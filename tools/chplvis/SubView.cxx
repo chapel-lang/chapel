@@ -47,14 +47,19 @@ SubView::SubView (int x, int y, int w, int h, const char *l)
     title->box(FL_NO_BOX);
     title->clear_visible_focus();
     add(title);
+
+    body = NULL;
 }
 
 SubView::~SubView()
 {
-  printf ("SubView destructor for %s.", title->label());
+  // printf ("SubView destructor for %s.", title->label());
   delete backBtn;
   delete title;
-  if (body) delete body;
+  if (body)  {
+    remove(body);
+    delete body;
+  }
 }
 
 
@@ -222,6 +227,7 @@ void SubView::TaskCommCB (void)
         show->showBackButton();
         if (!show->ShowFile (fName, lineNo)) {
           delete show;
+          MainWindow->redraw();
           return;
         }
         DataField->pushNewChild (show, true);
