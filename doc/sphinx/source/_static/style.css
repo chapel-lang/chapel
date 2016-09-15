@@ -7,3 +7,7 @@
 .rst-content .section ol.lowerroman, .rst-content .section ol.lowerroman li {
   list-style: lower-roman;
 }
+
+/* Add color for .mb class that is undefined in Sphinx RTD theme */
+.highlight .mb{ color: #099}
+
