@@ -169,7 +169,7 @@ typedef struct qio_style_s {
 
   // numeric printing and scanning choice
   int32_t precision; // for floating point, number after decimal point.
-                     // or number of significant digits in realfmt 2.
+                     // or number of significant digits in realfmt 0.
                      // for integers, this is always the number
                      // of .000 zeros to print
                      // when reading, this number has no impact on floating
