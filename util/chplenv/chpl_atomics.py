@@ -45,10 +45,7 @@ def get(flag='target'):
             elif compiler_val == 'cray-prgenv-cray':
                 atomics_val = 'intrinsics'
             elif compiler_val == 'clang':
-                if has_std_atomics(compiler_val):
-                    atomics_val = 'cstdlib'
-                else:
-                    atomics_val = 'intrinsics'
+                atomics_val = 'intrinsics'
             elif compiler_val == 'clang-included':
                 atomics_val = 'intrinsics'
 
