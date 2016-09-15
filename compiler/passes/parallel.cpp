@@ -196,7 +196,7 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
       var->hasFlag(FLAG_COFORALL_INDEX_VAR))
   {
     if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
-         isString(baseType) ||
+         isString(baseType) || // TODO -- is this case necessary?
          (isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)))
     {
       // Do this only if the record is passed by value.
@@ -223,42 +223,7 @@ static Symbol* insertAutoCopyForTaskArg
 
   FnSymbol* autoCopyFn = getAutoCopy(baseType);
 
-  // Special handling for reference counted types.
-  if (false) //isRefCountedType(baseType))
-  {
-    // TODO: Can we consolidate these two clauses?
-    // Does arg->typeInfo() != baseType mean that arg is passed by ref?
-    if (arg->typeInfo() != baseType)
-    {
-      // For internally reference-counted types, this punches through
-      // references to bump the reference count.
-      VarSymbol* derefTmp = newTemp(baseType);
-      fcall->insertBefore(new DefExpr(derefTmp));
-      fcall->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
-                                       new CallExpr(PRIM_DEREF, var)));
-      // The result of the autoCopy call is dropped on the floor.
-      // It is only called to increment the ref count.
-      CallExpr* autoCopyCall = new CallExpr(autoCopyFn, derefTmp);
-      fcall->insertBefore(autoCopyCall);
-      insertReferenceTemps(autoCopyCall);
-      // But the original var is passed through to the field assignment.
-    }
-    else
-    {
-      VarSymbol* valTmp = newTemp(baseType);
-      valTmp->addFlag(FLAG_NECESSARY_AUTO_COPY);
-      fcall->insertBefore(new DefExpr(valTmp));
-      CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
-      fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
-      insertReferenceTemps(autoCopyCall);
-      // If the arg is not passed by reference, the result of the autoCopy is
-      // passed to the field assignment.
-      var = valTmp;
-    }
-  }
-
   // Normal (record) handling
-  else
   {
     // TODO: Find out why _RuntimeTypeInfo records do not have autoCopy
     // functions, so we can get rid of this special test.
