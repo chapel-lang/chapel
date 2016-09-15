@@ -3978,7 +3978,7 @@ proc stringify(args ...?k):string {
       if args[i].type == string ||
          args[i].type == c_string ||
          args[i].type == c_string_copy {
-        str += args[i];
+        str += args[i]:string;
       } else if isRangeType(args[i].type) ||
                 isPrimitiveType(args[i].type) {
         str += args[i]:string;
