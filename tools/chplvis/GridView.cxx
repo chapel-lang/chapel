@@ -31,7 +31,7 @@
 //  GridView Constructors
 
 GridView::GridView (int bx, int by, int bw, int bh, const char *label)
-  : DataView (bx, by, bw, bh, 0) 
+  : DataView (bx, by, bw, bh, 0)
 {
   // printf ("GridView init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
   numlocales = 1;
@@ -42,42 +42,43 @@ GridView::GridView (int bx, int by, int bw, int bh, const char *label)
     setNumLocales(VisData.NumLocales());
   }
   boxSize = 10;
+  getSize = 0;
 };
 
-// Private methods 
+// Private methods
 
 void GridView::allocArrays()
 {
   int ix;
   int ix2;
 
-  //printf ("allocArrays\n");
+  // printf ("allocArrays: getSize = %d, numLocales = %d\n", getSize, numlocales);
   // Dealloc anything current
   if (theLocales != NULL) {
     for (ix = 0; ix < getSize; ix++) {
-      if (theLocales[ix].win != NULL) {
-        delete theLocales[ix].win;
-        //printf ("deleting win for %d\n", ix);
-      }
-      if (theLocales[ix].ccwin != NULL) 
-        delete theLocales[ix].ccwin;
-      if (theLocales[ix].bT != NULL) 
-        delete theLocales[ix].bT;
-      if (theLocales[ix].bL != NULL) 
+      // if (theLocales[ix].win != NULL) {
+      //  delete theLocales[ix].win;
+      //  printf ("deleting win for %d\n", ix);
+      // }
+      //if (theLocales[ix].ccwin != NULL)
+      //  delete theLocales[ix].ccwin;
+      //if (theLocales[ix].bT != NULL)
+      //  delete theLocales[ix].bT;
+      if (theLocales[ix].bL != NULL)
         delete theLocales[ix].bL;
     }
     delete [] theLocales;
   }
   if (comms != NULL) {
-    for (ix = 0; ix < getSize; ix++)  { 
-      for (ix2 = 0; ix2 < getSize; ix2++) 
-        if (comms[ix][ix2].win != NULL)
-          delete comms[ix][ix2].win;
+    for (ix = 0; ix < getSize; ix++)  {
+      //for (ix2 = 0; ix2 < getSize; ix2++)
+        //if (comms[ix][ix2].win != NULL)
+        //  delete comms[ix][ix2].win;
       delete [] comms[ix];
     }
     delete [] comms;
   }
-  
+
   // Alloc new space
   theLocales = new localeInfo [numlocales];
   comms = new  struct commInfo* [numlocales];
@@ -93,21 +94,21 @@ void GridView::allocArrays()
       exit(1);
     }
     for (ix2 = 0; ix2 < numlocales; ix2++) {
-      comms[ix][ix2].win = NULL;
+      // comms[ix][ix2].win = NULL;
       comms[ix][ix2].b = NULL;
     }
   }
 
   for (ix = 0; ix < numlocales; ix++) {
-    theLocales[ix].win = NULL;
-    theLocales[ix].ccwin = NULL;
+    //theLocales[ix].win = NULL;
+    //theLocales[ix].ccwin = NULL;
     theLocales[ix].bT = NULL;
     theLocales[ix].bL = NULL;
   }
 }
 
 
-// Public Methods 
+// Public Methods
 
 //  tagNo:  -3 => new open
 //          -2 => All: start to finish
@@ -120,7 +121,7 @@ void GridView::selectData(int tagNum)
 
   // if (tagNum < TagALL || tagNum >= numTags) error of some kind
 
-#if 0  
+#if 0
   // Close all the windows
   for (ix1 = 0; ix1 < numlocales; ix1++) {
     if (theLocales[ix1].win != NULL) {
@@ -130,7 +131,7 @@ void GridView::selectData(int tagNum)
       theLocales[ix1].ccwin->hide();
     }
     for (ix2 = 0; ix2 < numlocales; ix2++)  {
-      if (comms[ix1][ix2].win != NULL) 
+      if (comms[ix1][ix2].win != NULL)
         comms[ix1][ix2].win->hide();
     }
   }
@@ -154,7 +155,7 @@ void GridView::setLocTooltip ( int ix, bool isInt, int ival, double fval)
   char tmpchars[100];
   if (theLocales != NULL) {
     localeInfo *loc = &theLocales[ix];
-    
+
     // Invisible button for the tooltip!
     if (loc->bT == NULL) {
       loc->bT = new Fl_Box (FL_NO_BOX, x() + 10 + boxSize + loc->x,
@@ -279,7 +280,7 @@ void GridView::draw()
   DataView::draw();
 
   // Draw locales first
-  
+
   for (ix = 0; ix < numlocales; ix++) {
     switch (Info->dataToShow()) {
     case show_Tasks:
@@ -319,7 +320,7 @@ void GridView::draw()
       setCommTooltip(iy, ix, com2iy);
     }
   }
-    
+
   Info->draw();
 }
 
@@ -354,7 +355,7 @@ int GridView::handle(int event)
             fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
           } else {
             if (Fl::event_button() == FL_MIDDLE_MOUSE) {
-#if 0              
+#if 0
               if (theLocales[loc1].ccwin == NULL) {
                 // Create the window
                 theLocales[loc1].ccwin = make_concurrency_window(loc1, curTagNum);
@@ -376,7 +377,7 @@ int GridView::handle(int event)
           }
         } else {
           if (Fl::event_button() == FL_MIDDLE_MOUSE){
-#if 0            
+#if 0
             //printf ("Making locale window.\n");
             if (theLocales[loc1].win == NULL) {
               // Create the window
@@ -384,7 +385,7 @@ int GridView::handle(int event)
             } else {
               theLocales[loc1].win->setAsLocale(loc1, &curTagData->locales[loc1]);
             }
-            if (theLocales[loc1].win->visible()) 
+            if (theLocales[loc1].win->visible())
               theLocales[loc1].win->hide();
             else
               theLocales[loc1].win->show();
@@ -411,7 +412,7 @@ int GridView::handle(int event)
             fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
           } else {
             if (Fl::event_button() == FL_MIDDLE_MOUSE) {
-#if 0              
+#if 0
               if (theLocales[loc1].ccwin == NULL) {
                 // Create the window
                 theLocales[loc1].ccwin = make_concurrency_window(loc1, curTagNum);
@@ -433,7 +434,7 @@ int GridView::handle(int event)
           }
         } else {
           if (Fl::event_button() == FL_MIDDLE_MOUSE){
-#if 0              
+#if 0
             printf ("Making locale window.\n");
             if (theLocales[loc1].win == NULL) {
               // Create the window
@@ -441,7 +442,7 @@ int GridView::handle(int event)
             } else {
               theLocales[loc1].win->setAsLocale(loc1, &curTagData->locales[loc1]);
             }
-            if (theLocales[loc1].win->visible()) 
+            if (theLocales[loc1].win->visible())
               theLocales[loc1].win->hide();
             else
               theLocales[loc1].win->show();
@@ -467,7 +468,7 @@ int GridView::handle(int event)
         if (loc1 < numlocales && loc2 < numlocales && loc1 != loc2 ) {
           // printf ("Comm, %d,%d\n", loc1, loc2);
           if (Fl::event_button() == FL_MIDDLE_MOUSE) {
-#if 0            
+#if 0
             //printf ("Should create a comm win.\n");
             if (comms[loc1][loc2].win == NULL) {
               comms[loc1][loc2].win = make_LC_window(loc1, loc2,
@@ -496,15 +497,16 @@ int GridView::handle(int event)
         }
       }
     }
-    break;      
+    break;
   }
   return DataView::handle(event);
 }
 
 void GridView::redrawAllWindows(void)
     {
-      int ix, ix1, ix2;
+//    int ix, ix1, ix2;
       MainWindow->redraw();
+#if 0
       for (ix = 0; ix < numlocales; ix++) {
         if (theLocales[ix].win != NULL)
           theLocales[ix].win->redraw();
@@ -515,6 +517,7 @@ void GridView::redrawAllWindows(void)
         for (ix2 = 0; ix2 < numlocales; ix2++)
           if (comms[ix1][ix2].win != NULL)
             comms[ix1][ix2].win->redraw();
+#endif
     }
 
 

@@ -36,14 +36,14 @@
 
 struct localeInfo {
   // locale box location on view area
-  int x; 
+  int x;
   int y;
   int w;
   int h;
-  // Locale Window information.
-  LocCommWin *win;
+  // Locale Window information.  -- code commented out
+  // LocCommWin *win;
   // Concurrency Window information.
-  ConcurrencyWin *ccwin;
+  // ConcurrencyWin *ccwin;
   // Locale box ... for tool tips.
   Fl_Box *b;
 };
@@ -51,9 +51,9 @@ struct localeInfo {
 // Information stored for every comm direction
 // X -> Y and Y -> X for all X & Y.  (2d array)
 
-struct commInfo { // Remove this and just use CommWin*??? YYY
-  LocCommWin *win;
-};
+//struct commInfo { // Disabled, no multi-window mode.
+//  LocCommWin *win;
+//};
 
 // Tag names may appear multiple times in the data,
 // Associates unique tag number with name.
@@ -78,7 +78,7 @@ class GraphView : public DataView {
     // Data arrays for the locales (1D) and communication (2D)
     localeInfo *theLocales; // Need to de/reallocate after changing numlocales
     int getSize;            // size used for doing deallocate after changeing numlocales
-    commInfo **comms;       // Also need to de/reallocate after changing numlocales
+    // commInfo **comms;       // Also need to de/reallocate after changing numlocales
     // Methods
 
     void allocArrays ();
@@ -96,7 +96,7 @@ class GraphView : public DataView {
   void selectData (int tagNum);
 
   void setNumLocales (int n)
-    { 
+    {
       //printf("NumLocalse set to %d\n", n);
       numlocales = n;
       angle = twopi / numlocales;
@@ -115,6 +115,7 @@ class GraphView : public DataView {
   // Draw a comm line between loc1 and loc2, color changing in the middle
   void drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
 
+#if 0
   // Window show/hide functions ...
   void hideAllCommWindows (void)
     {
@@ -143,7 +144,7 @@ class GraphView : public DataView {
         if (theLocales[ix].ccwin != NULL)
           theLocales[ix].ccwin->hide();
       }
-    }        
+    }
 
   void showAllLocCommWindows (void)
     {
@@ -155,6 +156,7 @@ class GraphView : public DataView {
           theLocales[ix].ccwin->show();
       }
     }
+#endif
 
   void redrawAllWindows (void);
 

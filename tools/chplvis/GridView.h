@@ -35,41 +35,41 @@ static  const int minBoxSize = 6;
 class GridView : public DataView {
 
   // Information stored for each locale
-  
+
   struct localeInfo {
     // locale box location on view area
-    int x; 
+    int x;
     int y;
     int w;
     int h;
-    // Locale Window information.
-    LocCommWin *win;
+    // Locale Window information. -- code commented out
+    // LocCommWin *win;
     // Concurrency Window information.
-    ConcurrencyWin *ccwin;
+    // ConcurrencyWin *ccwin;
     // boxes ... for tool tips.
     Fl_Box *bT;  // Top row box
     Fl_Box *bL;  // Left column box
   };
-  
+
   // Information stored for every comm direction
   // X -> Y and Y -> X for all X & Y.  (2d array)
   // b for the tool tip
-  
+
   struct commInfo {
     int x;
     int y;
-    LocCommWin *win;
+    // LocCommWin *win;
     Fl_Box *b;
   };
-  
+
   // Tag names may appear multiple times in the data,
   // Associates unique tag number with name.
-  
+
   struct tagInfo {
     int tagNo;
     char *tagName;
   };
-  
+
  private:
 
     // Data arrays for the locales (1D) and communication (2D)
@@ -95,7 +95,7 @@ class GridView : public DataView {
     void selectData (int tagNum);
 
     void setNumLocales (int n)
-    { 
+    {
       //printf("NumLocalse set to %d\n", n);
       numlocales = n;
       if ((n+2)*minBoxSize+40 > w())
@@ -116,6 +116,7 @@ class GridView : public DataView {
     // Draw a comm line between loc1 and loc2, color changing in the middle
     void drawCommBox (int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
 
+#if 0
     // Window show/hide functions ...
     void hideAllCommWindows (void)
     {
@@ -156,6 +157,7 @@ class GridView : public DataView {
           theLocales[ix].ccwin->show();
       }
     }
+#endif
 
     void redrawAllWindows (void);
 

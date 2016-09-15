@@ -32,24 +32,24 @@
 //  GraphView Constructors
 
 GraphView::GraphView (int bx, int by, int bw, int bh, const char *label)
-  : DataView (bx, by, bw, bh, 0) 
+  : DataView (bx, by, bw, bh, 0)
 {
   // printf ("GraphView init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
   numlocales = 0;
   theLocales = NULL;
-  comms = NULL;
+  // comms = NULL;
   curTagData = NULL;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
 };
 
-// Private methods 
+// Private methods
 
 void GraphView::allocArrays()
 {
   int ix;
-  int ix2;
+  // int ix2;
 
   //printf ("allocArrays\n");
   // Dealloc anything current
@@ -57,33 +57,36 @@ void GraphView::allocArrays()
     for (ix = 0; ix < getSize; ix++) {
       //      if (theLocales[ix].win != NULL) {
       //        delete theLocales[ix].win;
-        //printf ("deleting win for %d\n", ix);
+      //printf ("deleting win for %d\n", ix);
       //      }
-      if (theLocales[ix].ccwin != NULL) 
-        delete theLocales[ix].ccwin;
-      if (theLocales[ix].b != NULL) 
-        delete theLocales[ix].b;
+      //if (theLocales[ix].ccwin != NULL)
+      //  delete theLocales[ix].ccwin;
+      if (theLocales[ix].b != NULL)
+         delete theLocales[ix].b;
     }
     delete [] theLocales;
   }
+#if 0
   if (comms != NULL) {
-    for (ix = 0; ix < getSize; ix++)  { 
-      for (ix2 = 0; ix2 < getSize; ix2++) 
-        //        if (comms[ix][ix2].win != NULL)
-        //          delete comms[ix][ix2].win;
+    for (ix = 0; ix < getSize; ix++)  {
+      for (ix2 = 0; ix2 < getSize; ix2++)
+        if (comms[ix][ix2].win != NULL)
+           delete comms[ix][ix2].win;
       delete [] comms[ix];
     }
     delete [] comms;
   }
-  
+#endif
+
   // Alloc new space
   theLocales = new localeInfo [numlocales];
-  comms = new  struct commInfo* [numlocales];
-  if (theLocales == NULL || comms == NULL) {
+  // comms = new  struct commInfo* [numlocales];
+  if (theLocales == NULL /* || comms == NULL */ ) {
     fprintf (stderr, "chplvis: out of memory.\n");
     exit(1);
   }
   getSize = numlocales;
+#if 0
   for (ix = 0; ix < getSize; ix++) {
     comms[ix] = new struct commInfo[numlocales];
     if (comms[ix] == NULL) {
@@ -94,16 +97,17 @@ void GraphView::allocArrays()
       comms[ix][ix2].win = NULL;
     }
   }
+#endif
 
   for (ix = 0; ix < numlocales; ix++) {
-    theLocales[ix].win = NULL;
-    theLocales[ix].ccwin = NULL;
+    //theLocales[ix].win = NULL;
+    //theLocales[ix].ccwin = NULL;
     theLocales[ix].b = NULL;
   }
 }
 
 
-// Public Methods 
+// Public Methods
 
 //  tagNo:  -3 => new open
 //          -2 => All: start to finish
@@ -116,7 +120,7 @@ void GraphView::selectData(int tagNum)
 
   // if (tagNum < TagALL || tagNum >= numTags) error of some kind
 
-#if 0  
+#if 0
   // Close all the windows
   for (ix1 = 0; ix1 < numlocales; ix1++) {
     if (theLocales[ix1].win != NULL) {
@@ -126,7 +130,7 @@ void GraphView::selectData(int tagNum)
       theLocales[ix1].ccwin->hide();
     }
     for (ix2 = 0; ix2 < numlocales; ix2++)  {
-      if (comms[ix1][ix2].win != NULL) 
+      if (comms[ix1][ix2].win != NULL)
         comms[ix1][ix2].win->hide();
     }
   }
@@ -207,13 +211,13 @@ void GraphView::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
   }
   localeInfo *loc1 = &theLocales[ix1], *loc2 = &theLocales[ix2];
   double theta, cw, ch;
-  
+
   dx = loc2->x - loc1->x;
   dy = loc2->y - loc1->y;
   if (dx == 0) {
     theta = (dy < 0 ? pi / 2 : pi * 1.5);
   } else {
-    if (dx < 0) 
+    if (dx < 0)
       theta = pi + atan((double)dy/(double)dx);
     else
       theta = atan((double)dy/(double)dx);
@@ -221,7 +225,7 @@ void GraphView::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
   cw = loc1->w / sin(pi/4);
   ch = loc1->h / sin(pi/4);
   //printf ("dx = %d, dy = %d, Theta = %lf\n", dx, dy, theta);
-  
+
   //  Need correct calculations here.
   x1 = rint (cw/2 * cos(theta));
   x1 = loc1->x + (abs(x1) > loc1->w/2 ? (dx < 0 ? -1 : 1)*loc1->w/2 : x1);
@@ -281,7 +285,7 @@ void GraphView::draw()
   DataView::draw();
 
   // Draw comm lines first so they go under locales
-  
+
   for (ix = 0; ix < numlocales-1; ix++) {
     for (iy = ix + 1; iy < numlocales; iy++) {
       int  com2ix, com2iy, comMax;
@@ -308,7 +312,7 @@ void GraphView::draw()
   }
 
   // Draw locales next
-  
+
   for (ix = 0; ix < numlocales; ix++) {
     switch (Info->dataToShow()) {
     case show_Tasks:
@@ -324,7 +328,7 @@ void GraphView::draw()
       drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
     }
   }
-    
+
   Info->draw();
 }
 
@@ -367,7 +371,7 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
         if (abs(loc2->x - x) < abs(xlen)/2)
           return 2;
         else
-          return 1;  
+          return 1;
       }
     } else {
       float newx  = (float)loc2->x - (loc2->y - y)/slope;
@@ -378,7 +382,7 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
         if (abs(loc2->y - y) < abs(ylen)/2)
           return 2;
         else
-          return 1;  
+          return 1;
       }
     }
   }
@@ -394,7 +398,7 @@ int GraphView::handle(int event)
   int y = Fl::event_y();
 
   int i, j; // search for the comm link clicked
-  
+
   switch (event) {
   case FL_PUSH:
     //printf ("Push at (%d,%d) event_button() = %d\n", x, y, Fl::event_buttons());
@@ -421,7 +425,7 @@ int GraphView::handle(int event)
               fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
             } else {
               if (Fl::event_button() == FL_MIDDLE_MOUSE) {
-#if 0                
+#if 0
                 if (theLocales[ix].ccwin == NULL) {
                   // Create the window
                   theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
@@ -443,7 +447,7 @@ int GraphView::handle(int event)
             }
           } else {
             if (Fl::event_button() == FL_MIDDLE_MOUSE){
-#if 0              
+#if 0
               // printf ("Making locale window.\n");
               if (theLocales[ix].win == NULL) {
                 // Create the window
@@ -451,12 +455,12 @@ int GraphView::handle(int event)
               } else {
                 theLocales[ix].win->setAsLocale(ix, &curTagData->locales[ix]);
               }
-              if (theLocales[ix].win->visible()) 
+              if (theLocales[ix].win->visible())
                 theLocales[ix].win->hide();
               else
                 theLocales[ix].win->show();
 #endif
-              return 0; // Disable LC window stuff 
+              return 0; // Disable LC window stuff
             } else {
               // Left mouse, place it on the info bar.
               LocCommBox *infoBox;
@@ -488,7 +492,7 @@ int GraphView::handle(int event)
               int t = j; j = i; i = t;
             }
             if (Fl::event_button() == FL_MIDDLE_MOUSE){
-#if 0              
+#if 0
               //printf ("Should create a comm win.\n");
               if (comms[i][j].win == NULL) {
                 comms[i][j].win = make_LC_window(i, j, &curTagData->comms[i][j]);
@@ -514,7 +518,7 @@ int GraphView::handle(int event)
         }
       }
     }
-    
+
     break;
   }
   return DataView::handle(event);
@@ -522,8 +526,9 @@ int GraphView::handle(int event)
 
 void GraphView::redrawAllWindows(void)
     {
-      int ix, ix1, ix2;
+//    int ix, ix1, ix2;
       MainWindow->redraw();
+#if 0
       for (ix = 0; ix < numlocales; ix++) {
         if (theLocales[ix].win != NULL)
           theLocales[ix].win->redraw();
@@ -534,4 +539,5 @@ void GraphView::redrawAllWindows(void)
         for (ix2 = 0; ix2 < numlocales; ix2++)
           if (comms[ix1][ix2].win != NULL)
             comms[ix1][ix2].win->redraw();
+#endif
     }
