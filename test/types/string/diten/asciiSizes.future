@@ -1,4 +1,0 @@
-bug: return type of param 'ascii' doesn't match return type of var 'ascii'
-
-When the string argument to ascii is a param, it returns an int(64), but when
-it is a var or const, ascii returns an int(32).
