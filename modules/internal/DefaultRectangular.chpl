@@ -583,10 +583,10 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiBuildArray(type eltType, param noInnerMult=true) {
-      //      compilerWarning("Creating a default array with noInnerMult="+noInnerMult);
+    proc dsiBuildArray(type eltType, param isAdvancedAlias: bool /*= true */ /* want: false */) {
+      //      compilerWarning("Creating a default array with isAdvancedAlias="+isAdvancedAlias);
       return new DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
-                                       stridable=stridable, noInnerMult=noInnerMult, dom=this);
+                                       stridable=stridable, isAdvancedAlias=isAdvancedAlias, dom=this);
     }
 
     proc dsiBuildRectangularDom(param rank: int, type idxType, param stridable: bool,
@@ -640,7 +640,7 @@ module DefaultRectangular {
     param rank : int;
     type idxType;
     param stridable: bool;
-    param noInnerMult: bool;
+    param isAdvancedAlias: bool;
 
     var dom : DefaultRectangularDom(rank=rank, idxType=idxType,
                                            stridable=stridable);
@@ -850,7 +850,7 @@ module DefaultRectangular {
         // then blk(rank) == 1. Knowing this, we need not multiply the final
         // ind(...) by anything. This may lead to performance improvements for
         // array accesses.
-        if noInnerMult || assertNoSlicing {
+        if !isAdvancedAlias || assertNoSlicing {
           for param i in 1..rank-1 {
             sum += ind(i) * blk(i);
           }
@@ -951,13 +951,13 @@ module DefaultRectangular {
       var alias : DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                         idxType=d.idxType,
                                         stridable=d.stridable,
-                                        noInnerMult=false
+                                        isAdvancedAlias=true
                                         );
       on this {
       alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                            idxType=d.idxType,
                                            stridable=d.stridable,
-                                           noInnerMult=false,
+                                           isAdvancedAlias=true,
                                            dom=d, noinit_data=true,
                                            str=str,
                                            blk=blk);
@@ -995,12 +995,12 @@ module DefaultRectangular {
       var alias : DefaultRectangularArr(eltType=eltType, rank=rank,
                                         idxType=idxType,
                                         stridable=d.stridable,
-                                        noInnerMult=noInnerMult);
+                                        isAdvancedAlias=isAdvancedAlias);
       on this {
         alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                              idxType=idxType,
                                              stridable=d.stridable,
-                                             noInnerMult=noInnerMult,
+                                             isAdvancedAlias=isAdvancedAlias,
                                              dom=d, noinit_data=true);
         alias.data = data;
         //alias.numelm = numelm;
@@ -1027,12 +1027,12 @@ module DefaultRectangular {
       var alias : DefaultRectangularArr(eltType=eltType, rank=newRank,
                                         idxType=idxType,
                                         stridable=newStridable,
-                                        noInnerMult=false);
+                                        isAdvancedAlias=true);
       on this {
       alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
                                            idxType=idxType,
                                            stridable=newStridable,
-                                           noInnerMult=false,
+                                           isAdvancedAlias=true,
                                            dom=d, noinit_data=true);
       alias.data = data;
       //alias.numelm = numelm;
@@ -1061,7 +1061,7 @@ module DefaultRectangular {
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
-                                            noInnerMult=noInnerMult,
+                                            isAdvancedAlias=isAdvancedAlias,
                                             dom=d._value);
         for i in d((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);

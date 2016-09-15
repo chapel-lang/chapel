@@ -330,12 +330,12 @@ class BlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  param noInnerMult: bool; // = true, by default
+  param isAdvancedAlias: bool;
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
-  var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable, noInnerMult);
-  var myLocArr: LocBlockArr(eltType, rank, idxType, stridable, noInnerMult);
+  var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable, isAdvancedAlias);
+  var myLocArr: LocBlockArr(eltType, rank, idxType, stridable, isAdvancedAlias);
   var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
@@ -355,13 +355,13 @@ class LocBlockArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  param noInnerMult: bool; // = true, by default
+  param isAdvancedAlias: bool;
   const locDom: LocBlockDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   //  var myElems: [locDom.myBlock] eltType;
   //  var myElems: chpl__buildArrayRuntimeType(locDom.myBlock, eltType);
   //  var myElems = (locDom.myBlock).buildArray(eltType);
-  var myElems = (locDom.myBlock).buildDefRectArray(eltType, noInnerMult);
+  var myElems = (locDom.myBlock).buildArray(eltType, isAdvancedAlias=true /* want just 'isAdvancedAlias' */);
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
@@ -856,9 +856,9 @@ proc BlockDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc BlockDom.dsiBuildArray(type eltType) {
+proc BlockDom.dsiBuildArray(type eltType, param isAdvancedAlias: bool) {
   var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-                         stridable=stridable, noInnerMult=true, sparseLayoutType=sparseLayoutType, dom=this);
+                         stridable=stridable, isAdvancedAlias=true/* want: isAdvancedAlias */, sparseLayoutType=sparseLayoutType, dom=this);
   arr.setup();
   return arr;
 }
@@ -1000,7 +1000,7 @@ proc BlockArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
-      locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, noInnerMult=noInnerMult, locDom=locDom);
+      locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, isAdvancedAlias=isAdvancedAlias, locDom=locDom);
       if thisid == here.id then
         myLocArr = locArr(localeIdx);
     }
@@ -1208,13 +1208,22 @@ proc BlockArr.dsiSerialWrite(f) {
 
 proc BlockArr.dsiSlice(d: BlockDom) {
   // MPF: should this use sparseLayoutType = d.sparseLayoutType ?
+  //
+  // BLC: Below, we'd really like to say "isAdvancedAlias=isAdvancedAlias"
+  // (that is, it's no more advanced than the original array), but because
+  // of our use of the goofy '=>' operator which always triggers a reindex
+  // (and must do so in the reindexing and rankchange cases), we need to
+  // pretend that it is advanced.  We could introduce two flavors of the =>
+  // operator as a short-term workaround for this, to get better scalar
+  // perf for Block-distributed arrays.
+  //
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-                           stridable=d.stridable, noInnerMult=noInnerMult,
+                           stridable=d.stridable, isAdvancedAlias=true,
                            dom=d, sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocales(i) {
-      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, noInnerMult=noInnerMult, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
+      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, isAdvancedAlias=true, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
       if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
@@ -1265,7 +1274,7 @@ proc _extendTuple(type t, idx, args) {
 
 proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType,
-                           stridable=stridable, noInnerMult=false, dom=d,
+                           stridable=stridable, isAdvancedAlias=true, dom=d,
                            sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
   coforall ind in d.dist.targetLocDom {
@@ -1309,7 +1318,7 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
 
       alias.locArr[ind] =
         new LocBlockArr(eltType=eltType, rank=newRank, idxType=d.idxType,
-                        stridable=d.stridable, noInnerMult=false, locDom=locDom,
+                        stridable=d.stridable, isAdvancedAlias=true, locDom=locDom,
                         myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
 
       if thisid == here.id then
@@ -1323,7 +1332,7 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
 proc BlockArr.dsiReindex(d: BlockDom) {
   // in constructor we have to pass sparseLayoutType as it has no default value
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
-                           stridable=d.stridable, noInnerMult=false, dom=d,
+                           stridable=d.stridable, isAdvancedAlias=true, dom=d,
                            sparseLayoutType=DefaultDist);
   const sameDom = d==dom;
 
@@ -1335,7 +1344,7 @@ proc BlockArr.dsiReindex(d: BlockDom) {
       alias.locArr[i] = new LocBlockArr(eltType=eltType,
                                         rank=rank, idxType=d.idxType,
                                         stridable=d.stridable,
-                                        noInnerMult=false,
+                                        isAdvancedAlias=true,
                                         locDom=locDom,
                                         myElems=>locAlias);
       if thisid == here.id then
@@ -1466,7 +1475,7 @@ proc BlockArr.dsiGetPrivatizeData() return dom.pid;
 proc BlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-                       stridable=stridable, noInnerMult=noInnerMult,
+                       stridable=stridable, isAdvancedAlias=isAdvancedAlias,
                        sparseLayoutType=sparseLayoutType, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);

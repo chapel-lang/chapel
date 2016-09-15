@@ -352,8 +352,8 @@ module ChapelArray {
   // Support for array types
   //
   pragma "runtime type init fn"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType)
-    return dom.buildArray(eltType);
+    proc chpl__buildArrayRuntimeType(dom: domain, type eltType, param isAdvancedAlias: bool = false /* = true */ /* want: false */)
+    return dom.buildArray(eltType, isAdvancedAlias);
 
   proc _getLiteralType(type t) type {
     if t != c_string then return t;
@@ -438,8 +438,12 @@ module ChapelArray {
 
 
   proc chpl__convertValueToRuntimeType(arr: []) type
-    return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
+    return chpl__buildArrayRuntimeType(arr.domain, arr.eltType, arr.isAdvancedAlias);
 
+  proc chpl__getDomainFromArrayType(arrayVal) {
+    return chpl__getDomainFromArrayType(arrayVal.type);
+  }
+  
   proc chpl__getDomainFromArrayType(type arrayType) {
     var A: arrayType;
     pragma "no copy" var D = A.domain;
@@ -1019,8 +1023,8 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc buildArray(type eltType) {
-      var x = _value.dsiBuildArray(eltType);
+    proc buildArray(type eltType, param isAdvancedAlias: bool) {
+      var x = _value.dsiBuildArray(eltType, isAdvancedAlias);
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);
@@ -1032,8 +1036,10 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc buildDefRectArray(type eltType, param noInnerMult=true) {
-      var x = _value.dsiBuildArray(eltType, noInnerMult);
+    proc buildDefRectArray(type eltType, param isAdvancedAlias: bool) {
+      //      if (isAdvancedAlias) then
+      //        compilerWarning("Building an advanced default rectangular array");
+      var x = _value.dsiBuildArray(eltType, isAdvancedAlias);
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);
@@ -1778,6 +1784,7 @@ module ChapelArray {
     proc eltType type return _value.eltType;
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
+    proc isAdvancedAlias param return _value.isAdvancedAlias;
     proc _dom return _getDomain(_value.dom);
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
