@@ -487,20 +487,8 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
           std::map<long,taskData>::iterator it;
           // Find task in task map
           it = curTag->locales[curNodeId].tasks.find(etp->taskId());
-          if (it != curTag->locales[curNodeId].tasks.end()) {
-            double taskTime;
-            // Update the end record
-            it->second.endRec = etp;
-            it->second.endTagNo = cTagNo;
-            // Set task times
-            taskTime = it->second.endRec->clock_time() - it->second.beginRec->clock_time();
-            it->second.taskClock = taskTime;
-            if (curTag->locales[curNodeId].maxTaskClock < taskTime)
-              curTag->locales[curNodeId].maxTaskClock = taskTime;
-            if (tagList[0]->locales[curNodeId].maxTaskClock < taskTime)
-              tagList[0]->locales[curNodeId].maxTaskClock = taskTime;
-            funcTbl[it->second.taskRec->funcId()].clockTime += taskTime;
-          } else {
+          if (it == curTag->locales[curNodeId].tasks.end()) {
+            // Find the task in a previous tag.
             bool validEnd = false;
             int tryTagNo = cTagNo-1;
             while (tryTagNo > DataModel::TagALL) {
@@ -517,8 +505,22 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
               itr = theEvents.erase(itr);
               if (itr != theEvents.begin())
                 itr--;
+              break;
             }
           }
+
+          double taskTime;
+          // Update the end record
+          it->second.endRec = etp;
+          it->second.endTagNo = cTagNo;
+          // Set task times
+          taskTime = it->second.endRec->clock_time() - it->second.beginRec->clock_time();
+          it->second.taskClock = taskTime;
+          if (curTag->locales[curNodeId].maxTaskClock < taskTime)
+            curTag->locales[curNodeId].maxTaskClock = taskTime;
+          if (tagList[0]->locales[curNodeId].maxTaskClock < taskTime)
+            tagList[0]->locales[curNodeId].maxTaskClock = taskTime;
+          funcTbl[it->second.taskRec->funcId()].clockTime += taskTime;
         }
         break;
 
