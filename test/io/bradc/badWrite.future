@@ -1,6 +1,0 @@
-bug: write(:string) not equivalent to writef("%s", :string) for binary I/O
-
-This test shows that these two ways of writing strings don't
-behave equivalently as I believe they should.  I believe the
-issue is that the former is trying to write the length of
-the string as a binary character prior to the string itself.
