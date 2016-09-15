@@ -166,7 +166,9 @@ all:
     - remove volatile on real atomics, make atomic_load atomic (#4491)
     - use "distrib" scheduler for numa instead of "sherwood" (#4505)
   09/14/16:
-    - enable native qthreds sync vars (#4506)
+    - enable native qthreads sync vars (#4506)
+  09/15/16:
+    - use atomic spin-lock instead of sync for reductions (#4532)
 
 AllCompTime:
   11/09/14:
