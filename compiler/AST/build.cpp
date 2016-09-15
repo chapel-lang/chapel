@@ -1853,9 +1853,6 @@ buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
   eltType->addFlag(FLAG_MAYBE_TYPE);
   fn->insertAtTail(new DefExpr(eltType));
 
-  // TODO -- consider giving this function a different name
-  // By function resolution, we can know when a user variable
-  // is being set to an iterator.
   if( !zippered ) {
     fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)))))}", eltType, data);
   } else {
@@ -2306,7 +2303,6 @@ buildFunctionDecl(FnSymbol*   fn,
   }
 
   if (optRetType)
-    //fn->retExprType = new BlockStmt(new CallExpr("_unref_type", optRetType), BLOCK_SCOPELESS);
     fn->retExprType = new BlockStmt(optRetType, BLOCK_SCOPELESS);
   else if (fn->hasFlag(FLAG_EXTERN))
     fn->retType     = dtVoid;
