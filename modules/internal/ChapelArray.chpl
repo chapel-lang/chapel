@@ -548,7 +548,6 @@ module ChapelArray {
   // test/users/bugzilla/bug794133/ for more details and examples.
   //
   proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
-    compilerAssert(!noRefCount);
     if (isArrayType(eltType)) {
       var ev: eltType;
       ev.domain._value.add_containing_arr(arr);
@@ -557,13 +556,11 @@ module ChapelArray {
   }
 
   proc chpl_decRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
-    compilerAssert(!noRefCount);
     if (isArrayType(eltType)) {
       var ev: eltType;
       const refcount = ev.domain._value.remove_containing_arr(arr);
-      if !noRefCount then
-        if refcount == 0 then
-          _delete_dom(ev.domain._value, _isPrivatized(ev.domain._value));
+      if refcount == 0 then
+        _delete_dom(ev.domain._value, _isPrivatized(ev.domain._value));
       chpl_decRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
     }
   }
@@ -1294,9 +1291,11 @@ module ChapelArray {
 
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      //if !noRefCount then
-      //  if (d.linksDistribution()) then
-      //    d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
+
       return _newDomain(d);
     }
 
@@ -1996,13 +1995,6 @@ module ChapelArray {
       chpl_incRefCountsForDomainsInArrayEltTypes(a, a.eltType);
       a._arrAlias = _value;
       d._value.add_arr(a);
-      //pragma "dont disable remote value forwarding"
-      //proc help() {
-      //  d._value.incRefCount();
-      //  a._arrAlias.incRefCount();
-      //}
-      //if !noRefCount then
-      //  help();
       return _newArray(a);
     }
 
@@ -2016,13 +2008,9 @@ module ChapelArray {
       param rank = ranges.size, stridable = chpl__anyStridable(ranges);
       pragma "no auto destroy" var d = _dom((...args));
       d._value._free_when_no_arrs = true;
-      //if !noRefCount then
-      //  d._value.incRefCount();
       var a = _value.dsiRankChange(d._value, rank, stridable, args);
       a._arrAlias = _value;
       d._value.add_arr(a);
-      //if !noRefCount then
-      //  a._arrAlias.incRefCount();
       return _newArray(a);
     }
 
@@ -2182,14 +2170,7 @@ module ChapelArray {
       newDom._value._free_when_no_arrs = true;
       var x = _value.dsiReindex(newDom._value);
       x._arrAlias = _value;
-      d._value.add_arr(x);
-      //pragma "dont disable remote value forwarding"
-      //proc help() {
-      //  newDom._value.incRefCount();
-      //  x._arrAlias.incRefCount();
-      //}
-      //if !noRefCount then
-      //  help();
+      newDom._value.add_arr(x);
       return _newArray(x);
     }
 
@@ -2972,13 +2953,8 @@ module ChapelArray {
     } else if a._value._doms.length == 0 {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
-      // TODO: This is needed as part of the assign_to_ref implementation to
-      // keep _distCnt from going below zero.  It's probably not the "correct"
-      // solution, but it resolves the immediate problem in
-      // test_distribution_syntax2.chpl (compiled with CHPL_COMM=none).
       if a._value == b._value {
-        //if !noRefCount then
-        //  a._value.incRefCount();
+        // do nothing
       } else
         a._value.dsiAssign(b._value);
       if _isPrivatized(a._instance) then
