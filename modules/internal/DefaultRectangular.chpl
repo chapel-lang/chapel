@@ -640,7 +640,7 @@ module DefaultRectangular {
     param rank : int;
     type idxType;
     param stridable: bool;
-    param noInnerMult = true;
+    param noInnerMult: bool;
 
     var dom : DefaultRectangularDom(rank=rank, idxType=idxType,
                                            stridable=stridable);
@@ -994,11 +994,13 @@ module DefaultRectangular {
     proc dsiSlice(d: DefaultRectangularDom) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=rank,
                                         idxType=idxType,
-                                        stridable=d.stridable);
+                                        stridable=d.stridable,
+                                        noInnerMult=noInnerMult);
       on this {
         alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                              idxType=idxType,
                                              stridable=d.stridable,
+                                             noInnerMult=noInnerMult,
                                              dom=d, noinit_data=true);
         alias.data = data;
         //alias.numelm = numelm;
@@ -1059,6 +1061,7 @@ module DefaultRectangular {
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
+                                            noInnerMult=noInnerMult,
                                             dom=d._value);
         for i in d((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);
