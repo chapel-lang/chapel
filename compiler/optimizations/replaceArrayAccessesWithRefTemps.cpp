@@ -36,6 +36,7 @@ static bool isWrite(SymExpr* lhs,
                     Map<Symbol*, Vec<SymExpr*>*>& defMap,
                     Map<Symbol*, Vec<SymExpr*>*>& useMap);
 
+// Return true if lhs is a write or any aliases of lhs are writes
 static bool isWrite(SymExpr* lhs,
                     Map<Symbol*, Vec<SymExpr*>*>& defMap,
                     Map<Symbol*, Vec<SymExpr*>*>& useMap) {
@@ -61,7 +62,8 @@ static bool isWrite(SymExpr* lhs,
   return false;
 }
 
-
+// Return true if any of the context calls in the allContextCalls vector
+// are used to write to the array 'matchArray'.
 static bool anyAssignmentsToArray(std::vector<ContextCallExpr*> allContextCalls,
                                   SymExpr* matchArray,
                                   Map<Symbol*, Vec<SymExpr*>*>& defMap,
@@ -217,8 +219,11 @@ void replaceArrayAccessesWithRefTemps() {
           SymExpr* array = toSymExpr(accessCall->get(1));
           // assign an array indexing context call in the vector to a 'ref'
           // variable at the top of the loop
-          VarSymbol* ref = newTemp("arrayAccessRef", firstCall->typeInfo());
+          VarSymbol* ref = newTemp("arrayAccessTmp", firstCall->typeInfo());
           if (anyAssignmentsToArray(allContextCalls, array, defMap, useMap)) {
+            // If any assignment to the array happens in the loop, mark the
+            // temp as a user-level reference var.  This will prevent it
+            // from being changed to by-value during cullOverReferences.
             if (DEBUG_RAAWRT) {
               printf("found an assignment to %s, forcing refs\n", array->var->name);
             }
