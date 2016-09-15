@@ -43,6 +43,7 @@ typedef uint8_t style_char_t;
 #define QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS 8
 
 
+// If these values change, also change iostringformat in IO.chpl
 #define QIO_STRING_FORMAT_WORD 0
 #define QIO_STRING_FORMAT_BASIC 1
 #define QIO_STRING_FORMAT_CHPL 2
