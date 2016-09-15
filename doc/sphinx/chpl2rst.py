@@ -65,7 +65,8 @@ def get_arguments():
 
 
 def chpl2rst(chapelfile):
-    """Convert Chapel program to restructured text"""
+    """Convert Chapel program to restructured text, using the rules described
+    in the module doc string"""
 
     filename = os.path.split(chapelfile)[1]
     basename, _ = os.path.splitext(filename)
@@ -155,7 +156,8 @@ def chpl2rst(chapelfile):
 
 
 def chpl2codeblock(chapelfile):
-    """Convert Chapel file to giant code block rst file"""
+    """Wrap contents of chapelfile with code-block:: chapel and return the
+    resulting contents as a string"""
 
     filename = os.path.split(chapelfile)[1]
     basename, _ = os.path.splitext(filename)

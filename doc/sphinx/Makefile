@@ -47,6 +47,7 @@ copy-docs: clean-copy-docs
 primers: clean-primers
 	@echo
 	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/primers"
+	@#Note - this assumes that we are not in a release tar ball
 	./run-in-venv.bash ./chpl2rst.py ../../test/release/examples/primers/*.chpl --output=rst --prefix=source/primers
 	./run-in-venv.bash ./chpl2rst.py ../../test/release/examples/primers/*doc.chpl --output=rst --codeblock --prefix=source/primers
 	./run-in-venv.bash ./chpl2rst.py ../../test/release/examples/primers/chplvis/*.chpl --output=rst --prefix=source/primers
@@ -88,7 +89,7 @@ clean-module-docs: FORCE
 clean-primers: FORCE
 	@echo
 	@echo "Removing primers generated into source/primers"
-	git clean -fX source/primers
+	find source/primers/ -type f -not -name 'primers*' -not -path '*/\.*' -print0 | xargs -0 rm --
 
 
 FORCE:

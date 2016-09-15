@@ -9,12 +9,12 @@ Language Basics
 .. toctree::
    :maxdepth: 1
 
-   variables
-   procedures
-   classes
-   genericClasses
-   varargs
-   modules
+   Variables <variables>
+   Procedures <procedures>
+   Classes <classes>
+   Generic Classes <genericClasses>
+   Variadic Arguments (var args) <varargs>
+   Modules <modules>
 
 Iterators
 ---------
@@ -22,8 +22,8 @@ Iterators
 .. toctree::
    :maxdepth: 1
 
-   iterators
-   parIters
+   Iterators <iterators>
+   Parallel Iterators <parIters>
 
 
 Task Parallelism
@@ -32,9 +32,9 @@ Task Parallelism
 .. toctree::
    :maxdepth: 1
 
-   taskParallel
-   syncsingle
-   atomics
+   Task Parallelism <taskParallel>
+   Sync / Singles <syncsingle>
+   Atomics <atomics>
 
 Locality
 --------
@@ -42,7 +42,7 @@ Locality
 .. toctree::
    :maxdepth: 1
 
-   locales
+   Locales <locales>
 
 Data Parallelism
 ----------------
@@ -50,16 +50,16 @@ Data Parallelism
 .. toctree::
    :maxdepth: 1
 
-   ranges
-   domains
-   arrays
-   slices
-   arrayVectorOps
-   sparse
-   associative
-   opaque
-   reductions
-   distributions
+   Ranges <ranges>
+   Domains <domains>
+   Arrays <arrays>
+   Slices <slices>
+   Array Vector Operations <arrayVectorOps>
+   Sparse Domains and Arrays <sparse>
+   Associative Domains and Arrays <associative>
+   Opaque Domains and Arrays <opaque>
+   Reductions <reductions>
+   Distributions <distributions>
 
 Library Utilities
 -----------------
@@ -67,8 +67,8 @@ Library Utilities
 .. toctree::
    :maxdepth: 1
 
-   fileIO
-   timers
+   File I/O <fileIO>
+   Timers <timers>
 
 Numerical Libraries
 -------------------
@@ -76,9 +76,9 @@ Numerical Libraries
 .. toctree::
    :maxdepth: 1
 
-   LAPACKlib
-   FFTWlib
-   randomNumbers
+   LAPACK <LAPACKlib>
+   FFTW <FFTWlib>
+   Random <randomNumbers>
 
 Tools
 -----
@@ -86,17 +86,17 @@ Tools
 .. toctree::
    :maxdepth: 1
 
-   chpldoc.doc
-   chplvis1
-   chplvis2
-   chplvis3
-   chplvis4
+   chpldoc <chpldoc.doc>
+   chplvis example 1 <chplvis1>
+   chplvis example 2 <chplvis2>
+   chplvis example 3 <chplvis3>
+   chplvis example 4 <chplvis4>
 
-Kitchen Sink
-------------
+Language Overview
+-----------------
 
 .. toctree::
    :maxdepth: 1
 
-   learnChapelInYMinutes
+   Learn Chapel in Y Minutes <learnChapelInYMinutes>
 
