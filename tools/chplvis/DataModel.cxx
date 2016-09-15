@@ -474,6 +474,8 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
           if (it != curTag->locales[curNodeId].tasks.end()) {
             // Update the begin record
             (*it).second.beginRec = btp;
+            // Initialize the task time
+            (*it).second.taskClock = 0;
           } else {
             printf ("(Begin task) No such task %ld in tag %s nodeid %d.\n",
                     btp->taskId(), curTag->name, curNodeId);
