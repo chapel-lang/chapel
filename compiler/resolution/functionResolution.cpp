@@ -4995,10 +4995,10 @@ static void
 resolveCoerce(CallExpr* call) {
 
   resolveDefaultGenericType(call);
-  
+
   FnSymbol* fn = toFnSymbol(call->parentSymbol);
   Type* toType = call->get(2)->typeInfo();
-  
+
   INT_ASSERT(fn);
 
   if (toType->symbol->hasFlag(FLAG_TUPLE) &&
