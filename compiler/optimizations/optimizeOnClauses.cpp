@@ -292,8 +292,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_METHOD_CALL_RESOLVES:
   case PRIM_GET_COMPILER_VAR:
   case NUM_KNOWN_PRIMS:
-
-  case PRIM_GET_CALLER_STACK_TOKEN:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
