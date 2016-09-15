@@ -13,7 +13,7 @@ config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newLine: int(8) = ascii("\n");
+param newLine = ascii("\n");
 
 enum Ntide {
   A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),

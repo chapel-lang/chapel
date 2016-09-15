@@ -70,6 +70,11 @@ returnInfoNodeID(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoUInt8(CallExpr* call) {
+  return QualifiedType(dtUInt[INT_SIZE_8], QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoInt32(CallExpr* call) {
   return QualifiedType(dtInt[INT_SIZE_32], QUAL_VAL);
 }
@@ -568,7 +573,7 @@ initPrimitive() {
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoStringCopy, true, true);
   prim_def("string_length", returnInfoDefaultInt);
-  prim_def("ascii", returnInfoInt32);
+  prim_def("ascii", returnInfoUInt8);
   prim_def("string_index", returnInfoStringCopy, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);

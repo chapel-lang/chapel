@@ -362,7 +362,7 @@
 %type <pblockstmt> stmt_ls
 
 %type <pblockstmt> use_stmt require_stmt
-%type <ponlylist>  only_ls
+%type <ponlylist>  only_ls opt_only_ls except_ls
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -522,10 +522,28 @@ only_ls:
                                          cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
                                          $1->push_back(cur); }
 
+opt_only_ls:
+  /* nothing */                        { $$ = new std::vector<OnlyRename*>();
+                                         OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::SINGLE;
+                                         cur->elem = new UnresolvedSymExpr("");
+                                         $$->push_back(cur); }
+| only_ls
+;
+
+except_ls:
+  TSTAR                                { $$ = new std::vector<OnlyRename*>();
+                                         OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::SINGLE;
+                                         cur->elem = new UnresolvedSymExpr("");
+                                         $$->push_back(cur); }
+| only_ls
+;
+
 use_stmt:
   TUSE expr_ls TSEMI                   { $$ = buildUseStmt($2); }
-| TUSE expr TEXCEPT only_ls TSEMI      { $$ = buildUseStmt($2, $4, true); }
-| TUSE expr TONLY only_ls TSEMI        { $$ = buildUseStmt($2, $4, false); }
+| TUSE expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($2, $4, true); }
+| TUSE expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($2, $4, false); }
 ;
 
 require_stmt:
@@ -1528,6 +1546,7 @@ parenthesized_expr:
   TLP tuple_component TRP           { $$ = $2; }
 | TLP tuple_component TCOMMA TRP    { $$ = buildOneTuple($2); }
 | TLP tuple_expr_ls TRP             { $$ = buildTuple($2); }
+| TLP tuple_expr_ls TCOMMA TRP      { $$ = buildTuple($2); }
 ;
 
 literal_expr:
@@ -1537,11 +1556,18 @@ literal_expr:
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
 | CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
+| TLCBR expr_ls TCOMMA TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
+| TLSBR expr_ls TCOMMA TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR assoc_expr_ls TRSBR
     {
       $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
     }
+| TLSBR assoc_expr_ls TCOMMA TRSBR
+    {
+      $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
+    }
+
 ;
 
 assoc_expr_ls:

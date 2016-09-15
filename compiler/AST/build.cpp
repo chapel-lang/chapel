@@ -421,6 +421,17 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except)
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
+  // Catch the 'except *' case and turn it into 'only <nothing>'.  This
+  // case will have a single UnresolvedSymExpr named "".
+  if (except && names->size() == 1) {
+    OnlyRename* listElem = (*names)[0];
+    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+      if (name->unresolved[0] == '\0') {
+        except = false;
+      }
+    }
+  }
+
   // Iterate through the list of names to exclude when using mod
   for_vector(OnlyRename, listElem, *names) {
     switch (listElem->tag) {
