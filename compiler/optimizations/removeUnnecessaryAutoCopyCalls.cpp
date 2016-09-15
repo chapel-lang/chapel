@@ -340,7 +340,6 @@ static void removePODinitDestroy()
 
 
 void removeUnnecessaryAutoCopyCalls() {
-
   if (fNoRemoveCopyCalls)
     return;
 
@@ -350,7 +349,7 @@ void removeUnnecessaryAutoCopyCalls() {
   //
   removePODinitDestroy();
 
-  return;
+  return; // TODO -- delete more in removeUnnecessaryAutoCopyCalls.
 
   //
   // remove matched pairs of autoCopy and autoDestroy calls marked with the
