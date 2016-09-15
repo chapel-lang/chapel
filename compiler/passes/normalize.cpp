@@ -1162,7 +1162,6 @@ static void init_array_alias(VarSymbol* var,
     partial = new CallExpr(reindex, type->remove());
   }
 
-//  autoCopy = new CallExpr("chpl__autoCopy", partial);
   autoCopy = partial;
 
   stmt->insertAfter(new CallExpr(PRIM_MOVE, var, autoCopy));
