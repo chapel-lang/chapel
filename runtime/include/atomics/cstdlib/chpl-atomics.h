@@ -42,7 +42,7 @@
     using std::atomic_uint_least32_t;
     using std::atomic_uint_least64_t;
     using std::atomic_uintptr_t;
-    using std::atomic_bool;
+    typedef std::atomic<bool> atomic_bool; // Work around broken <atomic>
     using std::memory_order_relaxed;
     using std::memory_order_consume;
     using std::memory_order_acquire;
