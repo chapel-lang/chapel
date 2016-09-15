@@ -190,10 +190,8 @@ static void cb_selTag(Fl_Widget *w, void *p)
     concView->updateData (Menus.currentLoc(), ix);
     break;
   case VIEW_GRID:
-    Grid_View->selectData(ix);
-    break;
   case VIEW_GRAPH:
-    Graph_View->selectData(ix);
+    Menus.currentDataView()->selectData(ix);
     break;
   default:
     fprintf (stderr, "chplvis menu error!\n");
@@ -296,6 +294,7 @@ static Fl_Menu_Item empty_popupMenu[] = {
 
 MenuManager::MenuManager()
 {
+  curView = VIEW_GRAPH;
   useUTags = false;
   curZoom = NULL;
   curDataView = NULL;
@@ -421,39 +420,38 @@ void MenuManager::makeMenusFor(ViewKind viewkind)
   switch (viewkind) {
     case VIEW_GRAPH:
       MainMenuBar->menu(GridGraphMenu);
-      setCurrentDataView(Graph_View);
+      curDataView = Graph_View;
+      curZoom = Graph_Scroll;
       makeTagsMenu();
       addPopUpTo(DataField);
-      setCurrentZoom(Graph_Scroll);
       Info->showTag();
       break;
       
     case VIEW_GRID:
       MainMenuBar->menu(GridGraphMenu);
-      setCurrentDataView(Grid_View);
+      curDataView = Grid_View;
+      curZoom = Grid_Scroll;
       makeTagsMenu();
       addPopUpTo(DataField);
-      setCurrentZoom(Grid_Scroll);
       Info->showTag();
       break;
 
     case VIEW_CONCURRENCY:
       MainMenuBar->menu(ConcurrencyMenu);
-      setCurrentDataView(NULL);
-      // makeLocaleMenu();
+      curDataView = NULL;
+      curZoom = NULL;
       makeTagsMenu();
       addPopUpTo(DataField);
       Info->showTag();
-      setCurrentZoom(NULL);
       break;
       
     case VIEW_PROFILE:
       MainMenuBar->menu(ProfileMenu);
-      setCurrentDataView(NULL);
+      curDataView = NULL;
+      curZoom = NULL;
       makeTagsMenu();  // Actually removes the tags menu
       addPopUpTo(DataField);
       Info->hideTag();
-      setCurrentZoom(NULL);
       break;
   }
 }

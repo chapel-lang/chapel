@@ -176,14 +176,15 @@ Grid_View->selectData(DataModel::TagALL);
 Info->setFileName(name);
 Info->clearTagName();
 
-return true;} {}
+return true;} {selected
+  }
 } 
 
 Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {1125 470 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {1300 472 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -208,7 +209,7 @@ Function {} {open
       Fl_Button {} {
         callback {DataField->popAll();
 DataField->selectChild(GraphGrp);
-Menus.makeMenusFor(VIEW_GRID);
+Menus.makeMenusFor(VIEW_GRAPH);
 Info->showColorRef();
 Graph_View->selectData(Menus.currentTag());}
         tooltip {Graph View} image {Graph-2-40x40.png} xywh {10 110 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
@@ -241,7 +242,7 @@ DataField->selectChild(ProfileView);
 ProfileView->prepareData(ProfileBrowser::D_CLOCK); // XXX
 Info->rmAllLocOrComm();
 Info->hideColorRef();
-Menus.makeMenusFor(VIEW_PROFILE);} selected
+Menus.makeMenusFor(VIEW_PROFILE);}
         tooltip {Profile View} image {Profile-40x40.png} xywh {10 260 40 40} box NO_BOX down_box FLAT_BOX
         code0 {o->clear_visible_focus();}
       }
