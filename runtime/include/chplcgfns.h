@@ -40,6 +40,7 @@
 extern const char* chpl_compileCommand;
 extern const char* chpl_compileVersion;
 extern const char* chpl_compileDirectory;
+
 extern const char* CHPL_HOME;
 extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
