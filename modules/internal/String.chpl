@@ -1464,17 +1464,6 @@ module String {
   //
   // Param procs
   //
-  pragma "no doc"
-  proc typeToString(type t) param {
-    compilerWarning("typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'");
-    return __primitive("typeToString", t);
-  }
-
-  pragma "no doc"
-  proc typeToString(x) param {
-    compilerWarning("typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'");
-    compilerError("typeToString()'s argument must be a type, not a value");
-  }
 
   pragma "no doc"
   inline proc ==(param s0: string, param s1: string) param  {
