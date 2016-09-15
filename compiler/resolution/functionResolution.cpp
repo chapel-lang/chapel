@@ -4672,20 +4672,6 @@ static void resolveSetMember(CallExpr* call) {
   if (t == dtNil && fs->type == dtUnknown)
     USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
   if (fs->type == dtUnknown) {
-/*    if (ct->symbol->hasFlag(FLAG_TUPLE)) {
-      // adjust field to use blank intent.
-      IntentTag intent = blankIntentForType(t);
-      if ((intent & INTENT_FLAG_REF) &&
-           ct->symbol->hasFlag(FLAG_ALLOW_REF) &&
-           isRecordWrappedType(t) // temporary
-          ) {
-        // Use a ref field to capture values with types
-        // where blank intent is ref or const ref.
-        if (!isReferenceType(t))
-          t = t->getRefType();
-      }
-    }
-  */
     // Set the field type.
     fs->type = t;
   }
@@ -8031,22 +8017,6 @@ static void resolveReturnType(FnSymbol* fn)
       USR_FATAL(fn, "unable to resolve return type");
     fn->retType = retType;
   }
-
-  /*if (retType->symbol->hasFlag(FLAG_TUPLE)) {
-    // testing
-    std::vector<TypeSymbol*> tmp;
-    AggregateType* at = toAggregateType(retType);
-    int i = 0;
-    for_fields(field, at) {
-      if (i != 0) { // skip size field
-        tmp.push_back(field->type->symbol);
-      }
-      i++;
-    }
-    TypeSymbol* ts = getTupleTypeSymbol(tmp);
-    assert(ts);
-    gdbShouldBreakHere();
-  }*/
 
 }
 

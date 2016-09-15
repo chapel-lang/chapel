@@ -476,33 +476,6 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
     }
   }
 
-  /*
-  //
-  // mark star tuples, add star flag
-  //
-  if (!fn->hasFlag(FLAG_TUPLE) && newType->symbol->hasFlag(FLAG_TUPLE)) {
-    bool  markStar = true;
-    Type* starType = NULL;
-
-    form_Map(SymbolMapElem, e, subs) {
-      TypeSymbol* ts = toTypeSymbol(e->value);
-
-      INT_ASSERT(ts && ts->type);
-
-      if (starType == NULL) {
-        starType = ts->type;
-      } else if (starType != ts->type) {
-        markStar = false;
-        break;
-      }
-    }
-
-    if (markStar)
-      newType->symbol->addFlag(FLAG_STAR_TUPLE);
-  }
-
-  */
-
   renameInstantiatedType(newType->symbol, subs, fn);
 
   fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
