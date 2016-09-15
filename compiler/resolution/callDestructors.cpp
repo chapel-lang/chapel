@@ -266,23 +266,11 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
 
   Expr* returnOrFirstAutoDestroy = expr;
 
-  // Adding the onret call before the first autoDestroy
-  // allows array onret to respond to returning a slice of a local
-  // array.
+  // Add the move to return before the first autoDestroy
+  // At this point we could also invoke some other function
+  // (such as an 'onret' handler) if that turns out to be necessary.
   returnOrFirstAutoDestroy->insertBefore(moveExpr);
 
-  /*
-  if (0 == strcmp(fn->name, "_defaultOf") ||
-      fn->hasFlag(FLAG_CONSTRUCTOR) ||
-      fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
-      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-      fn->hasFlag(FLAG_INIT_COPY_FN)) {
-    // don't add a onRet call
-  } else {
-    FnSymbol* onRetFn = getOnRet(formal->getValType());
-    CallExpr* onRetCall   = new CallExpr(onRetFn, new SymExpr(formal));
-    returnOrFirstAutoDestroy->insertBefore(onRetCall);
-  }*/
 }
 
 //
