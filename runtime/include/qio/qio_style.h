@@ -232,7 +232,7 @@ void qio_style_init_default(qio_style_t* s)
 
   s->binary = 0;
   s->byteorder = QIO_NATIVE;
-  s->str_style = -10;
+  s->str_style = -0xff00; // to EOF
 
   s->min_width_columns = 0;
   s->max_width_columns = UINT32_MAX;

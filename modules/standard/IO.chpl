@@ -1290,7 +1290,8 @@ via the ``str_style`` field in :record:`iostyle`.
   most-significant. This way of encoding a variable-byte length  matches
   `Google Protocol Buffers <https://github.com/google/protobuf/>`_.
 * ``iostringstyle.data_toeof`` indicates a string format that contains
-  string data until the end of the file
+  only the string data without any length or terminator. When reading,
+  this format will read a string until the end of the file is reached.
 * ``iostringstyle.data_null`` indicates a string that is terminated
   by a zero byte. It can be combined with other numeric
   values to indicate a string terminated by a particular byte. For example,
@@ -1504,7 +1505,7 @@ extern record iostyle { // aka qio_style_t
      in binary mode? See :type:`iostringstyle` for more information
      on what the values of ``str_style`` mean.
    */
-  var str_style:int(64) = -10;
+  var str_style:int(64) = iostringstyle.data_toeof;
 
   // text style choices
   /* When performing text I/O, pad out to this many columns */
