@@ -187,15 +187,12 @@ static void cb_selTag(Fl_Widget *w, void *p)
   }
   switch (Menus.currentViewKind()) {
   case VIEW_CONCURRENCY:
-    printf ("tag in conc\n");
     concView->updateData (Menus.currentLoc(), ix);
     break;
   case VIEW_GRID:
-    printf ("tag in grid\n");
     Grid_View->selectData(ix);
     break;
   case VIEW_GRAPH:
-    printf ("tag in graph\n");
     Graph_View->selectData(ix);
     break;
   default:
