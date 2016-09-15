@@ -39,7 +39,8 @@ static Type* getWrapRecordBaseType(Type* type);
 void
 removeWrapRecords() {
 
-  return; // TODO -- disabled.
+  return; // disabled
+          // TODO -- delete this pass
           // I don't think it makes sense to continue removing wrapper
           // records, because e.g. ownership bit exists at runtime.
           // However, the fields in these records are constant, so
