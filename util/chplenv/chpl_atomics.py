@@ -7,7 +7,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
-from compiler_utils import CompVersion, get_compiler_version, has_std_atomics
+from compiler_utils import CompVersion, get_compiler_version
 from utils import memoize
 
 
