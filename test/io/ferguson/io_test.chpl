@@ -39,9 +39,13 @@ proc testio(x)
 
   for i in 1..styles.size {
     var style = styles[i];
+    if noisy then writeln("STYLE ", i, " iodynamic");
     testio(iodynamic, style, x);
+    if noisy then writeln("STYLE ", i, " ionative");
     testio(ionative, style, x);
+    if noisy then writeln("STYLE ", i, " iobig");
     testio(iobig, style, x);
+    if noisy then writeln("STYLE ", i, " iolittle");
     testio(iolittle, style, x);
   }
 }
