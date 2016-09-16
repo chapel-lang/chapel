@@ -61,117 +61,137 @@ def get_arguments():
                         help='convert entire document into code block')
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
                         help='verbosity')
+    parser.add_argument('--link', '-l', default=None)
     return parser.parse_args()
 
 
-def chpl2rst(chapelfile):
-    """Convert Chapel program to restructured text, using the rules described
-    in the module doc string"""
+def gen_preamble(chapelfile, link=None):
+    """Generate preamble for rst file"""
 
+    # Strip path and extension from chapelfile
     filename = os.path.split(chapelfile)[1]
-    basename, _ = os.path.splitext(filename)
-    # Title
+    #basename, _ = os.path.splitext(filename)
     output = []
-    output.append(basename)
-    output.append('='*len(basename))
 
-    with open(chapelfile, 'r') as handle:
-        commentdepth = 0
-        state = ''
-        indentation = -1
+    # Generate title
+    output.append(filename)
+    output.append('='*len(filename))
+    output.append('')
 
-        # Each line is rst or code-block
-        for line in [l.strip('\n') for l in handle.readlines()]:
+    # Generate dynamic links below title
+    if link:
+        # Note - this makes the assumption that the file lives in the test dir
+        abspath = os.path.abspath(chapelfile)
 
-            # Skip empty lines
-            if len(line.strip()) == 0:
-                output.append('')
-                continue
+        if 'chapel/test/' not in abspath:
+            print('Error: --link flag only works for files in chapel/test/')
+            sys.exit(1)
 
-            # Comment canaries
-            # TODO -- support escaped characters (to make mppf proud)
-            commentstarts = line.count('/*')
-            commentends = line.count('*/')
-            commentdepth += commentstarts - commentends
-
-            # State tracking
-            laststate = state
-            state = ''
-
-            # Identification of line
-            if commentdepth > 0 or commentends > 0:
-                state = 'blockcomment'
-            elif line.startswith('//'):
-                state = 'linecomment'
-            elif 'code' in laststate:
-                state = 'code'
-            else:
-                state = 'codeblock'
-
-            if 'comment' in state:
-
-                if 'comment' not in laststate:
-                    output.append('')
-
-                rstline = line
-                if state == 'linecomment':
-                    # Strip white space for line comments
-                    rstline = rstline.replace('//', '  ')
-                    rstline = rstline.strip()
-                else:
-                    # Preserve white space for block comments
-                    if commentstarts:
-                        rstline = rstline.replace('/*', '  ')
-                    if commentends > 0:
-                        rstline = rstline.replace('*/', '  ')
-                    if '.. code-block::' in rstline or len(rstline.strip()) == 0:
-                        rstline = rstline.strip()
-
-                # Strip indentation
-                if indentation == -1:
-                    lineindentation = len(rstline) - len(rstline.lstrip(' '))
-                    if lineindentation > 0:
-                        indentation = lineindentation
-                        rstline = rstline.lstrip(' ')
-                else:
-                    if rstline.startswith(' '*indentation):
-                        rstline = rstline[indentation:]
-                    else:
-                        rstline = rstline.lstrip(' ')
-
-                output.append(rstline)
-            else:
-                # Reset indentation
-                indentation = -1
-
-                # Write code block
-                if state == 'codeblock':
-                    output.append('')
-                    output.append('.. code-block:: chapel')
-                    output.append('')
-                codeline = ''.join(['    ', line])
-                output.append(codeline)
+        # Get path from CHPL_HOME directory
+        chplpath = abspath[abspath.find('chapel/test/'):]
+        testpath = chplpath.lstrip('chapel/')
+        hyperlink = 'https://github.com/chapel-lang/chapel/blob/{0}/{1}'.format(link, testpath)
+        rstlink = '`View {0} on GitHub <{1}>`_'.format(filename, hyperlink)
+        output.append(rstlink)
+        output.append('')
 
     return '\n'.join(output)
 
 
-def chpl2codeblock(chapelfile):
-    """Wrap contents of chapelfile with code-block:: chapel and return the
+def gen_rst(handle):
+    """Convert contents of file handle to restructured text, using the rules
+    described in the module doc string (__doc__)"""
+
+    output = []
+    commentdepth = 0
+    state = ''
+    indentation = -1
+
+    # Each line is rst or code-block
+    for line in [l.strip('\n') for l in handle.readlines()]:
+
+        # Skip empty lines
+        if len(line.strip()) == 0:
+            output.append('')
+            continue
+
+        # Comment canaries - note: we don't support escaped comments: \/*
+        commentstarts = line.count('/*')
+        commentends = line.count('*/')
+        commentdepth += commentstarts - commentends
+
+        # State tracking
+        laststate = state
+        state = ''
+
+        # Identification of line
+        if commentdepth > 0 or commentends > 0:
+            state = 'blockcomment'
+        elif line.startswith('//'):
+            state = 'linecomment'
+        elif 'code' in laststate:
+            state = 'code'
+        else:
+            state = 'codeblock'
+
+        if 'comment' in state:
+
+            if 'comment' not in laststate:
+                output.append('')
+
+            rstline = line
+            if state == 'linecomment':
+                # Strip white space for line comments
+                rstline = rstline.replace('//', '  ')
+                rstline = rstline.strip()
+            else:
+                # Preserve white space for block comments
+                if commentstarts:
+                    rstline = rstline.replace('/*', '  ')
+                if commentends > 0:
+                    rstline = rstline.replace('*/', '  ')
+                if '.. code-block::' in rstline or len(rstline.strip()) == 0:
+                    rstline = rstline.strip()
+
+            # Strip indentation
+            if indentation == -1:
+                lineindentation = len(rstline) - len(rstline.lstrip(' '))
+                if lineindentation > 0:
+                    indentation = lineindentation
+                    rstline = rstline.lstrip(' ')
+            else:
+                if rstline.startswith(' '*indentation):
+                    rstline = rstline[indentation:]
+                else:
+                    rstline = rstline.lstrip(' ')
+
+            output.append(rstline)
+        else:
+            # Reset indentation
+            indentation = -1
+
+            # Write code block
+            if state == 'codeblock':
+                output.append('')
+                output.append('.. code-block:: chapel')
+                output.append('')
+            codeline = ''.join(['    ', line])
+            output.append(codeline)
+
+    return '\n'.join(output)
+
+
+def gen_codeblock(handle):
+    """Wrap contents of file handle with 'code-block:: chapel' and return the
     resulting contents as a string"""
 
-    filename = os.path.split(chapelfile)[1]
-    basename, _ = os.path.splitext(filename)
-    # Title
     output = []
-    output.append(basename)
-    output.append('='*len(basename))
     output.append('')
     output.append('.. code-block:: chapel')
     output.append('')
 
-    with open(chapelfile, 'r') as handle:
-        for line in [l.strip('\n') for l in handle.readlines()]:
-            output.append('  ' + line)
+    for line in [l.strip('\n') for l in handle.readlines()]:
+        output.append('  ' + line)
 
     return '\n'.join(output)
 
@@ -202,20 +222,37 @@ def write(rstoutput, output):
         handle.write(rstoutput)
 
 
-def main(chapelfiles, output='rst', prefix='.', codeblock=False, verbose=False):
+def main(**kwargs):
     """Driver function - convert each file to rst and write to output"""
+
+    # Parse keyword arguments
+    chapelfiles = kwargs['chapelfiles']
+    output = kwargs['output']
+    prefix = kwargs['prefix']
+    codeblock = kwargs['codeblock']
+    link = kwargs['link']
+    verbose = kwargs['verbose']
+
     for chapelfile in chapelfiles:
 
-        if codeblock:
-            rstoutput = chpl2codeblock(chapelfile)
-        else:
-            rstoutput = chpl2rst(chapelfile)
+        preamble = gen_preamble(chapelfile, link=link)
+
+        with open(chapelfile, 'r') as handle:
+            if codeblock:
+                rstoutput = gen_codeblock(handle)
+            else:
+                rstoutput = gen_rst(handle)
+
+        rstoutput = '\n'.join([preamble, rstoutput])
 
         fname = getfname(chapelfile, output, prefix)
+
         if verbose:
             print('writing output of {0} to {1}'.format(chapelfile, fname))
+
         write(rstoutput, fname)
 
 if __name__ == '__main__':
-    ARGS = get_arguments()
-    main(ARGS.chapelfiles, ARGS.output, ARGS.prefix, ARGS.codeblock, ARGS.verbose)
+    # Parse arguments and cast them into a dictionary
+    arguments = vars(get_arguments())
+    main(**arguments)
