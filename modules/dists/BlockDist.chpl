@@ -361,7 +361,9 @@ class LocBlockArr {
   //  var myElems: [locDom.myBlock] eltType;
   //  var myElems: chpl__buildArrayRuntimeType(locDom.myBlock, eltType);
   //  var myElems = (locDom.myBlock).buildArray(eltType);
-  var myElems = (locDom.myBlock).buildArray(eltType, isAdvancedAlias=true /* want just 'isAdvancedAlias' */);
+  //  var myElems = (locDom.myBlock).buildArray(eltType, isAdvancedAlias=true);
+                                  /* wanted just 'isAdvancedAlias' here ^^^ */
+  var myElems: chpl__buildArrayRuntimeType(locDom.myBlock, eltType, isAdvancedAlias=true);
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
@@ -858,7 +860,7 @@ proc BlockDom.dsiSerialWrite(x) {
 //
 proc BlockDom.dsiBuildArray(type eltType, param isAdvancedAlias: bool) {
   var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-                         stridable=stridable, isAdvancedAlias=true/* want: isAdvancedAlias */, sparseLayoutType=sparseLayoutType, dom=this);
+                         stridable=stridable, isAdvancedAlias=true/* wanted: isAdvancedAlias */, sparseLayoutType=sparseLayoutType, dom=this);
   arr.setup();
   return arr;
 }
