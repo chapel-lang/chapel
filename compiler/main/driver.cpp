@@ -102,6 +102,7 @@ bool fNoScalarReplacement = false;
 bool fNoTupleCopyOpt = false;
 bool fNoRemoteValueForwarding = false;
 bool fNoRemoveCopyCalls = false;
+bool fNoOptimizeArrayIndexing = false;
 bool fNoOptimizeLoopIterators = false;
 bool fNoVectorize = true;
 bool fNoGlobalConstOpt = false;
@@ -166,6 +167,7 @@ bool fPrintModuleResolution = false;
 bool fPrintEmittedCodeSize = false;
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
+bool fReportOptimizedArrayIndexing = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportOrderIndependentLoops = false;
 bool fReportOptimizedOn = false;
@@ -493,6 +495,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoloopInvariantCodeMotion= false;
   fNoInline = false;
   fNoInlineIterators = false;
+  fNoOptimizeArrayIndexing = false;
   fNoOptimizeLoopIterators = false;
   fNoLiveAnalysis = false;
   fNoRemoteValueForwarding = false;
@@ -535,6 +538,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoInline = true;
   fNoInlineIterators = true;
   fNoLiveAnalysis = true;
+  fNoOptimizeArrayIndexing = true;
   fNoOptimizeLoopIterators = true;
   fNoVectorize = true;
   fNoRemoteValueForwarding = true;
@@ -646,6 +650,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
+ {"optimize-array-indexing", ' ', NULL, "Enable [disable] array indexing optimization", "n", &fNoOptimizeArrayIndexing, "CHPL_DISABLE_OPTIMIZE_ARRAY_INDEXING", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},
  {"optimize-on-clause-limit", ' ', "<limit>", "Limit recursion depth of on clause optimization search", "I", &optimize_on_clause_limit, "CHPL_OPTIMIZE_ON_CLAUSE_LIMIT", NULL},
@@ -769,6 +774,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
+ {"report-optimized-array-indexing", ' ', NULL, "Print stats on optimized array indexing", "F", &fReportOptimizedArrayIndexing, NULL, NULL},
  {"report-optimized-loop-iterators", ' ', NULL, "Print stats on optimized single loop iterators", "F", &fReportOptimizedLoopIterators, NULL, NULL},
  {"report-order-independent-loops", ' ', NULL, "Print stats on order independent loops", "F", &fReportOrderIndependentLoops, NULL, NULL},
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},

@@ -56,6 +56,7 @@ extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
+extern bool fNoOptimizeArrayIndexing;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoVectorize;
 extern bool fNoPrivatization;
@@ -166,6 +167,7 @@ extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 
+extern bool fReportOptimizedArrayIndexing;
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportOrderIndependentLoops;
 extern bool fReportOptimizedOn;
