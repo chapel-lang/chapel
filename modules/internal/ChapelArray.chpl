@@ -440,11 +440,6 @@ module ChapelArray {
   proc chpl__convertValueToRuntimeType(arr: []) type
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType, arr.isAdvancedAlias);
 
-  /* Shouldn't need this: */
-  // proc chpl__getDomainFromArrayType(arrayVal) {
-  //   return chpl__getDomainFromArrayType(arrayVal.type);
-  // }
-  
   proc chpl__getDomainFromArrayType(type arrayType) {
     var A: arrayType;
     pragma "no copy" var D = A.domain;
@@ -1036,22 +1031,6 @@ module ChapelArray {
       return _newArray(x);
     }
 
-    //    pragma "no doc"
-    //    proc buildDefRectArray(type eltType, param isAdvancedAlias: bool) {
-    //      //      if (isAdvancedAlias) then
-    //    //      //        compilerWarning("Building an advanced default rectangular array");
-    //      var x = _value.dsiBuildArray(eltType, isAdvancedAlias);
-    //      pragma "dont disable remote value forwarding"
-    //      proc help() {
-    //        _value.add_arr(x);
-    //        if !noRefCount then
-    //          _value.incRefCount();
-    //      }
-    //      help();
-    //      return _newArray(x);
-    //    }
-
-    
     /* Remove all indices from this domain, leaving it empty */
     proc clear() {
       _value.dsiClear();

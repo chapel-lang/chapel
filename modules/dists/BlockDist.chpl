@@ -358,12 +358,10 @@ class LocBlockArr {
   param isAdvancedAlias: bool;
   const locDom: LocBlockDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
-  //  var myElems: [locDom.myBlock] eltType;
-  //  var myElems: chpl__buildArrayRuntimeType(locDom.myBlock, eltType);
-  //  var myElems = (locDom.myBlock).buildArray(eltType);
-  //  var myElems = (locDom.myBlock).buildArray(eltType, isAdvancedAlias=true);
-                                  /* wanted just 'isAdvancedAlias' here ^^^ */
   var myElems: chpl__buildArrayRuntimeType(locDom.myBlock, eltType, isAdvancedAlias=true);
+  // The previous line is long-form for declaring:
+  //   var myElems: [locDom.myBlock] eltType;
+  // while setting 'isAdvancedAlias' to true rather than its default of 'false'
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 

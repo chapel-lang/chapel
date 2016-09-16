@@ -584,9 +584,8 @@ module DefaultRectangular {
     }
 
     proc dsiBuildArray(type eltType, param isAdvancedAlias: bool) {
-      //      compilerWarning("Creating a default array with isAdvancedAlias="+isAdvancedAlias);
       return new DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
-                                       stridable=stridable, isAdvancedAlias=isAdvancedAlias, dom=this);
+                                      stridable=stridable, isAdvancedAlias=isAdvancedAlias, dom=this);
     }
 
     proc dsiBuildRectangularDom(param rank: int, type idxType, param stridable: bool,
