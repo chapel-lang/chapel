@@ -9387,15 +9387,21 @@ static bool arrayBlkModified() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isResolved() && fn->defPoint && fn->defPoint->parentSymbol) {
       if (fn->hasFlag(FLAG_MODIFIES_ARRAY_BLK)) {
+        if (fReportOptimizedArrayIndexing) {
+          printf("Unable to optimize array indexing\n");
+        }
         return true;
       }
     }
+  }
+  if (fReportOptimizedArrayIndexing) {
+    printf("Optimized array indexing\n");
   }
   return false;
 }
 
 static bool canOptimizeArrayBlk() {
-  static bool canOptimize = !arrayBlkModified();
+  static bool canOptimize = !fNoOptimizeArrayIndexing && !arrayBlkModified();
   return canOptimize;
 }
 
