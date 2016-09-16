@@ -223,6 +223,11 @@ OPTIONS
     Enable [disable] remote value forwarding of read-only values to remote
     threads if reading them early does not violate program semantics.
 
+**--[no-]replace-array-accesses-with-ref-temps**
+
+    Enable [disable] replacing multiple array accesses with references to
+    the accessed element.
+
 **--[no-]scalar-replacement**
 
     Enable [disable] scalar replacement of records and classes for some
