@@ -352,8 +352,8 @@ module ChapelArray {
   // Support for array types
   //
   pragma "runtime type init fn"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType)
-    return dom.buildArray(eltType);
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType, param isAdvancedAlias: bool = false)
+    return dom.buildArray(eltType, isAdvancedAlias);
 
   proc _getLiteralType(type t) type {
     if t != c_string then return t;
@@ -438,7 +438,7 @@ module ChapelArray {
 
 
   proc chpl__convertValueToRuntimeType(arr: []) type
-    return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
+    return chpl__buildArrayRuntimeType(arr.domain, arr.eltType, arr.isAdvancedAlias);
 
   proc chpl__getDomainFromArrayType(type arrayType) {
     var A: arrayType;
@@ -1019,8 +1019,8 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc buildArray(type eltType) {
-      var x = _value.dsiBuildArray(eltType);
+    proc buildArray(type eltType, param isAdvancedAlias: bool) {
+      var x = _value.dsiBuildArray(eltType, isAdvancedAlias);
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);
@@ -1030,6 +1030,7 @@ module ChapelArray {
       help();
       return _newArray(x);
     }
+
     /* Remove all indices from this domain, leaving it empty */
     proc clear() {
       _value.dsiClear();
@@ -1763,6 +1764,7 @@ module ChapelArray {
     proc eltType type return _value.eltType;
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
+    proc isAdvancedAlias param return _value.isAdvancedAlias;
     proc _dom return _getDomain(_value.dom);
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
@@ -2057,11 +2059,13 @@ module ChapelArray {
       // Optimization: Just return an alias of this array when
       // reindexing to the same domain. We skip same-ness test
       // if the domain descriptors' types are disjoint.
+      /*
       if isSubtype(_value.dom.type, d._value.type) ||
          isSubtype(d._value.type, _value.dom.type)
       then
         if _value.dom:object == d._value:object then
           return newAlias();
+      */
 
       for param i in 1..rank do
         if d.dim(i).length != _value.dom.dsiDim(i).length then

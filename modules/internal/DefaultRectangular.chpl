@@ -583,9 +583,9 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiBuildArray(type eltType) {
+    proc dsiBuildArray(type eltType, param isAdvancedAlias: bool) {
       return new DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
-                                      stridable=stridable, dom=this);
+                                      stridable=stridable, isAdvancedAlias=isAdvancedAlias, dom=this);
     }
 
     proc dsiBuildRectangularDom(param rank: int, type idxType, param stridable: bool,
@@ -639,6 +639,7 @@ module DefaultRectangular {
     param rank : int;
     type idxType;
     param stridable: bool;
+    param isAdvancedAlias: bool;
 
     var dom : DefaultRectangularDom(rank=rank, idxType=idxType,
                                            stridable=stridable);
@@ -848,7 +849,7 @@ module DefaultRectangular {
         // then blk(rank) == 1. Knowing this, we need not multiply the final
         // ind(...) by anything. This may lead to performance improvements for
         // array accesses.
-        if assertNoSlicing {
+        if !isAdvancedAlias || assertNoSlicing {
           for param i in 1..rank-1 {
             sum += ind(i) * blk(i);
           }
@@ -948,11 +949,14 @@ module DefaultRectangular {
     proc dsiReindex(d: DefaultRectangularDom) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                         idxType=d.idxType,
-                                        stridable=d.stridable);
+                                        stridable=d.stridable,
+                                        isAdvancedAlias=true
+                                        );
       on this {
       alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                            idxType=d.idxType,
                                            stridable=d.stridable,
+                                           isAdvancedAlias=true,
                                            dom=d, noinit_data=true,
                                            str=str,
                                            blk=blk);
@@ -989,11 +993,13 @@ module DefaultRectangular {
     proc dsiSlice(d: DefaultRectangularDom) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=rank,
                                         idxType=idxType,
-                                        stridable=d.stridable);
+                                        stridable=d.stridable,
+                                        isAdvancedAlias=isAdvancedAlias);
       on this {
         alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                              idxType=idxType,
                                              stridable=d.stridable,
+                                             isAdvancedAlias=isAdvancedAlias,
                                              dom=d, noinit_data=true);
         alias.data = data;
         //alias.numelm = numelm;
@@ -1019,11 +1025,13 @@ module DefaultRectangular {
     proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=newRank,
                                         idxType=idxType,
-                                        stridable=newStridable);
+                                        stridable=newStridable,
+                                        isAdvancedAlias=true);
       on this {
       alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
                                            idxType=idxType,
                                            stridable=newStridable,
+                                           isAdvancedAlias=true,
                                            dom=d, noinit_data=true);
       alias.data = data;
       //alias.numelm = numelm;
@@ -1052,6 +1060,7 @@ module DefaultRectangular {
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
+                                            isAdvancedAlias=isAdvancedAlias,
                                             dom=d._value);
         for i in d((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);
