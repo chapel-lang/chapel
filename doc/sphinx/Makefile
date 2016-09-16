@@ -89,7 +89,7 @@ clean-module-docs: FORCE
 clean-primers: FORCE
 	@echo
 	@echo "Removing primers generated into source/primers"
-	find source/primers/ -type f -not -name 'primers*' -not -path '*/\.*' -print0 | xargs -0 rm --
+	find source/primers/ -type f -not -name 'primers*' -not -path '*/\.*' -print0 | xargs -0 rm -f
 
 
 FORCE:
