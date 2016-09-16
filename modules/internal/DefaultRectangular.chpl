@@ -38,7 +38,6 @@ module DefaultRectangular {
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
-  config param assertNoSlicing = false;
 
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -842,24 +841,32 @@ module DefaultRectangular {
           sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
         return sum;
       } else {
-        var sum = if earlyShiftData then 0:idxType else origin;
-
-        // If the user asserts that there is no slicing in their program,
-        // then blk(rank) == 1. Knowing this, we need not multiply the final
-        // ind(...) by anything. This may lead to performance improvements for
-        // array accesses.
-        if assertNoSlicing {
-          for param i in 1..rank-1 {
-            sum += ind(i) * blk(i);
+        // optimize common case to get cleaner generated code
+        if (rank == 1 && earlyShiftData) {
+          if __primitive("optimize_array_blk_mult") {
+            return ind(1);
+          } else {
+            return ind(1) * blk(1);
           }
-          sum += ind(rank);
         } else {
-          for param i in 1..rank {
-            sum += ind(i) * blk(i);
+          var sum = if earlyShiftData then 0:idxType else origin;
+
+          // If we detect that blk is never changed then then blk(rank) == 1.
+          // Knowing this, we need not multiply the final ind(...) by anything.
+          // This relies on us marking every function that modifies blk
+          if __primitive("optimize_array_blk_mult") {
+            for param i in 1..rank-1 {
+              sum += ind(i) * blk(i);
+            }
+            sum += ind(rank);
+          } else {
+            for param i in 1..rank {
+              sum += ind(i) * blk(i);
+            }
           }
+          if !earlyShiftData then sum -= factoredOffs;
+          return sum;
         }
-        if !earlyShiftData then sum -= factoredOffs;
-        return sum;
       }
     }
 
@@ -967,6 +974,7 @@ module DefaultRectangular {
       return alias;
     }
 
+    pragma "modifies array blk"
     proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
                                      alias: DefaultRectangularArr)
     {
@@ -985,6 +993,18 @@ module DefaultRectangular {
         alias.str(i) = d.dsiDim(i).stride;
       }
     }
+
+    proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
+                                     alias: DefaultRectangularArr)
+      where dom.stridable == false && this.stridable == false
+    {
+      for param i in 1..rank {
+        alias.off(i) = d.dsiDim(i).low;
+        alias.blk(i) = blk(i);
+        alias.str(i) = d.dsiDim(i).stride;
+      }
+    }
+
 
     proc dsiSlice(d: DefaultRectangularDom) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=rank,
@@ -1016,6 +1036,7 @@ module DefaultRectangular {
       return alias;
     }
 
+    pragma "modifies array blk"
     proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=newRank,
                                         idxType=idxType,

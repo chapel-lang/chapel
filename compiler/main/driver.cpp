@@ -102,6 +102,7 @@ bool fNoScalarReplacement = false;
 bool fNoTupleCopyOpt = false;
 bool fNoRemoteValueForwarding = false;
 bool fNoRemoveCopyCalls = false;
+bool fNoOptimizeArrayIndexing = false;
 bool fNoOptimizeLoopIterators = false;
 bool fNoVectorize = true;
 bool fNoGlobalConstOpt = false;
@@ -113,6 +114,7 @@ bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
+bool fReplaceArrayAccessesWithRefTemps = false;
 bool fUserSetStackChecks = false;
 bool fNoCastChecks = false;
 bool fMungeUserIdents = true;
@@ -166,6 +168,7 @@ bool fPrintModuleResolution = false;
 bool fPrintEmittedCodeSize = false;
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
+bool fReportOptimizedArrayIndexing = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportOrderIndependentLoops = false;
 bool fReportOptimizedOn = false;
@@ -493,6 +496,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoloopInvariantCodeMotion= false;
   fNoInline = false;
   fNoInlineIterators = false;
+  fNoOptimizeArrayIndexing = false;
   fNoOptimizeLoopIterators = false;
   fNoLiveAnalysis = false;
   fNoRemoteValueForwarding = false;
@@ -503,6 +507,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoChecks = true;
   fIgnoreLocalClasses = false;
   fNoOptimizeOnClauses = false;
+  //fReplaceArrayAccessesWithRefTemps = true; // don't tie this to --fast yet
   optimizeCCode = true;
   specializeCCode = true;
   turnOffChecks(desc, unused);
@@ -535,6 +540,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoInline = true;
   fNoInlineIterators = true;
   fNoLiveAnalysis = true;
+  fNoOptimizeArrayIndexing = true;
   fNoOptimizeLoopIterators = true;
   fNoVectorize = true;
   fNoRemoteValueForwarding = true;
@@ -544,6 +550,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoPrivatization = true;
   fNoOptimizeOnClauses = true;
   fIgnoreLocalClasses = true;
+  //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
   fDenormalize = false;
   fConditionalDynamicDispatchLimit = 0;
 }
@@ -552,7 +559,6 @@ static void setCacheEnable(const ArgumentDescription* desc, const char* unused) 
   const char *val = fCacheRemote ? "true" : "false";
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
-
 
 static void setHtmlUser(const ArgumentDescription* desc, const char* unused) {
   fdump_html = true;
@@ -646,12 +652,14 @@ static ArgumentDescription arg_desc[] = {
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
+ {"optimize-array-indexing", ' ', NULL, "Enable [disable] array indexing optimization", "n", &fNoOptimizeArrayIndexing, "CHPL_DISABLE_OPTIMIZE_ARRAY_INDEXING", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},
  {"optimize-on-clause-limit", ' ', "<limit>", "Limit recursion depth of on clause optimization search", "I", &optimize_on_clause_limit, "CHPL_OPTIMIZE_ON_CLAUSE_LIMIT", NULL},
  {"privatization", ' ', NULL, "Enable [disable] privatization of distributed arrays and domains", "n", &fNoPrivatization, "CHPL_DISABLE_PRIVATIZATION", NULL},
  {"remote-value-forwarding", ' ', NULL, "Enable [disable] remote value forwarding", "n", &fNoRemoteValueForwarding, "CHPL_DISABLE_REMOTE_VALUE_FORWARDING", NULL},
  {"remove-copy-calls", ' ', NULL, "Enable [disable] remove copy calls", "n", &fNoRemoveCopyCalls, "CHPL_DISABLE_REMOVE_COPY_CALLS", NULL},
+ {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"scalar-replacement", ' ', NULL, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
  {"scalar-replace-limit", ' ', "<limit>", "Limit on the size of tuples being replaced during scalar replacement", "I", &scalar_replace_limit, "CHPL_SCALAR_REPLACE_TUPLE_LIMIT", NULL},
  {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
@@ -769,6 +777,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
+ {"report-optimized-array-indexing", ' ', NULL, "Print stats on optimized array indexing", "F", &fReportOptimizedArrayIndexing, NULL, NULL},
  {"report-optimized-loop-iterators", ' ', NULL, "Print stats on optimized single loop iterators", "F", &fReportOptimizedLoopIterators, NULL, NULL},
  {"report-order-independent-loops", ' ', NULL, "Print stats on order independent loops", "F", &fReportOrderIndependentLoops, NULL, NULL},
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},

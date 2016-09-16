@@ -185,6 +185,11 @@ OPTIONS
     Enable [disable] live variable analysis, which is currently only used to
     optimize iterators that are not inlined.
 
+**--[no-]optimize-array-indexing**
+
+    Enable [disable] an optimization that removes an extra multiply in array
+    indexing when it's provably unnecessary. By default this is enabled.
+
 **--[no-]optimize-loop-iterators**
 
     Enable [disable] optimizations to aggressively optimize iterators that
@@ -222,6 +227,11 @@ OPTIONS
 
     Enable [disable] remote value forwarding of read-only values to remote
     threads if reading them early does not violate program semantics.
+
+**--[no-]replace-array-accesses-with-ref-temps**
+
+    Enable [disable] replacing multiple array accesses with references to
+    the accessed element.  This is currently an experimental optimization.
 
 **--[no-]scalar-replacement**
 
