@@ -1,0 +1,5 @@
+bug: whole array access in loop causes wrong answers
+
+A whole array access in the loop doesn't force
+--replace-array-accesses-with-ref-temps to use a user-level ref, so it is
+incorrectly changed to store the value instead during cullOverReferences.
