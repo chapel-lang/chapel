@@ -121,7 +121,7 @@ proc getFieldIndex(type t, param s:string) param : int
 proc hasField(type t, param s:string) param : bool
   return getFieldIndex(t, s) > 0;
 
-/* Returns true if a function named `fname` taking in no arguments
+/* Returns true if a function named `fname` taking no arguments
    could be called in the current scope.
    */
 proc canResolve(param fname : string) param : bool
@@ -135,7 +135,7 @@ proc canResolve(param fname : string, args ...) param : bool
 
 // TODO -- how can this work with by-name argument passing?
 
-/* Returns true if a method named `fname` taking in no arguments
+/* Returns true if a method named `fname` taking no arguments
    could be called on `obj` in the current scope.
    */
 proc canResolveMethod(obj, param fname : string) param : bool
@@ -147,16 +147,16 @@ proc canResolveMethod(obj, param fname : string) param : bool
 proc canResolveMethod(obj, param fname : string, args ...) param : bool
   return __primitive("method call resolves", obj, fname, (...args));
 
-/* Returns true if a type method named `fname` taking in no
+/* Returns true if a type method named `fname` taking no
    arguments could be called on type `t` in the current scope.
    */
-proc canResolveMethod(type t, param fname : string) param : bool
+proc canResolveTypeMethod(type t, param fname : string) param : bool
   return __primitive("method call resolves", t, fname);
  
 /* Returns true if a type method named `fname` taking the
    arguments in `args` could be called on type `t` in the current scope.
    */
-proc canResolveMethod(type t, param fname : string, args ...) param : bool
+proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool
   return __primitive("method call resolves", t, fname, (...args));
 
 // TODO -- do we need a different version of can resolve with ref this?

@@ -30,20 +30,20 @@ checkType(R);
 proc checkType(type t) {
   use Reflection;
   
-  assert(canResolveMethod(t, "foo"));
-  assert(!canResolveMethod(t, "fog"));
+  assert(canResolveTypeMethod(t, "foo"));
+  assert(!canResolveTypeMethod(t, "fog"));
   
-  assert(canResolveMethod(t, "bar", 1));
-  assert(!canResolveMethod(t, "bar", 1.2));
-  assert(!canResolveMethod(t, "bar", 1, 2));
-  assert(!canResolveMethod(t, "bar"));
-  assert(!canResolveMethod(t, "bag", 1));
+  assert(canResolveTypeMethod(t, "bar", 1));
+  assert(!canResolveTypeMethod(t, "bar", 1.2));
+  assert(!canResolveTypeMethod(t, "bar", 1, 2));
+  assert(!canResolveTypeMethod(t, "bar"));
+  assert(!canResolveTypeMethod(t, "bag", 1));
 
-  assert(canResolveMethod(t, "baz", 1, 2, 3));
-  assert(!canResolveMethod(t, "baz", 1.2, 3, 4));
-  assert(!canResolveMethod(t, "baz", 1, 2));
-  assert(!canResolveMethod(t, "baz", 1, 2, 3, 4));
-  assert(!canResolveMethod(t, "bag", 1, 2, 3));
+  assert(canResolveTypeMethod(t, "baz", 1, 2, 3));
+  assert(!canResolveTypeMethod(t, "baz", 1.2, 3, 4));
+  assert(!canResolveTypeMethod(t, "baz", 1, 2));
+  assert(!canResolveTypeMethod(t, "baz", 1, 2, 3, 4));
+  assert(!canResolveTypeMethod(t, "bag", 1, 2, 3));
 
   writeln("passed all assertions for ", t:string);
 
