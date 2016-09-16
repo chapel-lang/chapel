@@ -51,6 +51,7 @@ class FnSymbol;
 class Symbol;
 class TypeSymbol;
 class VarSymbol;
+class IteratorInfo;
 
 class Type : public BaseAST {
 public:
@@ -59,7 +60,7 @@ public:
   // Interface for BaseAST
   virtual GenRet   codegen();
   virtual bool     inTree();
-  virtual Type*    typeInfo();
+  virtual QualifiedType qualType();
   virtual void     verify();
 
   virtual void     codegenDef();
@@ -112,6 +113,86 @@ private:
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
+
+// a Qualifier allows the compiler to distinguish between
+// different properties of a variable (const or ref-ness in particular)
+// without changing its type to a ref or wide ref type.
+enum Qualifier {
+  // The abstract qualifiers
+  QUAL_BLANK,
+  QUAL_CONST,
+  QUAL_REF,
+  QUAL_CONST_REF,
+
+  // The concrete qualifiers
+
+  // We expect we will need QUAL_PARAM
+  // QUAL_TYPE has also been proposed
+  // As we add those, we expect to add methods
+  // e.g. isParam() to QualifiedType.
+
+  // QUAL_VAL applies to local or global variables
+  // as well as to compiler-introduced temporaries.
+  // Something with Qualifier QUAL_VAL is mutable, but
+  // something with Qualifier QUAL_CONST_VAL is not.
+  QUAL_VAL,
+  QUAL_NARROW_REF,
+  QUAL_WIDE_REF,
+
+  QUAL_CONST_VAL,
+  QUAL_CONST_NARROW_REF,
+  QUAL_CONST_WIDE_REF
+};
+
+// A QualifiedType is basically a tuple of (qualifier, type).
+// Shorter names, such as QualType and QualT have been proposed.
+// A QualifiedType is only expected to be meaningful during and
+// after resolution.
+//
+// For example
+//   var aVar:int;
+//   ref aRef = aVar;
+//
+//   SymExpr(aVar) and Symbol(aVar) have QualifiedType(int, QUAL_VAL)
+//   SymExpr(aRef) and Symbol(aVar) have QualifiedType(int, QUAL_REF)
+//
+class QualifiedType {
+public:
+
+  explicit QualifiedType(Type* type)
+    : _type(type), _qual(QUAL_BLANK)
+  {
+  }
+
+  QualifiedType(Type* type, Qualifier qual)
+    : _type(type), _qual(qual)
+  {
+  }
+
+  bool isAbstract() const {
+    return (_qual == QUAL_BLANK || _qual == QUAL_CONST ||
+            _qual == QUAL_REF || _qual == QUAL_CONST_REF);
+  }
+  bool isVal() const {
+    return (_qual == QUAL_VAL || _qual == QUAL_CONST_VAL);
+  }
+  bool isRef() const {
+    return (_qual == QUAL_REF || _qual == QUAL_CONST_REF ||
+            _qual == QUAL_NARROW_REF || _qual == QUAL_CONST_NARROW_REF);
+  }
+  bool isWideRef() const {
+    return (_qual == QUAL_WIDE_REF || _qual == QUAL_CONST_WIDE_REF);
+  }
+
+  Type* type() const {
+    return _type;
+  }
+
+private:
+  Type*      _type;
+  Qualifier  _qual;
+};
+
 class EnumType : public Type {
  public:
   AList constants; // EnumSymbols
@@ -151,12 +232,22 @@ enum AggregateTag {
   AGGREGATE_UNION
 };
 
+enum InitializerStyle {
+  DEFINES_CONSTRUCTOR,
+  DEFINES_INITIALIZER,
+  DEFINES_NONE_USE_DEFAULT
+};
+
 class AggregateType : public Type {
  public:
   AggregateTag aggregateTag;
+  InitializerStyle initializerStyle;
   AList fields;
   AList inherits; // used from parsing, sets dispatchParents
   Symbol* outer;  // pointer to an outer class if this is an inner class
+
+  IteratorInfo* iteratorInfo; // Attached only to iterator class/records
+
   const char *doc;
 
   AggregateType(AggregateTag initTag);

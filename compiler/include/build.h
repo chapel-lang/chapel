@@ -95,13 +95,14 @@ CallExpr* buildForLoopExpr(Expr* indices,
                            Expr* cond = NULL,
                            bool maybeArrayType = false,
                            bool zippered = false);
-CallExpr* buildForallLoopExpr(Expr* indices,
+ForallExpr* buildForallLoopExpr(Expr* indices,
                               Expr* iterator,
                               Expr* expr,
                               Expr* cond = NULL,
                               bool maybeArrayType = false,
                               bool zippered = false);
-CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
+void convertForallExpressions();
+Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
                                            bool recursiveCall = false);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op = NULL);

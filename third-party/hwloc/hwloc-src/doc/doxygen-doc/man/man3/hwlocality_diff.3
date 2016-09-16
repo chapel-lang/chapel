@@ -1,16 +1,13 @@
-.TH "Topology differences" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_diff" 3 "Sun Aug 28 2016" "Version 1.11.4" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Topology differences \- 
+hwlocality_diff \- Topology differences
 .SS "Data Structures"
 
 .in +1c
 .ti -1c
 .RI "union \fBhwloc_topology_diff_obj_attr_u\fP"
-.br
-.ti -1c
-.RI "struct \fBhwloc_topology_diff_obj_attr_u::hwloc_topology_diff_obj_attr_generic_s\fP"
 .br
 .ti -1c
 .RI "struct \fBhwloc_topology_diff_obj_attr_u::hwloc_topology_diff_obj_attr_uint64_s\fP"
@@ -19,35 +16,32 @@ Topology differences \-
 .RI "struct \fBhwloc_topology_diff_obj_attr_u::hwloc_topology_diff_obj_attr_string_s\fP"
 .br
 .ti -1c
+.RI "struct \fBhwloc_topology_diff_obj_attr_u::hwloc_topology_diff_obj_attr_generic_s\fP"
+.br
+.ti -1c
 .RI "union \fBhwloc_topology_diff_u\fP"
 .br
 .ti -1c
-.RI "struct \fBhwloc_topology_diff_u::hwloc_topology_diff_generic_s\fP"
+.RI "struct \fBhwloc_topology_diff_u::hwloc_topology_diff_too_complex_s\fP"
 .br
 .ti -1c
 .RI "struct \fBhwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s\fP"
 .br
 .ti -1c
-.RI "struct \fBhwloc_topology_diff_u::hwloc_topology_diff_too_complex_s\fP"
+.RI "struct \fBhwloc_topology_diff_u::hwloc_topology_diff_generic_s\fP"
 .br
 .in -1c
 .SS "Typedefs"
 
 .in +1c
 .ti -1c
-.RI "typedef enum 
-.br
-\fBhwloc_topology_diff_obj_attr_type_e\fP \fBhwloc_topology_diff_obj_attr_type_t\fP"
+.RI "typedef enum \fBhwloc_topology_diff_obj_attr_type_e\fP \fBhwloc_topology_diff_obj_attr_type_t\fP"
 .br
 .ti -1c
-.RI "typedef enum 
-.br
-\fBhwloc_topology_diff_type_e\fP \fBhwloc_topology_diff_type_t\fP"
+.RI "typedef enum \fBhwloc_topology_diff_type_e\fP \fBhwloc_topology_diff_type_t\fP"
 .br
 .ti -1c
-.RI "typedef union 
-.br
-\fBhwloc_topology_diff_u\fP * \fBhwloc_topology_diff_t\fP"
+.RI "typedef union \fBhwloc_topology_diff_u\fP * \fBhwloc_topology_diff_t\fP"
 .br
 .in -1c
 .SS "Enumerations"
@@ -154,7 +148,7 @@ An object attribute was changed\&. The union is a hwloc_topology_diff_obj_attr_u
 The difference is too complex, it cannot be represented\&. The difference below this object has not been checked\&. \fBhwloc_topology_diff_build()\fP will return 1\&. The union is a hwloc_topology_diff_obj_attr_u::hwloc_topology_diff_too_complex_s\&. 
 .SH "Function Documentation"
 .PP 
-.SS "int hwloc_topology_diff_apply (\fBhwloc_topology_t\fPtopology, \fBhwloc_topology_diff_t\fPdiff, unsigned longflags)"
+.SS "int hwloc_topology_diff_apply (\fBhwloc_topology_t\fP topology, \fBhwloc_topology_diff_t\fP diff, unsigned long flags)"
 
 .PP
 Apply a topology diff to an existing topology\&. \fCflags\fP is an OR'ed set of \fBhwloc_topology_diff_apply_flags_e\fP\&.
@@ -171,7 +165,7 @@ If the difference cannot be applied entirely, all previous applied elements are 
 .RE
 .PP
 
-.SS "int hwloc_topology_diff_build (\fBhwloc_topology_t\fPtopology, \fBhwloc_topology_t\fPnewtopology, unsigned longflags, \fBhwloc_topology_diff_t\fP *diff)"
+.SS "int hwloc_topology_diff_build (\fBhwloc_topology_t\fP topology, \fBhwloc_topology_t\fP newtopology, unsigned long flags, \fBhwloc_topology_diff_t\fP * diff)"
 
 .PP
 Compute the difference between 2 topologies\&. The difference is stored as a list of \fBhwloc_topology_diff_t\fP entries starting at \fCdiff\fP\&. It is computed by doing a depth-first traversal of both topology trees simultaneously\&.
@@ -201,7 +195,7 @@ The output diff may be modified by removing some entries from the list\&. The re
 .RE
 .PP
 
-.SS "int hwloc_topology_diff_destroy (\fBhwloc_topology_t\fPtopology, \fBhwloc_topology_diff_t\fPdiff)"
+.SS "int hwloc_topology_diff_destroy (\fBhwloc_topology_t\fP topology, \fBhwloc_topology_diff_t\fP diff)"
 
 .PP
 Destroy a list of topology differences\&. 
@@ -212,7 +206,7 @@ The \fCtopology\fP parameter must be a valid topology but it is not required tha
 .RE
 .PP
 
-.SS "int hwloc_topology_diff_export_xml (\fBhwloc_topology_t\fPtopology, \fBhwloc_topology_diff_t\fPdiff, const char *refname, const char *xmlpath)"
+.SS "int hwloc_topology_diff_export_xml (\fBhwloc_topology_t\fP topology, \fBhwloc_topology_diff_t\fP diff, const char * refname, const char * xmlpath)"
 
 .PP
 Export a list of topology differences to a XML file\&. If not \fCNULL\fP, \fCrefname\fP defines an identifier string for the reference topology which was used as a base when computing this difference\&. This identifier is usually the name of the other XML file that contains the reference topology\&. This attribute is given back when reading the diff from XML\&.
@@ -223,7 +217,7 @@ The \fCtopology\fP parameter must be a valid topology but it is not required tha
 .RE
 .PP
 
-.SS "int hwloc_topology_diff_export_xmlbuffer (\fBhwloc_topology_t\fPtopology, \fBhwloc_topology_diff_t\fPdiff, const char *refname, char **xmlbuffer, int *buflen)"
+.SS "int hwloc_topology_diff_export_xmlbuffer (\fBhwloc_topology_t\fP topology, \fBhwloc_topology_diff_t\fP diff, const char * refname, char ** xmlbuffer, int * buflen)"
 
 .PP
 Export a list of topology differences to a XML buffer\&. If not \fCNULL\fP, \fCrefname\fP defines an identifier string for the reference topology which was used as a base when computing this difference\&. This identifier is usually the name of the other XML file that contains the reference topology\&. This attribute is given back when reading the diff from XML\&.
@@ -236,7 +230,7 @@ The \fCtopology\fP parameter must be a valid topology but it is not required tha
 .RE
 .PP
 
-.SS "int hwloc_topology_diff_load_xml (\fBhwloc_topology_t\fPtopology, const char *xmlpath, \fBhwloc_topology_diff_t\fP *diff, char **refname)"
+.SS "int hwloc_topology_diff_load_xml (\fBhwloc_topology_t\fP topology, const char * xmlpath, \fBhwloc_topology_diff_t\fP * diff, char ** refname)"
 
 .PP
 Load a list of topology differences from a XML file\&. If not \fCNULL\fP, \fCrefname\fP will be filled with the identifier string of the reference topology for the difference file, if any was specified in the XML file\&. This identifier is usually the name of the other XML file that contains the reference topology\&.
@@ -249,7 +243,7 @@ the pointer returned in refname should later be freed by the caller\&.
 .RE
 .PP
 
-.SS "int hwloc_topology_diff_load_xmlbuffer (\fBhwloc_topology_t\fPtopology, const char *xmlbuffer, intbuflen, \fBhwloc_topology_diff_t\fP *diff, char **refname)"
+.SS "int hwloc_topology_diff_load_xmlbuffer (\fBhwloc_topology_t\fP topology, const char * xmlbuffer, int buflen, \fBhwloc_topology_diff_t\fP * diff, char ** refname)"
 
 .PP
 Load a list of topology differences from a XML buffer\&. If not \fCNULL\fP, \fCrefname\fP will be filled with the identifier string of the reference topology for the difference file, if any was specified in the XML file\&. This identifier is usually the name of the other XML file that contains the reference topology\&.

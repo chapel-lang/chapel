@@ -277,16 +277,10 @@ static void addOneToSymbolTable(DefExpr* def)
                     def->sym->stringLoc());
         }
 
-        if (!oldFn && (newFn && !newFn->_this)) {
+        if ((!oldFn && (newFn && !newFn->_this)) ||
+            (!newFn && (oldFn && !oldFn->_this))) {
           // A function definition is conflicting with another named symbol
           // that isn't a function (could be a variable, a module name, etc.)
-          USR_FATAL(sym,
-                    "'%s' has multiple definitions, redefined at:\n  %s",
-                    sym->name,
-                    def->sym->stringLoc());
-        } else if (!newFn && (oldFn && !oldFn->_this)) {
-          // Another named symbol that isn't a function is conflicting with
-          // a function definition name.
           USR_FATAL(sym,
                     "'%s' has multiple definitions, redefined at:\n  %s",
                     sym->name,
@@ -483,15 +477,17 @@ void UseStmt::validateList() {
 
   const char* listName = except ? "except" : "only";
   for_vector(const char, name, named) {
-    Symbol* sym = lookup(scopeToUse, name);
+    if (name[0] != '\0') {
+      Symbol* sym = lookup(scopeToUse, name);
 
-    if (!sym) {
-      USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
-    } else if (!sym->isVisible(this)) {
-      USR_FATAL_CONT(this, "Bad identifier in '%s' clause, '%s' is private", listName, name);
+      if (!sym) {
+        USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
+      } else if (!sym->isVisible(this)) {
+        USR_FATAL_CONT(this, "Bad identifier in '%s' clause, '%s' is private", listName, name);
+      }
+
+      createRelatedNames(sym);
     }
-
-    createRelatedNames(sym);
   }
 
   for (std::map<const char*, const char*>::iterator it = renamed.begin();
@@ -1006,10 +1002,6 @@ static void build_type_constructor(AggregateType* ct) {
 // which is also called by user-defined constructors to pre-initialize all
 // fields to their declared or type-specific initial values.
 static void build_constructor(AggregateType* ct) {
-  if (isSyncType(ct) || isSingleType(ct)) {
-    ct->defaultValue = NULL;
-  }
-
   // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
 
@@ -1065,9 +1057,7 @@ static void build_constructor(AggregateType* ct) {
   CallExpr*  superCall = NULL;
   CallExpr*  allocCall = NULL;
 
-  if (ct->symbol->hasFlag(FLAG_REF) ||
-      isSyncType(ct)                ||
-      isSingleType(ct)) {
+  if (ct->symbol->hasFlag(FLAG_REF)) {
     // For ref, sync and single classes, just allocate space.
     allocCall = callChplHereAlloc(fn->_this);
 
@@ -1928,32 +1918,16 @@ static void resolveEnumeratedTypes() {
         if (EnumType* type = toEnumType(first->var->type)) {
           if (SymExpr* second = toSymExpr(call->get(2))) {
             const char* name;
-            bool found = false;
-
-            CallExpr* parent = toCallExpr(call->parentExpr);
-            if( parent && parent->baseExpr == call ) {
-              // This is a call e.g.
-              // myenum.method( a )
-              // aka call(call(. myenum "method") a)
-              // so that call needs to go through normalize and resolve
-              continue;
-            }
-
 
             INT_ASSERT(get_string(second, &name));
 
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
                 call->replace(new SymExpr(constant->sym));
-                found = true;
               }
             }
-
-            if (!found) {
-              USR_FATAL(call, 
-                        "unresolved enumerated type symbol \"%s\"",
-                        name);
-            }
+            // Unresolved enum symbols are now either resolved or throw an error
+            // during the function resolution pass. Permits paren-less methods.
           }
         }
       }

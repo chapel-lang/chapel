@@ -140,12 +140,45 @@ all:
   06/24/16:
     - text: Improve optimizeOnClauses optimization (#4008)
       config: 16 node XC
+  07/19/16:
+    - Disable jemalloc's stat gathering by default (#4180)
+  07/20/16:
+    - Generated code changes in preparation for incremental compilation (#4177)
+  08/02/16:
+    - Restore static to normal compilation generated code (#4233)
+  08/03/16:
+    - text: Hardware upgrade
+      config: 16 node XC, Single node XC
+  08/04/16:
+    - Updates to Search module, required array slicing (partially reverted) (#4273)
+  08/19/16:
+    - Turn denormalization on by default (reverted the next night) (#4360)
+  08/28/16:
+    - text: Upgraded chap* (except chap03) and chapcs* machines from gcc 4.7 to gcc 6.2
+      config: chap04, chapcs
+  09/01/16:
+    - Turn denormalization on by default (#4434)
+  09/04/16:
+    - use standard atomics rather than intrinsics for gcc (reverted the next night) (#4443)
+  09/09/16:
+    - convert more reductions to use reduce intents (#4396)
+  09/13/16:
+    - remove volatile on real atomics, make atomic_load atomic (#4491)
+    - use "distrib" scheduler for numa instead of "sherwood" (#4505)
+  09/14/16:
+    - enable native qthreads sync vars (#4506)
+  09/15/16:
+    - use atomic spin-lock instead of sync for reductions (#4532)
 
 AllCompTime:
   11/09/14:
     - disable the task table by default
   01/17/16:
     - add dead string literal elimination (#3120)
+  09/09/16:
+    - disable function resolution optimization (#4476)
+  09/14/16:
+    - re-enable function resolution optimization (#4517)
 
 arrayPerformance-1d:
   03/19/15:
@@ -187,6 +220,18 @@ binary-trees:
 chameneos-redux:
   07/08/13:
     - altered output order for chameneos data, old data incompatible
+
+compSampler-timecomp:
+  09/09/16:
+    - disable function resolution optimization (#4476)
+  09/14/16:
+    - re-enable function resolution optimization (#4517)
+
+cg-sparse-timecomp:
+  09/09/16:
+    - disable function resolution optimization (#4476)
+  09/14/16:
+    - re-enable function resolution optimization (#4517)
 
 dgemm.128:
   09/06/13:
@@ -230,6 +275,12 @@ fasta:
     - optimize certain functions that return with ref-intent (#3101)
   03/12/16:
     - implemented good_alloc_size for jemalloc(#3446)
+
+fft-timecomp:
+  09/09/16:
+    - disable function resolution optimization (#4476)
+  09/14/16:
+    - re-enable function resolution optimization (#4517)
 
 forall-dom-range:
   01/21/15:
@@ -323,6 +374,12 @@ jacobi:
     - add dead string literal elimination (#3120)
   04/01/16:
     - casting bug fix (#3615)
+  08/12/16:
+    - Improve and enable strided bulk transfer optimization as default (#4318)
+  08/13/16:
+    - Fix bulk transfer stride failure, cast to size_t for 32-bit support (#4329)
+
+
 
 knucleotide:
   10/16/15:
@@ -390,6 +447,10 @@ memleaks:
     - optimize certain functions that return with ref-intent (#3101)
   03/10/16:
     - Cleanups to miniMD (#3436)
+  08/11/16:
+    - Sync as record (#4309)
+  08/17/16:
+    - Single as record (#4350)
 
 memleaksfull:
   07/08/14:
@@ -402,10 +463,16 @@ memleaksfull:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
   01/14/16:
     - optimize certain functions that return with ref-intent (#3101)
+  08/11/16:
+    - Sync as record (#4309)
+  08/23/16:
+    - Fix gasnet config for recent memory leak updates (#4375)
 
 meteor:
   12/18/13:
     - Chapel level improvement by using implicit domains
+  08/10/16:
+    - Updated meteor's lock to yield less frequently (#4300)
 
 miniMD:
   12/21/13:
@@ -452,7 +519,7 @@ prk-stencil:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
     - blockDist for useStencilDist output matrix and more (#3705)
-  05/07/16:
+  05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
 
 prk-stencil.xc-perf:
@@ -460,8 +527,10 @@ prk-stencil.xc-perf:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
     - blockDist for useStencilDist output matrix and more (#3705)
-  05/07/16:
+  05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
+  08/12/16:
+    - Improve and enable strided bulk transfer optimization as default (#4318)
 
 ra:
   05/13/16:
@@ -483,6 +552,9 @@ revcomp:
     - various qio changes motivated by cygwin failures (#1943)
   10/29/15:
     - Difficult to consistently replicate
+  08/12/16:
+    - text: Discontinued performance testing (data invalid) (#4333)
+      config: Single node XC
 
 sad:
   05/03/16:
@@ -527,6 +599,10 @@ stream:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
 
+taskSpawn:
+  07/24/16:
+    - Stopped performing remote value forwarding on task functions (#4240)
+
 testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
@@ -543,6 +619,18 @@ time_array_vs_ddata:
     - Optimize iteration over anonymous low-bounded counted ranges (#3154)
   03/01/16:
     - Extend early string-as-rec work to cover more sub-types of record (#3386)
+
+time_array_vs_ref:
+  09/13/16:
+    - stop converting "ref" variables to values in cullOverReferences (#4485)
+
+time_array_vs_ref_forall:
+  09/13/16:
+    - stop converting "ref" variables to values in cullOverReferences (#4485)
+
+time_array_vs_ref_multidim:
+  09/13/16:
+    - stop converting "ref" variables to values in cullOverReferences (#4485)
 
 time_array_vs_tuple:
   08/19/14:

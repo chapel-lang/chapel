@@ -20,14 +20,14 @@
 #ifndef _QIO_ERROR_H
 #define _QIO_ERROR_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "sys_basic.h"
 #include <assert.h>
 
 #define QIO_ERROR_DOUBLE_CHECK 0
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef int err_t;
 

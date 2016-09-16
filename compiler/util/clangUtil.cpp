@@ -45,6 +45,8 @@
 
 #include "build.h"
 
+#include "llvmDebug.h"
+
 typedef Type ChapelType;
 
 #ifndef HAVE_LLVM
@@ -327,7 +329,10 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       int hex;
       int isfloat;
       if( negate ) numString.append("-");
-      numString.append(tok.getLiteralData(), tok.getLength());
+
+      if (tok.getLiteralData() && tok.getLength()) {
+        numString.append(tok.getLiteralData(), tok.getLength());
+      }
 
       if( debugPrint) printf("num = %s\n", numString.c_str());
 
@@ -856,21 +861,30 @@ CREATE_AST_CONSUMER_RETURN_TYPE CCodeGenAction::CreateASTConsumer(
 #endif
 };
 
-static void cleanupClang(GenInfo* info)
-{
+static void finishClang(GenInfo* info){
   if( info->cgBuilder ) {
     info->cgBuilder->Release();
+  }
+  info->Diags.reset();
+  info->DiagID.reset();
+}
+
+static void deleteClang(GenInfo* info){
+  if( info->cgBuilder ) {
     delete info->cgBuilder;
     info->cgBuilder = NULL;
   }
   delete info->targetData;
-  info->targetData = NULL;
   delete info->Clang;
   info->Clang = NULL;
   delete info->cgAction;
   info->cgAction = NULL;
-  info->Diags.reset();
-  info->DiagID.reset();
+}
+
+static void cleanupClang(GenInfo* info)
+{
+  finishClang(info);
+  deleteClang(info);
 }
 
 void setupClang(GenInfo* info, std::string mainFile)
@@ -994,13 +1008,16 @@ void finishCodegenLLVM() {
   info->FPM_postgen = NULL;
 
   // Now finish any Clang code generation.
-  cleanupClang(info);
+  finishClang(info);
+
+  if(debug_info)debug_info->finalize();
 
   // Verify the LLVM module.
   if( developer ) {
     bool problems;
 #if HAVE_LLVM_VER >= 35
     problems = verifyModule(*info->module, &errs());
+    //problems = false;
 #else
     problems = verifyModule(*info->module, PrintMessageAction);
 #endif
@@ -1856,6 +1873,8 @@ void makeBinaryLLVM(void) {
   output.keep();
   output.os().flush();
 
+  //finishClang is before the call to the debug finalize
+  deleteClang(info);
 
   std::string options = "";
 

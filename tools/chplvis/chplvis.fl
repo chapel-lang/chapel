@@ -73,7 +73,7 @@ Function {mainWinCallback(Fl_Widget *)} {open return_type void
 exit(1);} {}
 } 
 
-Function {make_locale_window(int locnum, localeData *locInfo)} {C
+Function {make_locale_window(int locnum, localeData *locInfo)} {open C
 } {
   Fl_Window {} {open
     xywh {0 123 180 130} type Double color 7 hide resizable
@@ -93,7 +93,8 @@ Function {make_locale_window(int locnum, localeData *locInfo)} {C
 w->updateWin(locInfo);} {}
 } 
 
-Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {} {
+Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {open
+} {
   Fl_Window {} {open
     xywh {1454 216 180 120} type Double color 7 hide resizable
     class CommWin
@@ -112,7 +113,7 @@ Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {} 
 w->updateWin(commdata);} {}
 } 
 
-Function {make_concurrency_window(long locNum, long tagNum)} {return_type {ConcurrencyWin *}
+Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
 } {
   Fl_Window {} {open
     xywh {1300 177 500 600} type Double color 7 hide resizable
@@ -140,7 +141,7 @@ Function {make_setting_window()} {open
 } {
   Fl_Window SettingsWin {
     label Settings open
-    xywh {1267 786 560 225} type Double color 7
+    xywh {1297 787 560 225} type Double color 7
     class Settings visible
   } {
     Fl_Button {} {
@@ -198,7 +199,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {1104 442 500 590} type Double color 7 hide resizable size_range {500 590 0 0}
+    xywh {39 273 500 590} type Double color 7 hide resizable size_range {500 590 0 0}
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 500 20} color 55
@@ -214,7 +215,7 @@ Function {} {open
 
 if (selfile) {
    // User didn't cancel
-   if (!VisData.LoadData(selfile)) {
+   if (!VisData.LoadData(selfile, false)) {
       return;
    }
    DbgView->setNumLocales(VisData.NumLocales());
@@ -281,6 +282,10 @@ exit(0);}
         xywh {0 0 70 21}
       } {
         MenuItem {} {
+          label Locales
+          xywh {0 0 31 20} labeltype ENGRAVED_LABEL deactivate divider
+        }
+        MenuItem {} {
           label {Show Tasks}
           callback {DbgView->showTasks();
 MainWindow->redraw();}
@@ -302,16 +307,20 @@ MainWindow->redraw();}
           label {Show Concurrency}
           callback {DbgView->showConcurrency();
 MainWindow->redraw();}
-          xywh {0 0 31 20}
+          xywh {0 0 31 20} divider
         }
         MenuItem {} {
-          label {Show Communication Count}
+          label Communication
+          xywh {0 0 31 20} labeltype ENGRAVED_LABEL deactivate divider
+        }
+        MenuItem {} {
+          label {Show Count}
           callback {DbgView->showComms();
 MainWindow->redraw();}
           xywh {0 0 36 21}
         }
         MenuItem {} {
-          label {Show Communication Size}
+          label {Show Size}
           callback {DbgView->showDsize();
 MainWindow->redraw();}
           xywh {0 0 36 21}
@@ -329,8 +338,8 @@ MainWindow->redraw();}
   }
   code {VisSettings.readFromFile();
 if (argc > 1 && argv[1][1] != '-') {
-    printf ("argv[1] is %s\\n", argv[1]);
-    if (!VisData.LoadData(argv[1])) {
+    //printf ("argv[1] is %s\\n", argv[1]);
+    if (!VisData.LoadData(argv[1],true)) {
        exit(1);
     }
     DbgView->setNumLocales(VisData.NumLocales());
@@ -342,7 +351,7 @@ if (argc > 1 && argv[1][1] != '-') {
 } else {
    // look for .Vdebug/.Vdebug-0
    if (access(".Vdebug/.Vdebug-0", R_OK) == 0 &&
-       VisData.LoadData(".Vdebug/.Vdebug-0")) {
+       VisData.LoadData(".Vdebug/.Vdebug-0",false)) {
       DbgView->setNumLocales(VisData.NumLocales());
       DbgView->makeTagsMenu();
       DbgView->selectData(DataModel::TagALL);

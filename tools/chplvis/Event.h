@@ -87,14 +87,16 @@ class  E_task : public Event {
 
   private:
     long taskid;
+    long funcid;
     bool isOn;
     long lineNum;
     const char *srcFile;
   
   public:
-    E_task (long esec, long eusec, int nid, long taskId, bool ison, long line,
-            const char *file)
-      : Event(esec,eusec, nid), taskid(taskId), isOn(ison), lineNum(line)
+    E_task (long esec, long eusec, int nid, long taskId, long funcid, bool ison,
+            long line, const char *file)
+      : Event(esec,eusec, nid), taskid(taskId), funcid(funcid), isOn(ison),
+        lineNum(line)
     {
       srcFile = file;  // Not duplicating, just saving the pointer
     }
@@ -103,13 +105,14 @@ class  E_task : public Event {
     long srcLine () { return lineNum; }
     const char *srcName () { return srcFile; }
     long taskId () { return taskid; }
+    long funcId () { return funcid; }
     
 
     virtual int Ekind() {return Ev_task;}
     virtual void print() {
-      printf ("Task: node %d time %ld.%06ld taskId %ld %s line %ld file %s\n",
-              nodeid, sec, usec, taskid, isOn ? "OnExe" : "local", lineNum,
-              (srcFile != NULL ? srcFile : "<none>"));
+      printf ("Task: node %d time %ld.%06ld taskId %ld %ld %s line %ld file %s\n",
+              nodeid, sec, usec, taskid, funcid, isOn ? "OnExe" : "local",
+              lineNum, (srcFile != NULL ? srcFile : "<none>"));
     }
 
 };

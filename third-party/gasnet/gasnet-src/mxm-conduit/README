@@ -1,5 +1,78 @@
-README file for mxm-conduit
+GASNet mxm-conduit documentation
 ============================================
+
+User Information:
+-----------------
+
+Mxm-conduit implements GASNet over the Mellanox Messaging Accelerator (MXM)
+API for recent Mellanox InfiniBand Host Channel Adapters (HCAs).
+
+See http://www.mellanox.com/products/mxm for general information on MXM,
+including supported hardware and OS releases.
+
+Where this conduit runs:
+-----------------------
+
+While nearly all InfiniBand HCAs can run ibv-conduit, mxm-conduit is able to
+take fuller advantage of the underlying infrastructure in Mellanox's switches
+and HCAs.  One significant difference is improved scalability to large node
+counts, due to MXM's support for Dynamic Connection (DC) transport mode.
+
+Mxm-conduit is expected to work with all releases of MXM.
+
+The relative performance of mxm and ibv conduits can depend on many factors.
+For this reason we cannot categorically recommend one over the other.  We
+encourage users concerned with obtaining the best possible performance to
+benchmark your own workload when selecting a conduit.
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+* GASNET_PHYSMEM_MAX (default 0 = auto detect)
+  If non-zero this parameter tells mxm-conduit the maximum amount of memory to
+  pin for the segment in a (default) GASNET_SEGMENT_FAST build.  The suffixes
+  "M" and "G" are interpreted as Megabytes and Gigabytes respectively.  The
+  current default is zero, which means to probe the limits imposed by the O/S
+  and HCA.  Setting to a non-zero value will limit how large the GASNet
+  segment can be.
+
+  This is a per-node value - if there are multiple processes per shared memory
+  node the value given by this variable will be divided by the number of
+  processes per shared memory node to determine the maximum segment size.
+
+* GASNET_PHYSMEM_PROBE (default 0 = do not probe)
+  This gives a boolean: "0" to disable or "1" to force a probe to verify the
+  value given by GASNET_PHYSMEM_MAX.  If GASNET_PHYSMEM_MAX is zero or unset,
+  this variable is ignored.  Enabling this setting may greatly slow startup,
+  but can avoid unexpected runtime failures if GASNET_PHYSMEM_MAX exceeds the
+  limits imposed by the O/S and HCA.
+
+* GASNET_MXM_MAX_OUTSTANDING_MSGS (default = 500)
+  This gives the maximum number of MXM-level operations which can be in-flight
+  at any given time due to GASNet NBI Puts and Gets.
+
+* MXM environment variables documented in the Release Notes which accompany
+  your release of MXM.
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+Known problems:
+---------------
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+Future work:
+------------
+
+==============================================================================
+
+Design Overview:
+----------------
 
 Header Files
 ------------

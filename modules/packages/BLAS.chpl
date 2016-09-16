@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,103 +19,136 @@
 
 /*
 
+Support for Basic Linear Algebra Subprograms (BLAS) kernel routines.
+
+The `netlib documentation <http://www.netlib.org/blas/#_documentation>`_
+describes BLAS as the following::
+
+   The BLAS (Basic Linear Algebra Subprograms) are routines that provide
+   standard building blocks for performing basic vector and matrix operations.
+   The Level 1 BLAS perform scalar, vector and vector-vector operations, the
+   Level 2 BLAS perform matrix-vector operations, and the Level 3 BLAS perform
+   matrix-matrix operations. Because the BLAS are efficient, portable, and
+   widely available, they are commonly used in the development of high quality
+   linear algebra software, LAPACK for example.
+
+This module wraps the functionality of level 3 matrix-matrix BLAS routines,
+supporting the array element types, ``real(32)`` (single), ``real`` (double),
+``complex(32)`` (complex), and ``complex`` (complex double) under a single
+interface.
+
+
 Compiling with BLAS
 -------------------
 
-In order to compile with the BLAS libraries, you will need
-BLAS and CBLAS (C wrappers to BLAS) installed on your system. You
-will also need to know the location of the cblas.h header file,
-as well as the BLAS libraries you need to link in (and where they
-are, if they're not in a standard location).
+In order to compile a Chapel program that uses this module, the
+BLAS and CBLAS (C wrappers to BLAS) libraries must be installed on the system.
+The paths to both the ``cblas.h`` header file and BLAS library
+must be passed to the ``-I`` and ``-L`` compiler arguments. The library name,
+typically ``blas``, must be passed to the ``-l`` argument as well.
 
-We recommend using a version of BLAS optimized for your system
-to get the best performance.
-
-As an example, with OpenBLAS :
+The compilation command should look something like this:
 
 .. code-block:: sh
 
     chpl -I$PATH_TO_CBLAS_DIR \
          -L$PATH_TO_BLAS_LIBS -lblas source.chpl
 
-You may need additional arguments for different libraries. For instance, if you
-use ATLAS, you will likely need to also add a -latlas to the above
-command. We strongly recommend referring to the documentation for the
-version of BLAS you have.
+BLAS Implementations:
+  There is a wide range of
+  `BLAS implementations <https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms#Implementations>`_
+  available.
+  This module was built and tested with `netlib's CBLAS
+  <http://www.netlib.org/blas/#_cblas>`_, but many other implementations are
+  compatible as well.
+  Using a version of BLAS optimized for the user's system will yield the best
+  performance.
 
-.. note::
- 1. This module assumes that the CBLAS functions are defined in ``cblas.h``.
- If they are not (eg. MKL defines these in ``mkl_cblas.h``, you can work around
- this by creating a symbolic link to the correct header file (eg. ``ln -s mkl_cblas.h cblas.h``).
- You may also just download the Netlib reference ``cblas.h`` file 
- http://www.netlib.org/blas/#_cblas
- and then link to the appropriate libraries.
- 2. The header files that are included with OpenBLAS differ from the reference CBLAS prototypes
- for complex arguments by using ``float*`` and ``double*`` pointers, instead of ``void*`` pointers.
- Using this will likely result in warnings about incompatible pointer types. These may be ignored, 
- or suppressed by using the Netlib reference header file.
+  There are a few known caveats with some popular implementations:
 
-The CBLAS API
--------------
+  * **ATLAS**
 
-The C_BLAS submodule of the BLAS module provides access to all the 
-CBLAS calls. Arrays are passed in directly, while pointers to scalar
-quantities (including complex numbers) are passed by reference (removing
-the need to wrap these with ``c_ptrTo``). As with BLAS calls in C, 
-the user is responsible for passing in array dimensions etc. Furthermore, 
-different array element types require using different functions.
+    * The compilation command above likely requires the additional flag: ``-latlas``
 
-We refer the user to the existing CBLAS documentation for the usage
-of these functions.
+  * **MKL**
+
+    * The BLAS module assumes that the CBLAS functions are defined in the
+      header named ``cblas.h``.
+      MKL defines these in ``mkl_cblas.h``. This can be worked around by
+      creating a symbolic link to the correct header file name:
+      ``ln -s mkl_cblas.h cblas.h``
+
+  * **OpenBLAS**
+
+    * The header files that are included with OpenBLAS differ from the reference
+      CBLAS prototypes for complex arguments by using ``float*`` and ``double*``
+      pointers, instead of ``void*`` pointers.  Using this will likely result in
+      warnings about incompatible pointer types. These may be ignored.
+
+Cray Systems:
+  No compiler flags should be necessary when compiling BLAS programs on
+  Crays. The **PBLAS** implementation is made available through Cray's libsci,
+  which comes installed on all Cray systems. This is typically loaded by
+  default, but can be manually loaded with ``module load cray-libsci`` as well.
+  Chapel programs compiled on Crays utilize the ``cc`` wrapper as the backend
+  compiler, which implicitly links against the libsci library. Therefore, no
+  additional steps are required of the user.
 
 Chapel Level 3 BLAS API
 -----------------------
 
-For convenience, we provide wrappers around the Level 3 (matrix-matrix)
-BLAS functions. These determine the appropriate functions to call, based
-on the array element types, as well as the array dimensions. The other
-functionality is identical to the corresponding BLAS functions.
+For convenience, this module provides wrappers around the Level 3
+(matrix-matrix) BLAS functions. These determine the appropriate functions to
+call, based on the array element types, as well as the array dimensions. The
+other functionality is identical to the corresponding BLAS functions.
 
 The names of these routines are identical to the corresponding BLAS functions,
-except that the type prefix is dropped. For instance, ``gemm`` is the 
+except that the type prefix is dropped. For instance, ``gemm`` is the
 wrapper for the ``[sdcz]gemm`` routines.
 
 .. note::
  Chapel determines the dimensions of the matrices from the arrays that are
- passed in. However, if one is passing in a sub-array such that the array 
- elements are not contiguously stored in memory, then the user needs to 
+ passed in. However, if one is passing in a sub-array such that the array
+ elements are not contiguously stored in memory, then the user needs to
  pass in the leading dimension (```lda``` etc) to the array, just as they
  would in C. These default to 0, in which case Chapel determines the appropriate
  values based on the array passed in.
 
 
 */
-
-
 module BLAS {
+
+  use C_BLAS;
 
   use SysCTypes;
   require "cblas.h";
 
 
   /* Define row or column order */
-  enum Order {Row=101:c_int, Col=102};
+  enum Order {Row=101 : c_int, Col};
 
   /* Operation of matrix : none, transpose, or adjoint */
-  enum Op {N=111:c_int, T=112, H=113}; // NoTranspose, Transpose, Adjoint
+  enum Op {N=111 : c_int, T, H}; // NoTranspose, Transpose, Adjoint
 
   /* Storage for symmetric matrices */
-  enum Uplo {Upper=121:c_int, Lower=122};
+  enum Uplo {Upper=121 : c_int, Lower};
 
   /* Assume a unit or non-unit diagonal */
-  enum Diag {NonUnit=131:c_int, Unit=132};
+  enum Diag {NonUnit=131 : c_int, Unit};
 
   /* Operate on the left or right side */
-  enum Side {Left=141:c_int, Right=142};
+  enum Side {Left=141 : c_int, Right};
 
   /* Level 3 BLAS */
 
-  /* Wrapper for the GEMM routines */
+  /*
+    Wrapper for the `GEMM routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gac4e11e8e8a4b0c802d2229b08da341f6.html#gac4e11e8e8a4b0c802d2229b08da341f6>`_
+
+    Performs the matrix-matrix operation::
+
+      C := alpha * op(A) * op(B) + beta * C
+
+  */
   proc gemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
     opA : Op = Op.N, opB : Op = Op.N,
@@ -170,7 +203,19 @@ module BLAS {
 
   }
 
-  /* Wrapper for the SYMM routines */
+  /*
+   Wrapper for the `SYMM routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_ga2490eea9e962fd69b9902e22aaa3a634.html#ga2490eea9e962fd69b9902e22aaa3a634>`_
+
+    Performs the matrix-matrix operation::
+
+      C := alpha * A * B + beta * C
+
+    or::
+
+      C := alpha * B * A + beta * C
+
+    where ``A`` is a symmetric matrix.
+  */
   proc symm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
@@ -222,7 +267,19 @@ module BLAS {
 
   }
 
-  /* Wrapper for the HEMM routines */
+  /*
+    Wrapper for the `HEMM routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gad2d1853a142397404eae974b6574ece3.html#gad2d1853a142397404eae974b6574ece3>`_
+
+    Performs the matrix-matrix operation::
+
+      C := alpha * A * B + beta * C
+
+    or::
+
+      C := alpha * B * A + beta * C
+
+    where ``A`` is an hermitian matrix.
+  */
   proc hemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
@@ -264,7 +321,20 @@ module BLAS {
 
   }
 
-  /* Wrapper for the SYRK routines */
+  /*
+    Wrapper for the `SYRK routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_ga1b4f63daf04fdf3061bd25dfec0d3e84.html#ga1b4f63daf04fdf3061bd25dfec0d3e84>`_
+
+    Performs the matrix-matrix operation::
+
+      C := alpha * A * A**T + beta * C
+
+    or::
+
+      C := alpha * A**T * A + beta * C
+
+
+    where ``C`` is a symmetric matrix, and ``A**T`` is the transpose of ``A``.
+  */
   proc syrk(A : [?Adom],  C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
@@ -317,7 +387,20 @@ module BLAS {
 
   }
 
-  /* Wrapper for the HERK routines */
+  /*
+    Wrapper for the `HERK routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gade9f14cf41f0cefea7918d716f3e1c20.html#gade9f14cf41f0cefea7918d716f3e1c20>`_
+
+    Performs the matrix-matrix operation::
+
+      C := alpha * A * A**H + beta * C
+
+    or::
+
+      C := alpha * A**H * A + beta * C
+
+    where ``C`` is an hermitian matrix, and ``A**H`` is the conjugate transpose
+    of ``A``.
+  */
   proc herk(A : [?Adom],  C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
@@ -361,7 +444,20 @@ module BLAS {
   }
 
 
-  /* Wrapper for the SYR2K routines */
+  /*
+    Wrapper for the `SYR2K routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gaa8320d51ded07cd3038db237fd400547.html#gaa8320d51ded07cd3038db237fd400547>`_
+
+    Performs the matrix-matrix operation::
+
+      C := alpha * A * B**T + alpha * B * A**T +  beta * C
+
+    or::
+
+      C := alpha * A**T * B + alpha * B**T * A +  beta * C
+
+    where ``C`` is a symmetric matrix, and ``A**T`` and ``B**T`` are the
+    transpose of ``A`` and ``B`` , respectively.
+  */
   proc syr2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
@@ -415,7 +511,20 @@ module BLAS {
 
   }
 
-  /* Wrapper for the HER2K routines */
+  /*
+    Wrapper for the `HER2K routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gaf5266b622e0fbbd972cfc2df3061984f.html#gaf5266b622e0fbbd972cfc2df3061984f>`_
+
+    Performs the matrix-matrix operation::
+
+      C := alpha * A * B**H + conjg(alpha) * B * A**H +  beta * C
+
+    or::
+
+      C := alpha * A**H * B + conjg(alpha) * B**H * A +  beta * C
+
+    where ``C`` is an hermitian matrix, ``B**H`` is the conjugate transpose of
+    ``B`` , ``conjg(alpha)`` is the complex conjugate of ``alpha``.
+  */
   proc her2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
@@ -457,7 +566,18 @@ module BLAS {
 
   }
 
-  /* Wrapper for the TRMM routines
+  /*
+    Wrapper for the `TRMM routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gad7c297c05b482699b6d60a29c8d4a165.html#gad7c297c05b482699b6d60a29c8d4a165>`_
+
+    Performs the matrix-matrix operation::
+
+      B := alpha * op(A) * B
+
+    or::
+
+      B := alpha * B * op(A)
+
+    where ``A`` is a triangular matrix.
   */
   proc trmm(A : [?Adom],  B : [?Bdom],
     alpha,
@@ -504,7 +624,18 @@ module BLAS {
 
   }
 
-  /* Wrapper for the TRSM routines
+  /*
+    Wrapper for the `TRSM routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gaf33844c7fd27e5434496d2ce0c1fc9d4.html#gaf33844c7fd27e5434496d2ce0c1fc9d4>`_
+
+    Solves the matrix equation::
+
+      op(A) * X = alpha * B
+
+    or::
+
+      X * op(A) = alpha * B
+
+    where ``A`` is a triangular matrix.
   */
   proc trsm(A : [?Adom],  B : [?Bdom],
     alpha,
@@ -565,17 +696,26 @@ module BLAS {
   }
 
 
+  /*
 
+    Support for low-level native CBLAS bindings.
+
+    This submodule wraps the netlib CBLAS implementation, providing access to
+    all of CBLAS calls.
+
+    Arrays are passed in directly, while pointers to scalar
+    quantities (including complex numbers) are passed by reference (removing
+    the need to wrap these with ``c_ptrTo``). As with BLAS calls in C,
+    the user is responsible for passing in array dimensions etc. Furthermore,
+    different array element types require using different functions.
+
+    Refer to the
+    `CBLAS documentation <http://www.netlib.org/lapack/explore-html/dir_f88bc7ad48bfd56d75bf9d4836a2bb00.html>`_
+    of the reference version for the usage of this module.
+
+  */
   module C_BLAS {
-    extern type CBLAS_INDEX = size_t;
-
-    // Do a size test.
-    {
-      pragma "no doc"
-      pragma "no prototype"
-      extern proc sizeof(type t): size_t;
-      assert(sizeof(CBLAS_INDEX) == sizeof(size_t), "size of CBLAS_INDEX is not the same as size_t");
-    }
+    extern type CBLAS_INDEX;
 
     // Define the external types
     // These are C enums, so we define these as c_ints;
@@ -758,3 +898,4 @@ module BLAS {
 
 
 }
+

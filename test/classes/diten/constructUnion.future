@@ -1,0 +1,3 @@
+bug: setting a union field in constructor call leaves the field unset
+
+This currently compiles and runs, but leaves the union fields unset.

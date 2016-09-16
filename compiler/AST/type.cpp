@@ -36,6 +36,8 @@
 #include "symbol.h"
 #include "vec.h"
 
+#include "iterator.h"
+
 #include "AstVisitor.h"
 
 static bool isDerivedType(Type* type, Flag flag);
@@ -75,8 +77,8 @@ bool Type::inTree() {
 }
 
 
-Type* Type::typeInfo() {
-  return this;
+QualifiedType Type::qualType() {
+  return QualifiedType(this);
 }
 
 // Are actuals of this type passed with const intent by default?
@@ -85,8 +87,6 @@ bool Type::isDefaultIntentConst() const {
 
   if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
       isReferenceType(this)                       == true ||
-      isSyncType(this)                            == true ||
-      isSingleType(this)                          == true ||
       isRecordWrappedType(this)                   == true)
     retval = false;
 
@@ -573,9 +573,11 @@ std::string EnumType::docsDirective() {
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
   aggregateTag(initTag),
+  initializerStyle(DEFINES_NONE_USE_DEFAULT),
   fields(),
   inherits(),
   outer(NULL),
+  iteratorInfo(NULL),
   doc(NULL)
 {
   if (aggregateTag == AGGREGATE_CLASS) { // set defaultValue to nil to keep it
@@ -589,7 +591,15 @@ AggregateType::AggregateType(AggregateTag initTag) :
 }
 
 
-AggregateType::~AggregateType() { }
+AggregateType::~AggregateType() {
+  // Delete references to this in iteratorInfo when destroyed.
+  if (iteratorInfo) {
+    if (iteratorInfo->iclass == this)
+      iteratorInfo->iclass = NULL;
+    if (iteratorInfo->irecord == this)
+      iteratorInfo->irecord = NULL;
+  }
+}
 
 
 void AggregateType::verify() {
@@ -1932,9 +1942,11 @@ bool isAtomicType(const Type* t) {
 bool isRefIterType(Type* t) {
   Symbol* iteratorRecord = NULL;
 
-  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS))
-    iteratorRecord = t->defaultInitializer->getFormal(1)->type->symbol;
-  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+    AggregateType* at = toAggregateType(t);
+    FnSymbol* getIterator = at->iteratorInfo->getIterator;
+    iteratorRecord = getIterator->getFormal(1)->type->symbol;
+  } else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     iteratorRecord = t->symbol;
 
   if (iteratorRecord)

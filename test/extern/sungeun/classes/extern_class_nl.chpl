@@ -1,4 +1,4 @@
-config const l = numLocales-1;
+config const l  = numLocales - 1;
 config const rl = 0;
 
 on Locales(l) {
@@ -12,5 +12,7 @@ on Locales(l) {
   }
 
   writeln(myC);
+
+  delete myC;
 }
 

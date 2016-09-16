@@ -27,12 +27,14 @@ PASSES_SRCS = \
         cleanup.cpp \
         codegen.cpp \
         createTaskFunctions.cpp \
+        denormalize.cpp \
         docs.cpp \
         expandExternArrayCalls.cpp \
         externCResolve.cpp \
         filesToAST.cpp \
         flattenClasses.cpp \
         flattenFunctions.cpp \
+        initializerRules.cpp \
         insertLineNumbers.cpp \
         insertWideReferences.cpp \
         normalize.cpp \

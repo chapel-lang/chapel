@@ -1,9 +1,11 @@
-//
-// Atomics primer
-//
-// This primer illustrates Chapel's atomic variables.  For more information
-// on Chapel's atomics, see the Chapel Language Specification.
-//
+/*
+  Atomics primer
+
+  This primer illustrates Chapel's atomic variables.  For more information
+  on Chapel's atomics, see the Chapel Language Specification.
+
+*/
+
 config const n = 31;
 const R = 1..n;
 
@@ -93,7 +95,7 @@ flag.clear();
 // - fetchXor() and xor() (bit-wise) (integral types only)
 //
 // Each of the above atomically reads the variable, stores the result
-// of the operation (+, -, |, &, ^) using the value and the method
+// of the operation (``+``, ``-``, ``|``, ``&``, ``^``) using the value and the method
 // argument, then, for the fetchOps functions, returns the original
 // value.
 //
@@ -107,7 +109,7 @@ coforall id in R do a.add(id*id);
 //
 var expected = n*(n+1)*(2*n+1)/6; 
 if a.read() != expected then
-  halt("Error: a=", a, " (should be ", expected, ")");
+  halt("Error: a=", a.read(), " (should be ", expected, ")");
 
 // In the following example, we create n tasks to atomically increment
 // the atomic variable a with the square of the task's given id.  The

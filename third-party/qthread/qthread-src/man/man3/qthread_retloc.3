@@ -1,0 +1,22 @@
+.TH qthread_retloc 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_retloc
+\- returns pointer to qthread's return location
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I aligned_t *
+.br
+.B qthread_retloc
+(void);
+.SH DESCRIPTION
+This function returns the location that the return value of the current thread
+will be stored into, if one has been defined.
+.SH "RETURN VALUE"
+Returns a pointer to the location that the return value of the thread will be
+stored in. If the thread's return value will not be stored via FEBs, this
+function will return NULL.
+.SH SEE ALSO
+.BR qthread_id (3),
+.BR qthread_shep (3),
+.BR qthread_stackleft (3)

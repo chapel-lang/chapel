@@ -112,6 +112,7 @@ extern bool widePointersStruct;
 extern char fExplainCall[256];
 extern int  explainCallID;
 extern int  breakOnResolveID;
+extern bool fDenormalize;
 extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
 /// resolution.
@@ -191,6 +192,9 @@ extern char compileVersion[64];
 // This flag is useful for testing
 // the compiler but breaks the language!
 extern bool fMinimalModules;
+
+// Set to true if we want to enable incremental compilation.
+extern bool fIncrementalCompilation;
 
 // Set to true if we want to use the experimental
 // Interactive Programming Environment (IPE) mode.

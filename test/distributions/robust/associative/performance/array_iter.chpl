@@ -1,4 +1,4 @@
-use Memory, Types, Time;
+use Memory, Types, Time, Sort;
 
 config const printTiming = false;
 config const verify = true;
@@ -26,7 +26,7 @@ for i in D {
   Aref(i) = off;
   AD += off;
 }
-if verify then QuickSort(Aref);
+if verify then quickSort(Aref);
 
 forall i in AD {
   AA(i) = i;
@@ -54,7 +54,7 @@ if verify {
   var success = true;
 
   if verify {
-    QuickSort(A);
+    quickSort(A);
     for i in D {
       if A(i) != Aref(i) {
         success = false;
@@ -83,7 +83,7 @@ if verify {
   var success = true;
 
   if verify {
-    QuickSort(A);
+    quickSort(A);
     for i in D {
       if A(i) != Aref(i) {
         success = false;

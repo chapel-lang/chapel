@@ -184,8 +184,7 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   buildSyncAccessFunctionSet(syncSet);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-
-    if (isTaskFun(fn)) {
+    if (fn->hasFlag(FLAG_ON) == true) {
       // Would need to flatten them if they are not already.
       INT_ASSERT(isGlobal(fn));
 
@@ -331,6 +330,23 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
   }
 }
 
+
+static bool isSyncSingleMethod(FnSymbol* fn) {
+
+  bool retval = false;
+
+  if (fn->_this != NULL) {
+    Type* valType = fn->_this->getValType();
+
+    if  (isSyncType(valType)   == true ||
+         isSingleType(valType) == true) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Compute set of functions that access sync variables.                        *
@@ -341,50 +357,29 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
   Vec<FnSymbol*> syncAccessFunctionVec;
 
   //
-  // Find all functions that directly call sync access primitives.
+  // Find all methods on sync/single vars
   //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
-      if (call->isPrimitive(PRIM_SYNC_INIT) ||
-          call->isPrimitive(PRIM_SYNC_LOCK) ||
-          call->isPrimitive(PRIM_SYNC_UNLOCK) ||
-          call->isPrimitive(PRIM_SYNC_WAIT_FULL) ||
-          call->isPrimitive(PRIM_SYNC_WAIT_EMPTY) ||
-          call->isPrimitive(PRIM_SYNC_SIGNAL_FULL) ||
-          call->isPrimitive(PRIM_SYNC_SIGNAL_EMPTY) ||
-          call->isPrimitive(PRIM_SINGLE_INIT) ||
-          call->isPrimitive(PRIM_SINGLE_LOCK) ||
-          call->isPrimitive(PRIM_SINGLE_UNLOCK) ||
-          call->isPrimitive(PRIM_SINGLE_WAIT_FULL) ||
-          call->isPrimitive(PRIM_SINGLE_SIGNAL_FULL) ||
-          call->isPrimitive(PRIM_WRITEEF) ||
-          call->isPrimitive(PRIM_WRITEFF) ||
-          call->isPrimitive(PRIM_WRITEXF) ||
-          call->isPrimitive(PRIM_READFE) ||
-          call->isPrimitive(PRIM_READFF) ||
-          call->isPrimitive(PRIM_READXX) ||
-          call->isPrimitive(PRIM_SYNC_IS_FULL) ||
-          call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
-          call->isPrimitive(PRIM_SINGLE_READFF) ||
-          call->isPrimitive(PRIM_SINGLE_READXX) ||
-          call->isPrimitive(PRIM_SINGLE_IS_FULL)) {
-        if (!parent->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
-            !syncAccessFunctionSet.set_in(parent)) {
-          syncAccessFunctionSet.set_add(parent);
-          syncAccessFunctionVec.add(parent);
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (isSyncSingleMethod(fn)) {
+      if (!fn->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
+          !syncAccessFunctionSet.set_in(fn)) {
+        syncAccessFunctionSet.set_add(fn);
+        syncAccessFunctionVec.add(fn);
 #ifdef DEBUG_SYNC_ACCESS_FUNCTION_SET
-          printf("%s:%d %s\n",
-                 parent->getModule()->name,
-                 parent->linenum(),
-                 parent->name);
+        printf("%s:%d %s\n",
+               fn->getModule()->name,
+               fn->linenum(),
+               fn->name);
 #endif
-        }
       }
     }
   }
 
   //
-  // Find all functions that indirectly call sync access primitives.
+  // Find all functions that indirectly call methods on sync/single vars. Note
+  // that syncAccessFunctionSet is just used for fast membership check, while
+  // syncAccessFunctionVec is trickily appended to while iterating over it so
+  // that we look at callsites of newly discovered functions.
   //
   forv_Vec(FnSymbol, fn, syncAccessFunctionVec) {
     forv_Vec(CallExpr, caller, *fn->calledBy) {

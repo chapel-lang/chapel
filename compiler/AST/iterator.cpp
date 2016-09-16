@@ -1155,6 +1155,7 @@ rebuildIterator(IteratorInfo* ii,
   for_alist(expr, fn->body->body)
     expr->remove();
 
+  fn->retSymbol = NULL;
   fn->defPoint->remove();
 
   // Now the iterator creates and returns a copy of the iterator record.
