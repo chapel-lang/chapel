@@ -1,14 +1,14 @@
+/*
+   Opaque Primer
+
+   This primer is designed to give a brief introduction to Chapel's
+   opaque domains and arrays.  Opaque domains and arrays are those in
+   which index values are opaque/anonymous, and were designed to
+   support unstructured arrays like graphs.
+*/
+module Opaque {
 // The module wrapper is required because module names and type names can conflict.
 // This is a known bug: test/modules/hilde/Writer.future
-module Opaque {
-/*
- * Opaque Primer
- *
- * This primer is designed to give a brief introduction to Chapel's
- * opaque domains and arrays.  Opaque domains and arrays are those in
- * which index values are opaque/anonymous, and were designed to
- * support unstructured arrays like graphs.
- */
 
 //
 // Opaque domains are declared by specifying the keyword "opaque" in
@@ -83,7 +83,7 @@ writeln();
 // in the domain.  For example, let's assume that Barry is the father of
 // Bill and Bob.  We could represent this by declaring an array of
 // indices from the People domain:
-// 
+//
 
 var Father: [People] index(People);
 

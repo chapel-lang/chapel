@@ -1,9 +1,9 @@
 /*
- * Varargs Primer
- *
- * This primer demonstrates procedures with variable length arguments lists.
- *
- */
+   Varargs Primer
+
+   This primer demonstrates procedures with variable length arguments lists.
+
+*/
 //
 // Procedures can be defined with variable length argument lists. The
 // following procedure accepts integer arguments and defines the

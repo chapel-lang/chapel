@@ -1,9 +1,9 @@
 /*
- * Variables Primer
- *
- * This primer demonstrates variable declaration syntax.
- *
- */ 
+   Variables Primer
+
+   This primer demonstrates variable declaration syntax.
+
+*/
 
 //
 // Variables are declared with the 'var' keyword.  Variable

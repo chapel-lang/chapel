@@ -1,9 +1,9 @@
 /*
- * Range Primer
- *
- * This primer illustrates Chapel ranges and range operations.
- *
- */
+   Range Primer
+
+   This primer illustrates Chapel ranges and range operations.
+
+*/
 
 //
 // Ranges represent sequences of integral numbers, or "indices".
@@ -90,7 +90,7 @@ writeln();
 
 //
 // The 'align' operator specifies the alignment of a strided range, which
-// determines (i % |stride|) for any index 'i' in the range's sequence.
+// determines (``i % |stride|``) for any index 'i' in the range's sequence.
 // For example, alignment differentiates the sequence of all odd numbers
 // from all even numbers.
 //

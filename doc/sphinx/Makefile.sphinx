@@ -68,6 +68,15 @@ html: check-sphinxbuild source clean-build
 	@echo
 	@echo "Build finished. The HTML pages are in "'$(BUILDPATH)'"/html."
 
+html-dev:
+	@echo
+	@echo "Building HTML documentation with no prerequisites (dev testing)"
+	@echo "Warnings not treated as errors"
+	$(SPHINXBUILD) -b html -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) source $(BUILDDIR)/html
+	@chmod -R ugo+rX $(BUILDDIR)
+	@echo
+	@echo "Build finished. The HTML pages are in "'$(BUILDPATH)'"/html."
+
 check: check-sphinxbuild source clean-build
 	@echo "Checking for broken links or cross-references"
 	$(SPHINXBUILD) -n -b linkcheck -d $(BUILDDIR)/doctrees source $(BUILDDIR)/linkcheck

@@ -1,15 +1,16 @@
 /*
- * Domains primer
- *
- * This primer showcases Chapel domains as abstract concepts, primarily
- * within the context of rectangular domains.  For other uses of domains
- * see the following primers: 
- *  - Arrays primer (arrays.chpl)
- *  - Sparse arrays primer (sparse.chpl)
- *  - Opaque arrays primer (opaque.chpl)
- *  - Associative arrays primer (associative.chpl)
- *
- */
+   Domains primer
+
+   This primer showcases Chapel domains as abstract concepts, primarily
+   within the context of rectangular domains.  For other uses of domains
+   see the following primers:
+
+    - Arrays primer (arrays.chpl)
+    - Sparse arrays primer (sparse.chpl)
+    - Opaque arrays primer (opaque.chpl)
+    - Associative arrays primer (associative.chpl)
+
+*/
 
 config var n = 10;
 //
@@ -32,7 +33,7 @@ config var n = 10;
 var RD: domain(3) = {1..n, 1..n, 1..n};
 writeln(RD);
 
-// 
+//
 // Rectangular domains have a set of methods that enable convenient
 // reuse of existing domains.
 //
@@ -97,10 +98,10 @@ RSD2 = RD[n/2+1.., .., ..]; // And this the other half.
 writeln("RSD1:", RSD1);
 writeln("RSD2:", RSD2);
 
-// Notes: 
+// Notes:
 // - Subdomains of rectangular domains are regular unless they are explicitly
 // declared to be sparse.
-// - At present, range checking to ensure that a subdomain fits within its parent 
+// - At present, range checking to ensure that a subdomain fits within its parent
 // domain is unimplemented.
 
 //
@@ -124,6 +125,6 @@ writeln("SSD:", SSD); // Now contains an unordered set of indices.
 // have not been implemented.
 
 /*
- * For more information on domains, see the Domains chapter of the
- * Chapel Language Spec.
- */
+   For more information on domains, see the Domains chapter of the
+   Chapel Language Spec.
+*/

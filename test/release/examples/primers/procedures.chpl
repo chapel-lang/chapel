@@ -1,10 +1,10 @@
 /*
- * Procedures Primer
- *
- * This primer covers procedures including overloading, argument
- * intents and dynamic dispatch.
- *
- */
+   Procedures Primer
+
+   This primer covers procedures including overloading, argument
+   intents and dynamic dispatch.
+
+*/
 
 //
 // A procedure groups computations that can be called from another part
@@ -172,7 +172,7 @@ use Time;
 //
 proc countDown(in n : uint = 10) : void
 {
-  while n > 0 
+  while n > 0
   {
     writeln(n, " ...");
     if useSleep then sleep(1);
@@ -193,7 +193,7 @@ writeln();
 //
 proc countDownToZero(inout n : uint = 10) : void
 {
-  while n > 0 
+  while n > 0
   {
     writeln(n, " ...");
     if useSleep then sleep(1);
@@ -217,7 +217,7 @@ writeln();
 //
 proc countDownToZeroToo(ref n : uint = 10) : void
 {
-  while n > 0 
+  while n > 0
   {
     writeln(n, " ...");
     if useSleep then sleep(1);
