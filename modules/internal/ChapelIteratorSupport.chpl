@@ -98,13 +98,16 @@ module ChapelIteratorSupport {
     return ic;
 
   proc _getIterator(type t) {
+    return _getIterator(_checkIterator(t));
+    /*
     use Reflection;
 
     if (canResolveTypeMethod(t, "these")) then
       if (canResolve("_getIterator", t.these())) then
         return _getIterator(t.these());
 
-    compilerError("unable to iterate over type ", t:string);
+    compilerError("unable to iterate over type '", t:string, "'");
+    */
   }
 
   inline proc _getIteratorZip(x) {
@@ -130,6 +133,16 @@ module ChapelIteratorSupport {
 
   inline proc _checkIterator(x) {
     return x;
+  }
+
+  inline proc _checkIterator(type t) {
+    use Reflection;
+
+    if (canResolveTypeMethod(t, "these")) then
+      if (canResolve("_getIterator", t.these())) then
+        return t.these();
+
+    compilerError("unable to iterate over type '", t:string, "'");
   }
 
   inline proc _freeIterator(ic: _iteratorClass) {
