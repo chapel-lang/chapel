@@ -698,55 +698,36 @@ module BLAS {
 /* =================================== Begin Blas Level 1 =========================*/
 
 
- /*
+/*
     Wrapper for the `Rotg routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga2f65d66137ddaeb7ae93fcc4902de3fc.html#ga2f65d66137ddaeb7ae93fcc4902de3fc>
-   
-    ROTG construct givens plane rotation.
+*/
 
-  */
-
-proc rotg(ref a : ?TypeValue, ref b : TypeValue, ref c : TypeValue, ref s : TypeValue){
-  select( TypeValue ){
+proc rotg(ref a : ?eltType, ref b : eltType, ref c : eltType, ref s : eltType){
+  select eltType {
     when real(32) do{
-
       cblas_srotg (a, b, c, s);
-
     } 
     when real(64) do{
-
       cblas_drotg (a, b, c, s);
-
     } 
     otherwise {
-        halt("Unknown type in trsm");
+        halt("Unknown type in rotg");
     }
   }
-
-
 } 
-
 
 /**
    Wrapper for the `Rotmg routines  <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga97ce4e31b77723a3b60fb3f479f61316.html#ga97ce4e31b77723a3b60fb3f479f61316>
 
-   CONSTRUCT THE MODIFIED GIVENS TRANSFORMATION MATRIX.
-
 */
-proc rotmg(ref d1: ?TypeValue, ref d2: TypeValue, ref b1: TypeValue, b2: TypeValue, P: []TypeValue){
-  select( TypeValue ){
-    
+proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType){
+  select eltType {
     when real(32) do{
-
       cblas_srotmg(d1,d2,b1,b2,P);
-
     } 
-    
     when real(64) do{
-
       cblas_drotmg(d1,d2,b1,b2,P);
-
     } 
-    
     otherwise {
         halt("Unknown type in rotmg");
     }
@@ -755,300 +736,204 @@ proc rotmg(ref d1: ?TypeValue, ref d2: TypeValue, ref b1: TypeValue, b2: TypeVal
 
 /**
     Wrapper for the `ROT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga0ce1ab4726eb7ad925cbd89f100d5ce0.html#ga0ce1ab4726eb7ad925cbd89f100d5ce0>
-  
-    Applies a plane rotation.
-
 */
 
-proc rot(N: int, X: []?TypeValue, incX: int, Y: []TypeValue, incY: int, c: TypeValue, s: TypeValue) 
-where N > 0 {
+proc rot(X: [?D] ?eltType, Y: [D] eltType, c: eltType, s: eltType,  incY: c_int = 1, incX: c_int = 1) 
+where D.rank == 1 {
 
-  select( TypeValue ){
-
+  const N = D.size;
+  
+  select eltType {
     when real(32) do{
-
       cblas_srot(N, X, incX, Y, incY, c, s);
-
     } 
-    
     when real(64) do{
-
       cblas_drot(N, X, incX, Y, incY, c, s);
-
     } 
-    
     otherwise {
         halt("Unknown type in rot");
     }
   }
-  
 }
-
-
 /*  
   Wrapper for the `ROTM routines  <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga5633344a5729b4f0167aa441dcf95a9c.html#ga5633344a5729b4f0167aa441dcf95a9c>
-
-  APPLY THE MODIFIED GIVENS TRANSFORMATION, H, TO THE 2 BY N MATRIX
-
 */
-proc rotm(N: int, X: []?TypeValue, incX: int, Y: []TypeValue, incY: int, c: TypeValue, P: []TypeValue)
- where N > 0 {
+proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: [D]eltType, c: eltType,  incY: c_int = 1, incX: c_int = 1)
+ where D.rank == 1 {
 
-  select( TypeValue ){
+  const N = D.size;
 
+  select eltType {
     when real(32) do{
-
       cblas_srotm(N, X, incX, Y, incY, c, P);
-
     } 
-    
     when real(64) do{
-
       cblas_drotm(N, X, incX, Y, incY, c, P);
-
     } 
-    
     otherwise {
         halt("Unknown type in rotm");
     }
   }
-  
 }
 
 
-
 /*
-
 Wrapper for the `SWAP routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga0a2eaca94b4941dbc351157126cbb0f6.html#ga0a2eaca94b4941dbc351157126cbb0f6>
 
-Interchanges two vectors.
-Uses unrolled loops for increments equal to 1.
-
 */
+proc swap(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+ where D.rank == 1 {
 
-proc swap(N: int, X: []?TypeValue, incX: int, Y: []TypeValue, incY: int)
- where N > 0 {
+  const N = D.size;
 
-  select( TypeValue ){
-
+  select eltType {
     when real(32) do{
-
       cblas_sswap (N, X, incX, Y, incY);
-
     } 
-    
     when real(64) do{
-
       cblas_dswap (N, X, incX, Y, incY);
-
     }
     when complex(32) do{
-
       cblas_cswap (N, X, incX, Y, incY);
-
     }
     when complex(64) do{
-
       cblas_zswap (N, X, incX, Y, incY);
-
     } 
-    
     otherwise {
         halt("Unknown type in swap");
     }
   }
-  
 }
 
 /*
 Wrapper for the SCAL <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga3252f1f70b29d59941e9bc65a6aefc0a.html#ga3252f1f70b29d59941e9bc65a6aefc0a>
 
-Scales a vector by a constant.
-Uses unrolled loops for increment equal to 1.
-
 */
-proc scal(N: int, alpha:?TypeValue,  X: []TypeValue, incX: int )
- where N > 0 {
+proc scal(X: [?D]?eltType, alpha:eltType, incX: c_int = 1)
+where D.rank == 1 {
 
-  select( TypeValue ){
+  const N = D.size;
 
+  select eltType {
     when real(32) do{
-
       cblas_sscal (N, alpha, X, incX);
-
     } 
-    
     when real(64) do{
-
       cblas_dscal (N, alpha, X, incX);
-
     }
     when complex(32) do{
-
       cblas_cscal (N, alpha, X, incX);
-
     }
     when complex(64) do{
-
       cblas_zscal (N, alpha, X, incX);
-
     } 
-    
     otherwise {
         halt("Unknown type in scal");
     }
   }
-  
 }
 
-// extern proc cblas_scopy (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int);
  /*
  Wrapper for the COPY <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga24785e467bd921df5a2b7300da57c469.html#ga24785e467bd921df5a2b7300da57c469>
 
-  COPY copies a vector, x, to a vector, y.
-  Uses unrolled loops for increments equal to 1.
- 
  */
  
- proc copy(N: int, X: []?TypeValue, incX: int , Y: []TypeValue, incY: int)
- where N > 0 {
+proc copy(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
 
-  select( TypeValue ){
+where D.rank == 1 {
 
+  const N = D.size;
+  
+  select eltType {
     when real(32) do{
-
       cblas_scopy (N, X, incX, Y, incY);
-
     } 
-    
     when real(64) do{
-
       cblas_dcopy (N, X, incX, Y, incY);
-
     }
     when complex(32) do{
-
       cblas_ccopy (N, X, incX, Y, incY);
-
     }
     when complex(64) do{
-
       cblas_zcopy (N, X, incX, Y, incY);
-
     } 
-    
     otherwise {
         halt("Unknown type in copy");
     }
   }
-  
 }  
 
  /*
-
   Wrapper for the AXPY <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gad2a52de0e32a6fc111931ece9b39726c.html#gad2a52de0e32a6fc111931ece9b39726c>
- 
-  AXPY constant times a vector plus a vector.
-    Uses unrolled loops for increments equal to one.
+
  */ 
 
- proc axpy(N: int, alpha:?TypeValue, X: []TypeValue, incX: int , Y: []TypeValue, incY: int)
- where N > 0 {
+proc axpy(X: [?D]?eltType, Y: [D]eltType, alpha:eltType, incY: c_int = 1, incX: c_int = 1)
+ where D.rank == 1 {
 
-  select( TypeValue ){
-
+  const N = D.size;
+  select eltType {
     when real(32) do{
-
       cblas_saxpy (N, alpha,X, incX, Y, incY);
-
     } 
-    
     when real(64) do{
-
       cblas_saxpy (N, alpha,X, incX, Y, incY);
-
     }
     when complex(32) do{
-
       cblas_saxpy (N, alpha,X, incX, Y, incY);
-
     }
     when complex(64) do{
-
       cblas_saxpy (N, alpha,X, incX, Y, incY);
-
     } 
-    
     otherwise {
         halt("Unknown type in axpy");
     }
   }
-  
 }  
-
 
 /*
  Wrapper for <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga37a14d8598319955b711af0d64a6f56e.html#ga37a14d8598319955b711af0d64a6f56e>
 
-DOT forms the dot product of two vectors.
-    uses unrolled loops for increments equal to one.
-
 */
-proc dot(N: int,  X: []?TypeValue, incX: int , Y: []TypeValue, incY: int):TypeValue
- where N > 0 {
+proc dot( X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1):eltType
+where D.rank == 1 {
 
-  select( TypeValue ){
+  const N = D.size;
 
+  select eltType {
     when real(32) do{
-
       return cblas_sdot (N, X, incX, Y, incY);
-
     } 
-    
     when real(64) do{
-
      return cblas_ddot (N,X, incX, Y, incY);
-
     }
-      
     otherwise {
         halt("Unknown type in dot");
     }
   }
   
 } 
-//extern proc cblas_cdotu_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, ref dotu);
-//extern proc cDOYU_SUBblas_zdotu_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, ref dotu);
 
 /*
   Wraper for  DOTU_SUB <http://www.netlib.org/lapack/explore-html/d2/df9/group__complex16__blas__level1_ga25e3992c589a478c5affcc975c6c7b08.html#ga25e3992c589a478c5affcc975c6c7b08>
-   
-    DOTU forms the dot product of two complex vectors
-    DOTU = X^T * Y
 
 */
+proc dotu_sub( X: [?D]?eltType,  Y: [D]eltType, ref dotu, incY: c_int = 1, incX: c_int = 1)
+where D.rank == 1 {
 
- proc dotu_sub(N: int,  X: []?TypeValue, incX: int , Y: []TypeValue, incY: int, ref dotu)
- where N > 0 {
+  const N = D.size;
 
-  select( TypeValue ){
-
+  select eltType {
     when complex(32) do{
-
       cblas_cdotu_sub (N, X, incX, Y, incY, dotu);
-
     }
     when complex(64) do{
-
       cblas_zdotu_sub (N, X, incX, Y, incY, dotu);
-
     } 
-    
     otherwise {
         halt("Unknown type in dotu_sub");
     }
   }
-  
 }  
 
 
@@ -1056,202 +941,133 @@ proc dot(N: int,  X: []?TypeValue, incX: int , Y: []TypeValue, incY: int):TypeVa
 /*
 Wraper for DOTC_SUB <http://www.netlib.org/lapack/explore-html/da/df6/group__complex__blas__level1_gadd72f1b633553acc77250e32bc704a78.html#gadd72f1b633553acc77250e32bc704a78>
 
-DOTU forms the dot product of two complex vectors
-      DOTU = X^T * Y
-
-
 */
 
- proc dotc_sub(N: int,  X: []?TypeValue, incX: int , Y: []TypeValue, incY: int, ref dotc)
- where N > 0 {
+proc dotc_sub(X: [?D]?eltType, Y: [D]eltType, ref dotc, incY: c_int = 1, incX: c_int = 1)
+ where D.rank == 1 {
 
-  select( TypeValue ){
-
+  const N = D.size;
+  
+  select eltType {
     when complex(32) do{
-
       cblas_cdotc_sub (N, X, incX, Y, incY, dotc);
-
     }
     when complex(64) do{
-
       cblas_zdotc_sub (N, X, incX, Y, incY, dotc);
-
     } 
-    
     otherwise {
         halt("Unknown type in dotc_sub");
     }
   }
-  
 }  
 
-//extern proc cblas_sdsdot (N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int): c_float;
 /*
-
 Wraper for SDSDOT <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>
 
-Dot product with extended precision accumulation
-
-
-
 */
- proc sdsdot(N: int, alpha: ?TypeValue, X: []TypeValue, incX: int , Y: []TypeValue, incY: int): TypeValue
- where N > 0 {
+proc sdsdot(X: [?D]?eltType, Y: [D]eltType, alpha: eltType, incY: c_int = 1,incX: c_int = 1): eltType
+ where D.rank == 1 {
 
-  select( TypeValue ){
+  const N = D.size;
 
+  select eltType {
    when real(32) do{
-
       return cblas_sdsdot (N, alpha, X, incX, Y, incY);
-    
     } 
     otherwise {
         halt("Unknown type in sdsdot");
     }
   }
-  
 }  
 
-
 /**
-
 Wrapper for NRM2 functions <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga35c2ec0e9bfdaa545320c2a134fcc471.html#ga35c2ec0e9bfdaa545320c2a134fcc471>
 
-NRM2 returns the euclidean norm of a vector via the function
- name, so that
-
-    NRM2 := sqrt( x'*x ).
-
 */
-proc nrm2(N: int,  X: []?TypeValue, incX: int)
- where N > 0 {
+proc nrm2(X: [?D]?eltType, incX: c_int = 1)
+where D.rank == 1 {
 
-  select( TypeValue ){
+  const N = D.size;
 
+  select eltType {
    when real(32) do{
-
       return cblas_snrm2 (N,  X, incX);
-    
     } 
     when real(64) do{
-
       return cblas_dnrm2 (N, X, incX);
-    
     }
     when complex(32) do{
-
       return cblas_scnrm2 (N, X, incX);
-    
     }
     when complex(64) do{
-
       return cblas_dznrm2 (N, X, incX);
-    
     } 
-
     otherwise {
         halt("Unknown type in nrm2");
     }
   }
-  
 }
+
 /*
 Wrapper for the ASUM functions <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gafc5e1e8d9f26907c0a7cf878107f08cf.html#gafc5e1e8d9f26907c0a7cf878107f08cf>
 
-ASUM takes the sum of the absolute values.
-    uses unrolled loops for increment equal to one.
-
 */
-proc asum(N: int,  X: []?TypeValue, incX: int)
- where N > 0 {
+proc asum(X: [?D]?eltType, incX: c_int = 1)
+where D.rank == 1 {
 
-  select( TypeValue ){
+  const N = D.size;
 
+  select eltType {
    when real(32) do{
-
       return cblas_sasum(N, X, incX);
-    
     }
-    
    when real(64) do{
-
       return cblas_dasum(N, X, incX);
-    
     }
-
    when complex(32) do{
-
       return cblas_scasum(N, X, incX);
-    
     }
     when complex(64) do{
-
       return cblas_dzasum(N, X, incX);
-    
     }
-    
-
     otherwise {
         halt("Unknown type in asum");
     }
   }
-  
 }  
 
 /*
 Wrapper for I_AMAX functions <http://www.netlib.org/lapack/explore-html/d6/d44/isamax_8f_a16c36ed9a25ca6e68931c4a00d2778e5.html#a16c36ed9a25ca6e68931c4a00d2778e5>
 
-ISAMAX finds the index of the first element having maximum absolute value.
-
-
 */
+proc amax(X: [?D]?eltType, incX: c_int = 1)
+where D.rank == 1 {
 
-proc amax(N: int,  X: []?TypeValue, incX: int)
- where N > 0 {
-
-  select( TypeValue ){
-
+  const N = D.size;
+  
+  select eltType {
    when real(32) do{
-
       return cblas_isamax(N, X, incX);
-    
-    }
-    
+    }  
    when real(64) do{
-
       return cblas_idamax(N, X, incX);
-    
     }
-
    when complex(32) do{
-
       return cblas_icamax(N, X, incX);
-    
     }
     when complex(64) do{
-
       return cblas_izamax(N, X, incX);
-    
     }
-    
-
     otherwise {
         halt("Unknown type in amax");
     }
   }
-  
 }  
 
 
 /* =================================== End Blas Level 1 =========================*/
 
-
-
-
-
-
-
-  /*
+/*
 
     Support for low-level native CBLAS bindings.
 
