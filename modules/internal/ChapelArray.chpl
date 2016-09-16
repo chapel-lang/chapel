@@ -352,7 +352,7 @@ module ChapelArray {
   // Support for array types
   //
   pragma "runtime type init fn"
-    proc chpl__buildArrayRuntimeType(dom: domain, type eltType, param isAdvancedAlias: bool = false /* = true */ /* want: false */)
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType, param isAdvancedAlias: bool = false)
     return dom.buildArray(eltType, isAdvancedAlias);
 
   proc _getLiteralType(type t) type {
@@ -440,9 +440,10 @@ module ChapelArray {
   proc chpl__convertValueToRuntimeType(arr: []) type
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType, arr.isAdvancedAlias);
 
-  proc chpl__getDomainFromArrayType(arrayVal) {
-    return chpl__getDomainFromArrayType(arrayVal.type);
-  }
+  /* Shouldn't need this: */
+  // proc chpl__getDomainFromArrayType(arrayVal) {
+  //   return chpl__getDomainFromArrayType(arrayVal.type);
+  // }
   
   proc chpl__getDomainFromArrayType(type arrayType) {
     var A: arrayType;
@@ -1035,20 +1036,20 @@ module ChapelArray {
       return _newArray(x);
     }
 
-    pragma "no doc"
-    proc buildDefRectArray(type eltType, param isAdvancedAlias: bool) {
-      //      if (isAdvancedAlias) then
-      //        compilerWarning("Building an advanced default rectangular array");
-      var x = _value.dsiBuildArray(eltType, isAdvancedAlias);
-      pragma "dont disable remote value forwarding"
-      proc help() {
-        _value.add_arr(x);
-        if !noRefCount then
-          _value.incRefCount();
-      }
-      help();
-      return _newArray(x);
-    }
+    //    pragma "no doc"
+    //    proc buildDefRectArray(type eltType, param isAdvancedAlias: bool) {
+    //      //      if (isAdvancedAlias) then
+    //    //      //        compilerWarning("Building an advanced default rectangular array");
+    //      var x = _value.dsiBuildArray(eltType, isAdvancedAlias);
+    //      pragma "dont disable remote value forwarding"
+    //      proc help() {
+    //        _value.add_arr(x);
+    //        if !noRefCount then
+    //          _value.incRefCount();
+    //      }
+    //      help();
+    //      return _newArray(x);
+    //    }
 
     
     /* Remove all indices from this domain, leaving it empty */
