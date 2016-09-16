@@ -99,8 +99,8 @@ module ChapelIteratorSupport {
 
   proc _getIterator(type t) {
     use Reflection;
-    
-    if (canResolveMethod(t, "these")) then
+
+    if (canResolveTypeMethod(t, "these")) then
       if (canResolve("_getIterator", t.these())) then
         return _getIterator(t.these());
 
