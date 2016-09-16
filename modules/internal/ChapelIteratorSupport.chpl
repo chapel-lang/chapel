@@ -139,10 +139,9 @@ module ChapelIteratorSupport {
     use Reflection;
 
     if (canResolveTypeMethod(t, "these")) then
-      if (canResolve("_getIterator", t.these())) then
-        return t.these();
-
-    compilerError("unable to iterate over type '", t:string, "'");
+      return t.these();
+    else
+      compilerError("unable to iterate over type '", t:string, "'");
   }
 
   inline proc _freeIterator(ic: _iteratorClass) {
