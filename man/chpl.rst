@@ -226,7 +226,7 @@ OPTIONS
 **--[no-]replace-array-accesses-with-ref-temps**
 
     Enable [disable] replacing multiple array accesses with references to
-    the accessed element.
+    the accessed element.  This is currently an experimental optimization.
 
 **--[no-]scalar-replacement**
 
