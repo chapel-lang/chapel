@@ -844,11 +844,10 @@ module DefaultRectangular {
       } else {
         var sum = if earlyShiftData then 0:idxType else origin;
 
-        // If the user asserts that there is no slicing in their program,
-        // then blk(rank) == 1. Knowing this, we need not multiply the final
-        // ind(...) by anything. This may lead to performance improvements for
-        // array accesses.
-        if assertNoSlicing {
+        // If we detect that blk is never changed then then blk(rank) == 1.
+        // Knowing this, we need not multiply the final ind(...) by anything.
+        // This relies on us marking every function that modifies blk
+        if __primitive("optimize_array_blk_mult") {
           for param i in 1..rank-1 {
             sum += ind(i) * blk(i);
           }
@@ -967,6 +966,7 @@ module DefaultRectangular {
       return alias;
     }
 
+    pragma "modifies array blk"
     proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
                                      alias: DefaultRectangularArr)
     {
@@ -985,6 +985,18 @@ module DefaultRectangular {
         alias.str(i) = d.dsiDim(i).stride;
       }
     }
+
+    proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
+                                     alias: DefaultRectangularArr)
+      where dom.stridable == false && this.stridable == false
+    {
+      for param i in 1..rank {
+        alias.off(i) = d.dsiDim(i).low;
+        alias.blk(i) = blk(i);
+        alias.str(i) = d.dsiDim(i).stride;
+      }
+    }
+
 
     proc dsiSlice(d: DefaultRectangularDom) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=rank,
@@ -1016,6 +1028,7 @@ module DefaultRectangular {
       return alias;
     }
 
+    pragma "modifies array blk"
     proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=newRank,
                                         idxType=idxType,

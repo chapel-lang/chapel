@@ -257,6 +257,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ERROR:
   case PRIM_WARNING:
 
+  case PRIM_OPTIMIZE_ARRAY_BLK_MULT:
+
   case PRIM_BLOCK_PARAM_LOOP:
   case PRIM_BLOCK_BEGIN:
   case PRIM_BLOCK_COBEGIN:

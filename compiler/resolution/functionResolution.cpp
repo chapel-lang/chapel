@@ -9383,6 +9383,22 @@ static void removeUnusedGlobals()
   }
 }
 
+static bool arrayBlkModified() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isResolved() && fn->defPoint && fn->defPoint->parentSymbol) {
+      if (fn->hasFlag(FLAG_MODIFIES_ARRAY_BLK)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static bool canOptimizeArrayBlk() {
+  static bool canOptimize = !arrayBlkModified();
+  return canOptimize;
+}
+
 static void removeRandomPrimitive(CallExpr* call)
 {
   if (! call->primitive)
@@ -9405,6 +9421,17 @@ static void removeRandomPrimitive(CallExpr* call)
     case PRIM_NOOP:
       call->remove();
       break;
+
+    case PRIM_OPTIMIZE_ARRAY_BLK_MULT:
+    {
+      SET_LINENO(call);
+      if (canOptimizeArrayBlk()) {
+        call->replace(new SymExpr(gTrue));
+      } else {
+        call->replace(new SymExpr(gFalse));
+      }
+    }
+    break;
 
     case PRIM_TYPEOF:
     {
