@@ -842,23 +842,32 @@ module DefaultRectangular {
           sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
         return sum;
       } else {
-        var sum = if earlyShiftData then 0:idxType else origin;
-
-        // If we detect that blk is never changed then then blk(rank) == 1.
-        // Knowing this, we need not multiply the final ind(...) by anything.
-        // This relies on us marking every function that modifies blk
-        if __primitive("optimize_array_blk_mult") {
-          for param i in 1..rank-1 {
-            sum += ind(i) * blk(i);
+        // optimize common case to get cleaner generated code
+        if (rank == 1 && earlyShiftData) {
+          if __primitive("optimize_array_blk_mult") {
+            return ind(1);
+          } else {
+            return ind(1) * blk(1);
           }
-          sum += ind(rank);
         } else {
-          for param i in 1..rank {
-            sum += ind(i) * blk(i);
+          var sum = if earlyShiftData then 0:idxType else origin;
+
+          // If we detect that blk is never changed then then blk(rank) == 1.
+          // Knowing this, we need not multiply the final ind(...) by anything.
+          // This relies on us marking every function that modifies blk
+          if __primitive("optimize_array_blk_mult") {
+            for param i in 1..rank-1 {
+              sum += ind(i) * blk(i);
+            }
+            sum += ind(rank);
+          } else {
+            for param i in 1..rank {
+              sum += ind(i) * blk(i);
+            }
           }
+          if !earlyShiftData then sum -= factoredOffs;
+          return sum;
         }
-        if !earlyShiftData then sum -= factoredOffs;
-        return sum;
       }
     }
 
