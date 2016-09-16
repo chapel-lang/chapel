@@ -183,9 +183,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
     //    list_view(iteratorExpr);
     CallExpr* zipExpr = toCallExpr(iteratorExpr);
     if (zipExpr) {
-      //
-      // If this is a PRIM_ZIP(), replace it by _getIteratorZip()
-      //      assert(zipExpr->primitive == PRIM_ZIP);
+      assert(zipExpr->isPrimitive(PRIM_ZIP));
       zipExpr->primitive = NULL;
       if (zipExpr->argList.length == 1) {
         zipExpr->baseExpr = new UnresolvedSymExpr("_getIterator");
