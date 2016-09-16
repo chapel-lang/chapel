@@ -210,7 +210,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
       // otherwise, treat it as we traditionally have
       //
       iterInit = new CallExpr(PRIM_MOVE, iterator,
-                              new CallExpr("_getIteratorZip", iteratorExpr));
+                              new CallExpr("_getIterator", iteratorExpr));
     }
     //    printf("----\n");
   }
