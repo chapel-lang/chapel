@@ -38,7 +38,6 @@ module DefaultRectangular {
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
-  config param assertNoSlicing = false;
 
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
