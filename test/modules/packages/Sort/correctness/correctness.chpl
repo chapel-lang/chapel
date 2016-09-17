@@ -15,10 +15,20 @@ proc main() {
         revAbsComp = new ReverseComparator(absComp),
         tupleKey = new TupleCmp();
 
+  // Strided Array
+  var strideD = {2..8 by 2},
+      strideA: [strideD] int = [-3, -1, 4, 5];
+
+
+
   // Pre-sorted arrays paired with comparators
   var tests = (
+                // Data tests
                 ([-4, -1, 2, 3], defaultComparator),
                 (['Brad', 'anthony', 'ben', 'david'], defaultComparator),
+                (strideA, defaultComparator),
+
+                // Comparator tests
                 ([-1, 2, 3, -4], absKey),
                 ([-1, 2, 3, -4], absComp),
                 ([-1, 2, 3, -4], absKeyComp),
