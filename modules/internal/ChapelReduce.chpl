@@ -66,12 +66,21 @@ module ChapelReduce {
   
   pragma "ReduceScanOp"
   class ReduceScanOp {
-    var lock$: sync bool;
+    var l: atomicbool; // only accessed locally
+
     proc lock() {
-      lock$.writeEF(true);
+      var lockAttempts = 0,
+          maxLockAttempts = (2**10-1);
+      while l.testAndSet() {
+        lockAttempts += 1;
+        if (lockAttempts & maxLockAttempts) == 0 {
+          maxLockAttempts >>= 1;
+          chpl_task_yield();
+        }
+      }
     }
     proc unlock() {
-      lock$.readFE();
+      l.clear();
     }
   }
   

@@ -31,6 +31,8 @@ Optimization Control Options:
       --[no-]loop-invariant-code-motion
                                       Enable [disable] loop invariant code
                                       motion
+      --[no-]optimize-array-indexing  Enable [disable] array indexing
+                                      optimization
       --[no-]optimize-loop-iterators  Enable [disable] optimization of
                                       iterators composed of a single loop
       --[no-]optimize-on-clauses      Enable [disable] optimization of on

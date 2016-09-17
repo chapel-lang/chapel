@@ -141,7 +141,7 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Running post-processing scripts"
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
-	@echo "Copying generated module documentation to \$CHPL_HOME/doc/sphinx/modules"
+	@echo "Copying generated module documentation to "'$$CHPL_HOME'"/doc/sphinx/modules"
 	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/

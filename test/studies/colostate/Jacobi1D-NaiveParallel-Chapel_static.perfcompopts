@@ -1,1 +1,1 @@
---optimize --fast --no-checks  -sassertNoSlicing
+--optimize --fast --no-checks

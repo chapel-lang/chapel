@@ -984,6 +984,7 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
       break;
     case QIO_BINARY_STRING_STYLE_TOEOF:
       // Just don't worry about the length - write len bytes.
+      break;
     default:
       if( str_style >= 0 ) {
         // MPF - perhaps we should allow writing a string

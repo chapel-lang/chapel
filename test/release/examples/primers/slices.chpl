@@ -1,23 +1,25 @@
-/*  Slicing Primer    
+/*  Slicing Primer
 
     This example program demonstrates the use of array slicing and
-    reindexing.  
+    reindexing.
 
     In this program, diagonal blocks (or slices) of A are initialized
-    according to the row indices of the diagonal block.  
-       A(i,j) = i, for all (i,j) in diagonal blocks
-    If the block has been reindexed, then each diagonal block is 
-    initialized with the same values.  If the block has not been 
-    reindexed, then the block has the same indices as the full array, 
+    according to the row indices of the diagonal block.
+
+    ``(i,j) = i``, for all ``(i,j)`` in diagonal blocks
+
+    If the block has been reindexed, then each diagonal block is
+    initialized with the same values.  If the block has not been
+    reindexed, then the block has the same indices as the full array,
     so each diagonal block is initialized with different values.
 
     (Incomplete diagonal blocks are not initialized.  If blk does not
-    divide into n evenly, the last diagonal block of A will be 
+    divide into n evenly, the last diagonal block of A will be
     uninitialized.)
 
     Three different cases are given, to show different ways of slicing
-    arrays, with and without reindexing.  Array aliases are declared 
-    for the diagonal blocks in two of the three cases.  One of these 
+    arrays, with and without reindexing.  Array aliases are declared
+    for the diagonal blocks in two of the three cases.  One of these
     array aliases uses reindexing of the domain of the array alias.
     The initialization of the blocks is handled in either initBlock
     or initBlock2.  The procedure initBlock does not reindex the domain
@@ -25,7 +27,7 @@
 */
 
 // Configuration variables for n and blk where the array A is nxn and
-// blk is the size of the diagonal subblock. 
+// blk is the size of the diagonal subblock.
 config const n = 10,
              blk = 2;
 
@@ -44,7 +46,7 @@ proc main() {
 
   // Each of the following three for loop statements uses the
   // iterator blockIter to yield a range subvec that is then
-  // used to define (subvec x subvec) blocks along the diagonal 
+  // used to define (subvec x subvec) blocks along the diagonal
   // of A.
 
   //  Case 1:  No reindexing of the diagonal blocks.
@@ -64,7 +66,7 @@ proc main() {
 
   // Case 2:  An array alias with reindexing is used to point to each
   // diagonal block, and that array alias is sent to initBlock.
-  writeln("Initializing the diagonal blocks of A."); 
+  writeln("Initializing the diagonal blocks of A.");
   writeln("Reindexing of each diagonal block in alias declaration. ");
   for subvec in blockIter(vec,blk) {
     var Ablock: [D0] => A[subvec,subvec];
@@ -74,12 +76,12 @@ proc main() {
   writeln(A);
   writeln();
 
-  A = 0; 
+  A = 0;
 
   // Case 3: An array alias is used to point to each diagonal block
   // and is reindexed to use 1-based indexing in order to meet the
   // requirements of the initBlock2() routine.
-  writeln("Initializing the diagonal blocks of A."); 
+  writeln("Initializing the diagonal blocks of A.");
   writeln("Reindexing of array argument in init procedure definition. ");
   for subvec in blockIter(vec,blk) {
     var Ablock => A[subvec,subvec].reindex({1..blk, 1..blk});
@@ -91,10 +93,10 @@ proc main() {
 }
 
 // The iterator blockIter yields a range that defines a subset
-// of vec, which is always of length blk.  
+// of vec, which is always of length blk.
 iter blockIter(vec:range,blk) {
   for i in vec by blk {
-    if (i + blk-1 <= vec.high) then 
+    if (i + blk-1 <= vec.high) then
       yield i..i+blk-1;
   }
 }
