@@ -7,15 +7,19 @@
 #
 # To use it:
 #
-# * note that this script is currently hard-coded to our usage of if
+# * note that this script is currently hard-coded to our usage of it
 #   at Cray in terms of referring to certain paths and pre-installed
-#   locations of past releases.
+#   locations of past releases.  With more effort, it could be
+#   parameterized for external users, if desired.
 #
 # * set CHPL_HOME to indicate the current CHPL_HOME that you want to
-#   use (from which the util/ scripts will be used).  Note that this
-#   copy of the repository should be in /tmp or on the local disk (if
-#   you want to make the results comparable to the ones we gather
-#   nightly) and up-to-date with the master.
+#   use.  This hierarchy's util/ scripts will be used to run the
+#   tests.
+#
+# * NOTE: To get results that are optimal / comparable to those
+#   obtained in nightly performance runs, you need to host your
+#   $CHPL_HOME from a local disk like /tmp rather than from an
+#   NFS-mounted directory (BRAD: This means you, dummy).
 #
 # * optionally, set CHPL_TEST_VENV_DIR if you want it to differ
 #   from the default below.
