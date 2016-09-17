@@ -23,7 +23,6 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
-#include "view.h"
 
 #include <algorithm>
 
@@ -178,11 +177,12 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   if (zippered == false)
     iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
 
-  // Expand tuple to a tuple containing appropriate iterators for each value.
   else {
-    //    list_view(iteratorExpr);
+    // Zippered loop
     CallExpr* zipExpr = toCallExpr(iteratorExpr);
-    if (zipExpr) {
+    if (zipExpr && zipExpr->isPrimitive(PRIM_ZIP)) {
+      // New-style: Expand arguments to a tuple containing appropriate
+      // iterators for each value.
       assert(zipExpr->isPrimitive(PRIM_ZIP));
       zipExpr->primitive = NULL;
       if (zipExpr->argList.length == 1) {
@@ -193,14 +193,11 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
         zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
         Expr* arg = zipExpr->argList.first();
         while (arg) {
-          //          list_view(arg);
           Expr* next = arg->next;
           arg->replace(new CallExpr("_getIterator", arg->copy()));
-          //          list_view(arg);
           arg = next;
         }
       }
-      //      list_view(zipExpr);
       iterInit = new CallExpr(PRIM_MOVE, iterator, zipExpr);
       assert(zipExpr == iteratorExpr);
     } else {
@@ -208,9 +205,8 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
       // otherwise, treat it as we traditionally have
       //
       iterInit = new CallExpr(PRIM_MOVE, iterator,
-                              new CallExpr("_getIterator", iteratorExpr));
+                              new CallExpr("_getIteratorZip", iteratorExpr));
     }
-    //    printf("----\n");
   }
 
   // try to optimize anonymous range iteration, replaces iterExpr in place
