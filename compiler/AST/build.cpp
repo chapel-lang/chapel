@@ -1253,16 +1253,6 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABlock->insertAtTail(new DefExpr(iterRec));
   SABlock->insertAtTail(new DefExpr(saIter));
   SABlock->insertAtTail(new DefExpr(saIdx));
-  //
-  // This code is not ready to handle PRIM_ZIP yet, so put in the
-  // _build_tuple it's expecting from legacy code...
-  //
-  if (CallExpr* iterCallExpr = toCallExpr(iterExpr)) {
-    if (iterCallExpr->isPrimitive(PRIM_ZIP)) {
-      iterCallExpr->primitive = NULL;
-      iterCallExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
-    }
-  }
   SABlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr);
   SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", saIter, iterRec);
   SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", saIdx, saIter);
@@ -1367,16 +1357,6 @@ buildForallLoopStmt(Expr*      indices,
   resultBlock->insertAtTail(new DefExpr(leadIter));
   resultBlock->insertAtTail(new DefExpr(leadIdx));
 
-  //
-  // This code is not ready to handle PRIM_ZIP yet, so put in the
-  // _build_tuple it's expecting from legacy code...
-  //
-  if (CallExpr* iterCallExpr = toCallExpr(iterExpr)) {
-    if (iterCallExpr->isPrimitive(PRIM_ZIP)) {
-      iterCallExpr->primitive = NULL;
-      iterCallExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
-    }
-  }
   resultBlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr->copy());
 
   if (zippered == false)

@@ -99,15 +99,6 @@ module ChapelIteratorSupport {
 
   proc _getIterator(type t) {
     return _getIterator(_checkIterator(t));
-    /*
-    use Reflection;
-
-    if (canResolveTypeMethod(t, "these")) then
-      if (canResolve("_getIterator", t.these())) then
-        return _getIterator(t.these());
-
-    compilerError("unable to iterate over type '", t:string, "'");
-    */
   }
 
   inline proc _getIteratorZip(x) {
@@ -131,8 +122,19 @@ module ChapelIteratorSupport {
       return _getIteratorZipInternal(x, 1);
   }
 
-  inline proc _checkIterator(x) {
-    return x;
+  inline proc _getIteratorZip(type t: _tuple) {
+    inline proc _getIteratorZipInternal(type t: _tuple, param dim: int) {
+      var x : t; //have to make an instance of the tuple to query the size
+
+      if dim == x.size then // dim == t.size then
+        return (_getIterator(t(dim)),);
+      else
+        return (_getIterator(t(dim)), (..._getIteratorZipInternal(t, dim+1)));
+    }
+    if t == (t(1),) then // t.size == 1 then
+      return _getIterator(t(1));
+    else
+      return _getIteratorZipInternal(t, 1);
   }
 
   inline proc _checkIterator(type t) {
@@ -142,6 +144,10 @@ module ChapelIteratorSupport {
       return t.these();
     else
       compilerError("unable to iterate over type '", t:string, "'");
+  }
+
+  inline proc _checkIterator(x) {
+    return x;
   }
 
   inline proc _freeIterator(ic: _iteratorClass) {

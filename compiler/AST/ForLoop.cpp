@@ -183,6 +183,13 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
     if (zipExpr && zipExpr->isPrimitive(PRIM_ZIP)) {
       // New-style: Expand arguments to a tuple containing appropriate
       // iterators for each value.
+      // Specifically, change:
+      //    zip(a, b, c,  ...)
+      // into the tuple:
+      //    (_getIterator(a), _getIterator(b), _getIterator(c), ...)
+      // ultimately, we will probably want to make this into a utility
+      // function for the other get*Zip functions...
+      //
       assert(zipExpr->isPrimitive(PRIM_ZIP));
       zipExpr->primitive = NULL;
       if (zipExpr->argList.length == 1) {
