@@ -21,6 +21,9 @@
 #   $CHPL_HOME from a local disk like /tmp rather than from an
 #   NFS-mounted directory (BRAD: This means you, dummy).
 #
+# * make sure that your $CHPL_HOME is set up to run testing (e.g.,
+#   can you run 'start_test'?)  If not, do a normal 'make test-venv'.
+#
 # * optionally, set CHPL_TEST_VENV_DIR if you want it to differ
 #   from the default below.
 #
@@ -41,7 +44,7 @@ function testReleasePerformance {
     pushd $CHPL_HOME
     . util/setchplenv.bash
     popd
-    $CHPL_TEST_UTIL_DIR/start_test -performance -num-trials 3
+    $CHPL_TEST_UTIL_DIR/start_test -performance --compopts --no-cc-warnings -num-trials 3
 }
 
 if [[ -z $CHPL_HOME ]]; then
