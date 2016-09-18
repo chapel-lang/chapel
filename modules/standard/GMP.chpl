@@ -144,39 +144,75 @@ module GMP {
   use SysBasic;
   use Error;
 
-  pragma "no doc"
-  extern type __mpf_struct;
+  /* The GMP ``mp_bitcnt_t`` type */
+  extern type mp_bitcnt_t     = c_ulong;
+
+  /* The GMP ``mp_size_t``   type */
+  extern type mp_size_t       = size_t;
+
+  /* The GMP ``mp_limb_t``   type. */
+  extern type mp_limb_t       = uint(64);
+
+  /* The GMP `mp_bits_per_limb`` constant */
+  extern const mp_bits_per_limb: c_int;
+
+
+  //
+  // GMP represents a multi-precision integer as an __mpz_struct.
+  // This is treated as an internal type by GMP and is not intended to
+  // used directly by C developers.  Chapel treats this as an opaque object.
+  //
+  // In practice the implementation is a dynamically-sized packed vector
+  // of platform-specific integers i.e.
+  //
+  //     typedef struct {
+  //       int        _mp_alloc;  // capacity
+  //       int        _mp_size;   // current size
+  //       mp_limb_t* _mp_d;      // a packed vector of integers
+  //     } __mpz_struct;
+  //
+  //
+  // GMP then defines the type mpz_t as
+  //
+  //     typedef __mpz_struct mpz_t[1];
+  //
+  // When used to define a C value, this is simply a single __mpz_struct.
+  // As an argument to a function, this causes the value to be passed by
+  // reference rather than by value as would be expected for a struct.
+  //
+  //
+  // For single locale applications the application programmer is
+  // responsible for ensuring that every mpz_t is initialized correctly
+  // and that it is cleared/freed when it is no longer needed.
+  //
+  // For multi-locale applications the application programmer must be aware
+  // that Chapel creates shallow copies of this data structure within
+  // on-statements; the _mp_d value will not be valid on the remote locale.
+  // The developer may invoke chpl_gmp_get_mpz() to create a local copy of
+  // the actual GMP data.
+  //
 
   pragma "no doc"
   extern type __mpz_struct;
 
+  /*  The GMP ``mpf_t`` type */
+  extern type mpf_t           = 1 * __mpf_struct;
+
+
+
+
+  pragma "no doc"
+  extern type __mpf_struct;
+
   pragma "no doc"
   extern type __gmp_randstate_struct;
 
-
-  /*  The GMP ``mpf_t`` type */
-  extern type mpf_t           = 1 * __mpf_struct;
 
   /* The GMP ``mpz_t`` type */
   extern type mpz_t           = 1 * __mpz_struct;
 
   /* The GMP ``gmp_randstate_t`` type */
   extern type gmp_randstate_t = 1 * __gmp_randstate_struct;
-
-  /* The GMP ``mp_bitcnt_t`` type */
-  extern type mp_bitcnt_t     = c_ulong;
-
-  /* The GMP ``mp_size_t`` type */
-  extern type mp_size_t       = size_t;
-
-  /* The GMP ``mp_limb_t`` type */
-  extern type mp_limb_t       = uint(64);
-
-  /* The GMP ``mp_ptr`` type */
-  extern type mp_ptr; // mp_limb_t *
-
-  /* The GMP `mp_bits_per_limb`` constant */
-  extern const mp_bits_per_limb: c_int;
 
   /* All these external functions are ref, which may
      seem surprising. They are that way because identity
@@ -211,7 +247,7 @@ module GMP {
 
   extern proc mpz_init(ref x: mpz_t);
 
-  extern proc mpz_init2(ref x: mpz_t, n: c_ulong);
+  extern proc mpz_init2(ref x: mpz_t, n: mp_bitcnt_t);
 
   extern proc mpz_clear(ref x: mpz_t);
 
