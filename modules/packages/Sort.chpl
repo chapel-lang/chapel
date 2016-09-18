@@ -235,7 +235,7 @@ pragma "no doc"
     Check if a comparator was passed and confirm that it will work, otherwise
     throw a compile-time error.
 
-    :arg a: Sample data passed to confirm that comparator methods can resolve
+   :arg a: Sample data passed to confirm that comparator methods can resolve
    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
       data is sorted.
 
@@ -283,7 +283,8 @@ proc chpl_check_comparator(comparator, type eltType) {
       data is sorted.
 
  */
-proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank == 1 {
   quickSort(Data, comparator=comparator);
 }
 
@@ -298,10 +299,12 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.ra
    :returns: ``true`` if array is sorted
    :rtype: `bool`
  */
-proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
+proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool
+  where Dom.rank == 1 {
   chpl_check_comparator(comparator, eltType);
-  for i in Dom.low..Dom.high-1 do
-    if chpl_compare(Data(i+1), Data(i), comparator) < 0 then
+  const stride = abs(Dom.stride);
+  for i in Dom.low..Dom.high-stride by stride do
+    if chpl_compare(Data[i+stride], Data[i], comparator) < 0 then
       return false;
   return true;
 }
@@ -359,15 +362,17 @@ iter sorted(x, comparator:?rec=defaultComparator) {
  */
 proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   chpl_check_comparator(comparator, eltType);
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
+  const low = Dom.low,
+        high = Dom.high,
+        stride = abs(Dom.stride);
+
   var swapped = true;
 
   while (swapped) {
     swapped = false;
-    for i in lo..hi-1 {
-      if chpl_compare(Data(i), Data(i+1), comparator) > 0 {
-        Data(i) <=> Data(i+1);
+    for i in low..high-stride by stride {
+      if chpl_compare(Data(i), Data(i+stride), comparator) > 0 {
+        Data(i) <=> Data(i+stride);
         swapped = true;
       }
     }
@@ -386,32 +391,41 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where 
  */
 proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   chpl_check_comparator(comparator, eltType);
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
-  const len = Dom.dim(1).size;
+  const low = Dom.low,
+        high = Dom.high,
+        size = Dom.size,
+        stride = abs(Dom.stride);
 
-  // heapify
-  var start = (len - 2) / 2 + lo;
-  while (start >= lo) {
-    SiftDown(start, hi, comparator);
-    start = start - 1;
+  // Heapify
+  var start = if high == low then high
+              else if size % 2 then low + ((size - 1)/2) * stride
+              else low + (size/2 - 1) * stride;
+
+  while (start >= low) {
+    SiftDown(start, high, comparator);
+    start = start - stride;
   }
 
-  // sort, moving max element to end and re-heapifying the rest
-  var end = hi;
-  while (end > lo) {
-    Data(end) <=> Data(lo);
-    end = end - 1;
-    SiftDown(lo, end, comparator);
+  // Sort, moving max element to end and re-heapifying the rest
+  var end = high;
+  while (end > low) {
+    Data(end) <=> Data(low);
+    end = end - stride;
+    SiftDown(low, end, comparator);
   }
 
-  proc SiftDown(start, end, comparator:?rec=defaultComparator) where isRecord(rec) {
+  proc SiftDown(start, end, comparator:?rec=defaultComparator) {
     var root = start;
-    while (root * 2 + 1 - lo <= end) {
-      const child = root * 2 + 1 - lo;
+    while ((2*root - low + stride) <= end) {
+      const child = 2*root - low + stride;
       var swap = root;
-      if chpl_compare(Data(swap), Data(child), comparator) < 0 then swap = child;
-      if (child + 1 <= end) && (chpl_compare(Data(swap), Data(child + 1), comparator) < 0) then swap = child + 1;
+
+      if chpl_compare(Data(swap), Data(child), comparator) < 0 then
+        swap = child;
+
+      if (child + stride <= end) && (chpl_compare(Data(swap), Data(child + stride), comparator) < 0) then
+        swap = child + stride;
+
       if swap != root {
         Data(root) <=> Data(swap);
         root = swap;
@@ -434,21 +448,24 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Do
  */
 proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   chpl_check_comparator(comparator, eltType);
-  const lo = Dom.low;
-  for i in Dom {
-    const ithVal = Data(i);
+  const low = Dom.low,
+        high = Dom.high,
+        stride = abs(Dom.stride);
+
+  for i in low..high by stride {
+    var ithVal = Data[i];
     var inserted = false;
-    for j in lo..i-1 by -1 {
-      if chpl_compare(ithVal, Data(j), comparator) < 0 {
-        Data(j+1) = Data(j);
+    for j in low..i-stride by -stride {
+      if chpl_compare(ithVal, Data[j], comparator) < 0 {
+        Data[j+stride] = Data[j];
       } else {
-        Data(j+1) = ithVal;
+        Data[j+stride] = ithVal;
         inserted = true;
         break;
       }
     }
     if (!inserted) {
-      Data(lo) = ithVal;
+      Data[low] = ithVal;
     }
   }
 }
@@ -531,7 +548,11 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
   // grab obvious indices
   const lo = Dom.low,
         hi = Dom.high,
-        mid = lo + (hi-lo+1)/2;
+        size = Dom.size,
+        stride = abs(Dom.stride),
+        mid = if hi == lo then hi
+              else if size % 2 then lo + ((size - 1)/2) * stride
+              else lo + (size/2 - 1) * stride;
 
   // base case -- use insertion sort
   if (hi - lo < minlen) {
@@ -548,21 +569,21 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
     Data(hi) <=> Data(mid);
 
   const pivotVal = Data(mid);
-  Data(mid) = Data(hi-1);
-  Data(hi-1) = pivotVal;
+  Data(mid) = Data(hi-stride);
+  Data(hi-stride) = pivotVal;
   // end median-of-3 partitioning
 
   var loptr = lo,
-      hiptr = hi-1;
+      hiptr = hi-stride;
   while (loptr < hiptr) {
-    do { loptr += 1; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
-    do { hiptr -= 1; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
+    do { loptr += stride; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
+    do { hiptr -= stride; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
     if (loptr < hiptr) {
       Data(loptr) <=> Data(hiptr);
     }
   }
 
-  Data(hi-1) = Data(loptr);
+  Data(hi-stride) = Data(loptr);
   Data(loptr) = pivotVal;
 
   // TODO -- Get this cobegin working and tested
@@ -584,12 +605,14 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
  */
 proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
-  const lo = Dom.dim(1).low,
-        hi = Dom.dim(1).high;
-  for i in lo..hi-1 {
+  const low = Dom.low,
+        high = Dom.high,
+        stride = abs(Dom.stride);
+
+  for i in low..high-stride by stride {
     var jMin = i;
     // TODO -- should be a minloc reduction, when they can support comparators
-    for j in i..hi {
+    for j in i..high by stride {
       if chpl_compare(Data[j], Data[jMin], comparator) < 0 then
         jMin = j;
     }
@@ -831,7 +854,6 @@ pragma "no doc"
 
  */
 proc VerifySort(Data: [?Dom] ?eltType, str: string, param reverse=false) {
-  //writeln("Deprecation warning: VerifySort replaced by isSorted");
   if reverse {
     for i in Dom.low..Dom.high-1 do
       if Data[i] < Data[i+1] then
