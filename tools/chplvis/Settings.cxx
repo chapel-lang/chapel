@@ -155,7 +155,16 @@ void SettingsData::saveToFile (bool saveAll)
       file_maxG = maxG;
       file_maxB = maxB;
       file_maxR = maxR;
+    } else if (!didReadFile) {
+      // Set the defaults to write to the file.
+      file_minR = 0;
+      file_minG = 180;
+      file_minB = 255;
+      file_maxR = 255;
+      file_maxG = 0;
+      file_maxB = 0;
     }
+
     // Write the data
     fprintf (setF, "%lf %lf %lf %lf %lf %lf %d %d %d\n",
              file_minR, file_minG, file_minB, file_maxR, file_maxG, file_maxB,
@@ -176,6 +185,7 @@ void SettingsData::readFromFile (void)
   int namelen = strlen(home)+20;
   char name[namelen];
   snprintf (name, namelen, "%s/.cache/chplvis", home);
+  didReadFile = false;
 
   FILE *setF;
   if (access(name, R_OK) == 0) {
@@ -187,7 +197,7 @@ void SettingsData::readFromFile (void)
                        &file_maxB, &sWH, &mainW, &mainH);
       if (nr != 9) {
         fl_alert ("Settings corrupt, reverting to default settings.");
-        VisSettings.setDefaults();
+        setDefaults();
       } else {
         save_WH = sWH == 1;
         minG = file_minG;
@@ -196,8 +206,15 @@ void SettingsData::readFromFile (void)
         maxG = file_maxG;
         maxB = file_maxB;
         maxR = file_maxR;
+        if (!save_WH) {
+          // Ignore file's W and H if not "saved"
+          mainW = 560;
+          mainH = 600;
+        }
+        didReadFile = true;
       }
       fclose(setF);
     }
-  }
+  } else
+    setDefaults();
 }

@@ -23,6 +23,8 @@
 #define SETTINGS_H
 
 class SettingsData {
+ private:
+  bool didReadFile;
 
  public:
   double minR;
@@ -51,9 +53,9 @@ class SettingsData {
     maxR = 255;
     maxG = 0;
     maxB = 0;
-    save_WH = false;
-    mainW = 500;
-    mainH = 590;
+    save_WH = true;
+    mainW = 560;
+    mainH = 600;
   }
 
   void saveToFile (bool);
