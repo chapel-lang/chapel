@@ -15,20 +15,29 @@ proc main() {
         revAbsComp = new ReverseComparator(absComp),
         tupleKey = new TupleCmp();
 
-  // Strided Array
-  var strideD = {2..8 by 2},
-      strideA: [strideD] int = [-3, -1, 4, 5];
+  // Arrays and Domains
+  const largeD = {1..20}, // quickSort requires domain.size > 16
+        strideD = {2..8 by 2},
+      strideRevD = {2..8 by -2};
+  var largeA: [largeD] int,
+      strideA: [strideD] int = [-3, -1, 4, 5],
+      strideRevA: [strideRevD] int = [-3, -1, 4, 5];
+    [i in largeD] largeA[i] = i;
 
 
 
-  // Pre-sorted arrays paired with comparators
+  // Pre-sorted arrays paired with comparators to test
   var tests = (
-                // Data tests
+                // Testing A.eltType
                 ([-4, -1, 2, 3], defaultComparator),
                 (['Brad', 'anthony', 'ben', 'david'], defaultComparator),
-                (strideA, defaultComparator),
 
-                // Comparator tests
+                // Testing D.idxType / D.dims()
+                (largeA, defaultComparator),
+                (strideA, defaultComparator),
+                (strideRevA, defaultComparator),
+
+                // Testing comparators
                 ([-1, 2, 3, -4], absKey),
                 ([-1, 2, 3, -4], absComp),
                 ([-1, 2, 3, -4], absKeyComp),
@@ -48,9 +57,11 @@ proc main() {
 
       if !isSorted(arr, comparator=cmp) {
         writeln('isSorted failed to sort array:');
-        writeln(arr);
-        writeln('with comparator:');
-        writeln(cmp.name());
+        writeln('failed to sort:');
+        writeln('eltType:    ', arr.eltType:string);
+        writeln('idxType:    ', arr.domain.idxType:string);
+        writeln('dimensions: ', arr.domain.dims());
+        writeln('comparator: ', cmp.name());
         isSortedWorks = false;
       }
     }
@@ -60,6 +71,7 @@ proc main() {
   }
 
   /* Correctness tests for sort routines */
+  // TODO -- functionalize these tests when FCF support allows it
   {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
@@ -70,7 +82,7 @@ proc main() {
     }
 
     for param i in 1..tests.size {
-      var (arr, cmp) = tests(i);
+      ref (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       bubbleSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
@@ -162,10 +174,11 @@ proc checkSort(arr, cmp) {
 
   // Check result
   if !isSorted(arr, cmp) {
-      writeln('failed to sort array:');
-      writeln(arr);
-      writeln('with comparator:');
-      writeln(cmp.name());
+      writeln('failed to sort:');
+      writeln('eltType:    ', arr.eltType:string);
+      writeln('idxType:    ', arr.domain.idxType:string);
+      writeln('dimensions: ', arr.domain.dims());
+      writeln('comparator: ', cmp.name());
       result = false;
   }
   return result;
@@ -178,8 +191,10 @@ proc checkSort(arr) {
 
   // Check result
   if !isSorted(arr) {
-      writeln('failed to sort array:');
-      writeln(arr);
+      writeln('failed to sort:');
+      writeln('eltType:    ', arr.eltType:string);
+      writeln('idxType:    ', arr.domain.idxType:string);
+      writeln('dimensions: ', arr.domain.dims());
       result = false;
   }
   return result;
