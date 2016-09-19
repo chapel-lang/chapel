@@ -79,6 +79,8 @@ symbolFlag( FLAG_COMPILER_NESTED_FUNCTION , npr, "compiler nested function" , nc
 symbolFlag( FLAG_CONCURRENTLY_ACCESSED , npr, "concurrently accessed" , "local variables accessed by multiple threads" )
 symbolFlag( FLAG_CONFIG , npr, "config" , "config variable, constant, or parameter" )
 symbolFlag( FLAG_CONST , npr, "const" , "constant" )
+// this shadow variable is constant, whereas the outer variable is not
+symbolFlag( FLAG_CONST_DUE_TO_TASK_FORALL_INTENT , npr, "const due to task or forall intent", ncm )
 symbolFlag( FLAG_C_PTR_CLASS , ypr, "c_ptr class" , "marks c_ptr class" )
 symbolFlag( FLAG_CONSTRUCTOR , npr, "constructor" , "constructor (but not type constructor); loosely defined to include constructor wrappers" )
 symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )

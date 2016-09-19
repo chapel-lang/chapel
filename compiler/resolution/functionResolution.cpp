@@ -4284,6 +4284,31 @@ static void lvalueCheck(CallExpr* call)
                          calleeFn->name, calleeParens);
         }
       }
+      if (SymExpr* aSE = toSymExpr(actual)) {
+        Symbol* aVar = aSE->var;
+        if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+          const char* varname = aVar->name;
+          if (!strncmp(varname, "_formal_tmp_", 12))
+            varname += 12;
+          if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
+            Symbol* enclTaskFn = aVar->defPoint->parentSymbol;
+            BaseAST* marker;
+            const char* constructName;
+            if (enclTaskFn->hasFlag(FLAG_BEGIN)) {
+              // enclTaskFn points to a good line number
+              marker = enclTaskFn;
+              constructName = "begin";
+            } else {
+              marker = enclTaskFn->defPoint->parentExpr;
+              constructName = "cobegin or coforall";
+            }
+            USR_PRINT(marker, "The shadow variable '%s' is constant due to task intents in this %s statement", varname, constructName);
+          } else {
+            Expr* enclLoop = aVar->defPoint->parentExpr;
+            USR_PRINT(enclLoop, "The shadow variable '%s' is constant due to forall intents in this loop", varname);
+          }
+        }
+      }
     }
   }
 }
@@ -4823,6 +4848,8 @@ insertFormalTemps(FnSymbol* fn) {
     if (formalRequiresTemp(formal)) {
       SET_LINENO(formal);
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
+      if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
+        tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       formals2vars.put(formal, tmp);
     }
   }

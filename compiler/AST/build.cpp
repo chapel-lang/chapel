@@ -2606,6 +2606,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
   block->insertAtTail(new CallExpr("_endCountFree", cobeginCount));
 
+  block->astloc = cobeginCount->astloc; // grab the location of 'cobegin' kw
   return block;
 }
 
