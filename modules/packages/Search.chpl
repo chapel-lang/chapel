@@ -35,6 +35,7 @@ module Search {
 
   TODO -- add performance testing for Search algorithms, and compare
           passing sliced arrays vs. unsliced arrays with lo/hi args
+          and strided vs unstrided performance
 */
 
 /*
@@ -62,7 +63,7 @@ module Search {
       been if it was not found.
    :rtype: (`bool`, `Dom.idxType`)
  */
-proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.first, hi=Dom.last, sorted=false) where Dom.rank == 1 {
+proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high, sorted=false) {
   if sorted then
     return binarySearch(Data, val, comparator, lo, hi);
   else
@@ -93,21 +94,46 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.first, h
    :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) where Dom.rank == 1 {
+proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) {
   chpl_check_comparator(comparator, Data.eltType);
 
   // Domain slicing is cheap, but avoiding it when possible helps performance
   if lo == Dom.low && hi == Dom.high {
-    for i in Dom do
+    for i in Dom {
       if chpl_compare(Data[i], val, comparator=comparator) == 0 then
         return (true, i);
+    }
   } else {
-    for i in Dom[lo..hi] do
+    for i in Dom[lo..hi] {
       if chpl_compare(Data[i], val, comparator=comparator) == 0 then
         return (true, i);
+    }
   }
 
   return (false, Dom.high+1);
+}
+
+
+pragma "no doc"
+/* Strided linearSearch */
+proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) where Dom.stridable {
+  chpl_check_comparator(comparator, Data.eltType);
+
+  const stride = abs(Dom.stride);
+  // Domain slicing is cheap, but avoiding it when possible helps performance
+  if lo == Dom.low && hi == Dom.high {
+    for i in Dom {
+      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
+        return (true, i);
+    }
+  } else {
+    for i in Dom[lo..hi by stride] {
+      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
+        return (true, i);
+    }
+  }
+
+  return (false, Dom.high+stride);
 }
 
 
@@ -136,11 +162,29 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
    :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.first, in hi=Dom.last) where Dom.rank == 1 {
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
   chpl_check_comparator(comparator, Data.eltType);
 
-  // TODO -- measure performance, and possibly overload strided version
-  const stride = Dom.stride;
+  while (lo <= hi) {
+    const mid = (hi - lo)/2 + lo;
+    if chpl_compare(Data[mid], val, comparator=comparator) == 0 then
+      return (true, mid);
+    else if chpl_compare(val, Data[mid], comparator=comparator) > 0 then
+      lo = mid + 1;
+    else
+      hi = mid - 1;
+  }
+  return (false, lo);
+}
+
+
+pragma "no doc"
+/* Strided binarySearch */
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) where Dom.stridable {
+  chpl_check_comparator(comparator, Data.eltType);
+
+  const stride = abs(Dom.stride);
+
   while (lo <= hi) {
     const size = (hi - lo) / stride,
           mid = if hi == lo then hi
@@ -148,11 +192,11 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
                 else lo + (size/2 - 1) * stride;
 
     if chpl_compare(Data[mid], val, comparator=comparator) == 0 then
-      return (true, mid);
+        return (true, mid);
     else if chpl_compare(val, Data[mid], comparator=comparator) > 0 then
-      lo = mid + Dom.stride;
+      lo = mid + stride;
     else
-      hi = mid - Dom.stride;
+      hi = mid - stride;
   }
   return (false, lo);
 }
