@@ -6388,14 +6388,11 @@ bool CallExpr::isRefExternStarTuple(Symbol* formal, Expr* actual) const {
   Symbol* formalSym  = formal->type->symbol;
   Symbol* formalVal  = formalSym->getValType()->symbol;
 
-  Type*   actualType = actual->typeInfo();
-  Symbol* actualSym  = actualType->symbol;
-
   bool  retval       = false;
 
   if (formal->isRef()                     == true &&
       formalVal->hasFlag(FLAG_STAR_TUPLE) == true &&
-      actualSym->isRef()                  == true)
+      actual->isRef()                     == true)
     retval = true;
 
   return retval;
