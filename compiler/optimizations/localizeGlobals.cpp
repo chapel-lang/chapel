@@ -47,6 +47,7 @@ void localizeGlobals() {
         ModuleSymbol* parentmod = toModuleSymbol(var->defPoint->parentSymbol);
         CallExpr* parentExpr = toCallExpr(se->parentExpr);
         bool inAddrOf = parentExpr && parentExpr->isPrimitive(PRIM_ADDR_OF);
+        bool lhsOfMove = parentExpr && isMoveOrAssign(parentExpr) && (parentExpr->get(1) == se);
 
         // Is var a global constant?
         // Don't replace the var name in its init function since that's
@@ -59,6 +60,7 @@ void localizeGlobals() {
             fn != parentmod->initFn &&
             fn != initStringLiterals &&
             !inAddrOf &&
+            !lhsOfMove &&
             var->hasFlag(FLAG_CONST) &&
             var->defPoint->parentSymbol != rootModule) {
           VarSymbol* local_global = globals.get(var);
