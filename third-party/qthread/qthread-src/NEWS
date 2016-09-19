@@ -2,7 +2,8 @@
 New Features:
  - Distib scheduler: lower contention numa-aware scheduling
  - Binders affinity layer: more control over affinity
- - Portals4 support
+ - Updated Portals4 runtime support
+ - Added missing XMT FEB operations
 --- 1.10 ---
 New Features:
  - Task queue subsystem
