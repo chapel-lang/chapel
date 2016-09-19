@@ -17,9 +17,6 @@
  * limitations under the License.
  */
 
-/*
- * Enum and uses.
- */
 enum RemElems {
   Thru, // 2, 3, 2, 3 
   Pack, // 3, 3, 3, 1
@@ -61,6 +58,7 @@ proc chunk(
     then start..end by r.stride
     else start..end;
 }
+
 
 /*
  * Order-based interface, iterator and query.
@@ -128,6 +126,12 @@ proc chunkOrder(
   }
 }
 
+
+/*
+ * Query the chunk index of a value in the range.
+ * Returned value is zero-based.
+ */
+
 proc whichChunk(
   r: range(?RT, bounded, ?),
   numChunks: integral,
@@ -159,6 +163,7 @@ proc whichChunk(
       else rem + (i - splitPoint) / chunkSize; 
   }
 }
+
 
 /*
  * Private helpers for order pairs and thereby ranges.
