@@ -17,18 +17,30 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <assert.h>
+#ifndef ZOOMSCROLL_H
+#define ZOOMSCROLL_H
 
-#include "ConcurrencyWin.h"
-#include "chplvis.h"
+#include <FL/Fl_Scroll.H>
 
-#include <FL/fl_draw.H>
-#include <FL/fl_ask.H>
+class ZoomScroll : public Fl_Scroll {
 
+  Fl_Widget *zoomWidget;
 
-ConcurrencyWin::ConcurrencyWin (int x, int y, int W, int H, const char *l)
-  :  Fl_Double_Window (W, H, l)
-{
-}
+ public:
 
+  ZoomScroll (int x, int y, int w, int h, const char *l = 0)
+    : Fl_Scroll::Fl_Scroll (x, y, w, h, l) { zoomWidget = 0; }; 
+
+  void setZoomWidget (Fl_Widget *zw) { zoomWidget = zw; }
+    
+  Fl_Widget *getZoomWidget (void) { return zoomWidget; }
+    
+  void resize (int, int, int, int);
+
+  void zoomIn(int zx = -1, int zy=-1);
+  void zoomOut(int zx = -1, int zy=-1);
+  void reset(void);
+
+};
+
+#endif

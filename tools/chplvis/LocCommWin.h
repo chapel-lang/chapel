@@ -17,29 +17,34 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
+#ifndef LOCALEWIN_H
+#define LOCALEWIN_H
 
-#include "CommWin.h"
-#include "ViewField.h"
+#include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Box.H>
+#include <FL/Fl_Multiline_Output.H>
+#include "LocCommBox.h"
 
-CommWin::CommWin (int x, int y, int W, int H, const char *l)
-  :  Fl_Double_Window (W, H, l)
-{
-}
+struct localeData;
+struct commData;
 
-void CommWin::updateWin(commData *c)
-{
-  //  Write the data to the window
-  const int msgsize = 1024;
-  char mesg[msgsize];
-  snprintf (mesg, msgsize, "Comm %d->%d", fromLoc, toLoc);
-  title->copy_label(mesg);
+// Window for showing Locale information.
+
+class LocCommWin : public Fl_Double_Window {
+
+ private:
+  LocCommBox *LCBox;
   
-  // Create the text
-  comm = c;
-  snprintf (mesg, msgsize, "Total Comms = %ld\nTotal bytes = %ld\n"
-            "  Gets = %ld\n  Puts = %ld\n  Forks = %ld\n",
-            comm->numComms, comm->commSize, comm->numGets, comm->numPuts,
-            comm->numComms - comm->numGets - comm->numPuts);
-  info->value(mesg);
-}
+
+ public:
+  LocCommWin (int x, int y, int W, int H, const char *l=0);
+
+  void setBox (LocCommBox *b) { LCBox = b; }
+
+  void setAsLocale (int Loc, localeData *l);
+
+  void setAsComm(int L1, int L2, commData *c);
+  
+};
+
+#endif

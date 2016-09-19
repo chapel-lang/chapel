@@ -17,36 +17,31 @@
  * limitations under the License.
  */
 
-#ifndef LOCALEWIN_H
-#define LOCALEWIN_H
+/* Implementation of a "Multi-group", similar to a Tab set but without
+ * the tabs.  Control of which group is visible is one of several methods
+ *  that select the group to be displayed.
+ */
 
-#include <FL/Fl_Double_Window.H>
-#include <FL/Fl_Box.H>
-#include <FL/Fl_Multiline_Output.H>
-struct localeData;
+#ifndef SELECTBROWSER_H
+#define SELECTBROWSER_H
 
-// Window for showing Locale information.
+#include <FL/Fl_Browser.H>
 
-class LocaleWin : public Fl_Double_Window {
+// Allow a selection to last past the "FL_RELEASE" event
 
- private:
-  Fl_Box *title;
-  Fl_Multiline_Output *info;
-  localeData *loc;
-  int locnum;
+class SelectBrowser : public Fl_Browser {
 
- public:
-  LocaleWin (int x, int y, int W, int H, const char *l=0);
+  void *lastSelected;
 
-  void setMembers (Fl_Box *t, Fl_Multiline_Output *i, localeData *l, int ln) {
-    title = t;
-    info = i;
-    loc = l;
-    locnum = ln;
-  }
+  public:
 
-  void updateWin (localeData *l);
-    
+  SelectBrowser (int x, int y, int w, int h, const char *l = 0);
+
+  int handle(int event);
+
+  void *lastSel (void) { return lastSelected; }
+
 };
+
 
 #endif

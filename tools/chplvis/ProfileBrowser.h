@@ -17,18 +17,36 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <assert.h>
+/* Implementation of a "Multi-group", similar to a Tab set but without
+ * the tabs.  Control of which group is visible is one of several methods
+ *  that select the group to be displayed.
+ */
 
-#include "ConcurrencyWin.h"
-#include "chplvis.h"
+#ifndef PROFILEBROWSER_H
+#define PROFILEBROWSER_H
 
-#include <FL/fl_draw.H>
-#include <FL/fl_ask.H>
+#include "SelectBrowser.h"
+#include <vector>
+
+class ProfileBrowser : public SelectBrowser {
+
+  const funcInfo ** funcList;
+  int numFuncs;
+  void *lastSelected;
+
+  public:
+
+  enum whichData { D_CLOCK, D_TASKS, D_COMM, D_ONCALLS, D_GETS, D_PUTS };
+
+  ProfileBrowser (int x, int y, int w, int h, const char *l = 0);
+
+  void loadData();
+
+  void prepareData(whichData what);
+
+  void showFileFor(int ix);
+  
+};
 
 
-ConcurrencyWin::ConcurrencyWin (int x, int y, int W, int H, const char *l)
-  :  Fl_Double_Window (W, H, l)
-{
-}
-
+#endif

@@ -17,18 +17,18 @@
  * limitations under the License.
  */
 
-#ifndef VIEWFIELD_H
-#define VIEWFIELD_H
+#ifndef GRAPHVIEW_H
+#define GRAPHVIEW_H
 
-//class ViewField;  // So we can include chplvis.h
+//class GraphView;  // So we can include chplvis.h
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
-#include "LocaleWin.h"
-#include "CommWin.h"
+#include "LocCommWin.h"
 #include "ConcurrencyWin.h"
 
 #include "DataModel.h"
+#include "DataView.h"
 
 #include <string>
 
@@ -36,14 +36,14 @@
 
 struct localeInfo {
   // locale box location on view area
-  int x; 
+  int x;
   int y;
   int w;
   int h;
-  // Locale Window information.
-  LocaleWin *win;
+  // Locale Window information.  -- code commented out
+  // LocCommWin *win;
   // Concurrency Window information.
-  ConcurrencyWin *ccwin;
+  // ConcurrencyWin *ccwin;
   // Locale box ... for tool tips.
   Fl_Box *b;
 };
@@ -51,9 +51,9 @@ struct localeInfo {
 // Information stored for every comm direction
 // X -> Y and Y -> X for all X & Y.  (2d array)
 
-struct commInfo { // Remove this and just use CommWin*??? YYY
-  CommWin *win;
-};
+//struct commInfo { // Disabled, no multi-window mode.
+//  LocCommWin *win;
+//};
 
 // Tag names may appear multiple times in the data,
 // Associates unique tag number with name.
@@ -66,12 +66,11 @@ struct tagInfo {
 static const double twopi = 6.28318530717958647688;
 static const double pi = 3.14159265358979323844;
 
-class ViewField : public Fl_Box {
+class GraphView : public DataView {
 
   private:
 
-    int numlocales;
-    int cx, cy;     // center of the ViewField
+    int cx, cy;     // center of the GraphView
     double rx, ry;  // Radius of the locales, for elliptical view
     double angle;   // Angle between locale
     double start;   // Angle of locale 0
@@ -79,25 +78,14 @@ class ViewField : public Fl_Box {
     // Data arrays for the locales (1D) and communication (2D)
     localeInfo *theLocales; // Need to de/reallocate after changing numlocales
     int getSize;            // size used for doing deallocate after changeing numlocales
-    commInfo **comms;       // Also need to de/reallocate after changing numlocales
-
-    bool useUTags;
-    int tagMenu;
-
-    // Keep track of what is being displayed
-    enum show_what {show_Tasks, show_CPU, show_Clock, show_Concurrency} infoTop;
-
-    DataModel::tagData *curTagData;
-    int curTagNum;
-    bool showcomms;
-
+    // commInfo **comms;       // Also need to de/reallocate after changing numlocales
     // Methods
 
     void allocArrays ();
 
   public:
 
-  ViewField (int bx, int by, int bw, int bh, const char *label = 0);
+  GraphView (int bx, int by, int bw, int bh, const char *label = 0);
 
   //  Virtual methods to override
   void draw (void);
@@ -105,16 +93,10 @@ class ViewField : public Fl_Box {
 
   // Processing routines
 
-  bool usingUTags() { return useUTags; }
-
-  void toggleUTags() { useUTags = !useUTags; }
-
   void selectData (int tagNum);
 
-  void makeTagsMenu (void);
-
   void setNumLocales (int n)
-    { 
+    {
       //printf("NumLocalse set to %d\n", n);
       numlocales = n;
       angle = twopi / numlocales;
@@ -133,17 +115,7 @@ class ViewField : public Fl_Box {
   // Draw a comm line between loc1 and loc2, color changing in the middle
   void drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
 
-  // What to show!
-  void showTasks (void) { infoTop = show_Tasks; }
-  void showCpu (void  ) { infoTop = show_CPU; }
-  void showClock (void) { infoTop = show_Clock; }
-  void showConcurrency (void) { infoTop = show_Concurrency; }
-
-  void showComms (void) { showcomms = true; }
-  void showDsize (void) { showcomms = false; }
-
-  void showAllData (void) { printf ("showAllData called\n"); }
-
+#if 0
   // Window show/hide functions ...
   void hideAllCommWindows (void)
     {
@@ -163,7 +135,7 @@ class ViewField : public Fl_Box {
             comms[ix1][ix2].win->show();
     }
 
-  void hideAllLocaleWindows (void)
+  void hideAllLocCommWindows (void)
     {
       int ix;
       for (ix = 0; ix < numlocales; ix++) {
@@ -172,9 +144,9 @@ class ViewField : public Fl_Box {
         if (theLocales[ix].ccwin != NULL)
           theLocales[ix].ccwin->hide();
       }
-    }        
+    }
 
-  void showAllLocaleWindows (void)
+  void showAllLocCommWindows (void)
     {
       int ix;
       for (ix = 0; ix < numlocales; ix++) {
@@ -184,6 +156,7 @@ class ViewField : public Fl_Box {
           theLocales[ix].ccwin->show();
       }
     }
+#endif
 
   void redrawAllWindows (void);
 

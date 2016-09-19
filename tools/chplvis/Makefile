@@ -42,10 +42,14 @@ CXXFLAGS=  -Wall -I. -g
 	$$($(FLTK_CONFIG) --cxx) -c $$($(FLTK_CONFIG) --cxxflags) $(CXXFLAGS) $<
 
 
-SRCS=   ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx \
-        CommWin.cxx ConcurrencyWin.cxx Settings.cxx
-HFILES= ViewField.h   DataModel.h   Event.h   InfoBar.h   LocaleWin.h \
-        CommWin.h   ConcurrencyWin.h   Settings.h
+SRCS=   GraphView.cxx DataModel.cxx Event.cxx InfoBar.cxx LocCommWin.cxx \
+        ConcurrencyWin.cxx Settings.cxx  Fl_MultiGroup.cxx \
+        ZoomScroll.cxx GridView.cxx MenuManager.cxx LocCommBox.cxx \
+	ConcurrencyView.cxx  ProfileBrowser.cxx SelectBrowser.cxx SubView.cxx
+HFILES= GraphView.h   DataModel.h   Event.h   InfoBar.h   LocCommWin.h \
+        ConcurrencyWin.h   Settings.h Fl_MultiGroup.H \
+        ZoomScroll.h GridView.h MenuManager.h LocCommBox.h \
+	ConcurrencyView.h ProfileBrowser.h SelectBrowser.cxx Subview.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
@@ -58,11 +62,19 @@ chplvis: $(GENSRCS) $(OFILES)
 	$$($(FLTK_CONFIG) --cxx)  -o chplvis $(OFILES) \
 	        $$($(FLTK_CONFIG) --ldflags) $$($(FLTK_CONFIG) --libs)
 
-chplvis.cxx chplvis.h: chplvis.fl
+chplvis.h: chplvis.fl
 	$(FLTK_FLUID) -c chplvis.fl
+
+testMG.cxx: testMG.fl
+	$(FLTK_FLUID) -c testMG.fl
+
+testMG: Fl_MultiGroup.o testMG.o
+	$$($(FLTK_CONFIG) --cxx)  -o testMG  Fl_MultiGroup.o testMG.o \
+	       $$($(FLTK_CONFIG) --ldflags) $$($(FLTK_CONFIG) --libs)
 
 clean:
 	rm -f $(GENSRCS) $(GENH) $(OFILES) *~
+	rm -f testMG.o testMG.cxx testMG.h testMG
 
 clobber: clean
 	rm -f chplvis
@@ -71,12 +83,43 @@ install: chplvis
 	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 
 # Dependencies
-chplvis.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
-ViewField.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
-DataModel.o: DataModel.h Event.h StringCache.h
-InfoBar.o: InfoBar.h ViewField.h chplvis.h
-LocaleWin.o: LocaleWin.h
-CommWin.o: CommWin.h
-ConcurrencyWin.o: ConcurrencyWin.h DataModel.h chplvis.h StringCache.h
+chplvis.cxx: chplvis.h  # This rule to get fluid run only once
+chplvis.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h ConcurrencyView.h
+GraphView.o:  chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h ConcurrencyView.h
+GridView.o:  chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h ConcurrencyView.h
+InfoBar.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h LocCommBox.h ConcurrencyView.h
+Settings.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h ConcurrencyView.h
+ZoomScroll.o:   chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h ConcurrencyView.h
+MenuManager.o:  chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h ConcurrencyView.h
+ConcurrencyWin.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h ConcurrencyView.h
+ProfileBrowser.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h ConcurrencyView.h SelectBrowser.h SubView.h
+SubView.o:  chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h ConcurrencyView.h SelectBrowser.h SubView.h
 Event.o: Event.h
-Settings.o: Settings.h chplvis.h
+DataModel.o: DataModel.h StringCache.h
+Fl_MultiGroup.o: Fl_MultiGroup.H 
+LocCommWin.o: LocCommWin.h GraphView.h  ConcurrencyWin.h DataModel.h \
+    DataView.h ConcurrencyView.h
+LocCommBox.o: LocCommBox.h
+ConcurrencyView.o: chplvis.h  Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h
+SelectBrowser.o: SelectBrowser.h

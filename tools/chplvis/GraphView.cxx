@@ -22,81 +22,71 @@
 
 
 #include "chplvis.h"
-#include "math.h"
+#include "LocCommBox.h"
+#include <math.h>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
-#include <sstream>
+#include <FL/Fl_Menu_Item.H>
 
-#define SSTR( x ) dynamic_cast< std::ostringstream & >( \
-                    ( std::ostringstream() << std::dec << x ) ).str()
 
-//  ViewField Constructors
+//  GraphView Constructors
 
-ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
-  : Fl_Box (bx, by, bw, bh, 0) 
+GraphView::GraphView (int bx, int by, int bw, int bh, const char *label)
+  : DataView (bx, by, bw, bh, 0)
 {
-  // printf ("ViewField init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
+  // printf ("GraphView init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
   numlocales = 0;
   theLocales = NULL;
-  comms = NULL;
+  // comms = NULL;
   curTagData = NULL;
-  tagMenu = -1;
-  useUTags = false;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
-  /*
-  maxTasks = 1;
-  maxComms = 1;
-  maxCpu = 0.000001;
-  maxClock = 0;
-  maxDatasize = 1;
-  */
-  infoTop = show_Tasks;
-  showcomms = true;
-  
 };
 
-// Private methods 
+// Private methods
 
-void ViewField::allocArrays()
+void GraphView::allocArrays()
 {
   int ix;
-  int ix2;
+  // int ix2;
 
   //printf ("allocArrays\n");
   // Dealloc anything current
   if (theLocales != NULL) {
     for (ix = 0; ix < getSize; ix++) {
-      if (theLocales[ix].win != NULL) {
-        delete theLocales[ix].win;
-        //printf ("deleting win for %d\n", ix);
-      }
-      if (theLocales[ix].ccwin != NULL) 
-        delete theLocales[ix].ccwin;
-      if (theLocales[ix].b != NULL) 
-        delete theLocales[ix].b;
+      //      if (theLocales[ix].win != NULL) {
+      //        delete theLocales[ix].win;
+      //printf ("deleting win for %d\n", ix);
+      //      }
+      //if (theLocales[ix].ccwin != NULL)
+      //  delete theLocales[ix].ccwin;
+      if (theLocales[ix].b != NULL)
+         delete theLocales[ix].b;
     }
     delete [] theLocales;
   }
+#if 0
   if (comms != NULL) {
-    for (ix = 0; ix < getSize; ix++)  { 
-      for (ix2 = 0; ix2 < getSize; ix2++) 
+    for (ix = 0; ix < getSize; ix++)  {
+      for (ix2 = 0; ix2 < getSize; ix2++)
         if (comms[ix][ix2].win != NULL)
-          delete comms[ix][ix2].win;
+           delete comms[ix][ix2].win;
       delete [] comms[ix];
     }
     delete [] comms;
   }
-  
+#endif
+
   // Alloc new space
   theLocales = new localeInfo [numlocales];
-  comms = new  struct commInfo* [numlocales];
-  if (theLocales == NULL || comms == NULL) {
+  // comms = new  struct commInfo* [numlocales];
+  if (theLocales == NULL /* || comms == NULL */ ) {
     fprintf (stderr, "chplvis: out of memory.\n");
     exit(1);
   }
   getSize = numlocales;
+#if 0
   for (ix = 0; ix < getSize; ix++) {
     comms[ix] = new struct commInfo[numlocales];
     if (comms[ix] == NULL) {
@@ -107,28 +97,30 @@ void ViewField::allocArrays()
       comms[ix][ix2].win = NULL;
     }
   }
+#endif
 
   for (ix = 0; ix < numlocales; ix++) {
-    theLocales[ix].win = NULL;
-    theLocales[ix].ccwin = NULL;
+    //theLocales[ix].win = NULL;
+    //theLocales[ix].ccwin = NULL;
     theLocales[ix].b = NULL;
   }
 }
 
 
-// Public Methods 
+// Public Methods
 
 //  tagNo:  -3 => new open
 //          -2 => All: start to finish
 //          -1 => Start to first tag (tag 0)
 //          0 and greater => start at tagNo to next tag.
 
-void ViewField::selectData(int tagNum)
+void GraphView::selectData(int tagNum)
 {
-  int ix1, ix2;  // For processing the arrays
+  // int ix1, ix2;  // For processing the arrays
 
   // if (tagNum < TagALL || tagNum >= numTags) error of some kind
 
+#if 0
   // Close all the windows
   for (ix1 = 0; ix1 < numlocales; ix1++) {
     if (theLocales[ix1].win != NULL) {
@@ -138,13 +130,14 @@ void ViewField::selectData(int tagNum)
       theLocales[ix1].ccwin->hide();
     }
     for (ix2 = 0; ix2 < numlocales; ix2++)  {
-      if (comms[ix1][ix2].win != NULL) 
+      if (comms[ix1][ix2].win != NULL)
         comms[ix1][ix2].win->hide();
     }
   }
+#endif
 
   // Select data to use
-  if (useUTags)
+  if (Menus.usingUTags())
     curTagData = VisData.getUTagData(tagNum);
   else
     curTagData = VisData.getTagData(tagNum);
@@ -153,97 +146,11 @@ void ViewField::selectData(int tagNum)
   // Set the max values in the info bar
   Info->setMaxes(curTagData->maxTasks, curTagData->maxComms, curTagData->maxSize,
                  curTagData->maxConc, curTagData->maxCpu, curTagData->maxClock);
+  Info->rmAllLocOrComm();
 
  }
 
-static void selTag(Fl_Widget *w, void *p)
-{
-  long ix = (long) p;
-  
-  if (ix == DataModel::TagALL) {
-    // printf ("selTag called on All\n");
-    Info->setTagName("All");
-    DbgView->selectData(ix);
-  } else if (ix == DataModel::TagStart) {
-    // printf ("selTag called on Start\n");
-    Info->setTagName("Start");
-    DbgView->selectData(ix);
-  } else {
-    // printf ("selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
-    if (DbgView->usingUTags())
-      Info->setTagName(VisData.getUTagData(ix)->name);
-    else
-      if (VisData.hasUniqueTags())
-        Info->setTagName(VisData.getTagData(ix)->name);
-      else {
-        char tmp[2048];
-        snprintf (tmp, sizeof(tmp), "%ld (%s)", ix, VisData.getTagData(ix)->name);
-        Info->setTagName(tmp);
-      }
-    DbgView->selectData(ix);
-  }
-  DbgView->redraw();
-  Info->redraw();
-}
-
-static void toggleUnique (Fl_Widget *w, void *p) {
-  DbgView->toggleUTags();
-  DbgView->makeTagsMenu();
-  selTag((Fl_Widget *)NULL, (void *)DataModel::TagALL);
-}
-
-void ViewField::makeTagsMenu(void)
-{
-  // Remove the old one if it exists
-  if (tagMenu > 0) {
-    MainMenuBar->remove(tagMenu);
-    tagMenu = -1;
-  }
-  if (VisData.NumTags() >= 1) {
-
-    // printf("Make tags menu, %d tags\n", VisData.NumTags());
-
-    // Build the menu
-
-    tagMenu = MainMenuBar->add("Tags", 0, 0, 0, FL_SUBMENU);
-    if (tagMenu < 1) {
-      printf ("Menu problem!\n");
-      return;
-    }
-    if (!VisData.hasUniqueTags()) {
-      if (useUTags)
-        MainMenuBar->add("Tags/Show All Tags", 0, toggleUnique, (void *)0);
-      else
-        MainMenuBar->add("Tags/Merge Tags", 0, toggleUnique, (void *)0);
-    }
-    MainMenuBar->add("Tags/All", 0, selTag, (void *)DataModel::TagALL);
-    MainMenuBar->add("Tags/Start", 0, selTag, (void *)DataModel::TagStart);
-
-    long ix;
-    long numTags;
-    if (useUTags)
-      numTags = VisData.NumUTags();
-    else
-      numTags = VisData.NumTags();
-    // printf ("make menu: numTags = %ld\n", numTags);
-    for (ix = 0; ix < numTags; ix++) {
-      const char *tagName;
-      std::string menuName;
-      if (useUTags)
-        tagName = VisData.getUTagData(ix)->name;
-      else
-        tagName = VisData.getTagData(ix)->name;
-      if (VisData.hasUniqueTags() || useUTags)
-        menuName = "Tags/" + std::string(tagName);
-      else
-        menuName = "Tags/tag " + SSTR(ix) + " (" + tagName + ")";
-      MainMenuBar->add(menuName.c_str(), 0, selTag, (void *)ix, 0);
-    }
-    MainMenuBar->redraw();
-  }
-}
-
-void ViewField::setTooltip ( int ix, bool isInt, int ival, double fval)
+void GraphView::setTooltip ( int ix, bool isInt, int ival, double fval)
 {
     char tmpchars[100];
     if (theLocales != NULL) {
@@ -261,8 +168,7 @@ void ViewField::setTooltip ( int ix, bool isInt, int ival, double fval)
         parent()->add(loc->b);
         loc->b->show();
       } else {
-        loc->b->position(loc->x-loc->w/2,loc->y-loc->h/2);
-        loc->b->size(loc->w,loc->h);
+        loc->b->resize(loc->x-loc->w/2,loc->y-loc->h/2,loc->w,loc->h);
       }
       if (isInt)
         snprintf (tmpchars, sizeof(tmpchars), "%d", ival);
@@ -273,7 +179,7 @@ void ViewField::setTooltip ( int ix, bool isInt, int ival, double fval)
 }
 
 
-void ViewField::drawLocale ( int ix, Fl_Color col)
+void GraphView::drawLocale ( int ix, Fl_Color col)
 {
   //printf ("drawLocale %d\n", ix);
     char ixchars[10];
@@ -296,8 +202,7 @@ void ViewField::drawLocale ( int ix, Fl_Color col)
     }
 }
 
-
-void ViewField::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
+void GraphView::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
 {
   int x1, x2, y1, y2, dx, dy, midx, midy;
   if (ix1 < 0 || ix1 >= numlocales || ix2 < 0 || ix2 >= numlocales) {
@@ -306,13 +211,13 @@ void ViewField::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
   }
   localeInfo *loc1 = &theLocales[ix1], *loc2 = &theLocales[ix2];
   double theta, cw, ch;
-  
+
   dx = loc2->x - loc1->x;
   dy = loc2->y - loc1->y;
   if (dx == 0) {
     theta = (dy < 0 ? pi / 2 : pi * 1.5);
   } else {
-    if (dx < 0) 
+    if (dx < 0)
       theta = pi + atan((double)dy/(double)dx);
     else
       theta = atan((double)dy/(double)dx);
@@ -320,7 +225,7 @@ void ViewField::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
   cw = loc1->w / sin(pi/4);
   ch = loc1->h / sin(pi/4);
   //printf ("dx = %d, dy = %d, Theta = %lf\n", dx, dy, theta);
-  
+
   //  Need correct calculations here.
   x1 = rint (cw/2 * cos(theta));
   x1 = loc1->x + (abs(x1) > loc1->w/2 ? (dx < 0 ? -1 : 1)*loc1->w/2 : x1);
@@ -348,12 +253,12 @@ void ViewField::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
   fl_line_style(FL_SOLID, 1, NULL);
 }
 
-void ViewField::draw()
+void GraphView::draw()
 {
   int ix;
   int iy;
 
-  //printf ("ViewField draw, numlocales is %d\n", numlocales);
+  //printf ("GraphView draw, numlocales is %d\n", numlocales);
   //printf ("draw: x,y = %d,%d, h,w = %d,%d\n", x(), y(), w(), h());
 
   cx = x() + w()/2;
@@ -362,7 +267,7 @@ void ViewField::draw()
   ry = 0.85 * h() / 2;
 
   for (ix = 0; ix < numlocales; ix++) {
-    switch (infoTop) {
+    switch (Info->dataToShow()) {
     case show_Tasks:
       setTooltip(ix, true, curTagData->locales[ix].numTasks, 0);
       break;
@@ -377,28 +282,14 @@ void ViewField::draw()
     }
   }
 
-  Fl_Box::draw();
+  DataView::draw();
 
-  for (ix = 0; ix < numlocales; ix++) {
-    switch (infoTop) {
-    case show_Tasks:
-      drawLocale(ix, heatColor(curTagData->locales[ix].numTasks, curTagData->maxTasks));
-      break;
-    case show_CPU:
-      drawLocale(ix, heatColor(curTagData->locales[ix].Cpu, curTagData->maxCpu));
-      break;
-    case show_Clock:
-      drawLocale(ix, heatColor(curTagData->locales[ix].clockTime, curTagData->maxClock));
-      break;
-    case show_Concurrency:
-      drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
-    }
-  }
+  // Draw comm lines first so they go under locales
 
   for (ix = 0; ix < numlocales-1; ix++) {
     for (iy = ix + 1; iy < numlocales; iy++) {
-      int  com2ix, com2iy, comMax; 
-      if (showcomms) {
+      int  com2ix, com2iy, comMax;
+      if (Info->commToShow()) {
         com2ix = curTagData->comms[iy][ix].numComms;
         com2iy = curTagData->comms[ix][iy].numComms;
         comMax = curTagData->maxComms;
@@ -420,26 +311,24 @@ void ViewField::draw()
     }
   }
 
-  // Set up the info widget correctly
-  if (showcomms)
-    Info->showComms();
-  else 
-    Info->showSize();
-  switch (infoTop) {
+  // Draw locales next
+
+  for (ix = 0; ix < numlocales; ix++) {
+    switch (Info->dataToShow()) {
     case show_Tasks:
-      Info->showTasks();
+      drawLocale(ix, heatColor(curTagData->locales[ix].numTasks, curTagData->maxTasks));
       break;
     case show_CPU:
-      Info->showCpu();
+      drawLocale(ix, heatColor(curTagData->locales[ix].Cpu, curTagData->maxCpu));
       break;
     case show_Clock:
-      Info->showClock();
+      drawLocale(ix, heatColor(curTagData->locales[ix].clockTime, curTagData->maxClock));
       break;
     case show_Concurrency:
-      Info->showConcurrency();
-      break;
+      drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
+    }
   }
-    
+
   Info->draw();
 }
 
@@ -482,7 +371,7 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
         if (abs(loc2->x - x) < abs(xlen)/2)
           return 2;
         else
-          return 1;  
+          return 1;
       }
     } else {
       float newx  = (float)loc2->x - (loc2->y - y)/slope;
@@ -493,7 +382,7 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
         if (abs(loc2->y - y) < abs(ylen)/2)
           return 2;
         else
-          return 1;  
+          return 1;
       }
     }
   }
@@ -501,7 +390,7 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
   return 0;
 }
 
-int ViewField::handle(int event)
+int GraphView::handle(int event)
 {
   int ix;
 
@@ -509,13 +398,20 @@ int ViewField::handle(int event)
   int y = Fl::event_y();
 
   int i, j; // search for the comm link clicked
-  
+
   switch (event) {
   case FL_PUSH:
-    //printf ("Push at (%d,%d)\n", x, y);
+    //printf ("Push at (%d,%d) event_button() = %d\n", x, y, Fl::event_buttons());
+    //if (Fl::event_buttons() == FL_RIGHT_MOUSE) {
+    //  printf ("right mouse push\n");
+    //}
     break;
   case FL_RELEASE:
     //printf ("Release at (%d,%d)\n", x, y);
+    if (Fl::event_button() == FL_RIGHT_MOUSE) {
+      // printf ("middle or right release\n");
+      break;
+    }
     // Click on a locale?
     if (numlocales > 0) {
       for (ix = 0; ix < numlocales; ix++) {
@@ -523,33 +419,56 @@ int ViewField::handle(int event)
         localeInfo *loc = &theLocales[ix];
         if ( x > loc->x-loc->w/2 && x <= loc->x + loc->w/2 &&
              y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
-          if (infoTop == show_Concurrency) {
-            if (useUTags && curTagNum != DataModel::TagALL) {
+          Menus.setCurrentLoc(ix);
+          if (Info->dataToShow() == show_Concurrency) {
+            if (Menus.usingUTags() && curTagNum != DataModel::TagALL) {
               fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
             } else {
-              if (theLocales[ix].ccwin == NULL) {
-                // Create the window
-                theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
+              if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+#if 0
+                if (theLocales[ix].ccwin == NULL) {
+                  // Create the window
+                  theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
+                } else {
+                  theLocales[ix].ccwin->updateData(ix, curTagNum);
+                  theLocales[ix].ccwin->showTaskBox();
+                }
+                if (theLocales[ix].ccwin->visible())
+                  theLocales[ix].ccwin->hide();
+                else
+                  theLocales[ix].ccwin->show();
+#endif
+                return 1; // diable extra windows
               } else {
-                theLocales[ix].ccwin->updateData(ix, curTagNum);
-                theLocales[ix].ccwin->showTaskBox();
+                // Show the concurrency view.
+                DataField->selectChild(concView);
+                concView->updateData(ix, curTagNum);
               }
-              if (theLocales[ix].ccwin->visible())
-                theLocales[ix].ccwin->hide();
-              else
-                theLocales[ix].ccwin->show();
             }
           } else {
-            if (theLocales[ix].win == NULL) {
-              // Create the window
-              theLocales[ix].win = make_locale_window(ix, &curTagData->locales[ix]);
+            if (Fl::event_button() == FL_MIDDLE_MOUSE){
+#if 0
+              // printf ("Making locale window.\n");
+              if (theLocales[ix].win == NULL) {
+                // Create the window
+                theLocales[ix].win = make_LC_window(ix, &curTagData->locales[ix]);
+              } else {
+                theLocales[ix].win->setAsLocale(ix, &curTagData->locales[ix]);
+              }
+              if (theLocales[ix].win->visible())
+                theLocales[ix].win->hide();
+              else
+                theLocales[ix].win->show();
+#endif
+              return 0; // Disable LC window stuff
             } else {
-              theLocales[ix].win->updateWin(&curTagData->locales[ix]);
+              // Left mouse, place it on the info bar.
+              LocCommBox *infoBox;
+              infoBox = Info->getNewLocComm();
+              infoBox->setLocale(ix, &curTagData->locales[ix]);
+              infoBox->addXButton();
+              Info->addLocOrComm(infoBox);
             }
-            if (theLocales[ix].win->visible()) 
-              theLocales[ix].win->hide();
-            else
-              theLocales[ix].win->show();
           }
           return 1;
         }
@@ -571,31 +490,45 @@ int ViewField::handle(int event)
             if (OnComm == 1) {
               // j -> i, swap so both can use i->j
               int t = j; j = i; i = t;
-            } 
-            if (comms[i][j].win == NULL) {
-              comms[i][j].win = make_comm_window(i,j,&curTagData->comms[i][j]);
-            } else {
-              comms[i][j].win->updateWin(&curTagData->comms[i][j]);
             }
-            if (comms[i][j].win->visible())
-              comms[i][j].win->hide();
-            else
-              comms[i][j].win->show();
+            if (Fl::event_button() == FL_MIDDLE_MOUSE){
+#if 0
+              //printf ("Should create a comm win.\n");
+              if (comms[i][j].win == NULL) {
+                comms[i][j].win = make_LC_window(i, j, &curTagData->comms[i][j]);
+              } else {
+                comms[i][j].win->setAsComm(i, j, &curTagData->comms[i][j]);
+              }
+              if (comms[i][j].win->visible())
+                comms[i][j].win->hide();
+              else
+                comms[i][j].win->show();
+#endif
+              return 0;  // Disable LC windows
+            } else {
+              // printf ("New LocCommBox for comm...\n");
+              LocCommBox *infoBox;
+              infoBox = Info->getNewLocComm();
+              infoBox->setComm(i, j, &curTagData->comms[i][j]);
+              infoBox->addXButton();
+              Info->addLocOrComm(infoBox);
+            }
             return 1;
           }
         }
       }
     }
-    
+
     break;
   }
-  return Fl_Box::handle(event);
+  return DataView::handle(event);
 }
 
-void ViewField::redrawAllWindows(void)
+void GraphView::redrawAllWindows(void)
     {
-      int ix, ix1, ix2;
+//    int ix, ix1, ix2;
       MainWindow->redraw();
+#if 0
       for (ix = 0; ix < numlocales; ix++) {
         if (theLocales[ix].win != NULL)
           theLocales[ix].win->redraw();
@@ -606,4 +539,5 @@ void ViewField::redrawAllWindows(void)
         for (ix2 = 0; ix2 < numlocales; ix2++)
           if (comms[ix1][ix2].win != NULL)
             comms[ix1][ix2].win->redraw();
+#endif
     }
