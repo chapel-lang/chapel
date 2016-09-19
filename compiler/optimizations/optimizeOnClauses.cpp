@@ -234,6 +234,7 @@ classifyPrimitive(CallExpr *call) {
     // Shouldn't this be return FAST_NOT_LOCAL ?
     return NOT_FAST_NOT_LOCAL;
 
+  case PRIM_REDUCE_ASSIGN:
   case PRIM_NEW:
   case PRIM_INIT:
   case PRIM_NO_INIT:
