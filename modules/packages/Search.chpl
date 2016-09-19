@@ -103,33 +103,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
 
   chpl_check_comparator(comparator, Data.eltType);
 
-  // Domain slicing is cheap, but avoiding it when possible helps performance
-  if lo == Dom.low && hi == Dom.high {
-    for i in Dom {
-      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
-        return (true, i);
-    }
-  } else {
-    for i in Dom[lo..hi] {
-      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
-        return (true, i);
-    }
-  }
-
-  return (false, Dom.high+1);
-}
-
-
-pragma "no doc"
-/* Strided linearSearch */
-proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) 
-  where Dom.stridable {
-  if Dom.rank != 1 then
-    compilerError("linearSearch() requires 1-D array");
-
-  chpl_check_comparator(comparator, Data.eltType);
-
-  const stride = abs(Dom.stride);
+  param stride = if Dom.stridable then abs(Dom.stride) else 1;
   // Domain slicing is cheap, but avoiding it when possible helps performance
   if lo == Dom.low && hi == Dom.high {
     for i in Dom {
@@ -178,29 +152,8 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
 
   chpl_check_comparator(comparator, Data.eltType);
 
-  while (lo <= hi) {
-    const mid = (hi - lo)/2 + lo;
-    if chpl_compare(Data[mid], val, comparator=comparator) == 0 then
-      return (true, mid);
-    else if chpl_compare(val, Data[mid], comparator=comparator) > 0 then
-      lo = mid + 1;
-    else
-      hi = mid - 1;
-  }
-  return (false, lo);
-}
+  param stride = if Dom.stridable then abs(Dom.stride) else 1;
 
-
-pragma "no doc"
-/* Strided binarySearch */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) 
-  where Dom.stridable {
-  if Dom.rank != 1 then
-    compilerError("binarySearch() requires 1-D array");
-
-  chpl_check_comparator(comparator, Data.eltType);
-
-  const stride = abs(Dom.stride);
 
   while (lo <= hi) {
     const size = (hi - lo) / stride,
