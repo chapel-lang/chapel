@@ -25,7 +25,6 @@
 //
 
 use DimensionalDist2D;
-use RangeChunk;
 
 /*
 This Replicated dimension specifier is for use with the
@@ -358,8 +357,7 @@ proc Replicated1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTas
   : dsiMyDensifiedRangeType1d(globDD)
 {
   type IT = globDD.idxType;
-  const (startIx, endIx) = chunkOrder(locWholeR, numTasks:IT, taskid:IT + 1);
-  return (startIx:IT) .. (endIx:IT);
+  return RangeChunk.chunk(locWholeR, numTasks:IT, taskid:IT);
 }
 
 // REQ the range type returned/yielded by dsiMyDensifiedRangeForSingleTask1d()

@@ -22,7 +22,6 @@
 //
 
 use DimensionalDist2D;
-use RangeChunk;
 
 config const BlockCyclicDim_allowParLeader = true;
 config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing
@@ -777,19 +776,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   const hereDenseInds = 0:resultIdxType..#wholeR.length by nLocs align AL;
 
   // This is our chunk of hereDenseInds
-  const chunkInds = chunk(hereDenseInds, numTasks, taskid+1);
-
-  // Pick the corresponding part of hereDenseInds
-  assert(hereDenseInds.member(chunkInds.first));
-  assert(hereDenseInds.member(chunkInds.last));
-
-//writeln("MyDensifiedRangeForTaskID(", globDD.name, ") on ", locId,
-//        "  taskid ", taskid, " of ", numTasks, "  ", begIx, "...", endIx,
-//        "   fl=", firstLoc, " al=", AL,
-//        "  fullR ", hereDenseInds, " myR ", begIx .. endIx by nLocs,
-//        "");
-
-  return chunkInds;
+  return RangeChunk.chunk(hereDenseInds, numTasks, taskid);
 }
 
 proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type
