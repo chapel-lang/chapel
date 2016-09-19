@@ -2,14 +2,6 @@
  *  Check correctness of search functions
  */
 
-// TODO
-//  * linearSearch with unsorted array
-//  * Strided arrays
-//  * Multi-dimensional arrays
-//  * Associative arrays
-//  * Sparse Array
-//  * Enumerated array
-
 use Search;
 
 proc main() {
@@ -33,17 +25,23 @@ proc main() {
         absComp = new AbsCompCmp();
 
 
-  /* Test data types */
-
-  // Integers
+  // search
   result = search(A, 2);
   checkSearch(result, (true, 3), A, 'search');
 
-  // Strings
+  // linearSearch
+  result = linearSearch(A, 2);
+  checkSearch(result, (true, 3), A, 'linearSearch');
+
+  // binarySearch
+  result = binarySearch(A, 2);
+  checkSearch(result, (true, 3), A, 'binarySearch');
+
+  // eltType = string
   result = search(strA, 'ben');
   checkSearch(result, (true, 3), strA, 'search');
 
-  // Strided Array
+  /* Strided Arrays */
   result = linearSearch(strideA, 2);
   checkSearch(result, (true, 30), strideA, 'linearSearch');
 
@@ -68,13 +66,11 @@ proc main() {
   result = binarySearch(revStrideA, 5);
   checkSearch(result, (false, revStrideD.high+abs(revStrideD.stride)), revStrideA, 'binarySearch');
 
-  /* Reverse */
+  /* Comparators */
 
-  // Default reversecomparator
   result = search(revA, 2, comparator=reverseComparator, sorted=true);
   checkSearch(result, (true, 2), revA, 'search');
 
-  /* Comparator basics */
   result = search(absA, 2, comparator=absKey, sorted=true);
   checkSearch(result, (true, 2), absA, 'search');
 
@@ -93,15 +89,16 @@ proc main() {
   checkSearch(result, (false, 3), A, 'search');
 
 
-  /* Test Searches */
+  /* Minimal tests for deprecated search functions */
+  // TODO - remove these for 1.15
 
   // linearSearch
-  result = linearSearch(A, 2);
-  checkSearch(result, (true, 3), A, 'linearSearch');
+  result = LinearSearch(A, 2);
+  checkSearch(result, (true, 3), A, 'LinearSearch');
 
   // binarySearch
-  result = binarySearch(A, 2);
-  checkSearch(result, (true, 3), A, 'binarySearch');
+  result = BinarySearch(A, 2);
+  checkSearch(result, (true, 3), A, 'BinarySearch');
 
 }
 
