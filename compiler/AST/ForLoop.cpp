@@ -23,7 +23,6 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
-#include "view.h"
 
 #include <algorithm>
 
@@ -179,35 +178,43 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   if (zippered == false)
     iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
 
+  // Zippered loop: Expand args to a tuple with an iterator for each element.
   else {
-    // Zippered loop
     CallExpr* zipExpr = toCallExpr(iteratorExpr);
     if (zipExpr && zipExpr->isPrimitive(PRIM_ZIP)) {
-      // New-style: Expand arguments to a tuple containing appropriate
-      // iterators for each value.
+      // The PRIM_ZIP indicates this is a new-style zip() AST.
+      // Expand arguments to a tuple with appropriate iterators for each value.
+      //
       // Specifically, change:
       //    zip(a, b, c,  ...)
       // into the tuple:
       //    (_getIterator(a), _getIterator(b), _getIterator(c), ...)
-      // ultimately, we will probably want to make this into a utility
-      // function for the other get*Zip functions...
       //
-      zipExpr->primitive = NULL;
+      // (ultimately, we will probably want to make this style of
+      // rewrite into a utility function for the other get*Zip
+      // functions as we convert parallel loops over to use PRIM_ZIP).
+      //
+      zipExpr->primitive = NULL;   // remove the primitive
       if (zipExpr->argList.length == 1) {
-        //        list_view(zipExpr);
-        Expr* arg = zipExpr->argList.only();
-        CallExpr* argAsCallExpr = toCallExpr(arg);
-        if (argAsCallExpr && argAsCallExpr->isPrimitive(PRIM_TUPLE_EXPAND)) {
-          Expr* tupleArg = argAsCallExpr->argList.only();
-          tupleArg->remove();
-          arg->replace(tupleArg);
-          arg = tupleArg;
-          //          list_view(zipExpr);
-        }
+        // if there's just one argument, x, just change the top-level
+        // expression into a call to _getIterator(x) by setting the
+        // baseExpr:
         zipExpr->baseExpr = new UnresolvedSymExpr("_getIterator");
-        arg->replace(new CallExpr("_getIterator", arg->copy()));
-        //        list_view(zipExpr);
+
+        // if the one argument is a tuple expansion '(...t)' then
+        // remove the tuple expansion and simply pass the tuple itself
+        // to _getIterator()
+        CallExpr* zipArg = toCallExpr(zipExpr->argList.only());
+        if (zipArg && zipArg->isPrimitive(PRIM_TUPLE_EXPAND)) {
+          Expr* tupleArg = zipArg->argList.only();
+          tupleArg->remove();
+          zipArg->replace(tupleArg);
+        }
       } else {
+        //
+        // If there's more than one argument, build up the tuple by
+        // applying _getIterator() to each element.
+        //
         zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
         Expr* arg = zipExpr->argList.first();
         while (arg) {
@@ -220,7 +227,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
       assert(zipExpr == iteratorExpr);
     } else {
       //
-      // otherwise, treat it as we traditionally have
+      // This is an old-style zippered loop so handle it in the old style
       //
       iterInit = new CallExpr(PRIM_MOVE, iterator,
                               new CallExpr("_getIteratorZip", iteratorExpr));
