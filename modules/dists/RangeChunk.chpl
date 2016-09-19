@@ -105,7 +105,7 @@ proc chunkOrder(
   idx: integral,
   remPol: RemElems = Thru): 2*RT
 {
-  if r.length == 0 || numChunks <= 0 || idx > numChunks then
+  if r.length == 0 || numChunks <= 0 || idx >= numChunks then
     return (1, 0);
 
   const nElems = r.length;
