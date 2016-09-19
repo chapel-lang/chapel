@@ -1031,8 +1031,14 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   // mangle type names if they clash with other types
   //
   forv_Vec(TypeSymbol, ts, types) {
-    if (ts->isRenameable())
-      ts->cname = uniquifyName(ts->cname, &cnames);
+    if (ts->isRenameable()){
+      if(ts->getModule()->modTag != MOD_INTERNAL) {
+        legalizeName(ts->getModule());
+        ts->cname = uniquifyName(astr(ts->cname, "_", ts->getModule()->cname), &cnames);
+      }
+      else
+        ts->cname = uniquifyName(ts->cname, &cnames);
+   }
   }
   uniquifyNameCounts.clear();
 
@@ -1045,8 +1051,9 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
       for_enums(constant, enumType) {
         Symbol* sym = constant->sym;
         legalizeName(sym);
+        legalizeName(sym->getModule());
         sym->cname = astr(enumType->symbol->cname, "_", sym->cname);
-        sym->cname = uniquifyName(sym->cname, &cnames);
+        sym->cname = uniquifyName(astr(sym->cname, "_", sym->getModule()->cname), &cnames);
       }
     }
   }
@@ -1062,7 +1069,43 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
         std::set<const char*> fieldNameSet;
         for_fields(field, ct) {
           legalizeName(field);
-          field->cname = uniquifyName(field->cname, &fieldNameSet);
+
+          //
+          // Here, we try to append module name to the end of a field name.
+          // However, simply appending the module name breaks things in a way
+          // similar to suggested previously in protectNameFromC (Pending TODO)
+          // Hence, the fix used there has been implemented here to rename only
+          // the specific parts which can be renamed currently. A more
+          // detailed explanation of the issue and the fix can be found in
+          // the comments of protectNameFromC function.
+          //
+          bool canModifyName = true;
+
+          ModuleSymbol* fieldMod = field->getModule();
+          if (fieldMod->modTag == MOD_INTERNAL) {
+            canModifyName = false;
+          }
+
+          //
+          // Walk from the symbol up to its enclosing module.  If the symbol
+          // is declared within an extern declaration, name should be preserved.
+          //
+          if (field != fieldMod) {
+            Symbol* parentSym = field->defPoint->parentSymbol;
+            while (parentSym != fieldMod) {
+              if (parentSym->hasFlag(FLAG_EXTERN)) {
+                canModifyName = false;
+              }
+              parentSym = parentSym->defPoint->parentSymbol;
+            }
+          }
+
+          if(canModifyName){
+            legalizeName(field->getModule());
+            field->cname = uniquifyName(astr(field->cname, "_", field->getModule()->cname), &fieldNameSet);
+          }
+          else
+            field->cname = uniquifyName(field->cname, &fieldNameSet);
         }
         uniquifyNameCounts.clear();
       }
@@ -1074,8 +1117,10 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   // constants, or other global variables
   //
   forv_Vec(VarSymbol, var, globals) {
-    if (var->isRenameable())
-      var->cname = uniquifyName(var->cname, &cnames);
+    if (var->isRenameable()){
+      legalizeName(var->getModule());
+      var->cname = uniquifyName(astr(var->cname, "_", var->getModule()->cname), &cnames);
+    }
   }
   uniquifyNameCounts.clear();
 
@@ -1084,8 +1129,25 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   // global variables, or other functions
   //
   for_vector(FnSymbol, fn, functions) {
-    if (fn->isRenameable())
-      fn->cname = uniquifyName(fn->cname, &cnames);
+    if (fn->isRenameable()){
+      legalizeName(fn->getModule());
+      bool canModifyName = true;
+
+      ModuleSymbol* fnMod = fn->getModule();
+      if (fnMod->modTag == MOD_INTERNAL) {
+        canModifyName = false;
+      }
+
+      //
+      // Avoiding strange looking name "chpl__init_ModuleName_ModuleName"
+      // for the init function where the name of the function has the module
+      // name already appended to it.
+      //
+      if(canModifyName && strncmp("chpl__init", fn->cname, strlen("chpl__init")))
+        fn->cname = uniquifyName(astr(fn->cname, "_", fn->getModule()->cname), &cnames);
+      else
+        fn->cname = uniquifyName(fn->cname, &cnames);
+    }
   }
   uniquifyNameCounts.clear();
 
@@ -1098,7 +1160,8 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
     std::set<const char*> formalNameSet;
     for_formals(formal, fn) {
       legalizeName(formal);
-      formal->cname = uniquifyName(formal->cname, &formalNameSet, &cnames);
+      legalizeName(formal->getModule());
+      formal->cname = uniquifyName(astr(formal->cname, "_", formal->getModule()->cname), &formalNameSet, &cnames);
     }
     uniquifyNameCounts.clear();
   }
@@ -1131,7 +1194,11 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
             def->sym->cname = astr("T");
         }
       }
-      def->sym->cname = uniquifyName(def->sym->cname, &local, &cnames);
+
+      if(def->sym->isRenameable())
+        def->sym->cname = uniquifyName(astr(def->sym->cname, "_", def->sym->getModule()->cname), &local, &cnames);
+      else
+        def->sym->cname = uniquifyName(def->sym->cname, &local, &cnames);
     }
     uniquifyNameCounts.clear();
   }
