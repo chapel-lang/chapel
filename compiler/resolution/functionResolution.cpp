@@ -4101,7 +4101,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     best->fn = defaultWrap(best->fn, &best->actualIdxToFormal, &info);
     reorderActuals(best->fn, &best->actualIdxToFormal, &info);
     coerceActuals(best->fn, &info);
-    best->fn = promotionWrap(best->fn, &info);
+    best->fn = promotionWrap(best->fn, &info, /*buildFastFollowerChecks=*/true);
     if (valueCall) {
       // If we're resolving a ref and non-ref pair,
       // also handle the value version. best is the ref version.
@@ -4112,7 +4112,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
                                   &valueInfo);
       reorderActuals(bestValue->fn, &bestValue->actualIdxToFormal, &valueInfo);
       coerceActuals(bestValue->fn, &valueInfo);
-      bestValue->fn = promotionWrap(bestValue->fn, &valueInfo);
+      bestValue->fn = promotionWrap(bestValue->fn, &valueInfo, /*buildFastFollowerChecks=*/false);
     }
   }
 

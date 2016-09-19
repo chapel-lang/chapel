@@ -65,7 +65,8 @@ buildDefaultWrapper(FnSymbol* fn,
 static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
-                      CallInfo* info);
+                      CallInfo* info,
+                      bool buildFastFollowerChecks);
 
 //########################################################################
 
@@ -812,7 +813,8 @@ buildPromotionFastFollowerCheck(bool isStatic,
 static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
-                      CallInfo* info) {
+                      CallInfo* info,
+                      bool buildFastFollowerChecks) {
   SET_LINENO(info->call);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
@@ -947,7 +949,7 @@ buildPromotionWrapper(FnSymbol* fn,
     fifn->addFlag(FLAG_GENERIC);
     fifn->instantiationPoint = getVisibilityBlock(info->call);
 
-    if (!fNoFastFollowers) {
+    if (!fNoFastFollowers && buildFastFollowerChecks) {
       // Build up the static (param) fast follower check functions
       buildPromotionFastFollowerCheck(/*isStatic=*/true,  /*addLead=*/false, info, wrapper, requiresPromotion);
       buildPromotionFastFollowerCheck(/*isStatic=*/true,  /*addLead=*/true,  info, wrapper, requiresPromotion);
@@ -975,7 +977,8 @@ buildPromotionWrapper(FnSymbol* fn,
 
 
 FnSymbol*
-promotionWrap(FnSymbol* fn, CallInfo* info) {
+promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChecks) {
+
   Vec<Symbol*>* actuals = &info->actuals;
   if (!strcmp(fn->name, "="))
     return fn;
@@ -1002,7 +1005,7 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
 
     FnSymbol* wrapper = checkCache(promotionsCache, fn, &promoted_subs);
     if (wrapper == NULL) {
-      wrapper = buildPromotionWrapper(fn, &promoted_subs, info);
+      wrapper = buildPromotionWrapper(fn, &promoted_subs, info, buildFastFollowerChecks);
       addCache(promotionsCache, fn, wrapper, &promoted_subs);
     }
     resolveFormals(wrapper);
