@@ -73,6 +73,30 @@ Some issues could be considered current bugs.)
   in the locale 0 data file.)  Save the new definitions in a file in the
   data directory? e.g. PATHS file
 
+- Highlight the sidebar icon of the current view, so it's easy to tell
+  which view you are in.
+
+- OS X issue: Window does not support snapping, nor full screening
+  (green button)
+
+- Don't include references to non-user code when CHPL_DEVELOPER is
+  unset.  (This is a runtime issue.  chplvis just shows file names
+  logged by the runtime.)
+
+
+- Simplify options interface:
+   + Changing any option saves by default (for the current session)
+
+   + Have a save as new defaults button to write all current settings
+     to the persistent cache file.
+     
+   + Have a remove defaults button that deletes the cache file, and
+        restores to built-in chplvis defaults.
+
+   + (really minor) Remove the tag label from the top, when viewing tag: all
+
+- Add export png / pdf of current view feature
+  
 
 Wild suggestions ...
 
