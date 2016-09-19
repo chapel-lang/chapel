@@ -1654,12 +1654,29 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     }
 
     if numChunks <= 1 {
-      for i in this do
+      for i in this {
         yield i;
+      }
     } else {
-      coforall chunk in RangeChunk.chunks(this, numChunks) {
-        for i in chunk do
-          yield i;
+      coforall chunk in 0..#numChunks {
+        if stridable {
+          // TODO: find a way to avoid this densify/undensify for strided
+          // ranges, perhaps by adding knowledge of alignment to _computeBlock
+          // or using an aligned range
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
+          const mylen = hi - (lo-1);
+          var low = orderToIndex(lo);
+          var high = (low:strType + stride * (mylen - 1):strType):idxType;
+          if stride < 0 then low <=> high;
+          for i in low..high by stride {
+            yield i;
+          }
+        } else {
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, this.high, this.low, this.low);
+          for i in lo..hi {
+            yield i;
+          }
+        }
       }
     }
   }
