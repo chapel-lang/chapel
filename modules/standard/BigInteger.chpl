@@ -163,6 +163,12 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
+    // Within a given locale, Bigint assignment creates a deep copy of the
+    // data and so the record "owns" the GMP data.
+    //
+    // If a Bigint is copied to a remote node then it will receive a shallow
+    // copy.  The localeId points back the correct locale but the mpz field
+    // is meaningless.
     proc ~Bigint() {
       if _local || this.localeId == chpl_nodeID {
         mpz_clear(this.mpz);
