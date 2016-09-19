@@ -23,6 +23,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
+#include "view.h"
 
 #include <algorithm>
 
@@ -150,6 +151,7 @@ static void optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
           tryToReplaceWithDirectRangeIterator(actual);
 }
 
+
 /************************************ | *************************************
 *                                                                           *
 * Factory methods for the Parser                                            *
@@ -190,12 +192,21 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
       // ultimately, we will probably want to make this into a utility
       // function for the other get*Zip functions...
       //
-      assert(zipExpr->isPrimitive(PRIM_ZIP));
       zipExpr->primitive = NULL;
       if (zipExpr->argList.length == 1) {
-        zipExpr->baseExpr = new UnresolvedSymExpr("_getIterator");
+        //        list_view(zipExpr);
         Expr* arg = zipExpr->argList.only();
+        CallExpr* argAsCallExpr = toCallExpr(arg);
+        if (argAsCallExpr && argAsCallExpr->isPrimitive(PRIM_TUPLE_EXPAND)) {
+          Expr* tupleArg = argAsCallExpr->argList.only();
+          tupleArg->remove();
+          arg->replace(tupleArg);
+          arg = tupleArg;
+          //          list_view(zipExpr);
+        }
+        zipExpr->baseExpr = new UnresolvedSymExpr("_getIterator");
         arg->replace(new CallExpr("_getIterator", arg->copy()));
+        //        list_view(zipExpr);
       } else {
         zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
         Expr* arg = zipExpr->argList.first();
