@@ -25,6 +25,7 @@
 //
 
 use DimensionalDist2D;
+use RangeChunk only ;
 
 /*
 This Replicated dimension specifier is for use with the

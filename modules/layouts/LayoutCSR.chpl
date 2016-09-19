@@ -18,6 +18,7 @@
  */
 
 config param debugCSR = false;
+use RangeChunk only ;
 
 // I have not seen us test a non-"sub" CSR domain
 // and I do not want untested code in the docs.

@@ -20,6 +20,8 @@
 // DefaultSparse.chpl
 //
 module DefaultSparse {
+  use RangeChunk only ;
+
   config param debugDefaultSparse = false;
 
   class DefaultSparseDom: BaseSparseDomImpl {

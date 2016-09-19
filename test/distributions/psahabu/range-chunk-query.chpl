@@ -1,5 +1,3 @@
-use RangeChunk;
-
 var pos  = 0..100;
 var neg = -100..0;
 var rev = 0..100 by -1;
