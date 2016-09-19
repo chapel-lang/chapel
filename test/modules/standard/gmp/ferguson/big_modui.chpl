@@ -1,8 +1,8 @@
-use GMP;
+use BigInteger;
 
-var x = new BigInt(20);
-var y = new BigInt(0);
+var x = new Bigint(20);
+var y = new Bigint(0);
 
-y.mod_ui(x, 11);
+y.mod(x, 11);
 
 writeln(y);
