@@ -24,8 +24,6 @@ proc main() {
       strideRevA: [strideRevD] int = [-3, -1, 4, 5];
     [i in largeD] largeA[i] = i;
 
-
-
   // Pre-sorted arrays paired with comparators to test
   var tests = (
                 // Testing A.eltType
