@@ -9,10 +9,6 @@
 // array's domain, which would unexpectedly modify other arrays if they shared
 // domains.
 //
-// As currently implemented, every operation that results in a domain size
-// change results in an array reallocation and so is O(n).  This is expected
-// to improve in a future release.
-//
 
 //
 // Declare a 1D array and initialize it to the values 1..5. The anonymous
