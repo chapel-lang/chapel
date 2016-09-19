@@ -64,6 +64,9 @@ module Search {
    :rtype: (`bool`, `Dom.idxType`)
  */
 proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high, sorted=false) {
+  if Dom.rank != 1 then
+    compilerError("search() requires 1-D array");
+
   if sorted then
     return binarySearch(Data, val, comparator, lo, hi);
   else
@@ -95,6 +98,9 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=
 
  */
 proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) {
+  if Dom.rank != 1 then
+    compilerError("linearSearch() requires 1-D array");
+
   chpl_check_comparator(comparator, Data.eltType);
 
   // Domain slicing is cheap, but avoiding it when possible helps performance
@@ -116,7 +122,11 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
 
 pragma "no doc"
 /* Strided linearSearch */
-proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) where Dom.stridable {
+proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) 
+  where Dom.stridable {
+  if Dom.rank != 1 then
+    compilerError("linearSearch() requires 1-D array");
+
   chpl_check_comparator(comparator, Data.eltType);
 
   const stride = abs(Dom.stride);
@@ -163,6 +173,9 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
 
  */
 proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
+  if Dom.rank != 1 then
+    compilerError("binarySearch() requires 1-D array");
+
   chpl_check_comparator(comparator, Data.eltType);
 
   while (lo <= hi) {
@@ -180,7 +193,11 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
 
 pragma "no doc"
 /* Strided binarySearch */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) where Dom.stridable {
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) 
+  where Dom.stridable {
+  if Dom.rank != 1 then
+    compilerError("binarySearch() requires 1-D array");
+
   chpl_check_comparator(comparator, Data.eltType);
 
   const stride = abs(Dom.stride);

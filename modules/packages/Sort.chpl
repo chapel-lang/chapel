@@ -283,8 +283,9 @@ proc chpl_check_comparator(comparator, type eltType) {
       data is sorted.
 
  */
-proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank == 1 {
+proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  if Dom.rank != 1 then
+    compilerError("sort() requires 1-D array");
   quickSort(Data, comparator=comparator);
 }
 
@@ -299,8 +300,10 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
    :returns: ``true`` if array is sorted
    :rtype: `bool`
  */
-proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool
-  where Dom.rank == 1 {
+proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
+  if Dom.rank != 1 then
+    compilerError("isSorted() requires 1-D array");
+
   chpl_check_comparator(comparator, eltType);
   const stride = abs(Dom.stride);
   for i in Dom.low..Dom.high-stride by stride do
@@ -360,7 +363,10 @@ iter sorted(x, comparator:?rec=defaultComparator) {
       data is sorted.
 
  */
-proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  if Dom.rank != 1 then
+    compilerError("bubbleSort() requires 1-D array");
+
   chpl_check_comparator(comparator, eltType);
   const low = Dom.low,
         high = Dom.high,
@@ -389,7 +395,10 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where 
       data is sorted.
 
  */
-proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  if Dom.rank != 1 then
+    compilerError("heapSort() requires 1-D array");
+
   chpl_check_comparator(comparator, eltType);
   const low = Dom.low,
         high = Dom.high,
@@ -446,7 +455,10 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Do
       data is sorted.
 
  */
-proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  if Dom.rank != 1 then
+    compilerError("insertionSort() requires 1-D array");
+
   chpl_check_comparator(comparator, eltType);
   const low = Dom.low,
         high = Dom.high,
@@ -482,12 +494,16 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) whe
       data is sorted.
 
  */
-proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
+  if Dom.rank != 1 then
+    compilerError("mergeSort() requires 1-D array");
+
   chpl_check_comparator(comparator, eltType);
   _MergeSort(Data, minlen, comparator);
 }
 
-private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultComparator)
+  where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   if hi-lo < minlen {
@@ -543,7 +559,10 @@ private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=def
       data is sorted.
 
  */
-proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
+  if Dom.rank != 1 then
+    compilerError("quickSort() requires 1-D array");
+
   chpl_check_comparator(comparator, eltType);
   // grab obvious indices
   const lo = Dom.low,
@@ -604,7 +623,10 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
       data is sorted.
 
  */
-proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  if Dom.rank != 1 then
+    compilerError("selectionSort() requires 1-D array");
+
   const low = Dom.low,
         high = Dom.high,
         stride = abs(Dom.stride);
