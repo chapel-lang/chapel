@@ -102,6 +102,7 @@ static inline int myth_globalattr_set_default_body(const myth_globalattr_t * att
 static inline int
 myth_globalattr_get_stacksize_body(myth_globalattr_t * attr,
 				   size_t *stacksize) {
+  if (!attr) attr = &g_attr;
   *stacksize = attr->stacksize;
   return 0;
 }
@@ -109,6 +110,7 @@ myth_globalattr_get_stacksize_body(myth_globalattr_t * attr,
 static inline int
 myth_globalattr_set_stacksize_body(myth_globalattr_t * attr,
 				   size_t stacksize) {
+  if (!attr) attr = &g_attr;
   attr->stacksize = stacksize;
   return 0;
 }
@@ -116,6 +118,7 @@ myth_globalattr_set_stacksize_body(myth_globalattr_t * attr,
 static inline int
 myth_globalattr_get_guardsize_body(myth_globalattr_t * attr,
 				   size_t *guardsize) {
+  if (!attr) attr = &g_attr;
   *guardsize = attr->guardsize;
   return 0;
 }
@@ -123,6 +126,7 @@ myth_globalattr_get_guardsize_body(myth_globalattr_t * attr,
 static inline int
 myth_globalattr_set_guardsize_body(myth_globalattr_t * attr,
 				   size_t guardsize) {
+  if (!attr) attr = &g_attr;
   attr->guardsize = guardsize;
   return 0;
 }
@@ -130,6 +134,7 @@ myth_globalattr_set_guardsize_body(myth_globalattr_t * attr,
 static inline int
 myth_globalattr_get_n_workers_body(myth_globalattr_t * attr,
 				   size_t *n_workers) {
+  if (!attr) attr = &g_attr;
   *n_workers = attr->n_workers;
   return 0;
 }
@@ -137,6 +142,7 @@ myth_globalattr_get_n_workers_body(myth_globalattr_t * attr,
 static inline int
 myth_globalattr_set_n_workers_body(myth_globalattr_t * attr,
 				   size_t n_workers) {
+  if (!attr) attr = &g_attr;
   attr->n_workers = n_workers;
   return 0;
 }
@@ -144,6 +150,7 @@ myth_globalattr_set_n_workers_body(myth_globalattr_t * attr,
 static inline int
 myth_globalattr_get_bind_workers_body(myth_globalattr_t * attr,
 				      int *bind_workers) {
+  if (!attr) attr = &g_attr;
   *bind_workers = attr->bind_workers;
   return 0;
 }
@@ -151,6 +158,7 @@ myth_globalattr_get_bind_workers_body(myth_globalattr_t * attr,
 static inline int
 myth_globalattr_set_bind_workers_body(myth_globalattr_t * attr,
 				      int bind_workers) {
+  if (!attr) attr = &g_attr;
   attr->bind_workers = bind_workers;
   return 0;
 }
@@ -158,6 +166,7 @@ myth_globalattr_set_bind_workers_body(myth_globalattr_t * attr,
 static inline int
 myth_globalattr_get_child_first_body(myth_globalattr_t * attr,
 				     int *child_first) {
+  if (!attr) attr = &g_attr;
   *child_first = attr->child_first;
   return 0;
 }
@@ -165,6 +174,7 @@ myth_globalattr_get_child_first_body(myth_globalattr_t * attr,
 static inline int
 myth_globalattr_set_child_first_body(myth_globalattr_t * attr,
 				     int child_first) {
+  if (!attr) attr = &g_attr;
   attr->child_first = child_first;
   return 0;
 }

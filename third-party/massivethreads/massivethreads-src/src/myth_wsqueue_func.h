@@ -166,36 +166,18 @@ static inline void __attribute__((always_inline)) myth_queue_push(myth_thread_qu
       myth_assert(0);
       fprintf(stderr, "Fatal error:Runqueue overflow\n");
       abort();
-      //TODO:extend runqueue
-      /* 
-	 myth_thread_t *newptr;
-	 int newsize;
-	 //Extend runqueue
-	 newsize=q->size*2;
-	 //Newly allocate
-	 newptr=myth_malloc(sizeof(myth_thread_t)*newsize);
-	 //copy
-	 memcpy(newptr+,q->ptr+base,sizeof(myth_thread_t)*(q->top-q->base+1));
-	 //Adjust index
-	 q->top=;q->base=;
-	 //Release that old array and replace to new one
-	 myth_free(q->ptr);q->ptr=newptr;q->size=newsize;
-      */
+      /* TODO:extend runqueue */
     } else {
       //Shift pointers
-      int offset,offset_x2;
-      offset_x2 = q->size - (q->base + q->top);
-      offset = offset_x2 / 2;
-      if (offset_x2 % 2) offset--;
-      myth_assert(offset<0);
-      if (q->top - q->base){
-	memmove(&q->ptr[q->base+offset], &q->ptr[q->base], 
-		sizeof(myth_thread_t) * (q->top - q->base));
-      }
+      int offset = (- q->base - 1) / 2;
+      myth_assert(offset < 0);
+      memmove(&q->ptr[q->base+offset], &q->ptr[q->base], 
+	      sizeof(myth_thread_t) * (q->top - q->base));
       q->top += offset;
       q->base += offset;
     }
     t = q->top;
+    myth_assert(t < q->size);
     myth_wsqueue_lock_unlock(&q->lock);
   }
   //Do not need to extend of move.
@@ -208,7 +190,7 @@ static inline void __attribute__((always_inline)) myth_queue_push(myth_thread_qu
   myth_queue_exit_operation(q);
 }
 
-#if MYTH_QUEUE_FIFO
+#if MYTH_QUEUE_LIFO
 static inline myth_thread_t __attribute__((always_inline)) myth_queue_pop(myth_thread_queue_t q)
 {
   myth_queue_enter_operation(q);
@@ -279,12 +261,12 @@ static inline myth_thread_t __attribute__((always_inline)) myth_queue_pop(myth_t
   }
   myth_unreachable();
 }
-#else  /* MYTH_QUEUE_FIFO */
+#else  /* MYTH_QUEUE_LIFO */
 static inline myth_thread_t myth_queue_take(myth_thread_queue_t q);
 static inline myth_thread_t myth_queue_pop(myth_thread_queue_t q){
   return myth_queue_take(q);
 }
-#endif /* MYTH_QUEUE_FIFO */
+#endif /* MYTH_QUEUE_LIFO */
 
 //take/pass:Non-owner functions
 static inline myth_thread_t myth_queue_take(myth_thread_queue_t q)
@@ -292,7 +274,7 @@ static inline myth_thread_t myth_queue_take(myth_thread_queue_t q)
   myth_thread_t ret;
   int b,top;
 #if QUICK_CHECK_ON_STEAL
-  if (q->top-q->base<=0){
+  if (q->top - q->base <= 0){
     return NULL;
   }
 #endif
@@ -309,12 +291,12 @@ static inline myth_thread_t myth_queue_take(myth_thread_queue_t q)
   myth_wsqueue_lock_lock(&q->lock);
 #endif
   //Increment base
-  b=q->base;
-  q->base=b+1;
+  b = q->base;
+  q->base = b + 1;
   myth_wsqueue_rwbarrier();
-  top=q->top;
-  if (b<top){
-    ret=q->ptr[b];
+  top = q->top;
+  if (b < top){
+    ret = q->ptr[b];
     //q->ptr[b]=NULL;
     myth_wsqueue_lock_unlock(&q->lock);
 #if USE_LOCK || USE_LOCK_TAKE
@@ -322,7 +304,7 @@ static inline myth_thread_t myth_queue_take(myth_thread_queue_t q)
 #endif
     return ret;
   }else{
-    q->base=b;
+    q->base = b;
     myth_wsqueue_lock_unlock(&q->lock);
 #if USE_LOCK || USE_LOCK_TAKE
     myth_spin_unlock_body(&q->m_lock);
@@ -337,17 +319,17 @@ static inline myth_thread_t myth_queue_peek(myth_thread_queue_t q)
   myth_thread_t ret;
   int b,top;
 #if QUICK_CHECK_ON_STEAL
-  if (q->top-q->base<=0){
+  if (q->top - q->base <= 0){
     return NULL;
   }
 #endif
   //myth_wsqueue_lock_lock(&q->lock);
   //if (!myth_wsqueue_lock_trylock(&q->lock))return NULL;
   //Increment base
-  b=q->base;
-  top=q->top;
-  if (b<top){
-    ret=q->ptr[b];
+  b = q->base;
+  top = q->top;
+  if (b < top){
+    ret = q->ptr[b];
     //myth_wsqueue_lock_unlock(&q->lock);
     return ret;
   }else{
@@ -363,15 +345,15 @@ static inline int myth_queue_trypass(myth_thread_queue_t q,myth_thread_t th)
 #if USE_LOCK || USE_LOCK_TRYPASS
   myth_spin_lock_body(&q->m_lock);
 #endif
-  int ret=1;
-  if (!myth_wsqueue_lock_trylock(&q->lock))return 0;
+  int ret = 1;
+  if (!myth_wsqueue_lock_trylock(&q->lock)) return 0;
   if (q->base == 0){
-    ret=0;
+    ret = 0;
   }
   else{
     int b;
-    b=q->base;
-    q->ptr[b-1]=th;
+    b = q->base;
+    q->ptr[b-1] = th;
     myth_wsqueue_wbarrier();
     q->base--;
   }
@@ -385,14 +367,14 @@ static inline int myth_queue_trypass(myth_thread_queue_t q,myth_thread_t th)
 static inline void myth_queue_pass(myth_thread_queue_t q,myth_thread_t th)
 {
   int ret;
-  do{
-    ret=myth_queue_trypass(q,th);
-  }while(ret == 0);
+  do {
+    ret = myth_queue_trypass(q,th);
+  } while (ret == 0);
 }
 
 
 //put:Owner function: put a thread to the tail of the queue
-static inline void myth_queue_put(myth_thread_queue_t q,myth_thread_t th)
+static inline void myth_queue_put(myth_thread_queue_t q, myth_thread_t th)
 {
   myth_queue_enter_operation(q);
 #if USE_LOCK || USE_LOCK_PUSH
@@ -400,34 +382,23 @@ static inline void myth_queue_put(myth_thread_queue_t q,myth_thread_t th)
 #endif
   myth_wsqueue_lock_lock(&q->lock);
   if (q->base == 0){
+    /* queue underflow at the bottom. move the contents higher */
     if (q->top == q->size){
       myth_assert(0);
       fprintf(stderr,"Fatal error:Runqueue overflow\n");
       abort();
-      /*myth_thread_t *newptr;
-	int newsize;
-	newsize=q->size*2;
-	newptr=myth_malloc(sizeof(myth_thread_t)*newsize);
-	memcpy(newptr+,q->ptr+base,sizeof(myth_thread_t)*(q->top-q->base+1));
-	q->top=;q->base=;
-	myth_free(q->ptr);q->ptr=newptr;q->size=newsize;*/
-    }
-    else{
-      int offset,offset_x2;
-      offset_x2 = q->size - (q->base + q->top);
-      offset = offset_x2 / 2;
-      if (offset_x2 % 2) offset--;
-      myth_assert(offset < 0);
-      if (q->top - q->base){
-	memmove(&q->ptr[q->base + offset], &q->ptr[q->base],
-		sizeof(myth_thread_t) * (q->top - q->base));
-      }
+    } else {
+      int offset = (q->size - q->top + 1) / 2;
+      myth_assert(offset > 0);
+      memmove(&q->ptr[q->base + offset], &q->ptr[q->base],
+	      sizeof(myth_thread_t) * (q->top - q->base));
       q->top += offset;
       q->base += offset;
+      myth_assert(q->base > 0);
     }
   }
   int b = q->base;
-  if (b == 0){ myth_unreachable(); }
+  myth_assert(b > 0);
   b--;
   q->ptr[b] = th;
   q->base = b;

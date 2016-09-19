@@ -60,10 +60,28 @@ AC_ARG_ENABLE([myth-dl],
 # we will later check if dlopen/dlsym are available and decide if
 # we really build libmyth-dl
 
-#
+# -----------------------
+# bind workers or not
+# -----------------------
+
+AC_ARG_ENABLE([bind-workers],
+            [AS_HELP_STRING([--enable-bind-workers=yes/no],
+                            [Set default value for bind-workers.
+                             Default: yes.  You can change it at runtime
+			     by setting MYTH_BIND_WORKERS.])],
+            [default_bind_workers="${enableval}"],
+            [default_bind_workers="yes"])
+
+if test "x$default_bind_workers" != "xno" ; then
+  AC_DEFINE_UNQUOTED([MYTH_BIND_WORKERS],[1],[if 1, bind workers by default])
+else						 
+  AC_DEFINE_UNQUOTED([MYTH_BIND_WORKERS],[0],[if 1, bind workers by default])
+fi
+
+# -----------------------
 # --enable-eco-mode
 #   flag controlling the behavior of eco-mode scheduler
-#
+# -----------------------
 
 AC_ARG_ENABLE([eco-mode],
               [AS_HELP_STRING([--enable-eco-mode=yes|no],
@@ -148,24 +166,6 @@ AC_ARG_WITH([default-guard-size],
 
 AC_DEFINE_UNQUOTED([MYTH_DEF_GUARD_SIZE],
 	[$default_guard_size],[Default guard size])
-
-# -----------------------
-# bind workers or not
-# -----------------------
-
-AC_ARG_WITH([bind-workers],
-            [AS_HELP_STRING([--with-bind-workers=yes/no],
-                            [Set default value for bind-workers.
-                             Default: 1.  You can change it at runtime
-			     by setting MYTH_BIND_WORKERS.])],
-            [default_bind_workers="$withval"],
-            [default_bind_workers="yes"])
-
-if test "x$default_bind_workers" != "xno" ; then
-  AC_DEFINE_UNQUOTED([MYTH_BIND_WORKERS],[1],[if 1, bind workers by default])
-else						 
-  AC_DEFINE_UNQUOTED([MYTH_BIND_WORKERS],[0],[if 1, bind workers by default])
-fi
 
 #
 # child first or not

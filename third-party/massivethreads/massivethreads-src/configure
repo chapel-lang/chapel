@@ -784,12 +784,12 @@ enable_maintainer_mode
 enable_dependency_tracking
 enable_myth_ld
 enable_myth_dl
+enable_bind_workers
 enable_eco_mode
 enable_native_context
 with_default_stack_size
 with_sched_stack_size
 with_default_guard_size
-with_bind_workers
 with_child_first
 enable_shared
 enable_static
@@ -1459,6 +1459,10 @@ Optional Features:
                           --wrap=function_name (default=yes)
   --enable-myth-dl=yes|no build libmyth-dl or not, a library that wraps some
                           system functions with dlopen/dlsym
+  --enable-bind-workers=yes/no
+                          Set default value for bind-workers. Default: yes.
+                          You can change it at runtime by setting
+                          MYTH_BIND_WORKERS.
   --enable-eco-mode=yes|no
                           Enable or disable eco-mode scheduler. "no"
                           completely disables it when compiling
@@ -1491,10 +1495,6 @@ Optional Packages:
                           Set default guard size of threads to S bytes.
                           Default: 4096. You can change it at runtime by
                           setting MYTH_DEF_GUARDSIZE.
-  --with-bind-workers=yes/no
-                          Set default value for bind-workers. Default: 1. You
-                          can change it at runtime by setting
-                          MYTH_BIND_WORKERS.
   --with-child-first=yes/no
                           Set default value for child-first. Default: 1. You
                           can change it at runtime by setting
@@ -4799,10 +4799,36 @@ fi
 # we will later check if dlopen/dlsym are available and decide if
 # we really build libmyth-dl
 
-#
+# -----------------------
+# bind workers or not
+# -----------------------
+
+# Check whether --enable-bind-workers was given.
+if test "${enable_bind_workers+set}" = set; then :
+  enableval=$enable_bind_workers; default_bind_workers="${enableval}"
+else
+  default_bind_workers="yes"
+fi
+
+
+if test "x$default_bind_workers" != "xno" ; then
+
+cat >>confdefs.h <<_ACEOF
+#define MYTH_BIND_WORKERS 1
+_ACEOF
+
+else
+
+cat >>confdefs.h <<_ACEOF
+#define MYTH_BIND_WORKERS 0
+_ACEOF
+
+fi
+
+# -----------------------
 # --enable-eco-mode
 #   flag controlling the behavior of eco-mode scheduler
-#
+# -----------------------
 
 # Check whether --enable-eco-mode was given.
 if test "${enable_eco_mode+set}" = set; then :
@@ -4916,33 +4942,6 @@ cat >>confdefs.h <<_ACEOF
 #define MYTH_DEF_GUARD_SIZE $default_guard_size
 _ACEOF
 
-
-# -----------------------
-# bind workers or not
-# -----------------------
-
-
-# Check whether --with-bind-workers was given.
-if test "${with_bind_workers+set}" = set; then :
-  withval=$with_bind_workers; default_bind_workers="$withval"
-else
-  default_bind_workers="yes"
-fi
-
-
-if test "x$default_bind_workers" != "xno" ; then
-
-cat >>confdefs.h <<_ACEOF
-#define MYTH_BIND_WORKERS 1
-_ACEOF
-
-else
-
-cat >>confdefs.h <<_ACEOF
-#define MYTH_BIND_WORKERS 0
-_ACEOF
-
-fi
 
 #
 # child first or not
