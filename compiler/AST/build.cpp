@@ -1159,12 +1159,27 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   if (otherROp)
     otherROp->replace(new SymExpr(globalOp));
 
-  // globalOp = new reduceOp(eltType = reduceVar.type)
-  Expr* eltType = new NamedExpr("eltType",
-                    new_Expr("'typeof'(%E)", reduceVar->copy()));
+  Expr* eltType = NULL;
+  if (isUnresolvedSymExpr(reduceOp)) {
+    // eltType = reduceVar.type
+    eltType = new_Expr("'typeof'(%E)", reduceVar->copy());
+
+  } else if (CallExpr* rCall = toCallExpr(reduceOp)) {
+    // eltType is rCall's argument
+    // NB 'rCall' is not inTree() - see replace() above
+    if (rCall->numActuals() == 1) {
+      reduceOp = rCall->baseExpr; // cannot remove() this one
+      eltType = rCall->get(1)->remove(); // must remove() this one
+    }
+  }
+  if (!eltType) {
+    USR_FATAL(reduceOp, "for a reduce intent, the 'reduce' keyword must be preceded by the reduction operator or the name of the reduction class with the single optional argument indicating the type of the reduction input");
+  }
+
+  // globalOp = new reduceOp(eltType = ...);
   if (!useThisGlobalOp)
     iterRec->defPoint->insertBefore("'move'(%S, 'new'(%E(%E)))",
-                                    globalOp, reduceOp, eltType);
+                        globalOp, reduceOp, new NamedExpr("eltType", eltType));
   // reduceVar = globalOp.generate(); delete globalOp;
   parLoop->insertAfter("'delete'(%S)",
                        globalOp);
