@@ -431,6 +431,8 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
               newFormal->addFlag(FLAG_MARKED_GENERIC);
           newActual = e->key;
           symReplace = newFormal;
+          if (!newActual->isConstant() && newFormal->isConstant())
+            newFormal->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }
 
         call->insertAtTail(newActual);

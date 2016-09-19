@@ -65,7 +65,8 @@ buildDefaultWrapper(FnSymbol* fn,
 static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
-                      CallInfo* info);
+                      CallInfo* info,
+                      bool buildFastFollowerChecks);
 
 //########################################################################
 
@@ -720,11 +721,100 @@ void coerceActuals(FnSymbol* fn, CallInfo* info) {
 //// promotion wrapper code
 ////
 
+//
+// In order for fast followers to trigger, the invoking loop requires a static
+// and dynamic check. They determine at compile time if the iterands implement
+// a fast follower, and at runtime if all the iterands can fast follow the
+// leader. Here we build up the checks for an iterator record. We basically
+// convert the iterator record into a tuple and call the "zip" check. Note
+// that we only stuff the components of the iterator record that actually
+// require promotion into the tuple.
+//
+// i.e. we build up something like:
+//
+//    // _iteratorRecord has a field for each formal in the promoted function. e.g.
+//    // `A + 2.0 * C` results in a record with fields for each array and the real
+//    proc chpl__dynamicFastFollowCheck(x: _iteratorRecord, lead) {
+//      // tuple that only has elements for fields that require promotion
+//      var promotion_tup: recordToPromotionTuple(x);
+//      var cur_tup_idx = 1;
+//      for param fieldNum in 1..numFields(x.type) {
+//        var field = getField(x.type, fieldNum);
+//        if requiresPromotion(field.type, x) {
+//          promotion_tup(cur_tup_idx) = field;
+//          cur_tup_idx += 1;
+//        }
+//      }
+//      return chpl__dynamicFastFollowCheckZip(promotion_tup, lead);
+//    }
+//
+// However, since the iterator record isn't fully built (none of the fields
+// exist yet), we use a primitive as a placeholder. When the record is filled
+// in during iterator lowering, we replace the primitive with the actual field.
+//
+static void
+buildPromotionFastFollowerCheck(bool isStatic,
+                                bool addLead,
+                                CallInfo* info,
+                                FnSymbol* wrapper,
+                                std::set<ArgSymbol*>& requiresPromotion) {
+  const char* fnName = isStatic ? "chpl__staticFastFollowCheck" : "chpl__dynamicFastFollowCheck";
+  const char* fowardFnName = astr(fnName, "Zip") ;
+
+  FnSymbol* fastFollowCheckFn = new FnSymbol(fnName);
+  if (isStatic) {
+    fastFollowCheckFn->retTag = RET_PARAM;
+  } else {
+    fastFollowCheckFn->retTag = RET_VALUE;
+  }
+
+  ArgSymbol* x = new ArgSymbol(INTENT_BLANK, "x", dtIteratorRecord);
+  fastFollowCheckFn->insertFormalAtTail(x);
+
+  ArgSymbol* lead = new ArgSymbol(INTENT_BLANK, "lead", dtAny);
+  if (addLead) {
+    fastFollowCheckFn->insertFormalAtTail(lead);
+  }
+
+
+  CallExpr* buildTuple = new CallExpr("_build_tuple_always_allow_ref");
+  for_formals(formal, wrapper) {
+    if (requiresPromotion.count(formal) > 0) {
+      Symbol* field = new VarSymbol(formal->name, formal->type);
+      fastFollowCheckFn->insertAtTail(new DefExpr(field));
+      fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, field, new CallExpr(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, x, formal)));
+      buildTuple->insertAtTail(new SymExpr(field));
+    }
+  }
+  fastFollowCheckFn->where = new BlockStmt(new CallExpr("==", new CallExpr(PRIM_TYPEOF, x), new CallExpr(PRIM_TYPEOF, info->call->copy())));
+
+  Symbol* p_tup = newTemp("p_tup");
+  fastFollowCheckFn->insertAtTail(new DefExpr(p_tup));
+  fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, p_tup, buildTuple));
+
+  Symbol* returnTmp = newTemp("p_ret");
+  returnTmp->addFlag(FLAG_EXPR_TEMP);
+  returnTmp->addFlag(FLAG_MAYBE_PARAM);
+  fastFollowCheckFn->insertAtTail(new DefExpr(returnTmp));
+  if (addLead) {
+    fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, returnTmp, new CallExpr(fowardFnName, p_tup, lead)));
+  } else {
+    fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, returnTmp, new CallExpr(fowardFnName, p_tup)));
+  }
+  fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_RETURN, returnTmp));
+
+  theProgram->block->insertAtTail(new DefExpr(fastFollowCheckFn));
+  normalize(fastFollowCheckFn);
+  fastFollowCheckFn->addFlag(FLAG_GENERIC);
+  fastFollowCheckFn->instantiationPoint = getVisibilityBlock(info->call);
+}
+
 
 static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
-                      CallInfo* info) {
+                      CallInfo* info,
+                      bool buildFastFollowerChecks) {
   SET_LINENO(info->call);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
@@ -737,6 +827,7 @@ buildPromotionWrapper(FnSymbol* fn,
   CallExpr* actualCall = new CallExpr(fn);
   bool zippered = true;
   int i = 1;
+  std::set<ArgSymbol*> requiresPromotion;
   for_formals(formal, fn) {
     SET_LINENO(formal);
     ArgSymbol* new_formal = copyFormalForWrapper(formal);
@@ -745,6 +836,7 @@ buildPromotionWrapper(FnSymbol* fn,
     if (fn->_this == formal)
       wrapper->_this = new_formal;
     if (Symbol* sub = promotion_subs->get(formal)) {
+      requiresPromotion.insert(new_formal);
       TypeSymbol* ts = toTypeSymbol(sub);
       if (!ts)
         INT_FATAL(fn, "error building promotion wrapper");
@@ -780,6 +872,8 @@ buildPromotionWrapper(FnSymbol* fn,
     wrapper->addFlag(FLAG_ITERATOR_FN);
     wrapper->removeFlag(FLAG_INLINE);
 
+
+    // Build up the leader iterator
     SymbolMap leaderMap;
     FnSymbol* lifn = wrapper->copy(&leaderMap);
     INT_ASSERT(! lifn->hasFlag(FLAG_RESOLVED));
@@ -812,6 +906,8 @@ buildPromotionWrapper(FnSymbol* fn,
     normalize(lifn);
     lifn->instantiationPoint = getVisibilityBlock(info->call);
 
+
+    // Build up the follower iterator
     SymbolMap followerMap;
     FnSymbol* fifn = wrapper->copy(&followerMap);
     INT_ASSERT(! fifn->hasFlag(FLAG_RESOLVED));
@@ -824,17 +920,21 @@ buildPromotionWrapper(FnSymbol* fn,
     fifn->insertFormalAtTail(fifnTag);
     ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
     fifn->insertFormalAtTail(fifnFollower);
+    ArgSymbol* fastFollower = new ArgSymbol(INTENT_PARAM, "fast", dtBool, NULL, new SymExpr(gFalse));
+    fifn->insertFormalAtTail(fastFollower);
     fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
     VarSymbol* followerIterator = newTemp("p_followerIterator");
     followerIterator->addFlag(FLAG_EXPR_TEMP);
     fifn->insertAtTail(new DefExpr(followerIterator));
 
     if( !zippered ) {
-      fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
+      fifn->insertAtTail(new CondStmt(new SymExpr(fastFollower),
+                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFastFollower", iterator->copy(&followerMap), fifnFollower)),
+                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower))));
     } else {
-      Expr* tMe = iterator->copy(&followerMap);
-      fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new
-                  CallExpr("_toFollowerZip", tMe, fifnFollower)));
+      fifn->insertAtTail(new CondStmt(new SymExpr(fastFollower),
+                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFastFollowerZip", iterator->copy(&followerMap), fifnFollower)),
+                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollowerZip", iterator->copy(&followerMap), fifnFollower))));
     }
 
     BlockStmt* followerBlock = new BlockStmt();
@@ -849,6 +949,19 @@ buildPromotionWrapper(FnSymbol* fn,
     fifn->addFlag(FLAG_GENERIC);
     fifn->instantiationPoint = getVisibilityBlock(info->call);
 
+    if (!fNoFastFollowers && buildFastFollowerChecks) {
+      // Build up the static (param) fast follower check functions
+      buildPromotionFastFollowerCheck(/*isStatic=*/true,  /*addLead=*/false, info, wrapper, requiresPromotion);
+      buildPromotionFastFollowerCheck(/*isStatic=*/true,  /*addLead=*/true,  info, wrapper, requiresPromotion);
+
+      // Build up the dynamic fast follower check functions
+      buildPromotionFastFollowerCheck(/*isStatic=*/false, /*addLead=*/false, info, wrapper, requiresPromotion);
+      buildPromotionFastFollowerCheck(/*isStatic=*/false, /*addLead=*/true,  info, wrapper, requiresPromotion);
+    }
+
+
+    // Finish building the serial iterator. We stopped mid-way so the common
+    // code could be copied for the leader/follower
     BlockStmt* yieldBlock = new BlockStmt();
     yieldTmp = newTemp("p_yield");
     yieldTmp->addFlag(FLAG_EXPR_TEMP);
@@ -864,7 +977,8 @@ buildPromotionWrapper(FnSymbol* fn,
 
 
 FnSymbol*
-promotionWrap(FnSymbol* fn, CallInfo* info) {
+promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChecks) {
+
   Vec<Symbol*>* actuals = &info->actuals;
   if (!strcmp(fn->name, "="))
     return fn;
@@ -891,7 +1005,7 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
 
     FnSymbol* wrapper = checkCache(promotionsCache, fn, &promoted_subs);
     if (wrapper == NULL) {
-      wrapper = buildPromotionWrapper(fn, &promoted_subs, info);
+      wrapper = buildPromotionWrapper(fn, &promoted_subs, info, buildFastFollowerChecks);
       addCache(promotionsCache, fn, wrapper, &promoted_subs);
     }
     resolveFormals(wrapper);

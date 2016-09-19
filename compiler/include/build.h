@@ -105,7 +105,8 @@ void convertForallExpressions();
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
                                            bool recursiveCall = false);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
-BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op = NULL);
+BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op);
+BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);

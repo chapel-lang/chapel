@@ -23,7 +23,8 @@ First line of every file is:
      ts  - system time        (sec.usec format)
      tnum - tag number
      lnum - line number
-     fileno - index in the file name table 
+     fileno - index in the file name table
+     fid - function id number
 
 Lines in the file:
 
@@ -32,6 +33,20 @@ Lines in the file:
 
   fname: fileno name
     On locale 0 only, name of file in the file table at fileno
+
+  FIDNsize: size
+    On locale 0 only, size of the function name table.
+
+  FIDname: fid lnum fileno name
+    On locale 0 only, fid is function id, lnum and fileno
+    are location of function creation point?
+
+  CHPL_HOME: string
+  DIR: string
+    names of the directories needed to use the file names
+    without having chplvis needing to be run in the
+    source code diretory and with the same CHPL_HOME environment
+    variable.
 
   tname: tnum tag_name
     On locale 0 only, name of a new tag
@@ -48,10 +63,10 @@ Lines in the file:
   Pause:  tv tu ts nid tid tnum
     Pause the collection of data, tag number is previous tag
 
-  task: tv nid tid parent_tid [OL] lnum fileno funcId
+  task: tv nid tid parent_tid [OL] lnum fileno fid
     [OL] - on of O or L, O for an "on task", L for a "local task"
     Task creation, On tasks don't have valid lnum and fileno.
-    funcId is the locale independent function identifier
+    fid is the locale independent function identifier
 
   Btask: tv nid tid
     Task has begun execution
@@ -68,9 +83,9 @@ Lines in the file:
     communication.  Puts: data flow nid->rid, gets: data flow rid -> nid
     nb is non-blocking, st is strided.
 
-  fork: tv nid rid subLoc funcId argPtr argSize tid
-  fork_nb: tv nid rid subLoc funcId argPtr argSize tid
-  f_fork:  tv nid rid subLoc funcId argPtr argSize tid
+  fork: tv nid rid subLoc fid argPtr argSize tid
+  fork_nb: tv nid rid subLoc fid argPtr argSize tid
+  f_fork:  tv nid rid subLoc fid argPtr argSize tid
      fork a task on a remote locale.   nb is non-blocking, f_fork does
      not start a remote task.  Data is sent from nid to rid.
 

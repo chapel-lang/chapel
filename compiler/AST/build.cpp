@@ -1537,6 +1537,11 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
   return buildChapelStmt(new CallExpr(op, lhs, rhs));
 }
 
+BlockStmt*
+buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op) {
+  return buildChapelStmt(new CallExpr(op, lhs, rhs));
+}
+
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = new BlockStmt();
   VarSymbol* ltmp = newTemp();
@@ -2606,6 +2611,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
   block->insertAtTail(new CallExpr("_endCountFree", cobeginCount));
 
+  block->astloc = cobeginCount->astloc; // grab the location of 'cobegin' kw
   return block;
 }
 

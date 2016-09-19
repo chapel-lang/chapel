@@ -128,9 +128,12 @@ static void findOuterVars(BlockStmt* block, SymbolMap& uses) {
 }
 
 // Not to be invoked upon a reduce intent.
-static void setShadowVarFlags(VarSymbol* svar, IntentTag intent) {
-  if (intent & INTENT_FLAG_CONST)
+static void setShadowVarFlags(Symbol* ovar, VarSymbol* svar, IntentTag intent) {
+  if (intent & INTENT_FLAG_CONST) {
     svar->addFlag(FLAG_CONST);
+    if (!ovar->isConstant())
+      svar->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+  }
   if (intent & INTENT_FLAG_REF) {
     INT_ASSERT(!(intent & INTENT_FLAG_IN));
     svar->addFlag(FLAG_REF_VAR);
@@ -272,7 +275,7 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
       svar->addFlag(FLAG_REF_VAR);
       svar->type = valtype->getRefType();
     } else {
-      setShadowVarFlags(svar, tiIntent); // instead of arg intents
+      setShadowVarFlags(ovar, svar, tiIntent); // instead of arg intents
     }
 
     outerVars.push_back(ovar);

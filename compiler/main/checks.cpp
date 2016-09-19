@@ -495,6 +495,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_IS_TUPLE_TYPE:
         case PRIM_IS_STAR_TUPLE_TYPE:
         case PRIM_IS_SUBTYPE:
+        case PRIM_REDUCE_ASSIGN:
         case PRIM_TUPLE_EXPAND:
         case PRIM_QUERY:
         case PRIM_QUERY_PARAM_FIELD:
