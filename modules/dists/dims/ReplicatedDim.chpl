@@ -25,7 +25,6 @@
 //
 
 use DimensionalDist2D;
-use RangeChunk only ;
 
 /*
 This Replicated dimension specifier is for use with the
@@ -357,6 +356,7 @@ proc Replicated1dom.dsiSingleTaskPerLocaleOnly1d() param return false;
 proc Replicated1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int)
   : dsiMyDensifiedRangeType1d(globDD)
 {
+  use RangeChunk;
   type IT = globDD.idxType;
   return RangeChunk.chunk(locWholeR, numTasks:IT, taskid:IT);
 }

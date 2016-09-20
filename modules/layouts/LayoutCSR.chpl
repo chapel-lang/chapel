@@ -18,7 +18,6 @@
  */
 
 config param debugCSR = false;
-use RangeChunk only ;
 
 // I have not seen us test a non-"sub" CSR domain
 // and I do not want untested code in the docs.
@@ -121,6 +120,7 @@ class CSRDom: BaseSparseDomImpl {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
+    use RangeChunk;
     // same as DefaultSparseDom's leader
     const numElems = nnz;
     const numChunks = _computeNumChunks(numElems);

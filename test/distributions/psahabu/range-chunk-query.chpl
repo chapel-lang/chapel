@@ -1,9 +1,11 @@
+use RangeChunk only ;
+
 var pos  = 0..100;
 var neg = -100..0;
 var rev = 0..100 by -1;
 
 writeln("positive:");
-writeln(chunk(pos, 5, 0));
+writeln(RangeChunk.chunk(pos, 5, 0));
 writeln(chunk(pos, 5, 2));
 writeln(chunk(pos, 5, 4));
 
