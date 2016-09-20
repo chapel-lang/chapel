@@ -50,29 +50,17 @@ implementations that would benefit the codes:
 
 binarytrees.chpl
 ----------------
-o The Chapel compiler should really be able to infer the return types
-  of these recursive functions...
 
-o Related: the type function Tree.build() could be made into a
-  constructor except that the compiler can't resolve the return type
-  of the constructor because it's recursive (which is silly since it's
-  a constructor); yet we can't declare the return type because it's a
-  constructor.  I.e., we should be able to write:
+o it'd be nice if Chapel provided a means to retain the default /
+  compiler-provided initializer even when the user specifies one.  In
+  this case, it essentially needs to be rewritten by the user
+  unnecessarily.
 
-    proc Tree(item, depth) {
-      this.item = item;
-      if depth {
-        left = new Tree(2*item-1, depth-1);
-        right = new Tree(2*item-1, depth-1);
-      }
-    }
-
-o It seems like we should be able to write a strength-reduction
-  oriented overload of the ** operator in order to replace the '1 <<'
-  expression with a 2** operation without loss of performance (looking
-  for param base expressions equal to 2 (or a power of 2?).  I believe
-  we already specialize ** for certain integral param exponents, but
-  not for the base expression?
+o should we change 'nil' be of type 'Object' rather than 'nilType'?
+  This would permit the type declarations on the left/right arguments
+  to be left off.  Brad recalls a very distinct decision to have 'nil'
+  be its own type in the early years of Chapel but can't recall the
+  rationale or whether it still holds in today's Chapel.
 
 
 chameneosredux.chpl
