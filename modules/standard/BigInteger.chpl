@@ -20,7 +20,7 @@
 /*
 Support for GNU Multiple Precision Integer Arithmetic through the Bigint record
 
-This module implements an interface with the GMP libray (the GNU Multiple
+This module implements an interface with the GMP library (the GNU Multiple
 Precision Arithmetic Library). See the `GMP homepage <https://gmplib.org/>`
 for more information on this library.
 
@@ -476,7 +476,7 @@ module BigInteger {
   //
 
   //
-  // Unary operartors
+  // Unary operators
   //
   proc +(a: Bigint) {
     return new Bigint(a);
@@ -499,7 +499,7 @@ module BigInteger {
   }
 
   //
-  // Binary operartors
+  // Binary operators
   //
 
   // Addition
