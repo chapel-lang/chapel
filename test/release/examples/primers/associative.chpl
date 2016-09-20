@@ -299,8 +299,8 @@ Scores["Mark"] = 81;
 //   Difference (-)
 //   Symmetric Difference (^)
 //
-// For both associative domains and arrays, the op= variants are supported:
-//   |=, +=, &=, -=, and ^=
+// For both associative domains and arrays, the ``op=`` variants are supported:
+//  ``|=, +=, &=, -=, and ^=``
 //
 
 var primeDom = {2, 3, 5, 7, 11, 13, 17};  // some prime numbers

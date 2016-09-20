@@ -87,29 +87,31 @@ class  E_task : public Event {
 
   private:
     long taskid;
+    long funcid;
     bool isOn;
     long lineNum;
-    const char *srcFile;
+    long srcFileNo;
   
   public:
-    E_task (long esec, long eusec, int nid, long taskId, bool ison, long line,
-            const char *file)
-      : Event(esec,eusec, nid), taskid(taskId), isOn(ison), lineNum(line)
+    E_task (long esec, long eusec, int nid, long taskId, long funcid, bool ison,
+            long line, long fileno)
+      : Event(esec,eusec, nid), taskid(taskId), funcid(funcid), isOn(ison),
+      lineNum(line), srcFileNo(fileno)
     {
-      srcFile = file;  // Not duplicating, just saving the pointer
     }
 
     bool isLocal () { return !isOn; }
     long srcLine () { return lineNum; }
-    const char *srcName () { return srcFile; }
+    long srcFile () { return srcFileNo; }
     long taskId () { return taskid; }
+    long funcId () { return funcid; }
     
 
     virtual int Ekind() {return Ev_task;}
     virtual void print() {
-      printf ("Task: node %d time %ld.%06ld taskId %ld %s line %ld file %s\n",
-              nodeid, sec, usec, taskid, isOn ? "OnExe" : "local", lineNum,
-              (srcFile != NULL ? srcFile : "<none>"));
+      printf ("Task: node %d time %ld.%06ld taskId %ld funcId %ld %s line %ld fileNo %ld\n",
+              nodeid, sec, usec, taskid, funcid, isOn ? "OnExe" : "local",
+              lineNum, srcFileNo);
     }
 
 };
@@ -122,13 +124,14 @@ class E_comm : public Event {
      bool isget;
      long byTask;
      long lineNo;
-     const char *srcFile;
+     long srcFileNo;
 
    public:
      E_comm (long esec, long eusec, int esrcid, int edstid, int elSize,
-             int dLen, bool get, long origTask, long line, const char *srcF) :
+             int dLen, bool get, long origTask, long line, long fileno) :
           Event(esec, eusec, esrcid), dstid(edstid), elemsize(elSize),
-            datalen(dLen), isget(get), byTask(origTask), lineNo(line), srcFile(srcF) {};
+            datalen(dLen), isget(get), byTask(origTask), lineNo(line),
+            srcFileNo(fileno) {};
 
      int srcId() { return nodeId(); }
      int dstId() { return dstid; }
@@ -136,14 +139,16 @@ class E_comm : public Event {
      int dataLen() { return datalen; }
      int totalLen() { return elemsize * datalen; }
      bool isGet() { return isget; }
-     long getLineNo() { return lineNo; }
-     const char *srcName () { return srcFile; }
+     long srcLine () { return lineNo; }
+     long srcFile () { return srcFileNo; }
      long inTask() { return byTask; }
 
      virtual int Ekind() {return Ev_comm;}
      virtual void print() { 
-       printf ("Comm: node %d time %ld.%06ld to %d size %d\n",
-               nodeid, sec, usec, dstid, elemsize * datalen); }
+       printf ("Comm(%s): node %d time %ld.%06ld to %d size %d, inTask %ld\n",
+               isget ? "get" : "put", nodeid, sec, usec, dstid, 
+               elemsize * datalen, byTask);
+     }
 };
 
 class E_fork : public Event {
@@ -153,17 +158,19 @@ class E_fork : public Event {
      int  argsize;
      bool isFast;
      long byTask;
+     int  fid;
 
    public:
        E_fork (long esec, long eusec, int esrcid, int edstid, int argsize,
-               bool fast, long task) : Event(esec,eusec, esrcid), dstid(edstid),
-       argsize(argsize), isFast(fast), byTask(task) {};
+               bool fast, long task, int FID) : Event(esec,eusec, esrcid), dstid(edstid),
+       argsize(argsize), isFast(fast), byTask(task), fid(FID) {};
 
      int srcId() { return nodeId(); }
      int dstId() { return dstid; }
      bool fast() { return isFast; }
      int argSize() { return argsize; }
      long inTask() { return byTask; }
+     int funcId() { return fid; }
 
      virtual int Ekind() {return Ev_fork;}
      virtual void print() {

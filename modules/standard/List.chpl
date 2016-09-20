@@ -134,6 +134,7 @@ record list {
 
   /*
     Remove the first encountered instance of `x` from the list.
+    Does nothing if `x` is not present in the list.
    */
   proc ref remove(x: eltType) {
     var tmp = first,

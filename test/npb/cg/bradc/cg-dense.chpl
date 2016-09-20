@@ -28,6 +28,11 @@ config const numTrials = 1,
              printTiming = false;
 
 
+proc truncateZero(x: real) {
+  const eps = 1e-8;
+  return if abs(x) < eps then 0.0 else x;
+}
+
 proc main() {
   const MatrixSpace = {1..n, 1..n};
   var A: [MatrixSpace] elemType;
@@ -57,7 +62,7 @@ proc main() {
 
       zeta = shift + 1.0 / + reduce (X*Z);
 
-      if verbose then writeln(it, " ", rnorm, " ", zeta);
+      if verbose then writeln(it, " ", truncateZero(rnorm), " ", truncateZero(zeta));
 
       X = (1.0 / sqrt(+ reduce(Z*Z))) * Z;
     }

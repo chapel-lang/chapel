@@ -189,7 +189,6 @@ class Chameneos {
 
     peer.color = newColor;
     peer.meetings += 1;
-    peer.meetingsWithSelf += (peer == this);
     peer.meetingCompleted.write(true);
 
     color = newColor;

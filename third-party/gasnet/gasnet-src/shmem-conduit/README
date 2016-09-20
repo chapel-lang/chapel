@@ -4,25 +4,15 @@ Christian Bell <csbell@cs.berkeley.edu>
 User Information:
 -----------------
 
-The most important difference between GASNet and shmem lies in the semantics
-for synchronization.  While GASNet strives for general and flexible
-synchronization, shmem provides only two synchronization primitives -- a fence
-for ordering puts and a quiet for guaranteeing remote completion.  Moreover,
-these primitives are exclusively temporal in that they cannot be associated
-with any specific operation, and only applies to put (write) operations (get
-operations block). GASNet attempts to expose finer-grained synchronization
-control over individual memory operations, which on shmem only translates to
-added overhead since there is no way one-to-one mapping between per-operation
-GASNet synchronization and shmem put/get calls.
+shmem-conduit is an implementation of GASNet over the Cray/SGI SHMEM interface.
 
-Since shmem targets are usually shared-memory machines that allow loads/stores
-to be issued to global memory, the GASNet conduit is engineered to allow
-non-blocking puts/gets to be issued with the least amount of instructions.
+Where this conduit runs:
+-----------------------
 
-The conduit implementation differs from other conduits in that most of the
-extended functionality is actually inlined through
-gasnet_extended_help_extra.h.  The core AM functionality is fairly tuned and is
-not inlined, as are the various split-phase barrier mechanisms.
+shmem-conduit was written and tuned for the native SHMEM implementations 
+on the Cray X1 and SGI Altix systems.  It is not intended for use with
+OpenSHMEM (some implementations of which themselves depend upon GASNet),
+or on any other current systems.
 
 Recognized environment variables:
 ---------------------------------
@@ -82,6 +72,26 @@ Future work:
 
 Design Overview:
 ----------------
+
+The most important difference between GASNet and shmem lies in the semantics
+for synchronization.  While GASNet strives for general and flexible
+synchronization, shmem provides only two synchronization primitives -- a fence
+for ordering puts and a quiet for guaranteeing remote completion.  Moreover,
+these primitives are exclusively temporal in that they cannot be associated
+with any specific operation, and only applies to put (write) operations (get
+operations block). GASNet attempts to expose finer-grained synchronization
+control over individual memory operations, which on shmem only translates to
+added overhead since there is no way one-to-one mapping between per-operation
+GASNet synchronization and shmem put/get calls.
+
+Since shmem targets are usually shared-memory machines that allow loads/stores
+to be issued to global memory, the GASNet conduit is engineered to allow
+non-blocking puts/gets to be issued with the least amount of instructions.
+
+The conduit implementation differs from other conduits in that most of the
+extended functionality is actually inlined through
+gasnet_extended_help_extra.h.  The core AM functionality is fairly tuned and is
+not inlined, as are the various split-phase barrier mechanisms.
 
 GASNet explicit memory operations (nb):
 

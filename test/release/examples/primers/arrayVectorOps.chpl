@@ -1,6 +1,6 @@
 /*
- * Vector Operations on 1D Arrays Primer
- */
+   Vector Operations on 1D Arrays Primer
+*/
 
 //
 // 1D rectangular arrays support several list-like or vector-like capabilities.
@@ -8,10 +8,6 @@
 // domains. This restriction is because many of these operations modify the
 // array's domain, which would unexpectedly modify other arrays if they shared
 // domains.
-//
-// As currently implemented, every operation that results in a domain size
-// change results in an array reallocation and so is O(n).  This is expected
-// to improve in a future release.
 //
 
 //

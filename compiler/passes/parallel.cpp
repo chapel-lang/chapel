@@ -1062,7 +1062,6 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
            is_complex_type(def->sym->type) ||
            (isRecord(def->sym->type)             &&
             !isRecordWrappedType(def->sym->type) &&
-            // sync/single are currently classes, so this shouldn't matter
             !isSyncType(def->sym->type)          &&
             !isSingleType(def->sym->type)        &&
             // Dont try to broadcast string literals, they'll get fixed in
@@ -1301,24 +1300,9 @@ makeHeapAllocations() {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->var, heapType->getField(1)));
           }
         } else if (call->isResolved()) {
-          if (call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN_SYNC)) {
-            //
-            // We don't move sync vars to the heap and don't do the
-            // analysis to determine whether or not they outlive a
-            // task that refers to them, so conservatively remove
-            // their autodestroy calls to avoid freeing them before
-            // all tasks are done with them.  While this is
-            // unfortunate and needs to be fixed in the future to
-            // avoid leaks (TODO), it is better than the previous
-            // version of this code that would remove all autodestroy
-            // calls in this conditional.  See the commit message for
-            // this comment for more detail.
-            //
-            call->remove();
-          } else if (actual_to_formal(use)->type == heapType) {
-            // do nothing
-          } else {
+          if (actual_to_formal(use)->type != heapType) {
             VarSymbol* tmp = newTemp(var->type);
+
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->var, heapType->getField(1))));
             use->replace(new SymExpr(tmp));

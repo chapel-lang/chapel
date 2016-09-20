@@ -77,8 +77,8 @@ bool Type::inTree() {
 }
 
 
-Type* Type::typeInfo() {
-  return this;
+QualifiedType Type::qualType() {
+  return QualifiedType(this);
 }
 
 // Are actuals of this type passed with const intent by default?
@@ -87,8 +87,6 @@ bool Type::isDefaultIntentConst() const {
 
   if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
       isReferenceType(this)                       == true ||
-      isSyncType(this)                            == true ||
-      isSingleType(this)                          == true ||
       isRecordWrappedType(this)                   == true)
     retval = false;
 
@@ -575,6 +573,7 @@ std::string EnumType::docsDirective() {
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
   aggregateTag(initTag),
+  initializerStyle(DEFINES_NONE_USE_DEFAULT),
   fields(),
   inherits(),
   outer(NULL),
@@ -683,6 +682,10 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
 
   if (def->parentSymbol || def->list)
     def->remove();
+
+  // Lydia note (Sept 2, 2016): Based on control flow, this adds even the
+  // function symbols we just handled into the fields alist for the type.
+  // Shouldn't placing them in ct->methods be sufficient?
   if (tail)
     ct->fields.insertAtTail(def);
   else

@@ -1,15 +1,15 @@
 /*
- * Iterators Primer
- *
- * This primer contains several examples of iterators:
- *   an iterator to generate the Fibonacci numbers,
- *   an iterator defined by multiple loops
- *   and a recursive iterator over a tree.
- *
- * It also contains examples of the two kinds of parallel iteration:
- *  data-parallel (forall), and
- *  task-parallel (coforall).
- */
+   Iterators Primer
+
+   This primer contains several examples of iterators:
+     an iterator to generate the Fibonacci numbers,
+     an iterator defined by multiple loops
+     and a recursive iterator over a tree.
+
+   It also contains examples of the two kinds of parallel iteration:
+    data-parallel (forall), and
+    task-parallel (coforall).
+*/
 
 //
 // fibonacci - generates the first n Fibonacci numbers
@@ -23,15 +23,15 @@ iter fibonacci(n: int) {
 
   for 1..n {
     yield current;
-      // When this iterator runs, it proceeds this far
-      // and then yields (generates) the first value of current (== 0).
-      // current and next are saved. The control and the yielded value
-      // are passed into the loop body, and one loop iteration executes.
-      //
-      // When the iteration completes, execution resumes here
-      // and continues until another yield is reached, etc.
-      //
-      // This statement updates current and next from their saved values.
+    // When this iterator runs, it proceeds this far
+    // and then yields (generates) the first value of current (== 0).
+    // current and next are saved. The control and the yielded value
+    // are passed into the loop body, and one loop iteration executes.
+    //
+    // When the iteration completes, execution resumes here
+    // and continues until another yield is reached, etc.
+    //
+    // This statement updates current and next from their saved values.
     (current, next) = (next, current + next);
   }
 }
@@ -107,14 +107,9 @@ writeln(multiloop(3));
 writeln(); // line break
 
 //
-// define a tree class and initialize an instance to
+//define a tree class
 //
-//      a
-//     / \
-//    b   c
-//       / \
-//      d   e
-//
+
 class Tree {
   var data: string;
   var left, right: Tree;
@@ -125,6 +120,20 @@ class Tree {
   }
 }
 
+
+/*
+  Initialize Tree instance to:
+
+  .. code-block:: text
+
+      tree:
+
+           a
+          / \
+         b   c
+            / \
+           d   e
+*/
 var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"),
                                                  new Tree("e")));
 
@@ -195,7 +204,7 @@ writeln();
 //
 
 // This just does something else noticeable to the tree data --
-// prefixing each string with "node_".
+// prefixing each string with ``node_``.
 proc decorate(s:string) return "node_" + s;
 
 //
@@ -211,3 +220,4 @@ writeln(tree);
 writeln();
 
 delete tree;
+

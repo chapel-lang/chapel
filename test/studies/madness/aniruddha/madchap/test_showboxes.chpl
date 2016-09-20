@@ -1,5 +1,6 @@
 use MRA;
 use MadAnalytics;
+use Sort;
 
 config const k      = 5;
 config const thresh = 1e-5;
@@ -21,7 +22,7 @@ proc main() {
     for lvl in 0..F.max_level { 
         write("\n **",lvl,": ");
         var arrNodeCoord = F.sumC.node_iter(lvl).get_coords();
-        QuickSort(arrNodeCoord);
+        quickSort(arrNodeCoord);
         for (n, l) in arrNodeCoord do
             write(" [",n,", ",l,"]");
     }

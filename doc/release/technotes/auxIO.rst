@@ -128,7 +128,8 @@ work on "standard" file systems as well).
    libhdfs, make sure the jvm installation includes a static version of libjvm.
    Since, Apache Hadoop's libhdfs spins up a jvm, each compute node will need 
    access to the Apache Hadoop HDFS jar files and correct Java classpath 
-   configurations.
+   configurations. Set ``CHPL_AUX_FILESYS=hdfs`` to use libhdfs.
+   Review ``$CHPL_HOME/modules/packages/HDFS.chpl`` for configuration.
 
  - Pivotal libhdfs3 is a pure C/C++ alternative implementation of the libhdfs. 
    To use libhdfs3: install the libhdfs3 using source code from the PivotalHD 

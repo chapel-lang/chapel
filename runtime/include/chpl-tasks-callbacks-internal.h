@@ -34,6 +34,7 @@ int chpl_task_callback_counts[chpl_task_cb_num_event_kinds];
 
 
 void chpl_task_do_callbacks_internal(chpl_task_cb_event_kind_t,
+                                     chpl_fn_int_t fid,
                                      int32_t filename,
                                      int lineno,
                                      uint64_t id,
@@ -49,13 +50,14 @@ int chpl_task_have_callbacks(chpl_task_cb_event_kind_t event_kind) {
 
 static inline
 void chpl_task_do_callbacks(chpl_task_cb_event_kind_t event_kind,
+                            chpl_fn_int_t fid,
                             int32_t filename,
                             int lineno,
                             uint64_t id,
                             int is_executeOn) {
   if (chpl_task_have_callbacks(event_kind))
     chpl_task_do_callbacks_internal(event_kind,
-                                    filename, lineno, id, is_executeOn);
+                                    fid, filename, lineno, id, is_executeOn);
 }
 
 #endif

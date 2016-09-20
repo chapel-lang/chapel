@@ -357,7 +357,7 @@ class LocBlockArr {
   const locDom: LocBlockDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: atomicflag; // This will only be accessed locally
+  var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
   // These function will always be called on this.locale, and so we do
@@ -454,7 +454,10 @@ proc Block.dsiEqualDMaps(that) param {
 proc Block.dsiClone() {
   return new Block(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity);
+                   dataParMinGranularity,
+                   rank,
+                   idxType,
+                   sparseLayoutType);
 }
 
 proc Block.dsiDestroyDistClass() {
@@ -493,9 +496,9 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 }
 
 proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-  return new SparseBlockDom(rank=rank, idxType=idxType, 
-      sparseLayoutType=sparseLayoutType, dist=this, parentDom=dom, 
-      whole=dom._value.whole);
+  return new SparseBlockDom(rank=rank, idxType=idxType,
+      sparseLayoutType=sparseLayoutType, dist=this, whole=dom._value.whole, 
+      parentDom=dom);
 }
 
 //
@@ -789,8 +792,13 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
     type strType = chpl__signedType(idxType);
     const tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
-    for param i in 1..tmpBlock.rank do
-      locOffset(i) = tmpBlock.dim(i).first/tmpBlock.dim(i).stride:strType;
+    for param i in 1..tmpBlock.rank {
+      const stride = tmpBlock.dim(i).stride;
+      if stride < 0 && strType != idxType then
+        halt("negative stride not supported with unsigned idxType");
+        // (since locOffset is unsigned in that case)
+      locOffset(i) = tmpBlock.dim(i).first / stride:idxType;
+    }
     // Forward to defaultRectangular
     for followThis in tmpBlock._value.these(iterKind.leader, maxTasks,
                                             myIgnoreRunning, minSize,
@@ -817,7 +825,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
   if chpl__testParFlag then
-    chpl__testPar("Block domain follower invoked on ", followThis);
+    chpl__testParWriteln("Block domain follower invoked on ", followThis);
 
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   type strType = chpl__signedType(idxType);
@@ -854,6 +862,9 @@ proc BlockDom.dsiNumIndices return whole.numIndices;
 proc BlockDom.dsiLow return whole.low;
 proc BlockDom.dsiHigh return whole.high;
 proc BlockDom.dsiStride return whole.stride;
+proc BlockDom.dsiAlignedLow return whole.alignedLow;
+proc BlockDom.dsiAlignedHigh return whole.alignedHigh;
+proc BlockDom.dsiAlignment return whole.alignment;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
@@ -1102,9 +1113,9 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
 
   if chpl__testParFlag {
     if fast then
-      chpl__testPar("Block array fast follower invoked on ", followThis);
+      chpl__testParWriteln("Block array fast follower invoked on ", followThis);
     else
-      chpl__testPar("Block array non-fast follower invoked on ", followThis);
+      chpl__testParWriteln("Block array non-fast follower invoked on ", followThis);
   }
 
   if testFastFollowerOptimization then
@@ -1191,6 +1202,7 @@ proc BlockArr.dsiSerialWrite(f) {
 }
 
 proc BlockArr.dsiSlice(d: BlockDom) {
+  // MPF: should this use sparseLayoutType = d.sparseLayoutType ?
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
       stridable=d.stridable, dom=d, sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
@@ -1210,8 +1222,7 @@ proc BlockArr.dsiLocalSlice(ranges) {
   for param i in 1..rank {
     low(i) = ranges(i).low;
   }
-  var A => locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
-  return A;
+  return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 
 proc _extendTuple(type t, idx: _tuple, args) {
@@ -1456,8 +1467,18 @@ proc BlockArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc BlockArr.dsiSupportsBulkTransfer() param return true;
-proc BlockArr.dsiSupportsBulkTransferInterface() param return true;
+proc BlockArr.dsiSupportsBulkTransfer() param {
+  if sparseLayoutType != DefaultDist then
+    return false;
+  else
+    return true;
+}
+proc BlockArr.dsiSupportsBulkTransferInterface() param {
+   if sparseLayoutType != DefaultDist then
+    return false;
+  else
+    return true;
+}
 
 proc BlockArr.doiCanBulkTransfer() {
   if debugBlockDistBulkTransfer then
@@ -1478,9 +1499,7 @@ proc BlockArr.doiCanBulkTransferStride() param {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiCanBulkTransferStride");
 
-  // A BlockArr is a bunch of DefaultRectangular arrays,
-  // so strided bulk transfer gotta be always possible.
-  return true;
+  return useBulkTransferDist;
 }
 
 proc BlockArr.doiBulkTransfer(B) {
@@ -1607,7 +1626,7 @@ iter ConsecutiveChunks(d1,d2,lid,lo) {
   var rlo=lo+offset;
   var rid  = d2.dist.targetLocsIdx(rlo);
   while (elemsToGet>0) {
-    const size = min(d2.numRemoteElems(rlo,rid),elemsToGet):int;
+    const size = min(d2.numRemoteElems(rlo,rid),elemsToGet);
     yield (rid,rlo,size);
     rid +=1;
     rlo += size;
@@ -1699,6 +1718,8 @@ proc BlockArr.doiBulkTransferTo(Barg)
 
 //For assignments of the form: "Block = any" 
 //where "any" means any array that implements the bulk transfer interface
+// TODO: avoid spawning so many coforall-ons
+//   - clean up some of this range creation logic
 proc BlockArr.doiBulkTransferFrom(Barg)
 {
   if debugBlockDistBulkTransfer then

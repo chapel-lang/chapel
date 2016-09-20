@@ -110,6 +110,9 @@ or coforall loop. Here is an example of such a class:
     /* accumulate a single element onto the accumulator */
     proc accumulate(elm)  { value = value + elm; }
 
+    /* accumulate a single element onto the state */
+    proc accumulateOntoState(state, elm)  { state = state + elm; }
+
     // Note: 'this' can be accessed by multiple calls to combine()
     // concurrently. The Chapel implementation serializes such calls
     // with a lock on 'this'.
@@ -129,7 +132,7 @@ or coforall loop. Here is an example of such a class:
   var A = [1000, 200, 30, 4];
   var sum: int;
   forall elm in A with (PlusReduceOp reduce sum) {
-    sum += elm;
+    sum += elm;  // equivalently:  sum reduce= elm;
   }
   writeln(sum);
 

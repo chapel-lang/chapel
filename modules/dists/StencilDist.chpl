@@ -307,7 +307,7 @@ class LocStencilArr {
   const locDom: LocStencilDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var myElems: [locDom.myFluff] eltType;
-  var locRADLock: atomicflag; // This will only be accessed locally
+  var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
   // These function will always be called on this.locale, and so we do
@@ -1283,8 +1283,7 @@ proc StencilArr.dsiLocalSlice(ranges) {
   for param i in 1..rank {
     low(i) = ranges(i).low;
   }
-  var A => locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
-  return A;
+  return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 
 proc _extendTuple(type t, idx: _tuple, args) {
@@ -1723,9 +1722,7 @@ proc StencilArr.doiCanBulkTransferStride() param {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiCanBulkTransferStride");
 
-  // A StencilArr is a bunch of DefaultRectangular arrays,
-  // so strided bulk transfer gotta be always possible.
-  return true;
+  return useBulkTransferDist;
 }
 
 proc StencilArr.doiBulkTransfer(B) {

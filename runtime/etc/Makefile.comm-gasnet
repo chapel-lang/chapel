@@ -28,8 +28,12 @@ include $(GASNET_SETUP_MAKEFILE)
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xt cray-xe cray-xc cray-xk))
 # Just don't set CC and LD - they'll be set by our compiler/Makefile....
 else
+ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
+# Just don't set CC and LD - they'll be set by our compiler/Makefile....
+else
 CC = $(GASNET_CC)
 LD = $(GASNET_LD)
+endif
 endif
 
 CHPL_MAKE_BASE_CFLAGS += $(CHPL_GASNET_CFLAGS)

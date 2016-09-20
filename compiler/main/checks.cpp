@@ -154,6 +154,13 @@ void check_checkResolved()
   // The checkResolved pass should not make any changes, so skip checks.
 }
 
+void check_replaceArrayAccessesWithRefTemps()
+{
+  check_afterEveryPass();
+  check_afterNormalization();
+  check_afterResolution();
+}
+
 void check_processIteratorYields() {
   check_afterEveryPass();
   check_afterNormalization();
@@ -175,7 +182,7 @@ void check_cullOverReferences()
   check_afterResolution();
 
   // No ContextCallExprs should remain in the tree.
-  forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
+  for_alive_in_Vec(ContextCallExpr, cc, gContextCallExprs) {
     INT_FATAL("ContextCallExpr should no longer be in AST");
   }
 }
@@ -362,6 +369,11 @@ void check_insertLineNumbers()
   check_afterLowerIterators();
 }
 
+void check_denormalize() {
+  //do we need to call any checks here ?
+  //or implement new checks ?
+}
+
 void check_codegen()
 {
   // This pass should not change the AST, so no checks are required.
@@ -444,6 +456,8 @@ static void check_afterCallDestructors()
 static void check_afterLowerIterators()
 {
   checkLowerIteratorsRemovedPrims();
+  if (fVerify)
+    checkArgsAndLocals();
 }
 
 
@@ -453,7 +467,7 @@ static void check_afterLowerIterators()
 //
 static void checkAggregateTypes()
 {
-  forv_Vec(AggregateType, at, gAggregateTypes)
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes)
   {
     if (! at->defaultInitializer)
       INT_FATAL(at, "aggregate type has no initializer");
@@ -468,7 +482,7 @@ static void checkAggregateTypes()
 //
 static void
 checkResolveRemovedPrims(void) {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (call->primitive) {
       switch(call->primitive->tag) {
         case PRIM_BLOCK_PARAM_LOOP:
@@ -478,11 +492,10 @@ checkResolveRemovedPrims(void) {
         case PRIM_LOGICAL_FOLDER:
         case PRIM_TYPEOF:
         case PRIM_TYPE_TO_STRING:
-        case PRIM_IS_SYNC_TYPE:
-        case PRIM_IS_SINGLE_TYPE:
         case PRIM_IS_TUPLE_TYPE:
         case PRIM_IS_STAR_TUPLE_TYPE:
         case PRIM_IS_SUBTYPE:
+        case PRIM_REDUCE_ASSIGN:
         case PRIM_TUPLE_EXPAND:
         case PRIM_QUERY:
         case PRIM_QUERY_PARAM_FIELD:
@@ -500,10 +513,10 @@ checkResolveRemovedPrims(void) {
   }
 }
 
-static void 
+static void
 checkTaskRemovedPrims()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
     if (call->primitive)
       switch(call->primitive->tag)
       {
@@ -525,7 +538,7 @@ checkTaskRemovedPrims()
 static void 
 checkLowerIteratorsRemovedPrims()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
     if (call->primitive)
       switch(call->primitive->tag)
       {
@@ -543,7 +556,7 @@ checkLowerIteratorsRemovedPrims()
 static void
 checkFlagRelationships()
 {
-  forv_Vec(DefExpr, def, gDefExprs)
+  for_alive_in_Vec(DefExpr, def, gDefExprs)
   {
     // These tests apply to function symbols.
     if (FnSymbol* fn = toFnSymbol(def->sym))
@@ -575,7 +588,7 @@ checkAutoCopyMap()
 static void
 checkFormalActualBaseTypesMatch()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     if (! call->parentSymbol)
       // Call is not in tree
@@ -625,7 +638,7 @@ checkFormalActualBaseTypesMatch()
 static void
 checkRetTypeMatchesRetVarType()
 {
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     if (fn->isIterator())
       // Iterators break this rule.
@@ -643,7 +656,7 @@ checkRetTypeMatchesRetVarType()
 static void
 checkFormalActualTypesMatch()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     if (FnSymbol* fn = call->isResolved())
     {

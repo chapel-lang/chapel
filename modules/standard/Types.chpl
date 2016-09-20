@@ -253,7 +253,7 @@ proc isPODValue(e)       param  return isPODType(e.type);
 
 
 //
-// ixXxx() - the argument can be either a type or a value
+// isXxx() - the argument can be either a type or a value
 //
 
 // Set 1 - types.
@@ -310,20 +310,6 @@ pragma "no doc"
 proc isRefIter(type t)   param  return isRefIterType(t);
 pragma "no doc"
 proc isPOD(type t)       param  return isPODType(t);
-pragma "no doc"
-proc isTupleOfPrimitiveTypes(e) param
-{
-  if !isTuple(e) then return false;
-
-  // compute && reduce isPrimitiveValue over the tuple
-  proc help(x) param
-    return isPrimitiveValue(x);
-
-  proc help(x, args ...) param
-    return isPrimitiveValue(x) && help((...args));
-
-  return help((...e));
-}
 
 // Set 2 - values.
 /*
@@ -609,6 +595,11 @@ iter chpl_enumerate(type t: enumerated) {
   for i in 1..enumTuple.size do
     yield enumTuple(i);
 }
+pragma "no doc"
+iter type enumerated.these(){
+  for i in chpl_enumerate(this) do
+    yield i;
+}
 
 // TODO add chpl_ to these functions' names - they are not intended for user.
 private proc enum_minbits(type t: enumerated) param {
@@ -714,18 +705,25 @@ inline proc _band_id(type t) {
   // but old code had it casting MAX_UINT to the same type...
   // I just moved it from the code generator since we don't need
   // a primitive to generate constants.
-  if t == bool then return true;
-  if t == int(8) then return -1:t;
-  if t == int(16) then return -1:t;
-  if t == int(32) then return -1:t;
-  if t == int(64) then return -1:t;
-  if t == real(32) then return max(uint(32)):t;
-  if t == real(64) then return max(uint(64)):t;
-  if t == imag(32) then return max(uint(32)):t;
-  if t == imag(64) then return max(uint(64)):t;
-  if t == complex(64) then return (max(uint(32)):real(32), max(uint(32)):real(32)):t;
-  if t == complex(128) then return (max(uint(64)):real(64), max(uint(64)):real(64)):t;
-  return max(t);
+  if      isBoolType(t) then return true:t;
+  else if isIntType(t)  then return -1:t;
+  else if isUintType(t) then return max(t);
+  else if t == real(32) then return max(uint(32)):t;
+  else if t == real(64) then return max(uint(64)):t;
+  else if t == imag(32) then return max(uint(32)):t;
+  else if t == imag(64) then return max(uint(64)):t;
+  else if t == complex(64) then return (max(uint(32)):real(32), max(uint(32)):real(32)):t;
+  else if t == complex(128) then return (max(uint(64)):real(64), max(uint(64)):real(64)):t;
+  else if isArrayType(t) {
+    var result: t;
+    type elT = result.eltType;
+    forall elm in result do
+      // Todo performance consideration: if elT is an array, we want to have
+      // just one array per locale or numa domain.
+      elm = _band_id(elT);
+    return result;
+  } else
+    compilerError("Identity value for & over ", t:string, "is not available");
 }
 pragma "no doc"
 inline proc _bor_id(type t) return 0:t;

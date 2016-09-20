@@ -33,7 +33,7 @@ module ChapelDistribution {
     // atomics are available
     var _distCnt: atomic_refcnt; // distribution reference count
     var _doms: list(BaseDom);   // domains declared over this distribution
-    var _domsLock: atomicflag;  //   and lock for concurrent access
+    var _domsLock: atomicbool;  //   and lock for concurrent access
   
     pragma "dont disable remote value forwarding"
     proc destroyDist(): int {
@@ -121,7 +121,7 @@ module ChapelDistribution {
     // atomics are available
     var _domCnt: atomic_refcnt; // domain reference count
     var _arrs: list(BaseArr);  // arrays declared over this domain
-    var _arrsLock: atomicflag; //   and lock for concurrent access
+    var _arrsLock: atomicbool; //   and lock for concurrent access
   
     proc dsiMyDist(): BaseDist {
       halt("internal error: dsiMyDist is not implemented");
@@ -220,37 +220,227 @@ module ChapelDistribution {
       halt("clear not implemented for this distribution");
     }
   
-    proc clearForIteratableAssign() {
-      compilerError("Illegal assignment to a rectangular domain");
-    }
-  
     proc dsiAdd(x) {
       compilerError("Cannot add indices to a rectangular domain");
+      return 0;
     }
   
     proc dsiRemove(x) {
       compilerError("Cannot remove indices from a rectangular domain");
+      return 0;
     }
   }
   
+  class BaseSparseDomImpl : BaseSparseDom {
+
+    var nnzDom = {1..nnz};
+
+    proc dsiBulkAdd(inds: [] index(rank, idxType),
+        dataSorted=false, isUnique=false, preserveInds=true){
+
+      if !dataSorted && preserveInds {
+        var _inds = inds;
+        return bulkAdd_help(_inds, dataSorted, isUnique); 
+      }
+      else {
+        return bulkAdd_help(inds, dataSorted, isUnique);
+      }
+    }
+
+    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), 
+        dataSorted=false, isUnique=false){
+      halt("Helper function called on the BaseSparseDomImpl");
+
+      return -1;
+    }
+
+    inline proc _grow(size: int){
+      const oldNNZDomSize = nnzDom.size;
+      if (size > oldNNZDomSize) {
+        const _newNNZDomSize = if (oldNNZDomSize) then 2*oldNNZDomSize else 1;
+        nnzDom = {1.._newNNZDomSize};
+      }
+    }
+
+    inline proc _bulkGrow(size: int) {
+      if (nnz > nnzDom.size) {
+        const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
+
+        nnzDom = {1.._newNNZDomSize};
+      }
+    }
+
+    // this is a helper function for bulkAdd functions in sparse subdomains.
+    // NOTE:it assumes that nnz array of the sparse domain has non-negative 
+    // indices. If, for some reason it changes, this function and bulkAdds have to
+    // be refactored. (I think it is a safe assumption at this point and keeps the
+    // function a bit cleaner than some other approach. -Engin)
+    proc __getActualInsertPts(d, inds, 
+        dataSorted, isUnique) /* where isSparseDom(d) */ {
+
+      use Sort;
+
+      //find individual insert points
+      //and eliminate duplicates between inds and dom
+      var indivInsertPts: [inds.domain] int;
+      var actualInsertPts: [inds.domain] int; //where to put in newdom
+
+      if !dataSorted then sort(inds);
+
+      //eliminate duplicates --assumes sorted
+      if !isUnique {
+        //make sure lastInd != inds[inds.domain.low]
+        var lastInd = inds[inds.domain.low] + 1; 
+        for (i, p) in zip(inds, indivInsertPts)  {
+          if i == lastInd then p = -1;
+          else lastInd = i;
+        }
+      }
+
+      //verify sorted and no duplicates if not --fast
+      if boundsChecking {
+        if !isSorted(inds) then
+          halt("bulkAdd: Data not sorted, call the function with dataSorted=false");
+
+        //check duplicates assuming sorted
+        const indsStart = inds.domain.low;
+        const indsEnd = inds.domain.high;
+        var lastInd = inds[indsStart];
+        for i in indsStart+1..indsEnd {
+          if inds[i] == lastInd && indivInsertPts[i] != -1 then 
+            halt("There are duplicates, call the function with isUnique=false"); 
+        }
+
+        for i in inds do d.boundsCheck(i);
+
+      }
+
+      forall (i,p) in zip(inds, indivInsertPts) {
+        if isUnique || p != -1 { //don't do anything if it's duplicate
+          const (found, insertPt) = d.find(i);
+          p = if found then -1 else insertPt; //mark as duplicate
+        }
+      }
+
+      //shift insert points for bulk addition
+      //previous indexes that are added will cause a shift in the next indexes
+      var actualAddCnt = 0;
+
+      //NOTE: this can also be done with scan
+      for (ip, ap) in zip(indivInsertPts, actualInsertPts) {
+        if ip != -1 {
+          ap = ip + actualAddCnt;
+          actualAddCnt += 1;
+        }
+        else ap = ip;
+      }
+
+      return (actualInsertPts, actualAddCnt);
+    }
+
+    proc dsiClear(){
+      halt("not implemented");
+    }
+
+  }
+
   class BaseSparseDom : BaseDom {
+    // rank and idxType will be moved to BaseDom
+    param rank: int;
+    type idxType;
+    var parentDom;
+
+    // We currently cannot have dist here. It is due to a compiler bug due to
+    // inheritance of generic var fields.
+    // var dist;
+
+    var nnz = 0; //: int;
+
     proc dsiClear() {
-      halt("clear not implemented for this distribution");
+      halt("clear not implemented for this distribution - BaseSparseDom");
     }
   
-    proc clearForIteratableAssign() {
-      dsiClear();
+    proc dsiBulkAdd(inds: [] index(rank, idxType),
+        dataSorted=false, isUnique=false, preserveInds=true){
+
+      halt("Bulk addition is not supported by this sparse domain");
     }
+
+    proc boundsCheck(ind: index(rank, idxType)):void {
+      if boundsChecking then
+        if !(parentDom.member(ind)) then
+          halt("Sparse domain/array index out of bounds: ", ind,
+              " (expected to be within ", parentDom, ")");
+    }
+
+    //basic DSI functions
+    proc dsiDim(d: int) { return parentDom.dim(d); }
+    proc dsiDims() { return parentDom.dims(); }
+    proc dsiNumIndices { return nnz; }
+    proc dsiSize { return nnz; }
+    proc dsiLow { return parentDom.low; }
+    proc dsiHigh { return parentDom.high; }
+    proc dsiStride { return parentDom.stride; }
+    proc dsiAlignment { return parentDom.alignment; }
+    proc dsiFirst {
+      halt("dsiFirst is not implemented");
+      const _tmp: rank*idxType;
+      return _tmp;
+    }
+    proc dsiLast {
+      halt("dsiLast not implemented");
+      const _tmp: rank*idxType;
+      return _tmp;
+    }
+    proc dsiAlignedLow { return parentDom.alignedLow; }
+    proc dsiAlignedHigh { return parentDom.alignedHigh; }
+
+  } // end BaseSparseDom
+
+  // BaseSparseDom operator overloads
+  proc +=(ref sd: domain, inds: [] sd.idxType) where isSparseDom(sd) && 
+    sd.rank==1 {
+
+    if inds.size == 0 then return;
+
+    sd._value.dsiBulkAdd(inds);
   }
+
+  proc +=(ref sd: domain, inds: [] sd.rank*sd.idxType) where isSparseDom(sd) &&
+    sd.rank>1 {
+
+    if inds.size == 0 then return;
+
+    sd._value.dsiBulkAdd(inds);
+  }
+
+  // Currently this is not optimized for addition of a sparse
+  proc +=(ref sd: domain, d: domain)
+  where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
+
+    if d.size == 0 then return;
+
+    type _idxType = if sd.rank==1 then int else sd.rank*int;
+    const indCount = d.numIndices;
+    const arr: [{0..#indCount}] _idxType;
+
+    //this could be a parallel loop. but ranks don't match -- doesn't compile
+    for (a,i) in zip(arr,d) do a=i;
+
+    sd._value.dsiBulkAdd(arr, true, true, false);
+  }
+  // end BaseSparseDom operators
   
   class BaseAssociativeDom : BaseDom {
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }
-  
-    proc clearForIteratableAssign() {
-      dsiClear();
+
+    proc dsiAdd(idx) {
+      compilerError("Index addition is not supported by this domain");
+      return 0;
     }
+  
   }
   
   class BaseOpaqueDom : BaseDom {
@@ -258,9 +448,6 @@ module ChapelDistribution {
       halt("clear not implemented for this distribution");
     }
   
-    proc clearForIteratableAssign() {
-      dsiClear();
-    }
   }
   
   //
@@ -394,5 +581,80 @@ module ChapelDistribution {
     proc dsiSupportsBulkTransferInterface() param return false;
     proc doiCanBulkTransferStride() param return false;
   }
-  
+
+  /*
+   * BaseSparseArr is very basic/generic so that we have some flexibility in
+   * implementing sparse array classes.
+   */
+  class BaseSparseArr: BaseArr {
+    type eltType;
+    param rank : int;
+    type idxType;
+
+    var dom; /* : DefaultSparseDom(?); */
+
+    // NOTE I tried to put `data` in `BaseSparseArrImpl`. However, it wasn't
+    // clear how to initialize this in that class.
+    var data: [dom.nnzDom] eltType;
+
+    proc dsiGetBaseDom() return dom;
+  }
+
+  /*
+   * All the common helpers/methods in implementations of internal sparse arrays
+   * go here.
+   */
+  class BaseSparseArrImpl: BaseSparseArr {
+
+
+    // currently there is no support implemented for setting IRV for
+    // SparseBlockArr, therefore I moved IRV related stuff to this class, and
+    // have SparseBlockArr be a child class of BaseSparseArr directly instead
+    // of this one
+    var irv: eltType;
+    proc IRV ref {
+      return irv;
+    }
+
+    // shifts data array according to shiftMap where shiftMap[i] is the new index 
+    // of the ith element of the array. Called at the end of bulkAdd to move the
+    // existing items in data array and initialize new indices with irv.
+    // oldnnz is the number of elements in the array. As the function is called 
+    // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
+    proc sparseBulkShiftArray(shiftMap, oldnnz){
+      var newIdx: int;
+      var prevNewIdx = 1;
+
+      // fill all new indices i s.t. i > indices[oldnnz]
+      forall i in shiftMap.domain.high+1..dom.nnzDom.high do data[i] = irv;
+
+      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+        newIdx = shiftMap[_newIdx];
+        data[newIdx] = data[i];
+
+        //fill IRV up to previously added nnz
+        for emptyIndex in newIdx+1..prevNewIdx-1 do data[emptyIndex] = irv;
+        prevNewIdx = newIdx;
+      }
+      //fill the initial added space with IRV
+      for i in 1..prevNewIdx-1 do data[i] = irv;
+    }
+
+    // shift data array after single index addition. Fills the new index with irv
+    proc sparseShiftArray(shiftrange, initrange) {
+      for i in initrange {
+        data(i) = irv;
+      }
+      for i in shiftrange by -1 {
+        data(i+1) = data(i);
+      }
+      data(shiftrange.low) = irv;
+    }
+
+    proc sparseShiftArrayBack(shiftrange) {
+      for i in shiftrange {
+        data(i) = data(i+1);
+      }
+    }
+  }
 }

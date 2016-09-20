@@ -1,8 +1,8 @@
-.TH "Converting between Object Types, Sets and Attributes, and Strings" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_object_strings" 3 "Sun Aug 28 2016" "Version 1.11.4" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Converting between Object Types, Sets and Attributes, and Strings \- 
+hwlocality_object_strings \- Converting between Object Types, Sets and Attributes, and Strings
 .SS "Functions"
 
 .in +1c
@@ -27,7 +27,7 @@ Converting between Object Types, Sets and Attributes, and Strings \-
 
 .SH "Function Documentation"
 .PP 
-.SS "int hwloc_obj_attr_snprintf (char *restrictstring, size_tsize, \fBhwloc_obj_t\fPobj, const char *restrictseparator, intverbose)"
+.SS "int hwloc_obj_attr_snprintf (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, const char *restrict separator, int verbose)"
 
 .PP
 Stringify the attributes of a given topology object into a human-readable form\&. Attribute values are separated by \fCseparator\fP\&.
@@ -42,7 +42,7 @@ the number of character that were actually written if not truncating, or that wo
 .RE
 .PP
 
-.SS "int hwloc_obj_cpuset_snprintf (char *restrictstr, size_tsize, size_tnobj, const \fBhwloc_obj_t\fP *restrictobjs)"
+.SS "int hwloc_obj_cpuset_snprintf (char *restrict str, size_t size, size_t nobj, const \fBhwloc_obj_t\fP *restrict objs)"
 
 .PP
 Stringify the cpuset containing a set of objects\&. If \fCsize\fP is 0, \fCstring\fP may safely be \fCNULL\fP\&.
@@ -53,7 +53,7 @@ the number of character that were actually written if not truncating, or that wo
 .RE
 .PP
 
-.SS "int hwloc_obj_type_snprintf (char *restrictstring, size_tsize, \fBhwloc_obj_t\fPobj, intverbose)"
+.SS "int hwloc_obj_type_snprintf (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, int verbose)"
 
 .PP
 Stringify the type of a given topology object into a human-readable form\&. Contrary to \fBhwloc_obj_type_string()\fP, this function includes object-specific attributes (such as the Group depth, the Bridge type, or OS device type) in the output, and it requires the caller to provide the output buffer\&.
@@ -68,7 +68,7 @@ the number of character that were actually written if not truncating, or that wo
 .RE
 .PP
 
-.SS "int hwloc_obj_type_sscanf (const char *string, \fBhwloc_obj_type_t\fP *typep, int *depthattrp, void *typeattrp, size_ttypeattrsize)"
+.SS "int hwloc_obj_type_sscanf (const char * string, \fBhwloc_obj_type_t\fP * typep, int * depthattrp, void * typeattrp, size_t typeattrsize)"
 
 .PP
 Return an object type and attributes from a type string\&. Convert strings such as 'Package' or 'Cache' into the corresponding types\&. Matching is case-insensitive, and only the first letters are actually required to match\&.
@@ -92,7 +92,7 @@ This is an extended version of the now deprecated hwloc_obj_type_of_string()
 .RE
 .PP
 
-.SS "const char* hwloc_obj_type_string (\fBhwloc_obj_type_t\fPtype)"
+.SS "const char* hwloc_obj_type_string (\fBhwloc_obj_type_t\fP type)"
 
 .PP
 Return a constant stringified object type\&. This function is the basic way to convert a generic type into a string\&.

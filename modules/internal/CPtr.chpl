@@ -89,6 +89,14 @@ module CPtr {
   inline proc _cast(type t, x) where t:c_ptr && x.type:c_void_ptr {
     return __primitive("cast", t, x);
   }
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:string && x.type:c_void_ptr {
+    return __primitive("ref to string", x):string;
+  }
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:string && x.type:c_ptr {
+    return __primitive("ref to string", x):string;
+  }
 
 
   pragma "compiler generated"
@@ -130,6 +138,10 @@ module CPtr {
     return __primitive("ptr_eq", a, b);
   }
   pragma "no doc"
+  inline proc ==(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_eq", a, b);
+  }
+  pragma "no doc"
   inline proc ==(a: c_ptr, b: _nilType) {
     return __primitive("ptr_eq", a, c_nil);
   }
@@ -156,6 +168,10 @@ module CPtr {
   }
   pragma "no doc"
   inline proc !=(a: c_void_ptr, b: c_ptr) {
+    return __primitive("ptr_neq", a, b);
+  }
+  pragma "no doc"
+  inline proc !=(a: c_void_ptr, b: c_void_ptr) {
     return __primitive("ptr_neq", a, b);
   }
   pragma "no doc"
