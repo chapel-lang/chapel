@@ -298,8 +298,8 @@ writeln();
 // It is expanded like a generic procedure, with the required number of
 // arguments having types which match the actual arguments.
 //
-// Note: see :ref:`varargs.chpl` for further information on procedures with a
-// variable number of arguments
+// Note: see the :doc:`varargs` primer for further information on procedures
+// with a variable number of arguments
 //
 proc writeList(x ...?k) {
   var first = true;
