@@ -12,5 +12,6 @@
 .highlight .mb{ color: #099}
 
 
-.pre{ color: #515151}
+/* Inlined code is black (instead of default red) */
+.pre{ color: #000}
 
