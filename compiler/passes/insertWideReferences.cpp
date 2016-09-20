@@ -2121,7 +2121,8 @@ static void fixAST() {
     if (call->isResolved()) {
       for_formals_actuals(formal, actual, call) {
         if (formal->hasFlag(FLAG_RETARG)) {
-          if (formal->typeInfo() != actual->typeInfo() && hasSomeWideness(formal)) {
+          if (formal->typeInfo() != actual->typeInfo() && hasSomeWideness(formal) &&
+              !(formal->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) || actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))) {
             SET_LINENO(call);
 
             SymExpr* act = toSymExpr(actual);
@@ -2180,6 +2181,10 @@ static void fixAST() {
             call->insertAfter(new CallExpr(PRIM_MOVE, dest->copy(), new SymExpr(destTemp)));
             parent->remove();
             act->var->defPoint->remove();
+          } else {
+            SymExpr* act = toSymExpr(actual);
+            INT_ASSERT(act);
+            makeMatch(formal, act);
           }
         }
         else if (SymExpr* act = toSymExpr(actual)) {
