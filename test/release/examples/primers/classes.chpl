@@ -23,14 +23,14 @@ class C {
 // each field in the class.  Once a class has been constructed, its methods
 // can be called.
 //
-var c = new C(1, 2);
-c.printFields();
+var i = new C(1, 2);
+i.printFields();
 
 //
 // Default output is supported so a class can be written by making a
 // call to write or writeln.  Default input is also supported.
 //
-writeln(c);
+writeln(i);
 
 //
 // Methods can also be defined outside of the class body by prefixing
@@ -44,7 +44,7 @@ writeln(c);
 proc C.sum_a_b_b(b: int) {
   return a + b + this.b;
 }
-writeln(c.sum_a_b_b(3));
+writeln(i.sum_a_b_b(3));
 
 //
 // Here, a class named 'D' is declared as a derived class from 'C'.
@@ -60,18 +60,18 @@ class D: C {
 }
 
 //
-// The static type of the variable 'c', declared above, is 'C'.
-// Because the class 'D' is derived from 'C', the variable 'c' can
+// The static type of the variable 'i', declared above, is 'C'.
+// Because the class 'D' is derived from 'C', the variable 'i' can
 // reference an object of type 'D'.  If an overridden method such as
 // printFields is called, it is dynamically dispatched to the method
 // with the most specific dynamic type.  The 'delete' keyword can be
 // used to free memory associated with c before pointing it an instance
 // of 'D'.
 //
-delete c;
-c = new D(3, 4);
-c.printFields();
-delete c;
+delete i;
+i = new D(3, 4);
+i.printFields();
+delete i;
 
 //
 // There are a few method names that cause the method to have special
