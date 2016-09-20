@@ -15,11 +15,11 @@ communication, for example with:
 
    export GASNET_PHYSMEM_MAX=1G
 
-Note that setting GASNET_PHYSMEM_MAX will limit amount of memory available
-to Chapel programs if CHPL_GASNET_SEGMENT=fast.
+Note that setting ``GASNET_PHYSMEM_MAX`` will limit amount of memory
+available to Chapel programs if ``CHPL_GASNET_SEGMENT=fast``.
 
-It might be necessary to also set GASNET_PHYSMEM_NOPROBE=1 - especially
-if you increase the size of GASNET_PHYSMEM_MAX.
+It might be necessary to also set ``GASNET_PHYSMEM_NOPROBE=1`` -
+especially if you increase the size of ``GASNET_PHYSMEM_MAX``.
 
 It's probably a good idea to start with this variable set
 and to try removing it once everything else is working.
@@ -29,12 +29,12 @@ Using Slurm for Job Launch
 
 For clusters using Slurm, there are three options:
 
-a. In the future, we expect that CHPL_LAUNCHER=slurm-srun will be the best
+a. In the future, we expect that ``CHPL_LAUNCHER=slurm-srun`` will be the best
    option. However, this configuration is not yet sufficiently tested
    with InfiniBand.
 
 #. The current best option for InfiniBand+Slurm is
-   CHPL_LAUNCHER=slurm-gasnetrun_ibv:
+   ``CHPL_LAUNCHER=slurm-gasnetrun_ibv``:
 
    .. code-block:: bash
 
@@ -168,11 +168,9 @@ configuration output.
 See Also
 ++++++++
 
-For more information on these and other available GASNet options
-other options, including configuring to launch through MPI,
-please refer to:
-
-``$CHPL_HOME/third-party/gasnet/gasnet-src/ibv-conduit/README``
-or
-http://gasnet.lbl.gov/dist/ibv-conduit/README
+For more information on these and other available GASNet options other
+options, including configuring to launch through MPI, please refer to
+GASNet's official `InfiniBand conduit documentation
+<http://gasnet.lbl.gov/dist/ibv-conduit/README>`_, which can also be found
+in ``$CHPL_HOME/third-party/gasnet/gasnet-src/ibv-conduit/README``.
 

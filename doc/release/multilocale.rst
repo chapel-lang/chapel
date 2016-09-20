@@ -82,10 +82,7 @@ What is GASNet?
 
 GASNet is a one-sided communication and active message library being
 developed by Lawrence Berkeley National Lab and UC Berkeley.  For details,
-refer to:
-
-* ``$CHPL_HOME/third-party/gasnet/README`` and
-* The GASNet website: http://gasnet.cs.berkeley.edu
+refer to the `GASNet website <http://gasnet.cs.berkeley.edu>`_.
 
 .. _set-comm-conduit:
 
@@ -126,7 +123,7 @@ mpi
     MPI - portable conduit, works on any network with MPI 1.1 or newer
 udp
     UDP - portable conduit, works on any network with a TCP/IP stack
-    (see :ref:`Using the Portable UDP Conduit <launching-udp>`)
+    (see :ref:`Using the Portable UDP Conduit <using-udp>`)
 
 See the GASNet documentation for more information on each of these conduits.
 
