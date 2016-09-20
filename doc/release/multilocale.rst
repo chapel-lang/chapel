@@ -6,7 +6,7 @@ Multilocale Chapel Execution
 
 This document outlines the steps to get started with multi-locale Chapel.
 
-0. Chceck for instructions more relevant to your platforrm in
+0. Check for instructions more relevant to your platforrm in
    :ref:`platform-specific <platforms-index>` documentation.
 
 #. Inspect your current communication configuration:
@@ -93,8 +93,10 @@ Setting CHPL_COMM_SUBSTRATE
 +++++++++++++++++++++++++++
 
 Advanced users can set ``CHPL_COMM_SUBSTRATE`` to indicate the GASNet
-conduit that they wish to use.  Novice users can leave this unset
-and Chapel will make a choice for them.
+conduit that they wish to use. Conduits are optional components in the
+GASNet library. GASNet uses different conduits to support different
+networks. is a Novice users can leave this unset and Chapel will make a
+choice for them.
 
 Most settings for ``CHPL_COMM_SUBSTRATE`` rely on the particular network
 hardware. The options include:
@@ -148,8 +150,11 @@ other                  udp
 Setting CHPL_GASNET_SEGMENT
 +++++++++++++++++++++++++++
 
-Advanced GASNet users can set ``CHPL_GASNET_SEGMENT`` to choose a
-memory segment to use with GASNet. The options are:
+Advanced GASNet users can set ``CHPL_GASNET_SEGMENT`` to choose a memory
+segment to use with GASNet. A GASNet segment is a region of memory that
+is expected to be used for remote memory access. The GASNet library works
+to make memory in this segment is available for accelerated memory access
+supported directly by network hardware.  The options are:
 
 everything
   All memory is available for remote memory access
