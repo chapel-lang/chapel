@@ -105,7 +105,7 @@ module RangeChunk {
     remPol: RemElems = Thru): 2*RT
   {
     if r.length == 0 || numChunks <= 0 || idx >= numChunks then
-      return (1, 0);
+      return (1: RT, 0: RT);
 
     const nElems = r.length;
     const nChunks = numChunks: RT;
@@ -177,7 +177,7 @@ module RangeChunk {
   {
     const m = nElems * i;
     const start = if i == 0
-      then 0
+      then 0: I
       else ceilXDivByY(m, nChunks);
     const end = if i == nChunks - 1
       then nElems - 1

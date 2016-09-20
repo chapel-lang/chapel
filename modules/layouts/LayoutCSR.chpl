@@ -18,6 +18,7 @@
  */
 
 config param debugCSR = false;
+use RangeChunk only ;
 
 // I have not seen us test a non-"sub" CSR domain
 // and I do not want untested code in the docs.
@@ -63,8 +64,6 @@ class CSR: BaseDist {
 }
 
 class CSRDom: BaseSparseDomImpl {
-  use RangeChunk only ;
-
   var dist: CSR;
 
   var rowRange: range(idxType);
@@ -134,7 +133,7 @@ class CSRDom: BaseSparseDomImpl {
     if numChunks == 1 then
       yield (this, 1, numElems);
     else
-      coforall chunk in RangeChunk.chunks(1..numElems, numChunks) do
+      coforall chunk in chunks(1..numElems, numChunks) do
         yield (this, chunk.first, chunk.last);
     // TODO: to handle large numElems and numChunks faster, it would be great
     // to run the binary search in _private_findStartRow smarter, e.g.
