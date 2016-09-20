@@ -118,7 +118,7 @@ All of the instructions above describe how to run Chapel programs
 in a single-locale (shared-memory) mode. To run using multiple
 locales (distributed memory), please refer to `doc/multilocale.rst`_.
 
-.. _doc/multilocale.rst: http://chapel.cray.com/docs/1.13/usingchapel/multilocale.html
+.. _doc/multilocale.rst: http://chapel.cray.com/docs/1.14/usingchapel/multilocale.html
 
 
 Performance
