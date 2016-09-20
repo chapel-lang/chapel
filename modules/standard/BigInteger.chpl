@@ -117,7 +117,7 @@ module BigInteger {
 
         mpz_init(this.mpz);
 
-        chpl_gmp_get_mpz(this.mpz, num.locale.id, mpz_struct);
+        chpl_gmp_get_mpz(this.mpz, num.localeId, mpz_struct);
       }
 
       this.localeId = chpl_nodeID;
@@ -373,11 +373,11 @@ module BigInteger {
     var ret : Bigint;
 
     if _local || bir.localeId == chpl_nodeID {
-      mpz_init_set(ret.mpz, bir.mpz);
+      mpz_set(ret.mpz, bir.mpz);
     } else {
       var mpz_struct = bir.mpzStruct();
 
-      chpl_gmp_get_mpz(ret.mpz, bir.locale.id, mpz_struct);
+      chpl_gmp_get_mpz(ret.mpz, bir.localeId, mpz_struct);
     }
 
     return ret;
@@ -390,7 +390,7 @@ module BigInteger {
     var ret : Bigint;
 
     if _local || bir.localeId == chpl_nodeID {
-      mpz_init_set(ret.mpz, bir.mpz);
+      mpz_set(ret.mpz, bir.mpz);
     } else {
       ret.mpz      = bir.mpz;
       ret.localeId = bir.localeId;
@@ -845,9 +845,8 @@ module BigInteger {
 
     } else {
       const a_ = a;
-      const b_ = b;
 
-      mpz_tdiv_q(c.mpz, a_.mpz, b_);
+      mpz_tdiv_q_ui(c.mpz, a_.mpz, b_);
     }
 
     if b < 0 then
@@ -865,9 +864,8 @@ module BigInteger {
 
     } else {
       const a_ = a;
-      const b_ = b;
 
-      mpz_tdiv_q(c.mpz, a_.mpz, b_);
+      mpz_tdiv_q_ui(c.mpz, a_.mpz, b_);
     }
 
     return c;
@@ -1365,9 +1363,9 @@ module BigInteger {
       mpz_add(a.mpz, a.mpz, b.mpz);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         const b_ = b;
 
         mpz_add(a.mpz, a.mpz, b_.mpz);
@@ -1383,24 +1381,23 @@ module BigInteger {
         mpz_add_ui(a.mpz, a.mpz, b_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-        on __primitive("chpl_on_locale_num", thisLoc) {
+        on __primitive("chpl_on_locale_num", aLoc) {
           mpz_add_ui(a.mpz, a.mpz, b_);
         }
       }
 
     } else {
-
       const b_ = (0 - b).safeCast(c_ulong);
 
       if _local || a.localeId == chpl_nodeID {
         mpz_sub_ui(a.mpz, a.mpz, b_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-        on __primitive("chpl_on_locale_num", thisLoc) {
+        on __primitive("chpl_on_locale_num", aLoc) {
           mpz_sub_ui(a.mpz, a.mpz, b_);
         }
       }
@@ -1414,34 +1411,13 @@ module BigInteger {
       mpz_add_ui(a.mpz, a.mpz, b_);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         mpz_add_ui(a.mpz, a.mpz, b_);
       }
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1451,9 +1427,9 @@ module BigInteger {
       mpz_sub(a.mpz, a.mpz, b.mpz);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         const b_ = b;
 
         mpz_sub(a.mpz, a.mpz, b_.mpz);
@@ -1469,9 +1445,9 @@ module BigInteger {
         mpz_sub_ui(a.mpz, a.mpz, b_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-        on __primitive("chpl_on_locale_num", thisLoc) {
+        on __primitive("chpl_on_locale_num", aLoc) {
           mpz_sub_ui(a.mpz, a.mpz, b_);
         }
       }
@@ -1483,9 +1459,9 @@ module BigInteger {
         mpz_add_ui(a.mpz, a.mpz, b_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-        on __primitive("chpl_on_locale_num", thisLoc) {
+        on __primitive("chpl_on_locale_num", aLoc) {
           mpz_add_ui(a.mpz, a.mpz, b_);
         }
       }
@@ -1499,9 +1475,9 @@ module BigInteger {
       mpz_sub_ui(a.mpz, a.mpz, b_);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         mpz_sub_ui(a.mpz, a.mpz, b_);
       }
     }
@@ -1515,9 +1491,9 @@ module BigInteger {
       mpz_mul(a.mpz, a.mpz, b.mpz);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         const b_ = b;
 
         mpz_mul(a.mpz, a.mpz, b_.mpz);
@@ -1532,9 +1508,9 @@ module BigInteger {
       mpz_mul_si(a.mpz, a.mpz, b_);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         mpz_mul_si(a.mpz, a.mpz, b_);
       }
     }
@@ -1547,9 +1523,9 @@ module BigInteger {
       mpz_mul_ui(a.mpz, a.mpz, b_);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         mpz_mul_ui(a.mpz, a.mpz, b_);
       }
     }
@@ -1563,9 +1539,9 @@ module BigInteger {
       mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         const b_ = b;
 
         mpz_tdiv_q(a.mpz, a.mpz, b_.mpz);
@@ -1575,7 +1551,6 @@ module BigInteger {
 
   proc /=(ref a: Bigint, b: int) {
     var b_ = 0 : c_ulong;
-    var c  = new Bigint();
 
     if b >= 0 then
       b_ = b.safeCast(c_ulong);
@@ -1583,17 +1558,21 @@ module BigInteger {
       b_ = (0 - b).safeCast(c_ulong);
 
     if _local || a.localeId == chpl_nodeID {
-      mpz_tdiv_q_ui(c.mpz, a.mpz, b_);
+      mpz_tdiv_q_ui(a.mpz, a.mpz, b_);
+
+      if b < 0 then
+        mpz_neg(a.mpz, a.mpz);
 
     } else {
-      const a_ = a;
-      const b_ = b;
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      mpz_tdiv_q(c.mpz, a_.mpz, b_);
+      on __primitive("chpl_on_locale_num", aLoc) {
+        mpz_tdiv_q_ui(a.mpz, a.mpz, b_);
+
+        if b < 0 then
+          mpz_neg(a.mpz, a.mpz);
+      }
     }
-
-    if b < 0 then
-      mpz_neg(c.mpz, c.mpz);
   }
 
   proc /=(ref a: Bigint, b: uint) {
@@ -1603,9 +1582,9 @@ module BigInteger {
       mpz_tdiv_q_ui(a.mpz, a.mpz, b_);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         mpz_tdiv_q_ui(a.mpz, a.mpz, b_);
       }
     }
@@ -1620,9 +1599,9 @@ module BigInteger {
       mpz_pow_ui(a.mpz, a.mpz, b_);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         mpz_pow_ui(a.mpz, a.mpz, b_);
       }
     }
@@ -1636,9 +1615,9 @@ module BigInteger {
       mpz_mod(a.mpz, a.mpz, b.mpz);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         const b_ = b;
 
         mpz_mod(a.mpz, a.mpz, b_.mpz);
@@ -1648,7 +1627,6 @@ module BigInteger {
 
   proc %=(ref a: Bigint, b: int) {
     var b_ = 0 : c_ulong;
-    var c  = new Bigint();
 
     if b >= 0 then
       b_ = b.safeCast(c_ulong);
@@ -1674,12 +1652,10 @@ module BigInteger {
       mpz_mod_ui(a.mpz, a.mpz, b_);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-
-        mpz_mod_ui(a.mpz, a.mpz, b_.mpz);
+      on __primitive("chpl_on_locale_num", aLoc) {
+        mpz_mod_ui(a.mpz, a.mpz, b_);
       }
     }
   }
@@ -1689,9 +1665,9 @@ module BigInteger {
       mpz_and(a.mpz, a.mpz, b.mpz);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         const b_ = b;
 
         mpz_and(a.mpz, a.mpz, b_.mpz);
@@ -1704,9 +1680,9 @@ module BigInteger {
       mpz_ior(a.mpz, a.mpz, b.mpz);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         const b_ = b;
 
         mpz_ior(a.mpz, a.mpz, b_.mpz);
@@ -1719,9 +1695,9 @@ module BigInteger {
       mpz_xor(a.mpz, a.mpz, b.mpz);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      on __primitive("chpl_on_locale_num", aLoc) {
         const b_ = b;
 
         mpz_xor(a.mpz, a.mpz, b_.mpz);
@@ -1739,11 +1715,9 @@ module BigInteger {
         mpz_mul_2exp(a.mpz, a.mpz, b_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const b_ = b;
-
+        on __primitive("chpl_on_locale_num", aLoc) {
           mpz_mul_2exp(a.mpz, a.mpz, b_);
         }
       }
@@ -1755,11 +1729,9 @@ module BigInteger {
         mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const b_ = b;
-
+        on __primitive("chpl_on_locale_num", aLoc) {
           mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
         }
       }
@@ -1773,11 +1745,9 @@ module BigInteger {
       mpz_mul_2exp(a.mpz, a.mpz, b_);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const b_ = b;
-
+      on __primitive("chpl_on_locale_num", aLoc) {
         mpz_mul_2exp(a.mpz, a.mpz, b_);
       }
     }
@@ -1794,11 +1764,9 @@ module BigInteger {
         mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const b_ = b;
-
+        on __primitive("chpl_on_locale_num", aLoc) {
           mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
         }
       }
@@ -1810,11 +1778,9 @@ module BigInteger {
         mpz_mul_2exp(a.mpz, a.mpz, b_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const b_ = b;
-
+        on __primitive("chpl_on_locale_num", aLoc) {
           mpz_mul_2exp(a.mpz, a.mpz, b_);
         }
       }
@@ -1824,15 +1790,13 @@ module BigInteger {
   proc >>=(ref a: Bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local || a.localeId == chpl_nodeID {
       mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const b_ = b;
-
+      on __primitive("chpl_on_locale_num", aLoc) {
         mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
       }
     }
@@ -2796,7 +2760,7 @@ module BigInteger {
     const sb_ = starting_bit.safeCast(c_ulong);
     var   ret: c_ulong;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_scan0(this.mpz, sb_);
 
     } else {
@@ -2812,7 +2776,7 @@ module BigInteger {
     const sb_ = starting_bit.safeCast(c_ulong);
     var   ret: c_ulong;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_scan1(this.mpz, sb_);
 
     } else {
@@ -2830,7 +2794,7 @@ module BigInteger {
   proc Bigint.setbit(bit_index: uint) {
     const bi_ = bit_index.safeCast(c_ulong);
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       mpz_setbit(this.mpz, bi_);
 
     } else {
@@ -2845,7 +2809,7 @@ module BigInteger {
   proc Bigint.clrbit(bit_index: uint) {
     const bi_ = bit_index.safeCast(c_ulong);
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       mpz_clrbit(this.mpz, bi_);
 
     } else {
@@ -2860,7 +2824,7 @@ module BigInteger {
   proc Bigint.combit(bit_index: uint) {
     const bi_ = bit_index.safeCast(c_ulong);
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       mpz_combit(this.mpz, bi_);
 
     } else {
@@ -2876,7 +2840,7 @@ module BigInteger {
     const bi_ = bit_index.safeCast(c_ulong);
     var  ret: c_int;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_tstbit(this.mpz, bi_);
 
     } else {
@@ -2894,7 +2858,7 @@ module BigInteger {
   proc Bigint.fits_ulong_p() : int {
     var ret: c_int;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_fits_ulong_p(this.mpz);
 
     } else {
@@ -2909,7 +2873,7 @@ module BigInteger {
   proc Bigint.fits_slong_p() : int {
     var ret: c_int;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_fits_slong_p(this.mpz);
 
     } else {
@@ -2924,7 +2888,7 @@ module BigInteger {
   proc Bigint.fits_uint_p() : int {
     var ret: c_int;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_fits_uint_p(this.mpz);
 
     } else {
@@ -2939,7 +2903,7 @@ module BigInteger {
   proc Bigint.fits_sint_p() : int {
     var ret: c_int;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_fits_sint_p(this.mpz);
 
     } else {
@@ -2954,7 +2918,7 @@ module BigInteger {
   proc Bigint.fits_ushort_p() : int {
     var ret: c_int;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_fits_ushort_p(this.mpz);
 
     } else {
@@ -2969,7 +2933,7 @@ module BigInteger {
   proc Bigint.fits_sshort_p() : int {
     var ret: c_int;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_fits_sshort_p(this.mpz);
 
     } else {
@@ -2984,7 +2948,7 @@ module BigInteger {
   proc Bigint.even_p() : int {
     var ret: c_int;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_even_p(this.mpz);
 
     } else {
@@ -2999,7 +2963,7 @@ module BigInteger {
   proc Bigint.odd_p() : int {
     var ret: c_int;
 
-    if _local || this.locaelId == chpl_nodeID {
+    if _local || this.localeId == chpl_nodeID {
       ret = mpz_odd_p(this.mpz);
 
     } else {
@@ -3462,8 +3426,7 @@ module BigInteger {
 
     } else if this.localeId == chpl_nodeID &&
               r.localeId    == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
+              n.localeId    == chpl_nodeID {
       select rounding {
         when Round.UP   do ret = mpz_cdiv_qr_ui(this.mpz, r.mpz, n.mpz, d_);
         when Round.DOWN do ret = mpz_fdiv_qr_ui(this.mpz, r.mpz, n.mpz, d_);
@@ -3479,13 +3442,13 @@ module BigInteger {
 
         select rounding {
           when Round.UP   do
-            ret = mpz_cdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+            ret = mpz_cdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d_);
 
           when Round.DOWN do
-            ret = mpz_fdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+            ret = mpz_fdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d_);
 
           when Round.ZERO do
-            ret = mpz_tdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+            ret = mpz_tdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d_);
         }
 
         r = r_;
@@ -3643,8 +3606,7 @@ module BigInteger {
       mpz_submul_ui(this.mpz, a.mpz, b_);
 
     } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
+              a.localeId    == chpl_nodeID {
       mpz_submul_ui(this.mpz, a.mpz, b_);
 
     } else {
@@ -3990,7 +3952,7 @@ module BigInteger {
       on __primitive("chpl_on_locale_num", thisLoc) {
         const mpz_struct = a.mpzStruct();
 
-        chpl_gmp_get_mpz(this.mpz, a.locale.id, mpz_struct);
+        chpl_gmp_get_mpz(this.mpz, a.localeId, mpz_struct);
       }
     }
   }
