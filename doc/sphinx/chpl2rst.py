@@ -70,12 +70,19 @@ def gen_preamble(chapelfile, link=None):
 
     # Strip path and extension from chapelfile
     filename = os.path.split(chapelfile)[1]
-    #basename, _ = os.path.splitext(filename)
-    output = []
+    basename, _ = os.path.splitext(filename)
 
-    # Generate title
-    output.append(filename)
-    output.append('='*len(filename))
+    domain = '.. default-domain:: chpl'
+    reference = '.. _primers-{0}:'.format(basename)
+    title = filename
+
+    output = []
+    output.append(domain)
+    output.append('')
+    output.append(reference)
+    output.append('')
+    output.append(title)
+    output.append('='*len(title))
     output.append('')
 
     # Generate dynamic links below title
