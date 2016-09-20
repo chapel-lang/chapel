@@ -6,7 +6,7 @@
    derived from the GNU C version by Bonzini, Bartlett, and Mellor
 */
 
-use GMP;
+use BigInteger;
 
 // Compute n digits of Pi, 10 000 by default to match benchmark expectation.
 config const n = 10000;
@@ -29,11 +29,13 @@ proc main() {
 }
 
 iter genDigits(numDigits) {
-  var numer = new BigInt(1),
-    accum = new BigInt(0),
-    denom = new BigInt(1),
-    tmp1 = new BigInt(),
-    tmp2 = new BigInt();
+  var numer = new Bigint(1);
+  var denom = new Bigint(1);
+
+  var accum = new Bigint(0);
+
+  var tmp1  = new Bigint();
+  var tmp2  = new Bigint();
 
   var k: uint(64);
 
@@ -44,17 +46,17 @@ iter genDigits(numDigits) {
         const y2 = 2 * k + 1;
 
         // Compute the next term.
-        tmp1.mul_ui(numer, 2);
+        tmp1.mul(numer, 2);
         accum.add(accum, tmp1);
-        accum.mul_ui(accum, y2);
-        numer.mul_ui(numer, k);
-        denom.mul_ui(denom, y2);
+        accum.mul(accum, y2);
+        numer.mul(numer, k);
+        denom.mul(denom, y2);
 
         // Continue looping until the digit is ready.
       } while numer.cmp(accum) > 0; // numer > accum
 
       // Compute: numer * 3 + accum
-      tmp1.mul_ui(numer, 3);
+      tmp1.mul(numer, 3);
       tmp1.add(tmp1, accum);
 
       // tmp1 = tmp1 / denom; tmp2 = tmp1 % denom
@@ -68,18 +70,12 @@ iter genDigits(numDigits) {
 
     // Compute and yield the digit.
     const digit = tmp1.get_ui();
+
     yield digit;
 
     // Eliminate digit.
-    accum.submul_ui(denom, digit);
-    accum.mul_ui(accum, 10);
-    numer.mul_ui(numer, 10);
+    accum.submul(denom, digit);
+    accum.mul(accum, 10);
+    numer.mul(numer, 10);
   }
-
-  // Free the memory associated with these.
-  delete numer;
-  delete accum;
-  delete denom;
-  delete tmp1;
-  delete tmp2;
 }

@@ -143,6 +143,7 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
 module GMP {
   use SysBasic;
   use Error;
+  use BigInteger;
 
   /* The GMP ``mp_bitcnt_t`` type */
   extern type mp_bitcnt_t     = c_ulong;
@@ -2573,15 +2574,14 @@ module GMP {
       gmp_randinit_mt(this.state);
     }
 
-    proc GMPRandom(a: BigInt, c: uint, m2exp: uint) {
-      var (acopy, a_) = a.maybeCopy();
+    proc GMPRandom(a: Bigint, c: uint, m2exp: uint) {
+      // Rely on Bigint assignment operator to obtain a local copy
+      var a_ = a;
 
       gmp_randinit_lc_2exp(this.state,
                            a_.mpz,
                            c.safeCast(c_ulong),
                            m2exp.safeCast(c_ulong));
-
-      if acopy then delete a_;
     }
 
     proc GMPRandom(size: uint) {
@@ -2602,13 +2602,12 @@ module GMP {
       }
     }
 
-    proc seed(seed: BigInt) {
+    proc seed(seed: Bigint) {
       on this {
-        var (scopy, s_) = seed.maybeCopy();
+        // Rely on Bigint assignment operator to obtain a local copy
+        var s_ = seed;
 
         gmp_randseed(this.state, s_.mpz);
-
-        if scopy then delete s_;
       }
     }
 
@@ -2618,6 +2617,28 @@ module GMP {
       }
     }
 
+    proc urandomb(nbits: uint) : uint {
+      var ret: c_ulong;
+
+      on this {
+        ret = gmp_urandomb_ui(this.state, nbits.safeCast(c_ulong));
+      }
+
+      return ret.safeCast(uint);
+    }
+
+    proc urandomm(n: uint) : uint {
+      var ret: c_ulong;
+
+      on this {
+        ret = gmp_urandomm_ui(this.state, n.safeCast(c_ulong));
+      }
+
+      return ret.safeCast(uint);
+    }
+
+
+    // TO DEPRECATE
     proc urandomb_ui(nbits: uint) : uint {
       var val: c_ulong;
 
@@ -2628,6 +2649,7 @@ module GMP {
       return val.safeCast(uint);
     }
 
+    // TO DEPRECATE
     proc urandomm_ui(n: uint) : uint {
       var val: c_ulong;
 
@@ -2638,45 +2660,37 @@ module GMP {
       return val.safeCast(uint);
     }
 
-    proc urandomb(r: BigInt, nbits: uint) {
+    proc urandomb(ref r: Bigint, nbits: uint) {
       on this {
-        var (rcopy, r_) = r.maybeCopy();
+        // Rely on Bigint assignment operator to obtain a local copy
+        var r_ = r;
 
         mpz_urandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
 
-        if rcopy {
-          r.set(r_);
-          delete r_;
-        }
+        r = r_;
       }
     }
 
-    proc urandomm(r: BigInt, n: BigInt) {
+    proc urandomm(ref r: Bigint, n: Bigint) {
       on this {
-        var (rcopy, r_) = r.maybeCopy();
-        var (ncopy, n_) = n.maybeCopy();
+        // Rely on Bigint assignment operator to obtain a local copy
+        var r_ = r;
+        var n_ = n;
 
         mpz_urandomm(r_.mpz, this.state, n_.mpz);
 
-        if rcopy {
-          r.set(r_);
-          delete r_;
-        }
-
-        if ncopy then delete n_;
+        r = r_;
       }
     }
 
-    proc rrandomb(r: BigInt, nbits: uint) {
+    proc rrandomb(ref r: Bigint, nbits: uint) {
       on this {
-        var (rcopy, r_) = r.maybeCopy();
+        // Rely on Bigint assignment operator to obtain a local copy
+        var r_ = r;
 
         mpz_rrandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
 
-        if rcopy {
-          r.set(r_);
-          delete r_;
-        }
+        r = r_;
       }
     }
   }

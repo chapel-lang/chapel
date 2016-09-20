@@ -1,7 +1,5 @@
-use GMP;
+use BigInteger;
 
-var a = new BigInt(1);
+var a = new Bigint(1);
 
 writeln(a);
-
-delete a;
