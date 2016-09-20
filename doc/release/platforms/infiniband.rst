@@ -7,7 +7,7 @@ Using Chapel with InfiniBand
 Avoiding Slow Job Launch
 ++++++++++++++++++++++++
 
-We've observed job launch hangs in some systems with InfiniBand
+We've observed very slow job launch on some systems with InfiniBand
 that were resolved by limiting the memory available for
 communication, for example with:
 
