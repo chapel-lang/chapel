@@ -1,1 +1,0 @@
-string-write-error.chpl:2: error: string.write deprecated: use string.format or stringify
