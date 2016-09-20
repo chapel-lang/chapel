@@ -759,7 +759,7 @@ buildPromotionFastFollowerCheck(bool isStatic,
                                 FnSymbol* wrapper,
                                 std::set<ArgSymbol*>& requiresPromotion) {
   const char* fnName = isStatic ? "chpl__staticFastFollowCheck" : "chpl__dynamicFastFollowCheck";
-  const char* fowardFnName = astr(fnName, "Zip") ;
+  const char* forwardFnName = astr(fnName, "Zip") ;
 
   FnSymbol* fastFollowCheckFn = new FnSymbol(fnName);
   if (isStatic) {
@@ -797,9 +797,9 @@ buildPromotionFastFollowerCheck(bool isStatic,
   returnTmp->addFlag(FLAG_MAYBE_PARAM);
   fastFollowCheckFn->insertAtTail(new DefExpr(returnTmp));
   if (addLead) {
-    fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, returnTmp, new CallExpr(fowardFnName, p_tup, lead)));
+    fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, returnTmp, new CallExpr(forwardFnName, p_tup, lead)));
   } else {
-    fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, returnTmp, new CallExpr(fowardFnName, p_tup)));
+    fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, returnTmp, new CallExpr(forwardFnName, p_tup)));
   }
   fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_RETURN, returnTmp));
 
