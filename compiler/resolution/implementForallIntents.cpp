@@ -273,7 +273,7 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
           "reduce intent is applied to a 'const' variable %s", ovar->name);
       // The shadow variable will assume the reference from the leadIdx tuple.
       svar->addFlag(FLAG_REF_VAR);
-      svar->type = valtype->getRefType();
+      svar->type = dtUnknown;
     } else {
       setShadowVarFlags(ovar, svar, tiIntent); // instead of arg intents
     }
