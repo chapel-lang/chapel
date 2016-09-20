@@ -47,7 +47,7 @@ writeln("uf = ", uf, ", uf2 = ", uf2);
 
 //
 // To specify a generic class type (without creating an instance),
-// don't use the new keyword and just specify the generic arguments.
+// don't use the ``new`` keyword and just specify the generic arguments.
 // For fields that have no types, specify a type for that field,
 // instead of a value.
 //
