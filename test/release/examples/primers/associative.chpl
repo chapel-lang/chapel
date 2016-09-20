@@ -206,7 +206,7 @@ writeln();
 // Traditional array operations like whole-array assignment and indexing
 // are supported for associative arrays.
 //
-Scores = 100; // every value in ``Scores`` is now '100'.
+Scores = 100; // every value in 'Scores' is now '100'.
 
 Scores["Robert"] = 33;
 Scores["Alice"] = 42;

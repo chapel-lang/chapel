@@ -2,12 +2,13 @@
   Example usage of the LAPACK module in Chapel.
 
   This particular file demonstrates how to use the gesv procedure with Chapel's
-  arrays. The gesv procedure solves ``A*X = B`` for ``X`` given both ``A`` and ``B``, where
-  ``A`` is a square matrix.
+  arrays. The gesv procedure solves ``A*X = B`` for ``X`` given both ``A`` and
+  ``B``, where ``A`` is a square matrix.
 
-  Here, we create ``A`` and ``X``, then compute ``B`` with a matrix multiplication, and
-  show that the result of the gesv procedure is the same as our synthesized
-  ``X`` array (within a small margin of error for floating point).
+  Here, we create ``A`` and ``X``, then compute ``B`` with a matrix
+  multiplication, and show that the result of the gesv procedure is the same as
+  our synthesized ``X`` array (within a small margin of error for floating
+  point).
 
   To compile a program with LAPACK, you may need to add some additional flags
   depending on how LAPACK was installed on your system:
@@ -21,7 +22,7 @@
   See the LAPACK module documentation for more information on compiling.
 */
 
-// Start by using the ``LAPACK`` module so that we can use the ``gesv`` function.
+// Start by using the ``LAPACK`` module to gain access to the ``gesv`` function.
 // The ``Random`` module will be used to fill arrays with random values.
 use LAPACK;
 use Random;
