@@ -281,8 +281,7 @@ use. For example, set the Slurm partition to 'debug' with the command:
 
 .. code-block:: bash
 
-  export SLURM_PARTITION=debug
-
+  export SALLOC_PARTITION=chapel
 
 If needed, you can request a specific node feature from SLURM by putting
 it in the ``CHPL_LAUNCHER_CONSTRAINT`` environment variable. For example,

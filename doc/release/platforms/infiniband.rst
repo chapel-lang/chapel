@@ -60,7 +60,7 @@ a. In the future, we expect that CHPL_LAUNCHER=slurm-srun will be the best
       # Specify a 15-minute maximum run time
       export CHPL_LAUNCHER_WALLTIME=00:15:00
       # Specify the Slurm partition to use
-      export SLURM_PARTITION=debug
+      export SALLOC_PARTITION=chapel
 
       # Run the sample program
       ./hello6-taskpar-dist -nl 2
