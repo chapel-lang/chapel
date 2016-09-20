@@ -79,8 +79,6 @@ writeln("   ",   " -=  ",   sa, " =           ",  b);
 writeln();
 
 
-
-
 b **= ua;
 writeln("   ",   " **=  ",  ua, " = ",            b);
 
@@ -228,20 +226,20 @@ writeln();
 
 
 b = a ^ c;
-writeln(" ",  a, " ^     ",  c, " =          ",  b);
+writeln(" ",  a, " ^     ",  c, " =           ",  b);
 
 b = c ^ a;
-writeln("  ", c, " ^    ",   a, " =          ",  b);
+writeln("  ", c, " ^    ",   a, " =           ",  b);
 
 writeln();
 
 
 
 b = a | c;
-writeln(" ",  a, " |     ",  c, " =          ",  b);
+writeln(" ",  a, " |     ",  c, " =           ",  b);
 
 b = c | a;
-writeln("  ", c, " |    ",   a, " =          ",  b);
+writeln("  ", c, " |    ",   a, " =           ",  b);
 
 writeln();
 
@@ -289,7 +287,7 @@ b =  a - sa;
 writeln(" ",  a, " -   ",   sa, " =          ", b);
 
 b = sa -  a;
-writeln("",  sa, " -    ",   a, " =         ",  b);
+writeln("",  sa, " -    ",   a, " =          ",  b);
 
 
 writeln();
