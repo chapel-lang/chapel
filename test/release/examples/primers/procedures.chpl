@@ -152,8 +152,8 @@ writeln("Using named arguments");
 // argument ``diameter`` allows us to define the arguments in any
 // order. Additionally, we can take advantage of the default value
 // for ``y`` by not specifying a value to use instead.
-// Thus this call creates a circle at (2.0, 0.0) with a radius
-// of 1.5.
+// Thus this call creates a circle at ``(2.0, 0.0)`` with a radius
+// of ``1.5``.
 //
 var c = create_circle(diameter=3.0,2.0);
 
@@ -265,7 +265,7 @@ writeln();
 // This arctan routine puts the result in the argument with ``out`` intent
 // and returns the number of iterations it needed to converge.
 //
-// atan x = x - x^3/3 + x^5/5 + sum_3^inf (-1)^i x^(2i+1)/(2i+1).
+// ``atan x = x - x^3/3 + x^5/5 + sum_3^inf (-1)^i x^(2i+1)/(2i+1)``.
 //
 // This actually converges very slowly for x close to 1 in absolute value.
 // So we set the error limit to be 3 significant digits.
@@ -298,8 +298,8 @@ writeln();
 // It is expanded like a generic procedure, with the required number of
 // arguments having types which match the actual arguments.
 //
-// Note: see varargs.chpl for further information on procedures with a variable
-// number of arguments
+// Note: see :ref:`varargs.chpl` for further information on procedures with a
+// variable number of arguments
 //
 proc writeList(x ...?k) {
   var first = true;
