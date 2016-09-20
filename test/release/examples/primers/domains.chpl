@@ -12,7 +12,6 @@
 
 */
 
-config var n = 10;
 //
 // A domain is a first-class representation of an index set used to
 // specify iteration spaces, define arrays, and aggregate operations
@@ -28,8 +27,10 @@ config var n = 10;
 // Rectangular domains support a literal syntax that is a
 // comma-separated list of range expressions enclosed in curly braces.
 //
-// RD is an n by n by n domain.
+// ``RD`` is an n by n by n domain.
 //
+config var n = 10;
+
 var RD: domain(3) = {1..n, 1..n, 1..n};
 writeln(RD);
 
@@ -98,11 +99,14 @@ RSD2 = RD[n/2+1.., .., ..]; // And this the other half.
 writeln("RSD1:", RSD1);
 writeln("RSD2:", RSD2);
 
-// Notes:
-// - Subdomains of rectangular domains are regular unless they are explicitly
-// declared to be sparse.
-// - At present, range checking to ensure that a subdomain fits within its parent
-// domain is unimplemented.
+/*
+ .. note::
+    - Subdomains of rectangular domains are regular unless they are explicitly
+      declared to be sparse.
+    - At present, range checking to ensure that a subdomain fits within its
+      parent domain is unimplemented.
+*/
+
 
 //
 // Create a sparse subdomain of a regular domain.
@@ -121,10 +125,11 @@ SSD += (9,10,1);
 
 writeln("SSD:", SSD); // Now contains an unordered set of indices.
 
-// Note: Checks to ensure that sparse subdomain indices lie within the parent domain
-// have not been implemented.
-
 /*
-   For more information on domains, see the Domains chapter of the
-   Chapel Language Spec.
+  .. note::
+     Checks to ensure that sparse subdomain indices lie within the parent domain
+     have not been implemented.
+
+For more information on domains, see the Domains chapter of the
+Chapel Language Spec.
 */
