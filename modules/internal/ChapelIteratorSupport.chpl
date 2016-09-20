@@ -101,19 +101,6 @@ module ChapelIteratorSupport {
     return _getIterator(_checkIterator(t));
   }
 
-  proc _getIterator(x: _tuple) {
-    inline proc _getIteratorHelper(x: _tuple, param dim: int) {
-      if dim == x.size then
-        return (_getIterator(x(dim)),);
-      else
-        return (_getIterator(x(dim)), (..._getIteratorHelper(x, dim+1)));
-    }
-    if x.size == 1 then
-      return _getIterator(x(1));
-    else
-      return _getIteratorHelper(x, 1);
-  }
-
   inline proc _getIteratorZip(x) {
     return _getIterator(x);
   }

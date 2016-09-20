@@ -184,29 +184,33 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
       // functions as we convert parallel loops over to use PRIM_ZIP).
       //
       zipExpr->primitive = NULL;   // remove the primitive
-      if (zipExpr->argList.length == 1) {
-        // if there's just one argument, x, just change the top-level
-        // expression into a call to _getIterator(x) by setting the
-        // baseExpr:
-        zipExpr->baseExpr = new UnresolvedSymExpr("_getIterator");
 
-        // if the one argument is a tuple expansion '(...t)' then
-        // remove the tuple expansion and simply pass the tuple itself
-        // to _getIterator()
+      // If there's just one argument...
+      if (zipExpr->argList.length == 1) {
         Expr* zipArg = zipExpr->argList.only();
         CallExpr* zipArgCall = toCallExpr(zipArg);
+
+        // ...and it is a tuple expansion '(...t)' then remove the
+        // tuple expansion primitive and simply pass the tuple itself
+        // to _getIteratorZip().  This will not require any more
+        // tuples than the user introduced themselves.
+        //
         if (zipArgCall && zipArgCall->isPrimitive(PRIM_TUPLE_EXPAND)) {
+          zipExpr->baseExpr = new UnresolvedSymExpr("_getIteratorZip");
           Expr* tupleArg = zipArgCall->argList.only();
           tupleArg->remove();
           zipArgCall->replace(tupleArg);
         } else {
+          // ...otherwise, make the expression into a _getIterator()
+          // call
+          zipExpr->baseExpr = new UnresolvedSymExpr("_getIterator");
           // try to optimize anonymous range iteration
           tryToReplaceWithDirectRangeIterator(zipArg);
         }
       } else {
         //
-        // If there's more than one argument, build up the tuple by
-        // applying _getIterator() to each element.
+        // Otherwise, if there's more than one argument, build up the
+        // tuple by applying _getIterator() to each element.
         //
         zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
         Expr* arg = zipExpr->argList.first();
