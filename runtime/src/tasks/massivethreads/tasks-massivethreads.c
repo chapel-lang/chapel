@@ -193,7 +193,7 @@ uint32_t myth_get_num_workers() {
 typedef struct myth_felockattr { } myth_felockattr_t;
 
 static inline int myth_felock_init_body(myth_felock_t * fe,
-					const myth_felockattr_t * attr) {
+                                        const myth_felockattr_t * attr) {
   (void)attr;
   pthread_mutex_init(fe->mutex, 0);
   pthread_cond_init(&fe->cond[0], 0);
@@ -218,7 +218,7 @@ static inline int myth_felock_unlock_body(myth_felock_t * fe) {
 }
 
 static inline int myth_felock_wait_and_lock_body(myth_felock_t * fe, 
-						 int status_to_wait) {
+                                                 int status_to_wait) {
   pthread_mutex_lock(fe->mutex);
   while (fe->status != status_to_wait) {
     pthread_cond_wait(&fe->cond[status_to_wait], fe->mutex);
@@ -227,7 +227,7 @@ static inline int myth_felock_wait_and_lock_body(myth_felock_t * fe,
 }
 
 static inline int myth_felock_mark_and_signal_body(myth_felock_t * fe,
-						   int status_to_signal) {
+                                                   int status_to_signal) {
   fe->status = status_to_signal;
   pthread_cond_signal(&fe->cond[status_to_signal]);
   return pthread_mutex_unlock(fe->mutex);
@@ -291,14 +291,14 @@ void chpl_sync_unlock(chpl_sync_aux_t * s) {
 }
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t * s,
-			       int32_t lineno, int32_t filename) {
+                               int32_t lineno, int32_t filename) {
   enter_();
   myth_felock_wait_and_lock(s->felock, 1);
   return_from_();
 }
 
 void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t * s,
-				int32_t lineno, int32_t filename) {
+                                int32_t lineno, int32_t filename) {
   enter_();
   myth_felock_wait_and_lock(s->felock, 0);
   return_from_();
@@ -461,14 +461,14 @@ static void * myth_chpl_wrap(void * _a) {
     chpl_task_setSerial(serial_state);
   }
   chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
-			 fid,
+                         fid,
                          filename,
                          lineno,
                          id,
                          is_executeOn);
   chpl_ftable[fid](arg);
   chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
-			 fid,
+                         fid,
                          filename,
                          lineno,
                          id,
@@ -477,14 +477,14 @@ static void * myth_chpl_wrap(void * _a) {
 }
 
 void myth_chpl_create(chpl_fn_int_t fid, void * arg,
-		      chpl_bool is_executeOn, chpl_bool serial_state,
-		      int lineno, int32_t filename, 
-		      chpl_taskID_t id);
+                      chpl_bool is_executeOn, chpl_bool serial_state,
+                      int lineno, int32_t filename, 
+                      chpl_taskID_t id);
 
 void myth_chpl_create(chpl_fn_int_t fid, void * arg,
-		      chpl_bool is_executeOn, chpl_bool serial_state,
-		      int lineno, int32_t filename, 
-		      chpl_taskID_t id) {
+                      chpl_bool is_executeOn, chpl_bool serial_state,
+                      int lineno, int32_t filename, 
+                      chpl_taskID_t id) {
   myth_chpl_wrap_arg_t a = {
     .fid = fid,
     .arg = arg,
@@ -499,7 +499,7 @@ void myth_chpl_create(chpl_fn_int_t fid, void * arg,
   //a = a_;
 
   chpl_task_do_callbacks(chpl_task_cb_event_kind_create,
-			 fid,
+                         fid,
                          filename,
                          lineno,
                          id,
@@ -533,9 +533,9 @@ void chpl_task_addToTaskList(
     chpl_ftable[fid](arg);
   } else {
     myth_chpl_create(fid, arg,
-		     /* is_executeOn = */ false,
-		     /* serial_state = */ false,
-		     lineno, filename, get_next_task_id());
+                     /* is_executeOn = */ false,
+                     /* serial_state = */ false,
+                     lineno, filename, get_next_task_id());
   }
   return_from_();
 }
@@ -549,11 +549,11 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
 // Call a function in a task.
 //
 void chpl_task_taskCallFTable(chpl_fn_int_t fid,          // function to call
-			      void* arg,              // function arg
-			      size_t arg_size,             // length of arg
-			      c_sublocid_t subloc,       // desired sublocale
-			      int lineno,                // line at which function begins
-			      int32_t filename) {           // name of file containing function
+                              void* arg,              // function arg
+                              size_t arg_size,             // length of arg
+                              c_sublocid_t subloc,       // desired sublocale
+                              int lineno,                // line at which function begins
+                              int32_t filename) {           // name of file containing function
   enter_();
   if (arg != NULL) {
     void *arg_copy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_TASK_ARG, 0, 0);
@@ -562,9 +562,9 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,          // function to call
       chpl_ftable[fid](arg_copy);
     } else {
       myth_chpl_create(fid, arg_copy,
-		       /* is_executeOn = */ true,
-		       /* serial_state = */ false,
-		       lineno, filename, get_next_task_id());
+                       /* is_executeOn = */ true,
+                       /* serial_state = */ false,
+                       lineno, filename, get_next_task_id());
     }
     //chpl_mem_free(arg_copy, 0, 0);
   } else {
@@ -572,9 +572,9 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,          // function to call
       chpl_ftable[fid](arg);
     } else {
       myth_chpl_create(fid, arg,
-		       /* is_executeOn = */ true,
-		       /* serial_state = */ false,
-		       lineno, filename, get_next_task_id());
+                       /* is_executeOn = */ true,
+                       /* serial_state = */ false,
+                       lineno, filename, get_next_task_id());
     }
   }
   return_from_();
@@ -586,7 +586,7 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,          // function to call
 // "on" statement.
 //
 void chpl_task_startMovedTask(chpl_fn_int_t fid,          // function to call
-			      chpl_fn_p fp,
+                              chpl_fn_p fp,
                               void* arg,              // function arg
                               c_sublocid_t subloc,       // desired sublocale
                               chpl_taskID_t id,      // task identifier
@@ -597,9 +597,9 @@ void chpl_task_startMovedTask(chpl_fn_int_t fid,          // function to call
     fp(arg);
   } else {
     myth_chpl_create(fid, arg,
-		     /* is_executeOn = */ true,
-		     /* serial_state = */ false,
-		     0, CHPL_FILE_IDX_UNKNOWN, id);
+                     /* is_executeOn = */ true,
+                     /* serial_state = */ false,
+                     0, CHPL_FILE_IDX_UNKNOWN, id);
   }
   return_from_();
 }
