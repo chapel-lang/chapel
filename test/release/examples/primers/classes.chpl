@@ -65,7 +65,7 @@ class D: C {
 // reference an object of type ``D``.  If an overridden method such as
 // printFields is called, it is dynamically dispatched to the method
 // with the most specific dynamic type.  The ``delete`` keyword can be
-// used to free memory associated with c before pointing it an instance
+// used to free memory associated with ``foo`` before pointing it an instance
 // of ``D``.
 //
 delete foo;
