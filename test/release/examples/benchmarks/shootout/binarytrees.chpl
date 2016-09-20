@@ -81,9 +81,9 @@ class Tree {
   
   proc init(item, depth) {
     if depth <= 0 then
-      this.init(item);
+      init(item);
     else
-      this.init(item, new Tree(2*item-1, depth-1), new Tree(2*item, depth-1));
+      init(item, new Tree(2*item-1, depth-1), new Tree(2*item, depth-1));
   }
 
   //
