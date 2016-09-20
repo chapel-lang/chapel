@@ -90,7 +90,7 @@ a. In the future, we expect that CHPL_LAUNCHER=slurm-srun will be the best
 
       # Reserve 2 nodes for an interactive run
       salloc -N 2
-      # Then, wthin the salloc shell
+      # Then, within the salloc shell
 
         # Specify that ssh should be used
         export GASNET_IBV_SPAWNER=ssh
