@@ -1,4 +1,0 @@
-enum-zippers.chpl:1: In function 'main':
-enum-zippers.chpl:5: error: unresolved call '_build_tuple(type medals, _ir_chpl_direct_range_iter)'
-$CHPL_HOME/modules/internal/ChapelTuple.chpl:52: note: candidates are: _build_tuple(type t ...)
-$CHPL_HOME/modules/internal/ChapelTuple.chpl:57: note:                 _build_tuple(x ...)

@@ -98,12 +98,7 @@ module ChapelIteratorSupport {
     return ic;
 
   proc _getIterator(type t) {
-    if (isEnumType(t)) then
-      return _getIterator(t.these());
-    else if (isTupleType(t)) then
-      compilerError("unable to iterate over a tuple of non-enum types"); //TODO: support this?
-    else
-      compilerError("cannot iterate over a type");
+    return _getIterator(_checkIterator(t));
   }
 
   inline proc _getIteratorZip(x) {
@@ -142,11 +137,13 @@ module ChapelIteratorSupport {
       return _getIteratorZipInternal(t, 1);
   }
 
-  proc _checkIterator(type t) {
-    if (!(isEnumType(t))) then
-      compilerError("cannot iterate over a type");
+  inline proc _checkIterator(type t) {
+    use Reflection;
+
+    if (canResolveTypeMethod(t, "these")) then
+      return t.these();
     else
-      return t;
+      compilerError("unable to iterate over type '", t:string, "'");
   }
 
   inline proc _checkIterator(x) {
