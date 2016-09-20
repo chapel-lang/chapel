@@ -203,7 +203,7 @@ I need to type a password when running my program
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Configure your machines for password-less ssh. Try searching for "how to set up
-passwordless ssh". You'll know you have succeded when you can `ssh` directly to
+passwordless ssh". You'll know you have succeeded when you can `ssh` directly to
 the compute nodes without needing to type in a password each time.
 
 I'm seeing login banners mixed with my program's output
@@ -237,8 +237,8 @@ warnings. To turn them off, use:
 
   export GASNET_QUIET=yes
 
-I get xSocket errors thes when using a system with multiple IP addresses
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+I get xSocket errors when using a system with multiple IP addresses
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
@@ -315,7 +315,7 @@ better experience.
 
 First, let's see how to use an SSH-based launcher with an interactive `salloc`
 session. Here we will assume the UDP conduit, but any other launcher supporting
-SSH can be configured analagously.
+SSH can be configured analogously.
 
 .. code-block:: bash
 
@@ -324,7 +324,7 @@ SSH can be configured analagously.
 
    # Reserve 2 nodes for an interactive run
    salloc -N 2
-   # Then, wthin the salloc shell
+   # Then, within the salloc shell
 
      # Specify that ssh should be used
      export GASNET_SPAWNFN=S
