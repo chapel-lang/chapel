@@ -5,10 +5,10 @@
    within the context of rectangular domains.  For other uses of domains
    see the following primers:
 
-    - Arrays primer (arrays.chpl)
-    - Sparse arrays primer (sparse.chpl)
-    - Opaque arrays primer (opaque.chpl)
-    - Associative arrays primer (associative.chpl)
+    - Arrays primer (:ref:`arrays.chpl <primers-arrays>`)
+    - Sparse arrays primer (:ref:`sparse.chpl <primers-sparse>`)
+    - Opaque arrays primer (:ref:`opaque.chpl <primers-opaque>`)
+    - Associative arrays primer (:ref:`associative.chpl <primers-associative>`)
 
 */
 
@@ -22,7 +22,7 @@
 // Rectangular domains are used to represent rectangular index sets.
 // Each dimension of a rectangular domain is specified by a range and
 // thus can take on the shape of any range.  See the Ranges primer
-// (ranges.chpl) for more information.
+// (:ref:`ranges.chpl <primers-ranges>`) for more information.
 //
 // Rectangular domains support a literal syntax that is a
 // comma-separated list of range expressions enclosed in curly braces.
@@ -38,7 +38,7 @@ writeln(RD);
 // Rectangular domains have a set of methods that enable convenient
 // reuse of existing domains.
 //
-// The expand method returns a new domain that is expanded or
+// The :proc:`~ChapelArray.expand` method returns a new domain that is expanded or
 // contracted depending on the sign of the offset argument.
 //
 var RDbigger = RD.expand((1,1,1));
@@ -47,10 +47,10 @@ var RDsmaller = RD.expand((-1,-1,-1));
 writeln(RDsmaller);
 
 //
-// The exterior method returns a new domain that is the exterior
-// portion of the current domain.  A positive offset specifies that
-// the exterior should be taken from the high bound; a negative
-// offset, the low bound.
+// The :proc:`~ChapelArray.exterior` method returns a new domain that is the
+// exterior portion of the current domain.  A positive offset specifies that
+// the exterior should be taken from the high bound; a negative offset, the low
+// bound.
 //
 var RDext_p = RD.exterior((1,1,1));
 writeln(RDext_p);
@@ -58,8 +58,8 @@ var RDext_n = RD.exterior((-1,-1,-1));
 writeln(RDext_n);
 
 //
-// The interior method returns a new domain that is the interior
-// portion of the current domain.  The sign of the offset implies
+// The :proc:`~ChapelArray.interior` method returns a new domain that is the
+// interior portion of the current domain.  The sign of the offset implies
 // using the high or low bound as in the exterior case.
 //
 var RDint_p = RD.interior((1,1,1));
@@ -68,8 +68,8 @@ var RDint_n = RD.interior((-1,-1,-1));
 writeln(RDint_n);
 
 //
-// The translate method returns a new domain that is the current domain
-// translated by the offset.
+// The :proc:`~ChapelArray.translate` method returns a new domain that is the
+// current domain translated by the offset.
 //
 var RDtrans_p = RD.translate((1,1,1));
 writeln(RDtrans_p);

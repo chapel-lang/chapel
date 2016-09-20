@@ -19,11 +19,12 @@
            -L$PATH_TO_LAPACK_BINARIES \
            -lgfortran
 
-  See the LAPACK module documentation for more information on compiling.
+  See the :mod:`LAPACK` module documentation for more information on compiling.
 */
 
-// Start by using the ``LAPACK`` module to gain access to the ``gesv`` function.
-// The ``Random`` module will be used to fill arrays with random values.
+// Start by using the :mod:`LAPACK` module to gain access to the
+// :proc:`~LAPACK.gesv` function.  The ``Random`` module will be used to fill
+// arrays with random values.
 use LAPACK;
 use Random;
 
@@ -74,7 +75,7 @@ var WorkBX = B;
 var ipiv : [1..N] c_int;
 
 //
-// Call the ``gesv`` function to solve for ``X``. Note that Chapel arrays are
+// Call the :proc:`~LAPACK.gesv` function to solve for ``X``. Note that Chapel arrays are
 // row-major order by default.
 //
 var info = gesv(lapack_memory_order.row_major, WorkA, ipiv, WorkBX);

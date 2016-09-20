@@ -4,9 +4,9 @@
 
   This is a tutorial on Chapel's associative domains and arrays.
 
-  It may be beneficial to read the 'arrays.chpl' and 'domains.chpl'
-  primers before proceeding if you're not already familiar with Chapel's
-  domains and arrays.
+  It may be beneficial to read the :ref:`arrays.chpl <primers-arrays>` and
+  :ref:`domains.chpl <primers-domains>` primers before proceeding if you're not
+  already familiar with Chapel's domains and arrays.
 
 */
 
