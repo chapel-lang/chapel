@@ -58,12 +58,6 @@ A code example::
 module BigInteger {
   use GMP;
 
-  enum Round {
-    DOWN = -1,
-    ZERO =  0,
-    UP   =  1
-  }
-
   /*
     The Bigint record provides arbitrary length integers and a set of
     operator overloads that allow Bigints to be treated consistently
