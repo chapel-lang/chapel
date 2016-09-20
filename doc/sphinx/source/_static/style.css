@@ -11,3 +11,6 @@
 /* Add color for .mb class that is undefined in Sphinx RTD theme */
 .highlight .mb{ color: #099}
 
+
+.pre{ color: #515151}
+
