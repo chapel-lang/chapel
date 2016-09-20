@@ -277,11 +277,12 @@ from SLURM. For example, the following requests 15 minutes:
   export CHPL_LAUNCHER_WALLTIME=00:15:00
 
 Another Slurm variable that usually needs to be set is the Slurm partition to
-use. For example, set the Slurm partition to 'debug' with the command:
+use. For example, set the Slurm partition to 'debug' with the commands:
 
 .. code-block:: bash
 
-  export SALLOC_PARTITION=chapel
+  export SALLOC_PARTITION=debug
+  export SLURM_PARTITION=$SALLOC_PARTITION
 
 If needed, you can request a specific node feature from SLURM by putting
 it in the ``CHPL_LAUNCHER_CONSTRAINT`` environment variable. For example,
