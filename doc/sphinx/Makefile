@@ -4,7 +4,7 @@
 include Makefile.sphinx
 
 CHPL2RST     = ./run-in-venv.bash ./chpl2rst.py
-CHPL2RSTOPTS = --output=rst --prefix=source/primers --link=master
+CHPL2RSTOPTS = --output=rst --prefix=source/primers/primers --link=master
 
 help: help-sphinx help-source
 
@@ -49,7 +49,7 @@ copy-docs: clean-copy-docs
 
 primers: clean-primers
 	@echo
-	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/primers"
+	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/primers/primers"
 	@#Note - this assumes that we are not in a release tar ball
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/*.chpl
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/*doc.chpl --codeblock
@@ -91,8 +91,8 @@ clean-module-docs: FORCE
 
 clean-primers: FORCE
 	@echo
-	@echo "Removing primers generated into source/primers"
-	find source/primers/ -type f -not -name 'primers*' -not -path '*/\.*' -print0 | xargs -0 rm -f
+	@echo "Removing primers generated into source/primers/primers"
+	rm -rf source/primers/primers
 
 
 FORCE:
