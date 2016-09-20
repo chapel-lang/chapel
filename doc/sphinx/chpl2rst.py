@@ -90,14 +90,18 @@ def gen_preamble(chapelfile, link=None):
         # Note - this makes the assumption that the file lives in the test dir
         abspath = os.path.abspath(chapelfile)
 
-        if 'chapel/test/' not in abspath:
-            print('Error: --link flag only works for files in chapel/test/')
+
+        chpl_home = os.getenv('CHPL_HOME')
+        if not chpl_home:
+            print('Error: --link flag only works when $CHPL_HOME is defined')
+            sys.exit(1)
+        elif not chpl_home in abspath:
+            print('Error: --link flag only work for files within $CHPL_HOME')
             sys.exit(1)
 
         # Get path from CHPL_HOME directory
-        chplpath = abspath[abspath.find('chapel/test/'):]
-        testpath = chplpath.lstrip('chapel/')
-        hyperlink = 'https://github.com/chapel-lang/chapel/blob/{0}/{1}'.format(link, testpath)
+        chplpath = abspath.replace(chpl_home, '').lstrip('/')
+        hyperlink = 'https://github.com/chapel-lang/chapel/blob/{0}/{1}'.format(link, chplpath)
         rstlink = '`View {0} on GitHub <{1}>`_'.format(filename, hyperlink)
         output.append(rstlink)
         output.append('')
