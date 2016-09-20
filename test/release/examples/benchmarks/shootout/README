@@ -77,12 +77,6 @@ o It seems like we should be able to write a strength-reduction
 
 chameneosredux.chpl
 -------------------
-o add user-level support for an enum iterator and replace array in
-  printColorEquations() with it
-
-o add support for a param enum.size query (not sure we'd actually use
-  this, though...)
-
 o once we map to C11 atomics/utilize memory order arguments, can
   performance be improved via different memory orders?
 
@@ -200,20 +194,16 @@ o explore expressing the complex values using Chapel's 'complex' type,
 
 meteor.chpl
 -----------
-o once we have a .size query on enums, we should replace uses of PIVOT
-  with this
-
 o would using 1-based arrays rather than 0-based clean anything up?
 
-o It would be nice to write:
+o It would be nice to be able to write:
     var x = min reduce for x in X do x;
   as:
     serial var x = min reduce X;
   or (preferably):
     var x = serial min reduce X;
   this suggests either adding a serial expression or permitting
-  reductions to be prefixed by 'serial'
-
+  reductions or variable declarations to be prefixed by 'serial'.
 
 
 nbody.chpl
