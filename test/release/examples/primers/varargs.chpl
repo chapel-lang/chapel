@@ -59,7 +59,7 @@ proc defaultValues(type args...?n) {
 anyTypeWriteln((...defaultValues(int, complex, bool, 2*real)));
 
 //
-// This procedure uses Euclid's algorithm to compute the greatest common
+// This procedure uses `Euclid's algorithm`_ to compute the greatest common
 // divisor of two integers. It is the base case for a version below that
 // finds the gcd of any number of integers.
 //
@@ -83,3 +83,4 @@ proc gcd(a:int, b:int, c:int ...?n) {
 
 writeln(gcd(100, 25, 50, 200));
 
+//.. _Euclid's algorithm: https://en.wikipedia.org/wiki/Euclidean_algorithm
