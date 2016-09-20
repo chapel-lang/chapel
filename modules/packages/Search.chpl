@@ -103,7 +103,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
 
   chpl_check_comparator(comparator, Data.eltType);
 
-  param stride = if Dom.stridable then abs(Dom.stride) else 1;
+  const stride = if Dom.stridable then abs(Dom.stride) else 1;
   // Domain slicing is cheap, but avoiding it when possible helps performance
   if lo == Dom.low && hi == Dom.high {
     for i in Dom {
@@ -111,7 +111,8 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
         return (true, i);
     }
   } else {
-    for i in Dom[lo..hi by stride] {
+    const r = if Dom.stridable then lo..hi by stride else lo..hi;
+    for i in Dom[r] {
       if chpl_compare(Data[i], val, comparator=comparator) == 0 then
         return (true, i);
     }
@@ -152,8 +153,7 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
 
   chpl_check_comparator(comparator, Data.eltType);
 
-  param stride = if Dom.stridable then abs(Dom.stride) else 1;
-
+  const stride = if Dom.stridable then abs(Dom.stride) else 1;
 
   while (lo <= hi) {
     const size = (hi - lo) / stride,
@@ -171,6 +171,29 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
   return (false, lo);
 }
 
+
+pragma "no doc"
+/* Non-stridable binarySearch */
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high)
+  where !Dom.stridable {
+  if Dom.rank != 1 then
+    compilerError("binarySearch() requires 1-D array");
+
+  chpl_check_comparator(comparator, Data.eltType);
+
+  param stride = 1;
+
+  while (lo <= hi) {
+    const mid = (hi - lo)/2 + lo;
+    if chpl_compare(Data[mid], val, comparator=comparator) == 0 then
+        return (true, mid);
+    else if chpl_compare(val, Data[mid], comparator=comparator) > 0 then
+      lo = mid + stride;
+    else
+      hi = mid - stride;
+  }
+  return (false, lo);
+}
 
 /*
     Deprecated Functions

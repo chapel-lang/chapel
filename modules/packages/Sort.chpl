@@ -305,7 +305,7 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
     compilerError("isSorted() requires 1-D array");
 
   chpl_check_comparator(comparator, eltType);
-  param stride = if Dom.stridable then abs(Dom.stride) else 1;
+  const stride = if Dom.stridable then abs(Dom.stride) else 1;
 
   for i in Dom.low..Dom.high-stride by stride do
     if chpl_compare(Data[i+stride], Data[i], comparator) < 0 then
@@ -566,8 +566,8 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
   chpl_check_comparator(comparator, eltType);
   // grab obvious indices
-  param stride = if Dom.stridable then abs(Dom.stride) else 1;
-  const lo = Dom.low,
+  const stride = abs(Dom.stride),
+        lo = Dom.low,
         hi = Dom.high,
         size = Dom.size,
         mid = if hi == lo then hi
@@ -604,6 +604,59 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
   }
 
   Data(hi-stride) = Data(loptr);
+  Data(loptr) = pivotVal;
+
+  // TODO -- Get this cobegin working and tested
+  //  cobegin {
+    quickSort(Data[..loptr-stride], minlen, comparator);  // could use unbounded ranges here
+    quickSort(Data[loptr+stride..], minlen, comparator);
+  //  }
+}
+
+pragma "no doc"
+/* Non-stridable quickSort */
+proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
+  where !Dom.stridable {
+  if Dom.rank != 1 then
+    compilerError("quickSort() requires 1-D array");
+
+  chpl_check_comparator(comparator, eltType);
+
+  // grab obvious indices
+  const lo = Dom.low,
+        hi = Dom.high,
+        mid = lo + (hi-lo+1)/2;
+
+  // base case -- use insertion sort
+  if (hi - lo < minlen) {
+    insertionSort(Data, comparator=comparator);
+    return;
+  }
+
+  // find pivot using median-of-3 method
+  if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
+    Data(mid) <=> Data(lo);
+  if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
+    Data(hi) <=> Data(lo);
+  if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
+    Data(hi) <=> Data(mid);
+
+  const pivotVal = Data(mid);
+  Data(mid) = Data(hi-1);
+  Data(hi-1) = pivotVal;
+  // end median-of-3 partitioning
+
+  var loptr = lo,
+      hiptr = hi-1;
+  while (loptr < hiptr) {
+    do { loptr += 1; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
+    do { hiptr -= 1; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
+    if (loptr < hiptr) {
+      Data(loptr) <=> Data(hiptr);
+    }
+  }
+
+  Data(hi-1) = Data(loptr);
   Data(loptr) = pivotVal;
 
   // TODO -- Get this cobegin working and tested
