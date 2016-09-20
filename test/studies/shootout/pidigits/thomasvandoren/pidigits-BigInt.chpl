@@ -29,13 +29,13 @@ proc main() {
 }
 
 iter genDigits(numDigits) {
-  var numer = new Bigint(1);
-  var denom = new Bigint(1);
+  var numer = new bigint(1);
+  var denom = new bigint(1);
 
-  var accum = new Bigint(0);
+  var accum = new bigint(0);
 
-  var tmp1  = new Bigint();
-  var tmp2  = new Bigint();
+  var tmp1  = new bigint();
+  var tmp2  = new bigint();
 
   var k: uint(64);
 

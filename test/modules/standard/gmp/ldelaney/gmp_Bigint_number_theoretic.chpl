@@ -3,11 +3,11 @@ use BigInteger;
 // Tests all of the number theoretic functions contained in the record
 // the jacobi and legendre functions will be tested elsewhere
 
-var a   = new Bigint(27);
-var b   = new Bigint(19);
-var c   = new Bigint("1302397");
-var d   = new Bigint(5);
-var e   = new Bigint(375);
+var a   = new bigint(27);
+var b   = new bigint(19);
+var c   = new bigint("1302397");
+var d   = new bigint(5);
+var e   = new bigint(375);
 
 
 

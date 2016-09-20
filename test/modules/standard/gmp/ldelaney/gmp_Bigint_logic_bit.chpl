@@ -2,8 +2,8 @@ use BigInteger;
 
 // Tests the logical and bit manipulation functions
 
-var a = new Bigint( 8);
-var b = new Bigint(40);
+var a = new bigint( 8);
+var b = new bigint(40);
 
 a.and(a, b); // 8 & 40 = 8
 writeln(a);

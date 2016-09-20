@@ -2,9 +2,9 @@ use BigInteger;
 
 // Tests the operator overloads
 
-var a            = new Bigint(25);
-var b            = new Bigint( 0);
-var c            = new Bigint( 5);
+var a            = new bigint(25);
+var b            = new bigint( 0);
+var c            = new bigint( 5);
 
 var ua : uint    =  12;
 var sa : int     = -13;

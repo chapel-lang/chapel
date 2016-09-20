@@ -1,8 +1,8 @@
 use BigInteger;
 
-var a = new Bigint(  0);
-var b = new Bigint(  2);
-var c = new Bigint(100);
+var a = new bigint(  0);
+var b = new bigint(  2);
+var c = new bigint(100);
 
 a.add(a, b);                         // a =     2
 a.add(a, 1000);                      // a =  1002

@@ -1,15 +1,15 @@
 use BigInteger;
 
-var tensandthrees = new Bigint("81000000000000000000000000000000000000000000");
+var tensandthrees = new bigint("81000000000000000000000000000000000000000000");
 
 writeln();
 writeln(tensandthrees, " _p:");
 
 for m in 1 .. 10 {
-  var mb = new Bigint(m);
+  var mb = new bigint(m);
 
   for c in 0..9 {
-    var cb = new Bigint(c);
+    var cb = new bigint(c);
 
     write(TF(tensandthrees.congruent_p(cb, mb)));
   }
@@ -31,7 +31,7 @@ writeln(tensandthrees, "_2exp_p:");
 
 for b in 1 .. 10 : uint {
   for c in 0 .. 9 {
-    var cb = new Bigint(c);
+    var cb = new bigint(c);
 
     write(TF(tensandthrees.congruent_2exp_p(cb, b)));
   }

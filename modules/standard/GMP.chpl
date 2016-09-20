@@ -2571,8 +2571,8 @@ module GMP {
       gmp_randinit_mt(this.state);
     }
 
-    proc GMPRandom(a: Bigint, c: uint, m2exp: uint) {
-      // Rely on Bigint assignment operator to obtain a local copy
+    proc GMPRandom(a: bigint, c: uint, m2exp: uint) {
+      // Rely on bigint assignment operator to obtain a local copy
       var a_ = a;
 
       gmp_randinit_lc_2exp(this.state,
@@ -2599,9 +2599,9 @@ module GMP {
       }
     }
 
-    proc seed(seed: Bigint) {
+    proc seed(seed: bigint) {
       on this {
-        // Rely on Bigint assignment operator to obtain a local copy
+        // Rely on bigint assignment operator to obtain a local copy
         var s_ = seed;
 
         gmp_randseed(this.state, s_.mpz);
@@ -2657,9 +2657,9 @@ module GMP {
       return val.safeCast(uint);
     }
 
-    proc urandomb(ref r: Bigint, nbits: uint) {
+    proc urandomb(ref r: bigint, nbits: uint) {
       on this {
-        // Rely on Bigint assignment operator to obtain a local copy
+        // Rely on bigint assignment operator to obtain a local copy
         var r_ = r;
 
         mpz_urandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
@@ -2668,9 +2668,9 @@ module GMP {
       }
     }
 
-    proc urandomm(ref r: Bigint, n: Bigint) {
+    proc urandomm(ref r: bigint, n: bigint) {
       on this {
-        // Rely on Bigint assignment operator to obtain a local copy
+        // Rely on bigint assignment operator to obtain a local copy
         var r_ = r;
         var n_ = n;
 
@@ -2680,9 +2680,9 @@ module GMP {
       }
     }
 
-    proc rrandomb(ref r: Bigint, nbits: uint) {
+    proc rrandomb(ref r: bigint, nbits: uint) {
       on this {
-        // Rely on Bigint assignment operator to obtain a local copy
+        // Rely on bigint assignment operator to obtain a local copy
         var r_ = r;
 
         mpz_rrandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
