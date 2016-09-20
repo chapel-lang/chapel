@@ -196,21 +196,18 @@ module GMP {
   pragma "no doc"
   extern type __mpz_struct;
 
-  /*  The GMP ``mpf_t`` type */
-  extern type mpf_t           = 1 * __mpf_struct;
-
-
-
+  /* The GMP ``mpz_t`` type */
+  extern type mpz_t           = 1 * __mpz_struct;
 
   pragma "no doc"
   extern type __mpf_struct;
 
+  /*  The GMP ``mpf_t`` type */
+  extern type mpf_t           = 1 * __mpf_struct;
+
   pragma "no doc"
   extern type __gmp_randstate_struct;
 
-
-  /* The GMP ``mpz_t`` type */
-  extern type mpz_t           = 1 * __mpz_struct;
 
   /* The GMP ``gmp_randstate_t`` type */
   extern type gmp_randstate_t = 1 * __gmp_randstate_struct;
@@ -226,7 +223,7 @@ module GMP {
      and the natural way to wrap that in Chapel is with a 1-element
      tuple. These tuples would be passed by value to the extern
      routines if not for ref.
-   */
+  */
 
 
 
@@ -259,7 +256,7 @@ module GMP {
   // 5.2 Assignment Functions
   //
 
-  extern proc mpz_set(ref rop: mpz_t, const op: mpz_t);
+  extern proc mpz_set(ref rop: mpz_t, const ref op: mpz_t);
 
   extern proc mpz_set_ui(ref rop: mpz_t, op: c_ulong);
 
@@ -1125,10 +1122,10 @@ module GMP {
   private extern proc chpl_gmp_mpz_nlimbs(from: __mpz_struct) : uint(64);
 
   /* Print out an mpz_t (for debugging) */
-  extern proc chpl_gmp_mpz_print(x: mpz_t);
+  extern proc chpl_gmp_mpz_print(const ref x: mpz_t);
 
   /* Get an mpz_t as a string */
-  extern proc chpl_gmp_mpz_get_str(base: c_int, x: mpz_t) : c_string_copy;
+  extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_string_copy;
 
 
   enum Round {
