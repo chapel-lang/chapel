@@ -22,6 +22,7 @@
 //
 
 use DimensionalDist2D;
+use RangeChunk only ;
 
 config const BlockCyclicDim_allowParLeader = true;
 config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing
@@ -744,7 +745,6 @@ proc BlockCyclic1dom.dsiSingleTaskPerLocaleOnly1d()
 // only works when BlockCyclic1dom.dsiSingleTaskPerLocaleOnly1d()
 proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int)
 {
-  use RangeChunk;
   // We better fit within this type. An explicit cast at the callsite
   // would presently fail if we don't fit.
   type resultIdxType = globDD.idxType;

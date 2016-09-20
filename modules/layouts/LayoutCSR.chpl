@@ -63,6 +63,8 @@ class CSR: BaseDist {
 }
 
 class CSRDom: BaseSparseDomImpl {
+  use RangeChunk only ;
+
   var dist: CSR;
 
   var rowRange: range(idxType);
@@ -120,7 +122,6 @@ class CSRDom: BaseSparseDomImpl {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
-    use RangeChunk;
     // same as DefaultSparseDom's leader
     const numElems = nnz;
     const numChunks = _computeNumChunks(numElems);

@@ -17,13 +17,12 @@
  * limitations under the License.
  */
 
-enum RemElems {
-  Thru, // 2, 3, 2, 3 
-  Pack, // 3, 3, 3, 1
-  Mod // 3, 3, 2, 2
-}
-
 module RangeChunk {
+  enum RemElems {
+    Thru,
+    Pack,
+    Mod
+  }
   use RemElems;
   use BoundedRangeType;
 

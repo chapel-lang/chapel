@@ -20,6 +20,8 @@
 // DefaultSparse.chpl
 //
 module DefaultSparse {
+  use RangeChunk only ;
+
   config param debugDefaultSparse = false;
 
   class DefaultSparseDom: BaseSparseDomImpl {
@@ -53,7 +55,6 @@ module DefaultSparse {
     }
 
     iter these(param tag: iterKind) where tag == iterKind.standalone {
-      use RangeChunk;
       const numElems = nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
       if debugDefaultSparse {
@@ -76,7 +77,6 @@ module DefaultSparse {
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
-      use RangeChunk;
       const numElems = nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
       if debugDefaultSparse then
@@ -399,7 +399,6 @@ module DefaultSparse {
     }
 
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
-      use RangeChunk;
       const numElems = dom.nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
       if debugDefaultSparse {
