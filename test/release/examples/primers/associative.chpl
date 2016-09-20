@@ -11,6 +11,9 @@
 */
 
 //
+// Associative Domains
+// -------------------
+//
 // Associative domains are commonly used to represent arbitrary sets, or to
 // represent the set of keys for a dictionary/hash table.
 //
@@ -134,6 +137,9 @@ if Names.member("Bob") then
 if Names.member("Frank") then
   halt("Error: Frank should have been removed!");
 
+//
+// Associative Arrays
+// ------------------
 //
 // Like all other domains, we can use associative domains to define an array.
 // ``Scores`` is the Chapel-equivalent of a "map", "dictionary", or "hash
@@ -316,6 +322,9 @@ Scores["Mark"] = 81;
 
 
 /*
+  Set Operations
+  --------------
+
   Set operations are available on associative domains and arrays.
 
   The supported set operations are:
@@ -358,10 +367,11 @@ if (Men | Women) != Names then
 //
 
 /*
-  .. note:: Future Directions
+Future Directions
+-----------------
 
-     Today, associative domains cannot be distributed across multiple
-     locales.  A prototype domain map for this exists, and the effort to make
-     it a polished feature could be accelerated with sufficient user
-     interest.
+Today, associative domains cannot be distributed across multiple
+locales.  A prototype domain map for this exists, and the effort to make
+it a polished feature could be accelerated with sufficient user
+interest.
 */
