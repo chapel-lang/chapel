@@ -986,6 +986,19 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
 }
 
 
+//
+// This is a simple utility function that converts new-style
+// PRIM_ZIP() expressions to old-style _build_tuple() expressions for
+// code that is not ready for the new style yet.
+//
+CallExpr* zipToTuple(CallExpr* zipExpr) {
+  assert(zipExpr->isPrimitive(PRIM_ZIP));
+  zipExpr->primitive = NULL;
+  zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
+  return zipExpr;
+}
+
+
 ForallExpr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   return new ForallExpr(indices, iteratorExpr, expr, cond, maybeArrayType, zippered);
