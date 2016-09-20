@@ -346,7 +346,8 @@ void insertOmittedField(Expr* next, const char* nextField,
   CallExpr* thisAccess = new CallExpr(".", _this,
                                       new_CStringSymbol(nextField));
   CallExpr* newInit = NULL;
-  if (!(isSymExpr(initExpr.first) &&
+  if (initExpr.first != NULL &&
+      !(isSymExpr(initExpr.first) &&
         toSymExpr(initExpr.first)->var == gTypeDefaultToken)) {
     Expr* init = initExpr.first->copy();
 
