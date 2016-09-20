@@ -7802,6 +7802,19 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
+  if (fn->hasFlag(FLAG_CONSTRUCTOR) && !strcmp(fn->name, "init")) {
+    // Lydia NOTE: Quick fix to allow our new initializers to recursively call
+    // themselves.  We know their return type already, pretending we don't just
+    // leads to errors.  Ideally, we'll remove this code when we fix our
+    // compiler's handling of recursive calls when the function doesn't declare
+    // its return type.
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_IS_MEME)) {
+        fn->retType = formal->type;
+      }
+    }
+  }
+
   resolveBlockStmt(fn->body);
 
   if (tryFailure) {
