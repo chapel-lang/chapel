@@ -1491,6 +1491,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 //
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
+  chpl_incRefCountsForDomainsInArrayEltTypes(a, a.eltType);
   a._arrAlias = _value;
   return _newArray(a);
 }

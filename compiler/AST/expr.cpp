@@ -5916,7 +5916,8 @@ GenRet CallExpr::codegenPrimMove() {
       codegenAssign(lhs, from);
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
-             get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false) {
+             get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false &&
+             !get(1)->isRef()) {
     GenRet rhs = get(2);
     if (get(2)->isRef()) {
       rhs = codegenDeref(rhs);

@@ -2009,6 +2009,7 @@ module ChapelArray {
       pragma "no auto destroy" var d = _dom((...args));
       d._value._free_when_no_arrs = true;
       var a = _value.dsiRankChange(d._value, rank, stridable, args);
+      chpl_incRefCountsForDomainsInArrayEltTypes(a, a.eltType);
       a._arrAlias = _value;
       d._value.add_arr(a);
       return _newArray(a);
@@ -2169,6 +2170,7 @@ module ChapelArray {
       pragma "no auto destroy" var newDom = {(...d.dims())} dmapped newDist;
       newDom._value._free_when_no_arrs = true;
       var x = _value.dsiReindex(newDom._value);
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
       x._arrAlias = _value;
       newDom._value.add_arr(x);
       return _newArray(x);
