@@ -6,7 +6,7 @@ Multilocale Chapel Execution
 
 This document outlines the steps to get started with multi-locale Chapel.
 
-0. Check for instructions more relevant to your platforrm in
+0. Check for instructions more relevant to your platform in
    :ref:`platform-specific <platforms-index>` documentation.
 
 #. Inspect your current communication configuration:
@@ -162,7 +162,7 @@ fast
   A limited portion of memory is available and optimized for fastest remote
   memory access
 large
-  As with fast, but a larger amount of memory is availble for communication
+  As with fast, but a larger amount of memory is available for communication
 
 Current defaults are:
 
