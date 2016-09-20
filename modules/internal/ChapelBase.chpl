@@ -1472,23 +1472,6 @@ module ChapelBase {
     if a == 0 then return true; else return __primitive("<=", a, b);
   }
 
-  // numFields moved to Reflection
-
-  pragma "no doc"
-  proc fieldNumToName(type t, param i) param {
-    compilerError("fieldNumToName deprecated. Use getFieldName");
-  }
-
-  pragma "no doc"
-  proc fieldValueByNum(x, param i) {
-    compilerError("fieldValueByNum deprecated. Use getField");
-  }
-
-  pragma "no doc"
-  proc fieldValueByName(x, param name) {
-    compilerError("fieldValueByName deprecated. Use getField");
-  }
-
   proc isClassType(type t) param where t:object return true;
   proc isClassType(type t) param return false;
 
