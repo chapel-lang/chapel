@@ -146,14 +146,9 @@ module ChapelIteratorSupport {
   proc _checkIterator(type t) {
     if (!(isEnumType(t))) then
       compilerError("cannot iterate over a type");
-    else
-      return t;
   }
 
-  // TODO - should be inline, but something is going really
-  // wrong in inlining...
-  proc _checkIterator(const ref x) const ref {
-    return x;
+  proc _checkIterator(x) {
   }
 
   inline proc _freeIterator(ic: _iteratorClass) {
