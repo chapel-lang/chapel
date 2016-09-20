@@ -4300,7 +4300,7 @@ static void lvalueCheck(CallExpr* call)
               constructName = "begin";
             } else {
               marker = enclTaskFn->defPoint->parentExpr;
-              constructName = "cobegin or coforall";
+              constructName = "parallel";
             }
             USR_PRINT(marker, "The shadow variable '%s' is constant due to task intents in this %s statement", varname, constructName);
           } else {
