@@ -496,12 +496,6 @@ checkUseBeforeDefs() {
                   USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
                                  sym->unresolved);
                   undeclared.set_add(sym->unresolved);
-                  // Also include a note about setter being deprecated if it
-                  // looks like that was the problem.
-                  if (call && call->parentSymbol)
-                    if (FnSymbol* inFn = toFnSymbol(call->parentSymbol))
-                      if(0 == strcmp(sym->unresolved, "setter") && inFn->retTag == RET_REF)
-                        USR_FATAL_CONT(sym, "setter is deprecated. Use a ref-pair instead.");
                 }
               }
             }
