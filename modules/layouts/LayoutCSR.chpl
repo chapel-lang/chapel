@@ -18,8 +18,8 @@
  */
 
 config param debugCSR = false;
+use RangeChunk only ;
 
-// In the following, I insist on SUBdomains because
 // I have not seen us test a non-"sub" CSR domain
 // and I do not want untested code in the docs.
 // TODO: change to 'sparse domain' and add that code to the test suite.
@@ -123,21 +123,21 @@ class CSRDom: BaseSparseDomImpl {
   iter these(param tag: iterKind) where tag == iterKind.leader {
     // same as DefaultSparseDom's leader
     const numElems = nnz;
-      const numChunks = _computeNumChunks(numElems);
-      //writeln("leader- rowRange=", rowRange, " colRange=", colRange, "\n",
-      //        "        rowStart=", rowStart, " colIdx=", colIdx);
-      if debugCSR then
-        writeln("CSRDom leader: ", numChunks, " chunks, ", numElems, " elems");
+    const numChunks = _computeNumChunks(numElems);
+    //writeln("leader- rowRange=", rowRange, " colRange=", colRange, "\n",
+    //        "        rowStart=", rowStart, " colIdx=", colIdx);
+    if debugCSR then
+      writeln("CSRDom leader: ", numChunks, " chunks, ", numElems, " elems");
 
-      // split our numElems elements over numChunks tasks
-      if numChunks == 1 then
-        yield (this, 1, numElems);
-      else
-        coforall chunk in 1..numChunks do
-          yield (this, (..._computeChunkStartEnd(numElems, numChunks, chunk)));
-      // TODO: to handle large numElems and numChunks faster, it would be great
-      // to run the binary search in _private_findStartRow smarter, e.g.
-      // pass to the tasks created in 'coforall' smaller ranges to search over.
+    // split our numElems elements over numChunks tasks
+    if numChunks == 1 then
+      yield (this, 1, numElems);
+    else
+      coforall chunk in chunks(1..numElems, numChunks) do
+        yield (this, chunk.first, chunk.last);
+    // TODO: to handle large numElems and numChunks faster, it would be great
+    // to run the binary search in _private_findStartRow smarter, e.g.
+    // pass to the tasks created in 'coforall' smaller ranges to search over.
   }
 
   iter these(param tag: iterKind, followThis: (?,?,?)) where tag == iterKind.follower {

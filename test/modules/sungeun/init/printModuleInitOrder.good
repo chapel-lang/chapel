@@ -40,5 +40,6 @@ Initializing Modules:
     Assert
     CommDiagnostics
     AlignedTSupport
+    RangeChunk
    printModuleInitOrder
     moduleInitTest

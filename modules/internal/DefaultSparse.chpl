@@ -20,6 +20,7 @@
 // DefaultSparse.chpl
 //
 module DefaultSparse {
+  use RangeChunk only ;
 
   config param debugDefaultSparse = false;
 
@@ -68,12 +69,9 @@ module DefaultSparse {
           yield indices(i);
         }
       } else {
-        coforall chunk in 1..numChunks {
-          const (startIx, endIx) =
-            _computeChunkStartEnd(numElems, numChunks, chunk);
-          for i in startIx..endIx {
+        coforall chunk in chunks(1..numElems, numChunks) {
+          for i in chunk do
             yield indices(i);
-          }
         }
       }
     }
@@ -90,8 +88,8 @@ module DefaultSparse {
         // ... except if 1, just use the current thread
         yield (this, 1, numElems);
       else
-        coforall chunk in 1..numChunks do
-          yield (this, (..._computeChunkStartEnd(numElems, numChunks, chunk)));
+        coforall chunk in chunks(1..numElems, numChunks) do
+          yield (this, chunk.first, chunk.last);
     }
 
     iter these(param tag: iterKind, followThis:(?,?,?)) where tag == iterKind.follower {
@@ -412,12 +410,9 @@ module DefaultSparse {
           yield data[i];
         }
       } else {
-        coforall chunk in 1..numChunks {
-          const (startIx, endIx) =
-            _computeChunkStartEnd(numElems, numChunks, chunk);
-          for i in startIx..endIx {
+        coforall chunk in chunks(1..numElems, numChunks) {
+          for i in chunk do
             yield data[i];
-          }
         }
       }
     }
