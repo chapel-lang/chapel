@@ -1,4 +1,3 @@
-warning: --specialize was set, but CHPL_TARGET_ARCH is 'unknown'. If you want any specialization to occur please set CHPL_TARGET_ARCH to a proper value.
 0
 1 -1
 1 -1
