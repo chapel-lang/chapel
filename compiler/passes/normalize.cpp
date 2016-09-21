@@ -346,8 +346,9 @@ static void lowerReduceAssign() {
         else if (Symbol* globalOp = reduceIntentOp(enclosingForall, lhsVar))
           {
             SET_LINENO(call);
+            Expr* rhs = call->get(2)->remove(); // do it before lhsSE->remove()
             Expr* repl = new_Expr(".(%S, 'accumulateOntoState')(%E,%E)",
-                           globalOp, lhsSE->remove(), call->get(2)->remove());
+                           globalOp, lhsSE->remove(), rhs);
             call->replace(repl);
           }
         else
