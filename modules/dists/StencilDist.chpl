@@ -109,16 +109,17 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 //
 
 /*
+  The Stencil distribution reduces communication by creating read-only caches
+  for elements adjacent to the block of elements owned by each locale. This
+  documentation may refer to these cached regions as 'ghost cells' or 'fluff'.
+  This approach can avoid many fine-grained GETs and PUTs when performing a
+  stencil computation near the boundary of the current locale's chunk of array
+  elements. The user must manually refresh these caches after writes by calling
+  the ``updateFluff`` method. Otherwise, reading and writing array elements
+  behaves the same as a Block-distributed array.
   
-  The Stencil distribution attempts to reduce communication for nearby array
-  accesses by creating read-only caches for elements within a user-defined
-  distance. These caches exist for the space between locales as well as the
-  space outside of the ``boundingBox``. This approach avoid many fine-grained
-  GETs and PUTs during the computation phase, and moves the communication into
-  its own step within the ``updateFluff`` function.
-
-  For information on how indices are partitioned, see the Block distribution
-  documentation. The Stencil distribution re-uses the same logic.
+  The indices are partitioned in the same way as the :mod:`Block <BlockDist>`
+  distribution.
 
   The ``Stencil`` class constructor is defined as follows:
 
@@ -135,18 +136,32 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
         fluff: rank*idxType       = makeZero(rank),
         periodic: bool            = false)
 
-  The ``fluff`` argument indicates the requested number of ghost cells in each
-  direction. ``fluff`` will be used to expand the ``boundingBox`` in each
-  direction to increase the index space that can be accessed. The default for
-  each component of the tuple is zero. This allows for accessing an array
-  with indices that are not within ``boundingBox`` domain.
+  The ``fluff`` argument indicates the requested number of cached elements in
+  each dimension. If an element of ``fluff`` is greater than zero, the user can
+  use indices outside of ``boundingBox`` to index into the array. If the domain
+  is not strided, you can consider indices for dimension ``i`` to be:
+
+  .. code-block:: chapel
+
+     boundingBox.dim(i).expand(fluff(i))
+
+  If the domain is strided:
+
+  .. code-block:: chapel
+
+     const bb = boundingBox.dim(i);
+     bb.expand(fluff(i) * abs(bb.stride));
+
+  The same logic is used when determining the cached index set on each locale,
+  except you can imagine ``boundingBox`` to be replaced with the returned
+  value from :proc:`~ChapelArray.localSubdomain`.
 
   The ``periodic`` argument indicates whether or not the stencil distribution
   should treat the array as a discrete chunk in a larger space. When enabled,
-  the ghost cells outside of ``boundingBox`` will contain values as if the data
-  were replicated on all sides of the space. When disabled, the outermost ghost
-  cells will be initialized with the default value of the element's type. The
-  ``periodic`` functionality is disabled by default.
+  the ghost cells outside of ``boundingBox`` will contain values as if the
+  array was replicated on all sides of the space. When disabled, the outermost
+  ghost cells will be initialized with the default value of the element's type.
+  The ``periodic`` functionality is disabled by default.
 
   .. note::
   
@@ -154,13 +169,14 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
      the expanded bounding box, so a user must manually wrap periodic indices
      themselves.
   
-  Iterating over a Stencil-distributed domain or array will only yield indices
-  within the ``boundingBox``.
+  Iterating directly over a Stencil-distributed domain or array will only yield
+  indices and elements within the ``boundingBox``.
 
-  ** Updating the Ghost Cache **
+  **Updating the Cached Elements**
 
   Once you have completed a series of writes to the array, you will need to
-  call the ``updateFluff`` function to update the ghost cache for each locale:
+  call the ``updateFluff`` function to update the cached elements for each
+  locale. Here is a simple example:
 
   .. code-block:: chapel
 
@@ -181,18 +197,18 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   After updating, any read from the array should be up-to-date. The
   ``updateFluff`` function does not currently accept any arguments.
 
-  ** Reading and Writing to Array Elements **
+  **Reading and Writing to Array Elements**
 
-  The Stencil distribution uses ghost cells as cached read-only values from other
-  locales. When reading from a Stencil-distributed array, the distribution will
-  attempt to read from the local ghost cache first. If the index is not owned by
-  the ghost space, then a remote read from the owner locale occurs.
+  The Stencil distribution uses ghost cells as cached read-only values from
+  other locales. When reading from a Stencil-distributed array, the
+  distribution will attempt to read from the local ghost cache first. If the
+  index is not within the cached index set of the current locale, then we
+  default to a remote read from the locale on which the element is located.
 
-  Any write to array data will be applied to the 'actual', non-ghost-cache
-  data. If you do write to the ghost cache, that value will be overwritten
-  during the next ``updateFluff`` call.
+  Any write to array data will be applied to the actual element, the same as if
+  you were using a Block-distributed array.
 
-  ** Modifying Exterior Ghost Cells **
+  **Modifying Exterior Ghost Cells**
 
   Updating the outermost ghost cells can be useful when working with a periodic
   stencil-distributed array. If your array contains position information, you may
@@ -202,9 +218,10 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   stencil-distributed array. This iterator yields a tuple where the first component
   is the ghost cell element to be modified, and the second component is a tuple
   indicating the side on which this ghost cell lives. This direction tuple will
-  contain values in the range "-1..1".
+  contain values in the range ``-1..1``.
 
-  See miniMD for an example of how to use this iterator.
+  The release benchmark 'miniMD' contains an example of how one might use this
+  iterator.
 
   .. warning::
 
