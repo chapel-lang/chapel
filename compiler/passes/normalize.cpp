@@ -1078,7 +1078,7 @@ static void fix_def_expr(VarSymbol* var) {
   //
   if (var->hasFlag(FLAG_NO_COPY)) {
     INT_ASSERT(init);
-    INT_ASSERT(!type);
+    //INT_ASSERT(!type);
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
     return;
   }

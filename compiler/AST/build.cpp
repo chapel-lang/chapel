@@ -547,6 +547,10 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
 BlockStmt*
 buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   VarSymbol* tmp = newTemp();
+  // MPF - without FLAG_NO_COPY, normalize adds an initCopy here,
+  // but that initCopy is unnecessary because each variable will
+  // be initialized with a tuple element (and initCopy called then).
+  tmp->addFlag(FLAG_NO_COPY);
   int count = 1;
   for_alist(expr, tupleBlock->body) {
     if (DefExpr* def = toDefExpr(expr)) {

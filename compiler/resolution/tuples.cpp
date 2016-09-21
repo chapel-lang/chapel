@@ -888,7 +888,8 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
     bool firstArgIsSize = fn->hasFlag(FLAG_TUPLE) || fn->hasFlag(FLAG_STAR_TUPLE);
     bool noref = fn->hasFlag(FLAG_DONT_ALLOW_REF);
 
-    bool noChangeTypes = false;
+    bool noChangeTypes = fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) ||
+                         fn->retTag == RET_TYPE;
 
     // This is a workaround for iterators use of build_tuple_always_allow_ref
     if (FnSymbol* inFn = call->getFunction())
@@ -911,8 +912,8 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
         // Subsequent arguments are tuple types.
         Type* t = actual->typeInfo();
 
-        // Args that are being passed with a ref intent
-        // should be captured as ref.
+        // Args that have blank intent -> ref intent
+        // should be captured as ref, but not in the type function.
         if (shouldChangeTupleType(t->getValType()) && !noChangeTypes) {
           if (SymExpr* se = toSymExpr(actual)) {
             if (ArgSymbol* arg = toArgSymbol(se->var)) {
