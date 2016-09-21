@@ -5672,7 +5672,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 int
 main ()
 {
- aligned_alloc(1, 1);
+ return (aligned_alloc(1, 1) ? 0 : 1);
   ;
   return 0;
 }

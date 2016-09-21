@@ -248,7 +248,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #define _ISOC11_SOURCE 1
 #include <stdlib.h>
 ]],
-	[[ aligned_alloc(1, 1); ]])],
+	[[ return (aligned_alloc(1, 1) ? 0 : 1); ]])],
 	[have_aligned_alloc="yes"],
 	[have_aligned_alloc="no"])
 AC_MSG_RESULT([$have_aligned_alloc])
