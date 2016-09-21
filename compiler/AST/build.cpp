@@ -879,7 +879,7 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   iterator->addFlag(FLAG_EXPR_TEMP);
   iterator->addFlag(FLAG_MAYBE_REF);
   block->insertAtTail(new DefExpr(iterator));
-  block->insertAtTail(new CallExpr("_checkIterator", iteratorExprArg));
+//  block->insertAtTail(new CallExpr("_checkIterator", iteratorExprArg));
   block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorExprArg));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
@@ -1022,7 +1022,7 @@ static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
   iterator->addFlag(FLAG_EXPR_TEMP);
   iterator->addFlag(FLAG_MAYBE_REF);
   block->insertAtTail(new DefExpr(iterator));
-  block->insertAtTail(new CallExpr("_checkIterator", iteratorExprArg));
+//  block->insertAtTail(new CallExpr("_checkIterator", iteratorExprArg));
   block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorExprArg));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
@@ -1247,7 +1247,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABlock->insertAtTail(new DefExpr(iterRec));
   SABlock->insertAtTail(new DefExpr(saIter));
   SABlock->insertAtTail(new DefExpr(saIdx));
-  SABlock->insertAtTail(new CallExpr("_checkIterator", iterExpr->copy()));
+//  SABlock->insertAtTail(new CallExpr("_checkIterator", iterExpr->copy()));
   SABlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
   SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", saIter, iterRec);
   SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", saIdx, saIter);
@@ -1352,7 +1352,7 @@ buildForallLoopStmt(Expr*      indices,
   resultBlock->insertAtTail(new DefExpr(leadIter));
   resultBlock->insertAtTail(new DefExpr(leadIdx));
 
-  resultBlock->insertAtTail(new CallExpr("_checkIterator", iterExpr->copy()));
+//  resultBlock->insertAtTail(new CallExpr("_checkIterator", iterExpr->copy()));
   resultBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr->copy()));
 
   if (zippered == false)

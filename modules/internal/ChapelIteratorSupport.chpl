@@ -142,7 +142,7 @@ module ChapelIteratorSupport {
     else
       return _getIteratorZipInternal(t, 1);
   }
-
+/*
   proc _checkIterator(type t) {
     if (!(isEnumType(t))) then
       compilerError("cannot iterate over a type");
@@ -150,7 +150,7 @@ module ChapelIteratorSupport {
 
   proc _checkIterator(x) {
   }
-
+*/
   inline proc _freeIterator(ic: _iteratorClass) {
     chpl_here_free(__primitive("cast_to_void_star", ic));
   }
