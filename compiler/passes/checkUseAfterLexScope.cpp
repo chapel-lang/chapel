@@ -483,7 +483,8 @@ static SyncGraph* nextSyncPoint(SyncGraph* start) {
  **/
 static void collectAllAvailableBeginGraphs(SyncGraph* root, SyncGraph* endPoint, SyncGraphVec& taskPoints) {
   SyncGrahVec endPoints;
-  endPoints.add(endPoint);
+  if(endPoint != NULL)
+    endPoints.add(endPoint);
   collectAllAvailableBeginGraphs(root, endPoints, taskPoints);
 }
 
@@ -662,7 +663,16 @@ static bool handleSingleSyncing(SyncGraph * toSyncNode, SyncGraphVec& destSyncPo
   // once they are filled they remain filled and
   // we don't have any advantage for pulling it back.
   getSyncPoints(syncPoints.head(), destSyncPoints, syncPoints);
-  // TODO: get next sync points for all in syncPoints in destSync Points.
+  forv_Vec(SyncGraph, syncPoint, syncPoints) {
+    int index = destSyncPoints.index(syncPoint);
+    if(index != -1) {
+      destSyncPoints.remove(index);
+      SyncGraph* nextSyncPoint = getnextSyncPoint(syncPoint);
+      if(nextSyncPoints != NULL)
+	destSyncPoints.add(nextSyncPoints);
+      collectAllAvailableBeginGraphs(syncPoint, nextSyncPoint, destSyncPoints);
+    } 
+  }
   filledSinglePoints.add(toSyncNode);
   return true;
 }
