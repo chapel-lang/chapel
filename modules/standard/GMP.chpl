@@ -358,7 +358,7 @@ module GMP {
 
   extern proc mpz_mul_2exp(ref rop: mpz_t,
                            const ref op1: mpz_t,
-                           op2: c_ulong);
+                           op2: mp_bitcnt_t);
 
   extern proc mpz_neg(ref rop: mpz_t,
                       const ref op: mpz_t);
