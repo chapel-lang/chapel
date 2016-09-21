@@ -5,6 +5,12 @@
 
 */
 
+/*
+  .. _primers-ranges-general:
+
+  Ranges (general info)
+  ---------------------
+*/
 //
 // Ranges represent sequences of integral numbers, or "indices".
 // A range literal is defined using the ``..`` operator.
@@ -70,9 +76,19 @@ for (i, j) in zip(312..315, 1..) {
 writeln();
 writeln();
 
+/*
+  .. _primers-ranges-operators:
+
+  Operators
+  ---------
+*/
+
 //
-// There are several operators for working with ranges.
-// The ``by`` and ``align`` operators create more complex range values.
+// There are several operators for working with ranges.  The ``by`` and
+// ``align`` operators create strided and aligned range values. The ``#``
+// operator counts a number of elements from the range.  The ``+`` and
+// ``-`` operators shift the sequence the range represents.  The ``==``
+// operator compares ranges for equality.
 //
 
 //
@@ -131,6 +147,31 @@ const rangeWithAmbiguousAlignment = 1.. by -3;
 writeln();
 
 //
+// The count operator ``#`` counts off a number of elements from the start
+// of a range. If the count is negative, the elements are taken from the end
+// of the range, instead. It is an error to take a positive count of indices
+// from a range with no starting index, or a negative count of indices
+// from a range with no ending index.
+//
+writeln("The count operator");
+const numElements = 5;
+writeRange(0..#numElements);
+writeRange(r # 4);
+writeRange(r by -1 # 4);
+writeRange(..5 # -3);
+writeln();
+
+//
+// The ``+`` and ``-`` operators are used to shift a range's sequence
+// higher or lower.
+//
+writeln("Operators + and -");
+writeRange(r + 2);
+writeRange(1 + ..5);
+writeRange((r by 2) - 1);
+writeln();
+
+//
 // The ``==`` operator can be used to test if two ranges are equal.
 // Equality means they represent the same sequence of indices.
 //
@@ -138,6 +179,13 @@ writeln("Range equality");
 writeln(r(allOdds) == oddsBetween1and10);          // true
 writeln(r(allEvens) == evensBetween1and10);        // true
 writeln();
+
+/*
+  .. _primers-ranges-slicing:
+
+  Slicing
+  -------
+*/
 
 //
 // Range slicing produces an intersection of the sequences defined
@@ -183,32 +231,13 @@ writeln("A slice of ", r, " with ", 5.. by 2);
 writeRange(r(5.. by 2));
 writeln("A slice of ", 1.., " with ", ..5);
 writeRange((1..)(..5));
-writeln();
 
-//
-// The ``+`` and ``-`` operators are used to shift a range's sequence
-// higher or lower.
-//
-writeln("Operators + and -");
-writeRange(r + 2);
-writeRange(1 + ..5);
-writeRange((r by 2) - 1);
-writeln();
+/*
+  .. _primers-ranges-writerange:
 
-//
-// The count operator ``#`` counts off a number of elements from the start
-// of a range. If the count is negative, the elements are taken from the end
-// of the range, instead. It is an error to take a positive count of indices
-// from a range with no starting index, or a negative count of indices
-// from a range with no ending index.
-//
-writeln("The count operator");
-const numElements = 5;
-writeRange(0..#numElements);
-writeRange(r # 4);
-writeRange(r by -1 # 4);
-writeRange(..5 # -3);
-writeln();
+  Definition of writeRange
+  ------------------------
+*/
 
 //
 // The procedure that has been used throughout this primer to print
