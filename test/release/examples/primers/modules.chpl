@@ -58,7 +58,8 @@ module modToUse {
     return a + 3;
   }
 
-}
+} // end of modToUse module
+
 /* In the current implementation, private cannot be applied to type
    definitions; type aliases, and declarations of enums, records, and
    classes cannot be declared private.  Private also cannot be applied to
@@ -84,7 +85,7 @@ module Conflict {
   var other = 5.0 + 3i;
 
   var another = false;
-}
+} // end of Conflict module
 
 
 module DifferentArguments {
@@ -93,7 +94,7 @@ module DifferentArguments {
   proc baz(x) {
     return x - 2;
   }
-}
+} // end of DifferentArguments module
 
 module MainModule {
   proc main() {
@@ -115,21 +116,21 @@ module MainModule {
     /* If several of the module's symbols are desired, or the same symbol is
        desired multiple times, then it can be convenient to utilize what is
        known as a "use statement".
+
+       ``use`` statements can be inserted at any lexical scope that contains
+       executable code.
+
+       A ``use`` statement makes all of the module's visible symbols available
+       to the scope that contains the ``use`` statement.  These symbols may
+       then be accessed without the module name prefix.
+
+       In this case, ``bazBarFoo`` should store the result of calling
+       ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``, which is
+       in this case ``28``.
     */
     {
       use modToUse;
 
-      /* ``use`` statements can be inserted at any lexical scope that contains
-         executable code.
-
-         A ``use`` statement makes all of the module's visible symbols available
-         to the scope that contains the ``use`` statement.  These symbols may
-         then be accessed without the module name prefix.
-
-         In this case, ``bazBarFoo`` should store the result of calling
-         ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``, which is
-         in this case ``28``.
-       */
       var bazBarFoo = baz(bar, foo);
       writeln(bazBarFoo);
 
@@ -392,8 +393,8 @@ module MainModule {
       writeln(foobar); // Will output Inner1.foobar, or '14'
     }
 
-  }
-}
+  } // end of main() function
+} // end of MainModule module
 
 module OuterNested {
   var foo = 12;
@@ -413,22 +414,21 @@ module OuterNested {
      submodules can refer to symbols defined within their parent module, but
      their parent module can't directly access the contents of the nested
      module without a ``use`` statement or fully qualified name.
+
+     The variable ``foobar`` references OuterNested's ``foo`` and ``bar``
+     variables.
    */
   module Inner1 {
-    /* The variable ``foobar`` references OuterNested's ``foo`` and ``bar``
-       variables.
-    */
     var foobar = foo + bar;
   }
 
+  /* Since the module ``Inner2`` is defined within ``OuterNested``, it can
+     access the private variable ``hiddenFoo`` and the private function
+     ``hiddenBaz``. However, any private symbol defined within ``Inner2``
+     will not be visible within scopes defined outside of ``Inner2``.
+  */
   module Inner2 {
-    /* Since the module ``Inner2`` is defined within ``OuterNested``, it can
-       access the private variable ``hiddenFoo`` and the private function
-       ``hiddenBaz``. However, any private symbol defined within ``Inner2``
-       will not be visible within scopes defined outside of ``Inner2``.
-    */
-
     private var innerOnly = -17;
     var canSeeHidden = !hiddenFoo;
   }
-}
+} // end of OuterNested module
