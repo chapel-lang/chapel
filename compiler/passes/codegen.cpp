@@ -38,6 +38,8 @@
 
 #include <inttypes.h>
 
+#include "llvmDebug.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -227,11 +229,11 @@ static void genGlobalInt32(const char *cname, int value) {
 }
 
 static void
-genClassIDs(Vec<TypeSymbol*> & typeSymbols, bool isHeader) {
+genClassIDs(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
   genComment("Class Type Identification Numbers");
 
   int count=0;
-  forv_Vec(TypeSymbol, ts, typeSymbols) {
+  forv_Vec(TypeSymbol, ts, typeSymbol) {
     if (AggregateType* ct = toAggregateType(ts->type)) {
       if (!isReferenceType(ct) && isClass(ct)) {
         genGlobalDefClassId(ts->cname, count, isHeader);
@@ -240,8 +242,9 @@ genClassIDs(Vec<TypeSymbol*> & typeSymbols, bool isHeader) {
     }
   }
 }
+
 static void
-genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
+genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
   const char* ftable_name = "chpl_ftable";
   if( info->cfile ) {
@@ -259,7 +262,7 @@ genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
       first = false;
     }
 
-    if (fSymbols.n == 0)
+    if (fSymbols.size() == 0)
       fprintf(hdrfile, "(chpl_fn_p)0");
     fprintf(hdrfile, "\n};\n");
   } else {
@@ -267,8 +270,8 @@ genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
     if (!isHeader)
       return;
 
-    std::vector<llvm::Constant *> table ((fSymbols.n == 0) ? 1 : fSymbols.n);
-    
+    std::vector<llvm::Constant *> table ((fSymbols.size() == 0) ? 1 : fSymbols.size());
+
     llvm::Type *funcPtrType = info->lvt->getType("chpl_fn_p");
 
     int fID = 0;
@@ -277,18 +280,18 @@ genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
       table[fID++] = llvm::cast<llvm::Constant>(
           info->builder->CreatePointerCast(func, funcPtrType));
     }
-    if (fSymbols.n == 0) {
+    if (fSymbols.size() == 0) {
       table[0] = llvm::Constant::getNullValue(funcPtrType);
     }
-    
+
     llvm::ArrayType *funcPtrTableType =
       llvm::ArrayType::get(funcPtrType, table.size());
-    
+
     if(llvm::GlobalVariable *ftable =
         info->module->getNamedGlobal(ftable_name)) {
       ftable->eraseFromParent();
     }
-    
+
     llvm::GlobalVariable *ftable = llvm::cast<llvm::GlobalVariable>(
         info->module->getOrInsertGlobal(ftable_name, funcPtrTableType));
     ftable->setInitializer(llvm::ConstantArray::get(funcPtrTableType, table));
@@ -299,7 +302,78 @@ genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
 }
 
 static void
-genVirtualMethodTable(Vec<TypeSymbol*>& types, bool isHeader) {
+genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
+  GenInfo* info = gGenInfo;
+  const char* finfo_name = "chpl_finfo";
+  if( info->cfile ) {
+    FILE* hdrfile = info->cfile;
+    if(isHeader) {
+      fprintf(hdrfile, "extern chpl_fn_info %s[];\n", finfo_name);
+      return;
+    }
+    // function information (names ...)
+    fprintf(hdrfile, "chpl_fn_info %s[] = {\n", finfo_name);
+    bool first = true;
+    forv_Vec(FnSymbol, fn, fSymbols) {
+      if (!first)
+        fprintf(hdrfile, ",\n");
+      fprintf(hdrfile, "{\"%s\", %d, %d}", fn->cname,
+              getFilenameLookupPosition(fn->astloc.filename),
+              fn->astloc.lineno);
+      first = false;
+    }
+    if (!first)
+      fprintf(hdrfile, ",\n");
+    fprintf(hdrfile, "{(char *)0, 0, 0}\n};\n");
+  } else {
+#ifdef HAVE_LLVM
+    if (!isHeader)
+      return;
+
+    // Types neede by this code
+    llvm::StructType *structType = (llvm::StructType *)info->lvt->getType("chpl_fn_info");
+
+    llvm::Type *c_stringType =
+        llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+
+    llvm::Type *int32Ty = llvm::IntegerType::getInt32Ty(info->module->getContext());
+
+    std::vector<llvm::Constant *> table ((fSymbols.size() == 0) ? 1 : fSymbols.size()+1);
+
+    int fID = 0;
+    llvm::Constant* fields[3];
+    forv_Vec(FnSymbol, fn, fSymbols) {
+      fields[0] = llvm::cast<llvm::GlobalVariable>
+        (new_CStringSymbol(fn->cname)->codegen().val)->getInitializer();
+      fields[1] = llvm::ConstantInt::get(int32Ty,
+                                         getFilenameLookupPosition(fn->astloc.filename));
+      fields[2] = llvm::ConstantInt::get(int32Ty, fn->astloc.lineno);
+      table[fID++] = llvm::ConstantStruct::get(structType, fields);
+    }
+    fields[0] = llvm::Constant::getNullValue(c_stringType);
+    fields[1] = llvm::ConstantInt::get(int32Ty, 0);
+    fields[2] = llvm::ConstantInt::get(int32Ty, 0);
+    table[fID] = llvm::ConstantStruct::get(structType, fields);
+
+    llvm::ArrayType *tableType =
+      llvm::ArrayType::get(structType, table.size());
+
+    if(llvm::GlobalVariable *ftable =
+        info->module->getNamedGlobal(finfo_name)) {
+      ftable->eraseFromParent();
+    }
+
+    llvm::GlobalVariable *ftable = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(finfo_name, tableType));
+    ftable->setInitializer(llvm::ConstantArray::get(tableType, table));
+    ftable->setConstant(true);
+    info->lvt->addGlobalValue(finfo_name, ftable, GEN_PTR, true);
+#endif
+  }
+}
+
+static void
+genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   GenInfo* info = gGenInfo;
   const char* vmt = "chpl_vmtable";
   if(info->cfile && isHeader) {
@@ -307,9 +381,9 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types, bool isHeader) {
     return;
   }
   int maxVMT = 0;
-  for (int i = 0; i < virtualMethodTable.n; i++)
-    if(virtualMethodTable.v[i].key && virtualMethodTable.v[i].value->n > maxVMT)
-      maxVMT = virtualMethodTable.v[i].value->n;
+  for (int i = 0; i < virtualMethodTable.size(); i++)
+    if(virtualMethodTable.begin()[i].key && virtualMethodTable.begin()[i].value->n > maxVMT)
+      maxVMT = virtualMethodTable.begin()[i].value->n;
 
   gMaxVMT = maxVMT;
 
@@ -345,7 +419,7 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types, bool isHeader) {
         }
       }
     }
-    if (types.n == 0 || maxVMT == 0)
+    if (types.size() == 0 || maxVMT == 0)
       fprintf(hdrfile, "(chpl_fn_p)0");
     fprintf(hdrfile, "\n};\n");
   } else {
@@ -463,14 +537,14 @@ static void genFilenameTable() {
 //
 static void genUnwindSymbolTable(){
   GenInfo *info = gGenInfo;
-  Vec<FnSymbol*> symbols;
+  std::vector<FnSymbol*> symbols;
 
   //If CHPL_UNWIND is none we don't want any symbols in our tables
   if(strcmp(CHPL_UNWIND, "none") != 0){
     // Gets only user symbols
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if(strncmp(fn->cname, "chpl_", 5)) {
-        symbols.add(fn);
+        symbols.push_back(fn);
       }
     }
   }
@@ -495,34 +569,11 @@ static void genUnwindSymbolTable(){
     fprintf(hdrfile," 0, 0};\n");
   }
 
-  genGlobalInt32("chpl_sizeSymTable", symbols.n * 2);
-}
-
-static int
-compareSymbol(const void* v1, const void* v2) {
-  Symbol* s1 = *(Symbol* const *)v1;
-  Symbol* s2 = *(Symbol* const *)v2;
-  ModuleSymbol* m1 = s1->getModule();
-  ModuleSymbol* m2 = s2->getModule();
-  if (m1 != m2) {
-    if (m1->modTag < m2->modTag)
-      return -1;
-    if (m1->modTag > m2->modTag)
-      return 1;
-    return strcmp(m1->cname, m2->cname);
-  }
-
-  if (s1->linenum() != s2->linenum())
-    return (s1->linenum() < s2->linenum()) ? -1 : 1;
-
-  int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
-  if (!result)
-    result = strcmp(s1->cname, s2->cname);
-  return result;
+  genGlobalInt32("chpl_sizeSymTable", symbols.size() * 2);
 }
 
 static bool
-compareSymbol2(void* v1, void* v2) {
+compareSymbol(void* v1, void* v2) {
   Symbol* s1 = (Symbol*)v1;
   Symbol* s2 = (Symbol*)v2;
   ModuleSymbol* m1 = s1->getModule();
@@ -545,6 +596,29 @@ compareSymbol2(void* v1, void* v2) {
   return result < 0;
 }
 
+static int
+compareSymbol2(const void* v1, const void* v2) {
+  Symbol* s1 = *(Symbol* const *)v1;
+  Symbol* s2 = *(Symbol* const *)v2;
+  ModuleSymbol* m1 = s1->getModule();
+  ModuleSymbol* m2 = s2->getModule();
+  if (m1 != m2) {
+    if (m1->modTag < m2->modTag)
+      return -1;
+    if (m1->modTag > m2->modTag)
+      return 1;
+    return strcmp(m1->cname, m2->cname);
+  }
+
+  if (s1->linenum() != s2->linenum())
+    return (s1->linenum() < s2->linenum()) ? -1 : 1;
+
+  int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
+  if (!result)
+    result = strcmp(s1->cname, s2->cname);
+  return result;
+}
+
 //
 // given a name and up to two sets of names, return a name that is in
 // neither set and add the name to the first set; the second set may
@@ -561,8 +635,8 @@ static const int maxCNameAddedChars = 20;
 static char* longCNameReplacementBuffer = NULL;
 static Map<const char*, int> uniquifyNameCounts;
 static const char* uniquifyName(const char* name,
-                                Vec<const char*>* set1,
-                                Vec<const char*>* set2 = NULL) {
+                                std::set<const char*>* set1,
+                                std::set<const char*>* set2 = NULL) {
   const char* newName = name;
   if (fMaxCIdentLen > 0 &&
       (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
@@ -578,14 +652,14 @@ static const char* uniquifyName(const char* name,
     longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
     name = newName = astr(longCNameReplacementBuffer);
   }
-  while (set1->set_in(newName) || (set2 && set2->set_in(newName))) {
+  while ((set1->find(newName)!=set1->end()) || (set2 && (set2->find(newName)!=set2->end()))) {
     char numberTmp[64];
     int count = uniquifyNameCounts.get(name);
     uniquifyNameCounts.put(name, count+1);
     snprintf(numberTmp, 64, "%d", count+2);
     newName = astr(name, numberTmp);
   }
-  set1->set_add(newName);
+  set1->insert(newName);
   return newName;
 }
 
@@ -675,6 +749,7 @@ static void codegen_header_compilation_config() {
 
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
+    genGlobalString("chpl_compileDirectory", getCwd());
     genGlobalString("CHPL_HOME",           CHPL_HOME);
 
     genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
@@ -806,12 +881,86 @@ static void protectNameFromC(Symbol* sym) {
 
 
 // TODO: Split this into a number of smaller routines.<hilde>
-static void codegen_header(bool isHeader) {
+static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*> & types,
+  std::vector<FnSymbol*> & functions, std::vector<VarSymbol*> & globals) {
   GenInfo* info = gGenInfo;
-  Vec<const char*> cnames;
-  Vec<TypeSymbol*> types;
-  std::vector<FnSymbol*> functions;
-  Vec<VarSymbol*> globals;
+  FILE* hdrfile = info->cfile;
+
+  genClassIDs(types, false);
+
+  genComment("Function Pointer Table");
+  genFtable(ftableVec, false);
+  genFinfo(ftableVec, false);
+
+  genComment("Virtual Method Table");
+  genVirtualMethodTable(types, false);
+
+  if(fIncrementalCompilation) {
+    genComment("Global Variables");
+    forv_Vec(VarSymbol, varSymbol, globals) {
+      varSymbol->codegenGlobalDef(false);
+    }
+  }
+
+  flushStatements();
+#ifndef HAVE_LLVM
+  zlineToFileIfNeeded(rootModule, info->cfile);
+#endif
+  
+  genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, false);
+  int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
+  if( hdrfile ) {
+    fprintf(hdrfile, "\nptr_wide_ptr_t chpl_globals_registry[%d];\n",
+                      globals_registry_static_size);
+  } else {
+    #ifdef HAVE_LLVM
+          return; // Nothing in remainder of function should be done twice for LLVM
+    #endif
+  }
+  genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0, false);
+  if( hdrfile ) {
+    fprintf(hdrfile, "\nconst char* chpl_mem_descs[] = {\n");
+    bool first = true;
+    forv_Vec(const char*, memDesc, memDescsVec) {
+      if (!first)
+        fprintf(hdrfile, ",\n");
+      fprintf(hdrfile, "\"%s\"", memDesc);
+      first = false;
+    }
+    fprintf(hdrfile, "\n};\n");
+  }
+
+  genGlobalInt("chpl_mem_numDescs", memDescsVec.n, false);
+
+  //
+  // add table of private-broadcast constants
+  //
+  if( hdrfile ) {
+    fprintf(hdrfile, "\nvoid* const chpl_private_broadcast_table[] = {\n");
+    fprintf(hdrfile, "&chpl_verbose_comm");
+    fprintf(hdrfile, ",\n&chpl_comm_diagnostics");
+    fprintf(hdrfile, ",\n&chpl_verbose_mem");
+    int i = 3;
+    forv_Vec(CallExpr, call, gCallExprs) {
+      if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
+        SymExpr* se = toSymExpr(call->get(1));
+        INT_ASSERT(se);
+        SET_LINENO(call);
+        fprintf(hdrfile, ",\n&%s", se->var->cname);
+        // To preserve operand order, this should be insertAtTail.
+        // The change must also be made below (for LLVM) and in the signature
+        // of chpl_comm_broadcast_private().
+        call->insertAtHead(new_IntSymbol(i));
+        i++;
+      }
+    }
+    fprintf(hdrfile, "\n};\n");
+  }
+}
+
+static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbol*> & types,
+  std::vector<FnSymbol*> & functions, std::vector<VarSymbol*> & globals) {
+  GenInfo* info = gGenInfo;
 
   // reserved symbol names that require renaming to compile
 #include "reservedSymbolNames.h"
@@ -822,10 +971,10 @@ static void codegen_header(bool isHeader) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       legalizeName(ts);
-      types.add(ts);
+      types.push_back(ts);
     }
   }
-  qsort(types.v, types.n, sizeof(types.v[0]), compareSymbol);
+  std::sort(types.begin(), types.end(), compareSymbol);
 
   //
   // collect globals and apply canonical sort
@@ -834,11 +983,10 @@ static void codegen_header(bool isHeader) {
     if (var->defPoint->parentExpr != rootModule->block &&
         toModuleSymbol(var->defPoint->parentSymbol)) {
       legalizeName(var);
-      globals.add(var);
+      globals.push_back(var);
     }
   }
-  qsort(globals.v, globals.n, sizeof(globals.v[0]), compareSymbol);
-
+  std::sort(globals.begin(), globals.end(), compareSymbol);
   //
   // collect functions and apply canonical sort
   //
@@ -846,7 +994,7 @@ static void codegen_header(bool isHeader) {
     legalizeName(fn);
     functions.push_back(fn);
   }
-  std::sort(functions.begin(), functions.end(), compareSymbol2);
+  std::sort(functions.begin(), functions.end(), compareSymbol);
 
 
   //
@@ -854,7 +1002,7 @@ static void codegen_header(bool isHeader) {
   // identifiers.  This can be disabled via the --munge-user-idents
   // flag.
   //
-  if (fMungeUserIdents && isHeader) {
+  if (fMungeUserIdents) {
     forv_Vec(ModuleSymbol, sym, gModuleSymbols) {
       protectNameFromC(sym);
     }
@@ -897,10 +1045,8 @@ static void codegen_header(bool isHeader) {
       for_enums(constant, enumType) {
         Symbol* sym = constant->sym;
         legalizeName(sym);
-        if(isHeader) {
-          sym->cname = astr(enumType->symbol->cname, "_", sym->cname);
-          sym->cname = uniquifyName(sym->cname, &cnames);
-        }
+        sym->cname = astr(enumType->symbol->cname, "_", sym->cname);
+        sym->cname = uniquifyName(sym->cname, &cnames);
       }
     }
   }
@@ -913,7 +1059,7 @@ static void codegen_header(bool isHeader) {
   forv_Vec(TypeSymbol, ts, types) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       if (AggregateType* ct = toAggregateType(ts->type)) {
-        Vec<const char*> fieldNameSet;
+        std::set<const char*> fieldNameSet;
         for_fields(field, ct) {
           legalizeName(field);
           field->cname = uniquifyName(field->cname, &fieldNameSet);
@@ -949,7 +1095,7 @@ static void codegen_header(bool isHeader) {
   // arguments in the same function
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    Vec<const char*> formalNameSet;
+    std::set<const char*> formalNameSet;
     for_formals(formal, fn) {
       legalizeName(formal);
       formal->cname = uniquifyName(formal->cname, &formalNameSet, &cnames);
@@ -963,10 +1109,10 @@ static void codegen_header(bool isHeader) {
   // other local variables in the same function
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    Vec<const char*> local;
+    std::set<const char*> local;
 
     for_formals(formal, fn) {
-      local.set_add(formal->cname);
+      local.insert(formal->cname);
     }
 
     std::vector<DefExpr*> defs;
@@ -994,7 +1140,7 @@ static void codegen_header(bool isHeader) {
 
   FILE* hdrfile = info->cfile;
 
-  if( hdrfile && isHeader) {
+  if( hdrfile) {
     // This is done in runClang for LLVM version.
     fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
 
@@ -1015,133 +1161,105 @@ static void codegen_header(bool isHeader) {
 #endif
   }
 
-  genClassIDs(types, isHeader);
+  genClassIDs(types, true);
 
-  if(isHeader) {
-    genComment("Class Prototypes");
-    forv_Vec(TypeSymbol, typeSymbol, types) {
-      if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
-      {
-        typeSymbol->codegenPrototype();
-      }
+  genComment("Class Prototypes");
+  forv_Vec(TypeSymbol, typeSymbol, types) {
+    if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
+    {
+      typeSymbol->codegenPrototype();
     }
   }
 
-  if(isHeader) {
-    // codegen enumerated types
-    genComment("Enumerated Types");
-    forv_Vec(TypeSymbol, typeSymbol, types) {
-      if (toEnumType(typeSymbol->type)) {
-        typeSymbol->codegenDef();
-      }
+  // codegen enumerated types
+  genComment("Enumerated Types");
+  forv_Vec(TypeSymbol, typeSymbol, types) {
+    if (toEnumType(typeSymbol->type)) {
+      typeSymbol->codegenDef();
     }
   }
 
-  if(isHeader) {
-    // codegen records/unions/references/data class in topological order
-    genComment("Records, Unions, Data Class, References (Hierarchically)");
-    forv_Vec(TypeSymbol, ts, types) {
-      if (AggregateType* ct = toAggregateType(ts->type))
-        codegen_aggregate_def(ct);
-    }
+  // codegen records/unions/references/data class in topological order
+  genComment("Records, Unions, Data Class, References (Hierarchically)");
+  forv_Vec(TypeSymbol, ts, types) {
+    if (AggregateType* ct = toAggregateType(ts->type))
+      codegen_aggregate_def(ct);
   }
 
-  if(isHeader) {
-    // codegen remaining types
-    genComment("Classes");
-    forv_Vec(TypeSymbol, typeSymbol, types) {
-      if (isClass(typeSymbol->type) &&
-          !typeSymbol->hasFlag(FLAG_REF) &&
-          !typeSymbol->hasFlag(FLAG_DATA_CLASS) &&
-          typeSymbol->hasFlag(FLAG_NO_OBJECT) &&
-          !typeSymbol->hasFlag(FLAG_OBJECT_CLASS))
-        typeSymbol->codegenDef();
-    }
+  // codegen remaining types
+  genComment("Classes");
+  forv_Vec(TypeSymbol, typeSymbol, types) {
+    if (isClass(typeSymbol->type) &&
+        !typeSymbol->hasFlag(FLAG_REF) &&
+        !typeSymbol->hasFlag(FLAG_DATA_CLASS) &&
+        typeSymbol->hasFlag(FLAG_NO_OBJECT) &&
+        !typeSymbol->hasFlag(FLAG_OBJECT_CLASS))
+      typeSymbol->codegenDef();
   }
 
   //
   // codegen class definitions in breadth first order starting with
   // "object" and following its dispatch children
   //
-  if(isHeader) {
-    Vec<TypeSymbol*> next, current;
-    current.add(dtObject->symbol);
-    while (current.n) {
-      forv_Vec(TypeSymbol, ts, current) {
-        ts->codegenDef();
-        forv_Vec(Type, child, ts->type->dispatchChildren) {
-          if (child)
-            next.set_add(child->symbol);
-        }
+
+  Vec<TypeSymbol*> next, current;
+  current.add(dtObject->symbol);
+  while (current.n) {
+    forv_Vec(TypeSymbol, ts, current) {
+      ts->codegenDef();
+      forv_Vec(Type, child, ts->type->dispatchChildren) {
+        if (child)
+          next.set_add(child->symbol);
       }
-      current.clear();
-      current.move(next);
-      current.set_to_vec();
-      qsort(current.v, current.n, sizeof(current.v[0]), compareSymbol);
-      next.clear();
     }
+    current.clear();
+    current.move(next);
+    current.set_to_vec();
+    qsort(current.v, current.n, sizeof(current.v[0]), compareSymbol2);
+    next.clear();
   }
 
-
-  if( (!info->cfile) && isHeader ) {
+  if(!info->cfile) {
     // Codegen any type annotations that are necessary.
     forv_Vec(TypeSymbol, typeSymbol, types) {
       typeSymbol->codegenMetadata();
     }
   }
 
-
-  if(isHeader) {
-    genComment("Function Prototypes");
-    for_vector(FnSymbol, fnSymbol, functions) {
-      fnSymbol->codegenPrototype();
-    }
+  genComment("Function Prototypes");
+  for_vector(FnSymbol, fnSymbol, functions) {
+    fnSymbol->codegenPrototype();
   }
 
   genComment("Function Pointer Table");
-#ifndef HAVE_LLVM
-  if(!isHeader) {
-#else
-    if (isHeader) {
-#endif
-    for_vector(FnSymbol, fn2, functions) {
-      if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
-          fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
-          fn2->hasFlag(FLAG_ON_BLOCK)) {
-      ftableVec.add(fn2);
-      ftableMap[fn2] = ftableVec.n-1;
-      }
+  for_vector(FnSymbol, fn2, functions) {
+    if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
+        fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+        fn2->hasFlag(FLAG_ON_BLOCK)) {
+    ftableVec.push_back(fn2);
+    ftableMap[fn2] = ftableVec.size()-1;
     }
   }
-  genFtable(ftableVec,isHeader);
+
+  genFtable(ftableVec,true);
+  genFinfo(ftableVec,true);
 
   genComment("Virtual Method Table");
-  genVirtualMethodTable(types,isHeader);
+  genVirtualMethodTable(types,true);
 
-  if(fIncrementalCompilation || isHeader) {
-    genComment("Global Variables");
-    forv_Vec(VarSymbol, varSymbol, globals) {
-      varSymbol->codegenGlobalDef(isHeader);
-    }
+  genComment("Global Variables");
+  forv_Vec(VarSymbol, varSymbol, globals) {
+    varSymbol->codegenGlobalDef(true);
   }
   flushStatements();
-  if (!isHeader)
-    zlineToFileIfNeeded(rootModule, info->cfile);
 
-  genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, isHeader);
+  genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, true);
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
   if( hdrfile ) {
-    if(isHeader)
-      fprintf(hdrfile, "\nextern ptr_wide_ptr_t chpl_globals_registry[%d];\n",
-                      globals_registry_static_size);
-    else
-      fprintf(hdrfile, "\nptr_wide_ptr_t chpl_globals_registry[%d];\n",
-                      globals_registry_static_size);
+    fprintf(hdrfile, "\nextern ptr_wide_ptr_t chpl_globals_registry[%d];\n",
+                    globals_registry_static_size);
   } else {
 #ifdef HAVE_LLVM
-    if (!isHeader)
-      return; // Nothing in remainder of function should be done twice for LLVM
-
     llvm::Type* ptr_wide_ptr_t = info->lvt->getType("ptr_wide_ptr_t");
     INT_ASSERT(ptr_wide_ptr_t);
 
@@ -1162,21 +1280,9 @@ static void codegen_header(bool isHeader) {
                               chpl_globals_registryGVar, GEN_PTR, true);
 #endif
   }
-  genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0, isHeader);
+  genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0, true);
   if( hdrfile ) {
-      if(isHeader) {
-        fprintf(hdrfile, "\nextern const char* chpl_mem_descs[];\n");
-      } else {
-        fprintf(hdrfile, "\nconst char* chpl_mem_descs[] = {\n");
-        bool first = true;
-        forv_Vec(const char*, memDesc, memDescsVec) {
-          if (!first)
-            fprintf(hdrfile, ",\n");
-          fprintf(hdrfile, "\"%s\"", memDesc);
-          first = false;
-        }
-        fprintf(hdrfile, "\n};\n");
-      }
+      fprintf(hdrfile, "\nextern const char* chpl_mem_descs[];\n");
     } else {
 #ifdef HAVE_LLVM
     std::vector<llvm::Constant *> memDescTable;
@@ -1202,35 +1308,13 @@ static void codegen_header(bool isHeader) {
 #endif
   }
 
-  genGlobalInt("chpl_mem_numDescs", memDescsVec.n, isHeader);
+  genGlobalInt("chpl_mem_numDescs", memDescsVec.size(), true);
 
   //
   // add table of private-broadcast constants
   //
   if( hdrfile ) {
-    if(isHeader){
-      fprintf(hdrfile, "\nextern void* const chpl_private_broadcast_table[];\n");
-    } else {
-      fprintf(hdrfile, "\nvoid* const chpl_private_broadcast_table[] = {\n");
-      fprintf(hdrfile, "&chpl_verbose_comm");
-      fprintf(hdrfile, ",\n&chpl_comm_diagnostics");
-      fprintf(hdrfile, ",\n&chpl_verbose_mem");
-      int i = 3;
-      forv_Vec(CallExpr, call, gCallExprs) {
-        if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
-          SymExpr* se = toSymExpr(call->get(1));
-          INT_ASSERT(se);
-          SET_LINENO(call);
-          fprintf(hdrfile, ",\n&%s", se->var->cname);
-          // To preserve operand order, this should be insertAtTail.
-          // The change must also be made below (for LLVM) and in the signature
-          // of chpl_comm_broadcast_private().
-          call->insertAtHead(new_IntSymbol(i));
-          i++;
-        }
-      }
-      fprintf(hdrfile, "\n};\n");
-    }
+    fprintf(hdrfile, "\nextern void* const chpl_private_broadcast_table[];\n");
   } else {
 #ifdef HAVE_LLVM
     llvm::Type *private_broadcastTableEntryType =
@@ -1285,8 +1369,7 @@ static void codegen_header(bool isHeader) {
 #endif
   }
 
-
-  if (hdrfile && isHeader) {
+  if (hdrfile) {
     fprintf(hdrfile, "#include \"chpl-gen-includes.h\"\n");
   }
 }
@@ -1455,6 +1538,8 @@ static const char* generateFileName(ChainHashMap<char*, StringHashFns, int>& fil
   return name;
 }
 
+extern bool printCppLineno;
+debug_data *debug_info=NULL;
 
 void codegen(void) {
   if (no_codegen)
@@ -1521,6 +1606,24 @@ void codegen(void) {
     if(fIncrementalCompilation)
       USR_FATAL("Incremental compilation is not yet supported with LLVM");
 
+    if(printCppLineno || debugCCode)
+    {
+      debug_info = new debug_data(*info->module);
+    }
+    if(debug_info) {
+      // first find the main module, this will be the compile unit.
+      forv_Vec(ModuleSymbol, currentModule, allModules) {
+        if(currentModule->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
+          //So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
+          // and no compile flags, since I can't figure out how to get that either.
+          const char *current_dir = "./";
+          const char *empty_string = "";
+          debug_info->create_compile_unit(currentModule->astloc.filename, current_dir, false, empty_string);
+          break;
+        }
+      }
+    }
+
     prepareCodegenLLVM();
 #endif
   } else {
@@ -1557,12 +1660,18 @@ void codegen(void) {
     codegen_makefile(&mainfile, NULL, false, userFileName);
   }
 
+  // Vectors to store different symbol names to be used while generating header
+  std::set<const char*> cnames;
+  std::vector<TypeSymbol*> types;
+  std::vector<FnSymbol*> functions;
+  std::vector<VarSymbol*> globals;
+
   // This dumps the generated sources into the build directory.
   info->cfile = hdrfile.fptr;
-  codegen_header(true);
+  codegen_header(cnames, types, functions, globals);
 
   info->cfile = defnfile.fptr;
-  codegen_header(false);
+  codegen_defn(cnames, types, functions, globals);
 
   info->cfile = mainfile.fptr;
   codegen_config();

@@ -138,18 +138,6 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
   }
 }
 
-static void optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
-{
-  if (!zippered)
-    tryToReplaceWithDirectRangeIterator(iteratorExpr);
-  // for zippered iterators, try to replace each iterator of the tuple
-  else
-    if (CallExpr* call = toCallExpr(iteratorExpr))
-      if (call->isNamed("_build_tuple"))
-        for_actuals(actual, call)
-          tryToReplaceWithDirectRangeIterator(actual);
-}
-
 /************************************ | *************************************
 *                                                                           *
 * Factory methods for the Parser                                            *
@@ -174,15 +162,83 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   iterator->addFlag(FLAG_EXPR_TEMP);
 
   // Unzippered loop, treat all objects (including tuples) the same
-  if (zippered == false)
+  if (zippered == false) {
     iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
+    // try to optimize anonymous range iteration
+    tryToReplaceWithDirectRangeIterator(iteratorExpr);
+  }
+  // Zippered loop: Expand args to a tuple with an iterator for each element.
+  else {
+    CallExpr* zipExpr = toCallExpr(iteratorExpr);
+    if (zipExpr && zipExpr->isPrimitive(PRIM_ZIP)) {
+      // The PRIM_ZIP indicates this is a new-style zip() AST.
+      // Expand arguments to a tuple with appropriate iterators for each value.
+      //
+      // Specifically, change:
+      //    zip(a, b, c,  ...)
+      // into the tuple:
+      //    (_getIterator(a), _getIterator(b), _getIterator(c), ...)
+      //
+      // (ultimately, we will probably want to make this style of
+      // rewrite into a utility function for the other get*Zip
+      // functions as we convert parallel loops over to use PRIM_ZIP).
+      //
+      zipExpr->primitive = NULL;   // remove the primitive
 
-  // Expand tuple to a tuple containing appropriate iterators for each value.
-  else
-    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr));
+      // If there's just one argument...
+      if (zipExpr->argList.length == 1) {
+        Expr* zipArg = zipExpr->argList.only();
+        CallExpr* zipArgCall = toCallExpr(zipArg);
 
-  // try to optimize anonymous range iteration, replaces iterExpr in place
-  optimizeAnonymousRangeIteration(iteratorExpr, zippered);
+        // ...and it is a tuple expansion '(...t)' then remove the
+        // tuple expansion primitive and simply pass the tuple itself
+        // to _getIteratorZip().  This will not require any more
+        // tuples than the user introduced themselves.
+        //
+        if (zipArgCall && zipArgCall->isPrimitive(PRIM_TUPLE_EXPAND)) {
+          zipExpr->baseExpr = new UnresolvedSymExpr("_getIteratorZip");
+          Expr* tupleArg = zipArgCall->argList.only();
+          tupleArg->remove();
+          zipArgCall->replace(tupleArg);
+        } else {
+          // ...otherwise, make the expression into a _getIterator()
+          // call
+          zipExpr->baseExpr = new UnresolvedSymExpr("_getIterator");
+          // try to optimize anonymous range iteration
+          tryToReplaceWithDirectRangeIterator(zipArg);
+        }
+      } else {
+        //
+        // Otherwise, if there's more than one argument, build up the
+        // tuple by applying _getIterator() to each element.
+        //
+        zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
+        Expr* arg = zipExpr->argList.first();
+        while (arg) {
+          Expr* next = arg->next;
+          Expr* argCopy = arg->copy();
+          arg->replace(new CallExpr("_getIterator", argCopy));
+          // try to optimize anonymous range iteration
+          tryToReplaceWithDirectRangeIterator(argCopy);
+          arg = next;
+        }
+      }
+      iterInit = new CallExpr(PRIM_MOVE, iterator, zipExpr);
+      assert(zipExpr == iteratorExpr);
+    } else {
+      //
+      // This is an old-style zippered loop so handle it in the old style
+      //
+      iterInit = new CallExpr(PRIM_MOVE, iterator,
+                              new CallExpr("_getIteratorZip", iteratorExpr));
+
+      // try to optimize anonymous range iteration
+      if (CallExpr* call = toCallExpr(iteratorExpr))
+        if (call->isNamed("_build_tuple"))
+          for_actuals(actual, call)
+            tryToReplaceWithDirectRangeIterator(actual);
+    }
+  }
 
   index->addFlag(FLAG_INDEX_OF_INTEREST);
 

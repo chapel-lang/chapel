@@ -1,6 +1,1 @@
-// This is a placeholder .good.
-
-What should be the outcome of this test?
-* wait for the variable to become full, then empty it?
-* ignore the variable's full/empty state?
-* compile-time error?
+in methodOnInt: 55

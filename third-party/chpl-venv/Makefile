@@ -4,16 +4,12 @@ endif
 
 CHPL_MAKE_HOST_TARGET = --host
 include $(CHPL_MAKE_HOME)/make/Makefile.base
+include $(THIRD_PARTY_DIR)/chpl-venv/Makefile.include
 
-PYTHON = $(shell which python)
 ifneq (,$(findstring cygwin, $(CHPL_MAKE_TARGET_PLATFORM)))
 # easy_install from cygwin's setuptools is `easy_install-<MAJOR>.<MINOR>`
 # instead of `easy_install`. If we can't find easy_install, look for the
-# versioned one. Version is grabbed from python's `sys.version_info`
-PYTHON_VERSION = $(shell $(PYTHON) -c "from __future__ import print_function; \
-                                       import sys; \
-                                       ver=sys.version_info; \
-                                       print('{0}.{1}'.format(ver[0], ver[1]))")
+# versioned one.
 EASY_INSTALL = $(shell which easy_install 2>/dev/null || which easy_install-$(PYTHON_VERSION))
 else
 EASY_INSTALL = $(shell which easy_install)
@@ -104,9 +100,11 @@ rm-test-reqs: FORCE
 rm-sphinx-build: FORCE
 	@rm -f $(CHPL_VENV_SPHINX_BUILD)
 
-
+# Fix up the chpl-venv installation in a Cray Chapel module that was built using a non-standard
+# Python installation (ie, the Python used was not installed under "/usr/...").
+# Only applicable when building a Cray Chapel module under certain conditions.
 use-system-python: FORCE
-	@./venv-use-sys-python.py $(CHPL_VENV_VIRTUALENV_BIN)
+	@./venv-use-sys-python.py $(CHPL_VENV_INSTALL_DIR)
 
 FORCE:
 

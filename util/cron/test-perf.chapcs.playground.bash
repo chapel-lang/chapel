@@ -9,23 +9,14 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test perf of qthreads WIP "distrib" scheduler with numa against sherwood
-export CHPL_QTHREAD_SCHEDULER=distrib
+DESCRIPTION=arrayRefTemps
+START_DATE=09/16/16
+NUM_TRIALS=5
 
-# hackily checkout and overlay qthreads branch that has the scheduler
-cd $CHPL_HOME/third-party/qthread/
-rm -rf qthread-1.10/
-git clone https://github.com/Qthreads/qthreads.git qthread-1.10/
-cd qthread-1.10/
-./autogen.sh
-cd $CWD
+# test the performance of --replace-array-accesses-with-ref-temps
 
-SHORT_NAME=numa-distrib
-START_DATE=08/10/16
+perf_args="-performance-description $DESCRIPTION -performance-configs default:v,$DESCRIPTION:v -sync-dir-suffix $DESCRIPTION"
+perf_args="${perf_args} -performance -numtrials $NUM_TRIALS -startdate $START_DATE"
+perf_args="${perf_args} -compopts --replace-array-accesses-with-ref-temps"
 
-source $CWD/common-numa.bash
-export CHPL_TEST_TIMEOUT=600
-
-perf_args="-performance-description $SHORT_NAME -performance-configs numa:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
-perf_args="${perf_args} -numtrials 3 -startdate $START_DATE"
-$CWD/nightly -cron ${perf_args} ${nightly_args}
+$CWD/nightly -cron ${nightly_args} ${perf_args}

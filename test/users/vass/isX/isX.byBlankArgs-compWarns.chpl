@@ -105,7 +105,7 @@ var aReal:  atomic real;
 
 /////////////////////////////////////////////////////////////////////////////
 
-proc report(param is: bool, param msg: c_string) {
+proc report(param is: bool, param msg: string) {
   if is then compilerWarning(msg);
 }
 

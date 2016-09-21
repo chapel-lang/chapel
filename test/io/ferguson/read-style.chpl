@@ -12,7 +12,7 @@ var reader = open( file_name, iomode.r ).reader();
 
 var line_style = new iostyle();
 var line: string;
-line_style.string_format = QIO_STRING_FORMAT_TOEND;
+line_style.string_format = iostringformat.toend:uint(8);
 line_style.string_end = 0x0a; // ascii newline.
 while( reader.read( line, style=line_style ) ) do writeln( line );
 

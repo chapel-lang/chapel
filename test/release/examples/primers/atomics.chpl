@@ -1,9 +1,11 @@
-//
-// Atomics primer
-//
-// This primer illustrates Chapel's atomic variables.  For more information
-// on Chapel's atomics, see the Chapel Language Specification.
-//
+/*
+  Atomics primer
+
+  This primer illustrates Chapel's atomic variables.  For more information
+  on Chapel's atomics, see the Chapel Language Specification.
+
+*/
+
 config const n = 31;
 const R = 1..n;
 
@@ -93,7 +95,7 @@ flag.clear();
 // - fetchXor() and xor() (bit-wise) (integral types only)
 //
 // Each of the above atomically reads the variable, stores the result
-// of the operation (+, -, |, &, ^) using the value and the method
+// of the operation (``+``, ``-``, ``|``, ``&``, ``^``) using the value and the method
 // argument, then, for the fetchOps functions, returns the original
 // value.
 //

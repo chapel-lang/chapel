@@ -5,6 +5,8 @@
    derived from the GNU C++ version by Branimir Maksimovic
 */
 
+use Sort;
+
 config param tableSize = 1 << 16,
              columns = 61;
 
@@ -61,7 +63,7 @@ proc writeFreqs(data, param nclSize) {
   //  var arr: [1..freqs.size] 2*int;
   //  for (a, k, v) in zip(arr, freqs.domain, freqs) do
   //    a = (v, k);
-  QuickSort(arr, reverse=true);
+  quickSort(arr, comparator=reverseComparator);
 
   for (f, s) in arr do
    writef("%s %.3dr\n", decode(s, nclSize), 
@@ -145,7 +147,7 @@ inline proc hash(str, beg, param size) {
 proc string.toBytes() {
   var bytes: [1..this.length] uint(8);
   for (b, i) in zip(bytes, 1..) do
-    b = ascii(this[i]):uint(8);
+    b = ascii(this[i]);
   return bytes;
 }
 

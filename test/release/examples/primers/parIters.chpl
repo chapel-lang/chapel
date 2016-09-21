@@ -1,17 +1,17 @@
-//
-// This example shows how to use parallel iterators in Chapel.
-// Leader-follower iterators are used to implement zippered
-// forall loops in Chapel over data structures or iterators.
-// Standalone parallel iterators are used to implement non-zippered
-// forall loops when they exist, falling back to leader-follower when
-// standalone is not available. We expect the parallel iterator
-// interface to change and improve over time, so this should be
-// considered a snapshot of their use in the current implementation.
-//
-// For a more thorough introduction to leader-follower iterators,
-// refer to our PGAS 2011 paper, "User-Defined Parallel Zippered
-// Iterators in Chapel".
-//
+/*
+  This example shows how to use parallel iterators in Chapel.
+  Leader-follower iterators are used to implement zippered
+  forall loops in Chapel over data structures or iterators.
+  Standalone parallel iterators are used to implement non-zippered
+  forall loops when they exist, falling back to leader-follower when
+  standalone is not available. We expect the parallel iterator
+  interface to change and improve over time, so this should be
+  considered a snapshot of their use in the current implementation.
+
+  For a more thorough introduction to leader-follower iterators,
+  refer to our PGAS 2011 paper, "User-Defined Parallel Zippered
+  Iterators in Chapel".
+*/
 
 //
 // Any zippered forall loop in Chapel will be implemented using
@@ -39,7 +39,7 @@
 // Note that since Chapel's implicitly parallel semantics are defined
 // in terms of zippered iteration, such cases are also implemented using
 // leader-follower iterators.  For example:
-// 
+//
 //   A = B + C;
 //
 // and:
@@ -153,7 +153,7 @@ writeln("After serial initialization, A is:");
 writeln(A);
 writeln();
 
-                         
+
 //
 // Then we override the default value of low in order to negate
 // the "middle" elements of A:
@@ -165,7 +165,7 @@ writeln("After negating the middle of A:");
 writeln(A);
 writeln();
 
-                         
+
 //
 // For serial zippered iteration, nothing is required other than
 // this single iterator:
@@ -173,7 +173,7 @@ writeln();
 
 for (i, a) in zip(count(probSize), A) do
   a = i/10.0;
-                         
+
 writeln("After reassigning A using zippering:");
 writeln(A);
 writeln();
@@ -200,7 +200,7 @@ writeln();
 // computeChunk() helper function (defined at the bottom of this file)
 // to compute its subrange of the range low..#n owned by the task,
 // storing it in a variable called 'myIters.'
-// 
+//
 // To be a legal leader iterator, we could simply yield this range as
 // a representation of the work we want the follower to perform.
 // However, to support zippering our leader with follower iterators
@@ -211,18 +211,18 @@ writeln();
 // work even though each may use its own indexing system.  This
 // permits, for example, arrays of the same size/shape to be zippered
 // together even if they have different domains.
-// 
+//
 // To this end, rather than yielding subranges of low..#n, we'll yield
 // subranges of 0..n-1 and rely on the follower to shift it back to
 // the original coordinate system.  For this reason, we translate the
 // range by -low to shift it from low-based coordinates to 0-based
 // coordinates; and then we make a 1-tuple out of it.
-// 
+//
 // Note the debugging output inserted into this iterator.  While
 // learning about leader-follower iterators, it's useful to turn
 // this debugging output on by compiling  with -sverbose=true
 //
-iter count(param tag: iterKind, n: int, low: int=1) 
+iter count(param tag: iterKind, n: int, low: int=1)
        where tag == iterKind.leader {
 
   if (verbose) then
@@ -323,8 +323,8 @@ writeln("After parallel initialization, A is:");
 writeln(A);
 writeln();
 
- 
-//                        
+
+//
 // Invoking it again with a different low value:
 //
 forall i in count(n=probSize/2, low=probSize/4) do
@@ -350,12 +350,12 @@ writeln();
 //
 forall (i, a) in zip(count(probSize), A) do
   a = i/10.0;
-                         
+
 writeln("After reassigning A using parallel zippering:");
 writeln(A);
 writeln();
 
-                            
+
 //
 // We can also zipper in the opposite order, making A the leader,
 // in which case count() no longer controls the degree of parallelism
@@ -389,18 +389,18 @@ writeln();
 //
 // Some closing notes:
 //
-// * Chapel data types like records and classes can support iteration
+//   Chapel data types like records and classes can support iteration
 //   by defining iterator methods (invoked by name) or these() iterators
 //   which support iterating over variables of that type directly.  Such
 //   iterator methods can be overloaded to support leader-follower
 //   versions as well to permit parallel iteration over the variable.
 //
-// * As mentioned at the outset, our leader-follower scheme has a number
+//   As mentioned at the outset, our leader-follower scheme has a number
 //   of changes planned for it such as interface improvements and better
 //   error checking.  We'll update this primer as we improve these features.
 //
 
-                        
+
 //
 // This is a poor-man's partitioning algorithm.  It gives
 // floor(numElements/NumChunks) work items to the first numChunks-1

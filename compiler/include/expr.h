@@ -38,7 +38,7 @@ public:
   // Interface for BaseAST
   virtual bool    inTree();
   virtual bool    isStmt()                                           const;
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual void    verify();
 
   // New interface
@@ -99,7 +99,7 @@ public:
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
 
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual void    prettyPrint(std::ostream* o);
 
   virtual GenRet  codegen();
@@ -128,7 +128,7 @@ class SymExpr : public Expr {
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
 
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual bool    isNoInitExpr() const;
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
@@ -150,7 +150,7 @@ class UnresolvedSymExpr : public Expr {
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
 
@@ -216,7 +216,7 @@ public:
 
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
 
   virtual Expr*   getFirstChild();
 
@@ -264,7 +264,7 @@ private:
 // A ContextCall has a designated call.
 // The designated call will be returned if toCallExpr() is called
 // on the context call.
-// typeInfo on the context call will return the type info for
+// typeInfo/qualType on the context call will return the type info for
 // the designated call.
 // isCallExpr() will return true for a ContextCallExpr.
 class ContextCallExpr : public Expr {
@@ -284,7 +284,7 @@ class ContextCallExpr : public Expr {
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
 
@@ -295,6 +295,34 @@ class ContextCallExpr : public Expr {
   void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
   CallExpr*       getRefCall();
   CallExpr*       getRValueCall();
+};
+
+
+class ForallExpr : public Expr {
+public:
+  Expr* indices;
+  Expr* iteratorExpr;
+  Expr* expr;
+  Expr* cond;
+  bool maybeArrayType;
+  bool zippered;
+
+  ForallExpr(Expr* indices,
+             Expr* iteratorExpr,
+             Expr* expr,
+             Expr* cond,
+             bool maybeArrayType,
+             bool zippered);
+
+  DECLARE_COPY(ForallExpr);
+
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    verify();
+  virtual void    accept(AstVisitor* visitor);
+  virtual GenRet  codegen();
+
+  virtual Expr*   getFirstChild();
+  virtual Expr*   getFirstExpr();
 };
 
 
@@ -311,7 +339,7 @@ class NamedExpr : public Expr {
 
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
 

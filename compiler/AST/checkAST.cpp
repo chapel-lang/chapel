@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,6 +50,28 @@ void checkForDuplicateUses()
   }
 }
 
+void checkArgsAndLocals()
+{
+  // Check that each VarSymbol and each ArgSymbol
+  // has a DefExpr that is in the FnSymbol
+  // or a parent of it.
+  forv_Vec(SymExpr, se, gSymExprs)
+  {
+    DefExpr* def = se->var->defPoint;
+    Symbol* defInSym = def->parentSymbol;
+    Symbol* useInSym = se->parentSymbol;
+
+    if (isFnSymbol(defInSym) && isFnSymbol(useInSym)) {
+      if (defInSym->hasFlag(FLAG_MODULE_INIT)) {
+        // OK, module init functions can define globals
+      } else {
+        if (defInSym != useInSym) {
+          INT_FATAL(se, "Refers to a local/arg in another function");
+        }
+      }
+    }
+  }
+}
 
 // Check that no unresolved symbols remain in the tree.
 // This one is pretty cheap, so can be run after every pass (following
@@ -61,7 +83,7 @@ void checkNoUnresolveds()
   // resolution ... .
   if (gUnresolvedSymExprs.n > 1)
     INT_FATAL("Structural error: "
-      "At this point, the AST should not contain any unresovled symbols.");
+      "At this point, the AST should not contain any unresolved symbols.");
 }
 
 // Ensures that primitives are used only where they are expected.
@@ -204,31 +226,6 @@ void checkPrimitives()
      case PRIM_GET_IMAG:            // get complex imag component
      case PRIM_QUERY:               // query expression primitive
      case PRIM_LOCAL_CHECK:         // assert that a wide ref is on this locale
-     case PRIM_SYNC_INIT:
-     case PRIM_SYNC_DESTROY:
-     case PRIM_SYNC_LOCK:
-     case PRIM_SYNC_UNLOCK:
-     case PRIM_SYNC_WAIT_FULL:
-     case PRIM_SYNC_WAIT_EMPTY:
-     case PRIM_SYNC_SIGNAL_FULL:
-     case PRIM_SYNC_SIGNAL_EMPTY:
-     case PRIM_SINGLE_INIT:
-     case PRIM_SINGLE_DESTROY:
-     case PRIM_SINGLE_LOCK:
-     case PRIM_SINGLE_UNLOCK:
-     case PRIM_SINGLE_WAIT_FULL:
-     case PRIM_SINGLE_SIGNAL_FULL:
-     case PRIM_WRITEEF:
-     case PRIM_WRITEFF:
-     case PRIM_WRITEXF:
-     case PRIM_READFE:
-     case PRIM_READFF:
-     case PRIM_READXX:
-     case PRIM_SYNC_IS_FULL:
-     case PRIM_SINGLE_WRITEEF:
-     case PRIM_SINGLE_READFF:
-     case PRIM_SINGLE_READXX:
-     case PRIM_SINGLE_IS_FULL:
      case PRIM_GET_END_COUNT:
      case PRIM_SET_END_COUNT:
      case PRIM_GET_SERIAL:              // get serial state
@@ -314,7 +311,7 @@ void checkReturnTypesHaveRefTypes()
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     Type* retType = fn->retType;
-    
+
     if (retType->symbol->hasFlag(FLAG_REF))
       continue;
 

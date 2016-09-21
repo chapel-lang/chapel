@@ -70,9 +70,9 @@ proc initTable(param pairs) {
 
   for param i in 1..pairs.length do
     if i%2 {
-      table[ascii(pairs[i])] = ascii(pairs[i+1]):uint(8);
+      table[ascii(pairs[i])] = ascii(pairs[i+1]);
       if pairs[i] != "\n" then
-        table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]):uint(8);
+        table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]);
     }
 
   return table;

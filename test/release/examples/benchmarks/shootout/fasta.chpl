@@ -1,16 +1,13 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Casey Battaglino, Kyle Brady, Preston Sahabu,
-               and Brad Chamberlain
-   derived from the GNU C version by Petr Prokhorenkov
+   contributed by Preston Sahabu
+   derived from the Chapel fastaredux version by Casey Battaglino et al.
+            and the GNU C version by Paul Hsieh
 */
 
 config const n = 1000,   // controls the length of the generated strings
-
-             lineLength = 60,
-             lookupSize = 4096,
-             lookupScale = lookupSize - 1.0;
+             lineLength = 60;
 
 //
 // Nucleotide definitions
@@ -66,8 +63,8 @@ const HomoSapiens = [(a, 0.3029549426680),
 
 
 proc main() {
-  sumAndScale(IUB);
-  sumAndScale(HomoSapiens);
+  sumProbs(IUB);
+  sumProbs(HomoSapiens);
   repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
   randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
   randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
@@ -76,26 +73,25 @@ proc main() {
 //
 // Scan the alphabets' probabilities to compute cut-offs
 //
-proc sumAndScale(alphabet: [?D]) {
+proc sumProbs(alphabet: []) {
   var p = 0.0;
   for letter in alphabet {
     p += letter(prob);
-    letter(prob) = p * lookupScale;
+    letter(prob) = p;
   }
-  alphabet[D.high](prob) = lookupScale;
 }
 
 //
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = ascii("\n"): int(8);
+param newline = ascii("\n");
 
 //
 // Repeat sequence "alu" for n characters
 //
 proc repeatMake(desc, alu, n) {
-  stdout.writef("%s", desc);
+  stdout.write(desc);
 
   const r = alu.size,
         s = [i in 0..(r+lineLength)] alu[i % r];
@@ -111,35 +107,33 @@ proc repeatMake(desc, alu, n) {
 // Output a random sequence of length 'n' using distribution a
 //
 proc randomMake(desc, a, n) {
-  var lookup = initLookup();
   var line_buff: [0..lineLength] int(8);
     
-  stdout.writef("%s", desc);
+  stdout.write(desc);
   for i in 1..n by lineLength do
     addLine(min(lineLength, n-i+1));
-
-  iter initLookup() {
-    var j = 1;
-    for i in 0..#lookupSize {
-      while (a[j](prob) < i) do
-        j += 1;
-      
-      yield a[j];
-    }
-  }
 
   //
   // Add a line of random sequence
   //
   proc addLine(bytes) {
     for (r, i) in zip(getRands(bytes), 0..) {
-      var ai = r: int + 1;
-      while (lookup[ai](prob) < r) do
-        ai += 1;
-      
-      line_buff[i] = lookup[ai](nucl);
+      if r < a[1](prob) {
+        line_buff[i] = a[1](nucl);
+      } else {
+        var lo = a.domain.low,
+            hi = a.domain.high;
+        while (hi > lo+1) {
+          var ai = (hi + lo) / 2;
+          if (r < a[ai](prob)) then
+            hi = ai;
+          else
+            lo = ai;
+        }
+        line_buff[i] = a[hi](nucl);
+      }
     }
-    line_buff[bytes] = newline;
+    line_buff[bytes] = newline:int(8);
 
     stdout.write(line_buff[0..bytes]);
   }
@@ -155,10 +149,9 @@ iter getRands(n) {
   param IA = 3877,
         IC = 29573,
         IM = 139968;
-  const SCALE = lookupScale / IM;
 
   for 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
-    yield SCALE * lastRand;
+    yield lastRand: real / IM;
   }
 }

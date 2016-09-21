@@ -1,10 +1,10 @@
-//
-// Distributions Primer
-//
-// This primer demonstrates uses of some of Chapel's standard
-// distributions.  To use these distributions in a Chapel program,
-// the respective module must be used:
-//
+/*
+  Distributions Primer
+
+  This primer demonstrates uses of some of Chapel's standard
+  distributions.  To use these distributions in a Chapel program,
+  the respective module must be used:
+*/
 use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
 use DimensionalDist2D, ReplicatedDim, BlockCycDim;
 
@@ -59,7 +59,7 @@ forall ba in BA do
   ba = here.id;
 
 //
-// The 'hasSingleLocalSubdomain' method on arrays will return true if the 
+// The 'hasSingleLocalSubdomain' method on arrays will return true if the
 // index set for a locale can be represented by a single domain.
 //
 if !BA.hasSingleLocalSubdomain() then
@@ -68,10 +68,10 @@ if !BA.hasSingleLocalSubdomain() then
 
 //
 // If the distribution's subdomains can be represented as single subdomain,
-// we can use the 'localSubdomain' method to get the index set for the 
+// we can use the 'localSubdomain' method to get the index set for the
 // current locale.
 //
-// Below, we'll use the index set to confirm that the array elements have the 
+// Below, we'll use the index set to confirm that the array elements have the
 // correct locale id.
 //
 
@@ -115,7 +115,7 @@ var MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
 //
 // Then we'll declare a distributed domain/array that targets
 // this view of the locales:
-// 
+//
 
 const BlockSpace2 = Space dmapped Block(boundingBox=Space,
                                         targetLocales=MyLocales);
@@ -183,7 +183,7 @@ on Locales[0] {
 // by a starting index (as with Cyclic) and a block size (per
 // dimension) specifying how large the chunks to be dealt out are.
 //
-const BlkCycSpace = Space dmapped BlockCyclic(startIdx=Space.low, 
+const BlkCycSpace = Space dmapped BlockCyclic(startIdx=Space.low,
                                               blocksize=(2, 3));
 var BCA: [BlkCycSpace] int;
 
@@ -202,11 +202,11 @@ if BCA.hasSingleLocalSubdomain() then
   halt("A Block-Cyclic index set cannot be represented by a single subdomain");
 
 //
-// If the local index set cannot be represented by a single subdomain, 
+// If the local index set cannot be represented by a single subdomain,
 // we can use the 'localSubdomains' iterator to yield a number of domains
 // that represent the whole index set.
 //
-// Let's write a function that will use 'localSubdomains' to verify the 
+// Let's write a function that will use 'localSubdomains' to verify the
 // correctness of the array values.
 //
 
@@ -334,16 +334,16 @@ writeln();
 // dimension will be distributed across.
 //
 // The DimensionalDist2D constructor requires:
-// * an [0..nl1-1, 0..nl2-1] array of locales, where
+//   an [0..nl1-1, 0..nl2-1] array of locales, where
 //   nl1 and nl2 are the number of locales in each dimension, and
-// * two dimension specifiers, created for nl1 and nl2 locale counts, resp.
+//   two dimension specifiers, created for nl1 and nl2 locale counts, resp.
 //
 // Presently, the following dimension specifiers are available
 // (shown here with their constructor arguments):
 //
-// * ReplicatedDim(numLocales)
-// * BlockDim(numLocales, boundingBoxLow, boundingBoxHigh)
-// * BlockCyclicDim(lowIdx, blockSize, numLocales)
+//   * ReplicatedDim(numLocales)
+//   * BlockDim(numLocales, boundingBoxLow, boundingBoxHigh)
+//   * BlockCyclicDim(lowIdx, blockSize, numLocales)
 //
 
 //

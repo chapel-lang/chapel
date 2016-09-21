@@ -1,10 +1,10 @@
 /*
- * Sparse Primer
- *
- * This primer shows off some of Chapel's support for sparse domains
- * and arrays.
- *
- */
+   Sparse Primer
+
+   This primer shows off some of Chapel's support for sparse domains
+   and arrays.
+
+*/
 
 
 //
@@ -138,21 +138,21 @@ writeSpsArr();
 
 //
 // Values can only be assigned to array positions that are members in
-// the sparse domain index set.  The boolean method Domain.member(x) 
+// the sparse domain index set.  The boolean method Domain.member(x)
 // can be used to check whether a certain index (x) is a member of the
 // domain's index set. Note that, in multi-dimensional domains, the member
-// method can accept the index as a tuple like spsDom.member((i,j)) 
-// or as a parameter list like spsDom.member(i,j). Below, we print '*' for 
+// method can accept the index as a tuple like spsDom.member((i,j))
+// or as a parameter list like spsDom.member(i,j). Below, we print '*' for
 // the positions that are members in the sparse domain, and '.' otherwise.
 //
 writeln("Positions that are members in the sparse domain are marked by a '*':");
 
 for (i,j) in dnsDom {
-  if spsDom.member(i,j) then 
+  if spsDom.member(i,j) then
     write("* "); // (i,j) is a member in the sparse index set
-  else 
+  else
     write(". "); // (i,j) is not a member in the sparse index set
-	
+
   if (j == n) then writeln();
 }
 writeln();
@@ -257,12 +257,12 @@ writeSpsArr();
 // proportional to the number of nonzeroes (nnz) rather than the size
 // of the dense bounding box.  Operations like inserting new indices
 // or testing for membership will tend to vary depending on the
-// representation.  
+// representation.
 //
 // For example, in the default representation, adding indices in
 // reverse sorted order will require O(nnz**2) time due to all of the
 // insertions required.  For this reason, users are encouraged to add
-// indices in sorted order when performance matters.  
+// indices in sorted order when performance matters.
 //
 // Other general rules of thumb when working with sparse domains and
 // arrays is to make the domains constant (const) whenever possible,

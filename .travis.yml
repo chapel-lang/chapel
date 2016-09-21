@@ -10,6 +10,8 @@ matrix:
   exclude:
     - os: osx
       compiler: gcc
+    - os: linux
+      compiler: clang
 
 
 script:
@@ -19,7 +21,6 @@ script:
 # have access to. This seems to be an artifact caused by the interaction
 # between docker and hwloc on Travis's docker images.
 env:
-  - CHPL_DEVELOPER=true QTHREAD_AFFINITY=no
   - NIGHTLY_TEST_SETTINGS=true QTHREAD_AFFINITY=no
 
 sudo: false

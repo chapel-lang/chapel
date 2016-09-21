@@ -1,0 +1,1 @@
+-sprintTimes=true -smaxAdds=20 --replace-array-accesses-with-ref-temps
