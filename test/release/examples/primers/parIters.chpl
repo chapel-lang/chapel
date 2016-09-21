@@ -25,12 +25,12 @@
 // .. code-block:: chapel
 //
 //   forall (a, b, c) in zip(A, B, C) do
-//     ...loop body...
+//     // ...loop body...
 //
 // is semantically defined such that the first thing being iterated
 // over -- in this case, A -- is designated the 'leader.'  All things
 // being iterated over are 'followers' (so for this loop, ``A``,
-// ``B,`` and ``C `` would be).
+// ``B``, and ``C`` would be).
 //
 // Semantics
 // ---------
@@ -41,7 +41,7 @@
 //
 //   for work in A.lead() do   // implemented by inlining the leader
 //     for (a, b, c) in zip(A.follow(work), B.follow(work), C.follow(work)) do
-//       ...loop body...
+//       // ...loop body...
 //
 // where ``.lead()`` and ``.follow()`` represent the leader-follower iterators
 // using a simplified naming scheme.
@@ -75,7 +75,7 @@
 // Example: count
 // --------------
 // For this example, we're going to create a simple iterator named
-// ``count`` that will be able to be invoked in ``for`` or ``forall`` loops.
+// ``count`` that will be able to be invoked in for or forall loops.
 // Count will be defined to take an argument ``n`` as input and an
 // optional argument ``low`` (set to 1 by default), and it will yield ``n``
 // integers starting with ``low``.
@@ -266,7 +266,7 @@ iter count(param tag: iterKind, n: int, low: int=1, followThis)
 // The next arguments again match the serial iterator exactly. This iterator
 // generates parallelism and yields single elements in the low-based
 // coordinate system. The standalone parallel iterator is invoked in
-// ``forall`` loops that are not zippered.  Because this iterator will not
+// forall loops that are not zippered.  Because this iterator will not
 // be zippered with others, it doesn't need to go to the trouble of
 // zero-shifting indices and putting them into a 1-tuple.
 //
@@ -290,7 +290,7 @@ iter count(param tag: iterKind, n: int, low: int = 1)
 // count: usage
 // ------------
 // Now that we've defined leader-follower and standalone iterators, we can
-// execute the same loops we did before, only this time using ``forall`` loops
+// execute the same loops we did before, only this time using forall loops
 // to make the execution parallel.  We start with some simple invocations
 // as before.  In these invocations, the ``count()`` standalone parallel
 // iterator is used since it is the only thing being iterated over (``A`` is
