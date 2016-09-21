@@ -1,10 +1,10 @@
 use BigInteger;
 
 // Tests the division functions
-var a = new Bigint(  8);
-var b = new Bigint( 10);
-var c = new Bigint(-27);
-var d = new Bigint();
+var a = new bigint(  8);
+var b = new bigint( 10);
+var c = new bigint(-27);
+var d = new bigint();
 
 d.div_q(Round.UP, c, a);
 b.div_r(Round.UP, c, a);

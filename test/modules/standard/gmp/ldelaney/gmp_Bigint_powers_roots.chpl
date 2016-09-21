@@ -3,10 +3,10 @@ use BigInteger;
 // Tests the power and root functions
 
 // powers
-var a = new Bigint( 2);
-var b = new Bigint( 4);
-var c = new Bigint(10);
-var d = new Bigint();
+var a = new bigint( 2);
+var b = new bigint( 4);
+var c = new bigint(10);
+var d = new bigint();
 
 a.powm(a, b, c);          // a = a^b mod c
 writeln("2^4 mod 10 = ", a);

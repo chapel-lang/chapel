@@ -2,8 +2,8 @@ use BigInteger;
 
 // Tests the comparison operators
 
-var a = new Bigint( 5);
-var b = new Bigint(-6);
+var a = new bigint( 5);
+var b = new bigint(-6);
 
 var val = a.cmp(b);
 writeln(a, " ", cmp_parse(val), " ", b);

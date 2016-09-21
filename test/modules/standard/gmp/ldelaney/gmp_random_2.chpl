@@ -3,8 +3,8 @@ use GMP;
 
 config const printrandom = false;
 
-var a  = new Bigint( 10);
-var b  = new Bigint(128);
+var a  = new bigint( 10);
+var b  = new bigint(128);
 
 var r1 = new GMPRandom();
 var r2 = new GMPRandom(true);

@@ -1,8 +1,8 @@
 use BigInteger;
 
 // Tests the miscellaneous functions
-var a = new Bigint(-65536);
-var b = new Bigint(129);
+var a = new bigint(-65536);
+var b = new bigint(129);
 
 writeln(a, parse_fit(a.fits_ulong_p()), " in an unsigned long integer");
 writeln(b, parse_fit(b.fits_ulong_p()), " in an unsigned long integer");

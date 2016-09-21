@@ -3,8 +3,8 @@ use GMP;
 config const printrandom = false;
 
 var r = new GMPRandom();
-var b = new Bigint();
-var n = new Bigint(10);
+var b = new bigint();
+var n = new bigint(10);
 var x:uint = 0;
 
 if printrandom then writeln(x);

@@ -1,7 +1,7 @@
 use BigInteger;
 
-var x = new Bigint(20);
-var y = new Bigint(0);
+var x = new bigint(20);
+var y = new bigint(0);
 
 y.mod(x, 11);
 

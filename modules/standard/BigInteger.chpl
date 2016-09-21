@@ -18,7 +18,7 @@
  */
 
 /*
-Support for GNU Multiple Precision Integer Arithmetic through the Bigint record
+Support for GNU Multiple Precision Integer Arithmetic through the bigint record
 
 This module implements an interface with the GMP library (the GNU Multiple
 Precision Arithmetic Library). See the `GMP homepage <https://gmplib.org/>`
@@ -26,17 +26,17 @@ for more information on this library.
 
 See the GMP Chapel module for more information on how to use GMP with Chapel.
 
-Using the Bigint record
+Using the bigint record
 -----------------------
 
-The BigInteger Chapel module provides a :record:`Bigint` record wrapping GMP
+The BigInteger Chapel module provides a :record:`bigint` record wrapping GMP
 integers. At the present time, only the functions for ``mpz`` (ie signed
-integer) GMP types are supported with :record:`Bigint`; future work will be to
+integer) GMP types are supported with :record:`bigint`; future work will be to
 extend this support to floating-point types.
 
-:record:`Bigint` methods all wrap GMP functions with obviously similar names.
-The :record:`Bigint` methods are locale aware - so Chapel programs can create
-a distributed array of GMP numbers. The method of :record:`Bigint` objects are
+:record:`bigint` methods all wrap GMP functions with obviously similar names.
+The :record:`bigint` methods are locale aware - so Chapel programs can create
+a distributed array of GMP numbers. The method of :record:`bigint` objects are
 setting the receiver, so e.g. myBigint.add(x,y) sets myBigint to ``x + y``.
 
 A code example::
@@ -44,13 +44,13 @@ A code example::
  use BigInteger;
 
  // initialize a GMP value, set it to zero
- var a = new Bigint();
+ var a = new bigint();
 
  a.fac(100);                            // set a to 100!
  writeln(a);                            // output   100!
 
  // initialize from a decimal string
- var b = new Bigint("48473822929893829847");
+ var b = new bigint("48473822929893829847");
 
  b.add(b, 1);                           // add one to b
 */
@@ -58,15 +58,9 @@ A code example::
 module BigInteger {
   use GMP;
 
-  enum Round {
-    DOWN = -1,
-    ZERO =  0,
-    UP   =  1
-  }
-
   /*
-    The Bigint record provides arbitrary length integers and a set of
-    operator overloads that allow Bigints to be treated consistently
+    The bigint record provides arbitrary length integers and a set of
+    operator overloads that allow bigints to be treated consistently
     with conventional fixed width integers.
 
     The current implementation relies on the GMP library.  This is a
@@ -82,13 +76,13 @@ module BigInteger {
 
       3) Automatic memory management of GMP data structures
 
-    Wrapping an mpz_t in a Bigint record does not appear to introduce
+    Wrapping an mpz_t in a bigint record does not appear to introduce
     a measurable performance impact.  However in the fall of 2016 the
     Chapel operator-based API may introduce a measurable overhead compared
     to the GMP-native API for some applications.  Therefore this module also
     provides lower-level multi-locale aware wrappers for the GMP functions.
 
-    Methods on Bigint are defined for Chapel types e.g int(64) and uint(64)
+    Methods on bigint are defined for Chapel types e.g int(64) and uint(64)
     which must be converted to underlying C types for use by GMP.  Runtime
     checks are used to ensure the Chapel types can safely be cast to the C
     types (e.g. when casting a Chapel uint it checks that it fits in the C
@@ -99,17 +93,17 @@ module BigInteger {
    */
 
   pragma "ignore noinit"
-  record Bigint {
+  record bigint {
     var mpz      : mpz_t;              // A dynamic-vector of C integers
     var localeId : chpl_nodeID_t;      // The locale id for the GMP state
 
-    proc Bigint() {
+    proc bigint() {
       mpz_init(this.mpz);
 
       this.localeId = chpl_nodeID;
     }
 
-    proc Bigint(num: Bigint) {
+    proc bigint(const ref num: bigint) {
       if _local || num.localeId == chpl_nodeID {
         mpz_init_set(this.mpz, num.mpz);
       } else {
@@ -123,19 +117,19 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    proc Bigint(num: int) {
+    proc bigint(num: int) {
       mpz_init_set_si(this.mpz, num.safeCast(c_long));
 
       this.localeId = chpl_nodeID;
     }
 
-    proc Bigint(num: uint) {
+    proc bigint(num: uint) {
       mpz_init_set_ui(this.mpz, num.safeCast(c_ulong));
 
       this.localeId = chpl_nodeID;
     }
 
-    proc Bigint(str: string, base: int = 0) {
+    proc bigint(str: string, base: int = 0) {
       var e = mpz_init_set_str(this.mpz,
                                str.localize().c_str(),
                                base.safeCast(c_int));
@@ -148,7 +142,7 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    proc Bigint(str: string, base: int = 0, out error: syserr) {
+    proc bigint(str: string, base: int = 0, out error: syserr) {
       var e = mpz_init_set_str(this.mpz,
                                str.localize().c_str(),
                                base.safeCast(c_int));
@@ -163,13 +157,13 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    // Within a given locale, Bigint assignment creates a deep copy of the
+    // Within a given locale, bigint assignment creates a deep copy of the
     // data and so the record "owns" the GMP data.
     //
-    // If a Bigint is copied to a remote node then it will receive a shallow
+    // If a bigint is copied to a remote node then it will receive a shallow
     // copy.  The localeId points back the correct locale but the mpz field
     // is meaningless.
-    proc ~Bigint() {
+    proc ~bigint() {
       if _local || this.localeId == chpl_nodeID {
         mpz_clear(this.mpz);
       }
@@ -369,8 +363,8 @@ module BigInteger {
 
   pragma "init copy fn"
   pragma "no doc"
-  proc chpl__initCopy(bir: Bigint) {
-    var ret : Bigint;
+  proc chpl__initCopy(const ref bir: bigint) {
+    var ret : bigint;
 
     if _local || bir.localeId == chpl_nodeID {
       mpz_set(ret.mpz, bir.mpz);
@@ -386,8 +380,8 @@ module BigInteger {
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
-  proc chpl__autoCopy(bir: Bigint) {
-    var ret : Bigint;
+  proc chpl__autoCopy(const ref bir: bigint) {
+    var ret : bigint;
 
     if _local || bir.localeId == chpl_nodeID {
       mpz_set(ret.mpz, bir.mpz);
@@ -403,7 +397,7 @@ module BigInteger {
   // Locale-aware assignment
   //
 
-  proc =(ref lhs: Bigint, rhs: Bigint) {
+  proc =(ref lhs: bigint, const ref rhs: bigint) {
     inline proc helper() {
       if _local || rhs.localeId == chpl_nodeID {
         mpz_set(lhs.mpz, rhs.mpz);
@@ -425,7 +419,7 @@ module BigInteger {
     }
   }
 
-  proc =(ref lhs: Bigint, rhs: int) {
+  proc =(ref lhs: bigint, rhs: int) {
     if _local || lhs.localeId == chpl_nodeID {
       mpz_set_si(lhs.mpz, rhs.safeCast(c_long));
 
@@ -438,7 +432,7 @@ module BigInteger {
     }
   }
 
-  proc =(ref lhs: Bigint, rhs: uint) {
+  proc =(ref lhs: bigint, rhs: uint) {
     if _local || lhs.localeId == chpl_nodeID {
       mpz_set_si(lhs.mpz, rhs.safeCast(c_long));
 
@@ -452,17 +446,17 @@ module BigInteger {
   }
 
   //
-  // Operations on Bigints
+  // Operations on bigints
   //
   // In general we need to think about 3 cases
   //
   //   1) This is a single-locale configuration.
   //      We can invoke the appropriate mpz operator directly.
   //
-  //   2) All Bigints are on the current locale.
+  //   2) All bigints are on the current locale.
   //      We can invoke the appropriate mpz operator directly.
   //
-  //   3) One or more Bigints are on a remote locale.
+  //   3) One or more bigints are on a remote locale.
   //      This is complicated.  It is tempting to handle all of the
   //      permutations as efficiently as possible but this introduces
   //      a lot of cases esp. for binary operations.
@@ -478,20 +472,20 @@ module BigInteger {
   //
   // Unary operators
   //
-  proc +(a: Bigint) {
-    return new Bigint(a);
+  proc +(const ref a: bigint) {
+    return new bigint(a);
   }
 
-  proc -(a: Bigint) {
-    var c = new Bigint(a);
+  proc -(const ref a: bigint) {
+    var c = new bigint(a);
 
     mpz_neg(c.mpz, c.mpz);
 
     return c;
   }
 
-  proc ~(a: Bigint) {
-    var c = new Bigint(a);
+  proc ~(const ref a: bigint) {
+    var c = new bigint(a);
 
     mpz_com(c.mpz, c.mpz);
 
@@ -503,8 +497,8 @@ module BigInteger {
   //
 
   // Addition
-  proc +(a: Bigint, b: Bigint) {
-    var c = new Bigint();
+  proc +(const ref a: bigint, const ref b: bigint) {
+    var c = new bigint();
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_add(c.mpz, a.mpz, b.mpz);
@@ -519,8 +513,8 @@ module BigInteger {
     return c;
   }
 
-  proc +(a: Bigint, b: int) {
-    var c = new Bigint();
+  proc +(const ref a: bigint, b: int) {
+    var c = new bigint();
 
     if b >= 0 {
       const b_ = b.safeCast(c_ulong);
@@ -551,8 +545,8 @@ module BigInteger {
     return c;
   }
 
-  proc +(a: int, b: Bigint) {
-    var c = new Bigint();
+  proc +(a: int, const ref b: bigint) {
+    var c = new bigint();
 
     if a >= 0 {
       const a_ = a.safeCast(c_ulong);
@@ -583,9 +577,9 @@ module BigInteger {
     return c;
   }
 
-  proc +(a: Bigint, b: uint) {
+  proc +(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || a.localeId == chpl_nodeID {
       mpz_add_ui(c.mpz, a.mpz,  b_);
@@ -599,9 +593,9 @@ module BigInteger {
     return c;
   }
 
-  proc +(a: uint, b: Bigint) {
+  proc +(a: uint, const ref b: bigint) {
     const a_ = a.safeCast(c_ulong);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || b.localeId == chpl_nodeID {
       mpz_add_ui(c.mpz, b.mpz,  a_);
@@ -618,8 +612,8 @@ module BigInteger {
 
 
   // Subtraction
-  proc -(a: Bigint, b: Bigint) {
-    var c = new Bigint();
+  proc -(const ref a: bigint, const ref b: bigint) {
+    var c = new bigint();
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_sub(c.mpz, a.mpz,  b.mpz);
@@ -634,8 +628,8 @@ module BigInteger {
     return c;
   }
 
-  proc -(a: Bigint, b: int) {
-    var c = new Bigint();
+  proc -(const ref a: bigint, const ref b: int) {
+    var c = new bigint();
 
     if b >= 0 {
       const b_ = b.safeCast(c_ulong);
@@ -666,8 +660,8 @@ module BigInteger {
     return c;
   }
 
-  proc -(a: int, b: Bigint) {
-    var c = new Bigint();
+  proc -(a: int, const ref b: bigint) {
+    var c = new bigint();
 
     if a >= 0 {
       const a_ = a.safeCast(c_ulong);
@@ -698,9 +692,9 @@ module BigInteger {
     return c;
   }
 
-  proc -(a: Bigint, b: uint) {
+  proc -(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || a.localeId == chpl_nodeID {
       mpz_sub_ui(c.mpz, a.mpz,  b_);
@@ -714,9 +708,9 @@ module BigInteger {
     return c;
   }
 
-  proc -(a: uint, b: Bigint) {
+  proc -(a: uint, const ref b: bigint) {
     const a_ = a.safeCast(c_ulong);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || b.localeId == chpl_nodeID {
       mpz_ui_sub(c.mpz, a_, b.mpz);
@@ -732,8 +726,8 @@ module BigInteger {
 
 
   // Multiplication
-  proc *(a: Bigint, b: Bigint) {
-    var c = new Bigint();
+  proc *(const ref a: bigint, const ref b: bigint) {
+    var c = new bigint();
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_mul(c.mpz, a.mpz, b.mpz);
@@ -748,9 +742,9 @@ module BigInteger {
     return c;
   }
 
-  proc *(a: Bigint, b: int) {
+  proc *(const ref a: bigint, b: int) {
     const b_ = b.safeCast(c_long);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || a.localeId == chpl_nodeID {
       mpz_mul_si(c.mpz, a.mpz,  b_);
@@ -764,9 +758,9 @@ module BigInteger {
     return c;
   }
 
-  proc *(a: int, b: Bigint) {
+  proc *(a: int, const ref b: bigint) {
     const a_ = a.safeCast(c_long);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || b.localeId == chpl_nodeID {
       mpz_mul_si(c.mpz, b.mpz,  a_);
@@ -780,9 +774,9 @@ module BigInteger {
     return c;
   }
 
-  proc *(a: Bigint, b: uint) {
+  proc *(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || a.localeId == chpl_nodeID {
       mpz_mul_ui(c.mpz, a.mpz,  b_);
@@ -796,9 +790,9 @@ module BigInteger {
     return c;
   }
 
-  proc *(a: uint, b: Bigint) {
+  proc *(a: uint, const ref b: bigint) {
     const a_ = a.safeCast(c_ulong);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || b.localeId == chpl_nodeID {
       mpz_mul_ui(c.mpz, b.mpz,  a_);
@@ -815,8 +809,8 @@ module BigInteger {
 
 
   // Division
-  proc /(a: Bigint, b: Bigint) {
-    var c = new Bigint();
+  proc /(const ref a: bigint, const ref b: bigint) {
+    var c = new bigint();
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
@@ -831,9 +825,9 @@ module BigInteger {
     return c;
   }
 
-  proc /(a: Bigint, b: int) {
+  proc /(const ref a: bigint, b: int) {
     var b_ = 0 : c_ulong;
-    var c  = new Bigint();
+    var c  = new bigint();
 
     if b >= 0 then
       b_ = b.safeCast(c_ulong);
@@ -855,9 +849,9 @@ module BigInteger {
     return c;
   }
 
-  proc /(a: Bigint, b: uint) {
+  proc /(const ref a: bigint, b: uint) {
     var b_ = b.safeCast(c_ulong);
-    var c  = new Bigint();
+    var c  = new bigint();
 
     if _local || a.localeId == chpl_nodeID {
       mpz_tdiv_q_ui(c.mpz, a.mpz, b_);
@@ -871,7 +865,7 @@ module BigInteger {
     return c;
   }
 
-  proc div(param rounding: Round, n: Bigint, d: uint) : uint {
+  proc div(param rounding: Round, const ref n: bigint, d: uint) : uint {
     const d_ = d.safeCast(c_ulong);
     var   ret: c_ulong;
 
@@ -899,8 +893,8 @@ module BigInteger {
 
 
   // Exponentiation
-  proc **(a: Bigint, b: uint) {
-    var c = new Bigint();
+  proc **(const ref a: bigint, b: uint) {
+    var c = new bigint();
 
     if _local || a.localeId == chpl_nodeID {
       mpz_pow_ui(c.mpz, a.mpz,  b);
@@ -917,8 +911,8 @@ module BigInteger {
 
 
   // Mod
-  proc %(a: Bigint, b: Bigint) {
-    var c = new Bigint();
+  proc %(const ref a: bigint, const ref b: bigint) {
+    var c = new bigint();
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_mod(c.mpz, a.mpz,  b.mpz);
@@ -932,9 +926,9 @@ module BigInteger {
     return c;
   }
 
-  proc %(a: Bigint, b: int) {
+  proc %(const ref a: bigint, b: int) {
     var b_ = 0 : c_ulong;
-    var c  = new Bigint();
+    var c  = new bigint();
 
     if b >= 0 then
       b_ = b.safeCast(c_ulong);
@@ -953,9 +947,9 @@ module BigInteger {
     return c;
   }
 
-  proc %(a: Bigint, b: uint) {
+  proc %(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || a.localeId == chpl_nodeID {
       mpz_mod_ui(c.mpz, a.mpz,  b_);
@@ -972,8 +966,8 @@ module BigInteger {
 
 
   // Bit-shift left
-  proc <<(a: Bigint, b: int) {
-    var c = new Bigint();
+  proc <<(const ref a: bigint, b: int) {
+    var c = new bigint();
 
     if b >= 0 {
       const b_ = b.safeCast(c_ulong);
@@ -1003,9 +997,9 @@ module BigInteger {
     return c;
   }
 
-  proc <<(a: Bigint, b: uint) {
+  proc <<(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || a.localeId == chpl_nodeID {
       mpz_mul_2exp(c.mpz, a.mpz,  b_);
@@ -1022,12 +1016,12 @@ module BigInteger {
 
 
   // Bit-shift right
-  proc >>(a: Bigint, b: int) {
-    var c = new Bigint();
+  proc >>(const ref a: bigint, b: int) {
+    var c = new bigint();
 
     if b >= 0 {
       const b_ = b.safeCast(c_ulong);
-      var   c  = new Bigint();
+      var   c  = new bigint();
 
       if _local || a.localeId == chpl_nodeID {
         mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
@@ -1054,9 +1048,9 @@ module BigInteger {
     return c;
   }
 
-  proc >>(a: Bigint, b: uint) {
+  proc >>(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
-    var   c  = new Bigint();
+    var   c  = new bigint();
 
     if _local || a.localeId == chpl_nodeID {
       mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
@@ -1073,8 +1067,8 @@ module BigInteger {
 
 
   // Bitwise and
-  proc &(a: Bigint, b: Bigint) {
-    var c = new Bigint();
+  proc &(const ref a: bigint, const ref b: bigint) {
+    var c = new bigint();
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_and(c.mpz, a.mpz, b.mpz);
@@ -1092,8 +1086,8 @@ module BigInteger {
 
 
   // Bitwise ior
-  proc |(a: Bigint, b: Bigint) {
-    var c = new Bigint();
+  proc |(const ref a: bigint, const ref b: bigint) {
+    var c = new bigint();
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_and(c.mpz, a.mpz, b.mpz);
@@ -1111,8 +1105,8 @@ module BigInteger {
 
 
   // Bitwise xor
-  proc ^(a: Bigint, b: Bigint) {
-    var c = new Bigint();
+  proc ^(const ref a: bigint, const ref b: bigint) {
+    var c = new bigint();
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_and(c.mpz, a.mpz, b.mpz);
@@ -1133,7 +1127,7 @@ module BigInteger {
   // Comparison Operations
   //
 
-  private inline proc cmp(a: Bigint, b: Bigint) {
+  private inline proc cmp(const ref a: bigint, const ref b: bigint) {
     var ret : c_int;
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
@@ -1149,7 +1143,7 @@ module BigInteger {
     return ret;
   }
 
-  private inline proc cmp(a: Bigint, b: int) {
+  private inline proc cmp(const ref a: bigint, b: int) {
     const b_ = b.safeCast(c_long);
     var   ret : c_int;
 
@@ -1165,7 +1159,7 @@ module BigInteger {
     return ret;
   }
 
-  private inline proc cmp(a: int, b: Bigint) {
+  private inline proc cmp(a: int, const ref b: bigint) {
     const a_ = a.safeCast(c_long);
     var   ret : c_int;
 
@@ -1181,7 +1175,7 @@ module BigInteger {
     return ret;
   }
 
-  private inline proc cmp(a: Bigint, b: uint) {
+  private inline proc cmp(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
     var   ret : c_int;
 
@@ -1197,7 +1191,7 @@ module BigInteger {
     return ret;
   }
 
-  private inline proc cmp(a: uint, b: Bigint) {
+  private inline proc cmp(a: uint, const ref b: bigint) {
     const a_ = a.safeCast(c_ulong);
     var   ret : c_int;
 
@@ -1216,137 +1210,137 @@ module BigInteger {
 
 
   // Equality
-  proc ==(a: Bigint, b: Bigint) {
+  proc ==(const ref a: bigint, const ref b: bigint) {
     return cmp(a, b) == 0;
   }
 
-  proc ==(a: Bigint, b: int) {
+  proc ==(const ref a: bigint, b: int) {
     return cmp(a, b) == 0;
   }
 
-  proc ==(a: int, b: Bigint) {
+  proc ==(a: int, const ref b: bigint) {
     return cmp(a, b) == 0;
   }
 
-  proc ==(a: Bigint, b: uint) {
+  proc ==(const ref a: bigint, b: uint) {
     return cmp(a, b) == 0;
   }
 
-  proc ==(a: uint, b: Bigint) {
+  proc ==(a: uint, const ref b: bigint) {
     return cmp(a, b) == 0;
   }
 
 
 
   // Inequality
-  proc !=(a: Bigint, b: Bigint) {
+  proc !=(const ref a: bigint, const ref b: bigint) {
     return cmp(a, b) != 0;
   }
 
-  proc !=(a: Bigint, b: int) {
+  proc !=(const ref a: bigint, b: int) {
     return cmp(a, b) != 0;
   }
 
-  proc !=(a: int, b: Bigint) {
+  proc !=(a: int, const ref b: bigint) {
     return cmp(a, b) != 0;
   }
 
-  proc !=(a: Bigint, b: uint) {
+  proc !=(const ref a: bigint, b: uint) {
     return cmp(a, b) != 0;
   }
 
-  proc !=(a: uint, b: Bigint) {
+  proc !=(a: uint, const ref b: bigint) {
     return cmp(a, b) != 0;
   }
 
 
 
   // Greater than
-  proc >(a: Bigint, b: Bigint) {
+  proc >(const ref a: bigint, const ref b: bigint) {
     return cmp(a, b) > 0;
   }
 
-  proc >(a: Bigint, b: int) {
+  proc >(const ref a: bigint, b: int) {
     return cmp(a, b) > 0;
   }
 
-  proc >(b: int, a: Bigint) {
+  proc >(b: int, const ref a: bigint) {
     return cmp(a, b) > 0;
   }
 
-  proc >(a: Bigint, b: uint) {
+  proc >(const ref a: bigint, b: uint) {
     return cmp(a, b) > 0;
   }
 
-  proc >(b: uint, a: Bigint) {
+  proc >(b: uint, const ref a: bigint) {
     return cmp(a, b) > 0;
   }
 
 
 
   // Less than
-  proc <(a: Bigint, b: Bigint) {
+  proc <(const ref a: bigint, const ref b: bigint) {
     return cmp(a, b) < 0;
   }
 
-  proc <(a: Bigint, b: int) {
+  proc <(const ref a: bigint, b: int) {
     return cmp(a, b) < 0;
   }
 
-  proc <(b: int, a: Bigint) {
+  proc <(b: int, const ref a: bigint) {
     return cmp(a, b) < 0;
   }
 
-  proc <(a: Bigint, b: uint) {
+  proc <(const ref a: bigint, b: uint) {
     return cmp(a, b) < 0;
   }
 
-  proc <(b: uint, a: Bigint) {
+  proc <(b: uint, const ref a: bigint) {
     return cmp(a, b) < 0;
   }
 
 
   // Greater than or equal
-  proc >=(a: Bigint, b: Bigint) {
+  proc >=(const ref a: bigint, const ref b: bigint) {
     return cmp(a, b) >= 0;
   }
 
-  proc >=(a: Bigint, b: int) {
+  proc >=(const ref a: bigint, b: int) {
     return cmp(a, b) >= 0;
   }
 
-  proc >=(b: int, a: Bigint) {
+  proc >=(b: int, const ref a: bigint) {
     return cmp(a, b) >= 0;
   }
 
-  proc >=(a: Bigint, b: uint) {
+  proc >=(const ref a: bigint, b: uint) {
     return cmp(a, b) >= 0;
   }
 
-  proc >=(b: uint, a: Bigint) {
+  proc >=(b: uint, const ref a: bigint) {
     return cmp(a, b) >= 0;
   }
 
 
 
   // Less than or equal
-  proc <=(a: Bigint, b: Bigint) {
+  proc <=(const ref a: bigint, const ref b: bigint) {
     return cmp(a, b) <= 0;
   }
 
-  proc <=(a: Bigint, b: int) {
+  proc <=(const ref a: bigint, b: int) {
     return cmp(a, b) <= 0;
   }
 
-  proc <=(b: int, a: Bigint) {
+  proc <=(b: int, const ref a: bigint) {
     return cmp(a, b) <= 0;
   }
 
-  proc <=(a: Bigint, b: uint) {
+  proc <=(const ref a: bigint, b: uint) {
     return cmp(a, b) <= 0;
   }
 
-  proc <=(b: uint, a: Bigint) {
+  proc <=(b: uint, const ref a: bigint) {
     return cmp(a, b) <= 0;
   }
 
@@ -1358,7 +1352,7 @@ module BigInteger {
   //
 
   // +=
-  proc +=(ref a: Bigint, b: Bigint) {
+  proc +=(ref a: bigint, const ref b: bigint) {
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_add(a.mpz, a.mpz, b.mpz);
 
@@ -1373,7 +1367,7 @@ module BigInteger {
     }
   }
 
-  proc +=(ref a: Bigint, b: int) {
+  proc +=(ref a: bigint, b: int) {
     if (b >= 0) {
       const b_ = b.safeCast(c_ulong);
 
@@ -1404,7 +1398,7 @@ module BigInteger {
     }
   }
 
-  proc +=(ref a: Bigint, b: uint) {
+  proc +=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local || a.localeId == chpl_nodeID {
@@ -1422,7 +1416,7 @@ module BigInteger {
 
 
   // -=
-  proc -=(ref a: Bigint, b: Bigint) {
+  proc -=(ref a: bigint, const ref b: bigint) {
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_sub(a.mpz, a.mpz, b.mpz);
 
@@ -1437,7 +1431,7 @@ module BigInteger {
     }
   }
 
-  proc -=(ref a: Bigint, b: int) {
+  proc -=(ref a: bigint, b: int) {
     if (b >= 0) {
       const b_ = b.safeCast(c_ulong);
 
@@ -1468,7 +1462,7 @@ module BigInteger {
     }
   }
 
-  proc -=(ref a: Bigint, b: uint) {
+  proc -=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local || a.localeId == chpl_nodeID {
@@ -1486,7 +1480,7 @@ module BigInteger {
 
 
   // *=
-  proc *=(ref a: Bigint, b: Bigint) {
+  proc *=(ref a: bigint, const ref b: bigint) {
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_mul(a.mpz, a.mpz, b.mpz);
 
@@ -1501,7 +1495,7 @@ module BigInteger {
     }
   }
 
-  proc *=(ref a: Bigint, b: int) {
+  proc *=(ref a: bigint, b: int) {
     const b_ = b.safeCast(c_long);
 
     if _local || a.localeId == chpl_nodeID {
@@ -1516,7 +1510,7 @@ module BigInteger {
     }
   }
 
-  proc *=(ref a: Bigint, b: uint) {
+  proc *=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local || a.localeId == chpl_nodeID {
@@ -1534,7 +1528,7 @@ module BigInteger {
 
 
   // /=
-  proc /=(ref a: Bigint, b: Bigint) {
+  proc /=(ref a: bigint, const ref b: bigint) {
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
 
@@ -1549,7 +1543,7 @@ module BigInteger {
     }
   }
 
-  proc /=(ref a: Bigint, b: int) {
+  proc /=(ref a: bigint, b: int) {
     var b_ = 0 : c_ulong;
 
     if b >= 0 then
@@ -1575,7 +1569,7 @@ module BigInteger {
     }
   }
 
-  proc /=(ref a: Bigint, b: uint) {
+  proc /=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local || a.localeId == chpl_nodeID {
@@ -1592,7 +1586,7 @@ module BigInteger {
 
 
   // **=
-  proc **=(ref a: Bigint, b: uint) {
+  proc **=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local || a.localeId == chpl_nodeID {
@@ -1610,7 +1604,7 @@ module BigInteger {
 
 
   // %=
-  proc %=(ref a: Bigint, b: Bigint) {
+  proc %=(ref a: bigint, const ref b: bigint) {
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_mod(a.mpz, a.mpz, b.mpz);
 
@@ -1625,7 +1619,7 @@ module BigInteger {
     }
   }
 
-  proc %=(ref a: Bigint, b: int) {
+  proc %=(ref a: bigint, b: int) {
     var b_ = 0 : c_ulong;
 
     if b >= 0 then
@@ -1645,7 +1639,7 @@ module BigInteger {
     }
   }
 
-  proc %=(ref a: Bigint, b: uint) {
+  proc %=(ref a: bigint, b: uint) {
     var b_ = b.safeCast(c_ulong);
 
     if _local || a.localeId == chpl_nodeID {
@@ -1660,7 +1654,7 @@ module BigInteger {
     }
   }
 
-  proc &=(ref a: Bigint, b: Bigint) {
+  proc &=(ref a: bigint, const ref b: bigint) {
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_and(a.mpz, a.mpz, b.mpz);
 
@@ -1675,7 +1669,7 @@ module BigInteger {
     }
   }
 
-  proc |=(ref a: Bigint, b: Bigint) {
+  proc |=(ref a: bigint, const ref b: bigint) {
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_ior(a.mpz, a.mpz, b.mpz);
 
@@ -1690,7 +1684,7 @@ module BigInteger {
     }
   }
 
-  proc ^=(ref a: Bigint, b: Bigint) {
+  proc ^=(ref a: bigint, const ref b: bigint) {
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       mpz_xor(a.mpz, a.mpz, b.mpz);
 
@@ -1707,7 +1701,7 @@ module BigInteger {
 
 
   // <<=
-  proc <<=(ref a: Bigint, b: int) {
+  proc <<=(ref a: bigint, b: int) {
     if b >= 0 {
       const b_ = b.safeCast(c_ulong);
 
@@ -1738,7 +1732,7 @@ module BigInteger {
     }
   }
 
-  proc <<=(ref a: Bigint, b: uint) {
+  proc <<=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local || a.localeId == chpl_nodeID {
@@ -1756,7 +1750,7 @@ module BigInteger {
 
 
   // >>=
-  proc >>=(ref a: Bigint, b: int) {
+  proc >>=(ref a: bigint, b: int) {
     if b >= 0 {
       const b_ = b.safeCast(c_ulong);
 
@@ -1787,7 +1781,7 @@ module BigInteger {
     }
   }
 
-  proc >>=(ref a: Bigint, b: uint) {
+  proc >>=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local || a.localeId == chpl_nodeID {
@@ -1804,7 +1798,7 @@ module BigInteger {
 
 
   // Swap
-  proc <=>(ref a: Bigint, ref b: Bigint) {
+  proc <=>(ref a: bigint, ref b: bigint) {
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       var t = a;
 
@@ -1835,7 +1829,7 @@ module BigInteger {
 
 
   // Special Operations
-  proc jacobi(a: Bigint, b: Bigint) : int {
+  proc jacobi(const ref a: bigint, const ref b: bigint) : int {
     var ret : c_int;
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
@@ -1853,7 +1847,7 @@ module BigInteger {
 
 
 
-  proc legendre(a: Bigint, p: Bigint) : int {
+  proc legendre(const ref a: bigint, const ref p: bigint) : int {
     var ret : c_int;
 
     if _local || (a.localeId == chpl_nodeID && p.localeId == chpl_nodeID) {
@@ -1872,7 +1866,7 @@ module BigInteger {
 
 
   // kronecker
-  proc kronecker(a: Bigint, b: Bigint) : int {
+  proc kronecker(const ref a: bigint, const ref b: bigint) : int {
     var ret : c_int;
 
     if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
@@ -1888,7 +1882,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc kronecker(a: Bigint, b: int) : int {
+  proc kronecker(const ref a: bigint, b: int) : int {
     const b_ = b.safeCast(c_long);
     var  ret : c_int;
 
@@ -1904,7 +1898,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc kronecker(a: int, b: Bigint) : int {
+  proc kronecker(a: int, const ref b: bigint) : int {
     const a_ = a.safeCast(c_long);
     var  ret : c_int;
 
@@ -1920,7 +1914,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc kronecker(a: Bigint, b: uint) : int {
+  proc kronecker(const ref a: bigint, b: uint) : int {
     const b_ = b.safeCast(c_ulong);
     var  ret : c_int;
 
@@ -1936,7 +1930,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc kronecker(a: uint, b: Bigint) : int {
+  proc kronecker(a: uint, const ref b: bigint) : int {
     const a_ = b.safeCast(c_ulong);
     var  ret : c_int;
 
@@ -1954,7 +1948,7 @@ module BigInteger {
 
 
   // divexact
-  proc Bigint.divexact(n: Bigint, d: Bigint) {
+  proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
     if _local {
       mpz_divexact(this.mpz, n.mpz, d.mpz);
 
@@ -1975,7 +1969,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.divexact(n: Bigint, d: uint) {
+  proc bigint.divexact(const ref n: bigint, d: uint) {
     var d_ = d.safeCast(c_ulong);
 
     if _local {
@@ -1999,7 +1993,7 @@ module BigInteger {
 
 
   // divisible_p
-  proc Bigint.divisible_p(d: Bigint) : int {
+  proc bigint.divisible_p(const ref d: bigint) : int {
     var ret: c_int;
 
     if _local {
@@ -2019,7 +2013,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.divisible_p(d: uint) : int {
+  proc bigint.divisible_p(d: uint) : int {
     const d_ = d.safeCast(c_ulong);
     var   ret: c_int;
 
@@ -2038,7 +2032,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.divisible_2exp_p(b: uint) : int {
+  proc bigint.divisible_2exp_p(b: uint) : int {
     const b_ = b.safeCast(c_ulong);
     var   ret: c_int;
 
@@ -2059,7 +2053,7 @@ module BigInteger {
 
 
   // congruent_p
-  proc Bigint.congruent_p(d: Bigint) : int {
+  proc bigint.congruent_p(const ref d: bigint) : int {
     var ret: c_int;
 
     if _local {
@@ -2079,7 +2073,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.congruent_p(c: Bigint, d: Bigint) : int {
+  proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
     var ret: c_int;
 
     if _local {
@@ -2101,7 +2095,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.congruent_p(c: uint, d: uint) : int {
+  proc bigint.congruent_p(c: uint, d: uint) : int {
     const c_ = c.safeCast(c_ulong);
     const d_ = d.safeCast(c_ulong);
     var   ret: c_int;
@@ -2121,7 +2115,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.congruent_2exp_p(c: Bigint, b: uint) : int {
+  proc bigint.congruent_2exp_p(const ref c: bigint, b: uint) : int {
     const b_ = b.safeCast(c_ulong);
     var   ret: c_int;
 
@@ -2145,9 +2139,9 @@ module BigInteger {
 
 
   // Exponentiation Functions
-  proc Bigint.powm(base: Bigint,
-                   exp:  Bigint,
-                   mod:  Bigint) {
+  proc bigint.powm(const ref base: bigint,
+                   const ref exp:  bigint,
+                   const ref mod:  bigint) {
     if _local {
       mpz_powm(this.mpz, base.mpz, exp.mpz, mod.mpz);
 
@@ -2170,9 +2164,9 @@ module BigInteger {
     }
   }
 
-  proc Bigint.powm(base: Bigint,
+  proc bigint.powm(const ref base: bigint,
                    exp: uint,
-                   mod: Bigint) {
+                   const ref mod: bigint) {
     const exp_ = exp.safeCast(c_ulong);
 
     if _local {
@@ -2195,7 +2189,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.pow(base: Bigint, exp: uint) {
+  proc bigint.pow(const ref base: bigint, exp: uint) {
     const exp_ = exp.safeCast(c_ulong);
 
     if _local {
@@ -2216,7 +2210,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.pow(base: uint, exp: uint) {
+  proc bigint.pow(base: uint, exp: uint) {
     const base_ = base.safeCast(c_ulong);
     const exp_  = exp.safeCast(c_ulong);
 
@@ -2236,7 +2230,7 @@ module BigInteger {
   }
 
   // Root Extraction Functions
-  proc Bigint.root(a: Bigint, n: uint) : int {
+  proc bigint.root(const ref a: bigint, n: uint) : int {
     const n_  = n.safeCast(c_ulong);
     var   ret: c_int;
 
@@ -2260,7 +2254,7 @@ module BigInteger {
   }
 
   // this gets root, rem gets remainder.
-  proc Bigint.rootrem(ref rem: Bigint, u: Bigint, n: uint) {
+  proc bigint.rootrem(ref rem: bigint, const ref u: bigint, n: uint) {
     const n_  = n.safeCast(c_ulong);
 
     if _local {
@@ -2285,7 +2279,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.sqrt(a: Bigint) {
+  proc bigint.sqrt(const ref a: bigint) {
     if _local {
       mpz_sqrt(this.mpz, a.mpz);
 
@@ -2305,7 +2299,7 @@ module BigInteger {
   }
 
   // this gets root, rem gets remainder of a-root*root.
-  proc Bigint.sqrtrem(ref rem: Bigint, a: Bigint) {
+  proc bigint.sqrtrem(ref rem: bigint, const ref a: bigint) {
     if _local {
       mpz_sqrtrem(this.mpz, rem.mpz, a.mpz);
 
@@ -2328,7 +2322,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.perfect_power_p() : int {
+  proc bigint.perfect_power_p() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2343,7 +2337,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.perfect_square_p() : int {
+  proc bigint.perfect_square_p() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2365,7 +2359,7 @@ module BigInteger {
 
   // returns 2 if definitely prime, 0 if not prime, 1 if likely prime
   // reasonable number of reps is 15-50
-  proc Bigint.probab_prime_p(reps: int) : int {
+  proc bigint.probab_prime_p(reps: int) : int {
     var reps_ = reps.safeCast(c_int);
     var ret: c_int;
 
@@ -2381,7 +2375,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.nextprime(a: Bigint) {
+  proc bigint.nextprime(const ref a: bigint) {
     if _local {
       mpz_nextprime(this.mpz, a.mpz);
 
@@ -2403,7 +2397,7 @@ module BigInteger {
 
 
   // gcd
-  proc Bigint.gcd(a: Bigint, b: Bigint) {
+  proc bigint.gcd(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_gcd(this.mpz, a.mpz, b.mpz);
 
@@ -2424,7 +2418,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.gcd(a: Bigint, b: uint) {
+  proc bigint.gcd(const ref a: bigint, b: uint) {
     var b_ = b.safeCast(c_ulong);
 
     if _local {
@@ -2447,10 +2441,10 @@ module BigInteger {
 
   // sets this to gcd(a,b)
   // set s and t to to coefficients satisfying a*s + b*t == g
-  proc Bigint.gcdext(ref s: Bigint,
-                     ref t: Bigint,
-                     a: Bigint,
-                     b: Bigint) {
+  proc bigint.gcdext(ref s: bigint,
+                     ref t: bigint,
+                     const ref a: bigint,
+                     const ref b: bigint) {
 
     if _local {
       mpz_gcdext(this.mpz, s.mpz, t.mpz, a.mpz, b.mpz);
@@ -2482,7 +2476,7 @@ module BigInteger {
 
 
   // lcm
-  proc Bigint.lcm(a: Bigint, b: Bigint) {
+  proc bigint.lcm(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_lcm(this.mpz, a.mpz, b.mpz);
 
@@ -2503,7 +2497,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.lcm(a: Bigint, b: uint) {
+  proc bigint.lcm(const ref a: bigint, b: uint) {
     var b_ = b.safeCast(c_ulong);
 
     if _local {
@@ -2527,7 +2521,7 @@ module BigInteger {
 
 
   // invert
-  proc Bigint.invert(a: Bigint, b: Bigint) : int {
+  proc bigint.invert(const ref a: bigint, const ref b: bigint) : int {
     var ret: c_int;
 
     if _local {
@@ -2554,7 +2548,7 @@ module BigInteger {
 
 
   // remove
-  proc Bigint.remove(a: Bigint, f: Bigint) : uint {
+  proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
     var ret: c_ulong;
 
     if _local {
@@ -2581,7 +2575,7 @@ module BigInteger {
 
 
   // Factorial
-  proc Bigint.fac(a: uint) {
+  proc bigint.fac(a: uint) {
     const a_ = a.safeCast(c_ulong);
 
     if _local || this.localeId == chpl_nodeID {
@@ -2599,7 +2593,7 @@ module BigInteger {
 
 
   // Binomial
-  proc Bigint.bin(n: Bigint, k: uint) {
+  proc bigint.bin(const ref n: bigint, k: uint) {
     const k_ = k.safeCast(c_ulong);
 
     if _local {
@@ -2620,7 +2614,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.bin(n: uint, k: uint) {
+  proc bigint.bin(n: uint, k: uint) {
     const n_ = n.safeCast(c_ulong);
     const k_ = k.safeCast(c_ulong);
 
@@ -2639,7 +2633,7 @@ module BigInteger {
 
 
   // Fibonacci
-  proc Bigint.fib(n: uint) {
+  proc bigint.fib(n: uint) {
     const n_ = n.safeCast(c_ulong);
 
     if _local || this.localeId == chpl_nodeID {
@@ -2654,7 +2648,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.fib2(ref fnsub1: Bigint, n: uint) {
+  proc bigint.fib2(ref fnsub1: bigint, n: uint) {
     const n_ = n.safeCast(c_ulong);
 
     if _local {
@@ -2668,7 +2662,7 @@ module BigInteger {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        var fnsub1_ : Bigint;
+        var fnsub1_ : bigint;
 
         mpz_fib2_ui(this.mpz, fnsub1_.mpz, n_);
 
@@ -2680,7 +2674,7 @@ module BigInteger {
 
 
   // Lucas Number
-  proc Bigint.lucnum(n: uint) {
+  proc bigint.lucnum(n: uint) {
     const n_ = n.safeCast(c_ulong);
 
     if _local || this.localeId == chpl_nodeID {
@@ -2695,7 +2689,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.lucnum2(ref fnsub1: Bigint, n: uint) {
+  proc bigint.lucnum2(ref fnsub1: bigint, n: uint) {
     const n_ = n.safeCast(c_ulong);
 
     if _local {
@@ -2709,7 +2703,7 @@ module BigInteger {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        var fnsub1_ : Bigint;
+        var fnsub1_ : bigint;
 
         mpz_lucnum2_ui(this.mpz, fnsub1_.mpz, n_);
 
@@ -2721,7 +2715,7 @@ module BigInteger {
 
 
   // Bit operations
-  proc Bigint.popcount() : uint {
+  proc bigint.popcount() : uint {
     var ret: c_ulong;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2736,7 +2730,7 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  proc Bigint.hamdist(b: Bigint) : uint {
+  proc bigint.hamdist(const ref b: bigint) : uint {
     var ret: c_ulong;
 
     if _local {
@@ -2756,7 +2750,7 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  proc Bigint.scan0(starting_bit: uint) : uint {
+  proc bigint.scan0(starting_bit: uint) : uint {
     const sb_ = starting_bit.safeCast(c_ulong);
     var   ret: c_ulong;
 
@@ -2772,7 +2766,7 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  proc Bigint.scan1(starting_bit: uint) : uint {
+  proc bigint.scan1(starting_bit: uint) : uint {
     const sb_ = starting_bit.safeCast(c_ulong);
     var   ret: c_ulong;
 
@@ -2791,7 +2785,7 @@ module BigInteger {
 
 
   // Set/Clr bit
-  proc Bigint.setbit(bit_index: uint) {
+  proc bigint.setbit(bit_index: uint) {
     const bi_ = bit_index.safeCast(c_ulong);
 
     if _local || this.localeId == chpl_nodeID {
@@ -2806,7 +2800,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.clrbit(bit_index: uint) {
+  proc bigint.clrbit(bit_index: uint) {
     const bi_ = bit_index.safeCast(c_ulong);
 
     if _local || this.localeId == chpl_nodeID {
@@ -2821,7 +2815,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.combit(bit_index: uint) {
+  proc bigint.combit(bit_index: uint) {
     const bi_ = bit_index.safeCast(c_ulong);
 
     if _local || this.localeId == chpl_nodeID {
@@ -2836,7 +2830,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.tstbit(bit_index: uint) : int {
+  proc bigint.tstbit(bit_index: uint) : int {
     const bi_ = bit_index.safeCast(c_ulong);
     var  ret: c_int;
 
@@ -2855,7 +2849,7 @@ module BigInteger {
 
 
   // Miscellaneous Functions
-  proc Bigint.fits_ulong_p() : int {
+  proc bigint.fits_ulong_p() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2870,7 +2864,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.fits_slong_p() : int {
+  proc bigint.fits_slong_p() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2885,7 +2879,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.fits_uint_p() : int {
+  proc bigint.fits_uint_p() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2900,7 +2894,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.fits_sint_p() : int {
+  proc bigint.fits_sint_p() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2915,7 +2909,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.fits_ushort_p() : int {
+  proc bigint.fits_ushort_p() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2930,7 +2924,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.fits_sshort_p() : int {
+  proc bigint.fits_sshort_p() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2945,7 +2939,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.even_p() : int {
+  proc bigint.even_p() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2960,7 +2954,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.odd_p() : int {
+  proc bigint.odd_p() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2981,7 +2975,7 @@ module BigInteger {
   // Unary arithmetic functions
   //
 
-  proc Bigint.neg(a: Bigint) {
+  proc bigint.neg(const ref a: bigint) {
     if _local {
       mpz_neg(this.mpz, a.mpz);
 
@@ -3000,7 +2994,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.abs(a: Bigint) {
+  proc bigint.abs(const ref a: bigint) {
     if _local {
       mpz_abs(this.mpz, a.mpz);
 
@@ -3024,7 +3018,7 @@ module BigInteger {
   //
 
   // Addition
-  proc Bigint.add(a: Bigint, b: Bigint) {
+  proc bigint.add(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_add(this.mpz, a.mpz, b.mpz);
 
@@ -3045,7 +3039,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.add(a: Bigint, b: uint) {
+  proc bigint.add(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
@@ -3069,7 +3063,7 @@ module BigInteger {
 
 
   // Subtraction
-  proc Bigint.sub(a: Bigint, b: Bigint) {
+  proc bigint.sub(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_sub(this.mpz, a.mpz, b.mpz);
 
@@ -3090,7 +3084,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.sub(a: Bigint, b: uint) {
+  proc bigint.sub(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
@@ -3111,7 +3105,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.sub(a: uint, b: Bigint) {
+  proc bigint.sub(a: uint, const ref b: bigint) {
     const a_ = a.safeCast(c_ulong);
 
     if _local {
@@ -3135,7 +3129,7 @@ module BigInteger {
 
 
   // Multiplication
-  proc Bigint.mul(a: Bigint, b: Bigint) {
+  proc bigint.mul(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_mul(this.mpz, a.mpz, b.mpz);
 
@@ -3156,7 +3150,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.mul(a: Bigint, b: int) {
+  proc bigint.mul(const ref a: bigint, b: int) {
     const b_ = b.safeCast(c_long);
 
     if _local {
@@ -3177,7 +3171,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.mul(a: Bigint, b: uint) {
+  proc bigint.mul(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
@@ -3198,7 +3192,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.mul_2exp(a: Bigint, b: uint) {
+  proc bigint.mul_2exp(const ref a: bigint, b: uint) {
     var b_ = b.safeCast(c_ulong);
 
     if _local {
@@ -3220,9 +3214,9 @@ module BigInteger {
   }
 
   // Division
-  proc Bigint.div_q(param rounding: Round,
-                    n: Bigint,
-                    d: Bigint) {
+  proc bigint.div_q(param rounding: Round,
+                    const ref n: bigint,
+                    const ref d: bigint) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
@@ -3255,8 +3249,8 @@ module BigInteger {
     }
   }
 
-  proc Bigint.div_q(param rounding: Round,
-                    n: Bigint,
+  proc bigint.div_q(param rounding: Round,
+                    const ref n: bigint,
                     d: uint) : uint {
     const d_ = d.safeCast(c_ulong);
     var   ret: c_ulong;
@@ -3293,9 +3287,9 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  proc Bigint.div_r(param rounding: Round,
-                    n: Bigint,
-                    d: Bigint) {
+  proc bigint.div_r(param rounding: Round,
+                    const ref n: bigint,
+                    const ref d: bigint) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
@@ -3328,8 +3322,8 @@ module BigInteger {
     }
   }
 
-  proc Bigint.div_r(param rounding: Round,
-                    n: Bigint,
+  proc bigint.div_r(param rounding: Round,
+                    const ref n: bigint,
                     d: uint) : uint {
     const d_ = d.safeCast(c_ulong);
     var   ret: c_ulong;
@@ -3369,10 +3363,10 @@ module BigInteger {
 
 
   // this gets quotient, r gets remainder
-  proc Bigint.div_qr(param rounding: Round,
-                     ref r: Bigint,
-                     n: Bigint,
-                     d: Bigint) {
+  proc bigint.div_qr(param rounding: Round,
+                     ref r: bigint,
+                     const ref n: bigint,
+                     const ref d: bigint) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
@@ -3410,9 +3404,9 @@ module BigInteger {
   }
 
   // this gets quotient, r gets remainder
-  proc Bigint.div_qr(param rounding: Round,
-                     ref r: Bigint,
-                     n: Bigint,
+  proc bigint.div_qr(param rounding: Round,
+                     ref r: bigint,
+                     const ref n: bigint,
                      d: uint) : uint {
     const d_ = d.safeCast(c_ulong);
     var   ret: c_ulong;
@@ -3458,8 +3452,8 @@ module BigInteger {
     return ret;
   }
 
-  proc Bigint.div_q_2exp(param rounding: Round,
-                         n: Bigint,
+  proc bigint.div_q_2exp(param rounding: Round,
+                         const ref n: bigint,
                          b: uint) {
     const b_ = b.safeCast(c_ulong);
 
@@ -3493,8 +3487,8 @@ module BigInteger {
     }
   }
 
-  proc Bigint.div_r_2exp(param rounding: Round,
-                         n: Bigint,
+  proc bigint.div_r_2exp(param rounding: Round,
+                         const ref n: bigint,
                          b: uint) {
     const b_ = b.safeCast(c_ulong);
 
@@ -3530,8 +3524,8 @@ module BigInteger {
 
 
 
-  proc Bigint.addmul(a: Bigint,
-                     b: Bigint) {
+  proc bigint.addmul(const ref a: bigint,
+                     const ref b: bigint) {
     if _local {
       mpz_addmul(this.mpz, a.mpz, b.mpz);
 
@@ -3552,7 +3546,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.addmul(a: Bigint,
+  proc bigint.addmul(const ref a: bigint,
                      b: uint) {
     const b_ = b.safeCast(c_ulong);
 
@@ -3576,8 +3570,8 @@ module BigInteger {
 
 
 
-  proc Bigint.submul(a: Bigint,
-                     b: Bigint) {
+  proc bigint.submul(const ref a: bigint,
+                     const ref b: bigint) {
     if _local {
       mpz_submul(this.mpz, a.mpz, b.mpz);
 
@@ -3598,7 +3592,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.submul(a: Bigint,
+  proc bigint.submul(const ref a: bigint,
                      b: uint) {
     const b_ = b.safeCast(c_ulong);
 
@@ -3622,8 +3616,8 @@ module BigInteger {
 
 
 
-  proc Bigint.mod(a: Bigint,
-                  b: Bigint) {
+  proc bigint.mod(const ref a: bigint,
+                  const ref b: bigint) {
     if _local {
       mpz_mod(this.mpz, a.mpz, b.mpz);
 
@@ -3644,7 +3638,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.mod(a: Bigint,
+  proc bigint.mod(const ref a: bigint,
                   b: uint) : uint {
     const b_ = b.safeCast(c_ulong);
     var   ret: c_ulong;
@@ -3672,7 +3666,7 @@ module BigInteger {
 
 
   // Comparison Functions
-  proc Bigint.cmp(b: Bigint) : int {
+  proc bigint.cmp(const ref b: bigint) : int {
     var ret: c_int;
 
     if _local {
@@ -3695,7 +3689,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.cmp(b: int) : int {
+  proc bigint.cmp(b: int) : int {
     const b_ = b.safeCast(c_long);
     var   ret: c_int;
 
@@ -3716,7 +3710,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.cmp(b: uint) : int {
+  proc bigint.cmp(b: uint) : int {
     const b_ = b.safeCast(c_ulong);
     var   ret: c_int;
 
@@ -3737,7 +3731,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.cmp(b: real) : int {
+  proc bigint.cmp(b: real) : int {
     const b_ = b : c_double;
     var   ret: c_int;
 
@@ -3760,7 +3754,7 @@ module BigInteger {
 
 
 
-  proc Bigint.cmpabs(b: Bigint) : int {
+  proc bigint.cmpabs(const ref b: bigint) : int {
     var ret: c_int;
 
     if _local {
@@ -3783,7 +3777,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.cmpabs(b: uint) : int {
+  proc bigint.cmpabs(b: uint) : int {
     const b_ = b.safeCast(c_ulong);
     var   ret: c_int;
 
@@ -3804,7 +3798,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc Bigint.cmpabs(b: real) : int {
+  proc bigint.cmpabs(b: real) : int {
     const b_ = b : c_double;
     var   ret: c_int;
 
@@ -3827,7 +3821,7 @@ module BigInteger {
 
 
 
-  proc Bigint.sgn() : int {
+  proc bigint.sgn() : int {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -3853,7 +3847,7 @@ module BigInteger {
 
 
   // Logical and Bit Manipulation Functions
-  proc Bigint.and(a: Bigint, b: Bigint) {
+  proc bigint.and(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_and(this.mpz, a.mpz, b.mpz);
 
@@ -3874,7 +3868,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.ior(a: Bigint, b: Bigint) {
+  proc bigint.ior(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_ior(this.mpz, a.mpz, b.mpz);
 
@@ -3895,7 +3889,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.xor(a: Bigint, b: Bigint) {
+  proc bigint.xor(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_xor(this.mpz, a.mpz, b.mpz);
 
@@ -3916,7 +3910,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.com(a: Bigint) {
+  proc bigint.com(const ref a: bigint) {
     if _local {
       mpz_com(this.mpz, a.mpz);
 
@@ -3938,7 +3932,7 @@ module BigInteger {
 
 
   // Assignment functions
-  proc Bigint.set(a: Bigint) {
+  proc bigint.set(const ref a: bigint) {
     if _local {
       mpz_set(this.mpz, a.mpz);
 
@@ -3957,7 +3951,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.set(num : int) {
+  proc bigint.set(num : int) {
     const num_ = num.safeCast(c_long);
 
     if _local {
@@ -3975,7 +3969,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.set(num : uint) {
+  proc bigint.set(num : uint) {
     const num_ = num.safeCast(c_ulong);
 
     if _local {
@@ -3993,7 +3987,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.set(num: real) {
+  proc bigint.set(num: real) {
     const num_ = num : c_double;
 
     if _local {
@@ -4011,7 +4005,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.set(str: string, base: int = 0) {
+  proc bigint.set(str: string, base: int = 0) {
     const base_ = base.safeCast(c_int);
 
     if _local {
@@ -4029,7 +4023,7 @@ module BigInteger {
     }
   }
 
-  proc Bigint.swap(ref a: Bigint) {
+  proc bigint.swap(ref a: bigint) {
     if _local {
       mpz_swap(this.mpz, a.mpz);
 
@@ -4041,7 +4035,7 @@ module BigInteger {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        var tmp = new Bigint(a);
+        var tmp = new bigint(a);
 
         a.set(this);
 

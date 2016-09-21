@@ -1,5 +1,5 @@
 use BigInteger;
 
-var a = new Bigint(1);
+var a = new bigint(1);
 
 writeln(a);

@@ -1,9 +1,8 @@
 use BigInteger;
 
 // tests the assignment functions
-
-var a = new Bigint(0);    // a = 0
-var b = new Bigint(2);      // b = 2
+var a = new bigint(0);    // a = 0
+var b = new bigint(2);    // b = 2
 
 writeln(a, " ", b);
 a.set(b);
