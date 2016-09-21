@@ -3199,9 +3199,15 @@ printResolutionErrorUnresolved(
       USR_FATAL_CONT(call, "delete not allowed on records");
   } else if (!strcmp("these", info->name)) {
     if (info->actuals.n == 2 &&
-        info->actuals.v[0]->type == dtMethodToken)
-    USR_FATAL_CONT(call, "cannot iterate over values of type %s",
-                   toString(info->actuals.v[1]->type));
+        info->actuals.v[0]->type == dtMethodToken) {
+      if (info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+        USR_FATAL_CONT(call, "cannot iterate over the type %s",
+                       toString(info->actuals.v[1]->type));
+      } else {
+        USR_FATAL_CONT(call, "cannot iterate over values of type %s",
+                       toString(info->actuals.v[1]->type));
+      }
+    }
   } else if (!strcmp("_type_construct__tuple", info->name)) {
     if (info->call->argList.length == 0)
       USR_FATAL_CONT(call, "tuple size must be specified");
@@ -4699,6 +4705,9 @@ static void resolveSetMember(CallExpr* call) {
 
 
 static void resolveMove(CallExpr* call) {
+  if (call->id == breakOnResolveID )
+      gdbShouldBreakHere();
+
   Expr* rhs = call->get(2);
   Symbol* lhs = NULL;
   if (SymExpr* se = toSymExpr(call->get(1)))
@@ -4754,6 +4763,21 @@ static void resolveMove(CallExpr* call) {
       }
       USR_FATAL(userCall(call),
                 "illegal use of function that does not return a value");
+    }
+  }
+
+  // This is a workaround for problems where the _iterator
+  // in buildForLoopExpr would be an _array instead of a ref(_array)
+  // in 4-init-array-forexpr.chpl. This could be improved with
+  // QualifiedType.
+  if (lhs->hasFlag(FLAG_MAYBE_REF)) {
+    if (SymExpr* se = toSymExpr(rhs)) {
+      if (ArgSymbol* arg = toArgSymbol(se->var)) {
+        if (concreteIntent(arg->intent, arg->type) & INTENT_FLAG_REF) {
+          makeRefType(rhsType);
+          rhsType = rhsType->refType;
+        }
+      }
     }
   }
 

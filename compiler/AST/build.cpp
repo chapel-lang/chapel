@@ -877,6 +877,7 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
+  iterator->addFlag(FLAG_MAYBE_REF);
   block->insertAtTail(new DefExpr(iterator));
   block->insertAtTail(new CallExpr("_checkIterator", iteratorExprArg));
   block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorExprArg));
@@ -1019,6 +1020,7 @@ static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
+  iterator->addFlag(FLAG_MAYBE_REF);
   block->insertAtTail(new DefExpr(iterator));
   block->insertAtTail(new CallExpr("_checkIterator", iteratorExprArg));
   block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorExprArg));
