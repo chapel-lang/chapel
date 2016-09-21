@@ -114,6 +114,7 @@ DISTS_TO_DOCUMENT = \
 	dists/DimensionalDist2D.chpl \
 	dists/PrivateDist.chpl \
 	dists/ReplicatedDist.chpl \
+	dists/StencilDist.chpl \
 	dists/dims/BlockCycDim.chpl \
 	dists/dims/BlockDim.chpl \
 	dists/dims/ReplicatedDim.chpl \
