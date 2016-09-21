@@ -48,8 +48,8 @@ The following are a list of planned improvements to Chapel and/or our
 implementations that would benefit the codes:
 
 
-binarytrees.chpl
-----------------
+binarytrees
+-----------
 o The Chapel compiler should really be able to infer the return types
   of these recursive functions...
 
@@ -75,8 +75,8 @@ o It seems like we should be able to write a strength-reduction
   not for the base expression?
 
 
-chameneosredux.chpl
--------------------
+chameneosredux
+--------------
 o once we map to C11 atomics/utilize memory order arguments, can
   performance be improved via different memory orders?
 
@@ -105,8 +105,8 @@ o Chapel has discussed supporting some standard record-wrapped class
   this in terms of avoiding the cleanup steps.
 
 
-fannkuchredux.chpl
-------------------
+fannkuchredux
+-------------
 o optimize slice assignment such that pp[0..i] = p[0..i] can be
   written without penalty
 
@@ -125,8 +125,8 @@ o should globals be allowed to be declared below main()?  If so, move
   fact[] to the bottom of the file?
 
 
-fasta.chpl / fastaredux.chpl
-----------------------------
+fasta / fastaredux
+------------------
 o We should introduce local "static" variables (using some other
   keyword) and use it to define some of the variables that are
   currently at global or outer scopes unnecessarily
@@ -135,16 +135,16 @@ o It seems like a param uint(8) whose value is known to fit in an
   int(8) should be assignable without a cast, but currently it isn't.
 
 
-k-nucleotide
-------------
-o In addition, we currently combine per-task associative domains into
-  the shared one an element at a time, but using the new bulk-add
-  interface for irregular domains, we should be able to do this
-  faster (at present time, however, bulk-add is only supported by
-  sparse, not associative :(
+knucleotide
+-----------
+o We currently combine per-task associative domains into the shared
+  one an element at a time, but using the new bulk-add interface for
+  irregular domains, we should be able to do this faster (at present
+  time, however, bulk-add is only supported by sparse, not associative
+  :( ).
 
-o I also find myself wondering whether the coforall + chunking could
-  be converted into a forall with a '+ reduce' intent on associative
+o I find myself wondering whether the coforall + chunking could be
+  converted into a forall with a '+ reduce' intent on associative
   domains.  Does that make sense?  What would it take for it to work?
   
 o Consider the difference in performance between associative and chaining;
@@ -166,11 +166,8 @@ o Could we use a 'sorted' iterator to print freqs rather than storing into
 o Shouldn't we be able to do a param for loop over a lo..#size param range
 
 
-mandelbrot.chpl
----------------
-o extend the dynamic() iterators for ranges to support domains and
-  collapse the two nested loops into a single loop over a 2D domain.
-
+mandelbrot
+----------
 o add an 'unroll' capability to loops and use it to unroll the 'for
   off ...' loop which is about twice as fast with manual unrolling.
   (we weren't willing to unroll it manually in this version)
@@ -179,14 +176,9 @@ o have the compiler automatically optimize writes to 'stdout' in
   serial code segments to avoid the need to manually get a lock-free
   channel to it.
 
-o explore expressing the complex values using Chapel's 'complex' type,
-  even if it means plucking C.re and C.im out and operating on them
-  directly rather than using higher-level complex operations to avoid
-  overheads associated with using cleaner complex operations.
 
-
-meteor.chpl
------------
+meteor /meteor-fast
+-------------------
 o would using 1-based arrays rather than 0-based clean anything up?
 
 o It would be nice to be able to write:
@@ -199,13 +191,11 @@ o It would be nice to be able to write:
   reductions or variable declarations to be prefixed by 'serial'.
 
 
-nbody.chpl
-----------
+nbody
+-----
 o explore possibility of enabling vectorization (perhaps by applying
   'vectorizeOnly() to tuple operations?)
   - explore padding to better align velocity field
-
-o have compiler eliminate inner multiplies
 
 o support sum-of-squares library function for all tuples?  (collections?)
   Improve and lean on Norm module more?  Optimize reductions so that
@@ -221,8 +211,8 @@ o as initializers are enabled, change 'mass' from 'var' to 'const'
   field
 
 
-pidigits.chpl
--------------
+pidigits
+--------
 o promote mpz_t types to a record-based implementation with:
   - a better name
   - arithmetic operators defined for it
@@ -231,8 +221,8 @@ o promote mpz_t types to a record-based implementation with:
     (using safecasts at any downward-facing interfaces)
 
 
-revcomp.chpl
-------------
+revcomp
+-------
 o The pattern ascii(mystring[i]) seems like it ought to be very
   optimizable compared to what we do now, and to support param
   versions in the event that mystring and 'i' are both params.  As a
@@ -249,8 +239,8 @@ o Each time I use readline() I'm sad that I have to declare a
 
 
 
-spectralnorm.chpl
------------------
+spectralnorm
+------------
 o spectral norm really wants partial reductions... :(
 
 o What could we do to not pass 'tmp' in as an input argument?  Should
@@ -274,7 +264,6 @@ o are the domain queries costing us more than we'd like?
 o should Chapel's dynamic() iterators default to a chunksize of 1?
 
 
-threadring.chpl
----------------
-o map Chapel's sync vars more directly down to Qthreads' sync vars
-  to avoid space and time overheads
+threadring
+----------
+o no current TODOs
