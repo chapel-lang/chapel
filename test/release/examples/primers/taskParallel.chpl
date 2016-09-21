@@ -4,12 +4,16 @@
 // This primer illustrates Chapel's parallel tasking features,
 // namely the ``begin``, ``cobegin``, and ``coforall`` statements.
 
-config const n = 10;
+config const n = 10; // Used for the coforall loop
 
-writeln("1: ### The begin statement ###");
-
+// .. _primers-taskparallel-begin:
+//
+// Begin Statements
+// ----------------
 // The ``begin`` statement spawns a thread of execution that is independent
 // of the current (main) thread of execution.
+writeln("1: ### The begin statement ###");
+
 begin writeln("1: output from spawned task");
 
 // The main thread of execution continues on to the next statement.
@@ -18,6 +22,10 @@ writeln("1: output from main task");
 
 
 
+// .. _primers-taskparallel-cobegin:
+//
+// Cobegin Statements
+// ------------------
 // For more structured behavior, the ``cobegin`` statement can be used to
 // spawn a block of tasks, one for each statement.  Control continues
 // after the ``cobegin`` block, but only after all the tasks within the
@@ -52,6 +60,10 @@ writeln("3: output from main task");
 
 
 
+// .. _primers-taskparallel-coforall:
+//
+// Coforall Statements
+// -------------------
 // Another more structured form of task parallelism is the ``coforall``
 // statement.  The ``coforall`` statement is a loop variant of the ``cobegin``
 // statement where each iteration of the loop is a separate task.
