@@ -169,8 +169,8 @@ configuration output.
 See Also
 ++++++++
 
-For more information on these and other available GASNet options other
-options, including configuring to launch through MPI, please refer to
+For more information on these and other available GASNet options,
+including configuring to launch through MPI, please refer to
 GASNet's official `InfiniBand conduit documentation
 <http://gasnet.lbl.gov/dist/ibv-conduit/README>`_, which can also be found
 in ``$CHPL_HOME/third-party/gasnet/gasnet-src/ibv-conduit/README``.
