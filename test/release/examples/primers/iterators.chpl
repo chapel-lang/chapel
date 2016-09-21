@@ -7,8 +7,8 @@
      * and a recursive iterator over a tree.
 
    It also contains examples of the two kinds of parallel iteration:
-     * data-parallel (forall), and
-     * task-parallel (coforall).
+     * data-parallel (``forall``), and
+     * task-parallel (``coforall``).
 */
 
 //
@@ -46,7 +46,7 @@ writeln("...");
 writeln();
 
 //
-// This example uses zipper iteration to iterate over the unbounded range 1..
+// This example uses zipper iteration to iterate over the unbounded range ``1..``
 // and the fibonacci iterator with ``n`` set to ten. Ranges, as well as arrays
 // and domains, can be used as iterators in loops.
 //
@@ -54,7 +54,7 @@ writeln();
 // and the two yielded values are combined into a tuple.
 //
 // A zippered loop can have a single index variable, which will be a tuple,
-// or a tuple of variables like (i,j), each of which is initialized
+// or a tuple of variables like ``(i, j)``, each of which is initialized
 // with the value yielded by the corresponding iterator.
 //
 writeln("Fibonacci Numbers");
@@ -91,8 +91,8 @@ iter multiloop(n: int) {
 // In this case, promotion means that a procedure which normally takes a
 // single argument will be repeated for each value that the iterator returns.
 //
-// In this case, writeln() is called with each value returned by the
-// multiloop() iterator.
+// In this case, ``writeln()`` is called with each value returned by the
+// ``multiloop()`` iterator.
 //
 writeln("Multiloop Tuples");
 writeln(multiloop(3));
@@ -101,7 +101,7 @@ writeln();
 //
 // postorder
 // ---------
-// Iterate over Tree in postorder using recursion.
+// Iterate over ``Tree`` in postorder using recursion.
 //
 // Each yield statement returns a node, or equivalently the subtree
 // rooted at that node.
@@ -131,17 +131,16 @@ iter postorder(tree: Tree): Tree {
   }
 }
 
-//
-// Initialize this Tree instance to:
-//
-// .. code-block:: text
-//
-//         a
-//        / \
-//       b   c
-//          / \
-//         d   e
-//
+/* Initialize a ``Tree`` instance to:
+
+   .. code-block:: text
+
+        a
+       / \
+      b   c
+         / \
+        d   e
+ */
 var tree = new Tree( "a",
   new Tree("b"),
   new Tree("c",

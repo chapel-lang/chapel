@@ -17,18 +17,19 @@
 
 //
 // Leader-follower
-// ===============
+// ---------------
 // Any zippered forall loop in Chapel will be implemented using
 // leader-follower iterators.  Generally speaking, a forall loop
 // of the following form:
-//
-// .. code-block:: chapel
-//
-//   forall (a, b, c) in zip(A, B, C) do
-//     // ...loop body...
-//
+
+/* .. code-block:: chapel
+
+      forall (a, b, c) in zip(A, B, C) do
+         // ...loop body...
+ */
+
 // is semantically defined such that the first thing being iterated
-// over -- in this case, A -- is designated the 'leader.'  All things
+// over -- in this case, ``A`` -- is designated the 'leader.'  All things
 // being iterated over are 'followers' (so for this loop, ``A``,
 // ``B``, and ``C`` would be).
 //
@@ -36,13 +37,14 @@
 // ---------
 // Given such a loop, the compiler will roughly translate it into
 // the following loop structure:
-//
-// .. code-block:: chapel
-//
-//   for work in A.lead() do   // implemented by inlining the leader
-//     for (a, b, c) in zip(A.follow(work), B.follow(work), C.follow(work)) do
-//       // ...loop body...
-//
+
+/* .. code-block:: chapel
+
+      for work in A.lead() do   // implemented by inlining the leader
+        for (a, b, c) in zip(A.follow(work), B.follow(work), C.follow(work)) do
+          // ...loop body...
+ */
+
 // where ``.lead()`` and ``.follow()`` represent the leader-follower iterators
 // using a simplified naming scheme.
 //
@@ -50,8 +52,8 @@
 // in terms of zippered iteration, such cases are also implemented using
 // leader-follower iterators.  For example, ``A = B + C;`` will be converted to
 // an equivalent zippered parallel loop and then to the leader-follower idiom
-// shown above. ``foo(A, B, C)`` goes through a similar transformation, where foo()
-// is defined to take scalar arguments and is promoted in this call.
+// shown above. ``foo(A, B, C)`` goes through a similar transformation, where
+// ``foo()`` is defined to take scalar arguments and is promoted in this call.
 //
 // Roles
 // -----
@@ -91,7 +93,7 @@ if (numTasks < 1) then
   halt("numTasks must be a positive integer");
 
 //
-// If compiled with verbose set to true, the leader and follower will
+// If compiled with ``verbose`` set to ``true``, the leader and follower will
 // print out some messages indicating what they're doing under the
 // covers.
 //
@@ -122,7 +124,7 @@ iter count(n: int, low: int=1) {
 //
 // Here are some simple loops using this iterator to demonstrate
 // it.  First we iterate over all indices in our problem size to
-// initialize A:
+// initialize ``A``:
 //
 for i in count(probSize) do
   A[i] = i:real;
@@ -133,7 +135,7 @@ writeln();
 
 //
 // Then we override the default value of low in order to negate
-// the "middle" elements of A:
+// the "middle" elements of ``A``:
 //
 for i in count(n=probSize/2, low=probSize/4) do
   A[i] = -A[i];
@@ -219,7 +221,7 @@ iter count(param tag: iterKind, n: int, low: int=1)
 // As mentioned at the outset, this leader is fairly static and
 // simple.  More generally, a leader can introduce tasks more
 // dynamically, partition work between the tasks more dynamically,
-// etc.  See $CHPL_HOME/modules/standard/DynamicIters.chpl for
+// etc.  ``See $CHPL_HOME/modules/standard/DynamicIters.chpl`` for
 // some more interesting examples of leader iterators, including
 // those that use dynamic partitioning.
 //
@@ -374,10 +376,8 @@ writeln();
 // of changes planned for it such as interface improvements and better
 // error checking.  We'll update this primer as we improve these features.
 //
-
+// Appendix:
 //
-// computeChunk helper
-// -------------------
 // This is a poor-man's partitioning algorithm.  It gives
 // ``floor(numElements/NumChunks)`` work items to the first ``numChunks-1``
 // chunks and the remainder to the last chunk.  For simplicity it only
