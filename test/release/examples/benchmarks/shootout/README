@@ -121,10 +121,6 @@ o improve magic number default for nChunks?
 o make scans not generate warnings and use them to compute/initialize
   fact?
 
-o remove warning for serial whole-array assignment when RHS is serial
-  and then use an initfact() iterator / procedure to initialize fact[]
-  at declaration time
-
 o should globals be allowed to be declared below main()?  If so, move
   fact[] to the bottom of the file?
 
@@ -134,9 +130,6 @@ fasta.chpl / fastaredux.chpl
 o We should introduce local "static" variables (using some other
   keyword) and use it to define some of the variables that are
   currently at global or outer scopes unnecessarily
-
-o Should writef("%s", str) and write(str) be equivalent?  If so,
-  it looks like we have a bug.
 
 o It seems like a param uint(8) whose value is known to fit in an
   int(8) should be assignable without a cast, but currently it isn't.
