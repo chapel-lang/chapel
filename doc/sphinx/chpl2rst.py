@@ -258,6 +258,11 @@ def main(**kwargs):
 
         fname = getfname(chapelfile, output, prefix)
 
+        if not os.path.exists(prefix) and output != 'stdout':
+            print('--prefix=', prefix, ' does not exist')
+            print('Creating directories:', prefix)
+            os.makedirs(prefix)
+
         if verbose:
             print('writing output of {0} to {1}'.format(chapelfile, fname))
 
