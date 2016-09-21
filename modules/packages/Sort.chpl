@@ -284,9 +284,15 @@ proc chpl_check_comparator(comparator, type eltType) {
 
  */
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  if Dom.rank != 1 then
-    compilerError("sort() requires 1-D array");
   quickSort(Data, comparator=comparator);
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("sort() requires 1-D array");
 }
 
 
@@ -301,9 +307,6 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
    :rtype: `bool`
  */
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
-  if Dom.rank != 1 then
-    compilerError("isSorted() requires 1-D array");
-
   chpl_check_comparator(comparator, eltType);
   const stride = if Dom.stridable then abs(Dom.stride) else 1;
 
@@ -311,6 +314,14 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
     if chpl_compare(Data[i+stride], Data[i], comparator) < 0 then
       return false;
   return true;
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("isSorted() requires 1-D array");
 }
 
 
@@ -365,9 +376,6 @@ iter sorted(x, comparator:?rec=defaultComparator) {
 
  */
 proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  if Dom.rank != 1 then
-    compilerError("bubbleSort() requires 1-D array");
-
   chpl_check_comparator(comparator, eltType);
   const low = Dom.low,
         high = Dom.high,
@@ -387,6 +395,14 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 }
 
 
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("bubbleSort() requires 1-D array");
+}
+
+
 /*
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
 
@@ -397,9 +413,6 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 
  */
 proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  if Dom.rank != 1 then
-    compilerError("heapSort() requires 1-D array");
-
   chpl_check_comparator(comparator, eltType);
   const low = Dom.low,
         high = Dom.high,
@@ -447,6 +460,14 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 }
 
 
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("heapSort() requires 1-D array");
+}
+
+
 /*
    Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
 
@@ -457,9 +478,6 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 
  */
 proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  if Dom.rank != 1 then
-    compilerError("insertionSort() requires 1-D array");
-
   chpl_check_comparator(comparator, eltType);
   const low = Dom.low,
         high = Dom.high,
@@ -484,6 +502,14 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 }
 
 
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("insertionSort() requires 1-D array");
+}
+
+
 /*
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
 
@@ -496,9 +522,6 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 
  */
 proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-  if Dom.rank != 1 then
-    compilerError("mergeSort() requires 1-D array");
-
   chpl_check_comparator(comparator, eltType);
   _MergeSort(Data, minlen, comparator);
 }
@@ -549,6 +572,14 @@ private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=def
 }
 
 
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc mergeSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("mergeSort() requires 1-D array");
+}
+
+
 /*
    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
 
@@ -561,9 +592,6 @@ private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=def
 
  */
 proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-  if Dom.rank != 1 then
-    compilerError("quickSort() requires 1-D array");
-
   chpl_check_comparator(comparator, eltType);
   // grab obvious indices
   const stride = abs(Dom.stride),
@@ -615,11 +643,8 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
 pragma "no doc"
 /* Non-stridable quickSort */
-proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
+proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) 
   where !Dom.stridable {
-  if Dom.rank != 1 then
-    compilerError("quickSort() requires 1-D array");
-
   chpl_check_comparator(comparator, eltType);
 
   // grab obvious indices
@@ -667,6 +692,14 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 }
 
 
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("quickSort() requires 1-D array");
+}
+
+
 /*
    Sort the 1D array `Data` in-place using a sequential selection sort
    algorithm.
@@ -678,9 +711,6 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
  */
 proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  if Dom.rank != 1 then
-    compilerError("selectionSort() requires 1-D array");
-
   const low = Dom.low,
         high = Dom.high,
         stride = abs(Dom.stride);
@@ -694,6 +724,14 @@ proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     }
     Data(i) <=> Data(jMin);
   }
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("selectionSort() requires 1-D array");
 }
 
 
