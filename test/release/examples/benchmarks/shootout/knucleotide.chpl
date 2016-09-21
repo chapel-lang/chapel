@@ -7,7 +7,7 @@
 
 use Sort;
 
-config param tableSize = 1 << 16,
+config param tableSize = 2**16,
              columns = 61;
 
 
