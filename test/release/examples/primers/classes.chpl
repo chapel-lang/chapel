@@ -19,7 +19,7 @@ class C {
 
 //
 // Class variables can be declared using the ``new`` keyword to call the
-// constructor for the class C.  The default constructor has an argument for
+// constructor for the class ``C``.  The default constructor has an argument for
 // each field in the class.  Once a class has been constructed, its methods
 // can be called.
 //
@@ -28,7 +28,7 @@ foo.printFields();
 
 //
 // Default output is supported so a class can be written by making a
-// call to write or writeln.  Default input is also supported.
+// call to ``write`` or ``writeln``.  Default input is also supported.
 //
 writeln(foo);
 
@@ -49,7 +49,7 @@ writeln(foo.sum_a_b_b(3));
 //
 // Here, a class named ``D`` is declared as a derived class from ``C``.
 // This new class has all of the fields and methods from ``C``, plus any
-// additional fields or methods it declares.  The printFields method
+// additional fields or methods it declares.  The ``printFields`` method
 // has the same signature as a method from ``C`` -- it is overridden.
 //
 class D: C {
@@ -63,7 +63,7 @@ class D: C {
 // The static type of the variable ``foo``, declared above, is ``C``.
 // Because the class ``D`` is derived from ``C``, the variable ``foo`` can
 // reference an object of type ``D``.  If an overridden method such as
-// printFields is called, it is dynamically dispatched to the method
+// ``printFields`` is called, it is dynamically dispatched to the method
 // with the most specific dynamic type.  The ``delete`` keyword can be
 // used to free memory associated with ``foo`` before pointing it an instance
 // of ``D``.
