@@ -3726,6 +3726,9 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
         if (formal->intent & INTENT_FLAG_REF) {
           formal->type = varActual->type;
         }
+        if (varActual->isConstant()) {
+          formal->intent = (IntentTag)(formal->intent | INTENT_FLAG_CONST);
+        }
       }
     }
 
