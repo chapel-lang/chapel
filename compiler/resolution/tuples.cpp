@@ -752,14 +752,15 @@ instantiate_tuple_unref(FnSymbol* fn)
 static bool
 shouldChangeTupleType(Type* elementType)
 {
-  // Only record-wrapped types for now, but we probably
-  // want to expand this to include almost all types in the
-  // future.
-  return isRecordWrappedType(elementType);
-
   // Hint: unless iterator records are reworked,
-  // this function should return false for
-  //return ! elementType->symbol->hasFlag(FLAG_ITERATOR_RECORD);
+  // this function should return false for iterator records...
+  return !elementType->symbol->hasFlag(FLAG_ITERATOR_RECORD);
+
+  // An alternative might be:
+
+  // isUserDefinedRecord(elementType) ||
+  // isRange(elementType) || is_arithmetic_type(elementType) ||
+  //   isClass(elementType) || isUnion(elementType) || ;
 }
 
 
@@ -790,9 +791,16 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
         if (valueOnly) {
           // already OK since we did getValType() above
         } else {
-          IntentTag concrete = concreteIntent(intent, useType);
-          if ( (concrete & INTENT_FLAG_REF) ) {
-            useType = useType->getRefType();
+          // If the tuple is passed with blank intent
+          // *and* the concrete intent for the element type
+          // of the tuple is a type where blank-intent-means-ref,
+          // then the tuple should include a ref field
+          // rather than a value field.
+          if (intent == INTENT_BLANK) {
+            IntentTag concrete = concreteIntent(intent, useType);
+            if ( (concrete & INTENT_FLAG_REF) ) {
+              useType = useType->getRefType();
+            }
           }
         }
       }
