@@ -33,12 +33,6 @@ writeln(a, " is ", a.sizeinbase(2), " digits in base 2");
 writeln(b, " is ", b.sizeinbase(10), " digits in base 10");
 writeln(b, " is ", b.sizeinbase(2), " digits in base 2");
 
-a.mul(a, 100000000000001234);
-writeln(a, ".size is " , a.size());
-
-writeln(a.get_limbn(1));
-writeln(a.get_limbn(0));
-
 a.set(35);
 b.set(9);
 
