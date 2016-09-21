@@ -113,7 +113,7 @@ static SyncGraphVec analysisRoots; // We will be creating multiple root for
                                    //  analyzing recursion and loops more
                                    // efficiently.
 static SyncGraphVec taskStartPoint; // start of all beginStatements
-static SyncGraphVec filledSinglePoints;
+static SyncGraphVec filledSinglePoints; // filled Single variables.
 static Vec<ExternVarDetails*> externVarDetails;
 static FnSyncGraphMap funcGraphMap; // start point of each function in Sync Graph
 static bool allCallsSynced;
@@ -155,12 +155,14 @@ static bool sync(SyncGraph* source, SyncGraph* dest);
 static void collectNextSyncPoints(SyncGraphVec& startPoints, SyncGraphVec& syncPoints);
 static void getSyncPoints(SyncGraph* source, SyncGraphVec& potentialDest, SyncGraphVec& syncPoints);
 static bool threadedMahjong(SyncGraph* sourceSyncPoint, SyncGraphVec& destSyncPoints);
-static void collectNewBegins(SyncGraph* start, SyncGraph* end, SyncGraphVec& destSyncPoints);
+//static void collectNewBegins(SyncGraph* start, SyncGraph* end, SyncGraphVec& destSyncPoints);
 static void removeNewBegins(SyncGraphVec& nextSourceBegins, SyncGraphVec&  destSyncPoints);
 static SyncGraph* pullUpNextSyncNode(SyncGraph* curNode, SyncGraphVec& destSyncPoints);
 static void pullDownSyncNode(SyncGraph* curNode, SyncGraph * prevNode, SyncGraphVec& destSyncPoints);
 static bool isStartPointAfterLastSync(SyncGraph* defFunction,SyncGraph* useNode);
 static bool handleSingleSyncing(SyncGraph * toSyncNode, SyncGraphVec& destSyncPoints, SyncGraphVec& syncPoints);
+static void collectAllAvailableBeginGraphs(SyncGraph* root, SyncGraphVec& endPoints, SyncGraphVec& taskPoints);
+static void collectAllAvailableBeginGraphs(SyncGraph* root, SyncGraph* endPoint, SyncGraphVec& taskPoints);
 //static bool isFilledSingle(SyncGraph* node);
 /************** HEADER ENDS *******************/
 
@@ -475,6 +477,16 @@ static SyncGraph* nextSyncPoint(SyncGraph* start) {
 }
 
 
+/**
+   A wrapper for collectAllAvailableBeginGraphs(SyncGraph* root, SyncGraphVec& endPoints, 
+   SyncGraphVec& taskPoints).
+ **/
+static void collectAllAvailableBeginGraphs(SyncGraph* root, SyncGraph* endPoint, SyncGraphVec& taskPoints) {
+  SyncGrahVec endPoints;
+  endPoints.add(endPoint);
+  collectAllAvailableBeginGraphs(root, endPoints, taskPoints);
+}
+
 
 /**
    This Function recursively collects all begins statements between 'root' and all 'endPoints' and add the first
@@ -675,7 +687,7 @@ static bool threadedMahjong(SyncGraph* sourceSyncPoint, SyncGraphVec& destSyncPo
   getSyncPoints(sourceSyncPoint, destSyncPoints, syncPoints);
   if(syncPoints.count() > 0) {
     SyncGraph* nextSourceNode = nextSyncPoint(sourceSyncPoint);
-    collectNewBegins(sourceSyncPoint, nextSourceNode, newSourceBegins);
+    collectAllAvailableBeginGraphs(sourceSyncPoint, nextSourceNode, newSourceBegins);
     destSyncPoints.append(newSourceBegins);
     if(sourceSyncPoint->syncType == NODE_SINGLE_WAIT_FULL ||
        sourceSyncPoint->syncType == NODE_SINGLE_SIGNAL_FULL) {
@@ -685,7 +697,8 @@ static bool threadedMahjong(SyncGraph* sourceSyncPoint, SyncGraphVec& destSyncPo
     } else {
       forv_Vec(SyncGraph, toSyncNode, syncPoints) {
 	SyncGraph* next = pullUpNextSyncNode(toSyncNode, destSyncPoints);
-	collectNewBegins(toSyncNode, next, newDestBegins);
+	
+	collectAllAvailableBeginGraphs(toSyncNode, next, newDestBegins);
 	destSyncPoints.append(newDestBegins);
 	sucess = threadedMahjong (nextSourceNode, destSyncPoints);
 	if(sucess) return sucess;
@@ -706,7 +719,7 @@ static bool threadedMahjong(SyncGraph* sourceSyncPoint, SyncGraphVec& destSyncPo
     SyncGraph* nextDestSyncNode = NULL;
     if(syncPoints.count() > 0) {
       nextDestSyncNode = pullUpNextSyncNode(destSyncNode, destSyncPoints);
-      collectNewBegins(destSyncNode, nextDestSyncNode, newSourceBegins);
+      collectAllAvailableBeginGraphs(destSyncNode, nextDestSyncNode, newSourceBegins);
       destSyncPoints.append(newSourceBegins);
       if(sourceSyncPoint->syncType == NODE_SINGLE_WAIT_FULL ||
        sourceSyncPoint->syncType == NODE_SINGLE_SIGNAL_FULL) {
@@ -717,7 +730,7 @@ static bool threadedMahjong(SyncGraph* sourceSyncPoint, SyncGraphVec& destSyncPo
 	forv_Vec(SyncGraph, toSyncNode, syncPoints) {
 	  SyncGraph* nextToSyncNode = pullUpNextSyncNode(toSyncNode,  destSyncPoints);
 	  newDestBegins.clear();
-	  collectNewBegins(toSyncNode, nextToSyncNode, newDestBegins);
+	  collectAllAvailableBeginGraphs(toSyncNode, nextToSyncNode, newDestBegins);
 	  destSyncPoints.append(newDestBegins);
 	  sucess = threadedMahjong (sourceSyncPoint, destSyncPoints);
 	  if(sucess) return sucess;
