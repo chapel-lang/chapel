@@ -71,19 +71,14 @@ class Tree {
   const left, right: Tree;
 
   //
-  // Two initializers (constructors) for a Tree object
+  // A Tree-building initializer
   //
-  proc init(item, left: Tree=nil, right: Tree=nil) {
-    this.item = item;
-    this.left = left;
-    this.right = right;
-  }
-  
   proc init(item, depth) {
-    if depth <= 0 then
-      init(item);
-    else
-      init(item, new Tree(2*item-1, depth-1), new Tree(2*item, depth-1));
+    this.item = item;
+    if depth > 1 {
+      left = new Tree(2*item-1, depth-1);
+      right = new Tree(2*item, depth-1);
+    }
   }
 
   //

@@ -50,17 +50,7 @@ implementations that would benefit the codes:
 
 binarytrees
 -----------
-o it'd be nice if Chapel provided a means to retain the default /
-  compiler-provided initializer even when the user specifies one.  In
-  this case, it essentially needs to be rewritten by the user
-  unnecessarily.
-
-o should we change 'nil' be of type 'Object' rather than 'nilType'?
-  This would permit the type declarations on the left/right arguments
-  to be left off.  Brad recalls a very distinct decision to have 'nil'
-  be its own type in the early years of Chapel but can't recall the
-  rationale or whether it still holds in today's Chapel.
-
+o no current TODOs
 
 chameneosredux
 --------------
