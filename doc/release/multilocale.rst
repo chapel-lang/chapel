@@ -21,7 +21,7 @@ This document outlines the steps to get started with multi-locale Chapel.
 
      export CHPL_COMM=gasnet
 
-   Then, consider changing several these variables:
+   Then, consider changing these variables:
 
      * :ref:`CHPL_LAUNCHER <readme-launcher>` controls job launch
      * :ref:`CHPL_COMM_SUBSTRATE <set-comm-conduit>` selects a GASNet conduit
