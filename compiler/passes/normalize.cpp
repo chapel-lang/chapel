@@ -1078,7 +1078,11 @@ static void fix_def_expr(VarSymbol* var) {
   //
   if (var->hasFlag(FLAG_NO_COPY)) {
     INT_ASSERT(init);
-    //INT_ASSERT(!type);
+    // If a type expression is set, normalize would normally
+    // use defaultOf/assignment anyway. As of 9-21-2016
+    // setting FLAG_NO_COPY and having a type leads to some
+    // unresolved type expression hanging around in the AST.
+    INT_ASSERT(!type);
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
     return;
   }
