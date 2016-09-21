@@ -65,6 +65,45 @@ def get_arguments():
     return parser.parse_args()
 
 
+def gen_link(link, chapelfile):
+    """Generate hyperlink to GitHub URL based on chapelfile path"""
+    # Note - this makes the assumption that the file lives in the github repo
+    abspath = os.path.abspath(chapelfile)
+    filename = os.path.split(chapelfile)[1]
+
+    chpl_home = os.getenv('CHPL_HOME')
+    if not chpl_home:
+        print('Error: --link flag only works when $CHPL_HOME is defined')
+        sys.exit(1)
+    elif not chpl_home in abspath:
+        print('Error: --link flag only work for files within $CHPL_HOME')
+        sys.exit(1)
+
+    # Get path from CHPL_HOME directory
+    chplpath = abspath.replace(chpl_home, '').lstrip('/')
+    hyperlink = 'https://github.com/chapel-lang/chapel/blob/{0}/{1}'.format(link, chplpath)
+    rstlink = '`View {0} on GitHub <{1}>`_'.format(filename, hyperlink)
+    return rstlink
+
+
+def titlecomment(line):
+    """Condition for a line to be a title comment"""
+    return line.startswith('//') and len(line.lstrip('//').strip()) > 0
+
+
+def gen_title(chapelfile):
+    """Generate file title, based on if title comment exists"""
+    with open(chapelfile, 'r') as handle:
+        line1 = handle.readline()
+        if titlecomment(line1):
+            title = line1.lstrip('//').strip()
+        else:
+            filename = os.path.split(chapelfile)[1]
+            title = filename
+
+    return title
+
+
 def gen_preamble(chapelfile, link=None):
     """Generate preamble for rst file"""
 
@@ -74,7 +113,8 @@ def gen_preamble(chapelfile, link=None):
 
     domain = '.. default-domain:: chpl'
     reference = '.. _primers-{0}:'.format(basename)
-    title = filename
+
+    title = gen_title(chapelfile)
 
     output = []
     output.append(domain)
@@ -87,23 +127,7 @@ def gen_preamble(chapelfile, link=None):
 
     # Generate dynamic links below title
     if link:
-        # Note - this makes the assumption that the file lives in the test dir
-        abspath = os.path.abspath(chapelfile)
-
-
-        chpl_home = os.getenv('CHPL_HOME')
-        if not chpl_home:
-            print('Error: --link flag only works when $CHPL_HOME is defined')
-            sys.exit(1)
-        elif not chpl_home in abspath:
-            print('Error: --link flag only work for files within $CHPL_HOME')
-            sys.exit(1)
-
-        # Get path from CHPL_HOME directory
-        chplpath = abspath.replace(chpl_home, '').lstrip('/')
-        hyperlink = 'https://github.com/chapel-lang/chapel/blob/{0}/{1}'.format(link, chplpath)
-        rstlink = '`View {0} on GitHub <{1}>`_'.format(filename, hyperlink)
-        output.append(rstlink)
+        output.append(gen_link(link, chapelfile))
         output.append('')
 
     return '\n'.join(output)

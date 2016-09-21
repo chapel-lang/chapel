@@ -1,8 +1,6 @@
+// Variables Primer
 /*
-   Variables Primer
-
    This primer demonstrates variable declaration syntax.
-
 */
 
 
