@@ -2121,6 +2121,8 @@ static void fixAST() {
     if (call->isResolved()) {
       for_formals_actuals(formal, actual, call) {
         if (formal->hasFlag(FLAG_RETARG)) {
+          // Only looking for a mismatch where the formal is a _ref_wide_T
+          // and the actual is a _ref_T
           if (formal->typeInfo() != actual->typeInfo() && hasSomeWideness(formal) &&
               !(formal->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) || actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))) {
             SET_LINENO(call);
