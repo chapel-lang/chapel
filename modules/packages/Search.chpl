@@ -128,7 +128,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
 
 pragma "no doc"
 /* Error message for multi-dimension arrays */
-proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) 
+proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high)
   where Dom.rank != 1 {
     compilerError("linearSearch() requires 1-D array");
 }

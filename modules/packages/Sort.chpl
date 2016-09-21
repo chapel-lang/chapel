@@ -643,7 +643,7 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
 pragma "no doc"
 /* Non-stridable quickSort */
-proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) 
+proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
   where !Dom.stridable {
   chpl_check_comparator(comparator, eltType);
 
