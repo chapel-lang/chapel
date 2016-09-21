@@ -161,8 +161,7 @@
 #define SWITCH_AFTER_EXIT 1
 
 //Scheduling policy of runqueue
-//FIFO
-//#define MYTH_QUEUE_FIFO 0
+#define MYTH_QUEUE_LIFO 1
 
 //Confirm if a thread descriptor is used in two threads at the same time.
 #define MYTH_DESC_REUSE_CHECK 0

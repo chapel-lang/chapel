@@ -14,7 +14,8 @@ else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
 CHPL_MASSIVETHREADS_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
 endif
 
-CHPL_MASSIVETHREADS_CFG_OPTIONS += --enable-malloc-wrapper=no \
+CHPL_MASSIVETHREADS_CFG_OPTIONS += --enable-myth-ld=no \
+                                   --enable-myth-dl=no \
                                    --enable-eco-mode=no \
                                    --enable-bind-workers=no
 

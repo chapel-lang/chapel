@@ -128,17 +128,6 @@ extern "C" {
      --- global attributes and initialization functions ---
      --------------------------------------- */
   
-  /* 
-     Type: myth_globalattr_t
-
-     This is given to myth_init
-
-     Fields:
-     size_t default_stack_size - default stack size in bytes 
-     (default: specified with ./configure --with-default-stack-size=S, or 128K)
-     int n_workers : number of workers
-     int bind_workers : 1 to bind workers to cores
-  */
   typedef struct {
     size_t stacksize;
     size_t guardsize;
@@ -162,8 +151,8 @@ extern "C" {
 
     Returns:
 
-    The number of workers MassiveThreads that ends
-    up launching.
+    zero if the library has been successfully initialized.
+    non-zero otherwise.
 
     See Also: 
     <myth_init_ex>
@@ -174,56 +163,27 @@ extern "C" {
     Function: myth_init_ex
 
     Initialize MassiveThreads library with the
-    specified number of workers and the
-    default stack size (in bytes).  You
+    specified global attributes.  You
     normally do not have to call it by
     youself, as <myth_init> is automatically
     called when you first call any
     MassiveThreads function.  You may want to
-    call it to explicitly to set the number of
-    workers or the default stack size within
-    your program.  Note that myth_init() can
-    still specify those parameters via
-    environment variables (see below).  Also
-    note that myth_init() is equivalent to 
-    myth_init_ex(0,0).
+    call it to explicitly set various attributes.
 
     Parameters:
 
-    worker_num - the number of workers, or
-    zero to mean the default (see below)
-
-    def_stack_size - the default stack size of
-    each user-level thread, or zero to mean
-    the default (see below).
-
-    When worker_num=0, it checks if the environment
-    variable MYTH_WORKER_NUM is set.  If so,
-    it parses it as an integer and uses the value.
-
-    When def_stack_size=0, it checks if the
-    environment variable MYTH_DEF_STKSIZE is
-    set.  If so, it parses it as an integer
-    and uses the value.  Otherwise it uses the
-    global default.  The global default can be
-    specified at compile time by ./configure
-    --with-default-stack-size=S, whose default
-    128KB (131072).  No matter what is the default,
-    you can specify the size of individual
-    user-level threads when creating them via
-    <myth_create_ex>.
+    attr - the pointer to global attribute 
 
     Returns:
 
-    The number of workers MassiveThreads that ends
-    up launching.
+    zero if the library has been successfully initialized.
+    non-zero otherwise.
 
     See Also: 
     <myth_init>, <myth_create>, <myth_create_ex>
   */
   int myth_init_ex(myth_globalattr_t * attr);
 
-  //void myth_init_withparam(int worker_num,size_t def_stack_size);
 
   /*
     Function: myth_fini
@@ -265,21 +225,6 @@ extern "C" {
      See Also: <myth_init>, <myth_init_ex>, <myth_globalattr_init>
   */
   int myth_globalattr_destroy(myth_globalattr_t * attr);
-
-  /* 
-     Function: myth_globalattr_set_default
-
-     Parameters:
-
-     attr - global attribute to set as default when you call
-     myth_init() or myth_init_ex() giving NULL as the parameter.
-
-     set the specified attribute as default, 
-
-     See Also: 
-     <myth_init>, <myth_init_ex>
-  */
-  int myth_globalattr_set_default(myth_globalattr_t * attr);
 
   /* 
      Function: myth_globalattr_get_stacksize
@@ -384,18 +329,6 @@ extern "C" {
 				       int bind_workers);
 
 
-  /* 
-     Type: myth_thread_attr_t
-
-     This is given to myth_thread
-
-     Fields:
-     size_t stack_size - stack size in bytes (default: what you specified in <myth_init_ex>)
-     int switch_immediately - 1 if myth_create should immediately switch to the child (default: 1)
-     size_t custom_data_size - 
-     void *custom_data - 
-  */
-
   typedef struct myth_thread_attr {
     void * stackaddr;
     size_t stacksize;
@@ -407,12 +340,6 @@ extern "C" {
     void *custom_data;
   } myth_thread_attr_t;
   
-  /* Type: myth_func_t 
-
-     a type of function taking an argument of
-     type (void *) and returning a value of
-     type (void *);
-  */
   typedef void*(*myth_func_t)(void*);
   
   /* 
@@ -782,41 +709,59 @@ extern "C" {
   int myth_getconcurrency(void);
 
   enum {
-    myth_yield_option_local_only = 0,
-    myth_yield_option_local_first = 1,
-    myth_yield_option_steal_only = 2,
-    myth_yield_option_steal_first = 3
+    myth_yield_option_half_half = 0,
+    myth_yield_option_local_only = 1,
+    myth_yield_option_local_first = 2,
+    myth_yield_option_steal_only = 3,
+    myth_yield_option_steal_first = 4
   };
 
   /*
-    Function: myth_yield
+    Function: myth_yield_ex
 
     Yield execution to another user-level thread.
 
     Parameters:
-    force_worksteal - if 1, the underlying worker
-    tries to steal a user-level thread from another worker,
-    rather than trying to execute another user-level thread in
-    its local scheduling queue.
+    yield_opt - take one of the following values and change
+    the behavior. 
 
-    See Also:
-    <myth_yield_ex>
+      myth_yield_option_half_half : 
+        behave like myth_yield_option_local_first with probability 1/2
+	and like myth_yield_option_steal_first with probability 1/2
+      myth_yield_option_local_only : 
+        try to yield to another thread in the local run queue.
+	if none exist, the caller keeps running.
+      myth_yield_option_local_first :
+        try to yield to another thread in the local run queue.
+	if none exist, an attempt is made to steal another thread 
+	in a remote run queue; if it succeeds, yields to it. otherwise
+        keep running.
+      myth_yield_option_steal_only :
+        an attempt is made to steal another thread 
+	in a remote run queue; if it succeeds, yield to it. otherwise
+        keep running.
+      myth_yield_option_steal_first :
+        an attempt is made to steal another thread 
+	in a remote run queue; if it succeeds, yield to it. otherwise
+        try to yield to another thread in the local run queue.
+	if none exist, the caller keeps running.
 
     Note:
-    The above describes the current implementation,
-    which may change in future.  You should not rely
-    on its exact behavior (other than it switches
-    to another user-level thread).
-   
+    Available options as well as detailed behaviors may change in future.
+
+    See Also:
+    <myth_yield>
+
   */
   void myth_yield_ex(int yield_opt);
 
   /*
     Function: myth_yield
 
-    Yield execution to another user-level
-    thread in the worker's local scheduling
-    queue.
+    it is equivalent to myth_yield_ex(myth_yield_option_half_half);
+    with probability 1/2, try to yield to a thread in the local 
+    queue and if none is found try to steal a thread from a remote
+    queue. do the opposite with probability 1/2.
 
     See Also:
     <myth_yield>

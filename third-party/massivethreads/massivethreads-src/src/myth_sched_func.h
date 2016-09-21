@@ -927,6 +927,20 @@ static inline int myth_yield_ex_body(int opt) {
   //Get next runnable thread
   next = NULL;
   switch (opt) {
+  case myth_yield_option_half_half: {
+    if (myth_random(0, 2) == 0) {
+      next = myth_queue_pop(&env->runnable_q);
+      if (!next) {
+	next = g_myth_steal_func(env->rank);
+      }
+    } else {
+      next = g_myth_steal_func(env->rank);
+      if (!next) {
+	next = myth_queue_pop(&env->runnable_q);
+      }
+    }
+    break;
+  }
   case myth_yield_option_local_only: {
     next = myth_queue_pop(&env->runnable_q);
     break;
@@ -966,7 +980,7 @@ static inline int myth_yield_ex_body(int opt) {
 }
 
 static inline int myth_yield_body(void) {
-  return myth_yield_ex_body(myth_yield_option_local_first);
+  return myth_yield_ex_body(myth_yield_option_half_half);
 }
 
 static inline void myth_timespec_add(const struct timespec * a,
@@ -1014,82 +1028,6 @@ static inline unsigned int myth_sleep_body(unsigned int s) {
   req->tv_nsec = 0;
   return myth_nanosleep_body(req, 0);
 }
-
-#if 0
-MYTH_CTX_CALLBACK void myth_yield_1(void *arg1,void *arg2,void *arg3) {
-  myth_running_env_t env=arg1;
-  myth_thread_t this_thread=arg2,next_thread=arg3;
-  {
-    //Push current thread to the tail of runqueue
-    myth_queue_put(&env->runnable_q,this_thread);
-    env->this_thread=next_thread;
-    next_thread->env=env;
-  }
-}
-
-//Yield execution to next runnable thread
-static inline void myth_yield_body(int force_worksteal)
-{
-  myth_running_env_t env;
-  myth_thread_t th,next;
-  int _ = myth_ensure_init();
-  env = myth_get_current_env();
-  th = env->this_thread;
-  myth_assert(th);
-#if MYTH_YIELD_DEBUG
-  myth_dprintf("myth_yield:thread %p yields execution to scheduler\n",th);
-#endif
-  //Get next runnable thread
-  next=NULL;
-  if (force_worksteal){
-    next=g_myth_steal_func(env->rank);
-    if (!next)next=myth_queue_pop(&env->runnable_q);
-  }
-  else{
-    next=myth_queue_pop(&env->runnable_q);
-    if (!next)next=g_myth_steal_func(env->rank);
-  }
-  if (next){
-    next->env=env;
-    //Switch context and push current thread to runqueue
-    myth_swap_context_withcall(&th->context,&next->context,myth_yield_1,(void*)env,(void*)th,(void*)next);
-  }
-#if MYTH_YIELD_DEBUG
-  myth_dprintf("myth_yield:thread %p continues execution\n",th);
-#endif
-}
-
-MYTH_CTX_CALLBACK void myth_yield2_1(void *arg1,void *arg2,void *arg3)
-{
-  myth_running_env_t env=arg1;
-  myth_thread_t this_thread=arg2,next_thread=arg3;
-  {
-    //Push current thread to the tail of runqueue
-    myth_queue_push(&env->runnable_q,this_thread);
-    env->this_thread=next_thread;
-    next_thread->env=env;
-  }
-}
-
-//Yield execution to next runnable thread
-static inline void myth_yield2_body(void)
-{
-  myth_running_env_t env;
-  myth_thread_t th,next;
-  env=myth_get_current_env();
-  th=env->this_thread;
-  myth_assert(th);
-  //Get next runnable thread
-  next=myth_queue_pop(&env->runnable_q);
-  if (!next)next=g_myth_steal_func(env->rank);
-  if (next){
-    next->env=env;
-    //Switch context and push current thread to runqueue
-    myth_swap_context_withcall(&th->context,&next->context,myth_yield2_1,(void*)env,(void*)th,(void*)next);
-  }
-}
-#endif	/* 0 */
-
 
 
 //Entry point of threads

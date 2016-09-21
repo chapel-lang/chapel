@@ -16,4 +16,4 @@
 # limitations under the License.
 
 RUNTIME_INCLS += -I$(MASSIVETHREADS_INCLUDE_DIR)
-CHPL_MAKE_THREADS=none
+CHPL_MAKE_THREADS=pthreads
