@@ -2,6 +2,171 @@
 Release Changes List
 ====================
 
+*** stopped at 7e7aadf, 2016-05-02 ***
+
+==============
+version 1.14.0
+==============
+
+Seventeenth public release of Chapel, September 21, 2016
+
+Highlights
+----------
+
+Configuration Changes
+---------------------
+
+Syntactic/Naming Changes
+------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+New Features
+------------
+
+Feature Improvements
+--------------------
+* extended the number of indices that an associative domain can store
+* added the ability to query locality information of domains and distributions
+  (see http://chapel.cray.com/docs/1.14/modules/internal/ChapelArray.html)
+* added support for a requestCapacity() method on associative domains
+  (see http://chapel.cray.com/docs/1.14/modules/internal/ChapelArray.html#ChapelArray.requestCapacity)
+
+Interoperability Improvements
+-----------------------------
+* added support for casts from c_string to c_void_ptr
+
+Standard Library/Modules
+------------------------
+* Reflection module:
+  - added getFieldRef() functions to get a reference to a field
+    (see http://chapel.cray.com/docs/1.14/modules/standard/Reflection.html#Reflection.getFieldRef)
+* strings:
+  - improved the flexibility of the arguments passed to join() calls
+    (see http://chapel.cray.com/docs/1.14/modules/internal/String.html?highlight=join#String.string.join)
+  - made a version of split() that handles arbitrary whitespace
+    (see http://chapel.cray.com/docs/1.14/modules/internal/String.html?highlight=join#String.string.split)
+
+
+Performance Optimizations/Improvements
+--------------------------------------
+* improved the efficiency of random accesses to StencilDist-distributed arrays
+* made modest improvements to the performance of associative domains
+* optimized functions returning references to avoid widening them when possible
+
+Memory Improvements
+-------------------
+* fixed a memory leak in the implementation of 'RandomStream'
+* fixed a memory leak in the implementation of module-level tuplesg
+* fixed a memory leak relating to 'args' arguments sent to main()
+
+Documentation
+-------------
+* added usage ('use ...') information to chpldoc-generated module documentation
+  (e.g., see http://chapel.cray.com/docs/1.14/modules/standard/Assert.html)
+* clarified differences between mod() and '%'
+  (see http://chapel.cray.com/docs/1.14/modules/standard/Math.html#Math.mod)
+* added an archive of past language specification versions to the online docs
+  (see http://chapel.cray.com/docs/1.14/language/archivedSpecs.html))
+
+Example Codes
+-------------
+* changed ISx to use low-level PCG interface to match the reference version
+
+Compiler Flags (see 'man chpl' for details)
+-------------------------------------------
+
+Execution Flags
+---------------
+
+Environment Changes
+-------------------
+
+Directory Structure Changes
+---------------------------
+
+Cray-specific Changes
+---------------------
+
+Portability Improvements
+------------------------
+* fixed a portability bug in our Makefiles for Ubuntu
+
+Tool Changes
+------------
+* updated our support for Andre Simon's highlighter to support version 3.x
+
+Error Message Improvements
+--------------------------
+* added an error for user fields named 'outer'
+
+Runtime Error Checks
+--------------------
+* added bounds checking to string index/slice operations
+* added bounds check to functions used when treating arrays as vectors
+
+Bug Fixes
+---------
+* fixed a bug ignoring whitespace when casting strings to values (**kushal)
+* fixed a bug in which StencilDists could fail to preserve key properties
+* fixed a bug in which legal remove()s on arrays reported out-of-bounds errors
+* fixed a bug relating to the handling of C function pointers in extern blocks
+* fixed a bug with typedef struct {...} function arguments in extern blocks
+* fixed a bug in the mod_ui() function for BigInts
+* fixed a bug in which 'chpldoc' did not skip nested code blocks
+* fixed a bug in which sleep() could under-sleep by 1 microsecond
+* fixed a bug in with storing max(int) in an associative domain of ints
+
+Cray-specific Bug Fixes
+-----------------------
+
+Third-Party Software Changes
+----------------------------
+
+Runtime Library Changes
+-----------------------
+
+Generated Code Cleanups
+-----------------------
+
+Testing System
+--------------
+* improved support for 'notest'ing and 'skipif'ing directories
+* removed the need to provide an argument to '-[no]stdinredirect
+
+Makefile Changes
+----------------
+
+Developer-oriented changes: Process Improvements
+------------------------------------------------
+
+Developer-oriented changes: Packaging Changes
+---------------------------------------------
+
+Developer-oriented changes: Module improvements
+-----------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+* moved the handling of PROC_NEW to the resolution pass
+* cleanups to representation/handling of varargs
+
+Developer-oriented changes: Generated code improvements
+-------------------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Third-party improvements
+----------------------------------------------------
+
+Developer-oriented changes: Testing system improvements
+-------------------------------------------------------
+
 
 ==============
 version 1.13.1
