@@ -4,6 +4,10 @@
 Using Chapel with InfiniBand
 ============================
 
+This document describes how to run Chapel across multiple machines in an
+InfiniBand cluster. The :ref:`readme-multilocale` describes general
+information about running Chapel in a multilocale configuration.
+
 Avoiding Slow Job Launch
 ++++++++++++++++++++++++
 
@@ -50,7 +54,7 @@ a. In the future, we expect that ``CHPL_LAUNCHER=slurm-srun`` will be the best
      # Compile a sample program
      chpl -o hello6-taskpar-dist examples/hello6-taskpar-dist.chpl
 
-   See :ref:`readme-launcher` for other options available, such
+   See :ref:`using-slurm` for other options available, such
    as setting the time limit or selecting the type of node.
    Some settings might be required by your Slurm configuration.
    Setting these variables are typically necessary:
