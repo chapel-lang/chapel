@@ -862,7 +862,7 @@ globalChpldocOpts = dirChpldocOpts + envChpldocOpts
 #
 # Global PERFNUMTRIALS
 #
-if perftest and os.access(PerfDirFile('NUMTRIALS'), os.R_OK): # ./PERFNUMTRIALS
+if os.access(PerfDirFile('NUMTRIALS'), os.R_OK): # ./PERFNUMTRIALS
     globalNumTrials = ReadIntegerValue(PerfDirFile('NUMTRIALS'), localdir)
 else:
     globalNumTrials=int(os.getenv('CHPL_TEST_NUM_TRIALS', '1'))
@@ -1093,7 +1093,7 @@ for testname in testsrc:
         elif (perftest and suffix==PerfSfx('timeexec') and os.access(f, os.R_OK)): #e.g. .perftimeexec
             timer = GetTimer(f)
 
-        elif (perftest and suffix==PerfSfx('numtrials') and os.access(f, os.R_OK)): #e.g. .perfnumtrials
+        elif (suffix==PerfSfx('numtrials') and os.access(f, os.R_OK)): #e.g. .perfnumtrials
             numTrials = ReadIntegerValue(f, localdir)
 
         elif (suffix=='.killtimeout' and os.access(f, os.R_OK)):
