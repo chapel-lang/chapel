@@ -664,6 +664,12 @@ if os.getenv("CHPL_TEST_EXEC_TIME_WARN_LIMIT"):
 else:
     execTimeWarnLimit = 0
 
+# get a threshold for which to skip any remaining trials
+if os.getenv("CHPL_TEST_EXEC_TIME_LIMIT_NUM_TRIALS"):
+    execTimeSkipTrials = int(os.getenv('CHPL_TEST_EXEC_TIME_LIMIT_NUM_TRIALS', '0'))
+else:
+    execTimeSkipTrials = 0
+
 # directory level timeout
 if os.access('./TIMEOUT',os.R_OK):
     directoryTimeout = ReadIntegerValue('./TIMEOUT', localdir)
@@ -1791,7 +1797,11 @@ for testname in testsrc:
             #
             # Run program (with timeout)
             #
+            skip_remaining_trials = False
             for count in xrange(numTrials):
+                if skip_remaining_trials:
+                    break
+
                 exec_limiter = execution_limiter.NoLock()
                 if os.getenv("CHPL_TEST_LIMIT_RUNNING_EXECUTABLES") is not None:
                     exec_name = os.path.join(localdir, test_filename)
@@ -1927,9 +1937,13 @@ for testname in testsrc:
                 print('[Elapsed execution time for "{0}" - {1:.3f} '
                     'seconds]'.format(test_name, elapsedExecTime))
 
-                if execTimeWarnLimit and elapsedExcTime > execTimeWarnLimit:
+
+                if execTimeWarnLimit and elapsedExecTime > execTimeWarnLimit:
                     sys.stdout.write('[Warning: %s/%s took over %.0f seconds to '
                         'execute]\n' %(localdir, test_filename, execTimeWarnLimit))
+
+                if execTimeSkipTrials and elapsedExecTime > execTimeSkipTrials:
+                    skip_remaining_trials = True
 
                 if catfiles:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%
