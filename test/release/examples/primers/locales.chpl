@@ -1,4 +1,4 @@
-// Locales primer
+// Locales
 
 /*
    This example showcases Chapel's locale types.  To run this example
