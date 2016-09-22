@@ -107,7 +107,7 @@ writeln(multiloop(3));
 writeln();
 
 /*
-. primers-iterators-postorder
+.. primers-iterators-postorder
 
 postorder
 ---------

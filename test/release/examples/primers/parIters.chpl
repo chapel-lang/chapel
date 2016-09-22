@@ -98,7 +98,7 @@ Example: count
 
 // For this example, we're going to create a simple iterator named
 // ``count`` that will be able to be invoked in for or forall loops.
-// Count will be defined to take an argument ``n`` as input and an
+// ``count`` will be defined to take an argument ``n`` as input and an
 // optional argument ``low`` (set to 1 by default), and it will yield ``n``
 // integers starting with ``low``.
 //
@@ -245,7 +245,7 @@ iter count(param tag: iterKind, n: int, low: int=1)
 // As mentioned at the outset, this leader is fairly static and
 // simple.  More generally, a leader can introduce tasks more
 // dynamically, partition work between the tasks more dynamically,
-// etc.  See :mod:DynamicIters.chpl for some more interesting examples
+// etc.  See :mod:`DynamicIters` for some more interesting examples
 // of leader iterators, including those that use dynamic partitioning.
 //
 
@@ -415,7 +415,7 @@ Closing notes
 // of changes planned for it such as interface improvements and better
 // error checking.  We'll update this primer as we improve these features.
 //
-// Appendix:
+// Definitions of functions used above:
 //
 // This is a poor-man's partitioning algorithm.  It gives
 // ``floor(numElements/NumChunks)`` work items to the first ``numChunks-1``
