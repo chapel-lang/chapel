@@ -57,22 +57,6 @@ c.neg(c);
 writeln();
 
 
-var d2 : uint = 0;
-
-d2 = div(Round.UP,   c, 8 : uint);
-writeln(d2);
-
-d2 = div(Round.DOWN, c, 8 : uint);
-writeln(d2);
-
-d2 = div(Round.ZERO, c, 8 : uint);
-writeln(d2);
-
-writeln();
-
-
-
-
 // q = (n / 2^d)
 d.div_q_2exp(Round.UP, c, 3);
 b.div_r_2exp(Round.UP, c, 3);
@@ -90,6 +74,8 @@ writeln();
 
 d.mod(c, a);
 writeln(d);
+
+var d2 : uint = 0;
 
 d2 = d.mod(c, 8);
 writeln(d2);
