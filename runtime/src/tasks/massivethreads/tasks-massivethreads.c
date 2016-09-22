@@ -506,7 +506,7 @@ void myth_chpl_create(chpl_fn_int_t fid, void * arg,
                          is_executeOn);
   //printf("passing %p to myth_chpl_wrap\n", &a);
   myth_create((myth_func_t)myth_chpl_wrap, (void *)&a);
-  /* TODO: get rid of the embarrasing spin wait */
+  /* TODO: get rid of the embarrassing spin wait */
   while (a.copied == 0) { }
   //printf("release args %p\n", &a);
 }
