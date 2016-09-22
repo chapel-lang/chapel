@@ -20,7 +20,7 @@
 
 Leader-follower
 ---------------
- */
+*/
 
 // Any zippered forall loop in Chapel will be implemented using
 // leader-follower iterators.  Generally speaking, a forall loop
@@ -30,7 +30,7 @@ Leader-follower
 
       forall (a, b, c) in zip(A, B, C) do
          // ...loop body...
- */
+*/
 
 // is semantically defined such that the first thing being iterated
 // over -- in this case, ``A`` -- is designated the 'leader.'  All things
@@ -43,7 +43,7 @@ Leader-follower
 
 Semantics
 ---------
- */
+*/
 
 // Given such a loop, the compiler will roughly translate it into
 // the following loop structure:
@@ -53,7 +53,7 @@ Semantics
       for work in A.lead() do   // implemented by inlining the leader
         for (a, b, c) in zip(A.follow(work), B.follow(work), C.follow(work)) do
           // ...loop body...
- */
+*/
 
 // where ``.lead()`` and ``.follow()`` represent the leader-follower iterators
 // using a simplified naming scheme.
@@ -70,7 +70,7 @@ Semantics
 
 Roles
 -----
- */
+*/
 
 // At a high level, the role of a leader iterator is to:
 //
@@ -94,7 +94,7 @@ Roles
 
 Example: count
 --------------
- */
+*/
 
 // For this example, we're going to create a simple iterator named
 // ``count`` that will be able to be invoked in for or forall loops.
@@ -180,7 +180,7 @@ writeln();
 
 count: leader
 -------------
- */
+*/
 
 // The leader and follower iterators are defined as overloads of the
 // serial version of the iterator, distinguished by an initial
@@ -254,7 +254,7 @@ iter count(param tag: iterKind, n: int, low: int=1)
 
 count: follower
 ---------------
- */
+*/
 
 // The follower is another overload of the same iterator name, this
 // time taking the iterKind.follower param enumeration as its first
@@ -292,7 +292,7 @@ iter count(param tag: iterKind, n: int, low: int=1, followThis)
 
 count: standalone parallel
 --------------------------
- */
+*/
 
 // The standalone parallel iterator is another overload of the same name,
 // taking the ``iterKind.standalone`` param enumeration as its first argument.
@@ -324,7 +324,7 @@ iter count(param tag: iterKind, n: int, low: int = 1)
 
 count: usage
 ------------
- */
+*/
 
 // Now that we've defined leader-follower and standalone iterators, we can
 // execute the same loops we did before, only this time using forall loops
@@ -403,7 +403,7 @@ writeln();
 
 Closing notes
 -------------
- */
+*/
 
 // Chapel data types like records and classes can support iteration
 // by defining iterator methods (invoked by name) or ``these()`` iterators

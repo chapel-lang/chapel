@@ -11,9 +11,13 @@
      * task-parallel (``coforall``).
 */
 
-//
-// fibonacci
-// ---------
+/*
+.. primers-iterators-fibonacci
+
+fibonacci
+---------
+*/
+
 // Generates the first ``n`` Fibonacci numbers.
 //
 // The state of this iterator is stored in the tuple ``(current, next)``.
@@ -74,9 +78,13 @@ for (i, j) in zip(1.., fibonacci(10)) {
 
 writeln();
 
-//
-// multiloop
-// ---------
+/*
+.. primers-iterators-multiloop
+
+multiloop
+---------
+*/
+
 // Generate the outer (Cartesian) product of indices in two ranges
 // and yield them as tuples.
 //
@@ -98,9 +106,13 @@ writeln("Multiloop Tuples");
 writeln(multiloop(3));
 writeln();
 
-//
-// postorder
-// ---------
+/*
+. primers-iterators-postorder
+
+postorder
+---------
+*/
+
 // Iterate over ``Tree`` in postorder using recursion.
 //
 // Each yield statement returns a node, or equivalently the subtree
@@ -140,7 +152,7 @@ iter postorder(tree: Tree): Tree {
       b   c
          / \
         d   e
- */
+*/
 var tree = new Tree( "a",
   new Tree("b"),
   new Tree("c",
@@ -172,13 +184,17 @@ writeln("Tree Data");
 writeln(tree);
 writeln();
 
-//
-// Iterators in parallel
-// ---------------------
+/*
+.. primers-iterators-parallel
+
+Iterators in parallel
+---------------------
+*/
+
 // When invoked in a forall loop (or semantically equivalent context),
 // the iterator is required to create parallel tasks and assign work to
 // them.  Such iterators are a fairly big topic and are described in
-// detail in :ref:`primers-parIters`.
+// detail in the :ref:`Parallel Iterators primer <primers-parIters>`.
 //
 // The coforall loop uses the serial iterator to spawn a separate task
 // for each of the values it yields. If you use coforall, you are asserting
