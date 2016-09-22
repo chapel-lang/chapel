@@ -48,7 +48,7 @@ module LocalesArray {
   // initialization (see chpl_rootLocaleInitPrivate()).  The copy for
   // locale 0 is set up here for the declaration.
   pragma "locale private"
-  var Locales => (rootLocale:RootLocale).getDefaultLocaleArray();
+  const Locales => (rootLocale:RootLocale).getDefaultLocaleArray();
 
   // We don't use the same private "trick" as with Locales above with
   // LocaleSpace/ because it's small enough to not matter.

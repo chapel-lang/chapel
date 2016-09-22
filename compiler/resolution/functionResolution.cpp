@@ -3922,6 +3922,15 @@ static void setFlagsAndCheckForConstAccess(Symbol* dest,
         )
       baseSym = getBaseSymForConstCheck(call);
 
+  } else if (resolvedFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
+    INT_ASSERT(dest->hasFlag(FLAG_ARRAY_ALIAS));
+    if (!dest->isConstant()) {
+      // We are creating a var alias - ensure aliasee is not const either.
+      SymExpr* aliaseeSE = toSymExpr(call->get(2));
+      INT_ASSERT(aliaseeSE);
+      if (aliaseeSE->var->isConstant())
+        USR_FATAL_CONT(call, "creating a non-const alias '%s' of a const array or domain", dest->name);
+    }
   } else if (constWCT) {
     baseSym = getBaseSymForConstCheck(call);
     if (baseSym->isConstant()               ||
@@ -3934,15 +3943,9 @@ static void setFlagsAndCheckForConstAccess(Symbol* dest,
       baseSym = NULL;
 
   } else if (dest->hasFlag(FLAG_ARRAY_ALIAS)        &&
-             resolvedFn->hasFlag(FLAG_AUTO_COPY_FN) &&
-             !dest->hasFlag(FLAG_CONST))
+             resolvedFn->hasFlag(FLAG_AUTO_COPY_FN))
   {
-    // We are creating a var alias - ensure aliasee is not const either.
-    SymExpr* aliaseeSE = toSymExpr(call->get(1));
-    INT_ASSERT(aliaseeSE);
-    if (aliaseeSE->var->isConstant() ||
-        aliaseeSE->var->hasFlag(FLAG_CONST))
-      USR_FATAL_CONT(call, "creating a non-const alias '%s' of a const array or domain", dest->name);
+    INT_ASSERT(false); // should not happen
   }
 
   // Do not consider it const if it is an access to 'this'
