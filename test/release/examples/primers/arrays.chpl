@@ -1,7 +1,7 @@
 // Arrays
 
 //
-//  This primer is a tutorial on Chapel rectangular arrays.
+// This primer is a tutorial on Chapel rectangular arrays and domains.
 //
 
 //
@@ -66,7 +66,8 @@ writeln();
 writeln("A(2..4) is: ", A(2..4), "\n");
 
 //
-// Note: further information on slicing can be found in "slices.chpl"
+// Note: further information on slicing can be found in
+// :ref:`slices.chpl <primers-slices>`
 //
 
 //
@@ -95,8 +96,8 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // An array's index set is referred to as a domain -- a first-class
 // language concept that stores the set of indices used to access the
 // array.  The arrays above are declared with the anonymous domains
-// {1..n} and {1..n, 1..n}.  An array's domain can be accessed using
-// the .domain method:
+// ``{1..n}`` and ``{1..n, 1..n}``.  An array's domain can be accessed
+// using the .domain method:
 //
 
 forall (i,j) in B.domain do
@@ -172,8 +173,7 @@ writeln("After initializing D, its value is:\n", D, "\n");
 
 
 //
-// Array expressions of similar size and shape support whole-array
-// assignment.
+// Arrays of similar size and shape support whole-array assignment.
 //
 
 E = C;
@@ -182,7 +182,7 @@ writeln("After assigning C to E, E's value is:\n", E, "\n");
 
 //
 // Whole array assignment also allows scalar values to be promoted
-// and assigned to every element of an array
+// and assigned to every element of an array.
 //
 
 B = 0.0;
@@ -194,8 +194,8 @@ writeln("After being reset, B is:\n", B, "\n");
 // though doing so presents the compiler with opportunities to
 // optimize bounds checks away.  In the following loop, there is
 // no known relation between B and ProbSpace, so bounds checks are
-// harder to prove away (requires symbolic analysis of the definitions
-// of the two domains and the invariance of their bounds)
+// harder to prove away. (It requires symbolic analysis of the definitions
+// of the two domains and the invariance of their bounds.)
 //
 
 for (i,j) in ProbSpace do
@@ -205,7 +205,7 @@ writeln("B has been re-initialized to:\n", B, "\n");
 
 //
 // Whole-array assignment can also be used for arrays or sub-arrays
-// whose index spaces differ:
+// whose index spaces differ. Their shapes must still match.
 //
 
 var F, G: [ProbSpace] real;
@@ -225,7 +225,7 @@ G[2.., ..] = B[..n-1, ..];
 writeln("After assigning a slice of B to G, G's value is:\n", G, "\n");
 
 //
-// Array slicing also supports rank-change semantics when sliced using
+// Array slicing supports rank-change semantics when sliced using
 // a scalar value rather than a range.  In the following assignment,
 // recall that A was our initial 1-dimensional array.
 //
@@ -259,8 +259,8 @@ writeln("B[ProbSpaceSlice] is:\n", B[ProbSpaceSlice], "\n");
 
 //
 // Forall loops over domains and arrays can be written using the
-// syntax "[<ind> in <Dom>] ..." which is shorthand for "forall ind
-// in Dom do ..."
+// syntax ``[<ind> in <Dom>] ...`` which is shorthand for
+// ``forall <ind> in <Dom> do ...``
 //
 
 const offset = (1,1); // a 2-tuple offset
@@ -292,7 +292,7 @@ var VarArr: [VarDom] real = [i in VarDom] i;
 writeln("Initially, VarArr = ", VarArr, "\n");
 
 //
-// Now, if we reassign VarDom, VarArr will be reallocated with the
+// Now, if we reassign ``VarDom``, ``VarArr`` will be reallocated with the
 // old values preserved and the new values initialized to the element
 // type's default value.
 //
@@ -305,7 +305,7 @@ writeln("After doubling VarDom, VarArr = ", VarArr, "\n");
 // As mentioned before, this reallocation preserves values according
 // to index, so if we extend the lower bound of the domain, the
 // non-zero values will still logically be associated with indices
-// 1..n:
+// ``1..n``:
 //
 
 VarDom = {-n+1..2*n};
@@ -322,8 +322,8 @@ writeln("After shrinking VarDom, VarArr = ", VarArr, "\n");
 
 //
 // One trick to reallocate an array without preserving any values is
-// to assign its domain a degenerate domain and then assign it the
-// new value:
+// to assign its domain variable a degenerate domain, e.g. ``{1..0}``,
+// and then assign it the new value:
 //
 
 VarDom = {1..0};
@@ -339,13 +339,13 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 // the function argument query syntax does not result in a domain
 // expression that can be reassigned.  In particular, we cannot do:
 //
-//   VarArr.domain = {1..2*n};
+//   ``VarArr.domain = {1..2*n};``
 //
 // nor:
 //
-//   proc foo(X: [?D]) {  D = {1..2*n};  }
+//   ``proc foo(X: [?D]) {  D = {1..2*n};  }``
 //
-// Only a domain variable or a domain function argument can be
+// Only a domain variable or formal argument can be
 // reassigned to reallocate arrays.  This is to avoid confusion
 // since assigning one domain variable can cause a number of
 // arrays to be reallocated.  It also implies that arrays declared
@@ -353,8 +353,6 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 // original array declarations A and B, we have no way of reallocating
 // them.  Arrays with constant domains provide the compiler with
 // optimization benefits, so this supports a common case efficiently.
-//
-// A.domain = {1..2*n};
 //
 
 //
@@ -372,18 +370,26 @@ forall (i,j) in ProbSpace do
 
 writeln("Y is:\n", Y);
 
+/*
+   Our current implementation does not yet support arrays of arrays
+   where the inner array size is a function of the outer -- they must
+   all be of uniform size.  In particular, it is our intention to
+   support things like:
+
+   .. code-block:: chapel
+
+       var Triangle: [row in 1..n] [1..row] real;
+       var HierArr: [lvl in 1..n] [1..2**lvl, 1..2**lvl] real;
+
+   If such capabilities would be of use to you, please let us know and
+   we will adjust their priority accordingly.
+*/
+
 //
-// Our current implementation does not yet support arrays of arrays
-// where the inner array size is a function of the outer -- they must
-// all be of uniform size.  In particular, it is our intention to
-// support things like:
-//
-//   const Triangle: [1..row] real = [row in 1..n] [col in 1..row] row + col/10.0;
-//
-// and:
-//
-//   var HierArr: [lvl in 1..n] [1..2**lvl, 1..2**lvl] real;
-//
-// If such capabilities would be of use to you, please let us know and
-// we will adjust their priority accordingly.
+// For further information, see the domain primer
+// :ref:`domains.chpl <primers-domains>`
+// and other array primers:
+// :ref:`sparse.chpl <primers-sparse>`,
+// :ref:`opaque.chpl <primers-opaque>`,
+// :ref:`associative.chpl <primers-associative>`.
 //

@@ -76,7 +76,7 @@ var Days = {"Sunday", "Wednesday", "Saturday"};
 
   .. code-block:: chapel
 
-       var Days : domain(string) = {"Sunday", ...};
+       var Days : domain(string) = {"Sunday", "Wednesday", "Saturday"};
 
 */
 
