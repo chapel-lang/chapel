@@ -97,5 +97,5 @@ if !quiet then
 
 //
 // For more information on Chapel's timing capabilities, refer to the
-// :mod:`Time` section of the Standard Modules online documentation
+// :mod:`Time` section of the Standard Modules online documentation.
 //
