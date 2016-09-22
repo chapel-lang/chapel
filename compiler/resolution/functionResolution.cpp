@@ -1211,13 +1211,17 @@ resolveFormals(FnSymbol* fn) {
       }
 
       // Adjust tuples for intent.
-      if (formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+      // This should not apply to 'ref' , 'out', or 'inout' formals,
+      // but these are currently turned into reference types above.
+      // It probably should not apply to 'const ref' either but
+      // that is more debateable.
+      if (formal->type->symbol->hasFlag(FLAG_TUPLE) &&
           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
           !(formal == fn->_this) &&
           !doNotChangeTupleTypeRefLevel(fn, false)) {
 
         Type* newType = computeTupleWithIntent(formal->intent,
-                                               formal->type->getValType());
+                                               formal->type);
         formal->type = newType;
       }
 
