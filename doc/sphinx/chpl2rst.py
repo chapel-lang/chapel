@@ -143,7 +143,12 @@ def gen_rst(handle):
     indentation = -1
 
     # Each line is rst or code-block
-    for line in [l.strip('\n') for l in handle.readlines()]:
+    for (i, line) in enumerate([l.strip('\n') for l in handle.readlines()]):
+
+        # Skip title comment if present
+        if i == 0:
+            if titlecomment(line):
+                continue
 
         # Skip empty lines
         if len(line.strip()) == 0:
@@ -225,7 +230,11 @@ def gen_codeblock(handle):
     output.append('.. code-block:: chapel')
     output.append('')
 
-    for line in [l.strip('\n') for l in handle.readlines()]:
+    for (i, line) in enumerate([l.strip('\n') for l in handle.readlines()]):
+        if i == 0:
+            if titlecomment(line):
+                continue
+
         output.append('  ' + line)
 
     return '\n'.join(output)
@@ -283,8 +292,7 @@ def main(**kwargs):
         fname = getfname(chapelfile, output, prefix)
 
         if not os.path.exists(prefix) and output != 'stdout':
-            print('--prefix=', prefix, ' does not exist')
-            print('Creating directories:', prefix)
+            print('Creating directory: ', prefix)
             os.makedirs(prefix)
 
         if verbose:
