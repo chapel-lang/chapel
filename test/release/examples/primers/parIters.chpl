@@ -9,15 +9,19 @@
   standalone is not available. 
 
   For a more thorough introduction to leader-follower iterators,
-  refer to our PGAS 2011 paper, "User-Defined Parallel Zippered
-  Iterators in Chapel". We expect the parallel iterator interface
+  refer to our PGAS 2011 paper, `User-Defined Parallel Zippered
+  Iterators in Chapel`_. We expect the parallel iterator interface
   to change and improve over time, so this should be considered a
   snapshot of their use in the current implementation.
 */
 
-//
-// Leader-follower
-// ---------------
+/*
+.. primers-parIters-leader-follower:
+
+Leader-follower
+---------------
+ */
+
 // Any zippered forall loop in Chapel will be implemented using
 // leader-follower iterators.  Generally speaking, a forall loop
 // of the following form:
@@ -33,8 +37,14 @@
 // being iterated over are 'followers' (so for this loop, ``A``,
 // ``B``, and ``C`` would be).
 //
-// Semantics
-// ---------
+
+/*
+.. primers-parIters-semantics:
+
+Semantics
+---------
+ */
+
 // Given such a loop, the compiler will roughly translate it into
 // the following loop structure:
 
@@ -54,9 +64,14 @@
 // an equivalent zippered parallel loop and then to the leader-follower idiom
 // shown above. ``foo(A, B, C)`` goes through a similar transformation, where
 // ``foo()`` is defined to take scalar arguments and is promoted in this call.
-//
-// Roles
-// -----
+
+/*
+.. primers-parIters-roles:
+
+Roles
+-----
+ */
+
 // At a high level, the role of a leader iterator is to:
 //
 //   a) create the parallel tasks used to implement the forall loop,
@@ -73,9 +88,14 @@
 // a chunk of work (as yielded by a leader) and to serially iterate
 // over and yield the elements/values corresponding to those
 // iterations in order.
-//
-// Example: count
-// --------------
+
+/*
+.. primers-parIters-count:
+
+Example: count
+--------------
+ */
+
 // For this example, we're going to create a simple iterator named
 // ``count`` that will be able to be invoked in for or forall loops.
 // Count will be defined to take an argument ``n`` as input and an
@@ -155,9 +175,13 @@ writeln("After reassigning A using zippering:");
 writeln(A);
 writeln();
 
-// 
-// count: leader
-// -------------
+/*
+.. primers-parIters-leader
+
+count: leader
+-------------
+ */
+
 // The leader and follower iterators are defined as overloads of the
 // serial version of the iterator, distinguished by an initial
 // param argument of the built-in enumerated type ``iterKind``.  To
@@ -221,14 +245,17 @@ iter count(param tag: iterKind, n: int, low: int=1)
 // As mentioned at the outset, this leader is fairly static and
 // simple.  More generally, a leader can introduce tasks more
 // dynamically, partition work between the tasks more dynamically,
-// etc.  ``See $CHPL_HOME/modules/standard/DynamicIters.chpl`` for
-// some more interesting examples of leader iterators, including
-// those that use dynamic partitioning.
+// etc.  See :mod:DynamicIters.chpl for some more interesting examples
+// of leader iterators, including those that use dynamic partitioning.
 //
 
-//
-// count: follower
-// ---------------
+/*
+.. primers-parIters-follower
+
+count: follower
+---------------
+ */
+
 // The follower is another overload of the same iterator name, this
 // time taking the iterKind.follower param enumeration as its first
 // argument.  The next arguments should match the leader and serial
@@ -260,9 +287,13 @@ iter count(param tag: iterKind, n: int, low: int=1, followThis)
     yield i;
 }
 
-//
-// count: standalone parallel
-// --------------------------
+/*
+.. primers-parIters-standalone-parallel
+
+count: standalone parallel
+--------------------------
+ */
+
 // The standalone parallel iterator is another overload of the same name,
 // taking the ``iterKind.standalone`` param enumeration as its first argument.
 // The next arguments again match the serial iterator exactly. This iterator
@@ -288,9 +319,13 @@ iter count(param tag: iterKind, n: int, low: int = 1)
   }
 }
 
-//
-// count: usage
-// ------------
+/*
+.. primers-parIters-usage
+
+count: usage
+------------
+ */
+
 // Now that we've defined leader-follower and standalone iterators, we can
 // execute the same loops we did before, only this time using forall loops
 // to make the execution parallel.  We start with some simple invocations
@@ -363,9 +398,13 @@ writeln("After reassigning A using whole-array assignment:");
 writeln(A);
 writeln();
 
-//
-// Closing notes
-// -------------
+/*
+.. primers-parIters-closing-notes
+
+Closing notes
+-------------
+ */
+
 // Chapel data types like records and classes can support iteration
 // by defining iterator methods (invoked by name) or ``these()`` iterators
 // which support iterating over variables of that type directly.  Such
@@ -394,3 +433,5 @@ proc computeChunk(r: range, myChunk, numChunks) where r.stridable == false {
     return mylow..r.high;
   }
 }
+
+// .. _User-Defined Parallel Zippered Iterators in Chapel: http://pgas11.rice.edu/papers/ChamberlainEtAl-Chapel-Iterators-PGAS11.pdf 
