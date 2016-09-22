@@ -16,7 +16,7 @@ Contributors to the current release
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
-* Andrea Francesco Iurio, individual contributor, [GSoC]
+* Andrea Francesco Iurio, [Università degli Studi di Milano] / [GSoC]
 * David Iten, [Cray Inc.]
 * David Keaton, [Cray Inc.]
 * Engin Kayraklioglu, [George Washington University] / [Cray Inc.]
@@ -29,7 +29,7 @@ Contributors to the current release
 * Nicholas Park, [DOD]
 * Elliot Ronaghan, [Cray Inc.]
 * Preston Sahabu, [Cray Inc.]
-* Kushal Singh, individual contributor, [GSoC]
+* Kushal Singh, [Int'l Institute of Information Technology, Hyderabad] /[GSoC]
 * [Kenjiro Taura], [University of Tokyo]
 * Chris Taylor, [DOD]
 * Greg Titus, [Cray Inc.]
@@ -150,6 +150,7 @@ implementation.
 [Georgia Tech]: http://www.cc.gatech.edu/
 [GSoC]: https://summerofcode.withgoogle.com/organizations/6608321708556288/
 [Indiana University]: http://www.cs.indiana.edu/
+[Int'l Institute of Information Technology, Hyderabad]: https://www.iiit.ac.in/
 [Københavns Universitet (University of Copenhagen)]: http://diku.dk/english/
 [Lawrence Berkeley National Laboratory]: http://crd.lbl.gov/
 [LTS]: https://www.ltsnet.net/
@@ -166,6 +167,7 @@ implementation.
 [Universidad de Málaga (University of Malaga)]: http://www.ac.uma.es/index-e.html
 [University of Maryland]: https://www.cs.umd.edu/
 [University of Notre Dame]: http://cse.nd.edu/
+[Università degli Studi di Milano]: http://www.unimi.it/ENG/
 [University of Tokyo]: http://www.i.u-tokyo.ac.jp/index_e.shtml
 [University of Washington]: http://cs.washington.edu/
 [University of Wisconsin]: http://www.cs.wisc.edu/
