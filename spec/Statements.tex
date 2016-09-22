@@ -373,16 +373,11 @@ select-statement:
 
 when-statements:
   when-statement
-  when-statement otherwise-statement
-  otherwise-statement when-statement
   when-statement when-statements
-  when-statements when-statement
 
 when-statement:
   `when' expression-list `do' statement
   `when' expression-list block-statement
-
-otherwise-statement:
   `otherwise' statement
   `otherwise' `do' statement
 
