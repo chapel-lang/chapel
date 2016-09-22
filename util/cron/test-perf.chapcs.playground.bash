@@ -7,7 +7,7 @@ export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $CWD/common-perf.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.arr-playground"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
 # Test performance of the blank-ref-intent branch (subset/prereq of arrays work)
 GITHUB_USER=benharsh
