@@ -328,11 +328,13 @@ static const char* error_string_no_error = "No error";
 
 static
 const char* extended_errors[] = {
-  "end of file",
-  "short read or write",
-  "bad format",
-  "illegal multibyte sequence", // most systems already have EILSEQ but not all
-  "overflow", // most systems already have EOVERFLOW but not all
+  /* EEOF */     "end of file",
+  /* ESHORT */   "short read or write",
+  /* EFORMAT */  "bad format",
+  // most systems already have the following but not all
+  /* EILSEQ */    "illegal multibyte sequence",
+  /* EOVERFLOW */ "overflow",
+  /* ENODATA */   "no data",
   NULL
 };
 
