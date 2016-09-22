@@ -109,8 +109,14 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 //
 
 /*
-  The Stencil distribution reduces communication by creating read-only caches
-  for elements adjacent to the block of elements owned by each locale. This
+  The Stencil distribution is a variant of the :mod:`Block <BlockDist>`
+  distribution that attempts to improve performance for stencil computations by
+  reducing the amount of communication necessary during array accesses. From
+  the user's perspective, it behaves very similarly to the Block distribution
+  where reads, writes, and iteration are concerned.
+
+  This distribution reduces communication by creating read-only caches for
+  elements adjacent to the block of elements owned by each locale. This
   documentation may refer to these cached regions as 'ghost cells' or 'fluff'.
   This approach can avoid many fine-grained GETs and PUTs when performing a
   stencil computation near the boundary of the current locale's chunk of array
