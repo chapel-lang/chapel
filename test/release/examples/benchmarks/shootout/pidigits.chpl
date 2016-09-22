@@ -70,7 +70,7 @@ iter gen_digits(numDigits) {
     //
     // eliminate digit d
     //
-    mpz_submul_ui(accum, denom, d);        // accum = (accum - denom) * d
+    mpz_submul_ui(accum, denom, d);        // accum -= denom * d
     mpz_mul_ui(accum, accum, 10);          // accum *= 10
     mpz_mul_ui(numer, numer, 10);          // numer *= 10
   }
