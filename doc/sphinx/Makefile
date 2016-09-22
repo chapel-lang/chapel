@@ -96,3 +96,7 @@ clean-primers: FORCE
 
 
 FORCE:
+
+# Disable parallel builds to prevent race conditions
+.NOTPARALLEL:
+
