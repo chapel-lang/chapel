@@ -47,7 +47,7 @@ iter gen_digits(numDigits) {
         //
         // Compute the next term
         //
-        accum += numer * 2;
+        accum.addmul(numer, 2);
         accum *= k2;
         denom *= k2;
         numer *= k;
