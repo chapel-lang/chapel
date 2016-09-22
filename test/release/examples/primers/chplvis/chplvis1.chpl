@@ -1,3 +1,4 @@
+// chplvis: Basic Usage
 
 //  Example 1 using visual debug
 //  Full primer is found in doc/chplvis/chplvis.rst.

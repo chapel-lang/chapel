@@ -1,6 +1,6 @@
-/*
-   Opaque Primer
+// Opaque Domains and Arrays
 
+/*
    This primer is designed to give a brief introduction to Chapel's
    opaque domains and arrays.  Opaque domains and arrays are those in
    which index values are opaque/anonymous, and were designed to

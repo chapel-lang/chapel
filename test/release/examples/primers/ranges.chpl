@@ -1,8 +1,7 @@
+// Ranges
+
 /*
-   Range Primer
-
    This primer illustrates Chapel ranges and range operations.
-
 */
 
 /*

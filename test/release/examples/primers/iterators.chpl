@@ -1,6 +1,6 @@
-/*
-   Iterators Primer
+// Iterators
 
+/*
    This primer contains several examples of iterators:
      an iterator to generate the Fibonacci numbers,
      an iterator defined by multiple loops
