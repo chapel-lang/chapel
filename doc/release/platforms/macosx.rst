@@ -17,6 +17,10 @@ following command::
 
     brew install chapel
 
+When using a Homebrew install of Chapel, the ``CHPL_HOME`` directory is
+here::
+
+    /usr/local/Cellar/chapel/<chapel-version>/libexec/
 
 .. note::
 
