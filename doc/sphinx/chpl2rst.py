@@ -68,15 +68,17 @@ def get_arguments():
 def gen_link(link, chapelfile):
     """Generate hyperlink to GitHub URL based on chapelfile path"""
     # Note - this makes the assumption that the file lives in the github repo
-    abspath = os.path.abspath(chapelfile)
+    abspath = os.path.realpath(chapelfile)
     filename = os.path.split(chapelfile)[1]
 
-    chpl_home = os.getenv('CHPL_HOME')
+    chpl_home = os.path.realpath(os.getenv('CHPL_HOME'))
     if not chpl_home:
         print('Error: --link flag only works when $CHPL_HOME is defined')
         sys.exit(1)
     elif not chpl_home in abspath:
         print('Error: --link flag only work for files within $CHPL_HOME')
+        print('CHPL_HOME: {0}'.format(chpl_home))
+        print('file path: {0}'.format(abspath))
         sys.exit(1)
 
     # Get path from CHPL_HOME directory
