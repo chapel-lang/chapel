@@ -156,8 +156,6 @@ Conversions
   # expressions/vass/cast-to-non-type-2.future
 - Integer to c_string cast promotes from int to real before cast is performed
   # types/string/thomasvandoren/int-to-c_string.future
-- Cast from string to scalar type does not ignore leading white space
-  # users/ferguson/cast_to_int_ignore_whitespace.future
 
 
 Statements and Expressions
@@ -178,8 +176,6 @@ Statements and Expressions
   # users/jglewis/locClassSegFault.future
 - Nested for expressions can cause runtime failure
   # expressions/diten/forExprs.future
-- Index variable in for expression can interfere with outer var by same name
-  # users/bguarraci/comprehension.future
 - Using domain extraction syntax inside a variable declaration causes
   compiler failure instead of a clean error
   # users/bguarraci/domain_extraction.future
@@ -439,9 +435,6 @@ Classes, Records, and Unions
   # arrays/deitz/part5/test_array_type_field_type.future 
   # classes/diten/type_order_problem.future
   # types/records/bharshbarger/nestedRecordInClass2.future
-- Cannot call 'new' on type variables for classes and records
-  # types/typedefs/tzakian/classConstructorsFromTypes.future
-  # types/typedefs/lydia/new-on-returned-type-alias.future
 - Ambiguous definitions of class methods that are overridden in a
   subclass result in an internal compiler error.
   # classes/vass/duplicate-virtual-method-error-2.future
@@ -483,11 +476,6 @@ Classes, Records, and Unions
   compiler error.
   # types/records/sungeun/recursiveRecord.future
   # arrays/dinan/array_of_records.future
-- Remote records have wide members shallow-copied.  Array members may
-  not share the same locale as the containing record violating the
-  intended semantics of array copying.
-  # types/records/bharshbarger/remoteBlankRecord.future
-  # types/records/bharshbarger/remoteInRecord.future
 - Classes arguments passed to out, inout, and ref intent formals
   result in a compiler internal error.
   # classes/vass/ref-like-intents/inout-subclass.future
@@ -636,7 +624,6 @@ Data Parallelism
   # arrays/sungeun/array_of_arrays/bxor_reduce.future
   # arrays/sungeun/array_of_arrays/max_reduce.future
   # arrays/sungeun/array_of_arrays/sum_reduce.future
-  # trivial/sidelnik/reduction.future
   # studies/shootout/nbody/sidelnik/nbody_fullreduction.future
 - Reduction type definitions nested in classes or records cannot be
   used directly outside of enclosing class or record's scope.
@@ -779,10 +766,6 @@ Miscellaneous
   # types/tuple/stonea/returnArrayTuple.future
 - Indexing string literals results in a parse error
   # types/string/sungeun/c_string/substr.future
-- The --minimal-modules feature has been disabled because strings are
-  required, but are records in the standard modules.
-  # compflags/bradc/minimalModules/minModDeclPrint.future
-  # compflags/bradc/minimalModules/minModFnRefArg.future
 - Getting the locale-id of variable in local-on statement can be incorrect.
   # optimizations/localon/bad-id.future
 
@@ -805,9 +788,6 @@ chpldoc
 - chpldoc comments that are not closed with using the specified
   comment style are not detected.
   # chpldoc/compflags/comment/badClose.doc.future
-- chpldoc generates documentation for some symbols that should not be
-  documented
-  # chpldoc/basics/main.doc.future
 - chpldoc is incorrect or incomplete for some types
   # chpldoc/enum/docConstants.doc.future
 
