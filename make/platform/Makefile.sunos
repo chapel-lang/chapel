@@ -35,3 +35,4 @@ GEN_CFLAGS +=  -U__STRICT_ANSI__
 #
 ARMCI_PLATFORM_SPECIFIC_LIBS = -lsocket
 PVM_PLATFORM_LIBS = -lrt
+GEN_LFLAGS = -lsocket -lnsl
