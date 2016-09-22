@@ -1,3 +1,5 @@
+// LAPACK
+
 /*
   Example usage of the LAPACK module in Chapel.
 

@@ -1,8 +1,7 @@
+// Timers
+
 /*
-   Timers Primer
-
    This primer demonstrates the use of a Timer from the ``Time`` module.
-
 */
 
 //

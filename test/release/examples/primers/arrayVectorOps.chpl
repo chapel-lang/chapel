@@ -1,6 +1,8 @@
-/*
-   Vector Operations on 1D Arrays Primer
-*/
+// Array Vector Operations
+
+//
+// This primer is about vector operations on 1D arrays
+//
 
 //
 // 1D rectangular arrays support several list-like or vector-like capabilities.

@@ -1,5 +1,5 @@
-//
-// Reductions Primer
+// Reductions
+
 //
 // This primer includes example reductions.
 //

@@ -1,3 +1,5 @@
+// FFTW
+
 /*
   Example usage of the FFTW module in Chapel. This particular file
   demonstrates the single-threaded version of the code.  In order to

@@ -1,5 +1,6 @@
+// Atomics
+
 /*
-  Atomics primer
 
   This primer illustrates Chapel's atomic variables.  For more information
   on Chapel's atomics, see the Chapel Language Specification.

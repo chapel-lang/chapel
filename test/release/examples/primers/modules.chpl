@@ -1,6 +1,6 @@
-/*
-   Module Primer
+// Modules
 
+/*
    This primer introduces the concept of modules, a concept for encapsulating
    code for use by other code.  It covers:
 

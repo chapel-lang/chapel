@@ -1,9 +1,8 @@
-/*
-   Procedures Primer
+// Procedures
 
+/*
    This primer covers procedures including overloading, argument
    intents and dynamic dispatch.
-
 */
 
 //

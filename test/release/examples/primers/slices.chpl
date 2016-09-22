@@ -1,5 +1,6 @@
-/*  Slicing Primer
+// Slices
 
+/*
     This example program demonstrates the use of array slicing and
     reindexing.
 

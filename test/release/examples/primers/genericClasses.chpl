@@ -1,8 +1,7 @@
+// Generic Classes
+
 /*
-   Generic Classes Primer
-
    This primer covers generic class types.
-
 */
 
 //
