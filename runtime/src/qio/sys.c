@@ -1449,10 +1449,22 @@ err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_o
   char* new_host_buf;
   char* serv_buf=0;
   char* new_serv_buf;
-  int host_buf_sz = NI_MAXHOST;
-  int serv_buf_sz = NI_MAXSERV;
+  int host_buf_sz;
+  int serv_buf_sz;
   int got;
   err_t err_out;
+
+#ifdef NI_MAXHOST
+  host_buf_sz = NI_MAXHOST;
+#else
+  host_buf_sz = 1025;
+#endif
+
+#ifdef NI_MAXSERV
+  serv_buf_sz = NI_MAXSERV;
+#else
+  serv_buf_sz = 32;
+#endif
 
   STARTING_SLOW_SYSCALL;
 
