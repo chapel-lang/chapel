@@ -216,6 +216,16 @@ binary-trees:
     - upgrade jemalloc to 4.2.0 (#3919)
   06/13/16:
     - polish to binary-trees versions (#4017)
+  09/21/16:
+    - switch from type method factory to init()-based implementation
+  09/22/16:
+    - simplify init()-based implementation
+
+binarytrees-submitted:
+  09/21/16:
+    - switch from type method factory to init()-based implementation
+  09/22/16:
+    - simplify init()-based implementation
 
 chameneos-redux:
   07/08/13:
