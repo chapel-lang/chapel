@@ -1,4 +1,6 @@
-// prog3.chpl -- A more complex chplvis example
+// chplvis: Jacobi Iterations Example
+
+// Example 3 -- A more complex chplvis example
 // A version of Jacobi Iterations written to run on multiple locales
 
 use VisualDebug;
