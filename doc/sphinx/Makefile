@@ -6,9 +6,6 @@ include Makefile.sphinx
 CHPL2RST     = ./run-in-venv.bash ./chpl2rst.py
 CHPL2RSTOPTS = --output=rst --prefix=source/primers/primers --link=master
 
-# Disable parallel builds to prevent race conditions
-.NOTPARALLEL:
-
 help: help-sphinx help-source
 
 help-source:
@@ -99,3 +96,7 @@ clean-primers: FORCE
 
 
 FORCE:
+
+# Disable parallel builds to prevent race conditions
+.NOTPARALLEL:
+
