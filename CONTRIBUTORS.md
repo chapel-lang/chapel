@@ -8,6 +8,7 @@ Chapel release:
 Contributors to the current release
 -----------------------------------
 * Ben Albrecht, [Cray Inc.]
+* Matthew Baker, [ORNL]
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
 * Sung-Eun Choi, [Cray Inc.]
@@ -33,11 +34,11 @@ Contributors to the current release
 * Chris Taylor, [DOD]
 * Greg Titus, [Cray Inc.]
 * Tony Wallace, [Cray Inc.]
+* Hui Zhang, [University of Maryland]
 
 Contributors to previous releases
 ---------------------------------
 * Rafael Asenjo, [Universidad de Málaga (University of Malaga)]
-* Matthew Baker, [ORNL]
 * Steve Balensiefer, [University of Washington]
 * Casey Battaglino, [Cray Inc.] / [Georgia Tech]
 * Ian Bertolacci, [Cray Inc.] / [Colorado State University]
