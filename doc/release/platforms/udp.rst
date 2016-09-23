@@ -153,9 +153,11 @@ I get xSocket errors when using a system with multiple IP addresses
  *** FATAL ERROR: Got an xSocket while spawning slave process: connect()
  failed while creating a connect socket (111:Connection refused)
 
-You need to set ``GASNET_MASTERIP`` and possibly ``GASNET_WORKERIP``. See
-``$CHPL_HOME/third-party/gasnet/gasnet-src/udp-conduit/README`` or
-http://gasnet.lbl.gov/dist/udp-conduit/README .
+You need to set ``GASNET_MASTERIP`` and possibly ``GASNET_WORKERIP``.
+Please refer to:
+
+  * ``$CHPL_HOME/third-party/gasnet/gasnet-src/udp-conduit/README``
+  * http://gasnet.lbl.gov/dist/udp-conduit/README .
 
 
 
