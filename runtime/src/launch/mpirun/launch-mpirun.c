@@ -39,7 +39,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
   // TODO When MPI Comm layer is supported, support -nl>1 && CHPL_COMM!=none
   if (numLocales != 1 || mpi_num_ranks==NULL) {
-    chpl_error("For mpirun, specify number of spmd images via --spmd <#>", 0, 0);
+    chpl_error("For mpirun, specify number of SPMD images via --spmd <#>", 0, 0);
   }
   if (strcmp(CHPL_COMM, "none") != 0) {
     chpl_error("mpirun only supports CHPL_COMM=none", 0, 0);
@@ -85,5 +85,5 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 void chpl_launch_print_help(void) {
   fprintf(stdout, "LAUNCHER FLAGS:\n");
   fprintf(stdout, "===============\n");
-  fprintf(stdout, "  %s : specify number of MPI ranks (default : numLocales)\n", CHPL_SPMD);
+  fprintf(stdout, "  %s : specify number of SPMD images \n", CHPL_SPMD);
 }
