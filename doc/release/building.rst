@@ -13,6 +13,7 @@ called ``gmake``. So, first check if ``make`` refers to GNU make:
 
 .. code-block:: bash
 
+   # If the first line includes "GNU Make", you have GNU Make.
    make -v
 
 Further instructions will assume ``make`` refers to GNU Make. If that's not
