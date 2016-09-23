@@ -11,6 +11,8 @@ provides instructions on how to set Chapel up to support multiple Auxiliary I/O
 systems simultaneously.
 
 
+.. _auxIO-HDFS-deps:
+
 Installing HDFS Dependencies
 ----------------------------
 
@@ -100,8 +102,8 @@ First reflect your directory structure and version numbers (etc) in the
       After this go to your datanode site and you should see a new
       datanode.
 
-      A good online tutorial for this as well can be found here:
-      http://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/ClusterSetup.html
+      A good online tutorial for this as well can be found here on the 
+      `Hadoop Cluster Setup Documentation <http://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/ClusterSetup.html>`_
 
 .. _setup-hadoop-4:
 
@@ -145,15 +147,18 @@ First reflect your directory structure and version numbers (etc) in the
 6. Set up Chapel to run in distributed mode:
 
    * You'll need to set up your Chapel environment to target multiple
-     locales in the standard way (see multilocale.rst and the
+     locales in the standard way (see :ref:`readme-multilocale` and the
      "Settings to run Chapel on multiple nodes" section of the
-     .bashrc below).
+     :ref:`setup-hadoop-bashrc` below).
 
    * After this you should be able to run Chapel code with HDFS over
      a cluster of computers the same way as you normally would.
 
 
 .. _setup-hadoop-bashrc:
+
+Sample .bashrc
+**************
 
 Here is a sample .bashrc for using Hadoop within Chapel:
 
