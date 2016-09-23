@@ -21,16 +21,9 @@
 #include <string.h>
 #include "chpllaunch.h"
 #include "chpl-mem.h"
+#include "chplcgfns.h"
 #include "error.h"
 
-/*
-TODO -- Throw an error if CHPL_COMM != none.
-
-The mpirun launcher was originally designed to support the mpi comm layer,
-but this comm layer is no longer officially supported. In the future, this
-layer will likely be supported again. However, for now, the mpirun launcher
-should only work with CHPL_COMM = none.
-*/
 #define CHPL_SPMD "--spmd"
 
 static char* mpi_num_ranks=NULL;
@@ -44,9 +37,12 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
   int numranks;
 
-  // TODO When MPI Comm layer is supported again, this can support numLocales>1
+  // TODO When MPI Comm layer is supported, support -nl>1 && CHPL_COMM!=none
   if (numLocales != 1 || mpi_num_ranks==NULL) {
-    chpl_error("For mpirun, specify number of ranks via --spmd <#>", 0, 0);
+    chpl_error("For mpirun, specify number of spmd images via --spmd <#>", 0, 0);
+  }
+  if (strcmp(CHPL_COMM, "none") != 0) {
+    chpl_error("mpirun only supports CHPL_COMM=none", 0, 0);
   }
 
   // Get the number of ranks
