@@ -66,8 +66,8 @@ writeln();
 writeln("A(2..4) is: ", A(2..4), "\n");
 
 //
-// Note: further information on slicing can be found in
-// :ref:`slices.chpl <primers-slices>`
+// Note: further information on slicing can be found in the
+// :ref:`Slices Primer <primers-slices>`
 //
 
 //
@@ -97,7 +97,7 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // language concept that stores the set of indices used to access the
 // array.  The arrays above are declared with the anonymous domains
 // ``{1..n}`` and ``{1..n, 1..n}``.  An array's domain can be accessed
-// using the .domain method:
+// using the ``.domain`` method:
 //
 
 forall (i,j) in B.domain do
@@ -136,7 +136,7 @@ writeln("After calling printArr, B is:\n", B, "\n");
 // variables.
 //
 // The following domain declaration defines a 2D arithmetic domain
-// called ProbSpace which is the same size and shape as B was above.
+// called ``ProbSpace`` which is the same size and shape as ``B`` was above.
 //
 
 var ProbSpace: domain(2) = {1..n, 1..n};
@@ -161,7 +161,7 @@ writeln("After initializing C, its value is:\n", C, "\n");
 // Similarly, multidimensional array accesses can be expressed using
 // tuple indices rather than multiple integer arguments.  In the
 // following example, the index variable ij stores a 2-tuple of
-// integers (2*int in Chapel).  This is a really inefficient way
+// integers (``2*int`` in Chapel).  This is a really inefficient way
 // to assign the diagonal values "true" -- note the use of tuple
 // indexing to tease the individual components out of the 2-tuple.
 //
@@ -193,9 +193,9 @@ writeln("After being reset, B is:\n", B, "\n");
 // An array need not be indexed using the domain used to declare it,
 // though doing so presents the compiler with opportunities to
 // optimize bounds checks away.  In the following loop, there is
-// no known relation between B and ProbSpace, so bounds checks are
-// harder to prove away. (It requires symbolic analysis of the definitions
-// of the two domains and the invariance of their bounds.)
+// no known relation between ``B`` and ``ProbSpace``, so bounds checks are
+// harder to prove away (requires symbolic analysis of the definitions
+// of the two domains and the invariance of their bounds).
 //
 
 for (i,j) in ProbSpace do
@@ -227,7 +227,7 @@ writeln("After assigning a slice of B to G, G's value is:\n", G, "\n");
 //
 // Array slicing supports rank-change semantics when sliced using
 // a scalar value rather than a range.  In the following assignment,
-// recall that A was our initial 1-dimensional array.
+// recall that ``A`` was our initial 1-dimensional array.
 //
 
 A = B[n/2, ..];
@@ -335,7 +335,7 @@ VarDom = {1..n};
 writeln("VarArr should now be reset: ", VarArr, "\n");
 
 //
-// Note that querying an array's domain via the .domain method or
+// Note that querying an array's domain via the ``.domain`` method or
 // the function argument query syntax does not result in a domain
 // expression that can be reassigned.  In particular, we cannot do:
 //
@@ -350,7 +350,7 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 // since assigning one domain variable can cause a number of
 // arrays to be reallocated.  It also implies that arrays declared
 // using an anonymous domain cannot be reallocated.  So for our
-// original array declarations A and B, we have no way of reallocating
+// original array declarations ``A`` and ``B``, we have no way of reallocating
 // them.  Arrays with constant domains provide the compiler with
 // optimization benefits, so this supports a common case efficiently.
 //
@@ -371,25 +371,19 @@ forall (i,j) in ProbSpace do
 writeln("Y is:\n", Y);
 
 /*
-   Our current implementation does not yet support arrays of arrays
-   where the inner array size is a function of the outer -- they must
-   all be of uniform size.  In particular, it is our intention to
-   support things like:
+   Our current implementation requires that array elements must
+   all be of uniform size. We would also like to support jagged arrays,
+   where the inner array size is a function of the outer.
+   In particular, it is our intention to support arrays like these:
 
    .. code-block:: chapel
 
        var Triangle: [row in 1..n] [1..row] real;
        var HierArr: [lvl in 1..n] [1..2**lvl, 1..2**lvl] real;
-
-   If such capabilities would be of use to you, please let us know and
-   we will adjust their priority accordingly.
 */
 
 //
-// For further information, see the domain primer
-// :ref:`domains.chpl <primers-domains>`
-// and other array primers:
-// :ref:`sparse.chpl <primers-sparse>`,
-// :ref:`opaque.chpl <primers-opaque>`,
-// :ref:`associative.chpl <primers-associative>`.
+// For further information, see the :ref:`Domain Primer <primers-domains>`
+// and other array primers: :ref:`Sparse <primers-sparse>`,
+// :ref:`Opaque <primers-opaque>`, :ref:`Associative <primers-associative>`.
 //
