@@ -76,8 +76,8 @@ iter gen_digits(numDigits) {
   proc extract_digit(nth) {
     tmp1.mul(numer, nth);
     tmp2.add(tmp1,accum);
-    tmp1.div_q(Round.ZERO, tmp2, denom);
+    tmp1.div_q(tmp2, denom);
 
-    return tmp1.get_si();
+    return tmp1: int;
   }
 }

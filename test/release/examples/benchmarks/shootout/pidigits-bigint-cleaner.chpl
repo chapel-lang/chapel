@@ -78,6 +78,6 @@ iter gen_digits(numDigits) {
     tmp2 = tmp1 + accum;
     tmp1 = tmp2 / denom;
 
-    return tmp1.get_si();
+    return tmp1: int;
   }
 }
