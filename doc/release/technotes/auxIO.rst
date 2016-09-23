@@ -16,39 +16,44 @@ systems simultaneously.
 Installing HDFS Dependencies
 ----------------------------
 
-The HDFS functionality in Chapel is dependent upon both Hadoop and Java being
+The :mod:`HDFS` functionality in Chapel is dependent upon both Hadoop and Java being
 installed.  The ``HADOOP_INSTALL``, ``JAVA_INSTALL`` and ``CLASSPATH``
 environment variables must be set as described below.
-Without this it will not compile with HDFS, even if
-the flags are set. As well, the HDFS functionality is also dependent upon the
+Without this it will not compile with :mod:`HDFS`, even if
+the flags are set. As well, the :mod:`HDFS` functionality is also dependent upon the
 ``CHPL_AUXIO_INCLUDE`` and ``CHPL_AUXIO_LIBS`` environment variables being set
 properly.
 
 If you have a working installation of Hadoop already, you can skip
-this section, other than to set up your CLASSPATH environment
+this section, other than to set up your ``CLASSPATH`` environment
 variable.  This section is written so that people without sudo
-permission can install and use HDFS.  If you do have sudo permissions,
+permission can install and use :mod:`HDFS`.  If you do have sudo permissions,
 you can usually install all of these via a package manager.
 
-The general outline for these instructions is:
+The general outline for these instructions are:
 
-  1. Install and point to the jdk to provide code Chapel needs to
-     compile against libhdfs (:ref:`Step 1 <setup-hadoop-1>`)
-  2. Install Hadoop (:ref:`Step 2 <setup-hadoop-2>`)
-  3. Set up Hadoop on (a) the local host or (b) a cluster of hosts
-     (:ref:`Step 3 <setup-hadoop-3>`)
-  4. Start up HDFS (:ref:`Step 4 <setup-hadoop-4>`)
-  5. Stop HDFS when you're done (:ref:`Step 5 <setup-hadoop-5>`)
-  6. Set up Chapel to run in distributed mode (:ref:`Step 6 <setup-hadoop-6>`)
+  * :ref:`Step 1 <setup-hadoop-1>`:  Install and point to the jdk to provide code Chapel needs to
+    compile against libhdfs
+
+  * :ref:`Step 2 <setup-hadoop-2>`: Install Hadoop
+
+  * :ref:`Step 3 <setup-hadoop-3>`: Set up Hadoop on (a) the local host or (b) a cluster of hosts
+
+  * :ref:`Step 4 <setup-hadoop-4>`: Start up HDFS
+
+  * :ref:`Step 5 <setup-hadoop-5>`: Stop HDFS when you're done
+
+  * :ref:`Step 6 <setup-hadoop-6>`: Set up Chapel to run in distributed mode
 
 First reflect your directory structure and version numbers (etc) in the
 :ref:`sample .bashrc <setup-hadoop-bashrc>` and put it in your .bashrc (or
-.bash_profile -- your choice) and source whichever one you put it into.
+other shell rc file of your choice) and source whichever one you put it into.
 
 .. _setup-hadoop-1:
 
 1. Make sure you have a SERVER edition of the jdk installed and
-   point JAVA_INSTALL to it (see the same .bashrc below)
+   point ``JAVA_INSTALL`` to it (see the
+   :ref:`sample .bashrc <setup-hadoop-bashrc>` below)
 
 .. _setup-hadoop-2:
 
@@ -56,9 +61,9 @@ First reflect your directory structure and version numbers (etc) in the
 
    * Download the latest version of Hadoop and unpack it
 
-   * Now in the unpacked directory, open conf/hadoop-env.sh and edit:
+   * Now in the unpacked directory, open ``conf/hadoop-env.sh`` and edit:
 
-     * set ``JAVA_INSTALL`` to be the part before ``bin/``... when you do:
+     * set ``JAVA_INSTALL`` to be the part before ``bin/`` when you do:
 
         .. code-block:: sh
 
@@ -102,7 +107,7 @@ First reflect your directory structure and version numbers (etc) in the
       After this go to your datanode site and you should see a new
       datanode.
 
-      A good online tutorial for this as well can be found here on the 
+      A good online tutorial for this as well can be found here on the
       `Hadoop Cluster Setup Documentation <http://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/ClusterSetup.html>`_
 
 .. _setup-hadoop-4:
@@ -215,13 +220,13 @@ Enabling HDFS Support
 
 Once you have ensured that Hadoop and Java are installed and have the
 five variables above, defined, set the environment variable
-CHPL_AUX_FILESYS to 'hdfs' to enable HDFS support:
+CHPL_AUX_FILESYS to 'hdfs' to enable :mod:`HDFS` support:
 
 .. code-block:: sh
 
   export CHPL_AUX_FILESYS=hdfs
 
-Then, rebuild Chapel by executing 'make' from $CHPL_HOME.
+Then, rebuild Chapel by executing ``make`` from ``$CHPL_HOME``.
 
 .. code-block:: sh
 
@@ -236,12 +241,12 @@ Then, rebuild Chapel by executing 'make' from $CHPL_HOME.
 Installing Curl Dependencies
 ----------------------------
 
-The Curl functionality in Chapel is dependent on libcurl. For information on
-how to install libcurl, see the
+The :mod:`Curl` functionality in Chapel is dependent on libcurl. For
+information on how to install libcurl, see the
 `curl installation instructions <https://curl.haxx.se/docs/install.html>`_
 
-The environment variables CHPL_AUXIO_INCLUDE and CHPL_AUXIO_LIBS must be set to
-point to the include and lib directories for libcurl respectively.
+The environment variables ``CHPL_AUXIO_INCLUDE`` and ``CHPL_AUXIO_LIBS`` must
+be set to point to the include and lib directories for libcurl respectively.
 
 .. note::
 
@@ -253,14 +258,14 @@ Enabling Curl Support
 *********************
 
 Once you have ensured that libcurl is installed, and have the two variables
-above defined, set the environment variable CHPL_AUX_FILESYS to 'curl' to enable
-Curl support:
+above defined, set the environment variable ``CHPL_AUX_FILESYS`` to 'curl' to
+enable :mod:`Curl` support:
 
 .. code-block:: sh
 
   export CHPL_AUX_FILESYS=curl
 
-Then, rebuild Chapel by executing 'make' from $CHPL_HOME:
+Then, rebuild Chapel by executing ``make`' from ``$CHPL_HOME``:
 
 .. code-block:: sh
 
@@ -271,12 +276,6 @@ Then, rebuild Chapel by executing 'make' from $CHPL_HOME:
   If Curl support is not enabled (which is the default), all features
   described below will compile successfully but will result in an error at
   runtime, saying: "No Curl Support".
-
-For information on how to enable and use Curl while also using other auxiliary
-IO extensions, as well as how to setup the CHPL_AUXIO_INCLUDE and
-CHPL_AUXIO_LIBS environment variables see doc/technotes/auxIO.rst in a
-Chapel release.
-
 
 
 The AIO system depends upon three environment variables:
@@ -321,17 +320,18 @@ CHPL_AUX_FILESYS
 ----------------
 
 This is a space delimited string detailing what AIO systems we wish to compile
-Chapel with (and use). For example if we wanted to enable Curl and HDFS support
-simultaneously we would set:
+Chapel with (and use). For example if we wanted to enable :mod:`Curl` and
+:mod:`HDFS` support simultaneously we would set:
 
     ``CHPL_AUX_FILESYS="hdfs curl"``
 
-Assuming that you have correctly defined ``CHPL_AUXIO_INCLUDES`` and ``CHPL_AUXIO_LIBS``
-as detailed above, and have the correct libraries installed.
+Assuming that you have correctly defined ``CHPL_AUXIO_INCLUDES`` and
+``CHPL_AUXIO_LIBS`` as detailed above, and have the correct libraries
+installed.
 
 If you only have one AIO system that you wish to use, you may simply set
-``CHPL_AUX_FILESYS=<system>``. For example, if we only wanted Apache Hadoop HDFS support,
-we would set:
+``CHPL_AUX_FILESYS=<system>``. For example, if we only wanted Apache Hadoop
+HDFS support, we would set:
 
     ``CHPL_AUX_FILESYS=hdfs``
 
@@ -355,11 +355,12 @@ work on "standard" file systems as well).
 ``file.getchunk(start:int(64), end:int(64)):(int(64), int(64))``
 
  - This returns the first logical *chunk* of the file that is inside this
-   section. If no *chunk* can be found inside this region, (0,0) is returned. If
-   no arguments are provided, we return the start and end of the first logical
-   chunk for this file.
+   section. If no *chunk* can be found inside this region, (0,0) is returned.
+   If no arguments are provided, we return the start and end of the first
+   logical chunk for this file.
 
-     - On Lustre, this returns the first stripe for the file that is inside this region.
+     - On Lustre, this returns the first stripe for the file that is inside
+       this region.
 
      - On HDFS, this returns the first block for the file that is inside this
        region.
@@ -383,8 +384,8 @@ work on "standard" file systems as well).
  - Apache Hadoop provides a libhdfs implementation that uses the Java virtual
    machine (jvm) and the Apache Hadoop HDFS jar files. When using Apache Hadoop
    libhdfs, make sure the jvm installation includes a static version of libjvm.
-   Since, Apache Hadoop's libhdfs spins up a jvm, each compute node will need 
-   access to the Apache Hadoop HDFS jar files and correct Java classpath 
+   Since, Apache Hadoop's libhdfs spins up a jvm, each compute node will need
+   access to the Apache Hadoop HDFS jar files and correct Java classpath
    configurations. Set ``CHPL_AUX_FILESYS=hdfs`` to use libhdfs.
    Review ``$CHPL_HOME/modules/packages/HDFS.chpl`` for configuration.
 
