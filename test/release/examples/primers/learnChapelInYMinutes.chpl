@@ -102,7 +102,7 @@ param compileTimeConst: int = 16;
 config var varCmdLineArg: int = -123;
 config const constCmdLineArg: int = 777;
 
-// ``config param``s can be set/changed at compile-time.
+// ``config param`` can be set/changed at compile-time.
 // Set with ``--set paramCmdLineArg=value`` at compile-time.
 config param paramCmdLineArg: bool = false;
 writeln( varCmdLineArg, ", ", constCmdLineArg, ", ", paramCmdLineArg );
@@ -391,9 +391,9 @@ for i in 1..10 do
   intArray[i] = -i;
 writeln( intArray );
 
-// We cannot access intArray[0] because it exists outside
-// of the index set, {1..10}, we defined it to have.
-// intArray[11] is illegal for the same reason.
+// We cannot access ``intArray[0]`` because it exists outside
+// of the index set, ``{1..10}``, we defined it to have.
+// ``intArray[11]`` is illegal for the same reason.
 var realDomain: domain(2) = {1..5,1..7};
 var realArray: [realDomain] real;
 var realArray2: [1..5,1..7] real;   // equivalent
@@ -578,6 +578,7 @@ Intents
 */
 
 /* Intent modifiers on the arguments convey how those arguments are passed to the procedure.
+
      * in: copy arg in, but not out
      * out: copy arg out, but not in
      * inout: copy arg in, copy arg out
