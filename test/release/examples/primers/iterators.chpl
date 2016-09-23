@@ -2,11 +2,13 @@
 
 /*
    This primer contains several examples of iterators:
+
      * an iterator to generate the Fibonacci numbers,
      * an iterator defined by multiple loops
      * and a recursive iterator over a tree.
 
    It also contains examples of the two kinds of parallel iteration:
+
      * data-parallel (``forall``), and
      * task-parallel (``coforall``).
 */
