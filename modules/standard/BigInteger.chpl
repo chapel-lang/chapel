@@ -3927,9 +3927,9 @@ module BigInteger {
   }
 
   // 5.6 Division Functions
-  proc bigint.div_q(param     rounding: Round,
-                    const ref n:        bigint,
-                    const ref d:        bigint) {
+  proc bigint.div_q(const ref n: bigint,
+                    const ref d: bigint,
+                    param     rounding = Round.ZERO) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
@@ -3962,15 +3962,16 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_q(param     rounding: Round,
-                    const ref n:        bigint,
-                              d:        integral) {
-    this.div_q(rounding, n, new bigint(d));
+  proc bigint.div_q(const ref n: bigint,
+                              d: integral,
+                    param     rounding = Round.ZERO) {
+
+    this.div_q(n, new bigint(d), rounding);
   }
 
-  proc bigint.div_r(param rounding: Round,
-                    const ref n: bigint,
-                    const ref d: bigint) {
+  proc bigint.div_r(const ref n: bigint,
+                    const ref d: bigint,
+                    param     rounding = Round.ZERO) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
@@ -4003,17 +4004,17 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_r(param     rounding: Round,
-                    const ref n:        bigint,
-                              d:        integral) {
-    this.div_r(rounding, n, new bigint(d));
+  proc bigint.div_r(const ref n: bigint,
+                              d: integral,
+                    param     rounding = Round.ZERO) {
+    this.div_r(n, new bigint(d), rounding);
   }
 
   // this gets quotient, r gets remainder
-  proc bigint.div_qr(param     rounding: Round,
-                     ref       r:        bigint,
+  proc bigint.div_qr(ref       r:        bigint,
                      const ref n:        bigint,
-                     const ref d:        bigint) {
+                     const ref d:        bigint,
+                     param     rounding = Round.ZERO) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
@@ -4050,16 +4051,16 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_qr(param     rounding: Round,
-                     ref       r:        bigint,
-                     const ref n:        bigint,
-                               d:        integral) {
-    this.div_qr(rounding, r, n, new bigint(d));
+  proc bigint.div_qr(ref       r: bigint,
+                     const ref n: bigint,
+                               d: integral,
+                     param     rounding = Round.ZERO) {
+    this.div_qr(r, n, new bigint(d), rounding);
   }
 
-  proc bigint.div_q_2exp(param rounding: Round,
-                         const ref n: bigint,
-                         b: integral) {
+  proc bigint.div_q_2exp(const ref n: bigint,
+                                   b: integral,
+                         param     rounding = Round.ZERO) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
@@ -4092,9 +4093,9 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_r_2exp(param rounding: Round,
-                         const ref n: bigint,
-                         b: integral) {
+  proc bigint.div_r_2exp(const ref n: bigint,
+                                   b: integral,
+                         param     rounding = Round.ZERO) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
