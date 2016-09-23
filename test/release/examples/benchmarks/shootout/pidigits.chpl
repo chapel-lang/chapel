@@ -7,7 +7,7 @@
 
 use BigInteger;
 
-config const n = 50;              // Compute n digits of pi, 50 by default
+config const n = 50;         // Compute n digits of pi, 50 by default
 
 proc main() {
   param digitsPerLine = 10;
@@ -34,8 +34,8 @@ proc main() {
 
 
 iter gen_digits(numDigits) {
-  var accum, tmp1, tmp2: bigint,
-      numer, denom: bigint = 1;
+  var numer, denom: bigint = 1,
+      accum, tmp1, tmp2: bigint;
 
   var d, k = 0;
   for i in 1..numDigits {
