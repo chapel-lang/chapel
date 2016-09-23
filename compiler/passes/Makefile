@@ -41,8 +41,8 @@ FORCE:
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 
-reservedSymbolNames.h: reservedSymbolNames
-	sed -e 's/^\([ 	]*\)\([A-Za-z_][A-Za-z0-9_]*\)/\1cnames.set_add(astr("\2"));/' <$< >$@
+reservedSymbolNames.h: reservedSymbolNames Makefile
+	sed -e 's/^\([ 	]*\)\([A-Za-z_][A-Za-z0-9_]*\)/\1cnames.insert(astr("\2"));/' <$< >$@
 
 $(OBJ_SUBDIR)/codegen.o: reservedSymbolNames.h
 

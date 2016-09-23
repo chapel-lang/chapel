@@ -39,6 +39,9 @@ Executing using the help (``-h``/``--help``) flag will typically print out
 any launcher-specific options in addition to the normal help message for
 the program itself.
 
+Currently Supported Launchers
++++++++++++++++++++++++++++++
+
 Currently supported launchers include:
 
 ===================  ====================================================
@@ -91,22 +94,130 @@ installation-specific configuration, e.g.), you can often use the ``-v``
 flag to capture the commands that the launcher executes on your behalf
 and customize them for your needs.
 
-
---------------------------------
 Forwarding Environment Variables
---------------------------------
+++++++++++++++++++++++++++++++++
 
 Chapel launchers generally arrange for environment variables to be
 forwarded to worker processes. However, this strategy is not always
 reliable. The remote system may override some environment variables, and
-some launchers might not correctly forward all environment variables.  In
-particular, the amudprun launcher will not forward environment variables
-containing backticks (`).
+some launchers might not correctly forward all environment variables.
+
+.. _using-slurm:
+
+Using Slurm
++++++++++++
+
+To use native Slurm, set:
+
+.. code-block:: sh
+
+  export CHPL_LAUNCHER=slurm-srun
+
+On Cray systems, this will happen automatically if srun is found in your path,
+but not when both srun and aprun are found in your path. Native Slurm is the
+best option where it works, but at the time of this writing, there are problems with it when combined with UDP or InfiniBand conduits. So, for these configurations please see:
+
+  * :ref:`readme-infiniband` for information about using Slurm with
+    InfiniBand.
+  * :ref:`using-udp-slurm` for information about using Slurm with the UDP
+    conduit
+
+Common Slurm Settings
+*********************
+
+Before running, you will need to set the amount of time to request
+from SLURM. For example, the following requests 15 minutes:
+
+.. code-block:: bash
+
+  export CHPL_LAUNCHER_WALLTIME=00:15:00
+
+Another Slurm variable that usually needs to be set is the Slurm partition to
+use. For example, set the Slurm partition to 'debug' with the commands:
+
+.. code-block:: bash
+
+  export SALLOC_PARTITION=debug
+  export SLURM_PARTITION=$SALLOC_PARTITION
+
+If needed, you can request a specific node feature from SLURM by putting
+it in the ``CHPL_LAUNCHER_CONSTRAINT`` environment variable. For example,
+to use nodes with the 'cal' feature (as defined in the slurm.conf
+file), set:
+
+.. code-block:: bash
+
+  export CHPL_LAUNCHER_CONSTRAINT=cal
+
+If this environment variable is undefined, SLURM may use any node in
+the computer.
+
+If the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` is defined then
+sbatch is used to launch the job to the queue system, rather than
+running it interactively as usual. In this mode, the output will be
+written by default to a file called <executableName>.<jobID>.out. The
+environment variable ``CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME`` can be used
+to specify a different filename for the output.
 
 
----------------------------------
-_real binary suffix for execution
----------------------------------
+.. _ssh-launchers-with-slurm:
+
+Using any SSH-based launcher with Slurm
+***************************************
+
+It is possible to use any SSH-based launcher with Slurm, with some additionally
+effort. This strategy can come in handy if other launchers are not working.
+However, launchers such as `slurm-srun` and `slurm-gasnetrun_ibv` offer a
+better experience.
+
+First, let's see how to use an SSH-based launcher with an interactive `salloc`
+session. Here we will assume the UDP conduit, but any other launcher supporting
+SSH can be configured analogously.
+
+.. code-block:: bash
+
+   # Compile a sample program
+   chpl -o hello6-taskpar-dist examples/hello6-taskpar-dist.chpl
+
+   # Reserve 2 nodes for an interactive run
+   salloc -N 2
+   # Then, within the salloc shell
+
+     # Specify that ssh should be used
+     export GASNET_SPAWNFN=S
+     # Specify the list of nodes to use
+     export GASNET_SSH_SERVERS=`scontrol show hostnames | xargs echo`
+     # Run the program on the 2 reserved nodes.
+     ./hello6-taskpar-dist -nl 2
+
+This strategy can also be used within an *sbatch* script. Here is an
+example script to save to the file `job.bash`:
+
+.. code-block:: bash
+
+  #!/bin/bash
+  #SBATCH -t 0:10:0
+  #SBATCH --nodes=2
+  #SBATCH --exclusive
+  #SBATCH --partition=chapel
+  #SBATCH --output=job.output
+
+  export GASNET_SPAWNFN=S
+  export GASNET_SSH_SERVERS=`scontrol show hostnames | xargs echo`
+
+  ./hello6-taskpar-dist -nl 2
+
+To run this job, use:
+
+.. code-block:: bash
+
+  sbatch job.bash
+
+and when it completes, the output will be available in `job.output` as
+specified in `job.bash`.
+
+Changing the _real binary suffix
+++++++++++++++++++++++++++++++++
 
 In order to support profiling tools that produce new binaries for the
 launcher to execute, the suffix of the real binary executed by the
@@ -115,9 +226,8 @@ variable. If this variable is unset, the suffix defaults to "_real",
 matching the compiler's output.
 
 
-----------------------
 Bypassing the launcher
-----------------------
+++++++++++++++++++++++
 
 If the Chapel launcher capability fails you completely, set
 ``CHPL_LAUNCHER`` to none, recompile, and execute the a.out binary
@@ -135,80 +245,14 @@ appropriate for your system:
   Chapel's threading layer (e.g., pthreads), so extra copies of the
   binary are not required per core.
 
------------
-SLURM notes
------------
+* in our experience, this technique does not work for InfiniBand
+  configurations.
 
-Prerequisites: 
- 
-  To use native SLURM, set:
-
-  .. code-block:: sh
-
-    export CHPL_LAUNCHER=slurm-srun
-
-  This will happen automatically if srun is found in your path, but
-  not when both srun and aprun are found in your path.
-
-  To use SLURM using GASNet over Infiniband, set:
-
-  .. code-block:: sh
-
-    export CHPL_LAUNCHER=slurm-gasnetrun_ibv
-    export CHPL_COMM=gasnet
-    export CHPL_COMM_SUBSTRATE=ibv
-
-  To have GASNet use mpirun to launch your program, set:
-
-  .. code-block:: sh
-
-    export GASNET_IBV_SPAWNER=mpi
-
-  At this point, rebuild your Chapel runtime ('make' from ``$CHPL_HOME``),
-  and compile your program.
-
-Settings: 
-
-  Before running, you will need to set the amount of time to request
-  from SLURM. For example, the following requests 15 minutes:
-
-  .. code-block:: sh
-
-    export CHPL_LAUNCHER_WALLTIME=00:15:00
-
-  If needed, you can request a specific node feature from SLURM by putting
-  it in the ``CHPL_LAUNCHER_CONSTRAINT`` environment variable. For example,
-  to use nodes with the 'cal' feature (as defined in the slurm.conf
-  file), set:
-
-  .. code-block:: sh
-
-    export CHPL_LAUNCHER_CONSTRAINT=cal
-
-  If this environment variable is undefined, SLURM may use any node in
-  the computer.
-
-  If the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` is defined then
-  sbatch is used to launch the job to the queue system, rather than
-  running it interactively as usual. In this mode, the output will be
-  written by default to a file called <executableName>.<jobID>.out. The
-  environment variable ``CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME`` can be used
-  to specify a different filename for the output.
-
-
-  Other SLURM variables will have an impact; for example, the SLURM
-  partition can be set to 'debug' with the command:
-
-  .. code-block:: sh
-
-    export SLURM_PARTITION=debug
-
---------------------
 Additional launchers
---------------------
+++++++++++++++++++++
 
-In addition to the launchers listed above there are several others that
-are not actively maintained but may still work.
+In addition to the supported launchers listed above there are several others
+that are not actively maintained but may still work.
 
 =============  ==========================================================
 Launcher Name  Description

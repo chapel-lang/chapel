@@ -190,6 +190,10 @@ class Cyclic: BaseDist {
     var tupleStartIdx: rank*idxType;
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;
+
+    // MPF - why isn't it:
+    //setupTargetLocalesArray(targetLocDom, targetLocs, targetLocales);
+
     if rank == 1  {
       targetLocDom = {0..#targetLocales.numElements};
       targetLocs = targetLocales;
@@ -817,8 +821,7 @@ proc CyclicArr.dsiLocalSlice(ranges) {
     low(i) = ranges(i).low;
   }
 
-  var A => locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
-  return A;
+  return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 
 proc CyclicArr.dsiDisplayRepresentation() {
@@ -885,7 +888,12 @@ proc CyclicArr.dsiPrivatize(privatizeData) {
 }
 
 
-inline proc _remoteAccessData.getDataIndex(param stridable, myStr: rank*idxType, ind: rank*idxType, startIdx, dimLen) {
+inline proc _remoteAccessData.getDataIndex(
+    param stridable,
+    myStr: rank*chpl__signedType(idxType),
+    ind: rank*idxType,
+    startIdx,
+    dimLen) {
   // modified from DefaultRectangularArr
   var sum = origin;
   if stridable {
@@ -935,7 +943,8 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
       if radata(rlocIdx).data != nil {
         const startIdx = myLocArr.locCyclicRAD.startIdx;
         const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
-        var str: rank*idxType;
+        type strType = chpl__signedType(idxType);
+        var str: rank*strType;
         for param i in 1..rank {
           pragma "no copy" pragma "no auto destroy" var whole = dom.whole;
           str(i) = whole.dim(i).stride;
@@ -976,9 +985,15 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
 
   var t: rank*range(idxType=idxType, stridable=true);
   for param i in 1..rank {
-    // NOTE: unsigned idxType with negative stride will not work
+    type strType = chpl__signedType(idxType);
     const wholestride = dom.whole.dim(i).stride:chpl__signedType(idxType);
-    t(i) = ((followThis(i).low*wholestride):idxType..(followThis(i).high*wholestride):idxType by (followThis(i).stride*wholestride)) + dom.whole.dim(i).low;
+    if wholestride < 0 && idxType != strType then
+      halt("negative stride with unsigned idxType not supported");
+    const iStride = wholestride:idxType;
+    const      lo = (followThis(i).low * iStride):idxType,
+               hi = (followThis(i).high * iStride):idxType,
+           stride = (followThis(i).stride*wholestride):strType;
+    t(i) = (lo..hi by stride) + dom.whole.dim(i).low;
   }
   const myFollowThis = {(...t)};
   if fast {
@@ -1069,7 +1084,7 @@ class LocCyclicArr {
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var locCyclicRAD: LocCyclicRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: atomicflag; // This will only be accessed locally, so
+  var locRADLock: atomicbool; // This will only be accessed locally, so
                               // force the use of processor atomics
 
   // These function will always be called on this.locale, and so we do
@@ -1116,9 +1131,7 @@ proc CyclicArr.doiCanBulkTransferStride() param {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiCanBulkTransferStride");
 
-  // A CyclicArr is a bunch of DefaultRectangular arrays,
-  // so strided bulk transfer gotta be always possible.
-  return true;
+  return useBulkTransferDist;
 }
 
 //For assignments of the form: "any = Cyclic"

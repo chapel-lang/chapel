@@ -98,11 +98,15 @@ module ChapelIteratorSupport {
     return ic;
 
   proc _getIterator(type t) {
-    compilerError("cannot iterate over a type");
+    return _getIterator(_checkIterator(t));
   }
 
   inline proc _getIteratorZip(x) {
     return _getIterator(x);
+  }
+
+  inline proc _getIteratorZip(type t) {
+    return _getIterator(t);
   }
 
   inline proc _getIteratorZip(x: _tuple) {
@@ -118,8 +122,28 @@ module ChapelIteratorSupport {
       return _getIteratorZipInternal(x, 1);
   }
 
-  proc _checkIterator(type t) {
-    compilerError("cannot iterate over a type");
+  inline proc _getIteratorZip(type t: _tuple) {
+    inline proc _getIteratorZipInternal(type t: _tuple, param dim: int) {
+      var x : t; //have to make an instance of the tuple to query the size
+
+      if dim == x.size then // dim == t.size then
+        return (_getIterator(t(dim)),);
+      else
+        return (_getIterator(t(dim)), (..._getIteratorZipInternal(t, dim+1)));
+    }
+    if t == (t(1),) then // t.size == 1 then
+      return _getIterator(t(1));
+    else
+      return _getIteratorZipInternal(t, 1);
+  }
+
+  inline proc _checkIterator(type t) {
+    use Reflection;
+
+    if (canResolveTypeMethod(t, "these")) then
+      return t.these();
+    else
+      compilerError("unable to iterate over type '", t:string, "'");
   }
 
   inline proc _checkIterator(x) {
@@ -337,20 +361,11 @@ module ChapelIteratorSupport {
     return follower;
   }
 
-  pragma "no implicit copy"
-  inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex) {
-    return _toFollower(iterator, leaderIndex);
-  }
-
-  inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex) {
-    return _toFollower(ir, leaderIndex);
-  }
-
   inline proc _toFastFollower(x, leaderIndex) {
     if chpl__staticFastFollowCheck(x) then
-      return _toFastFollower(x.these(), leaderIndex, fast=true);
+      return _toFastFollower(_getIterator(x), leaderIndex, fast=true);
     else
-      return _toFollower(x.these(), leaderIndex);
+      return _toFollower(_getIterator(x), leaderIndex);
   }
 
   inline proc _toFastFollowerZip(x, leaderIndex) {

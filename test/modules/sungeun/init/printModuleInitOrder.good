@@ -6,6 +6,7 @@ Initializing Modules:
      BaseStringType
      SysCTypes
      StringCasts
+    ChapelDebugPrint
     ChapelBase
      ChapelStringLiterals
     MemConsistency
@@ -25,18 +26,20 @@ Initializing Modules:
     LocalesArray
     ChapelDistribution
      List
+     Sort
     ChapelIO
      IO
       Error
       Regexp
     LocaleTree
     DefaultAssociative
-     Sort
     ChapelTaskTable
     MemTracking
     ChapelUtil
     ChapelDynDispHack
     Assert
     CommDiagnostics
+    AlignedTSupport
+    RangeChunk
    printModuleInitOrder
     moduleInitTest

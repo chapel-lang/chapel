@@ -561,7 +561,8 @@ class Function {
     inline proc truncate(x) {
       const eps = 1e-8;
       if abs(x) < eps then return 0.0;
-      else return x;
+      if abs(x) > 1.0/eps then return trunc(x/10) * 10;
+      return x;
     }
     
     /** Mostly for debugging, print summary of coefficients,

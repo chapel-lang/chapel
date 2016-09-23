@@ -16,7 +16,6 @@ Description=Dump hardware topology and locality information to #RUNSTATEDIR#/hwl
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=#SBINDIR#/hwloc-dump-hwdata -o #RUNSTATEDIR#/hwloc
-ExecStop=#RMPATH# -rf #RUNSTATEDIR#/hwloc
 
 [Install]
 WantedBy=multi-user.target

@@ -122,17 +122,6 @@ always-build-chpldoc: FORCE
 	$(MAKE) chpldoc; \
 	fi
 
-clean-module-docs:
-	cd modules && $(MAKE) clean-documentation
-
-module-docs-only:
-	cd modules && $(MAKE) documentation
-
-module-docs: chpldoc
-# Call `make module-docs-only` as part of the recipe instead of as a
-# dependency so parallel make executions correctly build chpldoc first.
-	$(MAKE) module-docs-only
-
 chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install

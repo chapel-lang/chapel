@@ -1,5 +1,0 @@
-bug: domain assignment that changes stridedness causes runtime crash
-
-I think this should be a compiler error similar to domain assignments that
-change rank or idxType. Assignments that change rank and idxType are commented
-out in this test as an example.

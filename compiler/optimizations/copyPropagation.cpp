@@ -29,6 +29,9 @@
 #include "stlUtil.h"
 #include "stmt.h"
 
+// view.h is used when DEBUG_CP is enabled.
+#include "view.h"
+
 //#############################################################################
 //# COPY PROPAGATION
 //#

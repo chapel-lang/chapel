@@ -148,7 +148,7 @@ module DefaultOpaque {
   }
   
   proc DefaultOpaqueDom.dsiRemove(idx: idxType) {
-    adomain.dsiRemove(idx);
+    return adomain.dsiRemove(idx);
   }
   
 }

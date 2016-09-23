@@ -1,13 +1,13 @@
+// Locales
+
 /*
- * Locales primer
- *
- * This example showcases Chapel's locale types.  To run this example
- * using multiple locales set up your environment as described in
- * multilocale.rst and execute it using the "-nl #" flag to specify
- * the number of locales.  For example, to run on 2 locales, run
- * "./a.out -nl 2".
- *
- */
+   This example showcases Chapel's locale types.  To run this example
+   using multiple locales set up your environment as described in
+   multilocale.rst and execute it using the "-nl #" flag to specify
+   the number of locales.  For example, to run on 2 locales, run
+   "./a.out -nl 2".
+
+*/
 
 use Memory;
 
@@ -121,7 +121,7 @@ if printLocaleInfo then
       writeln("locale #", here.id, "...");
       writeln("  ...is named: ", here.name);
       writeln("  ...has ", here.numPUs(), " processor cores");
-      writeln("  ...has ", here.physicalMemory(unit=MemUnits.GB, retType=real), 
+      writeln("  ...has ", here.physicalMemory(unit=MemUnits.GB, retType=real),
               " GB of memory");
       writeln("  ...has ", here.maxTaskPar, " maximum parallelism");
     }

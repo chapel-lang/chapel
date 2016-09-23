@@ -373,16 +373,11 @@ select-statement:
 
 when-statements:
   when-statement
-  when-statement otherwise-statement
-  otherwise-statement when-statement
   when-statement when-statements
-  when-statements when-statement
 
 when-statement:
   `when' expression-list `do' statement
   `when' expression-list block-statement
-
-otherwise-statement:
   `otherwise' statement
   `otherwise' `do' statement
 
@@ -692,8 +687,12 @@ module-or-enum-name:
   identifier . module-or-enum-name
 
 limitation-clause:
-  `except' identifier-list
-  `only' rename-list
+  `except' exclude-list
+  `only' rename-list[OPT]
+
+exclude-list:
+  identifier-list
+  $ * $
 
 rename-list:
   rename-base
@@ -789,7 +788,9 @@ listed visible symbols in the module or enumerated type will be made available
 without prefix.  All visible symbols not provided via these limited use
 statements are still accessible with the module or enumerated type name prefix.
 It is an error to provide a name in a \sntx{limitation-clause} that does not
-exist or is not visible in the respective module or enumerated type.
+exist or is not visible in the respective module or enumerated type.  If an
+\chpl{only} list is left empty or \chpl{except} is followed by $*$ then no
+symbols are made available to the scope without prefix.
 
 Within an \chpl{only} list, a visible symbol from that module may optionally be
 given a new name using the \chpl{as} keyword.  This new name will be usable from

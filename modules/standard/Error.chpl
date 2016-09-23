@@ -79,7 +79,7 @@ proc ioerror(error:syserr, msg:string)
     var errstr:c_string;
     var strerror_err:err_t = ENOERR;
     errstr = sys_strerror_syserr_str(error, strerror_err);
-    const err_msg: string = errstr + " " + msg;
+    const err_msg: string = errstr:string + " " + msg;
     __primitive("chpl_error", err_msg.c_str());
   }
 }

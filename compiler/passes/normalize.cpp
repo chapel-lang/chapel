@@ -27,6 +27,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
+#include "initializerRules.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -44,6 +45,7 @@ bool normalized = false;
 //
 static void insertModuleInit();
 static void transformLogicalShortCircuit();
+static void lowerReduceAssign();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
 static void insertUseForExplicitModuleCalls(void);
@@ -56,7 +58,6 @@ static void insert_call_temps(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
 static void hack_resolve_types(ArgSymbol* arg);
 static void fixup_array_formals(FnSymbol* fn);
-static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                                       DefExpr* def,
                                                       int width);
@@ -74,6 +75,7 @@ static void find_printModuleInit_stuff();
 void normalize() {
   insertModuleInit();
   transformLogicalShortCircuit();
+  lowerReduceAssign();
 
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -109,7 +111,6 @@ void normalize() {
     if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       fixup_array_formals(fn);
-    clone_parameterized_primitive_methods(fn);
     fixup_query_formals(fn);
     change_method_into_constructor(fn);
   }
@@ -277,6 +278,90 @@ static void transformLogicalShortCircuit()
   }
 }
 
+
+static Symbol* reduceIntentOp(BlockStmt* block, Symbol* reVar) {
+  // See markOuterVarsWithIntents() on how to decode byrefVars.
+  // Note that here we may have leading iter symbols, see getIterSymbols().
+  CallExpr* byrefVars = block->byrefVars;
+  bool leadingIterSymbols =
+    byrefVars->numActuals() >= 3 &&
+    toSymExpr(byrefVars->get(1))->var->hasFlag(FLAG_CHPL__ITER);
+
+  // The first actual (after the iter symbols when present); null if none.
+  Expr* markExpr = leadingIterSymbols ? byrefVars->get(3)->next :
+    byrefVars->argList.head;
+
+  while (markExpr) {
+    SymExpr* markSE = toSymExpr(markExpr);
+    SymExpr* outervarSE = toSymExpr(markSE->next);
+    markExpr = outervarSE->next;
+
+    if (isVarSymbol(markSE->var))
+      // this is a reduce intent
+      if (outervarSE->var == reVar)
+        // found reVar
+        return markSE->var;
+  }
+
+  // Did not see 'reVar' with a reduce intent.
+  return NULL;
+}
+
+//
+// lowerReduceAssign(): lower the reduce= calls, verifying their correct use.
+//
+// Parser represents "x reduce= y" in source code as PRIM_REDUCE_ASSIGN(x,y).
+// lowerReduceAssign() converts it into globalOp.accumulateOntoState(x,y)
+// where globalOp comes from the reduce intent for x.
+// This includes checking that there is, indeed, a reduce intent for x:
+// without it, there is no globalOp.
+//
+static void lowerReduceAssign() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
+
+      // l.h.s. must be a single variable
+      if (SymExpr* lhsSE = toSymExpr(call->get(1))) {
+        Symbol* lhsVar = lhsSE->var;
+        // ... which is mentioned in a with clause with a reduce intent
+        Expr* curr = call->parentExpr;
+        BlockStmt* enclosingForall = NULL;
+        while (curr) {
+          if (BlockStmt* block = toBlockStmt(curr))
+            if (block->byrefVars) {
+              // If non-PRIM_FORALL_LOOP is legit, replace assert with if.
+              INT_ASSERT(block->byrefVars->isPrimitive(PRIM_FORALL_LOOP));
+              enclosingForall = block;
+              break;
+            }
+          curr = curr->parentExpr;
+        }
+
+        // I'd love these to be USR_FATAL_CONT, however currently
+        // the forall loop body is replicated 3 times, so we would
+        // report the same error 3 times. We could have a hashset of
+        // astlocs to avoid that with USR_FATAL_CONT, if we wanted.
+        if (!enclosingForall)
+          USR_FATAL_CONT(call, "The reduce= operator must occur within a forall loop.");
+        else if (Symbol* globalOp = reduceIntentOp(enclosingForall, lhsVar))
+          {
+            SET_LINENO(call);
+            Expr* rhs = call->get(2)->remove(); // do it before lhsSE->remove()
+            Expr* repl = new_Expr(".(%S, 'accumulateOntoState')(%E,%E)",
+                           globalOp, lhsSE->remove(), rhs);
+            call->replace(repl);
+          }
+        else
+          USR_FATAL(lhsSE, "The l.h.s. of a reduce= operator, '%s', must be passed by a reduce intent into the nearest enclosing forall loop", lhsVar->name);
+
+      } else {
+        USR_FATAL(call->get(1), "The l.h.s. of a reduce= operator must be just a variable");
+      }
+    }
+  }
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -412,12 +497,6 @@ checkUseBeforeDefs() {
                   USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
                                  sym->unresolved);
                   undeclared.set_add(sym->unresolved);
-                  // Also include a note about setter being deprecated if it
-                  // looks like that was the problem.
-                  if (call && call->parentSymbol)
-                    if (FnSymbol* inFn = toFnSymbol(call->parentSymbol))
-                      if(0 == strcmp(sym->unresolved, "setter") && inFn->retTag == RET_REF)
-                        USR_FATAL_CONT(sym, "setter is deprecated. Use a ref-pair instead.");
                 }
               }
             }
@@ -888,7 +967,17 @@ static void applyGetterTransform(CallExpr* call) {
     if (VarSymbol* var = toVarSymbol(symExpr->var)) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
         call->baseExpr->replace(new UnresolvedSymExpr(var->immediate->v_string));
-        call->insertAtHead(gMethodToken);
+        if (!strcmp(var->immediate->v_string, "init")) {
+          // Transform:
+          //   call(call(. x "init") args)
+          // into:
+          //   call(call(init meme=x) args)
+          // because initializers are handled differently from other methods
+          Expr* firstArg = call->get(1)->remove();
+          call->insertAtHead(new NamedExpr("meme", firstArg));
+        } else {
+          call->insertAtHead(gMethodToken);
+        }
       } else {
         INT_FATAL(call, "unexpected case");
       }
@@ -1518,40 +1607,6 @@ static void fixup_array_formals(FnSymbol* fn) {
   }
 }
 
-static void clone_parameterized_primitive_methods(FnSymbol* fn) {
-  if (toArgSymbol(fn->_this)) {
-    /* The following works but is not currently necessary:
-    if (fn->_this->type == dtIntegral) {
-      for (int i=INT_SIZE_8; i<INT_SIZE_NUM; i++) {
-        if (dtInt[i]) { // Need this because of our bogus dtInt sizes
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtInt[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-      for (int i=INT_SIZE_8; i<INT_SIZE_NUM; i++) {
-        if (dtUInt[i]) { // Need this because of our bogus dtUint sizes
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtUInt[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-      fn->defPoint->remove();
-    }
-    */
-    if (fn->_this->type == dtAnyComplex) {
-      for (int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++) {
-        if (dtComplex[i]) { // Need this because of our bogus dtComplex sizes
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtComplex[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-      fn->defPoint->remove();
-    }
-  }
-}
-
 static void
 clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                           DefExpr* def,
@@ -1750,9 +1805,10 @@ static void change_method_into_constructor(FnSymbol* fn) {
     INT_FATAL(fn, "'this' argument has unknown type");
 
   // Now check that the function name matches the name of the type
-  // attached to 'this'.
-  if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name) &&
-      strcmp(fn->name, "init"))
+  // attached to 'this' or matches 'init'.
+  bool isCtor = (0 == strcmp(fn->getFormal(2)->type->symbol->name, fn->name));
+  bool isInit = (0 == strcmp(fn->name, "init"));
+  if (!isCtor && !isInit)
     return;
 
   // The type must be a class type.
@@ -1760,6 +1816,29 @@ static void change_method_into_constructor(FnSymbol* fn) {
   AggregateType* ct = toAggregateType(fn->getFormal(2)->type);
   if (!ct)
     INT_FATAL(fn, "initializer on non-class type");
+
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    USR_FATAL(fn, "a%s cannot be declared without parentheses", isCtor ? " constructor" : "n initializer");
+  }
+
+  if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+    // We hadn't previously seen a constructor or initializer definition.
+    // Update the field on the type appropriately.
+    if (isInit) {
+      ct->initializerStyle = DEFINES_INITIALIZER;
+    } else if (isCtor) {
+      ct->initializerStyle = DEFINES_CONSTRUCTOR;
+    } else {
+      // Should never reach here, but just in case...
+      INT_FATAL(fn, "Function was neither a constructor nor an initializer");
+    }
+  } else if ((ct->initializerStyle == DEFINES_CONSTRUCTOR && !isCtor) ||
+             (ct->initializerStyle == DEFINES_INITIALIZER && !isInit)) {
+    // We've previously seen a constructor but this new method is an initializer
+    // or we've previously seen an initializer but this new method is a
+    // constructor.  We don't allow both to be defined on a type.
+    USR_FATAL_CONT(fn, "Definition of both constructor '%s' and initializer 'init'.  Please choose one.", ct->symbol->name);
+  }
 
   // Call the initializer, passing in just the generic arguments.
   // This call ensures that the object is default-initialized before the user's
@@ -1780,6 +1859,16 @@ static void change_method_into_constructor(FnSymbol* fn) {
     }
   }
 
+  if (ct->initializerStyle == DEFINES_INITIALIZER) {
+    ArgSymbol* meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL,
+                                    new SymExpr(gTypeDefaultToken));
+    meme->addFlag(FLAG_IS_MEME);
+    fn->insertFormalAtTail(meme);
+    call->insertAtTail(new NamedExpr ("meme", new SymExpr(meme)));
+
+    handleInitializerRules(fn, ct);
+  }
+
   fn->_this = new VarSymbol("this");
   fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
@@ -1792,7 +1881,11 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
 
-  fn->name = ct->defaultInitializer->name;
+  if (isCtor) {
+    // The constructor's name is the name of the type.  Replace it with
+    // _construct_typename
+    fn->name = ct->defaultInitializer->name;
+  }
   fn->addFlag(FLAG_CONSTRUCTOR);
 }
 

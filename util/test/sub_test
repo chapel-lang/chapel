@@ -664,6 +664,12 @@ if os.getenv("CHPL_TEST_EXEC_TIME_WARN_LIMIT"):
 else:
     execTimeWarnLimit = 0
 
+# get a threshold for which to skip any remaining trials
+if os.getenv("CHPL_TEST_EXEC_TIME_LIMIT_NUM_TRIALS"):
+    execTimeSkipTrials = int(os.getenv('CHPL_TEST_EXEC_TIME_LIMIT_NUM_TRIALS', '0'))
+else:
+    execTimeSkipTrials = 0
+
 # directory level timeout
 if os.access('./TIMEOUT',os.R_OK):
     directoryTimeout = ReadIntegerValue('./TIMEOUT', localdir)
@@ -856,7 +862,7 @@ globalChpldocOpts = dirChpldocOpts + envChpldocOpts
 #
 # Global PERFNUMTRIALS
 #
-if perftest and os.access(PerfDirFile('NUMTRIALS'), os.R_OK): # ./PERFNUMTRIALS
+if os.access(PerfDirFile('NUMTRIALS'), os.R_OK): # ./PERFNUMTRIALS
     globalNumTrials = ReadIntegerValue(PerfDirFile('NUMTRIALS'), localdir)
 else:
     globalNumTrials=int(os.getenv('CHPL_TEST_NUM_TRIALS', '1'))
@@ -1087,7 +1093,7 @@ for testname in testsrc:
         elif (perftest and suffix==PerfSfx('timeexec') and os.access(f, os.R_OK)): #e.g. .perftimeexec
             timer = GetTimer(f)
 
-        elif (perftest and suffix==PerfSfx('numtrials') and os.access(f, os.R_OK)): #e.g. .perfnumtrials
+        elif (suffix==PerfSfx('numtrials') and os.access(f, os.R_OK)): #e.g. .perfnumtrials
             numTrials = ReadIntegerValue(f, localdir)
 
         elif (suffix=='.killtimeout' and os.access(f, os.R_OK)):
@@ -1489,7 +1495,7 @@ for testname in testsrc:
                 sys.stdout.write(p.communicate()[0])
                 sys.stdout.flush()
 
-            
+
             # find the compiler .good file to compare against. The compiler
             # .good file can be of the form testname.<configuration>.good or
             # explicitname.<configuration>.good. It's not currently setup to
@@ -1504,7 +1510,10 @@ for testname in testsrc:
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
-                sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
+                if perftest:
+                    sys.stdout.write('[Error compilation failed for %s]\n'%(test_name))
+                else:
+                    sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 sys.stdout.write(origoutput)
                 cleanup(execname)
@@ -1788,7 +1797,11 @@ for testname in testsrc:
             #
             # Run program (with timeout)
             #
+            skip_remaining_trials = False
             for count in xrange(numTrials):
+                if skip_remaining_trials:
+                    break
+
                 exec_limiter = execution_limiter.NoLock()
                 if os.getenv("CHPL_TEST_LIMIT_RUNNING_EXECUTABLES") is not None:
                     exec_name = os.path.join(localdir, test_filename)
@@ -1924,9 +1937,13 @@ for testname in testsrc:
                 print('[Elapsed execution time for "{0}" - {1:.3f} '
                     'seconds]'.format(test_name, elapsedExecTime))
 
-                if execTimeWarnLimit and elapsedExcTime > execTimeWarnLimit:
+
+                if execTimeWarnLimit and elapsedExecTime > execTimeWarnLimit:
                     sys.stdout.write('[Warning: %s/%s took over %.0f seconds to '
                         'execute]\n' %(localdir, test_filename, execTimeWarnLimit))
+
+                if execTimeSkipTrials and elapsedExecTime > execTimeSkipTrials:
+                    skip_remaining_trials = True
 
                 if catfiles:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%

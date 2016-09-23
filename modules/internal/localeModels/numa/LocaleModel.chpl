@@ -218,7 +218,7 @@ module LocaleModel {
       // sys_getenv returns zero on success.
       if sys_getenv(c"CHPL_COMM", comm) == 0 && comm == c"gasnet" &&
         sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 0 && spawnfn == c"L"
-      then local_name = chpl_nodeName() + "-" + _node_id : string;
+      then local_name = chpl_nodeName():string + "-" + _node_id:string;
       else local_name = chpl_nodeName():string;
 
       extern proc chpl_task_getCallStackSize(): size_t;

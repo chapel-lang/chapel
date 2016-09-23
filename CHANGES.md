@@ -213,6 +213,7 @@ Standard Library/Modules
 * improved the 'List' module to support JSON format
 * improved error handling in the IO and Spawn modules
 * added the ability to call exit() without arguments for a 0 default status
+* renamed 'AdvancedIters' to 'DynamicIters' to better reflect its role
 * removed deprecated functions from 'Memory' module
 
 Performance Improvements

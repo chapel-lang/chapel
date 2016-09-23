@@ -1,0 +1,8 @@
+passed all assertions for int(64)
+In int foo
+In int bar(1)
+In int baz(2, 3, 4)
+passed all assertions for R
+In R foo
+In R bar(1)
+In R bar(2, 3, 4)

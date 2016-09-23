@@ -1,0 +1,4 @@
+readline(amount=9) returned 5 bytes
+readline(amount=9) returned 9 bytes
+readline(amount=10) returned 10 bytes
+readline() returned 10 bytes

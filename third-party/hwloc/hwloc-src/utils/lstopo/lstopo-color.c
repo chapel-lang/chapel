@@ -46,12 +46,21 @@ int
 declare_color(int r, int g, int b)
 {
   int color = find_color(r, g, b);
+  struct color *tmp;
 
   if (color != -1)
     return color;
 
+  tmp = realloc(colors, sizeof(*colors) * (numcolors+1));
+
+  if (!tmp) {
+    /* FIXME: return -1 on error? tell the caller to use the default? */
+    fprintf(stderr, "Failed to realloc the colors array\n");
+    exit(EXIT_FAILURE);
+  }
+
+  colors = tmp;
   color = numcolors++;
-  colors = realloc(colors, sizeof(*colors) * (numcolors));
   colors[color].r = r;
   colors[color].g = g;
   colors[color].b = b;

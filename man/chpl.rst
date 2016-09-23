@@ -1,3 +1,5 @@
+.. _man-chpl:
+
 chpl
 ====
 
@@ -184,6 +186,11 @@ OPTIONS
 
     Enable [disable] live variable analysis, which is currently only used to
     optimize iterators that are not inlined.
+
+**--[no-]optimize-array-indexing**
+
+    Enable [disable] an optimization that removes an extra multiply in array
+    indexing when it's provably unnecessary. By default this is enabled.
 
 **--[no-]optimize-loop-iterators**
 

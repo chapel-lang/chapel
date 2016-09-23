@@ -1,6 +1,8 @@
-/*
- * Vector Operations on 1D Arrays Primer
- */
+// Array Vector Operations
+
+//
+// This primer is about vector operations on 1D arrays
+//
 
 //
 // 1D rectangular arrays support several list-like or vector-like capabilities.
@@ -9,13 +11,9 @@
 // array's domain, which would unexpectedly modify other arrays if they shared
 // domains.
 //
-// As currently implemented, every operation that results in a domain size
-// change results in an array reallocation and so is O(n).  This is expected
-// to improve in a future release.
-//
 
 //
-// Declare a 1D array and initialize it to the values 1..5. The anonymous
+// Declare a 1D array and initialize it to the values ``1..5``. The anonymous
 // domain used in this declaration has a 1:1 relationship with the array.
 //
 var A: [1..5] int = [i in 1..5] i;
@@ -24,8 +22,8 @@ writeln("A was initialized to: ", A);
 
 //
 // Add an element to the front of the array and one to the back of the array.
-// This will modify the array's domain to become {0..6} and add elements
-// 0 and 6 to the array.
+// This will modify the array's domain to become ``{0..6}`` and add elements
+// ``0`` and ``6`` to the array.
 //
 A.push_front(0);
 A.push_back(6);
@@ -38,8 +36,8 @@ writeln("After adding to the front and back A is: ", A);
 writeln("The first and last elements in A are: ", (A.head(), A.tail()));
 
 //
-// Remove the two elements added earlier with push_front and push_back.
-// The domain will become {1..5} again.
+// Remove the two elements added earlier with ``push_front`` and ``push_back``.
+// The domain will become ``{1..5}`` again.
 //
 A.pop_front();
 A.pop_back();
@@ -47,9 +45,9 @@ A.pop_back();
 writeln("After popping the two elements pushed previously A is: ", A);
 
 //
-// Insert values 10, 11 and 12 at indices 4, 3, and 2.  The domain will
-// grow by 3 to become {1..8} and the array elements above the inserted
-// positions will be shifted up.
+// Insert values ``10``, ``11`` and ``12`` at indices ``4``, ``3``, and ``2``.
+// The domain will grow by 3 to become ``{1..8}`` and the array elements above
+// the inserted positions will be shifted up.
 //
 A.insert(4, 10);
 A.insert(3, 11);
@@ -58,10 +56,10 @@ writeln("After inserting some new values, A is: ", A);
 
 
 //
-// The method 'find' searches the array for the argument.  It returns a tuple
-// containing a bool and an index. If the returned bool is true, the argument
-// was found at the returned index.  If the bool is false, the value was not
-// found and the index is unspecified.
+// The method ``find`` searches the array for the argument.  It returns a tuple
+// containing a bool and an index. If the returned bool is ``true``, the
+// argument was found at the returned index.  If the bool is ``false``, the
+// value was not found and the index is unspecified.
 //
 var (found, idx) = A.find(10);
 if found then
@@ -129,8 +127,8 @@ writeln("After adding 1 to all elements A is: ", A);
 writeln("The sum of elements in A is ", + reduce A);
 
 //
-// The clear method will empty the array completely.  If the domain's low
-// bound was 'low' this sets the domain to {low..low-1}
+// The ``clear`` method will empty the array completely.  If the domain's low
+// bound was ``low`` this sets the domain to ``{low..low-1}``
 //
 A.clear();
 writeln("After clearing, A is: ", A, " - with ", A.size, " elements");

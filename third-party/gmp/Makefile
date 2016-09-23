@@ -18,6 +18,9 @@ GMP_CROSS_COMPILED=no
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 GMP_CROSS_COMPILED=yes
+else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
+CHPL_GMP_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
+GMP_CROSS_COMPILED=yes
 endif
 
 #
@@ -37,10 +40,12 @@ endif
 endif
 
 #
-# On Cray systems, building the shared libraries causes issues.
+# On cross-compiled systems, building the shared libraries causes issues.
 # On Macs, not building the shared libraries causes warnings.
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_GMP_CFG_OPTIONS += --enable-static --disable-shared
+else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
 CHPL_GMP_CFG_OPTIONS += --enable-static --disable-shared
 endif
 
