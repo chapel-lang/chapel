@@ -1090,6 +1090,25 @@ proc main(){
     }
   }
 
+// ``single`` vars can only be written once. A read on an unwritten ``single``
+// results in a wait, but when the variable has a value it can be read indefinitely.
+  var someSingleVar$: single int; // varName$ is a convention not a law.
+  sync {
+    begin { // Reader task
+      writeln( "Reader: waiting to read." );
+      for i in 1..5 {
+        var read_single = someSingleVar$;
+        writeln( "Reader: iteration ", i,", and the value is ", read_single );
+      }
+    }
+
+    begin { // Writer task
+      writeln( "Writer: will write in..." );
+      countdown( 3 );
+      someSingleVar$ = 5; // first and only write ever.
+    }
+  }
+
 // Heres an example using atomics and a ``sync`` variable to create a
 // count-down mutex (also known as a multiplexer).
   var count: atomic int; // our counter
@@ -1116,25 +1135,6 @@ proc main(){
 
     count.add( 1 );        // Increment the counter
     lock$.writeXF( true ); // Set lock$ to full (signal)
-  }
-
-// ``single`` vars can only be written once. A read on an unwritten ``single``
-// results in a wait, but when the variable has a value it can be read indefinitely.
-  var someSingleVar$: single int; // varName$ is a convention not a law.
-  sync {
-    begin { // Reader task
-      writeln( "Reader: waiting to read." );
-      for i in 1..5 {
-        var read_single = someSingleVar$;
-        writeln( "Reader: iteration ", i,", and the value is ", read_single );
-      }
-    }
-
-    begin { // Writer task
-      writeln( "Writer: will write in..." );
-      countdown( 3 );
-      someSingleVar$ = 5; // first and only write ever.
-    }
   }
 
 // We can define the operations ``+ * & | ^ && || min max minloc maxloc``
