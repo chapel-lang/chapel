@@ -10,7 +10,7 @@
 
       // one line comment
       /*
-        multi-line comment
+         multi-line comment
       */
 */
 
@@ -888,7 +888,8 @@ Modules
 
 module OurModule {
   // We can use modules inside of other modules.
-  use Time; // Time is one of the standard modules.
+  // Time is one of the standard modules.
+  use Time;
 
   // We'll use this procedure in the parallelism section.
   proc countdown( seconds: int ){
@@ -942,9 +943,9 @@ Parallelism
 proc main(){
   writeln("PARALLELISM START");
 
-// A begin statement will spin the body of that statement off
+// A ``begin`` statement will spin the body of that statement off
 // into one new task.
-// A sync statement will ensure that the progress of the main
+// A ``sync`` statement will ensure that the progress of the main
 // task will not progress until the children have synced back up.
 
   sync {
@@ -961,53 +962,53 @@ proc main(){
     writeln( "fibonacci(",n,") = ", fibonacci( n ) );
   }
 
-  // A cobegin statement will spin each statement of the body into one new task
+// A ``cobegin`` statement will spin each statement of the body into one new task
+// Notice here that the prints from each statement may happen in any order.
   cobegin {
     printFibb( 20 ); // new task
     printFibb( 10 ); // new task
     printFibb( 5 );  // new task
     {
       // This is a nested statement body and thus is a single statement
-      // to the parent statement and is executed by a single task
+      // to the parent statement, executed by a single task.
       writeln( "this gets" );
       writeln( "executed as" );
       writeln( "a whole" );
     }
   }
-  // Notice here that the prints from each statement may happen in any order.
 
-  // Coforall loop will create a new task for EACH iteration
+// A ``coforall`` loop will create a new task for EACH iteration.
+// Again we see that prints happen in any order.
+// NOTE: ``coforall`` should be used only for creating tasks!
+// Using it to iterating over a structure is very a bad idea!
   var num_tasks = 10; // Number of tasks we want
   coforall taskID in 1..#num_tasks {
     writeln( "Hello from task# ", taskID );
   }
-  // Again we see that prints happen in any order.
-  // NOTE! coforall should be used only for creating tasks!
-  // Using it to iterating over a structure is very a bad idea!
 
-  // forall loops are another parallel loop, but only create a smaller number
-  // of tasks, specifically --dataParTasksPerLocale=number of task
+// ``forall`` loops are another parallel loop, but only create a smaller number
+// of tasks, specifically ``--dataParTasksPerLocale=`` number of tasks.
   forall i in 1..100 {
     write( i, ", ");
   }
   writeln( );
-  // Here we see that there are sections that are in order, followed by
-  // a section that would not follow ( e.g. 1, 2, 3, 7, 8, 9, 4, 5, 6, ).
-  // This is because each task is taking on a chunk of the range 1..10
-  // (1..3, 4..6, or 7..9) doing that chunk serially, but each task happens
-  // in parallel.
-  // Your results may depend on your machine and configuration
 
-  // For both the forall and coforall loops, the execution of the
-  // parent task will not continue until all the children sync up.
+// Here we see that there are sections that are in order, followed by
+// a section that would not follow ( e.g. 1, 2, 3, 7, 8, 9, 4, 5, 6, ).
+// This is because each task is taking on a chunk of the range 1..10
+// (1..3, 4..6, or 7..9) doing that chunk serially, but each task happens
+// in parallel. Your results may depend on your machine and configuration
 
-  // forall loops are particularly useful for parallel iteration over arrays.
-  // Lets run an experiment to see how much faster a parallel loop is
+// For both the ``forall`` and ``coforall`` loops, the execution of the
+// parent task will not continue until all the children sync up.
+
+// ``forall`` loops are particularly useful for parallel iteration over arrays.
+// Lets run an experiment to see how much faster a parallel loop is
   use Time; // Import the Time module to use Timer objects
   var timer: Timer;
   var myBigArray: [{1..4000,1..4000}] real; // Large array we will write into
 
-  // Serial Experiment
+// Serial Experiment:
   timer.start( ); // Start timer
   for (x,y) in myBigArray.domain { // Serial iteration
     myBigArray[x,y] = (x:real) / (y:real);
@@ -1016,7 +1017,7 @@ proc main(){
   writeln( "Serial: ", timer.elapsed( ) ); // Print elapsed time
   timer.clear( ); // Clear timer for parallel loop
 
-  // Parallel Experiment
+// Parallel Experiment:
   timer.start( ); // start timer
   forall (x,y) in myBigArray.domain { // Parallel iteration
     myBigArray[x,y] = (x:real) / (y:real);
@@ -1024,22 +1025,24 @@ proc main(){
   timer.stop( ); // Stop timer
   writeln( "Parallel: ", timer.elapsed( ) ); // Print elapsed time
   timer.clear( );
-  // You may have noticed that (depending on how many cores you have)
-  // that the parallel loop went faster than the serial loop
 
-  // The bracket style loop-expression described
-  // much earlier implicitly uses a forall loop.
+// You may have noticed that (depending on how many cores you have)
+// the parallel loop went faster than the serial loop.
+
+// The bracket style loop-expression described
+// much earlier implicitly uses a ``forall`` loop.
   [ val in myBigArray ] val = 1 / val; // Parallel operation
 
-  // Atomic variables, common to many languages, are ones whose operations
-  // occur uninterrupted. Multiple threads can both modify atomic variables
-  // and can know that their values are safe.
-  // Chapel atomic variables can be of type bool, int, uint, and real.
+// Atomic variables, common to many languages, are ones whose operations
+// occur uninterrupted. Multiple threads can therefore modify atomic
+// variables and can know that their values are safe.
+// Chapel atomic variables can be of type ``bool``, ``int``,
+// ``uint``, and ``real``.
   var uranium: atomic int;
   uranium.write( 238 );      // atomically write a variable
   writeln( uranium.read() ); // atomically read a variable
 
-  // operations are described as functions, you could define your own operators.
+// Atomic operations are described as functions, so you can define your own.
   uranium.sub( 3 ); // atomically subtract a variable
   writeln( uranium.read() );
 
@@ -1070,9 +1073,9 @@ proc main(){
     }
   }
 
-  // sync vars have two states: empty and full.
-  // If you read an empty variable or write a full variable, you are waited
-  // until the variable is full or empty again
+// ``sync`` variables have two states: empty and full.
+// If you read an empty variable or write a full variable, you are waited
+// until the variable is full or empty again.
   var someSyncVar$: sync int; // varName$ is a convention not a law.
   sync {
     begin { // Reader task
@@ -1088,27 +1091,8 @@ proc main(){
     }
   }
 
-  // single vars can only be written once. A read on an unwritten single results
-  // in a wait, but when the variable has a value it can be read indefinitely
-  var someSingleVar$: single int; // varName$ is a convention not a law.
-  sync {
-    begin { // Reader task
-      writeln( "Reader: waiting to read." );
-      for i in 1..5 {
-        var read_single = someSingleVar$;
-        writeln( "Reader: iteration ", i,", and the value is ", read_single );
-      }
-    }
-
-    begin { // Writer task
-      writeln( "Writer: will write in..." );
-      countdown( 3 );
-      someSingleVar$ = 5; // first and only write ever.
-    }
-  }
-
-  // Heres an example of using atomics and a synch variable to create a
-  // count-down mutex (also known as a multiplexer)
+// Heres an example using atomics and a ``sync`` variable to create a
+// count-down mutex (also known as a multiplexer).
   var count: atomic int; // our counter
   var lock$: sync bool;   // the mutex lock
 
@@ -1135,24 +1119,43 @@ proc main(){
     lock$.writeXF( true ); // Set lock$ to full (signal)
   }
 
-  // we can define the operations + * & | ^ && || min max minloc maxloc
-  // over an entire array using scans and reductions
-  // Reductions apply the operation over the entire array and
-  // result in a single value
+// ``single`` vars can only be written once. A read on an unwritten ``single``
+// results in a wait, but when the variable has a value it can be read indefinitely.
+  var someSingleVar$: single int; // varName$ is a convention not a law.
+  sync {
+    begin { // Reader task
+      writeln( "Reader: waiting to read." );
+      for i in 1..5 {
+        var read_single = someSingleVar$;
+        writeln( "Reader: iteration ", i,", and the value is ", read_single );
+      }
+    }
+
+    begin { // Writer task
+      writeln( "Writer: will write in..." );
+      countdown( 3 );
+      someSingleVar$ = 5; // first and only write ever.
+    }
+  }
+
+// We can define the operations ``+ * & | ^ && || min max minloc maxloc``
+// over an entire array using scans and reductions.
+// Reductions apply the operation over the entire array and
+// result in a scalar value.
   var listOfValues: [1..10] int = [15,57,354,36,45,15,456,8,678,2];
   var sumOfValues = + reduce listOfValues;
   var maxValue = max reduce listOfValues; // 'max' give just max value
 
-  // 'maxloc' gives max value and index of the max value
-  // Note: We have to zip the array and domain together with the zip iterator
+// ``maxloc`` gives max value and index of the max value.
+// Note: We have to zip the array and domain together with the zip iterator.
   var (theMaxValue, idxOfMax) = maxloc reduce zip(listOfValues,
                                                   listOfValues.domain);
 
   writeln( (sumOfValues, maxValue, idxOfMax, listOfValues[ idxOfMax ] ) );
 
-  // Scans apply the operation incrementally and return an array of the
-  // value of the operation at that index as it progressed through the
-  // array from array.domain.low to array.domain.high
+// Scans apply the operation incrementally and return an array with the
+// values of the operation at that index as it progressed through the
+// array from ``array.domain.low`` to ``array.domain.high``.
   var runningSumOfValues = + scan listOfValues;
   var maxScan = max scan listOfValues;
   writeln( runningSumOfValues );
