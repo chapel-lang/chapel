@@ -196,8 +196,8 @@ o we are currently losing performance when calling binary operators
   copies it into the result.  It would be nice to be able to use
   this form without taking a hit relative to the method-based form.
 
-o tmp1/tmp2 could be declared in gen_digits(), but with a performance
-  penalty.  Another use of local static variables?
+o tmp1/tmp2 could be declared in extract_digit(), but with a
+  performance penalty.  Another use of local static variables?
 
 
 regexdna
