@@ -23,6 +23,14 @@
 #include "chpl-mem.h"
 #include "error.h"
 
+/*
+TODO -- Throw an error if CHPL_COMM != none.
+
+The mpirun launcher was originally designed to support the mpi comm layer,
+but this comm layer is no longer officially supported. In the future, this
+layer will likely be supported again. However, for now, the mpirun launcher
+should only work with CHPL_COMM = none.
+*/
 #define CHPL_SPMD "--spmd"
 
 static char* mpi_num_ranks=NULL;
@@ -36,14 +44,13 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
   int numranks;
 
-  // Get the number of ranks
-  // TODO -- if we want, we can also use an environment variable, although
-  // that's probably overkill for this.
-  if (mpi_num_ranks==NULL) {
-    numranks = numLocales;
-  } else {
-    numranks = atoi(mpi_num_ranks);
+  // TODO When MPI Comm layer is supported again, this can support numLocales>1
+  if (numLocales != 1 || mpi_num_ranks==NULL) {
+    chpl_error("For mpirun, specify number of ranks via --spmd <#>", 0, 0);
   }
+
+  // Get the number of ranks
+  numranks = atoi(mpi_num_ranks);
 
   largv[0] = (char *) launch_cmd;
   largv[1] = (char *) "-np";
@@ -54,7 +61,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 }
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  char *cmd = "mpirun";
+  const char *cmd = "mpirun";
 
   return chpl_launch_using_exec(cmd,
                                 chpl_launch_create_argv(cmd, argc, argv,
