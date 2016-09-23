@@ -13,6 +13,7 @@ TARGETS = \
 	meteor-fast \
 	nbody \
 	pidigits \
+	pidigits-fast \
 	regexdna \
 	revcomp \
 	spectralnorm \
@@ -71,6 +72,15 @@ pidigits: pidigits.chpl
 	echo ""; \
 	fi
 
+pidigits-fast: pidigits-fast.chpl
+	@if [ "$(CHPL_MAKE_GMP)" != "none" ]; then \
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
+	else \
+	echo "";\
+	echo "Can't build pidigits-fast without CHPL_GMP being enabled. See for details:"; \
+	echo "http://chapel.cray.com/docs/latest/usingchapel/chplenv.html#chpl-gmp"; \
+	echo ""; \
+	fi
 
 regexdna: regexdna.chpl
 	@if [ "$(CHPL_REGEXP)" != "none" ]; then \
