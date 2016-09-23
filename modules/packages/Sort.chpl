@@ -593,10 +593,10 @@ proc mergeSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
  */
 proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  // grab obvious indices
+
   const stride = abs(Dom.stride),
-        lo = Dom.low,
-        hi = Dom.high,
+        lo = Dom.alignedLow,
+        hi = Dom.alignedHigh,
         size = Dom.size,
         mid = if hi == lo then hi
               else if size % 2 then lo + ((size - 1)/2) * stride
@@ -636,7 +636,7 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
   // TODO -- Get this cobegin working and tested
   //  cobegin {
-    quickSort(Data[..loptr-stride], minlen, comparator);  // could use unbounded ranges here
+    quickSort(Data[..loptr-stride], minlen, comparator);
     quickSort(Data[loptr+stride..], minlen, comparator);
   //  }
 }
@@ -711,11 +711,12 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
  */
 proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  const low = Dom.low,
-        high = Dom.high,
-        stride = abs(Dom.stride);
+  const low = Dom.alignedLow,
+        high = Dom.alignedHigh,
+        stride = abs(Dom.stride),
+        alignment = Dom.alignment;
 
-  for i in low..high-stride by stride {
+  for i in low..high-stride by stride align alignment {
     var jMin = i;
     // TODO -- should be a minloc reduction, when they can support comparators
     for j in i..high by stride {
