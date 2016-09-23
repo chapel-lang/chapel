@@ -134,7 +134,7 @@ qioerr qio_mkerror_errno(void);
 }
 
 // custom errors
-// if you update these, alse update the extended_errors array.
+// if you update these, also update the extended_errors array.
 
 #ifndef EEOF
 #define EEOF (EXTEND_ERROR_OFFSET+0)
