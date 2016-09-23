@@ -450,26 +450,26 @@ initPrimitive() {
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
-  prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirst);
-  prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirst);
-  prim_def(PRIM_UNARY_NOT, "u~", returnInfoFirst);
+  prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirstDeref);
+  prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirstDeref);
+  prim_def(PRIM_UNARY_NOT, "u~", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_LNOT, "!", returnInfoBool);
   prim_def(PRIM_ADD, "+", returnInfoNumericUp);
   prim_def(PRIM_SUBTRACT, "-", returnInfoNumericUp);
   prim_def(PRIM_MULT, "*", returnInfoNumericUp);
   prim_def(PRIM_DIV, "/", returnInfoNumericUp, true); // div by zero is visible
-  prim_def(PRIM_MOD, "%", returnInfoFirst); // mod by zero?
-  prim_def(PRIM_LSH, "<<", returnInfoFirst);
-  prim_def(PRIM_RSH, ">>", returnInfoFirst);
+  prim_def(PRIM_MOD, "%", returnInfoFirstDeref); // mod by zero?
+  prim_def(PRIM_LSH, "<<", returnInfoFirstDeref);
+  prim_def(PRIM_RSH, ">>", returnInfoFirstDeref);
   prim_def(PRIM_EQUAL, "==", returnInfoBool);
   prim_def(PRIM_NOTEQUAL, "!=", returnInfoBool);
   prim_def(PRIM_LESSOREQUAL, "<=", returnInfoBool);
   prim_def(PRIM_GREATEROREQUAL, ">=", returnInfoBool);
   prim_def(PRIM_LESS, "<", returnInfoBool);
   prim_def(PRIM_GREATER, ">", returnInfoBool);
-  prim_def(PRIM_AND, "&", returnInfoFirst);
-  prim_def(PRIM_OR, "|", returnInfoFirst);
-  prim_def(PRIM_XOR, "^", returnInfoFirst);
+  prim_def(PRIM_AND, "&", returnInfoFirstDeref);
+  prim_def(PRIM_OR, "|", returnInfoFirstDeref);
+  prim_def(PRIM_XOR, "^", returnInfoFirstDeref);
   prim_def(PRIM_POW, "**", returnInfoNumericUp);
 
   prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
