@@ -8,9 +8,9 @@
 use BigInteger;
 
 config const n = 50;              // Compute n digits of pi, 50 by default
-config param digitsPerLine = 10;
 
 proc main() {
+  param digitsPerLine = 10;
 
   //
   // Generate n digits, printing them in groups of digitsPerLine
@@ -66,8 +66,8 @@ iter gen_digits(numDigits) {
     // eliminate digit d
     //
     accum -= denom * d;
-    accum *= digitsPerLine;
-    numer *= digitsPerLine;
+    accum *= 10;
+    numer *= 10;
   }
 
   //
