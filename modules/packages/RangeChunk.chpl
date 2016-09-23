@@ -31,11 +31,8 @@ module RangeChunk {
    * idx in query is zero based.
    */
 
-  iter chunks(
-    r: range(?RT, bounded, ?S),
-    numChunks: integral,
-    remPol: RemElems = Thru): range(RT, bounded, S)
-  {
+  iter chunks(r: range(?RT, bounded, ?S), numChunks: integral,
+              remPol: RemElems = Thru): range(RT, bounded, S) {
     for (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
       const start = r.orderToIndex(startOrder);
       const end = r.orderToIndex(endOrder);
@@ -45,12 +42,8 @@ module RangeChunk {
     }
   }
 
-  proc chunk(
-    r: range(?RT, bounded, ?S),
-    numChunks: integral,
-    idx: integral,
-    remPol: RemElems = Thru): range(RT, bounded, S)
-  {
+  proc chunk(r: range(?RT, bounded, ?S), numChunks: integral, idx: integral,
+             remPol: RemElems = Thru): range(RT, bounded, S) {
     const (startOrder, endOrder) = chunkOrder(r, numChunks, idx, remPol);
     const start = r.orderToIndex(startOrder);
     const end = r.orderToIndex(endOrder);
@@ -65,45 +58,40 @@ module RangeChunk {
    * idx in query is zero-based.
    */
 
-  iter chunksOrder(
-    r: range(?RT, bounded, ?),
-    numChunks: integral,
-    remPol: RemElems = Thru): 2*RT
-  {
+  iter chunksOrder(r: range(?RT, bounded, ?), numChunks: integral,
+                   remPol: RemElems = Thru): 2*RT {
     if r.length == 0 || numChunks <= 0 then
       return;
     const nElems = r.length;
     const nChunks = numChunks: RT;
 
     var chunkSize, rem: RT;
-    if remPol == Pack {
-      chunkSize = nElems / nChunks;
-      if chunkSize * nChunks != nElems then
-        chunkSize += 1;
-    } else { // Mod
-      chunkSize = nElems / nChunks;
-      rem = nElems - chunkSize * nChunks;
+    select (remPol) {
+      when Pack {
+        chunkSize = nElems / nChunks;
+        if chunkSize * nChunks != nElems then
+          chunkSize += 1;
+      }
+      when Mod {
+        chunkSize = nElems / nChunks;
+        rem = nElems - chunkSize * nChunks;
+      }
     }
 
     for i in 0..#nChunks {
       var chunk: 2*RT;
-      if remPol == Thru {
-        chunk = chunkOrderThru(nElems, nChunks, i);
-      } else if remPol == Pack {
-         chunk = chunkOrderPack(chunkSize, nElems, i);
-      } else { // Mod
-        chunk = chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
+      select (remPol) {
+        when Thru do chunk = chunkOrderThru(nElems, nChunks, i);
+        when Pack do chunk = chunkOrderPack(chunkSize, nElems, i);
+        when Mod  do chunk = chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
+        otherwise halt("RangeChunk: unknown remPol in chunksOrder");
       }
       yield chunk;
     }
   }
 
-  proc chunkOrder(
-    r: range(?RT, bounded, ?),
-    numChunks: integral,
-    idx: integral,
-    remPol: RemElems = Thru): 2*RT
-  {
+  proc chunkOrder(r: range(?RT, bounded, ?), numChunks: integral, idx: integral,
+                  remPol: RemElems = Thru): 2*RT {
     if r.length == 0 || numChunks <= 0 || idx >= numChunks then
       return (1: RT, 0: RT);
 
@@ -111,17 +99,24 @@ module RangeChunk {
     const nChunks = numChunks: RT;
     const i = idx: RT;
 
-    if remPol == Thru {
-      return chunkOrderThru(nElems, nChunks, i);
-    } else if remPol == Pack {
-      var chunkSize = nElems / nChunks;
-      if chunkSize * nChunks != nElems then
-        chunkSize += 1;
-      return chunkOrderPack(chunkSize, nElems, i);
-    } else { // Mod
-      const chunkSize = nElems / nChunks;
-      const rem = nElems - chunkSize * nChunks;
-      return chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
+    select (remPol) {
+      when Thru {
+        return chunkOrderThru(nElems, nChunks, i);
+      }
+      when Pack { 
+        var chunkSize = nElems / nChunks;
+        if chunkSize * nChunks != nElems then
+          chunkSize += 1;
+        return chunkOrderPack(chunkSize, nElems, i);
+      }
+      when Mod {
+        const chunkSize = nElems / nChunks;
+        const rem = nElems - chunkSize * nChunks;
+        return chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
+      }
+      otherwise {
+        halt("RangeChunk: unknown remPol in chunkOrder");
+      }
     }
   }
 
@@ -130,12 +125,8 @@ module RangeChunk {
    * Returned value is zero-based.
    */
 
-  proc whichChunk(
-    r: range(?RT, bounded, ?),
-    numChunks: integral,
-    val: integral,
-    remPol: RemElems = Thru): RT
-  {
+  proc whichChunk(r: range(?RT, bounded, ?), numChunks: integral, val: integral,
+                  remPol: RemElems = Thru): RT {
     assert(r.length != 0 && numChunks > 0);
 
     const nElems = r.length;
@@ -144,21 +135,28 @@ module RangeChunk {
 
     assert(i: int != -1);
 
-    if remPol == Thru {
-      return i * nChunks / nElems; 
-    } else if remPol == Pack {
-      var chunkSize = nElems / nChunks;
-      if chunkSize * nChunks != nElems then
-        chunkSize += 1;
-      return i / chunkSize;
-    } else { // Mod
-      const chunkSize = nElems / nChunks;
-      const chunkSizePlus = chunkSize + 1;
-      const rem = nElems - chunkSize * nChunks;
-      const splitPoint = rem * chunkSizePlus;
-      return if i < splitPoint
-        then i / chunkSizePlus 
-        else rem + (i - splitPoint) / chunkSize; 
+    select (remPol) {
+      when Thru {
+        return i * nChunks / nElems; 
+      }
+      when Pack {
+        var chunkSize = nElems / nChunks;
+        if chunkSize * nChunks != nElems then
+          chunkSize += 1;
+        return i / chunkSize;
+      } 
+      when Mod {
+        const chunkSize = nElems / nChunks;
+        const chunkSizePlus = chunkSize + 1;
+        const rem = nElems - chunkSize * nChunks;
+        const splitPoint = rem * chunkSizePlus;
+        return if i < splitPoint
+          then i / chunkSizePlus 
+          else rem + (i - splitPoint) / chunkSize; 
+      }
+      otherwise {
+        halt("RangeChunk: unknown remPol in whichChunk");
+      }
     }
   }
 
@@ -170,29 +168,19 @@ module RangeChunk {
    */
 
   // remainder elems distributed throughout 
-  private proc chunkOrderThru(
-    nElems: ?I,
-    nChunks: I,
-    i: I): (I, I)
-  {
+  private proc chunkOrderThru(nElems: ?I, nChunks: I, i: I): (I, I) {
     const m = nElems * i;
     const start = if i == 0
       then 0: I
-      else ceilXDivByY(m, nChunks);
+      else divceil(m, nChunks);
     const end = if i == nChunks - 1
       then nElems - 1
-      else ceilXDivByY(m + nElems, nChunks) - 1;
+      else divceil(m + nElems, nChunks) - 1;
     return (start, end);
   }
 
-  private proc ceilXDivByY(x, y) return 1 + (x - 1)/y;
-
   // remainder elems packed into all chunks with small tail
-  private proc chunkOrderPack(
-    chunkSize: ?I,
-    nElems: I,
-    i: I): (I, I)
-  {
+  private proc chunkOrderPack(chunkSize: ?I, nElems: I, i: I): (I, I) {
     const start = chunkSize * i;
     var end = start + chunkSize - 1;
     if end > nElems then
@@ -201,13 +189,8 @@ module RangeChunk {
   }
 
   // remainder elems distributed over chunks before rem
-  private proc chunkOrderMod(
-    chunkSize: ?I,
-    rem: I,
-    nElems: I,
-    nChunks: I,
-    i: I): (I, I)
-  {
+  private proc chunkOrderMod(chunkSize: ?I, rem: I, nElems: I, nChunks: I,
+                             i: I): (I, I) {
     var start, end: I;
     if i < rem {
       // (chunkSize+1) elements per chunk
