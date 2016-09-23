@@ -16,7 +16,7 @@ Contributors to the current release
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
-* Andrea Francesco Iurio, [Università degli Studi di Milano] / [GSoC]
+* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC]
 * David Iten, [Cray Inc.]
 * David Keaton, [Cray Inc.]
 * Engin Kayraklioglu, [George Washington University] / [Cray Inc.]
