@@ -6,9 +6,18 @@
 Auxiliary I/O Systems
 =====================
 
-This document describes Chapel support for Auxiliary I/O(AIO) systems. It also
+This document describes Chapel support for Auxiliary I/O (AIO) systems. It also
 provides instructions on how to set Chapel up to support multiple Auxiliary I/O
 systems simultaneously.
+
+I/O Systems Supported
+---------------------
+
+Currently, the I/O systems supported are:
+
+ - Lustre
+ - :mod:`HDFS`
+ - :mod:`Curl`
 
 
 .. _auxIO-HDFS-deps:
@@ -220,11 +229,27 @@ Enabling HDFS Support
 
 Once you have ensured that Hadoop and Java are installed and have the
 five variables above, defined, set the environment variable
-CHPL_AUX_FILESYS to 'hdfs' to enable :mod:`HDFS` support:
+``CHPL_AUX_FILESYS`` to your libhdfs implementation to enable :mod:`HDFS` support:
 
 .. code-block:: sh
 
   export CHPL_AUX_FILESYS=hdfs
+
+About the varying implementations of libhdfs:
+
+ * Apache Hadoop provides a libhdfs implementation that uses the Java virtual
+   machine (jvm) and the Apache Hadoop HDFS jar files. When using Apache Hadoop
+   libhdfs, make sure the jvm installation includes a static version of libjvm.
+   Since, Apache Hadoop's libhdfs spins up a jvm, each compute node will need
+   access to the Apache Hadoop HDFS jar files and correct Java classpath
+   configurations. Set ``CHPL_AUX_FILESYS=hdfs`` to use libhdfs.
+
+ * Pivotal libhdfs3 is a pure C/C++ alternative implementation of the libhdfs.
+   To use libhdfs3: install the libhdfs3 using source code from the PivotalHD
+   github repository, follow the instructions for installing the Chapel support
+   for Apache Hadoop libhdfs, and set ``CHPL_AUX_FILESYS=hdfs3``
+
+ * When building Chapel HDFS support, select *one* libhdfs implementation!
 
 Then, rebuild Chapel by executing ``make`` from ``$CHPL_HOME``.
 
@@ -336,16 +361,6 @@ HDFS support, we would set:
     ``CHPL_AUX_FILESYS=hdfs``
 
 
-I/O Systems Supported
----------------------
-
-Currently, the I/O systems supported are:
-
- - Lustre
- - :mod:`HDFS`
- - :mod:`Curl`
-
-
 Parallel and Distributed I/O Features
 -------------------------------------
 
@@ -381,21 +396,4 @@ work on "standard" file systems as well).
      - On local file systems, we return all locales, since no individual
        locale is best.
 
- - Apache Hadoop provides a libhdfs implementation that uses the Java virtual
-   machine (jvm) and the Apache Hadoop HDFS jar files. When using Apache Hadoop
-   libhdfs, make sure the jvm installation includes a static version of libjvm.
-   Since, Apache Hadoop's libhdfs spins up a jvm, each compute node will need
-   access to the Apache Hadoop HDFS jar files and correct Java classpath
-   configurations. Set ``CHPL_AUX_FILESYS=hdfs`` to use libhdfs.
-   Review ``$CHPL_HOME/modules/packages/HDFS.chpl`` for configuration.
 
- - Pivotal libhdfs3 is a pure C/C++ alternative implementation of the libhdfs.
-   To use libhdfs3: install the libhdfs3 using source code from the PivotalHD
-   github repository, follow the instructions for installing the Chapel support
-   for Apache Hadoop libhdfs, and set ``CHPL_AUX_FILESYS=hdfs3``
-
- - When building Chapel HDFS support, select *one* libhdfs implementation!
-
- - To use Chapel's third-party build support (in the event you do not have or
-   would like avoid performing a system build of libhdfs) review the
-   :mod:`HDFS` documentation.
