@@ -106,7 +106,9 @@ proc main() {
 
   writeln(A);
   writeln();
-}
+
+//
+} // main()
 
 /*
   The iterator ``blockIter`` yields a range that defines a subset
