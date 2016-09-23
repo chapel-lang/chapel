@@ -257,66 +257,6 @@ module BigInteger {
       return ret;
     }
 
-    proc get_si() : int {
-      var ret: c_long;
-
-      if _local {
-        ret = mpz_get_si(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_get_si(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_get_si(this.mpz);
-        }
-      }
-
-      return ret.safeCast(int);
-    }
-
-    proc get_ui() : uint {
-      var ret: c_ulong;
-
-      if _local {
-        ret = mpz_get_ui(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_get_ui(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_get_ui(this.mpz);
-        }
-      }
-
-      return ret.safeCast(uint);
-    }
-
-    proc get_d() : real {
-      var ret: c_double;
-
-      if _local {
-        ret = mpz_get_d(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_get_d(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_get_d(this.mpz);
-        }
-      }
-
-      return ret : real;
-    }
-
     proc get_d_2exp() : (uint(32), real) {
       var exp: c_long;
       var dbl: c_double;
@@ -433,6 +373,75 @@ module BigInteger {
     }
 
     return ret;
+  }
+
+  //
+  // Cast operators
+  //
+
+  inline proc _cast(type t, const ref x: bigint) where isIntType(t) {
+    var ret: c_long;
+
+    if _local {
+      ret = mpz_get_si(x.mpz);
+
+    } else if x.localeId == chpl_nodeID {
+        ret = mpz_get_si(x.mpz);
+
+    } else {
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", xLoc) {
+        ret = mpz_get_si(x.mpz);
+      }
+    }
+
+    return ret.safeCast(int);
+  }
+
+  inline proc _cast(type t, const ref x: bigint) where isUintType(t) {
+    var ret: c_ulong;
+
+    if (mpz_cmp_ui(x.mpz, 0) >= 0) {
+      if _local {
+        ret = mpz_get_ui(x.mpz);
+
+      } else if x.localeId == chpl_nodeID {
+        ret = mpz_get_ui(x.mpz);
+
+      } else {
+        const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", xLoc) {
+          ret = mpz_get_ui(x.mpz);
+        }
+      }
+
+    } else {
+      halt("unable to convert a negative bigint to a uint(?w)");
+    }
+
+    return ret.safeCast(uint);
+  }
+
+  inline proc _cast(type t, const ref x: bigint) where isRealType(t) {
+    var ret: c_double;
+
+    if _local {
+      ret = mpz_get_d(x.mpz);
+
+    } else if x.localeId == chpl_nodeID {
+      ret = mpz_get_d(x.mpz);
+
+    } else {
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", xLoc) {
+        ret = mpz_get_d(x.mpz);
+      }
+    }
+
+    return ret : real;
   }
 
   //
