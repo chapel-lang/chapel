@@ -69,7 +69,7 @@ iter genDigits(numDigits) {
     } while tmp2.cmp(denom) >= 0; // tmp2 >= denom
 
     // Compute and yield the digit.
-    const digit = tmp1.get_ui();
+    const digit = tmp1 : uint;
 
     yield digit;
 

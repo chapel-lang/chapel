@@ -1,10 +1,10 @@
 use BigInteger;
 
-// tests the assignment functions
-var a = new bigint(0);    // a = 0
-var b = new bigint(2);    // b = 2
+var a = new bigint(0);
+var b = new bigint(2);
 
 writeln(a, " ", b);
+
 a.set(b);
 writeln(a, " ", b);
 
@@ -29,14 +29,12 @@ writeln(a);
 a.swap(b);
 writeln(a, " ", b);
 
-var x = a.get_ui();
+var x = a : uint;
+var y = b : int;
+var z = a : real;
 
 if isUint(x) then writeln("uint ", x);
-
-var y = b.get_si();
-if isInt(y) then writeln("int ", y);
-
-var z = a.get_d();
+if isInt(y)  then writeln("int ",  y);
 if isReal(z) then writeln("real ", z);
 
 a.set(101);
