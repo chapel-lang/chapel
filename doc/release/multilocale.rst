@@ -73,12 +73,10 @@ hello6-taskpar-dist_real).  The first binary contains code to
 launch the Chapel program onto the compute nodes. The second contains
 the program code itself.
 
+.. _what-is-gasnet:
 
 What is GASNet?
 +++++++++++++++
-
-.. _what-is-gasnet:
-
 
 GASNet is a one-sided communication and active message library being
 developed by Lawrence Berkeley National Lab and UC Berkeley.  For details,

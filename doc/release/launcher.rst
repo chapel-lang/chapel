@@ -102,153 +102,7 @@ forwarded to worker processes. However, this strategy is not always
 reliable. The remote system may override some environment variables, and
 some launchers might not correctly forward all environment variables.
 
-
-.. _using-udp:
-
-Using the Portable UDP Conduit
-++++++++++++++++++++++++++++++
-
-GASNet includes a portable UDP conduit. While this conduit can help get
-multilocale Chapel programs running in a variety of environments, it is
-not expected to achieve the best performance.
-
-To build Chapel with the UDP conduit, run these commands from ``$CHPL_HOME``:
-
-.. code-block:: bash
-
-   export CHPL_COMM=gasnet
-   export CHPL_COMM_SUBSTRATE=udp
-   make
-
-Now you should be able to compile a program:
-
-.. code-block:: bash
-
-   chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
-
-But, in order to run this program, you'll need to indicate where the
-multi-locale program should run.
-
-First, try running it locally:
-
-.. code-block:: bash
-
-   # Run over-subscribed on this machine
-   export GASNET_SPAWNFN=L
-   ./hello6-taskpar-dist -nl 2
-
-You should see output from 2 locales that both report the same hostname. This
-configuration simulates multiple Chapel locales with one workstation. This
-configuration is useful for testing but is not expected to perform well.
-
-Next, try running it across several machines.
-
-.. code-block:: bash
-
-   # Use SSH to spawn jobs
-   export GASNET_SPAWNFN=S
-   # Which ssh command should be used? ssh is the default.
-   export GASNET_SSH_CMD=ssh
-   # Disable X11 forwarding
-   export GASNET_SSH_OPTIONS=-x
-   # Specify which hosts to spawn on.
-   export GASNET_SSH_SERVERS="host1 host2 host3 ..."
-
-where host1, host2, host3, ... are the names of the
-workstations that will serve as your Chapel locales.  In
-order to run your Chapel program on k locales, you must
-have k entries in the ``GASNET_SSH_SERVERS`` variable.  To avoid
-typing in passwords for each node, you will probably want
-to use normal ssh-agent/ssh-add capabilities to support
-password-less ssh-ing.
-
-Now running
-
-.. code-block:: bash
-
-  ./hello6-taskpar-dist -nl 2
-
-should display 2 different hostnames that you specified in GASNET_SSH_SERVERS.
-
-GASNet's UDP conduit can be configured with many other options. Please refer
-to:
-
-   ``$CHPL_HOME/third-party/gasnet/gasnet-src/udp-conduit/README``
-   or
-   http://gasnet.lbl.gov/dist/udp-conduit/README
-
-
-.. _using-udp-slurm:
-
-Using the UDP Conduit with Slurm
-********************************
-
-It is also possible to configure GASNet/UDP to launch jobs with
-Slurm using the following commands:
-
-.. code-block:: bash
-
-   export GASNET_SPAWNFN=C
-   export GASNET_CSPAWN_CMD="srun -N%N %C"
-
-Note that this configuration will not work for other conduits, as
-``GASNET_SPAWNFN=C`` is specific to the UDP conduit.
-
-See ssh-launchers-with-slurm_ for other possibilities.
-
-Troubleshooting the UDP Conduit
-*******************************
-
-I need to type a password when running my program
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Configure your machines for password-less ssh. Try searching for "how to set up
-passwordless ssh". You'll know you have succeeded when you can `ssh` directly to
-the compute nodes without needing to type in a password each time.
-
-I'm seeing login banners mixed with my program's output
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If you are using SSH to launch jobs, you might get a
-login banner printed out along with your program's output. We have
-found the following setting useful to disable such printing:
-
-.. code-block:: bash
-
-   export GASNET_SSH_OPTIONS="-o LogLevel=Error"
-
-
-I'm seeing warnings from GASNet about using a higher-performance network
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-  WARNING: Using GASNet's udp-conduit, which exists for portability convenience.
-  WARNING: Support was detected for native GASNet conduits: ibv
-  WARNING: You should *really* use the high-performance native GASNet conduit
-  WARNING: if communication performance is at all important in this program run.
-
-Using a high-performance network, when available, is going to give much better
-performance with Chapel than the UDP conduit. However, in some cases (e.g. when
-comparing conduits) you might like to use the UDP conduit without these
-warnings. To turn them off, use:
-
-.. code-block:: bash
-
-  export GASNET_QUIET=yes
-
-I get xSocket errors when using a system with multiple IP addresses
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
- *** FATAL ERROR: Got an xSocket while spawning slave process: connect()
- failed while creating a connect socket (111:Connection refused)
-
-You need to set ``GASNET_MASTERIP`` and possibly ``GASNET_WORKERIP``. See
-``$CHPL_HOME/third-party/gasnet/gasnet-src/udp-conduit/README`` or
-http://gasnet.lbl.gov/dist/udp-conduit/README .
-
+.. _using-slurm:
 
 Using Slurm
 +++++++++++
@@ -263,8 +117,10 @@ On Cray systems, this will happen automatically if srun is found in your path,
 but not when both srun and aprun are found in your path. Native Slurm is the
 best option where it works, but at the time of this writing, there are problems with it when combined with UDP or InfiniBand conduits. So, for these configurations please see:
 
-  * :ref:`readme-infiniband` for information about using Slurm with InfiniBand.
-  * using-udp-slurm_ for information about using Slurm with the UDP conduit
+  * :ref:`readme-infiniband` for information about using Slurm with
+    InfiniBand.
+  * :ref:`using-udp-slurm` for information about using Slurm with the UDP
+    conduit
 
 Common Slurm Settings
 *********************
