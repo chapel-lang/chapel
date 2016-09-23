@@ -3926,8 +3926,8 @@ static void setFlagsAndCheckForConstAccess(Symbol* dest,
         )
       baseSym = getBaseSymForConstCheck(call);
 
-  } else if (resolvedFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
-    //INT_ASSERT(dest->hasFlag(FLAG_ARRAY_ALIAS));
+  } else if (resolvedFn->hasFlag(FLAG_NEW_ALIAS_FN) &&
+             dest->hasFlag(FLAG_ARRAY_ALIAS)) {
     if (!dest->isConstant()) {
       // We are creating a var alias - ensure aliasee is not const either.
       SymExpr* aliaseeSE = toSymExpr(call->get(2));
