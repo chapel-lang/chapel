@@ -78,7 +78,6 @@ var intFromReal = myReal : int;
 var intFromReal2: int = myReal : int;
 
 // Type aliasing.
-// (see :ref:`Tuples <primers-yminutes-tuples>`)
 type chroma = int;        // Type of a single hue
 type RGBColor = 3*chroma; // Type representing a full color
 var black: RGBColor = ( 0,0,0 );
@@ -274,8 +273,7 @@ do {
 writeln( jSum );
 
 // ``for`` loops are much like those in python in that they iterate over a range.
-// :ref:`Ranges <primers-yminutes-range-domain>` themselves are types, and can be
-// stuffed into variables.
+// Ranges themselves are types, and can be stuffed into variables.
 for i in 1..10 do write( i , ", ") ;
 writeln( );
 
@@ -470,7 +468,7 @@ var evensOrFivesAgain = [ i in 1..10 ] if (i % 2 == 0 || i % 5 == 0) then i;
 arrayFromLoop = [ value in arrayFromLoop ] value + 1;
 
 // Note: This notation can get somewhat tricky. For example, this code would break,
-// for reasons to be explained when discussing :ref:`zipped iterators <primers-yminutes-iterators>`.
+// for reasons to be explained when discussing zipped iterators.
 
 /* .. code-block:: chapel
    
@@ -745,7 +743,8 @@ Classes
 
 // Classes are similar to those in C++ and Java, allocated on the heap.
 class MyClass {
-  // Member variables
+
+// Member variables
   var memberInt : int;
   var memberBool : bool = true;
 
@@ -753,12 +752,12 @@ class MyClass {
     this.memberInt = ceil( val ): int;
   }
 
-  // Explicitly defined constructor. (There are default constructors.)
+// Explicitly defined constructor. (There are default constructors.)
   proc ~MyClass( ){
     writeln( "MyClass Destructor called ", (this.memberInt, this.memberBool) );
   }
 
-  // Class methods.
+// Class methods.
   proc setMemberInt( val: int ){
     this.memberInt = val;
   }
@@ -774,8 +773,7 @@ class MyClass {
   proc getMemberBool( ): bool {
     return this.memberBool;
   }
-
-}
+} // end MyClass
 
 // Default constructor, using default values.
 var myObject = new MyClass( 10 );
@@ -814,22 +812,22 @@ class MyChildClass : MyClass {
   var memberComplex: complex;
 }
 
-// Generic classes.
+// Here's an example of generic classes.
 class GenericClass {
   type classType;
   var classDomain: domain(1);
   var classArray: [classDomain] classType;
 
-  // Explicit constructor
+// Explicit constructor.
   proc GenericClass( type classType, elements : int ){
     this.classDomain = {1..#elements};
   }
 
-  // Copy constructor
-  // Note: We still have to put the type as an argument, but we can
-  // default to the type of the other object using the query (?) operator
-  // Further, we can take advantage of this to allow our copy constructor
-  // to copy classes of different types and cast on the fly
+// Copy constructor.
+// Note: We still have to put the type as an argument, but we can
+// default to the type of the other object using the query (``?``) operator.
+// Further, we can take advantage of this to allow our copy constructor
+// to copy classes of different types and cast on the fly.
   proc GenericClass( other : GenericClass(?otherType),
                      type classType = otherType ) {
     this.classDomain = other.classDomain;
@@ -837,21 +835,21 @@ class GenericClass {
     for idx in this.classDomain do this[ idx ] = other[ idx ] : classType;
   }
 
-  // Define bracket notation on a GenericClass
-  // object so it can behave like a normal array
-  // i.e. objVar[ i ] or objVar( i )
+// Define bracket notation on a GenericClass
+// object so it can behave like a normal array
+// i.e. ``objVar[ i ]`` or ``objVar( i )``
   proc this( i : int ) ref : classType {
     return this.classArray[ i ];
   }
 
-  // Define an implicit iterator for the class
-  // to yield values from the array to a loop
-  // i.e. for i in objVar do ....
+// Define an implicit iterator for the class
+// to yield values from the array to a loop
+// i.e. ``for i in objVar do ...``
   iter these( ) ref : classType {
     for i in this.classDomain do
       yield this[i];
   }
-}
+} // end GenericClass
 
 // We can assign to the member array of the object using the bracket
 // notation that we defined.
@@ -887,11 +885,12 @@ Modules
 // For example, this file implicitly names the ``learnChapelInYMinutes`` module
 
 module OurModule {
-  // We can use modules inside of other modules.
-  // Time is one of the standard modules.
+
+// We can use modules inside of other modules.
+// Time is one of the standard modules.
   use Time;
 
-  // We'll use this procedure in the parallelism section.
+// We'll use this procedure in the parallelism section.
   proc countdown( seconds: int ){
     for i in 1..seconds by -1 {
       writeln( i );
@@ -899,8 +898,8 @@ module OurModule {
     }
   }
 
-  // Submodules of OurModule
-  // It is possible to create arbitrarily deep module nests.
+// It is possible to create arbitrarily deep module nests.
+// i.e. submodules of OurModule
   module ChildModule {
     proc foo(){
       writeln( "ChildModule.foo()");
@@ -1104,9 +1103,9 @@ proc main(){
 
   coforall task in 1..#5 { // Generate tasks
     // Create a barrier
-    do{
+    do {
       lock$;                 // Read lock$ (wait)
-    }while ( count.read() < 1 ); // Keep waiting until a spot opens up
+    } while ( count.read() < 1 ); // Keep waiting until a spot opens up
 
     count.sub(1);          // decrement the counter
     lock$.writeXF( true ); // Set lock$ to full (signal)
