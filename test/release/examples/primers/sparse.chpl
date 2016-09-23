@@ -1,6 +1,6 @@
-/*
-   Sparse Primer
+// Sparse Domains and Arrays
 
+/*
    This primer shows off some of Chapel's support for sparse domains
    and arrays.
 

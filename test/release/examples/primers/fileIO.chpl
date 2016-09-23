@@ -1,6 +1,4 @@
-/*
-   File I/O Primer
-*/
+// File I/O
 
 /*
    First example: Textual Array I/O

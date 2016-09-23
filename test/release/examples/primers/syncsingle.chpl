@@ -1,5 +1,5 @@
-//
-// Sync and Single Variables Primer
+// Sync / Singles
+
 //
 // This primer illustrates Chapel's sync and single variables.
 //

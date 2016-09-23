@@ -328,11 +328,13 @@ static const char* error_string_no_error = "No error";
 
 static
 const char* extended_errors[] = {
-  "end of file",
-  "short read or write",
-  "bad format",
-  "illegal multibyte sequence", // most systems already have EILSEQ but not all
-  "overflow", // most systems already have EOVERFLOW but not all
+  /* EEOF */     "end of file",
+  /* ESHORT */   "short read or write",
+  /* EFORMAT */  "bad format",
+  // most systems already have the following but not all
+  /* EILSEQ */    "illegal multibyte sequence",
+  /* EOVERFLOW */ "overflow",
+  /* ENODATA */   "no data",
   NULL
 };
 
@@ -1449,10 +1451,22 @@ err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_o
   char* new_host_buf;
   char* serv_buf=0;
   char* new_serv_buf;
-  int host_buf_sz = NI_MAXHOST;
-  int serv_buf_sz = NI_MAXSERV;
+  int host_buf_sz;
+  int serv_buf_sz;
   int got;
   err_t err_out;
+
+#ifdef NI_MAXHOST
+  host_buf_sz = NI_MAXHOST;
+#else
+  host_buf_sz = 1025;
+#endif
+
+#ifdef NI_MAXSERV
+  serv_buf_sz = NI_MAXSERV;
+#else
+  serv_buf_sz = 32;
+#endif
 
   STARTING_SLOW_SYSCALL;
 

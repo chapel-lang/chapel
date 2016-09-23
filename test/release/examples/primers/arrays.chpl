@@ -1,9 +1,8 @@
-/*
-  Arrays Primer
+// Arrays
 
-  This primer is a tutorial on Chapel rectangular arrays.
-
-*/
+//
+//  This primer is a tutorial on Chapel rectangular arrays.
+//
 
 //
 // Arrays in Chapel are specified using a square-bracketed expression

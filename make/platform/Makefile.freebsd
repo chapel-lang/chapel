@@ -15,24 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Makefile.sunos: contains SunOS-specific variables
+# 
+# seemingly necessary to get dependencies, e.g. curl.h
 #
-
-ECHO = /usr/ucb/echo
-
+RUNTIME_CFLAGS += -I/usr/local/include
+ 
 #
-# seemingly necessary to get vnsprintf for the runtime libraries
+# seemingly necessary to get dependencies, e.g. curl.h
 #
-RUNTIME_CFLAGS += -U__STRICT_ANSI__
-
-#
-# seemingly necessary to get INT64_MAX and the like
-#
-GEN_CFLAGS +=  -U__STRICT_ANSI__
+GEN_CFLAGS +=  -I/usr/local/include
 
 #
+# seemingly necessary to get dependencies, e.g. libcurl.a
 #
-#
-ARMCI_PLATFORM_SPECIFIC_LIBS = -lsocket
-PVM_PLATFORM_LIBS = -lrt
-GEN_LFLAGS = -lsocket -lnsl
+GEN_LFLAGS +=  -L/usr/local/lib

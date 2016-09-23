@@ -1,8 +1,7 @@
+// Random
+
 /*
-   Standard Module: Random primer
-
    This primer demonstrates usage of the standard module Random.chpl.
-
 */
 
 use Random;

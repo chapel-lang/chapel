@@ -1,5 +1,5 @@
-//
-// Task Parallel Primer
+// Task Parallelism
+
 //
 // This primer illustrates Chapel's parallel tasking features,
 // namely the ``begin``, ``cobegin``, and ``coforall`` statements.

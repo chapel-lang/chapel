@@ -18,11 +18,13 @@
  */
 
 // Get realpath on linux
+#ifdef __linux__
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif
 #ifndef _XOPEN_SOURCE_EXTENDED
 #define _XOPEN_SOURCE_EXTENDED 1
+#endif
 #endif
 
 #include "files.h"

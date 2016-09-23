@@ -257,66 +257,6 @@ module BigInteger {
       return ret;
     }
 
-    proc get_si() : int {
-      var ret: c_long;
-
-      if _local {
-        ret = mpz_get_si(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_get_si(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_get_si(this.mpz);
-        }
-      }
-
-      return ret.safeCast(int);
-    }
-
-    proc get_ui() : uint {
-      var ret: c_ulong;
-
-      if _local {
-        ret = mpz_get_ui(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_get_ui(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_get_ui(this.mpz);
-        }
-      }
-
-      return ret.safeCast(uint);
-    }
-
-    proc get_d() : real {
-      var ret: c_double;
-
-      if _local {
-        ret = mpz_get_d(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_get_d(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_get_d(this.mpz);
-        }
-      }
-
-      return ret : real;
-    }
-
     proc get_d_2exp() : (uint(32), real) {
       var exp: c_long;
       var dbl: c_double;
@@ -433,6 +373,75 @@ module BigInteger {
     }
 
     return ret;
+  }
+
+  //
+  // Cast operators
+  //
+
+  inline proc _cast(type t, const ref x: bigint) where isIntType(t) {
+    var ret: c_long;
+
+    if _local {
+      ret = mpz_get_si(x.mpz);
+
+    } else if x.localeId == chpl_nodeID {
+        ret = mpz_get_si(x.mpz);
+
+    } else {
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", xLoc) {
+        ret = mpz_get_si(x.mpz);
+      }
+    }
+
+    return ret.safeCast(int);
+  }
+
+  inline proc _cast(type t, const ref x: bigint) where isUintType(t) {
+    var ret: c_ulong;
+
+    if (mpz_cmp_ui(x.mpz, 0) >= 0) {
+      if _local {
+        ret = mpz_get_ui(x.mpz);
+
+      } else if x.localeId == chpl_nodeID {
+        ret = mpz_get_ui(x.mpz);
+
+      } else {
+        const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", xLoc) {
+          ret = mpz_get_ui(x.mpz);
+        }
+      }
+
+    } else {
+      halt("unable to convert a negative bigint to a uint(?w)");
+    }
+
+    return ret.safeCast(uint);
+  }
+
+  inline proc _cast(type t, const ref x: bigint) where isRealType(t) {
+    var ret: c_double;
+
+    if _local {
+      ret = mpz_get_d(x.mpz);
+
+    } else if x.localeId == chpl_nodeID {
+      ret = mpz_get_d(x.mpz);
+
+    } else {
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", xLoc) {
+        ret = mpz_get_d(x.mpz);
+      }
+    }
+
+    return ret : real;
   }
 
   //
@@ -3918,9 +3927,9 @@ module BigInteger {
   }
 
   // 5.6 Division Functions
-  proc bigint.div_q(param     rounding: Round,
-                    const ref n:        bigint,
-                    const ref d:        bigint) {
+  proc bigint.div_q(const ref n: bigint,
+                    const ref d: bigint,
+                    param     rounding = Round.ZERO) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
@@ -3953,15 +3962,16 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_q(param     rounding: Round,
-                    const ref n:        bigint,
-                              d:        integral) {
-    this.div_q(rounding, n, new bigint(d));
+  proc bigint.div_q(const ref n: bigint,
+                              d: integral,
+                    param     rounding = Round.ZERO) {
+
+    this.div_q(n, new bigint(d), rounding);
   }
 
-  proc bigint.div_r(param rounding: Round,
-                    const ref n: bigint,
-                    const ref d: bigint) {
+  proc bigint.div_r(const ref n: bigint,
+                    const ref d: bigint,
+                    param     rounding = Round.ZERO) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
@@ -3994,17 +4004,17 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_r(param     rounding: Round,
-                    const ref n:        bigint,
-                              d:        integral) {
-    this.div_r(rounding, n, new bigint(d));
+  proc bigint.div_r(const ref n: bigint,
+                              d: integral,
+                    param     rounding = Round.ZERO) {
+    this.div_r(n, new bigint(d), rounding);
   }
 
   // this gets quotient, r gets remainder
-  proc bigint.div_qr(param     rounding: Round,
-                     ref       r:        bigint,
+  proc bigint.div_qr(ref       r:        bigint,
                      const ref n:        bigint,
-                     const ref d:        bigint) {
+                     const ref d:        bigint,
+                     param     rounding = Round.ZERO) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
@@ -4041,16 +4051,16 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_qr(param     rounding: Round,
-                     ref       r:        bigint,
-                     const ref n:        bigint,
-                               d:        integral) {
-    this.div_qr(rounding, r, n, new bigint(d));
+  proc bigint.div_qr(ref       r: bigint,
+                     const ref n: bigint,
+                               d: integral,
+                     param     rounding = Round.ZERO) {
+    this.div_qr(r, n, new bigint(d), rounding);
   }
 
-  proc bigint.div_q_2exp(param rounding: Round,
-                         const ref n: bigint,
-                         b: integral) {
+  proc bigint.div_q_2exp(const ref n: bigint,
+                                   b: integral,
+                         param     rounding = Round.ZERO) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
@@ -4083,9 +4093,9 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_r_2exp(param rounding: Round,
-                         const ref n: bigint,
-                         b: integral) {
+  proc bigint.div_r_2exp(const ref n: bigint,
+                                   b: integral,
+                         param     rounding = Round.ZERO) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {

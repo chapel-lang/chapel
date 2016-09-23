@@ -1,3 +1,5 @@
+// chplvis: Tags
+
 // Example 2 of use of VisualDebug module and chplvis tool.
 // Read the file doc/chplvis/chplvis.rst for full documentation
 // on chplvis.

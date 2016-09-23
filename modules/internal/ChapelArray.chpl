@@ -825,7 +825,9 @@ module ChapelArray {
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
-    // the locale grid
+    /*
+       Returns an array of locales over which this distribution was declared.
+    */
     proc targetLocales() {
       return _value.dsiTargetLocales();
     }
@@ -1479,7 +1481,9 @@ module ChapelArray {
       }
     }
 
-    // the locale grid
+    /*
+       Returns an array of locales over which this domain has been distributed.
+    */
     proc targetLocales() {
       return _value.dsiTargetLocales();
     }
@@ -2120,7 +2124,9 @@ module ChapelArray {
     pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
-    // the locale grid
+    /*
+       Returns an array of locales over which this array has been distributed.
+    */
     proc targetLocales() {
       return _value.dsiTargetLocales();
     }
