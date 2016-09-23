@@ -24,7 +24,7 @@ proc main() {
   //
   // Pad out any trailing digits for the final line
   //
-  const leftover = n%digitsPerLine;
+  const leftover = n % digitsPerLine;
   if (leftover) {
     for leftover..digitsPerLine do
       write(" ");
@@ -65,7 +65,7 @@ iter gen_digits(numDigits) {
     //
     // eliminate digit d
     //
-    accum -= denom * d;
+    accum.submul(denom, d);
     accum *= digitsPerLine;
     numer *= digitsPerLine;
   }
@@ -74,12 +74,10 @@ iter gen_digits(numDigits) {
   // Helper function to extract the nth digit
   //
   proc extract_digit(nth) {
-    tmp2.mul(numer, nth);
-    tmp2 += accum;
-    tmp2 /= denom;
-    
-    return tmp2.get_si();
+    tmp1.mul(numer, nth);
+    tmp2.add(tmp1,accum);
+    tmp1.div_q(Round.ZERO, tmp2, denom);
+
+    return tmp1.get_si();
   }
 }
-
-

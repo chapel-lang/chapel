@@ -24,7 +24,7 @@ proc main() {
   //
   // Pad out any trailing digits for the final line
   //
-  const leftover = n%digitsPerLine;
+  const leftover = n % digitsPerLine;
   if (leftover) {
     for leftover..digitsPerLine do
       write(" ");
@@ -91,9 +91,7 @@ iter gen_digits(numDigits) {
     mpz_mul_ui(tmp1, numer, nth);            // tmp1 = numer * nth
     mpz_add(tmp2, tmp1, accum);              // tmp2 = tmp1 + accum
     mpz_tdiv_q(tmp1, tmp2, denom);           // tmp1 = tmp2 / denom
-    
+
     return mpz_get_ui(tmp1);                 // convert tmp1 to a c_uint
   }
 }
-
-

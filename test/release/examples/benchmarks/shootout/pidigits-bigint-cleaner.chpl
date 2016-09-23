@@ -74,12 +74,10 @@ iter gen_digits(numDigits) {
   // Helper function to extract the nth digit
   //
   proc extract_digit(nth) {
-    tmp2 = numer * nth;
-    tmp2 += accum;
-    tmp2 /= denom;
-    
-    return tmp2.get_si();
+    tmp1 = numer * nth;
+    tmp2 = tmp1 + accum;
+    tmp1 = tmp2 / denom;
+
+    return tmp1.get_si();
   }
 }
-
-
