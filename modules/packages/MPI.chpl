@@ -201,7 +201,7 @@ module MPI {
     coforall loc in Locales do on loc {
       // TODO : Need a gasnet barrier here???
       var provided : c_int;
-      C_MPI.MPI_Init_thread(nil, nil, MPI_THREAD_MULTIPLE,provided);
+      C_MPI.MPI_Init_thread(0,0,MPI_THREAD_MULTIPLE,provided);
       if (provided != MPI_THREAD_MULTIPLE) &&
          requireThreadedMPI
       {
