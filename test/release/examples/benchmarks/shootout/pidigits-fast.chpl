@@ -7,7 +7,7 @@
 
 use BigInteger;
 
-config const n = 50;              // Compute n digits of pi, 50 by default
+config const n = 50;         // Compute n digits of pi, 50 by default
 
 proc main() {
   param digitsPerLine = 10;
@@ -24,7 +24,7 @@ proc main() {
   //
   // Pad out any trailing digits for the final line
   //
-  const leftover = n%digitsPerLine;
+  const leftover = n % digitsPerLine;
   if (leftover) {
     for leftover..digitsPerLine do
       write(" ");
@@ -34,8 +34,8 @@ proc main() {
 
 
 iter gen_digits(numDigits) {
-  var accum, tmp1, tmp2: bigint,
-      numer, denom: bigint = 1;
+  var numer, denom: bigint = 1,
+      accum, tmp1, tmp2: bigint;
 
   var d, k = 0;
   for i in 1..numDigits {
@@ -47,7 +47,7 @@ iter gen_digits(numDigits) {
         //
         // Compute the next term
         //
-        accum += numer * 2;
+        accum.addmul(numer, 2);
         accum *= k2;
         denom *= k2;
         numer *= k;
@@ -65,7 +65,7 @@ iter gen_digits(numDigits) {
     //
     // eliminate digit d
     //
-    accum -= denom * d;
+    accum.submul(denom, d);
     accum *= 10;
     numer *= 10;
   }
@@ -74,9 +74,9 @@ iter gen_digits(numDigits) {
   // Helper function to extract the nth digit
   //
   proc extract_digit(nth) {
-    tmp1 = numer * nth;
-    tmp2 = tmp1 + accum;
-    tmp1 = tmp2 / denom;
+    tmp1.mul(numer, nth);
+    tmp2.add(tmp1,accum);
+    tmp1.div_q(tmp2, denom);
 
     return tmp1: int;
   }
