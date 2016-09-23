@@ -80,7 +80,7 @@ b) Repeat steps 2-5 above, but in Step 2, source ``util/setchplenv.bash``
    configuration.  Building this configuration involves compiling
    third-party packages, which will increase the overall build time.
    If you run into any portability issues, please let us know via
-   http://chapel.cray.com/bugs.html.
+   `doc/bugs.rst`_.
 
    .. code-block:: bash
 
@@ -108,8 +108,6 @@ b) Repeat steps 2-5 above, but in Step 2, source ``util/setchplenv.bash``
    Chapel's configuration variables, what they mean, and how they
    can be set.
 
-.. _doc/chplenv.rst: http://chapel.cray.com/docs/1.14/usingchapel/chplenv.html
-
 
 Using Chapel in Multi-Locale Mode
 ---------------------------------
@@ -117,9 +115,6 @@ Using Chapel in Multi-Locale Mode
 All of the instructions above describe how to run Chapel programs
 in a single-locale (shared-memory) mode. To run using multiple
 locales (distributed memory), please refer to `doc/multilocale.rst`_.
-
-.. _doc/multilocale.rst: http://chapel.cray.com/docs/1.14/usingchapel/multilocale.html
-
 
 Performance
 -----------
@@ -166,11 +161,13 @@ What's next?
     changes since the last release              ``CHANGES.md``
 =============================================== =========================
 
-.. _platforms: http://chapel.cray.com/docs/1.14/platforms/index.html
+.. _doc/prereqs.rst: prereqs.html
+.. _doc/multilocale.rst: multilocale.html
+.. _platforms: ../platforms/index.html
 .. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.14/
-.. _doc/prereqs.rst: http://chapel.cray.com/docs/1.14/usingchapel/prereqs.html
-.. _doc/building.rst: http://chapel.cray.com/docs/1.14/usingchapel/building.html
-.. _doc/compiling.rst: http://chapel.cray.com/docs/1.14/usingchapel/compiling.html
-.. _doc/executing.rst: http://chapel.cray.com/docs/1.14/usingchapel/executing.html
-.. _doc/debugging.rst: http://chapel.cray.com/docs/1.14/usingchapel/debugging.html
-.. _doc/bugs.rst: http://chapel.cray.com/docs/1.14/usingchapel/bugs.html
+.. _doc/chplenv.rst: chplenv.html
+.. _doc/building.rst: building.html
+.. _doc/compiling.rst: compiling.html
+.. _doc/executing.rst: executing.html
+.. _doc/debugging.rst: debugging.html
+.. _doc/bugs.rst: bugs.html
