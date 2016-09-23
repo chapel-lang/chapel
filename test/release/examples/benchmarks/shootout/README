@@ -52,6 +52,7 @@ binarytrees
 -----------
 o no current TODOs
 
+
 chameneosredux
 --------------
 o once we map to C11 atomics/utilize memory order arguments, can
@@ -190,12 +191,15 @@ o as initializers are enabled, change 'mass' from 'var' to 'const'
 
 pidigits
 --------
-o promote mpz_t types to a record-based implementation with:
-  - a better name
-  - arithmetic operators defined for it
-  - automatic memory reclamation when it leaves scope
-  - support for native Chapel types rather than exposing C types
-    (using safecasts at any downward-facing interfaces)
+o we are currently losing performance when calling binary operators
+  on bigints and assigning the result to a third bigint because
+  the operator creates a value to store the result and then (deep)
+  copies it into the result.  It would be nice to be able to use
+  this form without taking a hit relative to the method-based form.
+
+o tmp1/tmp2 could be declared in extract_digit(), but with a
+  performance penalty.  Another use of local static variables?
+
 
 regexdna
 --------
