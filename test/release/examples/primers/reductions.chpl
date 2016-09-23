@@ -4,9 +4,9 @@
 // This primer includes example reductions.
 //
 // An array is filled with random values and the locations of the
-// maximum and minimum are found. The Euclidean norm of the Array's
-// columns is computed using + reductions over slices of A.  Finally,
-// an && reduction is used to compute whether all values in A are
+// maximum and minimum are found. The Euclidean norm of the array's
+// columns is computed using ``+`` reductions over slices of ``A``.  Finally,
+// an ``&&`` reduction is used to compute whether all values in ``A`` are
 // greater than 0.25 and the results of the computations are printed.
 //
 
@@ -49,11 +49,11 @@ writeln();
    Find the 1-norm of an array
    ---------------------------
 
-   We can find the 1-norm of A by summing over the absolute value of the
+   We can find the 1-norm of ``A`` by summing over the absolute value of the
    elements.
 
    The expression ``abs(A)`` creates a new matrix which contains in each of its
-   elements the absolute value of the corresponding element in A.
+   elements the absolute value of the corresponding element in ``A``.
    The ``+ reduce`` clause just sums these up.
 */
 
@@ -65,16 +65,16 @@ writeln();
    The Frobenius norm
    ------------------
 
-   The Frobenius norm is the square root of the sum over all elements of their
-   respective squares.
+   The `Frobenius norm`_ is the square root of the sum over all elements
+   of their respective squares.
 
    The expression below can be broken down thus:
 
     1) The Frobenius norm is the square root of some quantity.
     2) The quantity is the sum over all elements of a matrix.
     3) That matrix is the promotion of ``A`` by ``**2``.
-	 That is, it's a matrix each of whose elements is the square
-	 of the corresponding element in ``A``.
+       That is, each of its elements is the square
+       of the corresponding element of ``A``.
 */
 
 var frobNorm = sqrt(+ reduce A**2);
@@ -82,10 +82,10 @@ writeln("The Frobenius norm of A is ", frobNorm);
 writeln();
 
 /*
-   Maxloc and minloc reductions
-   ----------------------------
+   ``maxloc`` and ``minloc`` reductions
+   ------------------------------------
 
-   Apply minloc and maxloc reductions. We capture the results into
+   Apply ``minloc`` and ``maxloc`` reductions. We capture the results into
    the ``maxVal``, ``maxLoc``, ``minVal``, ``minLoc`` variables.
 
    ``maxloc`` and ``minloc`` reductions expect a 2-tuple argument
@@ -107,14 +107,16 @@ writeln();
    The Euclidean norm
    ------------------
 
-   Compute Euclidean norms for each column using ``+`` reductions.
+   Compute `Euclidean norms`_ for each column using ``+`` reductions.
   
    Breaking down the statement below:
-    1) ``vecNorms`` is a 1-D array containing size elements (indexed by ``1..size``).
+
+    1) ``vecNorms`` is a 1-D array containing ``size`` elements
+       (indexed by ``1..size``).
     2) The elements of ``vecNorms`` are the square-root of some quantity.
     3) The quantity is the sum over all of the elements of some vector.
-    4) The vector consists of the promotion of the j-th column of ``A`` by  ``**2``.
-         That is, each element of that column vector is squared.
+    4) The vector consists of the promotion of the j-th column of ``A``
+       by ``**2``. That is, each element of that column vector is squared.
 */
 
 var vecNorms = [j in 1..size] sqrt(+ reduce A(1..size, j)**2);
@@ -125,14 +127,15 @@ writeln();
    ``&&`` reduction
    ----------------
 
-   Use the ``&&`` reduction to compute if all values in ``A`` are greater than 0.25.
+   Use the ``&&`` reduction to compute if all values in ``A`` are greater
+   than 0.25.
 
-   The parenthesized value is the promotion of ``A`` by ``> 0.25``.  This yields
+   The parenthesized value is the promotion of ``A`` by ``> 0.25``. This yields
    an array of the same size as ``A``, containing boolean values that are true
    if the corresponding element in ``A`` exceeds 0.25 and false otherwise.
 
-   The clause ``&& reduce`` applies the Boolean AND operator to each element in
-   the array, and accumulates the result.
+   The clause ``&& reduce`` computes the result of applying the Boolean AND
+   operator between all elements of the promoted array.
 */
 
 var onlyBigValues = && reduce (A > 0.25);
@@ -141,3 +144,6 @@ if onlyBigValues then
 else
   writeln("Some values in A are less than 0.25");
 writeln();
+
+//.. _Frobenius norm: https://en.wikipedia.org/wiki/Matrix_norm#Frobenius_norm
+//.. _Euclidean norms: https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm
