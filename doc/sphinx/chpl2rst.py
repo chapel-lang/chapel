@@ -187,21 +187,25 @@ def gen_rst(handle):
                 rstline = rstline.replace('//', '  ')
                 rstline = rstline.strip()
             else:
-                # Preserve white space for block comments
+                # Preserve white space for block comments, for indent purposes
                 if commentstarts:
                     rstline = rstline.replace('/*', '  ')
                 if commentends > 0:
                     rstline = rstline.replace('*/', '  ')
-                if '.. code-block::' in rstline or len(rstline.strip()) == 0:
-                    rstline = rstline.strip()
+                # No need for trailing white space... ever
+                rstline = rstline.rstrip(' ')
 
-            # Strip indentation
+            # Handle indentation
             if indentation == -1:
-                lineindentation = len(rstline) - len(rstline.lstrip(' '))
-                if lineindentation > 0:
-                    indentation = lineindentation
+                # Detect level of indentation (number of leading whitespaces)
+                baseline = len(rstline) - len(rstline.lstrip(' '))
+                if baseline > 0:
+                    # Set indentation for the proceeding block
+                    indentation = baseline
+                    # Set indentation for baseline to 0
                     rstline = rstline.lstrip(' ')
             else:
+                # Remove the amount of indent that was removed from baseline
                 if rstline.startswith(' '*indentation):
                     rstline = rstline[indentation:]
                 else:
@@ -209,7 +213,7 @@ def gen_rst(handle):
 
             output.append(rstline)
         else:
-            # Reset indentation
+            # Reset indentation as we enter codeblock state
             indentation = -1
 
             # Write code block
