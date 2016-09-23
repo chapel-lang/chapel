@@ -22,10 +22,14 @@ Currently, the I/O systems supported are:
 
 .. _auxIO-HDFS-deps:
 
-Installing HDFS Dependencies
-----------------------------
+Setting up HDFS
+---------------
 
-The :mod:`HDFS` functionality in Chapel is dependent upon both Hadoop and Java being
+HDFS is the Hadoop Distributed Filesystem. This section demonstrates how to set
+up a Hadoop installation. If you already have access to an HDFS filesystem, you
+can skip ahead to :ref:`enabling-hdfs-support`.
+
+The :mod:`HDFS` functionality in Chapel is dependent Hadoop being
 installed.  The ``HADOOP_INSTALL``, ``JAVA_INSTALL`` and ``CLASSPATH``
 environment variables must be set as described below.
 Without this it will not compile with :mod:`HDFS`, even if
@@ -224,32 +228,26 @@ Here is a sample .bashrc for using Hadoop within Chapel:
   export GASNET_ROUTE_OUTPUT=0
 
 
+.. _enabling-hdfs-support:
+
 Enabling HDFS Support
 *********************
 
-Once you have ensured that Hadoop and Java are installed and have the
-five variables above, defined, set the environment variable
-``CHPL_AUX_FILESYS`` to your libhdfs implementation to enable :mod:`HDFS` support:
+
+There are two ways to configure Chapel to work with HDFS: using the Java
+implementation with libhdfs; or using a C/C++ implementation with libhdfs3.
+
+The user should set their ``CHPL_AUX_FILESYS`` accordingly:
 
 .. code-block:: sh
 
-  export CHPL_AUX_FILESYS=hdfs
+    # C/C++ implementation
+    export CHPL_AUX_FILESYS=hdfs3
 
-About the varying implementations of libhdfs:
+.. code-block:: sh
 
- * Apache Hadoop provides a libhdfs implementation that uses the Java virtual
-   machine (jvm) and the Apache Hadoop HDFS jar files. When using Apache Hadoop
-   libhdfs, make sure the jvm installation includes a static version of libjvm.
-   Since, Apache Hadoop's libhdfs spins up a jvm, each compute node will need
-   access to the Apache Hadoop HDFS jar files and correct Java classpath
-   configurations. Set ``CHPL_AUX_FILESYS=hdfs`` to use libhdfs.
-
- * Pivotal libhdfs3 is a pure C/C++ alternative implementation of the libhdfs.
-   To use libhdfs3: install the libhdfs3 using source code from the PivotalHD
-   github repository, follow the instructions for installing the Chapel support
-   for Apache Hadoop libhdfs, and set ``CHPL_AUX_FILESYS=hdfs3``
-
- * When building Chapel HDFS support, select *one* libhdfs implementation!
+    # Java implementation. Also set environment variables noted above.
+    export CHPL_AUX_FILESYS=hdfs
 
 Then, rebuild Chapel by executing ``make`` from ``$CHPL_HOME``.
 
@@ -260,8 +258,8 @@ Then, rebuild Chapel by executing ``make`` from ``$CHPL_HOME``.
 .. note::
 
   If HDFS support is not enabled (which is the default), all
-  features described below will compile successfully but will result in
-  an error at runtime such as: "No HDFS Support".
+  features described in :mod:`HDFS` will compile successfully but will result
+  in an error at runtime such as: "No HDFS Support".
 
 Installing Curl Dependencies
 ----------------------------

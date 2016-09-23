@@ -28,9 +28,8 @@ This module implements support for the
 Dependencies
 ------------
 
-The HDFS functionality in Chapel is dependent upon both Hadoop and Java being
-installed. See the :ref:`auxIO-HDFS-deps` documentation for details on getting
-these set up.
+See the :ref:`auxIO-HDFS-deps` documentation for details on setting up and
+enabling HDFS support in Chapel.
 
 Using HDFS Support in Chapel
 ----------------------------
