@@ -45,6 +45,11 @@ run into.
 #
 # OMITTED: users/npadmana/fftw/testFFTWsegfault.future
 # b/c not investigated or diagnosed
+#
+# OMITTED: functions/deitz/iterators/iterator_uses_setter.future
+# b/c 'setter' has been removed from the language and it's unclear if this test
+# can be updated
+#
 
 General (see also portability section at the bottom of this file)
 -----------------------------------------------------------------
@@ -308,12 +313,10 @@ Functions and Iterators
   # types/records/ferguson/parallel/coforall-mod/coforall-mod.future
 - Passing unexpected argument to default 'these' iterator causes internal error
   # users/rohanbadlani/bugs/bug3.future
-- The (deprecated) implicit 'setter' argument does not work in ref iterators.
-  # functions/deitz/iterators/iterator_uses_setter.future
-  # functions/deitz/iterators/test_promote_var_function_and_iterate.future
-- The (deprecated) implicit 'setter' argument passed to other functions may
-  be incorrect.
+- The ref version of a ref/val function pair is sometimes chosen when the val
+  version would be better.
   # functions/vass/setter-passed-to-another-fun.future
+  # functions/deitz/iterators/test_promote_var_function_and_iterate.future
 - A forall loop with an iteratable expression that does not provide
   leader/follower iterators cause an internal compiler error.
   # functions/iterators/vass/forall-without-leaderfollower.future
@@ -549,8 +552,6 @@ Domain Maps, Domains and Arrays
   # studies/hpcc/HPL/vass/bug.future
 - The default domain map is currently a single type for all default domains
   # distributions/bradc/layoutEquality.future
-- Distributed domain maps are currently only supported for dense,
-  rectangular domains.
 - Assignment from a distributed domain to a non-distributed domain causes
   a runtime error.
   # distributions/kushal/assignDomain.future
