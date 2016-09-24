@@ -534,6 +534,14 @@ parOpEquals:
 pidigits:
   05/16/16:
     - switched release version to use ledrug algorithm
+  09/24/16:
+    - rearranged pidigits; release versions now use bigints (#4655-6)
+
+pidigits-submitted:
+  05/16/16:
+    - switched release version to use ledrug algorithm
+  09/24/16:
+    - rearranged pidigits; release versions now use bigints (#4655-6)
 
 prk-stencil:
   02/14/16:
