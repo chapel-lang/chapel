@@ -2,7 +2,9 @@
 Release Changes List
 ====================
 
-*** stopped at 7e7aadf, 2016-05-02 ***
+TODO: Make sure 1.13.1 changes aren't listed again
+
+*** stopped at 300258f, 2016-06-07 ***
 
 ==============
 version 1.14.0
@@ -21,9 +23,18 @@ Syntactic/Naming Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* stopped 'use'ing automatic standard modules in inner/nested user modules
+* made assigning stridable ranges and domains to non-stridable an error
 
 New Features
 ------------
+* added an 'align' operator for domains
+  (see 'Domain Alignment' in the language specification)
+* added casts and safeCasts to turn stridable ranges/domains into non-stridable
+* made promoted array assignments always use a parallel loop
+* added the ability to pass Chapel functions to extern C routines
+  (see TODO)
+* added new += overloads for sparse subdomains supporting bulk index adds
 
 Feature Improvements
 --------------------
@@ -39,6 +50,7 @@ Interoperability Improvements
 
 Standard Library/Modules
 ------------------------
+* added an MPI module supporting message passing between Chapel images/locales
 * Reflection module:
   - added getFieldRef() functions to get a reference to a field
     (see http://chapel.cray.com/docs/1.14/modules/standard/Reflection.html#Reflection.getFieldRef)
@@ -47,13 +59,23 @@ Standard Library/Modules
     (see http://chapel.cray.com/docs/1.14/modules/internal/String.html?highlight=join#String.string.join)
   - made a version of split() that handles arbitrary whitespace
     (see http://chapel.cray.com/docs/1.14/modules/internal/String.html?highlight=join#String.string.split)
+* added a dynamic iterator for domains to the 'DynamicIters' module
+
+Domain Maps (Layouts and Distributions)
+---------------------------------------
+* added a new 'StencilDist' distribution designed for stencil computations
+  (see http://chapel.cray.com/docs/1.14/modules/dists/StencilDist.html)
+* added support for Block-distributed sparse domains and arrays
+  (see TODO)
 
 
 Performance Optimizations/Improvements
 --------------------------------------
-* improved the efficiency of random accesses to StencilDist-distributed arrays
 * made modest improvements to the performance of associative domains
 * optimized functions returning references to avoid widening them when possible
+* obtained performance improvements through new jemalloc upgrades and features
+* optimized on-statements that end up being local
+* stopped heap-allocating variables due to on-clauses for 'fifo' and 'muxed'
 
 Memory Improvements
 -------------------
@@ -69,13 +91,18 @@ Documentation
   (see http://chapel.cray.com/docs/1.14/modules/standard/Math.html#Math.mod)
 * added an archive of past language specification versions to the online docs
   (see http://chapel.cray.com/docs/1.14/language/archivedSpecs.html))
+* fixed a plethora of spelling mistakes throughout the documentation
 
 Example Codes
 -------------
 * changed ISx to use low-level PCG interface to match the reference version
+* significant improved all of our Computer Language Benchmark Game programs
+  (see $CHPL_HOME/examples/benchmarks/shootout/*)
+* updated LCALS initializations to use whole-array assignment
 
 Compiler Flags (see 'man chpl' for details)
 -------------------------------------------
+* stopped throwing --vectorize when --fast is thrown
 
 Execution Flags
 ---------------
@@ -86,20 +113,30 @@ Environment Changes
 Directory Structure Changes
 ---------------------------
 
-Cray-specific Changes
----------------------
-
 Portability Improvements
 ------------------------
 * fixed a portability bug in our Makefiles for Ubuntu
 
+Cray-specific Changes
+---------------------
+
+Platform-specific Changes
+-------------------------
+* removed support for KNC
+
 Tool Changes
 ------------
+
+Highlighting Changes
+--------------------
 * updated our support for Andre Simon's highlighter to support version 3.x
+* added support for nested block comments to emacs and 'highlight' highlighting
+* fixed portability of Chapel's emacs mode for emacs 24.x
 
 Error Message Improvements
 --------------------------
 * added an error for user fields named 'outer'
+* fixed some spelling errors in error messages
 
 Runtime Error Checks
 --------------------
@@ -109,23 +146,27 @@ Runtime Error Checks
 Bug Fixes
 ---------
 * fixed a bug ignoring whitespace when casting strings to values (**kushal)
-* fixed a bug in which StencilDists could fail to preserve key properties
-* fixed a bug in which legal remove()s on arrays reported out-of-bounds errors
-* fixed a bug relating to the handling of C function pointers in extern blocks
-* fixed a bug with typedef struct {...} function arguments in extern blocks
-* fixed a bug in the mod_ui() function for BigInts
 * fixed a bug in which 'chpldoc' did not skip nested code blocks
 * fixed a bug in which sleep() could under-sleep by 1 microsecond
 * fixed a bug in with storing max(int) in an associative domain of ints
+* fixed a bug in handling 'ref' return intents
+* fixed a bug related to locale models and order of resolution
+* fixed bugs in the mapping of GMP functions down to the underlying C library
 
 Cray-specific Bug Fixes
 -----------------------
 
 Third-Party Software Changes
 ----------------------------
+* upgraded hwloc to version 1.11.4
+* upgraded GASNet to version 1.26.3
+* upgraded jemalloc to version 4.2.1
+* enabled decay-based purging in jemalloc
 
 Runtime Library Changes
 -----------------------
+* changed the 'fifo' tasking layer to allocate task stacks in heap memory
+* added support for out-of-segment non-blocking puts and gets
 
 Generated Code Cleanups
 -----------------------
@@ -134,6 +175,8 @@ Testing System
 --------------
 * improved support for 'notest'ing and 'skipif'ing directories
 * removed the need to provide an argument to '-[no]stdinredirect
+* fixed graph annotations for days without any associated data
+* added the ability to limit the number of concurrently executing tests
 
 Makefile Changes
 ----------------
@@ -146,23 +189,31 @@ Developer-oriented changes: Packaging Changes
 
 Developer-oriented changes: Module improvements
 -----------------------------------------------
+* made string code call more directly to mem* routines in C
+* made the chpl_here_* routines more generic w.r.t. integral types
+* made some 'const's into 'var's in ChapelArray.chpl
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* re-enabled support for the --minimal-modules flag
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * moved the handling of PROC_NEW to the resolution pass
 * cleanups to representation/handling of varargs
+* refactored the remote value forwarding pass
+* refactored the gatherCandidates stage of function resolution
 
 Developer-oriented changes: Generated code improvements
 -------------------------------------------------------
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* simplified and sped up the implementation of chpl_executeOnNB()
 
 Developer-oriented changes: Third-party improvements
 ----------------------------------------------------
+* changed many third-party directory structures to avoid using version numbers
 
 Developer-oriented changes: Testing system improvements
 -------------------------------------------------------
