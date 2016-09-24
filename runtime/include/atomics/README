@@ -6,10 +6,12 @@ implementation. The cstdlib implementation is basically a wrapper for
 C11 atomics. The intrinsics implementation uses compiler atomic
 intrinsics to implement atomics and the locks version uses Chapel
 locks. The cstdlib implementation is expected to have the best
-performance (depending on the compiler's native handling of C11
-atomics), and the intrinsic version has better performance than locks,
-but neither the standard atomics nor the intrinsics are available on
-all systems.
+performance in the long run, depending on the compiler's native
+handling of C11 atomics, and the intrinsic version has better
+performance than locks, but neither the standard atomics nor the
+intrinsics are available on all systems.  (For gcc up to at least
+6.2.0, though, there is a performance bug that inhibits more
+optimization than necessary with standard atomics.)
 
 We require the C11 standard atomic functions for the types:
    atomic_uint_least8_t

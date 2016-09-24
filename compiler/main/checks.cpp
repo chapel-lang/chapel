@@ -154,6 +154,13 @@ void check_checkResolved()
   // The checkResolved pass should not make any changes, so skip checks.
 }
 
+void check_replaceArrayAccessesWithRefTemps()
+{
+  check_afterEveryPass();
+  check_afterNormalization();
+  check_afterResolution();
+}
+
 void check_processIteratorYields() {
   check_afterEveryPass();
   check_afterNormalization();
@@ -449,6 +456,8 @@ static void check_afterCallDestructors()
 static void check_afterLowerIterators()
 {
   checkLowerIteratorsRemovedPrims();
+  if (fVerify)
+    checkArgsAndLocals();
 }
 
 
@@ -486,6 +495,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_IS_TUPLE_TYPE:
         case PRIM_IS_STAR_TUPLE_TYPE:
         case PRIM_IS_SUBTYPE:
+        case PRIM_REDUCE_ASSIGN:
         case PRIM_TUPLE_EXPAND:
         case PRIM_QUERY:
         case PRIM_QUERY_PARAM_FIELD:

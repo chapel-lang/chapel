@@ -70,6 +70,11 @@ returnInfoNodeID(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoUInt8(CallExpr* call) {
+  return QualifiedType(dtUInt[INT_SIZE_8], QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoInt32(CallExpr* call) {
   return QualifiedType(dtInt[INT_SIZE_32], QUAL_VAL);
 }
@@ -358,6 +363,11 @@ returnInfoSecondType(CallExpr* call) {
   return t;
 }
 
+static QualifiedType
+returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
+  QualifiedType t = call->get(2)->qualType();
+  return t;
+}
 
 // print the number of each type of primitive present in the AST
 void printPrimitiveCounts(const char* passName) {
@@ -483,6 +493,7 @@ initPrimitive() {
   prim_def(PRIM_AND_ASSIGN, "&=", returnInfoVoid, true);
   prim_def(PRIM_OR_ASSIGN, "|=", returnInfoVoid, true);
   prim_def(PRIM_XOR_ASSIGN, "^=", returnInfoVoid, true);
+  prim_def(PRIM_REDUCE_ASSIGN, "reduce=", returnInfoVoid, true);
 
   prim_def(PRIM_MIN, "_min", returnInfoFirst);
   prim_def(PRIM_MAX, "_max", returnInfoFirst);
@@ -544,6 +555,7 @@ initPrimitive() {
   prim_def(PRIM_CHPL_COMM_GET_STRD, "chpl_comm_get_strd", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT_STRD, "chpl_comm_put_strd", returnInfoVoid, true, true);
 
+  prim_def(PRIM_OPTIMIZE_ARRAY_BLK_MULT, "optimize_array_blk_mult", returnInfoBool);
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
@@ -611,7 +623,7 @@ initPrimitive() {
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoStringCopy, true, true);
   prim_def("string_length", returnInfoDefaultInt);
-  prim_def("ascii", returnInfoInt32);
+  prim_def("ascii", returnInfoUInt8);
   prim_def("string_index", returnInfoStringCopy, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
@@ -644,6 +656,7 @@ initPrimitive() {
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
   prim_def(PRIM_FIELD_NAME_TO_NUM, "field name to num", returnInfoInt32);
   prim_def(PRIM_FIELD_BY_NUM, "field by num", returnInfoUnknown);
+  prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
@@ -669,6 +682,8 @@ initPrimitive() {
   prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
 
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
+
+  prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

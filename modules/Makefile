@@ -68,6 +68,7 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \
 	standard/Barrier.chpl \
+	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
@@ -114,6 +115,7 @@ DISTS_TO_DOCUMENT = \
 	dists/DimensionalDist2D.chpl \
 	dists/PrivateDist.chpl \
 	dists/ReplicatedDist.chpl \
+	dists/StencilDist.chpl \
 	dists/dims/BlockCycDim.chpl \
 	dists/dims/BlockDim.chpl \
 	dists/dims/ReplicatedDim.chpl \
@@ -141,7 +143,7 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Running post-processing scripts"
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
-	@echo "Copying generated module documentation to \$CHPL_HOME/doc/sphinx/modules"
+	@echo "Copying generated module documentation to "'$$CHPL_HOME'"/doc/sphinx/modules"
 	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/

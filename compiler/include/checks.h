@@ -37,6 +37,7 @@ void check_createTaskFunctions();
 void check_resolve();
 void check_resolveIntents();
 void check_checkResolved();
+void check_replaceArrayAccessesWithRefTemps();
 void check_processIteratorYields();
 void check_flattenFunctions();
 void check_cullOverReferences();

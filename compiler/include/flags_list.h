@@ -45,7 +45,7 @@ symbolFlag( FLAG_ASSIGNOP, npr, "assignop", "this fn is assignment or an <op>= o
 symbolFlag( FLAG_ATOMIC_MODULE , ypr, "atomic module" , "module containing implementations of atomic types" )
 symbolFlag( FLAG_ATOMIC_TYPE , ypr, "atomic type" , "type that implements an atomic" )
 symbolFlag( FLAG_AUTO_COPY_FN,  ypr, "auto copy fn" , "auto copy function" )
-symbolFlag( FLAG_AUTO_DESTROY_FN,  npr, "auto destroy fn" , "auto destroy function" )
+symbolFlag( FLAG_AUTO_DESTROY_FN,  ypr, "auto destroy fn" , "auto destroy function" )
 symbolFlag( FLAG_AUTO_II , npr, "auto ii" , ncm )
 symbolFlag( FLAG_BASE_ARRAY , ypr, "base array" , ncm )
 symbolFlag( FLAG_BASE_DOMAIN , ypr, "base domain" , ncm )
@@ -65,6 +65,7 @@ symbolFlag( FLAG_COERCE_TEMP , npr, "coerce temp" , "a temporary that was stores
 symbolFlag( FLAG_CODEGENNED , npr, "codegenned" , "code has been generated for this type" )
 symbolFlag( FLAG_COFORALL_INDEX_VAR , npr, "coforall index var" , ncm )
 symbolFlag( FLAG_COMMAND_LINE_SETTING , ypr, "command line setting" , ncm )
+symbolFlag( FLAG_MODIFIES_ARRAY_BLK , ypr, "modifies array blk" , "marks functions that modify the array blk field" )
 // The compiler-generated flag is already overloaded in three ways.  We may
 // want to split it if this becomes cumbersome:
 // 1. In resolution, functions marked as compiler-generated are considered only if
@@ -78,6 +79,8 @@ symbolFlag( FLAG_COMPILER_NESTED_FUNCTION , npr, "compiler nested function" , nc
 symbolFlag( FLAG_CONCURRENTLY_ACCESSED , npr, "concurrently accessed" , "local variables accessed by multiple threads" )
 symbolFlag( FLAG_CONFIG , npr, "config" , "config variable, constant, or parameter" )
 symbolFlag( FLAG_CONST , npr, "const" , "constant" )
+// this shadow variable is constant, whereas the outer variable is not
+symbolFlag( FLAG_CONST_DUE_TO_TASK_FORALL_INTENT , npr, "const due to task or forall intent", ncm )
 symbolFlag( FLAG_C_PTR_CLASS , ypr, "c_ptr class" , "marks c_ptr class" )
 symbolFlag( FLAG_CONSTRUCTOR , npr, "constructor" , "constructor (but not type constructor); loosely defined to include constructor wrappers" )
 symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )
@@ -234,6 +237,7 @@ symbolFlag( FLAG_REF_ITERATOR_CLASS , npr, "ref iterator class" , ncm )
 symbolFlag( FLAG_REF_TO_CONST , npr, "reference to a const" , "a temp or a function that returns a reference to a Chapel const, e.g. an accessor to a const field or its result" )
 symbolFlag( FLAG_REF_TO_CONST_WHEN_CONST_THIS , ypr, "reference to const when const this" , "a function that returns a reference to a Chapel const when 'this' is const" )
 symbolFlag( FLAG_REF_VAR , ypr, "ref var" , "reference variable" )
+symbolFlag( FLAG_REMOVABLE_ARRAY_ACCESS, ypr, "removable array access", "array access calls that can be replaced with a reference")
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
 symbolFlag( FLAG_RESOLVED , npr, "resolved" , "this function has been resolved" )

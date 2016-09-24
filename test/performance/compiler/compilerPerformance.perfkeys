@@ -23,6 +23,7 @@ createTaskFunctions :
 resolve :
 resolveIntents :
 checkResolved :
+replaceArrayAccessesWithRefTemps :
 processIteratorYields :
 flattenFunctions :
 cullOverReferences :

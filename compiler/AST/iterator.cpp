@@ -19,6 +19,9 @@
 
 #include "iterator.h"
 
+#include <map>
+#include <vector>
+
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"
@@ -1351,6 +1354,20 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
                                       SymbolMap& local2field, SymbolMap& local2rfield)
 {
   IteratorInfo* ii = fn->iteratorInfo;
+
+  // For the current iterator record, create a map of formals to the primitive
+  // calls for PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL
+  std::map<Symbol*, std::vector<CallExpr*> > formalToPrimMap;
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->parentSymbol && call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
+      AggregateType* ir = toAggregateType(toArgSymbol((toSymExpr(call->get(1))->var))->type);
+      if (ii->irecord == ir) {
+        Symbol* formal = toSymExpr(call->get(2))->var;
+        formalToPrimMap[formal].push_back(call);
+      }
+    }
+  }
+
   Symbol* valField = NULL;
 
   int i = 0;    // This numbers the fields.
@@ -1371,6 +1388,16 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
       Symbol* rfield = new VarSymbol(field->name, field->type);
       local2rfield.put(local, rfield);
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
+
+      // while we're creating the iterator record fields based on the original
+      // iterator function arguments, replace the primitive that gets the value
+      // based on the formal with prim_get_member_value of the actual value.
+      if (formalToPrimMap.count(local) > 0) {
+        for_vector(CallExpr, call, formalToPrimMap[local]) {
+          call->get(2)->replace(new SymExpr(rfield));
+          call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
+        }
+      }
     }
   }
 

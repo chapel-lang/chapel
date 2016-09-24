@@ -12,9 +12,6 @@
 /* Support dynamic profile of CAS steal infomation */
 #undef CAS_STEAL_PROFILE
 
-/* Support dynamic profile of Chapel infomation */
-#undef CHAPEL_PROFILE
-
 /* if the compiler supports inline assembly, we can prevent reordering */
 #undef COMPILER_FENCE
 
@@ -296,6 +293,9 @@
 /* Define to 1 if you have the <sys/mman.h> header file. */
 #undef HAVE_SYS_MMAN_H
 
+/* Define to 1 if you have the <sys/param.h> header file. */
+#undef HAVE_SYS_PARAM_H
+
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #undef HAVE_SYS_RESOURCE_H
 
@@ -351,8 +351,7 @@
 /* Define to use a lock-free hash table for FEB metadata. */
 #undef LOCK_FREE_FEBS
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
 /* if the compiler supports __sync_synchronize (fallback to COMPILER_FENCE) */
@@ -360,9 +359,6 @@
 
 /* Whether the library should use get/set rlimit functions */
 #undef NEED_RLIMIT
-
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-#undef NO_MINUS_C_MINUS_O
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
@@ -376,11 +372,11 @@
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
 
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
-
-/* Defined to 1 if PMI implementation is SLURM. */
-#undef PMI_SLURM
 
 /* this signifies that pthread_mutex_t is small enough to fit in the existing
    data structures */
@@ -430,9 +426,6 @@
 
 /* prints out barrier debugging information at runtime */
 #undef QTHREAD_DEBUG_BARRIER
-
-/* prints out chapel interface debugging information at runtime */
-#undef QTHREAD_DEBUG_CHAPEL
 
 /* prints out core debugging information at runtime */
 #undef QTHREAD_DEBUG_CORE
@@ -685,20 +678,35 @@
 /* Use Porterfield spinlock */
 #undef USE_INTERNAL_SPINLOCK
 
-/* Define to 1 if on AIX 3.
-   System headers sometimes define this.
-   We just want to avoid a redefinition error message.  */
+/* Enable extensions on AIX 3, Interix.  */
 #ifndef _ALL_SOURCE
 # undef _ALL_SOURCE
 #endif
-
-/* Number of bits in a file offset, on hosts where this is settable. */
-#undef _FILE_OFFSET_BITS
-
 /* Enable GNU extensions on systems that have them.  */
 #ifndef _GNU_SOURCE
 # undef _GNU_SOURCE
 #endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# undef _POSIX_PTHREAD_SEMANTICS
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+# undef _TANDEM_SOURCE
+#endif
+/* Enable general extensions on Solaris.  */
+#ifndef __EXTENSIONS__
+# undef __EXTENSIONS__
+#endif
+
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#undef _FILE_OFFSET_BITS
 
 /* Define for large files, on AIX-style hosts. */
 #undef _LARGE_FILES
@@ -712,17 +720,6 @@
 
 /* Define to 1 if you need to in order for `stat' and other things to work. */
 #undef _POSIX_SOURCE
-
-/* Enable extensions on Solaris.  */
-#ifndef __EXTENSIONS__
-# undef __EXTENSIONS__
-#endif
-#ifndef _POSIX_PTHREAD_SEMANTICS
-# undef _POSIX_PTHREAD_SEMANTICS
-#endif
-#ifndef _TANDEM_SOURCE
-# undef _TANDEM_SOURCE
-#endif
 
 /* Last resort, if no function name macros can be found */
 #undef __FUNCTION__

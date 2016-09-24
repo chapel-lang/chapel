@@ -30,9 +30,9 @@ var sng: single int;     test("single", sng);
 compilerError("done"); // no need for a C compile
 
 proc test(param msg, v) {
-  compilerWarning(msg + " is a class:  " + isClassType(v.type):c_string);
-  compilerWarning(msg + " is a record: " + isRecordType(v.type):c_string);
-  compilerWarning(msg + " is a union:  " + isUnionType(v.type):c_string);
+  compilerWarning(msg + " is a class:  " + isClassType(v.type):string);
+  compilerWarning(msg + " is a record: " + isRecordType(v.type):string);
+  compilerWarning(msg + " is a union:  " + isUnionType(v.type):string);
   if isRangeType(v.type)  then compilerWarning(msg + " is a range");
   if isTupleType(v.type)  then compilerWarning(msg + " is a tuple");
   if isDmapType(v.type)   then compilerWarning(msg + " is a dmap");

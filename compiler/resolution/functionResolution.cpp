@@ -115,14 +115,14 @@ public:
   FnSymbol* fn;
 
   /** The actual arguments for the candidate, aligned so that they have the same
-   *  index as their corresponding formal argument in alignedFormals.
+   *  index as their corresponding formal argument in the called function.
    */
-  Vec<Symbol*> alignedActuals;
+  Vec<Symbol*> formalIdxToActual; // note: was alignedActuals
 
   /** The formal arguments for the candidate, aligned so that they have the same
-   *  index as their corresponding actual argument in alignedActuals.
+   *  index as their corresponding actual argument in the call.
    */
-  Vec<ArgSymbol*> alignedFormals;
+  Vec<ArgSymbol*> actualIdxToFormal; // note: was alignedFormals
 
   /// A symbol map for substitutions that were made during the copying process.
   SymbolMap substitutions;
@@ -258,15 +258,15 @@ static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
-                             Vec<Symbol*>& alignedActuals,
-                             Vec<ArgSymbol*>& alignedFormals,
+                             Vec<Symbol*>& formalIdxToActual,
+                             Vec<ArgSymbol*>& actualIdxToFormal,
                              CallInfo& info);
 static Type*
 getInstantiationType(Type* actualType, Type* formalType);
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& alignedActuals);
+                   Vec<Symbol*>& formalIdxToActual);
 static FnSymbol*
 expandVarArgs(FnSymbol* origFn, int numActuals);
 
@@ -367,6 +367,7 @@ static void buildVirtualMaps();
 static void
 addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false);
 static void resolveTypedefedArgTypes(FnSymbol* fn);
+static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
 static void resolveUses(ModuleSymbol* mod);
 static void resolveExports();
@@ -406,15 +407,15 @@ static void fixTypeNames(AggregateType* ct);
 static void setScalarPromotionType(AggregateType* ct);
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
-  if (alignedActuals.n != 0) alignedActuals.clear();
-  if (alignedFormals.n != 0) alignedFormals.clear();
+  if (formalIdxToActual.n != 0) formalIdxToActual.clear();
+  if (actualIdxToFormal.n != 0) actualIdxToFormal.clear();
 
-  return computeActualFormalAlignment(fn, alignedActuals, alignedFormals, info);
+  return computeActualFormalAlignment(fn, formalIdxToActual, actualIdxToFormal, info);
 }
 
 void ResolutionCandidate::computeSubstitutions() {
   if (substitutions.n != 0) substitutions.clear();
-  computeGenericSubs(substitutions, fn, alignedActuals);
+  computeGenericSubs(substitutions, fn, formalIdxToActual);
 }
 
 static bool hasRefField(Type *type) {
@@ -1362,9 +1363,12 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
         if (fits_in_uint(get_width(formalType), var->immediate))
           return true;
   }
-  if (formalType == dtStringC && actualType == dtString)
+  // param strings can coerce between string and c_string
+  if ((formalType == dtString || formalType == dtStringC) &&
+      (actualType == dtString || actualType == dtStringC))
     if (actualSym && actualSym->isImmediate())
       return true;
+
   return false;
 }
 
@@ -1502,23 +1506,23 @@ moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
 
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
-                             Vec<Symbol*>& alignedActuals,
-                             Vec<ArgSymbol*>& alignedFormals,
+                             Vec<Symbol*>& formalIdxToActual,
+                             Vec<ArgSymbol*>& actualIdxToFormal,
                              CallInfo& info) {
-  alignedActuals.fill(fn->numFormals());
-  alignedFormals.fill(info.actuals.n);
+  formalIdxToActual.fill(fn->numFormals());
+  actualIdxToFormal.fill(info.actuals.n);
 
   // Match named actuals against formal names in the function signature.
   // Record successful matches.
-  for (int i = 0; i < alignedFormals.n; i++) {
+  for (int i = 0; i < actualIdxToFormal.n; i++) {
     if (info.actualNames.v[i]) {
       bool match = false;
       int j = 0;
       for_formals(formal, fn) {
         if (!strcmp(info.actualNames.v[i], formal->name)) {
           match = true;
-          alignedFormals.v[i] = formal;
-          alignedActuals.v[j] = info.actuals.v[i];
+          actualIdxToFormal.v[i] = formal;
+          formalIdxToActual.v[j] = info.actuals.v[i];
           break;
         }
         j++;
@@ -1533,16 +1537,18 @@ computeActualFormalAlignment(FnSymbol* fn,
   // Record successful substitutions.
   int j = 0;
   ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
-  for (int i = 0; i < alignedFormals.n; i++) {
+  for (int i = 0; i < actualIdxToFormal.n; i++) {
     if (!info.actualNames.v[i]) {
       bool match = false;
       while (formal) {
         if (formal->variableExpr)
           return (fn->hasFlag(FLAG_GENERIC)) ? true : false;
-        if (!alignedActuals.v[j]) {
+        if (!formalIdxToActual.v[j]) {
           match = true;
-          alignedFormals.v[i] = formal;
-          alignedActuals.v[j] = info.actuals.v[i];
+          actualIdxToFormal.v[i] = formal;
+          formalIdxToActual.v[j] = info.actuals.v[i];
+          formal = next_formal(formal);
+          j++;
           break;
         }
         formal = next_formal(formal);
@@ -1557,7 +1563,7 @@ computeActualFormalAlignment(FnSymbol* fn,
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (!alignedActuals.v[j] && !formal->defaultExpr)
+    if (!formalIdxToActual.v[j] && !formal->defaultExpr)
       // Fail if not.
       return false;
     formal = next_formal(formal);
@@ -1611,15 +1617,15 @@ getInstantiationType(Type* actualType, Type* formalType) {
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& alignedActuals) {
+                   Vec<Symbol*>& formalIdxToActual) {
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
-      if (alignedActuals.v[i] && alignedActuals.v[i]->isParameter()) {
+      if (formalIdxToActual.v[i] && formalIdxToActual.v[i]->isParameter()) {
         if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-            canInstantiate(alignedActuals.v[i]->type, formal->type))
-          subs.put(formal, alignedActuals.v[i]);
-      } else if (!alignedActuals.v[i] && formal->defaultExpr) {
+            canInstantiate(formalIdxToActual.v[i]->type, formal->type))
+          subs.put(formal, formalIdxToActual.v[i]);
+      } else if (!formalIdxToActual.v[i] && formal->defaultExpr) {
 
         // break because default expression may reference generic
         // arguments earlier in formal list; make those substitutions
@@ -1645,8 +1651,8 @@ computeGenericSubs(SymbolMap &subs,
           (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
         USR_FATAL(formal, "invalid generic type specification on class field");
 
-      if (alignedActuals.v[i]) {
-        if (Type* type = getInstantiationType(alignedActuals.v[i]->type, formal->type)) {
+      if (formalIdxToActual.v[i]) {
+        if (Type* type = getInstantiationType(formalIdxToActual.v[i]->type, formal->type)) {
           // String literal actuals aligned with non-param generic formals of
           // type dtAny will result in an instantiation of dtStringC when the
           // function is extern. In other words, let us write:
@@ -1655,8 +1661,8 @@ computeGenericSubs(SymbolMap &subs,
           // and pass "bar" as a c_string instead of a string
           if (fn->hasFlag(FLAG_EXTERN) && (formal->type == dtAny) &&
               (!formal->hasFlag(FLAG_PARAM)) && (type == dtString) &&
-              (alignedActuals.v[i]->type == dtString) &&
-              (alignedActuals.v[i]->isImmediate())) {
+              (formalIdxToActual.v[i]->type == dtString) &&
+              (formalIdxToActual.v[i]->isImmediate())) {
             subs.put(formal, dtStringC->symbol);
           } else {
             subs.put(formal, type->symbol);
@@ -2220,12 +2226,13 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
 
   int coindex = -1;
   for_formals(formal, currCandidate->fn) {
-    if (Symbol* actual = currCandidate->alignedActuals.v[++coindex]) {
+    if (Symbol* actual = currCandidate->formalIdxToActual.v[++coindex]) {
       if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
         return;
       }
 
-      if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+      bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) || formal->intent == INTENT_PARAM;
+      if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formalIsParam)) {
         return;
       }
     }
@@ -2260,7 +2267,7 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
   int coindex = 0;
   for_formals(formal, currCandidate->fn) {
     if (formal->type != dtUnknown) {
-      if (Symbol* actual = currCandidate->alignedActuals.v[coindex]) {
+      if (Symbol* actual = currCandidate->formalIdxToActual.v[coindex]) {
         if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
           return;
         }
@@ -2278,7 +2285,8 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
 
           }
         } else {
-          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+          bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) || formal->intent == INTENT_PARAM;
+          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formalIsParam)) {
             return;
           }
         }
@@ -2739,10 +2747,10 @@ static bool isBetterMatch(ResolutionCandidate* candidate1,
 
   DisambiguationState DS;
 
-  for (int k = 0; k < candidate1->alignedFormals.n; ++k) {
+  for (int k = 0; k < candidate1->actualIdxToFormal.n; ++k) {
     Symbol* actual = DC.actuals->v[k];
-    ArgSymbol* formal1 = candidate1->alignedFormals.v[k];
-    ArgSymbol* formal2 = candidate2->alignedFormals.v[k];
+    ArgSymbol* formal1 = candidate1->actualIdxToFormal.v[k];
+    ArgSymbol* formal2 = candidate2->actualIdxToFormal.v[k];
 
     TRACE_DISAMBIGUATE_BY_MATCH("\nLooking at argument %d\n", k);
 
@@ -3221,6 +3229,18 @@ static void buildVisibleFunctionMap() {
         block = theProgram->block;
       } else {
         block = getVisibilityBlock(fn->defPoint);
+        //
+        // add all functions in standard modules to theProgram
+        //
+        // Lydia NOTE 09/12/16: The computation of the standardModuleSet is not
+        // tied to what is actually placed within theProgram->block.  As such
+        // there could be bugs where that implementation differs.  We have
+        // already encountered some with qualified access to default-included
+        // modules like List and Sort.  This implementation needs to be linked
+        // to the computation of the standardModuleSet.
+        //
+        if (standardModuleSet.set_in(block))
+          block = theProgram->block;
       }
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
@@ -3244,6 +3264,19 @@ getVisibleFunctions(BlockStmt* block,
                     Vec<FnSymbol*>& visibleFns,
                     Vec<BlockStmt*>& visited,
                     CallExpr* callOrigin) {
+  //
+  // all functions in standard modules are stored in a single block
+  //
+  // Lydia NOTE 09/12/16: The computation of the standardModuleSet is not
+  // tied to what is actually placed within theProgram->block.  As such
+  // there could be bugs where that implementation differs.  We have
+  // already encountered some with qualified access to default-included
+  // modules like List and Sort.  This implementation needs to be linked
+  // to the computation of the standardModuleSet.
+  //
+  if (standardModuleSet.set_in(block))
+    block = theProgram->block;
+
   //
   // avoid infinite recursion due to modules with mutual uses
   //
@@ -4077,21 +4110,21 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     }
   } else {
     INT_ASSERT(best->fn);
-    best->fn = defaultWrap(best->fn, &best->alignedFormals, &info);
-    reorderActuals(best->fn, &best->alignedFormals, &info);
+    best->fn = defaultWrap(best->fn, &best->actualIdxToFormal, &info);
+    reorderActuals(best->fn, &best->actualIdxToFormal, &info);
     coerceActuals(best->fn, &info);
-    best->fn = promotionWrap(best->fn, &info);
+    best->fn = promotionWrap(best->fn, &info, /*buildFastFollowerChecks=*/true);
     if (valueCall) {
       // If we're resolving a ref and non-ref pair,
       // also handle the value version. best is the ref version.
       CallInfo valueInfo(valueCall, checkonly);
 
       INT_ASSERT(bestValue->fn);
-      bestValue->fn = defaultWrap(bestValue->fn, &bestValue->alignedFormals,
+      bestValue->fn = defaultWrap(bestValue->fn, &bestValue->actualIdxToFormal,
                                   &valueInfo);
-      reorderActuals(bestValue->fn, &bestValue->alignedFormals, &valueInfo);
+      reorderActuals(bestValue->fn, &bestValue->actualIdxToFormal, &valueInfo);
       coerceActuals(bestValue->fn, &valueInfo);
-      bestValue->fn = promotionWrap(bestValue->fn, &valueInfo);
+      bestValue->fn = promotionWrap(bestValue->fn, &valueInfo, /*buildFastFollowerChecks=*/false);
     }
   }
 
@@ -4261,6 +4294,31 @@ static void lvalueCheck(CallExpr* call)
           USR_FATAL_CONT(actual, "non-lvalue actual is passed to a %s formal of"
                          " %s%s", formal->intentDescrString(),
                          calleeFn->name, calleeParens);
+        }
+      }
+      if (SymExpr* aSE = toSymExpr(actual)) {
+        Symbol* aVar = aSE->var;
+        if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+          const char* varname = aVar->name;
+          if (!strncmp(varname, "_formal_tmp_", 12))
+            varname += 12;
+          if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
+            Symbol* enclTaskFn = aVar->defPoint->parentSymbol;
+            BaseAST* marker;
+            const char* constructName;
+            if (enclTaskFn->hasFlag(FLAG_BEGIN)) {
+              // enclTaskFn points to a good line number
+              marker = enclTaskFn;
+              constructName = "begin";
+            } else {
+              marker = enclTaskFn->defPoint->parentExpr;
+              constructName = "parallel";
+            }
+            USR_PRINT(marker, "The shadow variable '%s' is constant due to task intents in this %s statement", varname, constructName);
+          } else {
+            Expr* enclLoop = aVar->defPoint->parentExpr;
+            USR_PRINT(enclLoop, "The shadow variable '%s' is constant due to forall intents in this loop", varname);
+          }
         }
       }
     }
@@ -4802,6 +4860,8 @@ insertFormalTemps(FnSymbol* fn) {
     if (formalRequiresTemp(formal)) {
       SET_LINENO(formal);
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
+      if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
+        tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       formals2vars.put(formal, tmp);
     }
   }
@@ -6215,7 +6275,11 @@ preFold(Expr* expr) {
                 } else if (oldType == dtString && newType == dtStringC) {
                   result = new SymExpr(new_CStringSymbol(var->immediate->v_string));
                   call->replace(result);
+                } else if (oldType == dtStringC && newType == dtString) {
+                  result = new SymExpr(new_StringSymbol(var->immediate->v_string));
+                  call->replace(result);
                 }
+
               }
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->var)) {
@@ -7106,7 +7170,7 @@ postFold(Expr* expr) {
       if (se->var->isParameter()) {
         const char* str = get_string(se);
         const std::string unescaped = unescapeString(str, se);
-        result = new SymExpr(new_IntSymbol((int)unescaped[0], INT_SIZE_DEFAULT));
+        result = new SymExpr(new_UIntSymbol((int)unescaped[0], INT_SIZE_8));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_contains")) {
@@ -7197,6 +7261,7 @@ postFold(Expr* expr) {
       if (sym->var->type != dtUnknown && sym->var->type != val->type) {
         CallExpr* cast = new CallExpr("_cast", sym->var, val);
         sym->replace(cast);
+        // preFold is probably going to replace the _cast call
         result = preFold(cast);
       } else {
         sym->var = val;
@@ -7749,6 +7814,19 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
+  if (fn->hasFlag(FLAG_CONSTRUCTOR) && !strcmp(fn->name, "init")) {
+    // Lydia NOTE: Quick fix to allow our new initializers to recursively call
+    // themselves.  We know their return type already, pretending we don't just
+    // leads to errors.  Ideally, we'll remove this code when we fix our
+    // compiler's handling of recursive calls when the function doesn't declare
+    // its return type.
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_IS_MEME)) {
+        fn->retType = formal->type;
+      }
+    }
+  }
+
   resolveBlockStmt(fn->body);
 
   if (tryFailure) {
@@ -8263,9 +8341,52 @@ static void resolveTypedefedArgTypes(FnSymbol* fn)
   }
 }
 
+
+static void
+computeStandardModuleSet() {
+  // Lydia NOTE: 09/12/16 - this code does not follow the same code path used
+  // to add the standard module set to the root module's block, so misses some
+  // cases, causing qualified access to functions from certain modules (List,
+  // Search, Sort, at the time of this writing) to fail to resolve.  We
+  // should take the time to time this optimization to the code path it wishes
+  // to follow - however, I am not sure where that is occurring right now.
+
+  // Private uses will also help avoid the bug, but it is sweeping the bug under
+  // the rug rather than solving the problem at hand, and it is hard to say
+  // when the next time this code will bite us will be.
+  standardModuleSet.set_add(rootModule->block);
+  standardModuleSet.set_add(theProgram->block);
+
+  Vec<ModuleSymbol*> stack;
+  stack.add(standardModule);
+
+  while (ModuleSymbol* mod = stack.pop()) {
+    if (mod->block->modUses) {
+      for_actuals(expr, mod->block->modUses) {
+        UseStmt* use = toUseStmt(expr);
+        INT_ASSERT(use);
+        SymExpr* se = toSymExpr(use->src);
+        INT_ASSERT(se);
+        if (ModuleSymbol* usedMod = toModuleSymbol(se->var)) {
+          INT_ASSERT(usedMod);
+          if (!standardModuleSet.set_in(usedMod->block)) {
+            stack.add(usedMod);
+            standardModuleSet.set_add(usedMod->block);
+          }
+        }
+      }
+    }
+  }
+}
+
+
 void
 resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
+
+  computeStandardModuleSet(); // Lydia NOTE 09/12/16: is not linked to our
+  // treatment on functions included by default, leading to bugs with qualified
+  // access to symbols included in this way.
 
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
@@ -9324,6 +9445,28 @@ static void removeUnusedGlobals()
   }
 }
 
+static bool arrayBlkModified() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isResolved() && fn->defPoint && fn->defPoint->parentSymbol) {
+      if (fn->hasFlag(FLAG_MODIFIES_ARRAY_BLK)) {
+        if (fReportOptimizedArrayIndexing) {
+          printf("Unable to optimize array indexing\n");
+        }
+        return true;
+      }
+    }
+  }
+  if (fReportOptimizedArrayIndexing) {
+    printf("Optimized array indexing\n");
+  }
+  return false;
+}
+
+static bool canOptimizeArrayBlk() {
+  static bool canOptimize = !fNoOptimizeArrayIndexing && !arrayBlkModified();
+  return canOptimize;
+}
+
 static void removeRandomPrimitive(CallExpr* call)
 {
   if (! call->primitive)
@@ -9346,6 +9489,17 @@ static void removeRandomPrimitive(CallExpr* call)
     case PRIM_NOOP:
       call->remove();
       break;
+
+    case PRIM_OPTIMIZE_ARRAY_BLK_MULT:
+    {
+      SET_LINENO(call);
+      if (canOptimizeArrayBlk()) {
+        call->replace(new SymExpr(gTrue));
+      } else {
+        call->replace(new SymExpr(gFalse));
+      }
+    }
+    break;
 
     case PRIM_TYPEOF:
     {

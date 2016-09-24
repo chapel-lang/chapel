@@ -54,7 +54,7 @@ class syncvar
 {
     public:
 	QINLINE syncvar(void) {
-	    // Doint it this way because extended initializers (e.g.
+	    // Doing it this way because extended initializers (e.g.
 	    // SYNCVAR_STATIC_INITIALIZER) are not (yet) supported by C++
 	    the_syncvar_t.u.w = 0;
 	}

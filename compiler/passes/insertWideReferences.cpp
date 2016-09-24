@@ -2322,6 +2322,10 @@ static void fixAST() {
             call->insertAfter(new CallExpr(PRIM_MOVE, dest->copy(), new SymExpr(destTemp)));
             parent->remove();
             act->var->defPoint->remove();
+          } else {
+            SymExpr* act = toSymExpr(actual);
+            INT_ASSERT(act);
+            makeMatch(formal, act);
           }
         }
         else if (SymExpr* act = toSymExpr(actual)) {

@@ -179,7 +179,6 @@ read in the output of the default ``write`` method.
 module ChapelIO {
   use ChapelBase; // for uint().
   use SysBasic;
-  // use IO; happens below once we need it.
   
   // TODO -- this should probably be private
   pragma "no doc"
@@ -189,24 +188,6 @@ module ChapelIO {
     return helper(val);
   }
  
-  pragma "no doc"
-  proc writerDeprecated() param {
-    compilerError("Writer deprecated: make writeThis argument generic");
-  }
-  pragma "no doc"
-  proc readerDeprecated() param {
-    compilerError("Reader deprecated: make readThis argument generic");
-  }
-
-  pragma "no doc"
-  class Writer {
-    param dummy = writerDeprecated();
-  }
-  pragma "no doc"
-  class Reader {
-    param dummy = readerDeprecated();
-  }
-
   use IO;
 
     private
@@ -668,11 +649,6 @@ module ChapelIO {
   proc halt(s:string) {
     halt(s.localize().c_str());
   }
-
-  pragma "no doc"
-  proc halt(s:c_string) {
-    __primitive("chpl_error", c"halt reached - " + s);
-  }
  
   /*
      Prints an error message to stderr giving the location of the call to
@@ -689,12 +665,7 @@ module ChapelIO {
     in the Chapel source, followed by the argument(s) to the call.
   */
   proc warning(s:string) {
-    warning(s.localize().c_str());
-  }
-
-  pragma "no doc"
-  proc warning(s:c_string) {
-    __primitive("chpl_warning", s);
+    __primitive("chpl_warning", s.localize().c_str());
   }
  
   /*
@@ -702,10 +673,8 @@ module ChapelIO {
     in the Chapel source, followed by the argument(s) to the call.
   */
   proc warning(args ...?numArgs) {
-    var tmpstring: c_string_copy;
-    tmpstring.write((...args));
+    var tmpstring = stringify((...args));
     warning(tmpstring);
-    chpl_free_c_string_copy(tmpstring);
   }
   
   pragma "no doc"
@@ -741,10 +710,5 @@ module ChapelIO {
   pragma "compiler generated"
   proc _cast(type t, x) where t == string && ! isPrimitiveType(x.type) {
     return stringify(x);
-  }
-
-  pragma "no doc"
-  proc ref string.write(args ...?n) {
-    compilerError("string.write deprecated: use string.format or stringify");
   }
 }

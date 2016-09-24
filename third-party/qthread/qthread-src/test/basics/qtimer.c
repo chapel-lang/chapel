@@ -6,7 +6,7 @@
 #include <math.h> /* for sqrt() */
 #include "argparsing.h"
 
-unsigned int ITER = 100;
+const unsigned int ITER = 100;
 
 static int dcmp(const void *a,
                 const void *b)

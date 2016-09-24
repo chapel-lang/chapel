@@ -77,7 +77,7 @@ void resolveFns(FnSymbol* fn);
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
 void reorderActuals(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
 void coerceActuals(FnSymbol* fn, CallInfo* info);
-FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
+FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChecks);
 
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);

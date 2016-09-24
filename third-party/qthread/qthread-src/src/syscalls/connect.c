@@ -49,7 +49,7 @@ int connect(int                    socket,
             const struct sockaddr *address,
             socklen_t              address_len)
 {
-    if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+    if (qt_blockable()) {
         return qt_connect(socket, address, address_len);
     } else {
         return syscall(SYS_connect, socket, address, address_len);

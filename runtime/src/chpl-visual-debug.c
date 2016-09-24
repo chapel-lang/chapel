@@ -157,9 +157,14 @@ void chpl_vdebug_start (const char *fileroot, double now) {
                 (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
                 (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec  );
 
-  // Dump file names and function names
+  // Dump directory names, file names and function names
   if (chpl_nodeID == 0) {
     int ix;
+    int numFIDnames;
+
+    chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
+    chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", chpl_compileDirectory);
+
     chpl_dprintf (chpl_vdebug_fd, "Tablesize: %d\n", chpl_filenameTableSize);
     for (ix = 0; ix < chpl_filenameTableSize ; ix++) {
       if (chpl_filenameTable[ix][0] == 0) {
@@ -172,9 +177,11 @@ void chpl_vdebug_start (const char *fileroot, double now) {
                       chpl_filenameTable[ix]);
       }
     }
-    for (ix = 0; chpl_finfo[ix].name != NULL; ix++)
+    for (numFIDnames = 0; chpl_finfo[numFIDnames].name != NULL; numFIDnames++);
+    chpl_dprintf (chpl_vdebug_fd, "FIDNsize: %d\n", numFIDnames);
+    for (ix = 0; ix < numFIDnames; ix++)
       chpl_dprintf (chpl_vdebug_fd, "FIDname: %d %d %d %s\n", ix,
-                    chpl_finfo[ix].fileno, chpl_finfo[ix].lineno,
+                    chpl_finfo[ix].lineno, chpl_finfo[ix].fileno,
                     chpl_finfo[ix].name);
   }
   

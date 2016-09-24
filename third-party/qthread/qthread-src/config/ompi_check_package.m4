@@ -43,8 +43,8 @@ AC_DEFUN([_OMPI_CHECK_PACKAGE_HEADER], [
 
     AS_IF([test "$ompi_check_package_header_happy" = "no"],
           [AS_IF([test "$3" != ""],
-                 [$1_CPPFLAGS="$$1_CPPFLAGS -I$3/include"
-                  CPPFLAGS="$CPPFLAGS -I$3/include"])
+                 [$1_CPPFLAGS="$$1_CPPFLAGS -I$3/include -I$3"
+                  CPPFLAGS="$CPPFLAGS -I$3/include -I$3"])
            AC_CHECK_HEADER([$2], [$4], [$5])],
           [$4])
     unset ompi_check_package_header_happy])

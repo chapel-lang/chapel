@@ -19,6 +19,7 @@ Chapel Documentation
    :maxdepth: 1
 
    Quick Reference <language/reference>
+   Primers <primers/index>
    Language Specification <language/spec>
    modules/builtins
    modules/modules

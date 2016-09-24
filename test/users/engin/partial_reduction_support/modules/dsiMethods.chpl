@@ -2,6 +2,7 @@ use utilities;
 use BlockDist;
 use CyclicDist;
 use BlockCycDist;
+use Search;
 
 //
 // DefaultRectangular support

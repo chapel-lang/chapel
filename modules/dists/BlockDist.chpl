@@ -454,7 +454,10 @@ proc Block.dsiEqualDMaps(that) param {
 proc Block.dsiClone() {
   return new Block(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity);
+                   dataParMinGranularity,
+                   rank,
+                   idxType,
+                   sparseLayoutType);
 }
 
 proc Block.dsiDestroyDistClass() {
@@ -789,8 +792,13 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
     type strType = chpl__signedType(idxType);
     const tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
-    for param i in 1..tmpBlock.rank do
-      locOffset(i) = tmpBlock.dim(i).first/tmpBlock.dim(i).stride:strType;
+    for param i in 1..tmpBlock.rank {
+      const stride = tmpBlock.dim(i).stride;
+      if stride < 0 && strType != idxType then
+        halt("negative stride not supported with unsigned idxType");
+        // (since locOffset is unsigned in that case)
+      locOffset(i) = tmpBlock.dim(i).first / stride:idxType;
+    }
     // Forward to defaultRectangular
     for followThis in tmpBlock._value.these(iterKind.leader, maxTasks,
                                             myIgnoreRunning, minSize,
@@ -1197,6 +1205,7 @@ proc BlockArr.dsiSerialWrite(f) {
 }
 
 proc BlockArr.dsiSlice(d: BlockDom) {
+  // MPF: should this use sparseLayoutType = d.sparseLayoutType ?
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
       stridable=d.stridable, dom=d, sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
@@ -1216,8 +1225,7 @@ proc BlockArr.dsiLocalSlice(ranges) {
   for param i in 1..rank {
     low(i) = ranges(i).low;
   }
-  var A => locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
-  return A;
+  return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 
 proc _extendTuple(type t, idx: _tuple, args) {
@@ -1462,8 +1470,18 @@ proc BlockArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc BlockArr.dsiSupportsBulkTransfer() param return true;
-proc BlockArr.dsiSupportsBulkTransferInterface() param return true;
+proc BlockArr.dsiSupportsBulkTransfer() param {
+  if sparseLayoutType != DefaultDist then
+    return false;
+  else
+    return true;
+}
+proc BlockArr.dsiSupportsBulkTransferInterface() param {
+   if sparseLayoutType != DefaultDist then
+    return false;
+  else
+    return true;
+}
 
 proc BlockArr.doiCanBulkTransfer() {
   if debugBlockDistBulkTransfer then
@@ -1611,7 +1629,7 @@ iter ConsecutiveChunks(d1,d2,lid,lo) {
   var rlo=lo+offset;
   var rid  = d2.dist.targetLocsIdx(rlo);
   while (elemsToGet>0) {
-    const size = min(d2.numRemoteElems(rlo,rid),elemsToGet):int;
+    const size = min(d2.numRemoteElems(rlo,rid),elemsToGet);
     yield (rid,rlo,size);
     rid +=1;
     rlo += size;

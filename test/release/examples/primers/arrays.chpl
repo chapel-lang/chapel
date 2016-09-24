@@ -1,9 +1,8 @@
-/*
- * Arrays Primer
- *
- * This primer is a tutorial on Chapel rectangular arrays.
- *
- */
+// Arrays
+
+//
+// This primer is a tutorial on Chapel rectangular arrays and domains.
+//
 
 //
 // Arrays in Chapel are specified using a square-bracketed expression
@@ -24,7 +23,7 @@ var A: [1..n] real;
 // Like other variable types in Chapel, arrays are initialized so that
 // each element stores its default value.  So our array of real values
 // above will default to an array of the value 0.0.
-// 
+//
 
 writeln("Initially, A is: ", A);
 
@@ -67,7 +66,8 @@ writeln();
 writeln("A(2..4) is: ", A(2..4), "\n");
 
 //
-// Note: further information on slicing can be found in "slices.chpl"
+// Note: further information on slicing can be found in the
+// :ref:`Slices Primer <primers-slices>`
 //
 
 //
@@ -96,8 +96,8 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // An array's index set is referred to as a domain -- a first-class
 // language concept that stores the set of indices used to access the
 // array.  The arrays above are declared with the anonymous domains
-// {1..n} and {1..n, 1..n}.  An array's domain can be accessed using
-// the .domain method:
+// ``{1..n}`` and ``{1..n, 1..n}``.  An array's domain can be accessed
+// using the ``.domain`` method:
 //
 
 forall (i,j) in B.domain do
@@ -136,7 +136,7 @@ writeln("After calling printArr, B is:\n", B, "\n");
 // variables.
 //
 // The following domain declaration defines a 2D arithmetic domain
-// called ProbSpace which is the same size and shape as B was above.
+// called ``ProbSpace`` which is the same size and shape as ``B`` was above.
 //
 
 var ProbSpace: domain(2) = {1..n, 1..n};
@@ -161,7 +161,7 @@ writeln("After initializing C, its value is:\n", C, "\n");
 // Similarly, multidimensional array accesses can be expressed using
 // tuple indices rather than multiple integer arguments.  In the
 // following example, the index variable ij stores a 2-tuple of
-// integers (2*int in Chapel).  This is a really inefficient way
+// integers (``2*int`` in Chapel).  This is a really inefficient way
 // to assign the diagonal values "true" -- note the use of tuple
 // indexing to tease the individual components out of the 2-tuple.
 //
@@ -173,8 +173,7 @@ writeln("After initializing D, its value is:\n", D, "\n");
 
 
 //
-// Array expressions of similar size and shape support whole-array
-// assignment.
+// Arrays of similar size and shape support whole-array assignment.
 //
 
 E = C;
@@ -183,7 +182,7 @@ writeln("After assigning C to E, E's value is:\n", E, "\n");
 
 //
 // Whole array assignment also allows scalar values to be promoted
-// and assigned to every element of an array
+// and assigned to every element of an array.
 //
 
 B = 0.0;
@@ -194,9 +193,9 @@ writeln("After being reset, B is:\n", B, "\n");
 // An array need not be indexed using the domain used to declare it,
 // though doing so presents the compiler with opportunities to
 // optimize bounds checks away.  In the following loop, there is
-// no known relation between B and ProbSpace, so bounds checks are
+// no known relation between ``B`` and ``ProbSpace``, so bounds checks are
 // harder to prove away (requires symbolic analysis of the definitions
-// of the two domains and the invariance of their bounds)
+// of the two domains and the invariance of their bounds).
 //
 
 for (i,j) in ProbSpace do
@@ -206,7 +205,7 @@ writeln("B has been re-initialized to:\n", B, "\n");
 
 //
 // Whole-array assignment can also be used for arrays or sub-arrays
-// whose index spaces differ:
+// whose index spaces differ. Their shapes must still match.
 //
 
 var F, G: [ProbSpace] real;
@@ -226,9 +225,9 @@ G[2.., ..] = B[..n-1, ..];
 writeln("After assigning a slice of B to G, G's value is:\n", G, "\n");
 
 //
-// Array slicing also supports rank-change semantics when sliced using
+// Array slicing supports rank-change semantics when sliced using
 // a scalar value rather than a range.  In the following assignment,
-// recall that A was our initial 1-dimensional array.
+// recall that ``A`` was our initial 1-dimensional array.
 //
 
 A = B[n/2, ..];
@@ -260,8 +259,8 @@ writeln("B[ProbSpaceSlice] is:\n", B[ProbSpaceSlice], "\n");
 
 //
 // Forall loops over domains and arrays can be written using the
-// syntax "[<ind> in <Dom>] ..." which is shorthand for "forall ind
-// in Dom do ..."
+// syntax ``[<ind> in <Dom>] ...`` which is shorthand for
+// ``forall <ind> in <Dom> do ...``
 //
 
 const offset = (1,1); // a 2-tuple offset
@@ -293,7 +292,7 @@ var VarArr: [VarDom] real = [i in VarDom] i;
 writeln("Initially, VarArr = ", VarArr, "\n");
 
 //
-// Now, if we reassign VarDom, VarArr will be reallocated with the
+// Now, if we reassign ``VarDom``, ``VarArr`` will be reallocated with the
 // old values preserved and the new values initialized to the element
 // type's default value.
 //
@@ -306,7 +305,7 @@ writeln("After doubling VarDom, VarArr = ", VarArr, "\n");
 // As mentioned before, this reallocation preserves values according
 // to index, so if we extend the lower bound of the domain, the
 // non-zero values will still logically be associated with indices
-// 1..n:
+// ``1..n``:
 //
 
 VarDom = {-n+1..2*n};
@@ -323,8 +322,8 @@ writeln("After shrinking VarDom, VarArr = ", VarArr, "\n");
 
 //
 // One trick to reallocate an array without preserving any values is
-// to assign its domain a degenerate domain and then assign it the
-// new value:
+// to assign its domain variable a degenerate domain, e.g. ``{1..0}``,
+// and then assign it the new value:
 //
 
 VarDom = {1..0};
@@ -336,26 +335,24 @@ VarDom = {1..n};
 writeln("VarArr should now be reset: ", VarArr, "\n");
 
 //
-// Note that querying an array's domain via the .domain method or
+// Note that querying an array's domain via the ``.domain`` method or
 // the function argument query syntax does not result in a domain
 // expression that can be reassigned.  In particular, we cannot do:
 //
-//   VarArr.domain = {1..2*n};
+//   ``VarArr.domain = {1..2*n};``
 //
 // nor:
 //
-//   proc foo(X: [?D]) {  D = {1..2*n};  }
+//   ``proc foo(X: [?D]) {  D = {1..2*n};  }``
 //
-// Only a domain variable or a domain function argument can be
+// Only a domain variable or formal argument can be
 // reassigned to reallocate arrays.  This is to avoid confusion
 // since assigning one domain variable can cause a number of
 // arrays to be reallocated.  It also implies that arrays declared
 // using an anonymous domain cannot be reallocated.  So for our
-// original array declarations A and B, we have no way of reallocating
+// original array declarations ``A`` and ``B``, we have no way of reallocating
 // them.  Arrays with constant domains provide the compiler with
 // optimization benefits, so this supports a common case efficiently.
-//
-// A.domain = {1..2*n};
 //
 
 //
@@ -373,18 +370,20 @@ forall (i,j) in ProbSpace do
 
 writeln("Y is:\n", Y);
 
+/*
+   Our current implementation requires that array elements must
+   all be of uniform size. We would also like to support jagged arrays,
+   where the inner array size is a function of the outer.
+   In particular, it is our intention to support arrays like these:
+
+   .. code-block:: chapel
+
+       var Triangle: [row in 1..n] [1..row] real;
+       var HierArr: [lvl in 1..n] [1..2**lvl, 1..2**lvl] real;
+*/
+
 //
-// Our current implementation does not yet support arrays of arrays
-// where the inner array size is a function of the outer -- they must
-// all be of uniform size.  In particular, it is our intention to
-// support things like:
-//
-//   const Triangle: [1..row] real = [row in 1..n] [col in 1..row] row + col/10.0;
-//
-// and:
-//
-//   var HierArr: [lvl in 1..n] [1..2**lvl, 1..2**lvl] real;
-//
-// If such capabilities would be of use to you, please let us know and
-// we will adjust their priority accordingly.
+// For further information, see the :ref:`Domain Primer <primers-domains>`
+// and other array primers: :ref:`Sparse <primers-sparse>`,
+// :ref:`Opaque <primers-opaque>`, :ref:`Associative <primers-associative>`.
 //

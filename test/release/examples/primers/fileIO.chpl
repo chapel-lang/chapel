@@ -1,6 +1,4 @@
-/*
- * File I/O Primer
- */
+// File I/O
 
 /*
    First example: Textual Array I/O
@@ -21,27 +19,27 @@ config const epsilon = 10e-13;
 use IO;
 
 /* Example 1
- * This is a simple example of using file I/O in Chapel.
- *
- * It initializes an array and writes its size and data to a file.  It
- * then opens the file, uses the size in the file to declare a new
- * domain and array, and reads in the array data.
- */
+   This is a simple example of using file I/O in Chapel.
+
+   It initializes an array and writes its size and data to a file.  It
+   then opens the file, uses the size in the file to declare a new
+   domain and array, and reads in the array data.
+  */
 if example == 0 || example == 1 {
   const ADom = {1..n, 1..n};  // Create a domain of the specified problem size
 
   // Create and initialize an array of the specified size
   var A: [ADom] real = [(i,j) in ADom] i + j/10.0;
-  
+
   // Write the problem size and array out to the specified filename
   writeSquareArray(n, A, filename);
-  
+
   // Read an array in from the specified filename, storing in a new variable, B
   var B = readArray(filename);
-  
+
   // Print out B as a debugging step
   writeln("B is:\n", B);
-  
+
   //
   // verify that the values in A and B are within tolerance
   //
@@ -84,7 +82,7 @@ proc readArray(filename) {
   var reader = infile.reader();
 
   // Read the number of rows and columns in the array in from the file
-  var m = reader.read(int), 
+  var m = reader.read(int),
       n = reader.read(int);
 
   // Declare an array of the specified dimensions
@@ -124,12 +122,12 @@ if example == 0 || example == 2 {
   var f = open(testfile, iomode.cwr);
 
   /* Since the typical 'file position' design leads to race conditions
-   * all over, the Chapel I/O design separates a file from a channel.
-   * A channel is a buffer to a particular spot in a file. Channels
-   * can have a start and and end, so that if you're doing parallel I/O
-   * to different parts of a file with different channels, you can
-   * partition the file to be assured that they do not interfere.
-   */
+     all over, the Chapel I/O design separates a file from a channel.
+     A channel is a buffer to a particular spot in a file. Channels
+     can have a start and and end, so that if you're doing parallel I/O
+     to different parts of a file with different channels, you can
+     partition the file to be assured that they do not interfere.
+    */
 
   {
     var w = f.writer(kind=ionative); // get a binary writing channel for the start of the file.
@@ -171,8 +169,11 @@ if example == 0 || example == 3 {
      This time we're not going to use a temporary file, because
      we want to open it twice for performance reasons.
      If you want to measure the performance difference, try:
-       time ./fielIOv2 --example=2
-       time ./fielIOv2 --example=3
+
+     ..code-block:: sh
+
+         time ./fielIOv2 --example=2
+         time ./fielIOv2 --example=3
    */
 
   // First, open up a file and write to it.
@@ -180,7 +181,7 @@ if example == 0 || example == 3 {
     var f = open(testfile, iomode.cwr);
     /* When we create the writer, supplying locking=false will do unlocked I/O.
        That's fine as long as the channel is not shared between tasks.
-      */
+     */
     var w = f.writer(kind=ionative, locking=false);
 
     for i in 0..#num {
@@ -204,8 +205,8 @@ if example == 0 || example == 3 {
     forall i in 0..#num by -1 {
       /* When we create the reader, supplying locking=false will do unlocked I/O.
          That's fine as long as the channel is not shared between tasks;
-         here it's just used as a local variable, so we are O.K. 
-        */
+         here it's just used as a local variable, so we are O.K.
+       */
       var r = f.reader(kind=ionative, locking=false, start=8*i, end=8*i+8);
       var tmp:uint(64);
       r.read(tmp);
@@ -243,7 +244,7 @@ if example == 0 || example == 4 {
 
   // flush buffers, close the channel.
   w.close();
-  
+
   var r = f.reader();
   var line:string;
   while( r.readline(line) ) {
@@ -266,7 +267,7 @@ if example == 0 || example == 4 {
    with the new I/O routines. Maybe one day this strategy will
    be replaced by exceptions, but until then... Chapel programs
    can still respond to errors.
-   
+
 */
 if example == 0 || example == 5 {
   writeln("Running Example 5");
@@ -279,7 +280,7 @@ if example == 0 || example == 5 {
   // File does not exist by now, for sure.
   unlink(testfile, error=err);
   assert(err == ENOENT);
-  
+
   // What happens if we try to open a non-existent file?
   var f = open(testfile, iomode.r, error=err);
   assert(err == ENOENT);

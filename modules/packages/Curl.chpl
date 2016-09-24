@@ -36,48 +36,8 @@ The `curl homepage <https://curl.haxx.se/libcurl/>`_ describes libcurl thus::
 Dependencies
 ------------
 
-The Curl functionality in Chapel is dependent on libcurl. For information on
-how to install libcurl, see the
-`curl installation instructions <https://curl.haxx.se/docs/install.html>`_
-
-The environment variables CHPL_AUXIO_INCLUDE and CHPL_AUXIO_LIBS must be set to
-point to the include and lib directories for libcurl respectively. More
-information on these variables can be found in auxIO.rst
-
-.. note::
-
-  If libcurl is installed system-wide you should not need to set these
-  variables.
-
-
-Enabling Curl Support
----------------------
-
-Once you have ensured that libcurl is installed, and have the two variables
-above defined, set the environment variable CHPL_AUX_FILESYS to 'curl' to enable
-Curl support:
-
-.. code-block:: sh
-
-  export CHPL_AUX_FILESYS=curl
-
-Then, rebuild Chapel by executing 'make' from $CHPL_HOME:
-
-.. code-block:: sh
-
-  make
-
-.. note::
-
-  If Curl support is not enabled (which is the default), all features
-  described below will compile successfully but will result in an error at
-  runtime, saying: "No Curl Support".
-
-For information on how to enable and use Curl while also using other auxiliary
-IO extensions, as well as how to setup the CHPL_AUXIO_INCLUDE and
-CHPL_AUXIO_LIBS environment variables see doc/technotes/auxIO.rst in a
-Chapel release.
-
+The Curl module in Chapel is dependent on libcurl. For more information
+ on how to setup libcurl, see the :ref:`readme-auxIO` page.
 
 Using Curl Support in Chapel
 ----------------------------

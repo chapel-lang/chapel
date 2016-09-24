@@ -356,6 +356,7 @@ int INTERNAL qt_threadqueue_private_enqueue(qt_threadqueue_private_t *restrict c
         if (c->head == NULL) {
             c->head = tmp;
         } else {
+            assert(tmp && tmp->prev);
             tmp->prev->next = tmp;
         }
         c->qlength++;
@@ -420,6 +421,7 @@ int INTERNAL qt_threadqueue_private_enqueue_yielded(qt_threadqueue_private_t *re
     if (q->tail == NULL) {
         q->tail = node;
     } else {
+        assert(node && node->next);
         node->next->prev = node;
     }
     q->qlength++;
@@ -527,9 +529,9 @@ int INTERNAL qt_keep_adding_agg_task(qthread_t *agg_task,
     qt_threadqueue_node_t *node         = NULL;
     qthread_t             *t            = NULL;
     int                    count        = ((int *)agg_task->preconds)[0];
-    qthread_f             *list_of_f    = (qthread_f *)(&(((int *)agg_task->preconds)[1]));
-    void                 **list_of_farg = (void **)agg_task->arg;
-    void                 **list_of_fret = (void **)agg_task->ret;
+    qthread_f             *list_of_f    /*= (qthread_f *)(&(((int *)agg_task->preconds)[1]))*/;
+    void                 **list_of_farg /*= (void **)agg_task->arg*/;
+    void                 **list_of_fret /*= (void **)agg_task->ret*/;
     int                    local_cost   = *curr_cost;
     // never getting more than what was initially allocated!
 
@@ -561,7 +563,7 @@ int INTERNAL qt_keep_adding_agg_task(qthread_t *agg_task,
             tail_l = *tail_addr;
             if(tail_l != NULL) {
                 int max_allowed = max_t - count;
-                while(QTHREAD_TASK_IS_AGGREGABLE(tail_l->value->flags) && (len_l < max_allowed) && tail_l != head_l) {
+                while((len_l < max_allowed) && QTHREAD_TASK_IS_AGGREGABLE(tail_l->value->flags) && tail_l != head_l) {
                     len_l++;
                     if (tail_l->stealable) { ste_l++; }
                     tail_l = tail_l->prev;
@@ -696,6 +698,9 @@ void INTERNAL qt_add_first_agg_task(qthread_t             *agg_task,
 
 /* dequeue at tail */
 qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
+#ifdef QTHREAD_LOCAL_PRIORITY
+                                            qt_threadqueue_t         *lpq,
+#endif /* ifdef QTHREAD_LOCAL_PRIORITY */
                                             qt_threadqueue_private_t *qc,
                                             uint_fast8_t              active)
 {   /*{{{*/
@@ -720,6 +725,32 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
 #ifdef QTHREAD_TASK_AGGREGATION
         curr_cost = 0; ret_agg_task = 0;
 #endif
+
+#ifdef QTHREAD_LOCAL_PRIORITY
+            /* First check local priority queue */
+        if (lpq->head) {
+            QTHREAD_TRYLOCK_LOCK(&lpq->qlock);
+            PARANOIA_ONLY(sanity_check_queue(lpq));
+            node = lpq->tail;
+            if (node != NULL) {
+                assert(lpq->head);
+                assert(lpq->qlength > 0);
+
+                lpq->tail = node->prev;
+                if (lpq->tail == NULL) {
+                    lpq->head = NULL;
+                } else {
+                    lpq->tail->next = NULL;
+                }
+                assert(lpq->qlength > 0);
+                lpq->qlength--;
+                lpq->qlength_stealable -= node->stealable;
+            }
+            QTHREAD_TRYLOCK_UNLOCK(&lpq->qlock);
+        }
+        else
+#endif /* ifdef QTHREAD_LOCAL_PRIORITY */
+
         // printf("Total number of items: %d+%d\n", (qc?(qc->on_deck?(1+qc->qlength):0):0), q->qlength);
         if (qc && (qc->on_deck != NULL)) {
             assert(qc->tail == NULL || qc->tail->next == NULL);
@@ -755,6 +786,7 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
 #endif      /* ifdef QTHREAD_TASK_AGGREGATION */
 
             qthread_debug(THREADQUEUE_DETAILS, "q(%p), qc(%p), active(%u): qc->qlen(%u) Push remaining items onto the real queue\n", q, qc, active, qc->qlength);
+
             if (qc->qlength > 0) {
                 qt_threadqueue_node_t *first = qc->head;
                 qt_threadqueue_node_t *last  = qc->tail;
@@ -1124,6 +1156,10 @@ static QINLINE qt_threadqueue_node_t *qthread_steal(qthread_shepherd_t *thief_sh
     assert(sorted_sheplist);
 
     qt_threadqueue_t *myqueue = thief_shepherd->ready;
+
+#ifdef QTHREAD_LOCAL_PRIORITY
+    qt_threadqueue_t *mypriorityqueue = thief_shepherd->local_priority_queue;
+#endif /* ifdef QTHREAD_LOCAL_PRIORITY */
     while (stolen == NULL) {
         qt_threadqueue_t *victim_queue = shepherds[sorted_sheplist[i]].ready;
         if (0 != victim_queue->qlength_stealable) {
@@ -1142,6 +1178,12 @@ static QINLINE qt_threadqueue_node_t *qthread_steal(qthread_shepherd_t *thief_sh
                 STEAL_FAILED(thief_shepherd);
             }
         }
+#ifdef QTHREAD_LOCAL_PRIORITY
+        if ((0 < mypriorityqueue->qlength)){
+          break;
+        }
+#endif /* ifdef QTHREAD_LOCAL_PRIORITY */
+       
         if ((0 < myqueue->qlength) || steal_disable) {  // work at home quit steal attempt
             break;
         }

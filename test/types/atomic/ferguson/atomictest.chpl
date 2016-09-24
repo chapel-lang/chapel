@@ -1,38 +1,54 @@
-config const n = 100000;
+use Time;
+config const n = 1000000;
 config const showRace = false;
 
-proc test(param width, n_max:int ) {
-  var n:uint(width) = max(uint(width));
-  n -= 1; // don't go to max(type) since that will overflow the range iterator
-  if n_max:uint(64) < n:uint(64) then n = n_max:uint(width);
+config const performance = false;
 
-  const mult:uint(width) = 10;
-  const one:uint(width) = 1;
-  const zero:uint(width) = 0;
+proc test(type base_type, n_max:int) {
+  const mult = 10: base_type;
+  const one  =  1: base_type;
+  const zero =  0: base_type;
 
-  writeln("Testing " + width:string + " - bit atomics");
+  var n:uint = max(base_type):uint;
+  if isRealType(base_type) then n = max(uint);
+  n = min(n, n_max:uint);
+
+  // single precision floats have 24 bits of precision (i.e. can only
+  // represent integers up to 2**24 exactly)
+  if base_type == real(32) then n = min(n, (2**24)/mult:uint);
+
+  // need to avoid signed integer overflow, since it's undefined behavior
+  if isIntType(base_type) then
+    if n > (max(base_type)/mult):uint then  n = n/mult:uint;
+
+
+  writeln("Testing atomic " + base_type:string);
 
   if showRace {
-    var x:uint(width);
+    var x:base_type;
     x = zero;
-    forall i in one..n with (ref x) { // race is intentional
+    forall i in 1..n with (ref x) { // race is intentional
       x += one;
     }
     writeln("X is ", x," (vs. ", n, ")");
   }
 
-  var aint:atomic uint(width);
+  var aint:atomic base_type;
 
-  //aint.init(0);
-
-  forall i in one..n {
+  var t: Timer;
+  t.start();
+  forall i in 1..n {
     aint.fetchAdd(one);
   }
+  t.stop();
+  if performance && n == (n_max:uint) then
+    writeln("Elapsed seconds for fetchAdd on atomic ", base_type:string, ": ", t.elapsed());
 
-  assert(aint.read() == n);
+  assert(aint.read() == n:base_type);
   writeln("Increment OK");
 
-  forall i in one..n {
+
+  forall i in 1..n {
     aint.fetchSub(one);
   }
 
@@ -40,14 +56,14 @@ proc test(param width, n_max:int ) {
 
   writeln("Decrement OK");
 
-  forall i in one..n {
+  forall i in 1..n {
     aint.fetchAdd(mult);
   }
 
-  assert(aint.read() == (mult*n):uint(width));
+  assert(aint.read() == (mult*n:base_type));
   writeln("Add OK");
 
-  forall i in one..n {
+  forall i in 1..n {
     aint.fetchSub(mult);
   }
 
@@ -59,11 +75,18 @@ proc test(param width, n_max:int ) {
   assert(aint.read() == mult);
 
   writeln("Compare and Swap OK");
-
-  //aint.destroy();
+  writeln();
 }
 
-test(8,  n);
-test(16, n);
-test(32, n);
-//test(64, n);
+test(uint(8),  n);
+test(uint(16), n);
+test(uint(32), n);
+test(uint(64), n);
+
+test(int(8),  n);
+test(int(16), n);
+test(int(32), n);
+test(int(64), n);
+
+test(real(32), n);
+test(real(64), n);

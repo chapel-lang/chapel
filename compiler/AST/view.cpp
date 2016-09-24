@@ -637,7 +637,7 @@ const char* shortLoc(BaseAST* ast) {
     return "<no node provided>";
 
   const char* longLoc = stringLoc(ast);
-  const char* slash = (const char*) rindex(longLoc, '/');
+  const char* slash = (const char*) strrchr(longLoc, '/');
   return slash ? slash+1 : longLoc;
 }
 

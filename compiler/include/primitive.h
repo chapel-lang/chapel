@@ -74,6 +74,7 @@ enum PrimitiveTag {
   PRIM_AND_ASSIGN,
   PRIM_OR_ASSIGN,
   PRIM_XOR_ASSIGN,
+  PRIM_REDUCE_ASSIGN,
 
   PRIM_MIN,
   PRIM_MAX,
@@ -127,6 +128,7 @@ enum PrimitiveTag {
   PRIM_CHPL_COMM_GET_STRD,      // Direct calls to the Chapel comm layer for strided comm
   PRIM_CHPL_COMM_PUT_STRD,      //  may eventually add others (e.g., non-blocking)
 
+  PRIM_OPTIMIZE_ARRAY_BLK_MULT,
   PRIM_ARRAY_ALLOC,
   PRIM_ARRAY_FREE,
   PRIM_ARRAY_FREE_ELTS,
@@ -218,6 +220,7 @@ enum PrimitiveTag {
   PRIM_FIELD_NUM_TO_NAME,
   PRIM_FIELD_NAME_TO_NUM,
   PRIM_FIELD_BY_NUM,
+  PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL,
   PRIM_IS_UNION_TYPE,
   PRIM_IS_ATOMIC_TYPE,
   PRIM_IS_REF_ITER_TYPE,
@@ -238,6 +241,8 @@ enum PrimitiveTag {
   PRIM_LOOKUP_FILENAME,   // Given an index, get a given filename (c_string)
 
   PRIM_GET_COMPILER_VAR,
+
+  PRIM_ZIP,
 
   NUM_KNOWN_PRIMS
 };

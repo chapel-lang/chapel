@@ -51,7 +51,7 @@
 #define NO_SHEPHERD    ((qthread_shepherd_id_t)-1)
 #define NO_WORKER      ((qthread_worker_id_t)-1)
 
-#define QTHREAD_VERSION 1010000
+#define QTHREAD_VERSION 1010001
 
 #include <qthread/macros.h>
 
@@ -226,6 +226,14 @@ int qthread_fork_to(qthread_f             f,
                     const void           *arg,
                     aligned_t            *ret,
                     qthread_shepherd_id_t shepherd);
+
+#ifdef QTHREAD_LOCAL_PRIORITY
+int qthread_fork_to_local_priority(qthread_f             f,
+                                   const void           *arg,
+                                   aligned_t            *ret,
+                                   qthread_shepherd_id_t shepherd);
+#endif /* ifdef QTHREAD_LOCAL_PRIORITY */
+
 int qthread_fork_precond_to(qthread_f             f,
                             const void           *arg,
                             aligned_t            *ret,
@@ -275,7 +283,8 @@ enum _qthread_features {
     SPAWN_RET_SINC_VOID,
     SPAWN_PC_SYNCVAR_T,
     SPAWN_AGGREGABLE,
-    SPAWN_COUNT
+    SPAWN_COUNT,
+    SPAWN_LOCAL_PRIORITY
 };
 
 #define QTHREAD_SPAWN_PARENT        (1 << SPAWN_PARENT)
@@ -287,6 +296,7 @@ enum _qthread_features {
 #define QTHREAD_SPAWN_RET_SINC_VOID (1 << SPAWN_RET_SINC_VOID)
 #define QTHREAD_SPAWN_PC_SYNCVAR_T  (1 << SPAWN_PC_SYNCVAR_T)
 #define QTHREAD_SPAWN_AGGREGABLE    (1 << SPAWN_AGGREGABLE)
+#define QTHREAD_SPAWN_LOCAL_PRIORITY (1 << SPAWN_LOCAL_PRIORITY)
 
 int qthread_spawn(qthread_f             f,
                   const void           *arg,
@@ -314,6 +324,7 @@ unsigned              qthread_id(void);
 qthread_shepherd_id_t qthread_shep(void);
 qthread_worker_id_t   qthread_worker(qthread_shepherd_id_t *s);
 qthread_worker_id_t   qthread_worker_unique(qthread_shepherd_id_t *s);
+qthread_worker_id_t   qthread_worker_local(qthread_shepherd_id_t *s);
 #ifdef QTHREAD_USE_ROSE_EXTENSIONS
 unsigned                          qthread_barrier_id(void);
 struct qthread_parallel_region_s *qt_parallel_region(void);
@@ -348,6 +359,7 @@ const qthread_shepherd_id_t *qthread_sorted_sheps_remote(const
 /* returns the number of actively-scheduling shepherds */
 qthread_shepherd_id_t qthread_num_shepherds(void);
 qthread_worker_id_t   qthread_num_workers(void); /* how many kernel-level threads are running */
+qthread_worker_id_t   qthread_num_workers_local(qthread_shepherd_id_t shepherd_id);
 /* queries the current state */
 enum introspective_state {
     STACK_SIZE,
@@ -475,6 +487,40 @@ int qthread_syncvar_writeF(syncvar_t *restrict      dest,
 int qthread_syncvar_writeF_const(syncvar_t *restrict dest,
                                  uint64_t            src);
 
+/* This function is essentially qthread_empty, but it also writes 0. It does
+ * not wait for memory to become empty, but performs the write and sets the
+ * state to empty.
+ *
+ * The semantics of purge are:
+ * 1 - the destination's value is set to 0
+ * 2 - the destination's FEB state gets set to empty
+ */
+int qthread_purge(aligned_t *dest);
+
+// Intended only for Chapel where 0 might not be the default value for a type
+int qthread_purge_to(aligned_t *restrict       dest,
+                     const aligned_t *restrict src);
+int qthread_purge_to_const(aligned_t *dest,
+                     aligned_t  purgeVal);
+
+// NOTE: There is no syncvar version of purge
+
+/* This function waits for memory to become full, and leaves it full. When
+ * memory becomes full, all threads waiting for it to become full with a
+ * writeFF will write their value and be queued to run. Data is read from src
+ * and written to dest.
+
+ *
+ * The semantics of writeFF are:
+ * 1 - destination's FEB state must be "full"
+ * 2 - data is copied from src to destination
+ */
+int qthread_writeFF(aligned_t *restrict       dest,
+                    const aligned_t *restrict src);
+int qthread_writeFF_const(aligned_t *dest,
+                          aligned_t  src);
+// NOTE: There is no syncvar version of writeFF or writeFF_const
+
 /* This function waits for memory to become full, and then reads it and leaves
  * the memory as full. When memory becomes full, all threads waiting for it to
  * become full with a readFF will receive the value at once and will be queued
@@ -502,6 +548,17 @@ int qthread_readFE(aligned_t       *dest,
                    const aligned_t *src);
 int qthread_syncvar_readFE(uint64_t *restrict  dest,
                            syncvar_t *restrict src);
+
+/* This function ignores the FEB state. Data is read from src and written to
+ * dest.
+ *
+ * The semantics of readXX are:
+ * 1 - src's FEB state is ignored
+ * 2 - data is copied from src to destination
+ */
+int qthread_readXX(aligned_t       *dest,
+                   const aligned_t *src);
+// NOTE: There is no syncvar version of readXX
 
 /* functions to implement FEB-ish locking/unlocking
  *
@@ -1550,7 +1607,7 @@ static QINLINE void *qthread_cas_ptr_(void **addr,
 #  error The size of void* either could not be determined, or is very unusual.
     /* This should never happen, so deliberately cause a seg fault for
      * corefile analysis */
-    *(volatile int *)(0) = 0;
+    QTHREAD_TRAP();
     return NULL;                       /* compiler check */
 # endif  // if (SIZEOF_VOIDP == 4)
 } /*}}}*/

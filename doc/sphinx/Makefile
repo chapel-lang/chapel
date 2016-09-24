@@ -3,6 +3,9 @@
 # Makefile.sphinx interfaces with sphinx build commands
 include Makefile.sphinx
 
+CHPL2RST     = ./run-in-venv.bash ./chpl2rst.py
+CHPL2RSTOPTS = --output=rst --prefix=source/primers/primers --link=master
+
 help: help-sphinx help-source
 
 help-source:
@@ -10,6 +13,9 @@ help-source:
 	@echo "  docs           to invoke 'make html' in the virtualenv"
 	@echo "  checkdocs      to invoke 'make check' in the virtualenv"
 	@echo "  symlinks-docs  to symlink doc/release contents to source"
+	@echo "  module-docs    to invoke 'make documentation' in "'$$CHPL_HOME/modules'""
+	@echo "  copy-docs      to copy doc/release pdf contents to source"
+	@echo "  primers        to generate primer docs in source/primers/"
 	@echo "  clean          to remove all generated files in source/"
 	@echo "  clean-build    to remove all generated files in build/"
 	@echo "  clobber        to remove all generated files in source/ and build/"
@@ -23,7 +29,7 @@ man-chapel: FORCE
 	./run-in-venv.bash $(MAKE) man
 
 
-source: symlink-docs module-docs copy-docs
+source: symlink-docs module-docs copy-docs primers
 
 symlink-docs: clean-symlink-docs
 	@echo
@@ -41,6 +47,14 @@ copy-docs: clean-copy-docs
 	cp  ../release/quickReference.pdf     source/language/quickReference.pdf
 	cp  ../release/chapelLanguageSpec.pdf source/language/chapelLanguageSpec.pdf
 
+primers: clean-primers
+	@echo
+	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/primers/primers"
+	@#Note - this assumes that we are not in a release tar ball
+	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/*.chpl
+	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/*doc.chpl --codeblock
+	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/chplvis/*.chpl
+
 
 checkdocs: FORCE
 	./run-in-venv.bash $(MAKE) check
@@ -52,7 +66,7 @@ cleanall: clean-source
 
 clobber: clean-source clean-build
 
-clean-source: clean-symlink-docs clean-module-docs clean-copy-docs
+clean-source: clean-symlink-docs clean-module-docs clean-copy-docs clean-primers
 
 
 clean-symlink-docs: FORCE
@@ -75,5 +89,14 @@ clean-module-docs: FORCE
 	rm -rf source/modules/packages
 	rm -rf source/modules/standard
 
+clean-primers: FORCE
+	@echo
+	@echo "Removing primers generated into source/primers/primers"
+	rm -rf source/primers/primers
+
 
 FORCE:
+
+# Disable parallel builds to prevent race conditions
+.NOTPARALLEL:
+

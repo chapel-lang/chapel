@@ -749,6 +749,7 @@ static void codegen_header_compilation_config() {
 
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
+    genGlobalString("chpl_compileDirectory", getCwd());
     genGlobalString("CHPL_HOME",           CHPL_HOME);
 
     genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
