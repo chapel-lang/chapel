@@ -1152,14 +1152,20 @@ module GMP {
 
     // initializing integers (constructors)
     proc BigInt(init2: bool, nbits: uint) {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       mpz_init2(this.mpz, nbits.safeCast(c_ulong));
     }
 
     proc BigInt(num: int) {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       mpz_init_set_si(this.mpz, num.safeCast(c_long));
     }
 
     proc BigInt(str: string, base: int = 0) {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       var e: c_int;
 
       e = mpz_init_set_str(this.mpz,
@@ -1174,6 +1180,8 @@ module GMP {
     }
 
     proc BigInt(str: string, base: int = 0, out error: syserr) {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       var e: c_int;
 
       error = ENOERR;
@@ -1190,6 +1198,8 @@ module GMP {
     }
 
     proc BigInt(num: BigInt) {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       if num.locale == here {
         mpz_init_set(this.mpz, num.mpz);
       } else {
@@ -1202,6 +1212,8 @@ module GMP {
     }
 
     proc BigInt() {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       mpz_init(this.mpz);
     }
 
