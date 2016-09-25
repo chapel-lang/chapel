@@ -102,6 +102,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
 	packages/Norm.chpl \
+	packages/MPI.chpl \
 	packages/RecordParser.chpl \
 	packages/Search.chpl \
 	packages/Sort.chpl \
