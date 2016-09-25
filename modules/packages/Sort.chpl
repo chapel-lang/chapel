@@ -378,8 +378,8 @@ iter sorted(x, comparator:?rec=defaultComparator) {
  */
 proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  const low = Dom.low,
-        high = Dom.high,
+  const low = Dom.alignedLow,
+        high = Dom.alignedHigh,
         stride = abs(Dom.stride);
 
   var swapped = true;
@@ -480,8 +480,8 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
  */
 proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  const low = Dom.low,
-        high = Dom.high,
+  const low = Dom.alignedLow,
+        high = Dom.alignedHigh,
         stride = abs(Dom.stride);
 
   for i in low..high by stride {
@@ -492,6 +492,32 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
         Data[j+stride] = Data[j];
       } else {
         Data[j+stride] = ithVal;
+        inserted = true;
+        break;
+      }
+    }
+    if (!inserted) {
+      Data[low] = ithVal;
+    }
+  }
+}
+
+
+/* Non-stridable insertionSort */
+proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where !Dom.stridable {
+  chpl_check_comparator(comparator, eltType);
+
+  const low = Dom.alignedLow;
+
+  for i in Dom {
+    const ithVal = Data[i];
+    var inserted = false;
+    for j in low..i-1 by -1 {
+      if chpl_compare(ithVal, Data[j], comparator) < 0 {
+        Data[j+1] = Data[j];
+      } else {
+        Data[j+1] = ithVal;
         inserted = true;
         break;
       }
