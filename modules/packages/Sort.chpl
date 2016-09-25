@@ -19,6 +19,7 @@
 
 
 // TODO -- performance test sort routines and optimize (see other TODO's)
+// TODO -- Try using orderToIndex rather than using alignment/stride
 /*
 
 The Sort module is designed to support standard sort routines.
@@ -414,8 +415,8 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
  */
 proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  const low = Dom.low,
-        high = Dom.high,
+  const low = Dom.alignedLow,
+        high = Dom.alignedHigh,
         size = Dom.size,
         stride = abs(Dom.stride);
 
@@ -528,47 +529,64 @@ proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
 private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultComparator)
   where Dom.rank == 1 {
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
-  if hi-lo < minlen {
+
+  const low = Dom.alignedLow,
+        high = Dom.alignedHigh;
+
+  if high-low < minlen {
     insertionSort(Data, comparator);
     return;
   }
-  const mid = (hi-lo)/2+lo;
-  var A1 = Data[lo..mid];
-  var A2 = Data[mid+1..hi];
+
+  const size = Dom.size,
+        stride = abs(Dom.stride),
+        mid = if high == low then high
+        else if size % 2 then low + ((size - 1)/2) * stride
+        else low + (size/2 - 1) * stride;
+
+  var A1 = Data[low..mid by stride];
+  var A2 = Data[mid+stride..high by stride];
   cobegin {
     { _MergeSort(A1, minlen, comparator); }
     { _MergeSort(A2, minlen, comparator); }
   }
 
   // TODO -- This iterator causes unnecessary overhead - we can do without it
-  for (a, _a) in zip(Data[lo..hi], _MergeIterator(A1, A2, comparator=comparator)) do a = _a;
+  for (a, _a) in zip(Data[low..high by stride], _MergeIterator(A1, A2, comparator=comparator)) do a = _a;
 }
 
 
-private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=defaultComparator) {
-  var a1 = A1.domain.dim(1).low;
-  const a1hi = A1.domain.dim(1).high;
-  var a2 = A2.domain.dim(1).low;
-  const a2hi = A2.domain.dim(1).high;
+private iter _MergeIterator(A1: [?A1Dom] ?eltType, A2: [?A2Dom] eltType, comparator:?rec=defaultComparator) {
+  var a1 = A1Dom.alignedLow,
+      a2 = A2Dom.alignedLow;
+  const a1hi = A1Dom.alignedHigh,
+        a2hi = A2Dom.alignedHigh,
+        stride = abs(A1Dom.stride);
+
   while ((a1 <= a1hi) && (a2 <= a2hi)) {
     while (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
       yield A1(a1);
-      a1 += 1;
+      a1 += stride;
       if a1 > a1hi then break;
     }
     if a1 > a1hi then break;
     while (chpl_compare(A2(a2), A1(a1), comparator) <= 0) {
       yield A2(a2);
-      a2 += 1;
+      a2 += stride;
       if a2 > a2hi then break;
     }
   }
-  if a1 == a1hi then yield A1(a1);
-  else if a2 == a2hi then yield A2(a2);
-  if a1 < a1hi then for a in A1[a1..a1hi] do yield a;
-  else if a2 < a2hi then for a in A2[a2..a2hi] do yield a;
+
+  if a1 == a1hi then
+    yield A1(a1);
+  else if a2 == a2hi then
+    yield A2(a2);
+  if a1 < a1hi then
+    for a in A1[a1..a1hi by stride] do
+      yield a;
+  else if a2 < a2hi then
+    for a in A2[a2..a2hi by stride] do
+      yield a;
 }
 
 
@@ -636,8 +654,8 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
   // TODO -- Get this cobegin working and tested
   //  cobegin {
-    quickSort(Data[..loptr-stride], minlen, comparator);
-    quickSort(Data[loptr+stride..], minlen, comparator);
+    quickSort(Data[lo..loptr-stride by stride], minlen, comparator);
+    quickSort(Data[loptr+stride..hi by stride], minlen, comparator);
   //  }
 }
 
