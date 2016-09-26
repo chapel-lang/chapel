@@ -533,25 +533,25 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   // disable all chapel compiler optimizations
   //
   fBaseline = true;
-  fNoCopyPropagation = true;
-  fNoDeadCodeElimination = true;
-  fNoFastFollowers = true;
-  fNoloopInvariantCodeMotion = true;
-  fNoInline = true;
-  fNoInlineIterators = true;
-  fNoLiveAnalysis = true;
-  fNoOptimizeArrayIndexing = true;
-  fNoOptimizeLoopIterators = true;
-  fNoVectorize = true;
-  fNoRemoteValueForwarding = true;
-  fNoRemoveCopyCalls = true;
-  fNoScalarReplacement = true;
-  fNoTupleCopyOpt = true;
-  fNoPrivatization = true;
-  fNoOptimizeOnClauses = true;
-  fIgnoreLocalClasses = true;
-  //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
-  fDenormalize = false;
+
+  fNoCopyPropagation = true;          // --no-copy-propagation
+  fNoDeadCodeElimination = true;      // --no-dead-code-elimination
+  fNoFastFollowers = true;            // --no-fast-followers
+  fNoloopInvariantCodeMotion = true;  // --no-loop-invariant-code-motion
+  fNoInline = true;                   // --no-inline
+  fNoInlineIterators = true;          // --no-inline-iterators
+  fNoLiveAnalysis = true;             // --no-live-analysis
+  fNoOptimizeArrayIndexing = true;    // --no-optimize-array-indexing
+  fNoOptimizeLoopIterators = true;    // --no-optimize-loop-iterators
+  fNoVectorize = true;                // --no-vectorize
+  fNoRemoteValueForwarding = true;    // --no-remote-value-forwarding
+  fNoRemoveCopyCalls = true;          // --no-remove-copy-calls
+  fNoScalarReplacement = true;        // --no-scalar-replacement
+  fNoTupleCopyOpt = true;             // --no-tuple-copy-opt
+  fNoPrivatization = true;            // --no-privatization
+  fNoOptimizeOnClauses = true;        // --no-optimize-on-clauses
+  fIgnoreLocalClasses = true;         // --ignore-local-classes
+  fDenormalize = false;               // --no-denormalize
   fConditionalDynamicDispatchLimit = 0;
 }
 
