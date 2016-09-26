@@ -21,9 +21,9 @@
 // vectorizeOnly iterators found at the bottom of this file.
 /*
   Data parallel constructs (such as ``forall`` loops) are implicitly
-  vectorizable. If the ``--vectorize`` compiler flag is thrown (implied by
-  ``--fast``), the Chapel compiler will emit vectorization hints to the backend
-  compiler, though the effects will vary based on the target compiler.
+  vectorizable. If the ``--vectorize`` compiler flag is thrown the Chapel
+  compiler will emit vectorization hints to the backend compiler, though the
+  effects will vary based on the target compiler.
 
   In order to allow users to explicitly request vectorization, this prototype
   vectorizing iterator is being provided. Loops that invoke this iterator will
