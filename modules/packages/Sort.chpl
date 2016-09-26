@@ -311,7 +311,7 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   chpl_check_comparator(comparator, eltType);
   const stride = if Dom.stridable then abs(Dom.stride) else 1;
 
-  for i in Dom.low..Dom.high-stride by stride do
+  for i in Dom.alignedLow..Dom.alignedHigh-stride by stride do
     if chpl_compare(Data[i+stride], Data[i], comparator) < 0 then
       return false;
   return true;
@@ -638,19 +638,20 @@ proc mergeSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
 
-  const stride = abs(Dom.stride),
-        lo = Dom.alignedLow,
-        hi = Dom.alignedHigh,
-        size = Dom.size,
-        mid = if hi == lo then hi
-              else if size % 2 then lo + ((size - 1)/2) * stride
-              else lo + (size/2 - 1) * stride;
+  const size = Dom.size;
 
   // base case -- use insertion sort
-  if (hi - lo < minlen) {
+  if (size < minlen) {
     insertionSort(Data, comparator=comparator);
     return;
   }
+
+  const stride = abs(Dom.stride),
+        lo = Dom.alignedLow,
+        hi = Dom.alignedHigh,
+        mid = if hi == lo then hi
+              else if size % 2 then lo + ((size - 1)/2) * stride
+              else lo + (size/2 - 1) * stride;
 
   // find pivot using median-of-3 method
   if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
@@ -661,8 +662,7 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
     Data(hi) <=> Data(mid);
 
   const pivotVal = Data(mid);
-  Data(mid) = Data(hi-stride);
-  Data(hi-stride) = pivotVal;
+  (Data(mid), Data(hi-stride)) = (Data(hi-stride), pivotVal);
   // end median-of-3 partitioning
 
   var loptr = lo,
@@ -693,14 +693,15 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
   // grab obvious indices
   const lo = Dom.low,
-        hi = Dom.high,
-        mid = lo + (hi-lo+1)/2;
+        hi = Dom.high;
 
   // base case -- use insertion sort
   if (hi - lo < minlen) {
     insertionSort(Data, comparator=comparator);
     return;
   }
+
+  const mid = lo + (hi-lo+1)/2;
 
   // find pivot using median-of-3 method
   if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
@@ -711,8 +712,7 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
     Data(hi) <=> Data(mid);
 
   const pivotVal = Data(mid);
-  Data(mid) = Data(hi-1);
-  Data(hi-1) = pivotVal;
+  (Data(mid), Data(hi-1)) = (Data(hi-1), pivotVal);
   // end median-of-3 partitioning
 
   var loptr = lo,

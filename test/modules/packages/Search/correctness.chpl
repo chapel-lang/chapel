@@ -9,7 +9,8 @@ proc main() {
   var result: (bool, int);
 
   const strideD = {10..40 by 10},
-        revStrideD = {10..40 by -10};
+        revStrideD = {10..40 by -10},
+        alignD = {1..8 by -2 align 8};
 
   // Sorted arrays
   const    A = [-4, -1, 2, 3],
@@ -18,7 +19,8 @@ proc main() {
      revAbsA = [ -4, 3, 2, -1],
         strA = ['Brad', 'anthony', 'ben', 'david'],
     strideA : [strideD] int = [-4, -1, 2, 3],
-    revStrideA : [revStrideD] int = [-4, -1, 2, 3];
+    revStrideA : [revStrideD] int = [-4, -1, 2, 3],
+      alignA: [alignD] int = [-4, -1, 2, 3];
 
   // Comparators
   const absKey = new AbsKeyCmp(),
@@ -53,6 +55,12 @@ proc main() {
 
   result = binarySearch(revStrideA, 2);
   checkSearch(result, (true, 30), revStrideA, 'binarySearch');
+
+  result = linearSearch(alignA, 2);
+  checkSearch(result, (true, 6), alignA, 'linearSearch');
+
+  result = binarySearch(alignA, 2);
+  checkSearch(result, (true, 6), alignA, 'binarySearch');
 
   result = linearSearch(strideA, 5);
   checkSearch(result, (false, strideD.high+strideD.stride), strideA, 'linearSearch');
