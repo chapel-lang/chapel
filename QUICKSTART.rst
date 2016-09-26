@@ -24,13 +24,15 @@ enable more features, such as distributed memory execution.
    get started with Chapel. After that, you may want to switch to a more
    full-featured configuration. See using-a-more-full-featured-chapel_ below.
 
-   a. Make sure that your shell is in the directory containing QUICKSTART.rst
+   a. Make sure that your shell is in the directory containing
+      QUICKSTART.rst, for example:
+
 
       .. code-block:: bash
 
          cd ~/chapel-1.14
 
-   b. Set up your environment for Chapel's Quick Start mode.
+   b. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than bash,
       see quickstart-with-other-shells_ below.
 
@@ -79,10 +81,10 @@ Using a More Full-Featured Chapel
 To use Chapel in a more full-featured and preferred configuration,
 you will need to rebuild Chapel from source in a different configuration.
 
-a) Open up a new shell to avoid inheriting the previous environment
+*  Open up a new shell to avoid inheriting the previous environment
    settings.
 
-b) Repeat steps 2-5 above, but in Step 2, source ``util/setchplenv.bash``
+*  Repeat steps 2-5 above, but in Step 2, source ``util/setchplenv.bash``
    instead of ``util/quickstart/setchplenv.bash``.
    This will set up your environment to use Chapel in the preferred
    configuration.  Building this configuration involves compiling
