@@ -878,7 +878,7 @@ Type methods can also be iterators.
 In the following code, the record \chpl{R} defines a type method
 iterator which can be invoked on the type itself:
 \begin{chapel}
-record R {
+class R {
   var x: int;
   var y: string;
 
@@ -1022,7 +1022,7 @@ over the class type itself.
 In the following code, the record \chpl{R} defines a type method
 iterator named these, supporting direct iteration over the type:
 \begin{chapel}
-record R {
+class R {
   var x: int;
   var y: string;
 
