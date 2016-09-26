@@ -93,7 +93,7 @@ writeln();
    a 2-tuple result. The first component of the result is the
    maximum (or minimum) over the first component of the argument.
    The second component of the result indicates its location, i.e.
-   the corresonding element of the second component of the argument.
+   the corresponding element of the second component of the argument.
 */
 
 var (maxVal, maxLoc) = maxloc reduce zip(A, A.domain);

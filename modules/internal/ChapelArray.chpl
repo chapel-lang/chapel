@@ -3302,11 +3302,11 @@ module ChapelArray {
       a <=> b;
   }
 
-  /* Returns a copy of the array containing the same values but
-     in the shape of the new domain. The number of indices in the
+  /* Returns a copy of the array ``A`` containing the same values but
+     in the shape of the domain ``D``. The number of indices in the
      domain must equal the number of elements in the array. The
-     elements of the array are copied into the new array using the
-     default iteration orders over both arrays.  */
+     elements of ``A`` are copied into the new array using the
+     default iteration orders over ``D`` and ``A``.  */
   proc reshape(A: [], D: domain) {
     if !isRectangularDom(D) then
       compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
