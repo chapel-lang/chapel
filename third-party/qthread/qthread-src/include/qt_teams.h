@@ -27,7 +27,7 @@
 /* internal signalling macros */
 #define TEAM_SIGNAL_ISEXIT(team_id)   (((saligned_t)team_id) > 1)
 #define TEAM_SIGNAL_ISEUREKA(team_id) (((saligned_t)team_id) < 0)
-#define TEAM_SIGNAL_SENDERID(team_id) (labs(team_id))
+#define TEAM_SIGNAL_SENDERID(team_id) (team_id)
 #define TEAM_SIGNAL_EXIT(team_id)     (team_id)
 #define TEAM_SIGNAL_EUREKA(team_id)   (-1 * (saligned_t)(team_id))
 

@@ -223,7 +223,7 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
         // If it is a call expression, then we want to see if it is either an
         // autocopy call or a straight copy of one variable to another.  Both of
         // these have a 'move' primitive as the outer call.
-        if (call->isPrimitive(PRIM_MOVE)) {
+        if (isMoveOrAssign(call)) {
 
           // If the RHS is a SymExpr, then this is a straight move. Record the alias.
           if (toSymExpr(call->get(2)))
@@ -318,20 +318,17 @@ static void removePODinitDestroy()
           Type* lhsType = NULL;
           Type* rhsType = actual->typeInfo();
 
-          if (CallExpr* move = toCallExpr(call->parentExpr))
-            if (move->isPrimitive(PRIM_MOVE))
-              lhsType = move->get(1)->typeInfo();
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(isMoveOrAssign(move));
+          lhsType = move->get(1)->typeInfo();
 
           SET_LINENO(call);
 
-          if (lhsType == rhsType)
-            call->replace(actual->remove());
-          else if (lhsType && lhsType->getRefType() == rhsType) {
-            call->replace(new CallExpr(PRIM_DEREF, actual->remove()));
+          if (lhsType->getValType() != rhsType->getValType()) {
+            INT_FATAL(actual, "Type mismatch in updateAutoCopy");
           } else {
-            INT_ASSERT("Type mismatch in updateAutoCopy");
+            call->replace(actual->remove());
           }
-
         }
       }
     }

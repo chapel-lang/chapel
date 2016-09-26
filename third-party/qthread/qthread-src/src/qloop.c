@@ -1168,6 +1168,7 @@ static QINLINE qqloop_iteration_queue_t *qqloop_create_iq(const size_t          
         case TIMED:
         {
             const qthread_shepherd_id_t max    = qthread_num_workers();
+            assert(max != 0);
             qthread_shepherd_id_t       i;
             qtimer_t                   *timers = MALLOC(sizeof(qtimer_t) * max);
             assert(timers);

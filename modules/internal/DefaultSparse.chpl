@@ -20,8 +20,8 @@
 // DefaultSparse.chpl
 //
 module DefaultSparse {
+  use RangeChunk only ;
 
-  use Search;
   config param debugDefaultSparse = false;
 
   class DefaultSparseDom: BaseSparseDomImpl {
@@ -70,12 +70,9 @@ module DefaultSparse {
           yield indices(i);
         }
       } else {
-        coforall chunk in 1..numChunks {
-          const (startIx, endIx) =
-            _computeChunkStartEnd(numElems, numChunks, chunk);
-          for i in startIx..endIx {
+        coforall chunk in chunks(1..numElems, numChunks) {
+          for i in chunk do
             yield indices(i);
-          }
         }
       }
     }
@@ -92,8 +89,8 @@ module DefaultSparse {
         // ... except if 1, just use the current thread
         yield (this, 1, numElems);
       else
-        coforall chunk in 1..numChunks do
-          yield (this, (..._computeChunkStartEnd(numElems, numChunks, chunk)));
+        coforall chunk in chunks(1..numElems, numChunks) do
+          yield (this, chunk.first, chunk.last);
     }
 
     iter these(param tag: iterKind, followThis:(?,?,?)) where tag == iterKind.follower {
@@ -116,6 +113,7 @@ module DefaultSparse {
 
     // private
     proc find(ind) {
+      use Search;
       //
       // sjd: unfortunate specialization for rank == 1
       //
@@ -237,11 +235,11 @@ module DefaultSparse {
       }
     }
 
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), isSorted=false, 
+    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), dataSorted=false,
         isUnique=false){
 
       const (actualInsertPts, actualAddCnt) =
-        __getActualInsertPts(this, inds, isSorted, isUnique);
+        __getActualInsertPts(this, inds, dataSorted, isUnique);
 
       const oldnnz = nnz;
       nnz += actualAddCnt;
@@ -417,12 +415,9 @@ module DefaultSparse {
           yield data[i];
         }
       } else {
-        coforall chunk in 1..numChunks {
-          const (startIx, endIx) =
-            _computeChunkStartEnd(numElems, numChunks, chunk);
-          for i in startIx..endIx {
+        coforall chunk in chunks(1..numElems, numChunks) {
+          for i in chunk do
             yield data[i];
-          }
         }
       }
     }

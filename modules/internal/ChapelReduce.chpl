@@ -66,12 +66,21 @@ module ChapelReduce {
   
   pragma "ReduceScanOp"
   class ReduceScanOp {
-    var lock$: sync bool;
+    var l: atomicbool; // only accessed locally
+
     proc lock() {
-      lock$.writeEF(true);
+      var lockAttempts = 0,
+          maxLockAttempts = (2**10-1);
+      while l.testAndSet() {
+        lockAttempts += 1;
+        if (lockAttempts & maxLockAttempts) == 0 {
+          maxLockAttempts >>= 1;
+          chpl_task_yield();
+        }
+      }
     }
     proc unlock() {
-      lock$.readFE();
+      l.clear();
     }
   }
   
@@ -86,6 +95,9 @@ module ChapelReduce {
     }
     proc accumulate(x) {
       value += x;
+    }
+    proc accumulateOntoState(ref state, x) {
+      state += x;
     }
     proc combine(x) {
       value += x.value;
@@ -102,6 +114,9 @@ module ChapelReduce {
     proc accumulate(x) {
       value *= x;
     }
+    proc accumulateOntoState(ref state, x) {
+      state *= x;
+    }
     proc combine(x) {
       value *= x.value;
     }
@@ -116,6 +131,9 @@ module ChapelReduce {
     proc identity return min(eltType);
     proc accumulate(x) {
       value = max(x, value);
+    }
+    proc accumulateOntoState(ref state, x) {
+      state = max(state, x);
     }
     proc combine(x) {
       value = max(value, x.value);
@@ -132,6 +150,9 @@ module ChapelReduce {
     proc accumulate(x) {
       value = min(x, value);
     }
+    proc accumulateOntoState(ref state, x) {
+      state = min(state, x);
+    }
     proc combine(x) {
       value = min(value, x.value);
     }
@@ -146,6 +167,9 @@ module ChapelReduce {
     proc identity return _land_id(eltType);
     proc accumulate(x) {
       value &&= x;
+    }
+    proc accumulateOntoState(ref state, x) {
+      state &&= x;
     }
     proc combine(x) {
       value &&= x.value;
@@ -162,6 +186,9 @@ module ChapelReduce {
     proc accumulate(x) {
       value ||= x;
     }
+    proc accumulateOntoState(ref state, x) {
+      state ||= x;
+    }
     proc combine(x) {
       value ||= x.value;
     }
@@ -176,6 +203,9 @@ module ChapelReduce {
     proc identity return _band_id(eltType);
     proc accumulate(x) {
       value &= x;
+    }
+    proc accumulateOntoState(ref state, x) {
+      state &= x;
     }
     proc combine(x) {
       value &= x.value;
@@ -192,6 +222,9 @@ module ChapelReduce {
     proc accumulate(x) {
       value |= x;
     }
+    proc accumulateOntoState(ref state, x) {
+      state |= x;
+    }
     proc combine(x) {
       value |= x.value;
     }
@@ -206,6 +239,9 @@ module ChapelReduce {
     proc identity return _bxor_id(eltType);
     proc accumulate(x) {
       value ^= x;
+    }
+    proc accumulateOntoState(ref state, x) {
+      state ^= x;
     }
     proc combine(x) {
       value ^= x.value;

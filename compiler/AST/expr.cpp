@@ -141,6 +141,8 @@ const char* DefExpr::name() const {
   return retval;
 }
 
+// TODO: Fix up PRIM_ADDR_OF's return type function to correctly
+// handle this
 static
 bool isAddrOfWideRefVar(Expr* e)
 {
@@ -161,7 +163,7 @@ bool Expr::isRef() {
   if (isAddrOfWideRefVar(this))
     return false; // wide ref, not ref
 
-  return this->typeInfo()->symbol->hasFlag(FLAG_REF);
+  return this->qualType().isRef();
 }
 
 bool Expr::isWideRef() {
@@ -171,7 +173,7 @@ bool Expr::isWideRef() {
   if (isAddrOfWideRefVar(this))
     return true;
 
-  return this->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF);
+  return this->qualType().isWideRef();
 }
 
 bool Expr::isRefOrWideRef() {
@@ -4280,7 +4282,6 @@ GenRet CallExpr::codegen() {
 
     for_formals_actuals(formal, actual, this) {
       SymExpr* se         = toSymExpr(actual);
-      Type*    actualType = actual->typeInfo();
       GenRet   arg        = actual;
 
       if (se && isFnSymbol(se->var)) {
@@ -4298,7 +4299,7 @@ GenRet CallExpr::codegen() {
       // Handle passing strings to externs
       //should this be else if?
       if (fn->hasFlag(FLAG_EXTERN)) {
-        if (actualType->symbol->hasFlag(FLAG_WIDE_REF) == true ||
+        if (actual->isWideRef() == true ||
             arg.isLVPtr                                == GEN_WIDE_PTR) {
           arg = codegenRaddr(codegenValue(arg));
 
@@ -4501,7 +4502,7 @@ GenRet CallExpr::codegenPrimitive() {
     break;
 
   case PRIM_WIDE_GET_LOCALE: {
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+    if (get(1)->isWideRef() ||
         get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       ret = codegenRlocale(get(1));
     } else {
@@ -4512,7 +4513,7 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_WIDE_GET_NODE: {
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+    if (get(1)->isWideRef() ||
         get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       ret = codegenRnode(get(1));
     } else {
@@ -4523,7 +4524,7 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_WIDE_GET_ADDR: {
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+    if (get(1)->isWideRef() ||
         get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       ret = codegenRaddr(get(1));
     } else {
@@ -4540,9 +4541,6 @@ GenRet CallExpr::codegenPrimitive() {
     // Special handling for reference variables
     // These variables have value type so PRIM_ADDR_OF
     // should just return the reference.
-    //if (get(1)->isRef() && !get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-    //  ret = codegenValue(get(1));
-    //} else
       if (get(1)->isRefOrWideRef()) {
         ret = codegenValue(get(1));
       } else {
@@ -4552,7 +4550,7 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_REF_TO_STRING: {
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+    if (get(1)->isWideRef() ||
         get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       GenRet wide = get(1);
 
@@ -5223,7 +5221,7 @@ GenRet CallExpr::codegenPrimitive() {
     GenRet localAddr = codegenValuePtr(get(1));
 
     // destination data array
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+    if (get(1)->isWideRef()) {
       Symbol* sym = get(1)->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
@@ -5245,7 +5243,7 @@ GenRet CallExpr::codegenPrimitive() {
 
     GenRet locale;
 
-    if (get(2)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF)) {
+    if (get(2)->isRefOrWideRef()) {
       locale = codegenValue(codegenDeref(get(2)));
     } else {
       locale = codegenValue(get(2));
@@ -5256,20 +5254,20 @@ GenRet CallExpr::codegenPrimitive() {
     TypeSymbol *t = get(3)->typeInfo()->symbol;
 
 
-    if        (t->hasFlag(FLAG_WIDE_REF)   == true)  {
+    if        (get(3)->isWideRef()   == true)  {
       remoteAddr = codegenRaddr(remoteAddr);
 
     } else if (t->hasFlag(FLAG_DATA_CLASS) == true)  {
       remoteAddr = codegenValue(remoteAddr);
 
-    } else if (t->hasFlag(FLAG_REF)        == false) {
+    } else if (get(3)->isRef()        == false) {
       remoteAddr = codegenAddrOf(remoteAddr);
     }
 
     GenRet len;
     GenRet size;
 
-    if (get(4)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_REF)) {
+    if (get(4)->isRefOrWideRef()) {
       len = codegenValue(codegenDeref(get(4)));
     } else {
       len = codegenValue(get(4));
@@ -5328,7 +5326,7 @@ GenRet CallExpr::codegenPrimitive() {
     // Get the locale
     GenRet locale;
 
-    if (get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_REF)) {
+    if (get(1)->isRefOrWideRef()) {
       locale = codegenValue(codegenDeref(get(1)));
     } else {
       locale = codegenValue(get(1));
@@ -5340,16 +5338,16 @@ GenRet CallExpr::codegenPrimitive() {
 
     INT_ASSERT(sym);
 
-    if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+    if (sym->isWideRef()) {
       remoteAddr = codegenRaddr(remoteAddr);
 
-    } else if (sym->typeInfo()->symbol->hasFlag(FLAG_REF) == false) {
+    } else if (sym->isRef() == false) {
       remoteAddr = codegenAddrOf(remoteAddr);
     }
 
     GenRet len;
 
-    if (get(3)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_REF)) {
+    if (get(3)->isRefOrWideRef()) {
       len = codegenValue(codegenDeref(get(3)));
     } else {
       len = codegenValue(get(3));
@@ -5383,7 +5381,7 @@ GenRet CallExpr::codegenPrimitive() {
     GenRet localAddr = codegenValuePtr(get(1));
 
     // destination data array
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+    if (get(1)->isWideRef()) {
       Symbol* sym = get(1)->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
@@ -5400,7 +5398,7 @@ GenRet CallExpr::codegenPrimitive() {
     // destination strides local array
     GenRet dststr = codegenValuePtr(get(2));
 
-    if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+    if (get(2)->isWideRef()) {
       Symbol* sym = get(2)->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
@@ -5421,18 +5419,17 @@ GenRet CallExpr::codegenPrimitive() {
 
     // source data array
     GenRet   remoteAddr = get(4);
-    TypeSymbol* remoteAddrType = get(4)->typeInfo()->symbol;
 
-    if (remoteAddrType->hasFlag(FLAG_WIDE_REF) == true) {
+    if (get(4)->isWideRef() == true) {
       remoteAddr = codegenRaddr(remoteAddr);
-    } else if (remoteAddrType->hasFlag(FLAG_REF) == false) {
+    } else if (get(4)->isRef() == false) {
       remoteAddr = codegenAddrOf(remoteAddr);
     }
 
     // source strides local array
     GenRet srcstr = codegenValuePtr(get(5));
 
-    if (get(5)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+    if (get(5)->isWideRef()) {
       Symbol* sym = get(5)->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
@@ -5447,7 +5444,7 @@ GenRet CallExpr::codegenPrimitive() {
     // count local array
     GenRet count = codegenValuePtr(get(6));
 
-    if (get(6)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+    if (get(6)->isWideRef()) {
       Symbol* sym = get(6)->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
@@ -5460,7 +5457,7 @@ GenRet CallExpr::codegenPrimitive() {
     // stridelevels
     GenRet stridelevels;
 
-    if (get(7)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_REF)) {
+    if (get(7)->isRefOrWideRef()) {
       stridelevels = codegenValue(codegenDeref(get(7)));
     } else {
       stridelevels = codegenValue(get(7));
@@ -5491,7 +5488,7 @@ GenRet CallExpr::codegenPrimitive() {
 
       // If wide, get the value type.
     if (type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-        type->symbol->hasFlag(FLAG_WIDE_REF))
+        get(1)->isWideRef())
       type = toAggregateType(type)->getField("addr", true)->typeInfo();
 
 
@@ -5509,7 +5506,7 @@ GenRet CallExpr::codegenPrimitive() {
 
   case PRIM_CAST: {
     if (typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-        typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+        this->isWideRef()) {
 
       GenRet tmp = get(2);
 
@@ -5928,9 +5925,9 @@ GenRet CallExpr::codegenPrimMove() {
              get(2)->isRef() == true) {
     codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
 
-  } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)   == true  &&
-             get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)   == false &&
-             get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)        == false) {
+  } else if (get(1)->isWideRef() == true  &&
+             get(2)->isWideRef() == false &&
+             get(2)->isRef()     == false) {
 //  } else if (get(1)->isWideRef()   == true  &&
 //             get(2)->isWideRef()   == false &&
 //             get(2)->isRef()       == false) {
@@ -5991,7 +5988,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_GET_IMAG: {
       bool isReal = call->primitive->tag == PRIM_GET_REAL;
 
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      if (call->get(1)->isWideRef()) {
         // move(wide_real, prim_get_real(wide_complex));
         // turns into: wide_real.locale = wide_complex.locale;
         //             wide_real.addr = prim_get_real(wide_complex.addr);
@@ -6023,11 +6020,12 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
     case PRIM_DEREF: {
       // TODO: What if get(1) for this first branch is not a ref?
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+      if (call->get(1)->isWideRef() ||
           (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) && !call->get(1)->isRef())) {
         Type* valueType;
 
-        if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
+        // TODO: It seems odd to use a PRIM_DEREF on a wide class, why do we?
+        if (call->get(1)->isWideRef())
           valueType = call->get(1)->getValType();
         else
           valueType = call->get(1)->typeInfo()->getField("addr")->type;
@@ -6068,7 +6066,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
           ret = codegenFieldPtr(call->get(1), se);
         }
 
-      } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      } else if (call->get(1)->isWideRef()) {
         ret = codegenFieldPtr(call->get(1), se);
 
       } else if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
@@ -6098,7 +6096,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       SymExpr* se = toSymExpr(call->get(2));
 
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)   ||
+          call->get(1)->isWideRef()   ||
           call->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
 
         ret = codegenAddrOf(codegenFieldPtr(call->get(1), se));
@@ -6119,7 +6117,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_GET_SVEC_MEMBER: {
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      if (call->get(1)->isWideRef()) {
         /* Get a pointer to the i'th element of a homogeneous tuple */
         GenRet elemPtr = codegenElementPtr(call->get(1),
                                            codegenExprMinusOne(call->get(2)));
@@ -6166,8 +6164,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         ret = ref;
 
-      } else if (target && target->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,
-                                                           FLAG_WIDE_CLASS)) {
+      } else if (target && (target->qualType().isWideRef() || target->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
         // resulting reference is wide, but the array is local.
         // This can happen with c_ptr for extern integration...
         ret =  codegenAddrOf(codegenWideHere(ref));
@@ -6188,7 +6185,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_GET_UNION_ID: {
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      if (call->get(1)->isWideRef()) {
         ret = codegenFieldUidPtr(call->get(1));
         retval = true;
       }
@@ -6223,7 +6220,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
     case PRIM_CAST: {
       if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          call->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+          call->isWideRef()) {
         GenRet tmp = call->get(2);
         // TODO:  Should we check if we're casting to a ref?
         if (call->get(2)->isRef()) {
@@ -6341,7 +6338,7 @@ void CallExpr::codegenInvokeTaskFun(const char* name) {
   // get(3) is a buffer containing bundled arguments
   // get(4) is the buffer's length (unused for task fns)
   // get(5) is a dummy class type for the argument bundle
-  if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+  if (get(1)->isWideRef()) {
     taskList = codegenRaddr(taskList);
   }
 
@@ -6369,7 +6366,7 @@ GenRet CallExpr::codegenBasicPrimitiveExpr() const {
     Symbol* type = actual->typeInfo()->symbol;
 
     // Make wide pointers/classes local
-    if (type->hasFlag(FLAG_WIDE_CLASS) || type->hasFlag(FLAG_WIDE_REF))
+    if (type->hasFlag(FLAG_WIDE_CLASS) || actual->isWideRef())
       gen = codegenRaddr(gen);
 
     // Dereference reference or now-local wide reference

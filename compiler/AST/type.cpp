@@ -690,6 +690,10 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
 
   if (def->parentSymbol || def->list)
     def->remove();
+
+  // Lydia note (Sept 2, 2016): Based on control flow, this adds even the
+  // function symbols we just handled into the fields alist for the type.
+  // Shouldn't placing them in ct->methods be sufficient?
   if (tail)
     ct->fields.insertAtTail(def);
   else

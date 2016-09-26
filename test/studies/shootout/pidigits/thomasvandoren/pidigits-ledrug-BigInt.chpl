@@ -6,7 +6,7 @@
    derived from the GNU C version by Bonzini, Bartlett, and Mellor
 */
 
-use GMP;
+use BigInteger;
 
 // Compute n digits of Pi, 10 000 by default to match benchmark expectation.
 config const n = 10000;
@@ -16,26 +16,32 @@ proc main() {
 
   for (digit, i) in zip(genDigits(n), 1..) {
     write(digit);
+
     if i % digitsPerLine == 0 then
       writeln("\t:", i);
   }
 
   const leftover = n%digitsPerLine;
+
   if (leftover) {
     for leftover..digitsPerLine do
       write(" ");
+
     writeln("\t:", n);
   }
 }
 
 iter genDigits(numDigits) {
-  var numer = new BigInt(1),
-    accum = new BigInt(0),
-    denom = new BigInt(1),
-    tmp1 = new BigInt(),
-    tmp2 = new BigInt();
+  var numer = new bigint(1);
+  var denom = new bigint(1);
 
-  var digit, k: uint(64);
+  var accum = new bigint(0);
+
+  var tmp1  = new bigint();
+  var tmp2  = new bigint();
+
+  var digit: uint(64);
+  var k:     uint(64);
 
   for i in 1..numDigits {
     do {
@@ -44,10 +50,10 @@ iter genDigits(numDigits) {
         const y2 = 2 * k + 1;
 
         // Compute the next term.
-        accum.addmul_ui(numer, 2);
-        accum.mul_ui(accum, y2);
-        denom.mul_ui(denom, y2);
-        numer.mul_ui(numer, k);
+        accum.addmul(numer, 2);
+        accum.mul(accum, y2);
+        denom.mul(denom, y2);
+        numer.mul(numer, k);
 
         // Continue looping until the digit is ready.
       } while numer.cmp(accum) > 0; // numer > accum
@@ -59,24 +65,17 @@ iter genDigits(numDigits) {
     yield digit;
 
     // Eliminate digit.
-    accum.submul_ui(denom, digit);
-    accum.mul_ui(accum, 10);
-    numer.mul_ui(numer, 10);
+    accum.submul(denom, digit);
+    accum.mul(accum, 10);
+    numer.mul(numer, 10);
   }
 
   // Helper function to extract the nth digit.
   proc extractDigit(nth: uint) {
-    tmp1.mul_ui(numer, nth);
+    tmp1.mul(numer, nth);
     tmp2.add(tmp1, accum);
-    tmp1.div_q(Round.ZERO, tmp2, denom);
+    tmp1.div_q(tmp2, denom);
 
-    return tmp1.get_ui();
+    return tmp1 : uint;
   }
-
-  // Free the memory associated with these.
-  delete numer;
-  delete accum;
-  delete denom;
-  delete tmp1;
-  delete tmp2;
 }

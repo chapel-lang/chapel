@@ -1,9 +1,10 @@
+// chpldoc
+
 /*
-  chpldoc Primer
- 
+
   This primer covers the use of chpldoc to document source code. For further
   information, please see $CHPL_HOME/doc/technotes/chpldoc.rst
- 
+
 */
 
 
@@ -13,7 +14,7 @@
 // compile using the command 'chpldoc <sourceName.chpl>' or using the command
 // 'chpl --docs <sourceName.chpl>'.
 
-// The documentation files will be found in a special folder created by the 
+// The documentation files will be found in a special folder created by the
 // chpldoc tool.  If you are compiling a Chapel file that is deeper than your
 // current directory, this hierarchy will be reflected within the documentation
 // folder.
@@ -38,10 +39,10 @@ proc commented(val: int): string {
   The function can be a stub and still output its comment
 */
 proc stub(val): bool {
-  /* Comments within the function body are ignored */
+  /* Comments within the function body are ignored  */
 }
 
-// Single line comments are also ignored.  However, this does not prevent 
+// Single line comments are also ignored.  However, this does not prevent
 // the display of the function itself.
 proc uncommented() {
   /*
@@ -81,16 +82,16 @@ module Defined {
 
   /*
     And classes can display their comments, too
-  */
+   */
   class Foo {
     /*
       Including the comments associated with their fields
-    */
+     */
     var a: int;
 
     /*
       And class specific methods
-    */
+     */
     proc getA(): int {
       return a;
     }
@@ -99,11 +100,11 @@ module Defined {
   /*
     If a class inherits from another class, the inheritance is shown
     in the signature.
-  */
+   */
   class Bar : Foo {
 
     proc setA(newVal: int) {
       a = newVal;
-    }   
+    }
   }
 }

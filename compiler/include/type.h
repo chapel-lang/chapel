@@ -178,10 +178,12 @@ public:
   }
   bool isRef() const {
     return (_qual == QUAL_REF || _qual == QUAL_CONST_REF ||
-            _qual == QUAL_NARROW_REF || _qual == QUAL_CONST_NARROW_REF);
+            _qual == QUAL_NARROW_REF || _qual == QUAL_CONST_NARROW_REF ||
+            isRefType());
   }
   bool isWideRef() const {
-    return (_qual == QUAL_WIDE_REF || _qual == QUAL_CONST_WIDE_REF);
+    return (_qual == QUAL_WIDE_REF || _qual == QUAL_CONST_WIDE_REF ||
+            isWideRefType());
   }
   bool isRefOrWideRef() const {
     return isRef() || isWideRef();

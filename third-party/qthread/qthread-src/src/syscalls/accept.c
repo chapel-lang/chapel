@@ -49,7 +49,7 @@ int accept(int                       socket,
            struct sockaddr *restrict address,
            socklen_t *restrict       address_len)
 {
-    if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+    if (qt_blockable()) {
         return qt_accept(socket, address, address_len);
     } else {
         return syscall(SYS_accept, socket, address, address_len);

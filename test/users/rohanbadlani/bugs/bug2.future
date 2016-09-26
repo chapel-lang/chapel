@@ -1,4 +1,4 @@
-bug: The List Module does not support accessing elements of a list based on index. I feel that this should be supported.
+feature request: The List Module does not support accessing elements of a list based on index. I feel that this should be supported.
 
 Explainations:
 

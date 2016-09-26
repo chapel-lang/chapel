@@ -29,6 +29,7 @@ int usleep(useconds_t useconds)
             qthread_yield();
             qtimer_stop(t);
         } while (qtimer_secs(t) < seconds);
+        qtimer_destroy(t);
         return 0;
     } else {
 #if HAVE_SYSCALL

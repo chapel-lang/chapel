@@ -883,7 +883,9 @@ module ChapelArray {
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
-    // the locale grid
+    /*
+       Returns an array of locales over which this distribution was declared.
+    */
     proc targetLocales() {
       return _value.dsiTargetLocales();
     }
@@ -1129,20 +1131,20 @@ module ChapelArray {
       return _value.dsiAdd(i);
     }
 
-    proc bulkAdd(inds: [] _value.idxType, isSorted=false,
+    proc bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
 
       if inds.size == 0 then return 0;
 
-      return _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
     }
 
-    proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
+    proc bulkAdd(inds: [] _value.rank*_value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
 
       if inds.size == 0 then return 0;
 
-      return _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
     }
 
     /* Remove index ``i`` from this domain */
@@ -1571,7 +1573,9 @@ module ChapelArray {
       }
     }
 
-    // the locale grid
+    /*
+       Returns an array of locales over which this domain has been distributed.
+    */
     proc targetLocales() {
       return _value.dsiTargetLocales();
     }
@@ -1868,6 +1872,7 @@ module ChapelArray {
     // When 'this' is 'const', so is the returned l-value.
     pragma "no doc" // ref version
     pragma "reference to const when const this"
+    pragma "removable array access"
     inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
@@ -1897,6 +1902,7 @@ module ChapelArray {
 
     pragma "no doc" // ref version
     pragma "reference to const when const this"
+    pragma "removable array access"
     inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
 
@@ -1982,7 +1988,7 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
 
-    // array slicing by ranges
+    // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
     proc this(ranges: range(?) ...rank) {
@@ -2212,7 +2218,9 @@ module ChapelArray {
     pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
-    // the locale grid
+    /*
+       Returns an array of locales over which this array has been distributed.
+    */
     proc targetLocales() {
       return _value.dsiTargetLocales();
     }
@@ -3387,11 +3395,11 @@ module ChapelArray {
       a <=> b;
   }
 
-  /* Returns a copy of the array containing the same values but
-     in the shape of the new domain. The number of indices in the
+  /* Returns a copy of the array ``A`` containing the same values but
+     in the shape of the domain ``D``. The number of indices in the
      domain must equal the number of elements in the array. The
-     elements of the array are copied into the new array using the
-     default iteration orders over both arrays.  */
+     elements of ``A`` are copied into the new array using the
+     default iteration orders over ``D`` and ``A``.  */
   proc reshape(A: [], D: domain) {
     if !isRectangularDom(D) then
       compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);

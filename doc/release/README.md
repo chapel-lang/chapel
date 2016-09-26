@@ -57,7 +57,7 @@ Online Documentation
 You can navigate to the root of the documentation for this release using
 the URL:
 
-[chapel.cray.com/docs/1.13](http://chapel.cray.com/docs/1.13/)
+[chapel.cray.com/docs/1.14](http://chapel.cray.com/docs/1.14/)
 
 
 For More Information

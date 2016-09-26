@@ -1,0 +1,2 @@
+noReturnInInit.chpl:84: error: 'return' not permitted from 'init' routines
+noReturnInInit.chpl:86: error: 'return' not permitted from 'init' routines

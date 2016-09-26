@@ -1290,7 +1290,8 @@ via the ``str_style`` field in :record:`iostyle`.
   most-significant. This way of encoding a variable-byte length  matches
   `Google Protocol Buffers <https://github.com/google/protobuf/>`_.
 * ``iostringstyle.data_toeof`` indicates a string format that contains
-  string data until the end of the file
+  only the string data without any length or terminator. When reading,
+  this format will read a string until the end of the file is reached.
 * ``iostringstyle.data_null`` indicates a string that is terminated
   by a zero byte. It can be combined with other numeric
   values to indicate a string terminated by a particular byte. For example,
@@ -1309,6 +1310,35 @@ enum iostringstyle {
   data_toeof = -0xff00,
   data_null = -0x0100,
 }
+
+/*
+
+This enum contains values used to control text I/O with strings
+via the ``string_format`` field in :record:`iostyle`.
+
+  * ``iostringformat.word`` means string is as-is;
+    reading reads until whitespace. This is the default.
+  * ``iostringformat.basic`` means only escape *string_end* and ``\``
+    with ``\``
+  * ``iostringformat.chpl`` means  escape *string_end*
+    ``\`` ``'`` ``"`` ``\n`` with ``\`` and
+    nonprinting characters ``c = 0xXY`` with ``\xXY``
+  * ``iostringformat.json`` means  escape *string_end* ``"`` and ``\``
+    with ``\``, and nonprinting characters ``c = \uABCD``
+  * ``iostringformat.toend`` means string is as-is; reading reads until
+    *string_end*
+  * ``iostringformat.toeof`` means string is as-is; reading reads until
+    end of file
+*/
+enum iostringformat {
+  word = 0,
+  basic = 1,
+  chpl = 2,
+  json = 3,
+  toend = 4,
+  toeof = 5,
+}
+
 
 /*
 
@@ -1504,7 +1534,7 @@ extern record iostyle { // aka qio_style_t
      in binary mode? See :type:`iostringstyle` for more information
      on what the values of ``str_style`` mean.
    */
-  var str_style:int(64) = -10;
+  var str_style:int(64) = iostringstyle.data_toeof;
 
   // text style choices
   /* When performing text I/O, pad out to this many columns */
@@ -1516,50 +1546,68 @@ extern record iostyle { // aka qio_style_t
   /* When performing text I/O, do not use more than this many bytes */
   var max_width_bytes:uint(32) = max(uint(32));
 
-  /* What character do we start strings with, when appropriate? */
+  /* What character do we start strings with, when appropriate? Default is " */
   var string_start:style_char_t = 0x22; // "
-  /* What character do we end strings with, when appropriate? */
+  /* What character do we end strings with, when appropriate? Default is " */
   var string_end:style_char_t = 0x22; // "
 
   /* How should we format strings when performing text I/O?
-
-      * ``QIO_STRING_FORMAT_WORD`` means string is as-is;
-        reading reads until whitespace.
-      * ``QIO_STRING_FORMAT_BASIC`` means only escape *string_end* and ``\``
-        with ``\``
-      * ``QIO_STRING_FORMAT_CHPL`` means  escape *string_end*
-        ``\`` ``'`` ``"`` ``\n`` with ``\`` and
-        nonprinting characters ``c = 0xXY`` with ``\xXY``
-      * ``QIO_STRING_FORMAT_JSON`` means  escape *string_end* ``"`` and ``\``
-        with ``\``, and nonprinting characters ``c = \uABCD``
-      * ``QIO_STRING_FORMAT_TOEND`` means string is as-is; reading reads until
-        *string_end*
-      * ``QIO_STRING_FORMAT_TOEOF`` means string is as-is; reading reads until
-        end of file
+     See :type:`iostringstyle` for more information
+     on what the values of ``str_style`` mean.
    */
-  var string_format:uint(8) = 0;
+  var string_format:uint(8) = iostringformat.word:uint(8);
   // numeric scanning/printing choices
+  /* When reading or writing a numeric value in a text mode channel,
+     what base should be used for the number? Default of 0 means decimal.
+     Bases 2, 8, 10, 16 are supported for integers. Bases 10 and 16
+     are supported for real values.*/
   var base:uint(8) = 0;
+  /* When reading or writing a numeric value in a text mode channel,
+     how is the integer portion separated from the fractional portion?
+     Default is '.' */
   var point_char:style_char_t = 0x2e; // .
+  /* When reading or writing a numeric value in a text mode channel,
+     how is the exponent written? Default is 'e' */
   var exponent_char:style_char_t = 0x65; // e
+  /* When reading or writing a numeric value in a text mode channel,
+     when base is > 10, how is the exponent written? Default is 'e' */
   var other_exponent_char:style_char_t = 0x70; // p
+  /* What character denotes a positive number? Default is '+' */
   var positive_char:style_char_t = 0x2b; // +;
+  /* What character denotes a negative number? Default is '-' */
   var negative_char:style_char_t = 0x2d; // -;
+  /* What character follows an the imaginary number? Default is 'i' */
   var i_char:style_char_t = 0x69; // i
+  /* When writing in a base other than 10, should the prefix be used?
+     (e.g. hexadecimal numbers are prefixed with 0x) */
   var prefix_base:uint(8) = 1;
   // numeric printing choices
+  /* When padding with spaces, which pad character to use? Default is ' ' */
   var pad_char:style_char_t = 0x20; // ' '
+  /* When printing a positive numeric value, should the + be shown? */
   var showplus:uint(8) = 0;
+  /* When printing a numeric value in hexadecimal, should it be
+     uppercase? */
   var uppercase:uint(8) = 0;
+  /* When printing a numeric value in a field of specified width, should
+     the number be on the left (that is padded on the right?). The default
+     is to right-justify the number. */
   var leftjustify:uint(8) = 0;
+  /* When printing an integral value using a real format, should a trailing
+     decimal point be included? If so, the value 0 will be written as '0.' */
   var showpoint:uint(8) = 0;
+  /* When printing an integral value using a real format, should a trailing
+     decimal point and zero be included? If so, the value 0 will be written
+     as '0.0' */
   var showpointzero:uint(8) = 1;
+  /* Specifies the precision for real format conversions. See the description
+     of realfmt below. */
   var precision:int(32) = -1;
 
   /*
      Formatting of real numbers:
 
-       * 0 means  print out 'significant_digits' number of significant digits
+       * 0 means  print out 'precision' number of significant digits
          (%g in printf)
        * 1 means  print out 'precision' number of digits after the decimal point
          (%f)

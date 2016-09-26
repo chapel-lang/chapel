@@ -9,6 +9,11 @@ arrangement is to pin each worker thread to a PU (the lowest level
 computational processing unit), and to group them (for the Sherwood scheduler)
 by the top-level cache.
 
+Binders is a low level affinity layer for precise control over where workers and
+shepherds are allocated. It is implemented as a colon-seperated list of
+cpustrings, where each cpustring is a shepherd. It is controlled by the
+environment variable QT_CPUBIND. See src/affinity/README.binders for more details.
+
 Failing that, other APIs are also supported, but since they provide less
 information, they're used primarily for querying the number of cores and
 pinning worker threads to them in a round-robin fashion (libnuma also supports

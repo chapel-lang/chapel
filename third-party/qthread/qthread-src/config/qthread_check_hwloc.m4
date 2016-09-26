@@ -9,13 +9,12 @@ AC_DEFUN([QTHREAD_CHECK_HWLOC], [
   qt_allgoodsofar=yes
   AC_ARG_WITH([hwloc],
               [AS_HELP_STRING([--with-hwloc=[[PATH]]],
-			                  [specify the path to the hwloc library; used for both the library and the include files])],
-			  [qthread_topo=hwloc])
+			                  [specify the path to the hwloc library; used for both the library and the include files])])
   hwloc_saved_CPPFLAGS="$CPPFLAGS"
   hwloc_saved_LDFLAGS="$LDFLAGS"
   AS_IF([test "x$with_hwloc" != x],
         [CPPFLAGS="-I$with_hwloc/include $CPPFLAGS"
-		 LDFLAGS="-L$with_hwloc/lib $CPPFLAGS"])
+		 LDFLAGS="-L$with_hwloc/lib $LDFLAGS"])
   AC_CHECK_HEADERS([hwloc.h],[],
   				   [qt_allgoodsofar=no])
   AS_IF([test "x$qt_allgoodsofar" = xyes],

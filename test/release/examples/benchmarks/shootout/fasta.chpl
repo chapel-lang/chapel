@@ -85,13 +85,13 @@ proc sumProbs(alphabet: []) {
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = ascii("\n"): int(8);
+param newline = ascii("\n");
 
 //
 // Repeat sequence "alu" for n characters
 //
 proc repeatMake(desc, alu, n) {
-  stdout.writef("%s", desc);
+  stdout.write(desc);
 
   const r = alu.size,
         s = [i in 0..(r+lineLength)] alu[i % r];
@@ -109,7 +109,7 @@ proc repeatMake(desc, alu, n) {
 proc randomMake(desc, a, n) {
   var line_buff: [0..lineLength] int(8);
     
-  stdout.writef("%s", desc);
+  stdout.write(desc);
   for i in 1..n by lineLength do
     addLine(min(lineLength, n-i+1));
 
@@ -133,7 +133,7 @@ proc randomMake(desc, a, n) {
         line_buff[i] = a[hi](nucl);
       }
     }
-    line_buff[bytes] = newline;
+    line_buff[bytes] = newline:int(8);
 
     stdout.write(line_buff[0..bytes]);
   }

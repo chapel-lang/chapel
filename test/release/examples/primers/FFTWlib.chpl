@@ -1,4 +1,6 @@
-/* 
+// FFTW
+
+/*
   Example usage of the FFTW module in Chapel. This particular file
   demonstrates the single-threaded version of the code.  In order to
   switch to a multi-threaded version of the code, substitute FFTW_MT
@@ -69,7 +71,7 @@ proc testAllDims() {
 // data.
 //
 proc runtest(param ndim : int, fn : string) {
-  var dims : ndim*int(32); 
+  var dims : ndim*int(32);
 
   /* We define a number of different domains below, corresponding to
      complex input/output arrays, real (input)->complex (output)
@@ -77,25 +79,25 @@ proc runtest(param ndim : int, fn : string) {
 
      The domains are as follows:
 
-     * D : for complex<->complex transforms. This domain is also
-           used for the real array in a real->complex out-of-place
-           transform.
+        * D : for complex<->complex transforms. This domain is also
+             used for the real array in a real->complex out-of-place
+             transform.
 
-     * cD : for the complex array in a real<->complex out-of-place
-            transform.
+        * cD : for the complex array in a real<->complex out-of-place
+              transform.
 
-     * rD : for the real array in a real<->complex in-place
-            transform. This includes the padding needed by the
-            in-place transform. D is a sub-domain of this, and can be
-            used to extract the real array, without padding.
+        * rD : for the real array in a real<->complex in-place
+              transform. This includes the padding needed by the
+              in-place transform. D is a sub-domain of this, and can be
+              used to extract the real array, without padding.
 
-     * reD, imD : Utility domains that access the real/complex parts
-                  of the complex array in a real<->complex in-place
-                  transform.
-  */
+        * reD, imD : Utility domains that access the real/complex parts
+                    of the complex array in a real<->complex in-place
+                    transform.
+   */
   var D : domain(ndim);
-  var rD,cD,reD,imD : domain(ndim,int,true); 
-  
+  var rD,cD,reD,imD : domain(ndim,int,true);
+
 
   /* Read in the arrays from the file below. 'A' and 'B' are the
      arrays that will be used in the FFTW calls, while 'goodA' and
@@ -116,12 +118,12 @@ proc runtest(param ndim : int, fn : string) {
                             real-imaginary pairs).
 
         The arrays are all stored in row-major order, as in C.
-  */
+   */
   var A,B,goodA,goodB : [D] complex(128);
   {
     var f = open(fn,iomode.r).reader(kind=iokind.little);
     //
-    // Read in dimensions 
+    // Read in dimensions
     //
     for ii in 1..ndim {
       f.read(dims(ii));
@@ -150,11 +152,11 @@ proc runtest(param ndim : int, fn : string) {
     writeln("Data read...");
   }
 
-  /* Now set the remaining domains. 
+  /* Now set the remaining domains.
 
      Refer to the FFTW documentation on the storage order for the
      in-place transforms (Sec 2.4 and 4.3.4).
-  */
+   */
   select ndim {
     when 1 {
       var ldim = dims(1)/2 + 1;
@@ -167,8 +169,8 @@ proc runtest(param ndim : int, fn : string) {
       // Define domains to extract the real and imaginary parts for
       // in-place transforms
       //
-      reD = rD[0..(2*ldim-1) by 2]; 
-      imD = rD[1..(2*ldim-1) by 2]; 
+      reD = rD[0..(2*ldim-1) by 2];
+      imD = rD[1..(2*ldim-1) by 2];
     }
     when 2 {
       //
@@ -181,8 +183,8 @@ proc runtest(param ndim : int, fn : string) {
       // Define domains to extract the real and imaginary parts for
       // in-place transforms
       //
-      reD = rD[..,0..(2*ldim-1) by 2]; 
-      imD = rD[..,1..(2*ldim-1) by 2]; 
+      reD = rD[..,0..(2*ldim-1) by 2];
+      imD = rD[..,1..(2*ldim-1) by 2];
     }
     when 3 {
       //
@@ -195,8 +197,8 @@ proc runtest(param ndim : int, fn : string) {
       // Define domains to extract the real and imaginary parts for
       // in-place transforms
       //
-      reD = rD[..,..,0..(2*ldim-1) by 2]; 
-      imD = rD[..,..,1..(2*ldim-1) by 2]; 
+      reD = rD[..,..,0..(2*ldim-1) by 2];
+      imD = rD[..,..,1..(2*ldim-1) by 2];
     }
   }
 
@@ -206,54 +208,54 @@ proc runtest(param ndim : int, fn : string) {
   var norm = * reduce dims;
 
   /* We start the FFT tests below. The structure is the same :
-      * Define plans for forward and reverse transforms.
-      * Execute forward transform A -> B. 
-      * Compare with goodB.
-      * Execute reverse transform B -> A and normalize.
-      * Compare with goodA.
-      * Cleanup plans
-  */
+        Define plans for forward and reverse transforms.
+        Execute forward transform A -> B.
+        Compare with goodB.
+        Execute reverse transform B -> A and normalize.
+        Compare with goodA.
+        Cleanup plans
+   */
 
   /* Complex<->complex out-of-place transform.
-     
+
      Unlike the basic FFTW interface, we do not have specific 1D/2D/3D
      planner routines.  For the complex <-> complex case, the
      dimensions of the array are inferred automatically.
-  */
-	var fwd = plan_dft(A, B, FFTW_FORWARD, FFTW_ESTIMATE);
-	var rev = plan_dft(B, A, FFTW_BACKWARD, FFTW_ESTIMATE);
-        //
-	// Test forward and reverse transform
-        //
-	A = goodA;
-	execute(fwd);
-	printcmp(B,goodB);
-	execute(rev);
-	A /= norm; 
-	printcmp(A,goodA);
-	destroy_plan(fwd);
-	destroy_plan(rev);
+   */
+  var fwd = plan_dft(A, B, FFTW_FORWARD, FFTW_ESTIMATE);
+  var rev = plan_dft(B, A, FFTW_BACKWARD, FFTW_ESTIMATE);
+  //
+  // Test forward and reverse transform
+  //
+  A = goodA;
+  execute(fwd);
+  printcmp(B,goodB);
+  execute(rev);
+  A /= norm;
+  printcmp(A,goodA);
+  destroy_plan(fwd);
+  destroy_plan(rev);
 
-  /* Complex <-> complex in-place transform. 
+  /* Complex <-> complex in-place transform.
 
      This is the same calling sequence as above, but using the
      in-place versions of the routine.
-  */
-	fwd = plan_dft(A, FFTW_FORWARD, FFTW_ESTIMATE);
-	rev = plan_dft(A, FFTW_BACKWARD, FFTW_ESTIMATE);
-        //
-	// Test forward and reverse transform
-        //
-	A = goodA;
-	execute(fwd);
-	printcmp(A,goodB);
-	execute(rev);
-	A /= norm; // FFTW does an unnormalized transform
-	printcmp(A,goodA);
-	destroy_plan(fwd);
-	destroy_plan(rev);
+   */
+  fwd = plan_dft(A, FFTW_FORWARD, FFTW_ESTIMATE);
+  rev = plan_dft(A, FFTW_BACKWARD, FFTW_ESTIMATE);
+  //
+  // Test forward and reverse transform
+  //
+  A = goodA;
+  execute(fwd);
+  printcmp(A,goodB);
+  execute(rev);
+  A /= norm; // FFTW does an unnormalized transform
+  printcmp(A,goodA);
+  destroy_plan(fwd);
+  destroy_plan(rev);
 
-  /* Real <-> complex out-of-place transform 
+  /* Real <-> complex out-of-place transform
 
      As with FFTW, these use 'r2c' and 'c2r' suffixes to define the
      direction of the transform.
@@ -261,7 +263,7 @@ proc runtest(param ndim : int, fn : string) {
      plan_dft_r2c/plan_dft_c2r are overloaded; for the out-of-place
      transforms, they infer the dimensions from the sizes of the
      arrays passed in.
-  */
+   */
   var rA : [D] real(64); // No padding for an out-of-place transform
   var cB : [cD] complex(128);
   fwd = plan_dft_r2c(rA,cB,FFTW_ESTIMATE);
@@ -275,7 +277,7 @@ proc runtest(param ndim : int, fn : string) {
   destroy_plan(fwd);
   destroy_plan(rev);
 
-  /* Real <-> complex in-place transform 
+  /* Real <-> complex in-place transform
 
      In this case, the first argument to the planning routines is the
      domain of the *real* array WITHOUT padding (in both r2c and c2r
@@ -288,7 +290,7 @@ proc runtest(param ndim : int, fn : string) {
      intrinsically useful).
 
      For both the r2c and c2r transforms, a real array is passed in.
-  */
+   */
   var rA2 : [rD] real(64);
   fwd = plan_dft_r2c(D,rA2,FFTW_ESTIMATE);
   rev = plan_dft_c2r(D,rA2,FFTW_ESTIMATE);
@@ -311,7 +313,7 @@ proc runtest(param ndim : int, fn : string) {
 
      Note that we reuse the rA2 and cB arrays, since they're the
      correct sizes.
-  */
+   */
   fwd = plan_dft_r2c(D,cB,FFTW_ESTIMATE);
   rev = plan_dft_c2r(D,cB,FFTW_ESTIMATE);
   //

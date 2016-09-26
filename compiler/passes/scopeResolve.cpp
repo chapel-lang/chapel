@@ -28,6 +28,7 @@
 #include "clangUtil.h"
 #include "expr.h"
 #include "externCResolve.h"
+#include "initializerRules.h"
 #include "LoopStmt.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -477,15 +478,17 @@ void UseStmt::validateList() {
 
   const char* listName = except ? "except" : "only";
   for_vector(const char, name, named) {
-    Symbol* sym = lookup(scopeToUse, name);
+    if (name[0] != '\0') {
+      Symbol* sym = lookup(scopeToUse, name);
 
-    if (!sym) {
-      USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
-    } else if (!sym->isVisible(this)) {
-      USR_FATAL_CONT(this, "Bad identifier in '%s' clause, '%s' is private", listName, name);
+      if (!sym) {
+        USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
+      } else if (!sym->isVisible(this)) {
+        USR_FATAL_CONT(this, "Bad identifier in '%s' clause, '%s' is private", listName, name);
+      }
+
+      createRelatedNames(sym);
     }
-
-    createRelatedNames(sym);
   }
 
   for (std::map<const char*, const char*>::iterator it = renamed.begin();
@@ -1180,26 +1183,28 @@ static void build_constructor(AggregateType* ct) {
                                                                       init->copy())));
 
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
-      }
 
+        // This is set up for initializers (but we don't know if this type has
+        // one just yet).  This must be done before the initCopies or
+        // _createFieldDefault information is wrapped around the init, because
+        // we likely don't need those for the initializer omitted fields
+        // TODO: verify my claim about the _createFieldDefault call
+        storeFieldInit(ct, field->name, init, NULL);
+      }
     } else if (hadType &&
                !field->isType() &&
                !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
     }
 
-    if (!field->isType() && !field->hasFlag(FLAG_PARAM)) {
-      if (hadType)
-        init = new CallExpr("_createFieldDefault", exprType->copy(), init);
-      else if (init)
-        init = new CallExpr("chpl__initCopy", init);
-    }
 
-    if (init) {
-      if (hadInit)
-        arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
-      else
-        arg->defaultExpr = new BlockStmt(new SymExpr(gTypeDefaultToken));
+    if (!field->isType() && !field->hasFlag(FLAG_PARAM)) {
+      if (hadType) {
+        if (hadInit)
+          storeFieldInit(ct, field->name, init, NULL);
+        init = new CallExpr("_createFieldDefault", exprType->copy(), init);
+      } else if (init)
+        init = new CallExpr("chpl__initCopy", init);
     }
 
     if (exprType) {
@@ -1207,6 +1212,19 @@ static void build_constructor(AggregateType* ct) {
         arg->typeExpr = new BlockStmt(exprType, BLOCK_TYPE);
       else
         arg->typeExpr = toBlockStmt(exprType);
+    }
+
+    if (init) {
+      if (hadInit)
+        arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
+      else {
+        Expr* initVal = new SymExpr(gTypeDefaultToken);
+        arg->defaultExpr = new BlockStmt(initVal);
+        if (arg->typeExpr)
+          storeFieldInit(ct, field->name, initVal, arg->typeExpr);
+        else
+          storeFieldInit(ct, field->name, NULL, NULL);
+      }
     }
 
     if (field->isType())

@@ -44,6 +44,8 @@ int main(int   argc,
         assert(ret == QTHREAD_SUCCESS);
     }
 
+    free(rets);
+
     return EXIT_SUCCESS;
 }
 

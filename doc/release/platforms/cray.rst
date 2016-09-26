@@ -161,6 +161,9 @@ Building Chapel for a Cray System from Source
      :``CHPL_TASKS``: tasking implementation, default ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``gasnet``
 
+   For CS\ |trade| series systems, see :ref:`readme-infiniband` for
+   information about using Chapel with InfiniBand.
+
    Other configuration environment variables such as ``CHPL_MEM`` can also
    be set, but this is more typical when doing internal development.
    For production work the configuration scripts should always select an
@@ -217,6 +220,9 @@ Using Chapel on a Cray System
      :``CHPL_TASKS``: tasking implementation, default ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``ugni`` on Cray
                      XC/XE with pre-built module, else ``gasnet``
+
+   For CS\ |trade| series systems, see :ref:`readme-infiniband` for
+   information about using Chapel with InfiniBand.
 
    Other configuration environment variables such as ``CHPL_MEM`` can also
    be set, but this is more typical when doing internal development.

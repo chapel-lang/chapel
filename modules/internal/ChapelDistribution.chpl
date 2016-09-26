@@ -342,19 +342,19 @@ module ChapelDistribution {
     }
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
-        isSorted=false, isUnique=false, preserveInds=true){
+        dataSorted=false, isUnique=false, preserveInds=true){
 
-      if !isSorted && preserveInds {
+      if !dataSorted && preserveInds {
         var _inds = inds;
-        return bulkAdd_help(_inds, isSorted, isUnique); 
+        return bulkAdd_help(_inds, dataSorted, isUnique); 
       }
       else {
-        return bulkAdd_help(inds, isSorted, isUnique);
+        return bulkAdd_help(inds, dataSorted, isUnique);
       }
     }
 
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), 
-        isSorted=false, isUnique=false){
+        dataSorted=false, isUnique=false){
       halt("Helper function called on the BaseSparseDomImpl");
 
       return -1;
@@ -382,14 +382,16 @@ module ChapelDistribution {
     // be refactored. (I think it is a safe assumption at this point and keeps the
     // function a bit cleaner than some other approach. -Engin)
     proc __getActualInsertPts(d, inds, 
-        isIndsSorted, isUnique) /* where isSparseDom(d) */ {
+        dataSorted, isUnique) /* where isSparseDom(d) */ {
+
+      use Sort;
 
       //find individual insert points
       //and eliminate duplicates between inds and dom
       var indivInsertPts: [inds.domain] int;
       var actualInsertPts: [inds.domain] int; //where to put in newdom
 
-      if !isIndsSorted then sort(inds);
+      if !dataSorted then sort(inds);
 
       //eliminate duplicates --assumes sorted
       if !isUnique {
@@ -403,11 +405,8 @@ module ChapelDistribution {
 
       //verify sorted and no duplicates if not --fast
       if boundsChecking {
-        // TODO there seems to be a bug while resolving Sort.isSorted, therefore
-        // for this function the argument is still isIndsSorted, instead of
-        // isSorted. This should be changed when Sort.isSorted is working.
         if !isSorted(inds) then
-          halt("bulkAdd: Data not sorted, call the function with isSorted=false");
+          halt("bulkAdd: Data not sorted, call the function with dataSorted=false");
 
         //check duplicates assuming sorted
         const indsStart = inds.domain.low;
@@ -472,7 +471,7 @@ module ChapelDistribution {
     }
   
     proc dsiBulkAdd(inds: [] index(rank, idxType),
-        isSorted=false, isUnique=false, preserveInds=true){
+        dataSorted=false, isUnique=false, preserveInds=true){
 
       halt("Bulk addition is not supported by this sparse domain");
     }

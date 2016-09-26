@@ -332,6 +332,18 @@ Type* BaseAST::typeInfo() {
   return qt.type();
 }
 
+bool BaseAST::isRef() {
+  return this->qualType().isRef();
+}
+
+bool BaseAST::isWideRef() {
+  return this->qualType().isWideRef();
+}
+
+bool BaseAST::isRefOrWideRef() {
+  return this->qualType().isRefOrWideRef();
+}
+
 FnSymbol* BaseAST::getFunction() {
   if (ModuleSymbol* x = toModuleSymbol(this))
     return x->initFn;

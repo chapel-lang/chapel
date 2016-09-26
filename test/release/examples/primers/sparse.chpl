@@ -1,17 +1,17 @@
+// Sparse Domains and Arrays
+
 /*
- * Sparse Primer
- *
- * This primer shows off some of Chapel's support for sparse domains
- * and arrays.
- *
- */
+   This primer shows off some of Chapel's support for sparse domains
+   and arrays.
+
+*/
 
 
 //
-// First, we declare a configuration variable, n, which defines the
-// problem size for this example.  It's given a default value of 9,
+// First, we declare a configuration variable, ``n``, which defines the
+// problem size for this example.  It's given a default value of ``9``,
 // which can be over-ridden on the executable's command line using:
-// --n=<value>
+// ``--n=<value>``.
 //
 config var n = 9;
 
@@ -20,10 +20,10 @@ config var n = 9;
 // Sparse domains in Chapel are defined in terms of a bounding domain.
 // The role of this bounding domain is to define the range of legal
 // indices for the sparse domain.  Here we declare a dense 2D
-// rectangular bounding domain of n x n indices which will serve as the
+// rectangular bounding domain of ``n x n`` indices which will serve as the
 // index space for the sparse domain/array in our example.  As we will
 // see, it will also be useful for operations that want to treat our
-// sparse domain as though it was a dense n x n set of values.
+// sparse domain as though it was a dense ``n x n`` set of values.
 //
 const dnsDom = {1..n, 1..n};
 
@@ -31,8 +31,8 @@ const dnsDom = {1..n, 1..n};
 // Here we declare our sparse domain.  The sparse keyword indicates
 // that it will be used to only represent a subset of its bounding
 // domain's indices, and that arrays declared using it will store a
-// "zero" value (described further below) for all indices in the set
-// dnsDom - spsDom.  Because we don't initialize the sparse domain, it
+// *zero value* (described further below) for all indices in the set
+// ``dnsDom - spsDom``.  Because we don't initialize the sparse domain, it
 // is initially an empty set of indices.
 //
 var spsDom: sparse subdomain(dnsDom);
@@ -45,8 +45,8 @@ var spsArr: [spsDom] real;
 
 
 //
-// I/O on sparse domains and arrays only prints out "non-zero" values;
-// initially there are none, so these will both print in a degenerate manner
+// I/O on sparse domains and arrays only prints out *non-vero values*;
+// initially there are none, so these will both print in a degenerate manner.
 //
 writeln("Initially, spsDom is: ", spsDom);
 writeln("Initially, spsArr is: ", spsArr);
@@ -54,10 +54,10 @@ writeln();
 
 
 //
-// we can also do I/O more explicitly by iterating over the dense
+// We can also do I/O more explicitly by iterating over the dense
 // domain and indexing into the sparse array.  Note that it's legal to
-// index into a sparse array in either its "zero" or "nonzero"
-// positions; however it's only legal to assign to "nonzero"
+// index into a sparse array in either its *zero* or *nonzero*
+// positions; however it's only legal to assign to *nonzero*
 // positions, since those are the only ones that are explicitly
 // stored.
 //
@@ -79,14 +79,14 @@ writeSpsArr();
 
 //
 // Chapel's sparse arrays store the element type's default value for
-// their "zero" value by default -- so zeroes for numerical types,
-// empty strings for strings, nil references for classes, etc.
-// However, a different value can be stored at "zero" positions
-// instead which is why we don't refer to it as the "zero" value and
-// rather as the IRV or "Implicitly Replicated Value".  This value can
-// be changed for a given array by assigning to that array's IRV
+// their *zero value* by default -- so ``0`` for numerical types,
+// empty strings for strings, ``nil`` references for classes, etc.
+// However, a different value can be stored at *zero* positions
+// instead which is why we don't refer to it as the *zero value* and
+// rather as the *IRV* or *Implicitly Replicated Value*.  This value can
+// be changed for a given array by assigning to that array's *IRV*
 // field, allowing a more interesting value/string/class instance to
-// be stored at all the "nonzero" values.
+// be stored at all the *nonzero* values.
 //
 spsArr.IRV = 7.7;
 writeln("Printing spsArr after changing its IRV:");
@@ -94,7 +94,7 @@ writeSpsArr();
 
 
 //
-// OK, now let's actually add some sparse indices to the DaSps domain
+// OK, now let's actually add some sparse indices to the ``DaSps`` domain
 // and see what happens:
 //
 spsDom += (1,n);
@@ -111,7 +111,7 @@ writeSpsArr();
 // sparse domain spsDom was reallocated to store the four new (corner)
 // indices; the sparse array was reallocated to allocate storage for
 // the four new elements corresponding to those indices; and those
-// elements were initialized to store the IRV, since that's the
+// elements were initialized to store the *IRV*, since that's the
 // logical value that they were representing before the new sparse
 // indices "filled in".  We can see this difference by going back to
 // the default sparse I/O:
@@ -138,21 +138,21 @@ writeSpsArr();
 
 //
 // Values can only be assigned to array positions that are members in
-// the sparse domain index set.  The boolean method Domain.member(x) 
-// can be used to check whether a certain index (x) is a member of the
+// the sparse domain index set.  The boolean method Domain.member(x)
+// can be used to check whether a certain index ``(x)`` is a member of the
 // domain's index set. Note that, in multi-dimensional domains, the member
-// method can accept the index as a tuple like spsDom.member((i,j)) 
-// or as a parameter list like spsDom.member(i,j). Below, we print '*' for 
-// the positions that are members in the sparse domain, and '.' otherwise.
+// method can accept the index as a tuple like ``spsDom.member((i,j))``
+// or as a parameter list like ``spsDom.member(i,j)``. Below, we print ``*`` for
+// the positions that are members in the sparse domain, and ``.`` otherwise.
 //
 writeln("Positions that are members in the sparse domain are marked by a '*':");
 
 for (i,j) in dnsDom {
-  if spsDom.member(i,j) then 
+  if spsDom.member(i,j) then
     write("* "); // (i,j) is a member in the sparse index set
-  else 
+  else
     write(". "); // (i,j) is not a member in the sparse index set
-	
+
   if (j == n) then writeln();
 }
 writeln();
@@ -186,7 +186,7 @@ writeln();
 //
 // ...and slices will be allowed to be taken (sparse slices of dense
 // arrays, dense slices of sparse arrays, sparse slices of sparse
-// arrays, etc.), but those aren't implemented yet... :(
+// arrays, etc.), but those aren't implemented yet...
 //
 
 
@@ -254,15 +254,15 @@ writeSpsArr();
 //
 // Regardless of the sparse format used, operations over a sparse
 // domain's indices or sparse array's elements should typically be
-// proportional to the number of nonzeroes (nnz) rather than the size
+// proportional to the number of nonzeroes ``(nnz)`` rather than the size
 // of the dense bounding box.  Operations like inserting new indices
 // or testing for membership will tend to vary depending on the
-// representation.  
+// representation.
 //
 // For example, in the default representation, adding indices in
 // reverse sorted order will require O(nnz**2) time due to all of the
 // insertions required.  For this reason, users are encouraged to add
-// indices in sorted order when performance matters.  
+// indices in sorted order when performance matters.
 //
 // Other general rules of thumb when working with sparse domains and
 // arrays is to make the domains constant (const) whenever possible,

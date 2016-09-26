@@ -326,7 +326,7 @@ static Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
                                 new CallExpr("isTrue", right),
                                 new SymExpr(gFalse));
 
-  VarSymbol* eMsg = new_CStringSymbol("cannot promote short-circuiting && operator");
+  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
 
   ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
                                   new CallExpr("compilerError", eMsg)));
@@ -347,7 +347,7 @@ static Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
                                new SymExpr(gTrue),
                                new CallExpr("isTrue", right));
 
-  VarSymbol* eMsg = new_CStringSymbol("cannot promote short-circuiting || operator");
+  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
 
   ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
                                   new CallExpr("compilerError", eMsg)));
@@ -420,6 +420,17 @@ static void useListError(Expr* expr, bool except) {
 BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
+
+  // Catch the 'except *' case and turn it into 'only <nothing>'.  This
+  // case will have a single UnresolvedSymExpr named "".
+  if (except && names->size() == 1) {
+    OnlyRename* listElem = (*names)[0];
+    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+      if (name->unresolved[0] == '\0') {
+        except = false;
+      }
+    }
+  }
 
   // Iterate through the list of names to exclude when using mod
   for_vector(OnlyRename, listElem, *names) {
@@ -847,7 +858,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, Exp
     // we want to swap something like the below commented-out
     // statement with the compiler error statement but skyline
     // arrays are not yet supported...
-    thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, new CallExpr("compilerError", new_CStringSymbol("unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification"))));
+    thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, new CallExpr("compilerError", new_StringSymbol("unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification"))));
     //      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
     //                                          new CallExpr("chpl__buildArrayRuntimeType",
     //                                                       domain, expr->copy(),
@@ -983,6 +994,19 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
     fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollowerZip", fifnIterator, fifnFollower)));
   }
   return fifn;
+}
+
+
+//
+// This is a simple utility function that converts new-style
+// PRIM_ZIP() expressions to old-style _build_tuple() expressions for
+// code that is not ready for the new style yet.
+//
+CallExpr* zipToTuple(CallExpr* zipExpr) {
+  assert(zipExpr->isPrimitive(PRIM_ZIP));
+  zipExpr->primitive = NULL;
+  zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
+  return zipExpr;
 }
 
 
@@ -1161,12 +1185,27 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   if (otherROp)
     otherROp->replace(new SymExpr(globalOp));
 
-  // globalOp = new reduceOp(eltType = reduceVar.type)
-  Expr* eltType = new NamedExpr("eltType",
-                    new_Expr("'typeof'(%E)", reduceVar->copy()));
+  Expr* eltType = NULL;
+  if (isUnresolvedSymExpr(reduceOp)) {
+    // eltType = reduceVar.type
+    eltType = new_Expr("'typeof'(%E)", reduceVar->copy());
+
+  } else if (CallExpr* rCall = toCallExpr(reduceOp)) {
+    // eltType is rCall's argument
+    // NB 'rCall' is not inTree() - see replace() above
+    if (rCall->numActuals() == 1) {
+      reduceOp = rCall->baseExpr; // cannot remove() this one
+      eltType = rCall->get(1)->remove(); // must remove() this one
+    }
+  }
+  if (!eltType) {
+    USR_FATAL(reduceOp, "for a reduce intent, the 'reduce' keyword must be preceded by the reduction operator or the name of the reduction class with the single optional argument indicating the type of the reduction input");
+  }
+
+  // globalOp = new reduceOp(eltType = ...);
   if (!useThisGlobalOp)
     iterRec->defPoint->insertBefore("'move'(%S, 'new'(%E(%E)))",
-                                    globalOp, reduceOp, eltType);
+                        globalOp, reduceOp, new NamedExpr("eltType", eltType));
   // reduceVar = globalOp.generate(); delete globalOp;
   parLoop->insertAfter("'delete'(%S)",
                        globalOp);
@@ -1538,6 +1577,11 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
 BlockStmt*
 buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
   INT_ASSERT(op != NULL);
+  return buildChapelStmt(new CallExpr(op, lhs, rhs));
+}
+
+BlockStmt*
+buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op) {
   return buildChapelStmt(new CallExpr(op, lhs, rhs));
 }
 
@@ -2102,11 +2146,11 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
       buildIfStmt(new CallExpr("!=", new CallExpr(".", tuple->remove(),
                                                   new_CStringSymbol("size")),
                                varCount->remove()),
-                  new CallExpr("compilerError", new_CStringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
+                  new CallExpr("compilerError", new_StringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
 
     tuple->var->defPoint->insertAfter(
       buildIfStmt(new CallExpr("!", new CallExpr("isTuple", tuple->copy())),
-                  new CallExpr("compilerError", new_CStringSymbol("illegal tuple variable declaration with non-tuple initializer"), new_IntSymbol(0))));
+                  new CallExpr("compilerError", new_StringSymbol("illegal tuple variable declaration with non-tuple initializer"), new_IntSymbol(0))));
     stmts->blockInfoSet(NULL);
   }
   return stmts;
@@ -2610,6 +2654,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
   block->insertAtTail(new CallExpr("_endCountFree", cobeginCount));
 
+  block->astloc = cobeginCount->astloc; // grab the location of 'cobegin' kw
   return block;
 }
 

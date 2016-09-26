@@ -53,15 +53,15 @@ master_doc = 'index'
 # built documents.
 #
 # The short X.Y version.
-# version = '1.13'
+# version = '1.14'
 
 # We use a custom version variable (shortversion) instead, because setting
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
-shortversion = 1.13
+shortversion = 1.14
 
 # The full version, including alpha/beta/rc tags.
-release = '1.13.1'
+release = '1.14.0'
 
 # General information about the project.
 project = u'Chapel Documentation {0}'.format(shortversion)
@@ -101,7 +101,7 @@ exclude_patterns = []
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+#pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []

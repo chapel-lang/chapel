@@ -99,12 +99,7 @@ module ChapelIteratorSupport {
     return ic;
 
   proc _getIterator(type t) {
-    if (isEnumType(t)) then
-      return _getIterator(t.these());
-    else if (isTupleType(t)) then
-      compilerError("unable to iterate over a tuple of non-enum types"); //TODO: support this?
-    else
-      compilerError("cannot iterate over a type");
+    return _getIterator(_checkIterator(t));
   }
 
   inline proc _getIteratorZip(x) {
@@ -143,12 +138,17 @@ module ChapelIteratorSupport {
       return _getIteratorZipInternal(t, 1);
   }
 /*
-  proc _checkIterator(type t) {
-    if (!(isEnumType(t))) then
-      compilerError("cannot iterate over a type");
+  inline proc _checkIterator(type t) {
+    use Reflection;
+
+    if (canResolveTypeMethod(t, "these")) then
+      return t.these();
+    else
+      compilerError("unable to iterate over type '", t:string, "'");
   }
 
   proc _checkIterator(x) {
+    return x;
   }
 */
   inline proc _freeIterator(ic: _iteratorClass) {
@@ -362,20 +362,11 @@ module ChapelIteratorSupport {
     return follower;
   }
 
-  pragma "no implicit copy"
-  inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex) {
-    return _toFollower(iterator, leaderIndex);
-  }
-
-  inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex) {
-    return _toFollower(ir, leaderIndex);
-  }
-
   inline proc _toFastFollower(x, leaderIndex) {
     if chpl__staticFastFollowCheck(x) then
-      return _toFastFollower(x.these(), leaderIndex, fast=true);
+      return _toFastFollower(_getIterator(x), leaderIndex, fast=true);
     else
-      return _toFollower(x.these(), leaderIndex);
+      return _toFollower(_getIterator(x), leaderIndex);
   }
 
   inline proc _toFastFollowerZip(x, leaderIndex) {

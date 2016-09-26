@@ -369,6 +369,7 @@ static void buildVirtualMaps();
 static void
 addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false);
 static void resolveTypedefedArgTypes(FnSymbol* fn);
+static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
 static void resolveUses(ModuleSymbol* mod);
 static void resolveExports();
@@ -3460,6 +3461,18 @@ static void buildVisibleFunctionMap() {
         block = theProgram->block;
       } else {
         block = getVisibilityBlock(fn->defPoint);
+        //
+        // add all functions in standard modules to theProgram
+        //
+        // Lydia NOTE 09/12/16: The computation of the standardModuleSet is not
+        // tied to what is actually placed within theProgram->block.  As such
+        // there could be bugs where that implementation differs.  We have
+        // already encountered some with qualified access to default-included
+        // modules like List and Sort.  This implementation needs to be linked
+        // to the computation of the standardModuleSet.
+        //
+        if (standardModuleSet.set_in(block))
+          block = theProgram->block;
       }
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
@@ -3483,6 +3496,19 @@ getVisibleFunctions(BlockStmt* block,
                     Vec<FnSymbol*>& visibleFns,
                     Vec<BlockStmt*>& visited,
                     CallExpr* callOrigin) {
+  //
+  // all functions in standard modules are stored in a single block
+  //
+  // Lydia NOTE 09/12/16: The computation of the standardModuleSet is not
+  // tied to what is actually placed within theProgram->block.  As such
+  // there could be bugs where that implementation differs.  We have
+  // already encountered some with qualified access to default-included
+  // modules like List and Sort.  This implementation needs to be linked
+  // to the computation of the standardModuleSet.
+  //
+  if (standardModuleSet.set_in(block))
+    block = theProgram->block;
+
   //
   // avoid infinite recursion due to modules with mutual uses
   //
@@ -4325,7 +4351,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     best->fn = defaultWrap(best->fn, &best->actualIdxToFormal, &info);
     reorderActuals(best->fn, &best->actualIdxToFormal, &info);
     coerceActuals(best->fn, &info);
-    best->fn = promotionWrap(best->fn, &info);
+    best->fn = promotionWrap(best->fn, &info, /*buildFastFollowerChecks=*/true);
     if (valueCall) {
       // If we're resolving a ref and non-ref pair,
       // also handle the value version. best is the ref version.
@@ -4336,7 +4362,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
                                   &valueInfo);
       reorderActuals(bestValue->fn, &bestValue->actualIdxToFormal, &valueInfo);
       coerceActuals(bestValue->fn, &valueInfo);
-      bestValue->fn = promotionWrap(bestValue->fn, &valueInfo);
+      bestValue->fn = promotionWrap(bestValue->fn, &valueInfo, /*buildFastFollowerChecks=*/false);
     }
   }
 
@@ -4506,6 +4532,31 @@ static void lvalueCheck(CallExpr* call)
           USR_FATAL_CONT(actual, "non-lvalue actual is passed to a %s formal of"
                          " %s%s", formal->intentDescrString(),
                          calleeFn->name, calleeParens);
+        }
+      }
+      if (SymExpr* aSE = toSymExpr(actual)) {
+        Symbol* aVar = aSE->var;
+        if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+          const char* varname = aVar->name;
+          if (!strncmp(varname, "_formal_tmp_", 12))
+            varname += 12;
+          if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
+            Symbol* enclTaskFn = aVar->defPoint->parentSymbol;
+            BaseAST* marker;
+            const char* constructName;
+            if (enclTaskFn->hasFlag(FLAG_BEGIN)) {
+              // enclTaskFn points to a good line number
+              marker = enclTaskFn;
+              constructName = "begin";
+            } else {
+              marker = enclTaskFn->defPoint->parentExpr;
+              constructName = "parallel";
+            }
+            USR_PRINT(marker, "The shadow variable '%s' is constant due to task intents in this %s statement", varname, constructName);
+          } else {
+            Expr* enclLoop = aVar->defPoint->parentExpr;
+            USR_PRINT(enclLoop, "The shadow variable '%s' is constant due to forall intents in this loop", varname);
+          }
         }
       }
     }
@@ -5102,6 +5153,8 @@ insertFormalTemps(FnSymbol* fn) {
     if (formalRequiresTemp(formal)) {
       SET_LINENO(formal);
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
+      if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
+        tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       formals2vars.put(formal, tmp);
     }
   }
@@ -7441,7 +7494,7 @@ postFold(Expr* expr) {
       if (se->var->isParameter()) {
         const char* str = get_string(se);
         const std::string unescaped = unescapeString(str, se);
-        result = new SymExpr(new_IntSymbol((int)unescaped[0], INT_SIZE_DEFAULT));
+        result = new SymExpr(new_UIntSymbol((int)unescaped[0], INT_SIZE_8));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_contains")) {
@@ -8140,6 +8193,19 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
+  if (fn->hasFlag(FLAG_CONSTRUCTOR) && !strcmp(fn->name, "init")) {
+    // Lydia NOTE: Quick fix to allow our new initializers to recursively call
+    // themselves.  We know their return type already, pretending we don't just
+    // leads to errors.  Ideally, we'll remove this code when we fix our
+    // compiler's handling of recursive calls when the function doesn't declare
+    // its return type.
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_IS_MEME)) {
+        fn->retType = formal->type;
+      }
+    }
+  }
+
   resolveBlockStmt(fn->body);
 
   if (tryFailure) {
@@ -8655,9 +8721,52 @@ static void resolveTypedefedArgTypes(FnSymbol* fn)
   }
 }
 
+
+static void
+computeStandardModuleSet() {
+  // Lydia NOTE: 09/12/16 - this code does not follow the same code path used
+  // to add the standard module set to the root module's block, so misses some
+  // cases, causing qualified access to functions from certain modules (List,
+  // Search, Sort, at the time of this writing) to fail to resolve.  We
+  // should take the time to time this optimization to the code path it wishes
+  // to follow - however, I am not sure where that is occurring right now.
+
+  // Private uses will also help avoid the bug, but it is sweeping the bug under
+  // the rug rather than solving the problem at hand, and it is hard to say
+  // when the next time this code will bite us will be.
+  standardModuleSet.set_add(rootModule->block);
+  standardModuleSet.set_add(theProgram->block);
+
+  Vec<ModuleSymbol*> stack;
+  stack.add(standardModule);
+
+  while (ModuleSymbol* mod = stack.pop()) {
+    if (mod->block->modUses) {
+      for_actuals(expr, mod->block->modUses) {
+        UseStmt* use = toUseStmt(expr);
+        INT_ASSERT(use);
+        SymExpr* se = toSymExpr(use->src);
+        INT_ASSERT(se);
+        if (ModuleSymbol* usedMod = toModuleSymbol(se->var)) {
+          INT_ASSERT(usedMod);
+          if (!standardModuleSet.set_in(usedMod->block)) {
+            stack.add(usedMod);
+            standardModuleSet.set_add(usedMod->block);
+          }
+        }
+      }
+    }
+  }
+}
+
+
 void
 resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
+
+  computeStandardModuleSet(); // Lydia NOTE 09/12/16: is not linked to our
+  // treatment on functions included by default, leading to bugs with qualified
+  // access to symbols included in this way.
 
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
@@ -9714,6 +9823,28 @@ static void removeUnusedGlobals()
   }
 }
 
+static bool arrayBlkModified() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isResolved() && fn->defPoint && fn->defPoint->parentSymbol) {
+      if (fn->hasFlag(FLAG_MODIFIES_ARRAY_BLK)) {
+        if (fReportOptimizedArrayIndexing) {
+          printf("Unable to optimize array indexing\n");
+        }
+        return true;
+      }
+    }
+  }
+  if (fReportOptimizedArrayIndexing) {
+    printf("Optimized array indexing\n");
+  }
+  return false;
+}
+
+static bool canOptimizeArrayBlk() {
+  static bool canOptimize = !fNoOptimizeArrayIndexing && !arrayBlkModified();
+  return canOptimize;
+}
+
 static void removeRandomPrimitive(CallExpr* call)
 {
   if (! call->primitive)
@@ -9736,6 +9867,17 @@ static void removeRandomPrimitive(CallExpr* call)
     case PRIM_NOOP:
       call->remove();
       break;
+
+    case PRIM_OPTIMIZE_ARRAY_BLK_MULT:
+    {
+      SET_LINENO(call);
+      if (canOptimizeArrayBlk()) {
+        call->replace(new SymExpr(gTrue));
+      } else {
+        call->replace(new SymExpr(gFalse));
+      }
+    }
+    break;
 
     case PRIM_TYPEOF:
     {

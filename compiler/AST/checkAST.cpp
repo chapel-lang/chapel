@@ -62,8 +62,7 @@ void checkArgsAndLocals()
     Symbol* useInSym = se->parentSymbol;
 
     if (isFnSymbol(defInSym) && isFnSymbol(useInSym)) {
-      if (defInSym->hasFlag(FLAG_MODULE_INIT) /*||
-          defInSym->hasFlag(FLAG_ITERATOR_FN) */ ) {
+      if (defInSym->hasFlag(FLAG_MODULE_INIT)) {
         // OK, module init functions can define globals
       } else {
         if (defInSym != useInSym) {

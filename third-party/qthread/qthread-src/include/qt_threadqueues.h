@@ -44,6 +44,9 @@ void INTERNAL       qt_threadqueue_private_filter(qt_threadqueue_private_t *rest
 ssize_t INTERNAL qt_threadqueue_advisory_queuelen(qt_threadqueue_t *q);
 
 qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
+#ifdef QTHREAD_LOCAL_PRIORITY
+                                            qt_threadqueue_t         *lpq,
+#endif /* ifdef QTHREAD_LOCAL_PRIORITY */
                                             qt_threadqueue_private_t *qc,
                                             uint_fast8_t              active);
 void INTERNAL qthread_steal_stat(void);
