@@ -382,6 +382,10 @@ bool isMoveOrAssign(CallExpr* call) {
   return call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN);
 }
 
+bool isDerefMove(CallExpr* call) {
+  return isMoveOrAssign(call) && !call->get(1)->isRefOrWideRef() && call->get(2)->isRefOrWideRef();
+}
+
 
 //
 // Check if a callExpr is a relational operator primitive (==, !=, <=, >=, <, >)
