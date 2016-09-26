@@ -63,14 +63,16 @@ module RangeChunk {
     if r.length == 0 || numChunks <= 0 then
       return;
     const nElems = r.length;
-    const nChunks = numChunks: RT;
+    var nChunks = min(numChunks, nElems): RT;
 
     var chunkSize, rem: RT;
     select (remPol) {
       when Pack {
         chunkSize = nElems / nChunks;
-        if chunkSize * nChunks != nElems then
+        if chunkSize * nChunks != nElems {
           chunkSize += 1;
+          nChunks = divceil(nElems, chunkSize);
+        }
       }
       when Mod {
         chunkSize = nElems / nChunks;
@@ -96,7 +98,7 @@ module RangeChunk {
       return (1: RT, 0: RT);
 
     const nElems = r.length;
-    const nChunks = numChunks: RT;
+    const nChunks = min(numChunks, nElems): RT;
     const i = idx: RT;
 
     select (remPol) {
@@ -183,7 +185,7 @@ module RangeChunk {
   private proc chunkOrderPack(chunkSize: ?I, nElems: I, i: I): (I, I) {
     const start = chunkSize * i;
     if start >= nElems then
-      return (1, 0);
+      return (1: I, 0: I);
 
     var end = start + chunkSize - 1;
     if end >= nElems then
