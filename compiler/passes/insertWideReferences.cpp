@@ -1574,7 +1574,8 @@ static void propagateField(Symbol* sym) {
               case PRIM_GET_SVEC_MEMBER_VALUE:
                 if (fIgnoreLocalClasses || !sym->hasFlag(FLAG_LOCAL_FIELD)) {
                   DEBUG_PRINTF("\t"); debug(lhs, "widened gmv\n");
-                  matchWide(use, lhs);
+                  // this was matchWide(use, lhs); -- Ben, FIXME
+                  matchWide(sym, lhs);
                 }
                 break;
               default:
