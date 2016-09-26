@@ -258,9 +258,9 @@ where the updates are made.
 **Sparse Subdomains**
 
 When a ``sparse subdomain`` is declared as a subdomain to a Block-distributed
-domain, the resulting sparse domain will also be Block distributed. The
+domain, the resulting sparse domain will also be Block-distributed. The
 sparse layout used in this sparse subdomain can be controlled with the
-sparseLayoutType constructor argument to Block.
+``sparseLayoutType`` constructor argument to Block.
 
 This example demonstrates a Block-distributed sparse domain and array:
 
@@ -274,7 +274,7 @@ This example demonstrates a Block-distributed sparse domain and array:
     const DenseDom: domain(2) dmapped Block(boundingBox=Space) = Space;
 
     // Declare a sparse subdomain.
-    // Since DenseDom is Block distributed, SparseDom will be as well.
+    // Since DenseDom is Block-distributed, SparseDom will be as well.
     var SparseDom: sparse subdomain(DenseDom);
 
     // Add some elements to the sparse subdomain.
@@ -282,7 +282,7 @@ This example demonstrates a Block-distributed sparse domain and array:
     SparseDom += [ (1,2), (3,6), (5,4), (7,8) ];
 
     // Declare a sparse array.
-    // This array is also Block distributed.
+    // This array is also Block-distributed.
     var A: [SparseDom] int;
 
     A = 1;
