@@ -1239,15 +1239,21 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         for_uses(se, useMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
           SET_LINENO(se);
-          if (parent && parent->isPrimitive(PRIM_DEREF)) {
+          bool isDerefMove = parent && isMoveOrAssign(parent) && !parent->get(1)->isRef() && parent->get(2)->isRef();
+          if (parent && (parent->isPrimitive(PRIM_DEREF) || isDerefMove)) {
+            if (isDerefMove) gdbShouldBreakHere();
+            Expr* toReplace = parent;
+            if (isMoveOrAssign(parent)) {
+              toReplace = parent->get(2);
+            }
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
             if (!isSvec)
-              parent->replace(new CallExpr(PRIM_GET_MEMBER_VALUE,
+              toReplace->replace(new CallExpr(PRIM_GET_MEMBER_VALUE,
                                            se,
                                            rhs->get(2)->copy()));
             else
-              parent->replace(new CallExpr(PRIM_GET_SVEC_MEMBER_VALUE,
+              toReplace->replace(new CallExpr(PRIM_GET_SVEC_MEMBER_VALUE,
                                            se,
                                            rhs->get(2)->copy()));
             ++s_ref_repl_count;

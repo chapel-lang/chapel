@@ -227,6 +227,21 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               CallExpr* call = toCallExpr(se->parentExpr);
               INT_ASSERT(call);
               FnSymbol* fnc = call->isResolved();
+              bool canPassToFn = false;
+              if (fnc) {
+                ArgSymbol* form = actual_to_formal(se);
+                if (arg->isRef() && form->isRef() &&
+                    arg->getValType() == form->getValType() &&
+                    !isRecordWrappedType(form->getValType())) {
+                  // removeWrapRecords can modify the formal to have the
+                  // 'const in' intent. For now it's easier to insert the
+                  // DEREF here.
+                  canPassToFn = true;
+                } else if (arg->type == form->type) {
+                  canPassToFn = true;
+                }
+              }
+
               if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_ASSIGN) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
@@ -234,7 +249,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
                   (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_NODE)) ||
-                  (fnc && arg->type == actual_to_formal(se)->type)) {
+                  canPassToFn) {
                 se->var = arg; // do not dereference argument in these cases
               } else if (call->isPrimitive(PRIM_ADDR_OF)) {
                 SET_LINENO(se);
