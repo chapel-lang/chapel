@@ -117,11 +117,13 @@ array-literal:
 Rectangular array literals are specified by enclosing a comma separated list of 
 expressions representing values in square brackets. A 1-based domain will 
 automatically be generated for the given array literal.  The type of the array's 
-values will be the type of the first element listed.
+values will be the type of the first element listed. A trailing comma is
+allowed.
 
 \begin{syntax}
 rectangular-array-literal:
   [ expression-list ]
+  [ expression-list , ]
 \end{syntax}
 
 \begin{chapelexample}{adecl-literal.chpl}
@@ -183,11 +185,12 @@ the default value of the element type.
 Associative array values are specified by enclosing a comma separated list of
 index-to-value bindings within square brackets. It is expected that the indices 
 in the listing match in type and, likewise, the types of values in the listing 
-also match. 
+also match. A trailing commas is allowed.
 
 \begin{syntax}
 associative-array-literal:
   [ associative-expr-list ]
+  [ associative-expr-list , ]
 
 associative-expr-list:
   index-expr => value-expr
