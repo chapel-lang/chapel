@@ -159,7 +159,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
    :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.alignedLow, in hi=Dom.alignedHigh) {
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
   chpl_check_comparator(comparator, Data.eltType);
 
   const stride = if Dom.stridable then abs(Dom.stride) else 1;
