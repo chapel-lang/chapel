@@ -715,6 +715,9 @@ indices (for irregular domains).  If the domain variable being
 assigned was used to declare arrays, these arrays are reallocated as
 discussed in~\rsec{Association_of_Arrays_to_Domains}.
 
+It is an error to assign a stridable domain to an unstridable domain
+without an explicit conversion.
+
 \begin{example}
 The following three assignments show ways of assigning indices to a
 sparse domain, \chpl{SpsD}.  The first assigns the domain two index
