@@ -94,7 +94,7 @@ module RangeChunk {
 
   proc chunkOrder(r: range(?RT, bounded, ?), numChunks: integral, idx: integral,
                   remPol: RemElems = Thru): 2*RT {
-    if r.length == 0 || numChunks <= 0 || idx >= numChunks then
+    if r.length == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
       return (1: RT, 0: RT);
 
     const nElems = r.length;
