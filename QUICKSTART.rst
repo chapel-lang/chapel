@@ -17,33 +17,41 @@ enable more features, such as distributed memory execution.
    packages you may need to have installed to build and run Chapel.
 
 1) If you don't already have Chapel 1.14, see
-   http://chapel.cray.com/install.html .
+   http://chapel.cray.com/download.html .
 
 2) If you are using a source release, build Chapel in a *quickstart*
    configuration. The *quickstart* script used below is designed to help you
    get started with Chapel. After that, you may want to switch to a more
    full-featured configuration. See using-a-more-full-featured-chapel_ below.
 
-   .. code-block:: bash
+   a. Make sure that your shell is in the directory containing QUICKSTART.rst
 
-     # Make sure that your shell is in the directory containing QUICKSTART.rst
-     cd ~/chapel-1.14
+      .. code-block:: bash
 
-     # Set up your environment for Chapel's Quick Start mode.
-     # See below if you use a shell other than bash.
-     source util/quickstart/setchplenv.bash
+         cd ~/chapel-1.14
 
-     # Use GNU make to build Chapel.
-     # On some systems, you will have to use gmake.
-     # Parallel builds, such as make -j 6, are supported.
-     make
+   b. Set up your environment for Chapel's Quick Start mode.
+      If you are using a shell other than bash,
+      see quickstart-with-other-shells_ below.
 
-     # Optionally, check that your Chapel build is working correctly
-     make check
+      .. code-block:: bash
 
-   If you are using a shell other than bash, see quickstart-with-other-shells_
-   below.
-   See `doc/building.rst`_ for more information about building Chapel.
+         source util/quickstart/setchplenv.bash
+
+   c. Use GNU make to build Chapel.
+      On some systems, you will have to use gmake.
+      See `doc/building.rst`_ for more information about building Chapel.
+
+      .. code-block:: bash
+
+         make
+
+   d. Optionally, check that your Chapel build is working correctly
+
+      .. code-block:: bash
+
+         make check
+
 
 3) Compile an example program:
 
