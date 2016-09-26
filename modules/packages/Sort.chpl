@@ -310,7 +310,7 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   chpl_check_comparator(comparator, eltType);
   const stride = if Dom.stridable then abs(Dom.stride) else 1;
 
-  for i in Dom.low..Dom.high-stride by stride do
+  for i in Dom.alignedLow..Dom.alignedHigh-stride by stride do
     if chpl_compare(Data[i+stride], Data[i], comparator) < 0 then
       return false;
   return true;
@@ -377,8 +377,8 @@ iter sorted(x, comparator:?rec=defaultComparator) {
  */
 proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  const low = Dom.low,
-        high = Dom.high,
+  const low = Dom.alignedLow,
+        high = Dom.alignedHigh,
         stride = abs(Dom.stride);
 
   var swapped = true;
@@ -414,8 +414,8 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
  */
 proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  const low = Dom.low,
-        high = Dom.high,
+  const low = Dom.alignedLow,
+        high = Dom.alignedHigh,
         size = Dom.size,
         stride = abs(Dom.stride);
 
@@ -479,8 +479,8 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
  */
 proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  const low = Dom.low,
-        high = Dom.high,
+  const low = Dom.alignedLow,
+        high = Dom.alignedHigh,
         stride = abs(Dom.stride);
 
   for i in low..high by stride {
@@ -491,6 +491,32 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
         Data[j+stride] = Data[j];
       } else {
         Data[j+stride] = ithVal;
+        inserted = true;
+        break;
+      }
+    }
+    if (!inserted) {
+      Data[low] = ithVal;
+    }
+  }
+}
+
+
+/* Non-stridable insertionSort */
+proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where !Dom.stridable {
+  chpl_check_comparator(comparator, eltType);
+
+  const low = Dom.alignedLow;
+
+  for i in Dom {
+    const ithVal = Data[i];
+    var inserted = false;
+    for j in low..i-1 by -1 {
+      if chpl_compare(ithVal, Data[j], comparator) < 0 {
+        Data[j+1] = Data[j];
+      } else {
+        Data[j+1] = ithVal;
         inserted = true;
         break;
       }
@@ -528,47 +554,64 @@ proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
 private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultComparator)
   where Dom.rank == 1 {
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
-  if hi-lo < minlen {
+
+  const low = Dom.alignedLow,
+        high = Dom.alignedHigh;
+
+  if high-low < minlen {
     insertionSort(Data, comparator);
     return;
   }
-  const mid = (hi-lo)/2+lo;
-  var A1 = Data[lo..mid];
-  var A2 = Data[mid+1..hi];
+
+  const size = Dom.size,
+        stride = abs(Dom.stride),
+        mid = if high == low then high
+        else if size % 2 then low + ((size - 1)/2) * stride
+        else low + (size/2 - 1) * stride;
+
+  var A1 = Data[low..mid by stride];
+  var A2 = Data[mid+stride..high by stride];
   cobegin {
     { _MergeSort(A1, minlen, comparator); }
     { _MergeSort(A2, minlen, comparator); }
   }
 
   // TODO -- This iterator causes unnecessary overhead - we can do without it
-  for (a, _a) in zip(Data[lo..hi], _MergeIterator(A1, A2, comparator=comparator)) do a = _a;
+  for (a, _a) in zip(Data[low..high by stride], _MergeIterator(A1, A2, comparator=comparator)) do a = _a;
 }
 
 
-private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=defaultComparator) {
-  var a1 = A1.domain.dim(1).low;
-  const a1hi = A1.domain.dim(1).high;
-  var a2 = A2.domain.dim(1).low;
-  const a2hi = A2.domain.dim(1).high;
+private iter _MergeIterator(A1: [?A1Dom] ?eltType, A2: [?A2Dom] eltType, comparator:?rec=defaultComparator) {
+  var a1 = A1Dom.alignedLow,
+      a2 = A2Dom.alignedLow;
+  const a1hi = A1Dom.alignedHigh,
+        a2hi = A2Dom.alignedHigh,
+        stride = abs(A1Dom.stride);
+
   while ((a1 <= a1hi) && (a2 <= a2hi)) {
     while (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
       yield A1(a1);
-      a1 += 1;
+      a1 += stride;
       if a1 > a1hi then break;
     }
     if a1 > a1hi then break;
     while (chpl_compare(A2(a2), A1(a1), comparator) <= 0) {
       yield A2(a2);
-      a2 += 1;
+      a2 += stride;
       if a2 > a2hi then break;
     }
   }
-  if a1 == a1hi then yield A1(a1);
-  else if a2 == a2hi then yield A2(a2);
-  if a1 < a1hi then for a in A1[a1..a1hi] do yield a;
-  else if a2 < a2hi then for a in A2[a2..a2hi] do yield a;
+
+  if a1 == a1hi then
+    yield A1(a1);
+  else if a2 == a2hi then
+    yield A2(a2);
+  if a1 < a1hi then
+    for a in A1[a1..a1hi by stride] do
+      yield a;
+  else if a2 < a2hi then
+    for a in A2[a2..a2hi by stride] do
+      yield a;
 }
 
 
@@ -593,20 +636,21 @@ proc mergeSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
  */
 proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  // grab obvious indices
-  const stride = abs(Dom.stride),
-        lo = Dom.low,
-        hi = Dom.high,
-        size = Dom.size,
-        mid = if hi == lo then hi
-              else if size % 2 then lo + ((size - 1)/2) * stride
-              else lo + (size/2 - 1) * stride;
+
+  const size = Dom.size;
 
   // base case -- use insertion sort
-  if (hi - lo < minlen) {
+  if (size < minlen) {
     insertionSort(Data, comparator=comparator);
     return;
   }
+
+  const stride = abs(Dom.stride),
+        lo = Dom.alignedLow,
+        hi = Dom.alignedHigh,
+        mid = if hi == lo then hi
+              else if size % 2 then lo + ((size - 1)/2) * stride
+              else lo + (size/2 - 1) * stride;
 
   // find pivot using median-of-3 method
   if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
@@ -617,8 +661,7 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
     Data(hi) <=> Data(mid);
 
   const pivotVal = Data(mid);
-  Data(mid) = Data(hi-stride);
-  Data(hi-stride) = pivotVal;
+  (Data(mid), Data(hi-stride)) = (Data(hi-stride), pivotVal);
   // end median-of-3 partitioning
 
   var loptr = lo,
@@ -636,8 +679,8 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
   // TODO -- Get this cobegin working and tested
   //  cobegin {
-    quickSort(Data[..loptr-stride], minlen, comparator);  // could use unbounded ranges here
-    quickSort(Data[loptr+stride..], minlen, comparator);
+    quickSort(Data[lo..loptr-stride by stride], minlen, comparator);
+    quickSort(Data[loptr+stride..hi by stride], minlen, comparator);
   //  }
 }
 
@@ -649,14 +692,15 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
   // grab obvious indices
   const lo = Dom.low,
-        hi = Dom.high,
-        mid = lo + (hi-lo+1)/2;
+        hi = Dom.high;
 
   // base case -- use insertion sort
   if (hi - lo < minlen) {
     insertionSort(Data, comparator=comparator);
     return;
   }
+
+  const mid = lo + (hi-lo+1)/2;
 
   // find pivot using median-of-3 method
   if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
@@ -667,8 +711,7 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
     Data(hi) <=> Data(mid);
 
   const pivotVal = Data(mid);
-  Data(mid) = Data(hi-1);
-  Data(hi-1) = pivotVal;
+  (Data(mid), Data(hi-1)) = (Data(hi-1), pivotVal);
   // end median-of-3 partitioning
 
   var loptr = lo,
@@ -711,8 +754,8 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
  */
 proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  const low = Dom.low,
-        high = Dom.high,
+  const low = Dom.alignedLow,
+        high = Dom.alignedHigh,
         stride = abs(Dom.stride);
 
   for i in low..high-stride by stride {
