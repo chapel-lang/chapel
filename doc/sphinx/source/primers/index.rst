@@ -87,10 +87,6 @@ Tools
    :maxdepth: 1
 
    chpldoc <primers/chpldoc.doc>
-   chplvis example 1 <primers/chplvis1>
-   chplvis example 2 <primers/chplvis2>
-   chplvis example 3 <primers/chplvis3>
-   chplvis example 4 <primers/chplvis4>
 
 Language Overview
 -----------------
