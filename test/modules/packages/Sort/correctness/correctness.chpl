@@ -16,15 +16,12 @@ proc main() {
         tupleKey = new TupleCmp();
 
   // Arrays and Domains
-  const largeD = {1..101}, // quickSort requires domain.size > 16
+  const largeD = {1..20}, // quickSort requires domain.size > 16
         strideD = {2..8 by 2},
-      strideRevD = {2..8 by -2},
-        alignD = {1..8 by -2 align 8};
+      strideRevD = {2..8 by -2};
   var largeA: [largeD] int,
       strideA: [strideD] int = [-3, -1, 4, 5],
-      strideRevA: [strideRevD] int = [-3, -1, 4, 5],
-      alignA: [alignD] int = [-3, -1, 4, 5];
-
+      strideRevA: [strideRevD] int = [-3, -1, 4, 5];
     [i in largeD] largeA[i] = i;
 
   // Pre-sorted arrays paired with comparators to test
@@ -37,7 +34,6 @@ proc main() {
                 (largeA, defaultComparator),
                 (strideA, defaultComparator),
                 (strideRevA, defaultComparator),
-                (alignA, defaultComparator),
 
                 // Testing comparators
                 ([-1, 2, 3, -4], absKey),

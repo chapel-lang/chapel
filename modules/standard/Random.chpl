@@ -712,8 +712,8 @@ module Random {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const low = D.alignedLow,
-              high = D.alignedHigh,
+        const low = D.low,
+              high = D.high,
               stride = D.stride;
 
         if parSafe then
