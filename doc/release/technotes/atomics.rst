@@ -9,12 +9,12 @@ Runtime Support for Atomics
 The following information is meant to describe the underlying
 runtime support for Chapel's Atomic Variables.
 
-For more information on Atomic Variables refer to the Chapel
-Language Specification, or for a list of available functions on
+For more information on Atomic Variables refer to the :ref:`Chapel
+Language Specification <chapel-spec>`, or for a list of available functions on
 Atomics see :mod:`Atomics`
 
 For code examples using atomics, see the
-``$CHPL_HOME/examples/primers/atomics.chpl`` primer.
+:ref:`atomics.chpl <primers-atomics>` primer.
 
 --------
 Overview
