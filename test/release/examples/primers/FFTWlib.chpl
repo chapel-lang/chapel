@@ -3,39 +3,42 @@
 /*
   Example usage of the FFTW module in Chapel. This particular file
   demonstrates the single-threaded version of the code.  In order to
-  switch to a multi-threaded version of the code, substitute FFTW_MT
-  for FFTW in the 'use' statement just below this comment (see the
+  switch to a multi-threaded version of the code, substitute ``FFTW_MT``
+  for ``FFTW`` in the ``use`` statement just below this comment (see the
   FFTW_MT module's documentation for further details).
 
   If FFTW is in your standard include/library paths, compile this code
   using:
 
+  .. code-block:: text
+    
     chpl testFFTW.chpl
 
-  Otherwise, use the following (where $FFTW_DIR points to your FFTW
-  installation):
+  Otherwise, use the following (where ``$FFTW_DIR`` points to your
+  FFTW installation):
+
+  .. code-block:: text
 
     chpl testFFTW.chpl -I$FFTW_DIR/include -L$FFTW_DIR/lib
 
   The FFTW module uses the FFTW3 API and currently just implements the
   basic, double-precision interface.  We will assume that the reader
-  is familiar with using FFTW; more details are at
-  http://www.fftw.org.
+  is familiar with using FFTW; more details are at http://www.fftw.org.
 
   The code computes a series of 1D, 2D and 3D transforms, exercising
   the complex<->complex and real<->complex transforms (both in- and
   out-of-place). The output of the code should be a series of small
-  numbers ( <= 10^-13 ); see testFFTW.good for example values, though
+  numbers ( <= 10^-13 ); see ``testFFTW.good`` for example values, though
   it is possible that your values may differ in practice.
 
-  The input data for these tests is in arr{1,2,3}d.dat. The format of
+  The input data for these tests is in ``arr{1,2,3}d.dat``. The format of
   these files is documented below.
 */
 
 use FFTW;
 
 //
-// print out the error values?  Note that values may differ between
+// Print out the error values?  Note that values may differ between
 // platforms (so turn off for testing).
 //
 config const printErrors = true;
@@ -48,7 +51,7 @@ config const printErrors = true;
 config const epsilon = 10e-13;
 
 //
-// Perform the tests and then cleanup.
+// Performs the tests and cleanup.
 //
 proc main() {
   testAllDims();
@@ -67,34 +70,32 @@ proc testAllDims() {
 
 //
 // This is main test code, parametrized by the number of dimensions,
-// 'ndim'.  'fn' is the filename of the file that contains the test
-// data.
+// ``ndim``.  ``fn`` is the filename of the file that contains the
+// test data.
 //
 proc runtest(param ndim : int, fn : string) {
   var dims : ndim*int(32);
 
-  /* We define a number of different domains below, corresponding to
-     complex input/output arrays, real (input)->complex (output)
-     out-of-place arrays, and real<->complex in-place arrays.
+/* We define a number of different domains below, corresponding to
+   complex input/output arrays, real (input)->complex (output)
+   out-of-place arrays, and real<->complex in-place arrays.
 
-     The domains are as follows:
+   The domains are as follows:
 
-        * D : for complex<->complex transforms. This domain is also
-             used for the real array in a real->complex out-of-place
-             transform.
+     * ``D``: for complex<->complex transforms. This domain is also used
+       for the real array in a ``real->complex`` out-of-place transform.
 
-        * cD : for the complex array in a real<->complex out-of-place
-              transform.
+     * ``cD`` : for the complex array in a real<->complex
+       out-of-place transform.
 
-        * rD : for the real array in a real<->complex in-place
-              transform. This includes the padding needed by the
-              in-place transform. D is a sub-domain of this, and can be
-              used to extract the real array, without padding.
+     * ``rD`` : for the real array in a real<->complex in-place transform.
+       This includes the padding needed by the in-place transform.
+       ``D`` is a sub-domain of this, and can be used to extract the real
+       array, without padding.
 
-        * reD, imD : Utility domains that access the real/complex parts
-                    of the complex array in a real<->complex in-place
-                    transform.
-   */
+     * ``reD, imD`` : Utility domains that access the real/complex parts
+       of the complex array in a real<->complex in-place transform.
+*/
   var D : domain(ndim);
   var rD,cD,reD,imD : domain(ndim,int,true);
 
