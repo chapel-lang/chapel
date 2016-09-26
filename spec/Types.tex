@@ -296,6 +296,19 @@ constants must be prefixed by the enumerated type name and a dot unless a
 use statement is employed (see~\rsec{The_Use_Statement}).
 \end{chapelexample}
 
+\index{enumerated types!iterating}
+It is possible to iterate over an enumerated type. The loop body will be
+invoked on each named constant in the enum.
+The following method is also available:
+
+\index{enumerated types!size@\chpl{size}}
+\index{predefined functions!size (enum)@\chpl{size} (enum)}
+\begin{protohead}
+proc $enum$.size: int
+\end{protohead}
+\begin{protobody}
+The number of constants in the given enumerated type.
+\end{protobody}
 
 \clearpage
 \section{Structured Types}
