@@ -84,7 +84,7 @@ clean-module-docs: FORCE
 	@echo
 	@echo "Removing module docs that were generated into source/"
 	rm -rf source/modules/dists
-	rm -rf source/modules/internal
+	rm -rf source/builtins/
 	rm -rf source/modules/layouts
 	rm -rf source/modules/packages
 	rm -rf source/modules/standard
