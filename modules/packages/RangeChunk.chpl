@@ -122,46 +122,6 @@ module RangeChunk {
     }
   }
 
-  /*
-   * Query the chunk index of a value in the range.
-   * Returned value is zero-based.
-   */
-
-  proc whichChunk(r: range(?RT, bounded, ?), numChunks: integral, val: integral,
-                  remPol: RemElems = Thru): RT {
-    assert(r.length != 0 && numChunks > 0);
-
-    const nElems = r.length;
-    const nChunks = numChunks: RT;
-    const i = r.indexOrder(val);
-
-    assert(i: int != -1);
-
-    select (remPol) {
-      when Thru {
-        return i * nChunks / nElems; 
-      }
-      when Pack {
-        var chunkSize = nElems / nChunks;
-        if chunkSize * nChunks != nElems then
-          chunkSize += 1;
-        return i / chunkSize;
-      } 
-      when Mod {
-        const chunkSize = nElems / nChunks;
-        const chunkSizePlus = chunkSize + 1;
-        const rem = nElems - chunkSize * nChunks;
-        const splitPoint = rem * chunkSizePlus;
-        return if i < splitPoint
-          then i / chunkSizePlus 
-          else rem + (i - splitPoint) / chunkSize; 
-      }
-      otherwise {
-        halt("RangeChunk: unknown RemElems in whichChunk");
-      }
-    }
-  }
-
 
   /*
    * Private helpers for order pairs and thereby ranges.
