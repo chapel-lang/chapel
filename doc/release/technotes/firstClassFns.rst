@@ -113,7 +113,7 @@ the 'func' type functions that are provided as follows:
   // no arguments, void return type (returns no value)
   proc func() type
 
-  // no arguments, the return type is 'rettype' 
+  // no arguments, the return type is 'rettype'
   proc func(type rettype) type
 
   // argument types are 'argtypes'
@@ -127,6 +127,34 @@ For example:
   var f1: func();      // A shortcut for the above
   var g : func(int);   // A function with no arguments, returning int
   var h : func(bool, int); // A function with one bool argument, returning int
+
+Reflection
+----------
+
+First-class functions define a type method ``retType`` that returns the type
+of the value that would be returned if the function were to be invoked, and
+a type method ``argTypes`` that returns a tuple of the types of each formal.
+
+For example:
+
+.. code-block:: chapel
+
+  var F = lambda (x: int) { return x + 42; };
+
+  writeln(F(13));
+  writeln();
+
+  writeln("retType  = ", F.retType  : string);
+  writeln("argTypes = ", F.argTypes : string);
+  writeln();
+
+generates the output::
+
+  55
+
+  retType  = int(64)
+  argTypes = 1*int(64)
+
 
 
 Future Directions
