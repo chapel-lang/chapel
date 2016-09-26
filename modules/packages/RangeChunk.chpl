@@ -84,7 +84,7 @@ module RangeChunk {
         when Thru do chunk = chunkOrderThru(nElems, nChunks, i);
         when Pack do chunk = chunkOrderPack(chunkSize, nElems, i);
         when Mod  do chunk = chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
-        otherwise halt("RangeChunk: unknown remPol in chunksOrder");
+        otherwise halt("RangeChunk: unknown RemElems in chunksOrder");
       }
       yield chunk;
     }
@@ -115,7 +115,7 @@ module RangeChunk {
         return chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
       }
       otherwise {
-        halt("RangeChunk: unknown remPol in chunkOrder");
+        halt("RangeChunk: unknown RemElems in chunkOrder");
       }
     }
   }
@@ -155,7 +155,7 @@ module RangeChunk {
           else rem + (i - splitPoint) / chunkSize; 
       }
       otherwise {
-        halt("RangeChunk: unknown remPol in whichChunk");
+        halt("RangeChunk: unknown RemElems in whichChunk");
       }
     }
   }
@@ -182,9 +182,12 @@ module RangeChunk {
   // remainder elems packed into all chunks with small tail
   private proc chunkOrderPack(chunkSize: ?I, nElems: I, i: I): (I, I) {
     const start = chunkSize * i;
+    if start >= nElems then
+      return (1, 0);
+
     var end = start + chunkSize - 1;
-    if end > nElems then
-      end = nElems;
+    if end >= nElems then
+      end = nElems - 1;
     return (start, end); 
   }
 
