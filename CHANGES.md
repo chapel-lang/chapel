@@ -12,7 +12,7 @@ TODO: reorder sections
 version 1.14.0
 ==============
 
-Seventeenth public release of Chapel, September 21, 2016
+Seventeenth public release of Chapel, October 6, 2016
 
 Highlights
 ----------
@@ -176,6 +176,7 @@ Performance Optimizations/Improvements
 * optimized on-statements that end up being local
 * optimized the implementation of decrementing remote task counters
 * stopped heap-allocating variables due to on-clauses for 'fifo' and 'muxed'
+* improved the performance of intrinsic-based floating-point atomic 'fetchAdd's
 * fixed a potential performance issue when growing/shrinking arrays as vectors
 * made modest improvements to the performance of associative domains
 * optimized the implementation of .re and .im for complex values
@@ -282,6 +283,7 @@ Bug Fixes
 * fixed a bug in which 64-bit atomic loads on 32-bit systems were not atomic
 * fixed a longstanding but infrequent race condition in privatization
 * fixed a bug in handling 'ref' return intents
+* fixed a bug involving 'ref's to array elements
 * fixed a bug for recursive functions that return records
 * fixed a bug in accessing overridden methods
 * fixed a bug in which reduce intents could not be applied to arrays
@@ -337,14 +339,14 @@ Runtime Library Changes
   (see http://chapel.cray.com/docs/master/technotes/atomics.html and
    http://chapel.cray.com/docs/1.14/usingchapel/chplenv.html#chpl-atomics)
 * re-enabled support for massivethreads for single-locale executions
-* added support for out-of-segment non-blocking puts and gets
+* added support for out-of-segment non-blocking puts and gets for 'gasnet'
 * changed the 'fifo' tasking layer to allocate task stacks in heap memory
 
 Generated Code
 --------------
 * improved generated code readability when using the new --denormalize flag
 * added function IDs and a function ID -> name table to the generated code
-* improved debug information for the LLVM back-end compiler
+* enabled the LLVM back-end compiler to produce debug information
 * improved #line directives in the generated code when using --cpp-lines
 * improved the generated code quality for 'local' blocks
 
