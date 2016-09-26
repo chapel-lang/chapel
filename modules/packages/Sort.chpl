@@ -19,7 +19,6 @@
 
 
 // TODO -- performance test sort routines and optimize (see other TODO's)
-// TODO -- Try using orderToIndex rather than using alignment/stride
 /*
 
 The Sort module is designed to support standard sort routines.
@@ -757,10 +756,9 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   const low = Dom.alignedLow,
         high = Dom.alignedHigh,
-        stride = abs(Dom.stride),
-        alignment = Dom.alignment;
+        stride = abs(Dom.stride);
 
-  for i in low..high-stride by stride align alignment {
+  for i in low..high-stride by stride {
     var jMin = i;
     // TODO -- should be a minloc reduction, when they can support comparators
     for j in i..high by stride {
