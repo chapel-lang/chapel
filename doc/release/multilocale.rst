@@ -5,8 +5,8 @@ Multilocale Chapel Execution
 ============================
 
 This document outlines the steps to get started with multi-locale Chapel.
-Steps 2-3 describe how to build a multilocale Chapel and steps 4-6 cover
-compiling and running multilacale Chapel programs.
+Steps 2-3 describe how to build a multilocale Chapel, and steps 4-6 cover
+compiling and running multilocale Chapel programs.
 
 0. Check for instructions more relevant to your platform in
    :ref:`platform-specific <platforms-index>` documentation.
@@ -74,7 +74,7 @@ typically see two binaries (e.g., hello and hello_real).  The first
 binary contains code to launch the Chapel program onto the compute nodes
 as specified by the :ref:`CHPL_LAUNCHER <readme-launcher>` variable. The
 second contains the program code itself. The ``-v`` command line option
-is a good way to learn about what the lanucher is doing.
+is a good way to learn about what the launcher is doing.
 
 .. _what-is-gasnet:
 
