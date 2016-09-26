@@ -475,8 +475,10 @@ Range assignment is legal when:
 \item An implicit conversion is allowed from \chpl{idxType} of the source range
        to \chpl{idxType} of the destination range type,
 \item the two range types have the same \chpl{boundedType}, and
-\item either the destination range is stridable or the source range's
-      stride is 1.
+\item either the destination range is stridable or the source range
+      is not stridable.
+\item Or an explicit conversion is used to make the source range match the
+      type of the destination range.
 \end{itemize}
 
 \subsection{Range Comparisons}
