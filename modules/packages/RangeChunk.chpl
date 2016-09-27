@@ -17,7 +17,36 @@
  * limitations under the License.
  */
 
+/*
+   The ``RangeChunk`` module assists with dividing a bounded ``range`` of any ``idxType``
+   and stride into ``numChunks``. Chunks are 0-based, with the ``0`` index chunk including
+   ``range.low`` and the ``numChunks - 1`` index chunk including ``range.high``.
+   
+   These "chunks" are accessible in several ways:
+
+     * as a range, through an iterator
+     * as a range, through a query
+     * as a tuple of 0-based orders into the range, through an iterator
+     * as a tuple of 0-based orders into the range, through a query
+   
+   Given that it will be uncommon for the length of a given ``range`` to be divisible by
+   ``numChunks``, there are three different remainder policies available, expressed
+   by the enum ``RemElems``.
+*/  
 module RangeChunk {
+
+  /*
+     Given that it will be uncommon for the length of a ``range`` to be divisible by
+     ``numChunks``, ``RemElems`` specifies the distribution of remainder elements:
+       
+       * Thru: default policy; remainder elements will be distributed throughout
+               ``numChunks`` chunks
+       * Pack: each chunk will receive ceil( ``range.length`` / ``numChunks`` ) elements,
+               then one chunk will receive what is leftover; the number of actual chunks
+               may be less than ``numChunks``
+       * Mod:  in ``numChunks`` chunks, every chunk that has an index less than
+               ``range.length mod numChunks`` will receive a remainder element
+  */
   enum RemElems {
     Thru,
     Pack,
@@ -26,11 +55,11 @@ module RangeChunk {
   use RemElems;
   use BoundedRangeType;
 
+  
   /*
-   * Range-based interface, iterator and query.
-   * idx in query is zero based.
-   */
-
+     Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
+     as a range. The remainders will be distributed according to ``remPol``.
+  */
   iter chunks(r: range(?RT, bounded, ?S), numChunks: integral,
               remPol: RemElems = Thru): range(RT, bounded, S) {
     for (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
@@ -42,6 +71,10 @@ module RangeChunk {
     }
   }
 
+  /*
+     Returns the ``idx`` chunk of range ``r`` as a range. The remainders will be
+     distributed according to ``remPol``.
+  */
   proc chunk(r: range(?RT, bounded, ?S), numChunks: integral, idx: integral,
              remPol: RemElems = Thru): range(RT, bounded, S) {
     const (startOrder, endOrder) = chunkOrder(r, numChunks, idx, remPol);
@@ -53,11 +86,9 @@ module RangeChunk {
   }
 
   /*
-   * Order-based interface, iterator and query.
-   * Orders are zero-based "indices" into a range. 
-   * idx in query is zero-based.
-   */
-
+     Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
+     as a 0-based order tuple. The remainders will be distributed as described in RemElems.
+  */
   iter chunksOrder(r: range(?RT, bounded, ?), numChunks: integral,
                    remPol: RemElems = Thru): 2*RT {
     if r.length == 0 || numChunks <= 0 then
@@ -92,6 +123,10 @@ module RangeChunk {
     }
   }
 
+  /*
+     Returns the ``idx`` chunk of range ``r`` as a 0-based order tuple. The remainders
+     will be distributed according to ``remPol``.
+  */
   proc chunkOrder(r: range(?RT, bounded, ?), numChunks: integral, idx: integral,
                   remPol: RemElems = Thru): 2*RT {
     if r.length == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
@@ -123,13 +158,11 @@ module RangeChunk {
   }
 
 
-  /*
-   * Private helpers for order pairs and thereby ranges.
-   * Each corresponds with a remainder policy.
-   * i is a zero-based index.
-   */
-
-  // remainder elems distributed throughout 
+  //
+  // Private helpers for order pairs and thereby ranges.
+  // Each corresponds with a remainder policy.
+  //
+  pragma "no doc"
   private proc chunkOrderThru(nElems: ?I, nChunks: I, i: I): (I, I) {
     const m = nElems * i;
     const start = if i == 0
@@ -141,7 +174,7 @@ module RangeChunk {
     return (start, end);
   }
 
-  // remainder elems packed into all chunks with small tail
+  pragma "no doc"
   private proc chunkOrderPack(chunkSize: ?I, nElems: I, i: I): (I, I) {
     const start = chunkSize * i;
     if start >= nElems then
@@ -153,16 +186,14 @@ module RangeChunk {
     return (start, end); 
   }
 
-  // remainder elems distributed over chunks before rem
+  pragma "no doc"
   private proc chunkOrderMod(chunkSize: ?I, rem: I, nElems: I, nChunks: I,
                              i: I): (I, I) {
     var start, end: I;
     if i < rem {
-      // (chunkSize+1) elements per chunk
       start = i * (chunkSize + 1);
       end = start + chunkSize;
     } else {
-      // (chunkSize) elements per chunk
       start = nElems - (nChunks - i) * chunkSize;
       end = start + chunkSize - 1;
     }
