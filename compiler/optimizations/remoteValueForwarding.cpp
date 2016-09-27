@@ -300,7 +300,7 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
     // Find actual for arg.
     SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
 
-    INT_ASSERT(actual && actual->var->type == prevArgType);
+    INT_ASSERT(actual && actual->getValType() == prevArgType->getValType());
     SET_LINENO(actual);
 
     // Insert de-reference temp of value.
