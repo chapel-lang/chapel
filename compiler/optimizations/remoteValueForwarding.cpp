@@ -530,7 +530,11 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     if (call->isResolved()) {
       ArgSymbol* arg = actual_to_formal(use);
 
-      retval = isSafeToDeref(defMap, useMap, field, arg, visited);
+      if (arg->intent == INTENT_CONST_REF) {
+        retval = true;
+      } else {
+        retval = isSafeToDeref(defMap, useMap, field, arg, visited);
+      }
 
     } else if (call->isPrimitive(PRIM_MOVE)) {
       SymExpr* newRef = toSymExpr(call->get(1));
