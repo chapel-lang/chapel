@@ -92,7 +92,7 @@ Syntactic/Naming Changes
 New Features
 ------------
 * added a capability for generating stack traces on 'halt's
-  (see http://chapel.cray.com/docs/1.14/usingchapel/chplenv.html#chpl-unwind))
+  (see http://chapel.cray.com/docs/1.14/usingchapel/chplenv.html#chpl-unwind)
 * added support for iterating over, and querying the 'size' of enumerated types
   (see 'Enumerated Types' in the language specification)
 * added support for recursive record/class initializers
@@ -105,9 +105,9 @@ New Features
 * added support for 'retType' and 'argTypes' queries to first-class functions
   (http://chapel.cray.com/docs/1.14/technotes/firstClassFns.html#reflection)
 * added the ability to create serial iterators for types
-  (see 'The Method Receiver and the 'this' Argument' in the language spec))
+  (see 'The Method Receiver and the 'this' Argument' in the language spec)
 * added early prototype support for class/record initializers (constructors)
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/chips/10.rst))
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/chips/10.rst)
 
 Feature Improvements
 --------------------
@@ -159,13 +159,13 @@ Package Modules
 * added initial support for a 'BLAS' module supporting the level 3 routines
   (see http://chapel.cray.com/docs/1.14/modules/packages/BLAS.html)
 * added an MPI module supporting message passing between Chapel images/locales
-  (see http://chapel.cray.com/docs/1.14/modules/packages/MPI.html))
+  (see http://chapel.cray.com/docs/1.14/modules/packages/MPI.html)
 * added a ZeroMQ module supporting inter-application communication via 0MQ
   (see http://chapel.cray.com/docs/1.14/modules/packages/ZMQ.html)
 * added support for a 'MatrixMarket' module providing file serialization
   (see $CHPL_HOME/modules/packages/MatrixMarket.chpl)
 * added a new 'RangeChunk' package for dividing ranges into multiple chunks
-  (see http://chapel.cray.com/docs/1.14/modules/packages/RangeChunk.html))
+  (see http://chapel.cray.com/docs/1.14/modules/packages/RangeChunk.html)
 * Sort module: dramatically revamped the module, including comparator support
   (see http://chapel.cray.com/docs/1.14/modules/packages/Sort.html)
 * Search module: dramatically revamped the module, including comparator support
@@ -176,7 +176,7 @@ Domain Maps (Layouts and Distributions)
 * added a new 'StencilDist' distribution in support of stencil access patterns
   (see http://chapel.cray.com/docs/1.14/modules/dists/StencilDist.html)
 * added support for Block-distributed sparse domains and arrays
-  (see http://chapel.cray.com/docs/1.14/modules/dists/BlockDist.html))
+  (see http://chapel.cray.com/docs/1.14/modules/dists/BlockDist.html)
 * extended Block distributions to support strided bounding boxes
 
 Performance Optimizations/Improvements
@@ -213,7 +213,7 @@ Example Codes
 * made improvements to LCALS for style and performance
   (see $CHPL_HOME/examples/benchmarks/lcals/*)
 * changed ISx to use low-level PCG interface to match the reference version
-  (see $CHPL_HOME/examples/benchmarks/isx/*))
+  (see $CHPL_HOME/examples/benchmarks/isx/*)
 
 Tool Changes
 ------------
@@ -222,7 +222,7 @@ Tool Changes
   - fixed undetected 'chplvis' regressions in 1.13
   - made significant improvements to the user interface
   - added new views of execution-time data
-  (see http://chapel.cray.com/docs/1.14/tools/chplvis/chplvis.html))
+  (see http://chapel.cray.com/docs/1.14/tools/chplvis/chplvis.html)
 * 'chpldoc' improvements: improved formatting and handling of many situations
 
 Documentation
@@ -237,7 +237,7 @@ Documentation
   (see http://chapel.cray.com/docs/1.14/users-guide/index.html)
 * significantly re-worked the multi-locale execution and quickstart docs
   (see http://chapel.cray.com/docs/1.14/usingchapel/multilocale.html and
-   http://chapel.cray.com/docs/1.14/usingchapel/QUICKSTART.html))
+   http://chapel.cray.com/docs/1.14/usingchapel/QUICKSTART.html)
 * moved information about execution on UDP-based systems into its own document
   (see http://chapel.cray.com/docs/1.14/platforms/udp.html)
 * added usage ('use ...') information to chpldoc-generated module documentation
@@ -248,7 +248,7 @@ Documentation
   (see http://chapel.cray.com/docs/1.14/modules/packages/HDFS.html and
    http://chapel.cray.com/docs/1.14/technotes/auxIO.html#setting-up-hdfs)
 * added an archive of past language specification versions to the online docs
-  (see http://chapel.cray.com/docs/1.14/language/archivedSpecs.html))
+  (see http://chapel.cray.com/docs/1.14/language/archivedSpecs.html)
 * updated and fixed minor issues in the language specification
 * fixed a plethora of spelling mistakes throughout the documentation
 * fixed several online documentation formatting errors
@@ -441,7 +441,7 @@ Developer-oriented changes: Runtime improvements
 Developer-oriented changes: Documentation
 -----------------------------------------
 * added developer support for console-/man-based chpldocumentation
-  ('make man-chapel'))
+  ('make man-chapel')
 
 Developer-oriented changes: Third-party improvements
 ----------------------------------------------------
@@ -1032,7 +1032,7 @@ New Features
 * added the ability to rename extern records for use within Chapel
   (see 'Interoperation::...::Shared Types::Referring to External C Structs')
 * added support for -lchplmalloc for compilers supporting weak symbols
-  (see http://chapel.cray.com/docs/1.12/technotes/allocators.html))
+  (see http://chapel.cray.com/docs/1.12/technotes/allocators.html)
 * added the ability to use 'continue' statements in 'param' for-loops
 * added support for == and != operators on domain maps
 
@@ -1158,7 +1158,7 @@ Bug Fixes
 * fixed bugs with applying reduce intents to forall loops over domains/arrays
 * fixed bugs with scope resolution's choice of which symbol to resolve to
 * fixed a bug in which overloads of '|' broke internal modules
-* fixed a bug related to extern variables of types like c_ptr(c_int))
+* fixed a bug related to extern variables of types like c_ptr(c_int)
 * fixed an internal error when a class calls its parent class's destructor
 * fixed a bug in which large array copies could overflow runtime arguments
 * fixed a bug in which calls of the form '<type>(x)' would cause internal errors
@@ -1886,7 +1886,7 @@ Standard Modules
 * added a new standard module supporting a prefetch() operation
   (see modules/standard/Prefetch.chpl)
 * added some initial file/directory utility routines (more planned for 1.11)
-  (e.g., remove(), rename(), cwd(), chdir(), mkdir(), chown())
+  (e.g., remove(), rename(), cwd(), chdir(), mkdir(), chown()
 * added draft support for glob() and walking directory trees
   (see modules/standard/Filerator.chpl -- feedback desired)
 * added readstring()/readline() methods that read bytes into strings/arrays
