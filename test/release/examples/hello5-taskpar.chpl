@@ -1,6 +1,8 @@
-/*  This test uses Chapel's task parallel features to create a
- *  parallel hello world program that utilizes multiple cores on a
- *  single locale (node)
+// Task-parallel hello world
+
+/* This test uses Chapel's task parallel features to create a parallel
+   hello world program that utilizes multiple cores on a single locale
+   (node)
  */
 
 

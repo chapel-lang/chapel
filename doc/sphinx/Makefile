@@ -62,7 +62,7 @@ hellos: clean-hellos
 	@echo
 	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/$(CHPLDOC_HELLO_DIR)"
 	@#Note - this assumes that we are not in a release tar ball
-	$(CHPL2RST) $(CHPL2RSTOPTS_HELLOS) ../../test/release/examples/hello*.chpl
+	$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../../test/release/examples/hello*.chpl
 
 
 checkdocs: FORCE

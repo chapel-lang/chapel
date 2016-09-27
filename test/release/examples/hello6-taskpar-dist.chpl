@@ -1,7 +1,9 @@
-/*  This test shows how to use Chapel's task parallelism and locality
- *  features to create a parallel "Hello, world" program that utilizes
- *  multiple distributed memory locales (nodes) and multiple cores
- *  within each locale.
+// Distributed memory task parallel hello world
+
+/* This test shows how to use Chapel's task parallelism and locality
+   features to create a parallel "Hello, world" program that utilizes
+   multiple distributed memory locales (nodes) and multiple cores
+   within each locale.
  */
 
 
