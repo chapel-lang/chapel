@@ -1,11 +1,11 @@
 // FFTW
 
 /*
-  Example usage of the FFTW module in Chapel. This particular file
+  Example usage of the :mod:`FFTW` module in Chapel. This particular file
   demonstrates the single-threaded version of the code.  In order to
   switch to a multi-threaded version of the code, substitute ``FFTW_MT``
   for ``FFTW`` in the ``use`` statement just below this comment (see the
-  FFTW_MT module's documentation for further details).
+  :mod:`FFTW_MT` module's documentation for further details).
 
   If FFTW is in your standard include/library paths, compile this code
   using:
@@ -21,14 +21,14 @@
 
     chpl testFFTW.chpl -I$FFTW_DIR/include -L$FFTW_DIR/lib
 
-  The FFTW module uses the FFTW3 API and currently just implements the
+  The :mod:`FFTW` module uses the FFTW3 API and currently just implements the
   basic, double-precision interface.  We will assume that the reader
   is familiar with using FFTW; more details are at http://www.fftw.org.
 
   The code computes a series of 1D, 2D and 3D transforms, exercising
   the complex<->complex and real<->complex transforms (both in- and
   out-of-place). The output of the code should be a series of small
-  numbers ( <= 10^-13 ); see ``testFFTW.good`` for example values, though
+  numbers ( ``<= 10^-13`` ); see ``testFFTW.good`` for example values, though
   it is possible that your values may differ in practice.
 
   The input data for these tests is in ``arr{1,2,3}d.dat``. The format of
