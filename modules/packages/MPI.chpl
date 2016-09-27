@@ -20,6 +20,10 @@
 /* MPI Bindings for Chapel.
 
 
+.. note::
+  This is a prototype of the MPI interface for Chapel. The feature set,
+  configuration support, and documentation are expected to improve over time.
+
 MPI Version
 -----------
 
@@ -78,6 +82,24 @@ Note that the same caveats that apply to OpenMP+MPI
 programming apply here. For instance, MPI must be initialized with the
 appropriate thread support (see below).
 
+**Setting up SPMD mode on a Cray:**
+
+The recommended configuration for running multilocale MPI jobs on a Cray is as
+follows:
+
+* ``CHPL_TARGET_COMPILER = cray-prgenv-gnu``
+* ``CHPL_TASKS = fifo``
+* ``CHPL_COMM = none``
+* ``CHPL_LAUNCHER = mpirun``
+* ``MPICH_MAX_THREAD_SAFETY = multiple``
+
+These are the configurations in which this module is currently tested.
+
+.. note::
+  Currently, running SPMD jobs on a Cray requires manually launching the jobs,
+  as opposed to utilizing a built in Chapel launcher. Support for launching SPMD jobs with the built-in Chapel launchers will be
+  added in the future.
+
 Multilocale Mode
 ~~~~~~~~~~~~~~~~
 
@@ -97,23 +119,29 @@ model requires
    requirement that hopefully can be relaxed
    in the future.
 
-Multilocale mode has been tested on:
+**Setting up multilocale mode on a Cray:**
 
-1. Linux, with the mpi-conduit for GASNet
-2. Cray XC, with the aries conduit for GASNet
+The recommended configuration for running multilocale MPI jobs on a Cray is as
+follows:
+
+* ``CHPL_TARGET_COMPILER = cray-prgenv-gnu``
+* ``CHPL_TASKS = fifo``
+* ``CHPL_COMM = gasnet``
+* ``CHPL_COMM_SUBSTRATE = mpi`` or ``CHPL_COMM_SUBSTRATE = aries``
+* ``MPICH_MAX_THREAD_SAFETY = multiple``
+* ``AMMPI_MPI_THREAD = MULTIPLE`` (if ``CHPL_COMM_SUBSTRATE = mpi``)
+
+These are the configurations in which this module is currently tested. Any
+launcher should work fine for this mode. Support is expected to expand in
+future versions.
 
 
-Environment Variables and Module Constants
-------------------------------------------
+Configurations Constants
+------------------------
 
 This module uses two boolean config constants:
 :const:`autoInitMPI` and :const:`requireThreadedMPI`.
 Refer to their documentation for more information on when to use them.
-
-If you are using the MPI conduit on GASNet, you will need to select the threading
-mode for MPI (if you are running in mixed mode). To do so, set
-``AMMPI_MPI_THREAD=MULTIPLE`` in your environment. On Cray systems, you might
-need to set ``MPICH_MAX_THREAD_SAFETY`` to ``MULTIPLE``.
 
 Communicators
 -------------
@@ -132,13 +160,13 @@ error if used.
      in which case it is written using an array form.
   #. Some MPI-1.1 functions were deprecated in MPI-2. These should be updated in the future, but
      are still present in this version.
-  #. :const;`MPI_Aint` is represented by ptrdiff. If this is not the correct
+  #. :const:`MPI_Aint` is represented by ptrdiff. If this is not the correct
      size, there will be an assertion failure in the code.
 
 MPI Module Documentation
 ------------------------
 
-..note::
+.. note::
   For items without documentation, please refer to the MPI documentation.
 
 */
