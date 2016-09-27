@@ -1,16 +1,17 @@
 // "Production-grade" hello world
 
-/* This program is conceptually very similar to hello.chpl, but it
-   uses a more structured programming style, explicitly defining a
-   module, a configuration constant, and a main() procedure.
+/* This program is conceptually very similar to :ref:`hello.chpl
+   <primers-hello>`, but it uses a more structured programming style,
+   explicitly defining a module, a configuration constant, and a
+   main() procedure.
  */
 
 //
 // The following statement declares a module named 'Hello'.  If a
 // source file contains no module declarations, the filename minus its
 // ``.chpl`` extension serves as the module name for the code it
-// contains.  Thus, 'hello' would be the automatic module name for
-// the previous hello.chpl example.
+// contains.  Thus, 'hello' would be the automatic module name for the
+// previous :ref:`hello.chpl <primers-hello>` example.
 //
 module Hello {
 
@@ -28,11 +29,11 @@ module Hello {
 
 // Any top-level code in a module is executed as part of the module's
 // initialization when the program begins executing.  Thus, in the
-// previous one-line hello.chpl, the presence of a writeln() at the
-// file scope formed the implicit `hello` module's initialization and
-// would be executed at program startup.  Since there was no explicit
-// main() function or any other top-level code, that's all that the
-// program would do.
+// previous one-line :ref:`hello.chpl <primers-hello>`, the presence
+// of a writeln() at the file scope formed the implicit `hello`
+// module's initialization and would be executed at program startup.
+// Since there was no explicit `main()` function or any other
+// top-level code, that's all that the program would do.
 
 
 //
