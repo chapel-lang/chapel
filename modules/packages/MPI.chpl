@@ -57,9 +57,9 @@ get Chapel to use mpicc and assume that it works like gcc does.
 Note that on Cray systems, this is not necessary, since the default
 compilers include the necessary MPI information.
 
-.. note ::
-  #. Currently, only the gnu compilers wrapped by MPI are supported. This class
-     is expected to broaden in the future.
+.. note::
+  Currently, only the gnu compilers wrapped by MPI are supported. This class
+  is expected to broaden in the future.
 
 Interoperability Modes
 ----------------------
