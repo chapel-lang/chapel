@@ -878,7 +878,7 @@ Type methods can also be iterators.
 In the following code, the class \chpl{R} defines a type method
 iterator which can be invoked on the type itself:
 \begin{chapel}
-class R {
+class C {
   var x: int;
   var y: string;
 
@@ -890,8 +890,8 @@ class R {
   }
 }
 
-for r in R.myIter() do
-  writeln(r);
+for i in C.myIter() do
+  writeln(i);
 \end{chapel}
 \begin{chapeloutput}
 3
@@ -1020,9 +1020,9 @@ over the class type itself.
 
 \begin{chapelexample}{typeMethodIterThese.chpl}
 In the following code, the class \chpl{R} defines a type method
-iterator named these, supporting direct iteration over the type:
+iterator named \chpl{these}, supporting direct iteration over the type:
 \begin{chapel}
-class R {
+class C {
   var x: int;
   var y: string;
 
@@ -1034,8 +1034,8 @@ class R {
   }
 }
 
-for r in R do
-  writeln(r);
+for i in C do
+  writeln(i);
 \end{chapel}
 \begin{chapeloutput}
 1
