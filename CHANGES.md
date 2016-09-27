@@ -50,7 +50,7 @@ Highlights (see subsequent sections for more details)
      http://chapel.cray.com/docs/1.14/examples/index.html)
   - completed and updated our suite of Computer Language Benchmark Game codes
     (see $CHPL_HOME/examples/benchmarks/shootout/* and
-     http://benchmarksgame.alioth.debian.org/))
+     http://benchmarksgame.alioth.debian.org/)
   - added several new pages to the online users guide
     (see http://chapel.cray.com/docs/1.14/users-guide/index.html)
 * additional highlights:
