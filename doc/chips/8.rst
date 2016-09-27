@@ -5,7 +5,7 @@ Status:
   Draft
 
 Authors:
-  Greg Titus, Kyle Brady, Michael Ferguson
+  Greg Titus, Kyle Brady, Michael Ferguson, Preston Sahabu
 
 Abstract
 --------
@@ -14,52 +14,54 @@ A proposal for how error handling should work in Chapel.
 
 
 Rationale
----------
++++++++++
 
-Chapel currently lacks a general strategy for errors. The standard library
-currently primarily uses two approaches: `halt()` and optional `out` arguments
-(`out error: syserr`, if argument provided, assumes user will handle it; else
-call `halt()` ). Each of these approaches has serious drawbacks.
+Chapel currently lacks a general strategy for errors. The current standard
+library primarily uses two approaches, and each has serious drawbacks:
 
-  * Halting the program is not appropriate in library code
-  * The output argument approach only returns error codes and doesn't permit
-    users to add new error codes or new types of errors.
+* ``halt()``
+    
+  * Halting the program is not appropriate in library code.
 
-A more general strategy is desired. A good strategy would support the ability
-to write bulletproof code, ideally in a way that supports propagation of
-errors, and also the ability to get useful messages when errors are not
-handled.
+* optional ``out`` arguments, ex. ``out error: syserr``
 
-Description
------------
+  * ``if`` argument provided, assumes user will handle it; ``else halt()``
+  * Only returns error codes.
+  * Doesn't permit users to add new error codes or new types of errors.
 
-This error handling proposal is inspired by the Swift error handling strategy.
-See
-
-https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ErrorHandling.html
+A more general strategy is desired, one that supports robust code,
+propagates errors, and provides useful messages when errors are not handled.
 
 
-This strategy is appealing because it represents a middle ground arguably
-acceptable to devotees of both exceptions and error codes; it is easier to
-implement than stack-unwinding since it re-uses the existing return mechanisms;
-and it fits well with existing task parallelism.
+Model: Swift Error Handling
+---------------------------
 
-Summary of the Swift Error Handling Strategy
-++++++++++++++++++++++++++++++++++++++++++++
+This error handling proposal is inspired by the Swift_ error handling strategy.
 
-Functions that can raise an error are declared with throws:
+Swift's strategy is appealing because it:
+
+* represents a middle ground between exceptions and error codes;
+* is easier to implement than stack-unwinding since it re-uses the existing
+  return mechanisms; and
+* fits well with existing task parallelism.
+
+Swift Syntax
+++++++++++++
+
+* Functions that can throw an error are declared with ``throws``:
 
 ::
 
   func canThrowErrors() throws { … }
   func cannotThrowErrors() { … }
 
-Calls that throw must be decorated with `try` or `try!`
+* Calls that throw must be decorated with ``try`` or ``try!``.
 
-`try` propagates the error to an enclosing `do`/`catch` block or out of a
-throwing function `try!` halts if an error occurred
+  * ``try`` propagates the error to an enclosing ``do``/``catch`` block or out
+    of a throwing function.
+  * ``try!`` halts if an error occurred.
 
-Programs can respond to errors with `do`/`catch` statements:
+* Programs can catch errors with ``do``/``catch`` statements:
 
 ::
 
@@ -70,18 +72,24 @@ Programs can respond to errors with `do`/`catch` statements:
     writeln("The first call failed!")
   }
 
-
 Why Decorate Statements That Throw
 ++++++++++++++++++++++++++++++++++
 
-The Swift error handling approach includes the use of `try` to mark statements
+The Swift error handling approach includes the use of ``try`` to mark statements
 that can throw. This design addresses the most serious criticism of exceptions
 as a language feature - that they make the control flow possibilities hard to
 reason about. By marking each statement that can throw, the control flow
 possibilities can again be reasoned about with local information only.
 
-Expected Additions for Chapel
-+++++++++++++++++++++++++++++
+
+Chapel Error Handling
+---------------------
+
+Beyond the syntax and the additions below, Chapel's error handling strategy
+will be more or less identical to that of Swift. 
+
+Expected Additions
+++++++++++++++++++
 
 * Throwing errors from iterators
 * Ability to catch errors generated in runtime layers:
@@ -89,12 +97,148 @@ Expected Additions for Chapel
   * Communication
   * Memory allocation
   * Task creation
-  * Not mandatory to check for these
 
 * Task joins propagate errors to parent tasks:
 
   * Occurs at end the of sync/coforall/cobegin blocks
 
+Implementation
+++++++++++++++
+
+Given that the compiler will enforce the handling of errors, it is possible
+for them to be implemented with the ``out`` argument method described in
+the introduction.
+
+For example, here is some Chapel code that handles an error:
+
+.. code-block:: chapel
+
+  class IllegalArgumentError: Error {} 
+
+  proc caller(arg): A {
+    var value: A = callee(arg);
+    return value;
+  }
+
+  proc handler(arg): A throws {
+    do {
+      var value: A = try callee(arg);
+    } catch e: IllegalArgumentError {
+      return DEFAULT_A;
+    } catch e: Error {
+      throw e;
+    } 
+  }
+
+  proc callee(arg): A throws {
+    if arg then
+      return new A;
+    else
+      throw new IllegalArgumentError();
+  }
+
+The compiler could translate this into the following Chapel code:
+
+.. code-block:: chapel
+
+  class IllegalArgumentError: Error {} 
+
+  proc caller(arg): A {
+    var _e: Error;
+    var value: A = callee(arg, _e);
+    if _e then
+      halt(e.message());
+    else
+      return value;
+  }
+
+  proc handler(arg, out _e: Error): A {
+    var _e2: Error;
+    var value: A = callee(arg, _e2);
+    if _e2: IllegalArgumentError then
+      delete _e2;
+      return DEFAULT_A;
+    else if _e2 then
+      _e = _e2; 
+    else
+      return value;
+  }
+
+  proc callee(arg, out _e: Error): A {
+    if arg then
+      return new A;
+    else
+      _e = new IllegalArgumentError();
+  }
+
+Feedback Received (7/20)
+------------------------
+
+1. ``try`` is verbose within ``do`` blocks. While it clarifies control flow
+   within the block, it would be tiresome to repeat with throwing functions
+   that are closely related (ex. I/O).
+
+2. ``try`` is also verbose from an iteration perspective. For example, 
+   ``writeln("hello world")`` would have to be prefaced with a ``try``
+   statement if it were strictly enforced.
+
+3. main() ought to have some sort of reasonable response to an error being
+   propagated up to it.
+
+Potential Solutions
++++++++++++++++++++
+
+1. Elide ``try``.
+  
+* Within ``do`` blocks, ``try`` is only a visual aide to track control
+  flow. It is reasonable for developers to track that a procedure throws
+  without this assistance because it's already in a ``do`` block. However,
+  ``try!`` would be permitted inside ``do`` blocks for critical failures.
+
+* Outside of ``do`` blocks, ``try`` or ``try!`` can be elided on throwing
+  procedure calls depending on the calling procedure's signature. If the
+  calling procedure ``throws``, then ``try``, else ``try!``.
+
+* The downside of this is that it would be possible to pass errors of a
+  called procedure through the callee without any visual indication of
+  which call is throwing. This could lead to poorly handled error cases.
+    
+2. Elide ``try`` with a compiler flag.
+
+* Same as (1), but we would add an option to enforce marking statements
+  with ``try`` for a thoroughly checked version. This addresses the
+  potential downside of only eliding ``try`` without losing the ability
+  to draft code quickly.
+
+3. Eliminate ``do``.
+
+* ``do`` is already a keyword in Chapel, so it would take more effort to 
+  determine that the ``do`` is being used in association with a ``catch``.
+
+* In its place, ``try`` could be defined for single and compound statements.
+  
+  * If an error is thrown, it will look for a matching ``catch`` block.
+  * If none exists, it will throw to a surrounding ``try`` block.
+  * If none exists, then the procedure invoking it must ``throw`` or the
+    program will not compile.
+
+* The downside is that ``try`` could no longer be used in an expression
+  form, so assignments that might throw an error may look more awkward.
+
+:: 
+
+  var a = try canThrowErrors(); // expression
+  try var a = canThrowErrors(); // statement
+
+4. Cleaning up after an error.
+
+* It is often necessary to cleanup state if an error occurs. To capture this,
+  ``do``/``catch`` could be associated with a ``finally`` block that will
+  run when the ``do`` (or ``try``) block is exited.
+
+* Swift's version of this is ``defer``, which runs when the scope it is
+  defined in is exited. This is a more general form of ``finally`` which
+  may better fit Chapel's needs. 
 
 Examples
 --------
@@ -281,3 +425,5 @@ Implementation Notes
 
 Since this error handling strategy is based off returning either the value or
 an error, better support for union types in chapel may be necessary.
+
+.. _Swift: https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ErrorHandling.html
