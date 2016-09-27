@@ -49,7 +49,8 @@ Highlights (see subsequent sections for more details)
     (see http://chapel.cray.com/docs/1.14/primers/index.html and
      http://chapel.cray.com/docs/1.14/examples/index.html)
   - completed and updated our suite of Computer Language Benchmark Game codes
-    (see $CHPL_HOME/examples/benchmarks/shootout/*)
+    (see $CHPL_HOME/examples/benchmarks/shootout/* and
+     http://benchmarksgame.alioth.debian.org/))
   - added several new pages to the online users guide
     (see http://chapel.cray.com/docs/1.14/users-guide/index.html)
 * additional highlights:
@@ -207,7 +208,8 @@ Memory Improvements
 Example Codes
 -------------
 * added all remaining Computer Language Benchmark Game programs
-  (see $CHPL_HOME/examples/benchmarks/shootout/*)
+  (see $CHPL_HOME/examples/benchmarks/shootout/* and
+   http://benchmarksgame.alioth.debian.org/)
 * significantly improved existing Computer Language Benchmark Game programs
   (see $CHPL_HOME/examples/benchmarks/shootout/*)
 * made improvements to LCALS for style and performance
