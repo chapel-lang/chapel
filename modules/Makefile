@@ -101,8 +101,9 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
-	packages/Norm.chpl \
 	packages/MPI.chpl \
+	packages/Norm.chpl \
+	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/Search.chpl \
 	packages/Sort.chpl \
