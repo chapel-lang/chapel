@@ -209,7 +209,8 @@ that function and pass a Chapel function to it:
   }
 
 Any calls that foo() makes through its function pointer argument will
-call back to Chapel's bar() routine.
+call back to Chapel's bar() routine.  Note that any Chapel functions
+passed as c_fn_ptr arguments cannot be overloaded nor generic.
 
 .. _readme-extern-extern-declarations:
 
