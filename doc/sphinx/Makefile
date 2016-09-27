@@ -6,8 +6,8 @@ include Makefile.sphinx
 CHPL2RST     = ./run-in-venv.bash ./chpl2rst.py
 CHPL2RSTOPTS = --output=rst --prefix=source/primers/primers --link=master
 
-CHPLDOC_HELLO_DIR = source/examples/hellos
-CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPLDOC_HELLO_DIR) --link=master
+CHPL_DOC_HELLO_DIR = source/examples/hellos
+CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPL_DOC_HELLO_DIR) --link=master
 
 help: help-sphinx help-source
 
@@ -60,7 +60,7 @@ primers: clean-primers
 
 hellos: clean-hellos
 	@echo
-	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/$(CHPLDOC_HELLO_DIR)"
+	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/$(CHPL_DOC_HELLO_DIR)"
 	@#Note - this assumes that we are not in a release tar ball
 	$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../../test/release/examples/hello*.chpl
 
@@ -105,8 +105,8 @@ clean-primers: FORCE
 
 clean-hellos: FORCE
 	@echo
-	@echo "Removing hellos generated into $(CHPLDOC_HELLO_DIR)"
-	rm -rf $(CHPLDOC_HELLO_DIR)
+	@echo "Removing hellos generated into $(CHPL_DOC_HELLO_DIR)"
+	rm -rf $(CHPL_DOC_HELLO_DIR)
 
 
 FORCE:
