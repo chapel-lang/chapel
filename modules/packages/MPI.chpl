@@ -60,9 +60,6 @@ compilers include the necessary MPI information.
 .. note ::
   #. Currently, only the gnu compilers wrapped by MPI are supported. This class
      is expected to broaden in the future.
-  #. The current scripts fail to correctly determine the architecture for
-     the mpi-gnu suite, hence ``CHPL_TARGET_ARCH=none``. This is expected to be
-     fixed in the future.
 
 Interoperability Modes
 ----------------------
