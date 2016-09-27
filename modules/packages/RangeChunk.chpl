@@ -22,7 +22,7 @@
    and stride into ``numChunks``. Chunks are 0-based, with the ``0`` index chunk including
    ``range.low`` and the ``numChunks - 1`` index chunk including ``range.high``.
    
-   These "chunks" are accessible in several ways:
+   Chunks are accessible in several ways:
 
      * as a range, through an iterator
      * as a range, through a query
@@ -36,16 +36,15 @@
 module RangeChunk {
 
   /*
-     Given that it will be uncommon for the length of a ``range`` to be divisible by
-     ``numChunks``, ``RemElems`` specifies the distribution of remainder elements:
+     ``RemElems`` specifies the distribution of remainder elements:
        
-       * Thru: default policy; remainder elements will be distributed throughout
-               ``numChunks`` chunks
-       * Pack: each chunk will receive ceil( ``range.length`` / ``numChunks`` ) elements,
-               then one chunk will receive what is leftover; the number of actual chunks
-               may be less than ``numChunks``
-       * Mod:  in ``numChunks`` chunks, every chunk that has an index less than
-               ``range.length mod numChunks`` will receive a remainder element
+       - **Thru**: default policy; remainder elements will be distributed throughout
+         ``numChunks`` chunks
+       - **Pack**: chunks at the front will receive ``ceil(range.length / numChunks)``
+         elements, then one chunk will receive what is left over; the actual number of chunks
+         may be less than ``numChunks``
+       - **Mod**: in ``numChunks`` chunks, every chunk that has an index less than
+         ``range.length % numChunks`` will receive a remainder element
   */
   enum RemElems {
     Thru,
@@ -87,7 +86,7 @@ module RangeChunk {
 
   /*
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
-     as a 0-based order tuple. The remainders will be distributed as described in RemElems.
+     as a 0-based order tuple. The remainders will be distributed according to ``remPol``.
   */
   iter chunksOrder(r: range(?RT, bounded, ?), numChunks: integral,
                    remPol: RemElems = Thru): 2*RT {
