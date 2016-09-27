@@ -112,19 +112,21 @@ c_void_ptr, c_string, and c_ptr(T) are described in the next section.
 Pointer and String Types
 ------------------------
 
-Chapel supports 3 C pointer types: c_void_ptr, c_string, and c_ptr(T).
+Chapel supports four C pointer types: c_void_ptr, c_ptr(T), c_string, and
+c_fn_ptr.
 These types are the same as C types:
 
-.. code-block:: chapel
+.. code-block:: text
 
   c_void_ptr is void*
   c_ptr(T) is T*
   c_string is const char*
+  c_fn_ptr represents a C function pointer (with unspecified arg and return types)
 
 Note that in some cases, a ref argument intent may be used in place of
 c_void_ptr or c_ptr(T).
 
-All three of these pointer types may only point to local memory. The intent is
+All four of these pointer types may only point to local memory. The intent is
 that they will be used to interoperate with C libraries that run within a
 single locale. In addition, these pointer types must be treated carefully as it
 is possible to create the same kinds of problems as in C - in particular, it is
@@ -183,6 +185,32 @@ because c_string is a local-only type, the .c_str() method can only be
 called on Chapel strings that are stored on the same locale; calling
 .c_str() on a non-local string will result in a runtime error.
 
+
+c_fn_ptr
+~~~~~~~~
+
+The c_fn_ptr type is useful for representing arguments to external
+functions that accept function pointers.  At present, there is no way
+to specify the argument types or return type of the function pointer.
+Chapel functions can be passed as arguments of type c_fn_ptr via the
+c_ptrTo() call, as with other c_ptr types.  For example, given an
+external C function foo() that takes in a pointer to a function that
+accepts an int and returns a double, the following code would declare
+that function and pass a Chapel function to it:
+
+.. code-block:: chapel
+
+  extern proc foo(f: c_fn_ptr);
+
+  foo(c_ptrTo(bar));
+
+  proc bar(x: c_int): c_double {
+    ...
+  }
+
+Any calls that foo() makes through its function pointer argument will
+call back to Chapel's bar() routine.  Note that any Chapel functions
+passed as c_fn_ptr arguments cannot be overloaded nor generic.
 
 .. _readme-extern-extern-declarations:
 
