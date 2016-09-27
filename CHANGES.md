@@ -441,7 +441,7 @@ Developer-oriented changes: Runtime improvements
 Developer-oriented changes: Documentation
 -----------------------------------------
 * added developer support for console-/man-based chpldocumentation
-  ('make man-chpl'))
+  ('make man-chapel'))
 
 Developer-oriented changes: Third-party improvements
 ----------------------------------------------------
