@@ -23,7 +23,7 @@ config const numMessages = 100;
 // number of local processing units or cores.
 //
 // Because the messages are printed within a parallel loop, they may
-// be displayed in any order.  The writeln() procedure protects
+// be displayed in any order.  The `writeln()` procedure protects
 // against finer-grained interleaving of the messages themselves.
 //
 forall msg in 1..numMessages do

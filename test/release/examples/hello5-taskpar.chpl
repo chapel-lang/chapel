@@ -20,14 +20,15 @@ config const numTasks = here.maxTaskPar;
 // This is a parallel loop form that will create a distinct task per
 // iteration.
 //
-// This coforall-loop is iterating over the `range` 0..#numTasks which
-// represents the first `numTasks` integers starting at 0 (equivalent
-// to ``0..numTasks-1``).  The result will be `numTasks` iterations,
-// each of which will be executed as a distinct parallel task.
+// This coforall-loop is iterating over the `range` ``0..#numTasks``
+// which represents the first `numTasks` integers starting at 0
+// (equivalent to ``0..numTasks-1``).  The result will be `numTasks`
+// iterations, each of which will be executed as a distinct parallel
+// task.
 //
 // Each iteration prints out a message that is unique based on its
 // value of `tid`.  Due to the task parallelism, the messages may be
-// printed in any order.  However, the writeln() procedure will
+// printed in any order.  However, the `writeln()` procedure will
 // prevent finer-grained interleaving of the messages themselves.
 //
 coforall tid in 0..#numTasks do

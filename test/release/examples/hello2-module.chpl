@@ -30,7 +30,7 @@ module Hello {
 // Any top-level code in a module is executed as part of the module's
 // initialization when the program begins executing.  Thus, in the
 // previous one-line :ref:`hello.chpl <primers-hello>`, the presence
-// of a writeln() at the file scope formed the implicit `hello`
+// of a `writeln()` at the file scope formed the implicit `hello`
 // module's initialization and would be executed at program startup.
 // Since there was no explicit `main()` function or any other
 // top-level code, that's all that the program would do.
