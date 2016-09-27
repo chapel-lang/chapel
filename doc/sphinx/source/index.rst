@@ -19,6 +19,7 @@ Chapel Documentation
    :maxdepth: 1
 
    Quick Reference <language/reference>
+   Hello World Variants <examples/index>
    Primers <primers/index>
    Language Specification <language/spec>
    builtins
