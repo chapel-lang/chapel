@@ -5,6 +5,8 @@ Multilocale Chapel Execution
 ============================
 
 This document outlines the steps to get started with multi-locale Chapel.
+Steps 2-3 describe how to build a multilocale Chapel, and steps 4-6 cover
+compiling and running multilocale Chapel programs.
 
 0. Check for instructions more relevant to your platform in
    :ref:`platform-specific <platforms-index>` documentation.
@@ -27,6 +29,9 @@ This document outlines the steps to get started with multi-locale Chapel.
      * :ref:`CHPL_COMM_SUBSTRATE <set-comm-conduit>` selects a GASNet conduit
      * :ref:`CHPL_GASNET_SEGMENT <set-comm-segment>` indicates a memory segment
 
+   Note that the runtime libraries used by the Chapel compiler are
+   based on these settings.
+
 #.
    .. _remake-the-compiler:
 
@@ -37,14 +42,11 @@ This document outlines the steps to get started with multi-locale Chapel.
      cd $CHPL_HOME
      make
 
-   Note that the runtime libraries used by the Chapel compiler are
-   based on these settings.
-
 #. Compile your Chapel program as usual:
 
    .. code-block:: bash
 
-     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
+     chpl -o hello $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 #. Set any environment variables necessary to control the launcher.
    See :ref:`readme-launcher` or documentation for your platform.
@@ -60,7 +62,7 @@ This document outlines the steps to get started with multi-locale Chapel.
 
    .. code-block:: bash
 
-     ./hello6-taskpar-dist -nl 2
+     ./hello -nl 2
 
    runs our Hello World program on 2 locales.
 
@@ -68,32 +70,30 @@ What is this _real program?
 +++++++++++++++++++++++++++
 
 When you compile a Chapel program for multiple locales, you should
-typically see two binaries (e.g., hello6-taskpar-dist and
-hello6-taskpar-dist_real).  The first binary contains code to
-launch the Chapel program onto the compute nodes. The second contains
-the program code itself.
+typically see two binaries (e.g., hello and hello_real).  The first
+binary contains code to launch the Chapel program onto the compute nodes
+as specified by the :ref:`CHPL_LAUNCHER <readme-launcher>` variable. The
+second contains the program code itself. The ``-v`` command line option
+is a good way to learn about what the launcher is doing.
 
+.. _what-is-gasnet:
 
 What is GASNet?
 +++++++++++++++
 
-.. _what-is-gasnet:
-
-
 GASNet is a one-sided communication and active message library being
-developed by Lawrence Berkeley National Lab and UC Berkeley.  For details,
-refer to the `GASNet website <http://gasnet.cs.berkeley.edu>`_.
+developed by Lawrence Berkeley National Laboratory and UC Berkeley.  For
+details, refer to the `GASNet website <http://gasnet.cs.berkeley.edu>`_.
 
 .. _set-comm-conduit:
 
 Setting CHPL_COMM_SUBSTRATE
 +++++++++++++++++++++++++++
 
-Advanced users can set ``CHPL_COMM_SUBSTRATE`` to indicate the GASNet
-conduit that they wish to use. Conduits are optional components in the
-GASNet library. GASNet uses different conduits to support different
-networks. Novice users can leave this unset and Chapel will make a
-choice for them.
+Users can set ``CHPL_COMM_SUBSTRATE`` to indicate the GASNet conduit that
+they wish to use. Conduits are alternative implementations of the GASNet
+library. GASNet uses different conduits to support different networks.
+Novice users can leave this unset and Chapel will make a choice for them.
 
 Most settings for ``CHPL_COMM_SUBSTRATE`` rely on the particular network
 hardware. The options include:
@@ -101,29 +101,30 @@ hardware. The options include:
 ibv
     OpenIB/OpenFabrics Verbs for InfiniBand
     (see :ref:`Using Chapel with InfiniBand <readme-infiniband>`)
-mxm
-    Mellanox MXM for InfiniBand
-portals4
-    Portals4 (BETA) for the Portals 4.x API
-pami
-    PAMI for IBM Power 775, BlueGene/Q and others
-shmem
-    SHMEM for SGI Altix
+udp
+    UDP - portable conduit, works on any network with a TCP/IP stack
+    (see :ref:`Using the Portable UDP Conduit <using-udp>`)
 gemini
     Gemini for Cray XE and XK series
     (see :ref:`Using Chapel on Cray Systems <readme-cray>`)
 aries
     Aries for Cray XC series
     (see :ref:`Using Chapel on Cray Systems <readme-cray>`)
-ofi
-    OFI for multiple networks supported by libfabric
-psm
-    PSM for Intel's OmniPath fabric
+
 mpi
     MPI - portable conduit, works on any network with MPI 1.1 or newer
-udp
-    UDP - portable conduit, works on any network with a TCP/IP stack
-    (see :ref:`Using the Portable UDP Conduit <using-udp>`)
+mxm
+    Mellanox MXM for InfiniBand
+ofi
+    OFI for multiple networks supported by libfabric
+pami
+    PAMI for IBM Power 775, BlueGene/Q and others
+portals4
+    Portals4 (BETA) for the Portals 4.x API
+psm
+    PSM for Intel's OmniPath fabric
+shmem
+    SHMEM for SGI Altix
 
 See the `GASNet website <http://gasnet.cs.berkeley.edu>`_ for more
 information on each of these conduits.
@@ -148,11 +149,11 @@ other                  udp
 Setting CHPL_GASNET_SEGMENT
 +++++++++++++++++++++++++++
 
-Advanced GASNet users can set ``CHPL_GASNET_SEGMENT`` to choose a memory
-segment to use with GASNet. A GASNet segment is a region of memory that
-is expected to be used for remote memory access. The GASNet library works
-to make memory in this segment available for accelerated memory access
-supported directly by network hardware.  The options are:
+Users can set ``CHPL_GASNET_SEGMENT`` to choose a memory segment to use
+with GASNet. A GASNet segment is a region of memory that is expected to
+be used for remote memory access. The GASNet library works to make memory
+in this segment available for accelerated memory access supported
+directly by network hardware.  The options are:
 
 everything
   All memory is available for remote memory access.

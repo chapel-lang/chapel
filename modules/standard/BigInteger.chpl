@@ -18,83 +18,105 @@
  */
 
 /*
-Support for GNU Multiple Precision Integer Arithmetic through the bigint record
+The ``bigint`` record supports arithmetic operations on arbitrary
+precision integers in a manner that is broadly consistent with
+the conventional operations on primitive fixed length integers.
 
-This module implements an interface with the GMP library (the GNU Multiple
-Precision Arithmetic Library). See the `GMP homepage <https://gmplib.org/>`
-for more information on this library.
+The current implementation is based on the low-level types and
+functions defined in the GMP module i.e. it is implemented using the
+GNU Multiple Precision Integer Arithmetic library (GMP). More specifically
+the record :record:`bigint` wraps the GMP type :type:`~GMP.mpz_t`.
 
-See the GMP Chapel module for more information on how to use GMP with Chapel.
+The primary benefits of ``bigint`` over ``mpz_t`` are
 
-Using the bigint record
------------------------
+  1) support for multi-locale programs
 
-The BigInteger Chapel module provides a :record:`bigint` record wrapping GMP
-integers. At the present time, only the functions for ``mpz`` (ie signed
-integer) GMP types are supported with :record:`bigint`; future work will be to
-extend this support to floating-point types.
+  2) the convenience of arithmetic operator overloads
 
-:record:`bigint` methods all wrap GMP functions with obviously similar names.
-The :record:`bigint` methods are locale aware - so Chapel programs can create
-a distributed array of GMP numbers. The method of :record:`bigint` objects are
-setting the receiver, so e.g. myBigint.add(x,y) sets myBigint to ``x + y``.
+  3) automatic memory management of GMP data structures
 
-A code example::
+In addition to the expected set of operations, this record provides
+a number of methods that wrap GMP functions in a natural way::
 
  use BigInteger;
 
- // initialize a GMP value, set it to zero
- var a = new bigint();
+ var   a = new bigint(234958444);
+ const b = new bigint("4847382292989382987395534934347");
+ var   c = new bigint();
 
- a.fac(100);                            // set a to 100!
- writeln(a);                            // output   100!
+ writeln(a * b);
 
- // initialize from a decimal string
- var b = new bigint("48473822929893829847");
+ c.fac(100);
+ writeln(c);
 
- b.add(b, 1);                           // add one to b
+Wrapping an ``mpz_t`` in a ``bigint`` record may introduce a
+measurable overhead in some cases.
+
+The GMP library defines a low-level API that is based on
+side-effecting compound operations.  The documentation recommends that
+one prefer to reuse a small number of existing mpz_t structures rather
+than using many values of short duration.
+
+Matching this style using ``bigint`` records and the compound
+assignment operators is likely to provide comparable performance to an
+implementation based on ``mpz_t``.  So, for example::
+
+  x  = b
+  x *= c;
+  x += a;
+
+is likely to achieve better performance than::
+
+  x = a + b * c;
+
+In the fall of 2016 the Chapel compiler introduces two short lived
+temporaries for the intermediate results of the binary operators.
+
+
+If peak performance is required, perhaps in a critical loop, then it
+is always possible to invoke the GMP functions directly.  For example
+one might express::
+
+  a = a + b * c;
+
+as::
+
+  mpz_addmul(a.mpz, b.mpz, c.mpz);
+
+
+As usual the details are application specific and it is best to
+measure when peak performance is required.
+
+The operators on ``bigint`` include variations that accept Chapel
+integers e.g.::
+
+  var a = new bigint("9738639463465935");
+  var b = 9395739153 * a;
+
+The Chapel int(64) literal is converted to an underlying,
+platform-specific C integer, to invoke the underlying GMP primitive
+function.  This example is likely to work well on popular 64-bit
+platforms but to fail on common 32-bit platforms.  Runtime checks are
+used to ensure the Chapel types can safely be cast to the
+platform-specific types.  Ths program will halt if the Chapel value
+cannot be represented using the GMP scalar type.
+
+The checks are controlled by the compiler options ``--[no-]cast-checks``,
+``--fast``, etc.
+
+See :mod:`GMP` for more information on how to use GMP with Chapel.
+
 */
 
 module BigInteger {
   use GMP;
 
-  /*
-    The bigint record provides arbitrary length integers and a set of
-    operator overloads that allow bigints to be treated consistently
-    with conventional fixed width integers.
-
-    The current implementation relies on the GMP library.  This is a
-    conventional C-based library and hence does not have direct support
-    for multi-locale programs.  The GMP API is centered on the use of
-    side-effecting operations on an "object" of type mpz_t.
-
-    The primary benefits of this module include
-
-      1) Support for multi-locale programs
-
-      2) A set of operator overloads
-
-      3) Automatic memory management of GMP data structures
-
-    Wrapping an mpz_t in a bigint record does not appear to introduce
-    a measurable performance impact.  However in the fall of 2016 the
-    Chapel operator-based API may introduce a measurable overhead compared
-    to the GMP-native API for some applications.  Therefore this module also
-    provides lower-level multi-locale aware wrappers for the GMP functions.
-
-    Methods on bigint are defined for Chapel types e.g int(64) and uint(64)
-    which must be converted to underlying C types for use by GMP.  Runtime
-    checks are used to ensure the Chapel types can safely be cast to the C
-    types (e.g. when casting a Chapel uint it checks that it fits in the C
-    ulong which could be a 32 bit type if running on linux32 platform).
-
-    The checks are controlled by the compiler options ``--[no-]cast-checks``,
-    ``--fast``, etc.
-   */
-
   pragma "ignore noinit"
   record bigint {
+    /* The underlying GMP C structure */
     var mpz      : mpz_t;              // A dynamic-vector of C integers
+
+    pragma "no doc"
     var localeId : chpl_nodeID_t;      // The locale id for the GMP state
 
     proc bigint() {
@@ -130,10 +152,10 @@ module BigInteger {
     }
 
     proc bigint(str: string, base: int = 0) {
-      var e = mpz_init_set_str(this.mpz,
-                               str.localize().c_str(),
-                               base.safeCast(c_int));
-      if e != 0 {
+      const str_  = str.localize().c_str();
+      const base_ = base.safeCast(c_int);
+
+      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
         mpz_clear(this.mpz);
 
         halt("Error initializing big integer: bad format");
@@ -143,10 +165,10 @@ module BigInteger {
     }
 
     proc bigint(str: string, base: int = 0, out error: syserr) {
-      var e = mpz_init_set_str(this.mpz,
-                               str.localize().c_str(),
-                               base.safeCast(c_int));
-      if e != 0 {
+      const str_  = str.localize().c_str();
+      const base_ = base.safeCast(c_int);
+
+      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
         mpz_clear(this.mpz);
 
         error = EFORMAT;
@@ -163,6 +185,7 @@ module BigInteger {
     // If a bigint is copied to a remote node then it will receive a shallow
     // copy.  The localeId points back the correct locale but the mpz field
     // is meaningless.
+    pragma "no doc"
     proc ~bigint() {
       if _local || this.localeId == chpl_nodeID {
         mpz_clear(this.mpz);
@@ -172,7 +195,10 @@ module BigInteger {
     proc size() : size_t {
       var ret: size_t;
 
-      if _local || this.localeId == chpl_nodeID {
+      if _local {
+        ret = mpz_size(this.mpz);
+
+      } else if this.localeId == chpl_nodeID {
         ret = mpz_size(this.mpz);
 
       } else {
@@ -190,7 +216,10 @@ module BigInteger {
       const base_ = base.safeCast(c_int);
       var   ret: size_t;
 
-      if _local || this.localeId == chpl_nodeID {
+      if _local {
+        ret = mpz_sizeinbase(this.mpz, base_);
+
+      } else if this.localeId == chpl_nodeID {
         ret = mpz_sizeinbase(this.mpz, base_);
 
       } else {
@@ -214,8 +243,10 @@ module BigInteger {
       const n_ = n.safeCast(mp_size_t);
       var   ret: mp_limb_t;
 
+      if _local {
+        ret = mpz_getlimbn(this.mpz, n_);
 
-      if _local || this.localeId == chpl_nodeID {
+      } else if this.localeId == chpl_nodeID {
         ret = mpz_getlimbn(this.mpz, n_);
 
       } else {
@@ -232,7 +263,10 @@ module BigInteger {
     proc mpzStruct() : __mpz_struct {
       var ret: __mpz_struct;
 
-      if _local || this.localeId == chpl_nodeID {
+      if _local {
+        ret = this.mpz[1];
+
+      } else if this.localeId == chpl_nodeID {
         ret = this.mpz[1];
 
       } else {
@@ -246,62 +280,17 @@ module BigInteger {
       return ret;
     }
 
-    proc get_si() : int {
-      var ret: c_long;
-
-      if _local || this.localeId == chpl_nodeID {
-        ret = mpz_get_si(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_get_si(this.mpz);
-        }
-      }
-
-      return ret.safeCast(int);
-    }
-
-    proc get_ui() : uint {
-      var ret: c_ulong;
-
-      if _local || this.localeId == chpl_nodeID {
-        ret = mpz_get_ui(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_get_ui(this.mpz);
-        }
-      }
-
-      return ret.safeCast(uint);
-    }
-
-    proc get_d() : real {
-      var ret: c_double;
-
-      if _local || this.localeId == chpl_nodeID {
-        ret = mpz_get_d(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_get_d(this.mpz);
-        }
-      }
-
-      return ret : real;
-    }
-
     proc get_d_2exp() : (uint(32), real) {
       var exp: c_long;
       var dbl: c_double;
 
-      if _local || this.localeId == chpl_nodeID {
+      if _local {
+        var tmp: c_long;
+
+        dbl = mpz_get_d_2exp(tmp, this.mpz);
+        exp = tmp;
+
+      } else if this.localeId == chpl_nodeID {
         var tmp: c_long;
 
         dbl = mpz_get_d_2exp(tmp, this.mpz);
@@ -325,7 +314,12 @@ module BigInteger {
       const base_ = base.safeCast(c_int);
       var   ret: string;
 
-      if _local || this.localeId == chpl_nodeID {
+      if _local {
+        var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
+
+        ret = new string(tmpvar, owned = true, needToCopy = false);
+
+      } else if this.localeId == chpl_nodeID {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
         ret = new string(tmpvar, owned = true, needToCopy = false);
@@ -346,7 +340,10 @@ module BigInteger {
     proc writeThis(writer) {
       var s: string;
 
-      if _local || this.localeId == chpl_nodeID {
+      if _local {
+        s = this.get_str();
+
+      } else if this.localeId == chpl_nodeID {
         s = this.get_str();
 
       } else {
@@ -366,8 +363,12 @@ module BigInteger {
   proc chpl__initCopy(const ref bir: bigint) {
     var ret : bigint;
 
-    if _local || bir.localeId == chpl_nodeID {
+    if _local {
       mpz_set(ret.mpz, bir.mpz);
+
+    } else if bir.localeId == chpl_nodeID {
+      mpz_set(ret.mpz, bir.mpz);
+
     } else {
       var mpz_struct = bir.mpzStruct();
 
@@ -383,8 +384,12 @@ module BigInteger {
   proc chpl__autoCopy(const ref bir: bigint) {
     var ret : bigint;
 
-    if _local || bir.localeId == chpl_nodeID {
+    if _local {
       mpz_set(ret.mpz, bir.mpz);
+
+    } else if bir.localeId == chpl_nodeID {
+      mpz_set(ret.mpz, bir.mpz);
+
     } else {
       ret.mpz      = bir.mpz;
       ret.localeId = bir.localeId;
@@ -394,12 +399,84 @@ module BigInteger {
   }
 
   //
+  // Cast operators
+  //
+
+  pragma "no doc"
+  inline proc _cast(type t, const ref x: bigint) where isIntType(t) {
+    var ret: c_long;
+
+    if _local {
+      ret = mpz_get_si(x.mpz);
+
+    } else if x.localeId == chpl_nodeID {
+        ret = mpz_get_si(x.mpz);
+
+    } else {
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", xLoc) {
+        ret = mpz_get_si(x.mpz);
+      }
+    }
+
+    return ret.safeCast(int);
+  }
+
+  pragma "no doc"
+  inline proc _cast(type t, const ref x: bigint) where isUintType(t) {
+    var ret: c_ulong;
+
+    if (mpz_cmp_ui(x.mpz, 0) >= 0) {
+      if _local {
+        ret = mpz_get_ui(x.mpz);
+
+      } else if x.localeId == chpl_nodeID {
+        ret = mpz_get_ui(x.mpz);
+
+      } else {
+        const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", xLoc) {
+          ret = mpz_get_ui(x.mpz);
+        }
+      }
+
+    } else {
+      halt("unable to convert a negative bigint to a uint(?w)");
+    }
+
+    return ret.safeCast(uint);
+  }
+
+  pragma "no doc"
+  inline proc _cast(type t, const ref x: bigint) where isRealType(t) {
+    var ret: c_double;
+
+    if _local {
+      ret = mpz_get_d(x.mpz);
+
+    } else if x.localeId == chpl_nodeID {
+      ret = mpz_get_d(x.mpz);
+
+    } else {
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", xLoc) {
+        ret = mpz_get_d(x.mpz);
+      }
+    }
+
+    return ret : real;
+  }
+
+  //
   // Locale-aware assignment
   //
 
   proc =(ref lhs: bigint, const ref rhs: bigint) {
     inline proc helper() {
-      if _local || rhs.localeId == chpl_nodeID {
+      if rhs.localeId == chpl_nodeID {
         mpz_set(lhs.mpz, rhs.mpz);
 
       } else {
@@ -407,7 +484,10 @@ module BigInteger {
       }
     }
 
-    if _local || lhs.localeId == chpl_nodeID {
+    if _local {
+      mpz_set(lhs.mpz, rhs.mpz);
+
+    } else if lhs.localeId == chpl_nodeID {
       helper();
 
     } else {
@@ -420,9 +500,12 @@ module BigInteger {
   }
 
   proc =(ref lhs: bigint, rhs: int) {
-    var rhs_ = rhs.safeCast(c_long);
+    const rhs_ = rhs.safeCast(c_long);
 
-    if _local || lhs.localeId == chpl_nodeID {
+    if _local {
+      mpz_set_si(lhs.mpz, rhs_);
+
+    } else if lhs.localeId == chpl_nodeID {
       mpz_set_si(lhs.mpz, rhs_);
 
     } else {
@@ -435,9 +518,12 @@ module BigInteger {
   }
 
   proc =(ref lhs: bigint, rhs: uint) {
-    var rhs_ = rhs.safeCast(c_ulong);
+    const rhs_ = rhs.safeCast(c_ulong);
 
-    if _local || lhs.localeId == chpl_nodeID {
+    if _local {
+      mpz_set_ui(lhs.mpz, rhs_);
+
+    } else if lhs.localeId == chpl_nodeID {
       mpz_set_ui(lhs.mpz, rhs_);
 
     } else {
@@ -470,7 +556,7 @@ module BigInteger {
   //        b) Use assignment operator to copy operands to current locale
   //        c) Invoke the appropriate mpz operator directly
   //
-  //      Later we can use profiling to add special cases where appropriate
+  //      Later we can use profiling to add optimizations where appropriate
   //
 
   //
@@ -504,7 +590,10 @@ module BigInteger {
   proc +(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_add(c.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_add(c.mpz, a.mpz, b.mpz);
 
     } else {
@@ -523,7 +612,10 @@ module BigInteger {
     if b >= 0 {
       const b_ = b.safeCast(c_ulong);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_add_ui(c.mpz, a.mpz,  b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_add_ui(c.mpz, a.mpz,  b_);
 
       } else {
@@ -533,16 +625,18 @@ module BigInteger {
       }
 
     } else {
-      const b1 = abs(b);
-      const b2 = b1.safeCast(c_ulong);
+      const b_ = (0 - b).safeCast(c_ulong);
 
-      if _local || a.localeId == chpl_nodeID {
-        mpz_sub_ui(c.mpz, a.mpz, b2);
+      if _local {
+        mpz_sub_ui(c.mpz, a.mpz, b_);
+
+      } else if a.localeId == chpl_nodeID {
+        mpz_sub_ui(c.mpz, a.mpz, b_);
 
       } else {
         const a_ = a;
 
-        mpz_sub_ui(c.mpz, a_.mpz, b2);
+        mpz_sub_ui(c.mpz, a_.mpz, b_);
       }
     }
 
@@ -555,7 +649,10 @@ module BigInteger {
     if a >= 0 {
       const a_ = a.safeCast(c_ulong);
 
-      if _local || b.localeId == chpl_nodeID {
+      if _local {
+        mpz_add_ui(c.mpz, b.mpz,  a_);
+
+      } else if b.localeId == chpl_nodeID {
         mpz_add_ui(c.mpz, b.mpz,  a_);
 
       } else {
@@ -565,16 +662,18 @@ module BigInteger {
       }
 
     } else {
-      const a1 = abs(a);
-      const a2 = a1.safeCast(c_ulong);
+      const a_ = (0 - a).safeCast(c_ulong);
 
-      if _local || b.localeId == chpl_nodeID {
-        mpz_sub_ui(c.mpz, b.mpz,  a2);
+      if _local {
+        mpz_sub_ui(c.mpz, b.mpz,  a_);
+
+      } else if b.localeId == chpl_nodeID {
+        mpz_sub_ui(c.mpz, b.mpz,  a_);
 
       } else {
         const b_ = b;
 
-        mpz_sub_ui(c.mpz, b_.mpz, a2);
+        mpz_sub_ui(c.mpz, b_.mpz, a_);
       }
     }
 
@@ -585,7 +684,10 @@ module BigInteger {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_add_ui(c.mpz, a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_add_ui(c.mpz, a.mpz,  b_);
 
     } else {
@@ -601,7 +703,10 @@ module BigInteger {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
-    if _local || b.localeId == chpl_nodeID {
+    if _local {
+      mpz_add_ui(c.mpz, b.mpz,  a_);
+
+    } else if b.localeId == chpl_nodeID {
       mpz_add_ui(c.mpz, b.mpz,  a_);
 
     } else {
@@ -619,7 +724,10 @@ module BigInteger {
   proc -(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_sub(c.mpz, a.mpz,  b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_sub(c.mpz, a.mpz,  b.mpz);
 
     } else {
@@ -638,7 +746,10 @@ module BigInteger {
     if b >= 0 {
       const b_ = b.safeCast(c_ulong);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_sub_ui(c.mpz, a.mpz,  b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_sub_ui(c.mpz, a.mpz,  b_);
 
       } else {
@@ -648,16 +759,18 @@ module BigInteger {
       }
 
     } else {
-      const b1 = abs(b);
-      const b2 = b1.safeCast(c_ulong);
+      const b_ = (0 - b).safeCast(c_ulong);
 
-      if _local || a.localeId == chpl_nodeID {
-        mpz_add_ui(c.mpz, a.mpz,  b2);
+      if _local {
+        mpz_add_ui(c.mpz, a.mpz,  b_);
+
+      } else if a.localeId == chpl_nodeID {
+        mpz_add_ui(c.mpz, a.mpz,  b_);
 
       } else {
         const a_ = a;
 
-        mpz_add_ui(c.mpz, a_.mpz, b2);
+        mpz_add_ui(c.mpz, a_.mpz, b_);
       }
     }
 
@@ -670,7 +783,10 @@ module BigInteger {
     if a >= 0 {
       const a_ = a.safeCast(c_ulong);
 
-      if _local || b.localeId == chpl_nodeID {
+      if _local {
+        mpz_ui_sub(c.mpz, a_, b.mpz);
+
+      } else if b.localeId == chpl_nodeID {
         mpz_ui_sub(c.mpz, a_, b.mpz);
 
       } else {
@@ -680,16 +796,18 @@ module BigInteger {
       }
 
     } else {
-      const a1 = abs(a);
-      const a2 = a1.safeCast(c_ulong);
+      const a_ = (0 - a).safeCast(c_ulong);
 
-      if _local || b.localeId == chpl_nodeID {
-        mpz_add_ui(c.mpz, b.mpz,  a2);
+      if _local {
+        mpz_add_ui(c.mpz, b.mpz,  a_);
+
+      } else if b.localeId == chpl_nodeID {
+        mpz_add_ui(c.mpz, b.mpz,  a_);
 
       } else {
         const b_ = b;
 
-        mpz_add_ui(c.mpz, b_.mpz, a2);
+        mpz_add_ui(c.mpz, b_.mpz, a_);
       }
     }
 
@@ -700,7 +818,10 @@ module BigInteger {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_sub_ui(c.mpz, a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_sub_ui(c.mpz, a.mpz,  b_);
 
     } else {
@@ -716,7 +837,10 @@ module BigInteger {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
-    if _local || b.localeId == chpl_nodeID {
+    if _local {
+      mpz_ui_sub(c.mpz, a_, b.mpz);
+
+    } else if b.localeId == chpl_nodeID {
       mpz_ui_sub(c.mpz, a_, b.mpz);
 
     } else {
@@ -733,7 +857,10 @@ module BigInteger {
   proc *(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_mul(c.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_mul(c.mpz, a.mpz, b.mpz);
 
     } else {
@@ -750,7 +877,10 @@ module BigInteger {
     const b_ = b.safeCast(c_long);
     var   c  = new bigint();
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_mul_si(c.mpz, a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_mul_si(c.mpz, a.mpz,  b_);
 
     } else {
@@ -766,7 +896,10 @@ module BigInteger {
     const a_ = a.safeCast(c_long);
     var   c  = new bigint();
 
-    if _local || b.localeId == chpl_nodeID {
+    if _local {
+      mpz_mul_si(c.mpz, b.mpz,  a_);
+
+    } else if b.localeId == chpl_nodeID {
       mpz_mul_si(c.mpz, b.mpz,  a_);
 
     } else {
@@ -782,7 +915,10 @@ module BigInteger {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_mul_ui(c.mpz, a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_mul_ui(c.mpz, a.mpz,  b_);
 
     } else {
@@ -798,7 +934,10 @@ module BigInteger {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
-    if _local || b.localeId == chpl_nodeID {
+    if _local {
+      mpz_mul_ui(c.mpz, b.mpz,  a_);
+
+    } else if b.localeId == chpl_nodeID {
       mpz_mul_ui(c.mpz, b.mpz,  a_);
 
     } else {
@@ -816,7 +955,10 @@ module BigInteger {
   proc /(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
 
     } else {
@@ -829,85 +971,81 @@ module BigInteger {
     return c;
   }
 
-  proc /(const ref a: bigint, b: int) {
-    var b_ = 0 : c_ulong;
-    var c  = new bigint();
-
-    if b >= 0 then
-      b_ = b.safeCast(c_ulong);
-    else
-      b_ = (0 - b).safeCast(c_ulong);
-
-    if _local || a.localeId == chpl_nodeID {
-      mpz_tdiv_q_ui(c.mpz, a.mpz, b_);
-
-    } else {
-      const a_ = a;
-
-      mpz_tdiv_q_ui(c.mpz, a_.mpz, b_);
-    }
-
-    if b < 0 then
-      mpz_neg(c.mpz, c.mpz);
-
-    return c;
+  proc /(const ref a: bigint, b: integral) {
+    return a / new bigint(b);
   }
-
-  proc /(const ref a: bigint, b: uint) {
-    var b_ = b.safeCast(c_ulong);
-    var c  = new bigint();
-
-    if _local || a.localeId == chpl_nodeID {
-      mpz_tdiv_q_ui(c.mpz, a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      mpz_tdiv_q_ui(c.mpz, a_.mpz, b_);
-    }
-
-    return c;
-  }
-
-  proc div(param rounding: Round, const ref n: bigint, d: uint) : uint {
-    const d_ = d.safeCast(c_ulong);
-    var   ret: c_ulong;
-
-    if _local || n.localeId == chpl_nodeID {
-      select rounding {
-        when Round.UP   do ret = mpz_cdiv_ui(n.mpz, d_);
-        when Round.DOWN do ret = mpz_fdiv_ui(n.mpz, d_);
-        when Round.ZERO do ret = mpz_tdiv_ui(n.mpz, d_);
-      }
-
-    } else {
-      var nLoc = chpl_buildLocaleID(n.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", nLoc) {
-        select rounding {
-          when Round.UP   do ret = mpz_cdiv_ui(n.mpz, d_);
-          when Round.DOWN do ret = mpz_fdiv_ui(n.mpz, d_);
-          when Round.ZERO do ret = mpz_tdiv_ui(n.mpz, d_);
-        }
-      }
-    }
-
-    return ret.safeCast(uint);
-  }
-
 
   // Exponentiation
-  proc **(const ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
-    var   c  = new bigint();
+  proc **(const ref base: bigint, const ref exp: bigint) {
+    var c = new bigint();
 
-    if _local || a.localeId == chpl_nodeID {
-      mpz_pow_ui(c.mpz, a.mpz,  b_);
+    if _local {
+      mpz_powm(c.mpz, base.mpz,  exp.mpz,  base.mpz);
+
+    } else if base.localeId == chpl_nodeID && exp.localeId == chpl_nodeID {
+      mpz_powm(c.mpz, base.mpz,  exp.mpz,  base.mpz);
 
     } else {
-      const a_ = a;
+      const base_ = base;
+      const exp_  = exp;
 
-      mpz_pow_ui(c.mpz, a_.mpz, b_);
+      mpz_powm(c.mpz, base_.mpz, exp_.mpz, base_.mpz);
+    }
+
+    return c;
+  }
+
+  proc **(const ref base: bigint, exp: int) {
+    var c = new bigint();
+
+    if (exp >= 0) {
+      const exp_ = exp.safeCast(c_ulong);
+
+      if _local {
+        mpz_pow_ui(c.mpz, base.mpz,  exp_);
+
+      } else if base.localeId == chpl_nodeID {
+        mpz_pow_ui(c.mpz, base.mpz,  exp_);
+
+      } else {
+        const base_ = base;
+
+        mpz_pow_ui(c.mpz, base_.mpz, exp_);
+      }
+
+    } else {
+      const exp_ = new bigint(exp);
+
+      if _local {
+        mpz_powm(c.mpz, base.mpz,  exp_.mpz, base.mpz);
+
+      } else if base.localeId == chpl_nodeID {
+        mpz_powm(c.mpz, base.mpz,  exp_.mpz, base.mpz);
+
+      } else {
+        const base_ = base;
+
+        mpz_powm(c.mpz, base_.mpz, exp_.mpz, base_.mpz);
+      }
+    }
+
+    return c;
+  }
+
+  proc **(const ref base: bigint, exp: uint) {
+    const exp_ = exp.safeCast(c_ulong);
+    var   c    = new bigint();
+
+    if _local {
+      mpz_pow_ui(c.mpz, base.mpz,  exp_);
+
+    } else if base.localeId == chpl_nodeID {
+      mpz_pow_ui(c.mpz, base.mpz,  exp_);
+
+    } else {
+      const base_ = base;
+
+      mpz_pow_ui(c.mpz, base_.mpz, exp_);
     }
 
     return c;
@@ -919,7 +1057,10 @@ module BigInteger {
   proc %(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_mod(c.mpz, a.mpz,  b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_mod(c.mpz, a.mpz,  b.mpz);
 
     } else {
@@ -940,7 +1081,10 @@ module BigInteger {
     else
       b_ = (0 - b).safeCast(c_ulong);
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_mod_ui(c.mpz, a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_mod_ui(c.mpz, a.mpz,  b_);
 
     } else {
@@ -956,7 +1100,10 @@ module BigInteger {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_mod_ui(c.mpz, a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_mod_ui(c.mpz, a.mpz,  b_);
 
     } else {
@@ -977,7 +1124,10 @@ module BigInteger {
     if b >= 0 {
       const b_ = b.safeCast(mp_bitcnt_t);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_mul_2exp(c.mpz, a.mpz,  b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_mul_2exp(c.mpz, a.mpz,  b_);
 
       } else {
@@ -989,7 +1139,10 @@ module BigInteger {
     } else {
       const b_ = (0 - b).safeCast(mp_bitcnt_t);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
 
       } else {
@@ -1006,7 +1159,10 @@ module BigInteger {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   c  = new bigint();
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_mul_2exp(c.mpz, a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_mul_2exp(c.mpz, a.mpz,  b_);
 
     } else {
@@ -1028,7 +1184,10 @@ module BigInteger {
       const b_ = b.safeCast(mp_bitcnt_t);
       var   c  = new bigint();
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
 
       } else {
@@ -1040,7 +1199,10 @@ module BigInteger {
     } else {
       const b_ = (0 - b).safeCast(mp_bitcnt_t);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_mul_2exp(c.mpz, a.mpz,  b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_mul_2exp(c.mpz, a.mpz,  b_);
 
       } else {
@@ -1057,7 +1219,10 @@ module BigInteger {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   c  = new bigint();
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
 
     } else {
@@ -1075,7 +1240,10 @@ module BigInteger {
   proc &(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_and(c.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_and(c.mpz, a.mpz, b.mpz);
 
     } else {
@@ -1094,8 +1262,11 @@ module BigInteger {
   proc |(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
-      mpz_and(c.mpz, a.mpz, b.mpz);
+    if _local {
+      mpz_ior(c.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
+      mpz_ior(c.mpz, a.mpz, b.mpz);
 
     } else {
       const a_ = a;
@@ -1113,8 +1284,11 @@ module BigInteger {
   proc ^(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
-      mpz_and(c.mpz, a.mpz, b.mpz);
+    if _local {
+      mpz_xor(c.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
+      mpz_xor(c.mpz, a.mpz, b.mpz);
 
     } else {
       const a_ = a;
@@ -1135,7 +1309,10 @@ module BigInteger {
   private inline proc cmp(const ref a: bigint, const ref b: bigint) {
     var ret : c_int;
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      ret = mpz_cmp(a.mpz,  b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       ret = mpz_cmp(a.mpz,  b.mpz);
 
     } else {
@@ -1152,7 +1329,10 @@ module BigInteger {
     const b_ = b.safeCast(c_long);
     var   ret : c_int;
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_cmp_si(a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       ret = mpz_cmp_si(a.mpz,  b_);
 
     } else {
@@ -1168,7 +1348,10 @@ module BigInteger {
     const a_ = a.safeCast(c_long);
     var   ret : c_int;
 
-    if _local || b.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_cmp_si(b.mpz,  a_);
+
+    } else if b.localeId == chpl_nodeID {
       ret = mpz_cmp_si(b.mpz,  a_);
 
     } else {
@@ -1184,7 +1367,10 @@ module BigInteger {
     const b_ = b.safeCast(c_ulong);
     var   ret : c_int;
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_cmp_ui(a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       ret = mpz_cmp_ui(a.mpz,  b_);
 
     } else {
@@ -1200,7 +1386,10 @@ module BigInteger {
     const a_ = a.safeCast(c_ulong);
     var   ret : c_int;
 
-    if _local || b.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_cmp_ui(b.mpz,  a_);
+
+    } else if b.localeId == chpl_nodeID {
       ret = mpz_cmp_ui(b.mpz,  a_);
 
     } else {
@@ -1211,7 +1400,6 @@ module BigInteger {
 
     return 0 - ret;
   }
-
 
 
   // Equality
@@ -1358,7 +1546,10 @@ module BigInteger {
 
   // +=
   proc +=(ref a: bigint, const ref b: bigint) {
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_add(a.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_add(a.mpz, a.mpz, b.mpz);
 
     } else {
@@ -1376,7 +1567,10 @@ module BigInteger {
     if (b >= 0) {
       const b_ = b.safeCast(c_ulong);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_add_ui(a.mpz, a.mpz, b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_add_ui(a.mpz, a.mpz, b_);
 
       } else {
@@ -1390,7 +1584,10 @@ module BigInteger {
     } else {
       const b_ = (0 - b).safeCast(c_ulong);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_sub_ui(a.mpz, a.mpz, b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_sub_ui(a.mpz, a.mpz, b_);
 
       } else {
@@ -1406,7 +1603,10 @@ module BigInteger {
   proc +=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_add_ui(a.mpz, a.mpz, b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_add_ui(a.mpz, a.mpz, b_);
 
     } else {
@@ -1422,7 +1622,10 @@ module BigInteger {
 
   // -=
   proc -=(ref a: bigint, const ref b: bigint) {
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_sub(a.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_sub(a.mpz, a.mpz, b.mpz);
 
     } else {
@@ -1440,7 +1643,10 @@ module BigInteger {
     if (b >= 0) {
       const b_ = b.safeCast(c_ulong);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_sub_ui(a.mpz, a.mpz, b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_sub_ui(a.mpz, a.mpz, b_);
 
       } else {
@@ -1454,7 +1660,10 @@ module BigInteger {
     } else {
       const b_ = (0 - b).safeCast(c_ulong);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_add_ui(a.mpz, a.mpz, b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_add_ui(a.mpz, a.mpz, b_);
 
       } else {
@@ -1470,7 +1679,10 @@ module BigInteger {
   proc -=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_sub_ui(a.mpz, a.mpz, b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_sub_ui(a.mpz, a.mpz, b_);
 
     } else {
@@ -1486,7 +1698,10 @@ module BigInteger {
 
   // *=
   proc *=(ref a: bigint, const ref b: bigint) {
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_mul(a.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_mul(a.mpz, a.mpz, b.mpz);
 
     } else {
@@ -1503,7 +1718,10 @@ module BigInteger {
   proc *=(ref a: bigint, b: int) {
     const b_ = b.safeCast(c_long);
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_mul_si(a.mpz, a.mpz, b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_mul_si(a.mpz, a.mpz, b_);
 
     } else {
@@ -1518,7 +1736,10 @@ module BigInteger {
   proc *=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_mul_ui(a.mpz, a.mpz, b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_mul_ui(a.mpz, a.mpz, b_);
 
     } else {
@@ -1534,7 +1755,10 @@ module BigInteger {
 
   // /=
   proc /=(ref a: bigint, const ref b: bigint) {
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
 
     } else {
@@ -1548,60 +1772,75 @@ module BigInteger {
     }
   }
 
-  proc /=(ref a: bigint, b: int) {
-    var b_ = 0 : c_ulong;
-
-    if b >= 0 then
-      b_ = b.safeCast(c_ulong);
-    else
-      b_ = (0 - b).safeCast(c_ulong);
-
-    if _local || a.localeId == chpl_nodeID {
-      mpz_tdiv_q_ui(a.mpz, a.mpz, b_);
-
-      if b < 0 then
-        mpz_neg(a.mpz, a.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_tdiv_q_ui(a.mpz, a.mpz, b_);
-
-        if b < 0 then
-          mpz_neg(a.mpz, a.mpz);
-      }
-    }
+  proc /=(ref a: bigint, b: integral) {
+    a /= new bigint(b);
   }
 
-  proc /=(ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
-
-    if _local || a.localeId == chpl_nodeID {
-      mpz_tdiv_q_ui(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_tdiv_q_ui(a.mpz, a.mpz, b_);
-      }
-    }
-  }
 
 
   // **=
-  proc **=(ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
+  proc **=(ref base: bigint, const ref exp: bigint) {
+    if _local {
+      mpz_powm(base.mpz, base.mpz,  exp.mpz,  base.mpz);
 
-    if _local || a.localeId == chpl_nodeID {
-      mpz_pow_ui(a.mpz, a.mpz, b_);
+    } else if base.localeId == chpl_nodeID && exp.localeId == chpl_nodeID {
+      mpz_powm(base.mpz, base.mpz,  exp.mpz,  base.mpz);
 
     } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
+      const base_ = base;
+      const exp_  = exp;
 
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_pow_ui(a.mpz, a.mpz, b_);
+      mpz_powm(base.mpz, base_.mpz, exp_.mpz, base_.mpz);
+    }
+  }
+
+  proc **=(ref base: bigint, exp: int) {
+    if (exp >= 0) {
+      const exp_ = exp.safeCast(c_ulong);
+
+      if _local {
+        mpz_pow_ui(base.mpz, base.mpz,  exp_);
+
+      } else if base.localeId == chpl_nodeID {
+        mpz_pow_ui(base.mpz, base.mpz,  exp_);
+
+      } else {
+        const base_ = base;
+
+        mpz_pow_ui(base.mpz, base_.mpz, exp_);
+      }
+
+    } else {
+      const exp_ = new bigint(exp);
+
+      if _local {
+        mpz_powm(base.mpz, base.mpz,  exp_.mpz, base.mpz);
+
+      } else if base.localeId == chpl_nodeID {
+        mpz_powm(base.mpz, base.mpz,  exp_.mpz, base.mpz);
+
+      } else {
+        const base_ = base;
+
+        mpz_powm(base_.mpz, base_.mpz, exp_.mpz, base_.mpz);
+      }
+    }
+  }
+
+  proc **=(ref base: bigint, exp: uint) {
+    const exp_ = exp.safeCast(c_ulong);
+
+    if _local {
+      mpz_pow_ui(base.mpz, base.mpz, exp_);
+
+    } else if base.localeId == chpl_nodeID {
+      mpz_pow_ui(base.mpz, base.mpz, exp_);
+
+    } else {
+      const baseLoc = chpl_buildLocaleID(base.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", baseLoc) {
+        mpz_pow_ui(base.mpz, base.mpz, exp_);
       }
     }
   }
@@ -1610,7 +1849,10 @@ module BigInteger {
 
   // %=
   proc %=(ref a: bigint, const ref b: bigint) {
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_mod(a.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_mod(a.mpz, a.mpz, b.mpz);
 
     } else {
@@ -1625,29 +1867,23 @@ module BigInteger {
   }
 
   proc %=(ref a: bigint, b: int) {
-    var b_ = 0 : c_ulong;
+    var b_ = 0 : uint;
 
     if b >= 0 then
-      b_ = b.safeCast(c_ulong);
+      b_ = b       : uint;
     else
-      b_ = (0 - b).safeCast(c_ulong);
+      b_ = (0 - b) : uint;
 
-    if _local || a.localeId == chpl_nodeID {
-      mpz_mod_ui(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_mod_ui(a.mpz, a.mpz, b_);
-      }
-    }
+      a %= b_;
   }
 
   proc %=(ref a: bigint, b: uint) {
     var b_ = b.safeCast(c_ulong);
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_mod_ui(a.mpz, a.mpz, b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_mod_ui(a.mpz, a.mpz, b_);
 
     } else {
@@ -1660,7 +1896,10 @@ module BigInteger {
   }
 
   proc &=(ref a: bigint, const ref b: bigint) {
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_and(a.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_and(a.mpz, a.mpz, b.mpz);
 
     } else {
@@ -1675,7 +1914,10 @@ module BigInteger {
   }
 
   proc |=(ref a: bigint, const ref b: bigint) {
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_ior(a.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_ior(a.mpz, a.mpz, b.mpz);
 
     } else {
@@ -1690,7 +1932,10 @@ module BigInteger {
   }
 
   proc ^=(ref a: bigint, const ref b: bigint) {
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      mpz_xor(a.mpz, a.mpz, b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_xor(a.mpz, a.mpz, b.mpz);
 
     } else {
@@ -1710,7 +1955,10 @@ module BigInteger {
     if b >= 0 {
       const b_ = b.safeCast(mp_bitcnt_t);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_mul_2exp(a.mpz, a.mpz, b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_mul_2exp(a.mpz, a.mpz, b_);
 
       } else {
@@ -1722,9 +1970,12 @@ module BigInteger {
       }
 
     } else {
-      const b_ = (0 - b).safeCast(c_ulong);
+      const b_ = (0 - b).safeCast(mp_bitcnt_t);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else {
@@ -1740,7 +1991,10 @@ module BigInteger {
   proc <<=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_mul_2exp(a.mpz, a.mpz, b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_mul_2exp(a.mpz, a.mpz, b_);
 
     } else {
@@ -1759,7 +2013,10 @@ module BigInteger {
     if b >= 0 {
       const b_ = b.safeCast(mp_bitcnt_t);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else {
@@ -1773,7 +2030,10 @@ module BigInteger {
     } else {
       const b_ = (0 - b).safeCast(mp_bitcnt_t);
 
-      if _local || a.localeId == chpl_nodeID {
+      if _local {
+        mpz_mul_2exp(a.mpz, a.mpz, b_);
+
+      } else if a.localeId == chpl_nodeID {
         mpz_mul_2exp(a.mpz, a.mpz, b_);
 
       } else {
@@ -1789,7 +2049,10 @@ module BigInteger {
   proc >>=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+
+    } else if a.localeId == chpl_nodeID {
       mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
 
     } else {
@@ -1804,7 +2067,13 @@ module BigInteger {
 
   // Swap
   proc <=>(ref a: bigint, ref b: bigint) {
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      var t = a;
+
+      mpz_set(a.mpz, b.mpz);
+      mpz_set(b.mpz, t.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       var t = a;
 
       mpz_set(a.mpz, b.mpz);
@@ -1831,13 +2100,14 @@ module BigInteger {
   }
 
 
-
-
   // Special Operations
   proc jacobi(const ref a: bigint, const ref b: bigint) : int {
     var ret : c_int;
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      ret = mpz_jacobi(a.mpz,  b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       ret = mpz_jacobi(a.mpz,  b.mpz);
 
     } else {
@@ -1855,7 +2125,10 @@ module BigInteger {
   proc legendre(const ref a: bigint, const ref p: bigint) : int {
     var ret : c_int;
 
-    if _local || (a.localeId == chpl_nodeID && p.localeId == chpl_nodeID) {
+    if _local {
+      ret = mpz_legendre(a.mpz,  p.mpz);
+
+    } else if a.localeId == chpl_nodeID && p.localeId == chpl_nodeID {
       ret = mpz_legendre(a.mpz,  p.mpz);
 
     } else {
@@ -1874,7 +2147,10 @@ module BigInteger {
   proc kronecker(const ref a: bigint, const ref b: bigint) : int {
     var ret : c_int;
 
-    if _local || (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
+    if _local {
+      ret = mpz_kronecker(a.mpz,  b.mpz);
+
+    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       ret = mpz_kronecker(a.mpz,  b.mpz);
 
     } else {
@@ -1891,7 +2167,10 @@ module BigInteger {
     const b_ = b.safeCast(c_long);
     var  ret : c_int;
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_kronecker_si(a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       ret = mpz_kronecker_si(a.mpz,  b_);
 
     } else {
@@ -1907,7 +2186,10 @@ module BigInteger {
     const a_ = a.safeCast(c_long);
     var  ret : c_int;
 
-    if _local || b.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_si_kronecker(a_, b.mpz);
+
+    } else if b.localeId == chpl_nodeID {
       ret = mpz_si_kronecker(a_, b.mpz);
 
     } else {
@@ -1923,7 +2205,10 @@ module BigInteger {
     const b_ = b.safeCast(c_ulong);
     var  ret : c_int;
 
-    if _local || a.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_kronecker_ui(a.mpz,  b_);
+
+    } else if a.localeId == chpl_nodeID {
       ret = mpz_kronecker_ui(a.mpz,  b_);
 
     } else {
@@ -1939,7 +2224,10 @@ module BigInteger {
     const a_ = b.safeCast(c_ulong);
     var  ret : c_int;
 
-    if _local || b.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_ui_kronecker(a_, a.mpz);
+
+    } else if b.localeId == chpl_nodeID {
       ret = mpz_ui_kronecker(a_, a.mpz);
 
     } else {
@@ -1950,6 +2238,8 @@ module BigInteger {
 
     return ret.safeCast(int);
   }
+
+
 
 
   // divexact
@@ -1974,25 +2264,8 @@ module BigInteger {
     }
   }
 
-  proc bigint.divexact(const ref n: bigint, d: uint) {
-    var d_ = d.safeCast(c_ulong);
-
-    if _local {
-      mpz_divexact_ui(this.mpz, n.mpz, d_);
-
-    } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID {
-      mpz_divexact_ui(this.mpz, n.mpz, d_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-
-        mpz_divexact_ui(this.mpz, n_.mpz, d_);
-      }
-    }
+  proc bigint.divexact(const ref n: bigint, d: integral) {
+    this.divexact(n, new bigint(d));
   }
 
 
@@ -2004,8 +2277,7 @@ module BigInteger {
     if _local {
       ret = mpz_divisible_p(this.mpz, d.mpz);
 
-    } else if this.localeId == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && d.localeId == chpl_nodeID {
       ret = mpz_divisible_p(this.mpz, d.mpz);
 
     } else {
@@ -2013,6 +2285,30 @@ module BigInteger {
       const d_ = d;
 
       ret = mpz_divisible_p(this.mpz, d.mpz);
+    }
+
+    return ret.safeCast(int);
+  }
+
+  proc bigint.divisible_p(d: int) : int {
+    var d_ = 0 : c_ulong;
+    var ret: c_int;
+
+    if d >= 0 then
+      d_ = d.safeCast(c_ulong);
+    else
+      d_ = (0 - d).safeCast(c_ulong);
+
+    if _local {
+      ret = mpz_divisible_ui_p(this.mpz, d_);
+
+    } else if this.localeId == chpl_nodeID {
+      ret = mpz_divisible_ui_p(this.mpz, d_);
+
+    } else {
+      const t_ = this;
+
+      ret = mpz_divisible_ui_p(t_.mpz,   d_);
     }
 
     return ret.safeCast(int);
@@ -2037,7 +2333,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc bigint.divisible_2exp_p(b: uint) : int {
+  proc bigint.divisible_2exp_p(b: integral) : int {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
@@ -2057,27 +2353,8 @@ module BigInteger {
   }
 
 
+
   // congruent_p
-  proc bigint.congruent_p(const ref d: bigint) : int {
-    var ret: c_int;
-
-    if _local {
-      ret = mpz_congruent_p(this.mpz, d.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
-      ret = mpz_congruent_p(this.mpz, d.mpz);
-
-    } else {
-      const t_ = this;
-      const d_ = d;
-
-      ret = mpz_congruent_p(this.mpz, d.mpz);
-    }
-
-    return ret.safeCast(int);
-  }
-
   proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
     var ret: c_int;
 
@@ -2100,7 +2377,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc bigint.congruent_p(c: uint, d: uint) : int {
+  proc bigint.congruent_p(c: integral, d: integral) : int {
     const c_ = c.safeCast(c_ulong);
     const d_ = d.safeCast(c_ulong);
     var   ret: c_int;
@@ -2120,7 +2397,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  proc bigint.congruent_2exp_p(const ref c: bigint, b: uint) : int {
+  proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
@@ -2170,8 +2447,60 @@ module BigInteger {
   }
 
   proc bigint.powm(const ref base: bigint,
-                   exp: uint,
-                   const ref mod: bigint) {
+                             exp:  int,
+                   const ref mod:  bigint) {
+    if exp >= 0 {
+      const exp_ = exp.safeCast(c_ulong);
+
+      if _local {
+        mpz_powm_ui(this.mpz, base.mpz, exp_, mod.mpz);
+
+      } else if this.localeId == chpl_nodeID &&
+                base.localeId == chpl_nodeID &&
+                mod.localeId  == chpl_nodeID {
+        mpz_powm_ui(this.mpz, base.mpz, exp_, mod.mpz);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const base_ = base;
+          const mod_  = mod;
+
+          mpz_powm_ui(this.mpz, base_.mpz, exp_, mod_.mpz);
+        }
+      }
+
+    } else {
+      if _local {
+        const exp_ = new bigint(exp);
+
+        mpz_powm(this.mpz, base.mpz, exp_.mpz, mod.mpz);
+
+      } else if this.localeId == chpl_nodeID &&
+                base.localeId == chpl_nodeID &&
+                mod.localeId  == chpl_nodeID {
+        const exp_ = new bigint(exp);
+
+        mpz_powm(this.mpz, base.mpz, exp_.mpz, mod.mpz);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const base_ = base;
+          const exp_  = new bigint(exp);
+          const mod_  = mod;
+
+          mpz_powm(this.mpz, base_.mpz, exp_.mpz, mod_.mpz);
+        }
+      }
+    }
+  }
+
+  proc bigint.powm(const ref base: bigint,
+                             exp:  uint,
+                   const ref mod:  bigint) {
     const exp_ = exp.safeCast(c_ulong);
 
     if _local {
@@ -2194,6 +2523,39 @@ module BigInteger {
     }
   }
 
+
+
+
+
+  proc bigint.pow(const ref base: bigint, exp: int) {
+    if exp >= 0 {
+      this.pow(base, exp : uint);
+
+    } else {
+      if _local {
+        const exp_ = new bigint(exp);
+
+        mpz_powm(this.mpz, base.mpz, exp_.mpz, base.mpz);
+
+      } else if this.localeId == chpl_nodeID &&
+                base.localeId == chpl_nodeID {
+        const exp_ = new bigint(exp);
+
+        mpz_powm(this.mpz, base.mpz, exp_.mpz, base.mpz);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const base_ = base;
+          const exp_  = new bigint(exp);
+
+          mpz_powm(this.mpz, base_.mpz, exp_.mpz, base_.mpz);
+        }
+      }
+    }
+  }
+
   proc bigint.pow(const ref base: bigint, exp: uint) {
     const exp_ = exp.safeCast(c_ulong);
 
@@ -2212,6 +2574,22 @@ module BigInteger {
 
         mpz_pow_ui(this.mpz, base_.mpz, exp_);
       }
+    }
+  }
+
+  proc bigint.pow(base: int, exp: int) {
+    if base >= 0 && exp >= 0 {
+      this.pow(base : uint, exp : uint);
+
+    } else if base <  0 && exp >= 0 {
+      this.pow((0 - base) : uint, exp : uint);
+
+      if (exp % 2) == 1 {
+        this.neg(this);
+      }
+
+    } else {
+      this.pow(new bigint(base), exp);
     }
   }
 
@@ -2423,8 +2801,17 @@ module BigInteger {
     }
   }
 
+  proc bigint.gcd(const ref a: bigint, b: int) {
+    if b >= 0 {
+      this.gcd(a, b : uint);
+
+    } else {
+      this.gcd(a, new bigint(b));
+    }
+  }
+
   proc bigint.gcd(const ref a: bigint, b: uint) {
-    var b_ = b.safeCast(c_ulong);
+    const b_ = b.safeCast(c_ulong);
 
     if _local {
       mpz_gcd_ui(this.mpz, a.mpz, b_);
@@ -2502,14 +2889,38 @@ module BigInteger {
     }
   }
 
-  proc bigint.lcm(const ref a: bigint, b: uint) {
-    var b_ = b.safeCast(c_ulong);
+  proc bigint.lcm(const ref a: bigint, b: int) {
+    var b_ : c_ulong;
+
+    if b >= 0 then
+      b_ = b.safeCast(c_ulong);
+    else
+      b_ = (0 - b).safeCast(c_ulong);
 
     if _local {
       mpz_lcm_ui(this.mpz, a.mpz, b_);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+      mpz_lcm_ui(this.mpz, a.mpz, b_);
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        var a_ = a;
+
+        mpz_lcm_ui(this.mpz, a_.mpz, b_);
+      }
+    }
+  }
+
+  proc bigint.lcm(const ref a: bigint, b: uint) {
+    const b_ = b.safeCast(c_ulong);
+
+    if _local {
+      mpz_lcm_ui(this.mpz, a.mpz, b_);
+
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
       mpz_lcm_ui(this.mpz, a.mpz, b_);
 
     } else {
@@ -2580,10 +2991,13 @@ module BigInteger {
 
 
   // Factorial
-  proc bigint.fac(a: uint) {
+  proc bigint.fac(a: integral) {
     const a_ = a.safeCast(c_ulong);
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      mpz_fac_ui(this.mpz, a_);
+
+    } else if this.localeId == chpl_nodeID {
       mpz_fac_ui(this.mpz, a_);
 
     } else {
@@ -2598,14 +3012,13 @@ module BigInteger {
 
 
   // Binomial
-  proc bigint.bin(const ref n: bigint, k: uint) {
+  proc bigint.bin(const ref n: bigint, k: integral) {
     const k_ = k.safeCast(c_ulong);
 
     if _local {
       mpz_bin_ui(this.mpz, n.mpz, k_);
 
-    } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && n.localeId == chpl_nodeID {
       mpz_bin_ui(this.mpz, n.mpz, k_);
 
     } else {
@@ -2619,29 +3032,39 @@ module BigInteger {
     }
   }
 
-  proc bigint.bin(n: uint, k: uint) {
-    const n_ = n.safeCast(c_ulong);
-    const k_ = k.safeCast(c_ulong);
+  proc bigint.bin(n: uint, k: integral) {
+    if n >= 0 {
+      const n_ = n.safeCast(c_ulong);
+      const k_ = k.safeCast(c_ulong);
 
-    if _local || this.localeId == chpl_nodeID {
-      mpz_bin_uiui(this.mpz, n_, k_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      if _local {
         mpz_bin_uiui(this.mpz, n_, k_);
+
+      } else if this.localeId == chpl_nodeID {
+        mpz_bin_uiui(this.mpz, n_, k_);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          mpz_bin_uiui(this.mpz, n_, k_);
+        }
       }
+    } else {
+      this.bin(new bigint(n), k);
     }
   }
 
 
 
   // Fibonacci
-  proc bigint.fib(n: uint) {
+  proc bigint.fib(n: integral) {
     const n_ = n.safeCast(c_ulong);
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      mpz_fib_ui(this.mpz, n_);
+
+    } else if this.localeId == chpl_nodeID {
       mpz_fib_ui(this.mpz, n_);
 
     } else {
@@ -2653,14 +3076,13 @@ module BigInteger {
     }
   }
 
-  proc bigint.fib2(ref fnsub1: bigint, n: uint) {
+  proc bigint.fib2(ref fnsub1: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
     if _local {
       mpz_fib2_ui(this.mpz, fnsub1.mpz, n_);
 
-    } else if this.localeId   == chpl_nodeID &&
-              fnsub1.localeId == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && fnsub1.localeId == chpl_nodeID {
       mpz_fib2_ui(this.mpz, fnsub1.mpz, n_);
 
     } else {
@@ -2679,10 +3101,13 @@ module BigInteger {
 
 
   // Lucas Number
-  proc bigint.lucnum(n: uint) {
+  proc bigint.lucnum(n: integral) {
     const n_ = n.safeCast(c_ulong);
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      mpz_lucnum_ui(this.mpz, n_);
+
+    } else if _local || this.localeId == chpl_nodeID {
       mpz_lucnum_ui(this.mpz, n_);
 
     } else {
@@ -2694,14 +3119,13 @@ module BigInteger {
     }
   }
 
-  proc bigint.lucnum2(ref fnsub1: bigint, n: uint) {
+  proc bigint.lucnum2(ref fnsub1: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
     if _local {
       mpz_lucnum2_ui(this.mpz, fnsub1.mpz, n_);
 
-    } else if this.localeId   == chpl_nodeID &&
-              fnsub1.localeId == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && fnsub1.localeId == chpl_nodeID {
       mpz_lucnum2_ui(this.mpz, fnsub1.mpz, n_);
 
     } else {
@@ -2723,7 +3147,10 @@ module BigInteger {
   proc bigint.popcount() : uint {
     var ret: c_ulong;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_popcount(this.mpz);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_popcount(this.mpz);
 
     } else {
@@ -2741,8 +3168,7 @@ module BigInteger {
     if _local {
       ret = mpz_hamdist(this.mpz, b.mpz);
 
-    } else if this.localeId == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       ret = mpz_hamdist(this.mpz, b.mpz);
 
     } else {
@@ -2755,11 +3181,14 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  proc bigint.scan0(starting_bit: uint) : uint {
+  proc bigint.scan0(starting_bit: integral) : uint {
     const sb_ = starting_bit.safeCast(c_ulong);
     var   ret: c_ulong;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_scan0(this.mpz, sb_);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_scan0(this.mpz, sb_);
 
     } else {
@@ -2771,11 +3200,14 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  proc bigint.scan1(starting_bit: uint) : uint {
+  proc bigint.scan1(starting_bit: integral) : uint {
     const sb_ = starting_bit.safeCast(c_ulong);
     var   ret: c_ulong;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_scan1(this.mpz, sb_);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_scan1(this.mpz, sb_);
 
     } else {
@@ -2790,10 +3222,13 @@ module BigInteger {
 
 
   // Set/Clr bit
-  proc bigint.setbit(bit_index: uint) {
+  proc bigint.setbit(bit_index: integral) {
     const bi_ = bit_index.safeCast(c_ulong);
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      mpz_setbit(this.mpz, bi_);
+
+    } else if this.localeId == chpl_nodeID {
       mpz_setbit(this.mpz, bi_);
 
     } else {
@@ -2805,10 +3240,13 @@ module BigInteger {
     }
   }
 
-  proc bigint.clrbit(bit_index: uint) {
+  proc bigint.clrbit(bit_index: integral) {
     const bi_ = bit_index.safeCast(c_ulong);
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      mpz_clrbit(this.mpz, bi_);
+
+    } else if this.localeId == chpl_nodeID {
       mpz_clrbit(this.mpz, bi_);
 
     } else {
@@ -2820,10 +3258,13 @@ module BigInteger {
     }
   }
 
-  proc bigint.combit(bit_index: uint) {
+  proc bigint.combit(bit_index: integral) {
     const bi_ = bit_index.safeCast(c_ulong);
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      mpz_combit(this.mpz, bi_);
+
+    } else if this.localeId == chpl_nodeID {
       mpz_combit(this.mpz, bi_);
 
     } else {
@@ -2835,11 +3276,14 @@ module BigInteger {
     }
   }
 
-  proc bigint.tstbit(bit_index: uint) : int {
+  proc bigint.tstbit(bit_index: integral) : int {
     const bi_ = bit_index.safeCast(c_ulong);
     var  ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_tstbit(this.mpz, bi_);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_tstbit(this.mpz, bi_);
 
     } else {
@@ -2857,7 +3301,10 @@ module BigInteger {
   proc bigint.fits_ulong_p() : int {
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_fits_ulong_p(this.mpz);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_fits_ulong_p(this.mpz);
 
     } else {
@@ -2872,7 +3319,10 @@ module BigInteger {
   proc bigint.fits_slong_p() : int {
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_fits_slong_p(this.mpz);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_fits_slong_p(this.mpz);
 
     } else {
@@ -2887,7 +3337,10 @@ module BigInteger {
   proc bigint.fits_uint_p() : int {
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_fits_uint_p(this.mpz);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_fits_uint_p(this.mpz);
 
     } else {
@@ -2902,7 +3355,10 @@ module BigInteger {
   proc bigint.fits_sint_p() : int {
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_fits_sint_p(this.mpz);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_fits_sint_p(this.mpz);
 
     } else {
@@ -2917,7 +3373,10 @@ module BigInteger {
   proc bigint.fits_ushort_p() : int {
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_fits_ushort_p(this.mpz);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_fits_ushort_p(this.mpz);
 
     } else {
@@ -2932,7 +3391,10 @@ module BigInteger {
   proc bigint.fits_sshort_p() : int {
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_fits_sshort_p(this.mpz);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_fits_sshort_p(this.mpz);
 
     } else {
@@ -2947,7 +3409,10 @@ module BigInteger {
   proc bigint.even_p() : int {
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_even_p(this.mpz);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_even_p(this.mpz);
 
     } else {
@@ -2962,7 +3427,10 @@ module BigInteger {
   proc bigint.odd_p() : int {
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_odd_p(this.mpz);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_odd_p(this.mpz);
 
     } else {
@@ -2977,52 +3445,9 @@ module BigInteger {
 
 
   //
-  // Unary arithmetic functions
+  // 5.5 Arithmetic functions
   //
 
-  proc bigint.neg(const ref a: bigint) {
-    if _local {
-      mpz_neg(this.mpz, a.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
-      mpz_neg(this.mpz, a.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-
-        mpz_neg(this.mpz, a_.mpz);
-      }
-    }
-  }
-
-  proc bigint.abs(const ref a: bigint) {
-    if _local {
-      mpz_abs(this.mpz, a.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
-      mpz_abs(this.mpz, a.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-
-        mpz_abs(this.mpz, a_.mpz);
-      }
-    }
-  }
-
-  //
-  // Binary arithmetic functions
-  //
-
-  // Addition
   proc bigint.add(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_add(this.mpz, a.mpz, b.mpz);
@@ -3044,14 +3469,53 @@ module BigInteger {
     }
   }
 
+  proc bigint.add(const ref a: bigint, b: int) {
+    if b >= 0 {
+      const b_ = b.safeCast(c_ulong);
+
+      if _local {
+        mpz_add_ui(this.mpz, a.mpz, b_);
+
+      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+        mpz_add_ui(this.mpz, a.mpz, b_);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const a_ = a;
+
+          mpz_add_ui(this.mpz, a_.mpz, b_);
+        }
+      }
+    } else {
+      const b_ = (0 - b).safeCast(c_ulong);
+
+      if _local {
+        mpz_sub_ui(this.mpz, a.mpz, b_);
+
+      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+        mpz_sub_ui(this.mpz, a.mpz, b_);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const a_ = a;
+
+          mpz_sub_ui(this.mpz, a_.mpz, b_);
+        }
+      }
+    }
+  }
+
   proc bigint.add(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
       mpz_add_ui(this.mpz, a.mpz, b_);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
       mpz_add_ui(this.mpz, a.mpz, b_);
 
     } else {
@@ -3065,9 +3529,6 @@ module BigInteger {
     }
   }
 
-
-
-  // Subtraction
   proc bigint.sub(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_sub(this.mpz, a.mpz, b.mpz);
@@ -3089,14 +3550,53 @@ module BigInteger {
     }
   }
 
+  proc bigint.sub(const ref a: bigint, b: int) {
+    if b >= 0 {
+      const b_ = b.safeCast(c_ulong);
+
+      if _local {
+        mpz_sub_ui(this.mpz, a.mpz, b_);
+
+      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+        mpz_sub_ui(this.mpz, a.mpz, b_);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const a_ = a;
+
+          mpz_sub_ui(this.mpz, a_.mpz, b_);
+        }
+      }
+    } else {
+      const b_ = (0 - b).safeCast(c_ulong);
+
+      if _local {
+        mpz_add_ui(this.mpz, a.mpz, b_);
+
+      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+        mpz_add_ui(this.mpz, a.mpz, b_);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const a_ = a;
+
+          mpz_add_ui(this.mpz, a_.mpz, b_);
+        }
+      }
+    }
+  }
+
   proc bigint.sub(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
       mpz_sub_ui(this.mpz, a.mpz, b_);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
       mpz_sub_ui(this.mpz, a.mpz, b_);
 
     } else {
@@ -3110,14 +3610,56 @@ module BigInteger {
     }
   }
 
+  proc bigint.sub(a: int, const ref b: bigint) {
+    if a >= 0 {
+      const a_ = a.safeCast(c_ulong);
+
+      if _local {
+        mpz_ui_sub(this.mpz, a_, b.mpz);
+
+      } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
+        mpz_ui_sub(this.mpz, a_, b.mpz);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const b_ = b;
+
+          mpz_ui_sub(this.mpz, a_, b_.mpz);
+        }
+      }
+    } else {
+      const a_ = (0 - a).safeCast(c_ulong);
+
+      if _local {
+        mpz_add_ui(this.mpz, b.mpz, a_);
+        mpz_neg(this.mpz, this.mpz);
+
+      } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
+        mpz_add_ui(this.mpz, b.mpz, a_);
+        mpz_neg(this.mpz, this.mpz);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const b_ = b;
+
+          mpz_add_ui(this.mpz, b_.mpz, a_);
+          mpz_neg(this.mpz, this.mpz);
+        }
+      }
+    }
+  }
+
   proc bigint.sub(a: uint, const ref b: bigint) {
     const a_ = a.safeCast(c_ulong);
 
     if _local {
       mpz_ui_sub(this.mpz, a_, b.mpz);
 
-    } else if this.localeId == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       mpz_ui_sub(this.mpz, a_, b.mpz);
 
     } else {
@@ -3131,9 +3673,6 @@ module BigInteger {
     }
   }
 
-
-
-  // Multiplication
   proc bigint.mul(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_mul(this.mpz, a.mpz, b.mpz);
@@ -3161,8 +3700,7 @@ module BigInteger {
     if _local {
       mpz_mul_si(this.mpz, a.mpz, b_);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
       mpz_mul_si(this.mpz, a.mpz, b_);
 
     } else {
@@ -3182,8 +3720,7 @@ module BigInteger {
     if _local {
       mpz_mul_ui(this.mpz, a.mpz, b_);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
       mpz_mul_ui(this.mpz, a.mpz, b_);
 
     } else {
@@ -3197,14 +3734,175 @@ module BigInteger {
     }
   }
 
-  proc bigint.mul_2exp(const ref a: bigint, b: uint) {
-    var b_ = b.safeCast(mp_bitcnt_t);
+  proc bigint.addmul(const ref a: bigint, const ref b: bigint) {
+    if _local {
+      mpz_addmul(this.mpz, a.mpz, b.mpz);
+
+    } else if this.localeId == chpl_nodeID &&
+              a.localeId    == chpl_nodeID &&
+              b.localeId    == chpl_nodeID {
+      mpz_addmul(this.mpz, a.mpz, b.mpz);
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        const a_ = a;
+        const b_ = b;
+
+        mpz_addmul(this.mpz, a_.mpz, b_.mpz);
+      }
+    }
+  }
+
+  proc bigint.addmul(const ref a: bigint, b: int) {
+    if b >= 0 {
+      const b_ = b.safeCast(c_ulong);
+
+      if _local {
+        mpz_addmul_ui(this.mpz, a.mpz, b_);
+
+      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+        mpz_addmul_ui(this.mpz, a.mpz, b_);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const a_ = a;
+
+          mpz_addmul_ui(this.mpz, a_.mpz, b_);
+        }
+      }
+    } else {
+      const b_ = (0 - b).safeCast(c_ulong);
+
+      if _local {
+        mpz_submul_ui(this.mpz, a.mpz, b_);
+
+      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+        mpz_submul_ui(this.mpz, a.mpz, b_);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const a_ = a;
+
+          mpz_submul_ui(this.mpz, a_.mpz, b_);
+        }
+      }
+    }
+  }
+
+  proc bigint.addmul(const ref a: bigint, b: uint) {
+    const b_ = b.safeCast(c_ulong);
+
+    if _local {
+      mpz_addmul_ui(this.mpz, a.mpz, b_);
+
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+      mpz_addmul_ui(this.mpz, a.mpz, b_);
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        const a_ = a;
+
+        mpz_addmul_ui(this.mpz, a_.mpz, b_);
+      }
+    }
+  }
+
+  proc bigint.submul(const ref a: bigint, const ref b: bigint) {
+    if _local {
+      mpz_submul(this.mpz, a.mpz, b.mpz);
+
+    } else if this.localeId == chpl_nodeID &&
+              a.localeId    == chpl_nodeID &&
+              b.localeId    == chpl_nodeID {
+      mpz_submul(this.mpz, a.mpz, b.mpz);
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        const a_ = a;
+        const b_ = b;
+
+        mpz_submul(this.mpz, a_.mpz, b_.mpz);
+      }
+    }
+  }
+
+  proc bigint.submul(const ref a: bigint, b: int) {
+    if b >= 0 {
+      const b_ = b.safeCast(c_ulong);
+
+      if _local {
+        mpz_submul_ui(this.mpz, a.mpz, b_);
+
+      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+        mpz_submul_ui(this.mpz, a.mpz, b_);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const a_ = a;
+
+          mpz_submul_ui(this.mpz, a_.mpz, b_);
+        }
+      }
+    } else {
+      const b_ = (0 - b).safeCast(c_ulong);
+
+      if _local {
+        mpz_addmul_ui(this.mpz, a.mpz, b_);
+
+      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+        mpz_addmul_ui(this.mpz, a.mpz, b_);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const a_ = a;
+
+          mpz_addmul_ui(this.mpz, a_.mpz, b_);
+        }
+      }
+    }
+  }
+
+  proc bigint.submul(const ref a: bigint, b: uint) {
+    const b_ = b.safeCast(c_ulong);
+
+    if _local {
+      mpz_submul_ui(this.mpz, a.mpz, b_);
+
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+      mpz_submul_ui(this.mpz, a.mpz, b_);
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        const a_ = a;
+
+        mpz_submul_ui(this.mpz, a_.mpz, b_);
+      }
+    }
+  }
+
+  proc bigint.mul_2exp(const ref a: bigint, b: integral) {
+    const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
       mpz_mul_2exp(this.mpz, a.mpz, b_);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
       mpz_mul_2exp(this.mpz, a.mpz, b_);
 
     } else {
@@ -3218,10 +3916,46 @@ module BigInteger {
     }
   }
 
-  // Division
-  proc bigint.div_q(param rounding: Round,
-                    const ref n: bigint,
-                    const ref d: bigint) {
+  proc bigint.neg(const ref a: bigint) {
+    if _local {
+      mpz_neg(this.mpz, a.mpz);
+
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+      mpz_neg(this.mpz, a.mpz);
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        const a_ = a;
+
+        mpz_neg(this.mpz, a_.mpz);
+      }
+    }
+  }
+
+  proc bigint.abs(const ref a: bigint) {
+    if _local {
+      mpz_abs(this.mpz, a.mpz);
+
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
+      mpz_abs(this.mpz, a.mpz);
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        const a_ = a;
+
+        mpz_abs(this.mpz, a_.mpz);
+      }
+    }
+  }
+
+  // 5.6 Division Functions
+  proc bigint.div_q(const ref n: bigint,
+                    const ref d: bigint,
+                    param     rounding = Round.ZERO) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
@@ -3254,47 +3988,16 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_q(param rounding: Round,
-                    const ref n: bigint,
-                    d: uint) : uint {
-    const d_ = d.safeCast(c_ulong);
-    var   ret: c_ulong;
+  proc bigint.div_q(const ref n: bigint,
+                              d: integral,
+                    param     rounding = Round.ZERO) {
 
-    if _local {
-      select rounding {
-        when Round.UP   do ret = mpz_cdiv_q_ui(this.mpz, n.mpz,  d_);
-        when Round.DOWN do ret = mpz_fdiv_q_ui(this.mpz, n.mpz,  d_);
-        when Round.ZERO do ret = mpz_tdiv_q_ui(this.mpz, n.mpz,  d_);
-      }
-
-    } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID {
-      select rounding {
-        when Round.UP   do ret = mpz_cdiv_q_ui(this.mpz, n.mpz,  d_);
-        when Round.DOWN do ret = mpz_fdiv_q_ui(this.mpz, n.mpz,  d_);
-        when Round.ZERO do ret = mpz_tdiv_q_ui(this.mpz, n.mpz,  d_);
-      }
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-
-        select rounding {
-          when Round.UP   do ret = mpz_cdiv_q_ui(this.mpz, n_.mpz, d_);
-          when Round.DOWN do ret = mpz_fdiv_q_ui(this.mpz, n_.mpz, d_);
-          when Round.ZERO do ret = mpz_tdiv_q_ui(this.mpz, n_.mpz, d_);
-        }
-      }
-    }
-
-    return ret.safeCast(uint);
+    this.div_q(n, new bigint(d), rounding);
   }
 
-  proc bigint.div_r(param rounding: Round,
-                    const ref n: bigint,
-                    const ref d: bigint) {
+  proc bigint.div_r(const ref n: bigint,
+                    const ref d: bigint,
+                    param     rounding = Round.ZERO) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
@@ -3327,51 +4030,17 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_r(param rounding: Round,
-                    const ref n: bigint,
-                    d: uint) : uint {
-    const d_ = d.safeCast(c_ulong);
-    var   ret: c_ulong;
-
-    if _local {
-      select rounding {
-        when Round.UP   do ret = mpz_cdiv_r_ui(this.mpz, n.mpz,  d_);
-        when Round.DOWN do ret = mpz_fdiv_r_ui(this.mpz, n.mpz,  d_);
-        when Round.ZERO do ret = mpz_tdiv_r_ui(this.mpz, n.mpz,  d_);
-      }
-
-    } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID {
-      select rounding {
-        when Round.UP   do ret = mpz_cdiv_r_ui(this.mpz, n.mpz,  d_);
-        when Round.DOWN do ret = mpz_fdiv_r_ui(this.mpz, n.mpz,  d_);
-        when Round.ZERO do ret = mpz_tdiv_r_ui(this.mpz, n.mpz,  d_);
-      }
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-
-        select rounding {
-          when Round.UP   do ret = mpz_cdiv_r_ui(this.mpz, n_.mpz, d_);
-          when Round.DOWN do ret = mpz_fdiv_r_ui(this.mpz, n_.mpz, d_);
-          when Round.ZERO do ret = mpz_tdiv_r_ui(this.mpz, n_.mpz, d_);
-        }
-      }
-    }
-
-    return ret.safeCast(uint);
+  proc bigint.div_r(const ref n: bigint,
+                              d: integral,
+                    param     rounding = Round.ZERO) {
+    this.div_r(n, new bigint(d), rounding);
   }
 
-
-
   // this gets quotient, r gets remainder
-  proc bigint.div_qr(param rounding: Round,
-                     ref r: bigint,
-                     const ref n: bigint,
-                     const ref d: bigint) {
+  proc bigint.div_qr(ref       r:        bigint,
+                     const ref n:        bigint,
+                     const ref d:        bigint,
+                     param     rounding = Round.ZERO) {
     if _local {
       select rounding {
         when Round.UP   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
@@ -3408,58 +4077,16 @@ module BigInteger {
     }
   }
 
-  // this gets quotient, r gets remainder
-  proc bigint.div_qr(param rounding: Round,
-                     ref r: bigint,
+  proc bigint.div_qr(ref       r: bigint,
                      const ref n: bigint,
-                     d: uint) : uint {
-    const d_ = d.safeCast(c_ulong);
-    var   ret: c_ulong;
-
-    if _local {
-      select rounding {
-        when Round.UP   do ret = mpz_cdiv_qr_ui(this.mpz, r.mpz, n.mpz, d_);
-        when Round.DOWN do ret = mpz_fdiv_qr_ui(this.mpz, r.mpz, n.mpz, d_);
-        when Round.ZERO do ret = mpz_tdiv_qr_ui(this.mpz, r.mpz, n.mpz, d_);
-      }
-
-    } else if this.localeId == chpl_nodeID &&
-              r.localeId    == chpl_nodeID &&
-              n.localeId    == chpl_nodeID {
-      select rounding {
-        when Round.UP   do ret = mpz_cdiv_qr_ui(this.mpz, r.mpz, n.mpz, d_);
-        when Round.DOWN do ret = mpz_fdiv_qr_ui(this.mpz, r.mpz, n.mpz, d_);
-        when Round.ZERO do ret = mpz_tdiv_qr_ui(this.mpz, r.mpz, n.mpz, d_);
-      }
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var   r_ = r;
-        const n_ = n;
-
-        select rounding {
-          when Round.UP   do
-            ret = mpz_cdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d_);
-
-          when Round.DOWN do
-            ret = mpz_fdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d_);
-
-          when Round.ZERO do
-            ret = mpz_tdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d_);
-        }
-
-        r = r_;
-      }
-    }
-
-    return ret;
+                               d: integral,
+                     param     rounding = Round.ZERO) {
+    this.div_qr(r, n, new bigint(d), rounding);
   }
 
-  proc bigint.div_q_2exp(param rounding: Round,
-                         const ref n: bigint,
-                         b: uint) {
+  proc bigint.div_q_2exp(const ref n: bigint,
+                                   b: integral,
+                         param     rounding = Round.ZERO) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
@@ -3492,9 +4119,9 @@ module BigInteger {
     }
   }
 
-  proc bigint.div_r_2exp(param rounding: Round,
-                         const ref n: bigint,
-                         b: uint) {
+  proc bigint.div_r_2exp(const ref n: bigint,
+                                   b: integral,
+                         param     rounding = Round.ZERO) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
@@ -3504,8 +4131,7 @@ module BigInteger {
         when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
       }
 
-    } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && n.localeId == chpl_nodeID {
       select rounding {
         when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
         when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
@@ -3529,100 +4155,7 @@ module BigInteger {
 
 
 
-  proc bigint.addmul(const ref a: bigint,
-                     const ref b: bigint) {
-    if _local {
-      mpz_addmul(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_addmul(this.mpz, a.mpz, b.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-        const b_ = b;
-
-        mpz_addmul(this.mpz, a_.mpz, b_.mpz);
-      }
-    }
-  }
-
-  proc bigint.addmul(const ref a: bigint,
-                     b: uint) {
-    const b_ = b.safeCast(c_ulong);
-
-    if _local {
-      mpz_addmul_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID &&
-               a.localeId    == chpl_nodeID {
-      mpz_addmul_ui(this.mpz, a.mpz, b_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-
-        mpz_addmul_ui(this.mpz, a_.mpz, b_);
-      }
-    }
-  }
-
-
-
-  proc bigint.submul(const ref a: bigint,
-                     const ref b: bigint) {
-    if _local {
-      mpz_submul(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_submul(this.mpz, a.mpz, b.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-        const b_ = b;
-
-        mpz_submul(this.mpz, a_.mpz, b_.mpz);
-      }
-    }
-  }
-
-  proc bigint.submul(const ref a: bigint,
-                     b: uint) {
-    const b_ = b.safeCast(c_ulong);
-
-    if _local {
-      mpz_submul_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
-      mpz_submul_ui(this.mpz, a.mpz, b_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-
-        mpz_submul_ui(this.mpz, a_.mpz, b_);
-      }
-    }
-  }
-
-
-
-  proc bigint.mod(const ref a: bigint,
-                  const ref b: bigint) {
+  proc bigint.mod(const ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_mod(this.mpz, a.mpz, b.mpz);
 
@@ -3643,16 +4176,19 @@ module BigInteger {
     }
   }
 
-  proc bigint.mod(const ref a: bigint,
-                  b: uint) : uint {
-    const b_ = b.safeCast(c_ulong);
+  proc bigint.mod(const ref a: bigint, b: integral) : uint {
+    var   b_ : c_ulong;
     var   ret: c_ulong;
+
+    if b >= 0 then
+      b_ = b.safeCast(c_ulong);
+    else
+      b_ = (0 - b).safeCast(c_ulong);
 
     if _local {
       ret = mpz_mod_ui(this.mpz, a.mpz, b_);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
       ret = mpz_mod_ui(this.mpz, a.mpz, b_);
 
     } else {
@@ -3677,8 +4213,7 @@ module BigInteger {
     if _local {
       ret = mpz_cmp(this.mpz, b.mpz);
 
-    } else if this.localeId == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       ret = mpz_cmp(this.mpz, b.mpz);
 
     } else {
@@ -3765,8 +4300,7 @@ module BigInteger {
     if _local {
       ret = mpz_cmpabs(this.mpz, b.mpz);
 
-    } else if this.localeId == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
       ret = mpz_cmpabs(this.mpz, b.mpz);
 
     } else {
@@ -3829,7 +4363,10 @@ module BigInteger {
   proc bigint.sgn() : int {
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
+    if _local {
+      ret = mpz_sgn(this.mpz);
+
+    } else if this.localeId == chpl_nodeID {
       ret = mpz_sgn(this.mpz);
 
     } else {
@@ -3842,13 +4379,6 @@ module BigInteger {
 
     return ret.safeCast(int);
   }
-
-
-
-
-
-
-
 
 
   // Logical and Bit Manipulation Functions
@@ -3919,8 +4449,7 @@ module BigInteger {
     if _local {
       mpz_com(this.mpz, a.mpz);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
       mpz_com(this.mpz, a.mpz);
 
     } else {
@@ -3941,8 +4470,7 @@ module BigInteger {
     if _local {
       mpz_set(this.mpz, a.mpz);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
       mpz_set(this.mpz, a.mpz);
 
     } else {
@@ -4032,8 +4560,7 @@ module BigInteger {
     if _local {
       mpz_swap(this.mpz, a.mpz);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
       mpz_swap(this.mpz, a.mpz);
 
     } else {

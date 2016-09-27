@@ -1,6 +1,6 @@
-/*
+// Associative Domains and Arrays
 
-  Associative Primer
+/*
 
   This is a tutorial on Chapel's associative domains and arrays.
 
@@ -76,7 +76,7 @@ var Days = {"Sunday", "Wednesday", "Saturday"};
 
   .. code-block:: chapel
 
-       var Days : domain(string) = {"Sunday", ...};
+       var Days : domain(string) = {"Sunday", "Wednesday", "Saturday"};
 
 */
 

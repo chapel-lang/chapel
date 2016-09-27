@@ -226,20 +226,20 @@ writeln();
 
 
 b = a ^ c;
-writeln(" ",  a, " ^     ",  c, " =           ",  b);
+writeln(" ",  a, " ^     ",  c, " =          ",  b);
 
 b = c ^ a;
-writeln("  ", c, " ^    ",   a, " =           ",  b);
+writeln("  ", c, " ^    ",   a, " =          ",  b);
 
 writeln();
 
 
 
 b = a | c;
-writeln(" ",  a, " |     ",  c, " =           ",  b);
+writeln(" ",  a, " |     ",  c, " =          ",  b);
 
 b = c | a;
-writeln("  ", c, " |    ",   a, " =           ",  b);
+writeln("  ", c, " |    ",   a, " =          ",  b);
 
 writeln();
 

@@ -1,6 +1,6 @@
-/*
-   Domains primer
+// Domains
 
+/*
    This primer showcases Chapel domains as abstract concepts, primarily
    within the context of rectangular domains.  For other uses of domains
    see the following primers:
@@ -131,5 +131,5 @@ writeln("SSD:", SSD); // Now contains an unordered set of indices.
      have not been implemented.
 
 For more information on domains, see the Domains chapter of the
-Chapel Language Spec.
+:ref:`Chapel Language Specification <chapel-spec>`.
 */

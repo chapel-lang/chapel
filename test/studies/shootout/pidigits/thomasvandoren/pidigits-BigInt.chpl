@@ -61,7 +61,7 @@ iter genDigits(numDigits) {
 
       // tmp1 = tmp1 / denom; tmp2 = tmp1 % denom
       // tmp1 gets quotient, tmp2 gets remainder
-      tmp1.div_qr(Round.DOWN, tmp2, tmp1, denom);
+      tmp1.div_qr(tmp2, tmp1, denom, Round.DOWN);
 
       // Now, if:
       //   (numer * 3 + accum) % denom + numer == (numer * 4 + accum) + numer
@@ -69,7 +69,7 @@ iter genDigits(numDigits) {
     } while tmp2.cmp(denom) >= 0; // tmp2 >= denom
 
     // Compute and yield the digit.
-    const digit = tmp1.get_ui();
+    const digit = tmp1 : uint;
 
     yield digit;
 

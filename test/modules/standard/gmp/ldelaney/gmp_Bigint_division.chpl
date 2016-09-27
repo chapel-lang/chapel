@@ -6,90 +6,76 @@ var b = new bigint( 10);
 var c = new bigint(-27);
 var d = new bigint();
 
-d.div_q(Round.UP, c, a);
-b.div_r(Round.UP, c, a);
+d.div_q(c, a, Round.UP);
+b.div_r(c, a, Round.UP);
 writeln(d, " ", b);
 
-d.div_q(Round.DOWN, c, a);
-b.div_r(Round.DOWN, c, a);
+d.div_q(c, a, Round.DOWN);
+b.div_r(c, a, Round.DOWN);
 writeln(d, " ", b);
 
-d.div_q(Round.ZERO, c, a); // same as UP   for negative integers
-b.div_r(Round.ZERO, c, a); // same as DOWN for positive integers
+d.div_q(c, a, Round.ZERO); // same as UP   for negative integers
+b.div_r(c, a, Round.ZERO); // same as DOWN for positive integers
 writeln(d, " ", b);
 
 c.neg(c);
-d.div_qr(Round.UP, b, c, a);
+d.div_qr(b, c, a, Round.UP);
 writeln(d, " ", b);
 
-d.div_qr(Round.DOWN, b, c, a);
+d.div_qr(b, c, a, Round.DOWN);
 writeln(d, " ", b);
 
-d.div_qr(Round.ZERO, b, c, a); // same as DOWN for positive integers
+d.div_qr(b, c, a, Round.ZERO); // same as DOWN for positive integers
 writeln(d, " ", b);
 
 writeln();
 
 c.neg(c);
-d.div_q(Round.UP, c, 8);
-b.div_r(Round.UP, c, 8);
+d.div_q(c, 8, Round.UP);
+b.div_r(c, 8, Round.UP);
 writeln(d, " ", b);
 
-d.div_q(Round.DOWN, c, 8);
-b.div_r(Round.DOWN, c, 8);
+d.div_q(c, 8, Round.DOWN);
+b.div_r(c, 8, Round.DOWN);
 writeln(d, " ", b);
 
-d.div_q(Round.ZERO, c, 8); // same as DOWN for positive integers
-b.div_r(Round.ZERO, c, 8); // same as DOWN for positive integers
+d.div_q(c, 8, Round.ZERO); // same as DOWN for positive integers
+b.div_r(c, 8, Round.ZERO); // same as DOWN for positive integers
 writeln(d, " ", b);
 
 c.neg(c);
-d.div_qr(Round.UP, b, c, 8);
+d.div_qr(b, c, 8, Round.UP);
 writeln(d, " ", b);
 
-d.div_qr(Round.DOWN, b, c, 8);
+d.div_qr(b, c, 8, Round.DOWN);
 writeln(d, " ", b);
 
-d.div_qr(Round.ZERO, b, c, 8); // same as DOWN for positive integers
+d.div_qr(b, c, 8, Round.ZERO); // same as DOWN for positive integers
 writeln(d, " ", b);
 
 c.neg(c);
 writeln();
-
-
-var d2 : uint = 0;
-
-d2 = div(Round.UP,   c, 8 : uint);
-writeln(d2);
-
-d2 = div(Round.DOWN, c, 8 : uint);
-writeln(d2);
-
-d2 = div(Round.ZERO, c, 8 : uint);
-writeln(d2);
-
-writeln();
-
-
 
 
 // q = (n / 2^d)
-d.div_q_2exp(Round.UP, c, 3);
-b.div_r_2exp(Round.UP, c, 3);
+d.div_q_2exp(c, 3, Round.UP);
+b.div_r_2exp(c, 3, Round.UP);
 writeln(d, " ", b);
 
-d.div_q_2exp(Round.DOWN, c, 3);
-b.div_r_2exp(Round.DOWN, c, 3);
+d.div_q_2exp(c, 3, Round.DOWN);
+b.div_r_2exp(c, 3, Round.DOWN);
 writeln(d, " ", b);
 
-d.div_q_2exp(Round.ZERO, c, 3);
-b.div_r_2exp(Round.ZERO, c, 3);
+d.div_q_2exp(c, 3, Round.ZERO);
+b.div_r_2exp(c, 3, Round.ZERO);
 writeln(d, " ", b);
 
 writeln();
 
 d.mod(c, a);
 writeln(d);
+
+var d2 : uint = 0;
 
 d2 = d.mod(c, 8);
 writeln(d2);

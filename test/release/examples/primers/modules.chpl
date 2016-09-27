@@ -1,6 +1,6 @@
-/*
-   Module Primer
+// Modules
 
+/*
    This primer introduces the concept of modules, a concept for encapsulating
    code for use by other code.  It covers:
 
@@ -110,7 +110,7 @@ module MainModule {
        module name and a separating ``.`` as a prefix to the name of the symbol
        desired.
      */
-    var thriceFoo = 3 * modToUse.foo; // should be ``36``
+    var thriceFoo = 3 * modToUse.foo; // should be '36'
     writeln(thriceFoo);
 
     /* If several of the module's symbols are desired, or the same symbol is

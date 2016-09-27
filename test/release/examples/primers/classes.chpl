@@ -1,8 +1,7 @@
+// Classes
+
 /*
-   Classes Primer
-
    This primer covers the declaration and use of classes.
-
 */
 
 //

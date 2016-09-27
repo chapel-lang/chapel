@@ -55,21 +55,6 @@ tags
 /doc/tutorial/workbooks/*.bbl
 /doc/tutorial/workbooks/*.blg
 /doc/sphinx/build
-/doc/sphinx/source/*.rst
-/doc/sphinx/source/platforms/*.rst
-/doc/sphinx/source/technotes/*.rst
-/doc/sphinx/source/usingchapel/*.rst
-/doc/sphinx/source/modules/standard
-/doc/sphinx/source/modules/dists
-/doc/sphinx/source/modules/layouts
-/doc/sphinx/source/modules/internal
-/doc/sphinx/source/modules/packages
-/doc/sphinx/source/language/*.pdf
-/doc/sphinx/source/tools/chpldoc/man.rst
-!/doc/sphinx/source/index.rst
-!/doc/sphinx/source/technotes/index.rst
-!/doc/sphinx/source/platforms/index.rst
-!/doc/sphinx/source/usingchapel/index.rst
 
 
 # Make ignores.

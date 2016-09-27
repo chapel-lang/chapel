@@ -65,6 +65,47 @@ def get_arguments():
     return parser.parse_args()
 
 
+def gen_link(link, chapelfile):
+    """Generate hyperlink to GitHub URL based on chapelfile path"""
+    # Note - this makes the assumption that the file lives in the github repo
+    abspath = os.path.realpath(chapelfile)
+    filename = os.path.split(chapelfile)[1]
+
+    chpl_home = os.path.realpath(os.getenv('CHPL_HOME'))
+    if not chpl_home:
+        print('Error: --link flag only works when $CHPL_HOME is defined')
+        sys.exit(1)
+    elif not chpl_home in abspath:
+        print('Error: --link flag only work for files within $CHPL_HOME')
+        print('CHPL_HOME: {0}'.format(chpl_home))
+        print('file path: {0}'.format(abspath))
+        sys.exit(1)
+
+    # Get path from CHPL_HOME directory
+    chplpath = abspath.replace(chpl_home, '').lstrip('/')
+    hyperlink = 'https://github.com/chapel-lang/chapel/blob/{0}/{1}'.format(link, chplpath)
+    rstlink = '`View {0} on GitHub <{1}>`_'.format(filename, hyperlink)
+    return rstlink
+
+
+def titlecomment(line):
+    """Condition for a line to be a title comment"""
+    return line.startswith('//') and len(line.lstrip('//').strip()) > 0
+
+
+def gen_title(chapelfile):
+    """Generate file title, based on if title comment exists"""
+    with open(chapelfile, 'r') as handle:
+        line1 = handle.readline()
+        if titlecomment(line1):
+            title = line1.lstrip('//').strip()
+        else:
+            filename = os.path.split(chapelfile)[1]
+            title = filename
+
+    return title
+
+
 def gen_preamble(chapelfile, link=None):
     """Generate preamble for rst file"""
 
@@ -74,7 +115,8 @@ def gen_preamble(chapelfile, link=None):
 
     domain = '.. default-domain:: chpl'
     reference = '.. _primers-{0}:'.format(basename)
-    title = filename
+
+    title = gen_title(chapelfile)
 
     output = []
     output.append(domain)
@@ -87,23 +129,7 @@ def gen_preamble(chapelfile, link=None):
 
     # Generate dynamic links below title
     if link:
-        # Note - this makes the assumption that the file lives in the test dir
-        abspath = os.path.abspath(chapelfile)
-
-
-        chpl_home = os.getenv('CHPL_HOME')
-        if not chpl_home:
-            print('Error: --link flag only works when $CHPL_HOME is defined')
-            sys.exit(1)
-        elif not chpl_home in abspath:
-            print('Error: --link flag only work for files within $CHPL_HOME')
-            sys.exit(1)
-
-        # Get path from CHPL_HOME directory
-        chplpath = abspath.replace(chpl_home, '').lstrip('/')
-        hyperlink = 'https://github.com/chapel-lang/chapel/blob/{0}/{1}'.format(link, chplpath)
-        rstlink = '`View {0} on GitHub <{1}>`_'.format(filename, hyperlink)
-        output.append(rstlink)
+        output.append(gen_link(link, chapelfile))
         output.append('')
 
     return '\n'.join(output)
@@ -119,7 +145,12 @@ def gen_rst(handle):
     indentation = -1
 
     # Each line is rst or code-block
-    for line in [l.strip('\n') for l in handle.readlines()]:
+    for (i, line) in enumerate([l.strip('\n') for l in handle.readlines()]):
+
+        # Skip title comment if present
+        if i == 0:
+            if titlecomment(line):
+                continue
 
         # Skip empty lines
         if len(line.strip()) == 0:
@@ -156,21 +187,25 @@ def gen_rst(handle):
                 rstline = rstline.replace('//', '  ')
                 rstline = rstline.strip()
             else:
-                # Preserve white space for block comments
+                # Preserve white space for block comments, for indent purposes
                 if commentstarts:
                     rstline = rstline.replace('/*', '  ')
                 if commentends > 0:
                     rstline = rstline.replace('*/', '  ')
-                if '.. code-block::' in rstline or len(rstline.strip()) == 0:
-                    rstline = rstline.strip()
+                # No need for trailing white space... ever
+                rstline = rstline.rstrip(' ')
 
-            # Strip indentation
+            # Handle indentation
             if indentation == -1:
-                lineindentation = len(rstline) - len(rstline.lstrip(' '))
-                if lineindentation > 0:
-                    indentation = lineindentation
+                # Detect level of indentation (number of leading whitespaces)
+                baseline = len(rstline) - len(rstline.lstrip(' '))
+                if baseline > 0:
+                    # Set indentation for the proceeding block
+                    indentation = baseline
+                    # Set indentation for baseline to 0
                     rstline = rstline.lstrip(' ')
             else:
+                # Remove the amount of indent that was removed from baseline
                 if rstline.startswith(' '*indentation):
                     rstline = rstline[indentation:]
                 else:
@@ -178,7 +213,7 @@ def gen_rst(handle):
 
             output.append(rstline)
         else:
-            # Reset indentation
+            # Reset indentation as we enter codeblock state
             indentation = -1
 
             # Write code block
@@ -201,7 +236,11 @@ def gen_codeblock(handle):
     output.append('.. code-block:: chapel')
     output.append('')
 
-    for line in [l.strip('\n') for l in handle.readlines()]:
+    for (i, line) in enumerate([l.strip('\n') for l in handle.readlines()]):
+        if i == 0:
+            if titlecomment(line):
+                continue
+
         output.append('  ' + line)
 
     return '\n'.join(output)
@@ -259,8 +298,7 @@ def main(**kwargs):
         fname = getfname(chapelfile, output, prefix)
 
         if not os.path.exists(prefix) and output != 'stdout':
-            print('--prefix=', prefix, ' does not exist')
-            print('Creating directories:', prefix)
+            print('Creating directory: ', prefix)
             os.makedirs(prefix)
 
         if verbose:
