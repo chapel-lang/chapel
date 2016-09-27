@@ -84,11 +84,12 @@ appropriate thread support (see below).
 The recommended configuration for running multilocale MPI jobs on a Cray is as
 follows:
 
-* ``CHPL_TARGET_COMPILER = cray-prgenv-gnu``
-* ``CHPL_TASKS = fifo``
-* ``CHPL_COMM = none``
-* ``CHPL_LAUNCHER = mpirun``
-* ``MPICH_MAX_THREAD_SAFETY = multiple``
+.. code-block:: sh
+
+ CHPL_TARGET_COMPILER=cray-prgenv-gnu
+ CHPL_TASKS=fifo
+ CHPL_COMM=none
+ MPICH_MAX_THREAD_SAFETY=multiple
 
 These are the configurations in which this module is currently tested.
 
@@ -121,12 +122,14 @@ model requires
 The recommended configuration for running multilocale MPI jobs on a Cray is as
 follows:
 
-* ``CHPL_TARGET_COMPILER = cray-prgenv-gnu``
-* ``CHPL_TASKS = fifo``
-* ``CHPL_COMM = gasnet``
-* ``CHPL_COMM_SUBSTRATE = mpi`` or ``CHPL_COMM_SUBSTRATE = aries``
-* ``MPICH_MAX_THREAD_SAFETY = multiple``
-* ``AMMPI_MPI_THREAD = MULTIPLE`` (if ``CHPL_COMM_SUBSTRATE = mpi``)
+.. code-block:: sh
+
+  CHPL_TARGET_COMPILER=cray-prgenv-gnu
+  CHPL_TASKS=fifo
+  CHPL_COMM=gasnet
+  CHPL_COMM_SUBSTRATE=mpi           # or aries
+  MPICH_MAX_THREAD_SAFETY=multiple
+  AMMPI_MPI_THREAD=multiple         # if CHPL_COMM_SUBSTRATE=mpi
 
 These are the configurations in which this module is currently tested. Any
 launcher should work fine for this mode. Support is expected to expand in
