@@ -7055,6 +7055,27 @@ preFold(Expr* expr) {
       else
         result = new SymExpr(gFalse);
       call->replace(result);
+    } else if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+      // Convert these to PRIM_GET_SVEC_MEMBER_VALUE if the
+      // field in question is a reference.
+      // An alternative to this transformation here would be
+      // to build homog. tuple accessor entirely in tuples.cpp.
+      AggregateType *ct = toAggregateType(call->get(1)->getValType());
+      if (ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+        FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+        if (inFn && inFn->hasFlag(FLAG_STAR_TUPLE_ACCESSOR)) {
+          Type* fieldType = ct->getFieldType(call->get(2));
+          if (fieldType && fieldType->isRef()) {
+            if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+              Expr* base = call->get(1);
+              Expr* field = call->get(2);
+              result = new CallExpr(PRIM_GET_SVEC_MEMBER_VALUE,
+                                   base->remove(), field->remove());
+              call->replace(result);
+            }
+          }
+        }
+      }
     }
   }
   //

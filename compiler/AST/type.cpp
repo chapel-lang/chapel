@@ -1307,6 +1307,44 @@ Symbol* AggregateType::getField(int i) {
   return toDefExpr(fields.get(i))->sym;
 }
 
+Type* AggregateType::getFieldType(Expr* e) {
+  SymExpr* sym = NULL;
+  VarSymbol* var = NULL;
+
+  sym = toSymExpr(e);
+  if (sym)
+    var = toVarSymbol(sym->var);
+
+  const char* name = NULL;
+
+  // Special case: An integer field name is actually a tuple member index.
+  {
+    int64_t i;
+    if (get_int(sym, &i)) {
+      name = astr("x", istr(i));
+    }
+  }
+
+  // Typical case: field is identified by its name
+  if (var && var->immediate)
+    name = var->immediate->v_string;
+
+  // Special case: star tuples can have run-time integer field access
+  if (name == NULL && this->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    name = astr("x1"); // get the 1st field's type, since they're all the same
+  }
+
+  Symbol* fs = NULL;
+  for_fields(field, this) {
+    if (!strcmp(field->name, name)) {
+      fs = field;;
+    }
+  }
+
+  if (fs) return fs->type;
+  else return NULL;
+}
+
 
 void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
   // TODO: Include unions... (thomasvandoren, 2015-02-25)
