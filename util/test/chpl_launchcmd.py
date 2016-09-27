@@ -146,6 +146,9 @@ class AbstractJob(object):
         :returns: Number of cpus to reserve, or -1 if there was no cnselect output
         """
         try:
+            n_cpus = os.environ.get('CHPL_LAUNCHCMD_NUM_CPUS')
+            if n_cpus is not None:
+                return n_cpus
             logging.debug('Checking for number of cpus to reserve.')
             cnselect_proc = subprocess.Popen(
                 ['cnselect', '-Lnumcores'],
