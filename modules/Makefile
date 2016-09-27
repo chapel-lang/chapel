@@ -68,6 +68,7 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \
 	standard/Barrier.chpl \
+	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
@@ -147,7 +148,7 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/builtins
 	@echo "Removing generated files and directories"
 	rm -rf ./docs
 	rm -rf ${MODULE_SPHINX}

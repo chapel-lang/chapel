@@ -1594,10 +1594,10 @@ extern record iostyle { // aka qio_style_t
      is to right-justify the number. */
   var leftjustify:uint(8) = 0;
   /* When printing an integral value using a real format, should a trailing
-     decimal point be included? If so, the value 0 will be writtes as '0.' */
+     decimal point be included? If so, the value 0 will be written as '0.' */
   var showpoint:uint(8) = 0;
   /* When printing an integral value using a real format, should a trailing
-     decimal point and zero be included? If so, the value 0 will be writtes
+     decimal point and zero be included? If so, the value 0 will be written
      as '0.0' */
   var showpointzero:uint(8) = 1;
   /* Specifies the precision for real format conversions. See the description

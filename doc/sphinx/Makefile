@@ -53,7 +53,7 @@ primers: clean-primers
 	@#Note - this assumes that we are not in a release tar ball
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/*.chpl
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/*doc.chpl --codeblock
-	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/chplvis/*.chpl
+	cp ../../test/release/examples/primers/chplvis/*.chpl source/primers/primers/
 
 
 checkdocs: FORCE
@@ -84,7 +84,7 @@ clean-module-docs: FORCE
 	@echo
 	@echo "Removing module docs that were generated into source/"
 	rm -rf source/modules/dists
-	rm -rf source/modules/internal
+	rm -rf source/builtins/
 	rm -rf source/modules/layouts
 	rm -rf source/modules/packages
 	rm -rf source/modules/standard

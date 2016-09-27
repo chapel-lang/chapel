@@ -1,4 +1,7 @@
-This file is intended to mirror what is documented on [Docker Hub](https://hub.docker.com/r/chapel/chapel/).
+## _This directory is intended to document the images available on [Docker Hub](https://hub.docker.com/r/chapel/chapel/)._
+   Please see [Docker Hub](https://hub.docker.com/r/chapel/chapel/) for the latest images.
+
+---
 
 # Supported tags and respective `Dockerfile` links
 

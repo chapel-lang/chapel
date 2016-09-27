@@ -540,22 +540,22 @@ module Math {
   }
 
 
-  /* Returns the value of the Napierien `e` raised to the power of the argument `x`. */
+  /* Returns the value of the Napierian `e` raised to the power of the argument `x`. */
   extern proc exp(x: real(64)): real(64);
 
-  /* Returns the value of the Napierien `e` raised to the power of the argument. */
+  /* Returns the value of the Napierian `e` raised to the power of the argument. */
   inline proc exp(x : real(32)): real(32) {
     extern proc expf(x: real(32)): real(32);
     return expf(x);
   }
 
-  /* Returns the value of the Napierien `e` raised to the power of the argument. */
+  /* Returns the value of the Napierian `e` raised to the power of the argument. */
   inline proc exp(z: complex(64)): complex(64) {
     extern proc cexpf(z: complex(64)): complex(64);
     return cexpf(z);
   }
 
-  /* Returns the value of the Napierien `e` raised to the power of the argument. */
+  /* Returns the value of the Napierian `e` raised to the power of the argument. */
   inline proc exp(z: complex(128)): complex(128) {
     extern proc cexp(z: complex(128)): complex(128);
     return cexp(z);
@@ -572,11 +572,11 @@ module Math {
   }
 
 
-  /* Returns one less than the value of the Napierien `e` raised to the power
+  /* Returns one less than the value of the Napierian `e` raised to the power
      of the argument `x`. */
   extern proc expm1(x: real(64)): real(64);
 
-  /* Returns one less than the value of the Napierien `e` raised to the power
+  /* Returns one less than the value of the Napierian `e` raised to the power
      of the argument `x`. */
   inline proc expm1(x : real(32)): real(32) {
     extern proc expm1f(x: real(32)): real(32);

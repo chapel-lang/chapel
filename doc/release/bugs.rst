@@ -15,7 +15,7 @@ lists:
 Please include the following information in your email:
 
   1. the version number of your Chapel compiler (``chpl --version``)
-  2. the output of the ``$CHPL_HOME/util/printchplenv`` script
+  2. the output of the ``$CHPL_HOME/util/printchplenv --anonymize`` script
   3. the back-end C compiler you are using and its version (e.g., ``gcc --version``)
   4. the output of ``module list`` (if using a Cray system)
   5. one of the following:
