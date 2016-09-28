@@ -58,8 +58,8 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
       oldCap = chpl_capPrivateObjects;
       chpl_capPrivateObjects = 2*max(pid, oldCap);
 
-      tmp = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void *),
-                               CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
+      tmp = chpl_mem_allocManyZero(chpl_capPrivateObjects, sizeof(void *),
+                                   CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
       chpl_memcpy((void*)tmp, (void*)chpl_privateObjects, (oldCap)*sizeof(void*));
       chpl_privateObjects = tmp;
       // purposely leak old copies of chpl_privateObject to avoid the need to
