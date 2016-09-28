@@ -643,7 +643,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 
 // Look in the block statement determining a return value type, and see if it
 // looks like an array type expression.
-static bool
+/*static bool
 returnTypeIsArray(BlockStmt* retExprType)
 {
   CallExpr* call = toCallExpr(retExprType->body.tail);
@@ -657,7 +657,7 @@ returnTypeIsArray(BlockStmt* retExprType)
     return false;
   // Very likely an array type.
   return true;
-}
+}*/
 
 
 // Following normalization, each function contains only one return statement
@@ -773,11 +773,12 @@ static void normalize_returns(FnSymbol* fn) {
       // because it adds initialization code that is later removed.
       // Also, we want arrays returned from iterators to behave like
       // references, so we add the 'var' return intent here.
-      if (fn->isIterator() &&
+/*      if (fn->isIterator() &&
           returnTypeIsArray(retExprType))
         // Treat iterators returning arrays as if they are always returned
         // by ref.
         fn->retTag = RET_REF;
+        */
     }
 
     fn->insertAtHead(new DefExpr(retval));
