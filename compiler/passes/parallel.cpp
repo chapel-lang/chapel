@@ -1252,9 +1252,6 @@ makeHeapAllocations() {
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
           def->replace(new SymExpr(tmp));
         } else if (call->isResolved()) {
-          if (call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-            call->remove();
-          } else {
             ArgSymbol* formal = actual_to_formal(def);
             if (formal->isRef()) {
               VarSymbol* tmp = newTemp(var->type);
@@ -1267,7 +1264,6 @@ makeHeapAllocations() {
               call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(op, def->var, heapType->getField(1))));
               def->replace(new SymExpr(tmp));
             }
-          }
         } else {
           VarSymbol* tmp = newTemp(var->type);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
