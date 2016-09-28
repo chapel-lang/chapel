@@ -1,20 +1,9 @@
 build
 
-platforms/*.rst
-!platforms/index.rst
-
-technotes/*.rst
-!technotes/index.rst
-
-usingchapel/*.rst
-!usingchapel/index.rst
-
 builtins
-modules/standard
-modules/dists
-modules/layouts
-modules/packages
-
-language/*.pdf
+modules
+primers
+examples
 
 tools/chpldoc/man.rst
+usingchapel/man.rst

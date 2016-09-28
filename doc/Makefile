@@ -41,6 +41,8 @@ module-docs: clean-module-docs
 	@echo
 	@echo "Generating module docs from "'$$CHPL_HOME'"/modules/ into "'$$CHPL_HOME'"/doc/"
 	(cd ../modules && make documentation)
+	cp -f .modules/* modules/
+	cp -f .builtins/* builtins/
 
 primers: clean-primers
 	@echo
@@ -48,19 +50,21 @@ primers: clean-primers
 	@#Note - this assumes that we are not in a release tar ball
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*.chpl
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*doc.chpl --codeblock
-	cp ../test/release/examples/primers/chplvis/*.chpl primers/primers/
+	cp -f .primers/* primers
 
 hellos: clean-hellos
 	@echo
 	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/$(CHPL_DOC_HELLO_DIR)"
 	@#Note - this assumes that we are not in a release tar ball
 	$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../test/release/examples/hello*.chpl
+	cp -f .examples/* examples
 
 symlinks: clean-symlinks
 	@echo
 	@echo "Creating symlinks"
 	ln -s $$CHPL_HOME/man/chpl.rst usingchapel/man.rst
 	ln -s $$CHPL_HOME/man/chpldoc.rst tools/chpldoc/man.rst
+	ln -s $$CHPL_HOME/test/release/examples tools/chplvis/examples
 	ln -s $$CHPL_HOME/test/release/examples users-guide/base/examples
 	ln -s $$CHPL_HOME/test/release/examples users-guide/taskpar/examples
 	ln -s $$CHPL_HOME/test/release/examples users-guide/datapar/examples
@@ -76,26 +80,23 @@ cleanall: clean-source
 
 clobber: clean-source clean-build
 
-clean-source: clean-module-docs clean-primers
+clean-source: clean-module-docs clean-primers clean-hellos clean-symlinks
 
 clean-module-docs: FORCE
 	@echo
 	@echo "Removing module docs that were generated"
-	rm -rf modules/dists
+	rm -rf modules/
 	rm -rf builtins/
-	rm -rf modules/layouts
-	rm -rf modules/packages
-	rm -rf modules/standard
 
 clean-primers: FORCE
 	@echo
 	@echo "Removing primers generated into $(CHPL_DOC_HELLO_DIR)"
-	rm -rf $(CHPL_DOC_PRIMERS_DIR)
+	rm -rf primers/
 
 clean-hellos: FORCE
 	@echo
 	@echo "Removing hellos generated into $(CHPL_DOC_HELLO_DIR)"
-	rm -rf $(CHPL_DOC_HELLO_DIR)
+	rm -rf examples/
 
 clean-symlinks: FORCE
 	@echo

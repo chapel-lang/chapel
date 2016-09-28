@@ -53,7 +53,7 @@ Consider the chapel program ``prog1.chpl``: (The example programs in this
 primer are found in the directory ``examples/primers/chplvis`` in your
 distribution tree.)
 
-.. literalinclude:: ../../primers/primers/chplvis1.chpl
+.. literalinclude:: examples/primers/chplvis/chplvis1.chpl
    :language: chapel
    :lines: 1-3, 6-28
 
@@ -328,7 +328,7 @@ their program in addition to seeing the total statistics.  ``prog2.chpl``
 gives an example of using the :mod:`VisualDebug` functions
 :proc:`~VisualDebug.tagVdebug` and :proc:`~VisualDebug.pauseVdebug`.
 
-.. literalinclude:: ../../primers/primers/chplvis2.chpl
+.. literalinclude:: examples/primers/chplvis/chplvis2.chpl
    :language: chapel
    :lines: 1-3, 6-
 
@@ -509,7 +509,7 @@ To help show another feature of the "`Concurrency View`_", prog4.chpl was
 written to create a *begin* task on all locales and have those tasks
 live across calls to the :mod:`VisualDebug` module.  The code is:
 
-.. literalinclude:: ../../primers/primers/chplvis4.chpl
+.. literalinclude:: examples/primers/chplvis/chplvis4.chpl
    :language: chapel
 
 First we will look at the results of running this code on a single
