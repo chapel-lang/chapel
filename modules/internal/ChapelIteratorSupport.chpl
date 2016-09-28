@@ -99,7 +99,7 @@ module ChapelIteratorSupport {
     return ic;
 
   proc _getIterator(type t) {
-    return _getIterator(_checkIterator(t));
+    return _getIterator(t.these());
   }
 
   inline proc _getIteratorZip(x) {
