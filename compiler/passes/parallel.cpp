@@ -1289,12 +1289,34 @@ makeHeapAllocations() {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->var, heapType->getField(1)));
           }
         } else if (call->isResolved()) {
-          if (actual_to_formal(use)->type != heapType) {
-            VarSymbol* tmp = newTemp(var->type);
+          ArgSymbol* formal = actual_to_formal(use);
+          if (formal->type != heapType) {
 
-            call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->var, heapType->getField(1))));
-            use->replace(new SymExpr(tmp));
+            if (formal->isRef()) {
+              // Handle value arguments passed by blank intent where
+              // blank intent is 'const ref' without making a copy.
+              // Instead, pass the address of the heap-allocated variable.
+
+              // TODO  - this code is almost the same as the
+              // def case above..
+              VarSymbol* tmp = newTemp(var->type);
+              tmp->qual = QUAL_REF;
+              PrimitiveTag op = PRIM_GET_MEMBER;
+              if (heapType->getField(1)->isRef()) {
+                op = PRIM_GET_MEMBER_VALUE;
+              }
+              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(op, use->var, heapType->getField(1))));
+              use->replace(new SymExpr(tmp));
+            } else {
+              // formal takes in argument by value, so read from the
+              // heap-allocated global.
+              VarSymbol* tmp = newTemp(var->type);
+
+              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->var, heapType->getField(1))));
+              use->replace(new SymExpr(tmp));
+            }
           }
         } else if ((call->isPrimitive(PRIM_GET_MEMBER) ||
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||

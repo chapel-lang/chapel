@@ -1,4 +1,0 @@
-bug: error with blank-intent string modified through global
-
-This test seems to work correctly with --local but has
-different behavior with --no-local.
