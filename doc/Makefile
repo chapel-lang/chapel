@@ -20,6 +20,7 @@ help-source:
 	@echo "  module-docs    to invoke 'make documentation' in "'$$CHPL_HOME/modules'""
 	@echo "  primers        to generate primer docs in release/primers/"
 	@echo "  hellos         to generate hellos docs in release/primers/"
+	@echo "  man            to symbolically link the man page into release/usingchapel"
 	@echo "  clean          to remove all generated files in release/"
 	@echo "  clean-build    to remove all generated files in build/"
 	@echo "  clobber        to remove all generated files in release/ and build/"
@@ -33,7 +34,7 @@ man-chapel: FORCE
 	./util/run-in-venv.bash $(MAKE) man
 
 
-source: module-docs primers hellos
+source: module-docs primers hellos symlinks
 
 
 module-docs: clean-module-docs
@@ -55,6 +56,15 @@ hellos: clean-hellos
 	@#Note - this assumes that we are not in a release tar ball
 	$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../test/release/examples/hello*.chpl
 
+symlinks: clean-symlinks
+	@echo
+	@echo "Creating symlinks to release/"
+	ln -s $$CHPL_HOME/man/chpl.rst release/usingchapel/man.rst
+	ln -s $$CHPL_HOME/man/chpldoc.rst release/tools/chpldoc/man.rst
+	ln -s $$CHPL_HOME/test/release/examples release/users-guide/base/examples
+	ln -s $$CHPL_HOME/test/release/examples release/users-guide/taskpar/examples
+	ln -s $$CHPL_HOME/test/release/examples release/users-guide/datapar/examples
+	ln -s $$CHPL_HOME/test/release/examples release/users-guide/locality/examples
 
 checkdocs: FORCE
 	./util/run-in-venv.bash $(MAKE) check
@@ -86,6 +96,11 @@ clean-hellos: FORCE
 	@echo
 	@echo "Removing hellos generated into $(CHPL_DOC_HELLO_DIR)"
 	rm -rf $(CHPL_DOC_HELLO_DIR)
+
+clean-symlinks: FORCE
+	@echo
+	@echo "Removing all symbolic links from release/"
+	find release -type l -delete
 
 
 FORCE:
