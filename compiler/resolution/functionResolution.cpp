@@ -3206,7 +3206,7 @@ printResolutionErrorUnresolved(
     if (info->actuals.n == 2 &&
         info->actuals.v[0]->type == dtMethodToken) {
       if (info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-        USR_FATAL_CONT(call, "cannot iterate over the type %s",
+        USR_FATAL_CONT(call, "unable to iterate over type '%s'",
                        toString(info->actuals.v[1]->type));
       } else {
         USR_FATAL_CONT(call, "cannot iterate over values of type %s",
