@@ -1,0 +1,347 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Alternative Initializer Features &mdash; chpldoc 0.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="chpldoc 0.0.1 documentation" href="../index.html"/>
+        <link rel="next" title="Basics of Initialization" href="12.html"/>
+        <link rel="prev" title="Initializers" href="10.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chpldoc
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">chpldoc documentation</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="1.html">Chapel Improvement Proposals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10.html">Initializers</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Alternative Initializer Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#abstract">Abstract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rationale">Rationale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#features">Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#alternative-syntax-for-distinguishing-phase-1-and-phase-2-in-an-initializer">Alternative syntax for distinguishing Phase 1 and Phase 2 in an initializer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#child-s-fields-could-depend-on-parent-s-fields">Child&#8217;s fields could depend on parent&#8217;s fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parent-could-have-final-control-over-the-newly-created-object">Parent could have final control over the newly-created object</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="12.html">Basics of Initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13.html">Record Copying in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="14.html">Chapel stack traces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2.html">Constrained Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3.html">ZeroMQ Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4.html">Constructor Syntax and Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5.html">Implement Object Copying Using a &#8220;Postblit&#8221; Method</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6.html">Tuple Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7.html">Rules for inserting autoCopy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8.html">Error Handling in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9.html">Chapel Package Manager</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">chpldoc</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Alternative Initializer Features</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/11.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="alternative-initializer-features">
+<h1>Alternative Initializer Features<a class="headerlink" href="#alternative-initializer-features" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>Status:</dt>
+<dd>Rejected</dd>
+<dt>Authors:</dt>
+<dd>Kyle Brady, Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov</dd>
+</dl>
+<div class="contents local topic" id="outline">
+<p class="topic-title first">Outline</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id1">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id2">Rationale</a></li>
+<li><a class="reference internal" href="#features" id="id3">Features</a><ul>
+<li><a class="reference internal" href="#alternative-syntax-for-distinguishing-phase-1-and-phase-2-in-an-initializer" id="id4">Alternative syntax for distinguishing Phase 1 and Phase 2 in an initializer</a></li>
+<li><a class="reference internal" href="#child-s-fields-could-depend-on-parent-s-fields" id="id5">Child&#8217;s fields could depend on parent&#8217;s fields</a></li>
+<li><a class="reference internal" href="#parent-could-have-final-control-over-the-newly-created-object" id="id6">Parent could have final control over the newly-created object</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id1">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This document contains some features we discussed as part of the
+initializer story and chose not to incorporate.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id2">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>During our development of the initializer story for Chapel
+we considered a variety of features. Some of them were accepted
+and some of them were rejected. This document records some of
+the discussed-and-rejected features for posterity.</p>
+</div>
+<div class="section" id="features">
+<h2><a class="toc-backref" href="#id3">Features</a><a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="alternative-syntax-for-distinguishing-phase-1-and-phase-2-in-an-initializer">
+<h3><a class="toc-backref" href="#id4">Alternative syntax for distinguishing Phase 1 and Phase 2 in an initializer</a><a class="headerlink" href="#alternative-syntax-for-distinguishing-phase-1-and-phase-2-in-an-initializer" title="Permalink to this headline">¶</a></h3>
+<p>We considered providing dedicated syntax for distinguishing Phase 1
+and Phase 2 in an initializer. This syntax, codenamed Syntax 2,
+designates different block statements for Phase 1 and Phase 2,
+separated by the proposed &#8220;finalize&#8221; keyword.</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">proc</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span> <span class="nx">Phase</span> <span class="mi">1</span> <span class="nx">code</span> <span class="o">..</span><span class="p">.</span>
+  <span class="nx">super</span><span class="p">.</span><span class="nx">init</span><span class="p">(</span><span class="o">..</span><span class="p">.);</span>
+<span class="p">}</span> <span class="nx">finalize</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span> <span class="nx">Phase</span> <span class="mi">2</span> <span class="nx">code</span> <span class="o">..</span><span class="p">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The super.init() call can be omitted if it passes no arguments.
+The &#8220;finalize&#8221; keyword and the following block, if empty,
+can also be omitted.</p>
+<p>Syntax 2 has the advantage of visually-clear separation of the two
+phases. We did not incorporate it because it did not allow sharing
+variables or extending an if statement across the two phases.
+Also, we would like Phase 2 to be the default, and it felt
+unintuitive under Syntax 2.</p>
+</div>
+<div class="section" id="child-s-fields-could-depend-on-parent-s-fields">
+<h3><a class="toc-backref" href="#id5">Child&#8217;s fields could depend on parent&#8217;s fields</a><a class="headerlink" href="#child-s-fields-could-depend-on-parent-s-fields" title="Permalink to this headline">¶</a></h3>
+<p>We considered allowing child&#8217;s fields to be initialized based on
+parent&#8217;s fields. Below is one way to achieve this.</p>
+<p>The child&#8217;s initializer could control where, in its Phase 1, the
+parent&#8217;s Phase 1 is invoked. In other words, the parent&#8217;s Phase 1
+would not necessarily come at the end of the child initializer&#8217;s Phase 1.
+If the child needs to access its parent&#8217;s fields, it can invoke
+the parent&#8217;s Phase 1 prior to such access.</p>
+<p>Here is an example, which is based on Syntax 2.</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Parent</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">D</span><span class="p">:</span> <span class="k">domain</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+  <span class="k">proc</span> <span class="nf">init</span><span class="p">(</span><span class="nx">myRange</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">D</span> <span class="o">=</span> <span class="p">{</span><span class="nx">myRange</span><span class="p">};</span>  <span class="c1">// Phase 1</span>
+  <span class="p">}</span> <span class="nx">finalize</span> <span class="p">{</span>
+    <span class="o">..</span><span class="p">.</span> <span class="nx">Phase</span> <span class="mi">2</span> <span class="nx">code</span> <span class="o">..</span><span class="p">.</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">Child</span><span class="p">:</span> <span class="nx">Parent</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">xD</span><span class="p">:</span> <span class="k">domain</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+  <span class="k">proc</span> <span class="nf">init</span><span class="p">(</span><span class="nx">myRange</span><span class="p">,</span> <span class="nx">extra</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">super</span><span class="p">.</span><span class="nx">init</span><span class="p">(</span><span class="nx">myRange</span><span class="p">);</span>   <span class="c1">// initializes Parent.D</span>
+    <span class="nx">xD</span> <span class="o">=</span> <span class="nx">D</span><span class="p">.</span><span class="nx">expand</span><span class="p">(</span><span class="nx">extra</span><span class="p">);</span>  <span class="c1">// initialize xD based on Parent.D</span>
+  <span class="p">}</span> <span class="nx">finalize</span> <span class="p">{</span>
+    <span class="o">..</span><span class="p">.</span> <span class="nx">Phase</span> <span class="mi">2</span> <span class="nx">code</span> <span class="o">..</span><span class="p">.</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Analogously, we could allow the child initializer to control the point
+during its Phase 2 when the parent initializer&#8217;s Phase 2 is to be invoked.
+For example:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Child</span><span class="p">:</span> <span class="nx">Parent</span> <span class="p">{</span>
+  <span class="k">proc</span> <span class="nf">init</span><span class="p">(</span><span class="o">..</span><span class="p">.)</span> <span class="p">{</span>
+    <span class="o">..</span><span class="p">.</span> <span class="nx">Phase</span> <span class="mi">1</span> <span class="nx">code</span> <span class="o">..</span><span class="p">.</span>
+  <span class="p">}</span> <span class="nx">finalize</span> <span class="p">{</span>
+    <span class="o">..</span><span class="p">.</span> <span class="nx">Phase</span> <span class="mi">2</span> <span class="kd">in</span> <span class="nx">Child</span> <span class="o">..</span><span class="p">.</span>
+    <span class="nx">super</span><span class="p">.</span><span class="nx">finalize</span><span class="p">();</span>      <span class="c1">// executes Phase 2 in Parent</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>We did not incorporate this functionality because it adds complexity to
+how initialization occurs.</p>
+</div>
+<div class="section" id="parent-could-have-final-control-over-the-newly-created-object">
+<h3><a class="toc-backref" href="#id6">Parent could have final control over the newly-created object</a><a class="headerlink" href="#parent-could-have-final-control-over-the-newly-created-object" title="Permalink to this headline">¶</a></h3>
+<p>We considered giving the parent class the ability to exercise final control
+over the newly-created object via a &#8220;lastly&#8221; block.
+An example where this is important
+is if the new object must be be added to a shared list.
+If the list is concurrently accessible, it is important for all other
+invariants on the new object to have been established prior to such addition.
+This includes any actions performed in child class initializer(s).
+We did not incorporate the proposed feature because we preferred the user
+to perform such &#8220;final&#8221; actions outside of the initializer or explicitly
+in each child&#8217;s initializer.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="12.html" class="btn btn-neutral float-right" title="Basics of Initialization" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="10.html" class="btn btn-neutral" title="Initializers" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, .
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+
+
+
+</body>
+</html>

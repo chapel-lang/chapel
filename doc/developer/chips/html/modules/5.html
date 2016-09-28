@@ -1,0 +1,752 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Implement Object Copying Using a “Postblit” Method &mdash; chpldoc 0.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="chpldoc 0.0.1 documentation" href="../index.html"/>
+        <link rel="next" title="Tuple Semantics" href="6.html"/>
+        <link rel="prev" title="Constructor Syntax and Semantics" href="4.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chpldoc
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">chpldoc documentation</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="1.html">Chapel Improvement Proposals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11.html">Alternative Initializer Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="12.html">Basics of Initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13.html">Record Copying in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="14.html">Chapel stack traces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2.html">Constrained Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3.html">ZeroMQ Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4.html">Constructor Syntax and Semantics</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Implement Object Copying Using a &#8220;Postblit&#8221; Method</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#abstract">Abstract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rationale">Rationale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">Description</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#special-functions-before-this-chip">Special Functions before this CHIP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#semantics-before-this-chip">Semantics before this CHIP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#proposed-new-semantics">Proposed New Semantics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#principle-1-chapel-can-bit-copy-records">Principle 1: Chapel can bit copy records</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#principle-2-copy-is-bit-copy-followed-by-fixup">Principle 2: Copy is bit-copy followed by fixup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#principle-3-copies-can-be-added-or-removed-by-the-implementation">Principle 3: Copies can be added or removed by the implementation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#principle">Principle ?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Principle ?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#const-fields">Const fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#narrow-fields-and-copying-across-locales">Narrow fields and copying across locales</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#proposed-special-functions">Proposed Special Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#todo-original-outline-material">TODO: Original Outline Material</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="6.html">Tuple Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7.html">Rules for inserting autoCopy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8.html">Error Handling in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9.html">Chapel Package Manager</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">chpldoc</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Implement Object Copying Using a &#8220;Postblit&#8221; Method</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/5.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="implement-object-copying-using-a-postblit-method">
+<h1>Implement Object Copying Using a &#8220;Postblit&#8221; Method<a class="headerlink" href="#implement-object-copying-using-a-postblit-method" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>Status</dt>
+<dd>Draft</dd>
+<dt>Author</dt>
+<dd>Tom Hildebrandt, Michael Ferguson</dd>
+</dl>
+<p>This proposal is to implement object copying using a bitwise copy followed by a
+&#8220;postblit&#8221; operation.</p>
+<div class="section" id="abstract">
+<h2>Abstract<a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>In objects containing references, the choice between shallow and deep copying
+influences semantics, performance and memory usage.  Even in garbage-collected
+languages, a type designer must choose carefully when a deep copy is to be made.</p>
+<p>Special functions provide an interface between the compiler and code that
+implements a type, so that the choice between shallow and deep copying can be
+implemented consistently.  These special functions include destruction,
+default-initialization, copy-initialization and (usually) assignment.</p>
+<p>The current proposal is to implement copy-initialization using a bitwise copy
+followed by a &#8220;postblit&#8221; method call.  This idea is borrowed from the D Language
+and is in contrast to the better-known copy-constructor.  Implementing
+copy-initialization in this way can have significant performance benefits for
+Chapel, since it interacts well with the bulk-copying of bits across slow
+network connections.</p>
+<p>In addition, this proposal includes the ideas that the compiler can use
+bit-wise copies to move records between temporary storage locations,
+provided that does not change the lifetime of the record. Lastly, the
+proposal includes the idea that the compiler can create temporary bit-wise
+copies or full copies of records, and that the compiler can optimize such
+copies to produce fewer of them than necessary, as long as the program
+behavior is preserved.</p>
+<p>These ideas apply most importantly to records, but have a consistent
+interpretation for classes as well.</p>
+</div>
+<div class="section" id="rationale">
+<h2>Rationale<a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The existing language concept for copy-initialization, the copy-constructor,
+treats copying and any required fixup (i.e. construction) as a whole, and is
+defined recursively.  A straightforward implementation thus leads to many
+fine-grained copy operations at the leaves of a data structure.</p>
+<p>Network performance characteristics instead favor coarse-grained copy
+operations.  By separating the data copying from subsequent fixup, it is
+expected that much better object copying performance can be achieved &#8211;
+especially for large data structures such as arrays.</p>
+<p>In addition, the compiler sometimes needs to move a record from one
+location to another. That might happen for example when returning a record
+from a function - the record might need to move from the stack frame of
+the called function, where it was allocated, to a new stack location in
+the parent. Another example is when the compiler creates a temporary
+object (for example to store the value returned from a function call). In
+both of these cases, the move operation will be achieved with a bit copy -
+without calling methods provided by the record implementor. A bit copy can
+be used when the temporary copy does not affect the lifetime of the
+record. This bit-copy idea provides the corresponding functionality to C++
+move constructors - namely, a means to avoid performing a deep copy in
+many cases.</p>
+</div>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>This CHIP discusses special functions for records that are known to the
+compiler. The compiler needs to be able to call these functions so that
+the Chapel code can indicate how to initialize, copy, assign, or destroy
+a variable.</p>
+<dl class="docutils">
+<dt>default initialization</dt>
+<dd>initialize an object to a default state compatible with its destructor.</dd>
+<dt>explicit initialization</dt>
+<dd>initialize an object with additional information by calling its constructor
+with <em>new</em>. See CHIP 4.</dd>
+<dt>copy initialization</dt>
+<dd>initialize an object to be a copy of an existing object</dd>
+<dt>assignment</dt>
+<dd>replace the contents of an initialized object with another initialized object</dd>
+<dt>destruction</dt>
+<dd>releases resources held by an object, currently named ~RecordName()
+TODO: &#8220;invariant state&#8221; ?</dd>
+</dl>
+<div class="section" id="special-functions-before-this-chip">
+<h3>Special Functions before this CHIP<a class="headerlink" href="#special-functions-before-this-chip" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>destruction</dt>
+<dd>Implemented by an <cite>autoDestroy</cite> function. The compiler-default
+implementation calls the destructor, which is empty by default.</dd>
+<dt>default initialization</dt>
+<dd>Implemented using <cite>_defaultOf</cite> function. The compiler supplied default calls
+a zero-argument constructor if such a constructor was supplied.</dd>
+<dt>copy initialization</dt>
+<dd>Implemented using <cite>autoCopy</cite> function. There is no compiler-supplied
+default.</dd>
+<dt>assignment</dt>
+<dd>Uses the <cite>=</cite> operator. Compiler-supplied default is a field-wise
+assignment, but assignment of basic types (int,real,class instances)
+is a bitwise copy.</dd>
+</dl>
+</div>
+<div class="section" id="semantics-before-this-chip">
+<h3>Semantics before this CHIP<a class="headerlink" href="#semantics-before-this-chip" title="Permalink to this headline">¶</a></h3>
+<p>The compiler has historically returned values by calling the copy
+constructor inside of the called routine (TODO: from what to what)?
+The compiler also makes bit copies of records in many cases. The
+semantics are not really defined. TODO: autocopy for &#8216;in&#8217; intent?</p>
+</div>
+<div class="section" id="proposed-new-semantics">
+<h3>Proposed New Semantics<a class="headerlink" href="#proposed-new-semantics" title="Permalink to this headline">¶</a></h3>
+<p>We will describe the new semantics in several principles.</p>
+</div>
+<div class="section" id="principle-1-chapel-can-bit-copy-records">
+<h3>Principle 1: Chapel can bit copy records<a class="headerlink" href="#principle-1-chapel-can-bit-copy-records" title="Permalink to this headline">¶</a></h3>
+<p>First, Chapel should be allowed to move a record in memory (with memcpy)
+without calling any user-defined function. This is an important idea in
+order to avoid unnecessary deep copies. It is also the design adopted by
+both Rust and D (but not C++). This property is particularly useful when
+the compiler needs to construct temporary values and move them to a new
+location.</p>
+<p>As a distributed language, Chapel will need to communicate records
+regularly. We&#8217;d like to keep such communications as simple, efficient and
+as as aggregated as possible.</p>
+<p>A secondary argument for allowing the language to move records with
+memcpy is that it allows the compiler to achieve &#8216;move&#8217; semantics
+more easily. In that case, ownership of a record is being transferred
+from one location to another. The compiler only needs to avoid calling
+the destructor for the source object (or arrange for the source object
+to be set to a default value before its destructor is called).</p>
+<p>The third reason to prefer that the language allow memcpys of records
+is that it&#8217;s what the implementation already does - and so is a more
+achievable goal.</p>
+<p>Note that if the implementation can bit copy records, there is no need for
+a user-supplied move constructor - but specifying e.g. that an argument
+should transfer ownership of a record is still valuable.</p>
+</div>
+<div class="section" id="principle-2-copy-is-bit-copy-followed-by-fixup">
+<h3>Principle 2: Copy is bit-copy followed by fixup<a class="headerlink" href="#principle-2-copy-is-bit-copy-followed-by-fixup" title="Permalink to this headline">¶</a></h3>
+<p>Second, given that Chapel can bit-copy records, we propose to adopt
+a D-like &#8220;postblit&#8221; idea rather than C++-like copy and move constructors.</p>
+<p>The idea here is that the user will supply a constructor that will do any
+fix-ups necessary in order to make a copy of a record after the memcpy has
+already occurred.  Since the memcpy has already occurred, the postblit
+method does not need to take any arguments other than <cite>this</cite>.  In
+contrast, a copy constructor invocation takes in the source record as an
+argument.</p>
+<p>The main advantage of the postblit approach is that it makes it clear how
+efficient bulk transfer optimizations (e.g.) can be implemented.</p>
+<p>For example, if we do whole array assignment of records across locales,
+one might assume that the transfer could not be achieved in bulk - but it
+can because of our first design principle. The natural implementation of
+(1-D non-distributed) whole array assignment would perform a single GET
+to transfer all of the data (i.e. a distributed memcpy). Then, the
+implementation just needs to be sure to call the postblit method on each
+newly copied record.</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="c1">// after the copy, run the postblit methods</span>
+<span class="k">for</span> <span class="nx">x</span> <span class="kd">in</span> <span class="nx">dstArray</span> <span class="p">{</span>
+  <span class="nx">x</span><span class="p">.</span><span class="nx">postblit</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>If we instead had a copy constructor, the obvious - but wrong - conclusion
+would be that bulk transfer cannot occur for arrays of records with a
+non-trivial copy constructor. It can occur because of the Decision 1
+(that Chapel can bit-copy records). But the trouble does not
+stop there. Suppose you are implementing the bulk copy optimization - you
+have copied the records and now you need to call the copy constructors.
+You&#8217;d be tempted to call the copy constructors supplying the already
+copied data as the argument:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="c1">// after the copy, run the copy constructors</span>
+<span class="k">for</span> <span class="nx">x</span> <span class="kd">in</span> <span class="nx">dstArray</span> <span class="p">{</span>
+  <span class="nx">x</span><span class="p">.</span><span class="nx">copy</span><span class="p">(</span><span class="nx">x</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>But, that would not be OK because we want people to be able to &#8216;memcpy&#8217; in
+their copy constructor (for example, the default compiler-generated
+copy constructor could call memcpy). This would create a memcpy with
+src==dst.</p>
+<p>So, you&#8217;d have to write it like this:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="c1">// after the copy, run the copy constructors</span>
+<span class="k">for</span> <span class="nx">x</span> <span class="kd">in</span> <span class="nx">dstArray</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">tmp</span><span class="p">:</span><span class="nx">R</span><span class="p">;</span>
+  <span class="nx">memcpy</span><span class="p">(</span><span class="nx">dst</span><span class="o">=</span><span class="nx">tmp</span><span class="p">,</span> <span class="nx">src</span><span class="o">=</span><span class="nx">x</span><span class="p">);</span>
+  <span class="nx">x</span><span class="p">.</span><span class="nx">copy</span><span class="p">(</span><span class="nx">tmp</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>which seems a little bit pointless but is also less efficient.</p>
+<p>The second advantage to the postblit approach is that it removes the
+temptation to write programs that will break under Decision 1. In
+particular, if you can have a copy constructor that takes in an argument,
+you might be tempted to declare that argument as &#8216;ref&#8217; and then modify
+it, for example to zero it out. However such programs will be wrong
+because of Decision 1 - the argument to the copy constructor might not
+be the only version of a record. The changes to that record may not
+make it back to the version that will eventually be destroyed.</p>
+<p>The third advantage is that it is simpler than the copy constructor.
+It&#8217;s possible to write a copy constructor out of postblit but not possible
+to write postblit out of copy constructors.</p>
+<p>The fourth advantage (cited by D developers) is that postblit &#8220;scales
+better&#8221; when you add new fields to a record with a custom postblit method,
+you probably don&#8217;t need to modify the postblit function. (vs the copy
+constructor which you would need to modify in order to achieve the copy).</p>
+<p>Finally, a note that it is straightforward to implement a default
+assignment for a record supplying a postblit routine:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span>proc =(ref lhs:R, rhs:R) {
+    // copy lhs into tmp
+    memmove(dst=tmp, src=lhs)
+    // copy rhs into lhs
+    memmove(dst=lhs, src=rhs);
+    lhs.postblit();
+    // destroy tmp
+    call tmp destructor;
+}
+</pre></div>
+</div>
+<p>Also note that it is no longer necessary for the default assignment
+overload to go field-by-field to achieve the copy. It can always
+do the complete copy with memcpy (because of Decision 1). Then, using
+the postblit strategy, a compiler-generated postblit method should
+call the postblit method on each field in turn. (of course such
+postblit calls can be omitted when they do nothing).</p>
+</div>
+<div class="section" id="principle-3-copies-can-be-added-or-removed-by-the-implementation">
+<h3>Principle 3: Copies can be added or removed by the implementation<a class="headerlink" href="#principle-3-copies-can-be-added-or-removed-by-the-implementation" title="Permalink to this headline">¶</a></h3>
+<p>A full copy is user-visible since the postblit constructor is called.
+However, the Chapel compiler is free to create more copies than
+are strictly necessary, or to optimize copies that would be apparent
+into fewer copies.</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">A</span><span class="p">:</span> <span class="nx">MyRecord</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">B</span><span class="p">:</span> <span class="nx">MyRecord</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">C</span><span class="p">:</span> <span class="nx">MyRecord</span><span class="p">;</span>
+  <span class="nx">A</span> <span class="o">=</span> <span class="o">..</span><span class="p">.;</span>
+  <span class="nx">B</span> <span class="o">=</span> <span class="nx">A</span><span class="p">;</span>
+  <span class="nx">C</span> <span class="o">=</span> <span class="nx">B</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">D</span> <span class="o">=</span> <span class="nx">C</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">E</span> <span class="o">=</span> <span class="nx">D</span><span class="p">;</span>
+  <span class="nx">f</span><span class="p">(</span><span class="nx">E</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In this example, strictly speaking, we&#8217;d expect each of the variables
+A, B, C, D, and E to contain a full copy. However, the compiler can
+show that B, C, D, and E are not used. Therefore, the compiler may
+remove those copies and simplify this example to the following:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">A</span><span class="p">:</span> <span class="nx">MyRecord</span><span class="p">;</span>
+  <span class="nx">A</span> <span class="o">=</span> <span class="o">..</span><span class="p">.;</span>
+  <span class="nx">f</span><span class="p">(</span><span class="nx">A</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>That is the case <em>even if</em> MyRecord supplies custom assignment, default
+initialization, destruction, or postblit constructor routines. The compiler
+can change the number or order of these calls in ways that can be observed
+if those routines have side effects. However, programs with assignment,
+initialization, destruction, or postblit construction routines that
+are limited to modifying the relevant arguments will have consistent
+behavior.</p>
+</div>
+<div class="section" id="principle">
+<h3>Principle ?<a class="headerlink" href="#principle" title="Permalink to this headline">¶</a></h3>
+<p>Here is another principle (C) I use above:</p>
+<blockquote>
+<div>var r = EXPR;</div></blockquote>
+<p>is defined as:</p>
+<blockquote>
+<div>allocate &#8216;r&#8217;
+invoke constructor into &#8216;r&#8217; with EXPR as the actual argument</div></blockquote>
+</div>
+<div class="section" id="id1">
+<h3>Principle ?<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>Return value semantics</p>
+<p>BEFORE THIS CHIP</p>
+<blockquote>
+<div><ul class="simple">
+<li>Compiler calls copy constructor inside called routine.</li>
+<li>Returned value is always &#8220;owned&#8221;</li>
+</ul>
+</div></blockquote>
+<p>FROM TOM&#8217;s PROPOSAL</p>
+<blockquote>
+<div><ul class="simple">
+<li>Return value semantics<ul>
+<li><code class="docutils literal"><span class="pre">postblit</span></code> should be called
+* After space has been allocated and the result copied into it
+* Before the stack frame for the called function is deleted</li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+<p>TODO: Michael doesn&#8217;t think we should call postblit here.</p>
+<blockquote>
+<div><ul class="simple">
+<li>Why not skip the postblit?<ul>
+<li>Lifetime of the return value must be extended past the return<ul>
+<li>To provide the forward owner (if there is one) a chance to make a copy.<ul>
+<li>Invoking copy semantics (postblit) before return is one way to do this</li>
+<li>Maybe not the only option</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="const-fields">
+<h3>Const fields<a class="headerlink" href="#const-fields" title="Permalink to this headline">¶</a></h3>
+<p>How does postblit interact with const fields?</p>
+<p>(c1) Postblit cannot modify &#8216;const&#8217; fields.</p>
+<p>(c2) Postblit has a field initialization phase, like a regular
+constructor before entering the open curly brace. In that phase
+individual fields are accessible and modifiable, however the object as a
+whole does not exist yet.</p>
+</div>
+<div class="section" id="narrow-fields-and-copying-across-locales">
+<h3>Narrow fields and copying across locales<a class="headerlink" href="#narrow-fields-and-copying-across-locales" title="Permalink to this headline">¶</a></h3>
+<p>How does postblit interact with narrow fields?</p>
+<p>Our current planned strategy is to make the postblit constructor
+take as an argument a ref to the original object. Such an approach
+would still allow bulk copies in arrays for example, but would also
+allow the postblit function to repair a narrow pointer because it
+would know the original locale.</p>
+<p>Along with that, any copying across locales needs to call either
+postblit the assignment overlead. If a record:</p>
+<blockquote>
+<div><ul class="simple">
+<li>has a nontrivial postblit constructor, and</li>
+<li>has any narrow pointers in fields</li>
+</ul>
+</div></blockquote>
+<p>then it is not sufficient to bit-copy that record across locales.</p>
+<p>Other options:</p>
+<p>Ways to Support C Pointers Across Locales</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>only use wide C pointers.</li>
+<li>always pass records by reference.</li>
+<li>postblit function takes in source locale</li>
+<li>Always use assign overload (e.g.) instead of bit-copy/postblit
+when moving data across locales.</li>
+<li>compiler automatically promoting local pointers used in postblit</li>
+</ol>
+</div></blockquote>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">record</span> <span class="nc">R</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span>
+<span class="p">}</span>
+
+
+<span class="kd">var</span> <span class="nx">myR</span><span class="p">:</span> <span class="nx">R</span><span class="p">;</span>
+
+<span class="k">on</span> <span class="o">..</span><span class="p">.</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span><span class="nx">myR</span><span class="o">..</span><span class="p">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Q: Is the reference to &#8216;myR&#8217; indeed a reference to the original
+object?  Or could a copy be made?  And if so, in what circumstances?</p>
+<p>Q: what if we return a record from within an on statement?</p>
+</div>
+<div class="section" id="proposed-special-functions">
+<h3>Proposed Special Functions<a class="headerlink" href="#proposed-special-functions" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>destruction</dt>
+<dd>No change. Implemented by an <cite>autoDestroy</cite> function. The compiler-default
+implementation calls the destructor, which is empty by default. TODO:
+why do we need autoDestroy? Why is ~MyRecord not sufficient? Is
+autoDestroy be an implementation detail, with no impact on semantics?</dd>
+<dt>default initialization</dt>
+<dd>Implemented using <cite>_defaultOf</cite> function. The compiler supplied default calls
+a zero-argument constructor if such a constructor was supplied. TODO:
+should this be implemented with zero-argument constructor always? Or
+&#8220;postzero&#8221; ?</dd>
+<dt>copy initialization</dt>
+<dd>Implemented as bitwise copy followed by a postblit constructor call. The
+compiler will generate a default postblit constructor that calls any
+the postblit constructor recursively on all fields and on any base
+record sub-object. The postblit constructor call implements any deep
+copy semantics that are desired.
+TODO:
+what exactly is this constructor called? In D it is this(this). If it&#8217;s a
+constructor, do we need it to take in an argument? Can we have constructors
+with more than one name?</dd>
+<dt>assignment</dt>
+<dd>Uses the <cite>=</cite> operator. Compiler-supplied default bit copies the
+destination to a temporary, bit copies the source into the destination,
+calls postblit on the destination, and then calls the destructor on
+the temporary. Users can overload the assignment operator
+to do something else that might be more efficient. The assignment
+operator is only called for uses the <cite>=</cite> operator; in other words,
+if the compiler needs to create a copy it will do so using copy
+initialization.</dd>
+</dl>
+</div>
+<div class="section" id="todo-original-outline-material">
+<h3>TODO: Original Outline Material<a class="headerlink" href="#todo-original-outline-material" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">Proposed</p>
+<ul>
+<li><p class="first">Scoped variables are named variables, formals and fields, and function return values.</p>
+<blockquote>
+<div><blockquote>
+<div><ul class="simple">
+<li>By implication, special functions are not called to create/destroy temporary copies</li>
+<li>By further implication, objects can be moved around by bitwise copying (blitting)<ul>
+<li>An object becomes fixed in memory after a reference to it has been created.</li>
+</ul>
+</li>
+<li>How records are passed back as function return values is unclear.</li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li>Scoped variables are named variables, formals and fields, and function return values.<ul>
+<li>By implication, special functions are not called to create/destroy temporary copies</li>
+<li>By further implication, objects can be moved around by bitwise copying (blitting)</li>
+<li>An object becomes fixed in memory after a reference to it has been created.</li>
+</ul>
+</li>
+<li>How records are passed back as function return values is unclear.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Proposal TODOs</p>
+<ul class="simple">
+<li>Come up with a consistent naming scheme for the well-known functions</li>
+<li>Describe compiler-provided behavior.</li>
+<li>Review consistency of the relationship between compiler-supplied and user overrides for both well-known and user functions</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p class="first">Discussion</p>
+<ul class="simple">
+<li>Default-Initialization<ul>
+<li>Pro<ul>
+<li>Usually zero-initialization works OK</li>
+<li>Overridable if user desires</li>
+<li>Consistent with copy-initialization using postblit</li>
+</ul>
+</li>
+<li>Con<ul>
+<li>Zero-initialization may be wasted effort if fixup sets fields explicitly</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Copy-Initialization<ul>
+<li>Bulk copy of array implementations can be very efficient<ul>
+<li>All array elements copied in one go</li>
+<li>Then, postblit applied to each element in turn<ul>
+<li>Parallel application of element-wise postblit is possible<ul>
+<li>Assuming no dependencies among elements<ul>
+<li>Definition of postblit should guarantee this</li>
+<li>Not necessarily guaranteed<ul>
+<li>Reference to global data</li>
+<li>Reference to array as a whole through parent pointer</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Fixup of inter-element dependencies should be supplied at the
+container level<ul>
+<li>I.e. treating those dependencies at the element level is bad design</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Pro<ul>
+<li>More efficient for copying large data structures</li>
+<li>No fixup required for shallow copy semantics</li>
+<li>Overridable if user desires</li>
+</ul>
+</li>
+<li>Con<ul>
+<li>Wasted effort for fields overwritten in fixup<ul>
+<li>Copying creates a &#8220;locally-cached copy&#8221;<ul>
+<li>Information used by postblit needed to be transmitted anyway</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Assignment<ul>
+<li>Pro<ul>
+<li>Supports bulk copy with no extra work</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<dl class="docutils">
+<dt>TODO: Argument intents. in -&gt; full copy. out-&gt; temporary?</dt>
+<dd>const -&gt; could be a temporary copy or a ref?</dd>
+</dl>
+<p>TODO: should bitwise copy be exposed as a user concept for &#8220;no magic&#8221;?</p>
+<dl class="docutils">
+<dt>Tom&#8217;s 3 cases where a full copy is required:</dt>
+<dd><ul class="first last simple">
+<li>assign to variable / in/inout/out intent</li>
+<li>copy into field</li>
+<li>return value</li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="6.html" class="btn btn-neutral float-right" title="Tuple Semantics" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="4.html" class="btn btn-neutral" title="Constructor Syntax and Semantics" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, .
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+
+
+
+</body>
+</html>

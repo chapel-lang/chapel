@@ -1,0 +1,487 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Error Handling in Chapel &mdash; chpldoc 0.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="chpldoc 0.0.1 documentation" href="../index.html"/>
+        <link rel="next" title="Chapel Package Manager" href="9.html"/>
+        <link rel="prev" title="Rules for inserting autoCopy" href="7.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chpldoc
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">chpldoc documentation</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="1.html">Chapel Improvement Proposals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11.html">Alternative Initializer Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="12.html">Basics of Initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13.html">Record Copying in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="14.html">Chapel stack traces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2.html">Constrained Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3.html">ZeroMQ Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4.html">Constructor Syntax and Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5.html">Implement Object Copying Using a &#8220;Postblit&#8221; Method</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6.html">Tuple Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7.html">Rules for inserting autoCopy</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Error Handling in Chapel</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#abstract">Abstract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rationale">Rationale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">Description</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary-of-the-swift-error-handling-strategy">Summary of the Swift Error Handling Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#why-decorate-statements-that-throw">Why Decorate Statements That Throw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#expected-additions-for-chapel">Expected Additions for Chapel</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-1-simple-errors">Example 1: Simple Errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-2-file-io">Example 2: File IO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-3-errors-in-cobegins">Example 3: Errors In cobegins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-4-errors-in-iterators">Example 4: Errors In Iterators</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-5-errors-in-runtime-operations">Example 5: Errors In Runtime Operations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#implementation-notes">Implementation Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="9.html">Chapel Package Manager</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">chpldoc</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Error Handling in Chapel</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/8.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="error-handling-in-chapel">
+<h1>Error Handling in Chapel<a class="headerlink" href="#error-handling-in-chapel" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>Status:</dt>
+<dd>Draft</dd>
+<dt>Authors:</dt>
+<dd>Greg Titus, Kyle Brady, Michael Ferguson</dd>
+</dl>
+<div class="section" id="abstract">
+<h2>Abstract<a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>A proposal for how error handling should work in Chapel.</p>
+</div>
+<div class="section" id="rationale">
+<h2>Rationale<a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Chapel currently lacks a general strategy for errors. The standard library
+currently primarily uses two approaches: <cite>halt()</cite> and optional <cite>out</cite> arguments
+(<cite>out error: syserr</cite>, if argument provided, assumes user will handle it; else
+call <cite>halt()</cite> ). Each of these approaches has serious drawbacks.</p>
+<blockquote>
+<div><ul class="simple">
+<li>Halting the program is not appropriate in library code</li>
+<li>The output argument approach only returns error codes and doesn&#8217;t permit
+users to add new error codes or new types of errors.</li>
+</ul>
+</div></blockquote>
+<p>A more general strategy is desired. A good strategy would support the ability
+to write bulletproof code, ideally in a way that supports propagation of
+errors, and also the ability to get useful messages when errors are not
+handled.</p>
+</div>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>This error handling proposal is inspired by the Swift error handling strategy.
+See</p>
+<p><a class="reference external" href="https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ErrorHandling.html">https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ErrorHandling.html</a></p>
+<p>This strategy is appealing because it represents a middle ground arguably
+acceptable to devotees of both exceptions and error codes; it is easier to
+implement than stack-unwinding since it re-uses the existing return mechanisms;
+and it fits well with existing task parallelism.</p>
+<div class="section" id="summary-of-the-swift-error-handling-strategy">
+<h3>Summary of the Swift Error Handling Strategy<a class="headerlink" href="#summary-of-the-swift-error-handling-strategy" title="Permalink to this headline">¶</a></h3>
+<p>Functions that can raise an error are declared with throws:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>func canThrowErrors() throws { … }
+func cannotThrowErrors() { … }
+</pre></div>
+</div>
+<p>Calls that throw must be decorated with <cite>try</cite> or <cite>try!</cite></p>
+<p><cite>try</cite> propagates the error to an enclosing <cite>do</cite>/<cite>catch</cite> block or out of a
+throwing function <cite>try!</cite> halts if an error occurred</p>
+<p>Programs can respond to errors with <cite>do</cite>/<cite>catch</cite> statements:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>do {
+  try canThrowErrors()
+  try! canThrowErrors() // will halt on failure
+} catch {
+  writeln(&quot;The first call failed!&quot;)
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="why-decorate-statements-that-throw">
+<h3>Why Decorate Statements That Throw<a class="headerlink" href="#why-decorate-statements-that-throw" title="Permalink to this headline">¶</a></h3>
+<p>The Swift error handling approach includes the use of <cite>try</cite> to mark statements
+that can throw. This design addresses the most serious criticism of exceptions
+as a language feature - that they make the control flow possibilities hard to
+reason about. By marking each statement that can throw, the control flow
+possibilities can again be reasoned about with local information only.</p>
+</div>
+<div class="section" id="expected-additions-for-chapel">
+<h3>Expected Additions for Chapel<a class="headerlink" href="#expected-additions-for-chapel" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Throwing errors from iterators</li>
+<li>Ability to catch errors generated in runtime layers:<ul>
+<li>Communication</li>
+<li>Memory allocation</li>
+<li>Task creation</li>
+<li>Not mandatory to check for these</li>
+</ul>
+</li>
+<li>Task joins propagate errors to parent tasks:<ul>
+<li>Occurs at end the of sync/coforall/cobegin blocks</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="example-1-simple-errors">
+<h3>Example 1: Simple Errors<a class="headerlink" href="#example-1-simple-errors" title="Permalink to this headline">¶</a></h3>
+<p>As an example, this is a function currently (Jan 2016) on our Timer record in
+the standard modules:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">proc</span> <span class="nf">start</span><span class="p">()</span> <span class="p">:</span> <span class="nx">void</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="o">!</span><span class="nx">running</span> <span class="p">{</span>
+    <span class="nx">running</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="nx">time</span>    <span class="o">=</span> <span class="nx">chpl_now_timevalue</span><span class="p">();</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nx">halt</span><span class="p">(</span><span class="s">&quot;start called on a timer that has not been stopped&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>It calls <cite>halt</cite> when the timer is already running, which is not very friendly.
+With our proposal this would instead be:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">proc</span> <span class="nf">start</span><span class="p">()</span> <span class="nx">throws</span> <span class="p">:</span> <span class="nx">void</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="o">!</span><span class="nx">running</span> <span class="p">{</span>
+    <span class="nx">running</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="nx">time</span>    <span class="o">=</span> <span class="nx">chpl_now_timevalue</span><span class="p">();</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nx">throw</span> <span class="k">new</span> <span class="nx">Error</span><span class="p">(</span><span class="s">&quot;start called on a timer that has not been stopped&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This function can now be used as follows:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="kd">var</span> <span class="nx">my_timer</span><span class="p">:</span> <span class="nx">Timer</span><span class="p">;</span>
+<span class="nx">try</span><span class="o">!</span> <span class="nx">my_timer</span><span class="p">.</span><span class="nx">start</span><span class="p">();</span>
+<span class="k">do</span> <span class="p">{</span>
+  <span class="nx">try</span> <span class="nx">my_timer</span><span class="p">.</span><span class="nx">start</span><span class="p">();</span>
+<span class="p">}</span> <span class="nx">catch</span> <span class="nx">e</span><span class="p">:</span> <span class="nx">Error</span> <span class="p">{</span>
+  <span class="nx">writeln</span><span class="p">(</span><span class="nx">Error</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nx">try</span><span class="o">!</span> <span class="nx">my_timer</span><span class="p">.</span><span class="nx">start</span><span class="p">();</span> <span class="c1">// Will halt the program!</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-2-file-io">
+<h3>Example 2: File IO<a class="headerlink" href="#example-2-file-io" title="Permalink to this headline">¶</a></h3>
+<p>A common place for errors is interactions with the filesystem, we currently
+handle these with two strategies, out arguments and halting.</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="kd">var</span> <span class="nx">err</span><span class="p">:</span> <span class="nx">syserr</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">file</span> <span class="o">=</span> <span class="nx">open</span><span class="p">(</span><span class="s">&quot;my_data.dat&quot;</span><span class="p">,</span> <span class="nx">error</span><span class="o">=</span><span class="nx">err</span><span class="p">);</span>
+<span class="k">if</span> <span class="o">!</span><span class="nx">err</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">channel</span> <span class="o">=</span> <span class="nx">file</span><span class="p">.</span><span class="nx">writer</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+  <span class="k">if</span> <span class="o">!</span><span class="nx">err</span> <span class="p">{</span>
+    <span class="nx">channel</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="nx">err</span><span class="p">);</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="p">{</span>
+      <span class="nx">halt</span><span class="p">(</span><span class="s">&quot;Failed to write out data&quot;</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nx">halt</span><span class="p">(</span><span class="s">&quot;Failed to open channel&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+ <span class="nx">halt</span><span class="p">(</span><span class="s">&quot;Failed to open file&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">do</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">file</span> <span class="o">=</span> <span class="nx">try</span> <span class="nx">open</span><span class="p">(</span><span class="s">&quot;my_data.dat&quot;</span><span class="p">);</span>
+  <span class="kd">var</span> <span class="nx">channel</span> <span class="o">=</span> <span class="nx">try</span> <span class="nx">file</span><span class="p">.</span><span class="nx">writer</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+  <span class="nx">try</span> <span class="nx">channel</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="nx">err</span><span class="p">);</span>
+<span class="p">}</span> <span class="nx">catch</span>  <span class="nx">e</span><span class="p">:</span> <span class="nx">IOError</span> <span class="p">{</span>
+  <span class="nx">halt</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">message</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="c1">// Equivalent to:</span>
+
+<span class="kd">var</span> <span class="nx">file</span> <span class="o">=</span> <span class="nx">try</span><span class="o">!</span> <span class="nx">open</span><span class="p">(</span><span class="s">&quot;my_data.dat&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">channel</span> <span class="o">=</span> <span class="nx">try</span><span class="o">!</span> <span class="nx">file</span><span class="p">.</span><span class="nx">writer</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+<span class="nx">try</span><span class="o">!</span> <span class="nx">channel</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="nx">err</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-3-errors-in-cobegins">
+<h3>Example 3: Errors In cobegins<a class="headerlink" href="#example-3-errors-in-cobegins" title="Permalink to this headline">¶</a></h3>
+<p><cite>cobegin</cite>, and other task parallel constructs create tasks which could have
+errors. These errors will be provided at task join.</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">proc</span> <span class="nf">encounterError</span><span class="p">()</span> <span class="nx">throws</span> <span class="p">{</span> <span class="nx">throw</span> <span class="k">new</span> <span class="nx">Error</span><span class="p">();</span> <span class="p">}</span>
+<span class="k">proc</span> <span class="nf">noError</span><span class="p">()</span> <span class="nx">throws</span> <span class="p">{</span> <span class="k">return</span><span class="p">;</span> <span class="p">}</span>
+<span class="k">do</span> <span class="p">{</span>
+  <span class="nx">try</span> <span class="k">cobegin</span> <span class="p">{</span>
+    <span class="nx">try</span> <span class="nx">encounterError</span><span class="p">();</span>
+    <span class="nx">try</span> <span class="nx">noError</span><span class="p">();</span>
+    <span class="nx">try</span> <span class="nx">encounterError</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">}</span> <span class="nx">catch</span> <span class="nx">errors</span><span class="p">:</span> <span class="nx">CobeginErrors</span> <span class="p">{</span> <span class="c1">// could use a better name</span>
+  <span class="k">for</span> <span class="nx">e</span> <span class="kd">in</span> <span class="nx">errors</span> <span class="p">{</span>
+    <span class="nx">writeln</span><span class="p">(</span><span class="nx">e</span><span class="p">);</span> <span class="c1">// Would print out two lines</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-4-errors-in-iterators">
+<h3>Example 4: Errors In Iterators<a class="headerlink" href="#example-4-errors-in-iterators" title="Permalink to this headline">¶</a></h3>
+<p>This is the current <cite>glob</cite> iterator in the <cite>FileSystem</cite> module:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">iter</span> <span class="nx">glob</span><span class="p">(</span><span class="nx">pattern</span><span class="p">:</span> <span class="kt">string</span> <span class="o">=</span> <span class="s">&quot;*&quot;</span><span class="p">):</span> <span class="kt">string</span> <span class="p">{</span>
+  <span class="k">use</span> <span class="nx">chpl_glob_c_interface</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">glb</span> <span class="p">:</span> <span class="nx">glob_t</span><span class="p">;</span>
+
+  <span class="kd">const</span> <span class="nx">err</span> <span class="o">=</span> <span class="nx">chpl_glob</span><span class="p">(</span><span class="nx">pattern</span><span class="p">.</span><span class="nx">localize</span><span class="p">().</span><span class="nx">c_str</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">glb</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">err</span> <span class="o">!=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">err</span> <span class="o">!=</span> <span class="nx">GLOB_NOMATCH</span><span class="p">)</span> <span class="k">then</span>
+    <span class="nx">__primitive</span><span class="p">(</span><span class="s">&quot;chpl_error&quot;</span><span class="p">,</span> <span class="nx">c</span><span class="s">&quot;unhandled error in glob()&quot;</span><span class="p">);</span>
+  <span class="kd">const</span> <span class="nx">num</span> <span class="o">=</span> <span class="nx">chpl_glob_num</span><span class="p">(</span><span class="nx">glb</span><span class="p">).</span><span class="nx">safeCast</span><span class="p">(</span><span class="kt">int</span><span class="p">);</span>
+  <span class="k">for</span> <span class="nx">i</span> <span class="kd">in</span> <span class="mi">0</span><span class="o">..</span><span class="nx">num</span><span class="o">-</span><span class="mi">1</span> <span class="k">do</span>
+    <span class="k">yield</span> <span class="nx">chpl_glob_index</span><span class="p">(</span><span class="nx">glb</span><span class="p">,</span> <span class="nx">i</span><span class="p">.</span><span class="nx">safeCast</span><span class="p">(</span><span class="nx">size_t</span><span class="p">)):</span> <span class="kt">string</span><span class="p">;</span>
+
+  <span class="nx">globfree</span><span class="p">(</span><span class="nx">glb</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The new version would look like:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">iter</span> <span class="nx">glob</span><span class="p">(</span><span class="nx">pattern</span><span class="p">:</span> <span class="kt">string</span> <span class="o">=</span> <span class="s">&quot;*&quot;</span><span class="p">):</span> <span class="kt">string</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">err</span> <span class="o">!=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">err</span> <span class="o">!=</span> <span class="nx">GLOB_NOMATCH</span><span class="p">)</span> <span class="k">then</span>
+    <span class="nx">throw</span> <span class="k">new</span> <span class="nx">Error</span><span class="p">(</span><span class="s">&quot;unhandled error in glob()&quot;</span><span class="p">);</span>
+  <span class="o">..</span><span class="p">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Which can then be used like this:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">do</span> <span class="p">{</span>
+  <span class="nx">try</span> <span class="k">for</span> <span class="nx">x</span> <span class="kd">in</span> <span class="nx">glob</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">writeln</span><span class="p">(</span><span class="nx">x</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span> <span class="nx">catch</span> <span class="nx">e</span><span class="p">:</span> <span class="nx">Error</span> <span class="p">{</span>
+  <span class="nx">writeln</span><span class="p">(</span><span class="s">&quot;Error in glob&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Raising an error will halt the execution of the iterator. Errors in follower
+iterations in <cite>coforall</cite> and <cite>forall</cite> loops may still allow some iteration to
+occur. All errors will be reported at task join, as in example 3.</p>
+</div>
+<div class="section" id="example-5-errors-in-runtime-operations">
+<h3>Example 5: Errors In Runtime Operations<a class="headerlink" href="#example-5-errors-in-runtime-operations" title="Permalink to this headline">¶</a></h3>
+<p>Many kinds of runtime operations in Chapel have the potential to fail (say if
+you are out of memory). This class of errors will not be mandatory to check
+for. But, if one is encountered at runtime and you do not check for it, your
+program will halt.</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">do</span> <span class="p">{</span>
+  <span class="nx">try</span> <span class="k">on</span> <span class="nx">Locales</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">{</span>
+    <span class="nx">writeln</span><span class="p">(</span><span class="s">&quot;Hello!&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span> <span class="nx">catch</span> <span class="nx">e</span><span class="p">:</span> <span class="nx">OutOfMemoryError</span> <span class="p">{</span>
+  <span class="nx">free_large_object</span><span class="p">();</span>
+  <span class="c1">// This on statement does not have a try, and will halt execution if it fails</span>
+  <span class="k">on</span> <span class="nx">Locales</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">{</span>
+    <span class="nx">writeln</span><span class="p">(</span><span class="s">&quot;Hello!&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="implementation-notes">
+<h2>Implementation Notes<a class="headerlink" href="#implementation-notes" title="Permalink to this headline">¶</a></h2>
+<p>Since this error handling strategy is based off returning either the value or
+an error, better support for union types in chapel may be necessary.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="9.html" class="btn btn-neutral float-right" title="Chapel Package Manager" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="7.html" class="btn btn-neutral" title="Rules for inserting autoCopy" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, .
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+
+
+
+</body>
+</html>

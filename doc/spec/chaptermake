@@ -1,0 +1,29 @@
+#!/usr/bin/env perl
+#
+
+if ($#ARGV == 0) {
+    $chap = shift @ARGV;
+} else {
+    die "usage: make_chapter_help chapter\n";
+}
+
+`rm -f _chapter_temp.tex`;
+
+open(FILE, ">_chapter_temp.tex");
+
+@lines = `cat spec.tex`;
+foreach $line (@lines) {
+    if ($line =~ /\\input\{Scope\}/) {
+        print FILE "\\input{$chap}\n";
+        print FILE "\\end{document}\n";
+        last;
+    } else {
+        print FILE $line;
+    }
+}
+
+close(FILE);
+
+system("latex _chapter_temp.tex");
+system("latex _chapter_temp.tex");
+`mv _chapter_temp.dvi $chap.dvi`;

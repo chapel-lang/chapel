@@ -1,0 +1,112 @@
+Notes on Runtime Types
+
+% Change log:
+% Created: 2012/05/18 hilde
+
+Types declared with pragma "has runtime type":
+  record _domain
+  record _array
+
+The "secret sauce" here is that types declared to have runtime type define at
+least _value and _valueType fields.  Certain functions key off the contents of
+these fields to determine their actions at runtime.
+
+In a sense, "runtime type" is a misnomer.  Viewing the implementation, it
+appears to me that the above types and the compiler accommodations of
+FLAG_HAS_RUNTIME_TYPE work to support a poor-man's version of polymorphism.  The
+types involved are actually determined at compile time, but type-dependent (run-time)
+behavior can be attached to a type whose identity is not completely known at
+parse time, and which also does not fit within the standard generic type- and
+function- framework.
+
+I think this partial implementation of polymorphism was a convenience.  There
+are alternative approaches which might allow removal of this specialized code.
+For example, I believe it would be possible to use standard generic types and
+functions to perform the same function as what the "runtime types" are used for
+today.  However, in the absence of a fully-operational object inheritance
+implementation, all possible combinations would have to be taken into
+consideration in the generic implementation of a given (domain or array) type.
+
+The morphological differences between the various domain types makes plain the
+difficulty -- particularly if one considers having a single generic domain type
+that can represent rectangular, sparse and opaque domains comprehensively.  It
+is conceivable that the implementation part of a domain could be factored out
+(or that sparse and opaque domains could be reworked to accept a rank
+parameter), whereby the generic domain type would take the domain implementation
+as a type parameter.  
+
+The situation seems less difficult for arrays, where the variation appears to be
+concentrated in the element type.  It is interesting to note that the internal
+test for isRecordWrappedType() include distributions, but the root distribution
+type is not marked as having a runtime type.  Distributions have at least as
+much morphological variation as domains, yet their variation seems to have been
+handled adequately using fields of class type.
+
+The other option for an equivalent implementation is to assume that a full-up
+implementation of inheritance is implemented.  Given that all of the types
+involved are currently resolved statically, we do not need the full power of
+inhertance that would include dynamic dispatch.  Static dispatch can be used as
+an optimization.
+
+
+Functions declared with pragma "has runtime type":
+  (domains)
+	chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
+                                 type idxType = int, param stridable: bool = false) type
+	chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+    							 param parSafe: bool = true) type
+	chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+    							 param parSafe: bool = true) type
+	  where idxType == _OpaqueIndex
+	chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) type
+  (arrays)
+	chpl__buildArrayRuntimeType(dom: domain, type eltType) type
+
+
+Uses of FLAG_HAS_RUNTIME_TYPE:
+  All occur within functionResolution.cpp.
+  functionResolution.cpp:2430: Permits a function with the RET_TYPE return tag to
+  return a value.
+  functionResolution.cpp:3345: Causes PRIM_TYPEOF to be replaced by a call to
+  chpl__convertValueToRuntimeType().
+  functionResolution.cpp:3946: In postFold(), prevents the return value of a
+  function with the return tag RET_TYPE from being replaced by its type.
+  functionResolution.cpp:5158: In insertRuntimeTypeTemps() controls the
+  insertion of runtime type temps. 
+  functionResolution.cpp:5196: In resolveRecordInitializers(), causes the
+  resolution of PRIM_INIT primitives to be skipped entirely.
+  functionResolution.cpp:5601: In removeRandomJunk(), prevents removal of
+  accesses to type fields.
+  functionResolution.cpp:5619: In removeRandomJunk(), prevents removal of type formals.
+  functionResolution.cpp:5648: In buildRuntimeTypeExpressions(), filters for
+  functions returning runtime type information.
+  functionResolution.cpp:5656: In buildRuntimeTypeExpressions(), allows type
+  formals to set type fields.
+  functionResolution.cpp:5670: In removedUnusedFormals(), prevents removal of
+  type formals.
+  functionResolution.cpp:5696: In removedUnusedFormals(), allows a type formal to
+  be replaced with the corresponding value representing its runtime type.
+  functionResolution.cpp:5713: In removedUnusedFormals(), allows a return type
+  tagged as RET_TYPE to return a value.
+  functionResolution.cpp:5727:        if (ret && ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+  functionResolution.cpp:5750: In insertRuntimeInitTemps(), allows an initial
+  value to be established for a type variable.
+  functionResolution.cpp:5785: In insertRuntimeInitTemps(), causes return
+  statements to be removed.
+
+  The runtime type record is built on-the-fly for functions that are labelled
+  with the HAS_RUNTIME_TYPE flag.  (This is equivalent to having a return type
+  labelled with the same flag.)  This service is performed by the
+  buildRuntimeTypeInfo() function called from buildRuntimeTypeExpressions().
+
+
+Uses of FLAG_RUNTIME_TYPE_VALUE:
+  callDestructors.cpp:420: Prevents insertion of an autocopy in a PRIM_YIELD.
+  functionResolution.cpp:3909: Prevents requiresImplictDestroy() from returning true.
+  functionResolution.cpp:5401: It is applied to each _RuntimeTypeInfo record.
+  functionResolution.cpp:5715: Probably moot, unless it is possible for a
+  function labelled HAS_RUNTIME_TYPE to return something other than a
+  _RuntimeTypeInfo record.
+  functionResolution.cpp:5729: Ditto.
+  functionResolution.cpp:5764: Enables the main function in insertRuntimeTypeTemps().
+ 

@@ -1,0 +1,1081 @@
+\section{The Object Lifecycle Model and UMM}
+\label{Objects}
+
+
+The interaction of language semantics and the User-Managed Memory model can be discussed
+in terms of state transitions in the object lifecycle.  For background, a summary of the
+object lifecycle is presented in the following subsection.  We then discuss the
+transitions made by the current constructor model, and how the proposed constructor model
+would navigate these same transitions.
+
+
+\subsection{The Object Lifecycle}
+
+In general, the states an object can be in are:
+\begin{enumerate}
+\item Undefined
+\item Uninitialized
+\item Default-Initialized
+\item Field-Initialized
+\item Fully-Initialized (a.k.a. Constructed)
+\item Destroyed
+\item Reclaimed
+\end{enumerate}
+
+Before an object has been allocated, it is in the ``undefined'' state.  This is
+equivalent to representing its storage with a null pointer; the object {\it per
+se} does not exist.
+
+Once memory sufficient to represent the object has been allocated, the object
+moves to the ``uninitialized'' state.  The name of the object (or the class
+variable) refers to actual memory, but that memory is in an unknown state.
+
+Default-initialization moves the object to the ``default-initialized'' state.  Each
+field within an aggregate object is in an initial state consistent with its type,
+but neither the fields nor the object as a whole have been ``constructed''.
+Default-initialization may be applied knowing only the type of the object --- or
+just the types of the fundamental leaves of an aggregate type.  In particular,
+neither the constructors nor the field initializers are consulted in creating a
+default-initialized object.\footnote{This can be stated more simply using just the
+  restriction against consulting constructors, since field-initialization
+  depends upon construction.}
+
+Field-initialization consists of bringing each field in an aggregate type into a
+state consistent with the field declarations.  If the field is declared without
+a specified initializer, then the default constructor (for the type of that
+field) is called; otherwise, a constructor for the type of that field is called,
+passing the initialization expression for that field as its operand.
+
+Following field-initialization, the actions specified in the body of the
+constructor are called.  In many cases, the body of the constructor is empty,
+because the actions of default- and field-initialization bring the object into a
+state consistent with the desired class invariants.  In any case, after the body
+of one of its constructors has run to completion, the object is
+fully-initialized (i.e. constructed).
+
+When an object is destroyed, it transitions to the destroyed state.  This state
+is equivalent to ``uninitialized'', meaning that its contents cannot be relied
+upon.  An implementation may reuse a destroyed object without first returning it
+to the heap through deallocation.\footnote{After its destruction, an object may
+  still be accessible through the name or reference used to call the
+  destructor.  But since its contents cannot be relied upon, it represents a
+  programming error to attempt to read or write an object in this state.}
+
+Once an object has been destroyed, an implementation may reuse or reclaim it.
+This may happen immediately or at some unspecified future time.  After it has
+been reclaimed, the object returns to the undefined state.
+
+
+\subsection{Initialization in the Current Implementation}
+
+Initialization is the sequence of actions that take place when a variable is prepared for
+use within its scope, or when a field of a record or class is prepared for use.  Field
+initialization usually takes place as part of the construction of such object, as outlined
+above in the object lifecycle description.  We discuss the initialization of variables in
+this section, and treat field-initialization in the following subsection as part of the
+semantics of construction. 
+
+Assuming that type inference and initialization are separable concepts, we would expect
+there to be three canonical forms for variable declaration and initialization:
+\begin{chapel}
+// type T = ... ;
+   var a:T;
+   var b:T = noinit;
+   var c:T = new T( ... );
+\end{chapel}
+\noindent
+In the final form, any expression coercible to type \chpl{T} should exhibit the same
+semantics, so we could e.g. have said \chpl{var c:T = a;} instead, for example.
+
+In only the final form, the explicit type specifier on the variable may be omitted.  In that
+case the compiler infers the type from the initializer expression.  In the other forms,
+the type specifier is required.\footnote{The compiler might still be able to infer the type of the
+variable depending on how it is used (as it currently does for the return value
+temporary), but that would entail a change in the semantics of the language.}
+
+As things stand, type inference in the compiler allows it to convert the
+expression
+\begin{chapel}
+   var c = new T( ... );
+\end{chapel}
+\noindent
+into its canonical form \chpl{var c:T = new T( ... );}.  Note that since the inferred type
+of c is the same as the type of the initializer expression, the initializer expression is
+always coercible to the variable's type.
+
+The way in which the compiler initializes variables of record type is the most interesting
+case.  There are other types known to the compiler that should also be taken into
+consideration in forming a complete description of the current behavior.  These are
+considered separately below.
+
+
+\subsubsection{Record Variables}
+
+When \chpl{T} is a record type, we observe that the following Chapel code
+\begin{chapel}
+  var s:R;
+  var t:R = noinit;
+  var u:R = new R();
+  var v:R = new R(8, 9, 10.0);
+  var w = new R();
+  var x = new R(9, 16, 0.5625);
+\end{chapel}
+\noindent
+gives rise to the corresponding AST:
+\begin{numberedchapel}
+    var s:R
+    {
+      var type_tmp:R
+      ('move' type_tmp (call _construct_R))
+      ('move' s type_tmp)
+    }
+    var t:R
+    var u:R
+    {
+      var type_tmp:R
+      ('move' type_tmp (call _construct_R))
+      var call_tmp:R
+      ('move' call_tmp (call _construct_R))
+      (call = type_tmp call_tmp)
+      ('move' u type_tmp)
+    }
+    var v:R
+    {
+      var type_tmp:R
+      ('move' type_tmp (call _construct_R))
+      var call_tmp:R
+      var coerce_tmp:uint(64)
+      ('move' coerce_tmp (call _cast 8))
+      ('move' call_tmp (call _construct_R coerce_tmp 9 10.0))
+      (call = type_tmp call_tmp)
+      ('move' v type_tmp)
+    }
+    var w:R
+    ('move' w (call _construct_R))
+    var x:R
+    var coerce_tmp:uint(64)
+    ('move' coerce_tmp (call _cast 9))
+    ('move' x (call _construct_R coerce_tmp 16 0.5625))
+\end{numberedchapel}
+\noindent
+being roughly equivalent to the following canonical expansion:
+\begin{chapel}
+  pragma "no init" var type_tmp:R; type_tmp <- new R();
+  pragma "no init" var s:R; s <- type_tmp;
+
+  pragma "no init" var t:R;
+
+  pragma "no init" var type_tmp:R; type_temp <- new R();
+  pragma "no init" var call_tmp:R; call_temp <- new R();
+  type_tmp = call_tmp;
+  pragma "no init" var u:R; u <- type_tmp;
+
+  pragma "no init" var type_tmp2:R; type_temp2 <- new R();
+  pragma "no init" var call_tmp2:R; call_temp2 <- new R(8, 9, 10.0);
+  type_tmp2 = call_tmp2;
+  pragma "no init" var v:R; v <- type_tmp2;
+
+  pragma "no init" var w:R; w <- new R();
+
+  pragma "no init" var x:R; x <- new R(9, 16, 0.5625);
+\end{chapel}
+\noindent
+where the invented pragma \chpl{"no init"} performs basically the same function as the
+\chpl{=noinit} initializer --- inhibiting any kind of initialization from being applied
+to the raw memory representing the object.  The invented syntax \chpl{<-} expresses the
+action of the \chpl{'move'} primitive, which is to perform a bit-wise copy from the RHS
+object into the LHS object.  This is in contrast to \chpl{=}, which calls the assignment
+operator (i.e. \chpl{proc =}) compatible with the types of the two arguments.\footnote{The
+assignment operator is not necessarily trivial.  It may perform reference-counting
+operations, etc.}
+
+It can be observed that the form with the \chpl{=noinit} initializer performs no
+initialization whatsoever.  Default-initialization, field initialization and construction are
+all inhibited.  Because construction is not performed, this breaks encapsulation of the
+corresponding class or record.  And because the choice of whether construction is done or
+not is made at the point of declaration (rather than as part of the class design), the
+class designer is under no obligation to make any operation on an uninitialized object of
+that type work correctly.  In particular, assignment into an uninitialized object is
+not expected to work correctly which leaves no pathway for an uninitialized
+object to ever become properly initialized.  A redesign of the "noinit" feature to address
+these problems is currently underway.
+
+Somewhat to my surprise, the forms involving type inference are not merely normalized
+to their corresponding canonical forms.  They follow a completely different translation
+pathway.  I suspect this is due more to implementation history rather than being a matter
+of design.  In many places, the current implementation requires the construction of a
+full-up object where the construction of a mere type would suffice.  
+
+In terms of user intent, both forms of initialized variable declaration (with and without
+an explicit type specifier) should have implementations resembling the
+form that does not contain an explicit type; it is hard to imagine the utility of
+fully-establishing the type-default value in a variable that is then immediately overwritten.
+
+There is further complexity surrounding whether a record type defines a constructor that
+can be called with no arguments.  In the example code above, it does.  So the initial value of
+a \chpl{type_temp} variable is determined by calling that user-defined no-argument
+constructor.  If such a user-defined constructor does not exist, the compiler instead
+inserts a call to \chpl{_defaultOf(t)}, where \chpl{t} is the type of that record.  The
+compiler-supplied version of \chpl{_defaultOf()} calls the all-fields constructor for the
+passed-in type, passing no arguments.  
+
+This is the same behavior as would be achieved by consistently generating a call to the
+constructor for that type, passing no arguments.  
+In the case that such a user-defined
+constructor is supplied, the compiler would preferentially bind that one.
+In the case that no user-defined
+constructor that can bind to an empty argument list is supplied, the call would instead bind to
+the compiler-supplied all-fields constructor.  
+
+In the current implementation, it is possible to override the compiler-supplied version of
+\chpl{_defaultOf()}.  In that case, the user-defined version of \chpl{_defaultOf()} is
+used in preference to the compiler-provided version.
+However, it is still the case that \chpl{_defaultOf()} will only be called if there is no
+user-defined constructor for that type that can bind to an empty argument list.
+Part of this proposal is to change that behavior, as detailed here:
+
+Because \chpl{_defaultOf()} produces an object that is properly initialized, it is
+equivalent in its effect to construction.  It should therefore be under the control of the
+author of that type.  Both \chpl{_defaultOf()} and the no-argument constructor for a given
+type have the meaning ``give me a default-initialized object of type T'', so at least in
+concept they are aliases for one another.  The two differences that exist in the current
+implementation are that the user-defined no-argument constructor will take precedence over
+\chpl{_defaultOf()} and that \chpl{_defaultOf()} bypasses any user-defined no-argument
+constructor (which doesn't exist, by definition), and calls the compiler-defined
+all-fields constructor (passing no arguments) instead.  
+
+A way to bring these concepts
+closer into alignment would be to have the compiler-supplied version of
+\chpl{_defaultOf()} for record types call a constructor of that type by name, passing no
+arguments.  This will bind with the compiler-supplied all-fields constructor (passing no
+arguments) if no user-defined no-argument constructor is supplied, and will bind to the
+user-defined version if one is present.
+
+\subsubsection{Class Variables}
+
+When initializing a variable of class type, the following forms are possible:
+\begin{chapel}
+  var c:C; c = new C(false);
+  var d:C = new C(true);
+  var e = new C(false);
+  var f:C = noinit;
+\end{chapel}
+\noindent
+This produces the following AST
+\begin{numberedchapel}
+    var c:C
+    {
+      var type_tmp:C
+      ('move' type_tmp (call _defaultOf))
+      ('move' c type_tmp)
+    }
+    var call_tmp:C
+    ('move' call_tmp (call _construct_C))
+    (call = c call_tmp)
+    var d:C
+    {
+      var type_tmp:C
+      ('move' type_tmp (call _defaultOf))
+      var call_tmp:C
+      ('move' call_tmp (call _construct_C))
+      (call = type_tmp call_tmp)
+      ('move' d type_tmp)
+    }
+    var e:C
+    ('move' e (call _construct_C))
+    var f:C
+\end{numberedchapel}
+\noindent
+which is roughly equivalent to the following pseudo-Chapel code:
+\begin{chapel}
+  pragma "no init" var c:C;
+  pragma "no init" var type_tmp:C; type_tmp <- _defaultOf(C);
+  c <- type_tmp;
+
+  c = new C(false);
+
+  pragma "no init" var d:C; 
+  pragma "no init" var type_tmp:C; type_tmp <- _defaultOf(C);
+  pragma "no init" var call_tmp:C; call_tmp <- new C(true);
+  type_tmp = call_tmp;
+  d <- type_tmp;
+
+  pragma "no init" var e:C; e <- new C(false);
+  pragma "no init" var f:C;
+\end{chapel}
+\noindent
+For class variables, assignment is rigidly defined by the compiler to be a pointer copy,
+so there is no difference between the assignment operator and move primitives for all
+class types.  Therefore, the actions taken for the separate declaration and initialization
+(for variable \chpl{c}) are the same as those taken for the canonical initialization form
+(for variable \chpl{d}).  In minute detail, the first form involves one update of
+\chpl{type_tmp} and two updates to \chpl{c} while the second form involves two updates of
+\chpl{type_temp} and only one of \chpl{d}.  This may have performance impacts depending on
+where the two are stored.\footnote{The temporary variable \chpl{type_tmp} is expected to
+  be local.}
+
+For the noinit case, it should be noted that the value returned by \chpl{_defaultOf()} for
+any class type is \chpl{nil}.  But when the \chpl{=noinit} initializer is present,
+\chpl{nil} is not generated and assigned to the corresponding variable.  In spite of
+that, we find that both module-level and function-level class variables are initialized to
+\chpl{nil} after all.  This zero-initialization is added at code generation time to the
+backend representation of the variable.  
+
+\subsubsection{Distribution Variables}
+
+For the Chapel code:
+\begin{chapel}
+var a: Block(rank=2);
+var d: Block(rank=2) = noinit;
+var b = new Block({2..5, 2..5});
+var c: Block(rank=2) = new Block({1..4, 1..4});
+\end{chapel}
+\noindent
+we obtain:
+\begin{numberedchapel}
+    var a:Block(2,int(64))
+    {
+      var type_tmp:Block(2,int(64))
+      var call_tmp:Block(2,int(64))
+      ('move' type_tmp (call _defaultOf))
+      ('move' a type_tmp)
+    }
+    var d:Block(2,int(64))
+    var call_tmp:Block(2,int(64))
+    var b:Block(2,int(64))
+    var call_tmp:range(int(64),bounded,false)
+    ('move' call_tmp (call _build_range 2 5))
+    var call_tmp:range(int(64),bounded,false)
+    ('move' call_tmp (call _build_range 2 5))
+    var call_tmp:domain(2,int(64),false)
+    ('move' call_tmp (call chpl__buildDomainExpr call_tmp call_tmp))
+    ('move' b (call _construct_Block call_tmp))
+    var c:Block(2,int(64))
+    {
+      var type_tmp:Block(2,int(64))
+      var call_tmp:Block(2,int(64))
+      ('move' type_tmp (call _defaultOf))
+      var call_tmp:range(int(64),bounded,false)
+      ('move' call_tmp (call _build_range 1 4))
+      var call_tmp:range(int(64),bounded,false)
+      ('move' call_tmp (call _build_range 1 4))
+      var call_tmp:domain(2,int(64),false)
+      ('move' call_tmp (call chpl__buildDomainExpr call_tmp call_tmp))
+      var call_tmp:Block(2,int(64))
+      ('move' call_tmp (call _construct_Block call_tmp))
+      (call = type_tmp call_tmp)
+      ('move' c type_tmp)
+    }
+\end{numberedchapel}
+\noindent
+It appears that the \chpl{call_tmp} variables declared on lines 4, 9 and 21 are never
+used.  Otherwise, this code looks quite similar to initialization for a normal
+class variable.
+
+\subsubsection{Array Variables}
+
+The Chapel code:
+\begin{chapel}
+  var A: [1..n, 1..n] int;
+  var B = ["1", "2", "3", "4", "5"];
+  var C: [1..n] real = [.500, .666, .750, .800];
+  var D: [1..n, 1..n] int = noinit;
+\end{chapel}
+\noindent
+produces the following AST:
+\begin{numberedchapel}
+    var A:[domain(2,int(64),false)] int(64)
+    {
+      var type_tmp:[domain(2,int(64),false)] int(64)
+      var call_tmp:domain(2,int(64),false)
+      ('move' call_tmp (call chpl__ensureDomainExpr 1..n 1..n))
+      var call_tmp:_RuntimeTypeInfo
+      ('move' call_tmp (call chpl__buildArrayRuntimeType call_tmp))
+      var _runtime_type_tmp_:domain(2,int(64),false)
+      ('move' _runtime_type_tmp_ ('.v' call_tmp dom))
+      var _runtime_type_tmp_:[domain(2,int(64),false)] int(64)
+      ('move' _runtime_type_tmp_ (call chpl__convertRuntimeTypeToValue _runtime_type_tmp_))
+      ('move' type_tmp (call chpl__autoCopy _runtime_type_tmp_))
+      ('move' A type_tmp)
+    }
+    var B:[domain(1,int(64),false)] string
+    var call_tmp:[domain(1,int(64),false)] string
+    ('move' call_tmp (call chpl__buildArrayExpr "1" "2" "3" "4" "5"))
+    ('move' B (call chpl__initCopy call_tmp))
+    var C:[domain(1,int(64),false)] real(64)
+    {
+      var type_tmp:[domain(1,int(64),false)] real(64)
+      var call_tmp:domain(1,int(64),false)
+      ('move' call_tmp (call chpl__ensureDomainExpr 1..n))
+      var call_tmp:_RuntimeTypeInfo
+      ('move' call_tmp (call chpl__buildArrayRuntimeType call_tmp))
+      var _runtime_type_tmp_:domain(1,int(64),false)
+      ('move' _runtime_type_tmp_ ('.v' call_tmp dom))
+      var _runtime_type_tmp_:[domain(1,int(64),false)] real(64)
+      ('move' _runtime_type_tmp_ (call chpl__convertRuntimeTypeToValue _runtime_type_tmp_))
+      ('move' type_tmp (call chpl__autoCopy _runtime_type_tmp_))
+      var call_tmp:[domain(1,int(64),false)] real(64)
+      ('move' call_tmp (call chpl__buildArrayExpr 0.5 0.666 0.75 0.8))
+      (call = type_tmp call_tmp)
+      ('move' C type_tmp)
+    }
+    var D:[domain(2,int(64),false)] int(64)
+    var call_tmp:domain(2,int(64),false)
+    ('move' call_tmp (call chpl__ensureDomainExpr 1..n 1..n))
+    var call_tmp:_RuntimeTypeInfo
+    ('move' call_tmp (call chpl__buildArrayRuntimeType call_tmp))
+    var _runtime_type_tmp_:domain(2,int(64),false)
+    ('move' _runtime_type_tmp_ ('.v' call_tmp dom))
+    var _runtime_type_tmp_:[domain(2,int(64),false)] int(64)
+    ('move' _runtime_type_tmp_ (call chpl__convertRuntimeTypeToValue _runtime_type_tmp_))
+    ('move' D (call chpl__autoCopy _runtime_type_tmp_))
+\end{numberedchapel}
+
+Some nontrivial work goes into initializing an array, so there may not be an obvious
+translation to the common object construction model.  Let us examine the simplest case
+first --- the one involving \chpl{B}.
+
+The \chpl{call_tmp} is inserted in the normalize pass, but otherwise the AST is passed
+through unchanged from the form it had immediately after parsing.  Resolution must infer the type of the
+\chpl{call_tmp} from the initialization expression, and this is propagated backward to the
+declared variable as well.
+
+Here is a case where \emph{in situ} initialization does not seem to fit as well as with other
+types.  It appears from the formulation that \chpl{chpl__buildArrayExpr()} may return an
+array of arbitrary shape and size, and so considerable work is done to build up that array
+before it is handed off to the copy-constructor (here called \chpl{chpl__initCopy}) to be
+copied into the destination variable.  However, that is only a matter of appearance.  In
+fact, the type of the return value of \chpl{chpl__buildArrayExpr()} is known well before
+its execution commences.  (It is, in fact, known here by the end of resolution.)  Since
+the type of the resultant object is known, the call to the free function
+\chpl{chpl__buildArrayExpr()} could be replaced by a constructor call, and the call to the
+array's copy constructor thereby avoided.
+
+The return type of \chpl{chpl__buildArrayExpr()} is inferred from the types of the
+elements in the array literal.\footnote{Actually, only the type of the first element is
+  used in type inference.  The elements of the temporary array are assigned in a param
+  loop --- each element of the literal list being coerced to match the type of the fist.
+  If there is a mismatch, it is discovered when the body of the loop is resolved.}  The
+routine itself defines the domain to be a one-dimensional rectangular domain.  That is
+sufficient information to build the domain and array types.
+
+Aside from the obvious performance gains that may be obtained by avoiding an
+element-by-element copy, there is quite a bit of flexibility lost in first creating an
+array to express the array literal.  An impoverished representation of the initializer
+list (lacking domain information) could be passed to an array whose type (or at least
+domain) had already been declared.  The same initializer syntax could thus be used to
+initialize arrays of arbitrary dimension or element type --- according to the rules set
+down by the construct corresponding to that domain type.  (I assume that \chpl{where}
+clauses can be used here for partial specialization.)  
+
+An alternate approach suggested in
+the existing spec is to provide some syntax for specifying a domain as part of the literal.  
+This is a workable solution, and only suffers from the fact that a verbatim copy is still
+required after the full-fledged literal array is built.\footnote{The literal copy could also
+  be avoided if memory management in the compiler were sophisticated enough to transfer
+  ownership of that array from an unnamed temporary to the named array variable.  That
+  capability has been discussed and is feasible, but it makes good sense to first put
+  in place the basics discussed in this document.}
+
+Since array support for the \chpl{noinit} initializer is not yet provided, the generated code for
+cases \chpl{A} and \chpl{D} should be identical.  In fact, they differ because the
+initializer for \chpl{A} moves through a \chpl{type_tmp} variable and that for \chpl{D}
+does not.  The initializers are processed through two different code paths, but they end
+up in approximately the same place.  The paths are expected to diverge when \chpl{noinit}
+is implemented.
+
+The remainder of the code for these two cases first creates a domain expression and then
+passes this to \chpl{chpl__buildArrayRuntimeType()}.  That function primarily provides the
+means for grafting the element type onto an existing domain.  An array constructor with a
+generic type argument can perform this grafting equally well.  Initialization is not
+performed when that array object is created.  The function as written is split, so the
+type can be computed first and initialization performed later
+
+The domain is then copied by reference into the array type.  This copy may be redundant,
+depending on how the constructor for the array type is defined.  However, it is just a
+pointer copy after all, so is relatively cheap.  Next,
+\chpl{chpl__convertRuntimeTypeToValue} is called on the newly-created array type.  That
+function performs the initialization as originally written in the buildArrayRuntimeType
+function.
+
+From the results of resolution, it is evident that the type of an array is completely
+known after resolution.  The ``runtime type'' mechanism may help to manage type
+information up to a point, but by the time the call to
+\chpl{chpl__convertRuntimeTypeToValue()} is called, the type of the array being initialized
+is fully known.  That suggests that the array initialization could be replaced by a
+constructor call.
+
+
+The remaining case to consider is the initialization code for \chpl{C}.  The generated
+code is the same in every respect with that for \chpl{A} and \chpl{D}, except that the
+type-based initialization concludes with the autoCopy call.  The array literal is built by
+the call to \chpl{chpl__buildArrayExpr}, and this is followed by assignment to the
+\chpl{type_tmp}.  Finally, the \chpl{type_tmp} is assigned to the the named variable.  It
+gets the job done, but in a surprising and somewhat roundabout way.
+
+The autoCopy to initialize the \chpl{type_tmp} is arguably correct.
+If that much is done to establish the type of the array, then assignment is the correct
+choice for updating with values from the initializer.  Even so, since the type of the LHS
+is fully known by this point, a constructor that can accept the array literal as an
+argument can appear instead.  The move performs a bitwise copy of the \chpl{type_tmp}
+variable into the named variable \chpl{C}.  This is also correct --- assuming that no
+attempt is made to reclaim resources initially held by the \chpl{type_tmp}.  Ownership of
+them has been transferred to C.
+
+\subsubsection{Domain Variables}
+
+The Chapel code:
+\begin{chapel}
+  var D:domain(2);
+  var E = {1..2, 3..4};
+  var F:domain(2) = {6..7, 8..9};
+  var G:domain(2) = noinit;
+\end{chapel}
+\noindent
+produces the AST:
+\begin{numberedchapel}
+    var D:domain(2,int(64),false)
+    {
+      var type_tmp:domain(2,int(64),false)
+      var call_tmp:_RuntimeTypeInfo
+      ('move' call_tmp (call chpl__buildDomainRuntimeType defaultDist))
+      var _runtime_type_tmp_:DefaultDist
+      ('move' _runtime_type_tmp_ ('.v' call_tmp d))
+      var _runtime_type_tmp_:domain(2,int(64),false)
+      ('move' _runtime_type_tmp_ (call chpl__convertRuntimeTypeToValue _runtime_type_tmp_))
+      ('move' type_tmp (call chpl__autoCopy _runtime_type_tmp_))
+      ('move' D type_tmp)
+    }
+    var E:domain(2,int(64),false)
+    var call_tmp:domain(2,int(64),false)
+    ('move' call_tmp (call chpl__buildDomainExpr 1..2 3..4))
+    ('move' E (call chpl__initCopy call_tmp))
+    var F:domain(2,int(64),false)
+    {
+      var type_tmp:domain(2,int(64),false)
+      var call_tmp:_RuntimeTypeInfo
+      ('move' call_tmp (call chpl__buildDomainRuntimeType defaultDist))
+      var _runtime_type_tmp_:DefaultDist
+      ('move' _runtime_type_tmp_ ('.v' call_tmp d))
+      var _runtime_type_tmp_:domain(2,int(64),false)
+      ('move' _runtime_type_tmp_ (call chpl__convertRuntimeTypeToValue _runtime_type_tmp_))
+      ('move' type_tmp (call chpl__autoCopy _runtime_type_tmp_))
+      var call_tmp:domain(2,int(64),false)
+      ('move' call_tmp (call chpl__buildDomainExpr 6..7 8..9))
+      (call = type_tmp call_tmp)
+      ('move' F type_tmp)
+    }
+    var G:domain(2,int(64),false)
+    var call_tmp:_RuntimeTypeInfo
+    ('move' call_tmp (call chpl__buildDomainRuntimeType defaultDist))
+    var _runtime_type_tmp_:DefaultDist
+    ('move' _runtime_type_tmp_ ('.v' call_tmp d))
+    var _runtime_type_tmp_:domain(2,int(64),false)
+    ('move' _runtime_type_tmp_ (call chpl__convertRuntimeTypeToValue _runtime_type_tmp_))
+    ('move' G (call chpl__autoCopy _runtime_type_tmp_))
+\end{numberedchapel}
+
+As for arrays above, the forms for D and G are nearly the same, except that the form for D
+uses an extra \chpl{type_tmp} that is not present in the form for \chpl{G}.  This is again
+due to the different path taken for default initialization as compared to the path taken
+for the \chpl{noinit} initializer.  In effect they are the same.
+
+The initialization for \chpl{E} is relatively simple, and arguably correct.  One could
+propose an implementation that used a specialized constructor in place of the call to
+\chpl{chpl__buildDomainExpr}, but the code as it is is efficient enough, and perhaps
+slightly easier to understand.
+
+The form for \chpl{F} also echoes the similar case for arrays, and should be approached
+with the same recommendations: Replacing the creation of a \chpl{type_tmp} to represent
+the type of the domain and then overwriting this with the domain expression only makes
+sense if the types of the two differ.  Otherwise, the initialization can be done in-place
+and the autoCopy and assignment both avoided.  The final copy of the \chpl{type_tmp} back
+into the named variable is also unnecessary, but it basically devolves to a pointer copy
+and is therefore relatively cheap.
+
+\subsubsection{Sync and Single Variables}
+
+The Chapel code:
+\begin{chapel}
+  var a: sync int;
+  var b: sync int = noinit;
+  var c: sync int = n;
+
+  var d: single int;
+  var e: single int = noinit;
+  var f: single int = n;
+\end{chapel}
+\noindent
+produces:
+\begin{numberedchapel}
+    sync var a:_syncvar(int(64))
+    {
+      sync var type_tmp:_syncvar(int(64))
+      sync var call_tmp:_syncvar(int(64))
+      ('move' type_tmp (call _defaultOf))
+      ('move' a type_tmp)
+    }
+    sync var b:_syncvar(int(64))
+    sync var call_tmp:_syncvar(int(64))
+    ('move' b (call _defaultOf))
+    sync var c:_syncvar(int(64))
+    {
+      sync var type_tmp:_syncvar(int(64))
+      sync var call_tmp:_syncvar(int(64))
+      ('move' type_tmp (call _defaultOf))
+      (call = type_tmp n)
+      ('move' c type_tmp)
+    }
+    single var d:_singlevar(int(64))
+    {
+      single var type_tmp:_singlevar(int(64))
+      single var call_tmp:_singlevar(int(64))
+      ('move' type_tmp (call _defaultOf))
+      ('move' d type_tmp)
+    }
+    single var e:_singlevar(int(64))
+    single var call_tmp:_singlevar(int(64))
+    ('move' e (call _defaultOf))
+    single var f:_singlevar(int(64))
+    {
+      single var type_tmp:_singlevar(int(64))
+      single var call_tmp:_singlevar(int(64))
+      ('move' type_tmp (call _defaultOf))
+      (call = type_tmp n)
+      ('move' f type_tmp)
+    }
+\end{numberedchapel}
+
+Except for the presence of a \chpl{type_tmp} for \chpl{a}, the cases for \chpl{a} and
+\chpl{b} are the same.  The case for \chpl{c} also contains an initializer that
+overwrites the initial value supplied by \chpl{_defaultOf}.  Both forms could be replaced
+by a suitable constructor call.
+
+The cases for single variables are symmetrical with sync variables, and the same comments
+apply.
+
+\subsubsection{Tuple Variables}
+
+For the Chapel code:
+\begin{chapel}
+  var a:2*real;
+  var b:2*real = noinit;
+  var d:2*real = (12.0,13.3);
+  var e = d;
+\end{chapel}
+\noindent
+we obtain
+\begin{numberedchapel}
+    var a:2*real(64)
+    {
+      var type_tmp:2*real(64)
+      var call_tmp:2*real(64)
+      ('move' type_tmp (call _defaultOf))
+      ('move' a type_tmp)
+    }
+    var b:2*real(64)
+    var call_tmp:2*real(64)
+    var d:2*real(64)
+    {
+      var type_tmp:2*real(64)
+      var call_tmp:2*real(64)
+      ('move' type_tmp (call _defaultOf))
+      var call_tmp:2*real(64)
+      ('move' call_tmp (call _build_tuple 12.0 13.3))
+      (call = type_tmp call_tmp)
+      ('move' d type_tmp)
+    }
+    var e:2*real(64)
+    ('move' e (call chpl__initCopy d))
+\end{numberedchapel}
+\noindent
+It is interesting to note that for tuple initialization, there appears to be an extra
+\chpl{call_tmp} for the cases with an explicit type specifier that is inserted and never
+actually used in the initialization.   Other than that, the tuple code looks quite similar
+to the code for scalar variables.
+
+\subsubsection{Scalar Variables}
+
+Scalar variables include those of Boolean, integer, real, complex, enumeration and string
+types.  As with other types, the forms of variable declaration are:
+\begin{chapel}
+// type T = ... ;
+   var a:T;
+   var b:T = noinit;
+   var c:T = new T( ... );
+   var d = 13; // Initializer expression e has type T.
+   var e = d; // Same.
+\end{chapel}
+\noindent
+The third form is not currently supported for integer or real types, because the syntax
+type(size)() in a "new" expression is not recognized as a type expression followed by a
+call (which should invoke a constructor for that type).  The above code results in the
+following AST:
+\begin{numberedchapel}
+    var a:int(64)
+    {
+      var type_tmp:int(64)
+      ('move' type_tmp 0)
+      ('move' a type_tmp)
+    }
+    var b:int(64)
+    var d:int(64)
+    {
+      var type_tmp:int(64)
+      ('move' type_tmp 0)
+      (call = type_tmp 13)
+      ('move' d type_tmp)
+    }
+    var e:int(64)
+    ('move' e (call chpl__initCopy d))
+\end{numberedchapel}
+\noindent
+The first form results in default-initialization with a value of the declared type.
+Note that there is no initialization at all (in the AST) for the form
+involving \chpl{=noinit}.  Again, the canonical version contains extra data motion that
+is undesirable.  In particular, it uses assignment, which should not appear in initialization.
+
+
+
+\subsection{Construction in the Current Implementation}
+
+In the current implementation, construction involves all of the states from undefined
+through fully-initialized.
+
+\subsubsection{Allocation}
+
+Variables of class type are only allocated explicitly through the \chpl{new} operator.
+The allocation is performed in the wrapper function which calls the compiler-generated
+``all-fields'' constructor for that class, passing in all default-valued field arguments.
+\begin{numberedchapel}
+  // This is the AST clipped from the compiler-supplied constructor for a class C.
+  function C._construct_C() : C
+  {
+    var this:C
+    var call_tmp:int(64)
+    ('move' call_tmp ('sizeof' C))
+    var cast_tmp:opaque
+    ('move' cast_tmp (call chpl_here_alloc call_tmp 28))
+    ('move' this ('cast' C cast_tmp))
+    ('setcid' this)
+\end{numberedchapel}
+\noindent
+Storage for all other types is allocated either statically or on the stack.  In particular,
+variables of record type are not heap-allocated.  Therefore, the allocation code
+inserted in the class constructor wrapper shown above is \emph{not} inserted in the
+compiler-generated default constructor.
+
+\subsubsection{Default Initialization}
+
+Default-initialization is applied before field-initialization, and this occurs before any
+assignments that occur within the body of the constructor.
+
+In record and class constructors, this is done on a field-by-field basis, recursively,
+according to the default value specified for each fundamental type.  For the record:
+\begin{chapel}
+record R {
+  var u:uint = 7;
+  var i      = -2;
+  var r:real;
+}
+\end{chapel}
+\noindent
+we have: 
+\begin{numberedchapel}
+    var this:R
+    ('.=' this u 0)
+    ('.=' this i 0)
+    ('.=' this r 0.0)
+\end{numberedchapel}
+\noindent
+This code appears in every wrapper constructor that is used to call the compiler-generated
+all-fields constructor, but not in the all-fields constructor itself.  The all-fields
+constructor can be distinguished by the presence of a ``meme'' argument.  This argument
+does not appear in any of the constructor-wrapper functions that call the all-fields
+constructor nor in user-supplied constructors.
+
+For a class object of type C containing two records of the above type:
+\begin{chapel}
+class C {
+  var uninit:R;
+  var init = new R(3, 2, 1.0);
+}
+\end{chapel}
+\noindent
+the default-initialization code looks like:
+\begin{numberedchapel}
+    var this:C
+    // Allocation code elided. See above.
+    var _init_class_tmp_:R
+    ('.=' _init_class_tmp_ u 0)
+    ('.=' _init_class_tmp_ i 0)
+    ('.=' _init_class_tmp_ r 0.0)
+    ('.=' this uninit _init_class_tmp_)
+    var _init_class_tmp_:R
+    ('.=' _init_class_tmp_ u 0)
+    ('.=' _init_class_tmp_ i 0)
+    ('.=' _init_class_tmp_ r 0.0)
+    ('.=' this init _init_class_tmp_)
+\end{numberedchapel}
+\noindent
+Note that default-initialization has been recursively inlined.  This AST snapshot
+is taken at the end of the ``resolve'' pass --- well before explicit inlining is applied
+--- so we may conclude that this inlining is performed as part of normalization or resolution.
+
+The default-initialization code is injected by the compiler into every constructor that can be
+called directly from user code.
+
+\subsubsection{Field Initialization}
+
+Field-initialization in class and record construction is performed by the
+compiler-generated all-fields constructor.  Example AST for this function for a record is:
+\begin{numberedchapel}
+  function R._construct_R(arg u:uint(64), arg i:int(64), arg r:real(64), arg meme:R) : R
+  {
+    // Move meme into this.
+    var this:R
+    ('move' this meme)
+    // Perform field-by-field copy.
+    ('.=' this u u)
+    ('.=' this i i)
+    ('.=' this r r)
+    // Return this.
+    (return this)
+  }
+\end{numberedchapel}
+\noindent
+and for a class:
+\begin{numberedchapel}
+  function C._construct_C(arg uninit:R, arg init:R, arg meme:C) : C
+  {
+    // Move meme into this.
+    var this:C
+    ('move' this meme)
+    // Construct the base-class sub-object.
+    var _tmp:object
+    ('move' _tmp ('.v' this super))
+    var _return_tmp_:object
+    ('move' _return_tmp_ (call _construct_object _tmp))
+    // Perform field-by-field copy.
+    ('.=' this uninit uninit)
+    ('.=' this init init)
+    // Return this.
+    (return this)
+  }
+\end{numberedchapel}
+\noindent
+Both begin by moving \chpl{meme} into \chpl{this}.  The class constructor then calls its
+base-class constructor, passing in the pointer to the base-class sub-object.  Every class
+inherits from \chpl{object}.  The sub-object of type \chpl{object} contains the class ID
+and in this way, the run-time type of an object is established.  As an optimization,
+objects whose methods are statically bound can be declared withe the \chpl{"no object"} pragma ---
+in which case the \chpl{object} base class object is elided.
+
+In the compiler-generated all-fields constructor, it is apparent that the \chpl{meme}
+argument could be eliminated and the initial move avoided if that constructor is called as
+a method.  Aside from dependencies within the compiler on the form of the all-fields
+constructor function, this change should be relatively small.
+
+\subsubsection{Construction}
+
+In the object lifecycle, construction is the set of actions that take place after
+field-initialization is complete.  This usually corresponds to the body of the constructor
+function --- especially the body of a user-supplied constructor.
+
+In the example code, the user-supplied record constructor looks like:
+\begin{chapel}
+  proc R() { r = 2.71; }
+\end{chapel}
+\noindent
+It sets the r field of that record to a very bad approximation of $e$.
+
+The corresponding AST at the end of resolution is:
+\begin{numberedchapel}
+  function R._construct_R() : R
+  {
+    // The compiler adds this.
+    var this:R
+    ('move' this (call _construct_R))
+    // The original constructor body begins here.
+    var call_tmp:_ref(real(64))
+    ('move' call_tmp (call r this))
+    (call = call_tmp 2.71)
+    (return this)
+  }
+\end{numberedchapel}
+
+The compiler post-processes the source code for a constructor in the normalize pass (in\\ 
+\chpl{change_method_into_constructor}) to insert a call to the compiler-generated default
+constructor.  For a record, this performs default-initialization followed by
+field-initialization.  Control then advances to the code that constituted the original
+constructor body.
+
+In the example code, the user-supplied class constructor looks like:
+\begin{chapel}
+  proc C(param overw:bool)
+  {
+    if overw then
+    {
+      uninit = new R(r=3.14);
+      init.r = 12.0;
+    }
+  }
+\end{chapel}
+
+The interesting case is when \chpl{overw} is true.  (The param argument causes generic
+instantiation to stamp out two copies of this constructor --- one with the 
+\chpl{overw == true} clause and the other without.)  The corresponding AST is:
+\begin{numberedchapel}
+  function C._construct_C() : C
+  {
+    var this:C
+    ('move' this (call _construct_C))
+    {
+      var call_tmp:_ref(R)
+      ('move' call_tmp (call uninit this))
+      var call_tmp:R
+      ('move' call_tmp (call _construct_R 3.14))
+      (call = call_tmp call_tmp)
+      var call_tmp:_ref(R)
+      ('move' call_tmp (call init this))
+      var call_tmp:_ref(real(64))
+      ('move' call_tmp (call r call_tmp))
+      (call = call_tmp 12.0)
+    }
+    (return this)
+  }
+\end{numberedchapel}
+
+Note that as with records, the compiler inserts a call to the default constructor for C,
+moving the result into \chpl{this}.  The default constructor for C, in addition to
+performing default- and field-initialization, heap-allocates space to hold the returned object.
+
+
+\subsubsection{Post-Construction}
+
+A currently-supported feature of the compiler is to insert a call to an \chpl{initialize}
+method at the end of a constructor if such a method is defined in the class.
+
+There are a number of reasons why this language feature should be deprecated, including:
+\begin{itemize}
+\item The same effect can be achieved by calling an \chpl{initialize} function explicitly.
+\item The signature of the built-in \chpl{initialize} method is highly constrained (no
+  arguments, no return value) while a user-defined \chpl{initialize} method is not so
+  constrained. 
+\item It provides a way for a sophisticated coder to write obfuscated code.
+\item It slightly complicates the compiler.
+\item It removes that name from the user's namespace.
+\item Whatever was the historical problem it solved seems to have been overcome by now.
+\end{itemize}
+
+\subsubsection{Visibility}
+
+The current implementation contains two classes of procedure symbols,
+\emph{compiler-generated} and \emph{user-defined}.  Compiler-generated versions have
+\chpl{FLAG_COMPILER_GENERATED} attached: user-defined versions do not.  When a call is
+being resolved, user-defined versions are considered first.  If there are no user-defined
+candidates, then the compiler-generated versions are examined.
+
+Almost all of the compiler-generated functions, including
+\begin{itemize}
+\item \chpl{_defaultOf}
+\item All-fields constructors
+\item Record equality and inequality
+\item \chpl{chpl_enum_first}
+\item Integral-to-enum casts
+\item c\_string-to-enum casts
+\item Assignment
+\item Extern init functions
+\item Record initCopy functions
+\item Read/write functions
+\end{itemize}
+are created with \chpl{FLAG_COMPILER_GENERATED} set to true.  Certain others, including
+\begin{itemize}
+\item Setters and getters
+\item \chpl{enum_enumerate}
+\item Record casts (coercions)
+\item Record hash functions
+\item enum-to-c\_string casts
+\item Destructors
+\end{itemize}
+\noindent
+do not, but special-case code generally allows them to be overridden anyway.
+
+There is an ongoing effort to treat these cases uniformly (i.e. all using the
+\chpl{FLAG_COMPILER_GENERATED} mechanism in \chpl{functionResolution}).  Irrespective of
+the implementation details the basic behavior should be that the user can always override
+the compiler's version if he desires.
+
+\subsection{Construction in the Proposed Implementation}
+
+With the exception of the new initialization syntax proposed in sections
+\rsec{Declarations} and \rsec{Constructors}, the observable semantics of construction is
+expected to be largely compatible with today's implementation.  
+
+\subsubsection{Allocation}
+
+Allocation should be moved outside of the definition of a class constructor.  Not only
+will this reduce overall code size, it will allow the structure of class and record
+constructors to be identical.
+
+\subsubsection{Default Initialization}
+
+The current recommendation is to remove the default-initialization phase as it is
+currently implemented.  Default initialization will be merged with variable or field
+initialization --- meaning that initialization will either be performed in response to
+an explicit initializer, or through a call to \chpl{_defaultOf()}.  Since both of these
+methods would overwrite a zero-initialized variable (or field) what was thought of as
+default-initialization is now moot.  (Refer to the second open issue in
+\rsec{Constructors_Syntax} for further discussion.)
+
+As hinted above, an explicit initializer will be used if present, otherwise
+\chpl{_defaultOf()} will be called to supply a default value.
+
+The assignment used to update a typed object with its initializer should be replaced with
+a copy constructor call.
+
+Constructors should be implemented and called as methods, to avoid the final bit-wise
+copy-back (and to save confusion over ownership).
+
+When the initializer object is created using a new-expression, the copy-constructor call
+should be elided (as an optimization).
+
+\subsubsection{Field Initialization}
+
+Field initialization will be handled by the semantics associated with the
+\sntx{initializer-clause}, including substituting explicit or default initializations from
+the class or record declaration.
+
+The semantic rules for initializations specified in the \sntx{initializer-clause} will be
+consistent with those described for variable declarations.
+
+\subsubsection{Construction}
+
+According to this proposal, the body of a constructor will be ``straight code'', so no
+changes are proposed.  In particular, no restriction is placed on calling a method of the
+same class or record from within one of its constructors.
+
+\subsubsection{Post-Construction}
+
+We propose to deprecate and remove the magic surrounding the \chpl{initialize()} method.
+
+\subsubsection{Visibility}
+
+Assuming that all of the compiler-generated function classes mentioned above can be
+overridden in user code, the proposed behavior is the same as the existing behavior, with
+one exception.
+
+Currently, all-fields constructors remain visible unless they are specifically
+overridden.  We propose that the all-fields constructor for a given type be hidden if the
+definition of the corresponding type contains one or more explicitly-defined constructors.
+
+The reason for allowing user-code to invoke the all-fields constructor at all is that it
+supports rapid prototyping.  Much of what would be done in an explicit constructor can be
+simulated in client code.  The reason for hiding the all-fields constructor is that it
+breaks encapsulation.  It seems appropriate to hide the compiler-generated all-fields
+constructor after the first user-defined constructor is present in the code.  This means
+that the class (or record) author is thinking about encapsulation (construction and
+encapsulation are closely related).  At that point, he can add back as much of the
+all-fields capability as he needs, while appropriately managing the encapsulation of his class (or
+record).
+

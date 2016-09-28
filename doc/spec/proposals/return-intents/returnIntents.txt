@@ -1,0 +1,273 @@
+Notes from the deep dive session 7/30/2013.
+
+---------------------------------
+SUMMARY
+
+* We agreed to define the following aspects of the language:
+
+- The return mechanism (i.e. by value vs. by reference) for a non-'var'
+proc or iter is to match the blank intent for a formal argument
+of the same type.
+
+  We expect this will not make a significant difference in our
+current Chapel code base.
+
+  In the compiler, the choice of the mechanism is effected with insertRetMove()
+during normalization.
+
+- Allow 'out' return intent to force return by value.
+Or should it be 'const' ?
+
+- Rename 'var' return intent to 'ref'.
+
+
+* Open question: do all argument intents make sense as return intents?
+Especially see 'out' vs. 'const' below.
+
+
+* Open question: when returning integers - or arrays - by value,
+is this an 'out' or a 'const' intent? What is the difference
+between 'out' vs. 'const' as a return intent, to begin with?
+
+Brad: 'const' plays an important role in the language, to mark
+things that cannot be modified.
+
+Vass: something returned by value is just a value. It is meaningless
+to talk about modifiability of a value. Modifiability is a property
+of a variable, not a value or a type. This applies to primitive types,
+domains and arrays alike.
+Does this argument apply to sync/single/atomic? I don't know.
+
+Brad: so maybe const-ness is visible when aliasing the result
+of a function? E.g.
+
+  proc genConst(): ArrayType const {...}
+  proc genOut(): ArrayType out {...}
+
+  const A => genConst(); //OK
+  var A => genConst(); // error
+  const A => genOut(); // OK
+
+Vass: these are similar to aliasing constants, whereby memory
+is allocated implicitly and initialized with a constant:
+
+  var   A => [1,2,3]; // error
+  const A => [1,2,3]; // OK
+  var   x:int => 1;   // error
+  const x:int => 1;   // OK
+
+Vass: aliasing of constants or const/out functions probably means
+aliasing of implicitly-allocated memory that is initialized with
+that constant. So does that make sense at all, i.e. is that
+any different than a plain var/const?
+
+  var|const A = [1,2,3];
+
+One more example:
+
+  proc boo() {  // naturally, const - e.g. result cannot be passed by ref
+    var x,y: int;
+    return x+y;
+  }
+
+Vass's afterthought: maybe when yielding arrays, the yielded array
+can be modified if it is an 'out' iterator, but not if it is a 'const'
+iterator?
+
+
+* Open question: is A+B an lvalue?
+
+Currently it is not. Perhaps it shouldn't. Especially when A,B are arrays,
+A+B is a forall loop, not an array. So it cannot be returned by reference.
+
+A+B can be returned by value however, using this interpretation:
+  var ret = A+B; // promoted assignment+addition
+  return ret;
+
+Hm, if local variables can be returned by reference, the above interpretation
+still works for returning A+B by reference. But that means inserting
+an array temporary - contrary to the principle.
+
+
+* Open question: should it be allowed to return local variables by reference?
+
+Currently it is allowed for arrays (relying on heap allocation and
+reference counting), but not allowed for integers or domains.
+Cf. local variables, even integers, can be referenced within
+'begin' blocks even after the variable's scope has exited
+(relying on heap allocation). So why one but not the other?
+
+Alternatively, we could disallow such references for 'begin' blocks.
+
+
+* Related: what happens when a record is copied or passed by value
+and there is an array-typed field in a record?
+
+A: Right now the array would be deep-copied (i.e. using "=").
+We accepted that for now. In the future, the user will be able
+to write copy operators to avoid deep copy if desired.
+
+
+---------------------------------
+DETAILS AND BACKGROUND
+
+The discussion started with the question "Should arrays (and certain
+other types) be returned/yielded BY VALUE or BY REFERENCE from a
+non-variable (i.e. no 'var') procedure/iterator?"
+
+Below are background notes. Feedback during the meeting
+is marked with "***".
+
+Options:
+
+
+(1) "By value".
+
+Pro: uniform for all types.
+
+Cons: creates an implicit array temporary, which is against Chapel philosophy.
+
+*** cf. 'in' intent ==> return by value is like that
+cons: not visible; not consistent with blank argument intent
+
+
+(2) "By reference" for arrays; by value for all other types.
+
+Pro: consistent with arrays being special w.r.t. temporaries (see above).
+
+Cons: leaves no way to return/yield arrays by value.
+To return/yield by value, the proc/iter needs to create a copy explicitly
+or use an 'out' formal.
+
+Smaller cons: not uniform across all types. Makes me want to include
+other types for which blank intent means by reference.
+
+*** could provide another keyword to indicate return by value e.g. 'out'
+Greg: "easy to remember" - default for returning an array is the same as
+default for passing it as argument
+
+
+(3) "By reference" for all types for which blank intent means by reference.
+
+Pro: consistent with passing in by blank intent.
+
+Cons: leaves no way to return/yield these types by value.
+To return/yield by value, the proc/iter needs to create a copy explicitly
+or use an 'out' formal.
+
+*** Tom+Greg+Brad: consistency is attractive
+
+*** Q: allow returning local variables by reference?
+A: postpone; keep allowing for now.
+Afterthought: today the only local variables returnable by reference
+are array variables.
+
+*** Greg is comfortable continuing heap allocation and reference counting,
+in order to allow/implement references to local variables after they go
+out of scope. That may happen in 'begin' blocks and when returning references
+to local variables.
+
+*** Brad: there seems to be an inconsistency:
+  A = B;      // performs a copy of the value
+  A = foo();  // returns by reference
+A: it is the assignment that's doing the copy. So there is no inconsistency.
+
+*** Are all argument intents valid for returning?
+
+*** Do we rely on returning arrays by value today?
+Vass: in most cases today we return by reference.
+Arrays are returned by value only when the return type is specified explicitly.
+
+*** Lydia: inconsistency of having to use 'out' will be surprising/annoying.
+Brad: language consistently treats different types differently w.r.t.
+arg passing modes. So this should be OK.
+
+*** Example 1
+
+proc brad() {
+  var A, B = some arrays;
+  return A+B; // promoted +
+// Brad: A+B is not an l-value so can't be returned by reference
+// i.e. cannot capture the result A+B
+// gotta have 'out' intent to allow the compiler to insert an array temp
+}
+
+Assuming brad() has an out intent, would like to have the following
+compilation outcomes.
+
+//case 1  
+brad();  // do not store the result; looks like an optimization
+
+//case 2
+var C = brad();  // promoted C = A+B; looks like an optimization
+
+//case 3
+takesArgByRef(brad());  // gotta have an actual array for the result of brad()
+
+
+*** Example 2 - doable with by-reference return mode?
+
+proc greg(selector:bool) {
+  if selector then
+    return globalA;
+  else {
+    var localA: [D]int = globalA;
+    return localA;
+  }
+}
+
+-----------
+
+What's does it mean to return/yield "by value" vs. "by reference" ?
+
+Consider returning an array A:
+
+  proc test() {
+    ...
+    return A;
+  }
+
+"by value" implies creating a copy of A and returning a reference to that.
+"by reference" means returning a reference to A.
+
+Suppose A is a global variable. Then in this case by value or by reference
+is the same: whatever is returned is (a) copied to B then (b) discarded:
+
+  var B = test();
+
+When creating an alias or passing the result by reference, the difference
+will be observable: C will refer to an unaliased anonymous array if
+"by value" or to the global A array if "by reference":
+
+  var C => test();
+  C[5] = 6;
+  takesArgByRef(test());
+  proc takesArgByRef(C) { C[5] = 6; }
+
+
+When yielding, we have:
+
+  iter test() {
+    ...
+    yield A;
+  }
+
+  for a in test() {
+    ... a[5] = 6; ...
+  }
+
+If "by value", 'a' will reference a unique, unaliased copy of 'A' for each
+execution of 'yield A'. If "by reference", 'a' is always an alias of 'A'.
+
+Note: "by value" implies creating a new array and copying into it from
+the return/yield expression.
+
+
+If Chapel does not provide returning/yielding arrays by value, that can
+be mimicked by the user:
+
+  iter test() {
+    ...
+    var anonA = A;
+    yield anonA;
+  }

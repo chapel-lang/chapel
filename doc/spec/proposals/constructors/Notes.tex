@@ -1,0 +1,107 @@
+\section{Usage Notes}
+
+This appendix contains notes on usage, related to certain design choices.
+
+\subsection{Running Code Prior to Construction}
+
+In some cases, when creating a new object it is desirable to run code prior to
+construction.  No specific provision has been made in the specification for constructors
+to support this.  In particular, the initializer list supports the initialization of each
+field individually (in an arbitrary order), but does not support initializing many of them
+as the result of one function.  How can this case be handled?
+
+In Chapel, this is especially easy, given its support for generic functions and
+overloading.  The solution is to wrap object creation within a factory method.  The one
+restriction that must currently be obeyed is that the result of such a factory method must
+be described by a single type.  If the result type is not generic (i.e. it is a single
+static type) it may still be polymorphic (i.e. the returned object may have one of several
+runtime types).  
+
+For example:
+\begin{chapel}
+class B { }
+class D1 : B { }
+class D2 : B { }
+
+proc D_factory(i:int) : B {
+  select i {
+    when 1 do return new D1();
+    when 2 do return new D2();
+    otherwise compilerError("Bad D_factory argument.");
+  }
+}
+\end{chapel}
+\noindent
+This example is as simple as possible.  But can easily be imagined that \chpl{D_factory}
+accepts multiple arguments and performs nontrivial computations, passing the appropriate
+arguments to the constructor corresponding to each case.  Common code can be placed above
+the select statement, and case-specific code within the statement controlled by each
+\chpl{when}.
+
+The only potential down-side of this approach as compared to providing more general
+semantics within the constructor itself is that --- at least on the surface --- the
+initializers for some fields must be built up outside the constructor and then passed in
+as arguments.  That in turn may appear to necessitate a copy.  
+
+Many of these apparent drawbacks may be dismissed due to the fact that the same copy would
+be required even if the initializer value were generated within the constructor itself.
+The remaining cases may be answered with the eventual inclusion in the compiler
+implementation of copy-avoidance.  Specifically, if the coder avoids giving a name to the
+initializer expression passed to a constructor, the compiler may complete the
+initialization of the corresponding field with nothing more expensive than a pointer-copy
+operation.
+
+\vspace{6pt}
+
+The result type may also be generic.  That observation gives the user considerably more
+flexibility.  It means that the types of the results of specific cases within the factory
+method must have the same name.  Otherwise, they need have little in common.  A wrapper
+type containing a type field can handle the most general case.
+
+\begin{chapel}
+record Q { }
+record R { }
+record S { type T; }
+
+proc S_factory(i:int) : S {
+  select i {
+    when 1 do return new S(T=Q);
+    when 2 do return new S(T=R);
+    otherwise compilerError("Bad S_factory argument.");
+  }
+}
+\end{chapel}
+\noindent
+Here again, the example is as simple as possible.  However, it is easy to imagine
+considerable computation preceding the call to new, and those arguments being fed to the
+constructor for each type being constructed.
+
+\subsection{Escape of Partially-Constructed Objects}
+
+There was some discussion around having a second body in the definition of the constructor
+--- the first body taking the object from a field-initialized state to a
+fully-constructed state, the second containing actions that are permissible on the
+fully-constructed object (e.g. calling methods within the same type).
+
+I believe the discussion lapsed without coming to a conclusion.  However, it may now be
+argued that the person writing a constructor should know the point at which an object of
+that type is fully-initialized.  At the same time, without external knowledge the compiler has no way to determine
+whether the division between the two bodies is correct.  Therefore, there is no need set this point off specially
+in the syntax.  
+
+Carrying this argument further, the author of a constructor should know fully the
+interface and effects of any function he calls during construction (more so than the
+application programmer).  The problem of preventing the early escape of a
+partially-constructed object is pushed back on the author.  The class author himself must
+be the best judge of when it is safe to publish an object of that type.  
+
+One can see that the same problem arises whether a constructor has one body or two.  In
+the latter case, the author must be aware of the danger that calling a certain routine
+poses if he chooses to place a call to it in the second body.  That establishes the
+premise that he knows well enough how to make the calls in the right order so as to
+prevent early escape.  
+
+The availability of a second body may help the author consider the order in which things
+must be done, but it cannot force him to do this correctly.  For that matter, there is
+nothing special about the number 2 in this context.  We may as well support any number of bodies,
+including zero.

@@ -1,0 +1,717 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Initializers &mdash; chpldoc 0.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="chpldoc 0.0.1 documentation" href="../index.html"/>
+        <link rel="next" title="Alternative Initializer Features" href="11.html"/>
+        <link rel="prev" title="Chapel Improvement Proposals" href="1.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chpldoc
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">chpldoc documentation</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="1.html">Chapel Improvement Proposals</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Initializers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#abstract">Abstract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#outline">Outline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rationale">Rationale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">Description</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#compiler-generated-initializers">Compiler Generated Initializers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#initializer-naming">Initializer Naming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#defining-the-initializer-body">Defining the Initializer Body</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#phase-1-of-initialization">Phase 1 of Initialization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#phase-2-of-initialization">Phase 2 of Initialization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#syntax">Syntax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#definition-location">Definition Location</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#referencing-other-initializers">Referencing Other Initializers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#implementation-strategy-misc">Implementation Strategy, Misc.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#noinit">Noinit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#copy-initializers">Copy Initializers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="11.html">Alternative Initializer Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="12.html">Basics of Initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13.html">Record Copying in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="14.html">Chapel stack traces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2.html">Constrained Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3.html">ZeroMQ Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4.html">Constructor Syntax and Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5.html">Implement Object Copying Using a &#8220;Postblit&#8221; Method</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6.html">Tuple Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7.html">Rules for inserting autoCopy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8.html">Error Handling in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9.html">Chapel Package Manager</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">chpldoc</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Initializers</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/10.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="initializers">
+<span id="id1"></span><h1>Initializers<a class="headerlink" href="#initializers" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>Status:</dt>
+<dd>Draft</dd>
+<dt>Authors:</dt>
+<dd>Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov, Kyle Brady</dd>
+</dl>
+<div class="section" id="abstract">
+<h2>Abstract<a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>In this document, we propose new syntax and rules for constructors, both in
+ordinary and more complex cases.</p>
+</div>
+<div class="section" id="outline">
+<h2>Outline<a class="headerlink" href="#outline" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="#rationale">Rationale</a>: The Problems Associated With Constructors</li>
+<li><a class="reference internal" href="#compiler-generated-initializers">Compiler Generated Initializers</a></li>
+<li><a class="reference internal" href="#initializer-naming">Initializer Naming</a></li>
+<li><a class="reference internal" href="#defining-the-initializer-body">Defining the Initializer Body</a><ul>
+<li><a class="reference internal" href="#phase-1-of-initialization">Phase 1 of Initialization</a></li>
+<li><a class="reference internal" href="#phase-2-of-initialization">Phase 2 of Initialization</a></li>
+<li><a class="reference internal" href="#syntax">Syntax</a></li>
+<li><a class="reference internal" href="#definition-location">Definition Location</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#referencing-other-initializers">Referencing Other Initializers</a></li>
+<li><a class="reference internal" href="#implementation-strategy-misc">Implementation Strategy, Misc.</a></li>
+<li><a class="reference internal" href="#noinit">Noinit</a></li>
+<li><a class="reference internal" href="#copy-initializers">Copy Initializers</a></li>
+<li><a class="reference internal" href="#summary">Summary</a></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="rationale">
+<h2>Rationale<a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Variable declaration results in the allocation and (usually the) initialization
+of an instance of a particular type.  Through what was previously known as a
+“constructor”, the type designer could control how the initialization of a class
+or record instance responded to the various arguments it was provided (or lack
+thereof).  In the past, these constructors have not been able to handle all the
+types a designer would like to define and some of the major internal Chapel
+types have had to work around these lacks.  This effort will seek to define a
+stronger and more robust implementation, one that can handle such unusual cases.
+That implementation will be referred to as an “initializer” in the coming
+paragraphs, as this more accurately reflects the work done in these methods –
+allocation will remain handled by the compiler, over which the type designer
+will continue to have no control, and it will be triggered by the initializer
+call.</p>
+</div>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="compiler-generated-initializers">
+<h3>Compiler Generated Initializers<a class="headerlink" href="#compiler-generated-initializers" title="Permalink to this headline">¶</a></h3>
+<p>In keeping with prior practices, the compiler will generate a default all-fields
+initializer if no initializers are defined by the type designer.  This
+all-fields initializer will take into account any initialization code present in
+the field definitions.  The type designer may wish to make use of the all-fields
+initializer even if they have provided another initializer, but the definition
+of semantics for how to request that this initializer still be generated remains
+future work.</p>
+</div>
+<div class="section" id="initializer-naming">
+<h3>Initializer Naming<a class="headerlink" href="#initializer-naming" title="Permalink to this headline">¶</a></h3>
+<p>Describing the new initializer specification in order, we first define a change
+to the naming scheme for these methods.  It has been remarked in the past that
+naming methods which create instances of a type after that type name has a
+greater potential for error than using a unified name for all types – if the
+type was renamed or copied, any written constructor would have to be altered as
+well or the code would break:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Foo</span> <span class="p">{</span>
+  <span class="k">proc</span> <span class="nf">Foo</span><span class="p">()</span> <span class="p">{</span>
+    <span class="o">..</span><span class="p">.</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In the example above if <code class="docutils literal"><span class="pre">Foo</span></code> were renamed to <code class="docutils literal"><span class="pre">Bar</span></code>, so too would the method
+<code class="docutils literal"><span class="pre">Foo()</span></code> need to be renamed or it would no longer be a constructor on that
+type.  Additionally, if the type designer wished to give their type a
+particularly long name, that name would also have to be repeated at the
+constructor definition.  With these concerns in mind, we propose to change the
+name of an initializer method to <code class="docutils literal"><span class="pre">init</span></code> for all types – this name is succinct
+and does not vary, meaning that modifications to the type name will be less
+painful to perform.  Similarly and for consistency, the destructor name will be
+updated to <code class="docutils literal"><span class="pre">deinit</span></code>.</p>
+</div>
+<div class="section" id="defining-the-initializer-body">
+<h3>Defining the Initializer Body<a class="headerlink" href="#defining-the-initializer-body" title="Permalink to this headline">¶</a></h3>
+<p>To create a more robust initializer, a more thorough definition of the body was
+required.  With this work, we have defined two phases for the body of an
+initializer.  We felt this separation was necessary in order to provide an
+initializer for any type without sacrificing certain guarantees about the
+validity of it at any given point.  To wit, we wanted to ensure that the object
+in question could not be accessed as a whole before its fields had been put into
+an initialized state, while still allowing it to be operated on when the fields
+were given a valid (if not final) value.</p>
+<div class="section" id="phase-1-of-initialization">
+<h4>Phase 1 of Initialization<a class="headerlink" href="#phase-1-of-initialization" title="Permalink to this headline">¶</a></h4>
+<p>Phase 1 of the initializer will operate on the instance before all of its fields
+have been given a valid starting value.  Because of the dangers associated with
+operating on uninitialized memory, the operations possible during Phase 1 will
+be limited.  However, the type designer may desire to perform some more
+complicated actions on the instance before returning it to the user – these
+actions will be possible during Phase 2 of the initializer.</p>
+<p>During Phase 1, methods on the <code class="docutils literal"><span class="pre">this</span></code> instance cannot be called.  Fields must
+be initialized in declaration order, but the type designer can omit fields in
+Phase 1 to use the field declaration or (if not present) the type default for
+that field.  Omitted fields will be treated as if the intended initialization
+was inserted in the appropriate statement order.  For instance:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Foo</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">bar</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">baz</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">dip</span><span class="p">:</span> <span class="kt">real</span><span class="p">;</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// More fields, potentially</span>
+
+  <span class="k">proc</span> <span class="nf">init</span><span class="p">(</span><span class="nx">barVal</span><span class="p">,</span> <span class="nx">dipVal</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">bar</span> <span class="o">=</span> <span class="nx">barVal</span><span class="p">;</span>
+    <span class="c1">// Since no explicit initialization is provided for baz,</span>
+    <span class="c1">// it occurs between these two statements.</span>
+    <span class="c1">// It is set to false, the value provided in the field declaration.</span>
+    <span class="nx">dip</span> <span class="o">=</span> <span class="nx">dipVal</span><span class="p">;</span>
+    <span class="o">..</span><span class="p">.</span> <span class="c1">// Remainder of initializer</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Both explicit and implicit initialization of a field can depend on the values of
+earlier fields, but not of later fields:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Foo2</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">bar</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">baz</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">dip</span> <span class="o">=</span> <span class="nx">baz</span> <span class="o">*</span> <span class="mi">3</span><span class="p">;</span> <span class="c1">// In the initializer, if dip is unspecified it will</span>
+  <span class="c1">// use this dependence</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// More fields, potentially</span>
+
+  <span class="k">proc</span> <span class="nf">init</span><span class="p">(</span><span class="nx">barVal</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">bar</span> <span class="o">=</span> <span class="nx">barVal</span><span class="p">;</span>
+    <span class="nx">baz</span> <span class="o">=</span> <span class="nx">divceil</span><span class="p">(</span><span class="nx">bar</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+    <span class="c1">// baz relies on bar, which is acceptable because bar is defined</span>
+    <span class="c1">// dip obtains its value based on its field declaration&#39;s dependence on</span>
+    <span class="c1">// baz, which is defined</span>
+    <span class="o">..</span><span class="p">.</span> <span class="c1">// Remainder of initializer</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal"><span class="pre">const</span></code> and <code class="docutils literal"><span class="pre">ref</span></code> fields may be initialized during this phase.  No parent
+fields may be accessed during this phase, as they have not been given an initial
+value yet – the parent&#8217;s Phase 1 will be entered once the child&#8217;s phase 1 is
+complete (more information on this process will be provided later in this
+document in the section on <a class="reference internal" href="#referencing-other-initializers">Referencing Other Initializers</a>).  Local helper
+variables may be created and used, and functions may be called so long as
+<code class="docutils literal"><span class="pre">this</span></code> is not provided as an argument, but loops and parallel statements are
+not allowed to contain the initialization of fields, as fields cannot be
+initialized multiple times or in an arbitrary order.  Should allowing loops and
+parallel statements which do not violate this condition prove infeasible to
+implement, they will not be allowed at all during this phase for the time being.</p>
+</div>
+<div class="section" id="phase-2-of-initialization">
+<h4>Phase 2 of Initialization<a class="headerlink" href="#phase-2-of-initialization" title="Permalink to this headline">¶</a></h4>
+<p>At the start of Phase 2, every field is expected to contain a valid initial
+value, though the contents of certain fields may be redefined during this phase.
+This applies to fields inherited from a parent.  Thus, modifications to fields
+during Phase 2 are considered assignment, including updates to <code class="docutils literal"><span class="pre">ref</span></code> fields.
+Methods may be called on the <code class="docutils literal"><span class="pre">this</span></code> instance, and the object can be treated as
+a whole.  Parent fields may be accessed during this phase; operations on these
+fields in the parent&#8217;s Phase 2 will have already occurred.  However, <code class="docutils literal"><span class="pre">const</span></code>
+fields may not be redefined.  Note that we may choose to loosen the latter
+decision in the future and allow modification of <code class="docutils literal"><span class="pre">const</span></code> fields during Phase
+2, but it is a less breaking change to go from strict to tolerant than the
+opposite direction.</p>
+</div>
+<div class="section" id="syntax">
+<h4>Syntax<a class="headerlink" href="#syntax" title="Permalink to this headline">¶</a></h4>
+<p>Because Phase 1 and Phase 2 have such divergent rules, it is necessary to
+distinguish when Phase 1 ends and Phase 2 begins, both for clarity to the
+compiler and to the type designer.  The chosen syntax to represent this divide
+hinges on a call to another initializer, whether parent or sibling.  It looks
+like this:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">proc</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// Phase 1 code</span>
+  <span class="nx">super</span><span class="p">.</span><span class="nx">init</span><span class="p">();</span>
+  <span class="c1">// In this case, the call to the parent initializer divides the phases</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// Phase 2 code</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The alternate implementation which came in a close second follows.  It
+designates the phases through separate bodies which are executed in sequence.
+Any calls to parent or sibling initializers must occur as the last statement in
+the Phase 1 body:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">proc</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// Phase 1 code</span>
+  <span class="c1">// Optional call to parent or sibling initializer would occur here</span>
+<span class="p">}</span> <span class="nx">finalize</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// Phase 2 code</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The first syntax has the benefit of maintaining the initializer as a single
+body.  It appears more visually simple to the type designer&#8217;s eyes, though the
+implementation may need to be more complicated to accommodate this benefit
+(which is not necessarily an argument against it).  Local variables can be
+shared from Phase 1 to Phase 2, and <code class="docutils literal"><span class="pre">param</span></code> or compile-time const <code class="docutils literal"><span class="pre">if</span></code>
+statements may be used to wrap across both phases, though loops and parallel
+statements are not allowed to encapsulate both phases.  However, since the call
+to the parent initializer serves as the division between the two phases, it
+would be easy for this statement to get lost amid a larger and more complex
+initializer body.  Additionally, because the phase split is not as extreme as in
+the second syntax, the type designer may be more confused or frustrated when
+code placed after the call is valid but identical code before it is not.</p>
+<p>In contrast, the second syntax denotes more obviously the divide between the two
+phases.  Different rules for the different portions of the initializer would
+likely feel more reasonable to a type designer encountering our new requirements
+for the first time.  This comes at the cost of sharing local variables between
+the two phases.  That functionality can be recovered by calling a sibling
+initializer with the necessary variables as arguments; however, this workaround
+may be impractical or seen as a high cost for the type designer to pay.  The
+<code class="docutils literal"><span class="pre">finalize</span></code> block may be easily dropped, though this does more to support a
+default of Phase 1 rather than Phase 2.</p>
+<p>From an implementation standpoint, these syntaxes do not differ wildly – indeed,
+it is likely that after a certain point in the compiler, they would be handled
+identically, perhaps by inserting a pair of block statements similar to that
+visible in syntax 2, so that the rules for Phase 1 may be applied to the first
+block while the rules for Phase 2 may be applied to the second, without a
+constant check to the location of the <code class="docutils literal"><span class="pre">.init()</span></code> call which is the linchpin for
+syntax 1.</p>
+</div>
+<div class="section" id="definition-location">
+<h4>Definition Location<a class="headerlink" href="#definition-location" title="Permalink to this headline">¶</a></h4>
+<p>An initializer for a type may be defined within its original confines:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">record</span> <span class="nc">Bar</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// Some fields</span>
+  <span class="k">proc</span> <span class="nf">init</span><span class="p">(</span><span class="o">..</span><span class="p">.)</span> <span class="p">{</span> <span class="o">..</span><span class="p">.</span> <span class="p">}</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// Some methods</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>At the same scope as the type definition:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">record</span> <span class="nc">Bar</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// Some fields and methods</span>
+<span class="p">}</span>
+<span class="k">proc</span> <span class="nf">Bar</span><span class="p">.</span><span class="nx">init</span><span class="p">(</span><span class="o">..</span><span class="p">.)</span> <span class="p">{</span> <span class="o">..</span><span class="p">.</span> <span class="p">}</span>
+</pre></div>
+</div>
+<p>Or even in a separate module from where the type was defined, so long as the
+type itself is accessible from that scope.  While the latter could allow
+extensions to the type that the type designer did not intend, the type designer
+may still maintain control over which fields may be manipulated in this way.
+This can be done either by setting fields as private (when private fields and
+methods are supported) so that the knowledge of these fields&#8217; existence is
+hidden, or by defining a parenthesesless method instead of a field by the same
+name so that the value may be relied upon in all circumstances.</p>
+</div>
+</div>
+<div class="section" id="referencing-other-initializers">
+<h3>Referencing Other Initializers<a class="headerlink" href="#referencing-other-initializers" title="Permalink to this headline">¶</a></h3>
+<p>For either initializer syntax, the strategy to call parent and sibling
+initializers remains the same.  Both also require that such calls only occur at
+the end of Phase 1 for the current initializer.  The syntax of choice explicitly
+enforces this rule by separating the two phases based on these calls, while the
+alternate syntax would require a check to ensure correct usage.</p>
+<p>The syntax to call a parent initializer is <code class="docutils literal"><span class="pre">super.init(&lt;args&gt;);</span></code>.  All the
+child&#8217;s fields must be initialized at this point, so when the parent finishes
+its Phase 1 and begins its Phase 2, the object may be treated as a whole.  Once
+the parent has finished its Phase 2, control flow returns to the child&#8217;s
+initializer and enters the child&#8217;s Phase 2.  If the type has no parent, an
+argument-less <code class="docutils literal"><span class="pre">super.init();</span></code> call will be valid (signifying that control is
+entering Phase 2) but is otherwise a no-op.  (Note that this extra call is
+unnecessary in the second syntax proposal.)</p>
+<p>For instance, if a parent and child class were defined as:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Parent</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// Some fields</span>
+
+  <span class="k">proc</span> <span class="nf">init</span><span class="p">(</span><span class="o">..</span><span class="p">.)</span> <span class="p">{</span>
+    <span class="nx">writeln</span><span class="p">(</span><span class="s">&quot;Parent Phase 1&quot;</span><span class="p">);</span>
+    <span class="nx">super</span><span class="p">.</span><span class="nx">init</span><span class="p">();</span> <span class="c1">// no-op, no parent</span>
+    <span class="nx">writeln</span><span class="p">(</span><span class="s">&quot;Parent Phase 2&quot;</span><span class="p">);</span>
+    <span class="c1">// Since child fields are initialized, whole object use is allowed</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">Child</span><span class="p">:</span> <span class="nx">Parent</span> <span class="p">{</span>
+  <span class="o">..</span><span class="p">.</span> <span class="c1">// Some fields</span>
+
+  <span class="k">proc</span> <span class="nf">init</span><span class="p">(</span><span class="o">..</span><span class="p">.)</span> <span class="p">{</span>
+    <span class="nx">writeln</span><span class="p">(</span><span class="s">&quot;Child Phase 1&quot;</span><span class="p">);</span>
+    <span class="c1">//  Can’t access parent fields yet</span>
+    <span class="nx">super</span><span class="p">.</span><span class="nx">init</span><span class="p">();</span>
+    <span class="nx">writeln</span><span class="p">(</span><span class="s">&quot;Child Phase 2&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Creating an instance of Child will cause the following output during
+initialization:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>Child Phase 1
+Parent Phase 1
+&lt;any parent of Parent output would go in here&gt;
+Parent Phase 2
+Child Phase 2
+</pre></div>
+</div>
+<p>The syntax to call a sibling initializer is <code class="docutils literal"><span class="pre">this.init(&lt;args&gt;);</span></code>.  Similarly
+to in the parent-referential case, the return from that call will indicate that
+the calling initializer has begun Phase 2. In contrast to the parent case,
+however, a call to a sibling initializer may not be made if the current
+initializer has defined any fields.  The rationale for this decision is that a
+valid sibling initializer will initialize all of its fields, and so any
+initialization prior to that call will lead to the occurrence of an unexpected
+double initialization.</p>
+<p>An initializer may only contain one <code class="docutils literal"><span class="pre">this.init(&lt;args&gt;)</span></code> or
+<code class="docutils literal"><span class="pre">super.init(&lt;args&gt;)</span></code> call in a single path through the body – it may not
+contain both, or multiple of either one.  Additionally, only <code class="docutils literal"><span class="pre">param</span></code>
+conditionals may surround one of these calls.</p>
+<p>If no <code class="docutils literal"><span class="pre">this.init(&lt;args&gt;)</span></code> or <code class="docutils literal"><span class="pre">super.init(&lt;args&gt;)</span></code> call is present, the
+compiler will insert an argument-less <code class="docutils literal"><span class="pre">super.init()</span></code> call at the beginning of
+the initializer body:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="k">proc</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// Since there is no call to super.init(&lt;args&gt;) or this.init(&lt;args&gt;),</span>
+  <span class="c1">// this initializer starts with an implicit super.init() call</span>
+  <span class="nx">field1</span> <span class="o">=</span> <span class="mi">17</span><span class="p">;</span> <span class="c1">// This is then assignment.  If field1 were `const`, this</span>
+  <span class="c1">// line would throw an error</span>
+  <span class="nx">this</span><span class="p">.</span><span class="nx">someOtherMethod</span><span class="p">();</span> <span class="c1">// This call is valid, because we are in Phase 2</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>For backwards compatibility purposes, unless the divide between Phase 1 and 2 is
+explicitly stated, the compiler assumes the body of an initializer to be in
+Phase 2.  For optimization purposes, ideally bodies which are compliant with the
+conditions of Phase 1 would be considered Phase 1 only – implementing this is
+future work.</p>
+</div>
+<div class="section" id="implementation-strategy-misc">
+<h3>Implementation Strategy, Misc.<a class="headerlink" href="#implementation-strategy-misc" title="Permalink to this headline">¶</a></h3>
+<p>It is our intention to make the transition to the new syntax and rules both
+visible and straight-forward.  Ideally, the first release with the new
+initializer implementation will still allow the previous constructors to
+function (albeit with a warning that support of them is in the process of
+deprecation and a reference to the specification for the new initializer
+syntax), though attempting to define both a constructor and an initializer with
+the same set of arguments for a type will produce an error (instead of silently
+ignoring the constructor body).</p>
+</div>
+<div class="section" id="noinit">
+<h3>Noinit<a class="headerlink" href="#noinit" title="Permalink to this headline">¶</a></h3>
+<p>It may happen that for the purposes of optimization, a user would like to
+receive a constructed instance of a type that is not fully initialized.  For
+example, the user could know that the initial value for the instance will not be
+used before it is overwritten by some other value.  This instance could then
+gain an initial value at a later time, instead of paying the cost of default
+initialization and then updating through assignment.  This would be done through
+an application of the keyword <code class="docutils literal"><span class="pre">noinit</span></code>.  To provide a specific case, if the
+user wished to create an array and then give it a complex set of contents
+(perhaps by passing it to a function which would provide the proper value for
+each element, e.g.), the user could indicate this with the syntax <code class="docutils literal"><span class="pre">var</span>
+<span class="pre">arrayName:</span> <span class="pre">[domain]</span> <span class="pre">real</span> <span class="pre">=</span> <span class="pre">noinit;</span></code>.  Note that it is considered an error to
+access the contents of an instance that has been created with <code class="docutils literal"><span class="pre">noinit</span></code> until
+an initial value for its entire contents has been provided.  This is the
+responsibility of the user.  Instances that cannot be changed after
+initialization, such as <code class="docutils literal"><span class="pre">const</span></code> s or <code class="docutils literal"><span class="pre">param</span></code> s, cannot have <code class="docutils literal"><span class="pre">noinit</span></code>
+applied to them.</p>
+<p>In the above example, it should be noted that the user would need to fully
+specify the type of the instance to which they wish to apply <code class="docutils literal"><span class="pre">noinit</span></code>, or the
+compiler will not be able to perform the space allocation necessary for
+construction.  Relatedly, an array that has been created via the <code class="docutils literal"><span class="pre">noinit</span></code>
+keyword requires certain type knowledge to be present in order to accurately
+create the space – the domain of the array and the type it will store are
+essential.  There are other Chapel types with special requirements for
+<code class="docutils literal"><span class="pre">noinit</span></code> to be valid, such as types which have removed the setter method for a
+particular field (and as such cannot update this field after initialization), or
+types whose assignment operators assume that a particular field will always
+contain initialized memory.  Because some of these types are complex and large
+enough that the application of <code class="docutils literal"><span class="pre">noinit</span></code> would be a useful optimization, it is
+desirable to provide a mechanism for the type designer to specify how their
+type should respond to the <code class="docutils literal"><span class="pre">noinit</span></code> keyword (if at all) rather than have the
+language make the decision and declare that such types cannot support the
+keyword.</p>
+<p>To that end, for arbitrary classes or records the type designer will be able to
+specify what <code class="docutils literal"><span class="pre">noinit</span></code> means for their type via the initializers they define,
+as an argument to the initializer that can be referenced throughout the body.
+The compiler-generated all-fields initializer will support <code class="docutils literal"><span class="pre">noinit</span></code> by
+applying it to all fields when the <code class="docutils literal"><span class="pre">noinit</span></code> argument is set to <code class="docutils literal"><span class="pre">true</span></code>.
+Should the type designer provide an initializer, this will prevent the
+all-fields <code class="docutils literal"><span class="pre">noinit</span></code> application case, as part of preventing the use of the
+all-fields initializer.  This means that in order for a type with one or more
+defined initializer to support <code class="docutils literal"><span class="pre">noinit</span></code>, the argument must be explicitly
+present in one of the initializers.</p>
+<p>In the type designer&#8217;s initializer, <code class="docutils literal"><span class="pre">noinit</span></code> can only be applied to a field
+during Phase 1.  This is because at the time of Phase 2, the field will have
+been given an initial value and <code class="docutils literal"><span class="pre">noinit</span></code> cannot be applied as assignment.  The
+recommended strategy is to only apply <code class="docutils literal"><span class="pre">noinit</span></code> within the initializer body
+when the <code class="docutils literal"><span class="pre">noinit</span></code> argument is set to <code class="docutils literal"><span class="pre">true</span></code>, but the type designer may
+choose to ignore this rule – for instance, so that an array field may be filled
+in parallel during Phase 2.  However, in doing so they must be careful, as with
+any use of <code class="docutils literal"><span class="pre">noinit</span></code>, to be certain that uninitialized memory is not read.</p>
+<p>Note that the name of the <code class="docutils literal"><span class="pre">noinit</span></code> argument to the initializer is not set in
+stone – should it prove difficult to implement <code class="docutils literal"><span class="pre">noinit</span></code> as both a keyword and
+an argument that can be referenced, adjustments will need to be made.  This
+could be done by only treating <code class="docutils literal"><span class="pre">noinit</span></code> as a keyword (but not defining it as
+such in the parser, as it currently is) when used to initialize a field or
+instance, or by giving the argument a different name (but still keeping their
+relationship strongly linked).</p>
+</div>
+<div class="section" id="copy-initializers">
+<h3>Copy Initializers<a class="headerlink" href="#copy-initializers" title="Permalink to this headline">¶</a></h3>
+<p>The type designer may find themselves also looking to control the behavior of
+their type when copies of it must be made, such as when the type is passed to a
+function or task by the <code class="docutils literal"><span class="pre">in</span></code> intent, or copied across locale boundaries.  An
+example of when such control would be desired is if the type designer wanted to
+implement reference counting for their type.  For these situations, the type
+designer may define a copy initializer, to handle the final state of the type&#8217;s
+fields once a shallow bit copy has been made.</p>
+<p>Note that the cases handled by a copy initializer are not the same as user
+specified calls of the form:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="kd">var</span> <span class="nx">x</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">R</span><span class="p">(</span><span class="nx">y</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Such statements would be handled by an initializer with a single argument of the
+same type as the object being created, if the type designer intends for such
+actions to occur.</p>
+<p>Copy initializers will be quite different from normal initializers.  In the
+first place, the object in question is expected to be “initialized” once the
+body is entered – the shallow bit copy will have provided all fields with an
+initial value, and the copy initializer is intended to mend or improve upon what
+has been done.  Thus, a division into phases similar to those in normal
+initializers is unnecessary in the copy initializer body.  The body will behave
+in a similar manner to Phase 2 of the normal initializers, with the ability to
+modify a field in any order and to call methods on the instance as a whole.
+However, since the type designer would otherwise be unable to directly control
+the value of a <code class="docutils literal"><span class="pre">const</span></code> field, <code class="docutils literal"><span class="pre">const</span></code> fields can be modified in the body of
+a copy initializer.  Due to concerns about providing a field value to a method
+which could change unexpectedly in the middle of the method&#8217;s operations,
+ideally <code class="docutils literal"><span class="pre">const</span></code> fields would only be modifiable before the first method call
+on the instance during the copy initializer body – this may prove infeasible,
+though.  If doable, this permissive behavior could be extended to Phase 2 of the
+normal initializer body.</p>
+<p>The method header for a copy initializer will not allow as much variation as a
+normal initializer – the compiler will be the only client directly making calls
+to the method and will thus expect a single style of header.  This trivially
+means that a type cannot define multiple copy initializers, as doing so would
+result in ambiguity.</p>
+<p>Due to the unfinished status of record method inheritance, no support for calls
+to a parent copy initializer will be provided; any necessary operations on a
+parent field must be done in the body of the child copy initializer.  When
+record method inheritance is finalized, this policy may change.</p>
+<p>Final details for the syntax of this particular style of initializer have not
+been fully ironed out, stay tuned!</p>
+</div>
+<div class="section" id="summary">
+<h3>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h3>
+<p>Initializers will be used to dictate the starting value of records and classes.
+If the type designer does not provide an initializer, the compiler will generate
+one for the type based on its field declarations.  The operations possible in an
+initializer body will be divided into two phases – the first will be more
+strict, requiring ordering of field initialization and rejecting attempts to
+utilize the object as a whole; the second will be more permissive in general but
+will not allow the redefinition of <code class="docutils literal"><span class="pre">const</span></code> fields.  The syntax for the
+initializer will consist of a single body, with a call to another initializer
+serving as the divide between phases – if no call to another initializer is
+provided, the body is assumed to be operating in the second phase.  Calls to
+other initializers must occur at the end of the first phase only, and a parent
+initializer will fully complete before returning control to the child which
+called it.  For optimization purposes, some types will support <code class="docutils literal"><span class="pre">noinit</span></code> in
+order to skip initialization when their starting value would only be
+overwritten.  The type designer may prevent this on their type by defining an
+initializer, or may exert explicit control by utilizing an additional argument
+to the initializer.  The type designer may also utilize <code class="docutils literal"><span class="pre">noinit</span></code> on individual
+fields during the first phase of the initializer body.  If there are operations
+which must occur on a copy made by the compiler before it is operated on by
+other code, such as via an <code class="docutils literal"><span class="pre">in</span></code> intent, the type designer may supply a copy
+initializer which will be executed on the freshly made copy.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="11.html" class="btn btn-neutral float-right" title="Alternative Initializer Features" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="1.html" class="btn btn-neutral" title="Chapel Improvement Proposals" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, .
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+
+
+
+</body>
+</html>

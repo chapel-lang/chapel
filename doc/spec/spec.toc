@@ -1,0 +1,451 @@
+\contentsline {chapter}{\numberline {1}Scope}{13}{chapter.1}
+\contentsline {chapter}{\numberline {2}Notation}{14}{chapter.2}
+\contentsline {chapter}{\numberline {3}Organization}{16}{chapter.3}
+\contentsline {chapter}{\numberline {4}Acknowledgments}{18}{chapter.4}
+\contentsline {chapter}{\numberline {5}Language Overview}{19}{chapter.5}
+\contentsline {section}{\numberline {5.1}Guiding Principles}{19}{section.5.1}
+\contentsline {subsection}{\numberline {5.1.1}General Parallel Programming}{19}{subsection.5.1.1}
+\contentsline {subsection}{\numberline {5.1.2}Locality-Aware Programming}{20}{subsection.5.1.2}
+\contentsline {subsection}{\numberline {5.1.3}Object-Oriented Programming}{20}{subsection.5.1.3}
+\contentsline {subsection}{\numberline {5.1.4}Generic Programming}{21}{subsection.5.1.4}
+\contentsline {section}{\numberline {5.2}Getting Started}{21}{section.5.2}
+\contentsline {chapter}{\numberline {6}Lexical Structure}{22}{chapter.6}
+\contentsline {section}{\numberline {6.1}Comments}{22}{section.6.1}
+\contentsline {section}{\numberline {6.2}White Space}{22}{section.6.2}
+\contentsline {section}{\numberline {6.3}Case Sensitivity}{22}{section.6.3}
+\contentsline {section}{\numberline {6.4}Tokens}{22}{section.6.4}
+\contentsline {subsection}{\numberline {6.4.1}Identifiers}{23}{subsection.6.4.1}
+\contentsline {subsection}{\numberline {6.4.2}Keywords}{23}{subsection.6.4.2}
+\contentsline {subsection}{\numberline {6.4.3}Literals}{24}{subsection.6.4.3}
+\contentsline {subsection}{\numberline {6.4.4}Operators and Punctuation}{26}{subsection.6.4.4}
+\contentsline {subsection}{\numberline {6.4.5}Grouping Tokens}{26}{subsection.6.4.5}
+\contentsline {chapter}{\numberline {7}Types}{28}{chapter.7}
+\contentsline {section}{\numberline {7.1}Primitive Types}{28}{section.7.1}
+\contentsline {subsection}{\numberline {7.1.1}The Void Type}{29}{subsection.7.1.1}
+\contentsline {subsection}{\numberline {7.1.2}The Bool Type}{29}{subsection.7.1.2}
+\contentsline {subsection}{\numberline {7.1.3}Signed and Unsigned Integral Types}{29}{subsection.7.1.3}
+\contentsline {subsection}{\numberline {7.1.4}Real Types}{30}{subsection.7.1.4}
+\contentsline {subsection}{\numberline {7.1.5}Imaginary Types}{30}{subsection.7.1.5}
+\contentsline {subsection}{\numberline {7.1.6}Complex Types}{30}{subsection.7.1.6}
+\contentsline {subsection}{\numberline {7.1.7}The String Type}{30}{subsection.7.1.7}
+\contentsline {section}{\numberline {7.2}Enumerated Types}{31}{section.7.2}
+\contentsline {section}{\numberline {7.3}Structured Types}{32}{section.7.3}
+\contentsline {subsection}{\numberline {7.3.1}Class Types}{32}{subsection.7.3.1}
+\contentsline {subsection}{\numberline {7.3.2}Record Types}{32}{subsection.7.3.2}
+\contentsline {subsection}{\numberline {7.3.3}Union Types}{32}{subsection.7.3.3}
+\contentsline {subsection}{\numberline {7.3.4}Tuple Types}{32}{subsection.7.3.4}
+\contentsline {section}{\numberline {7.4}Data Parallel Types}{33}{section.7.4}
+\contentsline {subsection}{\numberline {7.4.1}Range Types}{33}{subsection.7.4.1}
+\contentsline {subsection}{\numberline {7.4.2}Domain, Array, and Index Types}{33}{subsection.7.4.2}
+\contentsline {section}{\numberline {7.5}Synchronization Types}{33}{section.7.5}
+\contentsline {section}{\numberline {7.6}Type Aliases}{34}{section.7.6}
+\contentsline {chapter}{\numberline {8}Variables}{35}{chapter.8}
+\contentsline {section}{\numberline {8.1}Variable Declarations}{35}{section.8.1}
+\contentsline {subsection}{\numberline {8.1.1}Default Initialization}{36}{subsection.8.1.1}
+\contentsline {subsection}{\numberline {8.1.2}Deferred Initialization}{37}{subsection.8.1.2}
+\contentsline {subsection}{\numberline {8.1.3}Local Type Inference}{37}{subsection.8.1.3}
+\contentsline {subsection}{\numberline {8.1.4}Multiple Variable Declarations}{38}{subsection.8.1.4}
+\contentsline {section}{\numberline {8.2}Module Level Variables}{39}{section.8.2}
+\contentsline {section}{\numberline {8.3}Local Variables}{39}{section.8.3}
+\contentsline {section}{\numberline {8.4}Constants}{39}{section.8.4}
+\contentsline {subsection}{\numberline {8.4.1}Compile-Time Constants}{39}{subsection.8.4.1}
+\contentsline {subsection}{\numberline {8.4.2}Runtime Constants}{40}{subsection.8.4.2}
+\contentsline {section}{\numberline {8.5}Configuration Variables}{40}{section.8.5}
+\contentsline {section}{\numberline {8.6}Ref Variables}{40}{section.8.6}
+\contentsline {chapter}{\numberline {9}Conversions}{42}{chapter.9}
+\contentsline {section}{\numberline {9.1}Implicit Conversions}{42}{section.9.1}
+\contentsline {subsection}{\numberline {9.1.1}Implicit Numeric, Bool and Enumeration Conversions}{43}{subsection.9.1.1}
+\contentsline {subsection}{\numberline {9.1.2}Implicit Compile-Time Constant Conversions}{44}{subsection.9.1.2}
+\contentsline {subsection}{\numberline {9.1.3}Implicit Statement Bool Conversions}{44}{subsection.9.1.3}
+\contentsline {section}{\numberline {9.2}Explicit Conversions}{44}{section.9.2}
+\contentsline {subsection}{\numberline {9.2.1}Explicit Numeric Conversions}{44}{subsection.9.2.1}
+\contentsline {subsection}{\numberline {9.2.2}Explicit Tuple to Complex Conversion}{45}{subsection.9.2.2}
+\contentsline {subsection}{\numberline {9.2.3}Explicit Enumeration Conversions}{45}{subsection.9.2.3}
+\contentsline {subsection}{\numberline {9.2.4}Explicit Class Conversions}{46}{subsection.9.2.4}
+\contentsline {subsection}{\numberline {9.2.5}Explicit Record Conversions}{46}{subsection.9.2.5}
+\contentsline {subsection}{\numberline {9.2.6}Explicit Range Conversions}{46}{subsection.9.2.6}
+\contentsline {subsection}{\numberline {9.2.7}Explicit Domain Conversions}{46}{subsection.9.2.7}
+\contentsline {subsection}{\numberline {9.2.8}Explicit Type to String Conversions}{47}{subsection.9.2.8}
+\contentsline {chapter}{\numberline {10}Expressions}{48}{chapter.10}
+\contentsline {section}{\numberline {10.1}Literal Expressions}{49}{section.10.1}
+\contentsline {section}{\numberline {10.2}Variable Expressions}{49}{section.10.2}
+\contentsline {section}{\numberline {10.3}Enumeration Constant Expression}{49}{section.10.3}
+\contentsline {section}{\numberline {10.4}Parenthesized Expressions}{49}{section.10.4}
+\contentsline {section}{\numberline {10.5}Call Expressions}{50}{section.10.5}
+\contentsline {section}{\numberline {10.6}Indexing Expressions}{50}{section.10.6}
+\contentsline {section}{\numberline {10.7}Member Access Expressions}{50}{section.10.7}
+\contentsline {section}{\numberline {10.8}The Query Expression}{50}{section.10.8}
+\contentsline {section}{\numberline {10.9}Casts}{51}{section.10.9}
+\contentsline {section}{\numberline {10.10}LValue Expressions}{51}{section.10.10}
+\contentsline {section}{\numberline {10.11}Precedence and Associativity}{52}{section.10.11}
+\contentsline {section}{\numberline {10.12}Operator Expressions}{54}{section.10.12}
+\contentsline {section}{\numberline {10.13}Arithmetic Operators}{54}{section.10.13}
+\contentsline {subsection}{\numberline {10.13.1}Unary Plus Operators}{54}{subsection.10.13.1}
+\contentsline {subsection}{\numberline {10.13.2}Unary Minus Operators}{55}{subsection.10.13.2}
+\contentsline {subsection}{\numberline {10.13.3}Addition Operators}{55}{subsection.10.13.3}
+\contentsline {subsection}{\numberline {10.13.4}Subtraction Operators}{56}{subsection.10.13.4}
+\contentsline {subsection}{\numberline {10.13.5}Multiplication Operators}{57}{subsection.10.13.5}
+\contentsline {subsection}{\numberline {10.13.6}Division Operators}{58}{subsection.10.13.6}
+\contentsline {subsection}{\numberline {10.13.7}Modulus Operators}{59}{subsection.10.13.7}
+\contentsline {subsection}{\numberline {10.13.8}Exponentiation Operators}{59}{subsection.10.13.8}
+\contentsline {section}{\numberline {10.14}Bitwise Operators}{60}{section.10.14}
+\contentsline {subsection}{\numberline {10.14.1}Bitwise Complement Operators}{60}{subsection.10.14.1}
+\contentsline {subsection}{\numberline {10.14.2}Bitwise And Operators}{60}{subsection.10.14.2}
+\contentsline {subsection}{\numberline {10.14.3}Bitwise Or Operators}{61}{subsection.10.14.3}
+\contentsline {subsection}{\numberline {10.14.4}Bitwise Xor Operators}{61}{subsection.10.14.4}
+\contentsline {section}{\numberline {10.15}Shift Operators}{61}{section.10.15}
+\contentsline {section}{\numberline {10.16}Logical Operators}{62}{section.10.16}
+\contentsline {subsection}{\numberline {10.16.1}The Logical Negation Operator}{62}{subsection.10.16.1}
+\contentsline {subsection}{\numberline {10.16.2}The Logical And Operator}{63}{subsection.10.16.2}
+\contentsline {subsection}{\numberline {10.16.3}The Logical Or Operator}{63}{subsection.10.16.3}
+\contentsline {section}{\numberline {10.17}Relational Operators}{63}{section.10.17}
+\contentsline {subsection}{\numberline {10.17.1}Ordered Comparison Operators}{64}{subsection.10.17.1}
+\contentsline {subsection}{\numberline {10.17.2}Equality Comparison Operators}{65}{subsection.10.17.2}
+\contentsline {section}{\numberline {10.18}Miscellaneous Operators}{67}{section.10.18}
+\contentsline {subsection}{\numberline {10.18.1}The String Concatenation Operator}{67}{subsection.10.18.1}
+\contentsline {subsection}{\numberline {10.18.2}The By Operator}{67}{subsection.10.18.2}
+\contentsline {subsection}{\numberline {10.18.3}The Align Operator}{67}{subsection.10.18.3}
+\contentsline {subsection}{\numberline {10.18.4}The Range Count Operator}{67}{subsection.10.18.4}
+\contentsline {section}{\numberline {10.19}Let Expressions}{67}{section.10.19}
+\contentsline {section}{\numberline {10.20}Conditional Expressions}{68}{section.10.20}
+\contentsline {section}{\numberline {10.21}For Expressions}{68}{section.10.21}
+\contentsline {subsection}{\numberline {10.21.1}Filtering Predicates in For Expressions}{69}{subsection.10.21.1}
+\contentsline {chapter}{\numberline {11}Statements}{70}{chapter.11}
+\contentsline {section}{\numberline {11.1}Blocks}{71}{section.11.1}
+\contentsline {section}{\numberline {11.2}Expression Statements}{71}{section.11.2}
+\contentsline {section}{\numberline {11.3}Assignment Statements}{72}{section.11.3}
+\contentsline {section}{\numberline {11.4}The Swap Statement}{73}{section.11.4}
+\contentsline {section}{\numberline {11.5}The I/O Statement}{73}{section.11.5}
+\contentsline {section}{\numberline {11.6}The Conditional Statement}{74}{section.11.6}
+\contentsline {section}{\numberline {11.7}The Select Statement}{74}{section.11.7}
+\contentsline {section}{\numberline {11.8}The While Do and Do While Loops}{75}{section.11.8}
+\contentsline {section}{\numberline {11.9}The For Loop}{77}{section.11.9}
+\contentsline {subsection}{\numberline {11.9.1}Zipper Iteration}{77}{subsection.11.9.1}
+\contentsline {subsection}{\numberline {11.9.2}Parameter For Loops}{78}{subsection.11.9.2}
+\contentsline {section}{\numberline {11.10}The Break, Continue and Label Statements}{78}{section.11.10}
+\contentsline {section}{\numberline {11.11}The Use Statement}{79}{section.11.11}
+\contentsline {section}{\numberline {11.12}The Empty Statement}{81}{section.11.12}
+\contentsline {chapter}{\numberline {12}Modules}{82}{chapter.12}
+\contentsline {section}{\numberline {12.1}Module Definitions}{82}{section.12.1}
+\contentsline {section}{\numberline {12.2}Files and Implicit Modules}{82}{section.12.2}
+\contentsline {section}{\numberline {12.3}Nested Modules}{83}{section.12.3}
+\contentsline {section}{\numberline {12.4}Access of Module Contents}{84}{section.12.4}
+\contentsline {subsection}{\numberline {12.4.1}Visibility Of A Module}{84}{subsection.12.4.1}
+\contentsline {subsection}{\numberline {12.4.2}Visibility Of A Module's Symbols}{84}{subsection.12.4.2}
+\contentsline {subsection}{\numberline {12.4.3}Explicit Naming}{84}{subsection.12.4.3}
+\contentsline {subsection}{\numberline {12.4.4}Using Modules}{85}{subsection.12.4.4}
+\contentsline {subsection}{\numberline {12.4.5}Module Initialization}{86}{subsection.12.4.5}
+\contentsline {section}{\numberline {12.5}Program Execution}{86}{section.12.5}
+\contentsline {subsection}{\numberline {12.5.1}The {\em main} Function}{86}{subsection.12.5.1}
+\contentsline {subsection}{\numberline {12.5.2}Module Initialization Order}{87}{subsection.12.5.2}
+\contentsline {chapter}{\numberline {13}Procedures}{89}{chapter.13}
+\contentsline {section}{\numberline {13.1}Function Calls}{89}{section.13.1}
+\contentsline {section}{\numberline {13.2}Procedure Definitions}{90}{section.13.2}
+\contentsline {section}{\numberline {13.3}Functions without Parentheses}{92}{section.13.3}
+\contentsline {section}{\numberline {13.4}Formal Arguments}{92}{section.13.4}
+\contentsline {subsection}{\numberline {13.4.1}Named Arguments}{93}{subsection.13.4.1}
+\contentsline {subsection}{\numberline {13.4.2}Default Values}{93}{subsection.13.4.2}
+\contentsline {section}{\numberline {13.5}Argument Intents}{94}{section.13.5}
+\contentsline {subsection}{\numberline {13.5.1}Concrete Intents}{94}{subsection.13.5.1}
+\contentsline {subsubsection}{The In Intent}{94}{section*.2}
+\contentsline {subsubsection}{The Out Intent}{94}{section*.3}
+\contentsline {subsubsection}{The Inout Intent}{94}{section*.4}
+\contentsline {subsubsection}{The Ref Intent}{94}{section*.5}
+\contentsline {subsubsection}{The Const In Intent}{95}{section*.6}
+\contentsline {subsubsection}{The Const Ref Intent}{95}{section*.7}
+\contentsline {subsubsection}{Summary of Concrete Intents}{95}{section*.8}
+\contentsline {subsection}{\numberline {13.5.2}Abstract Intents}{95}{subsection.13.5.2}
+\contentsline {subsubsection}{The Const Intent}{95}{section*.9}
+\contentsline {subsubsection}{The Default Intent}{96}{section*.10}
+\contentsline {section}{\numberline {13.6}Variable Number of Arguments}{97}{section.13.6}
+\contentsline {section}{\numberline {13.7}Return Intents}{97}{section.13.7}
+\contentsline {subsection}{\numberline {13.7.1}The Ref Return Intent}{98}{subsection.13.7.1}
+\contentsline {subsection}{\numberline {13.7.2}The Const Ref Return Intent}{98}{subsection.13.7.2}
+\contentsline {subsection}{\numberline {13.7.3}Choosing a Ref Return Intent Function Based on Calling Context}{98}{subsection.13.7.3}
+\contentsline {subsection}{\numberline {13.7.4}The Param Return Intent}{99}{subsection.13.7.4}
+\contentsline {subsection}{\numberline {13.7.5}The Type Return Intent}{100}{subsection.13.7.5}
+\contentsline {section}{\numberline {13.8}The Return Statement}{100}{section.13.8}
+\contentsline {section}{\numberline {13.9}Return Types}{100}{section.13.9}
+\contentsline {subsection}{\numberline {13.9.1}Explicit Return Types}{101}{subsection.13.9.1}
+\contentsline {subsection}{\numberline {13.9.2}Implicit Return Types}{101}{subsection.13.9.2}
+\contentsline {section}{\numberline {13.10}Nested Functions}{101}{section.13.10}
+\contentsline {section}{\numberline {13.11}Function and Operator Overloading}{101}{section.13.11}
+\contentsline {section}{\numberline {13.12}Function Resolution}{102}{section.13.12}
+\contentsline {subsection}{\numberline {13.12.1}Determining Visible Functions}{102}{subsection.13.12.1}
+\contentsline {subsection}{\numberline {13.12.2}Determining Candidate Functions}{102}{subsection.13.12.2}
+\contentsline {subsubsection}{Valid Mapping}{102}{section*.11}
+\contentsline {subsubsection}{Legal Argument Mapping}{103}{section*.12}
+\contentsline {subsection}{\numberline {13.12.3}Determining More Specific Functions}{103}{subsection.13.12.3}
+\contentsline {chapter}{\numberline {14}Tuples}{105}{chapter.14}
+\contentsline {section}{\numberline {14.1}Tuple Types}{105}{section.14.1}
+\contentsline {section}{\numberline {14.2}Tuple Values}{106}{section.14.2}
+\contentsline {section}{\numberline {14.3}Tuple Indexing}{107}{section.14.3}
+\contentsline {section}{\numberline {14.4}Iteration over Tuples}{107}{section.14.4}
+\contentsline {section}{\numberline {14.5}Tuple Assignment}{107}{section.14.5}
+\contentsline {section}{\numberline {14.6}Tuple Destructuring}{108}{section.14.6}
+\contentsline {subsection}{\numberline {14.6.1}Splitting a Tuple with Assignment}{108}{subsection.14.6.1}
+\contentsline {subsection}{\numberline {14.6.2}Splitting a Tuple in a Declaration}{109}{subsection.14.6.2}
+\contentsline {subsection}{\numberline {14.6.3}Splitting a Tuple into Multiple Indices of a Loop}{110}{subsection.14.6.3}
+\contentsline {subsection}{\numberline {14.6.4}Splitting a Tuple into Multiple Formal Arguments in a Function Call}{110}{subsection.14.6.4}
+\contentsline {subsection}{\numberline {14.6.5}Splitting a Tuple via Tuple Expansion}{111}{subsection.14.6.5}
+\contentsline {section}{\numberline {14.7}Tuple Operators}{112}{section.14.7}
+\contentsline {subsection}{\numberline {14.7.1}Unary Operators}{112}{subsection.14.7.1}
+\contentsline {subsection}{\numberline {14.7.2}Binary Operators}{112}{subsection.14.7.2}
+\contentsline {subsection}{\numberline {14.7.3}Relational Operators}{112}{subsection.14.7.3}
+\contentsline {section}{\numberline {14.8}Predefined Functions and Methods on Tuples}{113}{section.14.8}
+\contentsline {chapter}{\numberline {15}Classes}{114}{chapter.15}
+\contentsline {section}{\numberline {15.1}Class Declarations}{114}{section.15.1}
+\contentsline {subsection}{\numberline {15.1.1}Class Types}{115}{subsection.15.1.1}
+\contentsline {subsection}{\numberline {15.1.2}Class Values}{115}{subsection.15.1.2}
+\contentsline {subsection}{\numberline {15.1.3}Class Fields}{116}{subsection.15.1.3}
+\contentsline {subsection}{\numberline {15.1.4}Class Methods}{116}{subsection.15.1.4}
+\contentsline {subsection}{\numberline {15.1.5}Nested Classes}{117}{subsection.15.1.5}
+\contentsline {section}{\numberline {15.2}Inheritance}{117}{section.15.2}
+\contentsline {subsection}{\numberline {15.2.1}The object Class}{117}{subsection.15.2.1}
+\contentsline {subsection}{\numberline {15.2.2}Accessing Base Class Fields}{118}{subsection.15.2.2}
+\contentsline {subsection}{\numberline {15.2.3}Derived Class Constructors}{118}{subsection.15.2.3}
+\contentsline {subsection}{\numberline {15.2.4}Shadowing Base Class Fields}{118}{subsection.15.2.4}
+\contentsline {subsection}{\numberline {15.2.5}Overriding Base Class Methods}{118}{subsection.15.2.5}
+\contentsline {subsection}{\numberline {15.2.6}Inheriting from Multiple Classes}{119}{subsection.15.2.6}
+\contentsline {subsection}{\numberline {15.2.7}The {\em nil} Value}{119}{subsection.15.2.7}
+\contentsline {subsection}{\numberline {15.2.8}Default Initialization}{119}{subsection.15.2.8}
+\contentsline {section}{\numberline {15.3}Class Constructors}{119}{section.15.3}
+\contentsline {subsection}{\numberline {15.3.1}User-Defined Constructors}{120}{subsection.15.3.1}
+\contentsline {subsection}{\numberline {15.3.2}The Compiler-Generated Constructor}{120}{subsection.15.3.2}
+\contentsline {section}{\numberline {15.4}Field Accesses}{121}{section.15.4}
+\contentsline {subsection}{\numberline {15.4.1}Variable Getter Methods}{122}{subsection.15.4.1}
+\contentsline {section}{\numberline {15.5}Class Method Calls}{122}{section.15.5}
+\contentsline {subsection}{\numberline {15.5.1}The Method Receiver and the {\em this} Argument}{123}{subsection.15.5.1}
+\contentsline {section}{\numberline {15.6}The {\em this} Method}{124}{section.15.6}
+\contentsline {section}{\numberline {15.7}The {\em these} Method}{125}{section.15.7}
+\contentsline {section}{\numberline {15.8}Common Operations}{125}{section.15.8}
+\contentsline {subsection}{\numberline {15.8.1}Class Assignment}{125}{subsection.15.8.1}
+\contentsline {subsection}{\numberline {15.8.2}Implicit Class Conversions}{125}{subsection.15.8.2}
+\contentsline {section}{\numberline {15.9}Dynamic Memory Management}{126}{section.15.9}
+\contentsline {subsection}{\numberline {15.9.1}Class Destructor}{126}{subsection.15.9.1}
+\contentsline {chapter}{\numberline {16}Records}{127}{chapter.16}
+\contentsline {section}{\numberline {16.1}Record Declarations}{127}{section.16.1}
+\contentsline {subsection}{\numberline {16.1.1}Record Types}{128}{subsection.16.1.1}
+\contentsline {subsection}{\numberline {16.1.2}Record Fields}{129}{subsection.16.1.2}
+\contentsline {subsection}{\numberline {16.1.3}Record Methods}{129}{subsection.16.1.3}
+\contentsline {subsection}{\numberline {16.1.4}Nested Record Types}{129}{subsection.16.1.4}
+\contentsline {section}{\numberline {16.2}Record Inheritance}{129}{section.16.2}
+\contentsline {subsection}{\numberline {16.2.1}Shadowing Base Record Fields}{130}{subsection.16.2.1}
+\contentsline {section}{\numberline {16.3}Record Variable Declarations}{130}{section.16.3}
+\contentsline {subsection}{\numberline {16.3.1}Storage Allocation}{130}{subsection.16.3.1}
+\contentsline {subsection}{\numberline {16.3.2}Record Initialization}{131}{subsection.16.3.2}
+\contentsline {subsection}{\numberline {16.3.3}Record Destructor}{132}{subsection.16.3.3}
+\contentsline {section}{\numberline {16.4}Record Arguments}{132}{section.16.4}
+\contentsline {section}{\numberline {16.5}Record Field Access}{133}{section.16.5}
+\contentsline {subsection}{\numberline {16.5.1}Field Getter Methods}{133}{subsection.16.5.1}
+\contentsline {section}{\numberline {16.6}Record Method Calls}{133}{section.16.6}
+\contentsline {subsection}{\numberline {16.6.1}The Method Receiver and the {\em this} Argument}{133}{subsection.16.6.1}
+\contentsline {section}{\numberline {16.7}The {\em this} Method}{133}{section.16.7}
+\contentsline {section}{\numberline {16.8}The {\em these} Method}{134}{section.16.8}
+\contentsline {section}{\numberline {16.9}Common Operations}{134}{section.16.9}
+\contentsline {subsection}{\numberline {16.9.1}Record Assignment}{134}{subsection.16.9.1}
+\contentsline {subsection}{\numberline {16.9.2}Default Comparison Operators}{135}{subsection.16.9.2}
+\contentsline {subsection}{\numberline {16.9.3}Implicit Record Conversions}{135}{subsection.16.9.3}
+\contentsline {section}{\numberline {16.10}Differences between Classes and Records}{135}{section.16.10}
+\contentsline {subsection}{\numberline {16.10.1}Declarations}{135}{subsection.16.10.1}
+\contentsline {subsection}{\numberline {16.10.2}Storage Allocation}{135}{subsection.16.10.2}
+\contentsline {subsection}{\numberline {16.10.3}Assignment}{136}{subsection.16.10.3}
+\contentsline {subsection}{\numberline {16.10.4}Arguments}{136}{subsection.16.10.4}
+\contentsline {subsection}{\numberline {16.10.5}Inheritance}{136}{subsection.16.10.5}
+\contentsline {subsection}{\numberline {16.10.6}Shadowing and Overriding}{136}{subsection.16.10.6}
+\contentsline {subsection}{\numberline {16.10.7}No {\em nil} Value}{137}{subsection.16.10.7}
+\contentsline {subsection}{\numberline {16.10.8}The {\em delete} operator}{137}{subsection.16.10.8}
+\contentsline {subsection}{\numberline {16.10.9}Default Comparison Operators}{137}{subsection.16.10.9}
+\contentsline {chapter}{\numberline {17}Unions}{138}{chapter.17}
+\contentsline {section}{\numberline {17.1}Union Types}{138}{section.17.1}
+\contentsline {section}{\numberline {17.2}Union Declarations}{138}{section.17.2}
+\contentsline {subsection}{\numberline {17.2.1}Union Fields}{138}{subsection.17.2.1}
+\contentsline {section}{\numberline {17.3}Union Assignment}{139}{section.17.3}
+\contentsline {chapter}{\numberline {18}Ranges}{140}{chapter.18}
+\contentsline {section}{\numberline {18.1}Range Concepts}{140}{section.18.1}
+\contentsline {section}{\numberline {18.2}Range Types}{142}{section.18.2}
+\contentsline {section}{\numberline {18.3}Range Values}{143}{section.18.3}
+\contentsline {subsection}{\numberline {18.3.1}Range Literals}{143}{subsection.18.3.1}
+\contentsline {subsection}{\numberline {18.3.2}Default Values}{144}{subsection.18.3.2}
+\contentsline {section}{\numberline {18.4}Common Operations}{144}{section.18.4}
+\contentsline {subsection}{\numberline {18.4.1}Range Assignment}{145}{subsection.18.4.1}
+\contentsline {subsection}{\numberline {18.4.2}Range Comparisons}{145}{subsection.18.4.2}
+\contentsline {subsection}{\numberline {18.4.3}Iterating over Ranges}{145}{subsection.18.4.3}
+\contentsline {subsubsection}{Iterating over Unbounded Ranges in Zippered Iterations}{145}{section*.13}
+\contentsline {subsection}{\numberline {18.4.4}Range Promotion of Scalar Functions}{146}{subsection.18.4.4}
+\contentsline {section}{\numberline {18.5}Range Operators}{146}{section.18.5}
+\contentsline {subsection}{\numberline {18.5.1}By Operator}{146}{subsection.18.5.1}
+\contentsline {subsection}{\numberline {18.5.2}Align Operator}{147}{subsection.18.5.2}
+\contentsline {subsection}{\numberline {18.5.3}Count Operator}{148}{subsection.18.5.3}
+\contentsline {subsection}{\numberline {18.5.4}Arithmetic Operators}{149}{subsection.18.5.4}
+\contentsline {subsection}{\numberline {18.5.5}Range Slicing}{150}{subsection.18.5.5}
+\contentsline {section}{\numberline {18.6}Predefined Functions on Ranges}{150}{section.18.6}
+\contentsline {subsection}{\numberline {18.6.1}Range Type Parameters}{150}{subsection.18.6.1}
+\contentsline {subsection}{\numberline {18.6.2}Range Properties}{151}{subsection.18.6.2}
+\contentsline {subsection}{\numberline {18.6.3}Other Queries}{152}{subsection.18.6.3}
+\contentsline {subsection}{\numberline {18.6.4}Range Transformations}{153}{subsection.18.6.4}
+\contentsline {chapter}{\numberline {19}Domains}{155}{chapter.19}
+\contentsline {section}{\numberline {19.1}Domain Overview}{155}{section.19.1}
+\contentsline {section}{\numberline {19.2}Base Domain Types and Values}{156}{section.19.2}
+\contentsline {subsection}{\numberline {19.2.1}Rectangular Domains}{156}{subsection.19.2.1}
+\contentsline {subsubsection}{Rectangular Domain Types}{156}{section*.14}
+\contentsline {subsubsection}{Rectangular Domain Values}{157}{section*.15}
+\contentsline {subsection}{\numberline {19.2.2}Associative Domains}{158}{subsection.19.2.2}
+\contentsline {subsubsection}{Associative Domain Types}{158}{section*.16}
+\contentsline {subsubsection}{Associative Domain Values}{159}{section*.17}
+\contentsline {section}{\numberline {19.3}Simple Subdomain Types and Values}{160}{section.19.3}
+\contentsline {subsection}{\numberline {19.3.1}Simple Subdomain Types}{160}{subsection.19.3.1}
+\contentsline {subsection}{\numberline {19.3.2}Simple Subdomain Values}{160}{subsection.19.3.2}
+\contentsline {section}{\numberline {19.4}Sparse Subdomain Types and Values}{161}{section.19.4}
+\contentsline {subsection}{\numberline {19.4.1}Sparse Subdomain Types}{161}{subsection.19.4.1}
+\contentsline {subsection}{\numberline {19.4.2}Sparse Subdomain Values}{161}{subsection.19.4.2}
+\contentsline {section}{\numberline {19.5}Domain Index Types}{161}{section.19.5}
+\contentsline {section}{\numberline {19.6}Iteration Over Domains}{162}{section.19.6}
+\contentsline {section}{\numberline {19.7}Domains as Arguments}{162}{section.19.7}
+\contentsline {subsection}{\numberline {19.7.1}Formal Arguments of Domain Type}{162}{subsection.19.7.1}
+\contentsline {subsection}{\numberline {19.7.2}Domain Promotion of Scalar Functions}{163}{subsection.19.7.2}
+\contentsline {section}{\numberline {19.8}Domain Operations}{163}{section.19.8}
+\contentsline {subsection}{\numberline {19.8.1}Domain Assignment}{163}{subsection.19.8.1}
+\contentsline {subsection}{\numberline {19.8.2}Domain Striding}{164}{subsection.19.8.2}
+\contentsline {subsection}{\numberline {19.8.3}Domain Alignment}{164}{subsection.19.8.3}
+\contentsline {subsection}{\numberline {19.8.4}Domain Slicing}{165}{subsection.19.8.4}
+\contentsline {subsubsection}{Domain-based Slicing}{165}{section*.18}
+\contentsline {subsubsection}{Range-based Slicing}{165}{section*.19}
+\contentsline {subsubsection}{Rank-Change Slicing}{165}{section*.20}
+\contentsline {subsection}{\numberline {19.8.5}Count Operator}{166}{subsection.19.8.5}
+\contentsline {subsection}{\numberline {19.8.6}Adding and Removing Domain Indices}{166}{subsection.19.8.6}
+\contentsline {section}{\numberline {19.9}Predefined Methods on Domains}{166}{section.19.9}
+\contentsline {subsection}{\numberline {19.9.1}Methods on All Domain Types}{166}{subsection.19.9.1}
+\contentsline {subsection}{\numberline {19.9.2}Methods on Regular Domains}{168}{subsection.19.9.2}
+\contentsline {subsection}{\numberline {19.9.3}Methods on Irregular Domains}{169}{subsection.19.9.3}
+\contentsline {chapter}{\numberline {20}Arrays}{170}{chapter.20}
+\contentsline {section}{\numberline {20.1}Array Types}{170}{section.20.1}
+\contentsline {section}{\numberline {20.2}Array Values}{170}{section.20.2}
+\contentsline {subsection}{\numberline {20.2.1}Rectangular Array Literals}{171}{subsection.20.2.1}
+\contentsline {subsection}{\numberline {20.2.2}Associative Array Literals}{171}{subsection.20.2.2}
+\contentsline {subsection}{\numberline {20.2.3}Runtime Representation of Array Values}{172}{subsection.20.2.3}
+\contentsline {section}{\numberline {20.3}Array Indexing}{172}{section.20.3}
+\contentsline {subsection}{\numberline {20.3.1}Rectangular Array Indexing}{173}{subsection.20.3.1}
+\contentsline {subsection}{\numberline {20.3.2}Associative Array Indexing}{173}{subsection.20.3.2}
+\contentsline {section}{\numberline {20.4}Iteration over Arrays}{174}{section.20.4}
+\contentsline {section}{\numberline {20.5}Array Assignment}{174}{section.20.5}
+\contentsline {section}{\numberline {20.6}Array Slicing}{175}{section.20.6}
+\contentsline {subsection}{\numberline {20.6.1}Rectangular Array Slicing}{175}{subsection.20.6.1}
+\contentsline {subsection}{\numberline {20.6.2}Rectangular Array Slicing with a Rank Change}{176}{subsection.20.6.2}
+\contentsline {section}{\numberline {20.7}Count Operator}{176}{section.20.7}
+\contentsline {section}{\numberline {20.8}Array Arguments to Functions}{176}{section.20.8}
+\contentsline {subsection}{\numberline {20.8.1}Array Promotion of Scalar Functions}{176}{subsection.20.8.1}
+\contentsline {section}{\numberline {20.9}Array Aliases}{177}{section.20.9}
+\contentsline {section}{\numberline {20.10}Sparse Arrays}{177}{section.20.10}
+\contentsline {section}{\numberline {20.11}Association of Arrays to Domains}{178}{section.20.11}
+\contentsline {section}{\numberline {20.12}Predefined Functions and Methods on Arrays}{179}{section.20.12}
+\contentsline {chapter}{\numberline {21}Iterators}{180}{chapter.21}
+\contentsline {section}{\numberline {21.1}Iterator Definitions}{180}{section.21.1}
+\contentsline {section}{\numberline {21.2}The Yield Statement}{180}{section.21.2}
+\contentsline {section}{\numberline {21.3}Iterator Calls}{181}{section.21.3}
+\contentsline {subsection}{\numberline {21.3.1}Iterators in For and Forall Loops}{181}{subsection.21.3.1}
+\contentsline {subsection}{\numberline {21.3.2}Iterators as Arrays}{181}{subsection.21.3.2}
+\contentsline {subsection}{\numberline {21.3.3}Iterators and Generics}{182}{subsection.21.3.3}
+\contentsline {subsection}{\numberline {21.3.4}Recursive Iterators}{182}{subsection.21.3.4}
+\contentsline {subsection}{\numberline {21.3.5}Iterator Promotion of Scalar Functions}{182}{subsection.21.3.5}
+\contentsline {section}{\numberline {21.4}Parallel Iterators}{183}{section.21.4}
+\contentsline {chapter}{\numberline {22}Generics}{184}{chapter.22}
+\contentsline {section}{\numberline {22.1}Generic Functions}{184}{section.22.1}
+\contentsline {subsection}{\numberline {22.1.1}Formal Type Arguments}{184}{subsection.22.1.1}
+\contentsline {subsection}{\numberline {22.1.2}Formal Parameter Arguments}{185}{subsection.22.1.2}
+\contentsline {subsection}{\numberline {22.1.3}Formal Arguments without Types}{185}{subsection.22.1.3}
+\contentsline {subsection}{\numberline {22.1.4}Formal Arguments with Queried Types}{185}{subsection.22.1.4}
+\contentsline {subsection}{\numberline {22.1.5}Formal Arguments of Generic Type}{186}{subsection.22.1.5}
+\contentsline {subsection}{\numberline {22.1.6}Formal Arguments of Generic Array Types}{187}{subsection.22.1.6}
+\contentsline {section}{\numberline {22.2}Function Visibility in Generic Functions}{188}{section.22.2}
+\contentsline {section}{\numberline {22.3}Generic Types}{189}{section.22.3}
+\contentsline {subsection}{\numberline {22.3.1}Type Aliases in Generic Types}{189}{subsection.22.3.1}
+\contentsline {subsection}{\numberline {22.3.2}Parameters in Generic Types}{190}{subsection.22.3.2}
+\contentsline {subsection}{\numberline {22.3.3}Fields without Types}{190}{subsection.22.3.3}
+\contentsline {subsection}{\numberline {22.3.4}The Type Constructor}{191}{subsection.22.3.4}
+\contentsline {subsection}{\numberline {22.3.5}Generic Methods}{191}{subsection.22.3.5}
+\contentsline {subsection}{\numberline {22.3.6}The Compiler-Generated Constructor}{191}{subsection.22.3.6}
+\contentsline {subsection}{\numberline {22.3.7}User-Defined Constructors}{192}{subsection.22.3.7}
+\contentsline {section}{\numberline {22.4}Where Expressions}{192}{section.22.4}
+\contentsline {section}{\numberline {22.5}User-Defined Compiler Diagnostics}{193}{section.22.5}
+\contentsline {section}{\numberline {22.6}Example: A Generic Stack}{194}{section.22.6}
+\contentsline {chapter}{\numberline {23}Input and Output}{195}{chapter.23}
+\contentsline {section}{\numberline {23.1}See Library Documentation}{195}{section.23.1}
+\contentsline {chapter}{\numberline {24}Task Parallelism and Synchronization}{196}{chapter.24}
+\contentsline {section}{\numberline {24.1}Tasks and Task Parallelism}{196}{section.24.1}
+\contentsline {section}{\numberline {24.2}The Begin Statement}{197}{section.24.2}
+\contentsline {section}{\numberline {24.3}Synchronization Variables}{197}{section.24.3}
+\contentsline {subsection}{\numberline {24.3.1}Predefined Single and Sync Methods}{199}{subsection.24.3.1}
+\contentsline {section}{\numberline {24.4}Atomic Variables}{201}{section.24.4}
+\contentsline {subsection}{\numberline {24.4.1}Predefined Atomic Methods}{201}{subsection.24.4.1}
+\contentsline {section}{\numberline {24.5}The Cobegin Statement}{203}{section.24.5}
+\contentsline {section}{\numberline {24.6}The Coforall Loop}{203}{section.24.6}
+\contentsline {section}{\numberline {24.7}Task Intents}{204}{section.24.7}
+\contentsline {section}{\numberline {24.8}The Sync Statement}{206}{section.24.8}
+\contentsline {section}{\numberline {24.9}The Serial Statement}{206}{section.24.9}
+\contentsline {section}{\numberline {24.10}Atomic Statements}{207}{section.24.10}
+\contentsline {chapter}{\numberline {25}Data Parallelism}{209}{chapter.25}
+\contentsline {section}{\numberline {25.1}The Forall Statement}{209}{section.25.1}
+\contentsline {subsection}{\numberline {25.1.1}Syntax}{209}{subsection.25.1.1}
+\contentsline {subsection}{\numberline {25.1.2}Execution and Serializability}{210}{subsection.25.1.2}
+\contentsline {subsection}{\numberline {25.1.3}Zipper Iteration}{210}{subsection.25.1.3}
+\contentsline {section}{\numberline {25.2}The Forall Expression}{210}{section.25.2}
+\contentsline {subsection}{\numberline {25.2.1}Syntax}{211}{subsection.25.2.1}
+\contentsline {subsection}{\numberline {25.2.2}Execution and Serializability}{211}{subsection.25.2.2}
+\contentsline {subsection}{\numberline {25.2.3}Zipper Iteration}{211}{subsection.25.2.3}
+\contentsline {subsection}{\numberline {25.2.4}Filtering Predicates in Forall Expressions}{211}{subsection.25.2.4}
+\contentsline {section}{\numberline {25.3}Forall Intents}{212}{section.25.3}
+\contentsline {section}{\numberline {25.4}Promotion}{212}{section.25.4}
+\contentsline {subsection}{\numberline {25.4.1}Zipper Promotion}{213}{subsection.25.4.1}
+\contentsline {subsection}{\numberline {25.4.2}Whole Array Assignment}{213}{subsection.25.4.2}
+\contentsline {subsection}{\numberline {25.4.3}Evaluation Order}{214}{subsection.25.4.3}
+\contentsline {section}{\numberline {25.5}Reductions and Scans}{214}{section.25.5}
+\contentsline {subsection}{\numberline {25.5.1}Reduction Expressions}{214}{subsection.25.5.1}
+\contentsline {subsection}{\numberline {25.5.2}Scan Expressions}{215}{subsection.25.5.2}
+\contentsline {section}{\numberline {25.6}Configuration Constants for Default Data Parallelism}{216}{section.25.6}
+\contentsline {chapter}{\numberline {26}Locales}{217}{chapter.26}
+\contentsline {section}{\numberline {26.1}Locales}{217}{section.26.1}
+\contentsline {subsection}{\numberline {26.1.1}Locale Types}{217}{subsection.26.1.1}
+\contentsline {subsection}{\numberline {26.1.2}Locale Methods}{217}{subsection.26.1.2}
+\contentsline {subsection}{\numberline {26.1.3}The Predefined Locales Array}{218}{subsection.26.1.3}
+\contentsline {subsection}{\numberline {26.1.4}The {\em here} Locale}{219}{subsection.26.1.4}
+\contentsline {subsection}{\numberline {26.1.5}Querying the Locale of an Expression}{219}{subsection.26.1.5}
+\contentsline {section}{\numberline {26.2}The On Statement}{220}{section.26.2}
+\contentsline {subsection}{\numberline {26.2.1}Remote Variable Declarations}{220}{subsection.26.2.1}
+\contentsline {chapter}{\numberline {27}Domain Maps}{221}{chapter.27}
+\contentsline {section}{\numberline {27.1}Domain Maps for Domain Types}{221}{section.27.1}
+\contentsline {section}{\numberline {27.2}Domain Maps for Domain Values}{223}{section.27.2}
+\contentsline {section}{\numberline {27.3}Domain Maps for Arrays}{223}{section.27.3}
+\contentsline {section}{\numberline {27.4}Domain Maps Are Not Retained upon Domain Assignment}{224}{section.27.4}
+\contentsline {chapter}{\numberline {28}User-Defined Reductions and Scans}{225}{chapter.28}
+\contentsline {chapter}{\numberline {29}Memory Consistency Model}{226}{chapter.29}
+\contentsline {section}{\numberline {29.1}Sequential Consistency for Data-Race-Free Programs}{226}{section.29.1}
+\contentsline {subsection}{\numberline {29.1.1}Program Order}{228}{subsection.29.1.1}
+\contentsline {subsection}{\numberline {29.1.2}Memory Order}{228}{subsection.29.1.2}
+\contentsline {section}{\numberline {29.2}Non-Sequentially Consistent Atomic Operations}{229}{section.29.2}
+\contentsline {subsection}{\numberline {29.2.1}Relaxed Atomic Operations}{229}{subsection.29.2.1}
+\contentsline {section}{\numberline {29.3}Unordered Memory Operations}{230}{section.29.3}
+\contentsline {subsection}{\numberline {29.3.1}Unordered Memory Operations Examples}{230}{subsection.29.3.1}
+\contentsline {section}{\numberline {29.4}Examples}{231}{section.29.4}
+\contentsline {chapter}{\numberline {30}Interoperability}{233}{chapter.30}
+\contentsline {section}{\numberline {30.1}Interoperability Overview}{233}{section.30.1}
+\contentsline {subsection}{\numberline {30.1.1}Calling External Functions}{233}{subsection.30.1.1}
+\contentsline {subsection}{\numberline {30.1.2}Calling Chapel Functions}{234}{subsection.30.1.2}
+\contentsline {section}{\numberline {30.2}Shared Language Elements}{235}{section.30.2}
+\contentsline {subsection}{\numberline {30.2.1}Shared Types}{235}{subsection.30.2.1}
+\contentsline {subsubsection}{Referring to Standard C Types}{235}{section*.21}
+\contentsline {subsubsection}{Referring to External C Types}{236}{section*.22}
+\contentsline {subsubsection}{Referring to External C Structs}{236}{section*.23}
+\contentsline {subsubsection}{Referring to External Structs Through Pointers}{237}{section*.24}
+\contentsline {subsubsection}{Opaque Types}{238}{section*.25}
+\contentsline {subsection}{\numberline {30.2.2}Shared Data}{238}{subsection.30.2.2}
+\contentsline {subsection}{\numberline {30.2.3}Shared Procedures}{238}{subsection.30.2.3}
+\contentsline {subsubsection}{Calling External C Functions}{239}{section*.26}
+\contentsline {subsection}{\numberline {30.2.4}Calling Chapel Procedures Externally}{240}{subsection.30.2.4}
+\contentsline {subsection}{\numberline {30.2.5}Argument Passing}{240}{subsection.30.2.5}
+\contentsline {chapter}{\numberline {A}Collected Lexical and Syntax Productions}{241}{appendix.A}
+\contentsline {section}{\numberline {A.1}Alphabetical Lexical Productions}{241}{section.A.1}
+\contentsline {section}{\numberline {A.2}Alphabetical Syntax Productions}{243}{section.A.2}
+\contentsline {section}{\numberline {A.3}Depth-First Lexical Productions}{259}{section.A.3}
+\contentsline {section}{\numberline {A.4}Depth-First Syntax Productions}{261}{section.A.4}
+\contentsline {chapter}{Index}{277}{lstnumber.-1029.2}

@@ -1,0 +1,453 @@
+\BOOKMARK [1][-]{titlepage.1}{Title}{}% 1
+\BOOKMARK [1][-]{tablecontents.1}{Table of Contents}{}% 2
+\BOOKMARK [0][-]{chapter.1}{Scope}{}% 3
+\BOOKMARK [0][-]{chapter.2}{Notation}{}% 4
+\BOOKMARK [0][-]{chapter.3}{Organization}{}% 5
+\BOOKMARK [0][-]{chapter.4}{Acknowledgments}{}% 6
+\BOOKMARK [0][-]{chapter.5}{Language Overview}{}% 7
+\BOOKMARK [1][-]{section.5.1}{Guiding Principles}{chapter.5}% 8
+\BOOKMARK [2][-]{subsection.5.1.1}{General Parallel Programming}{section.5.1}% 9
+\BOOKMARK [2][-]{subsection.5.1.2}{Locality-Aware Programming}{section.5.1}% 10
+\BOOKMARK [2][-]{subsection.5.1.3}{Object-Oriented Programming}{section.5.1}% 11
+\BOOKMARK [2][-]{subsection.5.1.4}{Generic Programming}{section.5.1}% 12
+\BOOKMARK [1][-]{section.5.2}{Getting Started}{chapter.5}% 13
+\BOOKMARK [0][-]{chapter.6}{Lexical Structure}{}% 14
+\BOOKMARK [1][-]{section.6.1}{Comments}{chapter.6}% 15
+\BOOKMARK [1][-]{section.6.2}{White Space}{chapter.6}% 16
+\BOOKMARK [1][-]{section.6.3}{Case Sensitivity}{chapter.6}% 17
+\BOOKMARK [1][-]{section.6.4}{Tokens}{chapter.6}% 18
+\BOOKMARK [2][-]{subsection.6.4.1}{Identifiers}{section.6.4}% 19
+\BOOKMARK [2][-]{subsection.6.4.2}{Keywords}{section.6.4}% 20
+\BOOKMARK [2][-]{subsection.6.4.3}{Literals}{section.6.4}% 21
+\BOOKMARK [2][-]{subsection.6.4.4}{Operators and Punctuation}{section.6.4}% 22
+\BOOKMARK [2][-]{subsection.6.4.5}{Grouping Tokens}{section.6.4}% 23
+\BOOKMARK [0][-]{chapter.7}{Types}{}% 24
+\BOOKMARK [1][-]{section.7.1}{Primitive Types}{chapter.7}% 25
+\BOOKMARK [2][-]{subsection.7.1.1}{The Void Type}{section.7.1}% 26
+\BOOKMARK [2][-]{subsection.7.1.2}{The Bool Type}{section.7.1}% 27
+\BOOKMARK [2][-]{subsection.7.1.3}{Signed and Unsigned Integral Types}{section.7.1}% 28
+\BOOKMARK [2][-]{subsection.7.1.4}{Real Types}{section.7.1}% 29
+\BOOKMARK [2][-]{subsection.7.1.5}{Imaginary Types}{section.7.1}% 30
+\BOOKMARK [2][-]{subsection.7.1.6}{Complex Types}{section.7.1}% 31
+\BOOKMARK [2][-]{subsection.7.1.7}{The String Type}{section.7.1}% 32
+\BOOKMARK [1][-]{section.7.2}{Enumerated Types}{chapter.7}% 33
+\BOOKMARK [1][-]{section.7.3}{Structured Types}{chapter.7}% 34
+\BOOKMARK [2][-]{subsection.7.3.1}{Class Types}{section.7.3}% 35
+\BOOKMARK [2][-]{subsection.7.3.2}{Record Types}{section.7.3}% 36
+\BOOKMARK [2][-]{subsection.7.3.3}{Union Types}{section.7.3}% 37
+\BOOKMARK [2][-]{subsection.7.3.4}{Tuple Types}{section.7.3}% 38
+\BOOKMARK [1][-]{section.7.4}{Data Parallel Types}{chapter.7}% 39
+\BOOKMARK [2][-]{subsection.7.4.1}{Range Types}{section.7.4}% 40
+\BOOKMARK [2][-]{subsection.7.4.2}{Domain, Array, and Index Types}{section.7.4}% 41
+\BOOKMARK [1][-]{section.7.5}{Synchronization Types}{chapter.7}% 42
+\BOOKMARK [1][-]{section.7.6}{Type Aliases}{chapter.7}% 43
+\BOOKMARK [0][-]{chapter.8}{Variables}{}% 44
+\BOOKMARK [1][-]{section.8.1}{Variable Declarations}{chapter.8}% 45
+\BOOKMARK [2][-]{subsection.8.1.1}{Default Initialization}{section.8.1}% 46
+\BOOKMARK [2][-]{subsection.8.1.2}{Deferred Initialization}{section.8.1}% 47
+\BOOKMARK [2][-]{subsection.8.1.3}{Local Type Inference}{section.8.1}% 48
+\BOOKMARK [2][-]{subsection.8.1.4}{Multiple Variable Declarations}{section.8.1}% 49
+\BOOKMARK [1][-]{section.8.2}{Module Level Variables}{chapter.8}% 50
+\BOOKMARK [1][-]{section.8.3}{Local Variables}{chapter.8}% 51
+\BOOKMARK [1][-]{section.8.4}{Constants}{chapter.8}% 52
+\BOOKMARK [2][-]{subsection.8.4.1}{Compile-Time Constants}{section.8.4}% 53
+\BOOKMARK [2][-]{subsection.8.4.2}{Runtime Constants}{section.8.4}% 54
+\BOOKMARK [1][-]{section.8.5}{Configuration Variables}{chapter.8}% 55
+\BOOKMARK [1][-]{section.8.6}{Ref Variables}{chapter.8}% 56
+\BOOKMARK [0][-]{chapter.9}{Conversions}{}% 57
+\BOOKMARK [1][-]{section.9.1}{Implicit Conversions}{chapter.9}% 58
+\BOOKMARK [2][-]{subsection.9.1.1}{Implicit Numeric, Bool and Enumeration Conversions}{section.9.1}% 59
+\BOOKMARK [2][-]{subsection.9.1.2}{Implicit Compile-Time Constant Conversions}{section.9.1}% 60
+\BOOKMARK [2][-]{subsection.9.1.3}{Implicit Statement Bool Conversions}{section.9.1}% 61
+\BOOKMARK [1][-]{section.9.2}{Explicit Conversions}{chapter.9}% 62
+\BOOKMARK [2][-]{subsection.9.2.1}{Explicit Numeric Conversions}{section.9.2}% 63
+\BOOKMARK [2][-]{subsection.9.2.2}{Explicit Tuple to Complex Conversion}{section.9.2}% 64
+\BOOKMARK [2][-]{subsection.9.2.3}{Explicit Enumeration Conversions}{section.9.2}% 65
+\BOOKMARK [2][-]{subsection.9.2.4}{Explicit Class Conversions}{section.9.2}% 66
+\BOOKMARK [2][-]{subsection.9.2.5}{Explicit Record Conversions}{section.9.2}% 67
+\BOOKMARK [2][-]{subsection.9.2.6}{Explicit Range Conversions}{section.9.2}% 68
+\BOOKMARK [2][-]{subsection.9.2.7}{Explicit Domain Conversions}{section.9.2}% 69
+\BOOKMARK [2][-]{subsection.9.2.8}{Explicit Type to String Conversions}{section.9.2}% 70
+\BOOKMARK [0][-]{chapter.10}{Expressions}{}% 71
+\BOOKMARK [1][-]{section.10.1}{Literal Expressions}{chapter.10}% 72
+\BOOKMARK [1][-]{section.10.2}{Variable Expressions}{chapter.10}% 73
+\BOOKMARK [1][-]{section.10.3}{Enumeration Constant Expression}{chapter.10}% 74
+\BOOKMARK [1][-]{section.10.4}{Parenthesized Expressions}{chapter.10}% 75
+\BOOKMARK [1][-]{section.10.5}{Call Expressions}{chapter.10}% 76
+\BOOKMARK [1][-]{section.10.6}{Indexing Expressions}{chapter.10}% 77
+\BOOKMARK [1][-]{section.10.7}{Member Access Expressions}{chapter.10}% 78
+\BOOKMARK [1][-]{section.10.8}{The Query Expression}{chapter.10}% 79
+\BOOKMARK [1][-]{section.10.9}{Casts}{chapter.10}% 80
+\BOOKMARK [1][-]{section.10.10}{LValue Expressions}{chapter.10}% 81
+\BOOKMARK [1][-]{section.10.11}{Precedence and Associativity}{chapter.10}% 82
+\BOOKMARK [1][-]{section.10.12}{Operator Expressions}{chapter.10}% 83
+\BOOKMARK [1][-]{section.10.13}{Arithmetic Operators}{chapter.10}% 84
+\BOOKMARK [2][-]{subsection.10.13.1}{Unary Plus Operators}{section.10.13}% 85
+\BOOKMARK [2][-]{subsection.10.13.2}{Unary Minus Operators}{section.10.13}% 86
+\BOOKMARK [2][-]{subsection.10.13.3}{Addition Operators}{section.10.13}% 87
+\BOOKMARK [2][-]{subsection.10.13.4}{Subtraction Operators}{section.10.13}% 88
+\BOOKMARK [2][-]{subsection.10.13.5}{Multiplication Operators}{section.10.13}% 89
+\BOOKMARK [2][-]{subsection.10.13.6}{Division Operators}{section.10.13}% 90
+\BOOKMARK [2][-]{subsection.10.13.7}{Modulus Operators}{section.10.13}% 91
+\BOOKMARK [2][-]{subsection.10.13.8}{Exponentiation Operators}{section.10.13}% 92
+\BOOKMARK [1][-]{section.10.14}{Bitwise Operators}{chapter.10}% 93
+\BOOKMARK [2][-]{subsection.10.14.1}{Bitwise Complement Operators}{section.10.14}% 94
+\BOOKMARK [2][-]{subsection.10.14.2}{Bitwise And Operators}{section.10.14}% 95
+\BOOKMARK [2][-]{subsection.10.14.3}{Bitwise Or Operators}{section.10.14}% 96
+\BOOKMARK [2][-]{subsection.10.14.4}{Bitwise Xor Operators}{section.10.14}% 97
+\BOOKMARK [1][-]{section.10.15}{Shift Operators}{chapter.10}% 98
+\BOOKMARK [1][-]{section.10.16}{Logical Operators}{chapter.10}% 99
+\BOOKMARK [2][-]{subsection.10.16.1}{The Logical Negation Operator}{section.10.16}% 100
+\BOOKMARK [2][-]{subsection.10.16.2}{The Logical And Operator}{section.10.16}% 101
+\BOOKMARK [2][-]{subsection.10.16.3}{The Logical Or Operator}{section.10.16}% 102
+\BOOKMARK [1][-]{section.10.17}{Relational Operators}{chapter.10}% 103
+\BOOKMARK [2][-]{subsection.10.17.1}{Ordered Comparison Operators}{section.10.17}% 104
+\BOOKMARK [2][-]{subsection.10.17.2}{Equality Comparison Operators}{section.10.17}% 105
+\BOOKMARK [1][-]{section.10.18}{Miscellaneous Operators}{chapter.10}% 106
+\BOOKMARK [2][-]{subsection.10.18.1}{The String Concatenation Operator}{section.10.18}% 107
+\BOOKMARK [2][-]{subsection.10.18.2}{The By Operator}{section.10.18}% 108
+\BOOKMARK [2][-]{subsection.10.18.3}{The Align Operator}{section.10.18}% 109
+\BOOKMARK [2][-]{subsection.10.18.4}{The Range Count Operator}{section.10.18}% 110
+\BOOKMARK [1][-]{section.10.19}{Let Expressions}{chapter.10}% 111
+\BOOKMARK [1][-]{section.10.20}{Conditional Expressions}{chapter.10}% 112
+\BOOKMARK [1][-]{section.10.21}{For Expressions}{chapter.10}% 113
+\BOOKMARK [2][-]{subsection.10.21.1}{Filtering Predicates in For Expressions}{section.10.21}% 114
+\BOOKMARK [0][-]{chapter.11}{Statements}{}% 115
+\BOOKMARK [1][-]{section.11.1}{Blocks}{chapter.11}% 116
+\BOOKMARK [1][-]{section.11.2}{Expression Statements}{chapter.11}% 117
+\BOOKMARK [1][-]{section.11.3}{Assignment Statements}{chapter.11}% 118
+\BOOKMARK [1][-]{section.11.4}{The Swap Statement}{chapter.11}% 119
+\BOOKMARK [1][-]{section.11.5}{The I/O Statement}{chapter.11}% 120
+\BOOKMARK [1][-]{section.11.6}{The Conditional Statement}{chapter.11}% 121
+\BOOKMARK [1][-]{section.11.7}{The Select Statement}{chapter.11}% 122
+\BOOKMARK [1][-]{section.11.8}{The While Do and Do While Loops}{chapter.11}% 123
+\BOOKMARK [1][-]{section.11.9}{The For Loop}{chapter.11}% 124
+\BOOKMARK [2][-]{subsection.11.9.1}{Zipper Iteration}{section.11.9}% 125
+\BOOKMARK [2][-]{subsection.11.9.2}{Parameter For Loops}{section.11.9}% 126
+\BOOKMARK [1][-]{section.11.10}{The Break, Continue and Label Statements}{chapter.11}% 127
+\BOOKMARK [1][-]{section.11.11}{The Use Statement}{chapter.11}% 128
+\BOOKMARK [1][-]{section.11.12}{The Empty Statement}{chapter.11}% 129
+\BOOKMARK [0][-]{chapter.12}{Modules}{}% 130
+\BOOKMARK [1][-]{section.12.1}{Module Definitions}{chapter.12}% 131
+\BOOKMARK [1][-]{section.12.2}{Files and Implicit Modules}{chapter.12}% 132
+\BOOKMARK [1][-]{section.12.3}{Nested Modules}{chapter.12}% 133
+\BOOKMARK [1][-]{section.12.4}{Access of Module Contents}{chapter.12}% 134
+\BOOKMARK [2][-]{subsection.12.4.1}{Visibility Of A Module}{section.12.4}% 135
+\BOOKMARK [2][-]{subsection.12.4.2}{Visibility Of A Module's Symbols}{section.12.4}% 136
+\BOOKMARK [2][-]{subsection.12.4.3}{Explicit Naming}{section.12.4}% 137
+\BOOKMARK [2][-]{subsection.12.4.4}{Using Modules}{section.12.4}% 138
+\BOOKMARK [2][-]{subsection.12.4.5}{Module Initialization}{section.12.4}% 139
+\BOOKMARK [1][-]{section.12.5}{Program Execution}{chapter.12}% 140
+\BOOKMARK [2][-]{subsection.12.5.1}{The main Function}{section.12.5}% 141
+\BOOKMARK [2][-]{subsection.12.5.2}{Module Initialization Order}{section.12.5}% 142
+\BOOKMARK [0][-]{chapter.13}{Procedures}{}% 143
+\BOOKMARK [1][-]{section.13.1}{Function Calls}{chapter.13}% 144
+\BOOKMARK [1][-]{section.13.2}{Procedure Definitions}{chapter.13}% 145
+\BOOKMARK [1][-]{section.13.3}{Functions without Parentheses}{chapter.13}% 146
+\BOOKMARK [1][-]{section.13.4}{Formal Arguments}{chapter.13}% 147
+\BOOKMARK [2][-]{subsection.13.4.1}{Named Arguments}{section.13.4}% 148
+\BOOKMARK [2][-]{subsection.13.4.2}{Default Values}{section.13.4}% 149
+\BOOKMARK [1][-]{section.13.5}{Argument Intents}{chapter.13}% 150
+\BOOKMARK [2][-]{subsection.13.5.1}{Concrete Intents}{section.13.5}% 151
+\BOOKMARK [3][-]{section*.2}{The In Intent}{subsection.13.5.1}% 152
+\BOOKMARK [3][-]{section*.3}{The Out Intent}{subsection.13.5.1}% 153
+\BOOKMARK [3][-]{section*.4}{The Inout Intent}{subsection.13.5.1}% 154
+\BOOKMARK [3][-]{section*.5}{The Ref Intent}{subsection.13.5.1}% 155
+\BOOKMARK [3][-]{section*.6}{The Const In Intent}{subsection.13.5.1}% 156
+\BOOKMARK [3][-]{section*.7}{The Const Ref Intent}{subsection.13.5.1}% 157
+\BOOKMARK [3][-]{section*.8}{Summary of Concrete Intents}{subsection.13.5.1}% 158
+\BOOKMARK [2][-]{subsection.13.5.2}{Abstract Intents}{section.13.5}% 159
+\BOOKMARK [3][-]{section*.9}{The Const Intent}{subsection.13.5.2}% 160
+\BOOKMARK [3][-]{section*.10}{The Default Intent}{subsection.13.5.2}% 161
+\BOOKMARK [1][-]{section.13.6}{Variable Number of Arguments}{chapter.13}% 162
+\BOOKMARK [1][-]{section.13.7}{Return Intents}{chapter.13}% 163
+\BOOKMARK [2][-]{subsection.13.7.1}{The Ref Return Intent}{section.13.7}% 164
+\BOOKMARK [2][-]{subsection.13.7.2}{The Const Ref Return Intent}{section.13.7}% 165
+\BOOKMARK [2][-]{subsection.13.7.3}{Choosing a Ref Return Intent Function Based on Calling Context}{section.13.7}% 166
+\BOOKMARK [2][-]{subsection.13.7.4}{The Param Return Intent}{section.13.7}% 167
+\BOOKMARK [2][-]{subsection.13.7.5}{The Type Return Intent}{section.13.7}% 168
+\BOOKMARK [1][-]{section.13.8}{The Return Statement}{chapter.13}% 169
+\BOOKMARK [1][-]{section.13.9}{Return Types}{chapter.13}% 170
+\BOOKMARK [2][-]{subsection.13.9.1}{Explicit Return Types}{section.13.9}% 171
+\BOOKMARK [2][-]{subsection.13.9.2}{Implicit Return Types}{section.13.9}% 172
+\BOOKMARK [1][-]{section.13.10}{Nested Functions}{chapter.13}% 173
+\BOOKMARK [1][-]{section.13.11}{Function and Operator Overloading}{chapter.13}% 174
+\BOOKMARK [1][-]{section.13.12}{Function Resolution}{chapter.13}% 175
+\BOOKMARK [2][-]{subsection.13.12.1}{Determining Visible Functions}{section.13.12}% 176
+\BOOKMARK [2][-]{subsection.13.12.2}{Determining Candidate Functions}{section.13.12}% 177
+\BOOKMARK [3][-]{section*.11}{Valid Mapping}{subsection.13.12.2}% 178
+\BOOKMARK [3][-]{section*.12}{Legal Argument Mapping}{subsection.13.12.2}% 179
+\BOOKMARK [2][-]{subsection.13.12.3}{Determining More Specific Functions}{section.13.12}% 180
+\BOOKMARK [0][-]{chapter.14}{Tuples}{}% 181
+\BOOKMARK [1][-]{section.14.1}{Tuple Types}{chapter.14}% 182
+\BOOKMARK [1][-]{section.14.2}{Tuple Values}{chapter.14}% 183
+\BOOKMARK [1][-]{section.14.3}{Tuple Indexing}{chapter.14}% 184
+\BOOKMARK [1][-]{section.14.4}{Iteration over Tuples}{chapter.14}% 185
+\BOOKMARK [1][-]{section.14.5}{Tuple Assignment}{chapter.14}% 186
+\BOOKMARK [1][-]{section.14.6}{Tuple Destructuring}{chapter.14}% 187
+\BOOKMARK [2][-]{subsection.14.6.1}{Splitting a Tuple with Assignment}{section.14.6}% 188
+\BOOKMARK [2][-]{subsection.14.6.2}{Splitting a Tuple in a Declaration}{section.14.6}% 189
+\BOOKMARK [2][-]{subsection.14.6.3}{Splitting a Tuple into Multiple Indices of a Loop}{section.14.6}% 190
+\BOOKMARK [2][-]{subsection.14.6.4}{Splitting a Tuple into Multiple Formal Arguments in a Function Call}{section.14.6}% 191
+\BOOKMARK [2][-]{subsection.14.6.5}{Splitting a Tuple via Tuple Expansion}{section.14.6}% 192
+\BOOKMARK [1][-]{section.14.7}{Tuple Operators}{chapter.14}% 193
+\BOOKMARK [2][-]{subsection.14.7.1}{Unary Operators}{section.14.7}% 194
+\BOOKMARK [2][-]{subsection.14.7.2}{Binary Operators}{section.14.7}% 195
+\BOOKMARK [2][-]{subsection.14.7.3}{Relational Operators}{section.14.7}% 196
+\BOOKMARK [1][-]{section.14.8}{Predefined Functions and Methods on Tuples}{chapter.14}% 197
+\BOOKMARK [0][-]{chapter.15}{Classes}{}% 198
+\BOOKMARK [1][-]{section.15.1}{Class Declarations}{chapter.15}% 199
+\BOOKMARK [2][-]{subsection.15.1.1}{Class Types}{section.15.1}% 200
+\BOOKMARK [2][-]{subsection.15.1.2}{Class Values}{section.15.1}% 201
+\BOOKMARK [2][-]{subsection.15.1.3}{Class Fields}{section.15.1}% 202
+\BOOKMARK [2][-]{subsection.15.1.4}{Class Methods}{section.15.1}% 203
+\BOOKMARK [2][-]{subsection.15.1.5}{Nested Classes}{section.15.1}% 204
+\BOOKMARK [1][-]{section.15.2}{Inheritance}{chapter.15}% 205
+\BOOKMARK [2][-]{subsection.15.2.1}{The object Class}{section.15.2}% 206
+\BOOKMARK [2][-]{subsection.15.2.2}{Accessing Base Class Fields}{section.15.2}% 207
+\BOOKMARK [2][-]{subsection.15.2.3}{Derived Class Constructors}{section.15.2}% 208
+\BOOKMARK [2][-]{subsection.15.2.4}{Shadowing Base Class Fields}{section.15.2}% 209
+\BOOKMARK [2][-]{subsection.15.2.5}{Overriding Base Class Methods}{section.15.2}% 210
+\BOOKMARK [2][-]{subsection.15.2.6}{Inheriting from Multiple Classes}{section.15.2}% 211
+\BOOKMARK [2][-]{subsection.15.2.7}{The nil Value}{section.15.2}% 212
+\BOOKMARK [2][-]{subsection.15.2.8}{Default Initialization}{section.15.2}% 213
+\BOOKMARK [1][-]{section.15.3}{Class Constructors}{chapter.15}% 214
+\BOOKMARK [2][-]{subsection.15.3.1}{User-Defined Constructors}{section.15.3}% 215
+\BOOKMARK [2][-]{subsection.15.3.2}{The Compiler-Generated Constructor}{section.15.3}% 216
+\BOOKMARK [1][-]{section.15.4}{Field Accesses}{chapter.15}% 217
+\BOOKMARK [2][-]{subsection.15.4.1}{Variable Getter Methods}{section.15.4}% 218
+\BOOKMARK [1][-]{section.15.5}{Class Method Calls}{chapter.15}% 219
+\BOOKMARK [2][-]{subsection.15.5.1}{The Method Receiver and the this Argument}{section.15.5}% 220
+\BOOKMARK [1][-]{section.15.6}{The this Method}{chapter.15}% 221
+\BOOKMARK [1][-]{section.15.7}{The these Method}{chapter.15}% 222
+\BOOKMARK [1][-]{section.15.8}{Common Operations}{chapter.15}% 223
+\BOOKMARK [2][-]{subsection.15.8.1}{Class Assignment}{section.15.8}% 224
+\BOOKMARK [2][-]{subsection.15.8.2}{Implicit Class Conversions}{section.15.8}% 225
+\BOOKMARK [1][-]{section.15.9}{Dynamic Memory Management}{chapter.15}% 226
+\BOOKMARK [2][-]{subsection.15.9.1}{Class Destructor}{section.15.9}% 227
+\BOOKMARK [0][-]{chapter.16}{Records}{}% 228
+\BOOKMARK [1][-]{section.16.1}{Record Declarations}{chapter.16}% 229
+\BOOKMARK [2][-]{subsection.16.1.1}{Record Types}{section.16.1}% 230
+\BOOKMARK [2][-]{subsection.16.1.2}{Record Fields}{section.16.1}% 231
+\BOOKMARK [2][-]{subsection.16.1.3}{Record Methods}{section.16.1}% 232
+\BOOKMARK [2][-]{subsection.16.1.4}{Nested Record Types}{section.16.1}% 233
+\BOOKMARK [1][-]{section.16.2}{Record Inheritance}{chapter.16}% 234
+\BOOKMARK [2][-]{subsection.16.2.1}{Shadowing Base Record Fields}{section.16.2}% 235
+\BOOKMARK [1][-]{section.16.3}{Record Variable Declarations}{chapter.16}% 236
+\BOOKMARK [2][-]{subsection.16.3.1}{Storage Allocation}{section.16.3}% 237
+\BOOKMARK [2][-]{subsection.16.3.2}{Record Initialization}{section.16.3}% 238
+\BOOKMARK [2][-]{subsection.16.3.3}{Record Destructor}{section.16.3}% 239
+\BOOKMARK [1][-]{section.16.4}{Record Arguments}{chapter.16}% 240
+\BOOKMARK [1][-]{section.16.5}{Record Field Access}{chapter.16}% 241
+\BOOKMARK [2][-]{subsection.16.5.1}{Field Getter Methods}{section.16.5}% 242
+\BOOKMARK [1][-]{section.16.6}{Record Method Calls}{chapter.16}% 243
+\BOOKMARK [2][-]{subsection.16.6.1}{The Method Receiver and the this Argument}{section.16.6}% 244
+\BOOKMARK [1][-]{section.16.7}{The this Method}{chapter.16}% 245
+\BOOKMARK [1][-]{section.16.8}{The these Method}{chapter.16}% 246
+\BOOKMARK [1][-]{section.16.9}{Common Operations}{chapter.16}% 247
+\BOOKMARK [2][-]{subsection.16.9.1}{Record Assignment}{section.16.9}% 248
+\BOOKMARK [2][-]{subsection.16.9.2}{Default Comparison Operators}{section.16.9}% 249
+\BOOKMARK [2][-]{subsection.16.9.3}{Implicit Record Conversions}{section.16.9}% 250
+\BOOKMARK [1][-]{section.16.10}{Differences between Classes and Records}{chapter.16}% 251
+\BOOKMARK [2][-]{subsection.16.10.1}{Declarations}{section.16.10}% 252
+\BOOKMARK [2][-]{subsection.16.10.2}{Storage Allocation}{section.16.10}% 253
+\BOOKMARK [2][-]{subsection.16.10.3}{Assignment}{section.16.10}% 254
+\BOOKMARK [2][-]{subsection.16.10.4}{Arguments}{section.16.10}% 255
+\BOOKMARK [2][-]{subsection.16.10.5}{Inheritance}{section.16.10}% 256
+\BOOKMARK [2][-]{subsection.16.10.6}{Shadowing and Overriding}{section.16.10}% 257
+\BOOKMARK [2][-]{subsection.16.10.7}{No nil Value}{section.16.10}% 258
+\BOOKMARK [2][-]{subsection.16.10.8}{The delete operator}{section.16.10}% 259
+\BOOKMARK [2][-]{subsection.16.10.9}{Default Comparison Operators}{section.16.10}% 260
+\BOOKMARK [0][-]{chapter.17}{Unions}{}% 261
+\BOOKMARK [1][-]{section.17.1}{Union Types}{chapter.17}% 262
+\BOOKMARK [1][-]{section.17.2}{Union Declarations}{chapter.17}% 263
+\BOOKMARK [2][-]{subsection.17.2.1}{Union Fields}{section.17.2}% 264
+\BOOKMARK [1][-]{section.17.3}{Union Assignment}{chapter.17}% 265
+\BOOKMARK [0][-]{chapter.18}{Ranges}{}% 266
+\BOOKMARK [1][-]{section.18.1}{Range Concepts}{chapter.18}% 267
+\BOOKMARK [1][-]{section.18.2}{Range Types}{chapter.18}% 268
+\BOOKMARK [1][-]{section.18.3}{Range Values}{chapter.18}% 269
+\BOOKMARK [2][-]{subsection.18.3.1}{Range Literals}{section.18.3}% 270
+\BOOKMARK [2][-]{subsection.18.3.2}{Default Values}{section.18.3}% 271
+\BOOKMARK [1][-]{section.18.4}{Common Operations}{chapter.18}% 272
+\BOOKMARK [2][-]{subsection.18.4.1}{Range Assignment}{section.18.4}% 273
+\BOOKMARK [2][-]{subsection.18.4.2}{Range Comparisons}{section.18.4}% 274
+\BOOKMARK [2][-]{subsection.18.4.3}{Iterating over Ranges}{section.18.4}% 275
+\BOOKMARK [3][-]{section*.13}{Iterating over Unbounded Ranges in Zippered Iterations}{subsection.18.4.3}% 276
+\BOOKMARK [2][-]{subsection.18.4.4}{Range Promotion of Scalar Functions}{section.18.4}% 277
+\BOOKMARK [1][-]{section.18.5}{Range Operators}{chapter.18}% 278
+\BOOKMARK [2][-]{subsection.18.5.1}{By Operator}{section.18.5}% 279
+\BOOKMARK [2][-]{subsection.18.5.2}{Align Operator}{section.18.5}% 280
+\BOOKMARK [2][-]{subsection.18.5.3}{Count Operator}{section.18.5}% 281
+\BOOKMARK [2][-]{subsection.18.5.4}{Arithmetic Operators}{section.18.5}% 282
+\BOOKMARK [2][-]{subsection.18.5.5}{Range Slicing}{section.18.5}% 283
+\BOOKMARK [1][-]{section.18.6}{Predefined Functions on Ranges}{chapter.18}% 284
+\BOOKMARK [2][-]{subsection.18.6.1}{Range Type Parameters}{section.18.6}% 285
+\BOOKMARK [2][-]{subsection.18.6.2}{Range Properties}{section.18.6}% 286
+\BOOKMARK [2][-]{subsection.18.6.3}{Other Queries}{section.18.6}% 287
+\BOOKMARK [2][-]{subsection.18.6.4}{Range Transformations}{section.18.6}% 288
+\BOOKMARK [0][-]{chapter.19}{Domains}{}% 289
+\BOOKMARK [1][-]{section.19.1}{Domain Overview}{chapter.19}% 290
+\BOOKMARK [1][-]{section.19.2}{Base Domain Types and Values}{chapter.19}% 291
+\BOOKMARK [2][-]{subsection.19.2.1}{Rectangular Domains}{section.19.2}% 292
+\BOOKMARK [3][-]{section*.14}{Rectangular Domain Types}{subsection.19.2.1}% 293
+\BOOKMARK [3][-]{section*.15}{Rectangular Domain Values}{subsection.19.2.1}% 294
+\BOOKMARK [2][-]{subsection.19.2.2}{Associative Domains}{section.19.2}% 295
+\BOOKMARK [3][-]{section*.16}{Associative Domain Types}{subsection.19.2.2}% 296
+\BOOKMARK [3][-]{section*.17}{Associative Domain Values}{subsection.19.2.2}% 297
+\BOOKMARK [1][-]{section.19.3}{Simple Subdomain Types and Values}{chapter.19}% 298
+\BOOKMARK [2][-]{subsection.19.3.1}{Simple Subdomain Types}{section.19.3}% 299
+\BOOKMARK [2][-]{subsection.19.3.2}{Simple Subdomain Values}{section.19.3}% 300
+\BOOKMARK [1][-]{section.19.4}{Sparse Subdomain Types and Values}{chapter.19}% 301
+\BOOKMARK [2][-]{subsection.19.4.1}{Sparse Subdomain Types}{section.19.4}% 302
+\BOOKMARK [2][-]{subsection.19.4.2}{Sparse Subdomain Values}{section.19.4}% 303
+\BOOKMARK [1][-]{section.19.5}{Domain Index Types}{chapter.19}% 304
+\BOOKMARK [1][-]{section.19.6}{Iteration Over Domains}{chapter.19}% 305
+\BOOKMARK [1][-]{section.19.7}{Domains as Arguments}{chapter.19}% 306
+\BOOKMARK [2][-]{subsection.19.7.1}{Formal Arguments of Domain Type}{section.19.7}% 307
+\BOOKMARK [2][-]{subsection.19.7.2}{Domain Promotion of Scalar Functions}{section.19.7}% 308
+\BOOKMARK [1][-]{section.19.8}{Domain Operations}{chapter.19}% 309
+\BOOKMARK [2][-]{subsection.19.8.1}{Domain Assignment}{section.19.8}% 310
+\BOOKMARK [2][-]{subsection.19.8.2}{Domain Striding}{section.19.8}% 311
+\BOOKMARK [2][-]{subsection.19.8.3}{Domain Alignment}{section.19.8}% 312
+\BOOKMARK [2][-]{subsection.19.8.4}{Domain Slicing}{section.19.8}% 313
+\BOOKMARK [3][-]{section*.18}{Domain-based Slicing}{subsection.19.8.4}% 314
+\BOOKMARK [3][-]{section*.19}{Range-based Slicing}{subsection.19.8.4}% 315
+\BOOKMARK [3][-]{section*.20}{Rank-Change Slicing}{subsection.19.8.4}% 316
+\BOOKMARK [2][-]{subsection.19.8.5}{Count Operator}{section.19.8}% 317
+\BOOKMARK [2][-]{subsection.19.8.6}{Adding and Removing Domain Indices}{section.19.8}% 318
+\BOOKMARK [1][-]{section.19.9}{Predefined Methods on Domains}{chapter.19}% 319
+\BOOKMARK [2][-]{subsection.19.9.1}{Methods on All Domain Types}{section.19.9}% 320
+\BOOKMARK [2][-]{subsection.19.9.2}{Methods on Regular Domains}{section.19.9}% 321
+\BOOKMARK [2][-]{subsection.19.9.3}{Methods on Irregular Domains}{section.19.9}% 322
+\BOOKMARK [0][-]{chapter.20}{Arrays}{}% 323
+\BOOKMARK [1][-]{section.20.1}{Array Types}{chapter.20}% 324
+\BOOKMARK [1][-]{section.20.2}{Array Values}{chapter.20}% 325
+\BOOKMARK [2][-]{subsection.20.2.1}{Rectangular Array Literals}{section.20.2}% 326
+\BOOKMARK [2][-]{subsection.20.2.2}{Associative Array Literals}{section.20.2}% 327
+\BOOKMARK [2][-]{subsection.20.2.3}{Runtime Representation of Array Values}{section.20.2}% 328
+\BOOKMARK [1][-]{section.20.3}{Array Indexing}{chapter.20}% 329
+\BOOKMARK [2][-]{subsection.20.3.1}{Rectangular Array Indexing}{section.20.3}% 330
+\BOOKMARK [2][-]{subsection.20.3.2}{Associative Array Indexing}{section.20.3}% 331
+\BOOKMARK [1][-]{section.20.4}{Iteration over Arrays}{chapter.20}% 332
+\BOOKMARK [1][-]{section.20.5}{Array Assignment}{chapter.20}% 333
+\BOOKMARK [1][-]{section.20.6}{Array Slicing}{chapter.20}% 334
+\BOOKMARK [2][-]{subsection.20.6.1}{Rectangular Array Slicing}{section.20.6}% 335
+\BOOKMARK [2][-]{subsection.20.6.2}{Rectangular Array Slicing with a Rank Change}{section.20.6}% 336
+\BOOKMARK [1][-]{section.20.7}{Count Operator}{chapter.20}% 337
+\BOOKMARK [1][-]{section.20.8}{Array Arguments to Functions}{chapter.20}% 338
+\BOOKMARK [2][-]{subsection.20.8.1}{Array Promotion of Scalar Functions}{section.20.8}% 339
+\BOOKMARK [1][-]{section.20.9}{Array Aliases}{chapter.20}% 340
+\BOOKMARK [1][-]{section.20.10}{Sparse Arrays}{chapter.20}% 341
+\BOOKMARK [1][-]{section.20.11}{Association of Arrays to Domains}{chapter.20}% 342
+\BOOKMARK [1][-]{section.20.12}{Predefined Functions and Methods on Arrays}{chapter.20}% 343
+\BOOKMARK [0][-]{chapter.21}{Iterators}{}% 344
+\BOOKMARK [1][-]{section.21.1}{Iterator Definitions}{chapter.21}% 345
+\BOOKMARK [1][-]{section.21.2}{The Yield Statement}{chapter.21}% 346
+\BOOKMARK [1][-]{section.21.3}{Iterator Calls}{chapter.21}% 347
+\BOOKMARK [2][-]{subsection.21.3.1}{Iterators in For and Forall Loops}{section.21.3}% 348
+\BOOKMARK [2][-]{subsection.21.3.2}{Iterators as Arrays}{section.21.3}% 349
+\BOOKMARK [2][-]{subsection.21.3.3}{Iterators and Generics}{section.21.3}% 350
+\BOOKMARK [2][-]{subsection.21.3.4}{Recursive Iterators}{section.21.3}% 351
+\BOOKMARK [2][-]{subsection.21.3.5}{Iterator Promotion of Scalar Functions}{section.21.3}% 352
+\BOOKMARK [1][-]{section.21.4}{Parallel Iterators}{chapter.21}% 353
+\BOOKMARK [0][-]{chapter.22}{Generics}{}% 354
+\BOOKMARK [1][-]{section.22.1}{Generic Functions}{chapter.22}% 355
+\BOOKMARK [2][-]{subsection.22.1.1}{Formal Type Arguments}{section.22.1}% 356
+\BOOKMARK [2][-]{subsection.22.1.2}{Formal Parameter Arguments}{section.22.1}% 357
+\BOOKMARK [2][-]{subsection.22.1.3}{Formal Arguments without Types}{section.22.1}% 358
+\BOOKMARK [2][-]{subsection.22.1.4}{Formal Arguments with Queried Types}{section.22.1}% 359
+\BOOKMARK [2][-]{subsection.22.1.5}{Formal Arguments of Generic Type}{section.22.1}% 360
+\BOOKMARK [2][-]{subsection.22.1.6}{Formal Arguments of Generic Array Types}{section.22.1}% 361
+\BOOKMARK [1][-]{section.22.2}{Function Visibility in Generic Functions}{chapter.22}% 362
+\BOOKMARK [1][-]{section.22.3}{Generic Types}{chapter.22}% 363
+\BOOKMARK [2][-]{subsection.22.3.1}{Type Aliases in Generic Types}{section.22.3}% 364
+\BOOKMARK [2][-]{subsection.22.3.2}{Parameters in Generic Types}{section.22.3}% 365
+\BOOKMARK [2][-]{subsection.22.3.3}{Fields without Types}{section.22.3}% 366
+\BOOKMARK [2][-]{subsection.22.3.4}{The Type Constructor}{section.22.3}% 367
+\BOOKMARK [2][-]{subsection.22.3.5}{Generic Methods}{section.22.3}% 368
+\BOOKMARK [2][-]{subsection.22.3.6}{The Compiler-Generated Constructor}{section.22.3}% 369
+\BOOKMARK [2][-]{subsection.22.3.7}{User-Defined Constructors}{section.22.3}% 370
+\BOOKMARK [1][-]{section.22.4}{Where Expressions}{chapter.22}% 371
+\BOOKMARK [1][-]{section.22.5}{User-Defined Compiler Diagnostics}{chapter.22}% 372
+\BOOKMARK [1][-]{section.22.6}{Example: A Generic Stack}{chapter.22}% 373
+\BOOKMARK [0][-]{chapter.23}{Input and Output}{}% 374
+\BOOKMARK [1][-]{section.23.1}{See Library Documentation}{chapter.23}% 375
+\BOOKMARK [0][-]{chapter.24}{Task Parallelism and Synchronization}{}% 376
+\BOOKMARK [1][-]{section.24.1}{Tasks and Task Parallelism}{chapter.24}% 377
+\BOOKMARK [1][-]{section.24.2}{The Begin Statement}{chapter.24}% 378
+\BOOKMARK [1][-]{section.24.3}{Synchronization Variables}{chapter.24}% 379
+\BOOKMARK [2][-]{subsection.24.3.1}{Predefined Single and Sync Methods}{section.24.3}% 380
+\BOOKMARK [1][-]{section.24.4}{Atomic Variables}{chapter.24}% 381
+\BOOKMARK [2][-]{subsection.24.4.1}{Predefined Atomic Methods}{section.24.4}% 382
+\BOOKMARK [1][-]{section.24.5}{The Cobegin Statement}{chapter.24}% 383
+\BOOKMARK [1][-]{section.24.6}{The Coforall Loop}{chapter.24}% 384
+\BOOKMARK [1][-]{section.24.7}{Task Intents}{chapter.24}% 385
+\BOOKMARK [1][-]{section.24.8}{The Sync Statement}{chapter.24}% 386
+\BOOKMARK [1][-]{section.24.9}{The Serial Statement}{chapter.24}% 387
+\BOOKMARK [1][-]{section.24.10}{Atomic Statements}{chapter.24}% 388
+\BOOKMARK [0][-]{chapter.25}{Data Parallelism}{}% 389
+\BOOKMARK [1][-]{section.25.1}{The Forall Statement}{chapter.25}% 390
+\BOOKMARK [2][-]{subsection.25.1.1}{Syntax}{section.25.1}% 391
+\BOOKMARK [2][-]{subsection.25.1.2}{Execution and Serializability}{section.25.1}% 392
+\BOOKMARK [2][-]{subsection.25.1.3}{Zipper Iteration}{section.25.1}% 393
+\BOOKMARK [1][-]{section.25.2}{The Forall Expression}{chapter.25}% 394
+\BOOKMARK [2][-]{subsection.25.2.1}{Syntax}{section.25.2}% 395
+\BOOKMARK [2][-]{subsection.25.2.2}{Execution and Serializability}{section.25.2}% 396
+\BOOKMARK [2][-]{subsection.25.2.3}{Zipper Iteration}{section.25.2}% 397
+\BOOKMARK [2][-]{subsection.25.2.4}{Filtering Predicates in Forall Expressions}{section.25.2}% 398
+\BOOKMARK [1][-]{section.25.3}{Forall Intents}{chapter.25}% 399
+\BOOKMARK [1][-]{section.25.4}{Promotion}{chapter.25}% 400
+\BOOKMARK [2][-]{subsection.25.4.1}{Zipper Promotion}{section.25.4}% 401
+\BOOKMARK [2][-]{subsection.25.4.2}{Whole Array Assignment}{section.25.4}% 402
+\BOOKMARK [2][-]{subsection.25.4.3}{Evaluation Order}{section.25.4}% 403
+\BOOKMARK [1][-]{section.25.5}{Reductions and Scans}{chapter.25}% 404
+\BOOKMARK [2][-]{subsection.25.5.1}{Reduction Expressions}{section.25.5}% 405
+\BOOKMARK [2][-]{subsection.25.5.2}{Scan Expressions}{section.25.5}% 406
+\BOOKMARK [1][-]{section.25.6}{Configuration Constants for Default Data Parallelism}{chapter.25}% 407
+\BOOKMARK [0][-]{chapter.26}{Locales}{}% 408
+\BOOKMARK [1][-]{section.26.1}{Locales}{chapter.26}% 409
+\BOOKMARK [2][-]{subsection.26.1.1}{Locale Types}{section.26.1}% 410
+\BOOKMARK [2][-]{subsection.26.1.2}{Locale Methods}{section.26.1}% 411
+\BOOKMARK [2][-]{subsection.26.1.3}{The Predefined Locales Array}{section.26.1}% 412
+\BOOKMARK [2][-]{subsection.26.1.4}{The here Locale}{section.26.1}% 413
+\BOOKMARK [2][-]{subsection.26.1.5}{Querying the Locale of an Expression}{section.26.1}% 414
+\BOOKMARK [1][-]{section.26.2}{The On Statement}{chapter.26}% 415
+\BOOKMARK [2][-]{subsection.26.2.1}{Remote Variable Declarations}{section.26.2}% 416
+\BOOKMARK [0][-]{chapter.27}{Domain Maps}{}% 417
+\BOOKMARK [1][-]{section.27.1}{Domain Maps for Domain Types}{chapter.27}% 418
+\BOOKMARK [1][-]{section.27.2}{Domain Maps for Domain Values}{chapter.27}% 419
+\BOOKMARK [1][-]{section.27.3}{Domain Maps for Arrays}{chapter.27}% 420
+\BOOKMARK [1][-]{section.27.4}{Domain Maps Are Not Retained upon Domain Assignment}{chapter.27}% 421
+\BOOKMARK [0][-]{chapter.28}{User-Defined Reductions and Scans}{}% 422
+\BOOKMARK [0][-]{chapter.29}{Memory Consistency Model}{}% 423
+\BOOKMARK [1][-]{section.29.1}{Sequential Consistency for Data-Race-Free Programs}{chapter.29}% 424
+\BOOKMARK [2][-]{subsection.29.1.1}{Program Order}{section.29.1}% 425
+\BOOKMARK [2][-]{subsection.29.1.2}{Memory Order}{section.29.1}% 426
+\BOOKMARK [1][-]{section.29.2}{Non-Sequentially Consistent Atomic Operations}{chapter.29}% 427
+\BOOKMARK [2][-]{subsection.29.2.1}{Relaxed Atomic Operations}{section.29.2}% 428
+\BOOKMARK [1][-]{section.29.3}{Unordered Memory Operations}{chapter.29}% 429
+\BOOKMARK [2][-]{subsection.29.3.1}{Unordered Memory Operations Examples}{section.29.3}% 430
+\BOOKMARK [1][-]{section.29.4}{Examples}{chapter.29}% 431
+\BOOKMARK [0][-]{chapter.30}{Interoperability}{}% 432
+\BOOKMARK [1][-]{section.30.1}{Interoperability Overview}{chapter.30}% 433
+\BOOKMARK [2][-]{subsection.30.1.1}{Calling External Functions}{section.30.1}% 434
+\BOOKMARK [2][-]{subsection.30.1.2}{Calling Chapel Functions}{section.30.1}% 435
+\BOOKMARK [1][-]{section.30.2}{Shared Language Elements}{chapter.30}% 436
+\BOOKMARK [2][-]{subsection.30.2.1}{Shared Types}{section.30.2}% 437
+\BOOKMARK [3][-]{section*.21}{Referring to Standard C Types}{subsection.30.2.1}% 438
+\BOOKMARK [3][-]{section*.22}{Referring to External C Types}{subsection.30.2.1}% 439
+\BOOKMARK [3][-]{section*.23}{Referring to External C Structs}{subsection.30.2.1}% 440
+\BOOKMARK [3][-]{section*.24}{Referring to External Structs Through Pointers}{subsection.30.2.1}% 441
+\BOOKMARK [3][-]{section*.25}{Opaque Types}{subsection.30.2.1}% 442
+\BOOKMARK [2][-]{subsection.30.2.2}{Shared Data}{section.30.2}% 443
+\BOOKMARK [2][-]{subsection.30.2.3}{Shared Procedures}{section.30.2}% 444
+\BOOKMARK [3][-]{section*.26}{Calling External C Functions}{subsection.30.2.3}% 445
+\BOOKMARK [2][-]{subsection.30.2.4}{Calling Chapel Procedures Externally}{section.30.2}% 446
+\BOOKMARK [2][-]{subsection.30.2.5}{Argument Passing}{section.30.2}% 447
+\BOOKMARK [0][-]{appendix.A}{Collected Lexical and Syntax Productions}{}% 448
+\BOOKMARK [1][-]{section.A.1}{Alphabetical Lexical Productions}{appendix.A}% 449
+\BOOKMARK [1][-]{section.A.2}{Alphabetical Syntax Productions}{appendix.A}% 450
+\BOOKMARK [1][-]{section.A.3}{Depth-First Lexical Productions}{appendix.A}% 451
+\BOOKMARK [1][-]{section.A.4}{Depth-First Syntax Productions}{appendix.A}% 452
+\BOOKMARK [0][-]{lstnumber.-1029.2}{Index}{}% 453

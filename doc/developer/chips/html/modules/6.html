@@ -1,0 +1,445 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tuple Semantics &mdash; chpldoc 0.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="chpldoc 0.0.1 documentation" href="../index.html"/>
+        <link rel="next" title="Rules for inserting autoCopy" href="7.html"/>
+        <link rel="prev" title="Implement Object Copying Using a “Postblit” Method" href="5.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chpldoc
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">chpldoc documentation</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="1.html">Chapel Improvement Proposals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11.html">Alternative Initializer Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="12.html">Basics of Initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13.html">Record Copying in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="14.html">Chapel stack traces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2.html">Constrained Generics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3.html">ZeroMQ Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4.html">Constructor Syntax and Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5.html">Implement Object Copying Using a &#8220;Postblit&#8221; Method</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Tuple Semantics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#abstract">Abstract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#motivation">Motivation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rationale">Rationale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tuples-behave-as-records">Tuples Behave As Records</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#determining-whether-a-field-is-ref">Determining Whether A Field Is Ref</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#default-return-intent">Default Return Intent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#argument-intents-for-tuples">Argument Intents For Tuples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#corner-cases-and-open-issues">Corner Cases and Open Issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="7.html">Rules for inserting autoCopy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8.html">Error Handling in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9.html">Chapel Package Manager</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">chpldoc</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Tuple Semantics</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/6.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="tuple-semantics">
+<h1>Tuple Semantics<a class="headerlink" href="#tuple-semantics" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>Status</dt>
+<dd>Draft</dd>
+<dt>Author</dt>
+<dd>Vassily Litvinov, Chapel Team</dd>
+</dl>
+<div class="section" id="abstract">
+<h2>Abstract<a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Tuples behave as records, with some fields being automatically &#8216;ref&#8217; fields.
+The ref and const attributes of a field are consistent with return intents.</p>
+</div>
+<div class="section" id="motivation">
+<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Chapel makes use of tuples as a convenience for bundling several items
+together. This is done when passing them into and out of functions,
+variable-length argument lists, yielding from iterators, storing in
+variables and data structures.</p>
+<p>This CHIP defines the semantics of what tuples are.
+It is intended to add precision to certain parts
+of the spec and to settle some open questions.</p>
+</div>
+<div class="section" id="rationale">
+<h2>Rationale<a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>We had been considering two major options:</p>
+<ul class="simple">
+<li>a tuple is a shorthand for writing down individual variables</li>
+<li>a tuple is a shorthand for creating a record</li>
+</ul>
+<p>The key appeal of the &#8220;individual variables&#8221; option is
+the preservation of argument and return intents.
+E.g if A is an array, <code class="docutils literal"><span class="pre">f((1,A));</span></code> and <code class="docutils literal"><span class="pre">return</span> <span class="pre">(1,A);</span></code>
+pass/return 1 by value and A by reference.</p>
+<p>The appeal of the &#8220;record&#8221; option is:</p>
+<ul class="simple">
+<li>tuples are record-like in Rust, Swift, Fortress</li>
+<li>(and also in Python, Ruby, Julia, although that&#8217;s less interesting)</li>
+<li>a few team members already had the mental model of tuples as records</li>
+<li>grouping a few things together sounds like creating a record</li>
+<li>the implementation had already treated tuples as records</li>
+</ul>
+<p>We decided to determine ref-ness of a tuple component
+based on the return intent for that component&#8217;s type
+(see below),
+so that <code class="docutils literal"><span class="pre">return</span> <span class="pre">(1,A);</span></code> returns <cite>A</cite> by reference.
+The consequence of this is that <code class="docutils literal"><span class="pre">var</span> <span class="pre">t</span> <span class="pre">=</span> <span class="pre">(1,A);</span></code>
+stores <cite>A</cite> by reference, which was preferred by
+a few team members.
+(<cite>A</cite> above is an array.)</p>
+</div>
+<div class="section" id="tuples-behave-as-records">
+<h2>Tuples Behave As Records<a class="headerlink" href="#tuples-behave-as-records" title="Permalink to this headline">¶</a></h2>
+<p>A tuple is implicitly a record.
+A tuple component is implicitly a field of that record.
+All definitions applicable to records apply to tuples as well,
+except as specified in this CHIP.</p>
+<p>Notation:</p>
+<ul class="simple">
+<li>&#8220;tuple record&#8221; is such a record implicitly created for a tuple</li>
+<li>&#8220;user record&#8221; is a user-defined (non-tuple) record</li>
+<li>&#8220;record&#8221; refers to either a tuple record or a user record</li>
+</ul>
+</div>
+<div class="section" id="determining-whether-a-field-is-ref">
+<h2>Determining Whether A Field Is Ref<a class="headerlink" href="#determining-whether-a-field-is-ref" title="Permalink to this headline">¶</a></h2>
+<p>Given the type of a tuple component,
+the corresponding field of the tuple record is a <cite>var</cite> field
+when the default return intent for that type is &#8220;by value.&#8221;
+Otherwise the default return intent is <cite>ref</cite> and
+the tuple record&#8217;s field is a <cite>ref</cite> field.</p>
+<p>The default return intent is clarified in the following section.</p>
+</div>
+<div class="section" id="default-return-intent">
+<h2>Default Return Intent<a class="headerlink" href="#default-return-intent" title="Permalink to this headline">¶</a></h2>
+<p>This section clarifies the &#8220;Return Intents&#8221; section of the
+&#8220;Procedures&#8221; chapter of the spec.</p>
+<p>When a function&#8217;s return intent is not specified explicitly,
+the function is said to have the &#8220;default&#8221; return intent.
+It is an abstract return intent. Depending on the return type,
+the corresponding concrete intent is either by value or <cite>ref</cite>.</p>
+<p>When the concrete intent is by value, the function returns
+an r-value. When the concrete intent is <cite>ref</cite>, it is equivalent
+to the explicit <cite>ref</cite> return intent and the subsection
+&#8220;The Ref Return Intent&#8221; applies.</p>
+<p>The following tables defines the concrete intent
+for the default return intent and a given return type.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="47%" />
+<col width="53%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">type</th>
+<th class="head">intent</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>bool</td>
+<td>by value</td>
+</tr>
+<tr class="row-odd"><td>int</td>
+<td>by value</td>
+</tr>
+<tr class="row-even"><td>uint</td>
+<td>by value</td>
+</tr>
+<tr class="row-odd"><td>real</td>
+<td>by value</td>
+</tr>
+<tr class="row-even"><td>imag</td>
+<td>by value</td>
+</tr>
+<tr class="row-odd"><td>complex</td>
+<td>by value</td>
+</tr>
+<tr class="row-even"><td>string</td>
+<td>by value</td>
+</tr>
+<tr class="row-odd"><td>tuple</td>
+<td>by value</td>
+</tr>
+<tr class="row-even"><td>record</td>
+<td>by value</td>
+</tr>
+<tr class="row-odd"><td>class</td>
+<td>by value</td>
+</tr>
+<tr class="row-even"><td>union</td>
+<td>by value</td>
+</tr>
+<tr class="row-odd"><td>sync</td>
+<td><cite>ref</cite></td>
+</tr>
+<tr class="row-even"><td>single</td>
+<td><cite>ref</cite></td>
+</tr>
+<tr class="row-odd"><td>atomic</td>
+<td><cite>ref</cite></td>
+</tr>
+<tr class="row-even"><td>dmap</td>
+<td><cite>ref</cite></td>
+</tr>
+<tr class="row-odd"><td>domain</td>
+<td><cite>ref</cite></td>
+</tr>
+<tr class="row-even"><td>array</td>
+<td><cite>ref</cite></td>
+</tr>
+</tbody>
+</table>
+<p>This CHIP also re-opens this question.
+What is the concrete intent when the return intent is <cite>const</cite> and
+the return type is a domain, array, sync/single, atomic?
+E.g. by value, by const ref, ...?</p>
+</div>
+<div class="section" id="argument-intents-for-tuples">
+<h2>Argument Intents For Tuples<a class="headerlink" href="#argument-intents-for-tuples" title="Permalink to this headline">¶</a></h2>
+<p>Argument intents for tuples are the same as for records.
+In particular, the default intent for tuples is <cite>const</cite>;
+Cray Chapel&#8217;s <cite>const</cite> intent for tuples is <cite>const ref</cite>.</p>
+<p>This CHIP also clarifies the default behavior of
+constructing a copy of a record with a <cite>ref</cite> field.
+Namely, the corresponding field of the copy
+references the same variable as that field of the source.
+The contents of the referenced variable are not copied.</p>
+<p>Such a copy is constructed in the following cases,
+unless optimized away by the compiler:</p>
+<ul class="simple">
+<li>declaring a variable or a field or (in the future) array element whose initialization expression is the source record</li>
+<li>passing the source record into a function via an <cite>in</cite> or <cite>const in</cite> or <cite>inout</cite> argument</li>
+<li>returning the source record from a function by value via a <cite>return</cite> or <cite>yield</cite> statement</li>
+<li>returning the source record from a function via an <cite>out</cite> or <cite>inout</cite> argument</li>
+</ul>
+</div>
+<div class="section" id="corner-cases-and-open-issues">
+<h2>Corner Cases and Open Issues<a class="headerlink" href="#corner-cases-and-open-issues" title="Permalink to this headline">¶</a></h2>
+<p>Records are stored in tuples by value. Modification
+of a tuple component does not affect the original record.
+For example:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="kd">var</span> <span class="nx">rec</span><span class="p">:</span> <span class="nx">MyRecord</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">tup</span> <span class="o">=</span> <span class="p">(</span><span class="nx">rec</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
+<span class="nx">tup</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="o">..</span><span class="p">.;</span>      <span class="c1">// does not affect &#39;rec&#39;</span>
+</pre></div>
+</div>
+<p>By contrast, arrays are stored in tuples by reference.
+This is a change from the previously-implemented semantics.
+For example:</p>
+<div class="highlight-chapel"><div class="highlight"><pre><span></span><span class="kd">var</span> <span class="nx">Arr</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="o">..</span><span class="mi">10</span><span class="p">]</span> <span class="kt">real</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">tup</span> <span class="o">=</span> <span class="p">(</span><span class="nx">Arr</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
+<span class="nx">tup</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="nx">tup</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>   <span class="c1">// updates &#39;Arr&#39;</span>
+</pre></div>
+</div>
+<p>Consider a tuple type <cite>T</cite> for which the corresponding record type has
+<cite>ref</cite> field(s). The default value for such type <cite>T</cite> is <em>not</em> provided.
+An attempt to declare a variable <cite>tup</cite> of such a type
+without an initialization expression is a compile-time error.
+Our implementation will not implicitly provide another variable
+for this field of <cite>tup</cite> to reference.
+If this presents a significant user issue, we will look for solutions.</p>
+<p>Currently there is no way to create a tuple whose components:</p>
+<ul class="simple">
+<li>reference variables of &#8220;by value&#8221; types like integers, or</li>
+<li>are variables, not references to other variables, of &#8220;reference&#8221; types like arrays.</li>
+</ul>
+<p>Passing a tuple literal to a function by <cite>ref</cite> intent is an error.</p>
+<p>Assigning to a tuple with an array component results in copying
+into that component&#8217;s array, not into re-aliasing that component
+to point to the RHS array.</p>
+<p>Consider a function with a formal that has the default intent and
+is a tuple with an array component. Within the function,
+the corresponding array cannot be modified. That&#8217;s because
+all the tuple formal is &#8216;const&#8217; and so all its components are &#8216;const&#8217; too.
+Cf. when an array is passed to a function by default intent,
+it can be modified inside the function.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="7.html" class="btn btn-neutral float-right" title="Rules for inserting autoCopy" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="5.html" class="btn btn-neutral" title="Implement Object Copying Using a “Postblit” Method" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, .
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+
+
+
+</body>
+</html>

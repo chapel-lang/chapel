@@ -1,0 +1,2 @@
+Building this requires a newer version of the [lst]listings package than
+we have on Cray desktop systems.  Version 1.5c works.

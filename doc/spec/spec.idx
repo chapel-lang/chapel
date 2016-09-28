@@ -1,0 +1,1206 @@
+\indexentry{scope|hyperpage}{13}
+\indexentry{notation|hyperpage}{14}
+\indexentry{organization|hyperpage}{16}
+\indexentry{acknowledgments|hyperpage}{18}
+\indexentry{overview|hyperpage}{19}
+\indexentry{language overview|hyperpage}{19}
+\indexentry{language principles|hyperpage}{19}
+\indexentry{language principles!general parallel programming|hyperpage}{19}
+\indexentry{language principles!locality-aware programming|hyperpage}{20}
+\indexentry{language principles!object-oriented programming|hyperpage}{20}
+\indexentry{language principles!generic programming|hyperpage}{21}
+\indexentry{modules|hyperpage}{21}
+\indexentry{main@\chpl{main}|hyperpage}{21}
+\indexentry{lexical structure|hyperpage}{22}
+\indexentry{comments|hyperpage}{22}
+\indexentry{lexical structure!comments|hyperpage}{22}
+\indexentry{white space|hyperpage}{22}
+\indexentry{lexical structure!white space|hyperpage}{22}
+\indexentry{case sensitivity|hyperpage}{22}
+\indexentry{lexical structure!case sensitivity|hyperpage}{22}
+\indexentry{lexical structure!tokens|hyperpage}{22}
+\indexentry{identifiers|hyperpage}{23}
+\indexentry{lexical structure!identifiers|hyperpage}{23}
+\indexentry{keywords|hyperpage}{23}
+\indexentry{lexical structure!keywords|hyperpage}{23}
+\indexentry{lexical structure!literals|hyperpage}{24}
+\indexentry{literals!primitive type|hyperpage}{24}
+\indexentry{lexical structure!operator|hyperpage}{26}
+\indexentry{operators!lexical structure|hyperpage}{26}
+\indexentry{lexical structure!punctuation|hyperpage}{26}
+\indexentry{lexical structure!braces|hyperpage}{26}
+\indexentry{lexical structure!parentheses|hyperpage}{26}
+\indexentry{lexical structure!brackets|hyperpage}{26}
+\indexentry{types|hyperpage}{28}
+\indexentry{types!primitive|hyperpage}{28}
+\indexentry{void@\chpl{void}|hyperpage}{29}
+\indexentry{types!void@\chpl{void}|hyperpage}{29}
+\indexentry{bool@\chpl{bool}|hyperpage}{29}
+\indexentry{types!bool@\chpl{bool}|hyperpage}{29}
+\indexentry{uint@\chpl{uint}|hyperpage}{29}
+\indexentry{int@\chpl{int}|hyperpage}{29}
+\indexentry{types!uint@\chpl{uint}|hyperpage}{29}
+\indexentry{types!int@\chpl{int}|hyperpage}{29}
+\indexentry{real@\chpl{real}|hyperpage}{30}
+\indexentry{types!real@\chpl{real}|hyperpage}{30}
+\indexentry{imaginary@\chpl{imaginary}|hyperpage}{30}
+\indexentry{types!imaginary@\chpl{imaginary}|hyperpage}{30}
+\indexentry{complex@\chpl{complex}|hyperpage}{30}
+\indexentry{types!complex@\chpl{complex}|hyperpage}{30}
+\indexentry{string@\chpl{string}|hyperpage}{30}
+\indexentry{types!string@\chpl{string}|hyperpage}{30}
+\indexentry{enumerated types|hyperpage}{31}
+\indexentry{types!enumerated|hyperpage}{31}
+\indexentry{enumerated types!iterating|hyperpage}{31}
+\indexentry{enumerated types!size@\chpl{size}|hyperpage}{31}
+\indexentry{predefined functions!size (enum)@\chpl{size} (enum)|hyperpage}{31}
+\indexentry{types!structured|hyperpage}{32}
+\indexentry{types!dataparallel|hyperpage}{33}
+\indexentry{types!synchronization|hyperpage}{33}
+\indexentry{types!aliases|hyperpage}{34}
+\indexentry{variables|hyperpage}{35}
+\indexentry{variables!declarations|hyperpage}{35}
+\indexentry{declarations!variables|hyperpage}{35}
+\indexentry{default initialization!variables|hyperpage}{36}
+\indexentry{variables!default initialization|hyperpage}{36}
+\indexentry{variables!default values|hyperpage}{36}
+\indexentry{noinit|hyperpage}{37}
+\indexentry{noinit!variables|hyperpage}{37}
+\indexentry{type inference|hyperpage}{37}
+\indexentry{type inference!local|hyperpage}{37}
+\indexentry{declarations!variables!multiple|hyperpage}{38}
+\indexentry{variables!declarations!multiple|hyperpage}{38}
+\indexentry{variables!module level|hyperpage}{39}
+\indexentry{variables!local|hyperpage}{39}
+\indexentry{constants|hyperpage}{39}
+\indexentry{constants!compile-time|hyperpage}{39}
+\indexentry{parameters|hyperpage}{39}
+\indexentry{param@\chpl{param}|hyperpage}{39}
+\indexentry{constants!runtime|hyperpage}{40}
+\indexentry{constants|hyperpage}{40}
+\indexentry{const@\chpl{const}|hyperpage}{40}
+\indexentry{variables!configuration|hyperpage}{40}
+\indexentry{constants!configuration|hyperpage}{40}
+\indexentry{config@\chpl{config}|hyperpage}{40}
+\indexentry{parameters!configuration|hyperpage}{40}
+\indexentry{variables!ref|hyperpage}{40}
+\indexentry{ref@\chpl{ref}|hyperpage}{40}
+\indexentry{conversions|hyperpage}{42}
+\indexentry{conversions!source type|hyperpage}{42}
+\indexentry{conversions!target type|hyperpage}{42}
+\indexentry{conversions!implicit|hyperpage}{42}
+\indexentry{conversions!implicit!occurs at|hyperpage}{42}
+\indexentry{conversions!implicit!allowed types|hyperpage}{42}
+\indexentry{conversions!numeric|hyperpage}{43}
+\indexentry{conversions!implicit!numeric|hyperpage}{43}
+\indexentry{conversions!boolean|hyperpage}{43}
+\indexentry{conversions!implicit!boolean|hyperpage}{43}
+\indexentry{conversions!enumerated types|hyperpage}{43}
+\indexentry{conversions!implicit!enumerated types|hyperpage}{43}
+\indexentry{conversions!numeric!parameter|hyperpage}{44}
+\indexentry{conversions!implicit!parameter|hyperpage}{44}
+\indexentry{conversions!boolean!in a statement|hyperpage}{44}
+\indexentry{conversions!implicit!boolean|hyperpage}{44}
+\indexentry{conversions!explicit|hyperpage}{44}
+\indexentry{conversions!numeric|hyperpage}{44}
+\indexentry{conversions!explicit!numeric|hyperpage}{44}
+\indexentry{conversions!tuple to complex|hyperpage}{45}
+\indexentry{conversions!explicit!tuple to complex|hyperpage}{45}
+\indexentry{conversions!enumeration|hyperpage}{45}
+\indexentry{conversions!explicit!enumeration|hyperpage}{45}
+\indexentry{conversions!class|hyperpage}{46}
+\indexentry{conversions!explicit!class|hyperpage}{46}
+\indexentry{conversions!records|hyperpage}{46}
+\indexentry{conversions!explicit!records|hyperpage}{46}
+\indexentry{conversions!range|hyperpage}{46}
+\indexentry{conversions!explicit!range|hyperpage}{46}
+\indexentry{conversions!domain|hyperpage}{46}
+\indexentry{conversions!explicit!domain|hyperpage}{46}
+\indexentry{conversions!type to string|hyperpage}{47}
+\indexentry{conversions!explicit!type to string|hyperpage}{47}
+\indexentry{expressions|hyperpage}{48}
+\indexentry{literal expressions|hyperpage}{49}
+\indexentry{expressions!literal|hyperpage}{49}
+\indexentry{expressions!variable|hyperpage}{49}
+\indexentry{expressions!enumeration constant|hyperpage}{49}
+\indexentry{expressions!parenthesized|hyperpage}{49}
+\indexentry{function calls|hyperpage}{50}
+\indexentry{expressions!call|hyperpage}{50}
+\indexentry{indexing|hyperpage}{50}
+\indexentry{expressions!indexing|hyperpage}{50}
+\indexentry{member access|hyperpage}{50}
+\indexentry{expressions!member access|hyperpage}{50}
+\indexentry{expressions!type query|hyperpage}{50}
+\indexentry{? (type query)@\chpl{?} (type query)|hyperpage}{50}
+\indexentry{operators!? (type query)@\chpl{?} (type query)|hyperpage}{50}
+\indexentry{casts|hyperpage}{51}
+\indexentry{expressions!cast|hyperpage}{51}
+\indexentry{: (cast)@\chpl{:} (cast)|hyperpage}{51}
+\indexentry{operators!: (cast)@\chpl{:} (cast)|hyperpage}{51}
+\indexentry{lvalues|hyperpage}{51}
+\indexentry{expressions!lvalue|hyperpage}{51}
+\indexentry{operators!precedence|hyperpage}{52}
+\indexentry{operators!associativity|hyperpage}{52}
+\indexentry{expressions!precedence|hyperpage}{52}
+\indexentry{expressions!associativity|hyperpage}{52}
+\indexentry{expressions!operator|hyperpage}{54}
+\indexentry{operators!unary|hyperpage}{54}
+\indexentry{expressions!unary operator|hyperpage}{54}
+\indexentry{operators!binary|hyperpage}{54}
+\indexentry{expressions!binary operator|hyperpage}{54}
+\indexentry{operators!arithmetic|hyperpage}{54}
+\indexentry{+ (unary)@\chpl{+} (unary)|hyperpage}{54}
+\indexentry{operators!+ (unary)@\chpl{+} (unary)|hyperpage}{54}
+\indexentry{operators!negation|hyperpage}{55}
+\indexentry{- (unary)@\chpl{-} (unary)|hyperpage}{55}
+\indexentry{operators!- (unary)@\chpl{-} (unary)|hyperpage}{55}
+\indexentry{operators!addition|hyperpage}{55}
+\indexentry{+@\chpl{+}|hyperpage}{55}
+\indexentry{operators!+@\chpl{+}|hyperpage}{55}
+\indexentry{operators!subtraction|hyperpage}{56}
+\indexentry{-@\chpl{-}|hyperpage}{56}
+\indexentry{operators!-@\chpl{-}|hyperpage}{56}
+\indexentry{operators!multiplication|hyperpage}{57}
+\indexentry{operators!*@\chpl{*}|hyperpage}{57}
+\indexentry{*@\chpl{*}|hyperpage}{57}
+\indexentry{operators!division|hyperpage}{58}
+\indexentry{/@\chpl{/}|hyperpage}{58}
+\indexentry{operators!/@\chpl{/}|hyperpage}{58}
+\indexentry{operators!modulus|hyperpage}{59}
+\indexentry{\%@\chpl{\%}|hyperpage}{59}
+\indexentry{operators!\%@\chpl{\%}|hyperpage}{59}
+\indexentry{operators!exponentiation|hyperpage}{59}
+\indexentry{**@\chpl{**}|hyperpage}{59}
+\indexentry{operators!**@\chpl{**}|hyperpage}{59}
+\indexentry{operators!bitwise|hyperpage}{60}
+\indexentry{operators!bitwise!complement|hyperpage}{60}
+\indexentry{\~@\chpl{\~}|hyperpage}{60}
+\indexentry{operators!\~@\chpl{\~}|hyperpage}{60}
+\indexentry{operators!bitwise!and|hyperpage}{60}
+\indexentry{&@\chpl{&}|hyperpage}{60}
+\indexentry{operators!&@\chpl{&}|hyperpage}{60}
+\indexentry{operators!bitwise!or|hyperpage}{61}
+\indexentry{|hyperindexformat{\@\chpl{|}}}{61}
+\indexentry{operators!|hyperindexformat{\@\chpl{|}}}{61}
+\indexentry{operators!bitwise!exclusive or|hyperpage}{61}
+\indexentry{^@\chpl{^}|hyperpage}{61}
+\indexentry{operators!^@\chpl{^}|hyperpage}{61}
+\indexentry{operators!shift|hyperpage}{61}
+\indexentry{<<@\chpl{<<}|hyperpage}{61}
+\indexentry{operators!<<@\chpl{<<}|hyperpage}{61}
+\indexentry{>>@\chpl{>>}|hyperpage}{61}
+\indexentry{operators!>>@\chpl{>>}|hyperpage}{61}
+\indexentry{operators!logical|hyperpage}{62}
+\indexentry{operators!logical!not|hyperpage}{62}
+\indexentry{\!@\chpl{!}|hyperpage}{62}
+\indexentry{operators!\!@\chpl{!}|hyperpage}{62}
+\indexentry{operators!logical!and|hyperpage}{63}
+\indexentry{&&@\chpl{&&}|hyperpage}{63}
+\indexentry{operators!&&@\chpl{&&}|hyperpage}{63}
+\indexentry{operators!logical!or|hyperpage}{63}
+\indexentry{|hyperpage}{63}
+\indexentry{operators!|hyperpage}{63}
+\indexentry{operators!relational|hyperpage}{63}
+\indexentry{operators!less than|hyperpage}{64}
+\indexentry{<@\chpl{<}|hyperpage}{64}
+\indexentry{operators!<@\chpl{<}|hyperpage}{64}
+\indexentry{operators!greater than|hyperpage}{64}
+\indexentry{>@\chpl{>}|hyperpage}{64}
+\indexentry{operators!>@\chpl{>}|hyperpage}{64}
+\indexentry{operators!less than or equal|hyperpage}{64}
+\indexentry{<=@\chpl{<=}|hyperpage}{64}
+\indexentry{operators!<=@\chpl{<=}|hyperpage}{64}
+\indexentry{operators!greater than or equal|hyperpage}{65}
+\indexentry{>=@\chpl{>=}|hyperpage}{65}
+\indexentry{operators!>=@\chpl{>=}|hyperpage}{65}
+\indexentry{operators!equality|hyperpage}{65}
+\indexentry{==@\chpl{==}|hyperpage}{65}
+\indexentry{operators!==@\chpl{==}|hyperpage}{65}
+\indexentry{"!=@\chpl{"\"!=}|hyperpage}{65}
+\indexentry{operators!"!=@\chpl{"\"!=}|hyperpage}{65}
+\indexentry{== (string)@\chpl{==} (string)|hyperpage}{66}
+\indexentry{operators!== (string)@\chpl{==} (string)|hyperpage}{66}
+\indexentry{"!= (string)@\chpl{"\"!=} (string)|hyperpage}{66}
+\indexentry{operators!"!= (string)@\chpl{"\"!=} (string)|hyperpage}{66}
+\indexentry{operators!string concatenation|hyperpage}{67}
+\indexentry{operators!concatenation!string|hyperpage}{67}
+\indexentry{operators!+ (string)@\chpl{+} (string)|hyperpage}{67}
+\indexentry{by@\chpl{by}|hyperpage}{67}
+\indexentry{operators!by@\chpl{by}|hyperpage}{67}
+\indexentry{align@\chpl{align}|hyperpage}{67}
+\indexentry{operators!align@\chpl{align}|hyperpage}{67}
+\indexentry{operators!range!count|hyperpage}{67}
+\indexentry{#@\chpl{#}|hyperpage}{67}
+\indexentry{operators!#@\chpl{#}|hyperpage}{67}
+\indexentry{let@\chpl{let}|hyperpage}{67}
+\indexentry{operators!let@\chpl{let}|hyperpage}{67}
+\indexentry{conditional expressions|hyperpage}{68}
+\indexentry{expressions!conditional|hyperpage}{68}
+\indexentry{expressions!if-then-else|hyperpage}{68}
+\indexentry{if@\chpl{if}|hyperpage}{68}
+\indexentry{then@\chpl{then}|hyperpage}{68}
+\indexentry{else@\chpl{else}|hyperpage}{68}
+\indexentry{for@\chpl{for}|hyperpage}{68}
+\indexentry{expressions!for@\chpl{for}|hyperpage}{68}
+\indexentry{for@\chpl{for}!filtering predicates|hyperpage}{69}
+\indexentry{expressions!for@\chpl{for}!filtering predicates|hyperpage}{69}
+\indexentry{statement|hyperpage}{70}
+\indexentry{block|hyperpage}{71}
+\indexentry{expressions!statement|hyperpage}{71}
+\indexentry{expression statement|hyperpage}{71}
+\indexentry{statements!expression|hyperpage}{71}
+\indexentry{assignment|hyperpage}{72}
+\indexentry{statements!assignment|hyperpage}{72}
+\indexentry{= (see also assignment)@\chpl{=} (see also assignment)|hyperpage}{72}
+\indexentry{+=@\chpl{+=}|hyperpage}{72}
+\indexentry{-=@\chpl{-=}|hyperpage}{72}
+\indexentry{*=@\chpl{*=}|hyperpage}{72}
+\indexentry{/=@\chpl{/=}|hyperpage}{72}
+\indexentry{\%=@\chpl{\%=}|hyperpage}{72}
+\indexentry{**=@\chpl{**=}|hyperpage}{72}
+\indexentry{&=@\chpl{&=}|hyperpage}{72}
+\indexentry{|hyperindexformat{\=@\chpl{|=}}}{72}
+\indexentry{^=@\chpl{^=}|hyperpage}{72}
+\indexentry{|hyperpage}{72}
+\indexentry{&&=@\chpl{&&=}|hyperpage}{72}
+\indexentry{<<=@\chpl{<<=}|hyperpage}{72}
+\indexentry{>>=@\chpl{>>=}|hyperpage}{72}
+\indexentry{operators!assignment|hyperpage}{72}
+\indexentry{operators!compound assignment|hyperpage}{72}
+\indexentry{operators!assignment!compound|hyperpage}{72}
+\indexentry{operators!simple assignment|hyperpage}{72}
+\indexentry{operators!assignment!simple|hyperpage}{72}
+\indexentry{swap!statement|hyperpage}{73}
+\indexentry{statements!swap|hyperpage}{73}
+\indexentry{swap!operator|hyperpage}{73}
+\indexentry{operators!swap|hyperpage}{73}
+\indexentry{IO!statement|hyperpage}{73}
+\indexentry{statements!IO|hyperpage}{73}
+\indexentry{IO!operator|hyperpage}{73}
+\indexentry{operators!IO|hyperpage}{73}
+\indexentry{statements!conditional|hyperpage}{74}
+\indexentry{if@\chpl{if}|hyperpage}{74}
+\indexentry{then@\chpl{then}|hyperpage}{74}
+\indexentry{else@\chpl{else}|hyperpage}{74}
+\indexentry{conditional statements|hyperpage}{74}
+\indexentry{conditional statement!dangling else|hyperpage}{74}
+\indexentry{select@\chpl{select}|hyperpage}{74}
+\indexentry{when@\chpl{when}|hyperpage}{74}
+\indexentry{otherwise@\chpl{otherwise}|hyperpage}{74}
+\indexentry{statements!select@\chpl{select}|hyperpage}{74}
+\indexentry{statements!when@\chpl{when}|hyperpage}{74}
+\indexentry{statements!otherwise@\chpl{otherwise}|hyperpage}{74}
+\indexentry{while loops|hyperpage}{75}
+\indexentry{while@\chpl{while}|hyperpage}{75}
+\indexentry{statements!while@\chpl{while}|hyperpage}{75}
+\indexentry{for loops|hyperpage}{77}
+\indexentry{for@\chpl{for}|hyperpage}{77}
+\indexentry{statements!for@\chpl{for}|hyperpage}{77}
+\indexentry{zipper iteration|hyperpage}{77}
+\indexentry{iteration!zipper|hyperpage}{77}
+\indexentry{statements!param for|hyperpage}{78}
+\indexentry{for loops!parameters|hyperpage}{78}
+\indexentry{for@\chpl{for}|hyperpage}{78}
+\indexentry{param@\chpl{param}|hyperpage}{78}
+\indexentry{statements!jumps|hyperpage}{78}
+\indexentry{label@\chpl{label}|hyperpage}{78}
+\indexentry{break@\chpl{break}|hyperpage}{78}
+\indexentry{continue@\chpl{continue}|hyperpage}{78}
+\indexentry{statements!label@\chpl{label}|hyperpage}{78}
+\indexentry{statements!break@\chpl{break}|hyperpage}{78}
+\indexentry{statements!continue@\chpl{continue}|hyperpage}{78}
+\indexentry{use@\chpl{use}|hyperpage}{79}
+\indexentry{statements!use@\chpl{use}|hyperpage}{79}
+\indexentry{modules!using|hyperpage}{79}
+\indexentry{types!enumerated!using|hyperpage}{79}
+\indexentry{statements!empty|hyperpage}{81}
+\indexentry{modules|hyperpage}{82}
+\indexentry{module@\chpl{module}|hyperpage}{82}
+\indexentry{modules!definitions|hyperpage}{82}
+\indexentry{modules!and files|hyperpage}{82}
+\indexentry{implicit modules|hyperpage}{83}
+\indexentry{modules!implicit|hyperpage}{83}
+\indexentry{modules!nested|hyperpage}{83}
+\indexentry{modules!access|hyperpage}{84}
+\indexentry{modules!access|hyperpage}{84}
+\indexentry{modules!access|hyperpage}{84}
+\indexentry{modules!explicitly named|hyperpage}{84}
+\indexentry{modules!using|hyperpage}{85}
+\indexentry{modules!initialization|hyperpage}{86}
+\indexentry{program execution|hyperpage}{86}
+\indexentry{program initialization|hyperpage}{86}
+\indexentry{main@\chpl{main}|hyperpage}{86}
+\indexentry{functions!main@\chpl{main}|hyperpage}{86}
+\indexentry{exploratory programming|hyperpage}{87}
+\indexentry{modules!initialization order|hyperpage}{87}
+\indexentry{functions|hyperpage}{89}
+\indexentry{functions!call site|hyperpage}{89}
+\indexentry{call site|hyperpage}{89}
+\indexentry{functions!formal arguments|hyperpage}{89}
+\indexentry{formal arguments|hyperpage}{89}
+\indexentry{functions!actual arguments|hyperpage}{89}
+\indexentry{actual arguments|hyperpage}{89}
+\indexentry{functions!procedure|hyperpage}{89}
+\indexentry{procedure|hyperpage}{89}
+\indexentry{functions!operator|hyperpage}{89}
+\indexentry{functions!method|hyperpage}{89}
+\indexentry{operators!procedure|hyperpage}{89}
+\indexentry{function calls|hyperpage}{89}
+\indexentry{calls!function|hyperpage}{89}
+\indexentry{actual arguments|hyperpage}{90}
+\indexentry{functions!actual arguments|hyperpage}{90}
+\indexentry{functions!procedure definition|hyperpage}{90}
+\indexentry{procedures!definition|hyperpage}{90}
+\indexentry{proc@\chpl{proc}|hyperpage}{90}
+\indexentry{functions!without parentheses|hyperpage}{92}
+\indexentry{formal arguments|hyperpage}{92}
+\indexentry{functions!formal arguments|hyperpage}{92}
+\indexentry{functions!arguments!formal|hyperpage}{92}
+\indexentry{named arguments|hyperpage}{93}
+\indexentry{functions!named arguments|hyperpage}{93}
+\indexentry{functions!arguments!named|hyperpage}{93}
+\indexentry{formal arguments!naming|hyperpage}{93}
+\indexentry{default values|hyperpage}{93}
+\indexentry{functions!default argument values|hyperpage}{93}
+\indexentry{functions!arguments!defaults|hyperpage}{93}
+\indexentry{formal arguments!defaults|hyperpage}{93}
+\indexentry{intents|hyperpage}{94}
+\indexentry{argument!intents|hyperpage}{94}
+\indexentry{functions!arguments!intents|hyperpage}{94}
+\indexentry{intents!concrete|hyperpage}{94}
+\indexentry{in (intent)@\chpl{in} (intent)|hyperpage}{94}
+\indexentry{intents!in@\chpl{in}|hyperpage}{94}
+\indexentry{out (intent)@\chpl{out} (intent)|hyperpage}{94}
+\indexentry{intents!out@\chpl{out}|hyperpage}{94}
+\indexentry{inout (intent)@\chpl{inout} (intent)|hyperpage}{94}
+\indexentry{intents!inout@\chpl{inout}|hyperpage}{94}
+\indexentry{ref (intent)@\chpl{ref} (intent)|hyperpage}{94}
+\indexentry{intents!ref@\chpl{ref}|hyperpage}{94}
+\indexentry{const in (intent)@\chpl{const in} (intent)|hyperpage}{95}
+\indexentry{intents!const in@\chpl{const in}|hyperpage}{95}
+\indexentry{const ref (intent)@\chpl{const ref} (intent)|hyperpage}{95}
+\indexentry{intents!const ref@\chpl{const ref}|hyperpage}{95}
+\indexentry{intents!abstract|hyperpage}{95}
+\indexentry{intents!const@\chpl{const}|hyperpage}{95}
+\indexentry{intents!default|hyperpage}{96}
+\indexentry{functions!variable number of arguments|hyperpage}{97}
+\indexentry{functions!varargs|hyperpage}{97}
+\indexentry{functions!return intent|hyperpage}{97}
+\indexentry{functions!ref keyword and@\chpl{ref} keyword and|hyperpage}{98}
+\indexentry{ref (return intent)@\chpl{ref} (return intent)|hyperpage}{98}
+\indexentry{intents!ref return@\chpl{ref} return|hyperpage}{98}
+\indexentry{functions!lvalues|hyperpage}{98}
+\indexentry{functions!const ref keyword and@\chpl{const ref} keyword and|hyperpage}{98}
+\indexentry{const ref (return intent)@\chpl{const ref} (return intent)|hyperpage}{98}
+\indexentry{intents!const ref return@\chpl{const ref} return|hyperpage}{98}
+\indexentry{functions!ref-pair|hyperpage}{98}
+\indexentry{functions!ref-pair|hyperpage}{99}
+\indexentry{functions!as parameters|hyperpage}{99}
+\indexentry{functions!parameter function|hyperpage}{99}
+\indexentry{parameter function|hyperpage}{99}
+\indexentry{functions!as types|hyperpage}{100}
+\indexentry{functions!type functions|hyperpage}{100}
+\indexentry{return@\chpl{return}|hyperpage}{100}
+\indexentry{statements!return|hyperpage}{100}
+\indexentry{return@\chpl{return}!types|hyperpage}{100}
+\indexentry{functions!return types|hyperpage}{100}
+\indexentry{explicit return type|hyperpage}{101}
+\indexentry{functions!return types!explicit|hyperpage}{101}
+\indexentry{type inference!of return types|hyperpage}{101}
+\indexentry{implicit return type|hyperpage}{101}
+\indexentry{functions!return types!implicit|hyperpage}{101}
+\indexentry{functions!nested|hyperpage}{101}
+\indexentry{nested function|hyperpage}{101}
+\indexentry{overloading|hyperpage}{101}
+\indexentry{overloading functions (see also functions, overloading)|hyperpage}{101}
+\indexentry{overloading operators (see also operators, overloading)|hyperpage}{101}
+\indexentry{functions!overloading|hyperpage}{101}
+\indexentry{operators!overloading|hyperpage}{101}
+\indexentry{functions!resolution|hyperpage}{102}
+\indexentry{functions!visible|hyperpage}{102}
+\indexentry{functions!candidates|hyperpage}{102}
+\indexentry{functions!resolution!valid mapping|hyperpage}{102}
+\indexentry{functions!resolution!legal argument mapping|hyperpage}{103}
+\indexentry{functions!most specific|hyperpage}{103}
+\indexentry{functions!resolution!most specific|hyperpage}{103}
+\indexentry{tuples|hyperpage}{105}
+\indexentry{tuples!types|hyperpage}{105}
+\indexentry{types!tuple|hyperpage}{105}
+\indexentry{tuples!homogeneous|hyperpage}{105}
+\indexentry{types!* (tuples)@\chpl{*} tuples|hyperpage}{105}
+\indexentry{tuples!values|hyperpage}{106}
+\indexentry{values!tuple|hyperpage}{106}
+\indexentry{tuples!indexing|hyperpage}{107}
+\indexentry{tuples!iteration|hyperpage}{107}
+\indexentry{iteration!tuple|hyperpage}{107}
+\indexentry{assignment!tuple|hyperpage}{107}
+\indexentry{tuples!assignment|hyperpage}{107}
+\indexentry{tuples!destructuring|hyperpage}{108}
+\indexentry{tuples!assignments grouped as|hyperpage}{108}
+\indexentry{tuples!omitting components|hyperpage}{108}
+\indexentry{tuples!variable declarations grouped as|hyperpage}{109}
+\indexentry{tuples!omitting components|hyperpage}{109}
+\indexentry{tuples!indices grouped as|hyperpage}{110}
+\indexentry{tuples!omitting components|hyperpage}{110}
+\indexentry{tuples!formal arguments grouped as|hyperpage}{110}
+\indexentry{tuples!omitting components|hyperpage}{111}
+\indexentry{... (tuple expansion)@\chpl{...} (tuple expansion)|hyperpage}{111}
+\indexentry{tuples!expanding in place|hyperpage}{111}
+\indexentry{tuples!operators|hyperpage}{112}
+\indexentry{operators!tuple!unary|hyperpage}{112}
+\indexentry{operators!tuple!binary|hyperpage}{112}
+\indexentry{operators!tuple!relational|hyperpage}{112}
+\indexentry{tuples!predefined functions|hyperpage}{113}
+\indexentry{predefined functions!tuples|hyperpage}{113}
+\indexentry{functions!tuples!predefined|hyperpage}{113}
+\indexentry{tuples!isTuple@\chpl{isTuple}|hyperpage}{113}
+\indexentry{predefined functions!isTuple@\chpl{isTuple}|hyperpage}{113}
+\indexentry{tuples!isTupleType@\chpl{isTupleType}|hyperpage}{113}
+\indexentry{predefined functions!isTupleType@\chpl{isTupleType}|hyperpage}{113}
+\indexentry{tuples!max@\chpl{max}|hyperpage}{113}
+\indexentry{predefined functions!max@\chpl{max}|hyperpage}{113}
+\indexentry{tuples!min@\chpl{min}|hyperpage}{113}
+\indexentry{predefined functions!min@\chpl{min}|hyperpage}{113}
+\indexentry{tuples!size@\chpl{size}|hyperpage}{113}
+\indexentry{predefined functions!size@\chpl{size}|hyperpage}{113}
+\indexentry{classes|hyperpage}{114}
+\indexentry{classes!instances|hyperpage}{114}
+\indexentry{objects|hyperpage}{114}
+\indexentry{classes!declarations|hyperpage}{114}
+\indexentry{class@\chpl{class}|hyperpage}{114}
+\indexentry{classes!types|hyperpage}{115}
+\indexentry{class type|hyperpage}{115}
+\indexentry{classes!values|hyperpage}{115}
+\indexentry{class value|hyperpage}{115}
+\indexentry{classes!fields|hyperpage}{116}
+\indexentry{fields!class|hyperpage}{116}
+\indexentry{classes!methods|hyperpage}{116}
+\indexentry{methods!classes|hyperpage}{116}
+\indexentry{methods!primary|hyperpage}{116}
+\indexentry{methods!secondary|hyperpage}{116}
+\indexentry{primary methods|hyperpage}{116}
+\indexentry{secondary methods|hyperpage}{116}
+\indexentry{classes!nested classes|hyperpage}{117}
+\indexentry{nested classes|hyperpage}{117}
+\indexentry{inheritance|hyperpage}{117}
+\indexentry{classes!inheritance|hyperpage}{117}
+\indexentry{derived class|hyperpage}{117}
+\indexentry{classes!derived|hyperpage}{117}
+\indexentry{object@\chpl{object}|hyperpage}{117}
+\indexentry{classes!object@\chpl{object}|hyperpage}{117}
+\indexentry{classes!base!field access|hyperpage}{118}
+\indexentry{classes!field access!base class|hyperpage}{118}
+\indexentry{constructors!derived class|hyperpage}{118}
+\indexentry{classes!derived!constructors|hyperpage}{118}
+\indexentry{shadowing!base class fields|hyperpage}{118}
+\indexentry{dynamic dispatch|hyperpage}{118}
+\indexentry{methods!base class!overriding|hyperpage}{118}
+\indexentry{multiple inheritance|hyperpage}{119}
+\indexentry{inheritance!multiple|hyperpage}{119}
+\indexentry{classes!inheritance!multiple|hyperpage}{119}
+\indexentry{classes!nil|hyperpage}{119}
+\indexentry{nil@\chpl{nil}|hyperpage}{119}
+\indexentry{classes!initialization|hyperpage}{119}
+\indexentry{initialization!classes|hyperpage}{119}
+\indexentry{classes!initialization!default|hyperpage}{119}
+\indexentry{classes!default initialization|hyperpage}{119}
+\indexentry{default initialization!classes|hyperpage}{119}
+\indexentry{initialization!classes!default|hyperpage}{119}
+\indexentry{classes!constructors|hyperpage}{119}
+\indexentry{new!classes|hyperpage}{119}
+\indexentry{new@\chpl{new}|hyperpage}{119}
+\indexentry{classes!new@\chpl{new}|hyperpage}{119}
+\indexentry{constructors|hyperpage}{119}
+\indexentry{classes!constructors!user-defined|hyperpage}{120}
+\indexentry{user-defined constructors|hyperpage}{120}
+\indexentry{constructors!user-defined|hyperpage}{120}
+\indexentry{classes!constructors!compiler-generated|hyperpage}{120}
+\indexentry{constructors!compiler-generated|hyperpage}{120}
+\indexentry{compiler-generated constructors|hyperpage}{120}
+\indexentry{classes!field access|hyperpage}{121}
+\indexentry{field access!class|hyperpage}{121}
+\indexentry{classes!receiver|hyperpage}{121}
+\indexentry{receiver!class|hyperpage}{121}
+\indexentry{classes!getter method|hyperpage}{122}
+\indexentry{getter method!class|hyperpage}{122}
+\indexentry{methods!class!getter|hyperpage}{122}
+\indexentry{classes!method calls|hyperpage}{122}
+\indexentry{methods!calling|hyperpage}{122}
+\indexentry{classes!receiver|hyperpage}{123}
+\indexentry{this@\chpl{this}|hyperpage}{123}
+\indexentry{classes!this@\chpl{this}|hyperpage}{123}
+\indexentry{receiver|hyperpage}{123}
+\indexentry{type methods|hyperpage}{123}
+\indexentry{instance methods|hyperpage}{123}
+\indexentry{methods!type|hyperpage}{123}
+\indexentry{methods!instance|hyperpage}{123}
+\indexentry{classes!indexing|hyperpage}{124}
+\indexentry{this@\chpl{this}|hyperpage}{124}
+\indexentry{classes!this@\chpl{this}|hyperpage}{124}
+\indexentry{classes!iterating over|hyperpage}{125}
+\indexentry{these@\chpl{these}|hyperpage}{125}
+\indexentry{classes!these@\chpl{these}|hyperpage}{125}
+\indexentry{classes!assignment|hyperpage}{125}
+\indexentry{assignment!class|hyperpage}{125}
+\indexentry{conversions!class|hyperpage}{125}
+\indexentry{conversions!implicit!class|hyperpage}{125}
+\indexentry{classes!implicit conversion|hyperpage}{125}
+\indexentry{memory management|hyperpage}{126}
+\indexentry{classes!delete|hyperpage}{126}
+\indexentry{delete!classes|hyperpage}{126}
+\indexentry{classes!destructor|hyperpage}{126}
+\indexentry{destructor!classes|hyperpage}{126}
+\indexentry{records|hyperpage}{127}
+\indexentry{records!declarations|hyperpage}{127}
+\indexentry{declarations!records|hyperpage}{127}
+\indexentry{record@\chpl{record}|hyperpage}{127}
+\indexentry{records!record types|hyperpage}{128}
+\indexentry{records!types|hyperpage}{128}
+\indexentry{types!records|hyperpage}{128}
+\indexentry{records!fields|hyperpage}{129}
+\indexentry{fields!records|hyperpage}{129}
+\indexentry{records!methods|hyperpage}{129}
+\indexentry{methods!records|hyperpage}{129}
+\indexentry{nested records|hyperpage}{129}
+\indexentry{records!nested|hyperpage}{129}
+\indexentry{records!inheritance|hyperpage}{129}
+\indexentry{inheritance!records|hyperpage}{129}
+\indexentry{records!fields!shadowing|hyperpage}{130}
+\indexentry{records!variable declarations|hyperpage}{130}
+\indexentry{variables!records|hyperpage}{130}
+\indexentry{records!allocation|hyperpage}{130}
+\indexentry{records!initialization|hyperpage}{131}
+\indexentry{initialization!record|hyperpage}{131}
+\indexentry{records!destructor|hyperpage}{132}
+\indexentry{destructor!records|hyperpage}{132}
+\indexentry{records!arguments|hyperpage}{132}
+\indexentry{arguments!records|hyperpage}{132}
+\indexentry{records!field access|hyperpage}{133}
+\indexentry{field access|hyperpage}{133}
+\indexentry{records!getters|hyperpage}{133}
+\indexentry{records!method calls|hyperpage}{133}
+\indexentry{method calls|hyperpage}{133}
+\indexentry{this@\chpl{this}|hyperpage}{133}
+\indexentry{records!receiver|hyperpage}{133}
+\indexentry{receiver|hyperpage}{133}
+\indexentry{records!indexing|hyperpage}{133}
+\indexentry{records!iterating|hyperpage}{134}
+\indexentry{records!assignment|hyperpage}{134}
+\indexentry{records!equality|hyperpage}{135}
+\indexentry{records!inequality|hyperpage}{135}
+\indexentry{records!==@\chpl{==}|hyperpage}{135}
+\indexentry{records!"!=@\chpl{"\"!=}|hyperpage}{135}
+\indexentry{== (record)@\chpl{==} (record)|hyperpage}{135}
+\indexentry{"!= (record)@\chpl{"\"!=} (record)|hyperpage}{135}
+\indexentry{conversions!records|hyperpage}{135}
+\indexentry{conversions!implicit!records|hyperpage}{135}
+\indexentry{records!implicit conversions|hyperpage}{135}
+\indexentry{records!differences with classes|hyperpage}{135}
+\indexentry{records!declarations!differences with classes|hyperpage}{135}
+\indexentry{classes!allocation|hyperpage}{135}
+\indexentry{records!allocation|hyperpage}{135}
+\indexentry{classes!assignment|hyperpage}{136}
+\indexentry{records!assignment|hyperpage}{136}
+\indexentry{classes!arguments|hyperpage}{136}
+\indexentry{records!arguments|hyperpage}{136}
+\indexentry{records!inheritance|hyperpage}{136}
+\indexentry{inheritance!records|hyperpage}{136}
+\indexentry{records!inheritance|hyperpage}{136}
+\indexentry{inheritance!records|hyperpage}{136}
+\indexentry{classes!shadowing|hyperpage}{136}
+\indexentry{records!shadowing|hyperpage}{136}
+\indexentry{classes!overriding|hyperpage}{136}
+\indexentry{records!overriding|hyperpage}{136}
+\indexentry{nil@\chpl{nil}!not provided for records|hyperpage}{137}
+\indexentry{records!delete illegal|hyperpage}{137}
+\indexentry{delete!illegal for records|hyperpage}{137}
+\indexentry{classes!comparison|hyperpage}{137}
+\indexentry{records!comparison|hyperpage}{137}
+\indexentry{unions|hyperpage}{138}
+\indexentry{types!unions|hyperpage}{138}
+\indexentry{union types|hyperpage}{138}
+\indexentry{union@\chpl{union}|hyperpage}{138}
+\indexentry{declarations!union@\chpl{union}|hyperpage}{138}
+\indexentry{unions!fields|hyperpage}{138}
+\indexentry{unions!assignment|hyperpage}{139}
+\indexentry{ranges|hyperpage}{140}
+\indexentry{ranges!concepts|hyperpage}{140}
+\indexentry{ranges!represented sequence|hyperpage}{140}
+\indexentry{ranges!sequence|hyperpage}{140}
+\indexentry{ranges!low bound|hyperpage}{140}
+\indexentry{ranges!high bound|hyperpage}{140}
+\indexentry{ranges!stride|hyperpage}{140}
+\indexentry{ranges!alignment|hyperpage}{140}
+\indexentry{ranges!alignment!ambiguous|hyperpage}{140}
+\indexentry{ranges!represented sequence!increasing|hyperpage}{141}
+\indexentry{ranges!represented sequence!decreasing|hyperpage}{141}
+\indexentry{ranges!empty|hyperpage}{141}
+\indexentry{ranges!aligned integer|hyperpage}{141}
+\indexentry{ranges!alignment!ambiguous|hyperpage}{141}
+\indexentry{ranges!first index|hyperpage}{141}
+\indexentry{ranges!last index|hyperpage}{141}
+\indexentry{ranges!aligned low bound|hyperpage}{141}
+\indexentry{ranges!aligned high bound|hyperpage}{141}
+\indexentry{ranges!iterable|hyperpage}{141}
+\indexentry{ranges!types|hyperpage}{142}
+\indexentry{types!range|hyperpage}{142}
+\indexentry{ranges!idxType|hyperpage}{142}
+\indexentry{ranges!stride type|hyperpage}{142}
+\indexentry{ranges!boundedType|hyperpage}{142}
+\indexentry{ranges!stridable|hyperpage}{142}
+\indexentry{ranges!bounded|hyperpage}{142}
+\indexentry{ranges!boundedLow|hyperpage}{142}
+\indexentry{ranges!boundedHigh|hyperpage}{142}
+\indexentry{ranges!boundedNone|hyperpage}{142}
+\indexentry{ranges!values|hyperpage}{143}
+\indexentry{ranges!literals|hyperpage}{143}
+\indexentry{ranges!default values|hyperpage}{144}
+\indexentry{ranges!operations|hyperpage}{144}
+\indexentry{ranges!assignment|hyperpage}{145}
+\indexentry{ranges!comparisons|hyperpage}{145}
+\indexentry{ranges!iteration|hyperpage}{145}
+\indexentry{ranges!iteration!zippered|hyperpage}{145}
+\indexentry{ranges!promotion|hyperpage}{146}
+\indexentry{promotion!range|hyperpage}{146}
+\indexentry{ranges!operators|hyperpage}{146}
+\indexentry{ranges!strided|hyperpage}{146}
+\indexentry{by@\chpl{by}!on ranges|hyperpage}{146}
+\indexentry{operators!by (range)@\chpl{by} (range)|hyperpage}{146}
+\indexentry{ranges!by operator@\chpl{by} operator|hyperpage}{146}
+\indexentry{ranges!align|hyperpage}{147}
+\indexentry{align@\chpl{align}!on ranges|hyperpage}{147}
+\indexentry{operators!align (range)@\chpl{align} (range)|hyperpage}{147}
+\indexentry{ranges!align operator@\chpl{align} operator|hyperpage}{147}
+\indexentry{ranges!count operator|hyperpage}{148}
+\indexentry{ranges!#@\chpl{#}|hyperpage}{148}
+\indexentry{operators!# (range)@\chpl{#} (range)|hyperpage}{148}
+\indexentry{ranges!arithmetic operators|hyperpage}{149}
+\indexentry{operators!arithmetic!range|hyperpage}{149}
+\indexentry{ranges!slicing|hyperpage}{150}
+\indexentry{ranges!predefined functions|hyperpage}{150}
+\indexentry{ranges!type accessors|hyperpage}{150}
+\indexentry{ranges!boundedType@\chpl{boundedType}|hyperpage}{150}
+\indexentry{predefined functions!boundedType@\chpl{boundedType}|hyperpage}{150}
+\indexentry{ranges!idxType@\chpl{idxType}|hyperpage}{150}
+\indexentry{predefined functions!idxType@\chpl{idxType}|hyperpage}{150}
+\indexentry{ranges!stridable@\chpl{stridable}|hyperpage}{150}
+\indexentry{predefined functions!stridable@\chpl{stridable}|hyperpage}{150}
+\indexentry{ranges!properties|hyperpage}{151}
+\indexentry{ranges!aligned@\chpl{aligned}|hyperpage}{151}
+\indexentry{predefined functions!aligned@\chpl{aligned}|hyperpage}{151}
+\indexentry{ranges!alignedHigh@\chpl{alignedHigh}|hyperpage}{151}
+\indexentry{predefined functions!alignedHigh@\chpl{alignedHigh}|hyperpage}{151}
+\indexentry{ranges!alignedLow@\chpl{alignedLow}|hyperpage}{151}
+\indexentry{predefined functions!alignedLow@\chpl{alignedLow}|hyperpage}{151}
+\indexentry{ranges!alignment@\chpl{alignment}|hyperpage}{151}
+\indexentry{predefined functions!alignment@\chpl{alignment}|hyperpage}{151}
+\indexentry{ranges!first@\chpl{first}|hyperpage}{151}
+\indexentry{predefined functions!first@\chpl{first}|hyperpage}{151}
+\indexentry{ranges!hasFirst@\chpl{hasFirst}|hyperpage}{151}
+\indexentry{predefined functions!hasFirst@\chpl{hasFirst}|hyperpage}{151}
+\indexentry{ranges!hasHighBound@\chpl{hasHighBound}|hyperpage}{151}
+\indexentry{predefined functions!hasHighBound@\chpl{hasHighBound}|hyperpage}{151}
+\indexentry{ranges!hasLast@\chpl{hasLast}|hyperpage}{151}
+\indexentry{predefined functions!hasLast@\chpl{hasLast}|hyperpage}{151}
+\indexentry{ranges!hasLowBound@\chpl{hasLowBound}|hyperpage}{151}
+\indexentry{predefined functions!hasLowBound@\chpl{hasLowBound}|hyperpage}{151}
+\indexentry{ranges!high@\chpl{high}|hyperpage}{152}
+\indexentry{predefined functions!high@\chpl{high}|hyperpage}{152}
+\indexentry{ranges!isAmbiguous@\chpl{isAmbiguous}|hyperpage}{152}
+\indexentry{predefined functions!isAmbiguous@\chpl{isAmbiguous}|hyperpage}{152}
+\indexentry{ranges!last@\chpl{last}|hyperpage}{152}
+\indexentry{predefined functions!last@\chpl{last}|hyperpage}{152}
+\indexentry{ranges!length@\chpl{length}|hyperpage}{152}
+\indexentry{predefined functions!length@\chpl{length}|hyperpage}{152}
+\indexentry{ranges!low@\chpl{low}|hyperpage}{152}
+\indexentry{predefined functions!low@\chpl{low}|hyperpage}{152}
+\indexentry{ranges!size@\chpl{size}|hyperpage}{152}
+\indexentry{predefined functions!size@\chpl{size}|hyperpage}{152}
+\indexentry{ranges!stride@\chpl{stride}|hyperpage}{152}
+\indexentry{predefined functions!stride@\chpl{stride}|hyperpage}{152}
+\indexentry{ranges!other queries|hyperpage}{152}
+\indexentry{ranges!boundsCheck@\chpl{boundsCheck}|hyperpage}{152}
+\indexentry{predefined functions!boundsCheck@\chpl{boundsCheck}|hyperpage}{152}
+\indexentry{ranges!ident@\chpl{ident}|hyperpage}{152}
+\indexentry{predefined functions!ident@\chpl{ident}|hyperpage}{152}
+\indexentry{ranges!indexOrder@\chpl{indexOrder}|hyperpage}{152}
+\indexentry{predefined functions!indexOrder@\chpl{indexOrder}|hyperpage}{152}
+\indexentry{ranges!member@\chpl{member}|hyperpage}{153}
+\indexentry{predefined functions!member@\chpl{member}|hyperpage}{153}
+\indexentry{ranges!member@\chpl{member}|hyperpage}{153}
+\indexentry{predefined functions!member@\chpl{member}|hyperpage}{153}
+\indexentry{ranges!transformations|hyperpage}{153}
+\indexentry{ranges!alignHigh@\chpl{alignHigh}|hyperpage}{153}
+\indexentry{predefined functions!alignHigh (range)@\chpl{alignHigh} (range)|hyperpage}{153}
+\indexentry{ranges!alignLow@\chpl{alignLow}|hyperpage}{153}
+\indexentry{predefined functions!alignLow (range)@\chpl{alignLow} (range)|hyperpage}{153}
+\indexentry{ranges!expand@\chpl{expand}|hyperpage}{153}
+\indexentry{predefined functions!expand (range)@\chpl{expand}|hyperpage}{153}
+\indexentry{ranges!exterior@\chpl{exterior}|hyperpage}{153}
+\indexentry{predefined functions!exterior (range)@\chpl{exterior} (range)|hyperpage}{153}
+\indexentry{ranges!interior@\chpl{interior}|hyperpage}{153}
+\indexentry{predefined functions!interior (range)@\chpl{interior} (range)|hyperpage}{153}
+\indexentry{ranges!offset@\chpl{offset}|hyperpage}{154}
+\indexentry{predefined functions!offset (range)@\chpl{offset} (range)|hyperpage}{154}
+\indexentry{ranges!translate@\chpl{translate}|hyperpage}{154}
+\indexentry{predefined functions!translate (range)@\chpl{translate} (range)|hyperpage}{154}
+\indexentry{domains|hyperpage}{155}
+\indexentry{domains!kinds|hyperpage}{155}
+\indexentry{domains!types and values|hyperpage}{156}
+\indexentry{rectangular domains (see also domains, rectangular)|hyperpage}{156}
+\indexentry{domains!rectangular|hyperpage}{156}
+\indexentry{domains!rectangular!types|hyperpage}{156}
+\indexentry{types!rectangular domains|hyperpage}{156}
+\indexentry{domains!values!rectangular|hyperpage}{157}
+\indexentry{domains!rectangular!values|hyperpage}{157}
+\indexentry{domains!rectangular!literals|hyperpage}{157}
+\indexentry{domains!rectangular!default value|hyperpage}{157}
+\indexentry{associative domains (see also domains, associative)|hyperpage}{158}
+\indexentry{types!associative domains|hyperpage}{158}
+\indexentry{domains!associative|hyperpage}{158}
+\indexentry{types!enumerated domains|hyperpage}{158}
+\indexentry{enumerated domains!types|hyperpage}{158}
+\indexentry{domains!enumerated|hyperpage}{158}
+\indexentry{types!opaque domains|hyperpage}{158}
+\indexentry{opaque domains!types|hyperpage}{158}
+\indexentry{domains!opaque|hyperpage}{158}
+\indexentry{domains!values!associative|hyperpage}{159}
+\indexentry{domains!associative!values|hyperpage}{159}
+\indexentry{domains!associative!literals|hyperpage}{159}
+\indexentry{domains!associative!initialization|hyperpage}{159}
+\indexentry{domains!associative!default values|hyperpage}{159}
+\indexentry{subdomains|hyperpage}{160}
+\indexentry{subdomains!simple|hyperpage}{160}
+\indexentry{subdomains!simple!types|hyperpage}{160}
+\indexentry{subdomains!types!simple|hyperpage}{160}
+\indexentry{types!subdomains!simple|hyperpage}{160}
+\indexentry{subdomains!simple!values|hyperpage}{160}
+\indexentry{values!subdomains!simple|hyperpage}{160}
+\indexentry{subdomains!simple!default values|hyperpage}{160}
+\indexentry{domains!sparse|hyperpage}{161}
+\indexentry{subdomains!sparse|hyperpage}{161}
+\indexentry{domains!sparse!types|hyperpage}{161}
+\indexentry{subdomains!sparse!types|hyperpage}{161}
+\indexentry{types!domains!sparse|hyperpage}{161}
+\indexentry{types!subdomains!sparse|hyperpage}{161}
+\indexentry{domains!sparse!values|hyperpage}{161}
+\indexentry{subdomains!sparse!values|hyperpage}{161}
+\indexentry{values!domains!sparse|hyperpage}{161}
+\indexentry{values!subdomains!sparse|hyperpage}{161}
+\indexentry{sparse domains!literals!lack thereof|hyperpage}{161}
+\indexentry{sparse domains!initialization|hyperpage}{161}
+\indexentry{domains!sparse!initialization|hyperpage}{161}
+\indexentry{initializations!sparse domains|hyperpage}{161}
+\indexentry{sparse domains!default value|hyperpage}{161}
+\indexentry{domains!sparse!default value|hyperpage}{161}
+\indexentry{domains!index types|hyperpage}{161}
+\indexentry{domains!iteration|hyperpage}{162}
+\indexentry{iteration!domain|hyperpage}{162}
+\indexentry{domains!as arguments|hyperpage}{162}
+\indexentry{argument passing!domains|hyperpage}{162}
+\indexentry{domains!promotion|hyperpage}{163}
+\indexentry{promotion!domain|hyperpage}{163}
+\indexentry{domains!assignment|hyperpage}{163}
+\indexentry{assignment!domain|hyperpage}{163}
+\indexentry{domains!striding|hyperpage}{164}
+\indexentry{by@\chpl{by}!on rectangular domains|hyperpage}{164}
+\indexentry{operators!by (domain)@\chpl{by} (domain)|hyperpage}{164}
+\indexentry{domains!alignment|hyperpage}{164}
+\indexentry{align@\chpl{align}!on rectangular domains|hyperpage}{164}
+\indexentry{operators!align (domain)@\chpl{align} (domain)|hyperpage}{164}
+\indexentry{slicing!domains|hyperpage}{165}
+\indexentry{domains!slicing|hyperpage}{165}
+\indexentry{domain-based slicing|hyperpage}{165}
+\indexentry{slicing!domain-based|hyperpage}{165}
+\indexentry{slicing!range-based|hyperpage}{165}
+\indexentry{range-based slicing|hyperpage}{165}
+\indexentry{slicing!rank-change|hyperpage}{165}
+\indexentry{rank-change slicing|hyperpage}{165}
+\indexentry{domains!count operator|hyperpage}{166}
+\indexentry{domains!#@\chpl{#}|hyperpage}{166}
+\indexentry{# (domain)@\chpl{#} (domain)|hyperpage}{166}
+\indexentry{operators!# (domain)@\chpl{#} (domain)|hyperpage}{166}
+\indexentry{domains!adding indices|hyperpage}{166}
+\indexentry{domains!removing indices|hyperpage}{166}
+\indexentry{domains!predefined functions|hyperpage}{166}
+\indexentry{domains!methods!common|hyperpage}{166}
+\indexentry{domains!common methods|hyperpage}{166}
+\indexentry{domains!clear@\chpl{clear}|hyperpage}{166}
+\indexentry{predefined functions!clear@\chpl{clear}|hyperpage}{166}
+\indexentry{domains!idxType@\chpl{idxType}|hyperpage}{167}
+\indexentry{predefined functions!idxType@\chpl{idxType}|hyperpage}{167}
+\indexentry{domains!isEnumDom@\chpl{isEnumDom}|hyperpage}{167}
+\indexentry{predefined functions!isEnumDom@\chpl{isEnumDom}|hyperpage}{167}
+\indexentry{domains!isIrregularDom@\chpl{isIrregularDom}|hyperpage}{167}
+\indexentry{predefined functions!isIrregularDom@\chpl{isIrregularDom}|hyperpage}{167}
+\indexentry{domains!isOpaqueDom@\chpl{isOpaqueDom}|hyperpage}{167}
+\indexentry{predefined functions!isOpaqueDom@\chpl{isOpaqueDom}|hyperpage}{167}
+\indexentry{domains!isRectangularDom@\chpl{isRectangularDom}|hyperpage}{167}
+\indexentry{predefined functions!isRectangularDom@\chpl{isRectangularDom}|hyperpage}{167}
+\indexentry{domains!isSparseDom@\chpl{isSparseDom}|hyperpage}{167}
+\indexentry{predefined functions!isSparseDom@\chpl{isSparseDom}|hyperpage}{167}
+\indexentry{domains!member@\chpl{member}|hyperpage}{167}
+\indexentry{predefined functions!member (domain)@\chpl{member} (domain)|hyperpage}{167}
+\indexentry{domains!numIndices@\chpl{numIndices}|hyperpage}{167}
+\indexentry{predefined functions!numIndices (domain)@\chpl{numIndices} (domain)|hyperpage}{167}
+\indexentry{domains!methods!regular|hyperpage}{168}
+\indexentry{regular domains!methods|hyperpage}{168}
+\indexentry{domains!dim@\chpl{dim}|hyperpage}{168}
+\indexentry{predefined functions!dim (domain)@\chpl{dim} (domain)|hyperpage}{168}
+\indexentry{domains!dims@\chpl{dims}|hyperpage}{168}
+\indexentry{predefined functions!dims (domain)@\chpl{dims} (domain)|hyperpage}{168}
+\indexentry{domains!expand@\chpl{expand}|hyperpage}{168}
+\indexentry{predefined functions!expand (domain)@\chpl{expand} (domain)|hyperpage}{168}
+\indexentry{domains!exterior@\chpl{exterior}|hyperpage}{168}
+\indexentry{predefined functions!exterior (domain)@\chpl{exterior} (domain)|hyperpage}{168}
+\indexentry{domains!high@\chpl{high}|hyperpage}{168}
+\indexentry{predefined functions!high (domain)@\chpl{high} (domain)|hyperpage}{168}
+\indexentry{domains!interior@\chpl{interior}|hyperpage}{168}
+\indexentry{predefined functions!interior (domain)@\chpl{interior} (domain)|hyperpage}{168}
+\indexentry{domains!low@\chpl{low}|hyperpage}{168}
+\indexentry{predefined functions!low (domain)@\chpl{low} (domain)|hyperpage}{168}
+\indexentry{domains!rank@\chpl{rank}|hyperpage}{168}
+\indexentry{predefined functions!rank (domain)@\chpl{rank} (domain)|hyperpage}{168}
+\indexentry{domains!size@\chpl{size}|hyperpage}{168}
+\indexentry{predefined functions!size (domain)@\chpl{size} (domain)|hyperpage}{168}
+\indexentry{domains!stridable@\chpl{stridable}|hyperpage}{169}
+\indexentry{predefined functions!stridable (domain)@\chpl{stridable} (domain)|hyperpage}{169}
+\indexentry{domains!stride@\chpl{stride}|hyperpage}{169}
+\indexentry{predefined functions!stride (domain)@\chpl{stride} (domain)|hyperpage}{169}
+\indexentry{domains!translate@\chpl{translate}|hyperpage}{169}
+\indexentry{predefined functions!translate (domain)@\chpl{translate} (domain)|hyperpage}{169}
+\indexentry{domains!methods!irregular|hyperpage}{169}
+\indexentry{irregular domains!methods|hyperpage}{169}
+\indexentry{domains!+@\chpl{+}|hyperpage}{169}
+\indexentry{predefined functions!+ (domain)@\chpl{+} (domain)|hyperpage}{169}
+\indexentry{domains!+@\chpl{+}|hyperpage}{169}
+\indexentry{predefined functions!+ (domain)@\chpl{+} (domain)|hyperpage}{169}
+\indexentry{domains!-@\chpl{-}|hyperpage}{169}
+\indexentry{predefined functions!- (domain)@\chpl{-} (domain)|hyperpage}{169}
+\indexentry{domains!-@\chpl{-}|hyperpage}{169}
+\indexentry{predefined functions!- (domain)@\chpl{-} (domain)|hyperpage}{169}
+\indexentry{domains!requestCapacity@\chpl{requestCapacity}|hyperpage}{169}
+\indexentry{predefined functions!requestCapacity@\chpl{requestCapacity}|hyperpage}{169}
+\indexentry{arrays|hyperpage}{170}
+\indexentry{arrays!types|hyperpage}{170}
+\indexentry{arrays!element type|hyperpage}{170}
+\indexentry{arrays!values|hyperpage}{170}
+\indexentry{arrays!initialization|hyperpage}{170}
+\indexentry{initialization!arrays|hyperpage}{170}
+\indexentry{arrays!literals|hyperpage}{170}
+\indexentry{rectangular array literals|hyperpage}{171}
+\indexentry{arrays!rectangular!literals|hyperpage}{171}
+\indexentry{arrays!rectangular!default values|hyperpage}{171}
+\indexentry{associative array literals|hyperpage}{171}
+\indexentry{arrays!associative!literals|hyperpage}{171}
+\indexentry{arrays!runtime representation|hyperpage}{172}
+\indexentry{arrays!domain maps|hyperpage}{172}
+\indexentry{arrays!indexing|hyperpage}{172}
+\indexentry{indexing!arrays|hyperpage}{172}
+\indexentry{indexing!rectangular arrays|hyperpage}{173}
+\indexentry{rectangular arrays!indexing|hyperpage}{173}
+\indexentry{indexing!associative arrays|hyperpage}{173}
+\indexentry{associative arrays!indexing|hyperpage}{173}
+\indexentry{arrays!iteration|hyperpage}{174}
+\indexentry{iteration!array|hyperpage}{174}
+\indexentry{arrays!assignment|hyperpage}{174}
+\indexentry{assignment!array|hyperpage}{174}
+\indexentry{arrays!slicing|hyperpage}{175}
+\indexentry{slicing!array|hyperpage}{175}
+\indexentry{arrays!slicing!rectangular|hyperpage}{175}
+\indexentry{slicing!arrays!rectangular|hyperpage}{175}
+\indexentry{arrays!slicing!rectangular!rank change|hyperpage}{176}
+\indexentry{arrays!count operator|hyperpage}{176}
+\indexentry{operators!# (on arrays)@\chpl{#} (on arrays)|hyperpage}{176}
+\indexentry{arrays!actual arguments|hyperpage}{176}
+\indexentry{arguments!array|hyperpage}{176}
+\indexentry{arrays!promotion|hyperpage}{176}
+\indexentry{promotion!arrays|hyperpage}{176}
+\indexentry{arrays!aliases|hyperpage}{177}
+\indexentry{=> (array)@\chpl{=>} (array)|hyperpage}{177}
+\indexentry{operators!=> (array)@\chpl{=>} (array)|hyperpage}{177}
+\indexentry{arrays!sparse|hyperpage}{177}
+\indexentry{domains!association with arrays|hyperpage}{178}
+\indexentry{arrays!association with domains|hyperpage}{178}
+\indexentry{arrays!predefined functions|hyperpage}{179}
+\indexentry{predefined functions!arrays|hyperpage}{179}
+\indexentry{functions!arrays!predefined|hyperpage}{179}
+\indexentry{arrays!eltType@\chpl{eltType}|hyperpage}{179}
+\indexentry{predefined functions!eltType (array)@\chpl{eltType} (array)|hyperpage}{179}
+\indexentry{arrays!rank@\chpl{rank}|hyperpage}{179}
+\indexentry{predefined functions!rank (array)@\chpl{rank} (array)|hyperpage}{179}
+\indexentry{arrays!domain@\chpl{domain}|hyperpage}{179}
+\indexentry{predefined functions!domain (array)@\chpl{domain} (array)|hyperpage}{179}
+\indexentry{arrays!numElements@\chpl{numElements}|hyperpage}{179}
+\indexentry{predefined functions!numElements (array)@\chpl{numElements} (array)|hyperpage}{179}
+\indexentry{arrays!reshape@\chpl{reshape}|hyperpage}{179}
+\indexentry{predefined functions!reshape (array)@\chpl{reshape} (array)|hyperpage}{179}
+\indexentry{arrays!size@\chpl{size}|hyperpage}{179}
+\indexentry{predefined functions!size (array)@\chpl{size} (array)|hyperpage}{179}
+\indexentry{functions!iterators|hyperpage}{180}
+\indexentry{iterators|hyperpage}{180}
+\indexentry{iterators!definition|hyperpage}{180}
+\indexentry{yield@\chpl{yield}|hyperpage}{180}
+\indexentry{iterators!yield@\chpl{yield}|hyperpage}{180}
+\indexentry{iterators!calls|hyperpage}{181}
+\indexentry{iterators!in for loops|hyperpage}{181}
+\indexentry{iterators!in forall loops|hyperpage}{181}
+\indexentry{iterators!and arrays|hyperpage}{181}
+\indexentry{iterators!and generics|hyperpage}{182}
+\indexentry{iterators!recursive|hyperpage}{182}
+\indexentry{iterators!promotion|hyperpage}{182}
+\indexentry{promotion!iterator|hyperpage}{182}
+\indexentry{parallel iterators|hyperpage}{183}
+\indexentry{iterators!parallel|hyperpage}{183}
+\indexentry{generics|hyperpage}{184}
+\indexentry{functions!generic|hyperpage}{184}
+\indexentry{generics!functions|hyperpage}{184}
+\indexentry{intents!type@\chpl{type}|hyperpage}{184}
+\indexentry{intents!param@\chpl{param}|hyperpage}{185}
+\indexentry{formal arguments!without types|hyperpage}{185}
+\indexentry{formal arguments!with queried types|hyperpage}{185}
+\indexentry{formal arguments!generic|hyperpage}{186}
+\indexentry{where@\chpl{where}!implicit|hyperpage}{186}
+\indexentry{integral (generic type)@\chpl{integral} (generic type)|hyperpage}{187}
+\indexentry{numeric (generic type)@\chpl{numeric} (generic type)|hyperpage}{187}
+\indexentry{enumerated (generic type)@\chpl{enumerated} (generic type)|hyperpage}{187}
+\indexentry{formal arguments!array|hyperpage}{187}
+\indexentry{generics!function visibility|hyperpage}{188}
+\indexentry{generics!types|hyperpage}{189}
+\indexentry{types!generic|hyperpage}{189}
+\indexentry{generics!classes|hyperpage}{189}
+\indexentry{classes!generic|hyperpage}{189}
+\indexentry{generics!records|hyperpage}{189}
+\indexentry{records!generic|hyperpage}{189}
+\indexentry{generics!fields|hyperpage}{189}
+\indexentry{fields!generic|hyperpage}{189}
+\indexentry{type aliases!in classes or records|hyperpage}{189}
+\indexentry{fields!type alias|hyperpage}{189}
+\indexentry{parameters!in classes or records|hyperpage}{190}
+\indexentry{fields!parameter|hyperpage}{190}
+\indexentry{fields!variable and constant, without types|hyperpage}{190}
+\indexentry{variables!in classes or records|hyperpage}{190}
+\indexentry{constants!in classes or records|hyperpage}{190}
+\indexentry{generics!type constructor|hyperpage}{191}
+\indexentry{constructors!type constructors|hyperpage}{191}
+\indexentry{generics!instantiated type|hyperpage}{191}
+\indexentry{generics!methods|hyperpage}{191}
+\indexentry{methods!generic|hyperpage}{191}
+\indexentry{generics!constructors!compiler-generated|hyperpage}{191}
+\indexentry{constructors!compiler-generated!for generic classes or records|hyperpage}{191}
+\indexentry{generics!constructors!user-defined|hyperpage}{192}
+\indexentry{constructors!user-defined!for generic classes or records|hyperpage}{192}
+\indexentry{where@\chpl{where}|hyperpage}{192}
+\indexentry{expressions!where@\chpl{where}|hyperpage}{192}
+\indexentry{generics!where@\chpl{where}|hyperpage}{192}
+\indexentry{user-defined compiler diagnostics|hyperpage}{193}
+\indexentry{user-defined compiler errors|hyperpage}{193}
+\indexentry{user-defined compiler warnings|hyperpage}{193}
+\indexentry{compilerError|hyperpage}{193}
+\indexentry{compilerWarning|hyperpage}{193}
+\indexentry{generics!examples!stack|hyperpage}{194}
+\indexentry{input/output|hyperpage}{195}
+\indexentry{synchronization|hyperpage}{196}
+\indexentry{task parallelism|hyperpage}{196}
+\indexentry{parallelism!task|hyperpage}{196}
+\indexentry{task parallelism!task creation|hyperpage}{196}
+\indexentry{task creation|hyperpage}{196}
+\indexentry{task function|hyperpage}{196}
+\indexentry{task parallelism!task function|hyperpage}{196}
+\indexentry{begin@\chpl{begin}|hyperpage}{197}
+\indexentry{statements!begin|hyperpage}{197}
+\indexentry{synchronization variables!sync@\chpl{sync}|hyperpage}{197}
+\indexentry{synchronization variables!sync@\chpl{single}|hyperpage}{197}
+\indexentry{sync@\chpl{sync}|hyperpage}{197}
+\indexentry{single@\chpl{single}|hyperpage}{197}
+\indexentry{synchronization types!formal arguments|hyperpage}{199}
+\indexentry{synchronization types!actual arguments|hyperpage}{199}
+\indexentry{synchronization variables!predefined methods on|hyperpage}{199}
+\indexentry{readFE (sync var)@\chpl{readFE} (sync var)|hyperpage}{199}
+\indexentry{predefined functions!readFE (sync var)@\chpl{readFE} (sync var)|hyperpage}{199}
+\indexentry{readFF (sync var)@\chpl{readFF} (sync var)|hyperpage}{199}
+\indexentry{predefined functions!readFF (sync var)@\chpl{readFF} (sync var)|hyperpage}{199}
+\indexentry{readXX (sync var)@\chpl{readXX} (sync var)|hyperpage}{199}
+\indexentry{predefined functions!readXX (sync var)@\chpl{readXX} (sync var)|hyperpage}{199}
+\indexentry{writeEF (sync var)@\chpl{writeEF} (sync var)|hyperpage}{200}
+\indexentry{predefined functions!writeEF (sync var)@\chpl{writeEF} (sync var)|hyperpage}{200}
+\indexentry{writeFF (sync var)@\chpl{writeFF} (sync var)|hyperpage}{200}
+\indexentry{predefined functions!writeFF (sync var)@\chpl{writeFF} (sync var)|hyperpage}{200}
+\indexentry{writeXF (sync var)@\chpl{writeXF} (sync var)|hyperpage}{200}
+\indexentry{predefined functions!writeXF (sync var)@\chpl{writeXF} (sync var)|hyperpage}{200}
+\indexentry{reset (sync var)@\chpl{reset} (sync var)|hyperpage}{200}
+\indexentry{predefined functions!reset (sync var)@\chpl{reset} (sync var)|hyperpage}{200}
+\indexentry{isFull (sync var)@\chpl{isFull} (sync var)|hyperpage}{200}
+\indexentry{predefined functions!isFull (sync var)@\chpl{isFull} (sync var)|hyperpage}{200}
+\indexentry{atomic variables!atomic@\chpl{atomic}|hyperpage}{201}
+\indexentry{atomic@\chpl{atomic}|hyperpage}{201}
+\indexentry{atomic variables!predefined methods on|hyperpage}{201}
+\indexentry{atomic types!memory order|hyperpage}{201}
+\indexentry{read (atomic var)@\chpl{read} (atomic var)|hyperpage}{201}
+\indexentry{predefined functions!read (atomic var)@\chpl{read} (atomic var)|hyperpage}{201}
+\indexentry{peek (atomic var)@\chpl{peek} (atomic var)|hyperpage}{201}
+\indexentry{predefined functions!peek (atomic var)@\chpl{peek} (atomic var)|hyperpage}{201}
+\indexentry{write (atomic var)@\chpl{write} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!write (atomic var)@\chpl{write} (atomic var)|hyperpage}{202}
+\indexentry{poke (atomic var)@\chpl{poke} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!poke (atomic var)@\chpl{poke} (atomic var)|hyperpage}{202}
+\indexentry{exchange (atomic var)@\chpl{exchange} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!exchange (atomic var)@\chpl{exchange} (atomic var)|hyperpage}{202}
+\indexentry{compareExchangWeak (atomic var)@\chpl{compareExchangeWeak} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!compareExchangeWeak (atomic var)@\chpl{compareExchangeWeak} (atomic var)|hyperpage}{202}
+\indexentry{compareExchangStrong (atomic var)@\chpl{compareExchangeStrong} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!compareExchangeStrong (atomic var)@\chpl{compareExchangeStrong} (atomic var)|hyperpage}{202}
+\indexentry{compareExchange (atomic var)@\chpl{compareExchange} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!compareExchange (atomic var)@\chpl{compareExchange} (atomic var)|hyperpage}{202}
+\indexentry{add (atomic var)@\chpl{add} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!add (atomic var)@\chpl{add} (atomic var)|hyperpage}{202}
+\indexentry{sub (atomic var)@\chpl{sub} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!sub (atomic var)@\chpl{sub} (atomic var)|hyperpage}{202}
+\indexentry{or (atomic var)@\chpl{or} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!or (atomic var)@\chpl{or} (atomic var)|hyperpage}{202}
+\indexentry{and (atomic var)@\chpl{and} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!and (atomic var)@\chpl{and} (atomic var)|hyperpage}{202}
+\indexentry{xor (atomic var)@\chpl{xor} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!xor (atomic var)@\chpl{xor} (atomic var)|hyperpage}{202}
+\indexentry{fetchAdd (atomic var)@\chpl{fetchAdd} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!fetchAdd (atomic var)@\chpl{fetchAdd} (atomic var)|hyperpage}{202}
+\indexentry{fetchSub (atomic var)@\chpl{fetchSub} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!fetchSub (atomic var)@\chpl{fetchSub} (atomic var)|hyperpage}{202}
+\indexentry{fetchOr (atomic var)@\chpl{fetchOr} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!fetchOr (atomic var)@\chpl{fetchOr} (atomic var)|hyperpage}{202}
+\indexentry{fetchAnd (atomic var)@\chpl{fetchAnd} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!fetchAnd (atomic var)@\chpl{fetchAnd} (atomic var)|hyperpage}{202}
+\indexentry{fetchXor (atomic var)@\chpl{fetchXor} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!fetchXor (atomic var)@\chpl{fetchXor} (atomic var)|hyperpage}{202}
+\indexentry{testAndSet (atomic bool)@\chpl{testAndSet} (atomic bool)|hyperpage}{202}
+\indexentry{predefined functions!testAndSet (atomic bool)@\chpl{testAndSet} (atomic bool)|hyperpage}{202}
+\indexentry{clear (atomic bool)@\chpl{clear} (atomic bool)|hyperpage}{202}
+\indexentry{predefined functions!clear (atomic bool)@\chpl{clear} (atomic bool)|hyperpage}{202}
+\indexentry{waitFor (atomic var)@\chpl{waitFor} (atomic var)|hyperpage}{202}
+\indexentry{predefined functions!waitFor (atomic var)@\chpl{waitFor} (atomic var)|hyperpage}{202}
+\indexentry{cobegin@\chpl{cobegin}|hyperpage}{203}
+\indexentry{statements!cobegin@\chpl{cobegin}|hyperpage}{203}
+\indexentry{coforall@\chpl{coforall}|hyperpage}{203}
+\indexentry{statements!coforall@\chpl{coforall}|hyperpage}{203}
+\indexentry{task intents|hyperpage}{204}
+\indexentry{task parallelism!task functions|hyperpage}{204}
+\indexentry{task parallelism!task intents|hyperpage}{204}
+\indexentry{sync@\chpl{sync}|hyperpage}{206}
+\indexentry{statements!sync@\chpl{sync}|hyperpage}{206}
+\indexentry{serial@\chpl{serial}|hyperpage}{206}
+\indexentry{statements!serial@\chpl{serial}|hyperpage}{206}
+\indexentry{atomic transactions|hyperpage}{207}
+\indexentry{atomic statement|hyperpage}{207}
+\indexentry{atomic@\chpl{atomic}|hyperpage}{207}
+\indexentry{statements!atomic@\chpl{atomic}|hyperpage}{207}
+\indexentry{data parallelism|hyperpage}{209}
+\indexentry{parallelism!data|hyperpage}{209}
+\indexentry{forall@\chpl{forall} (see also statements, forall)|hyperpage}{209}
+\indexentry{loops!forall (see also statements, forall)|hyperpage}{209}
+\indexentry{data parallelism!forall|hyperpage}{209}
+\indexentry{statements!forall|hyperpage}{209}
+\indexentry{statements!forall!syntax|hyperpage}{209}
+\indexentry{statements!forall!semantics|hyperpage}{210}
+\indexentry{leading the execution of a loop|hyperpage}{210}
+\indexentry{data parallelism!leader iterator|hyperpage}{210}
+\indexentry{statements!forall!zipper iteration|hyperpage}{210}
+\indexentry{data parallelism!forall expressions|hyperpage}{210}
+\indexentry{forall expressions (see also expressions, forall)|hyperpage}{210}
+\indexentry{expressions!forall|hyperpage}{210}
+\indexentry{expressions!forall!syntax|hyperpage}{211}
+\indexentry{expressions!forall!semantics|hyperpage}{211}
+\indexentry{expressions!forall!zipper iteration|hyperpage}{211}
+\indexentry{expressions!forall!and conditional expressions|hyperpage}{211}
+\indexentry{expressions!forall!filtering|hyperpage}{211}
+\indexentry{forall intents|hyperpage}{212}
+\indexentry{data parallelism!forall intents|hyperpage}{212}
+\indexentry{promotion|hyperpage}{212}
+\indexentry{promotion!zipper iteration|hyperpage}{213}
+\indexentry{whole array assignment|hyperpage}{213}
+\indexentry{arrays!assignment|hyperpage}{213}
+\indexentry{assignment!whole array|hyperpage}{213}
+\indexentry{data parallelism!evaluation order|hyperpage}{214}
+\indexentry{reductions|hyperpage}{214}
+\indexentry{scans|hyperpage}{214}
+\indexentry{data parallelism!reductions|hyperpage}{214}
+\indexentry{data parallelism!scans|hyperpage}{214}
+\indexentry{reduction expressions|hyperpage}{214}
+\indexentry{expressions!reduction|hyperpage}{214}
+\indexentry{scan expressions|hyperpage}{215}
+\indexentry{expressions!scan|hyperpage}{215}
+\indexentry{data parallelism!knobs for default data parallelism|hyperpage}{216}
+\indexentry{data parallelism!configuration constants|hyperpage}{216}
+\indexentry{dataParTasksPerLocale@\chpl{dataParTasksPerLocale}|hyperpage}{216}
+\indexentry{dataParIgnoreRunningTasks@\chpl{dataParIgnoreRunningTasks}|hyperpage}{216}
+\indexentry{dataParMinGranularity@\chpl{dataParMinGranularity}|hyperpage}{216}
+\indexentry{local|hyperpage}{217}
+\indexentry{remote|hyperpage}{217}
+\indexentry{locales!local|hyperpage}{217}
+\indexentry{locales!remote|hyperpage}{217}
+\indexentry{locales|hyperpage}{217}
+\indexentry{locale@\chpl{locale}|hyperpage}{217}
+\indexentry{types!locale@\chpl{locale}|hyperpage}{217}
+\indexentry{locales!methods|hyperpage}{217}
+\indexentry{predefined functions!locale|hyperpage}{217}
+\indexentry{predefined functions!callStackSize@\chpl{callStackSize}|hyperpage}{217}
+\indexentry{locales!callStackSize@\chpl{callStackSize}|hyperpage}{217}
+\indexentry{predefined functions!id@\chpl{id}|hyperpage}{217}
+\indexentry{locales!id@\chpl{id}|hyperpage}{217}
+\indexentry{predefined functions!maxTaskPar@\chpl{maxTaskPar}|hyperpage}{217}
+\indexentry{locales!maxTaskPar@\chpl{maxTaskPar}|hyperpage}{217}
+\indexentry{predefined functions!name@\chpl{name}|hyperpage}{217}
+\indexentry{locales!name@\chpl{name}|hyperpage}{217}
+\indexentry{predefined functions!numPUs@\chpl{numPUs}|hyperpage}{218}
+\indexentry{locales!numPUs@\chpl{numPUs}|hyperpage}{218}
+\indexentry{predefined functions!physicalMemory@\chpl{physicalMemory}|hyperpage}{218}
+\indexentry{locales!physicalMemory@\chpl{physicalMemory}|hyperpage}{218}
+\indexentry{Locales@\chpl{Locales}|hyperpage}{218}
+\indexentry{numLocales@\chpl{numLocales}|hyperpage}{218}
+\indexentry{execution environment|hyperpage}{218}
+\indexentry{here@\chpl{here}|hyperpage}{219}
+\indexentry{locales!here@\chpl{here}|hyperpage}{219}
+\indexentry{locale@\chpl{locale}|hyperpage}{219}
+\indexentry{on@\chpl{on}|hyperpage}{220}
+\indexentry{statements!on@\chpl{on}|hyperpage}{220}
+\indexentry{variable declarations!remote|hyperpage}{220}
+\indexentry{domain maps|hyperpage}{221}
+\indexentry{mapped!domain maps|hyperpage}{221}
+\indexentry{layouts (see also domain maps, layouts)|hyperpage}{221}
+\indexentry{distributions (see also domain maps, distributions)|hyperpage}{221}
+\indexentry{domain maps!layout|hyperpage}{221}
+\indexentry{domain maps!distribution|hyperpage}{221}
+\indexentry{domain maps for domain types|hyperpage}{221}
+\indexentry{types!domains!domain maps for|hyperpage}{221}
+\indexentry{dmap value|hyperpage}{221}
+\indexentry{dmapped clause|hyperpage}{221}
+\indexentry{domain maps!dmap value|hyperpage}{221}
+\indexentry{domain maps!dmapped clause|hyperpage}{221}
+\indexentry{domain maps!for domain values|hyperpage}{223}
+\indexentry{values!domains!domain maps for|hyperpage}{223}
+\indexentry{domain maps!for arrays|hyperpage}{223}
+\indexentry{arrays!domain maps|hyperpage}{223}
+\indexentry{domain maps!domain assignment|hyperpage}{224}
+\indexentry{domains!assignment|hyperpage}{224}
+\indexentry{assignment!domain|hyperpage}{224}
+\indexentry{memory consistency model|hyperpage}{226}
+\indexentry{memory consistency model!sequential consistency for data-race-free programs|hyperpage}{226}
+\indexentry{memory consistency model!non-sequentially consisten atomic operations|hyperpage}{229}
+\indexentry{memory consistency model!unordered memory operations|hyperpage}{230}
+\indexentry{memory consistency model!examples|hyperpage}{231}
+\indexentry{interoperability|hyperpage}{233}
+\indexentry{interoperability!overview|hyperpage}{233}
+\indexentry{interoperability!external functions!calling|hyperpage}{233}
+\indexentry{interoperability!Chapel functions!calling|hyperpage}{234}
+\indexentry{interoperability!sharing|hyperpage}{235}
+\indexentry{interoperability!standard C types|hyperpage}{235}
+\indexentry{interoperability!C types!standard|hyperpage}{235}
+\indexentry{interoperability!external C types|hyperpage}{236}
+\indexentry{interoperability!C types!external|hyperpage}{236}
+\indexentry{interoperability!C structs!external|hyperpage}{236}
+\indexentry{interoperability!C Structs!external!pointers to|hyperpage}{237}
+\indexentry{interoperability!opaque types|hyperpage}{238}
+\indexentry{interoperability!shared data|hyperpage}{238}
+\indexentry{interoperability!shared procedures|hyperpage}{238}
+\indexentry{interoperability!external functions!calling|hyperpage}{239}
+\indexentry{interoperability!Chapel procedures!calling|hyperpage}{240}
+\indexentry{interoperability!argument passing|hyperpage}{240}

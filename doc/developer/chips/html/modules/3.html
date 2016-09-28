@@ -1,0 +1,359 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ZeroMQ Integration &mdash; chpldoc 0.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="chpldoc 0.0.1 documentation" href="../index.html"/>
+        <link rel="next" title="Constructor Syntax and Semantics" href="4.html"/>
+        <link rel="prev" title="Constrained Generics" href="2.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chpldoc
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">chpldoc documentation</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="1.html">Chapel Improvement Proposals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11.html">Alternative Initializer Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="12.html">Basics of Initialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13.html">Record Copying in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="14.html">Chapel stack traces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2.html">Constrained Generics</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">ZeroMQ Integration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#abstract">Abstract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rationale">Rationale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#strategy">Strategy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#low-level-bindings">Low-Level Bindings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#chapel-bindings">Chapel Bindings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#send-receive-multipart-messages-and-message-boundaries">Send, Receive, Multipart Messages, and Message Boundaries</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#open-questions">Open Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="4.html">Constructor Syntax and Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5.html">Implement Object Copying Using a &#8220;Postblit&#8221; Method</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6.html">Tuple Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7.html">Rules for inserting autoCopy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8.html">Error Handling in Chapel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9.html">Chapel Package Manager</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">chpldoc</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>ZeroMQ Integration</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/3.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="zeromq-integration">
+<h1>ZeroMQ Integration<a class="headerlink" href="#zeromq-integration" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>Status</dt>
+<dd>Draft</dd>
+<dt>Author</dt>
+<dd>Michael Ferguson</dd>
+</dl>
+<div class="section" id="abstract">
+<h2>Abstract<a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Proposing the development of a Chapel language binding for ZeroMQ (see
+<a class="reference external" href="http://zeromq.org/">http://zeromq.org/</a>).</p>
+</div>
+<div class="section" id="rationale">
+<h2>Rationale<a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The data and task parallelism features of Chapel work well for building
+tightly-coupled parallel programs, but some problems remain:</p>
+<blockquote>
+<div><ul class="simple">
+<li>How can a Chapel program fit in to a distributed work-flow?</li>
+<li>How can programs in other languages work with Chapel programs?</li>
+<li>How can Chapel programs be used to write servers?</li>
+<li>How can Chapel programs scale up and down depending on their input?</li>
+</ul>
+</div></blockquote>
+<p>The answers to these questions are not clear. Naturally, each of these
+questions could be addressed in many ways. The advantage of ZeroMQ integration
+is that will provide one mechanism to enable all of these use cases.</p>
+</div>
+<div class="section" id="strategy">
+<h2>Strategy<a class="headerlink" href="#strategy" title="Permalink to this headline">¶</a></h2>
+<p>ZeroMQ includes low-level C bindings, higher-level C bindings, as well
+as language bindings for many other languages. The proposed strategy for
+Chapel is to:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Provide the low-level C bindings as a starting point</li>
+<li>Develop Chapel-specific ZeroMQ functionality that makes sense on top of the
+low-level C bindings</li>
+<li>Provide Chapel-specific message queue functionality that could be
+implemented with other messaging systems</li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="low-level-bindings">
+<h2>Low-Level Bindings<a class="headerlink" href="#low-level-bindings" title="Permalink to this headline">¶</a></h2>
+<p>Every function in the libzmq core library will be available with Chapel&#8217;s C
+compatibility layer. However, Chapel code will need to use C interoperability
+features to call these functions.</p>
+<p>I plan use the extern block syntax to populate Chapel programs with ZeroMQ
+functions. If necessary, I plan to extend the extern block support to print
+out the explicit Chapel function interfaces.</p>
+</div>
+<div class="section" id="chapel-bindings">
+<h2>Chapel Bindings<a class="headerlink" href="#chapel-bindings" title="Permalink to this headline">¶</a></h2>
+<p>Higher-level functionality will be available that integrates nicely with the
+existing functionality for serializing Chapel variables. Chapel already
+includes the idea of a channel which can read or write Chapel objects.</p>
+<p>The basic operations in ZeroMQ are:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Creating a context. Some language bindings have an idea of a default context.</li>
+<li>Creating, configuring, and connecting sockets</li>
+<li>Moving data between sockets with send and recv calls.</li>
+</ul>
+</div></blockquote>
+<p>Functions to work with the context and the sockets can be more or less the same
+as those provided by the core library. The ZeroMQ guide recommends that
+high-level APIs provide some specific features. See
+<a class="reference external" href="http://zguide.zeromq.org/page:all#Features-of-a-Higher-Level-API">http://zguide.zeromq.org/page:all#Features-of-a-Higher-Level-API</a> . For Chapel,
+I believe that means we need the following features:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Mechanisms closing sockets easier, possibly closing all sockets when closing
+a context, and possibly automatically handling the linger timeout</li>
+<li>Integration with Chapel tasks. Ideally, the ZeroMQ functions should
+integrate with the Chapel tasking layer so that they can block a task (but
+not a thread). This has already been done for Python&#8217;s ZeroMQ binding
+to support &#8220;green threads&#8221;.</li>
+<li>A &#8220;reactor&#8221; functionality that allows a user of the library to provide
+event handlers</li>
+<li>Make sure that Ctrl-C works properly, since a ZeroMQ application is
+likely to be a server.</li>
+</ul>
+</div></blockquote>
+<div class="section" id="send-receive-multipart-messages-and-message-boundaries">
+<h3>Send, Receive, Multipart Messages, and Message Boundaries<a class="headerlink" href="#send-receive-multipart-messages-and-message-boundaries" title="Permalink to this headline">¶</a></h3>
+<p>One initial integration idea for ZeroMQ is to make a Chapel channel that moves
+data with ZeroMQ send and recv functions. However, doing so would not capture
+one of the key ideas of ZeroMQ - it moves <em>messages</em> and not just a stream of
+bytes. The channel interface is really for moving streams of bytes.</p>
+<p>There are two approaches to address that mismatch:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Enhance channels to be aware of message boundaries, or</li>
+<li>Provide send/recv as functions on ZeroMQ sockets that work
+analogously to write/read. In this case we would also want
+to provide a way to do a formatted send or receive (e.g. sendf might
+work with format strings as does writef).<ol class="loweralpha">
+<li>It would be pretty easy to make a multipart message interface
+where you&#8217;d open a multi-part message and each send/recv call would
+operate on one part. That would be like zmsg support in the CZMQ library
+(described here: <a class="reference external" href="http://api.zeromq.org/czmq3-0:zmsg">http://api.zeromq.org/czmq3-0:zmsg</a> ).</li>
+<li>If a Chapel programmer needs to use multiple calls to fill in
+a message but doesn&#8217;t want a multi-part message, they would need to
+create a buffer, write to the buffer, and then send the buffer.</li>
+</ol>
+</li>
+</ol>
+</div></blockquote>
+<p>We believe that (2) is more intuitive and matches other ZeroMQ programming
+examples. (2a) and (2b) could be left for future work in an initial
+implementation.</p>
+</div>
+</div>
+<div class="section" id="open-questions">
+<h2>Open Questions<a class="headerlink" href="#open-questions" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Should ZeroMQ be included as a built-in Chapel library? (like RE2 or GASNet)</li>
+<li>Can ZeroMQ integration require extern block support (Chapel built with LLVM)?</li>
+<li>Does Chapel need to support the serialization of circular data structures?
+(The serialization support provided by write/writef does not currently
+automatically handle such things, but neither does JSON).</li>
+<li>Can the generalized send/recv support assume IP functionality?<ul>
+<li>I think so; e.g. Infiniband provides IP over IB.</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="4.html" class="btn btn-neutral float-right" title="Constructor Syntax and Semantics" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="2.html" class="btn btn-neutral" title="Constrained Generics" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, .
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+
+
+
+</body>
+</html>
