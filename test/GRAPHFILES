@@ -236,6 +236,9 @@ types/string/psahabu/perf/allocate.graph
 types/string/psahabu/perf/arguments.graph
 types/string/psahabu/perf/search.graph
 types/string/psahabu/perf/substring.graph
+# suite: Standard Library
+modules/packages/sort/performance/sorts-linearithmic.graph
+modules/packages/sort/performance/sorts-quadratic.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
@@ -254,8 +257,5 @@ users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
 # suite: Elegance
 studies/elegance/elegance.graph
-# suite: Standard Library
-modules/packages/sort/performance/sorts-linearithmic.graph
-modules/packages/sort/performance/sorts-quadratic.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
