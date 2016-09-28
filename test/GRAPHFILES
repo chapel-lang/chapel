@@ -254,5 +254,7 @@ users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
 # suite: Elegance
 studies/elegance/elegance.graph
+# suite: Standard Library
+modules/packages/sort/performance/sorts-linearithmic.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph

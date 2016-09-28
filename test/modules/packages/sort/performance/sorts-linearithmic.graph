@@ -1,0 +1,7 @@
+perfkeys: (seconds):, (seconds):, (seconds):
+files: quickSort.dat, heapSort.dat, mergeSort.dat
+graphkeys: quickSort, heapSort, mergeSort
+graphtitle: Linearithmic sorts on 10 MiB
+ylabel: Time (seconds)
+graphname: sorts-linearithmic
+
