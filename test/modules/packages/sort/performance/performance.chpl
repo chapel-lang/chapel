@@ -53,7 +53,10 @@ proc gatherTimings(const ref A) {
     t.start();
     quickSort(B);
     t.stop();
-    print('quickSort (seconds): ', t.elapsed());
+    if !isSorted(B) then
+      writeln('quickSort failed to sort data');
+    else
+      print('quickSort (seconds): ', t.elapsed());
     t.clear();
   }
   if sorts.find('h')
@@ -62,7 +65,10 @@ proc gatherTimings(const ref A) {
     t.start();
     heapSort(B);
     t.stop();
-    print('heapSort (seconds): ', t.elapsed());
+    if !isSorted(B) then
+      writeln('heapSort failed to sort data');
+    else
+      print('heapSort (seconds): ', t.elapsed());
     t.clear();
   }
   if sorts.find('i')
@@ -71,7 +77,10 @@ proc gatherTimings(const ref A) {
     t.start();
     insertionSort(B);
     t.stop();
-    print('insertionSort (seconds): ', t.elapsed());
+    if !isSorted(B) then
+      writeln('insertionSort failed to sort data');
+    else
+      print('insertionSort (seconds): ', t.elapsed());
     t.clear();
   }
   if sorts.find('m')
@@ -80,7 +89,10 @@ proc gatherTimings(const ref A) {
     t.start();
     mergeSort(B);
     t.stop();
-    print('mergeSort (seconds): ', t.elapsed());
+    if !isSorted(B) then
+      writeln('mergeSort failed to sort data');
+    else
+      print('mergeSort (seconds): ', t.elapsed());
     t.clear();
   }
   if sorts.find('s')
@@ -89,7 +101,10 @@ proc gatherTimings(const ref A) {
     t.start();
     selectionSort(B);
     t.stop();
-    print('selectionSort (seconds): ', t.elapsed());
+    if !isSorted(B) then
+      writeln('selectionSort failed to sort data');
+    else
+      print('selectionSort (seconds): ', t.elapsed());
     t.clear();
   }
   if sorts.find('b')
@@ -98,7 +113,10 @@ proc gatherTimings(const ref A) {
     t.start();
     bubbleSort(B);
     t.stop();
-    print('bubbleSort (seconds): ', t.elapsed());
+    if !isSorted(B) then
+      writeln('bubbleSort failed to sort data');
+    else
+      print('bubbleSort (seconds): ', t.elapsed());
     t.clear();
   }
 }
