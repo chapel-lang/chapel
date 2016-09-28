@@ -37,7 +37,7 @@ SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
-DOC_SPHINX=${CHPL_MAKE_HOME}/doc/sphinx
+DOC_RELEASE=${CHPL_MAKE_HOME}/doc/release
 
 default: all
 
@@ -146,11 +146,11 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	@echo "Copying generated module documentation to "'$$CHPL_HOME'"/doc/sphinx/modules"
-	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC_SPHINX}/source/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/builtins
+	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_RELEASE}/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC_RELEASE}/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_RELEASE}/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_RELEASE}/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_RELEASE}/builtins
 	@echo "Removing generated files and directories"
 	rm -rf ./docs
 	rm -rf ${MODULE_SPHINX}
