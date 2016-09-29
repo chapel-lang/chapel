@@ -396,6 +396,7 @@ void check_afterEveryPass()
     verify();
     checkForDuplicateUses();
     checkFlagRelationships();
+    checkEmptyPartialCopyFnMap();
   }
 }
 

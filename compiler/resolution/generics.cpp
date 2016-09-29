@@ -843,7 +843,7 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
  */
 void
 instantiateBody(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_PARTIAL_COPY)) {
+  if (getPartialCopyInfo(fn)) {
     fn->finalizeCopy();
 
     if (fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
