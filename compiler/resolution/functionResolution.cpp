@@ -1196,6 +1196,7 @@ resolveFormals(FnSymbol* fn) {
         makeRefType(formal->type);
         formal->type = formal->type->refType;
       }
+
       if (isRecordWrappedType(formal->type) &&
           (fn->hasFlag(FLAG_BEGIN) ||
            fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
@@ -1207,8 +1208,13 @@ resolveFormals(FnSymbol* fn) {
         // It is temporary because we expect more of the
         // compiler to handle 'refness' of an ArgSymbol
         // in the future.
-        makeRefType(formal->type);
-        formal->type = formal->type->refType;
+
+        // But don't pass them by ref if they are the
+        // coforall index variable.
+        if (!formal->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
+          makeRefType(formal->type);
+          formal->type = formal->type->refType;
+        }
       }
 
       // Adjust tuples for intent.
