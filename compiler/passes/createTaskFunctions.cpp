@@ -426,6 +426,9 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
             INT_ASSERT(e->value == markUnspecified);
 
           newFormal = new ArgSymbol(argTag, sym->name, sym->type);
+          if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
+            newFormal->addFlag(FLAG_COFORALL_INDEX_VAR);
+
           if (ArgSymbol* symArg = toArgSymbol(sym))
             if (symArg->hasFlag(FLAG_MARKED_GENERIC))
               newFormal->addFlag(FLAG_MARKED_GENERIC);
