@@ -1194,7 +1194,7 @@ static void addKnownWides() {
     }
   }
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (!typeCanBeWide(var)) continue;
+    //if (!typeCanBeWide(var)) continue;
     Symbol* defParent = var->defPoint->parentSymbol;
 
     //
@@ -1204,7 +1204,12 @@ static void addKnownWides() {
     if (isModuleSymbol(defParent) && !var->hasFlag(FLAG_LOCALE_PRIVATE)) {
       if (FnSymbol* fn = usedInOn(var)) {
         debug(var, "Module scope variable used in on-statement\n");
-        setWide(fn, var);
+        if (typeCanBeWide(var)) {
+          setWide(fn, var);
+        }
+        if (isRecord(var->type)) {
+          widenSubAggregateTypes(fn, var->type);
+        }
       }
     }
   }
