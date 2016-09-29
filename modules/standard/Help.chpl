@@ -30,7 +30,7 @@
        }
      }
 
-   See doc/release/technotes/main.rst in a Chapel release for more
+   See doc/technotes/main.rst in a Chapel release for more
    information on this feature.
 
    Programs that use this feature might need to expand upon the usage message

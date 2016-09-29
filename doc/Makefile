@@ -73,6 +73,9 @@ symlinks: clean-symlinks
 checkdocs: FORCE
 	./util/run-in-venv.bash $(MAKE) check
 
+%.docs: FORCE
+	./util/run-in-venv.bash $(MAKE) $*.html
+
 
 clean: clean-source
 

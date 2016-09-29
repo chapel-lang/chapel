@@ -134,7 +134,7 @@ clean: FORCE
 	cd modules && $(MAKE) clean
 	cd runtime && $(MAKE) clean
 	cd third-party && $(MAKE) clean
-	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clean
+	cd doc && $(MAKE) clean
 	rm -f util/chplenv/*.pyc
 
 cleanall: FORCE
@@ -142,7 +142,7 @@ cleanall: FORCE
 	cd modules && $(MAKE) cleanall
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
-	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) cleanall
+	cd doc && $(MAKE) cleanall
 	rm -f util/chplenv/*.pyc
 
 cleandeps: FORCE
@@ -155,7 +155,7 @@ clobber: FORCE
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
-	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clobber
+	cd doc $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
 	rm -f util/chplenv/*.pyc

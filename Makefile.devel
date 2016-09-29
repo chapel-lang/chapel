@@ -21,10 +21,10 @@ develall: STATUS
 	@$(MAKE) always-build-man
 
 docs: chpldoc
-	cd doc/sphinx && $(MAKE) docs
+	cd doc && $(MAKE) docs
 
 checkdocs: FORCE
-	cd doc/sphinx && $(MAKE) checkdocs
+	cd doc && $(MAKE) checkdocs
 
 man: third-party-chpldoc-venv FORCE
 	cd man && $(MAKE)
@@ -33,9 +33,9 @@ man-chpldoc: FORCE
 	cd man && $(MAKE) chpldoc
 
 man-chapel: FORCE
-	cd doc/sphinx && $(MAKE) man-chapel
+	cd doc && $(MAKE) man-chapel
 	mkdir -p man/man3
-	cp doc/sphinx/build/man/chapel.3 man/man3/chapel.3
+	cp doc/build/man/chapel.3 man/man3/chapel.3
 
 always-build-man: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_MAN" ]; then \
@@ -63,23 +63,3 @@ FUTURES:
 
 future_stats: FUTURES
 	./util/devel/test/future_stats STATUS.devel test/FUTURES
-
-#
-# This rule is designed to focus in on a sub-directory of
-# doc/sphinx/source/ to accelerate doc build times when editing a doc
-# and viewing the results in a tight loop.  It works by naming a
-# subdirectory under source/ that you wish to build.  For example:
-#
-#   make users-guide.docs
-#
-# will remake the user's guide directory.  Note that a full 'make
-# docs' should be performed and verified before committing any
-# changes.
-#
-# TODO: Note that the following hard-codes the CHPL_MAKE_HOST_PLATFORM
-# value in the path to sphinx-build below.  Ultimately, we should
-# query this, yet at present, these values are not set in this top-level
-# Makefile...
-#
-%.docs: FORCE
-	third-party/chpl-venv/install/linux64/$(PYTHON_VERSION_DIR)/chpl-virtualenv/bin/sphinx-build -c doc/sphinx/source doc/sphinx/source/ doc/sphinx/build/html/$* && chmod -R ugo+rX doc/sphinx/build

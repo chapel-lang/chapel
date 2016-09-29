@@ -18,7 +18,7 @@
  */
 
 // This defines the HDFS implementation/interface to the QIO filesystem plugin.
-// Documentation can be found in $CHPL_HOME/doc/release/technotes/
+// Documentation can be found in $CHPL_HOME/doc/technotes/
 #ifndef QIOPLUGIN_HDFS_H_
 #define QIOPLUGIN_HDFS_H_ 
 

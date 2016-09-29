@@ -1,7 +1,7 @@
-These programs, prog1.chpl through prog4.chpl, are part of the chplvis
+These programs, chplvis1.chpl through chplvis4.chpl, are part of the chplvis
 primer.  It is best to read that primer instead of reading these file.
 Use these files to try out chplvis while reading the primer.
 
 If these programs are modified, the corresponding chplvis.rst file
 must be updated to match.  chplvis.rst is located in
-chapel/doc/sphinx/source/tools/chplvis.
+chapel/doc/tools/chplvis.
