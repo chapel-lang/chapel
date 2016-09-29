@@ -1198,23 +1198,14 @@ resolveFormals(FnSymbol* fn) {
       }
 
       if (isRecordWrappedType(formal->type) &&
-          (fn->hasFlag(FLAG_BEGIN) ||
-           fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
-           fn->hasFlag(FLAG_ON))) {
-        // Pass domains, arrays into task/on fns by ref.
-        // This is a temporary workaround that should
-        // probably be extended to all records that
-        // have blank-intent-is-const-ref.
-        // It is temporary because we expect more of the
-        // compiler to handle 'refness' of an ArgSymbol
-        // in the future.
-
-        // But don't pass them by ref if they are the
-        // coforall index variable.
-        if (!formal->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
-          makeRefType(formal->type);
-          formal->type = formal->type->refType;
-        }
+          fn->hasFlag(FLAG_BEGIN)) {
+        // Pass domains, arrays into begin fns by ref.
+        // This is a temporary workaround.
+        // * more of the compiler should handle argument intents
+        // * it's unclear why this applies only to FLAG_BEGIN task fns
+        // * should this apply to all user records?
+        makeRefType(formal->type);
+        formal->type = formal->type->refType;
       }
 
       // Adjust tuples for intent.
