@@ -36,7 +36,8 @@ propagates errors, and provides useful messages when errors are not handled.
 Model: Swift Error Handling
 ---------------------------
 
-This error handling proposal is inspired by the Swift_ error handling strategy.
+This error handling proposal was originally inspired by the Swift_ error
+handling strategy.
 
 Swift's strategy is appealing because it:
 
@@ -45,8 +46,8 @@ Swift's strategy is appealing because it:
   return mechanisms; and
 * fits well with existing task parallelism.
 
-Swift Syntax
-++++++++++++
+Syntax
+++++++
 
 * Functions that can throw an error are declared with ``throws``:
 
@@ -72,8 +73,8 @@ Swift Syntax
     writeln("The first call failed!")
   }
 
-Why Decorate Statements That Throw
-++++++++++++++++++++++++++++++++++
+Decorating statements that throw
+++++++++++++++++++++++++++++++++
 
 The Swift error handling approach includes the use of ``try`` to mark statements
 that can throw. This design addresses the most serious criticism of exceptions
@@ -82,25 +83,161 @@ reason about. By marking each statement that can throw, the control flow
 possibilities can again be reasoned about with local information only.
 
 
+Feedback Received (7/20)
+------------------------
+
+1. ``try`` is verbose within ``do`` blocks. While it clarifies control flow
+   within the block, it would be tiresome to repeat with throwing functions
+   that are closely related (ex. I/O). 
+
+2. ``try`` is also verbose from an iteration perspective. For example, 
+   ``writeln("hello world")`` would have to be prefaced with a ``try``
+   statement if it were strictly enforced.
+
+3. Repeated ``try`` statements may also desensitize users from
+   paying close attention to ``try`` and ``throws``.
+
+4. ``main()`` ought to have some sort of reasonable response to an error
+   being propagated up to it.
+
+Potential solutions
++++++++++++++++++++
+
+1. **Elide** ``try``.
+  
+* Within ``do`` blocks, ``try`` is only a visual aide to track control
+  flow. It is reasonable for developers to track that a procedure throws
+  without this assistance because it's already in a ``do`` block. However,
+  ``try!`` would be permitted inside ``do`` blocks for critical failures.
+
+* Outside of ``do`` blocks, ``try`` or ``try!`` can be elided on throwing
+  procedure calls depending on the calling procedure's signature. If the
+  calling procedure ``throws``, then ``try``, else ``try!``.
+
+* The downside of this is that it would be possible to pass errors of a
+  called procedure through the callee without any visual indication of
+  which call is throwing. This could lead to poorly handled error cases.
+    
+2. **Elide** ``try`` **with a compiler flag.**
+
+* Same as (1), but we would add an option to enforce marking statements
+  with ``try`` for a thoroughly checked version. This addresses the
+  potential downside of only eliding ``try`` without losing the ability
+  to draft code quickly.
+
+3. **Eliminate** ``do``.
+
+* ``do`` is already a keyword in Chapel, so it would take more effort to 
+  determine that the ``do`` is being used in association with a ``catch``.
+
+* In its place, ``try`` could be defined for single and compound statements.
+
+* The downside is that ``try`` could no longer be used in an expression
+  form, so assignments that might throw an error may look more awkward.
+
+::
+
+  var a = try canThrowErrors(); // expression
+  try var a = canThrowErrors(); // statement
+
+4. **Cleaning up after an error.**
+
+* It is often necessary to cleanup state if an error occurs. To capture this,
+  ``do``/``catch`` could be associated with a ``finally`` block that will
+  run when the ``do`` (or ``try``) block is exited.
+
+* Swift's version of this is ``defer``, which runs when the scope it is
+  defined in is exited. This is a more general form of ``finally`` which
+  may better fit Chapel's needs. 
+
+Enacted solution
+++++++++++++++++
+
+This CHIP will move forward with a combination of the first three solutions.
+
+
 Chapel Error Handling
 ---------------------
 
-Beyond the syntax and the additions below, Chapel's error handling strategy
-will be more or less identical to that of Swift. 
+Syntax
+++++++
 
-Expected Additions
-++++++++++++++++++
+* Functions that can throw an error are declared with ``throws``:
 
-* Throwing errors from iterators
-* Ability to catch errors generated in runtime layers:
+::
 
-  * Communication
-  * Memory allocation
-  * Task creation
+  proc canThrowErrors() throws { … }
+  proc cannotThrowErrors() { … }
 
-* Task joins propagate errors to parent tasks:
+* Statements that contain calls to functions that throw should be marked:
 
-  * Occurs at end the of sync/coforall/cobegin blocks
+  * ``try`` propagates the error.
+
+    * If an error is thrown, it will be passed to a matching ``catch`` block.
+
+    * If none exists, the error will be passed to an enclosing ``catch`` block.
+
+    * If none exists, the error will be passed out of the function, hence the
+      procedure must ``throw``.
+
+  * ``try!`` will ``halt()`` if an error occurs.
+
+  * Both may be used with single and compound statements.
+  
+* Errors can be handled with ``catch`` statements.
+
+Here is an example.
+
+::
+
+  try {
+    canThrowErrors();      // handled by catch on failure
+    try! canThrowErrors(); // halts on failure
+  } catch e {
+    writeln("The first call failed!")
+  }
+
+Default vs strict mode
+++++++++++++++++++++++
+
+To address the desire for both fast prototyping and enforced error handling,
+the compiler will run checks in one of two modes, based on a flag.
+
+1. **Default.** If a call to a throwing procedure is not marked with a ``try`` or
+   ``try!``, the program will compile and the call will ``halt()`` on an error,
+   as if the procedure were called with ``try!``.
+
+2. **Strict.** If a call to a throwing procedure is not marked with a ``try`` or
+   ``try!``, the compiler will raise an error.
+
+Error types
++++++++++++
+
+* Errors are classes that extend a base class ``Error``.
+
+* Errors will not be typechecked, but an error hierarchy is permitted.
+
+::
+
+  class MyBaseError: Error {}
+  class MySubError: MyBaseError {}
+
+* Errors can be matched against in ``catch`` blocks. They will be checked in
+  order, so even if a better fitting type is present, it will not be chosen
+  if a matching general type precedes it. If a type is not specified,
+  any ``Error`` will match.
+
+:: 
+
+  try {
+    ...
+  } catch e: MySubError {
+    ...
+  } catch e: MyBaseError {
+    ...
+  } catch e {
+    ...
+  }
 
 Implementation
 ++++++++++++++
@@ -115,7 +252,7 @@ For example, here is some Chapel code that handles an error:
 
   class IllegalArgumentError: Error {} 
 
-  proc caller(arg): A {
+  proc nohandle(arg): A {
     var value: A = callee(arg);
     return value;
   }
@@ -143,102 +280,36 @@ The compiler could translate this into the following Chapel code:
 
   class IllegalArgumentError: Error {} 
 
-  proc caller(arg): A {
+  proc nohandle(arg): A {
     var _e: Error;
     var value: A = callee(arg, _e);
     if _e then
       halt(e.message());
-    else
-      return value;
+    return value;
   }
 
   proc handler(arg, out _e: Error): A {
-    var _e2: Error;
-    var value: A = callee(arg, _e2);
-    if _e2: IllegalArgumentError then
-      delete _e2;
+    var _e_in: Error;
+    var value: A = callee(arg, _e_in);
+    if _e_in: IllegalArgumentError {
+      delete _e_in;
       return DEFAULT_A;
-    else if _e2 then
-      _e = _e2; 
-    else
-      return value;
+    } else if _e_in {
+      _e = _e_in; 
+      return;
+    }
+    return value;
   }
 
   proc callee(arg, out _e: Error): A {
     if arg then
       return new A;
-    else
+    else {
       _e = new IllegalArgumentError();
+      return;
+    }
   }
 
-Feedback Received (7/20)
-------------------------
-
-1. ``try`` is verbose within ``do`` blocks. While it clarifies control flow
-   within the block, it would be tiresome to repeat with throwing functions
-   that are closely related (ex. I/O).
-
-2. ``try`` is also verbose from an iteration perspective. For example, 
-   ``writeln("hello world")`` would have to be prefaced with a ``try``
-   statement if it were strictly enforced.
-
-3. main() ought to have some sort of reasonable response to an error being
-   propagated up to it.
-
-Potential Solutions
-+++++++++++++++++++
-
-1. Elide ``try``.
-  
-* Within ``do`` blocks, ``try`` is only a visual aide to track control
-  flow. It is reasonable for developers to track that a procedure throws
-  without this assistance because it's already in a ``do`` block. However,
-  ``try!`` would be permitted inside ``do`` blocks for critical failures.
-
-* Outside of ``do`` blocks, ``try`` or ``try!`` can be elided on throwing
-  procedure calls depending on the calling procedure's signature. If the
-  calling procedure ``throws``, then ``try``, else ``try!``.
-
-* The downside of this is that it would be possible to pass errors of a
-  called procedure through the callee without any visual indication of
-  which call is throwing. This could lead to poorly handled error cases.
-    
-2. Elide ``try`` with a compiler flag.
-
-* Same as (1), but we would add an option to enforce marking statements
-  with ``try`` for a thoroughly checked version. This addresses the
-  potential downside of only eliding ``try`` without losing the ability
-  to draft code quickly.
-
-3. Eliminate ``do``.
-
-* ``do`` is already a keyword in Chapel, so it would take more effort to 
-  determine that the ``do`` is being used in association with a ``catch``.
-
-* In its place, ``try`` could be defined for single and compound statements.
-  
-  * If an error is thrown, it will look for a matching ``catch`` block.
-  * If none exists, it will throw to a surrounding ``try`` block.
-  * If none exists, then the procedure invoking it must ``throw`` or the
-    program will not compile.
-
-* The downside is that ``try`` could no longer be used in an expression
-  form, so assignments that might throw an error may look more awkward.
-
-:: 
-
-  var a = try canThrowErrors(); // expression
-  try var a = canThrowErrors(); // statement
-
-4. Cleaning up after an error.
-
-* It is often necessary to cleanup state if an error occurs. To capture this,
-  ``do``/``catch`` could be associated with a ``finally`` block that will
-  run when the ``do`` (or ``try``) block is exited.
-
-* Swift's version of this is ``defer``, which runs when the scope it is
-  defined in is exited. This is a more general form of ``finally`` which
-  may better fit Chapel's needs. 
 
 Examples
 --------
@@ -418,6 +489,21 @@ program will halt.
         writeln("Hello!");
       }
     }
+
+
+Future Design Work
+------------------
+
+* Throwing errors from iterators
+* Ability to catch errors generated in runtime layers:
+
+  * communication
+  * memory allocation
+  * task creation
+
+* Task joins propagate errors to parent tasks:
+
+  * Occurs at the end of sync/coforall/cobegin blocks
 
 
 Implementation Notes
