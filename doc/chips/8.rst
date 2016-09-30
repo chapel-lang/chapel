@@ -254,26 +254,24 @@ For example, here is some Chapel code that throws and handles an error:
 
   class IllegalArgumentError: Error {} 
 
-  proc caller(arg) throws : A {
+  proc caller(arg) throws {
     try {
-      var value: A = callee(arg);
+      callee(arg);
       for i in iterating(arg) do
         writeln(i);
     } catch e: IllegalArgumentError {
-      return DEFAULT_A;
-    } catch e {
-      throw e;
-    } 
+      writeln("illegal arg, exiting caller");
+    }
+    // must throw because there is no catch-all block
   }
 
   proc callee(arg) throws : A {
-    if arg then
-      return new A;
-    else
+    if !arg then
       throw new IllegalArgumentError();
+    return new A(arg);
   }
 
-  iter iterating(arg) throws : A {
+  iter iterating(arg) throws : int {
     if arg < 1 then
       throw new IllegalArgumentError();
 
@@ -286,19 +284,18 @@ The compiler could translate this into the following Chapel code:
 .. code-block:: chapel
 
   class IllegalArgumentError: Error {} 
-  class IteratorError: Error {}
 
-  proc caller(arg, out _e_out: Error): A {
+  proc caller(arg, out _e_out: Error) {
     var _e: Error; 
-    var value: A = callee(arg, _e);
+    
+    callee(arg, _e);
 
     if _e: IllegalArgumentError {
       delete _e;
-      return DEFAULT_A;
+      writeln("illegal arg, exiting caller"); 
     } else if _e {
       _e_out = _e;
-      const _failure: A;
-      return _failure;
+      return;
     }
     
     for i in iterating(arg, _e) do
@@ -306,29 +303,27 @@ The compiler could translate this into the following Chapel code:
 
     if _e: IllegalArgumentError {
       delete _e;
-      return DEFAULT_A;
+      writeln("illegal arg, exiting caller"); 
     } else if _e {
       _e_out = _e;
-      const _failure: A;
-      return _failure;
+      return;
     }
 
     return value;
   }
 
   proc callee(arg, out _e_out: Error): A {
-    if arg then
-      return new A();
-    else {
+    if !arg {
       _e_out = new IllegalArgumentError();
-      const _failure: A;
-      return _failure; 
+      const _fail: A;
+      return _fail;
     }
+    return new A(arg);
   }
 
   iter iterating(arg, out _e_out: Error): A {
     if arg < 1 {
-      _e_out = new IteratorError();
+      _e_out = new IllegalArgumentError();
       return;
     }
 
