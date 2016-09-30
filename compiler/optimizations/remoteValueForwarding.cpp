@@ -205,10 +205,25 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             ArgSymbol*                    arg) {
   bool retval = false;
 
+  // Forward array values and references to array values.
+  // This is OK because the array/domain/distribution wrapper
+  // records have fields that do not vary.
+  // It does not matter if the on-body synchonizes.
+  // (The array class, e.g. DefaultRectangularArr, is what varies,
+  //  and it contains a pointer to the actual data, which might
+  //  be replaced with another pointer).
+  // An alternative strategy would be to migrate the contents of the
+  // array header class into the wrapper record - but that would require
+  // quite a lot of code changes, and some other features have entangled
+  // designs (including privitazation and the DSI interface).
+  if (isRecordWrappedType(arg->getValType())) {
+    retval = true;
+
+
   // If this function accesses sync vars and the argument is not
   // const, then we cannot remote value forward the argument due
   // to the fence implied by the sync var accesses */
-  if (syncFns.set_in(fn) && isSufficientlyConst(arg) == false) {
+  } else if (syncFns.set_in(fn) && isSufficientlyConst(arg) == false) {
     retval = false;
 
   // If this argument is a reference atomic type, we need to preserve
@@ -220,7 +235,8 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // to convert atomic formals to ref formals.
   } else if (isAtomicType(arg->type)) {
     retval = false;
-  } else if (arg->intent == INTENT_CONST_REF && !isRecordWrappedType(arg->typeInfo())) {
+  } else if (arg->intent == INTENT_CONST_REF /*&&
+                                               !isRecordWrappedType(arg->typeInfo())*/) {
     // TODO: Failure for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr.chpl on --no-local
     // when RVF-ing a domain. For now, simply do not RVF record-wrapped things
     retval = true;
@@ -243,13 +259,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 }
 
 static bool isSufficientlyConst(ArgSymbol* arg) {
-  Type* argValType = arg->getValType();
   bool  retval     = false;
-
-  // Arg is an array, so it's sufficiently constant (because this
-  // refers to the descriptor, not the array's values
-  if (argValType->symbol->hasFlag(FLAG_ARRAY)) {
-    retval = true;
 
   //
   // See if this argument is 'const in'; if it is, it's a good candidate for
@@ -270,8 +280,8 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   //
   //     test/multilocale/bradc/needMultiLocales/remoteReal.chpl
   //
-  } else if (arg->intent == INTENT_CONST_IN  &&
-             !arg->type->symbol->hasFlag(FLAG_REF)) {
+  if (arg->intent == INTENT_CONST_IN  &&
+      !arg->type->symbol->hasFlag(FLAG_REF)) {
     retval = true;
 
   // otherwise, conservatively assume it varies
