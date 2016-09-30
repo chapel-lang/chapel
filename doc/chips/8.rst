@@ -204,8 +204,8 @@ To address the desire for both fast prototyping and enforced error handling,
 the compiler will run checks in one of two modes, based on a flag.
 
 1. **Default.** If a call to a throwing procedure is not marked with a ``try`` or
-   ``try!``, the program will compile and the call will ``halt()`` on an error,
-   as if the procedure were called with ``try!``.
+   ``try!``, the program will compile with a warning and the call will ``halt()``
+   on an error, as if the procedure were called with ``try!``.
 
 2. **Strict.** If a call to a throwing procedure is not marked with a ``try`` or
    ``try!``, the compiler will raise an error.
@@ -246,32 +246,37 @@ Given that the compiler will enforce the handling of errors, it is possible
 for them to be implemented with the ``out`` argument method described in
 the introduction.
 
-For example, here is some Chapel code that handles an error:
+For example, here is some Chapel code that throws and handles an error:
 
 .. code-block:: chapel
 
   class IllegalArgumentError: Error {} 
 
-  proc nohandle(arg): A {
-    var value: A = callee(arg);
-    return value;
-  }
-
-  proc handler(arg): A throws {
-    do {
-      var value: A = try callee(arg);
+  proc caller(arg) throws : A {
+    try {
+      var value: A = callee(arg);
+      for i in iterating(arg) do
+        writeln(i);
     } catch e: IllegalArgumentError {
       return DEFAULT_A;
-    } catch e: Error {
+    } catch e {
       throw e;
     } 
   }
 
-  proc callee(arg): A throws {
+  proc callee(arg) throws : A {
     if arg then
       return new A;
     else
       throw new IllegalArgumentError();
+  }
+
+  iter iterating(arg) throws : A {
+    if arg < 1 then
+      throw new IllegalArgumentError();
+
+    for i in 1..arg do
+      yield i;
   }
 
 The compiler could translate this into the following Chapel code:
@@ -280,6 +285,65 @@ The compiler could translate this into the following Chapel code:
 
   class IllegalArgumentError: Error {} 
 
+  proc caller(arg, out _e_out: Error): A {
+    var _e: Error; 
+    var value: A = callee(arg, _e);
+
+    if _e: IllegalArgumentError {
+      delete _e;
+      return DEFAULT_A;
+    } else if _e {
+      _e_out = _e;
+      const _failure: A;
+      return _failure;
+    }
+    
+    for i in iterating(arg, _e) do
+      writeln(i);
+
+    if _e: IllegalArgumentError {
+      delete _e;
+      return DEFAULT_A;
+    } else if _e {
+      _e_out = _e;
+      const _failure: A;
+      return _failure;
+    }
+
+    return value;
+  }
+
+  proc callee(arg, out _e_out: Error): A {
+    if arg then
+      return new A();
+    else {
+      _e_out = new IllegalArgumentError();
+      const _failure: A;
+      return _failure; 
+    }
+  }
+
+  iter iterating(arg, out _e_out: Error): A {
+    if arg < 1 {
+      _e_out = new IllegalArgumentError();
+      return;
+    }
+
+    for i in 1..arg do
+      yield i;
+  } 
+
+In default mode, calling functions without handling their errors will
+produce a ``halt()``.
+
+.. code-block:: chapel
+
+  proc nohandle(arg): A {
+    var value: A = callee(arg);
+    return value;
+  }
+
+  // translated
   proc nohandle(arg): A {
     var _e: Error;
     var value: A = callee(arg, _e);
@@ -288,37 +352,15 @@ The compiler could translate this into the following Chapel code:
     return value;
   }
 
-  proc handler(arg, out _e: Error): A {
-    var _e_in: Error;
-    var value: A = callee(arg, _e_in);
-    if _e_in: IllegalArgumentError {
-      delete _e_in;
-      return DEFAULT_A;
-    } else if _e_in {
-      _e = _e_in; 
-      return;
-    }
-    return value;
-  }
-
-  proc callee(arg, out _e: Error): A {
-    if arg then
-      return new A;
-    else {
-      _e = new IllegalArgumentError();
-      return;
-    }
-  }
-
 
 Examples
 --------
 
-Example 1: Simple Errors
+Example 1: Simple errors
 ++++++++++++++++++++++++
 
-As an example, this is a function currently (Jan 2016) on our Timer record in
-the standard modules:
+As an example, this function is currently in our Timer record, which is
+part of the standard modules:
 
 .. code-block:: chapel
 
@@ -331,8 +373,8 @@ the standard modules:
       }
     }
 
-It calls `halt` when the timer is already running, which is not very friendly.
-With our proposal this would instead be:
+It calls ``halt()`` when the timer is already running, which is not very
+user friendly. With our proposal this would instead be:
 
 .. code-block:: chapel
 
@@ -351,18 +393,17 @@ This function can now be used as follows:
 
     var my_timer: Timer;
     try! my_timer.start();
-    do {
-      try my_timer.start();
-    } catch e: Error {
-      writeln(Error.message);
-    }
-    try! my_timer.start(); // Will halt the program!
+    try
+      my_timer.start();
+    catch e: Error
+      writeln(e.message);
+    try! my_timer.start(); // halts the program!
 
-Example 2: File IO
-++++++++++++++++++
+Example 2: File I/O
++++++++++++++++++++
 
-A common place for errors is interactions with the filesystem, we currently
-handle these with two strategies, out arguments and halting.
+A common place for errors is interactions with the filesystem, and we
+currently handle these with ``out`` arguments and halting.
 
 .. code-block:: chapel
 
@@ -379,50 +420,53 @@ handle these with two strategies, out arguments and halting.
       halt("Failed to open channel");
     }
   } else {
-   halt("Failed to open file");
+    halt("Failed to open file");
   }
 
 .. code-block:: chapel
 
-  do {
-    var file = try open("my_data.dat");
-    var channel = try file.writer(err);
-    try channel.write(1, 2, 4, 8, err);
-  } catch  e: IOError {
+  try {
+    var file = open("my_data.dat");
+    var channel = file.writer(err);
+    channel.write(1, 2, 4, 8, err);
+  } catch e: IOError {
     halt(e.message());
   }
 
   // Equivalent to:
 
-  var file = try! open("my_data.dat");
-  var channel = try! file.writer(err);
-  try! channel.write(1, 2, 4, 8, err);
+  try! {
+    var file = open("my_data.dat");
+    var channel = file.writer(err);
+    channel.write(1, 2, 4, 8, err);
+  }
 
-Example 3: Errors In cobegins
+// TODO: Think about it
+Example 3: Cobegins
 +++++++++++++++++++++++++++++
 
-`cobegin`, and other task parallel constructs create tasks which could have
-errors. These errors will be provided at task join.
+``cobegin``, and other task parallel constructs create tasks which could
+have errors. These errors will be provided at task join.
 
 .. code-block:: chapel
 
   proc encounterError() throws { throw new Error(); }
   proc noError() throws { return; }
-  do {
-    try cobegin {
-      try encounterError();
-      try noError();
-      try encounterError();
+  try {
+    cobegin {
+      encounterError();
+      noError();
+      encounterError();
     }
   } catch errors: CobeginErrors { // could use a better name
     for e in errors {
-      writeln(e); // Would print out two lines
+      writeln(e); // would print out two lines
     }
   }
 
-Example 4: Errors In Iterators
+Example 4: Iterators
 ++++++++++++++++++++++++++++++
-This is the current `glob` iterator in the `FileSystem` module:
+This is the current ``glob`` iterator in the ``FileSystem`` module:
 
 .. code-block:: chapel
 
@@ -444,7 +488,7 @@ The new version would look like:
 
 .. code-block:: chapel
 
-  iter glob(pattern: string = "*"): string {
+  iter glob(pattern: string = "*") throws : string {
     ...
     if (err != 0 && err != GLOB_NOMATCH) then
       throw new Error("unhandled error in glob()");
@@ -455,37 +499,37 @@ Which can then be used like this:
 
 .. code-block:: chapel
 
-    do {
-      try for x in glob() {
+    try {
+      for x in glob() do 
         writeln(x);
-      }
-    } catch e: Error {
+    } catch e {
       writeln("Error in glob");
     }
 
 Raising an error will halt the execution of the iterator. Errors in follower
-iterations in `coforall` and `forall` loops may still allow some iteration to
-occur. All errors will be reported at task join, as in example 3.
+iterations in ``coforall`` and ``forall`` loops may still allow some iteration
+to occur. All errors will be reported at task join, as in Example 3.
 
 
-Example 5: Errors In Runtime Operations
+Example 5: Runtime operations
 +++++++++++++++++++++++++++++++++++++++
 
 Many kinds of runtime operations in Chapel have the potential to fail (say if
-you are out of memory). This class of errors will not be mandatory to check
-for. But, if one is encountered at runtime and you do not check for it, your
-program will halt.
+you are out of memory). This class of errors should be marked with ``try!``
+so that if one is encountered at runtime, your program will ``halt()`` before
+causing other catastrophic errors.
 
 .. code-block:: chapel
 
-    do {
-      try on Locales[0] {
+    try {
+      on Locales[0] {
         writeln("Hello!");
       }
     } catch e: OutOfMemoryError {
       free_large_object();
-      // This on statement does not have a try, and will halt execution if it fails
-      on Locales[0] {
+
+      // attempt again, halt execution if it fails
+      try! on Locales[0] {
         writeln("Hello!");
       }
     }
