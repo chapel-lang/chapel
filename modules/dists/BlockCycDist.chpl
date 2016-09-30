@@ -18,11 +18,11 @@
  */
 
 //
-// Block Distribution
+// BlockCyclic Distribution
 // 
-//      Block       BlockDom     BlockArr
+//      BlockCyclic    BlockCyclicDom     BlockCyclicArr
 //
-//   LocBlock    LocBlockDom  LocBlockArr
+//   LocBlockCyclic    LocBlockCyclicDom  LocBlockCyclicArr
 //
 
 use DSIUtil;
