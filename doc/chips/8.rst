@@ -179,8 +179,6 @@ Syntax
       procedure must ``throw``.
 
   * ``try!`` will ``halt()`` if an error occurs.
-
-  * Both may be used with single and compound statements.
   
 * Errors can be handled with ``catch`` statements.
 
@@ -193,7 +191,7 @@ Here is an example.
     try canThrowErrors();  // also handled by catch ("in scope")
     try! canThrowErrors(); // halts on failure
   } catch e {
-    writeln("The first call failed!")
+    writeln("One of the first two calls failed!")
   }
 
 Default vs strict mode
