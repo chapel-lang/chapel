@@ -175,8 +175,6 @@ Syntax
 
     * If an error is thrown, it will be passed to a matching ``catch`` block.
 
-    * If none exists, the error will be passed to an enclosing ``catch`` block.
-
     * If none exists, the error will be passed out of the function, hence the
       procedure must ``throw``.
 
@@ -192,6 +190,7 @@ Here is an example.
 
   try {
     canThrowErrors();      // handled by catch on failure
+    try canThrowErrors();  // also handled by catch ("in scope")
     try! canThrowErrors(); // halts on failure
   } catch e {
     writeln("The first call failed!")
@@ -213,19 +212,24 @@ the compiler will run checks in one of two modes, based on a flag.
 Error types
 +++++++++++
 
-* Errors are classes that extend a base class ``Error``.
-
-* Errors will not be typechecked, but an error hierarchy is permitted.
+* ``Error`` will be a class defined in the standard library.
+  
+* ``Error`` may be extended to create custom errors and a hierarchy.
 
 ::
 
   class MyBaseError: Error {}
   class MySubError: MyBaseError {}
 
-* Errors can be matched against in ``catch`` blocks. They will be checked in
-  order, so even if a better fitting type is present, it will not be chosen
-  if a matching general type precedes it. If a type is not specified,
-  any ``Error`` will match.
+* Error types will not be checked by the compiler.
+
+* At runtime ``catch`` blocks can match against errors.
+
+  * These matches will be evaluated in order, so even if a better fitting
+    type is present, it will not be chosen if a matching general type
+    precedes it.
+
+  * If a type is not specified, any ``Error`` will match.
 
 :: 
 
@@ -284,6 +288,7 @@ The compiler could translate this into the following Chapel code:
 .. code-block:: chapel
 
   class IllegalArgumentError: Error {} 
+  class IteratorError: Error {}
 
   proc caller(arg, out _e_out: Error): A {
     var _e: Error; 
@@ -325,7 +330,7 @@ The compiler could translate this into the following Chapel code:
 
   iter iterating(arg, out _e_out: Error): A {
     if arg < 1 {
-      _e_out = new IllegalArgumentError();
+      _e_out = new IteratorError();
       return;
     }
 
@@ -441,12 +446,15 @@ currently handle these with ``out`` arguments and halting.
     channel.write(1, 2, 4, 8, err);
   }
 
-// TODO: Think about it
 Example 3: Cobegins
-+++++++++++++++++++++++++++++
++++++++++++++++++++
 
-``cobegin``, and other task parallel constructs create tasks which could
-have errors. These errors will be provided at task join.
+``begin`` and ``cobegin`` are parallel constructs that create
+asynchronous tasks which could have errors. Given that our error
+handling is synchronous, the compiler will force these tasks to
+``sync`` before the program is allowed to continue.
+
+These errors will be provided at task join.
 
 .. code-block:: chapel
 
@@ -458,14 +466,14 @@ have errors. These errors will be provided at task join.
       noError();
       encounterError();
     }
-  } catch errors: CobeginErrors { // could use a better name
+  } catch errors: AsyncErrors {
     for e in errors {
       writeln(e); // would print out two lines
     }
   }
 
 Example 4: Iterators
-++++++++++++++++++++++++++++++
+++++++++++++++++++++
 This is the current ``glob`` iterator in the ``FileSystem`` module:
 
 .. code-block:: chapel
@@ -510,9 +518,8 @@ Raising an error will halt the execution of the iterator. Errors in follower
 iterations in ``coforall`` and ``forall`` loops may still allow some iteration
 to occur. All errors will be reported at task join, as in Example 3.
 
-
 Example 5: Runtime operations
-+++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++
 
 Many kinds of runtime operations in Chapel have the potential to fail (say if
 you are out of memory). This class of errors should be marked with ``try!``
@@ -548,12 +555,5 @@ Future Design Work
 * Task joins propagate errors to parent tasks:
 
   * Occurs at the end of sync/coforall/cobegin blocks
-
-
-Implementation Notes
---------------------
-
-Since this error handling strategy is based off returning either the value or
-an error, better support for union types in chapel may be necessary.
 
 .. _Swift: https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ErrorHandling.html
