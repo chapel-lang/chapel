@@ -102,12 +102,11 @@ load_target_compiler ${COMPILER}
 
 # Do minor fixups
 case $COMPILER in
-    cray)
+    cray|intel|gnu)
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
-        module swap craype-network-aries craype-target-local_host
-        ;;
-    intel|gnu)
+        module unload $(module list -t 2>&1 | grep craype-network)
+        module load craype-target-local_host
         ;;
     pgi)
         # EJR (04/07/16): Since the default pgi was upgraded from 15.10.0 to
@@ -122,7 +121,7 @@ case $COMPILER in
         ;;
 esac
 
-if [ "${HOSTNAME}" = "esxbld03" ] ; then
+if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
     libsci_module=$(module list -t 2>&1 | grep libsci)
     if [ -n "${libsci_module}" ] ; then
         log_info "Unloading cray-libsci module: ${libsci_module}"
@@ -149,13 +148,8 @@ export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 # Ensure that one of the CPU modules is loaded.
 my_arch=$($CHPL_HOME/util/chplenv/chpl_arch.py 2> /dev/null)
 if [ "${my_arch}" = "none" ] ; then
-    if [ "${HOSTNAME}" = "esxbld03" ] ; then
-        log_info "Loading craype-sandybridge module to stifle chpl_arch.py warnings."
-        module load craype-sandybridge
-    else
-        log_info "Loading craype-shanghai module to stifle chpl_arch.py warnings."
-        module load craype-shanghai
-    fi
+    log_info "Loading craype-shanghai module to stifle chpl_arch.py warnings."
+    module load craype-shanghai
 fi
 
 if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then
