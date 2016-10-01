@@ -1261,6 +1261,12 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         BlockStmt* bodyCopy      = NULL;
         bool       inserted      = false;
 
+        if (forLoop->isCoforallLoop()) {
+          // parallel.cpp wants to know about these when considering whether
+          // or not to insert autoCopies
+          yieldedIndex->addFlag(FLAG_COFORALL_INDEX_VAR);
+        }
+
         SymbolMap  map;
 
         map.put(index, yieldedIndex);

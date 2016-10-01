@@ -1514,7 +1514,8 @@ GenRet codegenFieldPtr(
       castType = fieldSymbol->defPoint->parentSymbol->typeInfo();
       if( castType == ct ) castType = NULL;
     }
-    ret.chplType = fieldSymbol->typeInfo();
+    GenRet fieldRet = new SymExpr(fieldSymbol);
+    ret.chplType = fieldRet.chplType;
   }
 
   if( fLLVMWideOpt && castType && isWide(base) ) {
@@ -4311,7 +4312,7 @@ GenRet CallExpr::codegen() {
             arg = codegenDeref(arg);
         }
       }
-      if (arg.chplType->symbol->isRef() && !formal->isRef()) {
+      if (arg.chplType->symbol->isRefOrWideRef() && !formal->isRefOrWideRef()) {
         arg = codegenDeref(arg);
       }
 
@@ -5909,8 +5910,12 @@ GenRet CallExpr::codegenPrimMove() {
       INT_ASSERT(q.isRef() || q.isWideRef());
 
       GenRet lhs = var->codegenVarSymbol(true);
+      GenRet rhs = from;
+      if (!from->isRefOrWideRef()) {
+        rhs = codegenAddrOf(rhs);
+      }
 
-      codegenAssign(lhs, from);
+      codegenAssign(lhs, rhs);
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
              get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false &&

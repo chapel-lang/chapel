@@ -201,8 +201,12 @@ returnInfoRef(CallExpr* call) {
 static QualifiedType
 returnInfoAsRef(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
-  if (isReferenceType(t) || t->symbol->hasFlag(FLAG_WIDE_REF))
+  if (isReferenceType(t)) {
     return QualifiedType(t, QUAL_REF);
+  }
+  else if (t->symbol->hasFlag(FLAG_WIDE_REF)) {
+    return QualifiedType(t, QUAL_WIDE_REF);
+  }
   else {
     if (!t->refType)
       INT_FATAL(call, "invalid attempt to get reference type");
@@ -265,10 +269,10 @@ returnInfoGetMember(CallExpr* call) {
     const char* name = var->immediate->v_string;
     for_fields(field, ct) {
       if (!strcmp(field->name, name))
-        return QualifiedType(field->type, QUAL_VAL);
+        return field->qualType();
     }
   } else
-    return QualifiedType(var->type, QUAL_VAL);
+    return sym->qualType();
   INT_FATAL(call, "bad member primitive");
   return QualifiedType(NULL);
 }
