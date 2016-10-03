@@ -1196,7 +1196,7 @@ resolveFormals(FnSymbol* fn) {
         makeRefType(formal->type);
         formal->type = formal->type->refType;
       }
-
+/*
       if (isRecordWrappedType(formal->type) &&
           fn->hasFlag(FLAG_BEGIN)) {
         // Pass domains, arrays into begin fns by ref.
@@ -1207,7 +1207,7 @@ resolveFormals(FnSymbol* fn) {
         makeRefType(formal->type);
         formal->type = formal->type->refType;
       }
-
+*/
       // Adjust tuples for intent.
       // This should not apply to 'ref' , 'out', or 'inout' formals,
       // but these are currently turned into reference types above.
