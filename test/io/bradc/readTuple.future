@@ -1,9 +1,0 @@
-bug: reading tuple type
-
-Although the new QIO system supports the ability to read a given type
-(e.g., read(int)), it seems that it does not permit this type to be a
-tuple type (e.g., read((int, int))).  However, through the use of
-varargs type functions, it does support the following as a workaround:
-read(int, int).  That said, I think that for orthogonality, it should
-support reading a single tuple type as well, so this bug checks for
-that.
