@@ -19,6 +19,8 @@
  * ---------------------------------------------------------------------
  */
 
+use Time;
+
 config const rayMagnitude = 1000.0;  // trace rays of this magnitude
 
 // TODO: all globals used?  Any that should be configs?
@@ -141,6 +143,23 @@ proc main(args: [] string) {
     writeln("urand: ", urand);
     writeln("irand: ", irand);
   }
+
+  var t: Timer;
+  t.start();
+  render(xres, yres, pixels, rays);
+  const rendTime = t.elapsed();
+
+  stderr.writeln("Rendering took: ", rendTime, " seconds (", rendTime*1000,
+                 " milliseconds)");
+
+  outfile.writeln("P6");
+  outfile.writeln(xres, " ", yres);
+  outfile.writeln(255);
+  for p in pixels {
+    outfile.write((p >> redShift) & 0xff);
+    outfile.write((p >> greenShift) & 0xff);
+    outfile.write((p >> blueShift) & 0xff);
+  }
 }
 
 proc usage(args) {
@@ -216,5 +235,46 @@ proc loadScene(infile) {
     writeln("lights:  ", lights);
     writeln("camera:  ", cam);
     writeln("spheres: ", objList.next);
+  }
+}
+
+
+/* render a frame of xsz/ysz dimensions into the provided framebuffer */
+proc render(xsz, ysz, fb: [?D], samples) {
+  const rcpSamples = 1.0 / samples;
+    
+  for (i,j) in D {
+    var rgb: vec3;
+
+    for s in 0..#samples do
+      rgb += trace(getPrimaryRay(i, j, s));
+
+    rgb *= rcp_samples;
+
+    fb[i,j] = ((min(rgb(1), 1.0) * 255.0):uint(32) & 0xff) << redShift |
+              ((min(rgb(2), 1.0) * 255.0):uint(32) & 0xff) << greenShift |
+              ((min(rgb(3), 1.0) * 255.0):uint(32) & 0xff) << blueShift;
+  }
+}
+
+
+/* trace a ray throught the scene recursively (the recursion happens through
+ * shade() to calculate reflection rays if necessary).
+ */
+proc trace(ray, depth=0) {
+  /* if we reached the recursion limit, bail out */
+  if depth > maxRayDepth then
+    return (0.0, 0.0, 0.0);
+
+  /* find the nearest intersection ... */
+  var obj = objList.next;
+  while obj {
+    if ray_sphere(iter, ray, sp) {
+      if (!nearestObj || sp.dist < nearest_sp.dist) {
+        nearestObj = obj;
+        nearestSp = sp;
+      }
+    }
+    obj = obj.next;
   }
 }
