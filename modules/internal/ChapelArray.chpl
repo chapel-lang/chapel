@@ -1006,10 +1006,17 @@ module ChapelArray {
         compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
     }
 
-    pragma "no doc"
+    /*
+       Returns a tuple of ranges for a rectangular domain.
+       This tuple represents the bounds of the domain.
+       For sparse domains, returns the bounds of the parent domain.
+       */
     proc dims() return _value.dsiDims();
 
-    pragma "no doc"
+    /*
+       Returns a range representing the boundary of this
+       domain in a particular dimension.
+       */
     proc dim(d : int) return _value.dsiDim(d);
 
     pragma "no doc"
