@@ -357,7 +357,6 @@ buildDefaultWrapper(FnSymbol* fn,
         temp->addFlag(FLAG_MAYBE_PARAM);
         temp->addFlag(FLAG_EXPR_TEMP);
       }
-      //temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       if (formal->hasFlag(FLAG_TYPE_VARIABLE))
         temp->addFlag(FLAG_TYPE_VARIABLE);
       copy_map.put(formal, temp);
@@ -677,7 +676,8 @@ static void addArgCoercion(FnSymbol*  fn,
     //
     checkAgain = true;
 
-    // MPF - this call here is suspect
+    // MPF - this call here is suspect because dereferencing should
+    // call a record's copy-constructor (e.g. autoCopy).
     castCall   = new CallExpr(PRIM_DEREF, prevActual);
 
     if (SymExpr* prevSE = toSymExpr(prevActual))
