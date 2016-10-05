@@ -53,8 +53,7 @@ record material {
 class sphere {
   var pos: vec3,
       rad: real,
-      mat: material,
-      next: sphere;
+      mat: material;
 }
 
 record spoint {
@@ -86,7 +85,7 @@ config const rays = 1;
 
 const aspect = xres:real / yres;
 
-var objList: sphere;
+var objList: [0..-1] sphere;
 
 config const numLights = 16;
 
@@ -187,7 +186,6 @@ proc loadScene(infile) {
   var line: string;
   param delim = " \t\n";
 
-  objList = new sphere();
   while (infile.readline(line)) {
     var comment = false;
     for c in line {
@@ -223,9 +221,7 @@ proc loadScene(infile) {
     const refl = substrs[10]: real;
 
     if intype == 's' then
-      objList.next = new sphere(pos, rad, new material(col, spow, refl),
-                                objList.next);
-    // TODO: Consider making objList into a vector as well?
+      objList.push_back(new sphere(pos, rad, new material(col, spow, refl)));
 
     else
       stderr.writeln("unknown type: ", intype);
@@ -234,7 +230,7 @@ proc loadScene(infile) {
   if debug {
     stderr.writeln("lights:  ", lights);
     stderr.writeln("camera:  ", cam);
-    stderr.writeln("spheres: ", objList.next);
+    stderr.writeln("spheres: ", objList);
   }
 }
 
@@ -302,15 +298,13 @@ proc trace(ray, depth=0): vec3 {
   // TODO: This would clean up nicely if using a vector
   //
   // TODO: minloc reduction?
-  var obj = objList.next;
-  while obj {
+  for obj in objList {
     if raySphere(obj, ray, sp, useSp=true) {
       if (nearestObj == nil || sp.dist < nearestSp.dist) {
         nearestObj = obj;
         nearestSp = sp;
       }
     }
-    obj = obj.next;
   }
 
   if nearestObj then
@@ -391,7 +385,6 @@ proc shade(obj, sp, depth) {
 
   for l in lights {
     var ldir = l - sp.pos;
-    var obj2 = objList.next;
     const shadowRay = new ray(orig = sp.pos, dir = ldir);
     var inShadow = false;
     // TODO: use reduction
@@ -400,12 +393,11 @@ proc shade(obj, sp, depth) {
     // the light
     //
     var dummy: spoint;
-    while (obj2) {
-      if (raySphere(obj2, shadowRay, useSp=false, dummy)) {
+    for obj in objList {
+      if (raySphere(obj, shadowRay, useSp=false, dummy)) {
         inShadow = true;
         break;
       }
-      obj2 = obj2.next;
     }
 
     if (!inShadow) {
