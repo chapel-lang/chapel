@@ -90,7 +90,7 @@ Feedback Received (7/20)
    within the block, it would be tiresome to repeat with throwing functions
    that are closely related (ex. I/O). 
 
-2. ``try`` is also verbose from an iteration perspective. For example, 
+2. ``try`` is also verbose from an ergonomic perspective. For example, 
    ``writeln("hello world")`` would have to be prefaced with a ``try``
    statement if it were strictly enforced.
 
@@ -153,7 +153,13 @@ Potential solutions
 Enacted solution
 ++++++++++++++++
 
-This CHIP will move forward with a combination of the first three solutions.
+This CHIP will move forward with the third solution, eliminate ``do``, which
+moves it away from the Swift approach of marking every statement that can
+throw. This is being done for developer ergonomics and legibility.
+
+The design will also reflect the goals of the second solution, elide ``try``
+with a compiler flag, in the sense that there will be multiple levels of
+strictness in error handling.
 
 
 Chapel Error Handling
@@ -177,6 +183,8 @@ Syntax
 
     * If none exists, the error will be passed out of the function, hence the
       procedure must ``throw``.
+
+    * If the procedure does not ``throw``, the compiler will raise an error.
 
   * ``try!`` will ``halt()`` if an error occurs.
   
@@ -207,10 +215,13 @@ the compiler will run checks in one of two modes, based on a flag.
 2. **Strict.** If a call to a throwing procedure is not enclosed by a ``try``
    or ``try!``, the compiler will raise an error.
 
-Error types
-+++++++++++
+Errors
+++++++
 
-* ``Error`` will be a class defined in the standard library.
+The long term plan is to support enums, unions, and tagged unions as Error
+types, but the first implementation will be restricted to classes.
+
+* ``Error`` will be a class defined in the standard library. 
   
 * ``Error`` may be extended to create custom errors and a hierarchy.
 
@@ -308,8 +319,6 @@ The compiler could translate this into the following Chapel code:
       _e_out = _e;
       return;
     }
-
-    return value;
   }
 
   proc callee(arg, out _e_out: Error): A {
@@ -349,7 +358,6 @@ produce a ``halt()``.
       halt(e.message());
     return value;
   }
-
 
 Examples
 --------
@@ -391,11 +399,18 @@ This function can now be used as follows:
 
     var my_timer: Timer;
     try! my_timer.start();
-    try
+    try {
       my_timer.start();
-    catch e: Error
+    } catch e: Error {
       writeln(e.message);
+    }
     try! my_timer.start(); // halts the program!
+
+Here is the implementation of this error-handling:
+
+.. code-block:: chapel
+    var my_timer: Timer;
+
 
 Example 2: File I/O
 +++++++++++++++++++
