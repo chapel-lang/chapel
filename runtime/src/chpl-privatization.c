@@ -78,16 +78,20 @@ void* chpl_getPrivatizedClass(int64_t i) {
 
 
 void chpl_clearPrivatizedClass(int64_t i) {
+  chpl_sync_lock(&privatizationSync);
   chpl_privateObjects[i] = NULL;
+  chpl_sync_unlock(&privatizationSync);
 }
 
 // Used for to check for leaks of privatized classes
 int64_t chpl_numPrivatizedClasses(void) {
   int64_t ret = 0;
+  chpl_sync_lock(&privatizationSync);
   for (int64_t i = 0; i < chpl_capPrivateObjects; i++) {
     if (chpl_privateObjects[i])
       ret++;
   }
+  chpl_sync_unlock(&privatizationSync);
   return ret;
 }
 
