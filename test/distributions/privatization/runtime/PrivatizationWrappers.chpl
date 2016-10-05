@@ -12,3 +12,8 @@ proc insertPrivatized(o: object, pid: int) {
 proc getPrivatized(pid:int): C {
   return __primitive("chpl_getPrivatizedClass", nil:C, pid);
 }
+
+proc clearPrivatized(pid:int) {
+  extern proc chpl_clearPrivatizedClass(pid:int);
+  chpl_clearPrivatizedClass(pid);
+}
