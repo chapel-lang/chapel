@@ -137,20 +137,7 @@ module ChapelIteratorSupport {
     else
       return _getIteratorZipInternal(t, 1);
   }
-/*
-  inline proc _checkIterator(type t) {
-    use Reflection;
 
-    if (canResolveTypeMethod(t, "these")) then
-      return t.these();
-    else
-      compilerError("unable to iterate over type '", t:string, "'");
-  }
-
-  proc _checkIterator(x) {
-    return x;
-  }
-*/
   inline proc _freeIterator(ic: _iteratorClass) {
     chpl_here_free(__primitive("cast_to_void_star", ic));
   }
