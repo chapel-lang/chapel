@@ -268,9 +268,9 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
 
   // Add the move to return before the first autoDestroy
   // At this point we could also invoke some other function
-  // (such as an 'onret' handler) if that turns out to be necessary.
+  // if that turns out to be necessary. It might well be
+  // necessary in order to return array slices by value.
   returnOrFirstAutoDestroy->insertBefore(moveExpr);
-
 }
 
 //
@@ -362,23 +362,15 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
         VarSymbol* varLhs = toVarSymbol(symLhs->var);
         SymExpr*   symRhs = toSymExpr(callRhs->get(1));
         VarSymbol* varRhs = toVarSymbol(symRhs->var);
-        // Handling ArgSymbols here causes a leak in handling
-        // of out argument intents. Since I added it to support
-        // if-expr fixes, and that isn't working for other reasons,
-        // I've just disabled it for now. Presumably we could also
-        // adjust addLocalCopiesAndWritebacks...
-        ArgSymbol* argRhs = NULL; //toArgSymbol(symRhs->var);
-        Type*     rhsType = NULL;
 
-        if (varRhs)
-          rhsType = varRhs->type;
-        if (argRhs)
-          rhsType = argRhs->type;
+        // MPF 2016-10-02: It seems to me that this code should also handle the
+        // case that symRhs is an ArgSymbol, but adding that caused in the
+        // handling of out argument intents.
 
-        if (varLhs != NULL && rhsType != NULL)
+        if (varLhs != NULL && varRhs != NULL)
         {
           if (isUserDefinedRecord(varLhs->type) == true &&
-              rhsType                           == varLhs->type->refType)
+              varRhs->type                      == varLhs->type->refType)
           {
 
             // HARSHBARGER 2015-12-11:
@@ -1117,8 +1109,11 @@ static void insertAutoCopyTemps() {
       INT_ASSERT(move);
       SET_LINENO(move);
 
-      // TODO -- this code should no longer be necessary but it is
-      // currently being run
+      // MPF 2016-10-02. This code should no longer be necessary
+      // but it is currently being run. See the comment near the call
+      // to requiresImplicitDestroy in functionResolution and the test
+      // call-expr-tmp.chpl.
+
       Symbol* tmp = newTemp("_autoCopy_tmp_", sym->type);
 
       move->insertBefore(new DefExpr(tmp));
