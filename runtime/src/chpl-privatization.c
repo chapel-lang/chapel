@@ -64,12 +64,6 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
       chpl_privateObjects = tmp;
       // purposely leak old copies of chpl_privateObject to avoid the need to
       // lock chpl_getPrivatizedClass; TODO: fix with lock free data structure
-      // (since a3e09acf643bda236a2a6241fdd89c551159a943)
-      // Could collect all-zeros array elements perhaps
-      // when allocating? Still not sure this is safe, since
-      // on messages adding them could be added before the ones removing
-      // them... It would be OK if we tracked when they were deleted
-      // as a separate thing from never initialized though.
     }
   }
   chpl_privateObjects[pid] = v;
@@ -87,6 +81,7 @@ void chpl_clearPrivatizedClass(int64_t i) {
   chpl_privateObjects[i] = NULL;
 }
 
+// Used for to check for leaks of privatized classes
 int64_t chpl_numPrivatizedClasses(void) {
   int64_t ret = 0;
   for (int64_t i = 0; i < chpl_capPrivateObjects; i++) {
