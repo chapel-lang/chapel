@@ -160,15 +160,17 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     //
     bool autoCopy = needsAutoCopyAutoDestroyForArg(arg, fn);
 
-    if (var->isRef() || isClass(var->type))
+    if (var->isRef() || isClass(var->type)) {
       // Only a variable that is passed by reference out of its current scope
       // is concurrently accessed -- which means that it has to be passed by
       // reference.
       var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
+    }
     VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->getValType());
 
     // If it's a record-wrapped type we can just bit-copy into the arg bundle.
     // TODO: This really belongs in RVF
+    // TODO: Use 'formal->isRef()' instead of the var's ref-ness
     if (!isRecordWrappedType(var->getValType()) && !autoCopy && var->isRef()) field->qual = QUAL_REF;
 
     ctype->fields.insertAtTail(new DefExpr(field));
@@ -214,31 +216,29 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
     return true;
   }
 
-  // If we actually pass these through by reference there will be extra GETs
-  // to access the internal wrapped class. By *always* autocopying these
-  // through functions, we can be sure to avoid stack-related issues and
-  // to have local records (with wide wrapped classes) and reduce comms. This
-  // should probably be handled by RVF, but it's fastest to do it here.
+  // TODO: Move this into RVF. If we do, then we need to handle the following
+  // case:
+  // ```
+  // var a : sync int;
+  // begin {
+  //   on {
+  //     begin {
+  //     a += 1;
+  //     }
+  //   }
+  // }
   //
-  // TODO: This exposed an issue with promotion. Consider the following code:
+  // If the sync is rvf'd onto the on-statement's stack, we should not take
+  // a reference to it as it is about to go out of scope with the outer begin.
   //
-  //   var a : [1..3] sync int;
-  //   a.reset();
+  // This has the effect of always bit-copying the sync record into the arg
+  // bundle. This reduces comm counts and avoids issues with begin-statements
+  // where we might take the reference of a sync on the stack, and that stack
+  // is about to go away.
   //
-  // This snippet ends up with a 'p_i_#' variable at the top of the wrapper.
-  // When I first observed the problem, it was a ref to a sync.  The inner loop
-  // basically uses it as a temporary. The DefaultRectangular's serial path
-  // uses the stack reference just fine, but the coforall loop wants to take it
-  // by reference. In the coforall path the ref is uninitialized and points to
-  // NULL, and the autoCopy/Destroy fails.
-  //
-  // Helps the following tests with comm counts (no extra GET to access
-  // wrapper):
-  // - performance/sungeun/multilocale/syncsingle
-  //
-  //if (isSyncType(baseType) || isSingleType(baseType)) {
-  //  return true;
-  //}
+  if (isSyncType(baseType) || isSingleType(baseType)) {
+    return true;
+  }
 
   // This applies only to arguments being passed to asynchronous task
   // functions. No need to increment+decrement the reference counters
@@ -257,7 +257,6 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
     else if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
              isString(baseType))
     {
-      // Do this only if the record is passed by value.
       if (!formal->isRef())
       {
         return true;
