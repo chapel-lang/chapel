@@ -346,6 +346,15 @@ VarSymbol::VarSymbol(const char *init_name,
   llvmDIVariable(NULL)
 {
   gVarSymbols.add(this);
+  if (type == dtUnknown || type->symbol == NULL) {
+    this->qual = QUAL_BLANK;
+  } else if (type->symbol->hasFlag(FLAG_REF)) {
+    this->qual = QUAL_REF;
+  } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) {
+    this->qual = QUAL_WIDE_REF;
+  } else {
+    this->qual = QUAL_VAL;
+  }
 }
 
 

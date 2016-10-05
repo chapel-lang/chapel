@@ -200,7 +200,13 @@ public:
   }
 
   const char* qualStr() {
-    switch (_qual) {
+    Qualifier q = _qual;
+    if (isRefType()) {
+      q = QUAL_REF;
+    } else if (isWideRefType()) {
+      q = QUAL_WIDE_REF;
+    }
+    switch (q) {
       case QUAL_BLANK:
         return "blank";
       case QUAL_CONST:

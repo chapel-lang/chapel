@@ -335,6 +335,7 @@ void cullOverReferences() {
       if (Type* vt = def->sym->getValType()) {
         if (isRecordWrappedType(vt)) {
           def->sym->type = vt;
+          def->sym->qual = QUAL_VAL;
         }
       }
 

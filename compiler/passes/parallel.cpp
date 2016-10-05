@@ -168,6 +168,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->getValType());
 
     // If it's a record-wrapped type we can just bit-copy into the arg bundle.
+    // TODO: This really belongs in RVF
     if (!isRecordWrappedType(var->getValType()) && !autoCopy && var->isRef()) field->qual = QUAL_REF;
 
     ctype->fields.insertAtTail(new DefExpr(field));
@@ -1427,6 +1428,7 @@ makeHeapAllocations() {
     }
 
     var->type = heapType;
+    var->qual = QUAL_VAL;
   }
 
   freeHeapAllocatedVars(heapAllocatedVars);
