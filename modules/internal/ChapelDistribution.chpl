@@ -31,7 +31,6 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    //var _distCnt: atomic_refcnt;  // distribution reference count
     var _doms: list(BaseDom);     // domains declared over this distribution
     var _domsLock: atomicbool;    //   and lock for concurrent access
     var _free_when_no_doms: bool; // true when the original _distribution
@@ -160,7 +159,6 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    //var _domCnt: atomic_refcnt; // domain reference count
     var _arrs: list(BaseArr);  // arrays declared over this domain
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
@@ -576,7 +574,6 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    //var _arrCnt: atomic_refcnt; // array reference count
     var _arrAlias: BaseArr;    // reference to base array if an alias
     var pid:int = -1; // privatized ID, if privitization is supported
   
