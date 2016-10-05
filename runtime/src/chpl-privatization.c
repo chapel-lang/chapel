@@ -21,7 +21,6 @@
 #include "chpl-privatization.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
-extern int chpl_nodeID;
 
 static int64_t chpl_capPrivateObjects = 0;
 static chpl_sync_aux_t privatizationSync;
