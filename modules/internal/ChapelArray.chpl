@@ -175,15 +175,15 @@ module ChapelArray {
     // _privatization is controled by --[no-]privatization
     // privatization required, not optional, for PrivateDist
 
-  // MPF - This simple implementation of privitization has some drawbacks:
+  // MPF 2016-10-02: This simple implementation of privitization has some
+  // drawbacks:
   // 1) Creating a new privitized object necessarily does something on all
-  //     locales; this would be surprising if the user explicitly requested
-  //     a Block array on 2 locales for example.
-  // 2) Privitized object ids are managed by Locale 0 in a way that,
-  //    while relatively low overhead, adds work to Locale 0 that is not
-  //    present on the other locales, and again would be surprising if
-  //    a Block array were created over other locales only (say, Locales[2] and
-  //    Locales[3]).
+  //    locales; this would be surprising if the user explicitly requested a
+  //    Block array on 2 locales for example.
+  // 2) Privitized object ids are managed by Locale 0 in a way that, while
+  //    relatively low overhead, adds work to Locale 0 that is not present on
+  //    the other locales, and again would be surprising if a Block array were
+  //    created over other locales only (say, Locales[2] and Locales[3]).
 
   // Given a dsi Dist/Dom/Array, create an pid integer identifying the
   // privatized version on all locales; and populate each locale
@@ -191,15 +191,11 @@ module ChapelArray {
   // without communication.
   proc _newPrivatizedClass(value) : int {
 
-//    extern proc chpl_newPrivatizedClass(obj:object, pid:int);
-
     const n = numPrivateObjects.fetchAdd(1);
 
     const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     on Locales[0] {
-//      extern proc printf(fmt:c_string, x:object, i:c_int);
-//      printf("saving private : %p %i\n", value:object, n:c_int);
       _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
     }
 
@@ -208,11 +204,9 @@ module ChapelArray {
       if hereID != here.id {
         newValue = parentValue.dsiPrivatize(privatizeData);
         __primitive("chpl_newPrivatizedClass", newValue, n);
-//        chpl_newPrivatizedClass(newValue, n);
         newValue.pid = n;
       } else {
         __primitive("chpl_newPrivatizedClass", newValue, n);
-//        chpl_newPrivatizedClass(newValue, n);
         newValue.pid = n;
       }
       cobegin {
@@ -232,24 +226,17 @@ module ChapelArray {
   // canonical verison. The rest are copies on other locales.
   proc _freePrivatizedClass(pid:int, original:object):void
   {
-//    extern proc printf(fmt:c_string, x:object, i:c_int);
-//    printf("_freePrivatizedClass %p %i\n", original:object, pid:c_int);
     // Do nothing for null pids.
     if pid == nullPid then return;
 
-//    on __primitive("chpl_on_locale_num",
-//		   chpl_buildLocaleID(0, c_sublocid_any)) {
     on Locales[0] {
-//      extern proc printf(fmt:c_string, x:object, i:c_int);
-//      printf("deleting private : %p %i\n", original:object, pid:c_int);
       _freePrivatizedClassHelp(pid, original);
     }
 
     proc _freePrivatizedClassHelp(pid, original) {
       var prv = chpl_getPrivatizedCopy(object, pid);
       if prv != original then
-        delete prv; // TODO: not possible to call _delete_arr here,
-                    // but would that be necessary anyway?
+        delete prv;
 
       extern proc chpl_clearPrivatizedClass(pid:int);
       chpl_clearPrivatizedClass(pid);
@@ -511,7 +498,8 @@ module ChapelArray {
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
   /*
-   See test_array_alias_field.chpl
+   calls to chpl__getDomainFromArrayType are added by the
+   compiler in a case like this:
 
     class C {
       var A: [0..4] int;
@@ -520,6 +508,8 @@ module ChapelArray {
     var GA: [1..5] int = [i in 1..5] i;
 
     var c2 = new C(A=>GA);  // <- note A=>GA here
+
+    See also test_array_alias_field.chpl
   */
   proc chpl__getDomainFromArrayType(type arrayType) {
     var A: arrayType;
@@ -792,14 +782,8 @@ module ChapelArray {
                        // in which case, the record destructor should
                        // not attempt to delete the _instance.
 
-    // Never, ever create a distribution directly.
-    // Always call _newDistribution() to obtain  one.
-    //proc _distribution(_pid, _instance) { }
-
     inline proc _value {
       if _isPrivatized(_instance) {
-	  //extern proc printf(fmt:c_string);
-	  //printf("distribution _getting privatized copy " + _instance.type:string + "\n");
         return chpl_getPrivatizedCopy(_instance.type, _pid);
       } else {
         return _instance;
@@ -815,8 +799,6 @@ module ChapelArray {
           // that should be freed.
           var distToFree = _instance.remove();
           if distToFree != nil {
-	    //extern proc printf(fmt:c_string);
-	    //printf("in _do_destroy " + _isPrivatized(_instance):string + "\n");
             _delete_dist(distToFree, _isPrivatized(_instance));
 	  }
         }
@@ -1810,8 +1792,6 @@ module ChapelArray {
     if isPODType(t) then return false;
     return true;
   }
-
-  // TODO -- slices?
 
   // Array wrapper record
   pragma "array"
@@ -3421,8 +3401,9 @@ module ChapelArray {
   proc chpl__initCopy(a: _distribution) {
     pragma "no copy" var b = a.clone();
     return b;
-    // Sadly, this makes an infinite loop..
-    //return a.clone();
+    // You'd think we could just write
+    //   return a.clone();
+    // but that makes an infinite loop.
   }
 
   pragma "init copy fn"
@@ -3474,20 +3455,6 @@ module ChapelArray {
     b._unowned = true;
   }
 
-
-  /*
-  inline proc chpl__onret(ref x: domain) {
-    const tok = __primitive("get caller stack token");
-    const isalias = (x._unowned);// | (x._value._arrAlias != nil);
-    const isaliaslocal = isalias & (tok == x._value._stackToken);
-
-    if isaliaslocal {
-      __doDeepCopy(x, tok);
-    }
-  }
-
-  */
-
   pragma "unalias fn"
   inline proc chpl__unalias(ref x: domain) {
 
@@ -3495,7 +3462,6 @@ module ChapelArray {
       __doDeepCopy(x);
     }
   }
-
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref a: []) {
@@ -3538,17 +3504,6 @@ module ChapelArray {
     b._unowned = true;
   }
 
-  /*
-  inline proc chpl__onret(ref x: []) {
-    const tok = __primitive("get caller stack token");
-    const isalias = (x._unowned) | (x._value._arrAlias != nil);
-    const isaliaslocal = isalias & (tok == x._value._stackToken);
-
-    if isaliaslocal {
-      __doDeepCopy(x, tok);
-    }
-  }
-  */
   pragma "unalias fn"
   inline proc chpl__unalias(ref x: []) {
     const isalias = (x._unowned) | (x._value._arrAlias != nil);
@@ -3558,7 +3513,6 @@ module ChapelArray {
       __doDeepCopy(x);
     }
   }
-
 
 
   //
