@@ -117,52 +117,9 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
   }
 }
 
-/* Just want argument intent to cover it, rather than
-   changing the type.
-static bool formalWillBeByRef(Symbol* key, TypeSymbol* actualTS)
-{
-  ArgSymbol* formal = toArgSymbol(key);
-  
-  // If no formal, assume blank intent.
-  IntentTag intent = INTENT_BLANK;
-  if (formal) {
-    intent = formal->intent;
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE))
-      intent = INTENT_TYPE;
-  }
-  if (intent == INTENT_BLANK &&
-      actualTS->type != dtTypeDefaultToken &&
-      !actualTS->hasFlag(FLAG_ITERATOR_RECORD) )
-    intent = blankIntentForType(actualTS->type->getValType());
-
-  if ((intent & INTENT_FLAG_REF) != 0)
-    return true;
-  return false;
-}
-*/
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
   if (fn->hasEitherFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
-    // TODO -- I don't think that I can put this logic here...
-    // it seems to affect all tuples, because of
-    // _type_construct__tuple being the thing we resolve here
-
-    /*
-    // fn is a tuple construction/type construction function
-    Type *t = actualTS->type;
-    IntentTag intent = blankIntentForType(t);
-    if ((intent & INTENT_FLAG_REF) &&
-         fn->hasFlag(FLAG_ALLOW_REF) &&
-         //!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && // not _type_construct__tuple
-         isRecordWrappedType(t) // temporary
-        ) {
-      // Use a ref field to capture actualTS with types
-      // where blank intent is ref or const ref.
-      if (!isReferenceType(t)) {
-        gdbShouldBreakHere();
-        return t->getRefType()->symbol;
-      }
-    }*/
     return actualTS;
   } else if (fn->hasFlag(FLAG_ALLOW_REF)) {
     // With FLAG_ALLOW_REF, always use actualTS type, even if it's a ref type
@@ -172,33 +129,14 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
     // for the ref type, so re-instantiate it with whatever actualTS is.
     return actualTS;
   } else {
-
-//if( key->id == 235200 )
-//  gdbShouldBreakHere();
-//if( fn->id == 230516)
-//gdbShouldBreakHere();
-
-    //bool formalRef = formalWillBeByRef(key, actualTS);
     bool actualRef = actualTS->hasFlag(FLAG_REF);
 
-    if (actualTS->hasFlag(FLAG_TUPLE)) {
-      // When passing a tuple in by blank intent, get the tuple type that
-      // has the same ref/nonref semantics as if the arguments
-      // were expanded with blank intent.
-    }
-
-
-    /*if (formalRef == actualRef)
-      return actualTS;
-    else*/ if(actualRef)
+    if(actualRef)
       // the value is a ref and
       // instantiation of a formal of ref type loses ref
       return getNewSubType(fn, key, actualTS->getValType()->symbol);
     else
-      // the value is not a ref and instantiation of the
-      // formal of ref type adds ref
       return actualTS;
-      //return getNewSubType(fn, key, actualTS->getRefType()->symbol);
   }
 }
 
@@ -728,10 +666,6 @@ void
 instantiateBody(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_PARTIAL_COPY)) {
     fn->finalizeCopy();
-
-    /*if (fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
-      instantiate_tuple_body(fn);
-    }*/
   }
 }
 
