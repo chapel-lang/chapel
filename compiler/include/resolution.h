@@ -85,7 +85,6 @@ FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChec
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
 FnSymbol* getUnalias(Type* t);
-FnSymbol* getUnref(Type* t);
 
 
 bool isPOD(Type* t);

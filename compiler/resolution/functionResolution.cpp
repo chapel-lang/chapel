@@ -229,7 +229,6 @@ static Map<FnSymbol*,const char*> outerCompilerWarningMap;
 Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
 Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 Map<Type*,FnSymbol*> unaliasMap; // type to chpl__unalias function
-Map<Type*,FnSymbol*> unrefMap; // type to chpl__unref function
 
 
 Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
@@ -616,18 +615,6 @@ resolveAutoCopyEtc(Type* type) {
     unaliasMap.put(type, fn);
     tmp->defPoint->remove();
   }
-
-  // resolve unref
-  /*{
-    SET_LINENO(type->symbol);
-    Symbol* tmp = newTemp(type);
-    chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr("chpl__unref", tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
-    resolveFns(fn);
-    unrefMap.put(type, fn);
-    tmp->defPoint->remove();
-  }*/
 }
 
 
@@ -641,10 +628,6 @@ FnSymbol* getAutoDestroy(Type* t) {
 }
 FnSymbol* getUnalias(Type* t) {
   return unaliasMap.get(t);
-}
-
-FnSymbol* getUnref(Type* t) {
-  return unrefMap.get(t);
 }
 
 const char* toString(Type* type) {
@@ -1067,6 +1050,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
 
     // Difficult to call e.g. _unref_type in build/normalize
     // b/c of bugs in pulling out function symbols.
+    // So we make sure returned tuple types capture values here.
     if (retType->symbol->hasFlag(FLAG_TUPLE) &&
         !doNotChangeTupleTypeRefLevel(fn, true)) {
 
@@ -1196,18 +1180,7 @@ resolveFormals(FnSymbol* fn) {
         makeRefType(formal->type);
         formal->type = formal->type->refType;
       }
-/*
-      if (isRecordWrappedType(formal->type) &&
-          fn->hasFlag(FLAG_BEGIN)) {
-        // Pass domains, arrays into begin fns by ref.
-        // This is a temporary workaround.
-        // * more of the compiler should handle argument intents
-        // * it's unclear why this applies only to FLAG_BEGIN task fns
-        // * should this apply to all user records?
-        makeRefType(formal->type);
-        formal->type = formal->type->refType;
-      }
-*/
+
       // Adjust tuples for intent.
       // This should not apply to 'ref' , 'out', or 'inout' formals,
       // but these are currently turned into reference types above.
@@ -2080,9 +2053,11 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       int        n         = nVar->immediate->int_value();
       CallExpr*  tupleCall = NULL;
 
-      // NOTE HERE
-      // This code is run for _build_tuple
-      // and _build_tuple_always_allow_ref
+      // MPF 2016-10-02
+      // This code used to be run for _build_tuple
+      // and _build_tuple_always_allow_ref but now
+      // only runs for var-args functions.
+
       std::vector<ArgSymbol*> varargFormals(n);
       if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true)
         tupleCall = new CallExpr("_type_construct__tuple");
@@ -7251,9 +7226,7 @@ requiresImplicitDestroy(CallExpr* call) {
 
         // Return type is a record (which includes array, record, and
         // dist) or a ref counted type that is passed by reference
-        (isRecord(fn->retType) /*||
-         (fn->retType->symbol->hasFlag(FLAG_REF) &&
-          isRefCountedType(fn->retType->getValType()))*/) &&
+        isRecord(fn->retType) &&
 
         // These are special functions where we don't want to destroy
         // the result
@@ -10403,8 +10376,6 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
           VarSymbol* tmp = newTemp("_runtime_type_tmp_", runtimeTypeToValueFn->retType);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
-          //INT_ASSERT(autoCopyMap.get(tmp->type));
-          //call->replace(new CallExpr(autoCopyMap.get(tmp->type), tmp));
           call->replace(new SymExpr(tmp));
         } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           //
