@@ -42,12 +42,8 @@
 
 struct TupleInfo {
   TypeSymbol* typeSymbol;
-  //FnSymbol *typeConstruct; in type->defaultTypeConstructor
-  //FnSymbol *ctor; in type->defaultInitializer
-  /*FnSymbol *defaultOf;
-  FnSymbol *defaultHash;
-  FnSymbol *autoCopy;
-  FnSymbol *initCopy;*/
+  // type constructor is in type->defaultTypeConstructor
+  // constructor is in type->defaultInitializer
   FnSymbol *buildTupleType;
   FnSymbol *buildStarTupleType;
   FnSymbol *buildTupleTypeNoRef;
@@ -78,17 +74,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     Type* sizeType = dtInt[INT_SIZE_DEFAULT];
 
     ArgSymbol* genericTypeCtorSizeArg = gGenericTupleTypeCtor->getFormal(1);
-
-    // TODO:
-    // first create type constructor with right # of arguments
-    // then instantiate that (as the code does now)
-    // then fill in its bodies
-
-    // It would help if the control flow is obvious and the
-    // logic driving the insn is simpler here.
-
-    // Mostly, need to get _build_tuple out of generic argument
-    // processing...
 
     // Create the arguments for the type constructor
     // since we will refer to these in the substitutions.
@@ -195,7 +180,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       typeCtor->addFlag(FLAG_INVISIBLE_FN);
       typeCtor->addFlag(FLAG_TYPE_CONSTRUCTOR);
       typeCtor->addFlag(FLAG_PARTIAL_TUPLE);
-      //typeCtor->addFlag(FLAG_TUPLE);
 
       typeCtor->retTag = RET_TYPE;
       typeCtor->retType = newType;
@@ -210,11 +194,8 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       tupleModule->block->insertAtTail(new DefExpr(typeCtor));
 
       newType->defaultTypeConstructor = typeCtor;
-
-      //printf("tuple type constructor id %i\n", typeCtor->id);
-      //print_view(typeCtor);
     }
-    
+
     // Build the _build_tuple type function
     {
       const char* fnName = noref?"_build_tuple_noref":"_build_tuple";
@@ -242,8 +223,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       tupleModule->block->insertAtTail(new DefExpr(buildTupleType));
 
       info.buildTupleType = buildTupleType;
-      //printf("tuple type constructor id %i\n", typeCtor->id);
-      //print_view(typeCtor);
     }
 
     // Build the * type function
@@ -274,8 +253,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       tupleModule->block->insertAtTail(new DefExpr(buildStarTupleType));
 
       info.buildStarTupleType = buildStarTupleType;
-      //printf("tuple type constructor id %i\n", typeCtor->id);
-      //print_view(typeCtor);
     } else {
       info.buildStarTupleType = NULL;
     }
@@ -299,7 +276,8 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, args[i]->type);
         ctor->insertFormalAtTail(arg);
         // TODO : one would think that the tuple constructor body
-        // should call initCopy
+        // should call initCopy vs autoCopy, but these are more
+        // or less the same now.
 
         Symbol* element = NULL;
         if (isReferenceType(args[i]->type)) {
@@ -326,7 +304,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       ctor->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
       ctor->addFlag(FLAG_CONSTRUCTOR);
       ctor->addFlag(FLAG_PARTIAL_TUPLE);
-      //ctor->addFlag(FLAG_TUPLE);
 
       ctor->retTag = RET_VALUE;
       ctor->retType = newType;
@@ -340,11 +317,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       tupleModule->block->insertAtTail(new DefExpr(ctor));
 
       newType->defaultInitializer = ctor;
-
-      //info.ctor = ctor;
-
-      //printf("tuple constructor id %i\n", ctor->id);
-      //print_view(ctor);
     }
 
     // Build the value destructor
@@ -366,8 +338,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       dtor->addFlag(FLAG_INLINE);
       dtor->addFlag(FLAG_INVISIBLE_FN);
       dtor->addFlag(FLAG_DESTRUCTOR);
-      //dtor->addFlag(FLAG_PARTIAL_TUPLE);
-      //dtor->addFlag(FLAG_TUPLE);
 
       dtor->retTag = RET_VALUE;
       dtor->retType = dtVoid;
@@ -392,69 +362,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
   return info;
 }
 
-/*
-TypeSymbol* getTupleTypeSymbol(std::vector<TypeSymbol*>& args,
-                               CallExpr* instantiatedForCall)
-{
-  TupleInfo& info = getTupleInfo(args, instantiatedForCall);
-  return info.typeSymbol;
-}
-FnSymbol* getTupleConstructor(std::vector<TypeSymbol*>& args)
-{
-  TupleInfo& info = getTupleInfo(args);
-  return info.ctor;
-}*/
-
-/*
-static void
-instantiate_tuple_signature(FnSymbol* fn) {
-  AggregateType* tuple = toAggregateType(fn->retType);
-  //  // tuple is the return type for the type constructor
-  // tuple is NULL for the default constructor
-  //
-
-  fn->numPreTupleFormals = fn->formals.length;
-  
-  int64_t size = toVarSymbol(fn->substitutions.v[0].value)->immediate->int_value
-();
-  
-  for (int i = 1; i <= size; ++i) {
-    const char* name = astr("x", istr(i));
-    ArgSymbol* formal = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymEx
-pr(gTypeDefaultToken));
-    
-    if (tuple) {
-      formal->addFlag(FLAG_TYPE_VARIABLE);
-      tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
-    }
-    
-    fn->insertFormalAtTail(formal);
-  }
-  
-  fn->removeFlag(FLAG_TUPLE);
-  
-  fn->addFlag(FLAG_PARTIAL_TUPLE);
-  fn->addFlag(FLAG_ALLOW_REF);
-}
-
-
-static void
-instantiate_tuple_body(FnSymbol* fn) {
-  Expr* last = fn->body->body.last();
-  int numPreTupleFormals = fn->numPreTupleFormals;
-  
-  std::vector<TypeSymbol*> test;
-
-  for (int i = numPreTupleFormals + 1; i <= fn->formals.length; ++i) {
-    ArgSymbol* formal = fn->getFormal(i);
-    
-    last->insertBefore(new CallExpr(PRIM_SET_MEMBER, fn->_this, new_IntSymbol(i - numPreTupleFormals), formal));
-    test.push_back(fn->getFormal(i)->type->symbol);
-  }
-  
-  fn->removeFlag(FLAG_PARTIAL_TUPLE);
-}
-*/
 
 static void
 getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
@@ -465,22 +372,10 @@ getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
   INT_ASSERT(fn->numFormals() == 1); // expected of the original function
   arg = fn->getFormal(1);
   ct = toAggregateType(arg->type);
-  //INT_ASSERT(!isReferenceType(ct));
   if (isReferenceType(ct))
     ct = toAggregateType(ct->getValType());
 
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_TUPLE));
-
-  /*
-  std::vector<TypeSymbol*> tmp;
-  int i = 0;
-  for_fields(field, ct) {
-    if (i != 0) { // skip size field
-      tmp.push_back(field->type->symbol);
-    }
-    i++;
-  }
-  return getTupleInfo(tmp);*/
 }
 
 static void
@@ -635,7 +530,6 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
   AggregateType* ct;
   getTupleArgAndType(fn, arg, ct);
 
-  //CallExpr *call = new CallExpr(build_tuple_fun);
   BlockStmt* block = new BlockStmt();
 
   VarSymbol* retv = new VarSymbol("retv", ct);
@@ -741,7 +635,7 @@ instantiate_tuple_unref(FnSymbol* fn)
       }
       block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, retv, toName, element));
     }
-  
+
     block->insertAtTail(new CallExpr(PRIM_RETURN, retv));
   }
 
@@ -865,17 +759,6 @@ fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall
 
 }
 
-/*
-static FnSymbol*
-parentFunction(CallExpr* call)
-{
-  Symbol* s = call->parentSymbol;
-  while (s && ! isFnSymbol(s))
-    s = s->defPoint->parentSymbol;
-  return toFnSymbol(s);
-}
-*/
-
 FnSymbol*
 createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
 {
@@ -894,7 +777,7 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
       if (inFn->hasFlag(FLAG_ALLOW_REF))
         noChangeTypes = true;
 
-    // TODO - should this use subs in preference to call's arguments?
+    // Q. should this use subs in preference to call's arguments?
     for_actuals(actual, call) {
       if (i == 0 && firstArgIsSize) {
         // First argument is the tuple size
@@ -937,78 +820,10 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
       args.resize(actualN);
     }
 
-
-    //printf("Building tuple with %i parts\n", (int) args.size());
-
     if (noref) {
       for (size_t i = 0; i < args.size(); i++) {
         args[i] = args[i]->getValType()->symbol;
       }
-    } else {
-      // Types with blank intent = ref capture by ref
-
-      // When running the type version of _build_tuple,
-      // use whatever types were specified.
-
-      // When running the value version, capture
-      // as if in blank intent.
-#if 0
-      FnSymbol* parentFn = parentFunction(call);
-      if (parentFn->hasFlag(FLAG_TUPLE) &&
-          !parentFn->hasFlag(FLAG_BUILD_TUPLE_TYPE)) {
-        for (size_t i = 0; i < args.size(); i++) {
-          Type* t = args[i]->type;
-          IntentTag intent = blankIntentForType(t);
-          if (!isReferenceType(t) &&
-              (intent & INTENT_FLAG_REF) &&
-              // Including more than this causes problems with hello.chpl
-              // but I havn't figured out why.
-              (/*isUserDefinedRecord(t) || */isRecordWrappedType(t))
-             ) {
-            args[i] = t->getRefType()->symbol;
-          }
-        }
-      }
-#endif
- 
-      // Seeing problems with this when it's run inside of
-      // a _build_tuple_allow_ref call. In particular,
-      // an argument that should not be captured by ref
-      // is being captured by ref.
-
-      // This workaround is .. ugh..
-
-      // It might be better to distinguish in normalization
-      // the tuple construction calls between
-      // temporary values, user values, record/class fields,
-      // return types, argument types.
-
-      // * tuples in argument type expressions capture blank-intent-is-ref
-      //   types by reference
-      // * tuples in return type expressions capture blank-intent-is-ref
-      //   types by value
-      // * tuples in variable or field type declarations capture
-      //   blank-intent-is-ref types by value
-      // * tuples in compiler temporary variables capture blank-intent-is-ref
-      //   values by reference
-#if 0
-      if (! (parentFunction(call)->hasFlag(FLAG_ALLOW_REF) ||
-             parentFunction(call)->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
-             parentFunction(call)->hasFlag(FLAG_CONSTRUCTOR)) ) {
-        for (size_t i = 0; i < args.size(); i++) {
-          Type* t = args[i]->type;
-          IntentTag intent = blankIntentForType(t);
-          if (!isReferenceType(t) &&
-              (intent & INTENT_FLAG_REF) &&
-              // Including more than this causes problems with hello.chpl
-              // but I havn't figured out why.
-              (/*isUserDefinedRecord(t) || */isRecordWrappedType(t))
-             ) {
-            args[i] = t->getRefType()->symbol;
-          }
-        }
-      }
-#endif
     }
 
     BlockStmt* point = getVisibilityBlock(call);
