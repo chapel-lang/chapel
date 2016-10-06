@@ -1,11 +1,12 @@
-## _This directory is intended to document the images available on [Docker Hub](https://hub.docker.com/r/chapel/chapel/)._
-   Please see [Docker Hub](https://hub.docker.com/r/chapel/chapel/) for the latest images.
+#  This directory contains the Dockerfiles for Chapel images available on [Docker Hub](https://hub.docker.com/r/chapel/chapel/).
+   Please see [Docker Hub](https://hub.docker.com/r/chapel/chapel/) to obtain the images.
 
 ---
 
 # Supported tags and respective `Dockerfile` links
 
-* [`1.13.1`, `latest` (_1.13.1/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/96ea5aac571391ba5f210cbbd2cbfc7b3ab05b5f/util/dockerfiles/1.13.1/Dockerfile)
+* [`1.14.0`, `latest` (_1.14.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.14.0/Dockerfile)
+* [`1.13.1` (_1.13.1/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.13.1/Dockerfile)
 
 # What is Chapel?
 
