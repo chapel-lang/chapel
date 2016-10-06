@@ -23,12 +23,13 @@
 #include <stdint.h>
 #include "chpltypes.h"
 
-extern void** chpl_privateObjects; // privatized array and domain objects
+void chpl_privatization_init(void);
 
-extern void chpl_privatization_init(void);
+void chpl_newPrivatizedClass(void*, int64_t);
+void* chpl_getPrivatizedClass(int64_t);
+void chpl_clearPrivatizedClass(int64_t);
 
-extern void chpl_newPrivatizedClass(void*, int64_t);
-extern void* chpl_getPrivatizedClass(int64_t);
+int64_t chpl_numPrivatizedClasses(void);
 
 #endif // LAUNCHER
 #endif // _chpl_privatization_h_

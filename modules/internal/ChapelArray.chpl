@@ -1044,11 +1044,14 @@ module ChapelArray {
       return _value.dsiCreate();
     }
 
-    /* Add index ``i`` to this domain */
+    /* Add index ``i`` to this domain. This method is also available
+       as the ``+=`` operator.
+     */
     proc add(i) {
       return _value.dsiAdd(i);
     }
 
+    pragma "no doc"
     proc bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
 
@@ -1057,6 +1060,38 @@ module ChapelArray {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
     }
 
+    /*
+       Adds indices in ``inds`` to this domain in bulk.
+
+       For sparse domains, an operation equivalent to this method is available
+       with the ``+=`` operator, where the right-hand-side is an array. However,
+       in that case, default values will be used for the flags ``dataSorted``,
+       ``isUnique``, and ``preserveInds``. This method is available because in
+       some cases, expensive operations can be avoided by setting those flags.
+       To do so, ``bulkAdd`` must be called explicitly (instead of ``+=``).
+
+       .. note::
+
+         Right now, this method and the corresponding ``+=`` operator are
+         only available for sparse domains. In the future, we expect that
+         these methods will be available for all irregular domains.
+
+       :arg inds: Indices to be added. ``inds`` can be an array of
+                  ``rank*idxType`` or an array of ``idxType`` for
+                  1-D domains.
+
+       :arg dataSorted: ``true`` if data in ``inds`` is sorted.
+       :type dataSorted: bool
+
+       :arg isUnique: ``true`` if data in ``inds`` has no duplicates.
+       :type isUnique: bool
+
+       :arg preserveInds: ``true`` if data in ``inds`` needs to be preserved.
+       :type preserveInds: bool
+
+       :returns: Number of indices added to the domain
+       :rtype: int
+    */
     proc bulkAdd(inds: [] _value.rank*_value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
 

@@ -142,10 +142,6 @@ module CPtr {
     return __primitive("ptr_eq", a, b);
   }
   pragma "no doc"
-  inline proc ==(a: c_void_ptr, b: c_void_ptr) {
-    return __primitive("ptr_eq", a, b);
-  }
-  pragma "no doc"
   inline proc ==(a: c_ptr, b: _nilType) {
     return __primitive("ptr_eq", a, c_nil);
   }
@@ -172,10 +168,6 @@ module CPtr {
   }
   pragma "no doc"
   inline proc !=(a: c_void_ptr, b: c_ptr) {
-    return __primitive("ptr_neq", a, b);
-  }
-  pragma "no doc"
-  inline proc !=(a: c_void_ptr, b: c_void_ptr) {
     return __primitive("ptr_neq", a, b);
   }
   pragma "no doc"

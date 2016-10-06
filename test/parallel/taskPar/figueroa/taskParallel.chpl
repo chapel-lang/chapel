@@ -116,12 +116,12 @@ proc player(num) {
     }
 
     // This while statement makes a choice for each round of the game.
-    while notTired.readFF() {
+    do {
       var rockPaperScissors = chooseBetweenRockPaperScissors();
-      if refereeReady(num) && notTired.readFF() then
+      if refereeReady(num) then
         writeln ("Player ", num, ": ", rockPaperScissors);
       choice(num) = rockPaperScissors;
-    }
+    } while notTired.readFF();
   }
 
   // In order to ensure that the referee doesn't hang waiting for a player to
@@ -166,7 +166,7 @@ proc referee () {
     }
 
     // This while statement declares the winner for each round of the game.
-    while notTired.readFF() {
+    do {
       var delay = RandomNumber() * 2 + 1.0;
       sleep (delay : uint);
 
@@ -186,7 +186,7 @@ proc referee () {
       var player1 = choice(1),
           player2 = choice(2);
       determineWinner (player1, player2);
-    }
+    } while notTired.readFF();
   }
 
   // In order to ensure that none of the players hang waiting for the referee

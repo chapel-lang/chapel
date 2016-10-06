@@ -9,12 +9,12 @@ Runtime Support for Atomics
 The following information is meant to describe the underlying
 runtime support for Chapel's Atomic Variables.
 
-For more information on Atomic Variables refer to the Chapel
-Language Specification, or for a list of available functions on
+For more information on Atomic Variables refer to the :ref:`Chapel
+Language Specification <chapel-spec>`, or for a list of available functions on
 Atomics see :mod:`Atomics`
 
 For code examples using atomics, see the
-``$CHPL_HOME/examples/primers/atomics.chpl`` primer.
+:ref:`atomics.chpl <primers-atomics>` primer.
 
 --------
 Overview
@@ -79,7 +79,7 @@ Memory Order Notes
 As mentioned in the spec, most atomic operations optionally take a
 memory order. However, for the intrinsics and locks implementations,
 this argument is ignored. The resulting effect is that all atomic
-operations are performed with memory_order_seq_cst (sequentially
+operations are performed with ``memory_order_seq_cst`` (sequentially
 consistent) regardless of the actual order specified. The reason for
 this is because the compiler intrinsics used in the runtime have no
 way to specify memory order.
@@ -102,7 +102,7 @@ are not in C11. They are ``peek``, ``poke``, and ``waitFor``.
 ``peek`` and ``poke`` are supposed to be relaxed versions of read
 and write that allow users to perform reads and writes with more
 relaxed memory constraints.  Currently they are implemented as reads
-and writes with memory_order_relaxed. ``waitFor`` is a method that
+and writes with ``memory_order_relaxed``. ``waitFor`` is a method that
 waits until an atomic object has a specific value.  It can yield to
 other tasks while waiting.
 
@@ -116,7 +116,7 @@ operations. ``threadFence`` and ``signalFence`` are also in the
 runtime but not in the modules. The primary reason for this is that
 there is no need for them with the intrinsics or locks
 implementations, where all our operations use
-memory_order_seq_cst. They will be added for use with the cstdlib
+``memory_order_seq_cst``. They will be added for use with the cstdlib
 implementation. The fences are used with other memory_orders to allow
 you to create safe programs when atomic operations are using non
 sequential memory orders.
@@ -129,7 +129,7 @@ Open issues
 - Atomic bools are only supported for the default size and not
   implemented for all sizes of bools.
 
-- The memory_order is currently ignored by the intrinsics and locks
+- The ``memory_order`` is currently ignored by the intrinsics and locks
   implementations.
 
 - The threadFence and signalFence methods need to be made available

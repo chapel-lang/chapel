@@ -672,10 +672,12 @@ module GMP {
   extern proc mpz_cmp_d(const ref op1: mpz_t,
                         op2: c_double) : c_int;
 
-  extern proc mpz_cmp_si(const ref op1: mpz_t,
+  extern chpl_mpz_cmp_si
+         proc mpz_cmp_si(const ref op1: mpz_t,
                          op2: c_long) : c_int;
 
-  extern proc mpz_cmp_ui(const ref op1: mpz_t,
+  extern chpl_mpz_cmp_ui
+         proc mpz_cmp_ui(const ref op1: mpz_t,
                          op2: c_ulong) : c_int;
 
   extern proc mpz_cmpabs(const ref op1: mpz_t,
@@ -687,7 +689,8 @@ module GMP {
   extern proc mpz_cmpabs_ui(const ref op1: mpz_t,
                             op2: c_ulong) : c_int;
 
-  extern proc mpz_sgn(const ref op: mpz_t) : c_int;
+  extern chpl_mpz_sgn
+         proc mpz_sgn(const ref op: mpz_t) : c_int;
 
 
   //
@@ -782,9 +785,11 @@ module GMP {
 
   extern proc mpz_fits_sshort_p(const ref op: mpz_t) : c_int;
 
-  extern proc mpz_odd_p(const ref op: mpz_t) : c_int;
+  extern chpl_mpz_odd_p
+         proc mpz_odd_p(const ref op: mpz_t) : c_int;
 
-  extern proc mpz_even_p(const ref op: mpz_t) : c_int;
+  extern chpl_mpz_even_p
+         proc mpz_even_p(const ref op: mpz_t) : c_int;
 
   extern proc mpz_sizeinbase(const ref op: mpz_t,
                              base: c_int) : size_t;
