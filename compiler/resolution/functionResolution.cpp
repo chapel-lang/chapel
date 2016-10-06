@@ -1191,8 +1191,10 @@ resolveFormals(FnSymbol* fn) {
           !(formal == fn->_this) &&
           !doNotChangeTupleTypeRefLevel(fn, false)) {
 
-        Type* newType = computeTupleWithIntent(formal->intent,
-                                               formal->type);
+        // Let 'in' intent work similarly to the blank intent.
+        IntentTag intent = formal->intent;
+        if (intent == INTENT_IN) intent = INTENT_BLANK;
+        Type* newType = computeTupleWithIntent(intent, formal->type);
         formal->type = newType;
       }
 
