@@ -308,6 +308,12 @@ static void view_sym(Symbol* sym, bool number, int mark) {
   putchar('\'');
   if (sym->id == mark)
     printf("***");
+
+  if (isVarSymbol(sym) || isArgSymbol(sym)) {
+    QualifiedType qual = sym->qualType();
+    printf("%s ", qual.qualStr());
+  }
+
   if (toFnSymbol(sym)) {
     printf("fn ");
   } else if (toArgSymbol(sym)) {

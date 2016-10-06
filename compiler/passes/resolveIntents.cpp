@@ -162,5 +162,18 @@ void resolveIntents() {
     resolveArgIntent(arg);
   }
 
+  // BHARSH TODO: This shouldn't be necessary, but will be until we fully
+  // switch over to qualified types.
+  forv_Vec(VarSymbol, sym, gVarSymbols) {
+    QualifiedType q = sym->qualType();
+    if (q.getQual() == QUAL_BLANK) {
+      if (sym->isRef()) {
+        sym->qual = QUAL_REF;
+      } else {
+        sym->qual = QUAL_VAL;
+      }
+    }
+  }
+
   intentsResolved = true;
 }

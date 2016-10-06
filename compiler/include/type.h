@@ -199,6 +199,42 @@ public:
     return _qual;
   }
 
+  const char* qualStr() {
+    Qualifier q = _qual;
+    if (isRefType()) {
+      q = QUAL_REF;
+    } else if (isWideRefType()) {
+      q = QUAL_WIDE_REF;
+    }
+    switch (q) {
+      case QUAL_BLANK:
+        return "blank";
+      case QUAL_CONST:
+        return "const";
+      case QUAL_REF:
+        return "ref";
+      case QUAL_CONST_REF:
+        return "const ref";
+      case QUAL_VAL:
+        return "var";
+      case QUAL_NARROW_REF:
+        return "narrow-ref";
+      case QUAL_WIDE_REF:
+        return "wide-ref";
+
+      case QUAL_CONST_VAL:
+        return "const-var";
+      case QUAL_CONST_NARROW_REF:
+        return "const-narrow-ref";
+      case QUAL_CONST_WIDE_REF:
+        return "const-wide-ref";
+
+      default:
+        INT_FATAL("Unhandled Qualifier");
+    }
+    return "UNKNOWN-QUAL";
+  }
+
 
 private:
   Type*      _type;

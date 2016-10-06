@@ -48,6 +48,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "resolveIntents.h"
+#include "stlUtil.h"
 
 //########################################################################
 //# Static Function Forward Declarations
@@ -903,6 +904,39 @@ buildPromotionFastFollowerCheck(bool isStatic,
 }
 
 
+static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper, FnSymbol* fn) {
+  // Fix the UnresolvedSymExprs we inserted to the actualCall. For each
+  // call to `fn`, pick out any UnresolvedSymExprs and look in the loop
+  // body for a corresponding DefExpr.
+
+  std::vector<CallExpr*> calls;
+  collectCallExprs(wrapper, calls);
+  for_vector(CallExpr, call, calls) {
+    if (call->isResolved() == fn) {
+      for_actuals(actual, call) {
+        if (UnresolvedSymExpr* unsym = toUnresolvedSymExpr(actual)) {
+          // Get the StmtExpr in case 'call' returns something
+          BlockStmt* callBlock = toBlockStmt(call->getStmtExpr()->parentExpr);
+          INT_ASSERT(callBlock);
+          BlockStmt* loop = toBlockStmt(callBlock->parentExpr);
+          INT_ASSERT(loop && loop->isLoopStmt());
+          std::vector<DefExpr*> defs;
+          collectDefExprs(loop, defs);
+          bool found = false;
+          for_vector(DefExpr, def, defs) {
+            if (strcmp(def->sym->name, unsym->unresolved) == 0) {
+              unsym->replace(new SymExpr(def->sym));
+              found = true;
+              break;
+            }
+          }
+          INT_ASSERT(found);
+        }
+      }
+    }
+  }
+}
+
 static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
@@ -936,10 +970,13 @@ buildPromotionWrapper(FnSymbol* fn,
       new_formal->type = ts->type;
       wrapper->insertFormalAtTail(new_formal);
       iteratorCall->insertAtTail(new_formal);
-      VarSymbol* index = newTemp(astr("p_i_", istr(i)));
-      wrapper->insertAtTail(new DefExpr(index));
-      indicesCall->insertAtTail(index);
-      actualCall->insertAtTail(index);
+
+      // Rely on the 'destructureIndices' function in build.cpp to create a
+      // VarSymbol and DefExpr for these indices. This solves a problem where
+      // these 'p_i_' variables were declared outside of the loop body's scope.
+      const char* name = astr("p_i_", istr(i));
+      indicesCall->insertAtTail(new UnresolvedSymExpr(name));
+      actualCall->insertAtTail(new UnresolvedSymExpr(name));
     } else {
       wrapper->insertFormalAtTail(new_formal);
       actualCall->insertAtTail(new_formal);
@@ -1041,6 +1078,7 @@ buildPromotionWrapper(FnSymbol* fn,
     normalize(fifn);
     fifn->addFlag(FLAG_GENERIC);
     fifn->instantiationPoint = getVisibilityBlock(info->call);
+    fixUnresolvedSymExprsForPromotionWrapper(fifn, fn);
 
     if (!fNoFastFollowers && buildFastFollowerChecks) {
       // Build up the static (param) fast follower check functions
@@ -1065,6 +1103,8 @@ buildPromotionWrapper(FnSymbol* fn,
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   normalize(wrapper);
+  fixUnresolvedSymExprsForPromotionWrapper(wrapper, fn);
+
   return wrapper;
 }
 
