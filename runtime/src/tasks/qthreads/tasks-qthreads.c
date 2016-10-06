@@ -676,6 +676,7 @@ void chpl_task_init(void)
     int32_t   commMaxThreads;
     int32_t   hwpar;
     pthread_t initer;
+    pthread_attr_t pAttr;
 
     chpl_qthread_process_pthread = pthread_self();
     chpl_qthread_process_tls.chpl_data.id = qthread_incr(&next_task_id, 1);
@@ -692,7 +693,9 @@ void chpl_task_init(void)
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
     // Initialize qthreads
-    pthread_create(&initer, NULL, initializer, NULL);
+    pthread_attr_init(&pAttr);
+    pthread_attr_setdetachstate(&pAttr, PTHREAD_CREATE_DETACHED);
+    pthread_create(&initer, &pAttr, initializer, NULL);
     while (chpl_qthread_done_initializing == 0)
         sched_yield();
 
