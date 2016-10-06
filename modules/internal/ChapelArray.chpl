@@ -1007,16 +1007,15 @@ module ChapelArray {
     }
 
     /*
-       Returns a tuple of ranges for a rectangular domain.
-       This tuple represents the bounds of the domain.
-       For sparse domains, returns the bounds of the parent domain.
-       */
+       Returns a tuple of ranges describing the bounds of a rectangular domain.
+       For a sparse domain, returns the bounds of the parent domain.
+     */
     proc dims() return _value.dsiDims();
 
     /*
        Returns a range representing the boundary of this
        domain in a particular dimension.
-       */
+     */
     proc dim(d : int) return _value.dsiDim(d);
 
     pragma "no doc"
