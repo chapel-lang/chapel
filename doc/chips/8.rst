@@ -297,26 +297,26 @@ The compiler could translate this into the following Chapel code:
   class IllegalArgumentError: Error {} 
 
   proc caller(arg, out _e_out: Error) {
-    var _e: Error; 
+    var e: Error; 
     
-    callee(arg, _e);
+    callee(arg, e);
 
-    if _e: IllegalArgumentError {
-      delete _e;
+    if e: IllegalArgumentError {
+      delete e;
       writeln("illegal arg, exiting caller"); 
-    } else if _e {
-      _e_out = _e;
+    } else if e {
+      _e_out = e;
       return;
     }
     
-    for i in iterating(arg, _e) do
+    for i in iterating(arg, e) do
       writeln(i);
 
-    if _e: IllegalArgumentError {
-      delete _e;
+    if e: IllegalArgumentError {
+      delete e;
       writeln("illegal arg, exiting caller"); 
-    } else if _e {
-      _e_out = _e;
+    } else if e {
+      _e_out = e;
       return;
     }
   }
@@ -355,7 +355,7 @@ produce a ``halt()``.
     var _e: Error;
     var value: A = callee(arg, _e);
     if _e then
-      halt(e.message());
+      halt(e.message);
     return value;
   }
 
@@ -406,10 +406,24 @@ This function can now be used as follows:
     }
     try! my_timer.start(); // halts the program!
 
-Here is the implementation of this error-handling:
+Here is the implementation of this example:
 
 .. code-block:: chapel
+
     var my_timer: Timer;
+    var _e: Error;         // compiler generated
+    my_timer.start(_e);
+    if _e then
+      halt(_e.message);
+
+    var e: Error;          // user defined
+    my_timer.start(e);
+    if e then
+      writeln(e.message); 
+
+    my_timer.start(_e);    // can reuse compiler-gen error
+    if _e then
+      halt(_e.message);
 
 
 Example 2: File I/O
@@ -440,19 +454,38 @@ currently handle these with ``out`` arguments and halting.
 
   try {
     var file = open("my_data.dat");
-    var channel = file.writer(err);
-    channel.write(1, 2, 4, 8, err);
+    var channel = file.writer();
+    channel.write(1, 2, 4, 8);
   } catch e: IOError {
-    halt(e.message());
+    halt(e.message);
   }
 
   // Equivalent to:
 
   try! {
     var file = open("my_data.dat");
-    var channel = file.writer(err);
-    channel.write(1, 2, 4, 8, err);
+    var channel = file.writer();
+    channel.write(1, 2, 4, 8);
   }
+
+An implementation of the ``try!`` portion of the example:
+
+.. code-block:: chapel
+
+  var _e: Error;
+
+  var file = open("my_data.dat", _e);
+  if _e then
+    halt(_e.message);
+
+  var channel = file.writer(_e);
+  if _e then
+    halt(_e.message);
+
+  channel.write(1, 2, 4, 8, _e);
+  if _e then
+    halt(_e.message);
+
 
 Example 3: Cobegins
 +++++++++++++++++++
@@ -479,6 +512,16 @@ These errors will be provided at task join.
       writeln(e); // would print out two lines
     }
   }
+
+The implementation requires that the ``cobegin`` statements be
+synchronized first.
+
+// TODO: finish
+.. code_block:: chapel
+
+  proc encounterError(out _e_out) { _e_out = new Error(); }
+  proc noError(out _e_out) { return; }
+  
 
 Example 4: Iterators
 ++++++++++++++++++++
@@ -522,6 +565,25 @@ Which can then be used like this:
       writeln("Error in glob");
     }
 
+Which would be implemented like this:
+
+.. code-block:: chapel
+
+    iter glob(pattern: string = "*", out _e_out: Error) : string {
+      ...
+      if (err != 0 && err != GLOB_NOMATCH) {
+        _e_out = new Error("unhandled error in glob()");
+        return;
+      }
+      ...
+    } 
+
+    var e: Error;
+    for x in glob(_e_out = e) do
+      writeln(x);
+    if e then
+      writeln("Error in glob");
+
 Raising an error will halt the execution of the iterator. Errors in follower
 iterations in ``coforall`` and ``forall`` loops may still allow some iteration
 to occur. All errors will be reported at task join, as in Example 3.
@@ -548,6 +610,14 @@ causing other catastrophic errors.
         writeln("Hello!");
       }
     }
+
+For reference, here is an implementation:
+
+// TODO: finish
+.. code-block:: chapel
+
+    var e: Error;
+    on Locales[0]
 
 
 Future Design Work
