@@ -12,6 +12,8 @@ for i in 0..#numIters by -1 {
 }
 
 for i in 0..#numIters {
+  var c = getPrivatized(i);
+  delete c;
   clearPrivatized(i);
 }
 

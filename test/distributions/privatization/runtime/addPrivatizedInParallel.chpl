@@ -10,3 +10,10 @@ forall i in 0..#numIters {
 for i in 0..#numIters by -1 {
   writeln(getPrivatized(i).i);
 }
+
+// no leaks
+for i in 0..#numIters by -1 {
+  var c = getPrivatized(i);
+  delete c;
+  clearPrivatized(i);
+}
