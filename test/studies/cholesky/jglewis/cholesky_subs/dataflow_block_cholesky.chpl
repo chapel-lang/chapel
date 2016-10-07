@@ -159,7 +159,9 @@ module dataflow_block_cholesky {
           in symmetric_reduced_matrix_2_by_2_block_partition (trailing_cols) 
 	  do {
 
-	    begin {
+	    begin with (in leading_cols,
+                        in leading_offdiag_rows,
+                        in trailing_offdiag_rows) {
 	      compute_subdiagonal_block_launch_Schur_complement
 		( leading_cols, leading_cols,
 		  leading_offdiag_rows, leading_cols,
@@ -220,15 +222,19 @@ module dataflow_block_cholesky {
 
       // modify the related diagonal block of the Schur complement
 
-      begin { modify_Schur_complement_diagonal_block ( L_offdiag_rows, L_offdiag_cols,  A ); }
+      begin with (in L_offdiag_rows, in L_offdiag_cols) {
+        modify_Schur_complement_diagonal_block ( L_offdiag_rows,
+                                                 L_offdiag_cols,
+                                                 A );
+      }
 
       // spawn rest of the Schur complement tasks 
       // for the symmetric reduced matrix
-
       for
 	lower_block_rows in vector_block_partition (trailing_rows) do {
 
-	begin {
+	begin with (in lower_block_rows, in diag_cols,
+                    in L_offdiag_rows, in L_offdiag_cols) {
 	  modify_Schur_complement_off_diagonal_block 
 	      ( lower_block_rows, diag_cols, L_offdiag_rows, L_offdiag_cols, A );
 	}

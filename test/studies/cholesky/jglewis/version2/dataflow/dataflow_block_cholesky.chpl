@@ -162,7 +162,10 @@ module dataflow_block_cholesky {
 	for (AJI_rows, A_later_K_rows) 
           in symmetric_2_by_2_block_partition (AJKJK_row_indices) 
 	  do {
-	    begin {
+	    begin with (in AII_rc_indices,
+                        in AII_rc_indices,
+                        in AJI_rows,
+                        in A_later_K_rows) {
 	      compute_subdiagonal_block_launch_Schur_complement
 		( AII_rc_indices, AII_rc_indices,
 		  AJI_rows, AII_rc_indices,
@@ -223,14 +226,21 @@ module dataflow_block_cholesky {
 
       // modify the related diagonal block of the Schur complement
 
-      begin { modify_Schur_complement_diagonal_block ( LJlaterKI_rows, LJlaterKI_cols, A ); }
+      begin with (in LJlaterKI_rows, in LJlaterKI_cols) {
+        modify_Schur_complement_diagonal_block ( LJlaterKI_rows,
+                                                 LJlaterKI_cols,
+                                                 A );
+      }
 
       // spawn rest of the Schur complement tasks for the symmetric reduced 
       // matrix.  For each K > J, compute A (K,J) -= L(K,I) * L(J,I)^T
 
       for AKJ_rows in vector_block_partition (later_rows) do {
 
-	begin {
+	begin with (in AKJ_rows,
+                    in AJJ_cols,
+                    in LJlaterKI_rows,
+                    in LJlaterKI_cols) {
 	  modify_Schur_complement_off_diagonal_block 
 	      ( AKJ_rows, AJJ_cols,  LJlaterKI_rows, LJlaterKI_cols, A );
 	}
