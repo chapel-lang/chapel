@@ -4819,7 +4819,7 @@ static void resolveMove(CallExpr* call) {
   // in buildForLoopExpr would be an _array instead of a ref(_array)
   // in 4-init-array-forexpr.chpl. This could be improved with
   // QualifiedType.
-  if (lhs->hasFlag(FLAG_MAYBE_REF)) {
+  if (lhs->hasFlag(FLAG_MAYBE_REF) && !isReferenceType(rhsType)) {
     if (SymExpr* se = toSymExpr(rhs)) {
       if (ArgSymbol* arg = toArgSymbol(se->var)) {
         if (concreteIntent(arg->intent, arg->type) & INTENT_FLAG_REF) {
@@ -4834,6 +4834,7 @@ static void resolveMove(CallExpr* call) {
     if (lhs->id == breakOnResolveID )
       gdbShouldBreakHere();
 
+    INT_ASSERT(rhsType);
     lhs->type = rhsType;
   }
 
