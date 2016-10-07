@@ -414,31 +414,39 @@ instantiate_tuple_init(FnSymbol* fn) {
   ArgSymbol* arg;
   AggregateType* ct;
   getTupleArgAndType(fn, arg, ct);
-  FnSymbol* ctor = ct->defaultInitializer;
 
   if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
     INT_FATAL(fn, "_defaultOf function not provided a type argument");
 
-  // Similar to build_record_init_function in buildDefaultFunctions, we need
-  // to call the type specified default initializer
-  CallExpr* call = new CallExpr(ctor);
+  // To avoid a memory leak of the default values,
+  // this method calls PRIM_SET_MEMBER instead of invoking the
+  // constructor.
   BlockStmt* block = new BlockStmt();
+  VarSymbol* tup = newTemp("tup", ct);
 
-  // Need to insert all required arguments into this call
-  for_formals(formal, ctor) {
-    VarSymbol* tmp = newTemp(formal->name);
-    if (!strcmp(formal->name, "size"))
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_CStringSymbol(formal->name))));
-    else if (!formal->hasFlag(FLAG_IS_MEME)) {
-      if (formal->isParameter()) {
-        tmp->addFlag(FLAG_PARAM);
-      }
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, formal->type->symbol)));
+  block->insertAtTail(new DefExpr(tup));
+  for_fields(field, ct) {
+    const char* name = field->name;
+    Type* type = field->type;
+    if (isReferenceType(type)) {
+      INT_FATAL(fn, "_defaultOf with reference field");
     }
-    block->insertAtHead(new DefExpr(tmp));
-    call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+    Symbol* element = new VarSymbol(astr("elt_", name), type);
+    CallExpr* init = new CallExpr(PRIM_INIT, type->symbol);
+    // This move is transferring ownership of the element
+    // to the tuple.
+    CallExpr* move = new CallExpr(PRIM_MOVE, element, init);
+    CallExpr* set = new CallExpr(PRIM_SET_MEMBER,
+                                 tup,
+                                 new_CStringSymbol(name),
+                                 element);
+
+    block->insertAtTail(new DefExpr(element));
+    block->insertAtTail(move);
+    block->insertAtTail(set);
   }
-  block->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
+  block->insertAtTail(new CallExpr(PRIM_RETURN, tup));
   fn->body->replace(block);
   normalize(fn);
 }
