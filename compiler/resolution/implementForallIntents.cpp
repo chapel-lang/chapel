@@ -368,6 +368,7 @@ static bool setupShadowVarForRefIntents(CallExpr* lcCall,
         // Take a reference of 'ovar'.
         lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar,
                                new CallExpr(PRIM_ADDR_OF, ovar)));
+      }
     }
     return true;
   }
