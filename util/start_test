@@ -951,7 +951,7 @@ def set_up_executables():
     os.environ['EXECOPTS'] = args.execopts
 
     logger.write('[launchcmd: "{0}"]'.format(args.launch_cmd))
-    os.environ['LAUNCHCMD'] = args.launch_cmd
+    os.environ['LAUNCHCMD'] = os.path.expandvars(args.launch_cmd)
 
     comm = chpl_comm.get()
     launcher = chpl_launcher.get()
