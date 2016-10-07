@@ -104,4 +104,28 @@ c_string_copy chpl_gmp_mpz_get_str(int base, mpz_t x) {
   return str;
 }
 
+//
+// These functions wrap the equivalent GMP macros to support LLVM backend
+//
+int chpl_mpz_cmp_si(const mpz_t op1, long op2) {
+  return mpz_cmp_si(op1, op2);
+}
+
+int chpl_mpz_cmp_ui(const mpz_t op1, unsigned long op2) {
+  return mpz_cmp_ui(op1, op2);
+}
+
+int chpl_mpz_sgn(const mpz_t op) {
+  return mpz_sgn(op);
+}
+
+int chpl_mpz_odd_p(const mpz_t op) {
+  return mpz_odd_p(op);
+}
+
+int chpl_mpz_even_p(const mpz_t op) {
+  return mpz_even_p(op);
+}
+
+
 #endif

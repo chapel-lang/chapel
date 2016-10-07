@@ -146,8 +146,8 @@ OPTIONS
 
 **--fast**
 
-    Turns off all runtime checks using **--no-checks**, turns on **-O**,
-    **--specialize**, and **--vectorize**.
+    Turns off all runtime checks using **--no-checks**, turns on **-O** and
+    **--specialize**.
 
 **--[no-]fast-followers**
 
@@ -199,9 +199,9 @@ OPTIONS
 
 **--[no-]vectorize**
 
-    Enable [disable] generating vectorization hints for target compiler. If
-    enabled, hints will always be generated, but the effects will vary based
-    on the target compiler.
+    Enable [disable] generating vectorization hints for the target compiler.
+    If enabled, hints will always be generated, but the effects on performance
+    (and in some cases correctness) will vary based on the target compiler.
 
 **--[no-]optimize-on-clauses**
 

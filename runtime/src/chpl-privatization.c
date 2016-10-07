@@ -21,7 +21,6 @@
 #include "chpl-privatization.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
-extern int chpl_nodeID;
 
 static int64_t chpl_capPrivateObjects = 0;
 static chpl_sync_aux_t privatizationSync;
@@ -78,16 +77,20 @@ void* chpl_getPrivatizedClass(int64_t i) {
 
 
 void chpl_clearPrivatizedClass(int64_t i) {
+  chpl_sync_lock(&privatizationSync);
   chpl_privateObjects[i] = NULL;
+  chpl_sync_unlock(&privatizationSync);
 }
 
 // Used for to check for leaks of privatized classes
 int64_t chpl_numPrivatizedClasses(void) {
   int64_t ret = 0;
+  chpl_sync_lock(&privatizationSync);
   for (int64_t i = 0; i < chpl_capPrivateObjects; i++) {
     if (chpl_privateObjects[i])
       ret++;
   }
+  chpl_sync_unlock(&privatizationSync);
   return ret;
 }
 

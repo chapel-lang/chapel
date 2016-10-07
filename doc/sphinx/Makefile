@@ -6,6 +6,9 @@ include Makefile.sphinx
 CHPL2RST     = ./run-in-venv.bash ./chpl2rst.py
 CHPL2RSTOPTS = --output=rst --prefix=source/primers/primers --link=master
 
+CHPL_DOC_HELLO_DIR = source/examples/hellos
+CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPL_DOC_HELLO_DIR) --link=master
+
 help: help-sphinx help-source
 
 help-source:
@@ -29,7 +32,7 @@ man-chapel: FORCE
 	./run-in-venv.bash $(MAKE) man
 
 
-source: symlink-docs module-docs copy-docs primers
+source: symlink-docs module-docs copy-docs primers hellos
 
 symlink-docs: clean-symlink-docs
 	@echo
@@ -53,7 +56,13 @@ primers: clean-primers
 	@#Note - this assumes that we are not in a release tar ball
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/*.chpl
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/*doc.chpl --codeblock
-	$(CHPL2RST) $(CHPL2RSTOPTS) ../../test/release/examples/primers/chplvis/*.chpl
+	cp ../../test/release/examples/primers/chplvis/*.chpl source/primers/primers/
+
+hellos: clean-hellos
+	@echo
+	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/$(CHPL_DOC_HELLO_DIR)"
+	@#Note - this assumes that we are not in a release tar ball
+	$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../../test/release/examples/hello*.chpl
 
 
 checkdocs: FORCE
@@ -84,7 +93,7 @@ clean-module-docs: FORCE
 	@echo
 	@echo "Removing module docs that were generated into source/"
 	rm -rf source/modules/dists
-	rm -rf source/modules/internal
+	rm -rf source/builtins/
 	rm -rf source/modules/layouts
 	rm -rf source/modules/packages
 	rm -rf source/modules/standard
@@ -93,6 +102,11 @@ clean-primers: FORCE
 	@echo
 	@echo "Removing primers generated into source/primers/primers"
 	rm -rf source/primers/primers
+
+clean-hellos: FORCE
+	@echo
+	@echo "Removing hellos generated into $(CHPL_DOC_HELLO_DIR)"
+	rm -rf $(CHPL_DOC_HELLO_DIR)
 
 
 FORCE:

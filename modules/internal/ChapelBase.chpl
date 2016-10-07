@@ -1097,7 +1097,7 @@ module ChapelBase {
     __primitive("call destructor", x);
   }
 
-  // = for c_void_ptr
+  // c_void_ptr operations
   inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
   inline proc ==(a: c_void_ptr, b: c_void_ptr) {
     return __primitive("ptr_eq", a, b);

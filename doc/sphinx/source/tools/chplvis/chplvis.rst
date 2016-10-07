@@ -51,28 +51,19 @@ Example 1
 
 Consider the chapel program ``prog1.chpl``: (The example programs in this
 primer are found in the directory ``examples/primers/chplvis`` in your
-distribution tree.  The files have more comments than are shown here.)
+distribution tree.)
 
-.. code-block:: chapel
-
-     //  Example 1 using visual debug
-
-     use VisualDebug;
-
-     startVdebug("E1");
-
-     coforall loc in Locales do
-       on loc do writeln("Hello from locale " + here.id + ".");
-
-     stopVdebug();
+.. literalinclude:: ../../primers/primers/chplvis1.chpl
+   :language: chapel
+   :lines: 1-3, 6-28
 
 Compiling the program and running it with the options ``-nl 6`` will then
 produce a directory called ``E1`` containing 6 data files, one
 for each of the locales and named ``E1-n`` where ``n`` is
 replaced with the locale number, a number from 0 to 5.  Once this
 directory is created, one can run ``chplvis`` as ``chplvis E1`` or
-simply ``chplvis`` and then opening the file ``E1/E1-0``
-from the ``file/open`` menu.  The resulting display is:
+simply ``chplvis`` and then open the file ``E1/E1-0`` from the
+``file/open`` menu.  The resulting display is:
 
 .. image:: E1.png
 
@@ -182,7 +173,7 @@ programs run by starting low level tasks to do the required jobs. This
 display shows the order the tasks are executed and the color of each
 task shows the clock time for that task.  The black vertical vertical
 lines show the life time of the task.  There are two kinds of tasks
-shown: tasks started remotely via the "on" statements (on calls) to
+shown: tasks started remotely via the ``on`` statements (on calls) to
 this locale indicated by an *OC* and tasks started locally indicated
 by an *L*.  Also, some tasks communicate with other locales and others
 do not.   The tasks that communicate with other locales are marked with
@@ -337,52 +328,9 @@ their program in addition to seeing the total statistics.  ``prog2.chpl``
 gives an example of using the :mod:`VisualDebug` functions
 :proc:`~VisualDebug.tagVdebug` and :proc:`~VisualDebug.pauseVdebug`.
 
-.. code-block:: chapel
-
-    // Example 2 of use of VisualDebug module and chplvis tool.
-
-    use BlockDist;
-    use VisualDebug;
-
-    config var ncells = 10;
-
-    proc main() {
-
-       // Create a couple of domains and a block mapped data array.
-       const Domain = { 1 .. ncells };
-       const mapDomain = Domain dmapped Block(Domain);
-
-       var  data : [mapDomain] int = 1;
-
-       // Start VisualDebug here
-       startVdebug ("E2");
-
-       // First computation step ... a simple forall
-       forall i in Domain do data[i] += here.id + 1;
-
-       // Write the result, we want to see the results of the above
-       // so we tag before we continue.
-       tagVdebug("writeln 1");
-       writeln("data= ", data);
-
-       // Second computation step ... using the distributed domain
-       tagVdebug("step 2");
-       forall i in mapDomain do data[i] += here.id+1;
-
-       // Don't capture the writeln
-       pauseVdebug();
-       writeln("data2= ", data);
-
-       // Reduction step
-       tagVdebug("reduce");
-       var i = + reduce data;
-
-       // done with visual debug
-       stopVdebug();
-
-       writeln ("sum is " + i + ".");
-    }
-
+.. literalinclude:: ../../primers/primers/chplvis2.chpl
+   :language: chapel
+   :lines: 1-3, 6-
 
 Note that the ``startVdebug("E2")`` is placed after the declarations
 so that tasks and communication for the declarations are not included.
@@ -561,47 +509,8 @@ To help show another feature of the "`Concurrency View`_", prog4.chpl was
 written to create a *begin* task on all locales and have those tasks
 live across calls to the :mod:`VisualDebug` module.  The code is:
 
-.. code-block:: chapel
-
-   // Example 4, begin tasks as shown in chplvis
-   // This is a contrived example to have tasks live
-   // across a tagVdebug() call.
-
-   use VisualDebug;
-   use BlockDist;
-
-   const space =  { 0 .. #numLocales };
-   const Dspace = space dmapped Block (boundingBox=space);
-
-   startVdebug("E4");
-
-   var go$: [Dspace] single bool;
-   var done$: [Dspace] single bool;
-
-   // Start a begin task on all locales.  The task will start and then block.
-   coforall loc in Locales do
-     on loc do begin { // start a async task
-
-              go$[here.id]; // Block until ready!
-              writeln ("Finishing running the 'begin' statement on locale "
-                        + here.id + ".");
-              done$[here.id] = true;
-           }
-
-   tagVdebug("loc");
-
-   coforall loc in Locales do
-       on loc do writeln("Hello from " + here.id);
-
-   tagVdebug("finish");
-
-   // Let all tasks go
-   go$ = true;
-
-   // Wait until all tasks are finished
-   done$;
-
-   stopVdebug();
+.. literalinclude:: ../../primers/primers/chplvis4.chpl
+   :language: chapel
 
 First we will look at the results of running this code on a single
 locale.  Even though there is no communication, ``chplvis`` can help

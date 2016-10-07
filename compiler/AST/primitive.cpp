@@ -509,7 +509,7 @@ initPrimitive() {
 
   prim_def(PRIM_SETCID, "setcid", returnInfoVoid, true, true);
   prim_def(PRIM_TESTCID, "testcid", returnInfoBool, false, true);
-  prim_def(PRIM_GETCID, "getcid", returnInfoBool, false, true);
+  prim_def(PRIM_GETCID, "getcid", returnInfoInt32, false, true);
   prim_def(PRIM_SET_UNION_ID, "set_union_id", returnInfoVoid, true, true);
   prim_def(PRIM_GET_UNION_ID, "get_union_id", returnInfoDefaultInt, false, true);
   prim_def(PRIM_GET_MEMBER, ".", returnInfoGetMemberRef);
