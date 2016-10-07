@@ -1284,6 +1284,8 @@ buildStandaloneForallLoopStmt(Expr* indices,
   VarSymbol* saIdxCopy = newTemp("chpl__saIdxCopy");
 
   iterRec->addFlag(FLAG_CHPL__ITER);
+  iterRec->addFlag(FLAG_MAYBE_REF);
+
   saIter->addFlag(FLAG_EXPR_TEMP);
   saIdx->addFlag(FLAG_INDEX_OF_INTEREST);
   saIdx->addFlag(FLAG_INDEX_VAR);
