@@ -1285,6 +1285,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
 
   iterRec->addFlag(FLAG_CHPL__ITER);
   iterRec->addFlag(FLAG_MAYBE_REF);
+  iterRec->addFlag(FLAG_EXPR_TEMP);
 
   saIter->addFlag(FLAG_EXPR_TEMP);
   saIdx->addFlag(FLAG_INDEX_OF_INTEREST);
