@@ -29,9 +29,9 @@ param maxLights = 16,
       maxRayDepth = 5,  // raytrace recurion limit
       fieldOfView = quarter_pi,
       errorMargin = 1e-6,
-      redShift = 0,
+      redShift = 16,
       greenShift = 8,
-      blueShift = 16;
+      blueShift = 0;
 
 inline proc halfFieldOfView return fieldOfView / 2;
 
@@ -102,7 +102,7 @@ var urand: [0..#nran] vec3,
 // TODO: implement usage
 // config const help = false;
 
-config const debug = true;
+config const debug = false;
 
 proc main(args: [] string) {
   if (args.size > 1) then usage(args);
@@ -154,11 +154,13 @@ proc main(args: [] string) {
   outfile.writeln("P6");
   outfile.writeln(xres, " ", yres);
   outfile.writeln(255);
-  for p in pixels {
-    outfile.write((p >> redShift) & 0xff);
-    outfile.write((p >> greenShift) & 0xff);
-    outfile.write((p >> blueShift) & 0xff);
-  }
+  for i in 0..#yres do
+    for j in 0..#xres {
+      const p = pixels[j,i];
+      outfile.writef("%|1i", ((p >> redShift)   & 0xff):uint(8));
+      outfile.writef("%|1i", ((p >> greenShift) & 0xff):uint(8));
+      outfile.writef("%|1i", ((p >> blueShift)  & 0xff):uint(8));
+    }
 }
 
 proc usage(args) {
@@ -243,13 +245,18 @@ proc render(xsz, ysz, fb: [?D], samples) {
     var rgb: vec3;
 
     for s in 0..#samples do
-      rgb += trace(getPrimaryRay(i, j, s));
+      rgb += trace(getPrimaryRay(i, j, s), trace_trace=(i==4 && j == 12));
 
     rgb *= rcpSamples;
+
+    if (i == 4 && j == 12) then
+      stderr.writeln((i,j), " = ", rgb);
 
     fb[i,j] = ((min(rgb(1), 1.0) * 255.0):uint(32) & 0xff) << redShift |
               ((min(rgb(2), 1.0) * 255.0):uint(32) & 0xff) << greenShift |
               ((min(rgb(3), 1.0) * 255.0):uint(32) & 0xff) << blueShift;
+    if (i == 4 && j == 12) then
+      stderr.writeln("fb = ", fb[i,j]);
   }
 }
 
@@ -269,14 +276,23 @@ proc getPrimaryRay(x, y, sample) {
   pRay.dir(Z) = 1.0 / halfFieldOfView;
   pRay.dir *= rayMagnitude;
 
+  if (x == 4 && y == 12) then
+    stderr.writeln("m = ", m);
+
   const dir = pRay.dir + pRay.orig,
         // TODO: there has to be a better way to write this:
         foo = dir(X) * m[0] + dir(Y) * m[1] + dir(Z) * m[2],
-        orig = pRay.orig(X) * m[0] + pRay.orig(Y)*m[1] + pRay.orig(Z) * m[2];
+        orig = pRay.orig(X) * m[0] + pRay.orig(Y)*m[1] + pRay.orig(Z) * m[2] + cam.pos;
 
   // TODO: assign directly into orig?
   pRay.orig = orig;
+
+  if (x == 4 && y == 12) then 
+    stderr.writeln("foo = ", foo, "orig = ", orig);
   pRay.dir = foo + orig;
+
+  if (x == 4 && y == 12) then
+    stderr.writeln("primary ray for ", (x,y), " is ", pRay);
 
   return pRay;
 }
@@ -285,13 +301,17 @@ proc getPrimaryRay(x, y, sample) {
 /* trace a ray throught the scene recursively (the recursion happens through
  * shade() to calculate reflection rays if necessary).
  */
-proc trace(ray, depth=0): vec3 {
+proc trace(ray, depth=0, trace_trace=false): vec3 {
   var nearestObj: sphere;
   var sp, nearestSp: spoint;
   
+  if trace_trace then stderr.writeln("Hi from trace_trace!");
+
   /* if we reached the recursion limit, bail out */
-  if depth > maxRayDepth then
+  if depth > maxRayDepth then {
+    if trace_trace then stderr.writeln("early return");
     return (0.0, 0.0, 0.0);
+  }
 
   /* find the nearest intersection ... */
   //
@@ -307,10 +327,13 @@ proc trace(ray, depth=0): vec3 {
     }
   }
 
-  if nearestObj then
+  if nearestObj then {
+    if trace_trace then stderr.writeln("found nearest obj");
     return shade(nearestObj, nearestSp, depth);
-  else
+  } else {
+    if trace_trace then stderr.writeln("didn't find nearest obj");
     return (0.0, 0.0, 0.0);
+  }
 }
 
 proc getSamplePos(x, y, sample) {
