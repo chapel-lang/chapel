@@ -1,8 +1,9 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org
 
-   contributed by Tom Hildebrandt, Brad Chamberlain, and Lydia Duncan
-   derived from the GNU C version by Mr Ledrug
+   contributed by Thomas Van Doren, Michael Noakes, and Brad Chamberlain
+   derived from the Chapel version by Tom Hildebrandt et al. and the
+     GNU C version by Mr Ledrug
 */
 
 use BigInteger;
