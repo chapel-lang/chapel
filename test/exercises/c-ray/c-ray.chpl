@@ -21,21 +21,19 @@
 
 use Time;
 
-config const rayMagnitude = 1000.0;  // trace rays of this magnitude
+config const rayMagnitude = 1000.0,    // trace rays of this magnitude
+             maxRayDepth = 5,          // raytrace recurion limit
+             fieldOfView = quarter_pi,
+             errorMargin = 1e-6;
 
-// TODO: all globals used?  Any that should be configs?
+const halfFieldOfView = fieldOfView / 2;
 
-param maxLights = 16,
-      maxRayDepth = 5,  // raytrace recurion limit
-      fieldOfView = quarter_pi,
-      errorMargin = 1e-6,
-      redShift = 16,
+param redShift = 16,
       greenShift = 8,
       blueShift = 0;
 
-inline proc halfFieldOfView return fieldOfView / 2;
-
 type vec3 = 3*real;
+
 param X = 1,
       Y = 2,
       Z = 3;
