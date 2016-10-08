@@ -245,18 +245,13 @@ proc render(xsz, ysz, fb: [?D], samples) {
     var rgb: vec3;
 
     for s in 0..#samples do
-      rgb += trace(getPrimaryRay(i, j, s), trace_trace=(i==4 && j == 12));
+      rgb += trace(getPrimaryRay(i, j, s));
 
     rgb *= rcpSamples;
-
-    if (i == 4 && j == 12) then
-      stderr.writeln((i,j), " = ", rgb);
 
     fb[i,j] = ((min(rgb(1), 1.0) * 255.0):uint(32) & 0xff) << redShift |
               ((min(rgb(2), 1.0) * 255.0):uint(32) & 0xff) << greenShift |
               ((min(rgb(3), 1.0) * 255.0):uint(32) & 0xff) << blueShift;
-    if (i == 4 && j == 12) then
-      stderr.writeln("fb = ", fb[i,j]);
   }
 }
 
@@ -276,9 +271,6 @@ proc getPrimaryRay(x, y, sample) {
   pRay.dir(Z) = 1.0 / halfFieldOfView;
   pRay.dir *= rayMagnitude;
 
-  if (x == 4 && y == 12) then
-    stderr.writeln("m = ", m);
-
   const dir = pRay.dir + pRay.orig,
         // TODO: there has to be a better way to write this:
         foo = dir(X) * m[0] + dir(Y) * m[1] + dir(Z) * m[2],
@@ -287,12 +279,7 @@ proc getPrimaryRay(x, y, sample) {
   // TODO: assign directly into orig?
   pRay.orig = orig;
 
-  if (x == 4 && y == 12) then 
-    stderr.writeln("foo = ", foo, "orig = ", orig);
   pRay.dir = foo + orig;
-
-  if (x == 4 && y == 12) then
-    stderr.writeln("primary ray for ", (x,y), " is ", pRay);
 
   return pRay;
 }
@@ -301,17 +288,13 @@ proc getPrimaryRay(x, y, sample) {
 /* trace a ray throught the scene recursively (the recursion happens through
  * shade() to calculate reflection rays if necessary).
  */
-proc trace(ray, depth=0, trace_trace=false): vec3 {
+proc trace(ray, depth=0): vec3 {
   var nearestObj: sphere;
   var sp, nearestSp: spoint;
   
-  if trace_trace then stderr.writeln("Hi from trace_trace!");
-
   /* if we reached the recursion limit, bail out */
-  if depth > maxRayDepth then {
-    if trace_trace then stderr.writeln("early return");
+  if depth > maxRayDepth then
     return (0.0, 0.0, 0.0);
-  }
 
   /* find the nearest intersection ... */
   //
@@ -327,13 +310,10 @@ proc trace(ray, depth=0, trace_trace=false): vec3 {
     }
   }
 
-  if nearestObj then {
-    if trace_trace then stderr.writeln("found nearest obj");
+  if nearestObj then
     return shade(nearestObj, nearestSp, depth);
-  } else {
-    if trace_trace then stderr.writeln("didn't find nearest obj");
+  else
     return (0.0, 0.0, 0.0);
-  }
 }
 
 proc getSamplePos(x, y, sample) {
@@ -391,7 +371,6 @@ proc raySphere(sph, ray, ref sp, useSp=false) {
 
     sp.normal = (sp.pos - sph.pos) / sph.rad;
 
-    stderr.writeln("calling reflect with ", ray.dir, " and ", sp.normal);
     sp.vref = reflect(ray.dir, sp.normal);
     normalize(sp.vref);
   }
@@ -439,10 +418,8 @@ proc shade(obj, sp, depth) {
    * mirror direction.
    */
   if obj.mat.refl > 0.0 {
-    //    stderr.writeln("Tracing reflection ray");
-    const rRay = new ray(orig = sp.pos, dir = sp.vref * rayMagnitude);
-    stderr.writeln("reflecting from ", sp.pos, ", to ", sp.vref * rayMagnitude);
-    const rcol = trace(rRay, depth + 1);
+    const rRay = new ray(orig = sp.pos, dir = sp.vref * rayMagnitude),
+          rcol = trace(rRay, depth + 1);
     col += rcol * obj.mat.refl;
   }
 
