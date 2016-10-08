@@ -26,6 +26,8 @@ config const rayMagnitude = 1000.0,    // trace rays of this magnitude
              fieldOfView = quarter_pi,
              errorMargin = 1e-6;
 
+config const printTiming = true;
+
 const halfFieldOfView = fieldOfView / 2;
 
 param redShift = 16,
@@ -76,8 +78,8 @@ if (ssize(2) != "x") then
 const xres = ssize(1):int,
       yres = ssize(3):int;
 
-config const ifile = "stdin",
-             ofile = "stdout";
+config const scene = "scene",
+             image = "image.ppm";
 
 config const rays = 1;
 
@@ -104,10 +106,10 @@ proc main(args: [] string) {
   if (args.size > 1) then usage(args);
 
   var pixels: [0..#xres, 0..#yres] uint(32);
-  const infile = if ifile == "stdin" then stdin
-                                     else open(ifile, iomode.r).reader(),
-        outfile = if ofile == "stdout" then stdout
-                                       else open(ofile, iomode.cw).writer();
+  const infile = if scene == "stdin" then stdin
+                                     else open(scene, iomode.r).reader(),
+        outfile = if image == "stdout" then stdout
+                                       else open(image, iomode.cw).writer();
 
   loadScene(infile);
 
@@ -133,8 +135,9 @@ proc main(args: [] string) {
   render(xres, yres, pixels, rays);
   const rendTime = t.elapsed();
 
-  stderr.writeln("Rendering took: ", rendTime, " seconds (", rendTime*1000,
-                 " milliseconds)");
+  if printTiming then
+    stderr.writeln("Rendering took: ", rendTime, " seconds (", rendTime*1000,
+                   " milliseconds)");
 
   outfile.writeln("P6");
   outfile.writeln(xres, " ", yres);
@@ -152,13 +155,13 @@ proc usage(args) {
   for i in 1..args.size-1 {
     if (args[i] == "--help" || args[i] == "-h") {
       writeln("Usage: ", args[0], " [options]");
-      writeln(" Reads a scene file from stdin, writes the image to stdout, and stats to stderr.");
+      writeln(" Reads a scene file, writes a ray-traced image file, prints timing to stderr.");
       writeln();
       writeln("Options:");
       writeln("  --size WxH     where W is the width and H the height of the image");
       writeln("  --rays <rays>  shoot <rays> rays per pixel (antialiasing)");
-      writeln("  --ifile <file> read from <file> instead of stdin");
-      writeln("  --ofile <file> write to <file> instead of stdout");
+      writeln("  --scene <file> read scene from <file> (can be 'stdin')");
+      writeln("  --image <file> write image to <file> (can be 'stdout')");
       writeln("  --help         this help screen");
       writeln();
       exit(0);
