@@ -391,6 +391,7 @@ proc raySphere(sph, ray, ref sp, useSp=false) {
 
     sp.normal = (sp.pos - sph.pos) / sph.rad;
 
+    stderr.writeln("calling reflect with ", ray.dir, " and ", sp.normal);
     sp.vref = reflect(ray.dir, sp.normal);
     normalize(sp.vref);
   }
@@ -400,7 +401,7 @@ proc raySphere(sph, ray, ref sp, useSp=false) {
 
 
 proc reflect(v, n) {
-  return -(2.0 * dot(v, n) * (n - v));
+  return -(2.0 * dot(v, n) * n - v);
 }
 
 proc shade(obj, sp, depth) {
@@ -438,8 +439,10 @@ proc shade(obj, sp, depth) {
    * mirror direction.
    */
   if obj.mat.refl > 0.0 {
-    const rRay = new ray(orig = sp.pos, dir = sp.vref * rayMagnitude),
-          rcol = trace(rRay, depth + 1);
+    //    stderr.writeln("Tracing reflection ray");
+    const rRay = new ray(orig = sp.pos, dir = sp.vref * rayMagnitude);
+    stderr.writeln("reflecting from ", sp.pos, ", to ", sp.vref * rayMagnitude);
+    const rcol = trace(rRay, depth + 1);
     col += rcol * obj.mat.refl;
   }
 
