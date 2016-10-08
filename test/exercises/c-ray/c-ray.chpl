@@ -102,8 +102,6 @@ var urand: [0..#nran] vec3,
 // TODO: implement usage
 // config const help = false;
 
-config const debug = false;
-
 proc main(args: [] string) {
   if (args.size > 1) then usage(args);
 
@@ -112,13 +110,6 @@ proc main(args: [] string) {
                                      else open(ifile, iomode.r).reader(),
         outfile = if ofile == "stdout" then stdout
                                        else open(ofile, iomode.cw).writer();
-
-  if debug {
-    stderr.writeln("Rendering a scene that's ", (xres,yres));
-    stderr.writeln("infile is: ", ifile);
-    stderr.writeln("outfile is: ", ofile);
-    stderr.writeln("rays is: ", rays);
-  }
 
   loadScene(infile);
 
@@ -138,10 +129,6 @@ proc main(args: [] string) {
     for r in irand do
       r = (nran * (rand():real / RAND_MAX)): int;
   }
-  if debug {
-    stderr.writeln("urand: ", urand);
-    stderr.writeln("irand: ", irand);
-  }
 
   var t: Timer;
   t.start();
@@ -154,9 +141,9 @@ proc main(args: [] string) {
   outfile.writeln("P6");
   outfile.writeln(xres, " ", yres);
   outfile.writeln(255);
-  for i in 0..#yres do
-    for j in 0..#xres {
-      const p = pixels[j,i];
+  for j in 0..#yres do
+    for i in 0..#xres {
+      const p = pixels[i,j];
       outfile.writef("%|1i", ((p >> redShift)   & 0xff):uint(8));
       outfile.writef("%|1i", ((p >> greenShift) & 0xff):uint(8));
       outfile.writef("%|1i", ((p >> blueShift)  & 0xff):uint(8));
@@ -227,12 +214,6 @@ proc loadScene(infile) {
 
     else
       stderr.writeln("unknown type: ", intype);
-  }
-
-  if debug {
-    stderr.writeln("lights:  ", lights);
-    stderr.writeln("camera:  ", cam);
-    stderr.writeln("spheres: ", objList);
   }
 }
 
