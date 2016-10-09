@@ -190,9 +190,10 @@ returnInfoVal(CallExpr* call) {
   return QualifiedType(NULL);
 }
 
+// TODO: merge this with returnInfoAsRef and fix the WIDE_REF case...
 static QualifiedType
 returnInfoRef(CallExpr* call) {
-  Type* t = call->get(1)->typeInfo();
+  Type* t = call->get(1)->getValType();
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
   return QualifiedType(t->refType, QUAL_REF);

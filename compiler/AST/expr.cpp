@@ -1514,8 +1514,7 @@ GenRet codegenFieldPtr(
       castType = fieldSymbol->defPoint->parentSymbol->typeInfo();
       if( castType == ct ) castType = NULL;
     }
-    GenRet fieldRet = new SymExpr(fieldSymbol);
-    ret.chplType = fieldRet.chplType;
+    ret.chplType = fieldSymbol->type;
   }
 
   if( fLLVMWideOpt && castType && isWide(base) ) {
@@ -5918,8 +5917,7 @@ GenRet CallExpr::codegenPrimMove() {
       codegenAssign(lhs, rhs);
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
-             get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false &&
-             !get(1)->isRef()) {
+             get(2)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) == false ) {
     GenRet rhs = get(2);
     if (get(2)->isRef()) {
       rhs = codegenDeref(rhs);
@@ -5933,9 +5931,6 @@ GenRet CallExpr::codegenPrimMove() {
   } else if (get(1)->isWideRef() == true  &&
              get(2)->isWideRef() == false &&
              get(2)->isRef()     == false) {
-//  } else if (get(1)->isWideRef()   == true  &&
-//             get(2)->isWideRef()   == false &&
-//             get(2)->isRef()       == false) {
     GenRet to_ptr = codegenDeref(get(1));
 
     codegenAssign(to_ptr, get(2));
@@ -6026,7 +6021,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_DEREF: {
       // TODO: What if get(1) for this first branch is not a ref?
       if (call->get(1)->isWideRef() ||
-          (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) && !call->get(1)->isRef())) {
+          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         Type* valueType;
 
         // TODO: It seems odd to use a PRIM_DEREF on a wide class, why do we?
