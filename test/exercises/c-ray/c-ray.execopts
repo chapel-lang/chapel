@@ -1,0 +1,2 @@
+--printTiming=false                   # c-ray.good
+--printTiming=false --scene=sphfract  # c-ray.sphfract.good
