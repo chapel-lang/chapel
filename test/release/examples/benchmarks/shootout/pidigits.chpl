@@ -1,7 +1,8 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org
 
-   contributed by Thomas Van Doren, Michael Noakes, and Brad Chamberlain
+   contributed by Thomas Van Doren, Michael Noakes, Brad Chamberlain, and
+     Elliot Ronaghan
    derived from the Chapel version by Tom Hildebrandt et al. and the
      GNU C version by Mr Ledrug
 */
@@ -14,7 +15,7 @@ proc main() {
   param digitsPerLine = 10;
 
   // Generate n digits, printing them in groups of digitsPerLine
-  for (d, i) in gen_digits(n) {
+  for (d, i) in genDigits(n) {
     write(d);
     if i % digitsPerLine == 0 then
       writeln("\t:", i);
@@ -26,25 +27,25 @@ proc main() {
 }
 
 
-iter gen_digits(numDigits) {
+iter genDigits(numDigits) {
   var numer, denom: bigint = 1,
       accum, tmp1, tmp2: bigint;
 
   var i, k = 1;
   while i <= numDigits {
-    next_term(k);
+    nextTerm(k);
     k += 1;
     if numer <= accum {
-      const d = extract_digit(3);
-      if d == extract_digit(4) {
+      const d = extractDigit(3);
+      if d == extractDigit(4) {
         yield(d, i);
-        eliminate_digit(d);
+        eliminateDigit(d);
         i += 1;
       }
     }
   }
 
-  proc next_term(k) {
+  proc nextTerm(k) {
     const k2 = 2 * k + 1;
 
     accum += numer * 2;
@@ -53,7 +54,7 @@ iter gen_digits(numDigits) {
     numer *= k;
   }
 
-  proc extract_digit(nth) {
+  proc extractDigit(nth) {
     tmp1 = numer * nth;
     tmp2 = tmp1 + accum;
     tmp1 = tmp2 / denom;
@@ -61,7 +62,7 @@ iter gen_digits(numDigits) {
     return tmp1: int;
   }
 
-  proc eliminate_digit(d) {
+  proc eliminateDigit(d) {
     accum -= denom * d;
     accum *= 10;
     numer *= 10;
