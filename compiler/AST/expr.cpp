@@ -269,6 +269,17 @@ void Expr::verify() {
 
   if (list && parentExpr && list->parent != parentExpr)
     INT_FATAL(this, "Bad Expr::list::parent");
+
+  if (list && !parentExpr) {
+    if (Symbol* lps = toSymbol(list->parent))
+      if (lps != parentSymbol)
+        INT_FATAL(this, "Bad symbol Expr::list::parent");
+    if (Type* lpt = toType(list->parent))
+      if (lpt->symbol != parentSymbol)
+        INT_FATAL(this, "Bad type Expr::list::parent");
+    if (isExpr(list->parent))
+      INT_FATAL(this, "Expr::list::parent is an Expr unexpectedly");
+  }
 }
 
 
