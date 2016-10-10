@@ -13,24 +13,16 @@ config const n = 50;         // Compute n digits of pi, 50 by default
 proc main() {
   param digitsPerLine = 10;
 
-  //
   // Generate n digits, printing them in groups of digitsPerLine
-  //
   for (d,i) in zip(gen_digits(n), 1..) {
     write(d);
     if i % digitsPerLine == 0 then
       writeln("\t:", i);
   }
 
-  //
   // Pad out any trailing digits for the final line
-  //
-  const leftover = n % digitsPerLine;
-  if (leftover) {
-    for leftover..digitsPerLine do
-      write(" ");
-    writeln("\t:", n);
-  }
+  if n % digitsPerLine then
+    writeln(" " * (digitsPerLine - n % digitsPerLine), "\t:", n);
 }
 
 
