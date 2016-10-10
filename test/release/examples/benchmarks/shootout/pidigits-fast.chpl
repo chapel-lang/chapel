@@ -14,7 +14,7 @@ proc main() {
   param digitsPerLine = 10;
 
   // Generate n digits, printing them in groups of digitsPerLine
-  for (d,i) in zip(gen_digits(n), 1..) {
+  for (d, i) in gen_digits(n) {
     write(d);
     if i % digitsPerLine == 0 then
       writeln("\t:", i);
@@ -53,7 +53,7 @@ iter gen_digits(numDigits) {
       d = extract_digit(3);
     } while (d != extract_digit(4));       // while the 3rd digit != the 4th
 
-    yield d;                               // once it differs, yield it
+    yield (d, i);                          // once it differs, yield it
 
     //
     // eliminate digit d
