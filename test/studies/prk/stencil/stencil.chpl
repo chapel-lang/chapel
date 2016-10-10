@@ -90,9 +90,9 @@ proc main() {
   tiledLocalDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
   /* Flavors of parallelism, by distribution */
-  const blockDist = new Block(localDom),
-      stencilDist = new Stencil(innerLocalDom, fluff=(R,R)),
-           noDist = new DefaultDist();
+  const blockDist = new dmap(new Block(localDom)),
+      stencilDist = new dmap(new Stencil(innerLocalDom, fluff=(R,R))),
+           noDist = defaultDist;
 
   /* Set distribution based on configs */
   const Dist =  if useBlockDist then blockDist
@@ -104,11 +104,11 @@ proc main() {
                       else noDist;
 
   /* Map domains to selected distribution */
-  const Dom = localDom dmapped new dmap(Dist),
-   innerDom = innerLocalDom dmapped new dmap(Dist),
-   tiledDom = tiledLocalDom dmapped new dmap(Dist);
+  const Dom = localDom dmapped Dist,
+   innerDom = innerLocalDom dmapped Dist,
+   tiledDom = tiledLocalDom dmapped Dist;
 
-  const outputDom = localDom dmapped new dmap(outputDist);
+  const outputDom = localDom dmapped outputDist;
 
   /* Input and Output matrices represented as arrays over a 2D domain */
   var input: [Dom] dtype = 0.0,
