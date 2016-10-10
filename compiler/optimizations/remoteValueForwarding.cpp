@@ -215,14 +215,14 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // An alternative strategy would be to migrate the contents of the
   // array header class into the wrapper record - but that would require
   // quite a lot of code changes, and some other features have entangled
-  // designs (including privitazation and the DSI interface).
+  // designs (including privatization and the DSI interface).
   if (isRecordWrappedType(arg->getValType())) {
     retval = true;
 
 
   // If this function accesses sync vars and the argument is not
   // const, then we cannot remote value forward the argument due
-  // to the fence implied by the sync var accesses */
+  // to the fence implied by the sync var accesses
   } else if (syncFns.set_in(fn) && isSufficientlyConst(arg) == false) {
     retval = false;
 

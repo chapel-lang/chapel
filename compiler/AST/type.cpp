@@ -1337,7 +1337,7 @@ Type* AggregateType::getFieldType(Expr* e) {
   Symbol* fs = NULL;
   for_fields(field, this) {
     if (!strcmp(field->name, name)) {
-      fs = field;;
+      fs = field;
     }
   }
 

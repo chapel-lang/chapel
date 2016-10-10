@@ -364,8 +364,8 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
         VarSymbol* varRhs = toVarSymbol(symRhs->var);
 
         // MPF 2016-10-02: It seems to me that this code should also handle the
-        // case that symRhs is an ArgSymbol, but adding that caused in the
-        // handling of out argument intents.
+        // case that symRhs is an ArgSymbol, but adding that caused problems
+        // in the handling of out argument intents.
 
         if (varLhs != NULL && varRhs != NULL)
         {

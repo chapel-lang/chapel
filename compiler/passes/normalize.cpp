@@ -1193,7 +1193,6 @@ static void init_array_alias(VarSymbol* var,
                              Expr*      init,
                              Expr*      stmt) {
   CallExpr* partial  = NULL;
-  CallExpr* autoCopy = NULL;
 
   if (!type) {
     partial = new CallExpr("newAlias", gMethodToken, init->remove());
@@ -1209,9 +1208,7 @@ static void init_array_alias(VarSymbol* var,
     partial = new CallExpr(reindex, type->remove());
   }
 
-  autoCopy = partial;
-
-  stmt->insertAfter(new CallExpr(PRIM_MOVE, var, autoCopy));
+  stmt->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
 }
 
 
