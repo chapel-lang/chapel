@@ -35,15 +35,7 @@ iter gen_digits(numDigits) {
     do {
       do {
         k += 1;
-        const k2 = 2 * k + 1;
-
-        //
-        // Compute the next term
-        //
-        accum.addmul(numer, 2);
-        accum *= k2;
-        denom *= k2;
-        numer *= k;
+        next_term(k);
 
         //
         // Continue looping until the digit is ready
@@ -55,22 +47,29 @@ iter gen_digits(numDigits) {
 
     yield (d, i);                          // once it differs, yield it
 
-    //
-    // eliminate digit d
-    //
-    accum.submul(denom, d);
-    accum *= 10;
-    numer *= 10;
+    eliminate_digit(d);
   }
 
-  //
-  // Helper function to extract the nth digit
-  //
+  proc next_term(k) {
+    const k2 = 2 * k + 1;
+
+    accum.addmul(numer, 2);
+    accum *= k2;
+    denom *= k2;
+    numer *= k;
+  }
+
   proc extract_digit(nth) {
     tmp1.mul(numer, nth);
     tmp2.add(tmp1,accum);
     tmp1.div_q(tmp2, denom);
 
     return tmp1: int;
+  }
+
+  proc eliminate_digit(d) {
+    accum.submul(denom, d);
+    accum *= 10;
+    numer *= 10;
   }
 }
