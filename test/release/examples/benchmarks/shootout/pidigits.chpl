@@ -30,24 +30,18 @@ iter gen_digits(numDigits) {
   var numer, denom: bigint = 1,
       accum, tmp1, tmp2: bigint;
 
-  var d, k = 0;
-  for i in 1..numDigits {
-    do {
-      do {
-        k += 1;
-        next_term(k);
-
-        //
-        // Continue looping until the digit is ready
-        //
-      } while (numer > accum);
-
-      d = extract_digit(3);
-    } while (d != extract_digit(4));       // while the 3rd digit != the 4th
-
-    yield (d, i);                          // once it differs, yield it
-
-    eliminate_digit(d);
+  var i, k = 1;
+  while i <= numDigits {
+    next_term(k);
+    k += 1;
+    if numer <= accum {
+      const d = extract_digit(3);
+      if d == extract_digit(4) {
+        yield(d, i);
+        eliminate_digit(d);
+        i += 1;
+      }
+    }
   }
 
   proc next_term(k) {
