@@ -105,7 +105,7 @@ var urand: [0..#nran] vec3,
 proc main(args: [] string) {
   if (args.size > 1) then usage(args);
 
-  var pixels: [0..#xres, 0..#yres] uint(32);
+  var pixels: [0..#yres, 0..#xres] uint(32);
   const infile = if scene == "stdin" then stdin
                                      else open(scene, iomode.r).reader(),
         outfile = if image == "stdout" then stdout
@@ -132,7 +132,7 @@ proc main(args: [] string) {
 
   var t: Timer;
   t.start();
-  render(xres, yres, pixels, rays);
+  render(pixels, rays);
   const rendTime = t.elapsed();
 
   if printTiming then
@@ -142,13 +142,11 @@ proc main(args: [] string) {
   outfile.writeln("P6");
   outfile.writeln(xres, " ", yres);
   outfile.writeln(255);
-  for j in 0..#yres do
-    for i in 0..#xres {
-      const p = pixels[i,j];
-      outfile.writef("%|1i", ((p >> redShift)   & 0xff):uint(8));
-      outfile.writef("%|1i", ((p >> greenShift) & 0xff):uint(8));
-      outfile.writef("%|1i", ((p >> blueShift)  & 0xff):uint(8));
-    }
+  for p in pixels {
+    outfile.writef("%|1i", ((p >> redShift)   & 0xff):uint(8));
+    outfile.writef("%|1i", ((p >> greenShift) & 0xff):uint(8));
+    outfile.writef("%|1i", ((p >> blueShift)  & 0xff):uint(8));
+  }
 }
 
 proc usage(args) {
@@ -220,18 +218,18 @@ proc loadScene(infile) {
 
 
 /* render a frame of xsz/ysz dimensions into the provided framebuffer */
-proc render(xsz, ysz, fb: [?D], samples) {
+proc render(fb: [?D], samples) {
   const rcpSamples = 1.0 / samples;
     
-  for (i,j) in D {
+  forall (y, x) in D {
     var rgb: vec3;
 
     for s in 0..#samples do
-      rgb += trace(getPrimaryRay(i, j, s));
+      rgb += trace(getPrimaryRay(x, y, s));
 
     rgb *= rcpSamples;
 
-    fb[i,j] = ((min(rgb(1), 1.0) * 255.0):uint(32) & 0xff) << redShift |
+    fb[y,x] = ((min(rgb(1), 1.0) * 255.0):uint(32) & 0xff) << redShift |
               ((min(rgb(2), 1.0) * 255.0):uint(32) & 0xff) << greenShift |
               ((min(rgb(3), 1.0) * 255.0):uint(32) & 0xff) << blueShift;
   }
