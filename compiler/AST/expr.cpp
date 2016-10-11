@@ -2687,12 +2687,6 @@ GenRet codegenArgForFormal(GenRet arg,
     // Make sure that the formal type + intent
     // matches, so we don't get multiple reference levels.
 
-    // When passing a ref(t) to a formal of type
-    // t with a ref intent, we need to pass the ref(t)
-    // as a value.
-    //if ((formal->intent & INTENT_FLAG_REF) != 0 &&
-     //   arg.chplType && arg.chplType->symbol->hasFlag(FLAG_REF))
-
     // If we need to pass a reference but we already have a reference,
     // pass the pointer by value.
     if (arg.chplType && passRef) {
@@ -5630,7 +5624,6 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_CAST_TO_VOID_STAR: {
-    //Type*  t = get(1)->typeInfo();
     GenRet act = get(1);
     GenRet ptr;
 

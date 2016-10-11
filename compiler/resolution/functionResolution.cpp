@@ -1051,10 +1051,6 @@ resolveFormals(FnSymbol* fn) {
         }
       }
 
-      // MPF - we'll want to change from creating ref types
-      // to setting a ref flag on the Symbol.
-      //resolveArgIntent(formal);
-
       //
       // Fix up value types that need to be ref types.
       //
