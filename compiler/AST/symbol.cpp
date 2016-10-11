@@ -177,10 +177,9 @@ QualifiedType Symbol::qualType() {
   QualifiedType ret(dtUnknown, QUAL_BLANK);
 
   if (ArgSymbol* arg = toArgSymbol(this)) {
-  //  return QualifiedType(type, qualifierForArgIntent(arg->intent));
     Qualifier q = qualifierForArgIntent(arg->intent);
     if (qual == QUAL_WIDE_REF && (q == QUAL_REF || q == QUAL_CONST_REF)) {
-      q = QUAL_WIDE_REF; // TODO: fix for kConstWideRef
+      q = QUAL_WIDE_REF;
     }
     ret = QualifiedType(type, q);
   } else {
@@ -1357,6 +1356,7 @@ GenRet ArgSymbol::codegen() {
       ret.chplType = getOrMakeWideTypeDuringCodegen(refType);
     }
     /*
+    // BHARSH TODO: Is this still necessary?
     if (q.isRef() && !q.isRefType()) {
       ret.c = cname;
       ret.isLVPtr = GEN_PTR;
@@ -1375,6 +1375,7 @@ GenRet ArgSymbol::codegen() {
 #endif
   }
 
+  // BHARSH TODO: Is this still necessary?
   //if( requiresCPtr() ) {
   //  // Don't try to use chplType.
   //  ret.chplType = NULL;
