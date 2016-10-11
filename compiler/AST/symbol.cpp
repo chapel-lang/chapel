@@ -165,7 +165,7 @@ static Qualifier qualifierForArgIntent(IntentTag intent)
     case INTENT_CONST_IN:  return QUAL_CONST_VAL;
     case INTENT_REF:       return QUAL_REF;
     case INTENT_CONST_REF: return QUAL_CONST_REF;
-    case INTENT_PARAM:     return QUAL_BLANK; // TODO
+    case INTENT_PARAM:     return QUAL_PARAM; // TODO
     case INTENT_TYPE:      return QUAL_BLANK; // TODO
     case INTENT_BLANK:     return QUAL_BLANK;
     // no default to get compiler warning if other intents are added
