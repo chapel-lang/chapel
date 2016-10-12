@@ -265,15 +265,17 @@ For example, here is some Chapel code that throws and handles an error:
 
   class IllegalArgumentError: Error {} 
 
-  proc caller(arg) throws {
+  proc handle(arg) throws {
     try {
       callee(arg);
-      for i in iterating(arg) do
-        writeln(i);
     } catch e: IllegalArgumentError {
       writeln("illegal arg, exiting caller");
     }
-    // must throw because there is no catch-all block
+    // no catch-all block -> throws
+  }
+
+  proc passThru(arg) throws {
+    try callee(arg);
   }
 
   proc callee(arg) throws : A {
@@ -282,23 +284,15 @@ For example, here is some Chapel code that throws and handles an error:
     return new A(arg);
   }
 
-  iter iterating(arg) throws : int {
-    if arg < 1 then
-      throw new IllegalArgumentError();
-
-    for i in 1..arg do
-      yield i;
-  }
-
 The compiler could translate this into the following Chapel code:
 
 .. code-block:: chapel
 
   class IllegalArgumentError: Error {} 
 
-  proc caller(arg, out _e_out: Error) {
+  proc handle(arg, out _e_out: Error) {
     var e: Error; 
-    
+
     callee(arg, e);
 
     if e: IllegalArgumentError {
@@ -308,17 +302,10 @@ The compiler could translate this into the following Chapel code:
       _e_out = e;
       return;
     }
-    
-    for i in iterating(arg, e) do
-      writeln(i);
+  }
 
-    if e: IllegalArgumentError {
-      delete e;
-      writeln("illegal arg, exiting caller"); 
-    } else if e {
-      _e_out = e;
-      return;
-    }
+  proc passThru(arg, out _e_out: Error) {
+    callee(arg, _e_out);
   }
 
   proc callee(arg, out _e_out: Error): A {
@@ -330,24 +317,13 @@ The compiler could translate this into the following Chapel code:
     return new A(arg);
   }
 
-  iter iterating(arg, out _e_out: Error): A {
-    if arg < 1 {
-      _e_out = new IllegalArgumentError();
-      return;
-    }
-
-    for i in 1..arg do
-      yield i;
-  } 
-
-In default mode, calling functions without handling their errors will
-produce a ``halt()``.
-
+In default mode, calling throwing functions without an enclosing
+``try`` will produce a ``halt()``.
+ 
 .. code-block:: chapel
 
   proc nohandle(arg): A {
-    var value: A = callee(arg);
-    return value;
+    return callee(arg);
   }
 
   // translated
