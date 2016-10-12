@@ -491,11 +491,10 @@ Example 3: Cobegins
 +++++++++++++++++++
 
 ``begin`` and ``cobegin`` are parallel constructs that create
-asynchronous tasks which could have errors. Given that our error
-handling is synchronous, the compiler will force these tasks to
-``sync`` before the program is allowed to continue.
-
-These errors will be provided at task join.
+asynchronous tasks which could have errors. The parent task will
+wait for error-throwing child tasks to complete, as with a sync
+statement or at the end of coforall/cobegin. These errors will
+be provided at task join.
 
 .. code-block:: chapel
 
