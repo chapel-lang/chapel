@@ -8687,7 +8687,7 @@ buildVirtualMaps() {
       continue;
 
     if (fn->hasFlag(FLAG_NO_PARENS))
-      // Parenthesesless functions are statically bound; that is, they are not
+      // Parentheses-less functions are statically bound; that is, they are not
       // dispatched through the virtual table.
       continue;
 

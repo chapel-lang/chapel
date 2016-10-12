@@ -180,7 +180,7 @@ class ``GlobalDomain``
 
   The fields ``rank``, ``idxType``, ``stridable`` are the attributes
   of the corresponding Chapel domain. (They could be replaced with
-  parenthesesless functions of the same names and param/type intents.)
+  parentheses-less functions of the same names and param/type intents.)
 
   The field ``dist`` must contain a reference
   to the ``GlobalDistribution`` object
