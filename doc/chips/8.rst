@@ -175,20 +175,20 @@ Syntax
   proc canThrowErrors() throws { … }
   proc cannotThrowErrors() { … }
 
-* Statements that contain calls to functions that throw should be enclosed:
-
-  * ``try`` propagates the error.
-
-    * If an error is thrown, it will be passed to a matching ``catch`` block.
-
-    * If none exists, the error will be passed out of the procedure, hence the
-      procedure must ``throw``.
-
-    * If the procedure does not ``throw``, the compiler will raise an error.
-
-  * ``try!`` will ``halt()`` if an error occurs.
-  
 * Errors can be handled with ``catch`` statements.
+
+* Statements that contain calls to functions that throw should be enclosed
+  by ``try`` or ``try!``.
+  
+  * Both will attempt to handle errors with a matching ``catch`` block.
+
+  * If no matching ``catch`` block exists:
+   
+    * ``try`` propagates the error. This can either be to an enclosing ``try``
+      block, or out of the enclosing procedure, which must ``throw``.
+
+    * ``try!`` will ``halt()``, even if enclosed by another ``try``.
+  
 
 Here is an example.
 
@@ -196,7 +196,7 @@ Here is an example.
 
   try {
     canThrowErrors();      // handled by catch on error
-    try canThrowErrors();  // also handled by catch ("in scope")
+    try canThrowErrors();  // propagates to outer try, then catch
     try! canThrowErrors(); // halts on error
   } catch e {
     writeln("One of the first two calls failed!")
@@ -210,7 +210,7 @@ the compiler will run checks in one of two modes, based on a flag.
 
 1. **Default.** If a call to a throwing procedure is not enclosed by a ``try``
    or ``try!``, the program will compile with a warning and the call will
-   ``halt()`` on an error, as if the procedure were called with ``try!``.
+   ``halt()`` on an error.
 
 2. **Strict.** If a call to a throwing procedure is not enclosed by a ``try``
    or ``try!``, the compiler will raise an error.
@@ -265,13 +265,12 @@ For example, here is some Chapel code that throws and handles an error:
 
   class IllegalArgumentError: Error {} 
 
-  proc handle(arg) throws {
-    try {
+  proc handle(arg) {
+    try! {
       callee(arg);
     } catch e: IllegalArgumentError {
       writeln("illegal arg, exiting caller");
     }
-    // no catch-all block -> throws
   }
 
   proc passThru(arg) throws {
@@ -290,7 +289,7 @@ The compiler could translate this into the following Chapel code:
 
   class IllegalArgumentError: Error {} 
 
-  proc handle(arg, out _e_out: Error) {
+  proc handle(arg) {
     var e: Error; 
 
     callee(arg, e);
@@ -299,8 +298,7 @@ The compiler could translate this into the following Chapel code:
       delete e;
       writeln("illegal arg, exiting caller"); 
     } else if e {
-      _e_out = e;
-      return;
+      halt(e.message);
     }
   }
 
@@ -318,7 +316,7 @@ The compiler could translate this into the following Chapel code:
   }
 
 In default mode, calling throwing functions without an enclosing
-``try`` will produce a ``halt()``.
+``try`` or ``try!`` will ``halt()`` on error.
  
 .. code-block:: chapel
 
