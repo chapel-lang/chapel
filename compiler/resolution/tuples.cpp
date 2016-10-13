@@ -53,6 +53,251 @@ struct TupleInfo {
 static std::map< std::vector<TypeSymbol*>, TupleInfo > tupleMap;
 
 static
+void makeTupleName(std::vector<TypeSymbol*>& args,
+                   bool isStarTuple,
+                   std::string & name,
+                   std::string & cname)
+{
+  int size = args.size();
+  const char* size_str = istr(size);
+  cname = "_tuple_";
+  name = "";
+  if (isStarTuple) {
+    name += size_str;
+    name += "*";
+    name += args[0]->name;
+    cname += size_str;
+    cname += "_star_";
+    cname += args[0]->cname;
+  } else {
+    name += "(";
+    cname += size_str;
+    for(int i = 0; i < size; i++) {
+      cname += "_";
+      cname += args[i]->cname;
+      if (i != 0 ) name += ",";
+      name += args[i]->name;
+    }
+    name += ")";
+  }
+}
+
+static
+FnSymbol* makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
+                            TypeSymbol* newTypeSymbol,
+                            ModuleSymbol* tupleModule,
+                            BlockStmt* instantiationPoint)
+{
+  Type *newType = newTypeSymbol->type;
+  FnSymbol *typeCtor = new FnSymbol("_type_construct__tuple");
+  for(size_t i = 0; i < typeCtorArgs.size(); i++ ) {
+    typeCtor->insertFormalAtTail(typeCtorArgs[i]);
+  }
+  typeCtor->addFlag(FLAG_ALLOW_REF);
+  typeCtor->addFlag(FLAG_COMPILER_GENERATED);
+  typeCtor->addFlag(FLAG_INLINE);
+  typeCtor->addFlag(FLAG_INVISIBLE_FN);
+  typeCtor->addFlag(FLAG_TYPE_CONSTRUCTOR);
+  typeCtor->addFlag(FLAG_PARTIAL_TUPLE);
+
+  typeCtor->retTag = RET_TYPE;
+  typeCtor->retType = newType;
+  CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
+  typeCtor->insertAtTail(ret);
+  typeCtor->substitutions.copy(newType->substitutions);
+  typeCtor->numPreTupleFormals = 1;
+
+  typeCtor->instantiatedFrom = gGenericTupleTypeCtor;
+  typeCtor->instantiationPoint = instantiationPoint;
+
+  tupleModule->block->insertAtTail(new DefExpr(typeCtor));
+
+  newType->defaultTypeConstructor = typeCtor;
+
+  return typeCtor;
+}
+
+static
+FnSymbol* makeBuildTupleType(std::vector<ArgSymbol*> typeCtorArgs,
+                             TypeSymbol* newTypeSymbol,
+                             ModuleSymbol* tupleModule,
+                             BlockStmt* instantiationPoint,
+                             bool noref)
+{
+  Type *newType = newTypeSymbol->type;
+  const char* fnName = noref?"_build_tuple_noref":"_build_tuple";
+  FnSymbol *buildTupleType = new FnSymbol(fnName);
+  // starts at 1 to skip the size argument
+  for(size_t i = 1; i < typeCtorArgs.size(); i++ ) {
+    buildTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
+  }
+  buildTupleType->addFlag(FLAG_ALLOW_REF);
+  buildTupleType->addFlag(FLAG_COMPILER_GENERATED);
+  buildTupleType->addFlag(FLAG_INLINE);
+  buildTupleType->addFlag(FLAG_INVISIBLE_FN);
+  buildTupleType->addFlag(FLAG_BUILD_TUPLE);
+  buildTupleType->addFlag(FLAG_BUILD_TUPLE_TYPE);
+
+  buildTupleType->retTag = RET_TYPE;
+  buildTupleType->retType = newType;
+  CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
+  buildTupleType->insertAtTail(ret);
+  buildTupleType->substitutions.copy(newType->substitutions);
+
+  buildTupleType->instantiatedFrom = gBuildTupleType;
+  buildTupleType->instantiationPoint = instantiationPoint;
+
+  tupleModule->block->insertAtTail(new DefExpr(buildTupleType));
+
+  return buildTupleType;
+}
+
+static
+FnSymbol* makeBuildStarTupleType(std::vector<ArgSymbol*> typeCtorArgs,
+                                 TypeSymbol* newTypeSymbol,
+                                 ModuleSymbol* tupleModule,
+                                 BlockStmt* instantiationPoint,
+                                 bool noref)
+{
+  Type *newType = newTypeSymbol->type;
+  const char* fnName = noref?"_build_star_tuple_noref":"*";
+  FnSymbol *buildStarTupleType = new FnSymbol(fnName);
+  // just to arguments 0 and 1 to get size and element type
+  for(int i = 0; i < 2; i++ ) {
+    buildStarTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
+  }
+  buildStarTupleType->addFlag(FLAG_ALLOW_REF);
+  buildStarTupleType->addFlag(FLAG_COMPILER_GENERATED);
+  buildStarTupleType->addFlag(FLAG_INLINE);
+  buildStarTupleType->addFlag(FLAG_INVISIBLE_FN);
+  buildStarTupleType->addFlag(FLAG_BUILD_TUPLE);
+  buildStarTupleType->addFlag(FLAG_BUILD_TUPLE_TYPE);
+  buildStarTupleType->addFlag(FLAG_STAR_TUPLE);
+
+  buildStarTupleType->retTag = RET_TYPE;
+  buildStarTupleType->retType = newType;
+  CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
+  buildStarTupleType->insertAtTail(ret);
+  buildStarTupleType->substitutions.copy(newType->substitutions);
+
+  buildStarTupleType->instantiatedFrom = gBuildStarTupleType;
+  buildStarTupleType->instantiationPoint = instantiationPoint;
+
+  tupleModule->block->insertAtTail(new DefExpr(buildStarTupleType));
+  return buildStarTupleType;
+}
+
+static
+FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
+                             std::vector<ArgSymbol*> typeCtorArgs,
+                             TypeSymbol* newTypeSymbol,
+                             ModuleSymbol* tupleModule,
+                             BlockStmt* instantiationPoint,
+                             bool noref,
+                             Type* sizeType)
+{
+  int size = args.size();
+  Type *newType = newTypeSymbol->type;
+  FnSymbol *ctor = new FnSymbol("_construct__tuple");
+
+  // Does "_this" even make sense in this situation?
+  VarSymbol* _this = new VarSymbol("this", newType);
+  _this->addFlag(FLAG_ARG_THIS);
+  ctor->insertAtTail(new DefExpr(_this));
+  ctor->_this = _this;
+
+  ArgSymbol* sizeArg = new ArgSymbol(INTENT_BLANK, "size", sizeType);
+  sizeArg->addFlag(FLAG_INSTANTIATED_PARAM);
+  ctor->insertFormalAtTail(sizeArg);
+
+  for(int i = 0; i < size; i++ ) {
+    const char* name = typeCtorArgs[i+1]->name;
+    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, args[i]->type);
+    ctor->insertFormalAtTail(arg);
+    // TODO : one would think that the tuple constructor body
+    // should call initCopy vs autoCopy, but these are more
+    // or less the same now.
+
+    Symbol* element = NULL;
+    if (isReferenceType(args[i]->type)) {
+      // If it is a reference, pass it through
+      element = arg;
+    } else {
+      // Otherwise, copy it
+      element = new VarSymbol(astr("elt_", name), args[i]->type);
+      ctor->insertAtTail(new DefExpr(element));
+      CallExpr* copy = new CallExpr("chpl__autoCopy", arg);
+      ctor->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
+    }
+
+    ctor->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
+                                    _this,
+                                    new_CStringSymbol(name),
+                                    element));
+  }
+
+  ctor->addFlag(FLAG_ALLOW_REF);
+  ctor->addFlag(FLAG_COMPILER_GENERATED);
+  ctor->addFlag(FLAG_INLINE);
+  ctor->addFlag(FLAG_INVISIBLE_FN);
+  ctor->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
+  ctor->addFlag(FLAG_CONSTRUCTOR);
+  ctor->addFlag(FLAG_PARTIAL_TUPLE);
+
+  ctor->retTag = RET_VALUE;
+  ctor->retType = newType;
+  CallExpr* ret = new CallExpr(PRIM_RETURN, _this);
+  ctor->insertAtTail(ret);
+  ctor->substitutions.copy(newType->substitutions);
+
+  ctor->instantiatedFrom = gGenericTupleInit;
+  ctor->instantiationPoint = instantiationPoint;
+
+  tupleModule->block->insertAtTail(new DefExpr(ctor));
+
+  return ctor;
+}
+
+static
+FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
+                            ModuleSymbol* tupleModule,
+                            BlockStmt* instantiationPoint)
+{
+  Type *newType = newTypeSymbol->type;
+
+  FnSymbol *dtor = new FnSymbol("~chpl_destroy");
+
+  dtor->cname = astr("chpl__auto_destroy_", newType->symbol->cname);
+
+  // Does "_this" even make sense in this situation?
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", newType);
+  _this->addFlag(FLAG_ARG_THIS);
+  dtor->_this = _this;
+
+  dtor->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  dtor->addFlag(FLAG_METHOD);
+  dtor->insertFormalAtTail(dtor->_this);
+
+  dtor->addFlag(FLAG_COMPILER_GENERATED);
+  dtor->addFlag(FLAG_INLINE);
+  dtor->addFlag(FLAG_INVISIBLE_FN);
+  dtor->addFlag(FLAG_DESTRUCTOR);
+
+  dtor->retTag = RET_VALUE;
+  dtor->retType = dtVoid;
+  CallExpr* ret = new CallExpr(PRIM_RETURN, gVoid);
+  dtor->insertAtTail(ret);
+  dtor->substitutions.copy(newType->substitutions);
+
+  dtor->instantiatedFrom = gGenericTupleDestroy;
+  dtor->instantiationPoint = instantiationPoint;
+
+  tupleModule->block->insertAtTail(new DefExpr(dtor));
+
+  return dtor;
+}
+
+static
 TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
                        BlockStmt* instantiationPoint,
                        bool noref)
@@ -77,7 +322,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
 
     // Create the arguments for the type constructor
     // since we will refer to these in the substitutions.
-    // Keys in the substitutions are ArgSymbol in the type constructor.
+    // Keys in the substitutions are ArgSymbols in the type constructor.
     ArgSymbol* sizeArg = new ArgSymbol(INTENT_BLANK, "size", sizeType);
     sizeArg->addFlag(FLAG_INSTANTIATED_PARAM);
     typeCtorArgs.push_back(sizeArg);
@@ -129,27 +374,8 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     }
 
     // Construct the name for the tuple
-    const char* size_str = istr(args.size());
-    std::string cname = "_tuple_";
-    std::string name;
-    if (markStar) {
-      name += size_str;
-      name += "*";
-      name += args[0]->name;
-      cname += size_str;
-      cname += "_star_";
-      cname += args[0]->cname;
-    } else {
-      name += "(";
-      cname += size_str;
-      for(int i = 0; i < size; i++) {
-        cname += "_";
-        cname += args[i]->cname;
-        if (i != 0 ) name += ",";
-        name += args[i]->name;
-      }
-      name += ")";
-    }
+    std::string name, cname;
+    makeTupleName(args, markStar, name, cname);
 
     // Create the TypeSymbol
     TypeSymbol* newTypeSymbol = new TypeSymbol(name.c_str(), newType);
@@ -169,193 +395,45 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     info.typeSymbol = newTypeSymbol;
 
     // Build the type constructor
-    {
-      FnSymbol *typeCtor = new FnSymbol("_type_construct__tuple");
-      for(size_t i = 0; i < typeCtorArgs.size(); i++ ) {
-        typeCtor->insertFormalAtTail(typeCtorArgs[i]);
-      }
-      typeCtor->addFlag(FLAG_ALLOW_REF);
-      typeCtor->addFlag(FLAG_COMPILER_GENERATED);
-      typeCtor->addFlag(FLAG_INLINE);
-      typeCtor->addFlag(FLAG_INVISIBLE_FN);
-      typeCtor->addFlag(FLAG_TYPE_CONSTRUCTOR);
-      typeCtor->addFlag(FLAG_PARTIAL_TUPLE);
-
-      typeCtor->retTag = RET_TYPE;
-      typeCtor->retType = newType;
-      CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
-      typeCtor->insertAtTail(ret);
-      typeCtor->substitutions.copy(newType->substitutions);
-      typeCtor->numPreTupleFormals = 1;
-
-      typeCtor->instantiatedFrom = gGenericTupleTypeCtor;
-      typeCtor->instantiationPoint = instantiationPoint;
-
-      tupleModule->block->insertAtTail(new DefExpr(typeCtor));
-
-      newType->defaultTypeConstructor = typeCtor;
-    }
+    makeTupleTypeCtor(typeCtorArgs, newTypeSymbol,
+                      tupleModule, instantiationPoint);
 
     // Build the _build_tuple type function
-    {
-      const char* fnName = noref?"_build_tuple_noref":"_build_tuple";
-      FnSymbol *buildTupleType = new FnSymbol(fnName);
-      // starts at 1 to skip the size argument
-      for(size_t i = 1; i < typeCtorArgs.size(); i++ ) {
-        buildTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
-      }
-      buildTupleType->addFlag(FLAG_ALLOW_REF);
-      buildTupleType->addFlag(FLAG_COMPILER_GENERATED);
-      buildTupleType->addFlag(FLAG_INLINE);
-      buildTupleType->addFlag(FLAG_INVISIBLE_FN);
-      buildTupleType->addFlag(FLAG_BUILD_TUPLE);
-      buildTupleType->addFlag(FLAG_BUILD_TUPLE_TYPE);
+    info.buildTupleType = makeBuildTupleType(typeCtorArgs, newTypeSymbol,
+                                             tupleModule, instantiationPoint,
+                                             noref);
 
-      buildTupleType->retTag = RET_TYPE;
-      buildTupleType->retType = newType;
-      CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
-      buildTupleType->insertAtTail(ret);
-      buildTupleType->substitutions.copy(newType->substitutions);
-
-      buildTupleType->instantiatedFrom = gBuildTupleType;
-      buildTupleType->instantiationPoint = instantiationPoint;
-
-      tupleModule->block->insertAtTail(new DefExpr(buildTupleType));
-
-      info.buildTupleType = buildTupleType;
-    }
-
-    // Build the * type function
+    // Build the * type function for star tuples
     if (markStar) {
-      const char* fnName = noref?"_build_star_tuple_noref":"*";
-      FnSymbol *buildStarTupleType = new FnSymbol(fnName);
-      // just to arguments 0 and 1 to get size and element type
-      for(int i = 0; i < 2; i++ ) {
-        buildStarTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
-      }
-      buildStarTupleType->addFlag(FLAG_ALLOW_REF);
-      buildStarTupleType->addFlag(FLAG_COMPILER_GENERATED);
-      buildStarTupleType->addFlag(FLAG_INLINE);
-      buildStarTupleType->addFlag(FLAG_INVISIBLE_FN);
-      buildStarTupleType->addFlag(FLAG_BUILD_TUPLE);
-      buildStarTupleType->addFlag(FLAG_BUILD_TUPLE_TYPE);
-      buildStarTupleType->addFlag(FLAG_STAR_TUPLE);
-
-      buildStarTupleType->retTag = RET_TYPE;
-      buildStarTupleType->retType = newType;
-      CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
-      buildStarTupleType->insertAtTail(ret);
-      buildStarTupleType->substitutions.copy(newType->substitutions);
-
-      buildStarTupleType->instantiatedFrom = gBuildStarTupleType;
-      buildStarTupleType->instantiationPoint = instantiationPoint;
-
-      tupleModule->block->insertAtTail(new DefExpr(buildStarTupleType));
-
-      info.buildStarTupleType = buildStarTupleType;
+      info.buildStarTupleType = makeBuildStarTupleType(typeCtorArgs,
+                                                       newTypeSymbol,
+                                                       tupleModule,
+                                                       instantiationPoint,
+                                                       noref);
     } else {
       info.buildStarTupleType = NULL;
     }
 
     // Build the value constructor
     {
-      FnSymbol *ctor = new FnSymbol("_construct__tuple");
-
-      // Does "_this" even make sense in this situation?
-      VarSymbol* _this = new VarSymbol("this", newType);
-      _this->addFlag(FLAG_ARG_THIS);
-      ctor->insertAtTail(new DefExpr(_this));
-      ctor->_this = _this;
-
-      ArgSymbol* sizeArg = new ArgSymbol(INTENT_BLANK, "size", sizeType);
-      sizeArg->addFlag(FLAG_INSTANTIATED_PARAM);
-      ctor->insertFormalAtTail(sizeArg);
-
-      for(int i = 0; i < size; i++ ) {
-        const char* name = typeCtorArgs[i+1]->name;
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, args[i]->type);
-        ctor->insertFormalAtTail(arg);
-        // TODO : one would think that the tuple constructor body
-        // should call initCopy vs autoCopy, but these are more
-        // or less the same now.
-
-        Symbol* element = NULL;
-        if (isReferenceType(args[i]->type)) {
-          // If it is a reference, pass it through
-          element = arg;
-        } else {
-          // Otherwise, copy it
-          element = new VarSymbol(astr("elt_", name), args[i]->type);
-          ctor->insertAtTail(new DefExpr(element));
-          CallExpr* copy = new CallExpr("chpl__autoCopy", arg);
-          ctor->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
-        }
-
-        ctor->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                        _this,
-                                        new_CStringSymbol(name),
-                                        element));
-      }
-
-      ctor->addFlag(FLAG_ALLOW_REF);
-      ctor->addFlag(FLAG_COMPILER_GENERATED);
-      ctor->addFlag(FLAG_INLINE);
-      ctor->addFlag(FLAG_INVISIBLE_FN);
-      ctor->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
-      ctor->addFlag(FLAG_CONSTRUCTOR);
-      ctor->addFlag(FLAG_PARTIAL_TUPLE);
-
-      ctor->retTag = RET_VALUE;
-      ctor->retType = newType;
-      CallExpr* ret = new CallExpr(PRIM_RETURN, _this);
-      ctor->insertAtTail(ret);
-      ctor->substitutions.copy(newType->substitutions);
-
-      ctor->instantiatedFrom = gGenericTupleInit;
-      ctor->instantiationPoint = instantiationPoint;
-
-      tupleModule->block->insertAtTail(new DefExpr(ctor));
-
-      newType->defaultInitializer = ctor;
+      newType->defaultInitializer = makeConstructTuple(args,
+                                                       typeCtorArgs,
+                                                       newTypeSymbol,
+                                                       tupleModule,
+                                                       instantiationPoint,
+                                                       noref,
+                                                       sizeType);
     }
 
     // Build the value destructor
-    {
-      FnSymbol *dtor = new FnSymbol("~chpl_destroy");
+    FnSymbol* dtor = makeDestructTuple(newTypeSymbol,
+                                       tupleModule,
+                                       instantiationPoint);
+    newType->destructor = dtor;
+    newType->methods.add(dtor);
 
-      dtor->cname = astr("chpl__auto_destroy_", newType->symbol->cname);
-
-      // Does "_this" even make sense in this situation?
-      ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", newType);
-      _this->addFlag(FLAG_ARG_THIS);
-      dtor->_this = _this;
-
-      dtor->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-      dtor->addFlag(FLAG_METHOD);
-      dtor->insertFormalAtTail(dtor->_this);
-
-      dtor->addFlag(FLAG_COMPILER_GENERATED);
-      dtor->addFlag(FLAG_INLINE);
-      dtor->addFlag(FLAG_INVISIBLE_FN);
-      dtor->addFlag(FLAG_DESTRUCTOR);
-
-      dtor->retTag = RET_VALUE;
-      dtor->retType = dtVoid;
-      CallExpr* ret = new CallExpr(PRIM_RETURN, gVoid);
-      dtor->insertAtTail(ret);
-      dtor->substitutions.copy(newType->substitutions);
-
-      dtor->instantiatedFrom = gGenericTupleDestroy;
-      dtor->instantiationPoint = instantiationPoint;
-
-      tupleModule->block->insertAtTail(new DefExpr(dtor));
-
-      newType->destructor = dtor;
-      newType->methods.add(dtor);
-
-      // Resolve it so it stays in AST
-      resolveFns(dtor);
-    }
+    // Resolve it so it stays in AST
+    resolveFns(dtor);
 
   }
 
