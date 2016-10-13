@@ -1160,7 +1160,7 @@ resolveFormals(FnSymbol* fn) {
         // * arguably blank intent for ranges should be 'const ref',
         //   but the current compiler uses a mix of 'const in' and 'const ref'.
         // * resolveIntents is changing INTENT_IN to INTENT_REF
-        //   which intereferes with the logic in parallel.cpp
+        //   which interferes with the logic in parallel.cpp
         //   (another approach to that problem might be to separately
         //    store the 'requested intent' and the 'concrete intent').
         formal->intent = INTENT_CONST_IN;
