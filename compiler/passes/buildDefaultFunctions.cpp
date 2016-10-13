@@ -1408,6 +1408,10 @@ void buildDefaultDestructor(AggregateType* ct) {
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_DESTRUCTOR);
   fn->addFlag(FLAG_INLINE);
+
+  if (ct->symbol->hasFlag(FLAG_TUPLE))
+    gGenericTupleDestroy = fn;
+
   fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->addFlag(FLAG_METHOD);
