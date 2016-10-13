@@ -123,6 +123,7 @@ enum Qualifier {
   QUAL_CONST,
   QUAL_REF,
   QUAL_CONST_REF,
+  QUAL_PARAM,
 
   // The concrete qualifiers
 

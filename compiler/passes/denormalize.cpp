@@ -323,10 +323,18 @@ bool isDenormalizable(Symbol* sym,
           if(CallExpr* ce = toCallExpr(usePar)) {
             if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
                   // TODO: PRIM_SET_REFERENCE?
+                  //
+                  // TODO: BHARSH: I added PRIM_RETURN here after seeing a case
+                  // where we did something like this:
+                  //   (return (get_member_value this myField))
+                  // FnSymbol expects to return one symbol, so it's easier to
+                  // just not denormalize the returned symbol.
+                  //
                   ce->isPrimitive(PRIM_ARRAY_GET) ||
                   ce->isPrimitive(PRIM_GET_MEMBER) ||
                   ce->isPrimitive(PRIM_DEREF) ||
                   ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                  ce->isPrimitive(PRIM_RETURN) ||
                   (ce->isPrimitive(PRIM_MOVE) && 
                    ce->get(1)->typeInfo() !=
                    ce->get(2)->typeInfo()))) {

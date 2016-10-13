@@ -381,6 +381,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
       INT_ASSERT(se);
       sym = se->var;
     }
+    INT_ASSERT(sym);
 
     if (sym->isRefOrWideRef()) {
       retQ = QUAL_REF;
@@ -392,7 +393,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
         retType = sym->typeInfo()->getField("addr")->typeInfo();
       }
     } else {
-      retQ = sym->qual;
+      retQ = sym->qualType().getQual();
       if (isTypeFullyWide(bs)) {
         retType = sym->typeInfo()->getField("addr")->typeInfo();
       } else {

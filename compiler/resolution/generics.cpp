@@ -30,7 +30,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "resolveIntents.h"
 
 #include "resolveIntents.h"
 
@@ -617,9 +616,6 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
         insert_help(newFormal->defaultExpr, NULL, newFormal);
       }
     }
-
-    // Fix argument intents
-    //resolveArgIntent(newFormal);
   }
 
   if (newType) {

@@ -1,7 +1,0 @@
-bug: compiler doesn't prevent access assignment to 'const ref's to arrays
-
-These should generate error messages, similar to how:
-
-  const CR => C;
-
-does today.

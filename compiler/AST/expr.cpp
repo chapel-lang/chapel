@@ -1514,8 +1514,7 @@ GenRet codegenFieldPtr(
       castType = fieldSymbol->defPoint->parentSymbol->typeInfo();
       if( castType == ct ) castType = NULL;
     }
-    GenRet fieldRet = new SymExpr(fieldSymbol);
-    ret.chplType = fieldRet.chplType;
+    ret.chplType = fieldSymbol->type;
   }
 
   if( fLLVMWideOpt && castType && isWide(base) ) {
@@ -2687,12 +2686,6 @@ GenRet codegenArgForFormal(GenRet arg,
 
     // Make sure that the formal type + intent
     // matches, so we don't get multiple reference levels.
-
-    // When passing a ref(t) to a formal of type
-    // t with a ref intent, we need to pass the ref(t)
-    // as a value.
-    //if ((formal->intent & INTENT_FLAG_REF) != 0 &&
-     //   arg.chplType && arg.chplType->symbol->hasFlag(FLAG_REF))
 
     // If we need to pass a reference but we already have a reference,
     // pass the pointer by value.
@@ -5631,7 +5624,6 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_CAST_TO_VOID_STAR: {
-    //Type*  t = get(1)->typeInfo();
     GenRet act = get(1);
     GenRet ptr;
 
@@ -5918,8 +5910,7 @@ GenRet CallExpr::codegenPrimMove() {
       codegenAssign(lhs, rhs);
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
-             get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false &&
-             !get(1)->isRef()) {
+             get(2)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) == false ) {
     GenRet rhs = get(2);
     if (get(2)->isRef()) {
       rhs = codegenDeref(rhs);
@@ -5933,9 +5924,6 @@ GenRet CallExpr::codegenPrimMove() {
   } else if (get(1)->isWideRef() == true  &&
              get(2)->isWideRef() == false &&
              get(2)->isRef()     == false) {
-//  } else if (get(1)->isWideRef()   == true  &&
-//             get(2)->isWideRef()   == false &&
-//             get(2)->isRef()       == false) {
     GenRet to_ptr = codegenDeref(get(1));
 
     codegenAssign(to_ptr, get(2));
@@ -6026,7 +6014,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_DEREF: {
       // TODO: What if get(1) for this first branch is not a ref?
       if (call->get(1)->isWideRef() ||
-          (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) && !call->get(1)->isRef())) {
+          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         Type* valueType;
 
         // TODO: It seems odd to use a PRIM_DEREF on a wide class, why do we?

@@ -174,7 +174,7 @@ static Qualifier qualifierForArgIntent(IntentTag intent)
     case INTENT_CONST_IN:  return QUAL_CONST_VAL;
     case INTENT_REF:       return QUAL_REF;
     case INTENT_CONST_REF: return QUAL_CONST_REF;
-    case INTENT_PARAM:     return QUAL_BLANK; // TODO
+    case INTENT_PARAM:     return QUAL_PARAM; // TODO
     case INTENT_TYPE:      return QUAL_BLANK; // TODO
     case INTENT_BLANK:     return QUAL_BLANK;
     // no default to get compiler warning if other intents are added
@@ -186,10 +186,9 @@ QualifiedType Symbol::qualType() {
   QualifiedType ret(dtUnknown, QUAL_BLANK);
 
   if (ArgSymbol* arg = toArgSymbol(this)) {
-  //  return QualifiedType(type, qualifierForArgIntent(arg->intent));
     Qualifier q = qualifierForArgIntent(arg->intent);
     if (qual == QUAL_WIDE_REF && (q == QUAL_REF || q == QUAL_CONST_REF)) {
-      q = QUAL_WIDE_REF; // TODO: fix for kConstWideRef
+      q = QUAL_WIDE_REF;
     }
     ret = QualifiedType(type, q);
   } else {
@@ -1366,6 +1365,7 @@ GenRet ArgSymbol::codegen() {
       ret.chplType = getOrMakeWideTypeDuringCodegen(refType);
     }
     /*
+    // BHARSH TODO: Is this still necessary?
     if (q.isRef() && !q.isRefType()) {
       ret.c = cname;
       ret.isLVPtr = GEN_PTR;
@@ -1384,6 +1384,7 @@ GenRet ArgSymbol::codegen() {
 #endif
   }
 
+  // BHARSH TODO: Is this still necessary?
   //if( requiresCPtr() ) {
   //  // Don't try to use chplType.
   //  ret.chplType = NULL;
