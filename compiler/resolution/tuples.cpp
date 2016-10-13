@@ -547,7 +547,7 @@ instantiate_tuple_cast(FnSymbol* fn)
   // Starting at field 2 to skip the size field
   for (int i=2; i<=toT->fields.length; i++) {
     Symbol* fromField = toDefExpr(fromT->fields.get(i))->sym;
-    Symbol*   toField = toDefExpr(   toT->fields.get(i))->sym;
+    Symbol*   toField = toDefExpr(  toT->fields.get(i))->sym;
     Symbol*  fromName = new_CStringSymbol(fromField->name);
     Symbol*    toName = new_CStringSymbol(  toField->name);
     const char* name  = toField->name;
@@ -623,8 +623,8 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
 
   // Starting at field 2 to skip the size field
   for (int i=2; i<=ct->fields.length; i++) {
-    Symbol* fromField = toDefExpr(    ct->fields.get(i))->sym;
-    Symbol*   toField = toDefExpr(    ct->fields.get(i))->sym;
+    Symbol* fromField = toDefExpr(ct->fields.get(i))->sym;
+    Symbol*   toField = toDefExpr(ct->fields.get(i))->sym;
     Symbol*  fromName = new_CStringSymbol(fromField->name);
     Symbol*    toName = new_CStringSymbol(  toField->name);
     const char* name  = toField->name;
@@ -814,7 +814,7 @@ AggregateType* computeNonRefTuple(Type* t)
 void
 fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall)
 {
-  // Note: scopeResolve sets FLAG_TUPLE is for the type constructor
+  // Note: scopeResolve sets FLAG_TUPLE for the type constructor
   // and the constructor for the tuple record.
 
   if (!strcmp(fn->name, "_defaultOf") &&
