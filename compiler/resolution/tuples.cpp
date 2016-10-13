@@ -33,8 +33,6 @@
 
 #include "resolveIntents.h"
 
-#include "view.h"
-
 #include <cstdlib>
 #include <inttypes.h>
 #include <vector>
