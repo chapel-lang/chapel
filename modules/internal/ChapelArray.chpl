@@ -172,12 +172,12 @@ module ChapelArray {
   proc _isPrivatized(value) param
     return !_local && ((_privatization && value.dsiSupportsPrivatization()) || value.dsiRequiresPrivatization());
     // Note - _local=true means --local / single locale
-    // _privatization is controled by --[no-]privatization
+    // _privatization is controlled by --[no-]privatization
     // privatization required, not optional, for PrivateDist
 
-  // MPF 2016-10-02: This simple implementation of privitization has some
+  // MPF 2016-10-02: This simple implementation of privatization has some
   // drawbacks:
-  // 1) Creating a new privitized object necessarily does something on all
+  // 1) Creating a new privatizated object necessarily does something on all
   //    locales; this would be surprising if the user explicitly requested a
   //    Block array on 2 locales for example.
   // 2) Privitized object ids are managed by Locale 0 in a way that, while
@@ -1679,11 +1679,6 @@ module ChapelArray {
       compilerError("the domain and array arguments of # must have the same rank");
     return arr[arr.domain#counts];
   }
-
-
-  /*proc _getNewDist(value) {
-    return new dmap(value);
-  }*/
 
   proc +(d: domain, i: index(d)) {
     if isRectangularDom(d) then
@@ -3455,7 +3450,6 @@ module ChapelArray {
   }
 
   pragma "auto copy fn" proc chpl__autoCopy(const ref x: domain) {
-    //pragma "no copy" var b = new _domain(x._pid, x._instance, true);
     pragma "no copy" var b = chpl__initCopy(x);
     return b;
   }

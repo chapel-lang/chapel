@@ -126,7 +126,6 @@ proc GlobalData.GlobalData(nameArg: string) {
         pragma "no auto destroy"
 	var slice => nbr.ldata[slicex, slicey];
 	cache = slice._value;
-	//if !noRefCount then cache._arrCnt.inc(1);  // this is a bit low-level
       }
     }  // storecache()
   }  // forall

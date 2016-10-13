@@ -35,7 +35,7 @@ module ChapelDistribution {
     var _domsLock: atomicbool;    //   and lock for concurrent access
     var _free_when_no_doms: bool; // true when the original _distribution
                                   // has been destroyed
-    var pid:int = -1; // privatized ID, if privitization is supported
+    var pid:int = -1; // privatized ID, if privatization is supported
   
     proc ~BaseDist() {
     }
@@ -165,7 +165,7 @@ module ChapelDistribution {
                                    // is using {1..2}
     var _arrsLock: atomicbool; //   and lock for concurrent access
     var _free_when_no_arrs: bool;
-    var pid:int = -1; // privatized ID, if privitization is supported
+    var pid:int = -1; // privatized ID, if privatization is supported
   
     proc ~BaseDom() {
     }
@@ -575,7 +575,7 @@ module ChapelDistribution {
     // will use explicit processor atomics, even when network
     // atomics are available
     var _arrAlias: BaseArr;    // reference to base array if an alias
-    var pid:int = -1; // privatized ID, if privitization is supported
+    var pid:int = -1; // privatized ID, if privatization is supported
   
     proc ~BaseArr() {
     }
@@ -592,13 +592,6 @@ module ChapelDistribution {
     // dom is a domain that should be removed, or nil.
     pragma "dont disable remote value forwarding"
     proc remove() {
-      // TODO - any action to take for slices/ _arrAlias?
-
-      // moved to _delete_array
-      //if _arrAlias == nil {
-      //  dsiDestroyData();
-      //}
-
       var ret_arr = this; // this array is always deleted
       var ret_dom:BaseDom = nil;
       var rm_dom = false;
@@ -778,8 +771,6 @@ module ChapelDistribution {
   // we can't include the privatized freeing for DefaultRectangular
   // because of resolution order issues
   proc _delete_dist(dist:BaseDist, param privatized:bool) {
-    //extern proc printf(fmt:c_string);
-    //printf("in _delete_dist privatized=" + privatized:string + "\n");
     dist.dsiDestroyDist();
 
     if privatized {
