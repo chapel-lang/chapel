@@ -4499,6 +4499,9 @@ static void resolveSetMember(CallExpr* call) {
 
 
 static void resolveMove(CallExpr* call) {
+  if (call->id == breakOnResolveID )
+    gdbShouldBreakHere();
+
   Expr* rhs = call->get(2);
   Symbol* lhs = NULL;
   if (SymExpr* se = toSymExpr(call->get(1)))
@@ -7537,6 +7540,9 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
             Expr* rhs = call->get(2);
             Type* rhsType = rhs->typeInfo();
             CallExpr* rhsCall = toCallExpr(rhs);
+
+            if (call->id == breakOnResolveID)
+              gdbShouldBreakHere();
 
             if (rhsCall && rhsCall->isPrimitive(PRIM_COERCE)) {
               rhsType = rhsCall->get(1)->typeInfo();

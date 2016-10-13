@@ -930,6 +930,9 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
 void VarSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
 
+  if (id == breakOnCodegenID)
+    gdbShouldBreakHere();
+
   // Local variable symbols should never be
   // generated for extern or void types
   if (this->hasFlag(FLAG_EXTERN))
