@@ -238,17 +238,6 @@ class Cyclic: BaseDist {
       for loc in locDist do writeln(loc);
   }
 
-  /*
-  proc Cyclic(param rank, type idxType, other: Cyclic(rank, idxType)) {
-    targetLocDom = other.targetLocDom;
-    targetLocs = other.targetLocs;
-    startIdx = other.startIdx;
-    locDist = other.locDist;
-    dataParTasksPerLocale = other.dataParTasksPerLocale;
-    dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
-    dataParMinGranularity = other.dataParMinGranularity;
-  }*/
-
   proc dsiAssign(other: this.type) {
     coforall locid in targetLocDom do
       on targetLocs(locid) do
@@ -273,7 +262,6 @@ class Cyclic: BaseDist {
     return false;
   }
 
-//  proc dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
   proc dsiClone() {
     return new Cyclic(startIdx, targetLocs,
                       dataParTasksPerLocale,
@@ -329,7 +317,6 @@ proc Cyclic.dsiSupportsPrivatization() param return true;
 proc Cyclic.dsiGetPrivatizeData() return 0;
 
 proc Cyclic.dsiPrivatize(privatizeData) {
-  //return new Cyclic(rank=rank, idxType=idxType, other=this);
   return new Cyclic(startIdx, targetLocs,
                     dataParTasksPerLocale,
                     dataParIgnoreRunningTasks,
