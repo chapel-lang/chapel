@@ -977,9 +977,6 @@ doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet)
                                     //  * they might return by ref
                                     //  * might need to return a ref even
                                     //    when not indicated return by ref.
-      //(fn->hasFlag(FLAG_ITERATOR_FN) && // iterators returning by ref
-      // (fn->retTag == RET_REF ||        // might yield index variable by
-      //  fn->retTag == RET_CONST_REF))   // ref in a tuple
      ) {
     return true;
   } else {
@@ -1199,7 +1196,7 @@ resolveFormals(FnSymbol* fn) {
       // This should not apply to 'ref' , 'out', or 'inout' formals,
       // but these are currently turned into reference types above.
       // It probably should not apply to 'const ref' either but
-      // that is more debateable.
+      // that is more debatable.
       if (formal->type->symbol->hasFlag(FLAG_TUPLE) &&
           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
           !(formal == fn->_this) &&
@@ -6674,11 +6671,8 @@ preFold(Expr* expr) {
                 INT_ASSERT(ret);
 
                if (ret->var->defPoint->getFunction() == move->getFunction() &&
-                    !returnsRefArgumentByRef(call, fn) &&
-                    !ret->var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-                    //!ret->var->type->symbol->hasFlag(FLAG_TUPLE))
-                    //!ret->var->type->symbol->hasFlag(FLAG_ARRAY))
-                  // Should this conditional include domains, distributions, sync and/or single?
+                   !returnsRefArgumentByRef(call, fn) &&
+                   !ret->var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
                   USR_FATAL(ret, "illegal expression to return by ref");
                 if (fn->retTag == RET_REF)
                   if (ret->var->isConstant() || ret->var->isParameter())
