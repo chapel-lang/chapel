@@ -238,11 +238,13 @@ module ChapelDistribution {
       return (count==0);
     }
   
-    inline proc add_arr(x:BaseArr) {
+    inline proc add_arr(x:BaseArr, param locking=true) {
       on this {
-        _lock_arrs();
+        if locking then
+          _lock_arrs();
         _arrs.append(x);
-        _unlock_arrs();
+        if locking then
+          _unlock_arrs();
       }
     }
   
@@ -792,10 +794,16 @@ module ChapelDistribution {
   // arr is a subclass of :BaseArr but is generic so
   // that arr.eltType is meaningful.
   proc _delete_arr(arr, param privatized:bool) {
-    // unlink domain referred to by arr.eltType
-    chpl_decRefCountsForDomainsInArrayEltTypes(arr, arr.eltType);
     // decide whether or not the array is an alias
     var isalias = (arr._arrAlias != nil);
+
+    if !isalias {
+      // unlink domain referred to by arr.eltType
+      // not necessary for aliases/slices because the original
+      // array will take care of it.
+      chpl_decRefCountsForDomainsInArrayEltTypes(arr, arr.eltType);
+    }
+
     // array implementation can destroy data or other members
     arr.dsiDestroyArr(isalias);
 

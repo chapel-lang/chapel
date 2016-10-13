@@ -1533,7 +1533,6 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 //
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
-  chpl_incRefCountsForDomainsInArrayEltTypes(a, a.eltType);
   a._arrAlias = _value;
   return _newArray(a);
 }
@@ -1562,7 +1561,7 @@ proc StencilArr.dsiNoFluffView() {
     }
   }
   if doRADOpt then alias.setupRADOpt();
-  newDom.add_arr(alias);
+  newDom.add_arr(alias, locking=false);
   return alias;
 }
 
