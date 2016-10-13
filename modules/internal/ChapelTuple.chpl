@@ -301,9 +301,6 @@ module ChapelTuple {
   pragma "tuple cast fn"
   inline proc _cast(type t, x: _tuple) where t:_tuple {
     // body filled in during resolution
-    var x:t;
-    halt("this tuple _cast should not be called");
-    return x;
   }
   
   //
