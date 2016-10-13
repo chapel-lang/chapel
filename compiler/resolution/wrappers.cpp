@@ -252,44 +252,37 @@ buildDefaultWrapper(FnSymbol* fn,
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapper_formal)));
       } else if (specializeDefaultConstructor && wrapper_formal->typeExpr &&
                  isRecordWrappedType(wrapper_formal->type)) {
-        // Formal has a type expression attached and is reference counted (?).
-        temp = newTemp("wrap_type_arg");
-        if (Symbol* field = fn->_this->type->getField(formal->name, false))
-          if (field->defPoint->parentSymbol == fn->_this->type->symbol)
-            temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-        wrapper->insertAtTail(new DefExpr(temp));
+        // Formal has a type expression attached and is array/dom/dist
 
-        // Give the formal its own copy of the type expression.
-        BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
-        for_alist(expr, typeExpr->body) {
-          wrapper->insertAtTail(expr->remove());
-        }
-
-        // The type of an array is computed at runtime, so we have to insert
-        // some type computation code if the argument is an array alias field.
         isArrayAliasField = false;
         const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
-        for_formals(formal, fn)
-          if (formal->name == aliasFieldArg && !defaults->set_in(formal))
+        for_formals(fml, fn)
+          if (fml->name == aliasFieldArg && !defaults->set_in(fml))
             isArrayAliasField = true;
+
+        // Array alias fields initialization is different because
+        // no copy of the array elements occurs.
         if (isArrayAliasField) {
-          // The array type is the return type of this wrapper.
-          Expr* arrayTypeExpr = wrapper->body->body.tail->remove();
-          Symbol* arrayTypeTmp = newTemp("wrap_array_alias");
-          arrayTypeTmp->addFlag(FLAG_MAYBE_TYPE);
-          arrayTypeTmp->addFlag(FLAG_EXPR_TEMP);
-          temp->addFlag(FLAG_EXPR_TEMP);
 
-          temp->addFlag(FLAG_NO_AUTO_DESTROY);
+          // MPF 2016-10-13 the newAlias call here might be unnecessary
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("newAlias", gMethodToken, wrapper_formal)));
 
-          // Add the type marker temporary, and use it to reindex this formal
-          // before it is passed to the called function.
-          wrapper->insertAtTail(new DefExpr(arrayTypeTmp));
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, arrayTypeTmp, arrayTypeExpr));
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("reindex", gMethodToken, wrapper_formal, new CallExpr("chpl__getDomainFromArrayType", arrayTypeTmp))));
         } else {
           // Not an array alias field.  Just initialize this formal with
           // its default type expression.
+
+          temp = newTemp("wrap_type_arg");
+          if (Symbol* field = fn->_this->type->getField(formal->name, false))
+            if (field->defPoint->parentSymbol == fn->_this->type->symbol)
+              temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          wrapper->insertAtTail(new DefExpr(temp));
+
+          // Give the formal its own copy of the type expression.
+          BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
+          for_alist(expr, typeExpr->body) {
+            wrapper->insertAtTail(expr->remove());
+          }
+
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, wrapper->body->body.tail->remove())));
           wrapper->insertAtTail(new CallExpr("=", temp, wrapper_formal));
         }
