@@ -116,6 +116,7 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
             }
 
             field->type = vt;
+            field->qual = QUAL_VAL;
           }
         }
       }
