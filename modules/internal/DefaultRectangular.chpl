@@ -1050,6 +1050,9 @@ module DefaultRectangular {
         }
         alias.computeFactoredOffs();
         alias.initShiftedData();
+
+        // it won't work with this.adjustBlkOffStrForNewDomain(d, alias)
+        alias.adjustBlkOffStrForNewDomain(d, alias);
       }
       return alias;
     }
