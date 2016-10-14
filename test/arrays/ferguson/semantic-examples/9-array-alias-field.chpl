@@ -15,7 +15,8 @@ class LocArr {
 
 var myDom   = new LocDom({1..10});
 var myArr   = new LocArr(myDom);
-var mySlice = new LocArr(locDom=myArr.locDom, locArr=>myArr.locArr);
+var locAlias: [myDom.dom] => myArr.locArr;
+var mySlice = new LocArr(locDom=myArr.locDom, locArr=>locAlias);
 
 myArr.locArr[1] = 1;
 writeln(mySlice.locArr[1]);
