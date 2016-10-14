@@ -497,26 +497,6 @@ module ChapelArray {
   proc chpl__convertValueToRuntimeType(arr: []) type
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
-  /*
-   calls to chpl__getDomainFromArrayType are added by the
-   compiler in a case like this:
-
-    class C {
-      var A: [0..4] int;
-    }
-
-    var GA: [1..5] int = [i in 1..5] i;
-
-    var c2 = new C(A=>GA);  // <- note A=>GA here
-
-    See also test_array_alias_field.chpl
-  */
-  proc chpl__getDomainFromArrayType(type arrayType) {
-    var A: arrayType;
-    pragma "no copy" var D = A.domain;
-    return D;
-  }
-
   //
   // These routines increment and decrement the reference count
   // for a domain that is part of an array's element type.
