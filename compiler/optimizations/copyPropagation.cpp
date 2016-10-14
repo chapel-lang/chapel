@@ -565,8 +565,8 @@ static Expr* derefUse(SymExpr* se)
   CallExpr* call = toCallExpr(se->parentExpr);
   if (call->isPrimitive(PRIM_DEREF))
     return call;
-  if (isDerefMove(call)) {
-    return call->get(2);
+  if (isDerefMove(call) && se == call->get(2)) {
+    return se;
   }
   return NULL;
 }
