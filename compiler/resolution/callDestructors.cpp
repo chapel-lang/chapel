@@ -21,6 +21,7 @@
 
 #include "addAutoDestroyCalls.h"
 #include "astutil.h"
+#include "stringutil.h"
 #include "expr.h"
 #include "resolution.h"
 #include "resolveIntents.h"
@@ -1218,15 +1219,39 @@ static void insertReferenceTemps() {
 // (GlobalArray[1..10] in these examples) is destroyed at the end
 // of the current function. Instead, it should be used to initialize
 // the slice.
+//
+// For similar reasons, code like
+//
+//     class C {
+//      var A: [1..2] int;
+//    }
+//    var GA: [1..5] int = [i in 1..5] i;
+//    var c2 = new C(A=>GA[1..2]);  // <- note A=>GA here
+//
+// also needs special treatment.
+//
 static
 void fixupNewAlias(void) {
 
   std::vector<CallExpr*> newAliasCalls;
+  std::vector<CallExpr*> hasAliasArgInCtor;
+  const char* lookForAliasField = "chpl__aliasField_";
+  size_t lookForAliasFieldLen = strlen(lookForAliasField);
 
   forv_Vec(CallExpr, call, gCallExprs) {
     FnSymbol* calledFn = call->isResolved();
     if (calledFn && calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
         newAliasCalls.push_back(call);
+    }
+    if (calledFn && calledFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+      // Does the calledFn have a formal that starts with
+      // chpl__aliasField_ ?
+
+      // TODO -- could this use a flag?
+      for_formals(formal, calledFn) {
+        if (0 == strncmp(formal->name, lookForAliasField, lookForAliasFieldLen))
+          hasAliasArgInCtor.push_back(call);
+      }
     }
   }
 
@@ -1238,6 +1263,29 @@ void fixupNewAlias(void) {
       se->var->removeFlag(FLAG_INSERT_AUTO_COPY);
       se->var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
       call->replace(se->remove());
+    }
+  }
+
+  for_vector(CallExpr, ctorCall, hasAliasArgInCtor) {
+    FnSymbol* fn = ctorCall->isResolved();
+
+    for_formals_actuals(formal, actual, ctorCall) {
+
+      // TODO -- could this use a flag?
+      bool isArrayAliasField = false;
+      const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
+      for_formals(fml, fn)
+	if (fml->name == aliasFieldArg)
+	  isArrayAliasField = true;
+
+      if (isArrayAliasField) {
+        SymExpr* se = toSymExpr(actual);
+        if (se->var->hasFlag(FLAG_TEMP) &&
+            se->isRef() == false) {
+          se->var->removeFlag(FLAG_INSERT_AUTO_COPY);
+          se->var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+        }
+      }
     }
   }
 }

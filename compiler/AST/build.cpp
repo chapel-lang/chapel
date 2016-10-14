@@ -211,6 +211,13 @@ Expr* buildNamedActual(const char* name, Expr* expr) {
 Expr* buildNamedAliasActual(const char* name, Expr* expr) {
   return new CallExpr(PRIM_ACTUALS_LIST,
            new NamedExpr(name, expr),
+           // if we wanted to support expr being another variable,
+           // we could call newAlias on it. For now, the only supported
+           // actuals for this are
+           //   * a local variable declared as an alias with =>
+           //   * a call expression creating an array slice
+           // and additionally, for now the field to be initialized
+           // in this way must have a declared array type.
            new NamedExpr(astr("chpl__aliasField_", name), new SymExpr(gTrue)));
 }
 

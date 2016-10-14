@@ -254,6 +254,12 @@ buildDefaultWrapper(FnSymbol* fn,
                  isRecordWrappedType(wrapper_formal->type)) {
         // Formal has a type expression attached and is array/dom/dist
 
+        temp = newTemp("wrap_type_arg");
+        if (Symbol* field = fn->_this->type->getField(formal->name, false))
+          if (field->defPoint->parentSymbol == fn->_this->type->symbol)
+            temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        wrapper->insertAtTail(new DefExpr(temp));
+
         isArrayAliasField = false;
         const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
         for_formals(fml, fn)
@@ -264,18 +270,14 @@ buildDefaultWrapper(FnSymbol* fn,
         // no copy of the array elements occurs.
         if (isArrayAliasField) {
 
-          // MPF 2016-10-13 the newAlias call here might be unnecessary
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("newAlias", gMethodToken, wrapper_formal)));
+          temp->addFlag(FLAG_EXPR_TEMP);
+          temp->addFlag(FLAG_NO_AUTO_DESTROY);
+
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper_formal));
 
         } else {
           // Not an array alias field.  Just initialize this formal with
           // its default type expression.
-
-          temp = newTemp("wrap_type_arg");
-          if (Symbol* field = fn->_this->type->getField(formal->name, false))
-            if (field->defPoint->parentSymbol == fn->_this->type->symbol)
-              temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-          wrapper->insertAtTail(new DefExpr(temp));
 
           // Give the formal its own copy of the type expression.
           BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
