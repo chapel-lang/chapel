@@ -1280,8 +1280,10 @@ void fixupNewAlias(void) {
 
       if (isArrayAliasField) {
         SymExpr* se = toSymExpr(actual);
-        if (se->var->hasFlag(FLAG_TEMP) &&
-            se->isRef() == false) {
+        bool isTemp = se->var->hasFlag(FLAG_TEMP);
+        bool isAlias = se->var->hasFlag(FLAG_ARRAY_ALIAS);
+        if ((isTemp || isAlias) &&
+             se->isRef() == false) {
           se->var->removeFlag(FLAG_INSERT_AUTO_COPY);
           se->var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
         }
