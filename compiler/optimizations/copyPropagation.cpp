@@ -184,7 +184,7 @@ static void extractReferences(Expr* expr,
     // 4. A field assignment that has an 'addr of' primitive on its rhs. (not
     //    implemented)
     // 5. An assign or move that has a PRIM_GET_MEMBER on the rhs. (not implemented)
-    // TODO: Is this actually accurate for PRIM_ASSIGN? ASSIGN should do
+    // BHARSH TODO: Is this actually accurate for PRIM_ASSIGN? ASSIGN should do
     // a content-copy for (= ref ref), not a pointer-copy
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
     {

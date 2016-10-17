@@ -71,7 +71,6 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
         }
       }
 
-      // TODO: we shouldn't actually need this anymore...
      if(!isReferenceType(formal->type) &&
         formal->type->getRefType() == actual->typeInfo()) {
         // Passing an actual that is ref(t) to a formal t with intent ref.

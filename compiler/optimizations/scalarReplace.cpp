@@ -413,8 +413,8 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
           sym->defPoint->insertBefore(new DefExpr(rhs));
 
           // get the reference to the field to use for the rhs
-          // TODO: Teach PRIM_GET_MEMBER that if it's accessing a ref field,
-          // it should behave like PRIM_GET_MEMBER_VALUE
+          // BHARSH TODO: Teach PRIM_GET_MEMBER that if it's accessing a ref
+          // field, it should behave like PRIM_GET_MEMBER_VALUE
           SymExpr *a3 = new SymExpr(rhs);
           PrimitiveTag op = PRIM_GET_MEMBER;
           if (a2->isRef() && a3->isRef()) {

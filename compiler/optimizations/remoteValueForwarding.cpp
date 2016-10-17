@@ -221,13 +221,13 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   } else if (isAtomicType(arg->type)) {
     retval = false;
   } else if (arg->intent == INTENT_CONST_REF && !isRecordWrappedType(arg->typeInfo())) {
-    // TODO: Failure for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr.chpl on --no-local
+    // BHARSH TODO: Failure for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr.chpl on --no-local
     // when RVF-ing a domain. For now, simply do not RVF record-wrapped things
     retval = true;
   } else if (arg->intent == INTENT_CONST_IN &&
       !arg->type->symbol->hasFlag(FLAG_REF)) {
-    // TODO: This can currently happen when the arg is the lhs of a +=, but
-    // it obviously needs to have the 'ref' intent. One example can be seen
+    // BHARSH TODO: This can currently happen when the arg is the lhs of a +=,
+    // but it obviously needs to have the 'ref' intent. One example can be seen
     // for += between strings.
     retval = true;
 

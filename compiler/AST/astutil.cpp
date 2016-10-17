@@ -382,6 +382,13 @@ bool isMoveOrAssign(CallExpr* call) {
   return call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN);
 }
 
+//
+// Returns true if:
+// - the call is a PRIM_MOVE or PRIM_ASSIGN
+// - The LHS and RHS are both SymExprs
+// - The LHS is not a reference
+// - the RHS is a reference
+//
 bool isDerefMove(CallExpr* call) {
   return isMoveOrAssign(call) && !call->get(1)->isRefOrWideRef() && call->get(2)->isRefOrWideRef();
 }

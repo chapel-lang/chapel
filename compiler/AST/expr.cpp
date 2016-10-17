@@ -141,7 +141,7 @@ const char* DefExpr::name() const {
   return retval;
 }
 
-// TODO: Fix up PRIM_ADDR_OF's return type function to correctly
+// BHARSH TODO: Fix up PRIM_ADDR_OF's return type function to correctly
 // handle this
 static
 bool isAddrOfWideRefVar(Expr* e)
@@ -5089,7 +5089,7 @@ GenRet CallExpr::codegenPrimitive() {
     // set tuple base=get(1) at index=get(2) to value=get(3)
     GenRet ptr = codegenElementPtr(get(1), codegenExprMinusOne(get(2)));
     GenRet val = get(3);
-    // TODO: 'getSvecSymbol' may also be useful here...
+    // BHARSH TODO: 'getSvecSymbol' may also be useful here...
     if (get(3)->isRefOrWideRef() && !ptr.chplType->symbol->isRefOrWideRef()) {
       val = codegenDeref(val);
     }
@@ -6012,12 +6012,12 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_DEREF: {
-      // TODO: What if get(1) for this first branch is not a ref?
+      // BHARSH TODO: What if get(1) for this first branch is not a ref?
       if (call->get(1)->isWideRef() ||
           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         Type* valueType;
 
-        // TODO: It seems odd to use a PRIM_DEREF on a wide class, why do we?
+        // BHARSH TODO: It seems odd to use a PRIM_DEREF on a wide class, why do we?
         if (call->get(1)->isWideRef())
           valueType = call->get(1)->getValType();
         else
@@ -6215,7 +6215,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
           call->isWideRef()) {
         GenRet tmp = call->get(2);
-        // TODO:  Should we check if we're casting to a ref?
+        // BHARSH TODO:  Should we check if we're casting to a ref?
         if (call->get(2)->isRef()) {
           tmp = codegenDeref(tmp);
         }
