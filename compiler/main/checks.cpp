@@ -469,8 +469,8 @@ static void check_afterResolveIntents()
       // Only look at Var or Arg symbols
       if (isLcnSymbol(sym)) {
         QualifiedType qual = sym->qualType();
-        if (qual.getQual() == QUAL_BLANK) {
-          INT_FATAL("Symbol should not have blank qualifier: %s (%d)", sym->cname, sym->id);
+        if (qual.getQual() == QUAL_UNKNOWN) {
+          INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
         }
       }
     }

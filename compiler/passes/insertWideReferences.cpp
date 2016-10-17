@@ -359,7 +359,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
 
 
   Type* retType = NULL;
-  Qualifier retQ = QUAL_BLANK;
+  Qualifier retQ = QUAL_UNKNOWN;
 
   if (Type* t = toType(bs)) {
     if (t->symbol->qualType().isRefOrWideRef()) {
