@@ -215,16 +215,16 @@ public:
       case QUAL_REF:
         return "ref";
       case QUAL_CONST_REF:
-        return "const ref";
+        return "const-ref";
       case QUAL_VAL:
-        return "var";
+        return "val";
       case QUAL_NARROW_REF:
         return "narrow-ref";
       case QUAL_WIDE_REF:
         return "wide-ref";
 
       case QUAL_CONST_VAL:
-        return "const-var";
+        return "const-val";
       case QUAL_CONST_NARROW_REF:
         return "const-narrow-ref";
       case QUAL_CONST_WIDE_REF:
