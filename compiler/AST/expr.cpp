@@ -4309,7 +4309,7 @@ GenRet CallExpr::codegen() {
       //should this be else if?
       if (fn->hasFlag(FLAG_EXTERN)) {
         if (actual->isWideRef() == true ||
-            arg.isLVPtr                                == GEN_WIDE_PTR) {
+            arg.isLVPtr         == GEN_WIDE_PTR) {
           arg = codegenRaddr(codegenValue(arg));
 
         } else if (isRefExternStarTuple(formal, actual) == true) {
