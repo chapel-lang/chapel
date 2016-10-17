@@ -216,6 +216,14 @@ void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
 }
 
+bool QualifiedType::isRefType() const {
+  return _type->symbol->hasFlag(FLAG_REF);
+}
+
+bool QualifiedType::isWideRefType() const {
+  return _type->symbol->hasFlag(FLAG_WIDE_REF);
+}
+
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
   constants(), integerType(NULL),

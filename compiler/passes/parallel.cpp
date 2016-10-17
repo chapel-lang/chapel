@@ -104,6 +104,7 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
                                 Vec<Symbol*>& varSet, Vec<Symbol*>& varVec);
+static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn);
 
 // Package args into a class and call a wrapper function with that
 // object. The wrapper function will then call the function
@@ -144,12 +145,34 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
   for_actuals(arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // arg or var
-    if (var->type->symbol->hasFlag(FLAG_REF) || isClass(var->type))
+
+    //
+    // If we need to do an autoCopy for a BEGIN, and the result is placed on
+    // the stack, then we need to copy that result into the arg bundle even
+    // if the argument is passed by reference. Otherwise, that copy becomes
+    // trash when the caller's scope ends.
+    //
+    // This was exposed by an unwrapped, privatized _array record. At this point
+    // in the compiler we considered it to be a reference counted type, and
+    // decided we needed an autoCopy. In the generated code, this would place
+    // an integer on the caller's stack. We would then observe that we should
+    // pass records by const ref, and take the reference of that local integer.
+    //
+    bool autoCopy = needsAutoCopyAutoDestroyForArg(arg, fn);
+
+    if (var->isRef() || isClass(var->type)) {
       // Only a variable that is passed by reference out of its current scope
       // is concurrently accessed -- which means that it has to be passed by
       // reference.
       var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
-    VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->type);
+    }
+    VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->getValType());
+
+    // If it's a record-wrapped type we can just bit-copy into the arg bundle.
+    // BHARSH TODO: This really belongs in RVF
+    // BHARSH TODO: Use 'formal->isRef()' instead of the var's ref-ness
+    if (!isRecordWrappedType(var->getValType()) && !autoCopy && var->isRef()) field->qual = QUAL_REF;
+
     ctype->fields.insertAtTail(new DefExpr(field));
     i++;
   }
@@ -184,6 +207,38 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
   SymExpr* s        = toSymExpr(arg);
   Symbol*  var      = s->var;
   Type*    baseType = arg->getValType();
+  ArgSymbol*  formal   = toArgSymbol(actual_to_formal(s));
+  QualifiedType qual = formal->qualType();
+  INT_ASSERT(formal);
+
+  bool passedByRef = formal->intent == INTENT_REF || qual.getQual() == QUAL_REF;
+  if (!passedByRef && isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
+    return true;
+  }
+
+  // BHARSH TODO: Move this into RVF. If we do, then we need to handle the
+  // following case:
+  // ```
+  // var a : sync int;
+  // begin {
+  //   on {
+  //     begin {
+  //     a += 1;
+  //     }
+  //   }
+  // }
+  //
+  // If the sync is rvf'd onto the on-statement's stack, we should not take
+  // a reference to it as it is about to go out of scope with the outer begin.
+  //
+  // This has the effect of always bit-copying the sync record into the arg
+  // bundle. This reduces comm counts and avoids issues with begin-statements
+  // where we might take the reference of a sync on the stack, and that stack
+  // is about to go away.
+  //
+  if (isSyncType(baseType) || isSingleType(baseType)) {
+    return true;
+  }
 
   // This applies only to arguments being passed to asynchronous task
   // functions. No need to increment+decrement the reference counters
@@ -192,8 +247,7 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
   // MPF - should this logic also apply to arguments to coforall fns
   // that had the 'in' task intent?
   if (fn->hasFlag(FLAG_BEGIN) ||
-      isString(baseType) ||
-      var->hasFlag(FLAG_COFORALL_INDEX_VAR))
+      isString(baseType))
   {
     if (isRefCountedType(baseType))
     {
@@ -203,8 +257,7 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
     else if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
              isString(baseType))
     {
-      // Do this only if the record is passed by value.
-      if (arg->typeInfo() == baseType)
+      if (!formal->isRef())
       {
         return true;
       }
@@ -287,10 +340,12 @@ static void insertAutoDestroyForVar(Symbol *arg, FnSymbol* wrap_fn)
 
   if (autoDestroyFn == NULL) return;
 
+  // BHARSH TODO: This seems to be (poorly) checking if arg is a ref
   if (arg->typeInfo() != baseType)
   {
-    // This code is special case for ref counted types
-    INT_ASSERT(isRefCountedType(baseType));
+    // BHARSH: This code used to be special cased for ref counted types.
+    // Some changes in support of qualified refs made it possible for syncs
+    // to show up here.
     VarSymbol* derefTmp = newTemp(baseType);
     wrap_fn->insertAtTail(new DefExpr(derefTmp));
     wrap_fn->insertAtTail(
@@ -334,10 +389,19 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
       var = toSymExpr(arg)->var;
     baData.needsDestroy.push_back(autoCopy);
 
+    Symbol* field = ctype->getField(i);
+
+    if (field->isRef()) {
+      VarSymbol* tmp = newTemp(field->qualType());
+      fcall->insertBefore(new DefExpr(tmp));
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REFERENCE, var)));
+      var = tmp; // use 'tmp' in PRIM_SET_MEMBER
+    }
+
     // Copy the argument into the corresponding slot in the argument bundle.
     CallExpr *setc = new CallExpr(PRIM_SET_MEMBER,
                                   tempc,
-                                  ctype->getField(i),
+                                  field,
                                   var);
     fcall->insertBefore(setc);
     i++;
@@ -403,7 +467,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
     // If the end count is a reference, dereference it.
     // EndCount is a class.
-    if (endCount->type->symbol->hasFlag(FLAG_REF)) {
+    if (endCount->isRef()) {
       VarSymbol *endCountDeref = newTemp(astr("_end_count_deref", fn->name),
                                          endCount->getValType());
       fcall->insertBefore(new DefExpr(endCountDeref));
@@ -524,7 +588,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
     Symbol *field = ctype->getField(i);
     INT_ASSERT(field->getValType()->symbol->hasFlag(FLAG_END_COUNT));
 
-    VarSymbol* tmp = newTemp("endcount", field->type);
+    VarSymbol* tmp = newTemp("endcount", field->qualType());
     wrap_fn->insertAtTail(new DefExpr(tmp));
     wrap_fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
@@ -629,7 +693,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   for_fields(field, ctype)
   {
     // insert args
-    VarSymbol* tmp = newTemp(field->name, field->type);
+    VarSymbol* tmp = newTemp(field->name, field->qualType());
     wrap_fn->insertAtTail(new DefExpr(tmp));
     wrap_fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
@@ -655,7 +719,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   for_fields(field, ctype)
   {
     // insert auto destroy calls
-    VarSymbol* tmp = newTemp(field->name, field->type);
+    VarSymbol* tmp = newTemp(field->name, field->qualType());
     wrap_fn->insertAtTail(new DefExpr(tmp));
     wrap_fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
@@ -731,7 +795,7 @@ insertEndCount(FnSymbol* fn,
     endCountMap.put(fn, var);
     queue.add(fn);
   } else {
-    ArgSymbol* arg = new ArgSymbol(INTENT_CONST_REF, "_endCount", endCountType);
+    ArgSymbol* arg = new ArgSymbol(INTENT_CONST_IN, "_endCount", endCountType);
     fn->insertFormalAtTail(arg);
     VarSymbol* var = newTemp("_endCount", endCountType);
     fn->insertAtHead(new CallExpr(PRIM_MOVE, var, arg));
@@ -882,16 +946,24 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
           forv_Vec(SymExpr, se, *useMap.get(v)) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
+                  call->isPrimitive(PRIM_SET_REFERENCE) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
                   call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                   // TODO - should this handle PRIM_GET_SVEC_MEMBER_VALUE?
                   call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-                  call->isPrimitive(PRIM_WIDE_GET_NODE))
+                  call->isPrimitive(PRIM_WIDE_GET_NODE)) {
                 // Treat the use of these primitives as a use of their arguments.
                 call = toCallExpr(call->parentExpr);
-              if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-                varsToTrack.add(toSymExpr(call->get(1))->var);
+              }
+              if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+                Symbol* toAdd = toSymExpr(call->get(1))->var;
+                // BHARSH TODO: we really want something like a set that we can
+                // modify while iterating over it.
+                if (!varsToTrack.in(toAdd)) {
+                  varsToTrack.add(toAdd);
+                }
+              }
               else if (fnsContainingTaskll.in(call->isResolved())) {
                 freeVar = false;
                 break;
@@ -1016,7 +1088,7 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_LOCAL_ON) && needHeapVars()) {
       for_formals(formal, fn) {
-        if (formal->type->symbol->hasFlag(FLAG_REF)) {
+        if (formal->isRef()) {
           refSet.set_add(formal);
           refVec.add(formal);
         }
@@ -1046,6 +1118,7 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
 
+    // BHARSH TODO: Add a check only continue if def is not a reference
     if (!fLocal                                 &&
         isModuleSymbol(def->parentSymbol)       &&
         def->parentSymbol != rootModule         &&
@@ -1116,11 +1189,18 @@ makeHeapAllocations() {
         // Previous passes mean that we should always get a formal SymExpr
         // to match the ArgSymbol.  And that formal should have the
         // ref flag, since we obtained it through the refVec.
-        INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
-        if (!refSet.set_in(se->var)) {
+        //
+        // BHARSH TODO: This INT_ASSERT existed before the switch to qualified
+        // types. After the switch it's now possible to pass a non-ref actual
+        // to a ref formal, and codegen will just take care of it.  With that
+        // in mind, do we need to do something here if the actual is not a ref,
+        // or can we just skip that case?
+        //INT_ASSERT(se->var->isRef());
+        if (se->var->isRef() && !refSet.set_in(se->var)) {
           refSet.set_add(se->var);
           refVec.add(se->var);
         }
+        // BHARSH TODO: Need to add to varVec here?
       }
     } else if (VarSymbol* var = toVarSymbol(ref)) {
       //      INT_ASSERT(defMap.get(var)->n == 1);
@@ -1129,20 +1209,22 @@ makeHeapAllocations() {
         if (CallExpr* call = toCallExpr(def->parentExpr)) {
           if (call->isPrimitive(PRIM_MOVE)) {
             if (CallExpr* rhs = toCallExpr(call->get(2))) {
-              if (rhs->isPrimitive(PRIM_ADDR_OF)) {
+              if (rhs->isPrimitive(PRIM_ADDR_OF) ||
+                  rhs->isPrimitive(PRIM_SET_REFERENCE)) {
                 SymExpr* se = toSymExpr(rhs->get(1));
                 INT_ASSERT(se);
-                if (!varSet.set_in(se->var)) {
+                if (!se->isRef() && !varSet.set_in(se->var)) {
                   varSet.set_add(se->var);
                   varVec.add(se->var);
                 }
+                // BHARSH TODO: Need to add to refVec here?
               } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
                          rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                          rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                          rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
                 SymExpr* se = toSymExpr(rhs->get(1));
                 INT_ASSERT(se);
-                if (se->var->type->symbol->hasFlag(FLAG_REF)) {
+                if (se->var->isRef()) {
                   if (!refSet.set_in(se->var)) {
                     refSet.set_add(se->var);
                     refVec.add(se->var);
@@ -1169,7 +1251,7 @@ makeHeapAllocations() {
               // To debug this case, add an else INT_FATAL here.
               //
             } else if (SymExpr* rhs = toSymExpr(call->get(2))) {
-              INT_ASSERT(rhs->var->type->symbol->hasFlag(FLAG_REF));
+              INT_ASSERT(rhs->var->isRef());
               if (!refSet.set_in(rhs->var)) {
                 refSet.set_add(rhs->var);
                 refVec.add(rhs->var);
@@ -1201,7 +1283,7 @@ makeHeapAllocations() {
   Vec<Symbol*> heapAllocatedVars;
 
   forv_Vec(Symbol, var, varVec) {
-    INT_ASSERT(var->hasFlag(FLAG_REF_VAR) || !var->type->symbol->hasFlag(FLAG_REF));
+    INT_ASSERT(var->hasFlag(FLAG_REF_VAR) || !var->isRef());
 
     if (var->hasFlag(FLAG_EXTERN)) {
       // don't widen external variables
@@ -1276,9 +1358,23 @@ makeHeapAllocations() {
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
           def->replace(new SymExpr(tmp));
-        } else if (call->isResolved() &&
-                   call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-          call->remove();
+        } else if (call->isResolved()) {
+          if (call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+            call->remove();
+          } else {
+            ArgSymbol* formal = actual_to_formal(def);
+            if (formal->isRef()) {
+              VarSymbol* tmp = newTemp(var->type);
+              tmp->qual = QUAL_REF;
+              PrimitiveTag op = PRIM_GET_MEMBER;
+              if (heapType->getField(1)->isRef()) {
+                op = PRIM_GET_MEMBER_VALUE;
+              }
+              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(op, def->var, heapType->getField(1))));
+              def->replace(new SymExpr(tmp));
+            }
+          }
         } else {
           VarSymbol* tmp = newTemp(var->type);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1293,7 +1389,7 @@ makeHeapAllocations() {
       if (CallExpr* call = toCallExpr(use->parentExpr)) {
         if (call->isPrimitive(PRIM_ADDR_OF)) {
           CallExpr* move = toCallExpr(call->parentExpr);
-          INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+          INT_ASSERT(move && (move->isPrimitive(PRIM_MOVE)));
           if (move->get(1)->typeInfo() == heapType) {
             call->replace(use->copy());
           } else {
@@ -1331,6 +1427,7 @@ makeHeapAllocations() {
     }
 
     var->type = heapType;
+    var->qual = QUAL_VAL;
   }
 
   freeHeapAllocatedVars(heapAllocatedVars);
@@ -1553,6 +1650,7 @@ static void passArgsToNestedFns() {
 
 Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
+  if (type->symbol->hasFlag(FLAG_REF)) return type;
   refType = type->refType;
   if( ! refType ) {
     SET_LINENO(type->symbol);

@@ -1598,6 +1598,48 @@ void codegen(void) {
 
   INT_ASSERT(info);
 
+  forv_Vec(VarSymbol, sym, gVarSymbols) {
+    QualifiedType q = sym->qualType();
+    Type* type      = q.type();
+
+    if (q.isRef() && !q.isRefType()) {
+      type = getOrMakeRefTypeDuringCodegen(type);
+    } else if (q.isWideRef() && !q.isWideRefType()) {
+      type = getOrMakeRefTypeDuringCodegen(type);
+      type = getOrMakeWideTypeDuringCodegen(type);
+    }
+
+    sym->type = type;
+    if (type->symbol->hasFlag(FLAG_REF)) {
+      sym->qual = QUAL_REF;
+    } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) {
+      sym->qual = QUAL_WIDE_REF;
+    }
+  }
+  forv_Vec(ArgSymbol, sym, gArgSymbols) {
+    QualifiedType q = sym->qualType();
+    Type* type      = q.type();
+
+    if (q.isRef() && !q.isRefType()) {
+      type = getOrMakeRefTypeDuringCodegen(type);
+    } else if (q.isWideRef() && !q.isWideRefType()) {
+      type = getOrMakeRefTypeDuringCodegen(type);
+      type = getOrMakeWideTypeDuringCodegen(type);
+    }
+
+    sym->type = type;
+    if (type->symbol->hasFlag(FLAG_REF)) {
+      sym->qual = QUAL_REF;
+    } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) {
+      sym->qual = QUAL_WIDE_REF;
+    }
+  }
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->getReturnSymbol()) {
+      fn->retType = fn->getReturnSymbol()->type;
+    }
+  }
+
   if( llvmCodegen ) {
 #ifdef HAVE_LLVM
     if( fHeterogeneous )

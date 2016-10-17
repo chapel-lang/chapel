@@ -54,6 +54,11 @@ public:
 
   virtual void    prettyPrint(std::ostream* o);
 
+
+  bool            isRef();
+  bool            isWideRef();
+  bool            isRefOrWideRef();
+
   /* Returns true if the given expression is contained by this one. */
   bool            contains(const Expr* expr)                         const;
 

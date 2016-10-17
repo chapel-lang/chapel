@@ -766,6 +766,8 @@ destructureIndices(BlockStmt* block,
       var->addFlag(FLAG_COFORALL_INDEX_VAR);
     var->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else if (SymExpr* sym = toSymExpr(indices)) {
+    // BHARSH TODO: I think this should be a PRIM_ASSIGN. I've seen a case
+    // where 'sym' becomes a reference.
     block->insertAtHead(new CallExpr(PRIM_MOVE, sym->var, init));
     sym->var->addFlag(FLAG_INDEX_VAR);
     if (coforall)

@@ -448,17 +448,25 @@ static bool typeHasRefField(Type *type) {
 //
 static FnSymbol*
 resolveUninsertedCall(Type* type, CallExpr* call) {
+
+  // In case resolveCall drops other stuff into the tree ahead of the
+  // call, we wrap everything in a block for safe removal.
+  BlockStmt* block = new BlockStmt();
+
   if (type->defaultInitializer) {
     if (type->defaultInitializer->instantiationPoint)
-      type->defaultInitializer->instantiationPoint->insertAtHead(call);
+      type->defaultInitializer->instantiationPoint->insertAtHead(block);
     else
-      type->symbol->defPoint->insertBefore(call);
+      type->symbol->defPoint->insertBefore(block);
   } else {
-    chpl_gen_main->insertAtHead(call);
+    chpl_gen_main->insertAtHead(block);
   }
 
+  INT_ASSERT(block->parentSymbol);
+
+  block->insertAtHead(call);
   resolveCall(call);
-  call->remove();
+  block->remove();
 
   return call->isResolved();
 }

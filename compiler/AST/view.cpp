@@ -57,8 +57,8 @@ list_sym(Symbol* sym, bool type = true) {
   }
   if (toFnSymbol(sym)) {
     printf("fn ");
-  } else if (toArgSymbol(sym)) {
-    printf("arg ");
+  } else if (ArgSymbol* arg = toArgSymbol(sym)) {
+    printf("arg intent-%s ", arg->intentDescrString());
   } else if (toTypeSymbol(sym)) {
     printf("type ");
   }
@@ -161,7 +161,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
     } else if (NamedExpr* e = toNamedExpr(expr)) {
       printf("%s = ", e->name);
     } else if (toDefExpr(expr)) {
-      printf("def ");
+      printf("def %s ", toDefExpr(expr)->sym->qualType().qualStr());
     } else if (SymExpr* e = toSymExpr(expr)) {
       list_sym(e->var, false);
     } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {
@@ -308,6 +308,12 @@ static void view_sym(Symbol* sym, bool number, int mark) {
   putchar('\'');
   if (sym->id == mark)
     printf("***");
+
+  if (isVarSymbol(sym) || isArgSymbol(sym)) {
+    QualifiedType qual = sym->qualType();
+    printf("%s ", qual.qualStr());
+  }
+
   if (toFnSymbol(sym)) {
     printf("fn ");
   } else if (toArgSymbol(sym)) {
@@ -393,7 +399,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
   if (DefExpr* def = toDefExpr(ast)) {
     printf(" ");
     if (ArgSymbol* arg = toArgSymbol(def->sym))
-      printf("intent %s ", arg->intentDescrString());
+      printf("intent-%s ", arg->intentDescrString());
     writeFlags(stdout, def->sym);
   }
 

@@ -1083,7 +1083,11 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 // By splitting the non-local case into its own function, we can inline the
 // fast/local path and get better performance.
 //
-inline proc BlockArr.dsiAccess(i: rank*idxType) ref {
+// BHARSH TODO: Should this argument have the 'const in' intent? If it is
+// remote, the commented-out local block will fail.
+//
+inline proc BlockArr.dsiAccess(idx: rank*idxType) ref {
+  var i = idx;
   local {
     if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);

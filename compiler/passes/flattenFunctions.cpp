@@ -149,7 +149,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       Type* type = sym->type;
-      if (passByRef(sym))
+      IntentTag intent = INTENT_BLANK;
+
         /* NOTE: This is still conservative.  This avoids passing
            coforall index vars by reference for non-var iterators.
            David came up with an example with nested functions and no
@@ -157,7 +158,32 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            by reference.  With further analysis, we could figure out
            whether this variable is actually going to be returned as
            an LHS expr. */
+      //
+      // BHARSH: TODO: The arg intent set here can have a large impact on
+      // RVF later on. For RVF to be more effective, this might be a good
+      // place to do some analysis and mark arguments as 'const in' and 
+      // 'const ref', even if the actual is not marked with FLAG_CONST.
+      //
+      // Prior to the QualifiedType changes this section would make the type
+      // something like _ref_int, but the intent would be INTENT_CONST_IN and
+      // RVF would fire in some situations.
+      //
+      if (passByRef(sym)) {
+        IntentTag temp = INTENT_REF;
+        if (sym->hasFlag(FLAG_CONST)) {
+          temp = INTENT_CONST_REF;
+        }
+        intent = concreteIntent(temp, type);
         type = type->refType;
+      } else {
+        IntentTag temp = INTENT_BLANK;
+        if (sym->hasFlag(FLAG_CONST) && sym->isRef()) {
+          // Allows for RVF later
+          temp = INTENT_CONST_REF;
+        }
+        intent = concreteIntent(temp, type);
+      }
+
       SET_LINENO(sym);
       //
       // BLC: TODO: This routine is part of the reason that we aren't
@@ -175,7 +201,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       // inconsistencies like this and keep things more
       // uniform/simple; but we haven't made this switch yet.
       //
-      ArgSymbol* arg = new ArgSymbol(blankIntentForType(type), sym->name, type);
+      ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
         arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtTail(new DefExpr(arg));
@@ -201,6 +227,21 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               CallExpr* call = toCallExpr(se->parentExpr);
               INT_ASSERT(call);
               FnSymbol* fnc = call->isResolved();
+              bool canPassToFn = false;
+              if (fnc) {
+                ArgSymbol* form = actual_to_formal(se);
+                if (arg->isRef() && form->isRef() &&
+                    arg->getValType() == form->getValType() &&
+                    !isRecordWrappedType(form->getValType())) {
+                  // removeWrapRecords can modify the formal to have the
+                  // 'const in' intent. For now it's easier to insert the
+                  // DEREF here.
+                  canPassToFn = true;
+                } else if (arg->type == form->type) {
+                  canPassToFn = true;
+                }
+              }
+
               if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_ASSIGN) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
@@ -208,7 +249,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
                   (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_NODE)) ||
-                  (fnc && arg->type == actual_to_formal(se)->type)) {
+                  canPassToFn) {
                 se->var = arg; // do not dereference argument in these cases
               } else if (call->isPrimitive(PRIM_ADDR_OF)) {
                 SET_LINENO(se);
