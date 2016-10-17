@@ -141,8 +141,23 @@ const char* DefExpr::name() const {
   return retval;
 }
 
+//
 // BHARSH TODO: Fix up PRIM_ADDR_OF's return type function to correctly
 // handle this
+//
+// The 'returnInfoRef' function for PRIM_ADDR_OF is currently set up to
+// always return with the Qualifier QUAL_REF. This function is intended
+// as a workaround to handle the case where we have a wide-ref in a
+// PRIM_ADDR_OF:
+//
+// (move "wide-ref dest" (addr-of "wide-ref src"))
+//
+// Otherwise, 'returnInfoRef' would hide the fact that the actual is a wide-ref
+// and it would appear as though we had a local reference.
+//
+// Note that this case is actually just a copy of a pointer's address, and
+// will not generate an addrof in the generated code.
+//
 static
 bool isAddrOfWideRefVar(Expr* e)
 {
