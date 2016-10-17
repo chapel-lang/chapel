@@ -172,7 +172,7 @@ bool isAddrOfWideRefVar(Expr* e)
 }
 
 bool Expr::isRef() {
-  if(SymExpr* se = toSymExpr(this))
+  if (SymExpr* se = toSymExpr(this))
     return se->var->isRef();
 
   if (isAddrOfWideRefVar(this))
