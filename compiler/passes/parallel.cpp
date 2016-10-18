@@ -1650,7 +1650,14 @@ static void passArgsToNestedFns() {
 
 Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
-  if (type->symbol->hasFlag(FLAG_REF)) return type;
+  // BHARSH TODO: This check causes a failure for the following test:
+  //   execflags/tmacd/config_ref
+  //
+  // For some reason this test wants a reference to a reference. To make
+  // progress I'm commenting out the check for now, but I think we'll
+  // eventually want it when we complete the qualified refs work.
+  //
+  // if (type->symbol->hasFlag(FLAG_REF)) return type;
   refType = type->refType;
   if( ! refType ) {
     SET_LINENO(type->symbol);
