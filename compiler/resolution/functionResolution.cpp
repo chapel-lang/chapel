@@ -7271,8 +7271,8 @@ requiresImplicitDestroy(CallExpr* call) {
         // Currently, this assumes we have thoughtfully written
         // chpl__autoCopy functions.
 
-        // Return type is a record (which includes array, record, and
-        // dist) or a ref counted type that is passed by reference
+        // Return type is a record (which includes array, domain, dist,
+        // user record)
         isRecord(fn->retType) &&
 
         // These are special functions where we don't want to destroy
