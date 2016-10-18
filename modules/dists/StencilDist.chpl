@@ -1561,6 +1561,7 @@ proc StencilArr.dsiNoFluffView() {
     }
   }
   if doRADOpt then alias.setupRADOpt();
+  // this doesn't need to lock since we just created the domain newDom
   newDom.add_arr(alias, locking=false);
   return alias;
 }
