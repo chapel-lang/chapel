@@ -1,5 +1,5 @@
 use samples;
-// var one = new R(1);
+// one defined in samples as new R(1)
 
 var A:[1..2] R;
 var B = A;

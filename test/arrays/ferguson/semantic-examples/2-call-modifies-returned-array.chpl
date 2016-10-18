@@ -1,5 +1,5 @@
 use samples;
-// var ArrTwo = [new R(2)]
+// ArrTwo defined in samples as [new R(2)]
 
 var globalArray:[1..1] R;
 
