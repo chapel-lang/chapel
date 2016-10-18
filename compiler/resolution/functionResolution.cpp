@@ -6666,6 +6666,8 @@ preFold(Expr* expr) {
         if (v || a) { // works if a is removed from this conditional
           if (isRef) {
             // can't take address of something already a ref
+          } else if (sym2->type == dtNil) {
+            // can't take address of nil
           } else if (sym2->hasFlag(FLAG_EXPR_TEMP) ||
                      isImmediate ||
                      paramMap.get(sym2)) {
