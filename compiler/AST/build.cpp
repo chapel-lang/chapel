@@ -692,30 +692,26 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
 
   FnSymbol* ifFn = new FnSymbol(astr("_if_fn", istr(uid++)));
   ifFn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  ifFn->addFlag(FLAG_IF_EXPR_FN);
   ifFn->addFlag(FLAG_INLINE);
   VarSymbol* tmp1 = newTemp();
-  VarSymbol* tmp2 = newTemp();
   tmp1->addFlag(FLAG_MAYBE_PARAM);
-  tmp2->addFlag(FLAG_MAYBE_TYPE);
 
   ifFn->addFlag(FLAG_MAYBE_PARAM);
   ifFn->addFlag(FLAG_MAYBE_TYPE);
+  ifFn->addFlag(FLAG_MAYBE_REF);
   ifFn->insertAtHead(new DefExpr(tmp1));
-  ifFn->insertAtHead(new DefExpr(tmp2));
   ifFn->insertAtTail(new CallExpr(PRIM_MOVE, new SymExpr(tmp1), new CallExpr("_cond_test", e)));
   ifFn->insertAtTail(new CondStmt(
     new SymExpr(tmp1),
-    new CallExpr(PRIM_MOVE,
-                 new SymExpr(tmp2),
+    new CallExpr(PRIM_RETURN,
                  new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIM_DEREF, e1))),
-    new CallExpr(PRIM_MOVE,
-                 new SymExpr(tmp2),
+                              e1)),
+    new CallExpr(PRIM_RETURN,
                  new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIM_DEREF, e2)))));
-  ifFn->insertAtTail(new CallExpr(PRIM_RETURN, tmp2));
+                              e2))));
   return ifFn;
 }
 
