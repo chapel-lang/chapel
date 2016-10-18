@@ -1,2 +1,0 @@
-(r = (x = 0))
-record-const-ref-default-inline.chpl:30: error: assert failed
