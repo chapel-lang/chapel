@@ -1,5 +1,5 @@
 use samples;
-// var one = new R(1);
+// one defined in samples as new R(1)
 
 var globalArray: [1..2] R;
 proc returnGlobalArray() {
