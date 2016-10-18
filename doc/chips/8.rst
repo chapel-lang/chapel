@@ -159,7 +159,9 @@ throw. This is being done for developer ergonomics and legibility.
 
 The design will also reflect the goals of the second solution, elide ``try``
 with a compiler flag, in the sense that there will be multiple levels of
-strictness in error handling.
+strictness when annotating error handling cases.
+
+Finaly, the fourth solution will be addressed in the Future Work section.
 
 
 Chapel Error Handling
@@ -487,7 +489,7 @@ be provided at task join.
   }
 
 The implementation requires that the ``cobegin`` statements be
-synchronized first.
+synchronized before the errors are handled.
 
 .. code_block:: chapel
 
@@ -570,13 +572,48 @@ Raising an error will halt the execution of the iterator. Errors in follower
 iterations in ``coforall`` and ``forall`` loops may still allow some iteration
 to occur. All errors will be reported at task join, as in Example 3.
 
-Example 5: Runtime operations
-+++++++++++++++++++++++++++++
 
-Many kinds of runtime operations in Chapel have the potential to fail (say if
-you are out of memory). This class of errors should be enclosed with ``try!``
-so that if one is encountered at runtime, your program will ``halt()`` before
-causing other catastrophic errors.
+Future Work
+-----------
+
+Error cleanup
++++++++++++++
+
+Chapel will adopt something similar to Swift's ``defer``. Code enclosed in a
+``defer`` block is run whenever the enclosing scope exits, whether it be by
+error or normal execution. 
+
+.. code-block:: chapel
+    
+    proc caller() throws {
+      try {
+        var a = allocateBigObject();
+        defer {
+          delete a;
+        }
+        canThrowErrors(a);
+      }
+    }
+
+If multiple ``defer`` blocks are contained within a single scope,they are
+executed in reverse order of declaration, like a stack. If a ``defer``
+block is not reached in the execution of a scope, it will not be run on
+the scope's exit.
+
+This has a few advantages when compared to ``finally`` in Java/C#:
+
+  * Cleanup code is local to initializing code
+  * ``defer`` can be used outside of error handling
+
+Runtime errors
+++++++++++++++
+
+Many kinds of runtime operations in Chapel have the potential to fail
+(usually from running out of memory):
+
+  * communication
+  * memory allocation
+  * task creation
 
 .. code-block:: chapel
 
@@ -593,28 +630,25 @@ causing other catastrophic errors.
       }
     }
 
-For reference, here is an implementation:
-
-// TODO: how to get an error from an on clause
+The implementation of runtime error handling will keep the C runtime
+independent of Chapel error handling. The runtime will be modified
+to return error codes instead of halting, and Chapel module code
+will translate these runtime error codes into Chapel ``throws``.
 
 .. code-block:: chapel
 
-    var e: Error;
-    on Locales[0]
+    proc chpl_here_alloc(size: int): c_void_ptr throws {
+      extern proc chpl_mem_alloc(size: int) : c_void_ptr; //  runtime function
+      const p = chpl_mem_alloc(size); //  always returns
+      if p == c_nil then              //  runtime says allocation failed
+        throw new OutOfMemoryError();
+      return p;
+    }
 
+Asynchronous error handling
++++++++++++++++++++++++++++
 
-Future Design Work
-------------------
-
-* Throwing errors from iterators
-* Ability to catch errors generated in runtime layers:
-
-  * communication
-  * memory allocation
-  * task creation
-
-* Task joins propagate errors to parent tasks:
-
-  * Occurs at the end of sync/coforall/cobegin blocks
+Asynchronous tasks should not have to be synchronized before their errors
+can be handled. No design has yet been proposed to handle this case.
 
 .. _Swift: https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ErrorHandling.html
