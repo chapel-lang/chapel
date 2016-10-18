@@ -887,7 +887,7 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
   if (ct) useType = ct;
 
   std::string typestr =  (this->hasFlag(FLAG_SUPER_CLASS) ?
-                          std::string(ct->classStructName(true)) :
+                          std::string(toAggregateType(useType)->classStructName(true)) :
                           useType->codegen().c);
 
   //
