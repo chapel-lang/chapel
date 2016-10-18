@@ -56,13 +56,14 @@ refNecessary(SymExpr*                      se,
     return true;
   }
 
+  // a ref is not necessary if the LHS is a value
+  // (this can come up in recursive handling of a PRIM_MOVE).
+  if (se->getValType() == se->typeInfo())
+    return false;
+
   if (defs && defs->n > 1) {
     // If se is a reference that is written to,
     // we need to keep the ref version.
-
-    // If it is not a reference, it's not clear why
-    // this code is being run...
-    INT_ASSERT(se->getValType() != se->typeInfo());
 
     // We're only looking for things that set the value.
     // We don't care about PRIM_MOVEs b/c they only set the reference.

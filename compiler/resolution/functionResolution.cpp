@@ -6630,23 +6630,63 @@ preFold(Expr* expr) {
 
       result = paramLoop->foldForResolve();
     } else if (call->isPrimitive(PRIM_LOGICAL_FOLDER)) {
-      bool removed = false;
+
+      if(call->parentSymbol &&
+          call->parentSymbol->id == 950612)
+        gdbShouldBreakHere();
+
       SymExpr* sym1 = toSymExpr(call->get(1));
+      VarSymbol* lhs = NULL;
       if (VarSymbol* sym = toVarSymbol(sym1->var)) {
         if (sym->immediate || paramMap.get(sym)) {
           CallExpr* mvCall = toCallExpr(call->parentExpr);
           SymExpr* sym = toSymExpr(mvCall->get(1));
-          VarSymbol* var = toVarSymbol(sym->var);
-          removed = true;
-          var->addFlag(FLAG_MAYBE_PARAM);
-          result = call->get(2)->remove();
-          call->replace(result);
+          lhs = toVarSymbol(sym->var);
+          lhs->addFlag(FLAG_MAYBE_PARAM);
         }
       }
-      if (!removed) {
-        result = call->get(2)->remove();
-        call->replace(result);
+
+      result = call->get(2)->remove();
+      if (SymExpr* se = toSymExpr(result)) {
+        Symbol *sym2 = se->var;
+        VarSymbol *v = toVarSymbol(se->var);
+        ArgSymbol *a = toArgSymbol(se->var);
+        bool isRef = isReferenceType(sym2->type);
+        bool isImmediate = false;
+        IntentTag intent = INTENT_BLANK;
+
+        if (v)
+          if (v->immediate)
+            isImmediate = true;
+
+        if (a) {
+          intent = concreteIntent(a->intent, a->type);
+        }
+
+        if (v || a) { // works if a is removed from this conditional
+          if (isRef) {
+            // can't take address of something already a ref
+          } else if (sym2->hasFlag(FLAG_EXPR_TEMP) ||
+                     isImmediate ||
+                     paramMap.get(sym2)) {
+            // can't take address of call temps, param values
+            if (lhs)
+              lhs->removeFlag(FLAG_MAYBE_REF);
+          } else if (a && (intent & INTENT_FLAG_IN)) {
+            // don't take the address of arguments passed with in intent
+            // (it doesn't help and causes problems with inlining)
+          } else {
+            Expr* stmt = call->getStmtExpr();
+            Type* t = sym2->type;
+            makeRefType(t);
+            VarSymbol* tmp = newTemp("_fold_tmp", t->refType);
+            stmt->insertBefore(new DefExpr(tmp));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, result)));
+            result = new SymExpr(tmp);
+          }
+        }
       }
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_ADDR_OF)) {
       // remove set ref if already a reference
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
@@ -7998,6 +8038,17 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   call->insertAtTail(cast);
                   casts.add(cast);
                 }
+              } else {
+                // types are the same.
+                // handle reference level adjustments. No cast necessary.
+
+                if (rhsType == lhsType->refType) {
+                  lhs->remove();
+                  rhs->remove();
+                  CallExpr* move = new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_DEREF, rhs));
+                  call->replace(move);
+                  casts.add(move);
+                }
               }
             }
           }
@@ -8067,6 +8118,25 @@ static void resolveReturnType(FnSymbol* fn)
     if (retTypes.n == 1)
       retType = retTypes.head();
     else if (retTypes.n > 1) {
+      // adjust the reference level:
+      //  if they are all references, leave it that way
+      //  otherwise make them all values.
+      bool allRef = true;
+      bool allValue = true;
+      for (int i = 0; i < retTypes.n; i++) {
+        if (isReferenceType(retTypes.v[i])) {
+          allValue = false;
+        } else {
+          allRef = false;
+        }
+      }
+      // If there is a mix, adjust the return types to be values.
+      if (!allValue && !allRef) {
+        for (int i = 0; i < retTypes.n; i++) {
+          retTypes.v[i] = retTypes.v[i]->getValType();
+        }
+      }
+
       for (int i = 0; i < retTypes.n; i++) {
         bool best = true;
         for (int j = 0; j < retTypes.n; j++) {
