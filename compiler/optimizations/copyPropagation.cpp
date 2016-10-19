@@ -213,6 +213,11 @@ static void extractReferences(Expr* expr,
                      lhs->name, lhs->id, val->name, val->id);
 #endif
             refs.insert(RefMapElem(lhs, val));
+          } else {
+            // If we can't reason about this useage of a reference, mark it's
+            // corresponding value with NULL to indicate that nothing should
+            // happen.
+            refs[lhs] = NULL;
           }
         }
       }
