@@ -6680,6 +6680,7 @@ preFold(Expr* expr) {
           } else if (sym2->type == dtNil) {
             // can't take address of nil
           } else if (sym2->hasFlag(FLAG_EXPR_TEMP) ||
+                     sym2->hasFlag(FLAG_TEMP) ||
                      isImmediate ||
                      paramMap.get(sym2)) {
             // can't take address of call temps, param values
