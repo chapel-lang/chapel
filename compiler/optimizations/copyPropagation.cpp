@@ -602,6 +602,17 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
       }
     }
 
+    // If we encounter an ADDR_OF with a symbol, do not allow further
+    // replacements in case the reference is used to modify the symbol's data.
+    if (CallExpr* parent = toCallExpr(se->parentExpr)) {
+      if (parent->isPrimitive(PRIM_ADDR_OF)) {
+        AvailableMap::iterator ami = available.find(se->var);
+        if (ami != available.end()) {
+          available.erase(ami);
+        }
+      }
+    }
+
     // Also if the SymExpr is used in an expression of the form (deref se),
     // and there exists a ref-def pair s.t. ref == (addr_of def) and
     // se->var == ref, replace the deref expression with def.
