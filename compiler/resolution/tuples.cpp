@@ -58,12 +58,17 @@ void makeTupleName(std::vector<TypeSymbol*>& args,
 {
   int size = args.size();
   const char* size_str = istr(size);
+  bool omitRef = !developer;
+
   cname = "_tuple_";
   name = "";
   if (isStarTuple) {
+    TypeSymbol* nameTS = args[0];
+    if (omitRef)
+      nameTS = nameTS->type->getValType()->symbol;
     name += size_str;
     name += "*";
-    name += args[0]->name;
+    name += nameTS->name;
     cname += size_str;
     cname += "_star_";
     cname += args[0]->cname;
@@ -71,10 +76,13 @@ void makeTupleName(std::vector<TypeSymbol*>& args,
     name += "(";
     cname += size_str;
     for(int i = 0; i < size; i++) {
+      TypeSymbol* nameTS = args[i];
+      if (omitRef)
+        nameTS = nameTS->type->getValType()->symbol;
       cname += "_";
       cname += args[i]->cname;
       if (i != 0 ) name += ",";
-      name += args[i]->name;
+      name += nameTS->name;
     }
     name += ")";
   }
