@@ -226,12 +226,20 @@ static void extractReferences(Expr* expr,
           // Create the pair lhs <- &rhs.
           Symbol* lhs = lhe->var;
           Symbol* rhs = rhe->var;
+
+          RefMap::iterator refDef = refs.find(lhs);
+          if (refDef != refs.end()) {
+            // Multiple ADDR_OFs. Make the value NULL to indicate that we cannot
+            // replace this reference.
+            refs[lhs] = NULL;
+          } else {
 #if DEBUG_CP
-          if (debug > 0)
-            printf("Creating ref (%s[%d], %s[%d])\n",
-                   lhs->name, lhs->id, rhs->name, rhs->id);
+            if (debug > 0)
+              printf("Creating ref (%s[%d], %s[%d])\n",
+                     lhs->name, lhs->id, rhs->name, rhs->id);
 #endif
-          refs.insert(RefMapElem(lhs, rhs));
+            refs.insert(RefMapElem(lhs, rhs));
+          }
         }
       }
     }
@@ -610,7 +618,7 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
     {
       // See if there is a (ref,def) pair.
       RefMap::iterator ref_def_pair = refs.find(se->var);
-      if (ref_def_pair != refs.end())
+      if (ref_def_pair != refs.end() && ref_def_pair->second != NULL)
       {
 #if DEBUG_CP
         if (debug > 0)
