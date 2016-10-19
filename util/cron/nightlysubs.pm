@@ -30,7 +30,7 @@ sub mysystem {
             $mailsubject = "$subjectid $config_name Failure";
             $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
-            if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
+            if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
                 print "Trying to mail message... using $mailcommand\n";
                 open(MAIL, $mailcommand);
                 print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, "");
