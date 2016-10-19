@@ -204,7 +204,7 @@ static void extractReferences(Expr* expr,
           RefMap::iterator refDef = refs.find(rhs);
           // Refs can come from outside the function (e.g. through arguments),
           // so are not necessarily defined within the function.
-          if (refDef != refs.end())
+          if (refDef != refs.end() && refDef->second != NULL)
           {
             Symbol* val = refDef->second;
 #if DEBUG_CP
@@ -214,6 +214,11 @@ static void extractReferences(Expr* expr,
 #endif
             refs.insert(RefMapElem(lhs, val));
           } else {
+#if DEBUG_CP
+            if (debug > 0) {
+              printf("Setting pair to NULL: %s[%d]\n", lhs->name, lhs->id);
+            }
+#endif
             // If we can't reason about this useage of a reference, mark it's
             // corresponding value with NULL to indicate that nothing should
             // happen.
@@ -245,6 +250,8 @@ static void extractReferences(Expr* expr,
 #endif
             refs.insert(RefMapElem(lhs, rhs));
           }
+        } else {
+          refs[lhs] = NULL;
         }
       }
     }
