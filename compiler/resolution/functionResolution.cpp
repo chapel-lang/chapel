@@ -4772,7 +4772,11 @@ static void resolveMove(CallExpr* call) {
     if (isReturn) {
       USR_FATAL(call, "illegal return of type where value is expected");
     } else {
-      USR_FATAL(call, "illegal assignment of type to value");
+      if (lhs->hasFlag(FLAG_CHPL__ITER))
+        USR_FATAL(call, "unable to iterate over type '%s'",
+                  toString(rhs->getValType()));
+      else
+        USR_FATAL(call, "illegal assignment of type to value");
     }
   }
 
