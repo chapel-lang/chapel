@@ -861,12 +861,9 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, Exp
   domain->addFlag(FLAG_EXPR_TEMP);
   domain->addFlag(FLAG_NO_AUTO_DESTROY);
   thenStmt->insertAtTail(new DefExpr(domain));
-  // note that we need the below autoCopy until we start reference
-  // counting domains within runtime array types
   thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, domain,
-                           new CallExpr("chpl__autoCopy",
                              new CallExpr("chpl__ensureDomainExpr",
-                                          iteratorExprArg))));
+                                          iteratorExprArg)));
   if (hasSpecifiedIndices) {
     // we want to swap something like the below commented-out
     // statement with the compiler error statement but skyline
