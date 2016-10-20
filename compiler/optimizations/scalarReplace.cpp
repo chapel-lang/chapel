@@ -566,6 +566,11 @@ scalarReplace() {
     //
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (AggregateType* ct = toAggregateType(var->type)) {
+        if (var->isRef() && !isReferenceType(var->type)) {
+          // Handle qualified refs without the _ref type
+          ct = var->type->refType;
+        }
+        INT_ASSERT(ct);
         if (Vec<Symbol*>* varVec = typeVarMap.get(ct)) {
           if (isFnSymbol(var->defPoint->parentSymbol)) {
             varSet.set_add(var);
