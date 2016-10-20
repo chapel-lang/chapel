@@ -1018,11 +1018,11 @@ static void insert_call_temps(CallExpr* call)
   //     types/typedefs/bradc/arrayTypedef
   //   it would be better to handle this differently but I am
   //   not sure how.
-  FnSymbol* fn = call->getFunction();
-  if (fn == fn->getModule()->initFn) {
+  {
     CallExpr* cur = parentCall;
     while (cur != NULL) {
-      if (cur->isNamed("chpl__typeAliasInit"))
+      if (cur->isNamed("chpl__typeAliasInit") ||
+          cur->isNamed("chpl__buildArrayRuntimeType"))
         break;
       cur = toCallExpr(cur->parentExpr);
     }
