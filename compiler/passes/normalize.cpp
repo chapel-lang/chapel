@@ -1013,6 +1013,24 @@ static void insert_call_temps(CallExpr* call)
       parentCall->isNamed("_build_tuple")   == true)
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
+  // MPF 2016-10-20
+  //   This is a workaround for a problem in
+  //     types/typedefs/bradc/arrayTypedef
+  //   it would be better to handle this differently but I am
+  //   not sure how.
+  FnSymbol* fn = call->getFunction();
+  if (fn == fn->getModule()->initFn) {
+    CallExpr* cur = parentCall;
+    while (cur != NULL) {
+      if (cur->isNamed("chpl__typeAliasInit"))
+        break;
+      cur = toCallExpr(cur->parentExpr);
+    }
+    if (cur) {
+      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+    }
+  }
+
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
 
@@ -1145,6 +1163,8 @@ static void fix_def_expr(VarSymbol* var) {
                                    var,
                                    new CallExpr("chpl__typeAliasInit",
                                                 init->copy())));
+    // note: insert_call_temps adjusts auto-destroy in this case
+    // by checking for chpl__typeAliasInit
 
     return;
   }
