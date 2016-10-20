@@ -350,6 +350,8 @@ module ChapelArray {
   // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
   // by the compiler to just create a record storing the arguments. The body
   // is moved by the compiler to convertRuntimeTypeToValue.
+  // The return type of chpl__build...RuntimeType is what tells the
+  // compiler which runtime type it is creating.
 
   //
   // Support for domain types
