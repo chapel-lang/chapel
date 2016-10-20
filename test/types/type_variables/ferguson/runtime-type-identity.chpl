@@ -20,6 +20,7 @@ proc run() {
   D -= 6;
   writeln(a.domain);
   // should it output {2} or {6} ?
+  writeln(a);
 }
 
 run();

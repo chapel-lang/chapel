@@ -11,6 +11,7 @@ proc run() {
 
   // now a.domain should be {1}
   writeln(a.domain);
+  writeln(a);
 }
 
 run();

@@ -19,6 +19,9 @@ proc run() {
   D -= 6;
   writeln(c.x.domain);
   // should it output {2} or {6} ?
+  writeln(c);
+
+  delete c;
 }
 
 run();

@@ -2,9 +2,9 @@ proc getDom() {
   return {1};
 }
 
+type arrType = [getDom()] real;
 
-proc run() {
-  type arrType = [getDom()] real;
+proc main() {
 
   var a:arrType;
 
@@ -12,5 +12,3 @@ proc run() {
   writeln(a.domain);
   writeln(a);
 }
-
-run();
