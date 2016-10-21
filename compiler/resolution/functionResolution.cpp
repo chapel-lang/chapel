@@ -2095,15 +2095,15 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       bool needTupleInBody = true; //avoid "may be used uninitialized" warning
 
       // Replace mappings to the old formal with mappings to the new variable.
-      if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
+      if (PartialCopyData* pci = getPartialCopyInfo(workingFn)) {
         bool gotFormal = false; // for assertion only
-        for (int index = workingFn->partialCopyMap.n; --index >= 0;) {
-          SymbolMapElem& mapElem = workingFn->partialCopyMap.v[index];
+        for (int index = pci->partialCopyMap.n; --index >= 0;) {
+          SymbolMapElem& mapElem = pci->partialCopyMap.v[index];
 
           if (mapElem.value == formal) {
             gotFormal = true;
             needTupleInBody =
-              needVarArgTupleAsWhole(workingFn->partialCopySource->body, n,
+              needVarArgTupleAsWhole(pci->partialCopySource->body, n,
                                      toArgSymbol(mapElem.key));
 
             if (needTupleInBody) {
@@ -2111,8 +2111,8 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
             } else {
               // We will rely on mapElem.value==formal to replace it away
               // in finalizeCopy().  This assumes a single set of varargs.
-              workingFn->varargOldFormal = formal;
-              workingFn->varargNewFormals = varargFormals;
+              pci->varargOldFormal = formal;
+              pci->varargNewFormals = varargFormals;
             }
 
             break;
@@ -2217,9 +2217,9 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
           workingFn->insertAtHead(new DefExpr(var));
         }
 
-        if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
+        if (PartialCopyData* pci = getPartialCopyInfo(workingFn)) {
           // If this is a partial copy, store the mapping for substitution later.
-          workingFn->partialCopyMap.put(formal, var);
+          pci->partialCopyMap.put(formal, var);
         } else {
           // Otherwise, do the substitution now.
           subSymbol(workingFn->body, formal, var);
@@ -7868,7 +7868,7 @@ resolveExpr(Expr* expr) {
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           resolveFormals(ct->defaultTypeConstructor);
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
-            if (ct->defaultTypeConstructor->hasFlag(FLAG_PARTIAL_COPY))
+            if (getPartialCopyInfo(ct->defaultTypeConstructor))
               instantiateBody(ct->defaultTypeConstructor);
             resolveFns(ct->defaultTypeConstructor);
           }
@@ -8923,6 +8923,7 @@ resolve() {
   }
   visibleFunctionMap.clear();
   visibilityBlockCache.clear();
+  clearPartialCopyFnMap();
 
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
     stmt->moduleUseClear();

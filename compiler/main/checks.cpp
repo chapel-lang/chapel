@@ -422,6 +422,7 @@ void check_afterEveryPass()
     verify();
     checkForDuplicateUses();
     checkFlagRelationships();
+    checkEmptyPartialCopyFnMap();
   }
 }
 
@@ -478,8 +479,8 @@ static void check_afterResolveIntents()
           if (arg->intent == INTENT_TYPE)
             continue;
 
-        if (qual.getQual() == QUAL_BLANK) {
-          INT_FATAL("Symbol should not have blank qualifier: %s (%d)", sym->cname, sym->id);
+        if (qual.getQual() == QUAL_UNKNOWN) {
+          INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
         }
       }
     }

@@ -166,7 +166,7 @@ void resolveIntents() {
   // switch over to qualified types.
   forv_Vec(VarSymbol, sym, gVarSymbols) {
     QualifiedType q = sym->qualType();
-    if (q.getQual() == QUAL_BLANK) {
+    if (q.getQual() == QUAL_UNKNOWN) {
       if (sym->isRef()) {
         sym->qual = QUAL_REF;
       } else {

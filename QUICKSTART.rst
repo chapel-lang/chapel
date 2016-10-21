@@ -24,15 +24,20 @@ enable more features, such as distributed memory execution.
    get started with Chapel. After that, you may want to switch to a more
    full-featured configuration. See using-a-more-full-featured-chapel_ below.
 
-   a. Make sure that your shell is in the directory containing
-      QUICKSTART.rst, for example:
-
+   a. Expand the source release if you haven't already:
 
       .. code-block:: bash
 
-         cd ~/chapel-1.14
+         tar xzf chapel-1.14.0.tar.gz
 
-   b. Set up your environment for Chapel's Quickstart mode.
+   b. Make sure that your shell is in the directory containing
+      QUICKSTART.rst, for example:
+
+      .. code-block:: bash
+
+         cd chapel-1.14.0
+
+   c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than bash,
       see quickstart-with-other-shells_ below.
 
@@ -40,7 +45,7 @@ enable more features, such as distributed memory execution.
 
          source util/quickstart/setchplenv.bash
 
-   c. Use GNU make to build Chapel.
+   d. Use GNU make to build Chapel.
       On some systems, you will have to use gmake.
       See `doc/building.rst`_ for more information about building Chapel.
 
@@ -48,7 +53,7 @@ enable more features, such as distributed memory execution.
 
          make
 
-   d. Optionally, check that your Chapel build is working correctly
+   e. Optionally, check that your Chapel build is working correctly
 
       .. code-block:: bash
 

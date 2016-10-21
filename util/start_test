@@ -951,7 +951,7 @@ def set_up_executables():
     os.environ['EXECOPTS'] = args.execopts
 
     logger.write('[launchcmd: "{0}"]'.format(args.launch_cmd))
-    os.environ['LAUNCHCMD'] = args.launch_cmd
+    os.environ['LAUNCHCMD'] = os.path.expandvars(args.launch_cmd)
 
     comm = chpl_comm.get()
     launcher = chpl_launcher.get()
@@ -1199,7 +1199,7 @@ def parser_setup():
             dest="compiler", help="set alternate compiler")
     # program launch utility
     parser.add_argument("-launchcmd", "--launchcmd", action="store",
-            dest="launch_cmd", default="",
+            dest="launch_cmd", default=os.getenv("CHPL_TEST_LAUNCHCMD", ""),
             help="set a program to launch generated executables")
     # compiler options
     parser.add_argument("-compopts", "--compopts", action="append",

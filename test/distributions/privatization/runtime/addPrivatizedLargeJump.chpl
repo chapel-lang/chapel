@@ -4,10 +4,17 @@ var addOrder = [0, 1000, 10000];
 
 for i in addOrder {
   var newValue = new C(i);
-  insertPrivatized(new C(i), i);
+  insertPrivatized(newValue, i);
 }
 
 for i in addOrder {
   writeln(getPrivatized(i).i);
+}
+
+// no leaks
+for i in addOrder {
+  var c = getPrivatized(i);
+  delete c;
+  clearPrivatized(i);
 }
 

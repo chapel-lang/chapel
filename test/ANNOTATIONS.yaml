@@ -175,6 +175,8 @@ all:
     - Added optimization to remove inner multiply in dsiAccess (#4510)
   09/20/16:
     - Add promoted fast follower support (#4558)
+  10/18/16:
+    - First step to transition to qualified references (#4745)
 
 
 AllCompTime:

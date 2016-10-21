@@ -119,7 +119,7 @@ private:
 // without changing its type to a ref or wide ref type.
 enum Qualifier {
   // The abstract qualifiers
-  QUAL_BLANK,
+  QUAL_UNKNOWN,
   QUAL_CONST,
   QUAL_REF,
   QUAL_CONST_REF,
@@ -161,7 +161,7 @@ class QualifiedType {
 public:
 
   explicit QualifiedType(Type* type)
-    : _type(type), _qual(QUAL_BLANK)
+    : _type(type), _qual(QUAL_UNKNOWN)
   {
   }
 
@@ -171,7 +171,7 @@ public:
   }
 
   bool isAbstract() const {
-    return (_qual == QUAL_BLANK || _qual == QUAL_CONST ||
+    return (_qual == QUAL_UNKNOWN || _qual == QUAL_CONST ||
             _qual == QUAL_REF || _qual == QUAL_CONST_REF);
   }
   bool isVal() const {
@@ -208,25 +208,25 @@ public:
       q = QUAL_WIDE_REF;
     }
     switch (q) {
-      case QUAL_BLANK:
-        return "blank";
+      case QUAL_UNKNOWN:
+        return "unknown";
       case QUAL_CONST:
         return "const";
       case QUAL_REF:
         return "ref";
       case QUAL_CONST_REF:
-        return "const ref";
+        return "const-ref";
       case QUAL_PARAM:
         return "param";
       case QUAL_VAL:
-        return "var";
+        return "val";
       case QUAL_NARROW_REF:
         return "narrow-ref";
       case QUAL_WIDE_REF:
         return "wide-ref";
 
       case QUAL_CONST_VAL:
-        return "const-var";
+        return "const-val";
       case QUAL_CONST_NARROW_REF:
         return "const-narrow-ref";
       case QUAL_CONST_WIDE_REF:

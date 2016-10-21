@@ -210,7 +210,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
                                       bool           is_use,
                                       Vec<BaseAST*>& asts)
 {
-  // TODO: fix this to correctly utilize qualified refs
+  // BHARSH TODO: fix this to correctly utilize qualified refs
   // Get the expression that sets or uses the symexpr.
   CallExpr* call = toCallExpr(se->parentExpr);
 

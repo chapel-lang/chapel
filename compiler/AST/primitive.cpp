@@ -195,7 +195,7 @@ returnInfoVal(CallExpr* call) {
   return QualifiedType(NULL);
 }
 
-// TODO: merge this with returnInfoAsRef and fix the WIDE_REF case...
+// BHARSH TODO: merge this with returnInfoAsRef and fix the WIDE_REF case...
 static QualifiedType
 returnInfoRef(CallExpr* call) {
   Type* t = call->get(1)->getValType();

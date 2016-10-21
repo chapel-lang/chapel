@@ -413,8 +413,8 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
           sym->defPoint->insertBefore(new DefExpr(rhs));
 
           // get the reference to the field to use for the rhs
-          // TODO: Teach PRIM_GET_MEMBER that if it's accessing a ref field,
-          // it should behave like PRIM_GET_MEMBER_VALUE
+          // BHARSH TODO: Teach PRIM_GET_MEMBER that if it's accessing a ref
+          // field, it should behave like PRIM_GET_MEMBER_VALUE
           SymExpr *a3 = new SymExpr(rhs);
           PrimitiveTag op = PRIM_GET_MEMBER;
           if (a2->isRef() && a3->isRef()) {
@@ -566,6 +566,11 @@ scalarReplace() {
     //
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (AggregateType* ct = toAggregateType(var->type)) {
+        if (var->isRef() && !isReferenceType(var->type)) {
+          // Handle qualified refs without the _ref type
+          ct = var->type->refType;
+        }
+        INT_ASSERT(ct);
         if (Vec<Symbol*>* varVec = typeVarMap.get(ct)) {
           if (isFnSymbol(var->defPoint->parentSymbol)) {
             varSet.set_add(var);

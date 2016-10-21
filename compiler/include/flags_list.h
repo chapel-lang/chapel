@@ -214,7 +214,6 @@ symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )
 
 symbolFlag( FLAG_PARENT_FIELD , npr, "parent field" , "field from parent type" )
 
-symbolFlag( FLAG_PARTIAL_COPY, npr, "partial copy", ncm )
 symbolFlag( FLAG_PARTIAL_TUPLE, npr, "partial tuple", ncm)
 
 // Is this type a Plain-Old Data (POD) type - ie no autocopy/destructor/=
