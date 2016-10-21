@@ -3387,6 +3387,9 @@ module ChapelArray {
     var node:int = 0;
     var i:uint = 0;
   }
+  pragma "no doc"
+  pragma "locale private"
+  var _OpaqueIndexNext: atomic uint;
 
   //
   // Swap operator for arrays
