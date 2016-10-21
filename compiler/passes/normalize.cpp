@@ -1016,18 +1016,30 @@ static void insert_call_temps(CallExpr* call)
   // MPF 2016-10-20
   //   This is a workaround for a problem in
   //     types/typedefs/bradc/arrayTypedef
-  //   it would be better to handle this differently but I am
-  //   not sure how.
+  //   I'm sure that there is a better way to handle this
   {
-    CallExpr* cur = parentCall;
-    while (cur != NULL) {
-      if (cur->isNamed("chpl__typeAliasInit") ||
-          cur->isNamed("chpl__buildArrayRuntimeType"))
-        break;
-      cur = toCallExpr(cur->parentExpr);
+    // either in module init fn or in a sequence of parloopexpr fns
+    // computing an array type than are in a module init fn
+    FnSymbol* fn = call->getFunction();
+    while( fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) ) {
+      fn = fn->defPoint->getFunction();
     }
-    if (cur) {
-      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+    if (fn == fn->getModule()->initFn) {
+      CallExpr* cur = parentCall;
+      CallExpr* sub = call;
+      // Look for a parent call that is either:
+      //  * making an array type alias, or
+      //  * passing the result into the 2nd argument of buildArrayRuntimeType.
+      while (cur != NULL) {
+        if (cur->isNamed("chpl__typeAliasInit") ||
+            (cur->isNamed("chpl__buildArrayRuntimeType") && cur->get(2) == sub))
+          break;
+        sub = cur;
+        cur = toCallExpr(cur->parentExpr);
+      }
+      if (cur) {
+        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+      }
     }
   }
 

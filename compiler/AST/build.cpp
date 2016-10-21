@@ -1040,6 +1040,7 @@ static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
 
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  fn->addFlag(FLAG_MAYBE_ARRAY_TYPE);
 
   // MPF: We'll add the iteratorExpr to the call, so we need an
   // argument to accept it in the new function. This way,

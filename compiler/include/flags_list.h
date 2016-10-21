@@ -154,6 +154,7 @@ symbolFlag( FLAG_LOCAL_FN , npr, "local fn" , "function is completely local (no 
 symbolFlag( FLAG_LOCAL_ON, npr, "local on", ncm)
 symbolFlag( FLAG_LOOP_BODY_ARGUMENT_CLASS , npr, "loop body argument class" , ncm )
 symbolFlag( FLAG_MARKED_GENERIC , npr, "marked generic" , "formal is marked generic using the type query syntax" )
+symbolFlag( FLAG_MAYBE_ARRAY_TYPE , npr, "maybe array type" , "function may be computing array type")
 symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a param" )
 symbolFlag( FLAG_MAYBE_REF , npr, "maybe ref" , "symbol can resolve to a ref" )
 symbolFlag( FLAG_MAYBE_TYPE , npr, "maybe type" , "symbol can resolve to a type" )
