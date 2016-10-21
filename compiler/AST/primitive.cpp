@@ -689,6 +689,7 @@ initPrimitive() {
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
 
   prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
+  prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

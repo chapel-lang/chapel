@@ -7221,6 +7221,15 @@ postFold(Expr* expr) {
       FOLD_CALL2(P_prim_lsh);
     } else if (call->isPrimitive(PRIM_RSH)) {
       FOLD_CALL2(P_prim_rsh);
+    } else if (call->isPrimitive(PRIM_REQUIRE)) {
+      Expr* arg = call->argList.only();
+      const char* str;
+      if (get_string(arg, &str)) {
+        processStringInRequireStmt(str, false);
+      } else {
+        USR_FATAL(call, "'require' statements require string arguments");
+      }
+      call->remove();
     } else if (call->isPrimitive(PRIM_ARRAY_ALLOC) ||
                (call->primitive &&
                 (!strncmp("_fscan", call->primitive->name, 6) ||
