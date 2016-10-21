@@ -1,4 +1,9 @@
-// test of slicing for block-cyclic specifier
+// When this code works, uncomment the line:
+//
+//   test(Ab[1..n by 3, 5..n by 2], (4,5), (7,7));
+//
+// in s8.chpl and s9.chpl and remove this test altogether.
+
 
 use DimensionalDist2D, BlockCycDim;
 use u;
@@ -70,5 +75,4 @@ proc test(A, ix1, ix2) {
   tl();
 }
 
-test(Ab[1..n, 1..3],           (1,1), (2,2));
-//currently not available: test(Ab[1..n by 3, 5..n by 2], (4,5), (7,7));
+test(Ab[1..n by 3, 5..n by 2], (4,5), (7,7));

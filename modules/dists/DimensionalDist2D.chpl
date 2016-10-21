@@ -353,7 +353,7 @@ class DimensionalArr : BaseArr {
   const dom; // must be a DimensionalDom
 
   // same as 'dom'; for an alias (e.g. a slice), 'dom' of the original array
-  const allocDom; // must be a DimensionalDom
+  const allocDom: dom.type; // must be a DimensionalDom
 
   proc rank param return dom.rank;
   proc targetIds return localAdescs.domain;
@@ -981,7 +981,7 @@ proc DimensionalArr.isAlias
 
 // create a new array over this domain
 proc DimensionalDom.dsiBuildArray(type eltType)
-  : DimensionalArr(eltType, this.type, this.type)
+  : DimensionalArr(eltType, this.type)
 {
   _traceddd(this, ".dsiBuildArray");
   if rank != 2 then
@@ -1079,6 +1079,9 @@ proc DimensionalArr.dsiSlice(sliceDef: DimensionalDom) {
   const slicee = this;
   if slicee.rank != sliceDef.rank then
     compilerError("slicing with a different rank");
+
+  if sliceDef.type != slicee.allocDom.type then
+    compilerError("slicing a Dimensional array with a domain of a different type than the array's domain is currently not available");
 
   const result = new DimensionalArr(eltType  = slicee.eltType,
                                     dom      = sliceDef,
