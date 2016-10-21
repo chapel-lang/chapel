@@ -1106,6 +1106,7 @@ static void build_record_hash_function(AggregateType *ct) {
   } else {
     CallExpr *call = NULL;
     bool first = true;
+    int i = 1;
     for_fields(field, ct) {
       if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
         CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg);
@@ -1113,14 +1114,13 @@ static void build_record_hash_function(AggregateType *ct) {
           call = new CallExpr("chpl__defaultHash", field_access);
           first = false;
         } else {
-          call = new CallExpr("^",
-                              new CallExpr("chpl__defaultHash",
-                                           field_access),
-                              new CallExpr("<<",
-                                           call,
-                                           new_IntSymbol(17)));
+          call = new CallExpr("chpl__defaultHashCombine",
+                              new CallExpr("chpl__defaultHash", field_access),
+                              call,
+                              new_IntSymbol(i));
         }
       }
+      i++;
     }
     fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   }

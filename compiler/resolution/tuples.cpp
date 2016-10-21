@@ -476,12 +476,10 @@ instantiate_tuple_hash( FnSymbol* fn) {
       call =  new CallExpr( "chpl__defaultHash", field_access);
       first = false;
     } else {
-      call = new CallExpr( "^",
-                           new CallExpr( "chpl__defaultHash",
-                                         field_access),
-                           new CallExpr( "<<",
-                                         call,
-                                         new_IntSymbol(17)));
+      call = new CallExpr( "chpl__defaultHashCombine",
+                           new CallExpr( "chpl__defaultHash", field_access),
+                           call,
+                           new_IntSymbol(i) );
     }
   }
 
