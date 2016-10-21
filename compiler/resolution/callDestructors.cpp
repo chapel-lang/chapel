@@ -1275,8 +1275,8 @@ void fixupNewAlias(void) {
       bool isArrayAliasField = false;
       const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
       for_formals(fml, fn)
-	if (fml->name == aliasFieldArg)
-	  isArrayAliasField = true;
+        if (fml->name == aliasFieldArg)
+          isArrayAliasField = true;
 
       if (isArrayAliasField) {
         SymExpr* se = toSymExpr(actual);

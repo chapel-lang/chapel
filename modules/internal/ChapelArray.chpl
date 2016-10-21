@@ -782,7 +782,7 @@ module ChapelArray {
           var distToFree = _instance.remove();
           if distToFree != nil {
             _delete_dist(distToFree, _isPrivatized(_instance));
-	  }
+          }
         }
       }
     }
