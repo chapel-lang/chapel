@@ -3377,7 +3377,10 @@ module ChapelArray {
   // index for all opaque domains
   //
   pragma "no doc"
-  class _OpaqueIndex { }
+  record _OpaqueIndex {
+    var node:int = 0;
+    var i:uint = 0;
+  }
 
   //
   // Swap operator for arrays
