@@ -6645,11 +6645,6 @@ preFold(Expr* expr) {
 
       result = paramLoop->foldForResolve();
     } else if (call->isPrimitive(PRIM_LOGICAL_FOLDER)) {
-
-      if(call->parentSymbol &&
-          call->parentSymbol->id == 950612)
-        gdbShouldBreakHere();
-
       SymExpr* sym1 = toSymExpr(call->get(1));
       VarSymbol* lhs = NULL;
       if (VarSymbol* sym = toVarSymbol(sym1->var)) {
