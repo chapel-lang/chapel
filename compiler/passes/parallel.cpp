@@ -219,14 +219,22 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
   // BHARSH TODO: Move this into RVF. If we do, then we need to handle the
   // following case:
   // ```
-  // var a : sync int;
+  // var a : sync int; // a GLOBAL variable
   // begin {
+  //   writeln("inner begin");
   //   on {
+  //     writeln("on-stmt");
   //     begin {
-  //     a += 1;
+  //       a += 1;
   //     }
   //   }
   // }
+  // ```
+  //
+  // This issue was exposed by the following test:
+  //   test/multilocale/diten/needMultiLocales/DijkstraTermination.chpl
+  //
+  // The 'writeln's exist to make sure nothing is considered a begin-on.
   //
   // If the sync is rvf'd onto the on-statement's stack, we should not take
   // a reference to it as it is about to go out of scope with the outer begin.
