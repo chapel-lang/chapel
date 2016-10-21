@@ -4824,7 +4824,7 @@ static void resolveMove(CallExpr* call) {
           rhsType = rhsType->refType;
 
           // Add PRIM_ADDR_OF
-          //  (this won't be necessary with QualifiiedType/PRIM_SET_REFERENCE)
+          //  (this won't be necessary with QualifiedType/PRIM_SET_REFERENCE)
           VarSymbol* addrOfTmp = newTemp("moveAddr", rhsType);
           call->insertBefore(new DefExpr(addrOfTmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, addrOfTmp,
