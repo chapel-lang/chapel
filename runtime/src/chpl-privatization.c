@@ -82,7 +82,7 @@ void chpl_clearPrivatizedClass(int64_t i) {
   chpl_sync_unlock(&privatizationSync);
 }
 
-// Used for to check for leaks of privatized classes
+// Used to check for leaks of privatized classes
 int64_t chpl_numPrivatizedClasses(void) {
   int64_t ret = 0;
   chpl_sync_lock(&privatizationSync);
