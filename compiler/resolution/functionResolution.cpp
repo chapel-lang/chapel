@@ -7229,7 +7229,8 @@ postFold(Expr* expr) {
       } else {
         USR_FATAL(call, "'require' statements require string arguments");
       }
-      call->remove();
+      result = new CallExpr(PRIM_NOOP);
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_ARRAY_ALLOC) ||
                (call->primitive &&
                 (!strncmp("_fscan", call->primitive->name, 6) ||
