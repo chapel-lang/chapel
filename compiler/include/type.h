@@ -216,6 +216,8 @@ public:
         return "ref";
       case QUAL_CONST_REF:
         return "const ref";
+      case QUAL_PARAM:
+        return "param";
       case QUAL_VAL:
         return "var";
       case QUAL_NARROW_REF:
