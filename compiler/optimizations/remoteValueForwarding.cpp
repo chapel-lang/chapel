@@ -313,6 +313,9 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
 
     // Insert de-reference temp of value.
     VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
+    if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
+      deref->addFlag(FLAG_COFORALL_INDEX_VAR);
+    }
 
     Expr* rhs = NULL;
     if (actual->isRef()) {
