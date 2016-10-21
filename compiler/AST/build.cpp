@@ -542,7 +542,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
     if (list == NULL) {
       list = buildChapelStmt(requireCall);
     } else {
-      list->insertAtTail(buildChapelStmt(requireCall));
+      list->insertAtTail(requireCall);
     }
   }
 
