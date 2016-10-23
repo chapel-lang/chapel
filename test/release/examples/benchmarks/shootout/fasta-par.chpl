@@ -98,16 +98,17 @@ proc repeatMake(desc, str, n) {
 //
 // Output a random sequence of length 'n' using distribution 'a'
 //
-proc randomMake(desc, nuclInfo, n) {
+proc randomMake(desc, nuclInfo: [?D], n) {
   stdout.write(desc);
 
+  var cumul_p: [D] int;
   //
   // Sum the probabilities of the nucleotide info
   //
   var p = 0.0;
-  for letter in nuclInfo {
-    p += letter(prob);
-    letter(prob) = p;
+  for i in D {
+    p += nuclInfo[i](prob);
+    cumul_p[i] = 1 + (p*IM):int;
   }
 
   var rngTid$, outTid$: [0..#numTasks] sync int;
@@ -148,15 +149,15 @@ proc randomMake(desc, nuclInfo, n) {
         //
         // TODO: reference version doesn't use real, why do I?
         //
-        const r = rands[i]: real / IM;
-        if r < nuclInfo[1](prob) {
+        const r = rands[i];
+        if r < cumul_p[1] {
           line_buff[off] = nuclInfo[1](nucl);
         } else {
           var lo = nuclInfo.domain.low,
             hi = nuclInfo.domain.high;
           while (hi > lo+1) {
             var ai = (hi + lo) / 2;
-            if (r < nuclInfo[ai](prob)) then
+            if (r < cumul_p[ai]) then
               hi = ai;
             else
               lo = ai;
