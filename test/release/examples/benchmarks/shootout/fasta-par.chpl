@@ -50,6 +50,8 @@ const ALU: [0..286] int(8) = [
 param nucl = 1,
       prob = 2;
 
+param IM = 139968;
+
 //
 // Probability tables for sequences to be randomly generated
 //
@@ -115,7 +117,7 @@ proc randomMake(desc, nuclInfo, n) {
     const chunkSize = lineLength*blockSize;
 
     var line_buff: [0..chunkSize] int(8);
-    var rands: [0..chunkSize] real;
+    var rands: [0..chunkSize] int;
 
     //
     // TODO: Use some sort of chunking iterator?
@@ -140,7 +142,8 @@ proc randomMake(desc, nuclInfo, n) {
       rngTid$[(tid + 1)%numTasks] = myTurn + 1;
 
       var col = 0;
-      for (r, i) in zip(rands, 0..) {
+      for (r_int, i) in zip(rands, 0..) {
+        const r = r_int: real / IM;
         if r < nuclInfo[1](prob) {
           line_buff[i] = nuclInfo[1](nucl);
         } else {
@@ -184,12 +187,11 @@ var lastRand = 42;
 
 proc getRands(n, arr) {
   param IA = 3877,
-        IC = 29573,
-        IM = 139968;
+        IC = 29573;
 
   //  writef("tid %i got turn\n", tid);
   for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
-    arr[i] = lastRand: real / IM;
+    arr[i] = lastRand;
   }
 }
