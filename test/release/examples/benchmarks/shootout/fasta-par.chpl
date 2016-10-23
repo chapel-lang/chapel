@@ -1,15 +1,16 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Preston Sahabu
-   derived from the Chapel fastaredux version by Casey Battaglino et al.
-            and the GNU C version by Paul Hsieh
+   contributed by Brad Chamberlain
+   derived from Chapel fasta versions by Casey Battaglino, Kyle Brady,
+     and Preston Sahabu as well as the GNU C version by Аноним
+     Легионов and Jeremy Zerfas
 */
 
-config const n = 1000,         // the length of the generated strings
-             lineLength = 60,  // # of columns in the output
-  blockSize = 1, // 024, // parallelization granularity
-             numTasks = here.maxTaskPar;
+config const n = 1000,                   // the length of the generated strings
+             lineLength = 60,            // the number of columns in the output
+             blockSize = 1024,           // the parallelization granularity
+             numTasks = here.maxTaskPar; // the degree of parallelization
 
 //
 // Nucleotide definitions
@@ -115,19 +116,19 @@ proc randomMake(desc, nuclInfo, n) {
 
   coforall tid in 0..#numTasks {
     const chunkSize = lineLength*blockSize;
+    const nextTask = (tid + 1) % numTasks;
 
-    var line_buff: [0..chunkSize] int(8);
-    var rands: [0..chunkSize] int;
+    var line_buff: [0..(lineLength+1)*blockSize+1] int(8);
+    var rands: [0..chunkSize] int/*(32)*/;
 
     //
     // TODO: Use some sort of chunking iterator?
     //
-    const lo = tid*chunkSize + 1;
     //    writef("tid %i writing %i..%i\n", tid, lo, n);
-    for i in lo..n by chunkSize*numTasks {
-      //      writef("tid %i doing %i..%i\n", tid, i, min(lineLength, n-i+1));
+    for i in 1..n by chunkSize*numTasks align (tid*chunkSize+1) {
 
       const bytes = min(chunkSize, n-i+1);
+      //      writef("tid %i doing %i..#%i\n", tid, i, bytes);
 
       //      writef("tid %i working on bytes %i\n", tid, bytes);      
       //      writef("tid %i waiting for turn\n", tid);
@@ -139,13 +140,17 @@ proc randomMake(desc, nuclInfo, n) {
         rands[i] = r;
       */
       //      writef("tid %i passing turn to %i\n", tid, (tid+1)%numTasks);
-      rngTid$[(tid + 1)%numTasks] = myTurn + 1;
+      rngTid$[nextTask] = myTurn + 1;
 
       var col = 0;
-      for (r_int, i) in zip(rands, 0..) {
-        const r = r_int: real / IM;
+      var off = 0;
+      for i in 0..#bytes {
+        //
+        // TODO: reference version doesn't use real, why do I?
+        //
+        const r = rands[i]: real / IM;
         if r < nuclInfo[1](prob) {
-          line_buff[i] = nuclInfo[1](nucl);
+          line_buff[off] = nuclInfo[1](nucl);
         } else {
           var lo = nuclInfo.domain.low,
             hi = nuclInfo.domain.high;
@@ -156,21 +161,27 @@ proc randomMake(desc, nuclInfo, n) {
             else
               lo = ai;
           }
-          line_buff[i] = nuclInfo[hi](nucl);
+          line_buff[off] = nuclInfo[hi](nucl);
         }
+        off += 1;
         col += 1;
         if (col == lineLength) {
           col = 0;
-          line_buff[bytes] = newline:int(8);
+          line_buff[off] = newline;
+          off += 1;
         }
       }
-      line_buff[bytes] = newline:int(8);
+      if (col != 0) {
+        line_buff[off] = newline;
+        off += 1;
+      }
 
-        
+
+      //      writeln("tid = ", tid, "bytes = ", bytes, " off = ", off);
       {
         const myTurn = outTid$[tid];
-        stdout.write(line_buff[0..bytes]);
-        outTid$[(tid + 1)%numTasks] = myTurn + 1;
+        stdout.write(line_buff[0..#off]);
+        outTid$[nextTask] = myTurn + 1;
       }
     }
     
@@ -183,7 +194,7 @@ proc randomMake(desc, nuclInfo, n) {
 //
 // Deterministic random number generator
 //
-var lastRand = 42;
+var lastRand = 42/*:int(32)*/;
 
 proc getRands(n, arr) {
   param IA = 3877,
