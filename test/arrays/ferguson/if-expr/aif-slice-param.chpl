@@ -1,3 +1,8 @@
+// aif-slice-param.chpl
+// test if expression of arrays where the
+// conditional is param and where the if expression
+// is returning a slice
+
 config param param_useA = true;
 
 proc update(ref x)

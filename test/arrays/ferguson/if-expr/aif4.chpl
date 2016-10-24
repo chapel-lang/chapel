@@ -1,3 +1,7 @@
+// aif4.chpl
+// test if expression of arrays using function calls
+// returning arrays
+
 config const useA = true;
 
 proc update(ref x)

@@ -1,3 +1,8 @@
+// aif4-param.chpl
+// test if-expression of arrays where the conditional
+// is a param and the expressions are each function calls
+// returning an array
+
 config param param_useA = true;
 
 proc update(ref x)

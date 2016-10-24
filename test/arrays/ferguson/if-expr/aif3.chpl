@@ -1,3 +1,7 @@
+// aif3.chpl
+// test if expression of arrays where arrays
+// are arguments
+
 config const useA = true;
 
 proc update(ref x)

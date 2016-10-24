@@ -1,3 +1,7 @@
+// aif.chpl
+// test of if expression with arrays
+// arrays are global variables
+
 config const useA = true;
 
 proc update(ref x)

@@ -1,3 +1,7 @@
+// aif2.chpl
+// test if expression of arrays
+// arrays are local variables
+
 config const useA = true;
 
 proc update(ref x)

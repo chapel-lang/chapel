@@ -1,3 +1,9 @@
+// aif-slice.chpl
+// test if expression of arrays where the if expression
+// is returning a slice
+
+
+
 config const useA = true;
 
 proc update(ref x)
