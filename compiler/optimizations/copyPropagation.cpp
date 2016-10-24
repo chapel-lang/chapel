@@ -219,7 +219,7 @@ static void extractReferences(Expr* expr,
               printf("Setting pair to NULL: %s[%d]\n", lhs->name, lhs->id);
             }
 #endif
-            // If we can't reason about this useage of a reference, mark it's
+            // If we can't reason about this usage of a reference, mark its
             // corresponding value with NULL to indicate that nothing should
             // happen.
             refs[lhs] = NULL;
