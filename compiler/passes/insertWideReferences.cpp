@@ -2650,21 +2650,16 @@ shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
 }
 
 static void
-changeArgumentTypeToRef(ArgSymbol* arg) {
-
-  arg->qual = QUAL_REF;
-  arg->intent = INTENT_REF;
-}
-
-static void
 adjustArgSymbolTypesForIntent(void)
 {
   // Adjust ArgSymbols that have ref/const ref concrete
   // intent so that their type is ref. This allows the
   // rest of this code to work as expected.
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (shouldChangeArgumentTypeToRef(arg))
-      changeArgumentTypeToRef(arg);
+    if (shouldChangeArgumentTypeToRef(arg)) {
+      arg->qual   = QUAL_REF;
+      arg->intent = INTENT_REF;
+    }
   }
 }
 
