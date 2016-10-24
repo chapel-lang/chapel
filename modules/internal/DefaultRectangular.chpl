@@ -70,7 +70,6 @@ module DefaultRectangular {
     proc dsiTrackDomains()    return false;
 
     proc singleton() param return true;
-    proc dsiSingleton()    return true;
   }
 
   //

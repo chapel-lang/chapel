@@ -195,9 +195,8 @@ module ChapelArray {
 
     const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
-    on Locales[0] {
+    on Locales[0] do
       _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
-    }
 
     proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
       var newValue = originalValue;
@@ -3448,7 +3447,7 @@ module ChapelArray {
     return b;
   }
 
-  proc __doDeepCopy(ref a:domain) {
+  proc chpl_replaceWithDeepCopy(ref a:domain) {
     var b : a.type;
 
     if isRectangularDom(a) && isRectangularDom(b) {
@@ -3473,22 +3472,36 @@ module ChapelArray {
     a._instance = b._instance;
     a._unowned = false;
 
-    b._pid = -1;
+    b._pid = nullPid;
     b._instance = nil;
     b._unowned = true;
   }
 
+  // This implementation of arrays and domains can create aliases
+  // of domains and arrays. Additionally, array aliases are possible
+  // in the language with the => operator.
+  //
+  // A call to the chpl__unalias function is added by the compiler when a user
+  // variable is initialized from an expression that would normally not require
+  // a copy.
+  //
+  // For example, if we have
+  //   var A:[1..10] int;
+  //   var B = A[1..3];
+  // then B is initialized with a slice of A. But since B is a new
+  // variable, it needs to be a new 3-element array with distinct storage.
+  // Since the slice is implemented as a function call, without chpl__unalias,
+  // B would just be initialized to the result of the function call -
+  // meaning that B would not refer to distinct array elements.
   pragma "unalias fn"
   inline proc chpl__unalias(ref x: domain) {
-
     if x._unowned {
-      __doDeepCopy(x);
+      chpl_replaceWithDeepCopy(x);
     }
   }
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref a: []) {
-
     var b : [a._dom] a.eltType;
 
     // Try bulk transfer.
@@ -3506,7 +3519,7 @@ module ChapelArray {
     return b;
   }
 
-  proc __doDeepCopy(ref a:[]) {
+  proc chpl_replaceWithDeepCopy(ref a:[]) {
     var b : [a._dom] a.eltType;
 
     // Try bulk transfer.
@@ -3522,18 +3535,19 @@ module ChapelArray {
     a._instance = b._instance;
     a._unowned = false;
 
-    b._pid = -1;
+    b._pid = nullPid;
     b._instance = nil;
     b._unowned = true;
   }
 
+
+  // see comment on chpl__unalias for domains
   pragma "unalias fn"
   inline proc chpl__unalias(ref x: []) {
     const isalias = (x._unowned) | (x._value._arrAlias != nil);
 
     if isalias {
-
-      __doDeepCopy(x);
+      chpl_replaceWithDeepCopy(x);
     }
   }
 

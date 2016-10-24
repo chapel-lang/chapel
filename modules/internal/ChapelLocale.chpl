@@ -289,7 +289,7 @@ module ChapelLocale {
   }
 
   /* This class is used during initialization and is returned when
-     'here' is used before the locale heirarchy is initialized.
+     'here' is used before the locale hierarchy is initialized.
    */
   pragma "no doc"
   class DummyLocale : locale {

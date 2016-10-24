@@ -1045,13 +1045,6 @@ module ChapelBase {
   pragma "unalias fn"
   inline proc chpl__unalias(const ref x:_iteratorRecord) { }
 
-
-
-  pragma "compiler generated"
-  inline proc chpl__onret(ref x) { }
-
-
-
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
