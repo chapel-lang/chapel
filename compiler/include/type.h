@@ -322,7 +322,7 @@ class AggregateType : public Type {
   Symbol* getField(const char* name, bool fatal = true);
   Symbol* getField(int i);
   // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
-  Type* getFieldType(Expr* e);
+  QualifiedType getFieldType(Expr* e);
   int numFields() { return fields.length; }
   bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
   bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }

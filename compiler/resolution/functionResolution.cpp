@@ -7096,8 +7096,8 @@ preFold(Expr* expr) {
       if (ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         FnSymbol* inFn = toFnSymbol(call->parentSymbol);
         if (inFn && inFn->hasFlag(FLAG_STAR_TUPLE_ACCESSOR)) {
-          Type* fieldType = ct->getFieldType(call->get(2));
-          if (fieldType && fieldType->isRef()) {
+          QualifiedType fieldType = ct->getFieldType(call->get(2));
+          if (fieldType.type() && fieldType.isRef()) {
             if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
               Expr* base = call->get(1);
               Expr* field = call->get(2);
