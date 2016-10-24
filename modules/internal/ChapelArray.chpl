@@ -3388,7 +3388,7 @@ module ChapelArray {
       //
       // NOTE: See above note regarding associative domains
       //
-      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+      //compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
       for i in a do
         b.add(i);
     }
