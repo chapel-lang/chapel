@@ -530,7 +530,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
     // if this is a string literal, process it if we should
     //
     if (const char* str = toImmediateString(useArg)) {
-      if (processStringInRequireStmt(str)) {
+      if (processStringInRequireStmt(str, true)) {
         continue;
       }
     }
