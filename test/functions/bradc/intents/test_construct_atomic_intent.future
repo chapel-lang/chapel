@@ -1,8 +1,0 @@
-bug: atomics not passed to constructors by ref by default
-
-In order to get atomics passed by ref correctly for GASNet without
-breaking array construction and arrays of atomics, I had to make them
-not be passed by ref to constructors.  This future demonstrates this
-behavior as a placeholder to fix and address this later on, to avoid
-surprises and inconsistencies in the language (or at least to
-rationale it better if it must be this way).

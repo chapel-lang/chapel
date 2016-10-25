@@ -97,7 +97,7 @@ module RunBRawLoops {
             var val = 0.0;
             ltimer.start();
             for 0..#num_samples {
-              for i in 0..#len {
+              for i in 0..(len-1):int(32) {
                 var x = x0 + i*h;
                 sumx += trap_int_func(x, y, xp, yp);
               }

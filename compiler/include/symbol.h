@@ -122,6 +122,9 @@ public:
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
           bool       isRenameable()                            const;
+          bool       isRef();
+          bool       isWideRef();
+          bool       isRefOrWideRef();
 
   virtual void       codegenDef();
 
@@ -225,6 +228,7 @@ public:
 
   const char* doc;
 
+  GenRet codegenVarSymbol(bool lhsInSetReference=false);
   GenRet codegen();
   void codegenDefC(bool global = false, bool isHeader = false);
   void codegenDef();
@@ -616,6 +620,8 @@ void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
+VarSymbol* newTemp(const char* name, QualifiedType qt);
+VarSymbol* newTemp(QualifiedType qt);
 
 // for use in an English sentence
 const char* retTagDescrString(RetTag retTag);

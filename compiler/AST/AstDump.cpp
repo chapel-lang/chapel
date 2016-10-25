@@ -198,7 +198,8 @@ bool AstDump::enterDefExpr(DefExpr* node) {
         write("single");
       }
 
-      writeSymbol("var", sym, true);
+      write(true, sym->qualType().qualStr(), false);
+      writeSymbol("", sym, true);
       writeFlags(mFP, sym);
 
     } else if (isLabelSymbol(sym)) {

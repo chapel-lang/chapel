@@ -359,7 +359,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   inputFilenames = (const char**)realloc(inputFilenames, 
                                          (numInputFiles+1)*sizeof(char*));
 
-  for (int i = 0; i < numNewFilenames; i++, cursor++) {
+  for (int i = 0; i < numNewFilenames; i++) {
     if (!isRecognizedSource(filename[i])) {
       USR_FATAL(astr("file '",
                      filename[i],
@@ -377,9 +377,24 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
       closeInputFile(testfile);
     }
 
-    inputFilenames[cursor] = astr(filename[i]);
+    //
+    // Don't add the same file twice -- it's unnecessary and can mess
+    // up things like unprotected headers
+    //
+    bool duplicate = false;
+    const char* newFilename = astr(filename[i]);
+    for (int j = 0; j < cursor; j++) {
+      if (inputFilenames[j] == newFilename) {  // legal due to astr()
+        duplicate = true;
+        break;
+      }
+    }
+    if (duplicate) {
+      numInputFiles--;
+    } else {
+      inputFilenames[cursor++] = newFilename;
+    }
   }
-
   inputFilenames[cursor] = NULL;
 
   if (!foundChplSource && fUseIPE == false)

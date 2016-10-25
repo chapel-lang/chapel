@@ -332,6 +332,18 @@ Type* BaseAST::typeInfo() {
   return qt.type();
 }
 
+bool BaseAST::isRef() {
+  return this->qualType().isRef();
+}
+
+bool BaseAST::isWideRef() {
+  return this->qualType().isWideRef();
+}
+
+bool BaseAST::isRefOrWideRef() {
+  return this->qualType().isRefOrWideRef();
+}
+
 FnSymbol* BaseAST::getFunction() {
   if (ModuleSymbol* x = toModuleSymbol(this))
     return x->initFn;
@@ -592,7 +604,8 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
 GenRet baseASTCodegen(BaseAST* ast)
 {
   GenRet ret = ast->codegen();
-  ret.chplType = ast->typeInfo();
+  if (!ret.chplType)
+    ret.chplType = ast->typeInfo();
   ret.isUnsigned = ! is_signed(ret.chplType);
   return ret;
 }

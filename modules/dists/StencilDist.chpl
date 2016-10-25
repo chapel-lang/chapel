@@ -1093,8 +1093,12 @@ inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
+// BHARSH TODO: Like BlockDist, 'idx' should probably have a 'const in' or 'in'
+// intent
+//
 inline
-proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
+proc StencilArr.do_dsiAccess(param setter, idx: rank*idxType) ref {
+  var i = idx;
   local {
     if myLocArr != nil {
       if setter {

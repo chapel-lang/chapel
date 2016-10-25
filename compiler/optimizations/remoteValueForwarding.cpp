@@ -220,8 +220,18 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // to convert atomic formals to ref formals.
   } else if (isAtomicType(arg->type)) {
     retval = false;
+  } else if (arg->intent == INTENT_CONST_REF && !isRecordWrappedType(arg->typeInfo())) {
+    // BHARSH TODO: Failure for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr.chpl on --no-local
+    // when RVF-ing a domain. For now, simply do not RVF record-wrapped things
+    retval = true;
+  } else if (arg->intent == INTENT_CONST_IN &&
+      !arg->type->symbol->hasFlag(FLAG_REF)) {
+    // BHARSH TODO: This can currently happen when the arg is the lhs of a +=,
+    // but it obviously needs to have the 'ref' intent. One example can be seen
+    // for += between strings.
+    retval = true;
 
-  } else if (arg->type->symbol->hasFlag(FLAG_REF)  == true &&
+  } else if (arg->isRef()  == true &&
              isSafeToDerefArg(defMap, useMap, arg) == true) {
     retval = true;
 
@@ -290,16 +300,23 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
     // Find actual for arg.
     SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
 
-    INT_ASSERT(actual && actual->var->type == prevArgType);
+    INT_ASSERT(actual && actual->getValType() == prevArgType->getValType());
     SET_LINENO(actual);
 
     // Insert de-reference temp of value.
     VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
 
+    Expr* rhs = NULL;
+    if (actual->isRef()) {
+      rhs = new CallExpr(PRIM_DEREF, new SymExpr(actual->var));
+    } else {
+      rhs = new SymExpr(actual->var);
+    }
+
     call->insertBefore(new DefExpr(deref));
     call->insertBefore(new CallExpr(PRIM_MOVE,
                                     deref,
-                                    new CallExpr(PRIM_DEREF, actual->var)));
+                                    rhs));
 
     actual->replace(new SymExpr(deref));
   }
@@ -309,6 +326,7 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
     SET_LINENO(use);
 
     CallExpr* call = toCallExpr(use->parentExpr);
+    if (!call) continue;
 
     if (call && call->isPrimitive(PRIM_DEREF)) {
       call->replace(new SymExpr(arg));
@@ -320,10 +338,17 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
       Expr*      stmt   = use->getStmtExpr();
       VarSymbol* reref = newTemp("rvfRerefTmp", prevArgType);
 
+      Expr* rhs = NULL;
+      if (reref->isRef()) {
+        rhs = new CallExpr(PRIM_ADDR_OF, arg);
+      } else {
+        rhs = new SymExpr(arg);
+      }
+
       stmt->insertBefore(new DefExpr(reref));
       stmt->insertBefore(new CallExpr(PRIM_MOVE,
                                       reref,
-                                      new CallExpr(PRIM_ADDR_OF, arg)));
+                                      rhs));
 
       use->replace(new SymExpr(reref));
     }
@@ -505,7 +530,11 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     if (call->isResolved()) {
       ArgSymbol* arg = actual_to_formal(use);
 
-      retval = isSafeToDeref(defMap, useMap, field, arg, visited);
+      if (arg->intent == INTENT_CONST_REF) {
+        retval = true;
+      } else {
+        retval = isSafeToDeref(defMap, useMap, field, arg, visited);
+      }
 
     } else if (call->isPrimitive(PRIM_MOVE)) {
       SymExpr* newRef = toSymExpr(call->get(1));

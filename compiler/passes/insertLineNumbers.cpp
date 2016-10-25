@@ -99,7 +99,7 @@ static ArgSymbol* newLine(FnSymbol* fn) {
 }
 
 static ArgSymbol* newFile(FnSymbol* fn) {
-  ArgSymbol* file = new ArgSymbol(INTENT_CONST_REF, "_fn", dtInt[INT_SIZE_32]);
+  ArgSymbol* file = new ArgSymbol(INTENT_IN, "_fn", dtInt[INT_SIZE_32]);
   fn->insertFormalAtTail(file);
   filenameMap.put(fn, file);
   queue.add(fn);

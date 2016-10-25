@@ -448,17 +448,25 @@ static bool typeHasRefField(Type *type) {
 //
 static FnSymbol*
 resolveUninsertedCall(Type* type, CallExpr* call) {
+
+  // In case resolveCall drops other stuff into the tree ahead of the
+  // call, we wrap everything in a block for safe removal.
+  BlockStmt* block = new BlockStmt();
+
   if (type->defaultInitializer) {
     if (type->defaultInitializer->instantiationPoint)
-      type->defaultInitializer->instantiationPoint->insertAtHead(call);
+      type->defaultInitializer->instantiationPoint->insertAtHead(block);
     else
-      type->symbol->defPoint->insertBefore(call);
+      type->symbol->defPoint->insertBefore(block);
   } else {
-    chpl_gen_main->insertAtHead(call);
+    chpl_gen_main->insertAtHead(block);
   }
 
+  INT_ASSERT(block->parentSymbol);
+
+  block->insertAtHead(call);
   resolveCall(call);
-  call->remove();
+  block->remove();
 
   return call->isResolved();
 }
@@ -7216,6 +7224,16 @@ postFold(Expr* expr) {
       FOLD_CALL2(P_prim_lsh);
     } else if (call->isPrimitive(PRIM_RSH)) {
       FOLD_CALL2(P_prim_rsh);
+    } else if (call->isPrimitive(PRIM_REQUIRE)) {
+      Expr* arg = call->argList.only();
+      const char* str;
+      if (get_string(arg, &str)) {
+        processStringInRequireStmt(str, false);
+      } else {
+        USR_FATAL(call, "'require' statements require string arguments");
+      }
+      result = new CallExpr(PRIM_NOOP);
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_ARRAY_ALLOC) ||
                (call->primitive &&
                 (!strncmp("_fscan", call->primitive->name, 6) ||

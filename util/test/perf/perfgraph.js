@@ -388,7 +388,9 @@ function setupCloseGraphToggle(g, graphInfo, closeGraphToggle) {
 
   closeGraphToggle.onclick = function() {
     var checkBox = getCheckboxForGraph(g);
-    checkBox.checked = false;
+    if (typeof checkBox !== "undefined") {
+      checkBox.checked = false;
+    }
     $(g.divs.div).hide();
     $(g.divs.ldiv).hide();
     $(g.divs.gspacer).hide();

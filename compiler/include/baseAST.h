@@ -229,6 +229,9 @@ public:
   const char*       stringLoc()                                  const;
 
   Type*             typeInfo(); // note: calls qualType
+  bool              isRef();
+  bool              isWideRef();
+  bool              isRefOrWideRef();
   FnSymbol*         getFunction();
   ModuleSymbol*     getModule();
   Type*             getValType();

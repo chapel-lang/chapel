@@ -1,7 +1,3 @@
-./Glob.chpl:119: In iterator 'my_glob':
-./Glob.chpl:138: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-./Glob.chpl:57: In iterator 'my_wordexp':
-./Glob.chpl:75: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 ======== SERIAL ITERATORS (recursive) ==========
 -------- GLOB ----------
 a/a.c

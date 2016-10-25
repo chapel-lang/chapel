@@ -114,7 +114,7 @@ Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
-  qual(QUAL_BLANK),
+  qual(QUAL_UNKNOWN),
   type(init_type),
   flags(),
   defPoint(NULL)
@@ -165,20 +165,28 @@ static Qualifier qualifierForArgIntent(IntentTag intent)
     case INTENT_CONST_IN:  return QUAL_CONST_VAL;
     case INTENT_REF:       return QUAL_REF;
     case INTENT_CONST_REF: return QUAL_CONST_REF;
-    case INTENT_PARAM:     return QUAL_BLANK; // TODO
-    case INTENT_TYPE:      return QUAL_BLANK; // TODO
-    case INTENT_BLANK:     return QUAL_BLANK;
+    case INTENT_PARAM:     return QUAL_PARAM; // TODO
+    case INTENT_TYPE:      return QUAL_UNKNOWN; // TODO
+    case INTENT_BLANK:     return QUAL_UNKNOWN;
     // no default to get compiler warning if other intents are added
   }
-  return QUAL_BLANK;
+  return QUAL_UNKNOWN;
 }
 
 QualifiedType Symbol::qualType() {
+  QualifiedType ret(dtUnknown, QUAL_UNKNOWN);
+
   if (ArgSymbol* arg = toArgSymbol(this)) {
-    return QualifiedType(type, qualifierForArgIntent(arg->intent));
+    Qualifier q = qualifierForArgIntent(arg->intent);
+    if (qual == QUAL_WIDE_REF && (q == QUAL_REF || q == QUAL_CONST_REF)) {
+      q = QUAL_WIDE_REF;
+    }
+    ret = QualifiedType(type, q);
+  } else {
+    ret = QualifiedType(type, qual);
   }
 
-  return QualifiedType(type, qual);
+  return ret;
 }
 
 
@@ -196,6 +204,20 @@ bool Symbol::isParameter() const {
 
 bool Symbol::isRenameable() const {
   return !(hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN));
+}
+
+bool Symbol::isRef() {
+  QualifiedType q = qualType();
+  return (q.isRef() || type->symbol->hasFlag(FLAG_REF));
+}
+
+bool Symbol::isWideRef() {
+  QualifiedType q = qualType();
+  return (q.isWideRef() || type->symbol->hasFlag(FLAG_WIDE_REF));
+}
+
+bool Symbol::isRefOrWideRef() {
+  return isRef() || isWideRef();
 }
 
 
@@ -323,6 +345,15 @@ VarSymbol::VarSymbol(const char *init_name,
   llvmDIVariable(NULL)
 {
   gVarSymbols.add(this);
+  if (type == dtUnknown || type->symbol == NULL) {
+    this->qual = QUAL_UNKNOWN;
+  } else if (type->symbol->hasFlag(FLAG_REF)) {
+    this->qual = QUAL_REF;
+  } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) {
+    this->qual = QUAL_WIDE_REF;
+  } else {
+    this->qual = QUAL_VAL;
+  }
 }
 
 
@@ -588,7 +619,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
 }
 #endif
 
-GenRet VarSymbol::codegen() {
+GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
   GenRet ret;
@@ -689,9 +720,30 @@ GenRet VarSymbol::codegen() {
         ret.isLVPtr = GEN_VAL;
         ret.c = cname;
       } else {
-        ret.c = '&';
-        ret.c += cname;
-        ret.isLVPtr = GEN_PTR;
+        QualifiedType qt = qualType();
+        if (lhsInSetReference) {
+          ret.c = '&';
+          ret.c += cname;
+          ret.isLVPtr = GEN_PTR;
+          if (qt.isRef() && !qt.isRefType())
+            ret.chplType = getOrMakeRefTypeDuringCodegen(typeInfo());
+          else if (qt.isWideRef() && !qt.isWideRefType()) {
+            Type* refType = getOrMakeRefTypeDuringCodegen(typeInfo());
+            ret.chplType = getOrMakeWideTypeDuringCodegen(refType);
+          }
+        } else {
+          if (qt.isRef() && !qt.isRefType()) {
+            ret.c = cname;
+            ret.isLVPtr = GEN_PTR;
+          } else if(qt.isWideRef() && !qt.isWideRefType()) {
+            ret.c = cname;
+            ret.isLVPtr = GEN_WIDE_PTR;
+          } else {
+            ret.c = '&';
+            ret.c += cname;
+            ret.isLVPtr = GEN_PTR;
+          }
+        }
       }
       // Print string contents in a comment if developer mode
       // and savec is set.
@@ -806,6 +858,9 @@ GenRet VarSymbol::codegen() {
   return ret;
 }
 
+GenRet VarSymbol::codegen() {
+  return codegenVarSymbol(true);
+}
 
 void VarSymbol::codegenDefC(bool global, bool isHeader) {
   GenInfo* info = gGenInfo;
@@ -816,9 +871,24 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
     return;
 
   AggregateType* ct = toAggregateType(type);
+  QualifiedType qt = qualType();
+
+  if (qt.isRef() && !qt.isRefType()) {
+    Type* refType = getOrMakeRefTypeDuringCodegen(type);
+    ct = toAggregateType(refType);
+  }
+  if (qt.isWideRef() && !qt.isWideRefType()) {
+    Type* refType = getOrMakeRefTypeDuringCodegen(type);
+    Type* wideType = getOrMakeWideTypeDuringCodegen(refType);
+    ct = toAggregateType(wideType);
+  }
+
+  Type* useType = type;
+  if (ct) useType = ct;
+
   std::string typestr =  (this->hasFlag(FLAG_SUPER_CLASS) ?
-                          std::string(ct->classStructName(true)) :
-                          type->codegen().c);
+                          std::string(toAggregateType(useType)->classStructName(true)) :
+                          useType->codegen().c);
 
   //
   // a variable can be codegen'd as static if it is global and neither
@@ -1112,7 +1182,10 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 bool argMustUseCPtr(Type* type) {
-  if (isRecord(type) || isUnion(type))
+  if (isUnion(type))
+    return true;
+  if (isRecord(type) &&
+      !type->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
     return true;
   return false;
 }
@@ -1233,23 +1306,36 @@ const char* intentDescrString(IntentTag intent) {
 }
 
 
+static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
+  QualifiedType q = arg->qualType();
+  Type* useType = q.type();
+
+  if (q.isRef() && !q.isRefType())
+    useType = getOrMakeRefTypeDuringCodegen(useType);
+
+  if (q.isWideRef() && !q.isWideRefType()) {
+    Type* refType = getOrMakeRefTypeDuringCodegen(useType);
+    useType = getOrMakeWideTypeDuringCodegen(refType);
+  }
+  return useType;
+}
+
 GenRet ArgSymbol::codegenType() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
   GenRet ret;
+
+  Type* useType = getArgSymbolCodegenType(this);
+
   if( outfile ) {
-    ret.c = type->codegen().c;
-    if (requiresCPtr())
-      ret.c += "* const";
+    ret.c = useType->codegen().c;
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type *argType = type->codegen().type;
-    if(requiresCPtr()) {
-      argType = argType->getPointerTo();
-    }
+    llvm::Type *argType = useType->codegen().type;
     ret.type = argType;
 #endif
   }
+  ret.chplType = useType;
   return ret;
 }
 
@@ -1259,22 +1345,44 @@ GenRet ArgSymbol::codegen() {
   GenRet ret;
 
   if( outfile ) {
+    QualifiedType qt = qualType();
     ret.c = '&';
     ret.c += cname;
     ret.isLVPtr = GEN_PTR;
+    if (qt.isRef() && !qt.isRefType())
+      ret.chplType = getOrMakeRefTypeDuringCodegen(typeInfo());
+    else if (qt.isWideRef() && !qt.isWideRefType()) {
+      Type* refType = getOrMakeRefTypeDuringCodegen(typeInfo());
+      ret.chplType = getOrMakeWideTypeDuringCodegen(refType);
+    }
+    /*
+    // BHARSH TODO: Is this still necessary?
+    if (q.isRef() && !q.isRefType()) {
+      ret.c = cname;
+      ret.isLVPtr = GEN_PTR;
+    } else if(q.isWideRef() && !q.isWideRefType()) {
+      ret.c = cname;
+      ret.isLVPtr = GEN_WIDE_PTR;
+    } else {
+      ret.c = '&';
+      ret.c += cname;
+      ret.isLVPtr = GEN_PTR;
+    }
+    */
   } else {
 #ifdef HAVE_LLVM
     ret = info->lvt->getValue(cname);
 #endif
   }
 
-  if( requiresCPtr() ) {
-    // Don't try to use chplType.
-    ret.chplType = NULL;
-    ret = codegenLocalDeref(ret);
-  }
+  // BHARSH TODO: Is this still necessary?
+  //if( requiresCPtr() ) {
+  //  // Don't try to use chplType.
+  //  ret.chplType = NULL;
+  //  ret = codegenLocalDeref(ret);
+  //}
 
-  ret.chplType = typeInfo();
+  //ret.chplType = this->type;
 
   return ret;
 }
@@ -2525,7 +2633,7 @@ bool FnSymbol::returnsRefOrConstRef() const {
 }
 
 QualifiedType FnSymbol::getReturnQualType() const {
-  Qualifier q = QUAL_BLANK;
+  Qualifier q = QUAL_UNKNOWN;
   if (retTag == RET_REF)
     q = QUAL_REF;
   else if(retTag == RET_CONST_REF)
@@ -3622,6 +3730,16 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
   }
 
   return s->flags & mask;
+}
+
+VarSymbol* newTemp(const char* name, QualifiedType qt) {
+  VarSymbol* vs = newTemp(name, qt.type());
+  vs->qual = qt.getQual();
+  return vs;
+}
+
+VarSymbol* newTemp(QualifiedType qt) {
+  return newTemp((const char*)NULL, qt);
 }
 
 VarSymbol* newTemp(const char* name, Type* type) {

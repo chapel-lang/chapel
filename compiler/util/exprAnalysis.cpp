@@ -257,6 +257,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG:
     case PRIM_ADDR_OF:
+    case PRIM_SET_REFERENCE:
     case PRIM_DEREF:
     case PRIM_PTR_EQUAL:
     case PRIM_PTR_NOTEQUAL:
