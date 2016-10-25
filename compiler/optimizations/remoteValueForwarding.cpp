@@ -209,7 +209,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // Forward array values and references to array values.
   // This is OK because the array/domain/distribution wrapper
   // records have fields that do not vary.
-  // It does not matter if the on-body synchonizes.
+  // It does not matter if the on-body synchronizes.
   // (The array class, e.g. DefaultRectangularArr, is what varies,
   //  and it contains a pointer to the actual data, which might
   //  be replaced with another pointer).

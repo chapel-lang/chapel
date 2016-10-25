@@ -1014,7 +1014,6 @@ getReturnedTupleType(FnSymbol* fn, Type* retType)
     return computeTupleWithIntent(INTENT_REF, retType);
   } else {
     // Compute the tuple type without any refs
-    // Set the function return type to that type.
     return computeNonRefTuple(retType);
   }
 }
@@ -6200,7 +6199,12 @@ static Expr* resolvePrimInit(CallExpr* call)
   return result;
 }
 
-
+// This function helps when checking that we aren't returning
+// a local variable by reference. In particular, it checks for two
+// cases:
+//   * returning a ref-intent argument by ref
+//   * returning a const-ref-intent argument by const ref
+//
 static bool
 returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
 {
@@ -8095,7 +8099,6 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     FnSymbol* instantiatedFrom = fn->instantiatedFrom;
     while (instantiatedFrom->instantiatedFrom)
       instantiatedFrom = instantiatedFrom->instantiatedFrom;
-
 
     CallExpr* call = new CallExpr(instantiatedFrom->retType->defaultInitializer);
 

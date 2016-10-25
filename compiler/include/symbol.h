@@ -704,6 +704,9 @@ extern FnSymbol *gChplDoDirectExecuteOn;
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gGenericTupleDestroy;
+
+// These global symbols point to generic functions that
+// will be instantiated.
 extern FnSymbol *gBuildTupleType;
 extern FnSymbol *gBuildStarTupleType;
 extern FnSymbol *gBuildTupleTypeNoRef;
