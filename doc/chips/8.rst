@@ -492,7 +492,7 @@ be provided at task join.
 The implementation requires that the ``cobegin`` statements be
 synchronized before the errors are handled.
 
-.. code_block:: chapel
+.. code-block:: chapel
 
   proc encounterError(out _e_out: Error) { _e_out = new Error(); }
   proc noError(out _e_out: Error) { return; }
