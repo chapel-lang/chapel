@@ -722,26 +722,12 @@ checkFormalActualTypesMatch()
                     formal->name);
         }
 
-        if (formal->type != actual->typeInfo()) {
-          TypeSymbol* actualTS = actual->typeInfo()->symbol;
-          TypeSymbol* formalTS = formal->type->symbol;
-          if ((formal->intent & INTENT_FLAG_REF) &&
-              actualTS->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
-              formal->type == actualTS->type->getValType()) {
-            // OK to pass a ref to a ref-intent function
-          } else if((formal->isRefOrWideRef()) &&
-                    formalTS->type->getValType() == actualTS->type->getValType()) {
-            // OK to pass a value to a ref-intent function
-          } else if (!formal->isRefOrWideRef() && actual->isRefOrWideRef() &&
-                    formal->getValType() == actual->getValType()) {
-            // OK to pass ref to non-ref, codegen will insert dereference
-          } else {
-            INT_FATAL(call,
-                      "actual formal type mismatch for %s: %s != %s",
-                      fn->name,
-                      actual->typeInfo()->symbol->name,
-                      formal->type->symbol->name);
-          }
+        if (formal->getValType() != actual->getValType()) {
+          INT_FATAL(call,
+                    "actual formal type mismatch for %s: %s != %s",
+                    fn->name,
+                    actual->typeInfo()->symbol->name,
+                    formal->type->symbol->name);
         }
       }
     }
