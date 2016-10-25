@@ -152,19 +152,11 @@ proc randomMake(desc, nuclInfo: [?D], n) {
         // TODO: reference version doesn't use real, why do I?
         //
         const r = rands[i];
-        if r < cumul_p[1] {
-          line_buff[off] = nuclInfo[1](nucl);
-        } else {
-          var lo = nuclInfo.domain.low,
-            hi = nuclInfo.domain.high;
-          while (hi > lo+1) {
-            var ai = (hi + lo) / 2;
-            if (r < cumul_p[ai]) then
-              hi = ai;
-            else
-              lo = ai;
+        for i in D {
+          if r < cumul_p[i] {
+            line_buff[off] = nuclInfo[i](nucl);
+            break;
           }
-          line_buff[off] = nuclInfo[hi](nucl);
         }
         off += 1;
         col += 1;
