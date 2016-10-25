@@ -157,7 +157,7 @@ static QualifiedType
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
-  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS) /*&& !call->get(2)->isRef()*/) {
+  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS)) {
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
   }
@@ -526,8 +526,8 @@ initPrimitive() {
 
   prim_def(PRIM_ADDR_OF, "addr of", returnInfoRef);
   prim_def(PRIM_DEREF,   "deref",   returnInfoVal, false, true);
-  // sets a reference to another reference value
-  // it is the RHS of a PRIM_MOVE with the argument reference to point to
+  // If the argument is a reference, simply return it. Otherwise, return a
+  // ref to the arg. The result is always a reference.
   prim_def(PRIM_SET_REFERENCE, "set reference", returnInfoAsRef);
 
   // local block primitives
@@ -694,6 +694,7 @@ initPrimitive() {
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
 
   prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
+  prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

@@ -155,7 +155,7 @@ enum Qualifier {
 //   ref aRef = aVar;
 //
 //   SymExpr(aVar) and Symbol(aVar) have QualifiedType(int, QUAL_VAL)
-//   SymExpr(aRef) and Symbol(aVar) have QualifiedType(int, QUAL_REF)
+//   SymExpr(aRef) and Symbol(aRef) have QualifiedType(int, QUAL_REF)
 //
 class QualifiedType {
 public:
