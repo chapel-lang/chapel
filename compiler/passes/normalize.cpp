@@ -633,32 +633,17 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
                       new CallExpr(PRIM_COERCE, ret_expr,
                         fn->retExprType->body.tail->copy())));
   }
-  else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
+  else if (fn->hasFlag(FLAG_IF_EXPR_FN))
+  {
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
+  }
+  else if (!fn->hasFlag(FLAG_WRAPPER) &&
+           strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_DEREF, ret_expr)));
   else
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
 }
-
-
-// Look in the block statement determining a return value type, and see if it
-// looks like an array type expression.
-static bool
-returnTypeIsArray(BlockStmt* retExprType)
-{
-  CallExpr* call = toCallExpr(retExprType->body.tail);
-  if (! call)
-    return false;
-  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
-  if (! urse)
-    return false;
-  if (strcmp(urse->unresolved, "chpl__buildArrayRuntimeType"))
-    // Does not match.
-    return false;
-  // Very likely an array type.
-  return true;
-}
-
 
 // Following normalization, each function contains only one return statement
 // preceded by a label.  The first half of the function counts the
@@ -761,23 +746,6 @@ static void normalize_returns(FnSymbol* fn) {
                              "expressions the iterator yields");
 
       fn->addFlag(FLAG_SPECIFIED_RETURN_TYPE);
-
-      // I recommend a rework of function representation in the AST.
-      // Because we strip type information off of variable declarations and
-      // use the type of the initializer instead, initialization is obligatory.
-      // I think we should heed the declared type.
-      // Then at least these two lines can go away, and other simplifications
-      // may follow.
-
-      // We do not need to do this for iterators returning arrays
-      // because it adds initialization code that is later removed.
-      // Also, we want arrays returned from iterators to behave like
-      // references, so we add the 'var' return intent here.
-      if (fn->isIterator() &&
-          returnTypeIsArray(retExprType))
-        // Treat iterators returning arrays as if they are always returned
-        // by ref.
-        fn->retTag = RET_REF;
     }
 
     fn->insertAtHead(new DefExpr(retval));
@@ -1045,6 +1013,36 @@ static void insert_call_temps(CallExpr* call)
       parentCall->isNamed("_build_tuple")   == true)
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
+  // MPF 2016-10-20
+  //   This is a workaround for a problem in
+  //     types/typedefs/bradc/arrayTypedef
+  //   I'm sure that there is a better way to handle this
+  {
+    // either in module init fn or in a sequence of parloopexpr fns
+    // computing an array type than are in a module init fn
+    FnSymbol* fn = call->getFunction();
+    while( fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) ) {
+      fn = fn->defPoint->getFunction();
+    }
+    if (fn == fn->getModule()->initFn) {
+      CallExpr* cur = parentCall;
+      CallExpr* sub = call;
+      // Look for a parent call that is either:
+      //  * making an array type alias, or
+      //  * passing the result into the 2nd argument of buildArrayRuntimeType.
+      while (cur != NULL) {
+        if (cur->isNamed("chpl__typeAliasInit") ||
+            (cur->isNamed("chpl__buildArrayRuntimeType") && cur->get(2) == sub))
+          break;
+        sub = cur;
+        cur = toCallExpr(cur->parentExpr);
+      }
+      if (cur) {
+        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+      }
+    }
+  }
+
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
 
@@ -1158,6 +1156,10 @@ static void fix_def_expr(VarSymbol* var) {
   //
   if (var->hasFlag(FLAG_NO_COPY)) {
     INT_ASSERT(init);
+    // If a type expression is set, normalize would normally
+    // use defaultOf/assignment anyway. As of 9-21-2016
+    // setting FLAG_NO_COPY and having a type leads to some
+    // unresolved type expression hanging around in the AST.
     INT_ASSERT(!type);
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
     return;
@@ -1173,6 +1175,8 @@ static void fix_def_expr(VarSymbol* var) {
                                    var,
                                    new CallExpr("chpl__typeAliasInit",
                                                 init->copy())));
+    // note: insert_call_temps adjusts auto-destroy in this case
+    // by checking for chpl__typeAliasInit
 
     return;
   }
@@ -1226,7 +1230,6 @@ static void init_array_alias(VarSymbol* var,
                              Expr*      init,
                              Expr*      stmt) {
   CallExpr* partial  = NULL;
-  CallExpr* autoCopy = NULL;
 
   if (!type) {
     partial = new CallExpr("newAlias", gMethodToken, init->remove());
@@ -1242,9 +1245,7 @@ static void init_array_alias(VarSymbol* var,
     partial = new CallExpr(reindex, type->remove());
   }
 
-  autoCopy = new CallExpr("chpl__autoCopy", partial);
-
-  stmt->insertAfter(new CallExpr(PRIM_MOVE, var, autoCopy));
+  stmt->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
 }
 
 

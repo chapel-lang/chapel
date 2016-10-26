@@ -36,6 +36,7 @@ module DefaultSparse {
         parentDom: domain) {
 
       this.dist = dist;
+      this.parentDom = parentDom;
     }
 
     proc dsiBuildArray(type eltType)

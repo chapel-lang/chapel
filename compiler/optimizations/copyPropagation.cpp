@@ -204,7 +204,7 @@ static void extractReferences(Expr* expr,
           RefMap::iterator refDef = refs.find(rhs);
           // Refs can come from outside the function (e.g. through arguments),
           // so are not necessarily defined within the function.
-          if (refDef != refs.end())
+          if (refDef != refs.end() && refDef->second != NULL)
           {
             Symbol* val = refDef->second;
 #if DEBUG_CP
@@ -213,6 +213,16 @@ static void extractReferences(Expr* expr,
                      lhs->name, lhs->id, val->name, val->id);
 #endif
             refs.insert(RefMapElem(lhs, val));
+          } else {
+#if DEBUG_CP
+            if (debug > 0) {
+              printf("Setting pair to NULL: %s[%d]\n", lhs->name, lhs->id);
+            }
+#endif
+            // If we can't reason about this usage of a reference, mark its
+            // corresponding value with NULL to indicate that nothing should
+            // happen.
+            refs[lhs] = NULL;
           }
         }
       }
@@ -226,12 +236,22 @@ static void extractReferences(Expr* expr,
           // Create the pair lhs <- &rhs.
           Symbol* lhs = lhe->var;
           Symbol* rhs = rhe->var;
+
+          RefMap::iterator refDef = refs.find(lhs);
+          if (refDef != refs.end()) {
+            // Multiple ADDR_OFs. Make the value NULL to indicate that we cannot
+            // replace this reference.
+            refs[lhs] = NULL;
+          } else {
 #if DEBUG_CP
-          if (debug > 0)
-            printf("Creating ref (%s[%d], %s[%d])\n",
-                   lhs->name, lhs->id, rhs->name, rhs->id);
+            if (debug > 0)
+              printf("Creating ref (%s[%d], %s[%d])\n",
+                     lhs->name, lhs->id, rhs->name, rhs->id);
 #endif
-          refs.insert(RefMapElem(lhs, rhs));
+            refs.insert(RefMapElem(lhs, rhs));
+          }
+        } else {
+          refs[lhs] = NULL;
         }
       }
     }
@@ -565,8 +585,8 @@ static Expr* derefUse(SymExpr* se)
   CallExpr* call = toCallExpr(se->parentExpr);
   if (call->isPrimitive(PRIM_DEREF))
     return call;
-  if (isDerefMove(call)) {
-    return call->get(2);
+  if (isDerefMove(call) && se == call->get(2)) {
+    return se;
   }
   return NULL;
 }
@@ -621,7 +641,7 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
     {
       // See if there is a (ref,def) pair.
       RefMap::iterator ref_def_pair = refs.find(se->var);
-      if (ref_def_pair != refs.end())
+      if (ref_def_pair != refs.end() && ref_def_pair->second != NULL)
       {
 #if DEBUG_CP
         if (debug > 0)

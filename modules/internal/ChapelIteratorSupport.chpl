@@ -40,13 +40,14 @@ module ChapelIteratorSupport {
   // module support for iterators
   //
   pragma "no doc"
+  pragma "allow ref" // needs to to return tuples with refs
   proc iteratorIndex(ic: _iteratorClass) {
     ic.advance();
     return ic.getValue();
   }
 
   pragma "no doc"
-  pragma "expand tuples with values"
+  pragma "expand tuples with values"  // needs to return tuples with refs
   proc iteratorIndex(t: _tuple) {
     pragma "expand tuples with values"
     proc iteratorIndexHelp(t: _tuple, param dim: int) {
@@ -98,7 +99,7 @@ module ChapelIteratorSupport {
     return ic;
 
   proc _getIterator(type t) {
-    return _getIterator(_checkIterator(t));
+    return _getIterator(t.these());
   }
 
   inline proc _getIteratorZip(x) {
@@ -135,19 +136,6 @@ module ChapelIteratorSupport {
       return _getIterator(t(1));
     else
       return _getIteratorZipInternal(t, 1);
-  }
-
-  inline proc _checkIterator(type t) {
-    use Reflection;
-
-    if (canResolveTypeMethod(t, "these")) then
-      return t.these();
-    else
-      compilerError("unable to iterate over type '", t:string, "'");
-  }
-
-  inline proc _checkIterator(x) {
-    return x;
   }
 
   inline proc _freeIterator(ic: _iteratorClass) {

@@ -614,6 +614,10 @@
 03-error-in-fun.chpl:1125: note: The shadow variable 'enm' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:1150: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1125: note: The shadow variable 'cls' is constant due to task intents in this begin statement
+03-error-in-fun.chpl:1152: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1125: note: The shadow variable 'dom1' is constant due to task intents in this begin statement
+03-error-in-fun.chpl:1153: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1125: note: The shadow variable 'dom2' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:1159: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1157: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1160: error: illegal lvalue in assignment
@@ -656,6 +660,10 @@
 03-error-in-fun.chpl:1157: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1182: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1157: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
+03-error-in-fun.chpl:1184: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1157: note: The shadow variable 'dom1' is constant due to task intents in this parallel statement
+03-error-in-fun.chpl:1185: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1157: note: The shadow variable 'dom2' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1191: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1189: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1192: error: illegal lvalue in assignment
@@ -698,6 +706,10 @@
 03-error-in-fun.chpl:1189: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1214: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1189: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
+03-error-in-fun.chpl:1216: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1189: note: The shadow variable 'dom1' is constant due to task intents in this parallel statement
+03-error-in-fun.chpl:1217: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1189: note: The shadow variable 'dom2' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1261: In function 'funConstRef':
 03-error-in-fun.chpl:1297: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1298: error: illegal lvalue in assignment
@@ -720,6 +732,10 @@
 03-error-in-fun.chpl:1315: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1317: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1320: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1322: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1323: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1324: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1325: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1329: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1330: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1331: error: illegal lvalue in assignment
@@ -741,6 +757,10 @@
 03-error-in-fun.chpl:1347: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1349: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1352: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1354: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1355: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1356: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1357: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1361: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1362: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1363: error: illegal lvalue in assignment
@@ -762,3 +782,7 @@
 03-error-in-fun.chpl:1379: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1381: error: illegal lvalue in assignment
 03-error-in-fun.chpl:1384: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1386: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1387: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1388: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1389: error: illegal lvalue in assignment

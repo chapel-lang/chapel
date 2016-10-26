@@ -442,7 +442,7 @@ module SSCA2_RMAT_graph_generator
       if dEdge then writeln(dstyle, " vertex ", u);
       writeNum(sta, startIx);
 
-      for v in G.Neighbors(u) {
+      for v in G.Neighbors(u).sorted() {
         const w = G.Row(u).Weight(v);
         if dRow then write((v, w));
         if dEdge then writeln(dstyle, " ", u, " ", v, " ", w);

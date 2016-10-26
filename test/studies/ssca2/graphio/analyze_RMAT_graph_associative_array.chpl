@@ -85,7 +85,8 @@ module analyze_RMAT_graph_associative_array {
       const vertices;
       var   Row      : [vertices] row_struct (index (vertices));
 
-      proc   Neighbors  ( v : index (vertices) ) {return Row (v).Row_Neighbors;}
+      proc   Neighbors  ( v : index (vertices) ) ref
+        {return Row (v).Row_Neighbors;}
 
       iter   edge_weight (v : index (vertices) ) ref {
         for w in Row (v).Weight do

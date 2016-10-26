@@ -1,1 +1,1 @@
-bug: reference count becomes negative with ref A = returnArray()
+bug: default ref intent argument cannot be returned by ref

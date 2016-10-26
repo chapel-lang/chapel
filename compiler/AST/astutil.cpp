@@ -390,7 +390,7 @@ bool isMoveOrAssign(CallExpr* call) {
 // - the RHS is a reference
 //
 bool isDerefMove(CallExpr* call) {
-  return isMoveOrAssign(call) && !call->get(1)->isRefOrWideRef() && call->get(2)->isRefOrWideRef();
+  return isMoveOrAssign(call) && isSymExpr(call->get(2)) && !call->get(1)->isRefOrWideRef() && call->get(2)->isRefOrWideRef();
 }
 
 

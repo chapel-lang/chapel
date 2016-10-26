@@ -181,9 +181,6 @@ class ReplicatedDist : BaseDist {
   const targetLocales;
   // "IDs" are indices into targetLocales
   proc targetIds return targetLocales.domain;
-
-  // privatized object id
-  var pid: int = -1;
 }
 
 
@@ -216,6 +213,10 @@ proc ReplicatedDist.dsiEqualDMaps(that: ReplicatedDist(?)) {
 
 proc ReplicatedDist.dsiEqualDMaps(that) param {
   return false;
+}
+
+proc ReplicatedDist.dsiDestroyDist() {
+  // no action necessary here
 }
 
 // privatization
@@ -273,9 +274,6 @@ class ReplicatedDom : BaseRectangularDom {
   var localDoms: [dist.targetIds] LocReplicatedDom(rank, idxType, stridable);
 
   proc numReplicands return localDoms.numElements;
-
-  // privatized object id
-  var pid: int = -1;
 }
 
 //
@@ -496,6 +494,12 @@ proc ReplicatedDom.dsiMember(indexx)
 proc ReplicatedDom.dsiIndexOrder(indexx)
   return redirectee().dsiIndexOrder(indexx);
 
+proc ReplicatedDom.dsiDestroyDom() {
+  coforall localeIdx in dist.targetIds {
+    on dist.targetLocales(localeIdx) do
+      delete localDoms(localeIdx);
+  }
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // arrays
@@ -513,9 +517,6 @@ class ReplicatedArr : BaseArr {
   // NOTE: 'dom' must be initialized prior to initializing 'localArrs'
   var localArrs: [dom.dist.targetIds]
               LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
-
-  // privatized object id
-  var pid: int = -1;
 }
 
 //
@@ -583,7 +584,7 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
 }
 
 // Return the array element corresponding to the index - on the current locale
-proc ReplicatedArr.dsiAccess(indexx) ref: eltType {
+proc ReplicatedArr.dsiAccess(indexx) ref {
   return localArrs[here.id].arrLocalRep[indexx];
 }
 
@@ -597,6 +598,13 @@ proc ReplicatedArr.dsiSerialWrite(f): void {
         f.write(locArr.locale, ":\n");
       locArr.arrLocalRep._value.dsiSerialWrite(f);
 //  }
+  }
+}
+
+proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
+  coforall localeIdx in dom.dist.targetIds {
+    on dom.dist.targetLocales(localeIdx) do
+      delete localArrs(localeIdx);
   }
 }
 

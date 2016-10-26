@@ -73,10 +73,6 @@ created using 'this' - it will not redistribute already-existing
 domains/arrays.
 */
 proc Block.changeBoundingBox(newBB) {
-  // A weak guard against accessing already-deleted Block objects.
-  if _distCnt.read() < 0 then
-    halt("changeBoundingBox: negative reference count");
-
   // Comment out this check if desired. NB Block-distributed domains created
   // using 'this' will not be re-distributed upon changeBoundingBox().
   if _doms.length != 0 then

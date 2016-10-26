@@ -398,6 +398,8 @@ void Scope::variablesDestroy(Expr* refStmt, VarSymbol* excludeVar) const {
         if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
           SET_LINENO(var);
 
+          INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
+
           CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
 
           if (insertAfter == true)
@@ -506,10 +508,12 @@ static bool isAutoDestroyedVariable(Symbol* sym) {
   bool retval = false;
 
   if (VarSymbol* var = toVarSymbol(sym)) {
-    if (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true ||
+    if ((var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true &&
+         var->hasFlag(FLAG_NO_AUTO_DESTROY)     == false) ||
 
         (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true  &&
          var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
+         // TODO - can we remove this isRefCountedType?
          isRefCountedType(var->type)                             == false)) {
 
       retval = (var->isType() == false && autoDestroyMap.get(var->type) != 0);

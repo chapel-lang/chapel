@@ -5154,9 +5154,13 @@ proc _toNumeric(x:?t) where !_isIoPrimitiveType(t)
 }
 
 
-
 private inline
-proc _toString(x:?t) where _isIoPrimitiveType(t)
+proc _toString(x:?t) where t==string
+{
+  return (x, true);
+}
+private inline
+proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=string)
 {
   return (x:string, true);
 }

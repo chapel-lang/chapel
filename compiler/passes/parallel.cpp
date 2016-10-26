@@ -257,13 +257,9 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
   if (fn->hasFlag(FLAG_BEGIN) ||
       isString(baseType))
   {
-    if (isRefCountedType(baseType))
-    {
-      return true;
-    }
-
-    else if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
-             isString(baseType))
+    if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
+         isString(baseType) || // TODO -- is this case necessary?
+         (isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)))
     {
       if (!formal->isRef())
       {
@@ -288,42 +284,7 @@ static Symbol* insertAutoCopyForTaskArg
 
   FnSymbol* autoCopyFn = getAutoCopy(baseType);
 
-  // Special handling for reference counted types.
-  if (isRefCountedType(baseType))
-  {
-    // TODO: Can we consolidate these two clauses?
-    // Does arg->typeInfo() != baseType mean that arg is passed by ref?
-    if (arg->typeInfo() != baseType)
-    {
-      // For internally reference-counted types, this punches through
-      // references to bump the reference count.
-      VarSymbol* derefTmp = newTemp(baseType);
-      fcall->insertBefore(new DefExpr(derefTmp));
-      fcall->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
-                                       new CallExpr(PRIM_DEREF, var)));
-      // The result of the autoCopy call is dropped on the floor.
-      // It is only called to increment the ref count.
-      CallExpr* autoCopyCall = new CallExpr(autoCopyFn, derefTmp);
-      fcall->insertBefore(autoCopyCall);
-      insertReferenceTemps(autoCopyCall);
-      // But the original var is passed through to the field assignment.
-    }
-    else
-    {
-      VarSymbol* valTmp = newTemp(baseType);
-      valTmp->addFlag(FLAG_NECESSARY_AUTO_COPY);
-      fcall->insertBefore(new DefExpr(valTmp));
-      CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
-      fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
-      insertReferenceTemps(autoCopyCall);
-      // If the arg is not passed by reference, the result of the autoCopy is
-      // passed to the field assignment.
-      var = valTmp;
-    }
-  }
-
   // Normal (record) handling
-  else
   {
     // TODO: Find out why _RuntimeTypeInfo records do not have autoCopy
     // functions, so we can get rid of this special test.
@@ -1367,9 +1328,6 @@ makeHeapAllocations() {
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
           def->replace(new SymExpr(tmp));
         } else if (call->isResolved()) {
-          if (call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-            call->remove();
-          } else {
             ArgSymbol* formal = actual_to_formal(def);
             if (formal->isRef()) {
               VarSymbol* tmp = newTemp(var->type);
@@ -1382,7 +1340,6 @@ makeHeapAllocations() {
               call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(op, def->var, heapType->getField(1))));
               def->replace(new SymExpr(tmp));
             }
-          }
         } else {
           VarSymbol* tmp = newTemp(var->type);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1404,12 +1361,34 @@ makeHeapAllocations() {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->var, heapType->getField(1)));
           }
         } else if (call->isResolved()) {
-          if (actual_to_formal(use)->type != heapType) {
-            VarSymbol* tmp = newTemp(var->type);
+          ArgSymbol* formal = actual_to_formal(use);
+          if (formal->type != heapType) {
 
-            call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->var, heapType->getField(1))));
-            use->replace(new SymExpr(tmp));
+            if (formal->isRef()) {
+              // Handle value arguments passed by blank intent where
+              // blank intent is 'const ref' without making a copy.
+              // Instead, pass the address of the heap-allocated variable.
+
+              // TODO  - this code is almost the same as the
+              // def case above..
+              VarSymbol* tmp = newTemp(var->type);
+              tmp->qual = QUAL_REF;
+              PrimitiveTag op = PRIM_GET_MEMBER;
+              if (heapType->getField(1)->isRef()) {
+                op = PRIM_GET_MEMBER_VALUE;
+              }
+              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(op, use->var, heapType->getField(1))));
+              use->replace(new SymExpr(tmp));
+            } else {
+              // formal takes in argument by value, so read from the
+              // heap-allocated global.
+              VarSymbol* tmp = newTemp(var->type);
+
+              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->var, heapType->getField(1))));
+              use->replace(new SymExpr(tmp));
+            }
           }
         } else if ((call->isPrimitive(PRIM_GET_MEMBER) ||
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||

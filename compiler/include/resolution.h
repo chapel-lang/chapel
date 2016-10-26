@@ -21,6 +21,8 @@
 #define _RESOLUTION_H_
 
 #include "baseAST.h"
+#include "symbol.h"
+#include <vector>
 #include <map>
 
 class CallInfo;
@@ -71,6 +73,7 @@ void resolveFormals(FnSymbol* fn);
 void resolveBlockStmt(BlockStmt* blockStmt);
 void resolveCall(CallExpr* call);
 void resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
+void makeRefType(Type* type);
 FnSymbol* tryResolveCall(CallExpr* call);
 void resolveFns(FnSymbol* fn);
 
@@ -81,7 +84,15 @@ FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChec
 
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
+FnSymbol* getUnalias(Type* t);
+
 
 bool isPOD(Type* t);
+
+// tuples
+FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+void fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
+AggregateType* computeNonRefTuple(Type* t);
+AggregateType* computeTupleWithIntent(IntentTag intent, Type* t);
 
 #endif

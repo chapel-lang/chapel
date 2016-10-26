@@ -131,7 +131,13 @@ class kmeans: ReduceScanOp {
   // the generate function updates the centers and returns the error
   //
   proc generate() {
-    return (error, offset / clusterSize);
+    // this is a bug workaround
+    offset = offset / clusterSize;
+    return (error, offset);
+    // the original was
+    //return (error, offset / clusterSize);
+    // but that seems to return an iterator record and then causes
+    // a type mismatch compilation error on the arrays branch.
   }
 }
 

@@ -38,6 +38,15 @@ static Type* getWrapRecordBaseType(Type* type);
 //
 void
 removeWrapRecords() {
+
+  return; // disabled
+          // TODO -- delete this pass
+          // I don't think it makes sense to continue removing wrapper
+          // records, because e.g. ownership bit exists at runtime.
+          // However, the fields in these records are constant, so
+          // the record itself can be passed instead of
+          // a ref(the record).
+
   //
   // do not remove wrap records if dead code elimination is disabled
   // (or weakened because inlining or copy propagation is disabled)

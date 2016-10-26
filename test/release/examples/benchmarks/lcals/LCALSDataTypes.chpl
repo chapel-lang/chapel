@@ -46,7 +46,7 @@ module LCALSDataTypes {
 
     var loop_test_stats: [loop_variant_dom] [loop_kernel_dom] LoopStat;
 
-    proc getLoopStats(loop_variant: LoopVariantID) {
+    proc getLoopStats(loop_variant: LoopVariantID) ref {
       return loop_test_stats[loop_variant];
     }
 

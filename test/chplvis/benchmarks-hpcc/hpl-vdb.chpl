@@ -63,7 +63,7 @@ config const verify = true;
 config const allowUnusedLocales = false,
              gridRows = computeGridRows(),
              gridCols = numLocales / gridRows;
-const targetLocales => setupLocaleGrid();
+const targetLocales = setupLocaleGrid();
 
 //
 // The program entry point

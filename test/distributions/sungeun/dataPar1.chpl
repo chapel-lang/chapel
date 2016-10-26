@@ -58,7 +58,7 @@ proc checkdit(distName, A, B, C) {
 }
 
 var err = 0;
-const DDom = Space dmapped new dmap(new DefaultDist());
+const DDom = Space dmapped defaultDist;
 var DA, DB, DC: [DDom] real;
 dit(DDom, DA, DB, DC);
 err += checkdit("Default", DA, DB, DC);

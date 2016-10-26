@@ -10,5 +10,4 @@ proc f() ref {
 f() = ArrTwoThree;
 writeln(A[2].x);
 
-// It seems clear that this program should output
-// 2 since and be valid.
+// It seems clear that this program is valid and should output 2.

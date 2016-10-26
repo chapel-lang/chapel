@@ -262,6 +262,10 @@ module DefaultAssociative {
     //
     // Associative Domain Interface
     //
+    proc dsiMyDist() : BaseDist {
+      return dist;
+    }
+
     proc dsiClear() {
       on this {
         if parSafe then lockTable();

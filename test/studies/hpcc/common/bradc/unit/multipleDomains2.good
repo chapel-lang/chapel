@@ -8,16 +8,6 @@ dataParMinGranularity = 1
 locDist[0].myChunk = {-9223372036854775808..4}
 locDist[1].myChunk = {5..7}
 locDist[2].myChunk = {8..9223372036854775807}
-Creating new Block distribution:
-boundingBox = {1..10}
-targetLocDom = {0..2}
-targetLocales = 0 1 2
-dataParTasksPerLocale = 1
-dataParIgnoreRunningTasks = false
-dataParMinGranularity = 1
-locDist[0].myChunk = {-9223372036854775808..4}
-locDist[1].myChunk = {5..7}
-locDist[2].myChunk = {8..9223372036854775807}
 Creating new Block domain:
 whole = {1..0}
 locDoms[0].myBlock = {1..0}
