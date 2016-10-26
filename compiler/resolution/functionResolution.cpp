@@ -962,18 +962,18 @@ static bool
 doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet)
 {
 
-  if( fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) || // but not _type_construct__tuple
-      fn->hasFlag(FLAG_CONSTRUCTOR) || // but not _construct__tuple
-      fn->hasFlag(FLAG_BUILD_TUPLE) || // and not _build_tuple(_allow_ref)
-      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) || // and not _build_tuple_type
-      fn->hasFlag(FLAG_TUPLE_CAST_FN) || // and not _cast for tuples
-      fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) || // not iteratorIndex
-      (!forRet && fn->hasFlag(FLAG_INIT_COPY_FN)) || // not tuple chpl__initCopy
-      fn->hasFlag(FLAG_AUTO_COPY_FN) || // not tuple chpl__autoCopy
-      fn->hasFlag(FLAG_AUTO_DESTROY_FN) || // not tuple chpl__autoDestroy
-      fn->hasFlag(FLAG_UNALIAS_FN) || // not tuple chpl__unalias
-      fn->hasFlag(FLAG_ALLOW_REF) || // not iteratorIndex
-      (forRet && fn->hasFlag(FLAG_ITERATOR_FN)) // iterators b/c
+  if( fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
+      fn->hasFlag(FLAG_CONSTRUCTOR)              || // _construct__tuple
+      fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
+      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
+      fn->hasFlag(FLAG_TUPLE_CAST_FN)            || // _cast for tuples
+      fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES)|| // iteratorIndex
+      (!forRet && fn->hasFlag(FLAG_INIT_COPY_FN))|| // tuple chpl__initCopy
+      fn->hasFlag(FLAG_AUTO_COPY_FN)             || // tuple chpl__autoCopy
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN)          || // tuple chpl__autoDestroy
+      fn->hasFlag(FLAG_UNALIAS_FN)               || // tuple chpl__unalias
+      fn->hasFlag(FLAG_ALLOW_REF)                || // iteratorIndex
+      (forRet && fn->hasFlag(FLAG_ITERATOR_FN)) // not iterators b/c
                                     //  * they might return by ref
                                     //  * might need to return a ref even
                                     //    when not indicated return by ref.
