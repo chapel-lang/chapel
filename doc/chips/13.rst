@@ -50,7 +50,7 @@ reference. The following example shows the issue.
   writeln("setting returnArray()[1] to 2");
 
   returnArray() = otherArray;
-  // or, equvalently returnArray()[1] = 2;
+  // or, equivalently returnArray()[1] = 2;
   // both of these statements end up modifying globalArray
 
   writeln("globalArray is now ", globalArray);
@@ -141,10 +141,10 @@ Record authors can specify code to run on a `copy`.  For example, a
 record that contains a pointer to a class instance can operate as though
 the fields in the class instance were stored directly in the record by
 copying the class instance in each record `copy` initialization. If a
-customizeable `copy` were not available, the record author would be
+customizable `copy` were not available, the record author would be
 forced to support the case where two record variables point to the same
 class instance - or to require that users of that record include
-explicity `clone` method calls (for example).
+explicitly `clone` method calls (for example).
 
 Different languages make a different choice here. C++ and D allow record
 authors to implement some part of a `copy`, but Rust and Swift do not.
@@ -212,7 +212,7 @@ initialization could be copy initialization followed by destruction of the
 source variable.
 
 The language needs to provide a minimum
-level of optimization and also provide some reproducability in this area.
+level of optimization and also provide some reproducibility in this area.
 Therefore, the semantics described below should be interpreted to be the
 behavior the Chapel compiler provides in a baseline configuration (e.g. with
 `--baseline`).
