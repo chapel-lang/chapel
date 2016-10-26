@@ -2,7 +2,7 @@ Implement Object Copying Using a "Postblit" Method
 ##################################################
 
 Status
-  Draft
+  Superseded, see CHIP 10
 
 Author
   Tom Hildebrandt, Michael Ferguson
