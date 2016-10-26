@@ -90,7 +90,7 @@ Python 3.
 Virtual Python Environment builder
 
 Used to create isolated environment to install other python packages, without
-interfering with system ppython packages.
+interfering with system python packages.
 
 **License**: Python Software Foundation License
 

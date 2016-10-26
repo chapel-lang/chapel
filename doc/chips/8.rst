@@ -161,7 +161,7 @@ The design will also reflect the goals of the second solution, elide ``try``
 with a compiler flag, in the sense that there will be multiple levels of
 strictness when annotating error handling cases.
 
-Finaly, the fourth solution will be addressed in the Future Work section.
+Finally, the fourth solution will be addressed in the Future Work section.
 
 
 Chapel Error Handling
