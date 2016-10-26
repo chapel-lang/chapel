@@ -286,7 +286,7 @@ void errorCases(AggregateType* t, DefExpr* curField, const char* fieldname,
     }
   }
   if (isParentField(t, fieldname)) {
-    USR_FATAL_CONT(call, "can't set value of field \"%s\" from parent type during phase 1", fieldname);
+    USR_FATAL_CONT(call, "can't set value of field \"%s\" from parent type during phase 1 of initialization", fieldname);
   } else {
     // We didn't find the field match, even on our parent type.  It is a method.
     USR_FATAL_CONT(call, "attempted method call too early during initialization");
