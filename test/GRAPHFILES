@@ -14,6 +14,7 @@ studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/fasta/fasta.graph
+studies/shootout/fasta/fastaredux.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/nbody/nbody.graph
@@ -35,6 +36,7 @@ studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/nbody/nbody.graph
 studies/shootout/thread-ring/thread-ring.graph
 studies/shootout/fasta/fasta.graph
+studies/shootout/fasta/fastaredux.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/meteor/kbrady/meteor.graph
@@ -94,6 +96,7 @@ studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/fasta/fasta.graph
+studies/shootout/fasta/fastaredux.graph
 studies/shootout/k-nucleotide/knucleotide.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/meteor/kbrady/meteor.graph

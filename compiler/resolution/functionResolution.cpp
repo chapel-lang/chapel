@@ -4747,7 +4747,7 @@ static void resolveSetMember(CallExpr* call) {
 
 static void resolveMove(CallExpr* call) {
   if (call->id == breakOnResolveID )
-      gdbShouldBreakHere();
+    gdbShouldBreakHere();
 
   Expr* rhs = call->get(2);
   Symbol* lhs = NULL;

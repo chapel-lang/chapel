@@ -2,7 +2,7 @@ ZeroMQ Integration
 ==================
 
 Status
-  Draft
+  Partially Implemented
 
 Author
   Michael Ferguson

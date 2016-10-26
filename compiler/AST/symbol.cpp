@@ -1010,7 +1010,7 @@ void VarSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
 
   if (id == breakOnCodegenID)
-        gdbShouldBreakHere();
+    gdbShouldBreakHere();
 
   // Local variable symbols should never be
   // generated for extern or void types

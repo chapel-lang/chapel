@@ -2,7 +2,7 @@ Error Handling in Chapel
 ========================
 
 Status:
-  Draft
+  Partially Accepted, Needs Implementation
 
 Authors:
   Greg Titus, Kyle Brady, Michael Ferguson, Preston Sahabu
@@ -161,7 +161,7 @@ The design will also reflect the goals of the second solution, elide ``try``
 with a compiler flag, in the sense that there will be multiple levels of
 strictness when annotating error handling cases.
 
-Finaly, the fourth solution will be addressed in the Future Work section.
+Finally, the fourth solution will be addressed in the Future Work section.
 
 
 Chapel Error Handling
@@ -492,7 +492,7 @@ be provided at task join.
 The implementation requires that the ``cobegin`` statements be
 synchronized before the errors are handled.
 
-.. code_block:: chapel
+.. code-block:: chapel
 
   proc encounterError(out _e_out: Error) { _e_out = new Error(); }
   proc noError(out _e_out: Error) { return; }

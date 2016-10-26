@@ -4,7 +4,7 @@ Basics of Initialization
 ========================
 
 Status:
-  Draft
+  Active
 
 Authors:
   Michael Ferguson
