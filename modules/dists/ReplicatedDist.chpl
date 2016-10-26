@@ -584,7 +584,7 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
 }
 
 // Return the array element corresponding to the index - on the current locale
-proc ReplicatedArr.dsiAccess(indexx) ref: eltType {
+proc ReplicatedArr.dsiAccess(indexx) ref {
   return localArrs[here.id].arrLocalRep[indexx];
 }
 
