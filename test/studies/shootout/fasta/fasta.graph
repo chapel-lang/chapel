@@ -1,6 +1,6 @@
 perfkeys: real, real
 files: fasta-blc.dat, fasta-release.dat
-graphkeys: release, bradc study version
+graphkeys: bradc study version, release
 graphtitle: Fasta Shootout Benchmark (n=25,000,000)
 ylabel: Time (seconds)
 graphname: fasta.25000000
