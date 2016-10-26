@@ -4,7 +4,7 @@ Initializers
 ============
 
 Status:
-  Draft
+  Partially Implemented
 
 Authors:
   Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov, Kyle Brady
