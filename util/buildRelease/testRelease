@@ -225,7 +225,7 @@ sub mysystem {
             $mailcommand = "| $mailer -s \"$mailsubject \" $failuremail";
         }
 
-        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or $ENV{"CHPL_TEST_NOMAIL"} eq "") {
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
             print "Trying to mail message... using $mailcommand\n";
             open(MAIL, $mailcommand);
             print MAIL "=== Summary - testRelease ===================================================\n";
