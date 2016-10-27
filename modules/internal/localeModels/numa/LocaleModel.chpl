@@ -336,8 +336,8 @@ module LocaleModel {
         yield loc;
     }
 
-    proc getDefaultLocaleSpace() return this.myLocaleSpace;
-    proc getDefaultLocaleArray() return myLocales;
+    proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
+    proc getDefaultLocaleArray() const ref return myLocales;
 
     proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);
