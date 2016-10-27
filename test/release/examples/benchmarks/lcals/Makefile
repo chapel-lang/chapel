@@ -3,6 +3,7 @@ LCALS_SOURCES = LCALSMain.chpl \
                 RunBRawLoops.chpl \
                 RunCRawLoops.chpl \
                 RunParallelRawLoops.chpl \
+                RunSPMDRawLoops.chpl \
                 RunVectorizeOnlyRawLoops.chpl \
                 LCALSConfiguration.chpl \
                 LCALSLoops.chpl \

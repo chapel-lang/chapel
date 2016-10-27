@@ -25,8 +25,9 @@ This directory's contents are as follows:
 
   RunARawLoops.chpl             :\
   RunBRawLoops.chpl             : \
-  RunCRawLoops.chpl             :  | The kernel implementations
-  RunParallelRawLoops.chpl      : /
+  RunCRawLoops.chpl             :  \ The kernel implementations
+  RunParallelRawLoops.chpl      :  /
+  RunSPMDRawLoops.chpl          : /
   RunVectorizeOnlyRawLoops.chpl :/
 
   LCALSConfiguration.chpl : Configuration constants to define what to run
@@ -57,7 +58,7 @@ This directory's contents are as follows:
   LCALSMain.timeout      :/
 
   README                   : This file
-  README-LCALS_license.txt : The 
+  README-LCALS_license.txt : The LCALS reference license
 
 -----------------
 Execution Options

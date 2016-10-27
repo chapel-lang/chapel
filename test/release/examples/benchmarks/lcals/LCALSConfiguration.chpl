@@ -69,6 +69,9 @@ module LCALSConfiguration {
   config const run_variantRaw              = true;
   config const run_variantForallLambda     = false; // not implemented
   config const run_variantRawOmp           = true;
+  config const run_variantRawSPMD          = false; // off by default because
+                                                    // short and medium loops
+                                                    // take too long.
   config const run_variantRawVectorizeOnly = true;
   config const run_variantForallLambdaOmp  = false; // not implemented
 }
