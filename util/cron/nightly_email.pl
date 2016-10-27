@@ -110,7 +110,7 @@ if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpas
 $mailsubject = "$subjectid $config_name";
 $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
-if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
+if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
     print "Trying... $mailcommand\n";
     open(MAIL, $mailcommand);
 

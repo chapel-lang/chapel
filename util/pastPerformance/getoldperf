@@ -137,7 +137,7 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
     if ($mailmsg != 0) {
-        if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
             open(MAIL, $mailcommand);
             print MAIL "=== Summary ===================================================\n";
             print MAIL "ERROR $_[1]: $status\n";
