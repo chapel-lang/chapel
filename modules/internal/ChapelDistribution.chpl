@@ -796,15 +796,18 @@ module ChapelDistribution {
     // decide whether or not the array is an alias
     var isalias = (arr._arrAlias != nil);
 
+    // array implementation can destroy data or other members
+    arr.dsiDestroyArr(isalias);
+
     if !isalias {
       // unlink domain referred to by arr.eltType
       // not necessary for aliases/slices because the original
       // array will take care of it.
+      // This needs to be done after the array elements are destroyed
+      // (by dsiDestroyArray above) because the array elements might
+      // refer to this inner domain.
       chpl_decRefCountsForDomainsInArrayEltTypes(arr, arr.eltType);
     }
-
-    // array implementation can destroy data or other members
-    arr.dsiDestroyArr(isalias);
 
     if privatized {
       _freePrivatizedClass(arr.pid, arr);
