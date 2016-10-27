@@ -22,44 +22,42 @@ This is the core image for Chapel. It provides the complete Chapel compiler and 
 
 The Chapel core image (above), rebuilt with `CHPL_COMM=gasnet` and `GASNET_SPAWNFN=L`. Simulates a multilocale Chapel platform within the Docker container.
 
-Multilocale Chapel brings additional requirements, unrelated to Docker. The `chpl` compilation produces two binary files (e.g. `hello_real` as well as `hello`). When you run the binary, you need another command line parameter (`-nl #`, to specify the number of locales). Please see [Multilocale Chapel Execution](http://chapel.cray.com/docs/latest/usingchapel/multilocale.html) for details.
-
-Compiled Chapel programs cannot be run outside the container.
+Multilocale Chapel brings additional requirements, unrelated to Docker. The `chpl` compilation produces two binary files (e.g. `hello_real` as well as `hello`). When you run the binary, you need another command line parameter, `-nl #`, to specify the number of locales. Please see [Multilocale Chapel Execution](http://chapel.cray.com/docs/latest/usingchapel/multilocale.html) for details.
 
 # How to use the image
 
 ## Compile your Chapel program
 
-The image can be used to compile and run your Chapel program inside the container. On Linux systems, the core Chapel image `chapel/chapel` can export a binary that can be executed outside the container.
+The image can be used to compile and run your Chapel program inside the container.
 
-In the following example, the `docker run` argument `-v` mounts the current directory in the container, and `-w` sets the working directory to this mounted directory. The Chapel compiler, `chpl`, is invoked much like `gcc`, with argument `-o` to specify the name of the output binary.
+In the following example, you start a shell in the container and use the interactive session to compile and run your Chapel program, all within the container. The `-v` argument mounts the current directory in the container, `-w` sets the working directory to this mounted directory, `-i` gives you STDIN, and `-t` allocates a psuedo-TTY, giving you STDOUT and STDERR. 
+
+The Chapel compiler, `chpl`, is invoked much like `gcc`, with argument `-o` to specify the name of the output binary. Then the binary file, `hello`, is run in the usual way.
+
 ```
 $ echo 'writeln("Hello, world!");' > hello.chpl
 
-$ docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp chapel/chapel chpl -o hello hello.chpl
+$ docker run --rm -it -v "$PWD":/usr/src/myapp -w /usr/src/myapp chapel/chapel /bin/bash
+root@xxxxxxxxx:/usr/src/myapp# chpl -o hello hello.chpl
+root@xxxxxxxxx:/usr/src/myapp# ./hello
+Hello, world!
 ```
 &nbsp;
 
-To run the resultant binary inside the container:
+Alternatively, you could compile your program in one instance of the container, and run it in another, for the same end result. 
 ```
+$ docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp chapel/chapel chpl -o hello hello.chpl
+
 $ docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp chapel/chapel ./hello
 Hello, world!
 ```
 &nbsp;
 
-On a Linux system, the resultant binary can sometimes be run outside the container, if it was compiled with the `--static` option.
+On 64-bit Linux systems, the resultant binary can sometimes be run outside the container, if it was compiled with the `--static` option:
 ```
 $ docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp chapel/chapel chpl --static -o hello hello.chpl
-$ ./hello
-Hello, world!
-```
-&nbsp;
 
-Alternatively, you can start a shell and use an interactive session to compile and run your Chapel program within the container. The `-i` argument gives you STDIN, and the `-t` argument allocates a psuedo-TTY, giving you STDOUT and STDERR.
-```
-$ docker run --rm -it -v "$PWD":/usr/src/myapp -w /usr/src/myapp chapel/chapel /bin/bash
-root@xxxxxxxxx:/usr/src/myapp# chpl -o hello hello.chpl
-root@xxxxxxxxx:/usr/src/myapp# ./hello
+$ ./hello
 Hello, world!
 ```
 &nbsp;
