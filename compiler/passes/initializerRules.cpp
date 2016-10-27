@@ -133,6 +133,18 @@ Expr* getInitCall(FnSymbol* fn) {
 }
 
 static
+Expr* getNextStmt(Expr* curExpr, BlockStmt* body) {
+  if (curExpr->next) {
+    return curExpr->next;
+  } else if (curExpr->parentExpr != body) {
+    return curExpr->parentExpr->next;
+  }
+  // Shouldn't reach here unless Phase 1 is our default (or we are using
+  // this function on something other than Phase 1 analysis)
+  return NULL;
+}
+
+static
 void errorCases(AggregateType* t, DefExpr* curField, const char* fieldname,
                 bool seenField[], Expr* call);
 
@@ -183,11 +195,23 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
     if (curField != NULL && curExpr != initCall) {
       // still have phase 1 statements and fields left to traverse
 
+      if (BlockStmt* block = toBlockStmt(curExpr)) {
+        if (block->isLoopStmt()) {
+          // Special handling for loops.
+        } else {
+          // Need to dive into the block statement.
+          curExpr = block->body.head;
+        }
+      }/* else if (CondStmt* cond = toCondStmt(curExpr)) {
+        // Special handling for conditionals.
+        }*/
+
+
       if (const char* fieldname = getFieldName(curExpr)) {
         if (!strcmp(fieldname, curField->sym->name)) {
           // It's a match!  Advance both and move on
           curField = toDefExpr(curField->next);
-          curExpr = curExpr->next;
+          curExpr = getNextStmt(curExpr, body);
           seenField[index] = true;
           index++;
         } else if (isLaterFieldAccess(curField, fieldname)) {
@@ -197,11 +221,11 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
         } else {
           // It's not a valid field access at all.  Error cases!
           errorCases(t, curField, fieldname, seenField, curExpr);
-          curExpr = curExpr->next;
+          curExpr = getNextStmt(curExpr, body);
         }
       } else {
         // Wasn't a field access, only update curExpr;
-        curExpr = curExpr->next;
+        curExpr = getNextStmt(curExpr, body);
       }
     } else if (curField != NULL) {
       // only fields left
@@ -215,7 +239,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
       if (const char* fieldname = getFieldName(curExpr)) {
         errorCases(t, curField, fieldname, seenField, curExpr);
       }
-      curExpr = curExpr->next;
+      curExpr = getNextStmt(curExpr, body);
     }
   }
 
