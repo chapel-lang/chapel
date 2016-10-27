@@ -28,13 +28,6 @@ as follows:
   third-party/gasnet/gasnet-src/other/contrib/cross-configure-aarch64-linux
   which is the only ARM change beneath gasnet-src in the tree.
 
-* Applied an upstream patch to fix a use-after-free bug in amudp_spawn
-  command line argument handling:
-    https://bitbucket.org/berkeleylab/gasnet/commits/a6a6534
-
-  This fixes a problem reported against Chapel on stackoverflow:
-    https://stackoverflow.com/questions/39195929/chapel-gasnet-unexpected-eof-while-looking-for-matching
-
 Upgrading GASNet versions
 =========================
 
@@ -43,9 +36,9 @@ un-tarballed GASNet package contents.  Version updates should be done as
 follows, assuming the CWD is $CHPL_HOME/third-party/gasnet/:
 
 1. un-tarball the new package version into the directory it specifies,
-   for example GASNet-1.26.4
+   for example GASNet-1.28.0
 2. git rm -r gasnet-src
-3. mv GASNet-1.26.4 gasnet-src
+3. mv GASNet-1.28.0 gasnet-src
 4. git add --force gasnet-src
    ('--force' is needed so that the 'git add' ignores our .gitignore)
 5. commit
