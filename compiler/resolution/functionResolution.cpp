@@ -10570,7 +10570,7 @@ static void removeInitFields()
   {
     if (! def->inTree()) continue;
     if (! def->init) continue;
-    if (! def->sym->hasFlag(FLAG_TYPE_VARIABLE)) continue;
+    if (! (def->sym->hasFlag(FLAG_TYPE_VARIABLE) || def->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))) continue;
     def->init->remove();
     def->init = NULL;
   }
