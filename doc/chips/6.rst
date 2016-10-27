@@ -35,9 +35,9 @@ We had been considering two major options:
 * a tuple is a shorthand for creating a record
 
 The key appeal of the "individual variables" option is
-the preservation of argument and return intents.
-E.g if A is an array, ``f((1,A));`` and ``return (1,A);``
-pass/return 1 by value and A by reference.
+the preservation of argument intents.
+E.g if A is an array, and `f` takes in an argument by blank intent,
+`f((1,A));`` passes A by reference.
 
 The appeal of the "record" option is:
 
