@@ -3,7 +3,7 @@ README file for GASNet tools
 ============================
 Originally by: Dan Bonachea <bonachea@cs.berkeley.edu>
 Currently maintained by: Paul H. Hargrove <PHHargrove@lbl.gov>
-GASNet tools specification version: 1.8
+GASNet tools specification version: 1.9
 
 The GASNet tools are a set of communication-independent utilities that are used
 to implement GASNet, and constitute a useful portability tool for GASNet
@@ -670,7 +670,11 @@ appropriate no-ops, unless compiled with -DGASNETT_USE_TRUE_MUTEXES=1
 which will force gasnett_mutex_t to always use true locking (even 
 without -DGASNETT_THREAD_SAFE=1).
 
-* The following function identically to the pthread_mutex symbols of the same name:
+Unlike pthread_mutex_t, these locks may NEVER be obtained recursively, and
+in debug builds this is detected as a usage violation. Similarly, they are
+not safe to use for inter-process synchronization in shared memory segments.
+
+* Otherwise, the following function similarly to the pthread_mutex symbols of the same name:
 
 gasnett_mutex_t             
 GASNETT_MUTEX_INITIALIZER
@@ -737,6 +741,71 @@ void gasnett_cond_wait(gasnett_cond_t *pc, gasnett_mutex_t *pl)
     must check the outer condition *after* acquiring the same mutex and *before*
     calling wait (which atomically releases the lock and puts the thread to sleep).
 
+-------------------
+Reader/Writer locks
+-------------------
+
+As with the gasnett_mutex_t wrappers in the previous section, we also provide
+wrappers around POSIX reader/writer locks (pthread_rwlock_t). In a nutshell,
+these allow multiple threads to concurrently acquire a "read" lock (for
+concurrent read-only access to the protected data structures), but provide
+mutual exclusion when a thread obtains a "write" lock to update the shared data.
+
+CAUTION: The additional opportunities for concurrency provided by reader/writer
+locks come at a SIGNIFICANT cost in additional serial overhead, relative to
+simple mutexes.  The overhead for obtaining and releasing a read lock on an
+uncontended pthread_rwlock_t is commonly 50%-300% more expensive than the
+corresponding operation on simple mutex. Also, write locks still need to enforce
+mutual exclusion, thus frequent write locks can sharply degrade achieved concurrency.
+Consequently, rwlock's are only expected to provide a net performance win
+relative to mutexes when there is a high-degree of concurrency for long-running
+reader critical sections, and writers are VERY infrequent. In all other cases,
+one should probably be using a mutex instead.
+
+On systems lacking reader/writer locks (or when configured with --disable-rwlock), 
+these compile down to regular gasnett_mutex_t operations - with full
+serialization and no read concurrency. Some implementations also have a limit
+on the number of threads that can concurrently obtain a reader lock.  For these
+reasons, client code should be designed to remain deadlock-free when some or
+all read locks are serialized, even lacking writers.
+
+Unlike pthread_rwlock_t, these locks may NOT be obtained recursively, and
+in debug builds this is detected as a usage violation. Similarly, they are
+not safe to use for inter-process synchronization in shared memory segments.
+
+* Otherwise, the following function similarly to the pthread_rwlock symbols of the same name:
+
+gasnett_rwlock_t
+GASNETT_RWLOCK_INITIALIZER
+void gasnett_rwlock_init(gasnett_rwlock_t *)
+void gasnett_rwlock_destroy(gasnett_rwlock_t *)
+
+     rwlock creation and destruction, as with pthread_rwlock_t
+
+void gasnett_rwlock_rdlock(gasnett_rwlock_t *)
+void gasnett_rwlock_wrlock(gasnett_rwlock_t *)
+void gasnett_rwlock_unlock(gasnett_rwlock_t *)
+
+     blocking read lock, blocking write lock and unlock
+     POSIX errors due to reader concurrency limits are masked as blocking
+
+int gasnett_rwlock_tryrdlock(gasnett_rwlock_t *)
+int gasnett_rwlock_trywrlock(gasnett_rwlock_t *)
+
+     non-blocking trylock - returns EBUSY or EAGAIN on failure, 0 on success
+
+* Additional rwlock utilities:
+
+void gasnett_rwlock_assertrdlocked(gasnett_rwlock_t *)
+void gasnett_rwlock_assertwrlocked(gasnett_rwlock_t *)
+void gasnett_rwlock_assertlocked(gasnett_rwlock_t *)
+void gasnett_rwlock_assertunlocked(gasnett_rwlock_t *)
+
+  In debug builds, these functions respectively assert that the given rwlock is
+  currently locked (for read, write or either) or not locked by the calling
+  thread, generating a fatal error if the assertion is violated. Has no effect
+  in non-debug builds.
+
 --------------------
 Thread-specific data
 --------------------
@@ -750,8 +819,8 @@ Automatically handles the hassle of pthread key creation if required.
 
 A thread-specific data pointer (mykey) must be declared as:
 
-  GASNETI_THREADKEY_DEFINE(mykey); - must be defined in exactly one C file at global scope
-  GASNETI_THREADKEY_DECLARE(mykey); - optional, use in headers to reference externally-defined key
+  GASNETT_THREADKEY_DEFINE(mykey); - must be defined in exactly one C file at global scope
+  GASNETT_THREADKEY_DECLARE(mykey); - optional, use in headers to reference externally-defined key
 
 and then can be used as:
 

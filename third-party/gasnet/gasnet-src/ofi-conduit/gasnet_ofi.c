@@ -5,10 +5,10 @@
  * Terms of use are as specified in license.txt
  */
 #include <gasnet_internal.h>
+#include <gasnet_ofi.h>
 #include <gasnet_extended_internal.h>
 #include <gasnet_handler.h>
 #include <gasnet_core_internal.h>
-#include <gasnet_ofi.h>
 
 #include <pmi-spawner/gasnet_bootstrap_internal.h>
 #include <ssh-spawner/gasnet_bootstrap_internal.h>
@@ -80,6 +80,10 @@ static inline int gasnetc_is_exiting(void) {
     gasneti_sync_reads();
     return gasnetc_exit_in_progress;
 }
+#define gasnetc_is_exit_error(e) \
+  (gasnetc_is_exiting() && ((e).err == FI_SUCCESS || (e).err == FI_ECANCELED || (e).err == EACCES))
+#else
+#define gasnetc_is_exit_error(e) 0
 #endif
 
 /*------------------------------------------------
@@ -326,12 +330,21 @@ void gasnetc_ofi_exit(void)
     for(i = 0; i < OFI_AM_NUM_BLOCK; i++) {
       /* cancel the multi-recv */
       ret = fi_cancel(&gasnetc_ofi_am_epfd->fid, &am_buff_ctxt[i].ctxt);
+    #if 0 /* If exiting from a AM handler context, or multi-threaded, then cancel could fail */
       if (FI_SUCCESS != ret) gasneti_fatalerror("failed fi_cancel the %d am_buff_msg\n", i);
       gasneti_free(am_iov[i].iov_base);
+    #else
+      if (FI_SUCCESS == ret)
+        gasneti_free(am_iov[i].iov_base);
+    #endif
     }
+  #if GASNETI_CLIENT_THREADS
+    /* Unsafe to free resources if other threads may be using them */
+  #else
     gasneti_free(am_buff_ctxt);
     gasneti_free(am_iov);
     gasneti_free(am_buff_msg);
+  #endif
   }
 
   if(fi_close(&gasnetc_ofi_rdma_mrfd->fid)!=FI_SUCCESS) {
@@ -555,11 +568,7 @@ static void gasnetc_ofi_rdma_poll(int blocking_poll)
 		if (ret < 0) {
 			int err_sz = 0;
 			err_sz = fi_cq_readerr(gasnetc_ofi_rdma_cqfd, &e ,0);
-#if GASNET_PAR
-                        if (gasnetc_is_exiting() && (e.err == FI_SUCCESS || e.err == FI_ECANCELED)) {
-                                return;
-                        }
-#endif
+                        if_pf (gasnetc_is_exit_error(e)) return;
 			gasneti_fatalerror("fi_cq_read for rdma_ep failed with error: %s, err_sz %d\n", 
 					fi_strerror(e.err), err_sz);
 		} else {
@@ -586,11 +595,7 @@ static void gasnetc_ofi_am_send_poll(int blocking_poll)
 	{
 		if (ret < 0) {
 			fi_cq_readerr(gasnetc_ofi_am_scqfd, &e ,0);
-#if GASNET_PAR
-                        if (gasnetc_is_exiting() && (e.err == FI_SUCCESS || e.err == FI_ECANCELED)) {
-                                return;
-                        }
-#endif
+                        if_pf (gasnetc_is_exit_error(e)) return;
 			gasneti_fatalerror("fi_cq_read for am_send_poll failed with error: %s\n", fi_strerror(e.err));
 		} else {
 			ofi_am_buf_t *header;
@@ -615,11 +620,7 @@ static void gasnetc_ofi_am_recv_poll(int blocking_poll)
 	{
 		if (ret < 0) {
 			fi_cq_readerr(gasnetc_ofi_am_rcqfd, &e ,0);
-#if GASNET_PAR
-                        if (gasnetc_is_exiting() && (e.err == FI_SUCCESS || e.err == FI_ECANCELED)) {
-                                return;
-                        }
-#endif
+                        if_pf (gasnetc_is_exit_error(e)) return;
 			gasneti_fatalerror("fi_cq_read for am_recv_poll failed with error: %s\n", fi_strerror(e.err));
 		} else {
 			if(re.flags & FI_MULTI_RECV)

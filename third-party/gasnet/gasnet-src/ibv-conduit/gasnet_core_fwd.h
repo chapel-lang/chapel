@@ -132,9 +132,7 @@ typedef uint8_t gasnet_handler_t;
 	gasnetc_pthread_create(create_fn, thread, attr, start_routine, arg)
 #endif
 
-GASNETI_BEGIN_EXTERNC
 extern void gasnetc_amrdma_balance(void);
-GASNETI_END_EXTERNC
 #define GASNETC_PROGRESSFNS_LIST(FN) \
   FN(gasnetc_pf_amrdma, COUNTED, gasnetc_amrdma_balance)
 

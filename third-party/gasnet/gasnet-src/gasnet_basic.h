@@ -75,7 +75,7 @@
   #define GASNETI_END_EXTERNC   }
 #else
   #define GASNETI_BEGIN_EXTERNC 
-  #define GASNETI_EXTERNC       
+  #define GASNETI_EXTERNC       extern
   #define GASNETI_END_EXTERNC 
 #endif
 

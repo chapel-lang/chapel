@@ -75,14 +75,28 @@ int main(int argc, char **argv) {
 
   begin = getCurrentTimeMicrosec();
 
+ #if ONE_TO_ALL
+  if (myproc == 0) { /* 0 sends to everyone */
+    for (k=0; k < iters; k++) {
+      int peer;
+      for (peer=(numprocs==1?0:1); peer < numprocs; peer++) {
+        #if VERBOSE
+          printf("%i: sending request %i to %i...", myproc, k, peer); fflush(stdout);
+        #endif
+        AM_Safe(AM_Request0(ep, peer, PING_REQ_HANDLER));
+      }
+    }
+  }
+ #else /* all-to-one */
   if (myproc != 0 || numprocs == 1) { /* everybody sends packets to 0 */
     for (k=0;k < iters; k++) {
       #if VERBOSE
-        printf("%i: sending request...", myproc); fflush(stdout);
+        printf("%i: sending request %i...", myproc, k); fflush(stdout);
       #endif
       AM_Safe(AM_Request0(ep, 0, PING_REQ_HANDLER));
     }
   }
+ #endif
 
   if (polling) { /* poll until everyone done */
     while (numleft) {

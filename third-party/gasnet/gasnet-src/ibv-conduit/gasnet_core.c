@@ -825,7 +825,7 @@ static const char *mtu_to_str(enum ibv_mtu mtu) {
   case IBV_MTU_1024: return "1024";
   case IBV_MTU_2048: return "2048";
   case IBV_MTU_4096: return "4096";
-  default                  : return "unknown";
+  default: return (int)mtu ? "unknown" : "active_mtu";
   }
 }
 #endif
@@ -853,7 +853,7 @@ static int gasnetc_load_settings(void) {
       program_var = _tmp;                                                            \
     } while (0)
   
-  GASNETC_ENVINT(i, GASNET_MAX_MTU, 0, 0, 1);
+  GASNETC_ENVINT(i, GASNET_MAX_MTU, 0, -1, 1);
   switch (i) {
     default: fprintf(stderr,
                      "WARNING: ignoring invalid GASNET_MAX_MTU value %d.\n",
@@ -872,6 +872,8 @@ static int gasnetc_load_settings(void) {
   case 2048: gasnetc_max_mtu = IBV_MTU_2048;
              break;
   case 4096: gasnetc_max_mtu = IBV_MTU_4096;
+             break;
+  case   -1: gasnetc_max_mtu = 0; /* Use port's active_mtu */
              break;
   }
 
@@ -2739,7 +2741,7 @@ static void gasnetc_exit_reduce_reqh(gasnet_token_t token,
     /* atomic OR via C-A-S */
     uint32_t old_val;
     do {
-      old_val = gasneti_atomic32_read(&gasnetc_exit_dist, 0);
+      old_val = gasneti_atomic_read(&gasnetc_exit_dist, 0);
     } while (!gasneti_atomic_compare_and_swap(&gasnetc_exit_dist,
                                                old_val, old_val|distance,
                                                GASNETI_ATOMIC_REL));

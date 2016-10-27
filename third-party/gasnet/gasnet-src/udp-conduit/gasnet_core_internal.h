@@ -9,6 +9,8 @@
 
 #include <gasnet_internal.h>
 
+#include <amudp.h>
+
 /*  whether or not to use spin-locking for HSL's */
 #define GASNETC_HSL_SPINLOCK 1
 

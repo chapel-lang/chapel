@@ -31,7 +31,8 @@ LIBINCLUDES = $(TOOLLIBINCLUDES) \
 
 TOOLLIBDEFINES =                    \
         $(LIBGASNET_THREAD_DEFINES) \
-        @GASNET_MACHINE_DEFINES@ 
+        @GASNET_MACHINE_DEFINES@    \
+        $(MANUAL_DEFINES)
 
 LIBDEFINES =                        \
 	$(TOOLLIBDEFINES)	    \
@@ -40,22 +41,24 @@ LIBDEFINES =                        \
 @BUILDCONFIG_DEBUG_FALSE@ TOOLLIB_DEBUGFLAGS = -DNDEBUG
 TOOLLIBCFLAGS =                   \
         -DGASNETT_BUILDING_TOOLS  \
-        @CFLAGS@                  \
+        @GASNET_OPT_CFLAGS@       \
         @MISC_CFLAGS@             \
+        @MISC_CPPFLAGS@           \
         $(TOOLLIBDEFINES)         \
 	$(TOOLLIB_DEBUGFLAGS)     \
 	$(TOOLLIBINCLUDES)	  \
 	$${keeptmps:+@KEEPTMP_CFLAGS@} \
-	$(MANUAL_LIBCFLAGS)
+	$(MANUAL_CFLAGS)
 
 LIBCFLAGS =                       \
-        @CFLAGS@                  \
+        @GASNET_OPT_CFLAGS@       \
         @MISC_CFLAGS@             \
+        @MISC_CPPFLAGS@           \
         $(LIBDEFINES)             \
         $(CONDUIT_EXTRALIBCFLAGS) \
 	$(LIBINCLUDES)		  \
 	$${keeptmps:+@KEEPTMP_CFLAGS@} \
-	$(MANUAL_LIBCFLAGS)
+	$(MANUAL_CFLAGS)
 
 libgasnet_tools_sources =            \
 	$(top_srcdir)/gasnet_tools.c \
@@ -205,7 +208,7 @@ $(top_builddir)/other/Makefile-libgasnet.mak: $(top_srcdir)/other/Makefile-libga
 @GNU_NM_TRUE@		    -e ' [\._]*fh_' -e ' [\._]*firehose_'                           \
 @GNU_NM_TRUE@		    -e ' [\._]*fh[ic]_' -e ' [\._]*fhsmp_' -e ' [\._]*fhuni_'       \
 @GNU_NM_TRUE@		    -e ' [\._]*myxml_' -e ' [\._]*smp_coll_'                        \
-@GNU_NM_TRUE@		    -e ' [\._]*emutls_'                                             \
+@GNU_NM_TRUE@		    -e ' [\._]*emutls_' -e 'get_pc_thunk'                           \
 @GNU_NM_TRUE@		    -e ' D bg_[a-z]' -e ' D _uci_' -e ' D _parse[A-Z][a-z]'         \
 @GNU_NM_TRUE@		    -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e ' [\._]*DWinfo'       \
 @GNU_NM_TRUE@               -e ' [\._][\._]*debug_'                                              \

@@ -37,8 +37,6 @@
   #define STDERR_FILENO 2
 #endif
 
-GASNETI_BEGIN_EXTERNC
-
 #if PLATFORM_OS_MTA
    #include <machine/runtime.h>
    #define _gasneti_sched_yield() mta_yield()
@@ -54,14 +52,15 @@ extern void gasneti_filesystem_sync(void);
 
 #if PLATFORM_COMPILER_GNU_CXX /* bug 1681 */
   #define GASNETI_CURRENT_FUNCTION __PRETTY_FUNCTION__
-#elif defined(__GNUC__) || defined(__FUNCTION__)
-  #define GASNETI_CURRENT_FUNCTION __FUNCTION__
-#elif defined(HAVE_FUNC) && !defined(__cplusplus)
-  /* __func__ should also work for ISO C99 compilers */
+#elif (defined(HAVE_FUNC) && !GASNETI_CONFIGURE_MISMATCH) || __STDC_VERSION__ >= 199901 || __cplusplus >= 201103L
+  /* __func__ should also work for ISO C99 or C++11 compilers */
   #define GASNETI_CURRENT_FUNCTION __func__
+#elif PLATFORM_COMPILER_GNU /* fallback on gcc, last resort because it generates warnings w/-pedantic */
+  #define GASNETI_CURRENT_FUNCTION __FUNCTION__
 #else
   #define GASNETI_CURRENT_FUNCTION ""
 #endif
+
 extern char *gasneti_build_loc_str(const char *funcname, const char *filename, int linenum);
 #define gasneti_current_loc gasneti_build_loc_str(GASNETI_CURRENT_FUNCTION,__FILE__,__LINE__)
 
@@ -279,8 +278,11 @@ int gasneti_count0s_uint32_t(uint32_t x) {
 #endif
 
 #if GASNETI_USE_TRUE_MUTEXES && PLATFORM_OS_CYGWIN
-  /* bug1847: Cygwin mutexes initialized using PTHREAD_MUTEX_INITIALIZER are unsafe upon first acquire */
-  #define GASNETI_MUTEX_CAUTIOUS_INIT 1
+  #include <cygwin/version.h>
+  /* bug1847: Until Cygwin 1.7-3, mutexes initialized using PTHREAD_MUTEX_INITIALIZER were unsafe upon first acquire */
+  #if CYGWIN_VERSION_DLL_MAJOR < 1007 || (CYGWIN_VERSION_DLL_MAJOR == 1007 && CYGWIN_VERSION_DLL_MINOR < 3)
+    #define GASNETI_MUTEX_CAUTIOUS_INIT 1
+  #endif
 #endif
 
 #if GASNETI_MUTEX_CAUTIOUS_INIT
@@ -527,6 +529,108 @@ int gasneti_count0s_uint32_t(uint32_t x) {
 #endif
 
 /* ------------------------------------------------------------------------------------ */
+/* Reader-writer lock support */
+
+typedef enum {
+  _GASNETI_RWLOCK_UNLOCKED=0,
+  _GASNETI_RWLOCK_RDLOCKED,
+  _GASNETI_RWLOCK_WRLOCKED
+} _gasneti_rwlock_state; /* must always be defined for gasnet_tools-par */
+
+#if !GASNETI_USE_TRUE_MUTEXES ||  /* mutexes compile away to nothing */ \
+    !GASNETI_HAVE_PTHREAD_RWLOCK || /* OS rwlocks missing, use standard mutex (no read concurrency) */ \
+    GASNETI_MUTEX_CAUTIOUS_INIT     /* assume pthread_rwlocks are also broken */
+  #define gasneti_rwlock_t              gasneti_mutex_t
+  #define gasneti_rwlock_init           gasneti_mutex_init
+  #define gasneti_rwlock_destroy        gasneti_mutex_destroy
+  #define gasneti_rwlock_rdlock         gasneti_mutex_lock
+  #define gasneti_rwlock_wrlock         gasneti_mutex_lock
+  #define gasneti_rwlock_tryrdlock      gasneti_mutex_trylock
+  #define gasneti_rwlock_trywrlock      gasneti_mutex_trylock
+  #define gasneti_rwlock_unlock         gasneti_mutex_unlock    
+  #define GASNETI_RWLOCK_INITIALIZER    GASNETI_MUTEX_INITIALIZER
+  #define gasneti_rwlock_assertlocked   gasneti_mutex_assertlocked
+  #define gasneti_rwlock_assertrdlocked gasneti_mutex_assertlocked
+  #define gasneti_rwlock_assertwrlocked gasneti_mutex_assertlocked
+  #define gasneti_rwlock_assertunlocked gasneti_mutex_assertunlocked   
+
+#elif GASNET_DEBUG /* debug checking rwlocks */
+  #define gasneti_rwlock_t            pthread_rwlock_t
+  #define GASNETI_RWLOCK_INITIALIZER  PTHREAD_RWLOCK_INITIALIZER
+
+  extern _gasneti_rwlock_state _gasneti_rwlock_query(gasneti_rwlock_t const *l);
+  extern void _gasneti_rwlock_insert(gasneti_rwlock_t const *l, _gasneti_rwlock_state state);
+  extern void _gasneti_rwlock_remove(gasneti_rwlock_t const *l);
+
+  #define gasneti_rwlock_assertlocked(pl)   \
+          gasneti_assert(_gasneti_rwlock_query(pl))
+  #define gasneti_rwlock_assertrdlocked(pl) \
+          gasneti_assert(_gasneti_rwlock_query(pl) == _GASNETI_RWLOCK_RDLOCKED)
+  #define gasneti_rwlock_assertwrlocked(pl) \
+          gasneti_assert(_gasneti_rwlock_query(pl) == _GASNETI_RWLOCK_WRLOCKED)
+  #define gasneti_rwlock_assertunlocked(pl) \
+          gasneti_assert(!_gasneti_rwlock_query(pl)) 
+
+  #define gasneti_rwlock_init(pl) \
+          gasneti_assert_zeroret(pthread_rwlock_init(pl,NULL))
+  #define gasneti_rwlock_destroy(pl) do {                                      \
+    gasneti_rwlock_assertunlocked(pl);                                         \
+    gasneti_assert_zeroret(pthread_rwlock_destroy(pl));                        \
+  } while (0)
+
+  #define gasneti_rwlock_rdlock(pl) do {                                       \
+    int _ret;                                                                  \
+    gasneti_rwlock_assertunlocked(pl);                                         \
+    while ((_ret = pthread_rwlock_rdlock(pl)) == EAGAIN)                       \
+      gasneti_sched_yield(); /* too many readers */                            \
+    if (_ret) gasneti_fatalerror("pthread_rwlock_rdlock()=%s",strerror(_ret)); \
+    _gasneti_rwlock_insert(pl, _GASNETI_RWLOCK_RDLOCKED);                      \
+  } while (0)
+
+  #define gasneti_rwlock_wrlock(pl) do {                                       \
+    gasneti_rwlock_assertunlocked(pl);                                         \
+    gasneti_assert_zeroret(pthread_rwlock_wrlock(pl));                         \
+    _gasneti_rwlock_insert(pl, _GASNETI_RWLOCK_WRLOCKED);                      \
+  } while (0)
+
+  #define gasneti_rwlock_unlock(pl) do {                                       \
+    gasneti_rwlock_assertlocked(pl);                                           \
+    gasneti_assert_zeroret(pthread_rwlock_unlock(pl));                         \
+    _gasneti_rwlock_remove(pl);                                                \
+  } while (0)
+
+  GASNETI_INLINE(_gasneti_rwlock_trylock)
+  int _gasneti_rwlock_trylock(gasneti_rwlock_t *pl, int writer) {
+    int ret;
+    gasneti_rwlock_assertunlocked(pl);
+    if (writer) ret = pthread_rwlock_trywrlock(pl);
+    else        ret = pthread_rwlock_tryrdlock(pl);
+    if (ret == EBUSY) return EBUSY;
+    if (ret) gasneti_fatalerror("pthread_rwlock_trylock()=%s",strerror(ret));
+    _gasneti_rwlock_insert(pl, 
+      (writer ? _GASNETI_RWLOCK_WRLOCKED : _GASNETI_RWLOCK_RDLOCKED));
+    return 0;
+  }
+  #define gasneti_rwlock_tryrdlock(pl)  _gasneti_rwlock_trylock(pl,0)
+  #define gasneti_rwlock_trywrlock(pl)  _gasneti_rwlock_trylock(pl,1)
+
+#else /* using real, OS-provided rwlocks */
+  #define gasneti_rwlock_t            pthread_rwlock_t
+  #define gasneti_rwlock_init(pl)     pthread_rwlock_init(pl,NULL)
+  #define gasneti_rwlock_destroy      pthread_rwlock_destroy
+  #define gasneti_rwlock_rdlock(pl)   /* mask too-many-readers failure */ \
+    while (GASNETT_PREDICT_FALSE(pthread_rwlock_rdlock(pl) == EAGAIN)) gasneti_sched_yield()
+  #define gasneti_rwlock_wrlock       pthread_rwlock_wrlock
+  #define gasneti_rwlock_tryrdlock    pthread_rwlock_tryrdlock
+  #define gasneti_rwlock_trywrlock    pthread_rwlock_trywrlock
+  #define gasneti_rwlock_unlock       pthread_rwlock_unlock    
+  #define GASNETI_RWLOCK_INITIALIZER  PTHREAD_RWLOCK_INITIALIZER
+  #define gasneti_rwlock_assertlocked(pl)   ((void)0)
+  #define gasneti_rwlock_assertrdlocked(pl) ((void)0)
+  #define gasneti_rwlock_assertwrlocked(pl) ((void)0)
+  #define gasneti_rwlock_assertunlocked(pl) ((void)0)
+#endif
+/* ------------------------------------------------------------------------------------ */
 /* Wrappers for thread-local data storage
    See README-tools for usage information.
 */
@@ -565,6 +669,7 @@ int gasneti_count0s_uint32_t(uint32_t x) {
 
 #if GASNETI_THREADS
   GASNETI_NEVER_INLINE(_gasneti_threadkey_init, /* avoid inserting overhead for an uncommon path */
+  GASNETI_UNUSED
   static void _gasneti_threadkey_init(pthread_key_t *_value, gasneti_mutex_t *_initmutex, volatile int *_isinit)) {
     gasneti_mutex_lock(_initmutex);
       if (*_isinit == 0) {
@@ -887,7 +992,5 @@ int gasnett_maximize_rlimit(int res, const char *lim_desc);
 #endif
 
 /* ------------------------------------------------------------------------------------ */
-
-GASNETI_END_EXTERNC
 
 #endif

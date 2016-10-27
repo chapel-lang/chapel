@@ -11,8 +11,6 @@
 #ifndef _GASNET_CORE_HELP_H
 #define _GASNET_CORE_HELP_H
 
-GASNETI_BEGIN_EXTERNC
-
 #include <gasnet_help.h>
 
 #if defined(GASNETC_PTHREAD_CREATE_OVERRIDE)
@@ -27,7 +25,5 @@ GASNETI_BEGIN_EXTERNC
 #else
   #define GASNETC_PIN_SEGMENT 0
 #endif
-
-GASNETI_END_EXTERNC
 
 #endif

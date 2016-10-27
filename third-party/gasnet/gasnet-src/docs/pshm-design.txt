@@ -39,8 +39,8 @@ to any other mechanism.  So, if one wishes to use SystemV shared memory or
 mmap()ed files, one should explicitly disable the POSIX support and enable
 the desired mechanism:
 
-	Usage Summary (flags to be passed to the configure script):
-	----------------------------------------------------------
+        Usage Summary (flags to be passed to the configure script):
+        ----------------------------------------------------------
           OFF: --disable-pshm
         POSIX: --enable-pshm
          SYSV: --enable-pshm --disable-pshm-posix --enable-pshm-sysv
@@ -49,7 +49,7 @@ the desired mechanism:
         On Linux "--enable-pshm" is the default.
         On all other platforms "--disable-pshm" is the default.
 
-There are also implementations which are specifc to certain platforms:
+There are also implementations which are specific to certain platforms:
 
 For Cray XE, XK and XC systems, PSHM-over-XPMEM is enabled automatically
 by the corresponding cross-configure scripts.  However, one can also
@@ -97,55 +97,62 @@ start-up of any application using a runtime configured to use PSHM over
 SystemV.  Setting these parameters is system-specific and requires
 administrator privileges.
 
-* Examples to set:
+* Examples of configuration:
 
-   - Linux:	
-	sudo /sbin/sysctl -w kernel.shmmax=<large value>
-	sudo /sbin/sysctl -w kernel.shmall=<large value>
-	sudo /sbin/sysctl -w kernel.shmmni=<larger than number of
-					    PSHM processes + 1>
-   - MacOS:
-	sudo /sbin/sysctl -w kern.sysv.shmmax=<large value>
-	sudo /sbin/sysctl -w kern.sysv.shmall=<large value>
-	sudo /sbin/sysctl -w kern.sysv.shmmni=<larger than number of
-					 PSHM processes + 1>
+These examples are for 64-bit systems, and essentially allow
+unlimited amounts of memory to be used for GASNet segments.
 
-   - Various BSD flavors:
-        FreeBSD: follow MacOS example, replacing "sysv" with "ipc".
-        NetBSD: follow MacOS example, replacing "sysv" with "ipc".
-        OpenBSD: follow MacOS example, replacing "sysv" with "shminfo".
+These assume you are running no more than 127 processes per
+node.  If you have more cores (or cpu threads) then increase
+the shmmni value to the maximum number of processes you wish
+to be be able to run, plus 1.  Some examples below do not
+include a setting for shmmni because the system defaults are
+large enough in general, and often cannot be reduced.
 
-   - Solaris:
-        Depends on version.  Please see the Sun/Oracle documentation.
-
-   - Cygwin:
-        See Cygwin under "change parameters permanently", below.
-
-* To change parameters permanently:
+For 32-bit systems, use 2147483647 for the shmmax value to
+avoid a potential overflow.
 
    - Linux:
-	Add the following lines to /etc/sysctl.conf (sudo required):
-	kernel.shmmax=<large value>
-	kernel.shmall=<large value>
-	kernel.shmmni=<larger than number of
-	               PSHM processes + 1>
+        Add the following three lines to /etc/sysctl.conf (sudo required):
+kernel.shmmax=1099511627776
+kernel.shmall=268435456
+kernel.shmmni=128
 
-	To reload the new settings:
-	sudo /sbin/sysctl -p /etc/sysctl.conf
+        To activate the new settings reboot, or run the following:
+        sudo /sbin/sysctl -p /etc/sysctl.conf
 
    - MacOS:
-	Add the following lines to /etc/sysctl.conf (sudo required):
-	kern.sysv.shmmax=<large value>
-	kern.sysv.shmall=<large value>
-	kern.sysv.shmmni=<larger than number of
-	                  PSHM processes + 1>
+        Add the following three lines to /etc/sysctl.conf (sudo required):
+kern.sysv.shmmax=1099511627776
+kern.sysv.shmall=268435456
+kern.sysv.shmmni=128
 
-	To reload the new settings: reboot the machine.
+        To activate the new settings reboot, or run the following:
+        grep ^kern.sysv.shm /etc/sysctl.conf | sudo xargs /usr/sbin/sysctl -w
 
-   - Various BSD flavors:
-        FreeBSD: follow MacOS example, replacing "sysv" with "ipc".
-        NetBSD: follow MacOS example, replacing "sysv" with "ipc".
-        OpenBSD: follow MacOS example, replacing "sysv" with "shminfo".
+   - FreeBSD:
+        Add the following two lines to /etc/sysctl.conf (sudo required):
+kern.ipc.shmmax=1099511627776
+kern.ipc.shmall=268435456
+
+        To activate the new settings reboot, or run the following:
+        sudo /sbin/sysctl -f /etc/sysctl.conf
+
+   - NetBSD:
+        Add the following two lines to /etc/sysctl.conf (sudo required):
+kern.ipc.shmmax=1099511627776
+kern.ipc.shmmaxpgs=268435456
+
+        To activate the new settings reboot, or run the following:
+        sudo /sbin/sysctl -f /etc/sysctl.conf
+
+   - OpenBSD:
+        Add the following two lines to /etc/sysctl.conf (sudo required):
+kern.shminfo.shmmax=2147483647
+kern.shminfo.shmall=268435456
+
+        To activate the new settings reboot, or run the following:
+        grep ^kern.shminfo /etc/sysctl.conf | sudo xargs /sbin/sysctl -w
 
    - Solaris:
         Depends on version.  Please see the Sun/Oracle documentation.
@@ -232,13 +239,13 @@ Interface notes:
   supernode rank (which need not be the same when GASNET_SUPERNODE_MAXSIZE
   is non-zero) for each node.  Only nodes with the same supernode rank as
   the caller are addressable via PSHM.  When PSHM is enabled the "offset"
-  field givies the difference between X's address for its own segment and the
+  field gives the difference between X's address for its own segment and the
   address (if any) at which that segment is mapped in the caller's address
   space.
 * Client may directly load/store into the segments of any node sharing their
   supernode (currently implemented in Berkeley UPC runtime library)
 * remotely-addressable segment restrictions on gasnet_put/get/AMLong apply to
-  the individual segments - ie gasnet_put() to an address in the segment of
+  the individual segments - i.e. gasnet_put() to an address in the segment of
   node X must give node X as the target node, not some other supernode peer
 
 Restrictions:
@@ -277,7 +284,7 @@ A3) All supported conduits are attaching to segments in gasnet_attach().  We
     fork-based spawner inside gasnetc_init()).
 
 Q4) Does the client code between init/attach need to know the supernode
-    associations? (eg to make segsize decision)
+    associations? (e.g. to make segsize decision)
 A4) So far we have not seen a need for this (though internal to GASNet we do).
 
 Q5) Can/do we still get allocate on first write mapping for the segment?
@@ -289,7 +296,7 @@ A5) We have each node mmap() its own segment before any cross-mapping is done
     the OS does page frame allocation on touch, rather than mmap().
 
 Q6) Do we ever want to allow supernodes to share a physical node?
-    (eg to increase segment size or to leverage NUMA affinity)
+    (e.g. to increase segment size or to leverage NUMA affinity)
     - if so, need an interface to specify this (probably environment variables)
 A6) The GASNET_SUPERNODE_MAXSIZE env var bounds the number of processes which
     will be joined into a single supernode (with 0 meaning no bound).  When

@@ -6,6 +6,7 @@
 
 #include <gasnet_core_internal.h>
 
+#include <unistd.h>
 
 static int64_t gasnetc_rcv_thread_rate = 1000;
 
@@ -18,9 +19,19 @@ void gasnetc_do_exit(void)
         gasneti_mutex_lock(&exit_lock);
     }
 
+    /* Try for upto 5s to obtain the lock */
+    const uint64_t timeout_ns = 5 * 1000000000L;
+    const gasneti_tick_t t_start = gasneti_ticks_now();
+    while (gasneti_ticks_to_ns(gasneti_ticks_now() - t_start) < timeout_ns) {
+      if (!GASNETC_PSM_TRYLOCK()) break;
+      gasneti_sched_yield();
+    }
+
     psm2_ep_close(gasnetc_psm_state.ep, PSM2_EP_CLOSE_GRACEFUL,
              (int64_t)(gasnetc_psm_state.exit_timeout * 1000000000L));
     psm2_finalize();
+
+    alarm(60); /* in case bootstrapFini() hangs, for instance in a barrier */
     gasneti_bootstrapFini();
     gasneti_killmyprocess(gasnetc_psm_state.exit_code);
 }
@@ -53,7 +64,7 @@ extern int gasnetc_AMPoll(void)
         GASNETC_PSM_UNLOCK();
     }
 
-    if_pf (gasnetc_psm_state.should_exit) {
+    if_pf (gasnetc_psm_state.should_exit && !gasnetc_psm_state.exit_in_progress) {
         gasnetc_do_exit();
     }
 

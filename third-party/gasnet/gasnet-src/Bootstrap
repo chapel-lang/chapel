@@ -9,7 +9,7 @@ set -e
 srcdir=`dirname $0`
 
 TIME=
-CONFIRM=0
+CONFIRM=${GASNET_BOOTSTRAP_CONFIRM:-0}
 NOTOOLCHECK=0
 TOOLSONLYMODE=0
 autofilter="perl -0 -pe 's/^(autoheader.*?: )?WARN.+auxiliary files(.|\n)+WARN.+documentation.\n//m' \
@@ -182,6 +182,16 @@ set -x
     set +x
     CMD="automake -a" ; eval $DOIT
     set -x
+    # Perform some postprocessing to fix bugs in automake:
+    # 1) Overrides: Automake is too stupid to notice several overrides we intentionally perform,
+    # leading to spam of harmless warnings of the form:
+    #   warning: overriding commands for target X
+    #   warning: ignoring old commands for target X
+    # Remove the earlier, overridden rule to silence the warning AND remove unwanted dependencies
+    # top-level: Makefile and distclean targets, remove all but the last rule (ours)
+    perl -0777 -pi -e 's/^(distclean|Makefile):[^\n]*\n(?:\t[^\n]*\n)*(?=.*\n\1:)//msg' Makefile.in
+    # conduits: Makefile target defined in included other/Makefile-conduit.mak, just clear the automake one
+    perl -0777 -pi -e 's/^Makefile:[^\n]*\n(?:\t[^\n]*\n)*//msg' *-conduit/Makefile.in
 
     rm -Rf autom4te*.cache
     rm -f config.cache

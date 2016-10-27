@@ -81,7 +81,7 @@ extern void gasneti_mutex_cautious_init(/*gasneti_mutex_t*/void *_pl) {
   gasneti_atomic32_t *initstep = (gasneti_atomic32_t *)&(pl->initstep);
   while (1) {
     /* check if initialization is complete */
-    if (gasneti_atomic32_read(initstep,GASNETI_ATOMIC_RMB_POST) == 2) return;
+    if_pt (gasneti_atomic32_read(initstep,GASNETI_ATOMIC_RMB_POST) == 2) return;
     /* mutex needs initialization, try to acquire that job */
     if (gasneti_atomic32_compare_and_swap(initstep, 0, 1,
                                            GASNETI_ATOMIC_ACQ_IF_TRUE)) break;
@@ -98,6 +98,60 @@ extern void gasneti_mutex_cautious_init(/*gasneti_mutex_t*/void *_pl) {
   gasneti_atomic32_set(initstep, 2, GASNETI_ATOMIC_WMB_PRE);
   return;
 }
+#endif
+
+/* ------------------------------------------------------------------------------------ */
+/* rwlock support */
+
+#if GASNET_DEBUG || GASNETT_BUILDING_TOOLS
+  /* Use a thread-specific list of locks held, to avoid the need for extra synchronization.
+   * If a thread exits with locks held we currently leak this list, although if it ever matters
+   * this could be fixed using a destructor function in pthread_key_create.
+   */
+  GASNETI_THREADKEY_DEFINE(_gasneti_rwlock_list);
+
+  typedef struct _S_gasnet_rwlocklist {
+     gasneti_rwlock_t const *l;
+     struct _S_gasnet_rwlocklist *next;
+     _gasneti_rwlock_state state;
+  } _gasneti_rwlocklist_t GASNETI_THREAD_TYPEDEF;
+
+  extern _gasneti_rwlock_state _gasneti_rwlock_query(gasneti_rwlock_t const *l) {
+    _gasneti_rwlocklist_t const *list = gasneti_threadkey_get(_gasneti_rwlock_list);
+    gasneti_assert(l);
+    while (list) {
+      if (list->l == l) return list->state;
+      list = list->next;
+    }
+    return _GASNETI_RWLOCK_UNLOCKED;
+  }
+
+  extern void _gasneti_rwlock_insert(gasneti_rwlock_t const *l, _gasneti_rwlock_state state) {
+    _gasneti_rwlocklist_t *list = gasneti_threadkey_get(_gasneti_rwlock_list);
+    _gasneti_rwlocklist_t *elem = malloc(sizeof(_gasneti_rwlocklist_t));
+    gasneti_assert(l);
+    gasneti_assert(state);
+    elem->l = l;
+    elem->state = state;
+    elem->next = list;
+    gasneti_threadkey_set(_gasneti_rwlock_list, elem);
+  }
+
+  extern void _gasneti_rwlock_remove(gasneti_rwlock_t const *l) {
+    _gasneti_rwlocklist_t *list = gasneti_threadkey_get(_gasneti_rwlock_list);
+    _gasneti_rwlocklist_t **p = &list;
+    gasneti_assert(l);
+    while (*p) {
+      if ((*p)->l == l) {
+        _gasneti_rwlocklist_t *elem = *p;
+        *p = elem->next;
+        free(elem);
+        break;
+      }
+      p = &(*p)->next;
+    }
+    gasneti_threadkey_set(_gasneti_rwlock_list, list);
+  }
 #endif
 
 /* ------------------------------------------------------------------------------------ */
@@ -270,6 +324,9 @@ GASNETI_IDENT(gasnett_IdentString_SystemName,
 GASNETI_IDENT(gasnett_IdentString_CompilerID, 
              "$GASNetCompilerID: " PLATFORM_COMPILER_IDSTR " $");
 
+int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR)) = 1;
+int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR)) = 1;
+int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_PATCH_,GASNET_RELEASE_VERSION_PATCH)) = 1;
 int GASNETT_LINKCONFIG_IDIOTCHECK(LITE) = 1;
 int GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_THREAD_MODEL) = 1;
 int GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_DEBUG_CONFIG) = 1;
@@ -983,6 +1040,9 @@ static int gasneti_bt_mkstemp(char *filename, int limit) {
     /* Change "backtrace" to "backtrace full" to also see local vars from each frame */
     #if GASNETI_THREADS
       const char commands[] = "\ninfo threads\nthread apply all backtrace 50\ndetach\nquit\n";
+    #elif PLATFORM_OS_CYGWIN 
+      /* bug1848: cygwin is always multi-threaded, user thread is usually (always?) #1 */
+      const char commands[] = "\nthread 1\nbacktrace 50\ndetach\nquit\n";
     #else
       const char commands[] = "\nbacktrace 50\ndetach\nquit\n";
     #endif
@@ -1816,32 +1876,23 @@ int gasnett_maximize_rlimits(void) {
   }
   return success;
 }
+
 int gasnett_maximize_rlimit(int res, const char *lim_desc) {
   int success = 0;
-
-  #ifdef __USE_GNU
-    /* workaround an annoying glibc header bug, which erroneously declares get/setrlimit to take 
-       the enum type __rlimit_resource_t, instead of int as required by POSIX */
-   #if PLATFORM_COMPILER_GNU && PLATFORM_COMPILER_VERSION_GE(4,0,0)
-    /* Gcc-4.x gives a sequence-point warning on the (,) form despite the comma operator.
-     * So, we use a GCC-specific statement-expressions construct instead. */
-    #define RLIM_CALL(fnname,structname) ({void *_fp=(void *)&fnname; (int (*)(int,structname *))_fp;})
-   #else
-    void *_fp;
-    #define RLIM_CALL(fnname,structname) ( (_fp=(void *)&fnname), *(int (*)(int,structname *))_fp)
-   #endif
-  #else
-    #define RLIM_CALL(fnname,structname) fnname
-  #endif
 
   char ctrl_var[32] = "GASNET_MAXIMIZE_";
   gasneti_assert(strlen(ctrl_var) + strlen(lim_desc) < sizeof(ctrl_var));
   if (!gasneti_getenv_yesno_withdefault(strncat(ctrl_var, lim_desc, sizeof(ctrl_var)-1), 1))
     return 1;
 
+  /* function pointers used in this macro are a workaround an annoying glibc header bug,
+   * which erroneously declares get/setrlimit to take 
+   * the enum type __rlimit_resource_t, instead of int as required by POSIX */
   #define SET_RLIMITS(structname, getrlimit, setrlimit) do {                                    \
+    static int (*get_fp)(int,structname *) = (int (*)(int,structname *))&getrlimit;             \
+    static int (*set_fp)(int,const structname *) = (int (*)(int,const structname *))&setrlimit; \
     structname oldval,newval;                                                                   \
-    if (RLIM_CALL(getrlimit,structname)(res, &oldval)) {                                        \
+    if (get_fp(res, &oldval)) {                                                                 \
       GASNETT_TRACE_PRINTF("gasnett_maximize_rlimit: "#getrlimit"(%s) failed: %s",              \
                               lim_desc, strerror(errno));                                       \
     } else {                                                                                    \
@@ -1857,7 +1908,7 @@ int gasnett_maximize_rlimit(int res, const char *lim_desc) {
         snprintf(newvalstr, sizeof(newvalstr), "%llu", (unsigned long long)newval.rlim_cur);    \
       }                                                                                         \
       if (newval.rlim_cur != oldval.rlim_cur) {                                                 \
-        if (RLIM_CALL(setrlimit,structname)(res, &newval)) {                                    \
+        if (set_fp(res, &newval)) {                                                             \
           GASNETT_TRACE_PRINTF("gasnett_maximize_rlimit:                                        \
             "#setrlimit"(%s, %s) failed: %s", lim_desc, newvalstr, strerror(errno));            \
         } else {                                                                                \

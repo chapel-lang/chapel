@@ -58,7 +58,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/Makefile.tests
 subdir = other/ammpi
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -147,7 +147,7 @@ CC_FAMILY = @CC_FAMILY@
 CC_SUBFAMILY = @CC_SUBFAMILY@
 CC_UNWRAPPED = @CC_UNWRAPPED@
 CC_WRAPPED = @CC_WRAPPED@
-CFLAGS = @MPI_CFLAGS@ $(MANUAL_CFLAGS) $(apputils_flags) $(strict_proto_flags)
+CFLAGS = @MPI_CFLAGS@ $(MANUAL_MPICFLAGS) $(apputils_flags) $(strict_proto_flags)
 COMPLETE_INTTYPES_H = @COMPLETE_INTTYPES_H@
 COMPLETE_STDINT_H = @COMPLETE_STDINT_H@
 COMPLETE_SYS_TYPES_H = @COMPLETE_SYS_TYPES_H@
@@ -158,7 +158,6 @@ CPPFLAGS = @CPPFLAGS@
 CROSS_COMPILING = @CROSS_COMPILING@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
-CXXCPPFLAGS = @CXXCPPFLAGS@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CXX_FAMILY = @CXX_FAMILY@
@@ -191,6 +190,8 @@ GASNET_INSTALL_CMD = @GASNET_INSTALL_CMD@
 GASNET_MACHINE_DEFINES = @GASNET_MACHINE_DEFINES@
 GASNET_MXM_SPAWNER_CONF = @GASNET_MXM_SPAWNER_CONF@
 GASNET_OFI_SPAWNER_CONF = @GASNET_OFI_SPAWNER_CONF@
+GASNET_OPT_CFLAGS = @GASNET_OPT_CFLAGS@
+GASNET_OPT_CXXFLAGS = @GASNET_OPT_CXXFLAGS@
 GASNET_PERL_BYTESFLAG = @GASNET_PERL_BYTESFLAG@
 GASNET_PERL_LANG = @GASNET_PERL_LANG@
 GASNET_PLATFORM = @GASNET_PLATFORM@
@@ -380,8 +381,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 yod = @yod@
 AUTOMAKE_OPTIONS = foreign 1.4 no-dependencies
-@PLATFORM_ILP32_FALSE@apputils_flags = -DAPPUTILS_OMIT_READWRITE
-@PLATFORM_ILP32_TRUE@apputils_flags = 
+apputils_flags = 
 @BUILDCONFIG_DEBUG_FALSE@BUILDCONFIG_DEFINES = -DAMMPI_NDEBUG=1
 @BUILDCONFIG_DEBUG_TRUE@BUILDCONFIG_DEFINES = -DAMMPI_DEBUG=1
 @USE_STRICT_PROTOTYPES_FALSE@strict_proto_flags = 
@@ -415,14 +415,9 @@ EXTRA_DIST = \
 	Makefile.titanium.in	\
 	license.txt
 
-@PLATFORM_ILP32_FALSE@testprograms_ILP32only = 
 
 # ---------- test programs -------------
 # all the test executables
-@PLATFORM_ILP32_TRUE@testprograms_ILP32only = \
-@PLATFORM_ILP32_TRUE@    testgetput    		\
-@PLATFORM_ILP32_TRUE@    testreadwrite 
-
 testprograms = \
     testam       		\
     testbounce    		\
@@ -431,7 +426,8 @@ testprograms = \
     testlatencyM   		\
     testping      		\
     testreduce			\
-    $(testprograms_ILP32only)
+    testgetput    		\
+    testreadwrite 
 
 AMMPI_RUNCMD = '@MPIRUN_CMD@'
 TEST_NODES = 2
@@ -794,7 +790,7 @@ amxdist:
          echo "+++ Building distribution for AMMPI version $${VERSION} +++" && \
          rm -Rf ammpi$${VERSION}.tar.gz ammpi$${VERSION} && \
          mkdir ammpi$${VERSION} && \
-         cp $(srcdir)/Makefile* $(srcdir)/*.txt $(srcdir)/*.[ch]* $(testdir)/*.[ch]* \
+         cp $(srcdir)/Makefile* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.[ch]* $(testdir)/*.[ch]* \
 	    $(altincdir)/portable_inttypes.h $(altincdir)/portable_platform.h \
 	    ammpi$${VERSION} && \
          rm -f ammpi$${VERSION}/Makefile.in ammpi$${VERSION}/Makefile.titanium && \
@@ -813,6 +809,7 @@ amxdist:
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@            @NM@ --defined-only $$lib |                                             \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@            grep -v -e ' [\._]*ammpi_' -e ' [\._]*AMMPI_' -e ' [\._]*AM_'           \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@                    -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
+@GNU_NM_TRUE@@USE_AMMPI_TRUE@                    -e 'get_pc_thunk'                                               \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@                    -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e debug_info_seg |      \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@            @PERL@ -n -e 'print if /^[0-9a-fA-F]+\s+[A-Z]\s+/' > .$$lib.exp;        \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@          if test -s .$$lib.exp ; then                                              \

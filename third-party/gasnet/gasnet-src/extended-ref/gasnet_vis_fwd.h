@@ -11,8 +11,6 @@
 #ifndef _GASNET_VIS_FWD_H
 #define _GASNET_VIS_FWD_H
 
-GASNETI_BEGIN_EXTERNC
-
 extern void gasnete_vis_init(void);
 
 extern void gasneti_vis_progressfn(void);
@@ -70,7 +68,5 @@ extern void gasneti_vis_progressfn(void);
         CNT(C, GETS_REF_INDEXED, cnt)        \
 
 #endif
-
-GASNETI_END_EXTERNC
 
 #endif

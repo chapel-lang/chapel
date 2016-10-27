@@ -5981,7 +5981,7 @@ void gasnete_coll_stat_(GASNETE_THREAD_FARG_ALONE) {
   op = gasnete_coll_active_first();
   while (op) {
     gasnete_coll_generic_data_t *data = op->data;
-    fprintf(stderr, "OP: %p in state %d\n", op, data->state);
+    fprintf(stderr, "OP: %p in state %d\n", (void *)op, data->state);
     op = gasnete_coll_active_next(op);
   }
   /* gasneti_mutex_unlock(&gasnete_coll_active_lock); */

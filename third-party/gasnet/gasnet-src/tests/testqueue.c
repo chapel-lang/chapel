@@ -302,7 +302,7 @@ int main(int argc, char **argv) {
         }                                                                   \
         depth = 1;                                                          \
         if (iamsender) { /* Prime i-cache, free-lists, firehose, etc. */    \
-          GASNETI_UNUSED /* 'i' not used in all expansions of QUEUE_TEST */ \
+          GASNETT_UNUSED /* 'i' not used in all expansions of QUEUE_TEST */ \
           int i = 0;                                                        \
           OP;                                                               \
           { SYNC; }                                                         \
@@ -336,9 +336,9 @@ int main(int argc, char **argv) {
             { double avgus = gasnett_ticks_to_ns(total) / 1000.0 /          \
                              (double)iters / (double)depth;                 \
               /* '{min,max}us' not used in all expansions of QUEUE_TEST */  \
-              GASNETI_UNUSED                                                \
+              GASNETT_UNUSED                                                \
               double minus = gasnett_ticks_to_ns(min) / 1000.0 / (double)depth; \
-              GASNETI_UNUSED                                                \
+              GASNETT_UNUSED                                                \
               double maxus = gasnett_ticks_to_ns(max) / 1000.0 / (double)depth; \
               int prec;                                                     \
               if (avgus < 1000.0) prec = 3;                                 \

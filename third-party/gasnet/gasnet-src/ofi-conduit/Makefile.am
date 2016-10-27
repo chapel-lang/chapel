@@ -31,7 +31,7 @@ mpi_deps = $(mpi_srcdir)/*.h $(mpi_srcdir)/*.c
 mpi_special_objs = $(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o
 $(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o: force
 	@MPI_CC@ @MPI_CFLAGS@ $(LIBDEFINES) $(CONDUIT_EXTRALIBCFLAGS) $(LIBINCLUDES) \
-		-o $@ -c $(mpi_srcdir)/gasnet_bootstrap_mpi.c
+		$(MANUAL_MPICFLAGS) -o $@ -c $(mpi_srcdir)/gasnet_bootstrap_mpi.c
 endif
 
 ##
@@ -60,8 +60,7 @@ CONDUIT_FILELIST =           \
       gasnet_core_help.h     \
       gasnet_core_internal.h \
       gasnet_extended.c      \
-      gasnet_extended_fwd.h  \
-      gasnet_extended_internal.h
+      gasnet_extended_fwd.h
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line

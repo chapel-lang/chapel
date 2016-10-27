@@ -2,11 +2,11 @@
 // Description: Exception handlers for fserver
 // Copyright 1999, Dan Bonachea & Scott McPeak
 
-#include "exc.h"          // this module
-#include "sockutil.h"
-
 #include <stdio.h>
 #include <string.h>       // strlen, strcpy
+
+#include "exc.h"          // this module
+#include "sockutil.h"
 
 //------------------------------------------------------------------------------------
 void ackackack(int*) {}
@@ -80,7 +80,8 @@ xSocket::~xSocket()
 
 void xsocket(SOCKET s, char const *msg) { // creates and throws an xsocket
   char tmp[MAX_EXC_MSG];
-  sprintf(tmp, "%s (%i:%s)", msg, getSocketErrorCode(), errorCodeString(getSocketErrorCode()));
+  int err = errno;
+  sprintf(tmp, "%s (%i:%s)", msg, err, strerror(err));
   THROW(xSocket(s, tmp));
 }
 

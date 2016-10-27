@@ -17,7 +17,14 @@
 /* ------------------------------------------------------------------------------------ */
 #define GASNETC_HANDLER_BASE  1 /* reserve 1-63 for the core API */
 #define _hidx_gasnetc_auxseg_reqh             (GASNETC_HANDLER_BASE+0)
+#define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+1)
 /* add new core API handlers here and to the bottom of gasnet_core.c */
+
+#ifndef GASNETE_HANDLER_BASE
+  #define GASNETE_HANDLER_BASE  64 /* reserve 64-127 for the extended API */
+#elif GASNETE_HANDLER_BASE != 64
+  #error "GASNETE_HANDLER_BASE mismatch between core and extended"
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 /* handler table (recommended impl) */

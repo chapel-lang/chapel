@@ -13,6 +13,10 @@
          include gasnet.h before gasnet_tools.h 
 #endif
 
+#ifdef __cplusplus
+  extern "C" { // cannot use GASNETI_BEGIN_EXTERNC here due to a header dependency cycle
+#endif
+
 /* Recognized definitions:
    GASNETT_THREAD_SAFE - may be defined by client to enable thread-safety. Thread-safety is also
       auto-enabled by _REENTRANT, _THREAD_SAFE and pthread.h
@@ -71,8 +75,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-GASNETI_BEGIN_EXTERNC
-
 /* ------------------------------------------------------------------------------------ */
 /* basic purely syntactic features */
 #define GASNETT_IDENT(identName, identText) GASNETI_IDENT(identName, identText)
@@ -108,6 +110,7 @@ GASNETI_BEGIN_EXTERNC
 #define GASNETT_NEVER_INLINE            GASNETI_NEVER_INLINE
 #define GASNETT_RESTRICT                GASNETI_RESTRICT
 #define GASNETT_USED                    GASNETI_USED
+#define GASNETT_UNUSED                  GASNETI_UNUSED
 #define GASNETT_NORETURN                GASNETI_NORETURN
 #define GASNETT_NORETURNP               GASNETI_NORETURNP
 #define GASNETT_MALLOC                  GASNETI_MALLOC
@@ -128,7 +131,6 @@ GASNETI_BEGIN_EXTERNC
 #define GASNETT_BEGIN_EXTERNC           GASNETI_BEGIN_EXTERNC
 #define GASNETT_END_EXTERNC             GASNETI_END_EXTERNC
 #define GASNETT_EXTERNC                 GASNETI_EXTERNC
-#define GASNETT_COMMON_EXTERN           GASNETI_COMMON_EXTERN
 #define GASNETT_TENTATIVE_EXTERN        GASNETI_TENTATIVE_EXTERN
 
 #define gasnett_constant_p              gasneti_constant_p
@@ -384,6 +386,20 @@ extern const char *gasnett_performance_warning_str(void);
 #define gasnett_mutex_assertlocked    gasneti_mutex_assertlocked
 #define gasnett_mutex_assertunlocked  gasneti_mutex_assertunlocked
 
+#define gasnett_rwlock_t              gasneti_rwlock_t
+#define gasnett_rwlock_init           gasneti_rwlock_init
+#define gasnett_rwlock_destroy        gasneti_rwlock_destroy
+#define gasnett_rwlock_rdlock         gasneti_rwlock_rdlock
+#define gasnett_rwlock_wrlock         gasneti_rwlock_wrlock
+#define gasnett_rwlock_tryrdlock      gasneti_rwlock_tryrdlock
+#define gasnett_rwlock_trywrlock      gasneti_rwlock_trywrlock
+#define gasnett_rwlock_unlock         gasneti_rwlock_unlock
+#define GASNETT_RWLOCK_INITIALIZER    GASNETI_RWLOCK_INITIALIZER
+#define gasnett_rwlock_assertlocked   gasneti_rwlock_assertlocked 
+#define gasnett_rwlock_assertrdlocked gasneti_rwlock_assertrdlocked
+#define gasnett_rwlock_assertwrlocked gasneti_rwlock_assertwrlocked
+#define gasnett_rwlock_assertunlocked gasneti_rwlock_assertunlocked
+
 #define gasnett_cond_t               gasneti_cond_t
 #define gasnett_cond_init            gasneti_cond_init
 #define gasnett_cond_destroy         gasneti_cond_destroy
@@ -428,6 +444,7 @@ extern gasnett_backtrace_type_t gasnett_backtrace_user;
   #include <stdarg.h>
 #endif
 GASNETI_FORMAT_PRINTF(_gasnett_trace_printf_noop,1,2,
+GASNETI_UNUSED
 static void _gasnett_trace_printf_noop(const char *_format, ...)) {
   #if PLATFORM_COMPILER_PGI
     va_list _ap; va_start(_ap,_format); va_end(_ap); /* avoid a silly warning */
@@ -585,6 +602,9 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
 #endif
 
 #define GASNETT_LINKCONFIG_IDIOTCHECK(name) _CONCAT(gasnett_linkconfig_idiotcheck_,name)
+extern int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR));
+extern int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR));
+extern int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_PATCH_,GASNET_RELEASE_VERSION_PATCH));
 extern int GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_THREAD_MODEL);
 extern int GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_DEBUG_CONFIG);
 extern int GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_PTR_CONFIG);
@@ -596,12 +616,19 @@ extern int GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_ATOMIC32_CONFIG);
 extern int GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_ATOMIC64_CONFIG);
 #endif
 static int *gasnett_linkconfig_idiotcheck(void);
-static void *_gasnett_linkconfig_idiotcheck = (void *)&gasnett_linkconfig_idiotcheck;
+#if !PLATFORM_COMPILER_TINY /* avoid a tinyc bug */
+  #define GASNETI_IDIOTCHECK_RECURSIVE_REFERENCE 1
+  static int *(*_gasnett_linkconfig_idiotcheck)(void) = &gasnett_linkconfig_idiotcheck;
+#endif
 GASNETT_USED
 static int *gasnett_linkconfig_idiotcheck(void) 
 {
   static int val;
-  val +=  GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_THREAD_MODEL)
+  val +=  
+        + GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR))
+        + GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR))
+        + GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_PATCH_,GASNET_RELEASE_VERSION_PATCH))
+        + GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_THREAD_MODEL)
         + GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_DEBUG_CONFIG)
         + GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_PTR_CONFIG)
         + GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_TIMER_CONFIG)
@@ -612,8 +639,10 @@ static int *gasnett_linkconfig_idiotcheck(void)
         + GASNETT_LINKCONFIG_IDIOTCHECK(GASNETT_ATOMIC64_CONFIG)
       #endif
         ;
-  if (_gasnett_linkconfig_idiotcheck != (void *)&gasnett_linkconfig_idiotcheck)
-    val += ((int(*)(void))_gasnett_linkconfig_idiotcheck)();
+  #if GASNETI_IDIOTCHECK_RECURSIVE_REFERENCE
+  if (_gasnett_linkconfig_idiotcheck == &gasnett_linkconfig_idiotcheck)
+    val += *(*_gasnett_linkconfig_idiotcheck)();
+  #endif
   return &val;
 }
 

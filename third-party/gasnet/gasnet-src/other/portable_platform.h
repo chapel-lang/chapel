@@ -391,13 +391,13 @@
   /* gather any advertised GNU version number info, even for non-gcc compilers */
   #if defined(__GNUC_MINOR__) && defined(__GNUC_PATCHLEVEL__)
     #define __PLATFORM_COMPILER_GNU_VERSION_STR \
-      _STRINGIFY(__GNUC__)"." _STRINGIFY(__GNUC_MINOR__)"." _STRINGIFY(__GNUC_PATCHLEVEL__)
+      _STRINGIFY(__GNUC__) "." _STRINGIFY(__GNUC_MINOR__) "." _STRINGIFY(__GNUC_PATCHLEVEL__)
   #elif defined(__GNUC_MINOR__)
     #define __PLATFORM_COMPILER_GNU_VERSION_STR \
-      _STRINGIFY(__GNUC__)"." _STRINGIFY(__GNUC_MINOR__)".?"
+      _STRINGIFY(__GNUC__) "." _STRINGIFY(__GNUC_MINOR__) ".?"
   #else
     #define __PLATFORM_COMPILER_GNU_VERSION_STR \
-      _STRINGIFY(__GNUC__)".?.?"
+      _STRINGIFY(__GNUC__) ".?.?"
   #endif
 #elif defined(PLATFORM_COMPILER_UNKNOWN) /* unknown compiler */
   #define PLATFORM_COMPILER_FAMILYNAME UNKNOWN

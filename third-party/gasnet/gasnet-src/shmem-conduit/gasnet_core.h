@@ -13,8 +13,6 @@
 
 #include <gasnet_core_help.h>
 
-GASNETI_BEGIN_EXTERNC
-
 /* ------------------------------------------------------------------------------------ */
 /*
   Initialization
@@ -201,8 +199,6 @@ extern int gasnetc_AMReplyLongM(
                             int numargs, ...);
 
 /* ------------------------------------------------------------------------------------ */
-
-GASNETI_END_EXTERNC
 
 #endif
 

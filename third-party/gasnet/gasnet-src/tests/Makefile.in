@@ -289,7 +289,7 @@ do-run-testexit: force
 	@echo '  RUNCMD="$$INTERACTIVE_RUNCMD"'                   >> $(TESTEXIT_SCRIPT)
 	@echo "fi"                                                >> $(TESTEXIT_SCRIPT)
 	@echo "@DEBUGMALLOC_VAR@=$${@DEBUGMALLOC_VAR@-@DEBUGMALLOC_VAL@}; export @DEBUGMALLOC_VAR@" >> $(TESTEXIT_SCRIPT)
-	@if test "`echo ' mpi udp ' | grep ' $(CONDUIT_NAME) '`" != "" ; then \
+	@if test "`echo ' mpi udp psm ofi ' | grep ' $(CONDUIT_NAME) '`" != "" ; then \
 	   echo "have_interrupt=0"                                >> $(TESTEXIT_SCRIPT) ; \
 	 else                                                                             \
 	   echo "have_interrupt=1"                                >> $(TESTEXIT_SCRIPT) ; \
@@ -365,9 +365,8 @@ testbarrierlate_extraobjs = delay.o
 
 # delay function, used by multiple tests
 # need to deliberately exclude optimization for this object file to prevent breaking delay
-# some compilers implicitly enable optimization, so don't complain about that
 delay.o: force
-	$(GASNET_CC) $(GASNET_CPPFLAGS) $(GASNET_MISC_CFLAGS) $(KEEPTMP_CFLAGS) $(MANUAL_CFLAGS) -DGASNET_ALLOW_OPTIMIZED_DEBUG -c -o $@ $(srcdir)/$*.c
+	$(GASNET_CC) $(GASNET_CPPFLAGS) $(GASNET_MISC_CFLAGS) $(KEEPTMP_CFLAGS) $(MANUAL_CFLAGS) -c -o $@ $(srcdir)/$*.c
 
 mpi-check: force
 	@if test -z "$(GASNET_MPI_CC)" ; then \
@@ -378,14 +377,14 @@ mpi-check: force
 
 # testmpi must be compiled like an MPI program with GASNet support
 testmpi: mpi-check force
-	$(GASNET_MPI_CC) -I$(srcdir) $(GASNET_CPPFLAGS) @MPI_CFLAGS@ $(KEEPTMP_CFLAGS) $(MANUAL_CFLAGS) -c -o $@.o $(srcdir)/$@.c
+	$(GASNET_MPI_CC) -I$(srcdir) $(GASNET_CPPFLAGS) @MPI_CFLAGS@ $(KEEPTMP_CFLAGS) $(MANUAL_MPICFLAGS) -c -o $@.o $(srcdir)/$@.c
 	$(GASNET_MPI_LD) $(GASNET_LDFLAGS) @MPI_CFLAGS@ -o $@ $@.o $(GASNET_LIBS) @MPI_LIBS@ $(MANUAL_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 
 # the following are just plain MPI programs
 # testmpinbr requires libm
 $(MPI_TESTS): mpi-check force
-	$(GASNET_MPI_CC) -I$(srcdir)/mpi -I@TOP_SRCDIR@/other @MPI_CFLAGS@ $(KEEPTMP_CFLAGS) $(MANUAL_CFLAGS) -c -o $@.o $(srcdir)/mpi/$@.c
+	$(GASNET_MPI_CC) -I$(srcdir)/mpi -I@TOP_SRCDIR@/other @MPI_CFLAGS@ $(KEEPTMP_CFLAGS) $(MANUAL_MPICFLAGS) -c -o $@.o $(srcdir)/mpi/$@.c
 	$(GASNET_MPI_LD) $(GASNET_LDFLAGS) @MPI_CFLAGS@ -o $@ $@.o @MPI_LIBS@ @LIBM@ $(MANUAL_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 

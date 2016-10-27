@@ -11,8 +11,6 @@
 #ifndef _GASNET_SYNCOPS_H
 #define _GASNET_SYNCOPS_H
 
-GASNETI_BEGIN_EXTERNC
-
 /* ------------------------------------------------------------------------------------ */
 
 /* 
@@ -900,7 +898,12 @@ gasneti_atomic_val_t gasneti_semaphore_trydown_partial_SEQ(gasneti_semaphore_t_S
 
     GASNETI_INLINE(_gasneti_lifo_push)
     void _gasneti_lifo_push(gasneti_lifo_head_t_PAR *p, void **newhead, void **tail) {
-      uintptr_t tag, oldhead;
+    #if (PLATFORM_COMPILER_PGI && PLATFORM_COMPILER_VERSION_GE(16,4,0)) /* XXX: no end version */
+      volatile uintptr_t tag; /* See GASNet bug #3324 */
+    #else
+      uintptr_t tag;
+    #endif
+      uintptr_t oldhead;
       gasneti_atomic64_t *head = (gasneti_atomic64_t *)_GASNETI_LIFO_ALIGN(p);
       gasneti_atomic128_t *head_and_tag = (gasneti_atomic128_t *)head;
       do {
@@ -1196,6 +1199,5 @@ void *gasneti_lifo_next(void *elem) {
 #define gasneti_lifo_push_many       gasneti_cons_lifo(_GASNETI_PARSEQ,push_many)
 
 /* ------------------------------------------------------------------------------------ */
-GASNETI_END_EXTERNC
 
 #endif

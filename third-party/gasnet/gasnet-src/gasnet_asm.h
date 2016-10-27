@@ -114,7 +114,11 @@
   #if PLATFORM_COMPILER_VERSION_GE(7,1,0) && PLATFORM_COMPILER_VERSION_LT(7,1,2)
     #define GASNETI_PGI_ASM_BUG2149 1
   #endif
-  #if PLATFORM_ARCH_32 && PLATFORM_COMPILER_VERSION_GE(7,1,5) /* XXX: No end of range yet */
+  #if PLATFORM_ARCH_32 && \
+      PLATFORM_COMPILER_VERSION_GE(7,1,5) && PLATFORM_COMPILER_VERSION_LT(13,4,0)
+    /* NOTE: PGI reports TPR 14969 was fixed in 8.0-1.
+     * However, we have not been able to test on anything prior to 13.4-0.
+     */
     #define GASNETI_PGI_ASM_BUG2294 1
   #endif
   #if PLATFORM_COMPILER_VERSION_GE(7,0,0) && PLATFORM_COMPILER_VERSION_LT(10,8,0)

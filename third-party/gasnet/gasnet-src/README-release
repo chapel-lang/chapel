@@ -72,7 +72,7 @@ See also:
   contains any cross-configure scripts that are intended for distribution.
   The following command may be used to list any files which have been
   added to the Git repository since the previous release:
-    $ git diff --name-status [prevous-release-tag] | grep ^A
+    $ git diff --name-status [previous-release-tag] | grep ^A
 
 * Verify that ./unBootstrap removes all generated files:
   In the repository directory:
@@ -93,13 +93,15 @@ See also:
   with both debug+stats+trace and ndebug configs, and all supported backend
   C compilers:
    IBM BG/Q: pami (and mpi if time/allocation allows)
-   Cray XE: gemini (and mpi if time/allocation allows)
+   Cray XE/XK: gemini (and mpi if time/allocation allows)
    Cray XC: aries (and mpi if time/allocation allows)
-   Linux-Ethernet: mpi, udp
+   Linux-Ethernet: mpi, udp, ofi
    Linux-InfiniBand: mpi, ibv (and portals4 & mxm, if possible)
-   Linux-Altix: smp, shmem
+   Linux-OmniPath: psm, ofi (plus mpi and ibv if time/allocation allows)
+   Linux-Altix: smp, shmem (NOTE: no current access)
    Windows/Cygwin: smp+pthreads
-   Mac OS X: smp+pthreads
+   Mac OS X: smp+pthreads, smp+sysv
+  SEGMENT_EVERYTHING should be tested on all conduits supporting it.
   In most cases these test will be conducted as part of Berkeley UPC's
   release testing (the "gasnet-tests" suite of the BUPC test harness).
 
@@ -123,8 +125,6 @@ See also:
   The use of the URL for anonymous access to BitBucket is INTENTIONAL,
   so that you cannot accidentally commit the re-writes done by the
   "-o" option to ./Bootstrap.
-
-* Merge with Titanium and test SEGMENT_EVERYTHING functionality 
 
 * Iterate the appropriate steps above until you have final release
   tarballs for both GASNet and GASNet_Tools

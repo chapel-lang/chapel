@@ -44,20 +44,20 @@ int gasneti_bootstrapInit_mpi(int *argc, char ***argv, gasnet_node_t *nodes, gas
 
   /* Create private communicator */
   err = MPI_Comm_group(MPI_COMM_WORLD, &world);
-  gasneti_assert(err == MPI_SUCCESS);
+  gasneti_assert_always(err == MPI_SUCCESS);
   err = MPI_Comm_create(MPI_COMM_WORLD, world, &gasnetc_mpi_comm);
-  gasneti_assert(err == MPI_SUCCESS);
+  gasneti_assert_always(err == MPI_SUCCESS);
   err = MPI_Group_free(&world);
-  gasneti_assert(err == MPI_SUCCESS);
+  gasneti_assert_always(err == MPI_SUCCESS);
 
   /* Get size and rank */
   err = MPI_Comm_size(gasnetc_mpi_comm, &gasnetc_mpi_size);
-  gasneti_assert(err == MPI_SUCCESS);
+  gasneti_assert_always(err == MPI_SUCCESS);
   *nodes = gasnetc_mpi_size;
   if ((int)(*nodes) != gasnetc_mpi_size) *nodes = 0; /* Overflow! */
 
   err = MPI_Comm_rank(gasnetc_mpi_comm, &gasnetc_mpi_rank);
-  gasneti_assert(err == MPI_SUCCESS);
+  gasneti_assert_always(err == MPI_SUCCESS);
   *mynode = gasnetc_mpi_rank;
 
   gasneti_setupGlobalEnvironment(*nodes, *mynode,
@@ -71,7 +71,7 @@ void gasneti_bootstrapFini_mpi(void) {
   int err;
 
   err = MPI_Comm_free(&gasnetc_mpi_comm);
-  gasneti_assert(err == MPI_SUCCESS);
+  gasneti_assert_always(err == MPI_SUCCESS);
 
   /* In most cases it appears that calling MPI_Finalize() will
    * prevent us from propagating the exit code to the spawner.
@@ -95,7 +95,7 @@ void gasneti_bootstrapBarrier_mpi(void) {
   int err;
 
   err = MPI_Barrier(gasnetc_mpi_comm);
-  gasneti_assert(err == MPI_SUCCESS);
+  gasneti_assert_always(err == MPI_SUCCESS);
 }
 
 void gasneti_bootstrapExchange_mpi(void *src, size_t len, void *dest) {
@@ -111,7 +111,7 @@ void gasneti_bootstrapExchange_mpi(void *src, size_t len, void *dest) {
   }
 
   err = MPI_Allgather(src, len, MPI_BYTE, dest, len, MPI_BYTE, gasnetc_mpi_comm);
-  gasneti_assert(err == MPI_SUCCESS);
+  gasneti_assert_always(err == MPI_SUCCESS);
 
 #if !GASNETC_MPI_ALLGATHER_IN_PLACE
   if (inplace) gasneti_free(src);
@@ -132,7 +132,7 @@ void gasneti_bootstrapAlltoall_mpi(void *src, size_t len, void *dest) {
   }
 
   err = MPI_Alltoall(src, len, MPI_BYTE, dest, len, MPI_BYTE, gasnetc_mpi_comm);
-  gasneti_assert(err == MPI_SUCCESS);
+  gasneti_assert_always(err == MPI_SUCCESS);
 
 #if !GASNETC_MPI_ALLTOALL_IN_PLACE
   if (inplace) gasneti_free(src);
@@ -146,6 +146,7 @@ void gasneti_bootstrapBroadcast_mpi(void *src, size_t len, void *dest, int rootn
     memmove(dest, src, len);
   }
   err = MPI_Bcast(dest, len, MPI_BYTE, rootnode, gasnetc_mpi_comm);
+  gasneti_assert_always(err == MPI_SUCCESS);
 }
 
 void gasneti_bootstrapSNodeBroadcast_mpi(void *src, size_t len, void *dest, int rootnode) {
@@ -161,14 +162,14 @@ void gasneti_bootstrapSNodeBroadcast_mpi(void *src, size_t len, void *dest, int 
     for (i = 0, r = reqs; i < gasneti_nodemap_local_count; ++i) {
       if (i == gasneti_nodemap_local_rank) continue;
       err = MPI_Isend(src,len,MPI_BYTE,gasneti_nodemap_local[i],0,gasnetc_mpi_comm,r++);
-      gasneti_assert(err == MPI_SUCCESS);
+      gasneti_assert_always(err == MPI_SUCCESS);
     }
     err = MPI_Waitall(count,reqs,MPI_STATUSES_IGNORE);
-    gasneti_assert(err == MPI_SUCCESS);
+    gasneti_assert_always(err == MPI_SUCCESS);
     gasneti_free(reqs);
   } else {
     err = MPI_Recv(dest,len,MPI_BYTE,rootnode,0,gasnetc_mpi_comm,MPI_STATUS_IGNORE);
-    gasneti_assert(err == MPI_SUCCESS);
+    gasneti_assert_always(err == MPI_SUCCESS);
   }
 }
 

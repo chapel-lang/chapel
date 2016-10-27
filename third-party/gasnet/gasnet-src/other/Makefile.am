@@ -17,8 +17,8 @@ CONDUITMODE_SUBDIRS = \
 	blcr       \
 	contrib    \
 	firehose   \
-	fca	   \
-	testspawn
+	fca	   
+
 CONDUITMODE_EXTRADIST = \
 	amxtests    \
 	ssh-spawner \
@@ -71,6 +71,7 @@ if NEED_DOCDIR
 docdir = $(datadir)/doc/GASNet
 endif
 install-data-local:
+	$(mkinstalldirs) $(DESTDIR)$(docdir)
 	$(INSTALL_DATA) $(srcdir)/ssh-spawner/README $(DESTDIR)$(docdir)/README-ssh-spawner
 uninstall-local:
 	rm -Rf $(DESTDIR)$(docdir)

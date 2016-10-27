@@ -153,9 +153,7 @@ typedef struct _gasnetc_psm_state {
     int am_handlers[AM_HANDLER_NUM];
     psm2_epaddr_t* peer_epaddrs;
 
-    /* Core AM handler wrappers set this for gasnetc_exit */
-    int handler_running;
-
+    int exit_in_progress;
     int should_exit;
     int exit_code;
     double exit_timeout;

@@ -51,7 +51,8 @@ int main(int argc, char **argv) {
   test_init("testlockcontend",1,"(maxthreads) (iters) (accuracy) (test sections)");
 
   if (argc > 1) maxthreads = atoi(argv[1]);
-  if (maxthreads > TEST_MAXTHREADS || maxthreads < 1) {
+  maxthreads = test_thread_limit(maxthreads);
+  if (maxthreads < 1) {
     printf("Threads must be between 1 and %i\n", TEST_MAXTHREADS);
     gasnet_exit(-1);
   }

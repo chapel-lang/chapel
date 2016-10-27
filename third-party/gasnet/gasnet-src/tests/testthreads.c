@@ -251,10 +251,12 @@ main(int argc, char **argv)
 	if (argc > 1) test_usage();
 	else if (argc == 1) {
 		argv += optind;
-		threads_num = atoi(argv[0]);
+                threads_num = atoi(argv[0]);
 	}
-
-	if (threads_num > TEST_MAXTHREADS || threads_num < 1) {
+        #if GASNET_PAR
+	  threads_num = test_thread_limit(threads_num);
+        #endif
+	if (threads_num < 1) {
 		printf("ERROR: Threads must be between 1 and %i\n",TEST_MAXTHREADS);
 		exit(EXIT_FAILURE);
 	}

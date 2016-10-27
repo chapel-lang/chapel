@@ -124,17 +124,8 @@
 #include <time.h>
 #include <sys/time.h>
 
-#ifdef __AMMPI_H
-#error AMMPI library files should not include ammpi.h directly
-#endif
-#include <ammpi.h>
-#include <mpi.h>
-
-#if PLATFORM_OS_MSWINDOWS
-  #define ammpi_sched_yield() Sleep(0)
-  #define ammpi_usleep(x) Sleep(x)
-#elif PLATFORM_ARCH_CRAYT3E || PLATFORM_OS_SUPERUX || PLATFORM_OS_NETBSD || \
-    PLATFORM_OS_MTA || PLATFORM_OS_BLRTS || PLATFORM_OS_CATAMOUNT
+#if PLATFORM_OS_SUPERUX || PLATFORM_OS_NETBSD || \
+    PLATFORM_OS_BLRTS
   /* these implement sched_yield() in libpthread only, which we may not want */
   #include <unistd.h>
   #define ammpi_sched_yield() sleep(0)
@@ -144,7 +135,13 @@
   #define ammpi_sched_yield() sched_yield()
 #endif
 
-#if PLATFORM_OS_BLRTS || PLATFORM_OS_CATAMOUNT
+#include <mpi.h>
+
+#include <ammpi.h>
+
+AMMPI_BEGIN_EXTERNC
+
+#if PLATFORM_OS_BLRTS
   /* lack working select */
   #define ammpi_usleep(timeoutusec) sleep(timeoutusec/1000000)
 #endif
@@ -172,10 +169,12 @@
 #ifndef MAX
 #define MAX(x,y)  ((x)>(y)?(x):(y))
 #endif
-#if defined(__GNUC__) || defined(__FUNCTION__) /* try to get the function name from GCC */
-  #define __CURR_FUNCTION __FUNCTION__
+#if __STDC_VERSION__ >= 199901
+  #define AMMPI_CURR_FUNCTION __func__
+#elif defined(__GNUC__) /* try to get the function name from GCC */
+  #define AMMPI_CURR_FUNCTION __FUNCTION__
 #else
-  #define __CURR_FUNCTION ((const char *) 0) /* could use __func__ for C99 compilers.. */
+  #define AMMPI_CURR_FUNCTION ""
 #endif
 
 /* alignment macros */
@@ -437,52 +436,83 @@ struct ammpi_ep {
   #define if_pt(cond) if (PREDICT_TRUE(cond))
 #endif
 
-AMMPI_BEGIN_EXTERNC
-
 /* memory allocation */
+static void *_AMMPI_malloc(size_t sz, const char *curloc) {
+  void *ret = malloc(sz);
+  if_pf(!ret) AMMPI_FatalErr("Failed to malloc(%lu) at %s", (unsigned long)sz, curloc);
+  return ret;
+}
+static void *_AMMPI_calloc(size_t N, size_t S, const char *curloc) {
+  void *ret = calloc(N,S);
+  if_pf(!ret) AMMPI_FatalErr("Failed to calloc(%lu,%lu) at %s", (unsigned long)N, (unsigned long)S, curloc);
+  return ret;
+}
+static void *_AMMPI_realloc(void *ptr, size_t S, const char *curloc) {
+  void *ret = realloc(ptr,S);
+  if_pf(!ret) AMMPI_FatalErr("Failed to realloc(%lu) at %s", (unsigned long)S, curloc);
+  return ret;
+}
+static void _AMMPI_free(void *ptr, const char *curloc) {
+  free(ptr);
+}
+#define AMMPI_curloc __FILE__ ":" _STRINGIFY(__LINE__)
 #if AMMPI_DEBUG
   /* use the gasnet debug malloc functions if a debug libgasnet is linked */
   void *(*gasnett_debug_malloc_fn)(size_t sz, const char *curloc);
   void *(*gasnett_debug_calloc_fn)(size_t N, size_t S, const char *curloc);
+  void *(*gasnett_debug_realloc_fn)(void *ptr, size_t sz, const char *curloc);
   void (*gasnett_debug_free_fn)(void *ptr, const char *curloc);
-  static void *_AMMPI_malloc(size_t sz, const char *curloc) {
-    void *ret = malloc(sz);
-    if_pf(!ret) AMMPI_FatalErr("Failed to malloc(%lu) at %s", (unsigned long)sz, curloc);
-    return ret;
-  }
-  static void *_AMMPI_calloc(size_t N, size_t S, const char *curloc) {
-    void *ret = calloc(N,S);
-    if_pf(!ret) AMMPI_FatalErr("Failed to calloc(%lu,%lu) at %s", (unsigned long)N, (unsigned long)S, curloc);
-    return ret;
-  }
-  static void _AMMPI_free(void *ptr, const char *curloc) {
-    free(ptr);
-  }
-  #define AMMPI_curloc __FILE__ ":" _STRINGIFY(__LINE__)
-  #define AMMPI_malloc(sz)                             \
-    ( (PREDICT_FALSE(gasnett_debug_malloc_fn==NULL) ?  \
-        gasnett_debug_malloc_fn = &_AMMPI_malloc : NULL), \
+  void (*gasnett_debug_memcheck_fn)(void *ptr, const char *curloc);
+  void (*gasnett_debug_memcheck_one_fn)(const char *curloc);
+  void (*gasnett_debug_memcheck_all_fn)(const char *curloc);
+  #define AMMPI_malloc(sz)                                   \
+    ( (PREDICT_FALSE(gasnett_debug_malloc_fn==NULL) ?        \
+        gasnett_debug_malloc_fn = &_AMMPI_malloc : 0),       \
       (*gasnett_debug_malloc_fn)(sz, AMMPI_curloc))
-  #define AMMPI_calloc(N,S)                            \
-    ( (PREDICT_FALSE(gasnett_debug_calloc_fn==NULL) ?  \
-        gasnett_debug_calloc_fn = &_AMMPI_calloc : NULL), \
+  #define AMMPI_calloc(N,S)                                  \
+    ( (PREDICT_FALSE(gasnett_debug_calloc_fn==NULL) ?        \
+        gasnett_debug_calloc_fn = &_AMMPI_calloc : 0),       \
       (*gasnett_debug_calloc_fn)((N),(S), AMMPI_curloc))
-  #define AMMPI_free(ptr)                           \
-    ( (PREDICT_FALSE(gasnett_debug_free_fn==NULL) ? \
-        gasnett_debug_free_fn = &_AMMPI_free : NULL), \
+  #define AMMPI_realloc(ptr,S)                               \
+    ( (PREDICT_FALSE(gasnett_debug_realloc_fn==NULL) ?       \
+        gasnett_debug_realloc_fn = &_AMMPI_realloc : 0),     \
+      (*gasnett_debug_realloc_fn)((ptr),(S), AMMPI_curloc))
+  #define AMMPI_free(ptr)                                    \
+    ( (PREDICT_FALSE(gasnett_debug_free_fn==NULL) ?          \
+        gasnett_debug_free_fn = &_AMMPI_free : 0),           \
       (*gasnett_debug_free_fn)(ptr, AMMPI_curloc))
+  #define AMMPI_memcheck(ptr) do {                          \
+    AMMPI_assert(ptr);                                      \
+    if (gasnett_debug_memcheck_fn)                          \
+       (*gasnett_debug_memcheck_fn)(ptr, AMMPI_curloc);     \
+  } while (0)
+  #define AMMPI_memcheck_one() do {                         \
+    if (gasnett_debug_memcheck_one_fn)                      \
+       (*gasnett_debug_memcheck_one_fn)(AMMPI_curloc);      \
+  } while (0)
+  #define AMMPI_memcheck_all() do {                         \
+    if (gasnett_debug_memcheck_all_fn)                      \
+       (*gasnett_debug_memcheck_all_fn)(AMMPI_curloc);      \
+  } while (0)
 
   #undef malloc
   #define malloc(x)   ERROR_use_AMMPI_malloc
   #undef calloc
   #define calloc(n,s) ERROR_use_AMMPI_calloc
+  #undef realloc
+  #define realloc(n,s) ERROR_use_AMMPI_realloc
   #undef free
   #define free(x)     ERROR_use_AMMPI_free
 #else
-  #define AMMPI_malloc(sz)  malloc(sz)
-  #define AMMPI_calloc(N,S) calloc((N),(S))
-  #define AMMPI_free(ptr)   free(ptr)
+  #define AMMPI_malloc(sz)     _AMMPI_malloc((sz),AMMPI_curloc)
+  #define AMMPI_calloc(N,S)    _AMMPI_calloc((N),(S),AMMPI_curloc)
+  #define AMMPI_realloc(ptr,S) _AMMPI_realloc((ptr),(S),AMMPI_curloc)
+  #define AMMPI_free(ptr)      _AMMPI_free(ptr,AMMPI_curloc)
+  #define AMMPI_memcheck(ptr)   ((void)0)
+  #define AMMPI_memcheck_one()  ((void)0)
+  #define AMMPI_memcheck_all()  ((void)0)
 #endif
+
 
 /*------------------------------------------------------------------------------------
  * Error reporting
@@ -553,7 +583,7 @@ static const char *MPI_ErrorName(int errval) {
     if (AMMPI_VerboseErrors) {                                             \
       fprintf(stderr, "AMMPI %s returning an error code: AM_ERR_%s (%s)\n" \
         "  at %s:%i\n"                                                     \
-        ,(__CURR_FUNCTION ? __CURR_FUNCTION : "")                          \
+        , AMMPI_CURR_FUNCTION                                              \
         , #type, AMMPI_ErrorDesc(AM_ERR_##type), __FILE__, __LINE__);      \
       fflush(stderr);                                                      \
     }                                                                      \
@@ -564,7 +594,7 @@ static const char *MPI_ErrorName(int errval) {
       fprintf(stderr, "AMMPI %s returning an error code: AM_ERR_%s (%s)\n"     \
         "  from function %s\n"                                                 \
         "  at %s:%i\n"                                                         \
-        ,(__CURR_FUNCTION ? __CURR_FUNCTION : "")                              \
+        , AMMPI_CURR_FUNCTION                                                  \
         , #fromfn, #type, AMMPI_ErrorDesc(AM_ERR_##type), __FILE__, __LINE__); \
       fflush(stderr);                                                          \
     }                                                                          \
@@ -576,7 +606,7 @@ static const char *MPI_ErrorName(int errval) {
         "  from function %s\n"                                                         \
         "  at %s:%i\n"                                                                 \
         "  reason: %s\n"                                                               \
-        ,(__CURR_FUNCTION ? __CURR_FUNCTION : "")                                      \
+        , AMMPI_CURR_FUNCTION                                                          \
         , #type, AMMPI_ErrorDesc(AM_ERR_##type), #fromfn, __FILE__, __LINE__, reason); \
       fflush(stderr);                                                                  \
     }                                                                                  \
@@ -622,8 +652,7 @@ static const char *MPI_ErrorName(int errval) {
  * otherwise, the value of this expression will be TRUE 
  */
 #define MPI_SAFE_NORETURN(fncall) (AMMPI_VerboseErrors ?                                 \
-      AMMPI_checkMPIreturn(fncall, #fncall,                                              \
-                          (__CURR_FUNCTION ? __CURR_FUNCTION : ""), __FILE__, __LINE__): \
+      AMMPI_checkMPIreturn(fncall, #fncall, AMMPI_CURR_FUNCTION, __FILE__, __LINE__):    \
       (fncall) == MPI_SUCCESS)
 static int AMMPI_checkMPIreturn(int retcode, const char *fncallstr, 
                                 const char *context, const char *file, int line) {
@@ -642,7 +671,7 @@ static int AMMPI_checkMPIreturn(int retcode, const char *fncallstr,
     if_pf (AMMPI_VerboseErrors && val != AM_OK) {                          \
       fprintf(stderr, "AMMPI %s returning an error code: %s (%s)\n"        \
         "  at %s:%i\n"                                                     \
-        ,(__CURR_FUNCTION ? __CURR_FUNCTION : "")                          \
+        , AMMPI_CURR_FUNCTION                                              \
         , AMMPI_ErrorName(val), AMMPI_ErrorDesc(val), __FILE__, __LINE__); \
       fflush(stderr);                                                      \
     }                                                                      \
@@ -658,7 +687,7 @@ static int AMMPI_checkMPIreturn(int retcode, const char *fncallstr,
   #define AMMPI_assert(expr)                                \
     (PREDICT_TRUE(expr) ? (void)0 :                         \
       AMMPI_FatalErr("Assertion failure at %s %s:%i: %s\n", \
-        (__CURR_FUNCTION ? __CURR_FUNCTION : ""), __FILE__, __LINE__, #expr))
+        AMMPI_CURR_FUNCTION, __FILE__, __LINE__, #expr))
 #endif
 
 #ifdef AMMPI_HERE

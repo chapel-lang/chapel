@@ -176,14 +176,10 @@ extern int	*fhc_RemoteVictimFifoBuckets;
     uintptr_t     addr;
     uintptr_t     node; /* Might instead hold len in region case */
   }	  fh_key_t;
-  #if defined(HAVE_CONSTRUCTOR_EXPR)
-    #define FH_KEYMAKE(addr,node) ((fh_key_t){(addr),(node)})
-  #else
-    GASNETI_ALWAYS_INLINE(fh_keymake)
-    fh_key_t fh_keymake(uintptr_t addr, gasnet_node_t node)
-    { fh_key_t key; key.addr = addr; key.node = node; return key; }
-    #define FH_KEYMAKE(addr,node) fh_keymake(addr,node)
-  #endif
+  GASNETI_ALWAYS_INLINE(fh_keymake)
+  fh_key_t fh_keymake(uintptr_t addr, gasnet_node_t node)
+  { fh_key_t key; key.addr = addr; key.node = node; return key; }
+  #define FH_KEYMAKE(addr,node) fh_keymake(addr,node)
   #define FH_KEY_EQ(x,y)   (((x).addr == (y).addr) && ((x).node == ((y).node)))
   #define FH_KEY2INT(x)    ((intptr_t)(x).addr ^ (intptr_t)(x).node)
 

@@ -40,9 +40,7 @@ CONDUIT_EXTRALIBCFLAGS = -I$(top_srcdir)/other/amudp $(blcr_extralibcflags)
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS = \
 	$(blcr_extraheaders)               \
-	$(top_srcdir)/other/amudp/amudp.h  \
-	$(top_srcdir)/other/amudp/socket.h \
-	$(top_srcdir)/other/amudp/ueth.h
+	$(top_srcdir)/other/amudp/amudp_const.h 
 
 # headers selected by default rules that should NOT be installed
 CONDUIT_PRIVATEHEADERS = \

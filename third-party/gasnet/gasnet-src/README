@@ -23,6 +23,7 @@ Other documentation:
 Contents of this file:
  * Building and Installing GASNet
  * Basic Usage Information
+ * Conduit Status
  * Supported Platforms
  * Recognized Environment Variables
  * GASNet tracing & statistical collection
@@ -148,9 +149,11 @@ normal distribution.  If you think you need it, contact us at upc@lbl.gov]
       build a script to run the testexit tester and run it
   Compilation and linker flags for the GASNet libraries and tests can be
   augmented from the command-line by setting the following variables in the make
-  command:
-    make MANUAL_LIBCFLAGS=... Flags to add on the C compile for the GASNet libs
-    make MANUAL_CFLAGS=...    Flags to add on the C compile for GASNet clients & tests 
+  command, as described in more detail in the next section:
+    make MANUAL_CFLAGS=...    Flags to add on the C compile for GASNet libs, clients & tests
+    make MANUAL_CXXFLAGS=...  Flags to add on the C++ compile for GASNet libs, clients & tests
+    make MANUAL_MPICFLAGS=... Flags to add on the mpicc compile for GASNet libs, clients & tests
+    make MANUAL_DEFINES=...   Flags to add on all compiles for GASNet libs, clients & tests
     make MANUAL_LDFLAGS=...   Linker flags to add for GASNet clients & tests
     make MANUAL_LIBS=...      Linker library flags to add for GASNet clients & tests
   The following misc make variables can also be set to affect GASNet compilation:
@@ -164,6 +167,42 @@ normal distribution.  If you think you need it, contact us at upc@lbl.gov]
 include directory with a sub-directory for each supported conduit, and a lib
 directory containing a library file for each supported conduit, as well as any
 supporting libraries.
+
+Manual control over compile and link flags
+===================
+
+As described in the previous section, the recommended mechanism for passing
+flags to the compilers used by GASNet is to include them in the definition of
+the compiler variable itself (e.g. CC='gcc -m64').  These will be followed on
+the command line by flags chosen by GASNet's configure script instead of using
+the standard CFLAGS and CXXFLAGS make variables.  If there is a need to pass
+flags that override ones chosen by configure, then one may set MANUAL_CFLAGS,
+MANUAL_CXXFLAGS and MANUAL_MPICFLAGS on the 'make' command line, and these are
+guaranteed to appear on the compilation command line after the ones chosen by
+configure.  Additionally, MANUAL_DEFINES is provided to pass flags to all
+three compilers, but its order on the command line is not guaranteed (since it
+is intended for position-independent command line options such as '-Dfoo=10').
+
+Note that GASNet does not assume that MPI_CC is the same compiler as CC
+(though that is recommended), and therefore invokes it using a distinct
+MANUAL_MPICFLAGS, instead of MANUAL_CFLAGS.  The MPI C compiler is used to
+compile a portion of mpi-conduit (AMMPI) and the MPI-based spawner code used
+by several conduits; and to link executables for mpi-conduit and any conduit
+in which the MPI-based spawner is enabled.  Similarly, the C++ compiler is
+used to compile a portion of udp-conduit (AMUDP) and to link udp-conduit
+executables.
+
+Finally, the make variables MANUAL_LDFLAGS and MANUAL_LIBS are provided to add
+to the link command lines, after the respective configure-detected settings.
+They are intended for flags such as '-Ldir' and '-lfoo', respectively.  Since
+they do not have compiler-specific variants, their use is limited to
+compiler-independent flags unless special care is taken with the selection of
+the make target to ensure that make only invokes one compiler as a linker.
+
+All of the MANUAL_* make variables described above are honored by the Makefile
+infrastructure used to build GASNet's libraries and tests.  Additionally, the
+makefile fragments (next section) use these variables when compiling client
+code.
 
 Basic Usage Information
 =================
@@ -202,6 +241,78 @@ For more fine-grained control, the flags variables break-down as follows:
   GASNET_CXXCPPFLAGS is an alias for:
      $(GASNET_MISC_CXXCPPFLAGS) $(GASNET_DEFINES) $(GASNET_INCLUDES)
 
+Conduit Status
+==============
+
+The GASNet distribution includes multiple complete implementations of the GASNet API
+targeting particular lower-level networking layers. Each of these implementations 
+is called a 'conduit'. In some cases the lower-level layer is a proprietary or 
+hardware-specific network API, whereas in other cases the target API is a
+portable standard (although in some cases this distinction is blurred). The corresponding 
+GASNet conduits can be loosely categorized as either 'native' or 'portable' conduits.
+
+Below is the list of conduits in the current distribution, and their high-level status.
+Many conduits are supported on multiple platforms (CPU architectures, operating systems 
+and compilers) - see the 'Supported Platforms' section for more details on platforms.
+For more detailed info about each conduit, please consult the corresponding conduit README.
+
+Portable conduits:
+-----------------
+
+smp-conduit: SMP loopback (shared memory)
+ The conduit of choice for GASNet operation within a single shared-memory node.
+ Rigorously tested and supported on all current platforms. 
+  
+udp-conduit: UDP/IP (part of the TCP/IP protocol suite)
+ The conduit of choice for GASNet over Ethernet, supported on any TCP/IP-compliant network.
+ Rigorously tested over Ethernet and supported on most current platforms (see below).
+ 
+mpi-conduit: MPI (Message Passing Interface)
+ A portable implementation of GASNet over MPI-1.1 or later.
+ Intended as a reference implementation for systems lacking native conduit support.
+ Rigorously tested and supported on most current platforms (see below).
+
+ofi-conduit: Open Fabrics Interfaces
+ GASNet over the Open Fabrics Interface framework (libfabric).
+ Rigorously tested and supported over the portable/reference OFI sockets Provider.
+ Believed to also work over the Intel Truescale and Omni-Path Providers.
+
+portals4-conduit: Portals4   *BETA*
+ GASNet over the Portals4 network API developed at Sandia National Lab.
+ The core GASNet developers have been unable to test this conduit recently.
+  
+Native, high-performance conduits:
+---------------------------------
+
+pami-conduit: IBM Parallel Active Messaging Interface (PAMI)
+ The conduit of choice for GASNet on the IBM BlueGene/Q.
+ Rigorously tested on BlueGene/Q, also supported on other select IBM systems.
+
+gemini-conduit: Cray XE/XK Gemini
+aries-conduit:  Cray XC Aries
+ The conduit of choice for GASNet on the Gemini and Aries networks in recent Cray X* systems.
+ Rigorously tested and supported.
+
+ibv-conduit: InfiniBand Verbs
+ GASNet over the OpenFabrics Verbs API.
+ Rigorously tested and supported over InfiniBand hardware on all supported systems (see below).
+ Believed to also work on other hardware offering a standard-compliant Verbs layer.
+
+mxm-conduit: Mellanox InfiniBand Messaging Accelerator (MXM)
+ GASNet over the MXM API for recent Mellanox InfiniBand adapters.
+ The core GASNet developers have limited access to this hardware, but have completed 
+ minimal validation on x86_64/Linux.
+
+psm-conduit: Intel Omni-Path PSM2
+ GASNet over the PSM2 API for Intel Omni-Path adapters.
+ The core GASNet developers have limited access to this hardware, but have completed 
+ minimal validation on x86_64/Linux. 
+ 
+shmem-conduit: SGI Altix / Cray X1 Shmem   *DEPRECATED*
+ GASNet over proprietary (hardware-supported) SHMEM. Does not function over OpenSHMEM.
+ The core GASNet developers have been unable to test this conduit recently,
+ and it is officially deprecated. 
+ If you have interest in this conduit please contact us!
 
 Supported Platforms
 ===================
@@ -228,7 +339,7 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * Linux/SGI-Altix-IA64/{gcc,IntelC}/64: smp, mpi, udp, shmem
     * Linux/SGI-Altix-Xeon/{gcc,IntelC}/64: smp, mpi, udp, shmem
 
-    * FreeBSD/{x86,amd64}/{gcc,clang}/{32,64}: smp, mpi
+    * FreeBSD/{x86,amd64}/{gcc,clang}/{32,64}: smp, mpi, udp
     * OpenBSD/{x86,amd64}/{gcc,clang}/{32,64}: smp, mpi, udp
     * NetBSD/{x86,amd64}/{gcc,clang}/{32,64}:  smp, mpi, udp
 
@@ -374,7 +485,7 @@ application-specific support.
  backtrace for a "hung" process.
 
 * GASNET_BACKTRACE_TYPE - set to a comma-delimited, ordered list of mechanisms 
- (e.g. different debugger tools) to try when generating a backtrace for
+ (i.e. different debugger tools) to try when generating a backtrace for
  GASNET_BACKTRACE. The default value (visible via GASNET_VERBOSEENV) includes
  all mechanisms detected as supported on the current platform.
 
@@ -393,7 +504,7 @@ application-specific support.
   RDMADISSEM - uses Put operations to implement the Dissemination algorithm.
   DISSEM - auto-selects either AMDISSEM or RDMADISSEM
    The AMDISSEM or RDMADISSEM algorithm is selected automatically based on
-   conduit-specific critera.  In general RDMADISSEM is favored when the GASNet
+   conduit-specific criteria.  In general RDMADISSEM is favored when the GASNet
    Extended API is implemented natively.
  In addition to those choices, many conduits have additional network-specific
  barrier algorithms documented in the corresponding conduit READMEs.
@@ -405,7 +516,7 @@ application-specific support.
  is the radix of the tree-based intra-node (shared-memory) barrier.
    If zero (default) then radix = size - 1, resulting in a "flat tree" (linear time)
    If positive, then the given value is the out-degree of an N-ary tree.
-   If negative, then a tree is build with the processes in groups of size = -radix.
+   If negative, then a tree is built with the processes in groups of size = -radix.
      The first process in each group is the parent of the others in that group.
      The rank==0 process is the parent of the other group-representatives (in
      addition to being the parent of the others in its own group).
@@ -763,7 +874,7 @@ There are a few other important caveats to be aware of when mixing GASNet and MP
  blocking calls will generally not ensure progress of MPI communication. This
  means that arbitrarily interleaving blocking MPI calls with GASNet calls
  (e.g. UPC shared accesses) can easily lead to deadlock. In order to ensure
- safety and portably correct operation on across networks, GASNet communication
+ safety and portably correct operation across networks, GASNet communication
  operations and user MPI calls should be isolated from each other by barriers, 
  by strictly adhering to the following protocol:
 
@@ -961,16 +1072,33 @@ All GASNet conduit code is required to meet the following coding standards:
   - All GASNET_ or GASNETI_ configuration selection macros are either #defined
     to 1 or #undef'd
 
+* All non-normative identifiers appearing in public header files should use
+  either one of the GASNet internal name-space prefixes from the previous rule,
+  or a _ prefix to reduce the possibility of identifier name capture (eg
+  -Dfoo= before the #include of gasnet.h). This especially applies to
+  macro/function names, function arguments, local variables declared in macros
+  or inline functions, type/enum names, and struct field names.
+  This rule was added in July 2016 and applies to all new code.
+
 * GASNet code should be as close to C89 as possible (i.e. never differing without
   good reason), because many C compilers still do not provide full C99 support,
-  and differ quite widely in the supported features. Most notably:
-   - Do not use C99-style // comments. Use only /* */.
-   - Do not use mid-block declarations of variables. Place the declarations at
-     the top of the current block or create a nested block.
-   - Do not use variable-length array declarations, zero-length structure fields, 
-     trigraphs, or any GNU C extensions
-  Running your code through "gcc -pedantic" is a good way to track down
-  violations of these rules.
+  and differ quite widely in the supported features. 
+  The following is the COMPLETE list of features introduced by C99 we PERMIT:
+   1. C++/C99-style // comments
+   2. Mid-block declarations (mixing declarations and code)
+   3. Conditional expression declarations, only in for loop headers, 
+      ie: for (int i=...) { ..i.. }
+  All GASNet code should otherwise adhere to C89 restrictions.
+  Most notably, we PROHIBIT: (incomplete list)
+   - Do not use variable-length array declarations
+   - Do not use zero-length structure fields (aka flexible array member)
+   - Do not use compound literals or named struct field initializers
+   - Do not use printf format specifiers added in C99, such as: ll,j,z,t,L
+   - Do not include any header files introduced by C99 or any features they introduce
+   - Do not use restrict, __func__ or _Pragma/#pragma directly
+     (use GASNETI_RESTRICT, GASNETI_CURRENT_FUNCTION, and the various attribute
+      wrapper macros defined in gasnet_basic.h using configure detection)
+   - Do not use other GNU or vendor extensions (unless properly #ifdef protected w/ fallback)
 
 * GASNet code should use full prototypes whenever possible:
     NO:  extern void foo();
@@ -980,9 +1108,17 @@ All GASNet conduit code is required to meet the following coding standards:
   Configuring with --enable-strict-prototypes and compiling with the GNU or
   PathScale compilers will give you warnings for violations of this rule.
 
-* All code in public header files should be C++-compliant to support C++ 
-  GASNet clients. This means using GASNETI_{BEGIN,END}_EXTERNC around function 
-  prototypes, and ensuring any inline function code passes the C++ type checker.
+* All code in public header files should be C++98-compliant to support C++
+  GASNet clients. Most notably this means using GASNETI_{BEGIN,END}_EXTERNC
+  around all extern function prototypes, and ensuring any inline function code
+  or macro code passes the C++ type checker.  It is especially important for
+  code in public headers to avoid the few dozen C constructs which are not
+  present in the C subset of the C++98 standard. Most notably: (incomplete list)
+   - Do not use C++ keywords in identifiers
+   - Do not use long long types or printf specifiers
+   - Do not use tentative definitions
+   - Do not use empty preprocessor function macro arguments FOO(,,,)
+  See bug 3296 for a complete list.
   Run a "make testcxx" to verify compliance.
 
 * GASNet conduit code should never call any of the following functions 

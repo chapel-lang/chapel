@@ -25,26 +25,33 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
 @ Section: Where this conduit runs @
 
-  ibv-conduit runs over InfiniBand networks using the Open Fabrics Verbs
-  API.  Platforms known to support this API include Linux, Solaris, AIX,
-  Windows and FreeBSD.  However, at this time only Linux and Solaris
+  ibv-conduit runs over networks using the Open Fabrics Verbs API, such as
+  InfiniBand.  Platforms known to support this API include Linux, Solaris,
+  AIX, Windows and FreeBSD.  However, at this time only Linux and Solaris
   have been confirmed to run GASNet's ibv-conduit.
 
   While Open Fabrics Verbs also covers iWARP, ibv-conduit does not
   currently support it.
 
-  Nearly all InfiniBand cards (known as Host Channel Adapters, or HCAs)
-  have support for Open Fabrics Verbs, available either from
-  www.openfabrics.org or from the HCA vendor.  However, vendor-specific
-  APIs also exist, two of which are supported to some degree by GASNet:
-   + mxm-conduit for the MXM API from Mellanox
-   + ofi-conduit for the PSM (version 1) API on Intel TrueScale HCAa
+  While ibv-conduit may work on Intel Omni-Path (OPA) HCAs, we instead
+  recommend use of psm-conduit on such systems.
 
-  The performance of ibv-conduit relative to mxm or ofi will be
-  dependent on your applications' communications patterns, the number of
-  nodes you run on, and other parameters.  Therefore, we cannot
-  make any specific recommendation as to which to use.  We recommend
-  ibv-conduit as the most mature of the three, but encourage you to
+  Nearly all InfiniBand cards (known as Host Channel Adapters, or HCAs)
+  have support for Open Fabrics Verbs, available from www.openfabrics.org
+  or from the HCA or OS vendor.  We have tested numerous InfiniBand HCAs
+  from Mellanox, InfiniPath HCAs from Pathscale/QLogic, and TrueScale HCAs
+  from Intel.
+
+  In addition to the Open Fabrics Verbs, vendor-specific APIs also exist
+  and some have GASNet conduits:
+   + mxm-conduit for the MXM API from Mellanox
+   + ofi-conduit for the PSM (version 1) API on Intel TrueScale HCAs
+   + ofi- or psm-conduit for the PSM2 API on Intel Omni-Path HCAs
+
+  The performance of ibv-conduit relative to others on the same hardware
+  will depend on your applications' communications patterns, the number of
+  nodes you run on, and other parameters.  Therefore, we do not make any
+  specific recommendation as to which to use.  We recommend that you
   benchmark your own workload if you are concerned with the very best
   possible performance.
 
@@ -311,9 +318,10 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
   + GASNET_MAX_MTU
     This sets the maximum MTU to be used, and has the following valid
-    values:  0, 256, 512, 1024, 2048 or 4096.
+    values:  -1, 0, 256, 512, 1024, 2048 or 4096.
     If the value is 0 GASNet will automatically select the MTU size.
-    Otherwise the lesser of this setting or the port's configured value
+    If the value is -1 GASNet will use the HCA port's active value.
+    Otherwise the lesser of this setting or the port's active value
     will be used.
     The default is 0: automatic MTU selection.
 

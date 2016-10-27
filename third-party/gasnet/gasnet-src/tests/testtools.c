@@ -48,16 +48,17 @@ void test_dummy2(void) GASNETT_NORETURN;
 GASNETT_NORETURNP(test_dummy2)
 void test_dummy2(void) { gasnett_fatalerror("test_dummy2"); }
 
+GASNETT_EXTERNC void test_dummy5(void);
+
 GASNETT_BEGIN_EXTERNC
 void *test_dummy3(void) GASNETT_MALLOC;
 void *test_dummy3(void) { return malloc(1); }
 GASNETT_INLINE(test_dummy4) GASNETT_MALLOC
 void *test_dummy4(void) { return malloc(1); }
+void test_dummy5(void) { }
 GASNETT_END_EXTERNC
 double volatile d_junk = 0;
 
-GASNETT_EXTERNC
-void test_dummy5(void) { }
 
 GASNETT_THREADKEY_DECLARE(sertest_key1);
 GASNETT_THREADKEY_DEFINE(sertest_key1);
@@ -1197,7 +1198,7 @@ void * thread_fn(void *arg) {
   }
 
   TEST_HEADER("parallel swap test...") {
-    #if GASNETI_HAVE_ATOMIC_CAS
+    #if GASNETT_HAVE_STRONGATOMIC_CAS
       const gasnett_atomic_val_t limit = MIN(GASNETT_ATOMIC_MAX, 8192);
       static gasnett_atomic_t var;
       static char *array;
@@ -1216,7 +1217,7 @@ void * thread_fn(void *arg) {
            The 'array' tracks which values have been seen and ensures no duplicates. */
         for (j = id; j < limit; j += NUM_THREADS) {
           gasnett_atomic_val_t idx = gasnett_atomic_swap(&var, j, 0);
-          if_pt (idx != GASNETI_ATOMIC_MAX) {
+          if_pt (idx != GASNETT_ATOMIC_MAX) {
             if (array[idx] != 0)
               ERR("gasnett_atomic_swap produced a duplicate value %d", idx);
             array[idx] = 1;
@@ -1227,7 +1228,7 @@ void * thread_fn(void *arg) {
 
         if (0 == id) {
           /* One final swap to simplify the validation */
-          gasnett_atomic_val_t idx = gasnett_atomic_swap(&var, GASNETI_ATOMIC_MAX, 0);
+          gasnett_atomic_val_t idx = gasnett_atomic_swap(&var, GASNETT_ATOMIC_MAX, 0);
           if (array[idx] != 0)
             ERR("gasnett_atomic_swap produced a duplicate value %d", i);
           array[idx] = 1;

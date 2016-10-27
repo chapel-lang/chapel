@@ -13,8 +13,6 @@
 
 #include <stdio.h>
 
-GASNETI_BEGIN_EXTERNC
-
 /* ------------------------------------------------------------------------------------ */
 /* Statistical collection & tracing 
    See README for user-interface usage information
@@ -941,7 +939,5 @@ extern size_t gasneti_format_putsgets(char *buf, void *pstats,
 #define GASNETI_STAT_EVENT_TIME _GASNETI_STAT_EVENT_TIME
 
 /* ------------------------------------------------------------------------------------ */
-
-GASNETI_END_EXTERNC
 
 #endif

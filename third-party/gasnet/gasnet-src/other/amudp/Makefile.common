@@ -18,11 +18,6 @@ CXX = g++
 #otherflags := $(otherflags) -DFREEZE_SLAVE=1
 #otherflags := $(otherflags) -static
 
-uethlibname = -lueth
-#uethlibname = -lueth-profile
-#uethlibname = -lueth-3.0
-#uethlibname = -lueth-3.0-profile
-
 #ccdebugflags = -O0 -g3 -ansi -Wall -Wno-unused-variable -Wno-unused-function $(otherflags)
 ccdebugflags = -O0 -g3 $(otherflags)
 ccoptflags = -O3 $(otherflags)
@@ -35,10 +30,6 @@ cxxoptflags = -O3 $(otherflags)
 ranlib = ranlib
 ar = ar
 PERL = perl
-
-# paths to platform-dependent helpers
-ueth_includes	 := $(shell csh -c 'if ("`hostname`" == "whomp") echo "-DUETH"')
-ueth_libraries	 := $(shell csh -c 'if ("`hostname`" == "whomp") echo "$(uethlibname)"')
 
 # To be set by pre-baked makefiles:
 platform_defines = 

@@ -49,7 +49,7 @@
 
 #define GASNETI_GASNETC_AMPOLL
 #if GASNET_PSHM
-  GASNETI_EXTERNC int gasnetc_AMPoll(void);
+  extern int gasnetc_AMPoll(void);
 #else
   #define gasnetc_AMPoll()        GASNET_OK  /* nothing to do */
 #endif

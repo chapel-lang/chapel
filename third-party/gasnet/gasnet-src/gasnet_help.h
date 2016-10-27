@@ -11,8 +11,6 @@
 #ifndef _GASNET_HELP_H
 #define _GASNET_HELP_H
 
-GASNETI_BEGIN_EXTERNC
-
 typedef struct { 
   uint64_t allocated_bytes;   /* num bytes ever allocated */
   uint64_t freed_bytes;       /* num bytes ever freed */
@@ -896,7 +894,5 @@ void *gasneti_pshm_addr2local(gasnet_node_t node, void *addr) {
 GASNETI_PUREP(gasneti_pshm_addr2local)
 #endif /* GASNET_PSHM */
 /* ------------------------------------------------------------------------------------ */
-
-GASNETI_END_EXTERNC
 
 #endif

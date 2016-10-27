@@ -457,11 +457,11 @@ void gasnetc_rcv_post(gasnetc_cep_t *cep, gasnetc_rbuf_t *rbuf) {
   rbuf->cep = cep;
   rbuf->rr_sg.lkey = GASNETC_RCV_LKEY(cep);
   GASNETI_TRACE_PRINTF(D,("POST_RR rbuf=%p hca=%d lkey=0x%08x", 
-			  rbuf, GASNETC_HCA_IDX(cep),
+			  (void *)rbuf, GASNETC_HCA_IDX(cep),
 			  (unsigned int)(rbuf->rr_sg.lkey)));
   if (!gasnetc_use_srq) {
     GASNETI_TRACE_PRINTF(D,("POST_RR rbuf=%p peer=%d qp=%d",
-			    rbuf, gasnetc_epid2node(cep->epid),
+			    (void *)rbuf, gasnetc_epid2node(cep->epid),
 			    gasnetc_epid2qpi(cep->epid) - 1));
   }
 
@@ -1670,7 +1670,7 @@ void gasnetc_snd_validate(gasnetc_sreq_t *sreq, struct ibv_send_wr *sr_desc, int
   gasneti_assert(count > 0);
   gasneti_assert(type);
 
-  GASNETI_TRACE_PRINTF(D,("%s sreq=%p peer=%d qp=%d hca=%d\n", type, sreq,
+  GASNETI_TRACE_PRINTF(D,("%s sreq=%p peer=%d qp=%d hca=%d\n", type, (void *)sreq,
 			  gasnetc_epid2node(sreq->cep->epid),
 			  gasnetc_epid2qpi(sreq->cep->epid) - 1,
 			  GASNETC_HCA_IDX(sreq->cep)));

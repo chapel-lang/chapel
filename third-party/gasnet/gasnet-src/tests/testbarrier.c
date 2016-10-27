@@ -8,10 +8,8 @@
 
 #include <test.h>
 
-#if defined(GASNETE_USING_ELANFAST_BARRIER) 
-  #define PERFORM_MIXED_NAMED_ANON_TESTS (!GASNETE_USING_ELANFAST_BARRIER())
-#else
-  #define PERFORM_MIXED_NAMED_ANON_TESTS 1
+#ifndef PERFORM_MIXED_NAMED_ANON_TESTS 
+#define PERFORM_MIXED_NAMED_ANON_TESTS 1
 #endif
 
 #ifndef TEST_UNNAMED_BARRIER
@@ -81,7 +79,7 @@ int main(int argc, char **argv) {
   while (argc-arg >= 2) {
    if (!strcmp(argv[arg], "-p")) {
 #if GASNET_PAR
-    pollers = atoi(argv[arg+1]);
+    pollers = test_thread_limit(atoi(argv[arg+1])+1)-1;
     arg += 2;
 #else
     if (gasnet_mynode() == 0) {

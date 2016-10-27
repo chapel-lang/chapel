@@ -8,11 +8,7 @@
 
 AUTOMAKE_OPTIONS = foreign 1.4 no-dependencies
 
-if PLATFORM_ILP32
-  apputils_flags =
-else
-  apputils_flags = -DAPPUTILS_OMIT_READWRITE
-endif
+apputils_flags = 
 
 if BUILDCONFIG_DEBUG
   BUILDCONFIG_DEFINES = -DAMUDP_DEBUG=1
@@ -35,9 +31,9 @@ else
 endif
 
 CC  = @CC@
-CFLAGS = @CFLAGS@ @MISC_CFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags) $(strict_proto_flags)
+CFLAGS = @GASNET_OPT_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags) $(strict_proto_flags)
 CXX = @CXX@
-CXXFLAGS = @CXXFLAGS@ @MISC_CXXFLAGS@  @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
+CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
 LDFLAGS = @LDFLAGS@ @cxxLDFLAGS@ $(MANUAL_LDFLAGS)
 
 PERL = @PERL@
@@ -62,6 +58,7 @@ bin_PROGRAMS = amudprun
 endif
 headers = \
 	amudp.h			\
+	amudp_const.h		\
 	amudp_internal.h	\
 	amudp_spmd.h		\
 	exc.h			\
@@ -69,9 +66,7 @@ headers = \
 	sockaddr.h		\
 	socket.h		\
 	socklist.h		\
-	sockutil.h		\
-	ueth.h			\
-	ufxp.h
+	sockutil.h		
 
 libamudp_a_SOURCES = \
 	$(headers)		\
@@ -85,7 +80,7 @@ libamudp_a_SOURCES = \
 	socklist.cpp		\
 	sockutil.cpp		
 
-libamudp_a_DEPENDENCIES = $(libamudp_a_SOURCES:%.cpp=%.o)
+libamudp_a_DEPENDENCIES = $(libamudp_a_SOURCES:%.cpp=%.o) $(libamudp_a_SOURCES:%.c=%.o)
 
 EXTRA_DIST = \
 	Makefile.common 	\
@@ -98,13 +93,6 @@ EXTRA_DIST = \
 
 # ---------- test programs -------------
 # all the test executables
-if PLATFORM_ILP32
-  testprograms_ILP32only = 	\
-    testgetput    		\
-    testreadwrite 
-else
-  testprograms_ILP32only = 
-endif
 
 testprograms =    		\
     testam        		\
@@ -114,7 +102,9 @@ testprograms =    		\
     testlatencyM   		\
     testping      		\
     testreduce			\
-    $(testprograms_ILP32only)
+    testoutput      		\
+    testgetput    		\
+    testreadwrite 
 
 tests: apputils.o $(testprograms)
 
@@ -152,6 +142,7 @@ check-exports: libamudp.a
             @NM@ --defined-only $$lib |                                             \
             grep -v -e ' [\._]*amudp_' -e ' [\._]*AMUDP_' -e ' [\._]*AM_'           \
                     -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
+                    -e 'get_pc_thunk'                                               \
                     -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e debug_info_seg |      \
             @PERL@ -n -e 'print if /^[0-9a-fA-F]+\s+[A-Z]\s+/' > .$$lib.exp;        \
           if test -s .$$lib.exp ; then                                              \

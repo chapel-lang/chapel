@@ -12,10 +12,6 @@
 #ifndef _GASNET_CORE_HELP_H
 #define _GASNET_CORE_HELP_H
 
-GASNETI_BEGIN_EXTERNC
-
 #include <gasnet_help.h>
-
-GASNETI_END_EXTERNC
 
 #endif

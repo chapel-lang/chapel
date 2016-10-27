@@ -12,12 +12,20 @@
 @MXM_BOOTSTRAP_MPI_TRUE@GASNET_LD_OVERRIDE = @MPI_CC@
 @MXM_BOOTSTRAP_MPI_TRUE@GASNET_LDFLAGS_OVERRIDE = @MPI_CFLAGS@ @LDFLAGS@
 @MXM_BOOTSTRAP_MPI_TRUE@MPI_COMPAT_LIBS = @MPI_LIBS@
+
+# Linker feature requirements embedded in GASNET_LD(FLAGS) which are not satisfied solely by GASNET_LIBS 
+# (eg possible dependence on implicit MPI or C++ libraries added by a linker wrapper in GASNET_LD):
+@MXM_BOOTSTRAP_MPI_TRUE@GASNET_LD_REQUIRES_MPI = 1
+
 # Some platforms need extra -libs for the socket calls in ssh-spawner:
 @MXM_BOOTSTRAP_SSH_TRUE@SSH_LIBS = @SSH_SPAWNER_LIBS@
 CONDUIT_INCLUDES = @FCA_INCLUDES@
 CONDUIT_INCLUDES = @FCA_INCLUDES@ -I@TOP_SRCDIR@/mxm-conduit ###NOINSTALL###
 CONDUIT_LIBDIRS = @MXM_LIBDIR@ @PMI_SPAWNER_LIBDIR@ @FCA_LIBDIR@
 CONDUIT_LIBS = @MXM_LIBS@ $(MPI_COMPAT_LIBS) $(SSH_LIBS) @PMI_SPAWNER_LIBS@ @FCA_LIBS@
+
+# Recent mxm-conduit needs explict -lpthreads even in SEQ mode:
+CONDUIT_LIBS_SEQ = @GASNET_THREAD_LIBS@
 
 # Clients may want/need to know which spawners we support:
 GASNET_MXM_SPAWNER_DEFAULT = @GASNET_MXM_SPAWNER_CONF@

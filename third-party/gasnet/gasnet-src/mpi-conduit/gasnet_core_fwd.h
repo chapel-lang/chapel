@@ -88,7 +88,7 @@ extern void gasnetc_fatalsignal_callback(int sig);
 /* hook getSegmentInfo for NIS check */
 #define _GASNET_GETSEGMENTINFO
 struct gasneti_seginfo_s;
-GASNETI_EXTERNC int gasnetc_getSegmentInfo(struct gasneti_seginfo_s *seginfo_table, int numentries);
+extern int gasnetc_getSegmentInfo(struct gasneti_seginfo_s *seginfo_table, int numentries);
 #define gasnet_getSegmentInfo(seginfo_table, numentries) \
         gasnetc_getSegmentInfo(seginfo_table, numentries)
 

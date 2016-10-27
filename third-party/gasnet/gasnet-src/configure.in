@@ -32,14 +32,14 @@ AC_VALIDATE_CACHED_SYSTEM_TUPLE
 
 dnl Public release version packaging identifier:
 AC_DEFUN([GASNET_RELEASE_VERSION_MAJOR_D],[1])
-AC_DEFUN([GASNET_RELEASE_VERSION_MINOR_D],[26])
-AC_DEFUN([GASNET_RELEASE_VERSION_PATCH_D],[4])
+AC_DEFUN([GASNET_RELEASE_VERSION_MINOR_D],[28])
+AC_DEFUN([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet spec version:
 AC_DEFUN([GASNET_SPEC_VERSION_MAJOR_D],[1])
 AC_DEFUN([GASNET_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet tools spec version:
 AC_DEFUN([GASNETT_SPEC_VERSION_MAJOR_D],[1])
-AC_DEFUN([GASNETT_SPEC_VERSION_MINOR_D],[8])
+AC_DEFUN([GASNETT_SPEC_VERSION_MINOR_D],[9])
 
 AC_DEFUN([GASNET_RELEASE_VERSION_D],
          [GASNET_RELEASE_VERSION_MAJOR_D.GASNET_RELEASE_VERSION_MINOR_D.GASNET_RELEASE_VERSION_PATCH_D])
@@ -164,9 +164,9 @@ GASNET_FAMILY_CACHE_CHECK(C, CC, gasnet_cv_cc_family)
 
 ## compiler family early initialization
 
+gcc_flag_prefix=''
 case "$CC_FAMILY" in
   GNU)  GASNET_GCC_VERSION_CHECK(CC)
-        gcc_flag_prefix=''
         gcc_flag_delim=' '
         case "$CC_SUBFAMILY" in
           GCCFSS) AC_DEFINE(GASNETI_GCC_GCCFSS) ;;
@@ -386,8 +386,6 @@ AC_DEFUN([GASNET_GET_GNUWARNINGFLAGS],[
                               [[$1]FLAGS="$[$1]FLAGS ${gcc_flag_prefix}-Wnested-externs"])
         ]GASNET_TRY_[$1]FLAG[([${gcc_flag_prefix}-Wwrite-strings],
                               [[$1]FLAGS="$[$1]FLAGS ${gcc_flag_prefix}-Wwrite-strings"])
-        ]GASNET_TRY_[$1]FLAG[([${gcc_flag_prefix}-Wdeclaration-after-statement],
-                              [[$1]FLAGS="$[$1]FLAGS ${gcc_flag_prefix}-Wdeclaration-after-statement"])
         ]GASNET_TRY_[$1]FLAG[([${gcc_flag_prefix}-Wmissing-format-attribute],
                               [[$1]FLAGS="$[$1]FLAGS ${gcc_flag_prefix}-Wmissing-format-attribute"])
 	if test "$use_pthreads" != "no" ; then
@@ -431,16 +429,12 @@ case "$CC_FAMILY" in
   MTA)  CCDEBUGFLAGS="-g2" ;; # need +ESdbgasm to use -g with _asm()
   Pathscale) GASNET_PUSHVAR(CFLAGS,"-g3 -O0") # need to explicitly disable optimization
         GASNET_GET_GNUWARNINGFLAGS(C)
-        # Sigh.  Option -Wdeclaration-after-statement lacks a corresponding -Wno-.
-        # That is a problem for any client that wants to compile C99 code, because
-        # it leaves them with no option to turn it off.
-        CCDEBUGFLAGS=`echo "$CFLAGS" | sed -e 's/-Wdeclaration-after-statement//'`
+        CCDEBUGFLAGS="$CFLAGS"
         GASNET_POPVAR(CFLAGS)
   ;;
   Open64) GASNET_PUSHVAR(CFLAGS,"-g3")
           GASNET_GET_GNUWARNINGFLAGS(C)
-          # As with Pathscale, above, lack a -Wno-declaration-after-statement
-          CCDEBUGFLAGS=`echo "$CFLAGS" | sed -e 's/-Wdeclaration-after-statement//'`
+          CCDEBUGFLAGS="$CFLAGS"
           GASNET_POPVAR(CFLAGS)
   ;;
   Clang)  GASNET_PUSHVAR(CFLAGS,"-g -O0")
@@ -577,7 +571,12 @@ AC_DEFUN([GASNET_GET_PPC64_FLAGS],[
   popdef([ppc64code])
 ])
 
-
+dnl GASNET_SET_MISCFLAGS(CC|MPI_CC, compliancecode)
+AC_DEFUN([GASNET_SET_MISCFLAGS],[
+# Set MISC_CFLAGS: flags to be used by all C compilations, regardless of optimization/debugging level
+# This should include architectural/CPU flags and anything required for C99 conformance
+# We do not currently allow a user override of MISC_C(PP)FLAGS
+MISC_CFLAGS=""
 case "$CC_FAMILY" in
   GNU)
     case "$target_cpu" in
@@ -593,15 +592,28 @@ case "$CC_FAMILY" in
     esac
     ;;
   Cray) 
+    AC_MSG_CHECKING([for Cray C warning flags])
+    crayc_warn_flags="236:3185" # 3185 = bug 3306
+    GASNET_TRY_CCOMPILE_WITHWARN(
+       [ typedef struct { int f1; } S;
+         S foo(void) {
+           S s;
+           s.f1 = 1;
+           return s;
+         } ], [], [],
+       [ crayc_warn_flags="${crayc_warn_flags}:7212" ], #  bug 3309, Cray C 8.5+
+       [GASNET_MSG_ERROR(failure building struct warning test)])
     case "$target_cpu" in
-      x86_64)   MISC_CFLAGS="-hnomessage=236" ;; # XT, XE, XK, XC, etc.
+      x86_64)   MISC_CFLAGS="-hnomessage=$crayc_warn_flags" ;; # XT, XE, XK, XC, etc. 
       *)        AC_MSG_ERROR(Cray C compiler for unknown target CPU) ;;
-    esac ;;
-  Intel) MISC_CFLAGS="-wd177 -wd279" 
+    esac 
+    AC_MSG_RESULT([$MISC_CFLAGS])
+    ;;
+  Intel) MISC_CFLAGS="-wd177 -wd279"
          GASNET_TRY_CFLAG([-wd1572],
                           [MISC_CFLAGS="$MISC_CFLAGS -wd1572"])
          ;;
-  PGI) MISC_CFLAGS="-Masmkeyword -c9x -Msignextend";; # get inline assembly, restrict and sign-extended narrowing
+  PGI) MISC_CFLAGS="-Masmkeyword -Msignextend";; # get inline assembly and sign-extended narrowing
   MTA) MISC_CFLAGS="-display_error_number -WS 111,174,238" ;;
   Sun) if test "$target_cpu" = "sparc"; then 
          GASNET_GET_ULTRASPARC_FLAGS(C,["-xarch=v8plusb" "-xarch=v8plusa" "-xarch=v8plus" "-xarch=sparcvis2" "-xarch=sparcvis" "-xarch=sparc"])
@@ -615,14 +627,14 @@ case "$CC_FAMILY" in
        GASNET_TRY_CFLAG([-qsuppress=1500-010:1500-029:1506-229],
                         [MISC_CFLAGS="$MISC_CFLAGS -qsuppress=1500-010:1500-029:1506-229"])
        ;;
-  *)   MISC_CFLAGS="" ;;
+  *)  ;;
 esac
 
+# Set MISC_CPPFLAGS: flags to be used by all C preprocesses and compilations
+# Note this is ALSO used for C++ compilation, so only generic language-independent options should go in here
+# We do not currently allow a user override of MISC_C(PP)FLAGS
+MISC_CPPFLAGS=""
 case "$CC_FAMILY" in
-  XLC) # tell preprocessor to allow C++-style comments
-       GASNET_TRY_CFLAG([-qcpluscmt], [MISC_CPPFLAGS="$MISC_CPPFLAGS -qcpluscmt"]);;
-  PGI) MISC_CPPFLAGS="-B" ;; # C++ comments
-  Sun) MISC_CPPFLAGS="-xCC" ;; # C++ comments
   GNU)
     case "$target_os" in
       darwin*) # add some options which are specific to the Apple Inc version of gcc
@@ -630,25 +642,79 @@ case "$CC_FAMILY" in
                          [MISC_CPPFLAGS="$MISC_CPPFLAGS ${gcc_flag_prefix}-no-cpp-precomp"])
       ;; 
     esac ;;
-  *)  MISC_CPPFLAGS="" ;;
+  *)  ;;
+esac
+# Some C compilers disable OS POSIX entry points when strict c99 conformance is selected
+case "$target_os" in
+ # _GNU_SOURCE implies _XOPEN_SOURCE and enables other features we probe for, like "adaptive" mutex_t and pthread_rwlock_t
+ # Known to work on Linux, cygwin, and expected to be safe or at worst ignored on other OS's
+ *)  MISC_CPPFLAGS="$MISC_CPPFLAGS -D_GNU_SOURCE=1" ;;
 esac
 
-# Locate system directories for BG/Q
-if expr "$target" : powerpc64-bgq-linux >/dev/null; then
-  # TODO: Something like bgpmaster to search on?
-  bgsys_guess=/bgsys/drivers/ppcfloor
-
-  GASNET_ENV_DEFAULT(BGQ_SYS_HOME, $bgsys_guess)
-  GASNET_ENV_DEFAULT(BGQ_SYS_INCLUDE, $BGQ_SYS_HOME)
-  if test -e "$BGQ_SYS_INCLUDE/cnk/include"; then
-    tmp_flag="-isystem $BGQ_SYS_INCLUDE"
-    GASNET_TRY_CFLAG([$tmp_flag], [:], [tmp_flag="-I$BGQ_SYS_INCLUDE"])
-    SYS_HEADER_BLD="$SYS_HEADER_BLD $tmp_flag"
-    SYS_HEADER_INST="$SYS_HEADER_INST $tmp_flag"
-  fi
-  AC_SUBST(SYS_HEADER_BLD) dnl "Hook" shared with GASNET_CHECK_OVERRIDE_PTHREADS
-  AC_SUBST(SYS_HEADER_INST) dnl "Hook" shared with GASNET_CHECK_OVERRIDE_PTHREADS
+# Determine the minimal CFLAGS we need to add for C99 compliance
+# This is done incrementally to avoid passing options on newer compiler versions where the 
+# required compliance is provided by default, making the flag redundant (and potentially detrimental)
+# This also allows the user to pass a specific compliance flag in $CC without conflict
+case "$CC_FAMILY" in
+  # Some known oddball cases:
+   XLC) gasnet_c99_flags="-qlanglvl=extc99 -qlanglvl=stdc99";;
+   Sun) gasnet_c99_flags="-xc99=all";;
+  Cray) gasnet_c99_flags="'-h c99'";;
+   PGI) gasnet_c99_flags="-c99 -c9x" ;;
+  # One of these should work for the rest:
+  # std=c99 requests strict C99 conformance from gcc and look-alikes, whereas
+  # std=gnu99 additionally requests GNU-specific language extensions.
+  # All GASNet code should adhere to the subset of strict C99 in the README coding standards,
+  # (a subset of std=c99), however these flags are also used to compile network API headers
+  # and client code that may require more general support. Therefore std=gnu99 is default.
+     *) gasnet_c99_flags="${gcc_flag_prefix}-std=gnu99 ${gcc_flag_prefix}-c99 ${gcc_flag_prefix}-std=c99";;
+esac
+# NOTE: We do not currently cache this check because it is expanded in multiple contexts
+GASNET_C99_FLAG=unknown
+eval set - $gasnet_c99_flags
+for flag in "" "[$]@"; do
+  GASNET_PUSHVAR(CFLAGS, "$CFLAGS $MISC_CFLAGS $MISC_CPPFLAGS")
+  # first see if the flag generates warnings
+  GASNET_TRY_CFLAG([$flag],[
+    # now see if it gives us the support we want
+    GASNET_PUSHVAR(CFLAGS, "$CFLAGS $flag")
+    AC_TRY_COMPILE($2,[],[GASNET_C99_FLAG="$flag"])
+    GASNET_POPVAR(CFLAGS)
+  ])
+  GASNET_POPVAR(CFLAGS)
+  if test "$GASNET_C99_FLAG" != "unknown"; then break; fi
+done
+AC_MSG_CHECKING([for flags required for C99 subset compliance])
+if test "$GASNET_C99_FLAG" = "unknown"; then
+    AC_MSG_ERROR([Could not determine \$$1 flag to accept ISO C99 input. You may need to append flags in \$$1 to enable C99 support])
+elif test "$GASNET_C99_FLAG" = ""; then
+  AC_MSG_RESULT([none required])
+else
+  AC_MSG_RESULT([$GASNET_C99_FLAG])
+  MISC_CFLAGS="$MISC_CFLAGS $GASNET_C99_FLAG"
 fi
+
+]) dnl GASNET_SET_MISCFLAGS
+
+dnl Test code for compliance to the C99 subset required to compile gasnet.h
+dnl The following should ONLY include C99 features we officially adopt in the GASNet/README coding standards
+AC_DEFUN([GASNET_C99_TEST],
+ [ void foo(void) {
+     int a = 1; // C99 comment
+     for (int i=0; i < 100; i++) a += i; // Conditional expression declaration
+     int i = a; // mid-block decl
+   }
+])
+dnl The following is required for $CC (when compiling libgasnet) and optional for clients compiling gasnet.h
+AC_DEFUN([GASNET_VA_ARGS_TEST],[
+    #define GASNETI_AMNUMARGS(...) GASNETI_AMNUMARGS_(__VA_ARGS__,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0,0)
+    #define GASNETI_AMNUMARGS_(_0,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
+    int b[[GASNETI_AMNUMARGS(1)+1]];
+    int c[[GASNETI_AMNUMARGS(1,2)+1]];
+    int d[[GASNETI_AMNUMARGS(1,2,3)+1]];
+])
+
+GASNET_SET_MISCFLAGS(CC,[ GASNET_VA_ARGS_TEST GASNET_C99_TEST ])
 
 GASNET_IF_ENABLED(debug, Build GASNet in a debugging mode, 
   [ 
@@ -665,15 +731,28 @@ GASNET_MSG_WARN([
  WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 -----------------------------------------------------------------------])
     fi
-    CFLAGS="$CCDEBUGFLAGS"
+    GASNET_OPT_CFLAGS="$CCDEBUGFLAGS"
     AC_DEFINE(GASNET_DEBUG)
     BUILDCONFIG="debug"
     enabled_debug=yes],
-  [ CFLAGS="$CCOPTFLAGS"
+  [ GASNET_OPT_CFLAGS="$CCOPTFLAGS"
     AC_DEFINE(GASNET_NDEBUG)
     BUILDCONFIG="optimize"
     enabled_debug=no])
 AM_CONDITIONAL(BUILDCONFIG_DEBUG, test "$enabled_debug" = yes)
+
+# MISC_C(PP)FLAGS are added to C(PP)FLAGS here to ensure they are used for the remaining configure tests,
+# but they retain a separate identity post-configure
+CFLAGS="$GASNET_OPT_CFLAGS $MISC_CFLAGS"
+CPPFLAGS="$MISC_CPPFLAGS"
+AC_SUBST(MISC_CFLAGS)	      # warning suppression and other misc C flags
+AC_SUBST(MISC_CPPFLAGS)	      # misc preprocessor flags
+AC_SUBST(GASNET_OPT_CFLAGS)
+
+# Final check to ensure everything works together -- possibly redundant
+GASNET_TRY_CACHE_CHECK(for working GASNet-required ISO C99 subset, gasnet_c99_subset,
+ [ GASNET_VA_ARGS_TEST GASNET_C99_TEST ], [], [],
+ [ AC_MSG_ERROR(Unable to find sufficient C99 support features in $CC to build GASNet. You may need to append flags in \$CC to enable C99 support) ])
 
 GASNET_IF_ENABLED(gasnet-verbose, Build GASNet lib with debugging status messages, 
   [ enabled_debug_verbose=yes ], [ enabled_debug_verbose=no ])
@@ -710,17 +789,7 @@ GASNET_IF_ENABLED_WITH_AUTO(debug-malloc, Build GASNet with debugging malloc imp
   fi
 AM_CONDITIONAL(BUILDCONFIG_DEBUGMALLOC, test "$enabled_debug_malloc" = yes)
 
-case "$target" in
-  *-uclinux-*) # uclinux requires -Os
-    MISC_CFLAGS="$MISC_CFLAGS -DGASNET_ALLOW_OPTIMIZED_DEBUG=1" ;;
-  *)
-    GASNET_CHECK_OPTIMIZEDDEBUG(CC,CFLAGS,[$CPPFLAGS $MISC_CFLAGS $MISC_CPPFLAGS],[])
-  ;;
-esac
-
-#AC_SUBST(CFLAGS)	      # opt/debug flags
-AC_SUBST(MISC_CFLAGS)	      # warning suppression and other misc C flags
-AC_SUBST(MISC_CPPFLAGS)	      # misc preprocessor flags
+GASNET_CHECK_OPTIMIZEDDEBUG(CC,CFLAGS,[$CPPFLAGS],[])
 
 case "$CC_FAMILY" in
   GNU) KEEPTMP_CFLAGS="-save-temps" ;;
@@ -885,33 +954,11 @@ GASNET_FUN_END([$0])
 ])
 
 GASNET_LIBGCC
-GASNET_PUSHVAR(CFLAGS,"$CFLAGS $MISC_CPPFLAGS $MISC_CFLAGS")
 GASNET_CHECK_RESTRICT([GASNETI_CC])
 GASNET_CHECK_ASM_SUPPORT([C compiler],[CC])
 GASNET_INLINE_MODIFIER([C compiler],[CC])
 GASNET_GET_GNU_ATTRIBUTES([GASNETI_HAVE_CC])
 GASNET_GET_PLATFORM_ID([COMPILER])
-GASNET_POPVAR(CFLAGS)
-
-# Check for a usefull C99 features common in many pre-C99 compilers
-GASNET_TRY_CACHE_CHECK(for non-constant struct initializers, nonconst_struct_init,
-  [
-    #include <stdio.h>
-    struct S { int a; const int b; }; /* 'const' is here to trigger suncc bug 6913992 */
-    struct S foo(int a, int b) {
-      struct S tmp = {a, b};
-      return tmp;
-    }
-  ], [
-    /* printf() call ensures an int not known at compile/link time */
-    struct S s = foo(1, printf("boo\n"));
-  ], [ AC_DEFINE(HAVE_NONCONST_STRUCT_INIT) ])
-GASNET_TRY_CACHE_CHECK(for constructor expressions, constructor_expr,
-  [
-    struct S { int a; int b; };
-  ], [
-    struct S s = ((struct S){(1,2)});
-  ], [ AC_DEFINE(HAVE_CONSTRUCTOR_EXPR) ])
 
 GASNET_IFDEF([__PIC__],[AC_DEFINE(GASNETI_CONFIGURED_PIC)])
 
@@ -1047,12 +1094,24 @@ case "$target_os" in
 	    GASNETI_ARCH_BGQ=1
 	    AC_DEFINE(GASNETI_ARCH_BGQ)
 	    GASNET_PLATFORM=bgq
+
+            # Locate system directories for BG/Q
+            # TODO: Something like bgpmaster to search on?
+            bgsys_guess=/bgsys/drivers/ppcfloor
+
+            GASNET_ENV_DEFAULT(BGQ_SYS_HOME, $bgsys_guess)
+            GASNET_ENV_DEFAULT(BGQ_SYS_INCLUDE, $BGQ_SYS_HOME)
+            if test -e "$BGQ_SYS_INCLUDE/cnk/include"; then
+              tmp_flag="-isystem $BGQ_SYS_INCLUDE"
+              GASNET_TRY_CFLAG([$tmp_flag], [:], [tmp_flag="-I$BGQ_SYS_INCLUDE"])
+              SYS_HEADER_BLD="$SYS_HEADER_BLD $tmp_flag"
+              SYS_HEADER_INST="$SYS_HEADER_INST $tmp_flag"
+            fi
+            AC_SUBST(SYS_HEADER_BLD) dnl "Hook" shared with GASNET_CHECK_OVERRIDE_PTHREADS
+            AC_SUBST(SYS_HEADER_INST) dnl "Hook" shared with GASNET_CHECK_OVERRIDE_PTHREADS
 	    ;;
         esac
-        # Defining _GNU_SOURCE gives us accesss to the "adaptive"
-        # implementation of pthread_mutex_t, which is faster then
-        # the default implementation for our purposes.
-	GASNET_THREAD_DEFINES="-D_REENTRANT -D_GNU_SOURCE"
+	GASNET_THREAD_DEFINES="-D_REENTRANT"
         GASNET_THREAD_LIBS="-lpthread"
 	;;
   freebsd*)
@@ -1083,7 +1142,7 @@ case "$target_os" in
                           GASNET_THREAD_LIBS="-lpthread"])
 	;;
   cygwin*) 
-	GASNET_THREAD_DEFINES="-D_REENTRANT -D_XOPEN_SOURCE=500 -D_DEFAULT_SOURCE"
+	GASNET_THREAD_DEFINES="-D_REENTRANT"
         GASNET_THREAD_LIBS=""
 	;;
   darwin*) 
@@ -1175,10 +1234,28 @@ else
   # define HAVE_PTHREAD_H
   AC_CHECK_HEADERS(pthread.h)
 
+  # libraries that may be required for some POSIX thread features
+  opt_pthread_libs="pthread pthreads c_r"
+
   # look for optional pthreads entry points and features
-  AC_SEARCH_LIBS(pthread_setconcurrency, pthread pthreads c_r, AC_DEFINE(HAVE_PTHREAD_SETCONCURRENCY))
-  AC_SEARCH_LIBS(pthread_kill, pthread pthreads, AC_DEFINE(HAVE_PTHREAD_KILL))
-  AC_SEARCH_LIBS(pthread_kill_other_threads_np, pthread pthreads, AC_DEFINE(HAVE_PTHREAD_KILL_OTHER_THREADS_NP))
+  AC_SEARCH_LIBS(pthread_setconcurrency, $opt_pthread_libs, AC_DEFINE(HAVE_PTHREAD_SETCONCURRENCY))
+  AC_SEARCH_LIBS(pthread_kill, $opt_pthread_libs, AC_DEFINE(HAVE_PTHREAD_KILL))
+  AC_SEARCH_LIBS(pthread_kill_other_threads_np, $opt_pthread_libs, AC_DEFINE(HAVE_PTHREAD_KILL_OTHER_THREADS_NP))
+
+  GASNET_IF_ENABLED_WITH_AUTO(rwlock, Enable/disable use of pthread_rwlock_t (auto-detected),
+    enabled_rwlock=yes, enabled_rwlock=no, enabled_rwlock=probe)
+  if test "$enabled_rwlock" != "no" ; then
+    have_rwlock="yes"
+    AC_SEARCH_LIBS(pthread_rwlock_tryrdlock, $opt_pthread_libs, [], have_rwlock=no)
+    AC_SEARCH_LIBS(pthread_rwlock_wrlock, $opt_pthread_libs, [], have_rwlock=no)
+
+    if test "$have_rwlock" = "yes" ; then
+      AC_DEFINE(GASNETI_HAVE_PTHREAD_RWLOCK)
+    fi
+    if test "$enabled_rwlock$have_rwlock" = "yesno"; then
+     GASNET_MSG_ERROR([--enable-rwlock passed but no working pthread_rwlock_t support found])
+    fi
+  fi
 
   GASNET_IF_ENABLED_WITH_AUTO(tls, Enable/disable use of thread-local storage extensions (ie __thread) (auto-detected),
     enabled_tls=yes, enabled_tls=no, enabled_tls=probe)
@@ -1324,7 +1401,7 @@ if test "$enabled_pshm" != no; then
      esac
    ])
  if expr "$enabled_pshm_posix@$target_os" : "yes@darwin" >/dev/null; then
-   GASNET_MSG_ERROR([User requested --enable-pshm-posix but POSIX shared memory support is not permitted on Mac OS X.])
+   GASNET_MSG_WARN([User requested --enable-pshm-posix but POSIX shared memory support is not stable on Mac OS X.])
    dnl We can crash Macs!  See bug 2629.
  fi
  if test "$enabled_pshm_posix$with_pshm" = yesno; then
@@ -1401,10 +1478,11 @@ if test "$enabled_pshm" != no; then
   GASNET_PUSHVAR(CPPFLAGS,"")
   GASNET_CHECK_CRAY_HEADER([xpmem.h], [CRAY_XPMEM_INCLUDE_OPTS], [
       found_xpmem_h=yes
+      LDFLAGS="$CRAY_XPMEM_POST_LINK_OPTS -lxpmem " dnl The trailing space is required
     ],[
       found_xpmem_h=yes
       CPPFLAGS="$CRAY_XPMEM_INCLUDE_OPTS "  dnl The trailing space is required
-      LDFLAGS="$CRAY_XPMEM_POST_LINK_OPTS " dnl The trailing space is required
+      LDFLAGS="$CRAY_XPMEM_POST_LINK_OPTS -lxpmem " dnl The trailing space is required
     ],[
       AC_CHECK_HEADERS([sn/xpmem.h], [found_xpmem_h=yes], [found_xpmem_h=no])
     ])
@@ -1510,6 +1588,9 @@ AM_CONDITIONAL(USE_PSHM, test "$with_pshm" != no)
 ########################################################################
 ## CPU feature checks
 
+# the flags needed to compile gasnet_asm.h
+GASNET_ASM_CFLAGS="-I$TOP_SRCDIR -I$TOP_SRCDIR/other -D_IN_CONFIGURE"
+
 ## Look for potentially buggy MIPS R10k systems
 # There is a processor erratum to work-around in our atomics :-(
 # The only SGI products w/ the bad cpus are the "IP27" platforms (Origin 200, Origin 2000, and Onyx 2)
@@ -1523,7 +1604,7 @@ fi
 # Check how to reference MIPS assembler temporary register ("$1" or "$at")
 if expr "$target_cpu" : "mips" >/dev/null; then
   AC_CHECK_HEADERS(sgidefs.h)
-  GASNET_PUSHVAR(CFLAGS,"$CFLAGS $MISC_CPPFLAGS $MISC_CFLAGS -I$TOP_SRCDIR -I$TOP_SRCDIR/other -D_IN_CONFIGURE")
+  GASNET_PUSHVAR(CFLAGS,"$CFLAGS $GASNET_ASM_CFLAGS")
   GASNET_TRY_CACHE_CHECK(for MIPS register '\$[]1', mips_reg_1, [
     #include "gasnet_asm.h"
   ], [
@@ -1543,7 +1624,7 @@ fi
 
 ## ARM-specific checks for "kernel helpers"
 if expr "$target_cpu" : "arm" >/dev/null; then
-  GASNET_PUSHVAR(CFLAGS,"$CFLAGS $MISC_CPPFLAGS $MISC_CFLAGS -I$TOP_SRCDIR -I$TOP_SRCDIR/other -D_IN_CONFIGURE")
+  GASNET_PUSHVAR(CFLAGS,"$CFLAGS $GASNET_ASM_CFLAGS")
 
   ## Does ARM kernel have cmpxchg support?
   if test "$cross_compiling" = "yes" ; then
@@ -1552,10 +1633,10 @@ if expr "$target_cpu" : "arm" >/dev/null; then
     GASNET_TRY_CACHE_RUN([for ARM cmpxchg kernel support], have_arm_cmpxchg, [
       #include "gasnet_asm.h" /* For GASNETI_ARM_ASMCALL() */
       int cmp_swap(volatile unsigned int *v, int oldval, int newval) {
-	register unsigned int result asm("r0");
-	register unsigned int _newval asm("r1") = newval;
-	register unsigned int _v asm("r2") = (unsigned long)v;
-	register unsigned int _oldval asm("r4") = oldval;
+	register unsigned int result __asm("r0");
+	register unsigned int _newval __asm("r1") = newval;
+	register unsigned int _v __asm("r2") = (unsigned long)v;
+	register unsigned int _oldval __asm("r4") = oldval;
 
 	/* Transient failure is possible if interrupted.
 	 * Since we can't distinguish the cause of the failure,
@@ -1634,7 +1715,7 @@ if expr "$target_cpu" : "arm" >/dev/null; then
 fi
 
 ## Do toolchain and CPU support ia64 "cmp8xchg16"?
-GASNET_PUSHVAR(CFLAGS,"$CFLAGS $MISC_CPPFLAGS $MISC_CFLAGS -I$TOP_SRCDIR -I$TOP_SRCDIR/other -D_IN_CONFIGURE")
+GASNET_PUSHVAR(CFLAGS,"$CFLAGS $GASNET_ASM_CFLAGS")
 AC_MSG_CHECKING(for ia64 cmp8xchg16 support)
 AC_TRY_RUN([
   #include "gasnet_asm.h" /* For PLATFORM_COMPILER_* and GASNETI_*_ASM_* */
@@ -1681,10 +1762,10 @@ AC_TRY_RUN([
 GASNET_POPVAR(CFLAGS)
 
 ## Do CC/gas and CPU support "cmpxchg16b"?
-GASNET_PUSHVAR(CFLAGS,"$CFLAGS $MISC_CPPFLAGS $MISC_CFLAGS -I$TOP_SRCDIR -I$TOP_SRCDIR/other -D_IN_CONFIGURE")
+GASNET_PUSHVAR(CFLAGS,"$CFLAGS $GASNET_ASM_CFLAGS")
 if test "$cross_compiling" = "yes" ; then
   GASNET_CROSS_VAR(GASNETI_HAVE_X86_CMPXCHG16B,HAVE_X86_CMPXCHG16B,[probe])
-  if test "$GASNETI_HAVE_X86_CMPXCHG16B" = 'yes'; then
+  if test "$GASNETI_HAVE_X86_CMPXCHG16B" = '1'; then
     AC_DEFINE(GASNETI_HAVE_X86_CMPXCHG16B)
   fi
 fi
@@ -1736,7 +1817,7 @@ GASNET_POPVAR(CFLAGS)
 ## compiler which accepts GNU-style asm - but that is the only
 ## case where we *currently* care.  Test may need some additional
 ## cases for other compilers in the future.
-GASNET_PUSHVAR(CFLAGS,"$CFLAGS $MISC_CPPFLAGS $MISC_CFLAGS -I$TOP_SRCDIR -I$TOP_SRCDIR/other -D_IN_CONFIGURE")
+GASNET_PUSHVAR(CFLAGS,"$CFLAGS $GASNET_ASM_CFLAGS")
 GASNET_TRY_CACHE_CHECK(for x86 EBX register, x86_ebx, [
   #include "gasnet_asm.h" /* For PLATFORM_COMPILER_* and GASNETI_PGI_ASM_GNU */
 ], [
@@ -1757,7 +1838,6 @@ GASNET_POPVAR(CFLAGS)
 
 ## Does 32-bit SPARC compiler understand "U" and "h" register classes?
 if expr "$GASNETI_PTR_BITS$target_cpu" : "32sparc" >/dev/null; then
-  GASNET_PUSHVAR(CFLAGS,"$CFLAGS $MISC_CPPFLAGS $MISC_CFLAGS")
   GASNET_TRY_CACHE_CHECK([for 64-bit SPARC asm support], have_sparc32_64bit_asm, [] ,[
       unsigned long long u, v;
       volatile unsigned long long *p = &u;
@@ -1766,11 +1846,10 @@ if expr "$GASNETI_PTR_BITS$target_cpu" : "32sparc" >/dev/null; then
       __asm__ __volatile__ ( "std %1, %0" : "=m"(*p) : "U"(v) );
       __asm__ __volatile__ ( "clr %0 \n\tmovrz %1,1,%0" : "=&h"(retval), "+h"(tmp) );
   ], [AC_DEFINE(GASNETI_HAVE_SPARC32_64BIT_ASM)])
-  GASNET_POPVAR(CFLAGS)
 fi
 
 ## Spinloop hints
-GASNET_PUSHVAR(CFLAGS,"$CFLAGS $MISC_CPPFLAGS $MISC_CFLAGS -I$TOP_SRCDIR -I$TOP_SRCDIR/other -D_IN_CONFIGURE")
+GASNET_PUSHVAR(CFLAGS,"$CFLAGS $GASNET_ASM_CFLAGS")
 # need to run here because some OS's (Solaris/x86) forbid the pause instruction
 GASNET_TRY_CACHE_RUN_WITHCC(for x86 pause instruction,x86_pause_instruction, [
   #include "gasnet_asm.h" /* Includes portable_platform.h */
@@ -2004,7 +2083,7 @@ if test "$with_pshm" != no; then
     dnl So, if gasnet_atomic_bits.h has any unsatisfied dependencies on a given platform
     dnl then we could miss detecting the problem here, but will still catch at compile time.
     dnl Note that native atomics w/o signal safety are okay.
-    GASNET_PUSHVAR(CFLAGS,"$CFLAGS $MISC_CPPFLAGS $MISC_CFLAGS -I$TOP_SRCDIR -I$TOP_SRCDIR/other -D_IN_CONFIGURE")
+    GASNET_PUSHVAR(CFLAGS,"$CFLAGS $GASNET_ASM_CFLAGS")
     GASNET_TRY_CACHE_CHECK(for non-native atomics, non_native_atomics, [
       #include "portable_inttypes.h"
       #include "gasnet_asm.h" /* Includes portable_platform.h */
@@ -2177,7 +2256,7 @@ AC_DEFUN([GASNET_LINKHELPER_SETUP],[
       $LINKHELPER_TLS_CODE
     }
 _GASNET_EOF
-  compile="$CC $CFLAGS $MISC_CFLAGS $CPPFLAGS -c $LINKHELPER_SRC -o $LINKHELPER_OBJ"
+  compile="$CC $CFLAGS $CPPFLAGS -c $LINKHELPER_SRC -o $LINKHELPER_OBJ"
   eval echo "$compile" >&5
   if eval $compile 2>&5 && test -s $LINKHELPER_OBJ ; then
     AC_MSG_RESULT(ok)
@@ -2216,9 +2295,11 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
     GASNET_ENV_DEFAULT(TARGET_CXXFLAGS, "")
     unset ac_cv_prog_CXX
     unset ac_cv_prog_CXXCPP
-    CXX="$TARGET_CXX"
-    CXXFLAGS="$TARGET_CXXFLAGS"
+    CXX="$TARGET_CXX $TARGET_CXXFLAGS"
   fi
+  CXXFLAGS=""       # start with a clean slate
+  MISC_CXXFLAGS=""
+  # Note: autoconf uses CPPFLAGS for both C and C++, so there is NO CXXCPPFLAGS
 
   if test "$with_cxx" = no; then
     have_cxx=no
@@ -2296,7 +2377,7 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
       ;;
     Cray)
      case "$target_cpu" in
-      x86_64)   MISC_CXXFLAGS="-hnomessage=236 -hexceptions -hnew_for_init" ;; # XT, XE, XK, XC, etc.
+      x86_64)   MISC_CXXFLAGS="-hnomessage=236:3185 -hexceptions -hnew_for_init" ;; # XT, XE, XK, XC, etc. 3185=bug 3306
       *)        AC_MSG_ERROR(Cray C++ compiler for unknown target CPU) ;;
      esac ;;
     Pathscale)  CXXDEBUGFLAGS="-g3 -O0" ;; # consistent with CCDEBUGFLAGS
@@ -2308,8 +2389,7 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
        fi
        GASNET_PUSHVAR(CXXFLAGS,"-g3")
        GASNET_GET_GNUWARNINGFLAGS(CXX)
-       # As with CCDEBUGFLAGS lack a -Wno-declaration-after-statement
-       CXXDEBUGFLAGS=`echo "$CXXFLAGS" | sed -e 's/-Wdeclaration-after-statement//'`
+       CXXDEBUGFLAGS="$CXXFLAGS" 
        GASNET_POPVAR(CXXFLAGS)
     ;;
     Clang)
@@ -2325,17 +2405,15 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
     ;;
   esac  
   if test "$BUILDCONFIG" = "optimize" ; then
-    CXXFLAGS="$CXXOPTFLAGS"
+    GASNET_OPT_CXXFLAGS="$CXXOPTFLAGS"
   else
-    CXXFLAGS="$CXXDEBUGFLAGS"
+    GASNET_OPT_CXXFLAGS="$CXXDEBUGFLAGS"
   fi
-  case "$target" in
-    *-uclinux-*) # uclinux requires -Os
-      MISC_CXXFLAGS="$MISC_CXXFLAGS -DGASNET_ALLOW_OPTIMIZED_DEBUG=1" ;;
-    *)
-      GASNET_CHECK_OPTIMIZEDDEBUG(CXX,CXXFLAGS,[$CXXCPPFLAGS $MISC_CXXFLAGS],[])
-    ;;
-  esac
+  AC_SUBST(GASNET_OPT_CXXFLAGS)
+  # MISC_CXXFLAGS are added to CXXFLAGS here to ensure they are used for the remaining configure tests,
+  # but they retain a separate identity post-configure
+  CXXFLAGS="$GASNET_OPT_CXXFLAGS $MISC_CXXFLAGS"
+  GASNET_CHECK_OPTIMIZEDDEBUG(CXX,CXXFLAGS,[$CPPFLAGS],[])
 
   GASNET_ENV_DEFAULT(cxxLIBS, )             # C++ LIBS for any C++ link
   GASNET_ENV_DEFAULT(cxxLDFLAGS, )          # C++ LDFLAGS for any C++ link
@@ -2343,7 +2421,6 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
   AC_SUBST(cxxLIBS)
   AC_SUBST(cxxLDFLAGS)
 
-  GASNET_PUSHVAR(CXXFLAGS,"$CXXFLAGS $CXXCPPFLAGS $MISC_CXXFLAGS")
   GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $cxxLDFLAGS")
   GASNET_PUSHVAR(LIBS,"$LIBS $cxxLIBS")
   GASNET_TRY_CACHE_VERIFY_RUN( [for working C++ exceptions], cxx_exceptions, [ ], [
@@ -2360,6 +2437,8 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
   GASNET_CHECK_RESTRICT([GASNETI_CXX],[C++ compiler])
   GASNET_CHECK_ASM_SUPPORT([C++ compiler],[CXX])
   GASNET_GET_GNU_ATTRIBUTES([GASNETI_HAVE_CXX],[C++ compiler])
+
+  GASNET_TRY_CACHE_CHECK(for __VA_ARGS__ support in C++, cxx_va_args, [ GASNET_VA_ARGS_TEST ], [ ], [ AC_DEFINE(GASNETI_CXX_HAS_VA_ARGS) ])
 
   # we link in an object compiled with CC that uses libc, to ensure that's working
   # [at least initially this is almost a clone of the MPI helper test]
@@ -2385,7 +2464,6 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
   fi
   GASNET_LINKHELPER_CLEANUP()
 
-  GASNET_POPVAR(CXXFLAGS)
   GASNET_POPVAR(LDFLAGS)
   GASNET_POPVAR(LIBS)
   AC_SUBST(MISC_CXXFLAGS)
@@ -2460,42 +2538,13 @@ dnl GASNET_TOOLSONLY_FALSE_END
 # --enable-mpi controls mpi-conduit
 CONDUIT_BEGIN(mpi,[Portable MPI conduit (mpi)])
 
-AC_DEFUN([GASNET_CHECK_MPI_CC],[
-  if test "x$MPI_CC" = 'xno' >/dev/null; then
-    # Avoid unecessary and potentially confusing probes and their errors/warnings
-    have_mpi=no
-    mpi_reason="was disabled"
-  else
-    GASNET_GETFULLPATH(MPI_CC)
-    if expr "x$MPI_CC" : 'x/' >/dev/null; then
-      if test "$BUILDCONFIG" = "debug" ; then
-        SAFE_MPI_CFLAGS="-g"
-      else
-        SAFE_MPI_CFLAGS="-O"
-      fi
-      GASNET_SET_CHECKED_CFLAGS(MPI_CC, MPI_CFLAGS, $1, $SAFE_MPI_CFLAGS)
-    else
-      GASNET_MSG_WARN([MPI compiler "$MPI_CC" was not found.  Consider passing --with-mpi-cc if you want mpi-conduit or require MPI compatibility])
-      # Avoid unecessary and potentially confusing probes and their errors/warnings
-      MPI_CC=no
-      have_mpi=no
-      mpi_reason="was not found"
-    fi
-  fi
-])
 
 if test "$enabled_mpi" = yes || test "$enabled_mpi_compat" = yes; then
   # user can explicitly configure MPI by setting MPI_CC, MPI_CFLAGS and MPI_LIBS
+  # First step is to provide sane defaults when the user gave us nothing
   have_mpi=yes # start by assuming they have it
+  DEFAULT_MPI_CFLAGS="$GASNET_OPT_CFLAGS" # default flags, assuming they are the same compiler
   case "$target_os" in
-    solaris*)  
-        # I don't have access to a Solaris cluster with MPI (other than NOW) 
-        # but these seem like sane defaults
-    	GASNET_ENV_DEFAULT(MPI_CC, mpicc)
-        GASNET_CHECK_MPI_CC($MISC_CFLAGS $CFLAGS)
-    	GASNET_ENV_DEFAULT(MPI_LIBS, )
-	GASNET_ENV_DEFAULT(MPIRUN_CMD, mpirun -np %N %C)
-        ;;
     linux*) 
         if test -n "$GASNETI_ARCH_ALTIX"; then
           GASNET_ENV_DEFAULT(MPI_CC, "$CC")
@@ -2518,43 +2567,62 @@ if test "$enabled_mpi" = yes || test "$enabled_mpi_compat" = yes; then
     	  GASNET_ENV_DEFAULT(MPI_LIBS, )
 	  GASNET_ENV_DEFAULT(MPIRUN_CMD, mpirun -np %N %C)
         fi
-        GASNET_CHECK_MPI_CC($MISC_CFLAGS $CFLAGS)
         GASNET_ENV_DEFAULT(MPIRUN_CMD_BATCH, "")
-        ;;
-    darwin*) # Need to probe -Wno-long-double independently
-        GASNET_ENV_DEFAULT(MPI_CC, mpicc)
-        BASIC_MPI_CFLAGS=`echo "$MISC_CFLAGS $CFLAGS" | sed -e 's/-Wno-long-double//'`
-        GASNET_CHECK_MPI_CC($BASIC_MPI_CFLAGS)
-        GASNET_PUSHVAR(CC,"$MPI_CC")
-        GASNET_PUSHVAR(CFLAGS,"$MPI_CFLAGS")
-        if test x"$MPI_CC" != xno; then
-          GASNET_TRY_WNO_FLAG([C],[-Wno-long-double],
-	                      [MPI_CFLAGS="$MPI_CFLAGS -Wno-long-double"])
-        fi
-        GASNET_POPVAR(CC)
-        GASNET_POPVAR(CFLAGS)
-        GASNET_ENV_DEFAULT(MPI_LIBS, )
-        GASNET_ENV_DEFAULT(MPIRUN_CMD, mpirun -np %N %C)
         ;;
     mtx*)
     	GASNET_ENV_DEFAULT(MPI_CC, cc)
-        GASNET_CHECK_MPI_CC($MISC_CFLAGS $CFLAGS)
     	GASNET_ENV_DEFAULT(MPI_LIBS, -lmpi)
 	GASNET_ENV_DEFAULT(MPIRUN_CMD, mtarun -t %N -m %N /usr/bin/env _MPI_MT=%N %C)
         ;;
     *) 
-      # unknown OS - if user doesn't provide info, nothing we can do
+      # unknown OS - if user doesn't provide info, assume generic settings that often work
       GASNET_ENV_DEFAULT(MPI_CC, mpicc)
-      GASNET_CHECK_MPI_CC($MISC_CFLAGS $CFLAGS)
       GASNET_ENV_DEFAULT(MPI_LIBS, )
       GASNET_ENV_DEFAULT(MPIRUN_CMD, mpirun -np %N %C)
-      if test "$MPI_CC" = ""; then
-        GASNET_MSG_WARN([I don't know how to build MPI programs on your system: consider passing --with-mpi-cc and/or setting \$MPI_CFLAGS and \$MPI_LIBS to configure MPI support for your site if you want mpi-conduit or require MPI compatibility])
-	MPI_CC=$CC
-        have_mpi=no
-      fi 
       ;;
   esac
+
+  if test "x$MPI_CC" = 'xno' >/dev/null; then
+    # Avoid unecessary and potentially confusing probes and their errors/warnings
+    have_mpi=no
+    mpi_reason="was disabled"
+  else
+    GASNET_GETFULLPATH(MPI_CC)
+    if expr "x$MPI_CC" : 'x/' >/dev/null; then
+      # figure out a reasonable fallback MPI_CFLAGS for this arch/OS and C99 support
+      # this is complicated by the fact that $MPI_CC may be a different compiler than $CC
+      GASNET_PUSHVAR(CC,"$MPI_CC")
+      GASNET_PUSHVAR(CFLAGS,"")
+      GASNET_PUSHVAR(CPPFLAGS,"")
+      GASNET_PUSHVAR(MISC_CFLAGS,"")
+      GASNET_PUSHVAR(MISC_CPPFLAGS,"")
+      GASNET_ID_OTHER_COMPILER([MPI_CC], [MPI])
+      GASNET_PUSHVAR(CC_FAMILY,"$MPI_CC_FAMILY")
+        # we re-detect miscflags for MPI_CC, because it may differ from CC
+        GASNET_SET_MISCFLAGS(MPI_CC, [ GASNET_C99_TEST ])
+	MPI_MISCFLAGS="$MISC_CFLAGS $MISC_CPPFLAGS"
+        if test "$BUILDCONFIG" = "debug" ; then
+          SAFE_MPI_CFLAGS="-g"
+        else
+          SAFE_MPI_CFLAGS="-O"
+        fi
+      GASNET_POPVAR(CC)
+      GASNET_POPVAR(CC_FAMILY)
+      GASNET_POPVAR(CFLAGS)
+      GASNET_POPVAR(CPPFLAGS)
+      GASNET_POPVAR(MISC_CFLAGS)
+      GASNET_POPVAR(MISC_CPPFLAGS)
+      GASNET_SET_CHECKED_CFLAGS(MPI_CC, MPI_CFLAGS, $DEFAULT_MPI_CFLAGS, $SAFE_MPI_CFLAGS)
+      MPI_CFLAGS="$MPI_CFLAGS $MPI_MISCFLAGS"
+    else
+      GASNET_MSG_WARN([MPI compiler "$MPI_CC" was not found.  Consider passing --with-mpi-cc if you want mpi-conduit or require MPI compatibility])
+      # Avoid unecessary and potentially confusing probes and their errors/warnings
+      MPI_CC=no
+      have_mpi=no
+      mpi_reason="was not found"
+    fi
+  fi
+
   if test x"$MPI_CC" != xno; then
   GASNET_GETFULLPATH(MPIRUN_CMD)
   fi
@@ -2571,6 +2639,7 @@ if test "$enabled_mpi" = yes || test "$enabled_mpi_compat" = yes; then
     GASNET_PUSHVAR(CPPFLAGS,"")
     GASNET_PUSHVAR(LDFLAGS,"")
     GASNET_PUSHVAR(LIBS,"$MPI_LIBS")
+
     # we just try to link an MPI app - running MPI apps is a whole new can of worms
     GASNET_LINKHELPER_TRY_LINK(for working MPI configuration, mpi_works, [
       #include <mpi.h>
@@ -2595,7 +2664,6 @@ if test "$enabled_mpi" = yes || test "$enabled_mpi_compat" = yes; then
     GASNET_LINKHELPER_CLEANUP()
 
     if test "$mpi_test_worked" = yes ; then
-      GASNET_ID_OTHER_COMPILER([MPI_CC], [MPI])
       GASNET_CHECK_RESTRICT([GASNETI_MPI_CC],[MPI_CC])
       GASNET_CHECK_ASM_SUPPORT([MPI_CC],[MPI_CC])
       GASNET_INLINE_MODIFIER([MPI_CC],[MPI_CC])
@@ -2609,6 +2677,12 @@ if test "$enabled_mpi" = yes || test "$enabled_mpi_compat" = yes; then
         GASNET_TRY_CACHE_RUN_EXPR([MPI_CC for value of MPI_VERSION], MPI_VERSION, [#include <mpi.h>], [val = MPI_VERSION;], GASNETI_MPI_VERSION)
       fi
       AC_DEFINE(GASNETI_MPI_VERSION)
+
+      # check MPI_CC for a working C99 environment (enough to parse gasnet.h) -- possibly redundant
+      GASNET_TRY_CACHE_CHECK(for working GASNet-required ISO C99 subset in MPI_CC, mpi_gasnet_c99_subset,
+       [ GASNET_C99_TEST ], [], [],
+       [ mpi_test_worked=no 
+         GASNET_MSG_WARN(Unable to find sufficient C99 support features in $MPI_CC to build GASNet. You may need to append flags in \$MPI_CC to enable C99 support) ])
     fi
 
     GASNET_POPVAR(CC)
@@ -2774,6 +2848,8 @@ CONDUIT_BEGIN(mxm,[Mellanox InfiniBand MXM conduit (mxm)])
 have_mxm=no
 if test "$have_fork" = no; then
     GASNET_MSG_WARN([mxm-conduit requires or fork() ($fork_reason) for startup - disabling mxm])
+elif test "$have_pthread" = no; then
+    GASNET_MSG_WARN([mxm-conduit requires libpthread ($pthread_reason) - disabling mxm])
 elif test "$enabled_mxm" != no; then
     #
     # Either MXM was required explicitly, or we just need to probe for its existence
@@ -3382,14 +3458,14 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
     ],[
       have_pmi_cray_h=yes
       GNI_INCLUDES="$GNI_INCLUDES $CRAY_PMI_INCLUDE_OPTS"
-      GNI_LIBS="$GNI_LIBS $CRAY_PMI_POST_LINK_OPTS -lpmi"
     ])
+  GNI_LIBS="$GNI_LIBS $CRAY_PMI_POST_LINK_OPTS -lpmi"
 
   # Look for gni_pub.h, allowing for the possibility we are not using the wrapper compiler
   GASNET_CHECK_CRAY_HEADER([gni_pub.h],[CRAY_GNI_HEADERS_INCLUDE_OPTS],[:],[
       GNI_INCLUDES="$GNI_INCLUDES $CRAY_GNI_HEADERS_INCLUDE_OPTS"
-      GNI_LIBS="$GNI_LIBS $CRAY_UGNI_POST_LINK_OPTS -lugni"
     ])
+  GNI_LIBS="$GNI_LIBS $CRAY_UGNI_POST_LINK_OPTS -lugni"
 
   if test $have_[]lowername = yes; then
     # PSHM must be XPMEM, HUGETLBFS or none.
@@ -3446,13 +3522,13 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
       ],[
         AC_DEFINE(GASNETC_GNI_UDREG)
         GNI_INCLUDES="$GNI_INCLUDES $CRAY_UDREG_INCLUDE_OPTS"
-        GNI_LIBS="$GNI_LIBS $CRAY_UDREG_POST_LINK_OPTS -ludreg"
       ],[
         if test "$gni_udreg" = yes; then
           GASNET_ERR_SAVE()
           AC_MSG_ERROR([--enable-gni-udreg was passed but udreg_pub.h header was not found])
         fi
       ])
+    GNI_LIBS="$GNI_LIBS $CRAY_UDREG_POST_LINK_OPTS -ludreg"
   fi
 
   GASNET_WITH(gni-max-medium,
@@ -3679,9 +3755,9 @@ CONDUIT_BEGIN(ofi,[Portable OpenFabrics Interfaces conduit (ofi)])
 if test "$enabled_ofi" = yes; then
   have_ofi=yes
 
-  GASNET_ENV_DEFAULT(OFIHOME, /usr/local)
+  GASNET_ENV_DEFAULT(OFIHOME, /usr)
   AC_MSG_CHECKING(for --with-ofihome)
-  GASNET_WITH(ofihome, [Specify Libfabric install directory, default is /usr/local],
+  GASNET_WITH(ofihome, [Specify Libfabric install directory, default is /usr],
               [if test "$withval" = 'yes'; then
                  GASNET_MSG_ERROR(["--with-ofihome requires an argument (libfabric install directory)"])
                fi
@@ -4667,7 +4743,7 @@ GASNET_IF_ENABLED(strict-prototypes, [Use strict prototypes in GASNet headers (a
         dnl    MISC_CXXFLAGS gets the flag for any build
         if test "$enabled_debug" = yes; then
           GASNET_TRY_CFLAG([-Wstrict-prototypes],
-                           [CFLAGS="$CFLAGS -Wstrict-prototypes"])
+                           [MISC_CFLAGS="$MISC_CFLAGS -Wstrict-prototypes"])
         fi
         if test "$enabled_debug$have_mpi" = yesyes; then
           dnl Ick: will show "checking for C compiler flag -Wstrict-prototypes" twice in a row
@@ -4916,6 +4992,14 @@ EOF
 fi
 echo "----------------------------------------------------------------------" >> $CONDUIT_LIST
 
+# The following intentionally mirror the definitions in conduit fragments
+# These are intentionally non-additive, to help ensure configure checks add things to the 
+# appropriate sub-variable and NOT add things directly to CFLAGS which gets overwritten
+# Do NOT change the following lines!!!
+CFLAGS="$GASNET_OPT_CFLAGS $MISC_CFLAGS"
+CPPFLAGS="$MISC_CPPFLAGS"
+CXXFLAGS="$GASNET_OPT_CXXFLAGS $MISC_CXXFLAGS"
+
 # Files added here should also be added to ./unBootstrap
 GASNET_END_CONFIGURE()
 AC_OUTPUT(
@@ -4984,7 +5068,6 @@ other/ammpi/Makefile
 other/amudp/Makefile
 other/contrib/Makefile
 other/contrib/gasnet_trace
-other/testspawn/Makefile
 other/firehose/Makefile
 other/firehose/firehose.mak
 other/fca/Makefile
@@ -5001,6 +5084,7 @@ config-aux/Makefile
 , 
 GASNET_FIX_EXEC_OUTPUT()
 GASNET_SANITIZE_PACKAGE(gasnet_config.h)
+GASNET_TRUE_UNDEF(gasnet_config.h)
 [ 
 GASNET_MSG_WARN_FINISH()
 CONDUIT_LIST=.gasnet-conduit-list.tmp
