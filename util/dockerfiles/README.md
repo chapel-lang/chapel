@@ -1,5 +1,5 @@
-#  This directory contains the Dockerfiles for Chapel images available on [Docker Hub](https://hub.docker.com/r/chapel/chapel/).
-   Please see [Docker Hub](https://hub.docker.com/r/chapel/chapel/) to obtain the images.
+#  This directory contains the Dockerfiles for Chapel images available on [Docker Hub](https://hub.docker.com/r/chapel/).
+   Please see [Docker Hub](https://hub.docker.com/r/chapel/) to obtain the images.
 
 ---
 
@@ -14,13 +14,17 @@ Supported Chapel versions:
 * [`1.14.0`, `latest` (_1.14.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.14.0/Dockerfile/)
 * [`1.13.1` (_1.13.1/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.13.1/Dockerfile)
 
-This is the core image for Chapel. It provides the complete Chapel compiler and runtime.  It can be used to compile Chapel programs inside the container -- which may then be run inside the container, or exported via volumes and run outside the container (on 64-bit Linux hosts, if compiled with static linking).  Other Chapel-based Docker images can be created from this image.
+This is the core image for Chapel. It provides the complete Chapel compiler and runtime.  It can be used to compile and run Chapel programs inside the Docker container. On 64-bit Linux hosts, the compiled Chapel program binary can sometimes be executed outside the container (your mileage may vary). Other Chapel-based Docker images can be created from this image.
 
 ## [`chapel/chapel-gasnet:<version>`](https://hub.docker.com/r/chapel/chapel-gasnet/)
 
 * [`1.14.0`, `latest` (_1.14.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.14.0/gasnet/Dockerfile/)
 
-The Chapel core image (above), rebuilt with `CHPL_COMM=gasnet` and `GASNET_SPAWNFN=L`. Simulates a multi-locale Chapel platform within the Docker container (compiled Chapel programs can not be run outside the container).
+The Chapel core image (above), rebuilt with `CHPL_COMM=gasnet` and `GASNET_SPAWNFN=L`. Simulates a multilocale Chapel platform within the Docker container.
+
+Multilocale Chapel brings additional requirements, unrelated to Docker. The `chpl` compilation produces two binary files (e.g. `hello_real` as well as `hello`). When you run the binary, you need another command line parameter (`-nl #`, to specify the number of locales). Please see [Multilocale Chapel Execution](http://chapel.cray.com/docs/latest/usingchapel/multilocale.html) for details.
+
+Compiled Chapel programs cannot be run outside the container.
 
 # How to use the image
 
@@ -28,15 +32,24 @@ The Chapel core image (above), rebuilt with `CHPL_COMM=gasnet` and `GASNET_SPAWN
 
 The image can be used to compile and run your Chapel program inside the container. On Linux systems, the core Chapel image `chapel/chapel` can export a binary that can be executed outside the container.
 
-In the following example, the `docker run` argument `-v` mounts the current directory in the container, and `-w` sets the working directory to this mounted directory. The Chapel compiler, `chpl`, is invoked much like `gcc`, with arguments `--static` to create a statically-linked executable, and `-o` to specify the name of the output binary:
+In the following example, the `docker run` argument `-v` mounts the current directory in the container, and `-w` sets the working directory to this mounted directory. The Chapel compiler, `chpl`, is invoked much like `gcc`, with argument `-o` to specify the name of the output binary.
 ```
 $ echo 'writeln("Hello, world!");' > hello.chpl
-$ docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp chapel/chapel chpl --static -o hello hello.chpl
+
+$ docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp chapel/chapel chpl -o hello hello.chpl
 ```
 &nbsp;
 
-On a Linux system, the resultant binary can be run outside the container:
+To run the resultant binary inside the container:
 ```
+$ docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp chapel/chapel ./hello
+Hello, world!
+```
+&nbsp;
+
+On a Linux system, the resultant binary can sometimes be run outside the container, if it was compiled with the `--static` option.
+```
+$ docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp chapel/chapel chpl --static -o hello hello.chpl
 $ ./hello
 Hello, world!
 ```
