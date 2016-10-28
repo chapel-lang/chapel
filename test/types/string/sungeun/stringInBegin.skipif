@@ -1,0 +1,2 @@
+# This test seems to pass with GASNet for some reason
+CHPL_COMM!=none
