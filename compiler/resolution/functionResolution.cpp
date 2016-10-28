@@ -6669,15 +6669,17 @@ preFold(Expr* expr) {
         bool isImmediate = false;
         IntentTag intent = INTENT_BLANK;
 
-        if (v)
+        if (v) {
           if (v->immediate)
             isImmediate = true;
+          intent = concreteIntent(INTENT_BLANK, v->type);
+        }
 
         if (a) {
           intent = concreteIntent(a->intent, a->type);
         }
 
-        if (v || a) { // works if a is removed from this conditional
+        if (v || a) {
           if (isRef) {
             // can't take address of something already a ref
           } else if (sym2->type == dtNil) {
@@ -6692,6 +6694,12 @@ preFold(Expr* expr) {
           } else if (a && (intent & INTENT_FLAG_IN)) {
             // don't take the address of arguments passed with in intent
             // (it doesn't help and causes problems with inlining)
+          } else if (v &&
+                     (intent & INTENT_FLAG_IN) &&
+                     v->isConstValWillNotChange()) {
+            // don't take address of outer variables declared to be const
+            // (otherwise, after flattenFunctions, we will take the
+            //  address of a by-value argument).
           } else {
             Expr* stmt = call->getStmtExpr();
             Type* t = sym2->type;
