@@ -1836,6 +1836,11 @@ module ChapelArray {
           var domToFree:BaseDom = nil;
           var distToRemove:BaseDist = nil;
           var distToFree:BaseDist = nil;
+          // The dead code to access the fields of _instance are left in the
+          // generated code with --baseline on. This means that these
+          // statements cannot come after the _delete_arr call.
+          param domIsPrivatized  = _isPrivatized(_instance.dom);
+          param distIsPrivatized = _isPrivatized(_instance.dom.dist);
           if domToRemove != nil {
             // remove that domain
             (domToFree, distToRemove) = domToRemove.remove();
@@ -1846,9 +1851,9 @@ module ChapelArray {
           if arrToFree != nil then
             _delete_arr(_instance, _isPrivatized(_instance));
           if domToFree != nil then
-            _delete_dom(domToFree, _isPrivatized(_instance.dom));
+            _delete_dom(domToFree, domIsPrivatized);
           if distToFree != nil then
-            _delete_dist(distToFree, _isPrivatized(_instance.dom.dist));
+            _delete_dist(distToFree, distIsPrivatized);
         }
       }
     }
