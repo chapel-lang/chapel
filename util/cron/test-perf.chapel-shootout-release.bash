@@ -8,9 +8,9 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapel-shootout-release"
 
-# check out 1.13.0, but then grab the current tests
+# check out 1.14.0, but then grab the current tests
 currentSha=`git rev-parse HEAD`
-git checkout 1.13.0
+git checkout 1.14.0
 git checkout $currentSha -- $CHPL_HOME/test/
 git checkout $currentSha -- $CHPL_HOME/util/cron/
 
