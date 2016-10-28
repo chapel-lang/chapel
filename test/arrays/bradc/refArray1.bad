@@ -1,3 +1,0 @@
-0 0 99 0 0
-0 0 99 0 0
-refArray1.chpl:4: error: halt reached - array reference count is negative!
