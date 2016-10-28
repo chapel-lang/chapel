@@ -1,3 +1,0 @@
-bug: Taking 'ref' to array results in negative reference count
-
-It seems like this program ought to work, but it doesn't.

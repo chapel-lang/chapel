@@ -478,7 +478,7 @@ proc DimensionalDom.subordinate1dDist(param dim: int) {
 
 //== writing
 
-proc DimensionalDom.dsiSerialWrite(f: Writer): void {
+proc DimensionalDom.dsiSerialWrite(f): void {
   f.write(whole);
 }
 
@@ -650,7 +650,7 @@ proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
 
 //== writing
 
-proc DimensionalArr.dsiSerialWrite(f: Writer): void {
+proc DimensionalArr.dsiSerialWrite(f): void {
   const dom = this.dom;
   _traceddd(this, ".dsiSerialWrite on ", here.id);
   assert(dom.rank == 2);
