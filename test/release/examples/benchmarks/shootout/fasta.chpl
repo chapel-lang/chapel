@@ -56,21 +56,22 @@ param nucl = 1,
 //
 // Probability tables for sequences to be randomly generated
 //
-const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
-             (B, 0.02), (D, 0.02), (H, 0.02), (K, 0.02),
-             (M, 0.02), (N, 0.02), (R, 0.02), (S, 0.02),
-             (V, 0.02), (W, 0.02), (Y, 0.02)];
+const IUB: [1..15] (int(8), real) = [(a, 0.27), (c, 0.12), (g, 0.12),
+                                     (t, 0.27), (B, 0.02), (D, 0.02),
+                                     (H, 0.02), (K, 0.02), (M, 0.02),
+                                     (N, 0.02), (R, 0.02), (S, 0.02),
+                                     (V, 0.02), (W, 0.02), (Y, 0.02)];
 
-const HomoSapiens = [(a, 0.3029549426680),
-                     (c, 0.1979883004921),
-                     (g, 0.1975473066391),
-                     (t, 0.3015094502008)];
+const HomoSapiens: [1..4] (int(8), real) = [(a, 0.3029549426680),
+                                            (c, 0.1979883004921),
+                                            (g, 0.1975473066391),
+                                            (t, 0.3015094502008)];
 
 
 proc main() {
-  repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
-  randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
-  randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
+  repeatMake(">ONE Homo sapiens alu", ALU, n * 2);
+  randomMake(">TWO IUB ambiguity codes", IUB, n * 3);
+  randomMake(">THREE Homo sapiens frequency", HomoSapiens, n * 5);
 }
 
 //
@@ -83,7 +84,7 @@ param newline = ascii("\n");
 // Repeat sequence "alu" for n characters
 //
 proc repeatMake(desc, alu, n) {
-  stdout.write(desc);
+  stdout.writeln(desc);
 
   const r = alu.size,
         s = [i in 0..(r+lineLength)] alu[i % r];
@@ -99,7 +100,7 @@ proc repeatMake(desc, alu, n) {
 // Output a random sequence of length 'n' using distribution a
 //
 proc randomMake(desc, nucleotides: [?D], n) {
-  stdout.write(desc);
+  stdout.writeln(desc);
 
   var cumulProb: [D] int;
   var p = 0.0;
