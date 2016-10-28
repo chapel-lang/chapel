@@ -74,6 +74,10 @@ var branchInfo = [
                   { "release" : "1.13",
                     "releaseDate": "2016-04-07",
                     "branchDate" : "2016-03-29",
+                    "revision" : -1},
+                  { "release" : "1.14",
+                    "releaseDate": "2016-10-06",
+                    "branchDate" : "2016-09-27",
                     "revision" : -1}
                   ];
 
