@@ -6,7 +6,7 @@ int by inout     true
 int by out       true
 int by ref       true
 int by const in  false
-int by const ref true
+int by const ref false
 
 arr drop result  false
 arr assign to    true
@@ -16,4 +16,4 @@ arr by inout     true
 arr by out       true
 arr by ref       true
 arr by const in  false
-arr by const ref true
+arr by const ref false

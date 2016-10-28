@@ -40,16 +40,16 @@ write("int by inout     "); f_inout(accessorInt());
 write("int by out       "); f_out(accessorInt());
 write("int by ref       "); f_ref(accessorInt());
 write("int by const in  "); f_const_in(accessorInt());
-write("int by const ref "); f_const_ref(accessorInt()); // currentltly: false
+write("int by const ref "); f_const_ref(accessorInt());
 
 writeln();
 
 write("arr drop result  "); accessorArr();
 write("arr assign to    "); accessorArr() = 5;
-write("arr by blank     "); f_blank(accessorArr());     // currentltly: false
+write("arr by blank     "); f_blank(accessorArr());
 write("arr by in        "); f_in(accessorArr());
 write("arr by inout     "); f_inout(accessorArr());
 write("arr by out       "); f_out(accessorArr());
 write("arr by ref       "); f_ref(accessorArr());
 write("arr by const in  "); f_const_in(accessorArr());
-write("arr by const ref "); f_const_ref(accessorArr());  // currentltly: false
+write("arr by const ref "); f_const_ref(accessorArr());
