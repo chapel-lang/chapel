@@ -115,19 +115,11 @@ proc randomMake(desc, nucleotides: [?D], n) {
     const bytes = min(lineLength, n-i+1);
 
     for (r, i) in zip(getRands(bytes), 0..) {
-      if r < cumulProb[1] {
-        line_buff[i] = nucleotides[1](nucl);
-      } else {
-        var lo = D.low,
-            hi = D.high;
-        while (hi > lo+1) {
-          var ai = (hi + lo) / 2;
-          if (r < cumulProb[ai]) then
-            hi = ai;
-          else
-            lo = ai;
+      for j in D {
+        if r < cumulProb[j] {
+          line_buff[i] = nucleotides[j](nucl);
+          break;
         }
-        line_buff[i] = nucleotides[hi](nucl);
       }
     }
     line_buff[bytes] = newline:int(8);
