@@ -20,6 +20,7 @@
 #include "optimizations.h"
 
 #include "astutil.h"
+#include "stlutil.h"
 #include "expr.h"
 #include "stmt.h"
 
@@ -38,6 +39,20 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Symbol*                       field,
                           Symbol*                       ref);
 
+class DotInfo {
+  public:
+    bool finalized;
+    bool usesDotLocale;
+    std::vector<SymExpr*> todo;
+    DotInfo();
+};
+DotInfo::DotInfo() : finalized(false), usesDotLocale(false) { }
+
+static std::map<Symbol*, DotInfo*> dotLocaleMap;
+typedef std::map<Symbol*, DotInfo*>::iterator DotInfoIter;
+
+static void computeDotLocale();
+
 /************************************* | **************************************
 *                                                                             *
 * Convert reference args into values if they are only read and reading them   *
@@ -49,6 +64,8 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
 void remoteValueForwarding() {
   if (fNoRemoteValueForwarding == false) {
+    inferConstRefs();
+    computeDotLocale();
     Map<Symbol*, Vec<SymExpr*>*> defMap;
     Map<Symbol*, Vec<SymExpr*>*> useMap;
 
@@ -58,6 +75,11 @@ void remoteValueForwarding() {
     updateTaskFunctions(defMap, useMap);
 
     freeDefUseMaps(defMap, useMap);
+
+    for (DotInfoIter it = dotLocaleMap.begin(); it != dotLocaleMap.end(); ++it) {
+      delete it->second;
+    }
+    dotLocaleMap.clear();
   }
 }
 
@@ -178,6 +200,7 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
                           FnSymbol*                     fn,
                           ArgSymbol*                    arg);
 
+
 static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                 Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   Vec<FnSymbol*> syncSet;
@@ -237,7 +260,12 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   } else if (isAtomicType(arg->type)) {
     retval = false;
   } else if (arg->intent == INTENT_CONST_REF) {
-    retval = true;
+    DotInfo* info = dotLocaleMap[arg];
+    if (info == NULL) {
+      retval = true;
+    } else {
+      retval = !info->usesDotLocale;
+    }
   } else if (arg->intent == INTENT_CONST_IN &&
       !arg->type->symbol->hasFlag(FLAG_REF)) {
     // BHARSH TODO: This can currently happen when the arg is the lhs of a +=,
@@ -303,6 +331,7 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
   Type* prevArgType = arg->type;
 
   arg->type = arg->getValType();
+  // TODO: What should the intent be here?
 
   forv_Vec(CallExpr, call, *fn->calledBy) {
     // Find actual for arg.
@@ -579,3 +608,94 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   return retval;
 }
 
+static bool computeDotLocale(Symbol* sym) {
+  INT_ASSERT(sym->isRef());
+
+  DotInfo* info = dotLocaleMap[sym];
+
+  if (info == NULL) {
+    return false; // No uses for this symbol
+  } else if (info->finalized) {
+    return info->usesDotLocale;
+  }
+
+  bool retval = false;
+
+  while (!info->todo.empty() && !retval) {
+    SymExpr* use = info->todo.back();
+    info->todo.pop_back();
+
+    CallExpr* call = toCallExpr(use->parentExpr);
+    INT_ASSERT(call);
+    CallExpr* parent = toCallExpr(call->parentExpr);
+
+    if (call->isResolved()) {
+      ArgSymbol* form = actual_to_formal(use);
+      if (form->isRef() && computeDotLocale(form)) retval = true;
+    } else if (parent && isMoveOrAssign(parent)) {
+      // If something copies this reference, we need to see if the new
+      // reference also uses .locale
+      Symbol* LHS = toSymExpr(parent->get(1))->var;
+      if (call->isPrimitive(PRIM_ADDR_OF) ||
+          call->isPrimitive(PRIM_SET_REFERENCE)) {
+        if (computeDotLocale(LHS)) retval = true;
+      } else if (call->isPrimitive(PRIM_GET_MEMBER) ||
+                 call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                 call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                 call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+        // Check if the field is used in a .locale
+        if (LHS->isRef() && use == call->get(2) && computeDotLocale(LHS)) {
+          retval = true;
+        }
+      } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+                 call->isPrimitive(PRIM_WIDE_GET_NODE)) {
+        retval = true;
+      }
+    } else if (call->isPrimitive(PRIM_MOVE)) {
+      SymExpr* LHS = toSymExpr(call->get(1));
+      if (LHS->isRef() && use != LHS && computeDotLocale(LHS->var)) retval = true;
+    } else if (call->isPrimitive(PRIM_SET_MEMBER) && use == call->get(3)) {
+      // See if the field we're setting may use .locale
+      // This could be improved by only looking at the base object's instance,
+      // but that's much more complicated.
+      SymExpr* member = toSymExpr(call->get(2));
+      if (member->isRef() && computeDotLocale(member->var)) {
+        retval = true;
+      }
+    } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+      // Not sure how to handle the homogeneous tuple case yet, so to be safe
+      // simply return true;
+      retval = true;
+    }
+  }
+
+  info->finalized = true;
+  info->usesDotLocale = retval;
+
+  return retval;
+}
+
+static void computeDotLocale() {
+  std::vector<Symbol*> todo;
+
+  forv_Vec(SymExpr, se, gSymExprs) {
+    if (!(isVarSymbol(se->var) || isArgSymbol(se->var))) continue;
+    if (!se->isRef()) continue;
+
+    DotInfo* info = NULL;
+    DotInfoIter it = dotLocaleMap.find(se->var);
+    if (it == dotLocaleMap.end()) {
+      info = new DotInfo();
+      todo.push_back(se->var);
+      dotLocaleMap[se->var] = info;
+    } else {
+      info = it->second;
+    }
+
+    info->todo.push_back(se);
+  }
+
+  for_vector(Symbol, sym, todo) {
+    computeDotLocale(sym);
+  }
+}

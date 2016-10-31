@@ -20,6 +20,7 @@ OPTIMIZATIONS_SRCS = \
 	copyPropagation.cpp \
 	deadCodeElimination.cpp \
 	inlineFunctions.cpp \
+	inferConstRefs.cpp \
 	liveVariableAnalysis.cpp \
 	localizeGlobals.cpp \
 	loopInvariantCodeMotion.cpp \
