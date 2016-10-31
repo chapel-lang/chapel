@@ -204,7 +204,6 @@ CPPFLAGS = @CPPFLAGS@
 CROSS_COMPILING = @CROSS_COMPILING@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
-CXXCPPFLAGS = @CXXCPPFLAGS@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CXX_FAMILY = @CXX_FAMILY@
@@ -237,6 +236,8 @@ GASNET_INSTALL_CMD = @GASNET_INSTALL_CMD@
 GASNET_MACHINE_DEFINES = @GASNET_MACHINE_DEFINES@
 GASNET_MXM_SPAWNER_CONF = @GASNET_MXM_SPAWNER_CONF@
 GASNET_OFI_SPAWNER_CONF = @GASNET_OFI_SPAWNER_CONF@
+GASNET_OPT_CFLAGS = @GASNET_OPT_CFLAGS@
+GASNET_OPT_CXXFLAGS = @GASNET_OPT_CXXFLAGS@
 GASNET_PERL_BYTESFLAG = @GASNET_PERL_BYTESFLAG@
 GASNET_PERL_LANG = @GASNET_PERL_LANG@
 GASNET_PLATFORM = @GASNET_PLATFORM@
@@ -454,7 +455,7 @@ CONDUIT_FILELIST = \
       gasnet_core_help.h     \
       gasnet_core_internal.h \
       gasnet_core_list.h     \
-      gasnet_extended_internal.h \
+      gasnet_extended_internal_extra.h \
       gasnet_extended.c      \
       gasnet_extended_fwd.h  \
       gasnet_extended_longmsg.c \
@@ -529,14 +530,6 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	$(am__cd) $(top_srcdir) && \
 	  $(AUTOMAKE) --foreign psm-conduit/Makefile
 .PRECIOUS: Makefile
-Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
-	@case '$?' in \
-	  *config.status*) \
-	    cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh;; \
-	  *) \
-	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)'; \
-	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe);; \
-	esac;
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
@@ -905,7 +898,7 @@ uninstall-am: uninstall-libLIBRARIES uninstall-local
 
 @IBV_BOOTSTRAP_MPI_TRUE@$(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o: force
 @IBV_BOOTSTRAP_MPI_TRUE@	@MPI_CC@ @MPI_CFLAGS@ $(LIBDEFINES) $(CONDUIT_EXTRALIBCFLAGS) $(LIBINCLUDES) \
-@IBV_BOOTSTRAP_MPI_TRUE@		-o $@ -c $(mpi_srcdir)/gasnet_bootstrap_mpi.c
+@IBV_BOOTSTRAP_MPI_TRUE@		$(MANUAL_MPICFLAGS) -o $@ -c $(mpi_srcdir)/gasnet_bootstrap_mpi.c
 
 include $(top_builddir)/other/Makefile-conduit.mak
 

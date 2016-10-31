@@ -3,17 +3,11 @@
  * Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
  */
 
-#include <amudp_internal.h>
-#include <amudp_spmd.h>
+#include <portable_platform.h>
 
 #include <errno.h>
-#if PLATFORM_OS_MSWINDOWS
-  #include <winsock2.h>
-  #include <windows.h>  
-  #define sleep(x) Sleep(1000*x)
-  #include <process.h>
-  #include <io.h>
-  #include <direct.h>
+#if PLATFORM_OS_CYGWIN
+  #include <windows.h>  // CreateProcess
 #endif
 #if PLATFORM_ARCH_CRAYX1
   #include <unistd.h>
@@ -21,6 +15,10 @@
   extern char **environ; 
 #endif
 #include <string.h>
+
+#include <amudp_spmd.h>
+
+#include "amudp_internal.h" // must come after any other headers
 
 amudp_spawnfn_desc_t const AMUDP_Spawnfn_Desc[] = {
   { 'S',  "Spawn jobs using ssh remote shells", 
@@ -140,10 +138,7 @@ extern int AMUDP_SPMDLocalSpawn(int nproc, int argc, char **argv, char **extra_e
   }
 
   for (i = 0; i < nproc; i++) {
-    #if PLATFORM_OS_MSWINDOWS && !PLATFORM_OS_CYGWIN
-      if (_spawnv(_P_NOWAIT, argv[0], argv) == -1)
-        AMUDP_FatalErr("failed _spawnv()");
-    #elif PLATFORM_ARCH_CRAYX1
+    #if PLATFORM_ARCH_CRAYX1
       { char **nargv = (char **)AMUDP_malloc(sizeof(char *)*(argc+2));
         nargv[0] = argv[0];
         memcpy(nargv+1,argv,argc*sizeof(char *));
@@ -236,13 +231,13 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
 
   ssh_servers = AMUDP_getenv_prefixed_withdefault("SSH_SERVERS","");
   if (!strlen(ssh_servers)) {
-    printf("Environment variable SSH_SERVERS is missing.\n");
+    AMUDP_Err("Environment variable SSH_SERVERS is missing.");
     return FALSE;
   }
 
 
   if (!getcwd(cwd, 1024)) {
-    printf("Error calling getcwd()\n");
+    AMUDP_Err("Error calling getcwd()");
     return FALSE;
   }
   ssh_remote_path = quote_for_local(AMUDP_getenv_prefixed_withdefault("SSH_REMOTE_PATH", cwd));
@@ -250,7 +245,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
 
   int isOpenSSH = 0; /* figure out if we're using OpenSSH */
   { char cmdtmp[1024];
-    sprintf(cmdtmp,"%s -v 2>&1 | grep OpenSSH", ssh_cmd);
+    sprintf(cmdtmp,"%s -V 2>&1 | grep OpenSSH", ssh_cmd);
     FILE *pop = popen(cmdtmp,"r");
     while (!feof(pop) && !ferror(pop)) {
       int next = fgetc(pop);
@@ -270,8 +265,8 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
     while (*p && strchr(SSH_SERVERS_DELIM_CHARS, *p)) p++;
     end = p + strcspn(p, SSH_SERVERS_DELIM_CHARS);
     if (p == end) {
-      printf("Not enough machines in environment variable SSH_SERVERS to satisfy request for (%i).\n"
-       "Only (%i) machines available: %s\n", nproc, i, ssh_servers);
+      AMUDP_Err("Not enough machines in environment variable SSH_SERVERS to satisfy request for (%i).\n"
+       "Only (%i) machines available: %s", nproc, i, ssh_servers);
       return FALSE;
     }
     if (*end) p = end+1;
@@ -326,28 +321,28 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
     ssh_server[end-p] = '\0'; 
 
     /* build the ssh command */
-    snprintf(cmd2, cmd2_sz, "%s %s %s %s %s %s \" %s cd %s ; %s\" "
+    snprintf(cmd2, cmd2_sz, "%s %s%s%s%s %s \"%scd %s ; %s\" "
       " || ( echo \"connection to %s failed.\" ; kill %i ) "
       "%s", 
       ssh_cmd,
 
-      (isOpenSSH?"-f":""),    /* go into background and nullify stdin */
+      (isOpenSSH?"-f ":""),    /* go into background and nullify stdin */
 
       #if SSH_SUPRESSNEWKEYPROMPT
-        (isOpenSSH?"-o 'StrictHostKeyChecking no'":""),
+        (isOpenSSH?"-o 'StrictHostKeyChecking no' ":""),
       #else 
         "",
       #endif
 
       #if SSH_PREVENTRSHFALLBACK
-        (isOpenSSH?"-o 'FallBackToRsh no'":""),
+        (isOpenSSH?"-o 'FallBackToRsh no' ":""),
       #else 
         "",
       #endif
 
       ssh_options, ssh_server, 
       
-      (AMUDP_SilentMode?"":"echo connected to \\$HOST... ;"),
+      (AMUDP_SilentMode?"":"echo connected to \\$HOST... ; "),
 
       ssh_remote_path, cmd1, ssh_server, pid,
 
@@ -359,9 +354,9 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
     );
 
     if (!AMUDP_SilentMode) 
-      printf("system(%s)\n", cmd2); fflush(stdout);
+      AMUDP_Info("system(%s)", cmd2);
     if (system(cmd2) == -1) {
-      printf("Failed to call system() to spawn");
+      AMUDP_Err("Failed to call system() to spawn");
       AMUDP_free(cmd1);
       AMUDP_free(cmd2);
       return FALSE;
@@ -388,7 +383,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
  *                              %C => AMUDP command that should be run by each worker node
  *                              %D => the current working directory
  *                              %% => %
- * CSPAWN_ROUTE_OUTPUT <not set>   set this variable to request stdout/stderr routing of workers
+ * CSPAWN_ROUTE_OUTPUT 0   set this variable to request stdout/stderr routing of workers
  * (any environment variable may be specified with an optional prefix 
  *  of AMUDP_ or AMUDP_ENV_PREFIX##_)
  */
@@ -402,7 +397,7 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
   char nproc_str[10];
   char cwd[1024];
   char cmd[1024];
-#if PLATFORM_OS_MSWINDOWS || PLATFORM_OS_CYGWIN
+#if PLATFORM_OS_CYGWIN
   int spawn_use_create_process;
 #endif
   int spawn_route_output;
@@ -424,7 +419,7 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
   if (!strlen(spawn_servers)) spawn_servers = NULL;
   spawn_route_output = 
     strcmp(AMUDP_getenv_prefixed_withdefault("CSPAWN_ROUTE_OUTPUT","0"),"0");
-#if PLATFORM_OS_MSWINDOWS || PLATFORM_OS_CYGWIN
+#if PLATFORM_OS_CYGWIN
   spawn_use_create_process =
     strcmp(AMUDP_getenv_prefixed_withdefault("CSPAWN_USE_CREATE_PROCESS","0"),"0");
 #endif
@@ -441,8 +436,8 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
       while (*p && strchr(SSH_SERVERS_DELIM_CHARS, *p)) p++;
       end = p + strcspn(p, SSH_SERVERS_DELIM_CHARS);
       if (p == end) {
-        printf("Not enough machines in environment variable " AMUDP_ENV_PREFIX_STR"_CSPAWN_SERVERS to satisfy request for (%i).\n"
-          "Only (%i) machines available: %s\n", nproc, i, spawn_servers);
+        AMUDP_Err("Not enough machines in environment variable " AMUDP_ENV_PREFIX_STR"_CSPAWN_SERVERS to satisfy request for (%i).\n"
+          "Only (%i) machines available: %s", nproc, i, spawn_servers);
         return FALSE;
       }
       strncpy(servername, p, end-p);
@@ -458,7 +453,7 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
   sprintf(nproc_str, "%i", nproc);
 
   if (!getcwd(cwd, 1024)) {
-    printf("Error calling getcwd()\n");
+    AMUDP_Err("Error calling getcwd()");
     return FALSE;
   }
 
@@ -484,14 +479,16 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
     }
     AMUDP_assert(!argv[i]);
 
-  #if PLATFORM_OS_MSWINDOWS || PLATFORM_OS_CYGWIN
-    strcpy(workercmd, temp);
-  #else
+  #if PLATFORM_OS_CYGWIN
+    if (spawn_use_create_process) strcpy(workercmd, temp);
+    else
+  #endif
+   {
     sprintf(workercmd, "/bin/sh -c \"%s%s\" || ( echo \"spawn failed.\" ; kill %i ) ",
       (AMUDP_SilentMode?"":"echo connected to `uname -n`... ; "),
       temp, pid
     );
-  #endif
+   }
   }
 
   strcpy(cmd, spawn_cmd);
@@ -526,7 +523,6 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
   AMUDP_SPMDRedirectStdsockets = spawn_route_output; 
 
   {
-  #if !PLATFORM_OS_MSWINDOWS
     int forkRet;
     forkRet = fork(); /* fork a new process to hold cmd master */
 
@@ -538,11 +534,10 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
       return TRUE;  
     }
     else 
-  #endif
     {  /*  this is the child - exec the new process */
       if (!AMUDP_SilentMode) 
-        printf("system(%s)\n", cmd); fflush(stdout);
-    #if PLATFORM_OS_MSWINDOWS || PLATFORM_OS_CYGWIN
+        AMUDP_Info("system(%s)\n", cmd);
+    #if PLATFORM_OS_CYGWIN
       if (spawn_use_create_process) {
         STARTUPINFO si;
         PROCESS_INFORMATION pi;
