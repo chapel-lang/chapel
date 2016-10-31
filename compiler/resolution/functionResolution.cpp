@@ -8901,7 +8901,6 @@ resolve() {
 
   resolveExports();
   resolveEnumTypes();
-  resolveDynamicDispatches();
 
   insertRuntimeTypeTemps();
 
@@ -8909,6 +8908,7 @@ resolve() {
   resolveRecordInitializers();
   resolveOther();
 
+  resolveDynamicDispatches();
   insertDynamicDispatchCalls();
   insertReturnTemps();
 
