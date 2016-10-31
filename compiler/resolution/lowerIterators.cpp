@@ -110,7 +110,9 @@ static void nonLeaderParCheck()
 static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
 {
   std::vector<CallExpr*> calls;
+
   collectCallExprs(fn, calls);
+
   for_vector(CallExpr, call, calls) {
     if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
         (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
@@ -119,15 +121,20 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
       // If they are not, need issue the USR_FATAL_CONT like below.
       INT_ASSERT(false);
     }
+
     FnSymbol* taskFn = resolvedToTaskFun(call);
+
     bool isParallelConstruct = taskFn &&
-      (taskFn->hasFlag(FLAG_BEGIN) ||
-       taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
+                               (taskFn->hasFlag(FLAG_BEGIN) ||
+                                taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
+
     if (isParallelConstruct ||
         call->isNamed("_toLeader") ||
         call->isNamed("_toStandalone")) {
-      USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
+      USR_FATAL_CONT(call,
+                     "invalid use of parallel construct in serial iterator");
     }
+
     if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
         (call->isPrimitive(PRIM_BLOCK_BEGIN_ON)) ||
         (call->isPrimitive(PRIM_BLOCK_COBEGIN_ON)) ||
@@ -983,17 +990,21 @@ static void convertYieldsAndReturns(std::vector<BaseAST*>& asts, Symbol* index,
 static bool fnContainsOn(FnSymbol* fn)
 {
   std::vector<CallExpr*> calls;
+
   collectCallExprs(fn, calls);
+
   for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_BLOCK_ON) ||
         call->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
         call->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||
         call->isPrimitive(PRIM_BLOCK_COFORALL_ON))
       return true;
+
     if (FnSymbol* taskFn = resolvedToTaskFun(call))
       if (fnContainsOn(taskFn))
         return true;
   }
+
   return false;
 }
 
@@ -1206,6 +1217,7 @@ expandIteratorInline(ForLoop* forLoop) {
     // replaced in the functions below though.
     if (isOrderIndependent) {
       std::vector<CallExpr*> callExprs;
+
       collectCallExprs(ibody, callExprs);
 
       for_vector(CallExpr, call, callExprs) {
@@ -1378,8 +1390,11 @@ countYieldsInFn(FnSymbol* fn)
 
 {
   unsigned count = 0;
+
   std::vector<CallExpr*> calls;
+
   collectCallExprs(fn, calls);
+
   for_vector(CallExpr, call, calls)
   {
     if (call->isPrimitive(PRIM_YIELD))
@@ -1428,10 +1443,10 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
   getRecursiveIterators(iterators, gIterator);
 
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol*      iterator = getTheIteratorFn(iterators.v[i]);
-    BlockStmt*     block    = iterator->body;
-    Vec<CallExpr*> calls;
-    int            numYields = 0;
+    FnSymbol*              iterator = getTheIteratorFn(iterators.v[i]);
+    BlockStmt*             block    = iterator->body;
+    std::vector<CallExpr*> calls;
+    int                    numYields = 0;
 
     INT_ASSERT(block);
 
@@ -1440,7 +1455,8 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
     // Replace this loop with an equivalent predicate that uses std::vector in
     // a valid fashion.
     collectCallExprs(block, calls);
-    forv_Vec(CallExpr, call, calls) {
+
+    for_vector(CallExpr, call, calls) {
       if (call && call->isPrimitive(PRIM_YIELD)) {
         numYields++;
 
