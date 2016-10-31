@@ -17,14 +17,38 @@
  * limitations under the License.
  */
 
+#include "passes.h"
+
 #include "alist.h"
 #include "astutil.h"
 #include "expr.h"
-#include "passes.h"
 #include "resolveIntents.h"
 #include "stmt.h"
 #include "stlUtil.h"
 
+static void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+
+void flattenFunctions() {
+  Vec<FnSymbol*> nestedFunctions;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (isFnSymbol(fn->defPoint->parentSymbol)) {
+      nestedFunctions.add(fn);
+    }
+  }
+
+  flattenNestedFunctions(nestedFunctions);
+}
+
+void flattenNestedFunction(FnSymbol* nestedFunction) {
+  if (isFnSymbol(nestedFunction->defPoint->parentSymbol)) {
+    Vec<FnSymbol*> nestedFunctions;
+
+    nestedFunctions.add(nestedFunction);
+
+    flattenNestedFunctions(nestedFunctions);
+  }
+}
 
 //
 // returns true if the symbol is defined in an outer function to fn
@@ -34,10 +58,13 @@ static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
   if (!parent)
     parent = fn->defPoint->parentSymbol;
+
   if (!isFnSymbol(parent))
     return false;
+
   else if (sym->defPoint->parentSymbol == parent)
     return true;
+
   else
     return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
 }
@@ -56,9 +83,8 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
-      if (isLcnSymbol(sym)) {
-        if (isOuterVar(sym, fn))
-          uses->put(sym,gNil);
+      if (isLcnSymbol(sym) && isOuterVar(sym, fn)) {
+        uses->put(sym,gNil);
       }
     }
   }
@@ -103,14 +129,16 @@ passByRef(Symbol* sym) {
 
   Type* type = sym->type;
 
-  if (sym->hasFlag(FLAG_ARG_THIS))
-   if (passableByVal(type)) // NB this-in-taskfns-in-ctors.chpl
+  if (sym->hasFlag(FLAG_ARG_THIS) == true &&
+      passableByVal(type)         == true) {
     // This is also constant. TODO: mark with FLAG_CONST.
     // TODO: join with the passableByVal(type) test below.
     return false;
+  }
 
   // These simply document the current state.
   INT_ASSERT(type->symbol->hasFlag(FLAG_REF) == (type->refType == NULL));
+
   // Coforall vars are constant, but are not marked so.
   // todo - mark them with FLAG_CONST and remove this assert,
   //        as well as the special case for FLAG_COFORALL_INDEX_VAR.
@@ -118,8 +146,7 @@ passByRef(Symbol* sym) {
              !sym->hasFlag(FLAG_CONST));
 
   if (sym->hasFlag(FLAG_CONST) ||
-      sym->hasFlag(FLAG_COFORALL_INDEX_VAR)  // These are constant, too.
-  ) {
+      sym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {  // These are constant, too.
     if (passableByVal(type)) {
        return false;
     }
@@ -290,19 +317,22 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
 }
 
 
-void
-flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
+static void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   compute_call_sites();
 
   Vec<FnSymbol*> outerFunctionSet;
   Vec<FnSymbol*> nestedFunctionSet;
+
   forv_Vec(FnSymbol, fn, nestedFunctions)
     nestedFunctionSet.set_add(fn);
 
   Map<FnSymbol*,SymbolMap*> args_map;
+
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     SymbolMap* uses = new SymbolMap();
+
     findOuterVars(fn, uses);
+
     args_map.put(fn, uses);
   }
 
@@ -311,17 +341,23 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   // Also handle finding outer functions that are calling an
   // inner function, since these will also need the new arguments.
   bool change;
+
   do {
     change = false;
+
     forv_Vec(FnSymbol, fn, nestedFunctions) {
       std::vector<BaseAST*> asts;
+
       collect_top_asts(fn, asts);
+
       SymbolMap* uses = args_map.get(fn);
+
       for_vector(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isResolved()) {
             if (FnSymbol* fcall = call->findFnSymbol()) {
               SymbolMap* call_uses = args_map.get(fcall);
+
               if (call_uses) {
                 form_Map(SymbolMapElem, e, *call_uses) {
                   if (isOuterVar(e->key, fn) && !uses->get(e->key)) {
@@ -340,25 +376,34 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
         // call not in a nested function; handle the toFollower/toLeader cases
         // Note: outerCall=true implies the 'call' does not see defPoint
         // of the var 'use->key' anywhere in call's enclosing scopes. With
-        // toFollower/toLeader, the 'call' does not see defPoint of 'fn' either.
+        // toFollower/toLeader, the 'call' does not see defPoint of 'fn'
+        // either.
         //
         bool outerCall = false;
+
         if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
           if (!nestedFunctionSet.set_in(parent)) {
             form_Map(SymbolMapElem, use, *uses) {
               if (use->key->defPoint->parentSymbol != parent &&
-                  !isOuterVar(use->key, parent))
+                  !isOuterVar(use->key, parent)) {
                 outerCall = true;
+              }
             }
+
             if (outerCall) {
+              SymbolMap* usesCopy = new SymbolMap();
+
               outerFunctionSet.set_add(parent);
               nestedFunctionSet.set_add(parent);
               nestedFunctions.add(parent);
-              SymbolMap* usesCopy = new SymbolMap();
+
+
               form_Map(SymbolMapElem, use, *uses) {
                 usesCopy->put(use->key, gNil);
               }
+
               args_map.put(parent, usesCopy);
+
               change = true;
             }
           }
@@ -373,9 +418,10 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   // (in nested functions that call one another)
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     SymbolMap* uses = args_map.get(fn);
-    forv_Vec(CallExpr, call, *fn->calledBy) {
 
+    forv_Vec(CallExpr, call, *fn->calledBy) {
       bool outerCall = false;
+
       if (FnSymbol* parent = toFnSymbol(call->parentSymbol))
         outerCall = outerFunctionSet.set_in(parent);
 
@@ -405,18 +451,8 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   // remove types from functions
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (FnSymbol* fn = toFnSymbol(ts->defPoint->parentSymbol))
+    if (FnSymbol* fn = toFnSymbol(ts->defPoint->parentSymbol)) {
       fn->defPoint->insertBefore(ts->defPoint->remove());
+    }
   }
-}
-
-
-void flattenFunctions(void) {
-  Vec<FnSymbol*> nestedFunctions;
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (isFnSymbol(fn->defPoint->parentSymbol))
-      nestedFunctions.add(fn);
-  }
-
-  flattenNestedFunctions(nestedFunctions);
 }
