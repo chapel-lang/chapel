@@ -1116,11 +1116,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   loopBodyFn->retType = dtVoid;
 
   // Move the loop body function out to the module level.
-  Vec<FnSymbol*> nestedFunctions;
-
-  nestedFunctions.add(loopBodyFn);
-
-  flattenNestedFunctions(nestedFunctions);
+  flattenNestedFunction(loopBodyFn);
 
   FnSymbol* iteratorFn = iteratorFnMap.get(iterator);
 
@@ -1330,8 +1326,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // while preserving correct scoping of its SymExprs.
         INT_ASSERT(isGlobal(cfn));
 
-        FnSymbol*      fcopy = taskFnCopies.get(cfn);
-        Vec<FnSymbol*> nestedFnVec;
+        FnSymbol* fcopy = taskFnCopies.get(cfn);
 
         if (!fcopy) {
           // Clone the function. Just once per 'body' should suffice.
@@ -1369,9 +1364,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // We do it because it may eliminate further cloning of 'fcopy'
         // e.g. when the enclosing fn or block are copied for any reason.
         // Ideally, replace with flattenOneFunction().
-        nestedFnVec.add(fcopy);
-
-        flattenNestedFunctions(nestedFnVec);
+        flattenNestedFunction(fcopy);
       }
     }
   }
