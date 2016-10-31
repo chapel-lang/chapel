@@ -1873,7 +1873,7 @@ static bool tryCResolve_set(ModuleSymbol* module, const char* name,
 
     if (c_exprs.count()) {
       forv_Vec(Expr*, c_expr, c_exprs) {
-        Vec<DefExpr*> v;
+        std::vector<DefExpr*> v;
 
         collectDefExprs(c_expr, v);
 
