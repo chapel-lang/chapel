@@ -290,14 +290,8 @@ static bool inferConstRef(Symbol* sym) {
       }
     }
     else if (call->isPrimitive(PRIM_MOVE)) {
-      if (use == call->get(1)) {
-        if (!call->get(2)->isRef()) {
-          retval = false;
-        } else if (SymExpr* rhs = toSymExpr(call->get(2))) {
-          if (!inferConstRef(rhs->var)) {
-            retval = false;
-          }
-        }
+      if (use == call->get(1) && !call->get(2)->isRef()) {
+        retval = false;
       } else {
         // 'use' is the RHS of a MOVE
         if (call->get(1)->isRef()) {
@@ -324,6 +318,7 @@ static bool inferConstRef(Symbol* sym) {
     }
   }
 
+  // Should we 'correct' the ref if retval is false?
   if (retval) {
     if (ArgSymbol* arg = toArgSymbol(sym)) {
       arg->intent = INTENT_CONST_REF;
@@ -333,6 +328,7 @@ static bool inferConstRef(Symbol* sym) {
     }
   }
 
+  // TODO: assert that it's not already finalized?
   info->finalized = true;
 
   return retval;
