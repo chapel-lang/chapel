@@ -5,7 +5,7 @@ Status
   Partially Implemented
 
 Author
-  Vassily Litvinov, Michael Ferguson
+  Michael Ferguson
 
 
 Abstract
@@ -155,7 +155,7 @@ all types. This behavior can be overriden by specifying the `ref` or
 
 
 Tuple Return Behavior
---------------------
+---------------------
 
 When a tuple is returned from a function with `ref` or `const ref`
 return intent, that tuple must refer to a variable or other tuple
