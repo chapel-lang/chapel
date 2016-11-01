@@ -515,7 +515,7 @@ module ChapelLocale {
       // We mimic a private Locales array alias by using the move
       // primitive.
       pragma "no auto destroy"
-      var tmp = (rootLocale:RootLocale).getDefaultLocaleArray();
+      const tmp => (rootLocale:RootLocale).getDefaultLocaleArray();
       __primitive("move", Locales, tmp);
     }
   }
