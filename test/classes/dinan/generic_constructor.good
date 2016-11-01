@@ -1,1 +1,1 @@
-generic_constructor.chpl:5: error: constructor for class 'Foo' requires a generic argument called 'x'
+generic_constructor.chpl:5: error: initializer for class 'Foo' requires a generic argument called 'x'

@@ -163,7 +163,16 @@ bool AutoTrack::update() {
 void AutoTrack::updateAutoCopy(CallExpr* call) {
 //fprintf(stderr, "@@@ updateAutoCopy %d\n", call->id);
   CallExpr* rhs = toCallExpr(call->get(2));
-  rhs->replace(rhs->get(1)->remove());
+  Type* lhsType = call->get(1)->typeInfo();
+  Type* rhsType = rhs->get(1)->typeInfo();
+  SET_LINENO(call);
+  if (lhsType->getValType() == rhsType) {
+    rhs->replace(rhs->get(1)->remove());
+  } else if (lhsType->getRefType() == rhsType) {
+    rhs->replace(new CallExpr(PRIM_DEREF, rhs->get(1)->remove()));
+  } else {
+    INT_ASSERT("Type mismatch in updateAutoCopy");
+  }
 }
 
 void AutoTrack::updateAutoDestroy(CallExpr* call) {
@@ -214,7 +223,7 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
         // If it is a call expression, then we want to see if it is either an
         // autocopy call or a straight copy of one variable to another.  Both of
         // these have a 'move' primitive as the outer call.
-        if (call->isPrimitive(PRIM_MOVE)) {
+        if (isMoveOrAssign(call)) {
 
           // If the RHS is a SymExpr, then this is a straight move. Record the alias.
           if (toSymExpr(call->get(2)))
@@ -283,7 +292,7 @@ static void removePODinitDestroy()
     {
       // We expect both initCopy and autoCopy functions to have one argument
       // whose type is the same as the return type.
-      INT_ASSERT(fn->numFormals() == 1);
+      INT_ASSERT(fn->numFormals() >= 1);
 
       if (fn->getFormal(1)->type != fn->retType)
         // In some cases, the autoCopy function has a different return type than
@@ -305,7 +314,21 @@ static void removePODinitDestroy()
             INT_FATAL(arg, "Expected autoCopy argument to be a SymExpr.");
 
           // Bridge out the autoCopy call.
-          call->replace(actual->remove());
+
+          Type* lhsType = NULL;
+          Type* rhsType = actual->typeInfo();
+
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(isMoveOrAssign(move));
+          lhsType = move->get(1)->typeInfo();
+
+          SET_LINENO(call);
+
+          if (lhsType->getValType() != rhsType->getValType()) {
+            INT_FATAL(actual, "Type mismatch in updateAutoCopy");
+          } else {
+            call->replace(actual->remove());
+          }
         }
       }
     }
@@ -322,6 +345,8 @@ void removeUnnecessaryAutoCopyCalls() {
   // primitive types
   //
   removePODinitDestroy();
+
+  return; // TODO -- delete more in removeUnnecessaryAutoCopyCalls.
 
   //
   // remove matched pairs of autoCopy and autoDestroy calls marked with the

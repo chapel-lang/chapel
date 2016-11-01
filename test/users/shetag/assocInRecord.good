@@ -1,2 +1,1 @@
-assocInRecord.chpl:2: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 myC is: (d = {}, a = )

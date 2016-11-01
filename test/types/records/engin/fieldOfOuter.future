@@ -1,0 +1,16 @@
+bug: nil dereference referencing outer class' fields
+
+NOTES
+
+- calling the record's initializer via new in the field declaration allows the
+  program to compile fine
+
+- Where outer,inner == class,class; nil deref is thrown from the last line, 
+  which is expected due to memory allocation differences btw records vs classes
+
+- Where outer == record, nothing works(see nestedRecordField.future)
+
+- Lydia: The problem seems to be that innerRecord's "outer" is not getting set
+  properly during normal record initialization (it's receiving the default value
+  for a class rather than providing what the value should be), so attempts to
+  access one of outer's fields results in a dereference of nil.

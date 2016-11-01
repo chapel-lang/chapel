@@ -1,1 +1,1 @@
-error-constructor-return-type.chpl:2: error: constructors may not declare a return type
+error-constructor-return-type.chpl:2: error: initializers may not declare a return type

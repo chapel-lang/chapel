@@ -1,3 +1,5 @@
+.. _man-chpl:
+
 chpl
 ====
 
@@ -144,8 +146,8 @@ OPTIONS
 
 **--fast**
 
-    Turns off all runtime checks using **--no-checks**, turns on **-O**,
-    **--specialize**, and **--vectorize**.
+    Turns off all runtime checks using **--no-checks**, turns on **-O** and
+    **--specialize**.
 
 **--[no-]fast-followers**
 
@@ -185,6 +187,11 @@ OPTIONS
     Enable [disable] live variable analysis, which is currently only used to
     optimize iterators that are not inlined.
 
+**--[no-]optimize-array-indexing**
+
+    Enable [disable] an optimization that removes an extra multiply in array
+    indexing when it's provably unnecessary. By default this is enabled.
+
 **--[no-]optimize-loop-iterators**
 
     Enable [disable] optimizations to aggressively optimize iterators that
@@ -192,9 +199,9 @@ OPTIONS
 
 **--[no-]vectorize**
 
-    Enable [disable] generating vectorization hints for target compiler. If
-    enabled, hints will always be generated, but the effects will vary based
-    on the target compiler.
+    Enable [disable] generating vectorization hints for the target compiler.
+    If enabled, hints will always be generated, but the effects on performance
+    (and in some cases correctness) will vary based on the target compiler.
 
 **--[no-]optimize-on-clauses**
 

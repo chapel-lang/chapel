@@ -470,10 +470,14 @@ hwloc__xml_import_pagetype(hwloc_topology_t topology __hwloc_attribute_unused, h
 
   if (size) {
     int idx = obj->memory.page_types_len;
-    obj->memory.page_types = realloc(obj->memory.page_types, (idx+1)*sizeof(*obj->memory.page_types));
-    obj->memory.page_types_len = idx+1;
-    obj->memory.page_types[idx].size = size;
-    obj->memory.page_types[idx].count = count;
+    struct hwloc_obj_memory_page_type_s *tmp;
+    tmp = realloc(obj->memory.page_types, (idx+1)*sizeof(*obj->memory.page_types));
+    if (tmp) { /* if failed to allocate, ignore this page_type entry */
+      obj->memory.page_types = tmp;
+      obj->memory.page_types_len = idx+1;
+      obj->memory.page_types[idx].size = size;
+      obj->memory.page_types[idx].count = count;
+    }
   }
 
   return state->global->close_tag(state);
@@ -776,7 +780,9 @@ hwloc__xml_import_object(hwloc_topology_t topology,
   return state->global->close_tag(state);
 
  error_with_object:
-  hwloc_free_unlinked_object(obj);
+  if (parent)
+    /* root->parent is NULL, and root is already inserted. the caller will cleanup that root. */
+    hwloc_free_unlinked_object(obj);
  error:
   return -1;
 }

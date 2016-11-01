@@ -16,6 +16,7 @@ TARGETS = \
 	genericClasses \
 	iterators \
 	locales \
+	modules \
 	opaque \
 	parIters \
 	procedures \

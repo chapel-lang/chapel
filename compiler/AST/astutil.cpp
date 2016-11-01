@@ -42,14 +42,6 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types);
 static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types);
 
 
-void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls) {
-  AST_CHILDREN_CALL(ast, collectFnCalls, calls);
-  if (CallExpr* call = toCallExpr(ast))
-    if (call->isResolved())
-      calls.add(call);
-}
-
-
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
   AST_CHILDREN_CALL(ast, collectFnCalls, calls);
   if (CallExpr* call = toCallExpr(ast))
@@ -63,15 +55,6 @@ void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs) {
     exprs.push_back(expr);
 }
 
-void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
-  if (Expr* expr = toExpr(ast)) {
-    stmts.add(expr);
-    if (isBlockStmt(expr) || isCondStmt(expr)) {
-      AST_CHILDREN_CALL(ast, collect_stmts, stmts);
-    }
-  }
-}
-
 void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts) {
   if (Expr* expr = toExpr(ast)) {
     stmts.push_back(expr);
@@ -81,36 +64,16 @@ void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts) {
   }
 }
 
-void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs) {
-  AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
-  if (DefExpr* defExpr = toDefExpr(ast))
-    defExprs.add(defExpr);
-}
-
 void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
   AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
   if (DefExpr* defExpr = toDefExpr(ast))
     defExprs.push_back(defExpr);
 }
 
-void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs) {
-  AST_CHILDREN_CALL(ast, collectCallExprs, callExprs);
-  if (CallExpr* callExpr = toCallExpr(ast))
-    callExprs.add(callExpr);
-}
-
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
   AST_CHILDREN_CALL(ast, collectCallExprs, callExprs);
   if (CallExpr* callExpr = toCallExpr(ast))
     callExprs.push_back(callExpr);
-}
-
-void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs,
-                        FnSymbol* parent_fn) {
-  AST_CHILDREN_CALL(ast, collectMyCallExprs, callExprs, parent_fn);
-  if (CallExpr* callExpr = toCallExpr(ast))
-    if (callExpr->parentSymbol == parent_fn)
-      callExprs.add(callExpr);
 }
 
 void collectMyCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs,
@@ -121,22 +84,10 @@ void collectMyCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs,
       callExprs.push_back(callExpr);
 }
 
-void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts) {
-  AST_CHILDREN_CALL(ast, collectGotoStmts, gotoStmts);
-  if (GotoStmt* gotoStmt = toGotoStmt(ast))
-    gotoStmts.add(gotoStmt);
-}
-
 void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
   AST_CHILDREN_CALL(ast, collectGotoStmts, gotoStmts);
   if (GotoStmt* gotoStmt = toGotoStmt(ast))
     gotoStmts.push_back(gotoStmt);
-}
-
-void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs) {
-  AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
-  if (SymExpr* symExpr = toSymExpr(ast))
-    symExprs.add(symExpr);
 }
 
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
@@ -145,25 +96,12 @@ void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
     symExprs.push_back(symExpr);
 }
 
-static void collectMySymExprsHelp(BaseAST* ast, Vec<SymExpr*>& symExprs) {
-  if (isSymbol(ast)) return; // do not descend into nested symbols
-  AST_CHILDREN_CALL(ast, collectMySymExprsHelp, symExprs);
-  if (SymExpr* se = toSymExpr(ast))
-    symExprs.add(se);
-}
-
-static void collectMySymExprsHelp(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+static void collectMySymExprsHelp(BaseAST*               ast,
+                                  std::vector<SymExpr*>& symExprs) {
   if (isSymbol(ast)) return; // do not descend into nested symbols
   AST_CHILDREN_CALL(ast, collectMySymExprsHelp, symExprs);
   if (SymExpr* se = toSymExpr(ast))
     symExprs.push_back(se);
-}
-
-// Collect the SymExprs only *directly* under 'me'.
-// Do not include those in nested functions/other nested symbols.
-void collectMySymExprs(Symbol* me, Vec<SymExpr*>& symExprs) {
-  // skip the isSymbol(ast) check in collectMySymExprsHelp()
-  AST_CHILDREN_CALL(me, collectMySymExprsHelp, symExprs);
 }
 
 // The same for std::vector.
@@ -172,21 +110,10 @@ void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(me, collectMySymExprsHelp, symExprs);
 }
 
-void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols) {
-  AST_CHILDREN_CALL(ast, collectSymbols, symbols);
-  if (Symbol* symbol = toSymbol(ast))
-    symbols.add(symbol);
-}
-
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
   AST_CHILDREN_CALL(ast, collectSymbols, symbols);
   if (Symbol* symbol = toSymbol(ast))
     symbols.push_back(symbol);
-}
-
-void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
-  asts.add(ast);
-  AST_CHILDREN_CALL(ast, collect_asts, asts);
 }
 
 void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
@@ -204,19 +131,8 @@ void collect_asts_postorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
   asts.push_back(ast);
 }
 
-static void collect_top_asts_internal(BaseAST* ast, Vec<BaseAST*>& asts) {
-  if (!isSymbol(ast) || isArgSymbol(ast)) {
-    AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
-    asts.add(ast);
-  }
-}
-
-void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
-  AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
-  asts.add(ast);
-}
-
-static void collect_top_asts_internal(BaseAST* ast, std::vector<BaseAST*>& asts) {
+static void collect_top_asts_internal(BaseAST*               ast,
+                                      std::vector<BaseAST*>& asts) {
   if (!isSymbol(ast) || isArgSymbol(ast)) {
     AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
     asts.push_back(ast);
@@ -378,9 +294,28 @@ bool isOpEqualPrim(CallExpr* call) {
   return false;
 }
 
+bool isMoveOrAssign(CallExpr* call) {
+  return call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN);
+}
 
 //
-// Check if a callExpr is a relational operator primitive (==, !=, <=, >=, <, >)
+// Returns true if:
+// - the call is a PRIM_MOVE or PRIM_ASSIGN
+// - The LHS and RHS are both SymExprs
+// - The LHS is not a reference
+// - the RHS is a reference
+//
+bool isDerefMove(CallExpr* call) {
+  return isMoveOrAssign(call)                    &&
+         isSymExpr(call->get(2))                 &&
+         call->get(1)->isRefOrWideRef() == false &&
+         call->get(2)->isRefOrWideRef() ==  true;
+}
+
+
+//
+// Check if a callExpr is a relational operator primitive
+// (==, !=, <=, >=, <, >)
 //
 bool isRelationalOperator(CallExpr* call) {
   if (call->isPrimitive(PRIM_EQUAL)          ||
@@ -409,6 +344,15 @@ int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
         call->get(1) == se) {
+      CallExpr* rhsCall = toCallExpr(call->get(2));
+      QualifiedType lhsQual = se->var->qualType();
+      if ((lhsQual.isRef() || lhsQual.isWideRef()) &&
+          !isReferenceType(lhsQual.type()) &&
+          !(rhsCall && rhsCall->isPrimitive(PRIM_SET_REFERENCE))) {
+        // Assigning to a reference variable counts as a 'use'
+        // of the reference and a 'def' of its value
+        return 3;
+      }
       return 1;
     } else if (isOpEqualPrim(call) && call->get(1) == se) {
       return 3;
@@ -416,7 +360,9 @@ int isDefAndOrUse(SymExpr* se) {
       ArgSymbol* arg = actual_to_formal(se);
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
-          (!strcmp(fn->name, "=") && fn->getFormal(1) == arg && isRecord(arg->type)) ||
+          (strcmp(fn->name, "=") == 0   &&
+           fn->getFormal(1)      == arg &&
+           isRecord(arg->type)) ||
           isRecordWrappedType(arg->type)) { // pass by reference
         return 3;
         // also use; do not "continue"
@@ -436,8 +382,10 @@ void buildDefUseMaps(Vec<Symbol*>& symSet,
   forv_Vec(SymExpr, se, symExprs) {
     if (se->parentSymbol && symSet.set_in(se->var)) {
       int result = isDefAndOrUse(se);
+
       if (result & 1)
         addDef(defMap, se);
+
       if (result & 2)
         addUse(useMap, se);
     }
@@ -655,15 +603,36 @@ bool isTypeExpr(Expr* expr)
   return false;
 }
 
+static void pruneVisit(TypeSymbol*       ts,
+                       Vec<FnSymbol*>&   fns,
+                       Vec<TypeSymbol*>& types);
+
+static void pruneVisitFn(FnSymbol*         fn,
+                         Vec<FnSymbol*>&   fns,
+                         Vec<TypeSymbol*>& types);
+
+static void
+pruneVisit(Symbol* sym, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
+  if (isFnSymbol(sym)) {
+    pruneVisitFn(toFnSymbol(sym), fns, types);
+  } else {
+    pruneVisit(sym->type->symbol, fns, types);
+    if (sym->isRef() && !sym->type->symbol->hasFlag(FLAG_REF)) {
+      pruneVisit(sym->type->refType->symbol, fns, types);
+    }
+  }
+}
+
 
 static void
 pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
+  if (types.set_in(ts)) return;
   types.set_add(ts);
   std::vector<DefExpr*> defExprs;
   collectDefExprs(ts, defExprs);
   for_vector(DefExpr, def, defExprs) {
-    if (def->sym->type && !types.set_in(def->sym->type->symbol))
-      pruneVisit(def->sym->type->symbol, fns, types);
+    if (def->sym->type)
+      pruneVisit(def->sym, fns, types);
   }
   if (ts->hasFlag(FLAG_DATA_CLASS))
     pruneVisit(getDataClassType(ts), fns, types);
@@ -671,7 +640,8 @@ pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 
 
 static void
-pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
+pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
+  if (fns.set_in(fn)) return;
   fns.set_add(fn);
   std::vector<SymExpr*> symExprs;
   collectSymExprs(fn, symExprs);
@@ -679,12 +649,11 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
     if (FnSymbol* next = toFnSymbol(se->var))
       if (!fns.set_in(next))
         pruneVisit(next, fns, types);
-    if (se->var && se->var->type && !types.set_in(se->var->type->symbol))
-      pruneVisit(se->var->type->symbol, fns, types);
+    if (se->var && se->var->type)
+      pruneVisit(se->var, fns, types);
   }
   for_formals(formal, fn) {
-    if (!types.set_in(formal->type->symbol))
-      pruneVisit(formal->type->symbol, fns, types);
+    pruneVisit(formal, fns, types);
   }
 }
 
@@ -706,7 +675,8 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   }
 
   // Functions appearing the function pointer table are visible.
-  // These are blocks that can be started through a forall, coforall or on statement.
+  // These are blocks that can be started through a forall, coforall,
+  // or on statement.
   forv_Vec(FnSymbol, fn, ftableVec)
     pruneVisit(fn, fns, types);
 
@@ -822,7 +792,11 @@ static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
   // change symbols with dead types to void (important for baseline)
   //
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->parentSymbol && def->sym->type && isAggregateType(def->sym->type) && !isTypeSymbol(def->sym) && !types.set_in(def->sym->type->symbol))
+    if (def->parentSymbol                != NULL  &&
+        def->sym->type                   != NULL  &&
+        isAggregateType(def->sym->type)  ==  true &&
+        isTypeSymbol(def->sym)           == false &&
+        !types.set_in(def->sym->type->symbol))
       def->sym->type = dtVoid;
   }
 }
@@ -897,7 +871,8 @@ Symbol* getSvecSymbol(CallExpr* call) {
 }
 
 
-static void addToUsedFnSymbols(std::set<FnSymbol*>& fnSymbols, FnSymbol* newFn) {
+static void addToUsedFnSymbols(std::set<FnSymbol*>& fnSymbols,
+                               FnSymbol*            newFn) {
   if(fnSymbols.count(newFn) == 0) {
     fnSymbols.insert(newFn);
     AST_CHILDREN_CALL(newFn->body, collectUsedFnSymbols, fnSymbols);

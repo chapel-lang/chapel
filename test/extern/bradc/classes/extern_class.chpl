@@ -7,3 +7,4 @@ extern proc myfunc(c:myclass):int(64);
 var c = new myclass(5);
 writeln( c );
 writeln( myfunc(c) );
+delete c;

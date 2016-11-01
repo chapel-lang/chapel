@@ -52,6 +52,7 @@ struct PassInfo {
 #define LOG_resolve                            'R'
 #define LOG_resolveIntents                     'i'
 #define LOG_checkResolved                      NUL
+#define LOG_replaceArrayAccessesWithRefTemps   'T'
 #define LOG_processIteratorYields              'y'
 #define LOG_flattenFunctions                   'e'
 #define LOG_cullOverReferences                 'O'
@@ -76,6 +77,7 @@ struct PassInfo {
 #define LOG_optimizeOnClauses                  'o'
 #define LOG_addInitCalls                       'M'
 #define LOG_insertLineNumbers                  'n'
+#define LOG_denormalize                        'Q'
 #define LOG_codegen                            'E'
 #define LOG_makeBinary                         NUL
 
@@ -114,6 +116,8 @@ static PassInfo sPassList[] = {
   RUN(resolveIntents),          // resolve argument intents
   RUN(checkResolved),           // checks semantics of resolved AST
 
+  RUN(replaceArrayAccessesWithRefTemps), // replace multiple array access calls with reference temps
+
   // Post-resolution cleanup
   RUN(processIteratorYields),   // adjustments to iterators
   RUN(flattenFunctions),        // denest nested functions
@@ -146,6 +150,7 @@ static PassInfo sPassList[] = {
 
   // AST to C or LLVM
   RUN(insertLineNumbers),       // insert line numbers for error messages
+  RUN(denormalize),             // denormalize -- remove local temps
   RUN(codegen),                 // generate C code
   RUN(makeBinary)               // invoke underlying C compiler
 };
@@ -167,6 +172,11 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
     USR_STOP(); // quit if fatal errors were encountered in pass
 
     currentPassNo++;
+
+    // Break early if this is a parse-only run
+    if (fParseOnly ==  true && strcmp(sPassList[i].name, "checkParsed") == 0) {
+      break;
+    }
 
     // Break early if this is a chpl doc run
     if (isChpldoc == true && strcmp(sPassList[i].name, "docs") == 0) {
@@ -204,6 +214,12 @@ static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
   considerExitingEndOfPass();
 
   //
+  // An optional verify pass
+  //
+  tracker.StartPhase(info->name, PhaseTracker::kVerify);
+  (*(info->checkFunction))(); // Run per-pass check function.
+
+  //
   // Clean up the global pointers to AST.  If we're running chpldoc,
   // there's no real reason to run this step (and at the time of this
   // writing, it didn't work if we hadn't parsed all the 'use'd
@@ -211,17 +227,8 @@ static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
   //
   if (!isChpldoc) {
     tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
-
     cleanAst();
   }
-
-  //
-  // An optional verify pass
-  //
-
-  tracker.StartPhase(info->name, PhaseTracker::kVerify);
-
-  (*(info->checkFunction))(); // Run per-pass check function.
 
   if (printPasses == true || printPassesFile != 0) {
     tracker.ReportPass();

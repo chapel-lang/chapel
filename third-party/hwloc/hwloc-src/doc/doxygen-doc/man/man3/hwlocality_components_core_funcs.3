@@ -1,13 +1,13 @@
-.TH "Components and Plugins: Core functions to be used by components" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_components_core_funcs" 3 "Sun Aug 28 2016" "Version 1.11.4" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Components and Plugins: Core functions to be used by components \- 
+hwlocality_components_core_funcs \- Components and Plugins: Core functions to be used by components
 .SS "Typedefs"
 
 .in +1c
 .ti -1c
-.RI "typedef void(* \fBhwloc_report_error_t\fP )(const char *msg, int line)"
+.RI "typedef void(* \fBhwloc_report_error_t\fP) (const char *msg, int line)"
 .br
 .in -1c
 .SS "Functions"
@@ -43,21 +43,21 @@ Components and Plugins: Core functions to be used by components \-
 
 .SH "Typedef Documentation"
 .PP 
-.SS "typedef void(* hwloc_report_error_t)(const char *msg, int line)"
+.SS "typedef void(* hwloc_report_error_t) (const char *msg, int line)"
 
 .PP
 Type of error callbacks during object insertion\&. 
 .SH "Function Documentation"
 .PP 
-.SS "struct \fBhwloc_obj\fP* hwloc__insert_object_by_cpuset (struct hwloc_topology *topology, \fBhwloc_obj_t\fPobj, \fBhwloc_report_error_t\fPreport_error)"
+.SS "struct \fBhwloc_obj\fP* hwloc__insert_object_by_cpuset (struct hwloc_topology * topology, \fBhwloc_obj_t\fP obj, \fBhwloc_report_error_t\fP report_error)"
 
 .PP
 Add an object to the topology and specify which error callback to use\&. Aside from the error callback selection, this function is identical to \fBhwloc_insert_object_by_cpuset()\fP 
-.SS "static struct \fBhwloc_obj\fP* hwloc_alloc_setup_object (\fBhwloc_obj_type_t\fPtype, signedos_index)\fC [static]\fP"
+.SS "static struct \fBhwloc_obj\fP* hwloc_alloc_setup_object (\fBhwloc_obj_type_t\fP type, signed os_index)\fC [static]\fP"
 
 .PP
 Allocate and initialize an object of the given type and physical index\&. 
-.SS "int hwloc_fill_object_sets (\fBhwloc_obj_t\fPobj)"
+.SS "int hwloc_fill_object_sets (\fBhwloc_obj_t\fP obj)"
 
 .PP
 Setup object cpusets/nodesets by OR'ing its children\&. Used when adding an object late in the topology, after propagating sets up and down\&. The caller should use this after inserting by cpuset (which means the cpusets is already OK)\&. Typical case: PCI backend adding a hostbridge parent\&. 
@@ -65,7 +65,7 @@ Setup object cpusets/nodesets by OR'ing its children\&. Used when adding an obje
 
 .PP
 Check whether insertion errors are hidden\&. 
-.SS "struct \fBhwloc_obj\fP* hwloc_insert_object_by_cpuset (struct hwloc_topology *topology, \fBhwloc_obj_t\fPobj)"
+.SS "struct \fBhwloc_obj\fP* hwloc_insert_object_by_cpuset (struct hwloc_topology * topology, \fBhwloc_obj_t\fP obj)"
 
 .PP
 Add an object to the topology\&. It is sorted along the tree of other objects according to the inclusion of cpusets, to eventually be added as a child of the smallest object including this object\&.
@@ -79,7 +79,7 @@ This shall only be called before levels are built\&.
 In case of error, \fBhwloc_report_os_error()\fP is called\&.
 .PP
 Returns the object on success\&. Returns NULL and frees obj on error\&. Returns another object and frees obj if it was merged with an identical pre-existing object\&. 
-.SS "void hwloc_insert_object_by_parent (struct hwloc_topology *topology, \fBhwloc_obj_t\fPparent, \fBhwloc_obj_t\fPobj)"
+.SS "void hwloc_insert_object_by_parent (struct hwloc_topology * topology, \fBhwloc_obj_t\fP parent, \fBhwloc_obj_t\fP obj)"
 
 .PP
 Insert an object somewhere in the topology\&. It is added as the last child of the given parent\&. The cpuset is completely ignored, so strange objects such as I/O devices should preferably be inserted with this\&.
@@ -89,7 +89,7 @@ When used for 'normal' children with cpusets (when importing from XML when dupli
 The given object may have children\&.
 .PP
 Remember to call topology_connect() afterwards to fix handy pointers\&. 
-.SS "static int hwloc_plugin_check_namespace (const char *pluginname, const char *symbol)\fC [inline]\fP, \fC [static]\fP"
+.SS "static int hwloc_plugin_check_namespace (const char * pluginname, const char * symbol)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Make sure that plugins can lookup core symbols\&. This is a sanity check to avoid lazy-lookup failures when libhwloc is loaded within a plugin, and later tries to load its own plugins\&. This may fail (and abort the program) if libhwloc symbols are in a private namespace\&.
@@ -111,7 +111,7 @@ This function should remain inline so plugins can call it even when they cannot 
 .RE
 .PP
 
-.SS "void hwloc_report_os_error (const char *msg, intline)"
+.SS "void hwloc_report_os_error (const char * msg, int line)"
 
 .PP
 Report an insertion error from a backend\&. 

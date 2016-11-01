@@ -6,7 +6,7 @@ iter myiter() ref :R {
   var A:[1..4] R;
 
   for i in 1..4 {
-    A[i].init(x = i);
+    A[i].setup(x = i);
     A[i].verify();
     if verbose then writeln(A[i]);
   }

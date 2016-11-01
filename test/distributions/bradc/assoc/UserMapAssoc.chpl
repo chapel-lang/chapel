@@ -310,7 +310,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   proc dsiAdd(i: idxType) {
-    locDoms(dist.indexToLocaleIndex(i)).add(i);
+    return locDoms(dist.indexToLocaleIndex(i)).add(i);
   }
 
   proc dsiAddSorted(arr: [?Dom] idxType) where Dom.rank == 1 {
@@ -344,7 +344,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
 
   proc dsiRemove(i: idxType) {
-    locDoms(dist.indexToLocaleIndex(i)).remove(i);
+    return locDoms(dist.indexToLocaleIndex(i)).remove(i);
   }
 
   proc dsiMember(i: idxType) {
@@ -363,6 +363,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   iter dsiSorted(comparator:?t) {
+    use Sort;
     // This function creates a local copy of an entire distributed
     // data structure, which is probably a bad idea.
     // Alternatives include:
@@ -582,10 +583,10 @@ class LocUserMapAssocDom {
   // LOCAL DOMAIN INTERFACE:
 
   proc add(i: idxType) {
-    myInds += i;
+    return myInds.add(i);
   }
   proc remove(i: idxType) {
-    myInds -= i;
+    return myInds.remove(i);
   }
 
   proc member(i: idxType) {

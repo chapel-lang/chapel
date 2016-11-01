@@ -1,0 +1,18 @@
+%%MatrixMarket matrix coordinate real symmetric
+%-------------------------------------------------------------------------------
+% UF Sparse Matrix Collection, Tim Davis
+% http://www.cise.ufl.edu/research/sparse/matrices/HB/1138_bus
+% name: HB/1138_bus
+% [S ADMITTANCE MATRIX 1138 BUS POWER SYSTEM, D.J.TYLAVSKY, JULY 1985.]
+% id: 1
+% date: 1985
+% author: D. Tylavsky
+% ed: I. Duff, R. Grimes, J. Lewis
+% fields: title A name id date author ed kind
+% kind: power network problem
+%-------------------------------------------------------------------------------
+2 2 3
+1 2 1474.779
+2 1 -9.017133
+2 2 -5.730659
+

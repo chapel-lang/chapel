@@ -20,14 +20,14 @@
 #ifndef _QBUFFER_H_
 #define _QBUFFER_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // This macro set to obtain the portable format macro PRIu64 for debug output.
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS 1
+#endif
 // This macro set to obtain SIZE_MAX
+#ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS 1
+#endif
 
 #include "sys_basic.h"
 #include "qio_error.h"
@@ -92,6 +92,10 @@ typedef atomic_uint_least64_t qbytes_refcnt_t;
 }
 
 #define DO_DESTROY_REFCNT(ptr) atomic_destroy_uint_least64_t (&ptr->ref_cnt)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // how large is an iobuf?
 extern size_t qbytes_iobuf_size;
@@ -452,6 +456,10 @@ qioerr qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_i
  * */
 qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, unsigned char byte);
 
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 // How many bytes to try to store on stack in some functions that don't
 // really want to call malloc
 #define MAX_ON_STACK 128
@@ -466,12 +474,20 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #define qio_free(ptr) chpl_mem_free(ptr, 0, 0)
 #define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static inline char* qio_strdup(const char* ptr)
 {
   char* ret = (char*) qio_malloc(strlen(ptr)+1);
   if( ret ) strcpy(ret, ptr);
   return ret;
 }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 typedef chpl_bool qio_bool;
 
@@ -519,6 +535,10 @@ typedef bool qio_bool;
     qio_free(ptr); \
   } \
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Returns the difference between two pointers,
    but returns 0 if either pointer is NULL.

@@ -1,5 +1,0 @@
-feature request: cast real to imag
-
-I would expect that casting a real number n to an imaginary
-type would yield the number n*i, and not 0.0*i.
-

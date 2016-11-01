@@ -217,7 +217,7 @@ inline proc initFreeSurface(freeSurface) {
     var sortedSurface: [0..#size] int;
 
     for (a,b) in zip(sortedSurface, freeSurface) do a = b;
-    QuickSort(sortedSurface);
+    quickSort(sortedSurface);
 
     writeln(size);
     for b in sortedSurface do

@@ -1,3 +1,6 @@
+proc =(a:[],b): bulk transfer did not happen
+proc =(a:[],b): bulk transfer did not happen
+test start
 In DefaultRectangularArr.doiBulkTransfer(): Alo=(1, 1, 1), Blo=(1, 1, 1), len=315, elemSize=8
 In DefaultRectangularArr.doiBulkTransfer(): Alo=(1, 1, 1), Blo=(124, 457, 790), len=315, elemSize=8
 In DefaultRectangularArr.doiBulkTransfer(): Alo=(1, 1, 1), Blo=(-122, -455, -788), len=315, elemSize=8

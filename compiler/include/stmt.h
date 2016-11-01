@@ -312,8 +312,7 @@ LabelSymbol* getGotoLabelSymbol(GotoStmt* gs);
 GotoStmt*    getGotoLabelsIterResumeGoto(GotoStmt* gs);
 
 void         removeDeadIterResumeGotos();
-void         verifyNcleanRemovedIterResumeGotos();
-
-void         verifyNcleanCopiedIterResumeGotos();
+void         verifyRemovedIterResumeGotos();
+void         verifyCopiedIterResumeGotos();
 
 #endif

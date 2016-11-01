@@ -39,7 +39,7 @@
 //For naming of variadic function variables (and temporary names for void *'s).
 static int query_uid = 1;
 
-static void convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *tdn, Vec<Expr*> & results);
+static const char* convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *tdn, Vec<Expr*> & results);
 
 
 //Given a clang type, returns the corresponding chapel type (usually as 
@@ -53,9 +53,8 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
     // Get the typedef decl for that
     clang::TypedefNameDecl* tdn = td->getDecl();
 
-    convertTypedef(module, tdn, results);
+    const char* typedef_name = convertTypedef(module, tdn, results);
 
-    const char* typedef_name = tdn->getNameAsString().c_str();
     return new UnresolvedSymExpr(typedef_name);
 
   //pointers
@@ -67,6 +66,11 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
     if ( pointeeType.isConstQualified() &&
          pointeeType.getTypePtr()->isCharType() ) {
       return new UnresolvedSymExpr("c_string"); 
+    }
+
+    // Pointers to C functions become c_fn_ptr
+    if ( pointeeType.getTypePtr()->isFunctionType()) {
+      return new UnresolvedSymExpr("c_fn_ptr");
     }
 
     Expr* pointee = convertToChplType(module, pointeeType.getTypePtr(), results);
@@ -131,9 +135,8 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
 
       return new UnresolvedSymExpr(tmp_name);
   } else if (type->isFunctionType()) {
-    // Treat function types as opaque, at least until Chapel
-    // learns to understand them.
-    return new UnresolvedSymExpr("opaque");
+    // This should be handled in the pointer-to-function case above
+    INT_ASSERT("bare c function type");
   } else {
     // Check for enum types, which are really some sort of integer type
     if (type->isEnumeralType()) {
@@ -205,7 +208,7 @@ static void convertMacroToChpl(ModuleSymbol* module, const char* name, Type* chp
   setAlreadyConvertedExtern(module, name);
 }
 
-static void convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *tdn, Vec<Expr*> & results) {
+static const char* convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *tdn, Vec<Expr*> & results) {
 
   //handle typedefs
 
@@ -215,7 +218,7 @@ static void convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *tdn, Ve
 
   //If we've already converted this, return immediately to
   //  avoid multiple Chapel definitions.
-  if( alreadyConvertedExtern(module, typedef_name) ) return;
+  if( alreadyConvertedExtern(module, typedef_name) ) return typedef_name;
 
   if( contents_type->isStructureType() ) {
     clang::RecordDecl *rd = contents_type->getAsStructureType()->getDecl();
@@ -248,6 +251,8 @@ static void convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *tdn, Ve
   }
 
   setAlreadyConvertedExtern(module, typedef_name);
+
+  return typedef_name;
 }
 
 

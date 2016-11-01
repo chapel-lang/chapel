@@ -363,7 +363,13 @@ coerce_immediate(Immediate *from, Immediate *to) {
   if (base == 0 && exp < 0) {                            \
     USR_FATAL("0 cannot be raised to a negative power"); \
   } else if (exp < 0) {                                  \
-    res = 0;                                             \
+    if (base == 1) {                                     \
+      res = 1;                                           \
+    } else if (base == -1) {                             \
+      res = exp % 2 == 0 ? 1 : -1;                       \
+    } else {                                             \
+      res = 0;                                           \
+    }                                                    \
   } else {                                               \
     type i = exp;                                        \
     type z = base;                                       \

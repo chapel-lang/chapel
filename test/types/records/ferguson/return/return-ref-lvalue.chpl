@@ -8,11 +8,11 @@ proc return_ref(ref r) ref
 proc myfunction() {
 
   var r:R;
-  r.init(x=1);
+  r.setup(x=1);
   r.verify();
 
   var r2:R;
-  r2.init(x=2);
+  r2.setup(x=2);
   r2.verify();
 
   // Test use of return_ref as an lvalue.

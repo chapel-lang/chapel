@@ -48,11 +48,11 @@ ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
 	CHPL_AUXIO_INCLUDE ?= \
 		-I$(JAVA_INSTALL)/include \
 		-I$(JAVA_INSTALL)/include/linux \
-		-I$(HADOOP_INSTALL)/src/c++/libhdfs \
+		-I$(HADOOP_INSTALL)/include \
 
 	CHPL_AUXIO_LIBS ?= \
 		-L$(JAVA_INSTALL)/jre/lib/amd64/server \
-		-L$(HADOOP_INSTALL)/c++/Linux-amd64-64/lib 
+		-L$(HADOOP_INSTALL)/lib/native 
 endif 
 
 
@@ -96,6 +96,10 @@ endif
 # Add any further includes for GMP.
 GMP_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.gmp-$(CHPL_MAKE_GMP)
 -include $(GMP_INCLUDE)
+
+# Add any further includes for unwind.
+UNWIND_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.unwind-$(CHPL_MAKE_UNWIND)
+-include $(UNWIND_INCLUDE)
 
 # Add any further includes for HWLOC.
 HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)

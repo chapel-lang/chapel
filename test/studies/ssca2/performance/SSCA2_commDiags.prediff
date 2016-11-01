@@ -47,7 +47,7 @@ for l in lines:
             for d in range(10):
                 target = counts[i][d]
                 curr=int(commDiags[d].split('=')[1].strip())
-                if d==0 or d==7:
+                if d==0 or d==7 or d==8:
                     # gets and forks
                     f.write('%d: %s: N/A\n'%(i, commTypes[d]))
                 elif d==2:

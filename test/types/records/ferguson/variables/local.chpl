@@ -6,7 +6,7 @@ proc myfunction() {
   local1.verify();
 
   var local2: R;
-  local2.init(x = 20);
+  local2.setup(x = 20);
   local2.verify();
   assert(local2.x == 20);
 

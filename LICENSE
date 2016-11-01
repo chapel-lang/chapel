@@ -53,6 +53,7 @@ The Chapel implementation is composed of two categories of code:
      qthread          alternative lightweight tasking option       new BSD
      re2              optional regular expression parsing library  new BSD
      utf8-decoder     used for runtime UTF-8 string decoding       MIT
+     libunwind        used for runtime stack tracing               MIT
 
    For a more complete introduction to these packages and their
    licensing terms, refer to highlight/README.md, third-party/README, and the
@@ -79,6 +80,7 @@ The Chapel implementation is composed of two categories of code:
      qthread          only used when CHPL_TASKS is 'qthreads'
      re2              only used when CHPL_REGEXP is 're2'
      utf8-decoder     bundled into the Chapel runtime to decode UTF-8 strings
+     libunwind        only used when CHPL_UNWIND is 'libunwind'
 
    For packages that are used based on a CHPL_* setting, note that this
    setting may either be explicitly or implicitly set. Additionally,

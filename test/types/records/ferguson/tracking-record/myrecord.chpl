@@ -21,11 +21,11 @@ record R {
   var c: C;
 }
 
-proc ref R.init(x:int, allow_zero:bool=false) {
+proc ref R.setup(x:int, allow_zero:bool=false) {
   if !allow_zero then assert(x != 0);
 
   if debug {
-    printf("in init deallocating c=%p ", c);
+    printf("in setup deallocating c=%p ", c);
     writeln(c);
   }
 
@@ -38,7 +38,7 @@ proc ref R.init(x:int, allow_zero:bool=false) {
   
   extern proc printf(fmt:c_string, arg:C);
   if debug {
-    printf("in init allocated c=%p ", c);
+    printf("in setup allocated c=%p ", c);
     writeln(c);
   }
 
@@ -78,7 +78,7 @@ proc ref R.verify() {
 
   if c == nil {
     // any time we set x!=0 the class should be initialized
-    // (in R.init).
+    // (in R.setup).
     writeln("R.verify failed - no class but x != 0");
   }
   // otherwise, check that R.x == R.c.x
@@ -107,7 +107,7 @@ proc chpl__autoCopy(arg: R) {
 
   // allow copies of default initialized record
   if allocateAlways || arg.x!=0 || arg.c!=nil {
-    ret.init(x = arg.x, true);
+    ret.setup(x = arg.x, true);
   }
 
   if debug {
@@ -131,7 +131,7 @@ proc chpl__initCopy(arg: R) {
 
   var ret: R;
 
-  ret.init(x = arg.x, true);
+  ret.setup(x = arg.x, true);
 
   if debug {
     printf("leaving init copy from arg.c=%p to ret.c=%p ", arg.c, ret.c);
@@ -149,7 +149,7 @@ proc =(ref lhs: R, rhs: R) {
     writeln(rhs.c);
   }
 
-  lhs.init(x = rhs.x, true);
+  lhs.setup(x = rhs.x, true);
 
   if debug {
     printf("leaving assign lhs.c %p = rhs.c %p ", lhs.c, rhs.c);

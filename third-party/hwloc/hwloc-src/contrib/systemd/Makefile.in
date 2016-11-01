@@ -15,6 +15,7 @@
 @SET_MAKE@
 
 # Copyright © 2016 Inria.  All rights reserved.
+# Copyright © 2016 Université Bordeaux
 # See COPYING in top-level directory.
 
 # We can't use autoconf because we don't want $sbindir to be replaced with ${exec_prefix}/sbin
@@ -285,7 +286,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PDFLATEX = @PDFLATEX@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
-RMPATH = @RMPATH@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -581,7 +581,6 @@ uninstall-am: uninstall-nodist_pkgdataDATA
 @HWLOC_HAVE_LINUX_TRUE@	@ $(SED) \
 @HWLOC_HAVE_LINUX_TRUE@	  -e 's/#SBINDIR#/$(subst /,\/,$(sbindir))/g' \
 @HWLOC_HAVE_LINUX_TRUE@	  -e 's/#RUNSTATEDIR#/$(subst /,\/,$(HWLOC_runstatedir))/g' \
-@HWLOC_HAVE_LINUX_TRUE@	  -e 's/#RMPATH#/$(subst /,\/,$(RMPATH))/g' \
 @HWLOC_HAVE_LINUX_TRUE@	  > $@ < $<
 
 @HWLOC_HAVE_LINUX_TRUE@distclean-local:

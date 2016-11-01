@@ -29,11 +29,14 @@ module ChapelBase {
   // Is the cache for remote data enabled at compile time?
   config param CHPL_CACHE_REMOTE: bool = false;
 
+  // TODO -- remove this param, it is no longer used.
+  // That will require updating tests that throw it, especially
+  // performance tests.
   config param noRefCount = false;
 
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
-  proc _throwOpError(param op: c_string) {
+  proc _throwOpError(param op: string) {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
 
@@ -41,56 +44,45 @@ module ChapelBase {
     halt("Pure virtual function called.");
   }
 
-  proc compilerError(param x:c_string ...?n, param errorDepth:int) {
-    __primitive("error", (...x));
+
+  //
+  // compile-time diagnostics
+  //
+  // Note: the message printed by "error" and "warning" primitives
+  // consists of the formals of the enclosing function, not their own args.
+  //
+
+  proc compilerError(param msg: string ...?n, param errorDepth: int) {
+    __primitive("error");
   }
 
-  proc compilerError(param x:c_string ...?n) {
-    __primitive("error", (...x));
+  proc compilerError(param msg: string ...?n) {
+    __primitive("error");
   }
 
-  proc compilerWarning(param x:c_string ...?n, param errorDepth:int) {
-    __primitive("warning", (...x));
+  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
+    __primitive("warning");
   }
 
-  proc compilerWarning(param x:c_string ...?n) {
-    __primitive("warning", (...x));
+  proc compilerWarning(param msg: string ...?n) {
+    __primitive("warning");
   }
-
-  // for compilerAssert, as param tuples do not de-tuple into params yet,
-  // we handle only up to 5 message args and omit the rest
 
   proc compilerAssert(param test: bool)
   { if !test then compilerError("assert failed"); }
 
-  proc compilerAssert(param test: bool, param arg1:integral)
-  { if !test then compilerError("assert failed", arg1:int); }
+  proc compilerAssert(param test: bool, param errorDepth: int)
+  { if !test then compilerError("assert failed", errorDepth + 1); }
 
-  proc compilerAssert(param test: bool, param arg1) where !isIntegralType(arg1.type)
-  { if !test then compilerError("assert failed - ", arg1); }
+  proc compilerAssert(param test: bool, param msg: string ...?n)
+  { if !test then compilerError("assert failed - ", (...msg)); }
 
-  proc compilerAssert(param test: bool, param arg1, param arg2)
-  { if !test then compilerError("assert failed - ", arg1, arg2); }
+  proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
+  { if !test then compilerError("assert failed - ", (...msg), errorDepth + 1); }
 
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, param arg6: integral)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, arg6:int); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest..., param arglast: integral)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]", arglast:int); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
 
   enum iterKind {leader, follower, standalone};
+
 
   //
   // assignment on primitive types
@@ -314,6 +306,10 @@ module ChapelBase {
     if b < 0 then
       if a == 0 then
         halt("cannot compute ", a, " ** ", b);
+      else if a == 1 then
+        return 1;
+      else if a == -1 then
+        return if b % 2 == 0 then 1 else -1;
       else
         return 0;
     var i = b, y:a.type = 1, z = a;
@@ -363,11 +359,34 @@ module ChapelBase {
       compilerError("unexpected case in exponentiation optimization");
   }
 
+  inline proc _expBaseHelp(param a: int, b) where _basePowerTwo(a) {
+    if b == 0 then 
+      return 1:a.type;
+    if b < 0 then
+      if a == 1 then // "where _basePowerTwo(a)" means 'a' cannot be <= 0
+        return 1;
+      else
+        return 0;
+    var c = 0;
+    var x: int = a;
+    while (x > 1) // shift right to count the power
+    {
+      c += 1;
+      x = x >> 1;
+    }
+    var exp = c * (b-1);
+    return a << exp;
+  }
+
   proc _canOptimizeExp(param b: integral) param return b >= 0 && b <= 8 && b != 7;
+
+  // complement and compare is an efficient way to test for a power of 2
+  proc _basePowerTwo(param a: integral) param return (a > 0 && ((a & (~a + 1)) == a));
 
   inline proc **(a: int(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
   inline proc **(a: uint(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
   inline proc **(a: real(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+  inline proc **(param a: integral, b: int) where _basePowerTwo(a) return _expBaseHelp(a, b);
 
   //
   // logical operations on primitive types
@@ -656,22 +675,7 @@ module ChapelBase {
   pragma "no default functions"
   class _ddata {
     type eltType;
-    /*
-       If we had a way to do 'static' routines, this
-       could stay here, but since we don't at the moment,
-       we've wired the modules to call _ddata_free().
 
-    proc ~_ddata() {
-      __primitive("array_free", this);
-    }
-
-     If we had a way to do 'static' routines, this
-       could stay here, but since we don't at the moment,
-       we've wired the modules to call _ddata_allocate().
-    inline proc init(size: integral) {
-      __primitive("array_alloc", this, eltType, size);
-      init_elts(this, size, eltType);
-    }*/
     inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }
@@ -932,13 +936,13 @@ module ChapelBase {
     return if x then 1i:t else 0i:t;
 
   inline proc _cast(type t, x: int(?w)) where isImagType(t)
-    return 0i:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: uint(?w)) where isImagType(t)
-    return 0i:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: real(?w)) where isImagType(t)
-    return 0i:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: imag(?w)) where isImagType(t)
     return __primitive("cast", t, x);
@@ -959,7 +963,7 @@ module ChapelBase {
   // casts from imag
   //
   inline proc _cast(type t, x: imag(?w)) where isRealType(t) || isIntegralType(t)
-    return 0:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
@@ -1005,37 +1009,20 @@ module ChapelBase {
   pragma "init copy fn"
   inline proc chpl__initCopy(x) return x;
 
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn" proc chpl__autoCopy(x: _distribution) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn"  proc chpl__autoCopy(x: domain) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn" proc chpl__autoCopy(x: []) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
-
   pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
     // body inserted during generic instantiation
   }
+
+  pragma "compiler generated"
+  pragma "donor fn"
+  pragma "unref fn"
+  inline proc chpl__unref(x: _tuple) {
+    // body inserted during generic instantiation
+  }
+
 
   pragma "donor fn"
   pragma "auto copy fn"
@@ -1049,42 +1036,68 @@ module ChapelBase {
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
 
+  pragma "compiler generated"
+  pragma "unalias fn"
+  inline proc chpl__unalias(ref x) { }
+
+  pragma "unalias fn"
+  inline proc chpl__unalias(x:_iteratorClass) { }
+  pragma "unalias fn"
+  inline proc chpl__unalias(const ref x:_iteratorRecord) { }
+
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: object) { }
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(type t)  { }
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }
+
+  // These might seem the same as the generic version
+  // but they currently necessary to prevent resolution from
+  // using promotion (for example with an array of sync variables)
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: _distribution) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: domain) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
   }
 
-  // = for c_void_ptr
+  // c_void_ptr operations
   inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+  inline proc ==(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_eq", a, b);
+  }
+  inline proc !=(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_neq", a, b);
+  }
 
   // Type functions for representing function types
   inline proc func() type { return __primitive("create fn type", void); }
@@ -1458,23 +1471,6 @@ module ChapelBase {
   }
   inline proc <=(param a: uint(64), b: uint(64)) {
     if a == 0 then return true; else return __primitive("<=", a, b);
-  }
-
-  // numFields moved to Reflection
-
-  pragma "no doc"
-  proc fieldNumToName(type t, param i) param {
-    compilerError("fieldNumToName deprecated. Use getFieldName");
-  }
-
-  pragma "no doc"
-  proc fieldValueByNum(x, param i) {
-    compilerError("fieldValueByNum deprecated. Use getField");
-  }
-
-  pragma "no doc"
-  proc fieldValueByName(x, param name) {
-    compilerError("fieldValueByName deprecated. Use getField");
   }
 
   proc isClassType(type t) param where t:object return true;

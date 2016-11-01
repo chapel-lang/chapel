@@ -2,6 +2,13 @@ use StencilDist;
 
 config const debug = false;
 
+config const maxFluff = 2;
+
+proc test(dom : domain) {
+  for i in 1..maxFluff do
+    test(dom, i);
+}
+
 proc test(dom : domain, hval : int) {
   param rank = dom.rank;
   var halo : rank*int;
@@ -25,25 +32,12 @@ proc test(dom : domain, hval : int) {
   if debug then writeln();
 }
 
-const ones = {1..10, 1..10};
-const zeroes = {0..9, 0..9};
-const mixed = {-3..11, -3..11};
-const neg = {-20..-10, -20..-10};
-const three = {1..10, 1..10, 1..10};
-
-test(ones, 1);
-test(ones, 2);
-
-test(zeroes, 1);
-test(zeroes, 2);
-
-test(mixed, 1);
-test(mixed, 2);
-
-test(neg, 1);
-test(neg, 2);
-
-test(three, 1);
-test(three, 2);
+test({1..10, 1..10});
+test({0..9, 0..9});
+test({-3..11, -3..11});
+test({-20..-10, -20..-10});
+test({1..10, 1..10, 1..10});
+test({-10..#30, -10..#30, -10..#30} by 3);
+test({-10..1, 5..24, 0..10} by 2);
 
 writeln("Success!");

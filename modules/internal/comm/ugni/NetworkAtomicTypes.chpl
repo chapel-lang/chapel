@@ -20,7 +20,7 @@
 module NetworkAtomicTypes {
 
   proc chpl__networkAtomicType(type base_type) type {
-    if base_type==bool then return ratomicflag;
+    if base_type==bool then return ratomicbool;
     else if base_type==uint(32) then return ratomic_uint32;
     else if base_type==uint(64) then return ratomic_uint64;
     else if base_type==int(32) then return ratomic_int32;

@@ -116,6 +116,7 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
             }
 
             field->type = vt;
+            field->qual = QUAL_VAL;
           }
         }
       }
@@ -184,8 +185,7 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   buildSyncAccessFunctionSet(syncSet);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-
-    if (isTaskFun(fn)) {
+    if (fn->hasFlag(FLAG_ON) == true) {
       // Would need to flatten them if they are not already.
       INT_ASSERT(isGlobal(fn));
 
@@ -206,10 +206,25 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             ArgSymbol*                    arg) {
   bool retval = false;
 
+  // Forward array values and references to array values.
+  // This is OK because the array/domain/distribution wrapper
+  // records have fields that do not vary.
+  // It does not matter if the on-body synchronizes.
+  // (The array class, e.g. DefaultRectangularArr, is what varies,
+  //  and it contains a pointer to the actual data, which might
+  //  be replaced with another pointer).
+  // An alternative strategy would be to migrate the contents of the
+  // array header class into the wrapper record - but that would require
+  // quite a lot of code changes, and some other features have entangled
+  // designs (including privatization and the DSI interface).
+  if (isRecordWrappedType(arg->getValType())) {
+    retval = true;
+
+
   // If this function accesses sync vars and the argument is not
   // const, then we cannot remote value forward the argument due
-  // to the fence implied by the sync var accesses */
-  if (syncFns.set_in(fn) && isSufficientlyConst(arg) == false) {
+  // to the fence implied by the sync var accesses
+  } else if (syncFns.set_in(fn) && isSufficientlyConst(arg) == false) {
     retval = false;
 
   // If this argument is a reference atomic type, we need to preserve
@@ -221,8 +236,16 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // to convert atomic formals to ref formals.
   } else if (isAtomicType(arg->type)) {
     retval = false;
+  } else if (arg->intent == INTENT_CONST_REF) {
+    retval = true;
+  } else if (arg->intent == INTENT_CONST_IN &&
+      !arg->type->symbol->hasFlag(FLAG_REF)) {
+    // BHARSH TODO: This can currently happen when the arg is the lhs of a +=,
+    // but it obviously needs to have the 'ref' intent. One example can be seen
+    // for += between strings.
+    retval = true;
 
-  } else if (arg->type->symbol->hasFlag(FLAG_REF)  == true &&
+  } else if (arg->isRef()  == true &&
              isSafeToDerefArg(defMap, useMap, arg) == true) {
     retval = true;
 
@@ -234,13 +257,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 }
 
 static bool isSufficientlyConst(ArgSymbol* arg) {
-  Type* argValType = arg->getValType();
   bool  retval     = false;
-
-  // Arg is an array, so it's sufficiently constant (because this
-  // refers to the descriptor, not the array's values
-  if (argValType->symbol->hasFlag(FLAG_ARRAY)) {
-    retval = true;
 
   //
   // See if this argument is 'const in'; if it is, it's a good candidate for
@@ -261,8 +278,8 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   //
   //     test/multilocale/bradc/needMultiLocales/remoteReal.chpl
   //
-  } else if (arg->intent == INTENT_CONST_IN  &&
-             !arg->type->symbol->hasFlag(FLAG_REF)) {
+  if (arg->intent == INTENT_CONST_IN  &&
+      !arg->type->symbol->hasFlag(FLAG_REF)) {
     retval = true;
 
   // otherwise, conservatively assume it varies
@@ -291,16 +308,26 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
     // Find actual for arg.
     SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
 
-    INT_ASSERT(actual && actual->var->type == prevArgType);
+    INT_ASSERT(actual && actual->getValType() == prevArgType->getValType());
     SET_LINENO(actual);
 
     // Insert de-reference temp of value.
     VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
+    if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
+      deref->addFlag(FLAG_COFORALL_INDEX_VAR);
+    }
+
+    Expr* rhs = NULL;
+    if (actual->isRef()) {
+      rhs = new CallExpr(PRIM_DEREF, new SymExpr(actual->var));
+    } else {
+      rhs = new SymExpr(actual->var);
+    }
 
     call->insertBefore(new DefExpr(deref));
     call->insertBefore(new CallExpr(PRIM_MOVE,
                                     deref,
-                                    new CallExpr(PRIM_DEREF, actual->var)));
+                                    rhs));
 
     actual->replace(new SymExpr(deref));
   }
@@ -310,6 +337,7 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
     SET_LINENO(use);
 
     CallExpr* call = toCallExpr(use->parentExpr);
+    if (!call) continue;
 
     if (call && call->isPrimitive(PRIM_DEREF)) {
       call->replace(new SymExpr(arg));
@@ -321,14 +349,38 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
       Expr*      stmt   = use->getStmtExpr();
       VarSymbol* reref = newTemp("rvfRerefTmp", prevArgType);
 
+      Expr* rhs = NULL;
+      if (reref->isRef()) {
+        rhs = new CallExpr(PRIM_ADDR_OF, arg);
+      } else {
+        rhs = new SymExpr(arg);
+      }
+
       stmt->insertBefore(new DefExpr(reref));
       stmt->insertBefore(new CallExpr(PRIM_MOVE,
                                       reref,
-                                      new CallExpr(PRIM_ADDR_OF, arg)));
+                                      rhs));
 
       use->replace(new SymExpr(reref));
     }
   }
+}
+
+
+static bool isSyncSingleMethod(FnSymbol* fn) {
+
+  bool retval = false;
+
+  if (fn->_this != NULL) {
+    Type* valType = fn->_this->getValType();
+
+    if  (isSyncType(valType)   == true ||
+         isSingleType(valType) == true) {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
@@ -341,50 +393,29 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
   Vec<FnSymbol*> syncAccessFunctionVec;
 
   //
-  // Find all functions that directly call sync access primitives.
+  // Find all methods on sync/single vars
   //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
-      if (call->isPrimitive(PRIM_SYNC_INIT) ||
-          call->isPrimitive(PRIM_SYNC_LOCK) ||
-          call->isPrimitive(PRIM_SYNC_UNLOCK) ||
-          call->isPrimitive(PRIM_SYNC_WAIT_FULL) ||
-          call->isPrimitive(PRIM_SYNC_WAIT_EMPTY) ||
-          call->isPrimitive(PRIM_SYNC_SIGNAL_FULL) ||
-          call->isPrimitive(PRIM_SYNC_SIGNAL_EMPTY) ||
-          call->isPrimitive(PRIM_SINGLE_INIT) ||
-          call->isPrimitive(PRIM_SINGLE_LOCK) ||
-          call->isPrimitive(PRIM_SINGLE_UNLOCK) ||
-          call->isPrimitive(PRIM_SINGLE_WAIT_FULL) ||
-          call->isPrimitive(PRIM_SINGLE_SIGNAL_FULL) ||
-          call->isPrimitive(PRIM_WRITEEF) ||
-          call->isPrimitive(PRIM_WRITEFF) ||
-          call->isPrimitive(PRIM_WRITEXF) ||
-          call->isPrimitive(PRIM_READFE) ||
-          call->isPrimitive(PRIM_READFF) ||
-          call->isPrimitive(PRIM_READXX) ||
-          call->isPrimitive(PRIM_SYNC_IS_FULL) ||
-          call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
-          call->isPrimitive(PRIM_SINGLE_READFF) ||
-          call->isPrimitive(PRIM_SINGLE_READXX) ||
-          call->isPrimitive(PRIM_SINGLE_IS_FULL)) {
-        if (!parent->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
-            !syncAccessFunctionSet.set_in(parent)) {
-          syncAccessFunctionSet.set_add(parent);
-          syncAccessFunctionVec.add(parent);
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (isSyncSingleMethod(fn)) {
+      if (!fn->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
+          !syncAccessFunctionSet.set_in(fn)) {
+        syncAccessFunctionSet.set_add(fn);
+        syncAccessFunctionVec.add(fn);
 #ifdef DEBUG_SYNC_ACCESS_FUNCTION_SET
-          printf("%s:%d %s\n",
-                 parent->getModule()->name,
-                 parent->linenum(),
-                 parent->name);
+        printf("%s:%d %s\n",
+               fn->getModule()->name,
+               fn->linenum(),
+               fn->name);
 #endif
-        }
       }
     }
   }
 
   //
-  // Find all functions that indirectly call sync access primitives.
+  // Find all functions that indirectly call methods on sync/single vars. Note
+  // that syncAccessFunctionSet is just used for fast membership check, while
+  // syncAccessFunctionVec is trickily appended to while iterating over it so
+  // that we look at callsites of newly discovered functions.
   //
   forv_Vec(FnSymbol, fn, syncAccessFunctionVec) {
     forv_Vec(CallExpr, caller, *fn->calledBy) {
@@ -510,7 +541,11 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     if (call->isResolved()) {
       ArgSymbol* arg = actual_to_formal(use);
 
-      retval = isSafeToDeref(defMap, useMap, field, arg, visited);
+      if (arg->intent == INTENT_CONST_REF) {
+        retval = true;
+      } else {
+        retval = isSafeToDeref(defMap, useMap, field, arg, visited);
+      }
 
     } else if (call->isPrimitive(PRIM_MOVE)) {
       SymExpr* newRef = toSymExpr(call->get(1));

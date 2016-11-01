@@ -1,7 +1,36 @@
 use Random;
 
-var Arr = ['c', 'h', 'a', 'p', 'e', 'l'];
+{
+  var A = ['c', 'h', 'a', 'p', 'e', 'l'];
 
-shuffle(Arr, seed=10);
+  shuffle(A, seed=10);
 
-writeln(Arr);
+  writeln(A);
+}
+
+
+{
+  var D = {2..8 by 2},
+        A : [D] int;
+
+  for i in D {
+    A[i] = i;
+  }
+
+  shuffle(A, seed=10);
+
+  writeln(A);
+}
+
+{
+  var D = {2..8 by -2},
+        A : [D] int;
+
+  for i in D {
+    A[i] = i;
+  }
+
+  shuffle(A, seed=20);
+
+  writeln(A);
+}

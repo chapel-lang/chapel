@@ -28,6 +28,7 @@
 #include "clangUtil.h"
 #include "expr.h"
 #include "externCResolve.h"
+#include "initializerRules.h"
 #include "LoopStmt.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -277,16 +278,10 @@ static void addOneToSymbolTable(DefExpr* def)
                     def->sym->stringLoc());
         }
 
-        if (!oldFn && (newFn && !newFn->_this)) {
+        if ((!oldFn && (newFn && !newFn->_this)) ||
+            (!newFn && (oldFn && !oldFn->_this))) {
           // A function definition is conflicting with another named symbol
           // that isn't a function (could be a variable, a module name, etc.)
-          USR_FATAL(sym,
-                    "'%s' has multiple definitions, redefined at:\n  %s",
-                    sym->name,
-                    def->sym->stringLoc());
-        } else if (!newFn && (oldFn && !oldFn->_this)) {
-          // Another named symbol that isn't a function is conflicting with
-          // a function definition name.
           USR_FATAL(sym,
                     "'%s' has multiple definitions, redefined at:\n  %s",
                     sym->name,
@@ -483,15 +478,17 @@ void UseStmt::validateList() {
 
   const char* listName = except ? "except" : "only";
   for_vector(const char, name, named) {
-    Symbol* sym = lookup(scopeToUse, name);
+    if (name[0] != '\0') {
+      Symbol* sym = lookup(scopeToUse, name);
 
-    if (!sym) {
-      USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
-    } else if (!sym->isVisible(this)) {
-      USR_FATAL_CONT(this, "Bad identifier in '%s' clause, '%s' is private", listName, name);
+      if (!sym) {
+        USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
+      } else if (!sym->isVisible(this)) {
+        USR_FATAL_CONT(this, "Bad identifier in '%s' clause, '%s' is private", listName, name);
+      }
+
+      createRelatedNames(sym);
     }
-
-    createRelatedNames(sym);
   }
 
   for (std::map<const char*, const char*>::iterator it = renamed.begin();
@@ -811,6 +808,7 @@ static void build_type_constructor(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_TUPLE)) {
     fn->addFlag(FLAG_TUPLE);
     fn->addFlag(FLAG_INLINE);
+    gGenericTupleTypeCtor = fn;
   }
 
   // and insert it into the class type.
@@ -938,17 +936,7 @@ static void build_type_constructor(AggregateType* ct) {
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
                                           new_CStringSymbol(field->name),
-                                          new CallExpr("chpl__initCopy",
-                                                       new CallExpr(PRIM_TYPE_INIT, arg))));
-          #if 0
-          // Leaving this case in for Tom's work.  He will remove it if it is
-          // unnecessary
-          else
-            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                          fn->_this,
-                                          new_CStringSymbol(field->name),
                                           new CallExpr(PRIM_TYPE_INIT, arg)));
-          #endif
         } else if (exprType) {
           CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
           CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
@@ -1003,14 +991,12 @@ static void build_type_constructor(AggregateType* ct) {
 
 
 // For the given class type, this builds the compiler-generated constructor
-// which is also called by user-defined constructors to pre-initialize all 
+// which is also called by user-defined constructors to pre-initialize all
 // fields to their declared or type-specific initial values.
 static void build_constructor(AggregateType* ct) {
-  if (isSyncType(ct))
-    ct->defaultValue = NULL;
-
   // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
+
   fn->cname = fn->name;
 
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
@@ -1023,6 +1009,7 @@ static void build_constructor(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_TUPLE)) {
     fn->addFlag(FLAG_TUPLE);
     fn->addFlag(FLAG_INLINE);
+    gGenericTupleInit = fn;
   }
 
   // And insert it into the class type.
@@ -1063,11 +1050,12 @@ static void build_constructor(AggregateType* ct) {
   CallExpr*  superCall = NULL;
   CallExpr*  allocCall = NULL;
 
-  if (ct->symbol->hasFlag(FLAG_REF) ||
-      isSyncType(ct)) {
+  if (ct->symbol->hasFlag(FLAG_REF)) {
     // For ref, sync and single classes, just allocate space.
     allocCall = callChplHereAlloc(fn->_this);
+
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
+
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     // Create a meme (whatever that is).
     meme = new ArgSymbol(INTENT_BLANK,
@@ -1075,6 +1063,7 @@ static void build_constructor(AggregateType* ct) {
                          ct,
                          NULL,
                          new SymExpr(gTypeDefaultToken));
+
     meme->addFlag(FLAG_IS_MEME);
 
     // Move the meme into "this".
@@ -1194,26 +1183,28 @@ static void build_constructor(AggregateType* ct) {
                                                                       init->copy())));
 
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
-      }
 
+        // This is set up for initializers (but we don't know if this type has
+        // one just yet).  This must be done before the initCopies or
+        // _createFieldDefault information is wrapped around the init, because
+        // we likely don't need those for the initializer omitted fields
+        // TODO: verify my claim about the _createFieldDefault call
+        storeFieldInit(ct, field->name, init, NULL);
+      }
     } else if (hadType &&
                !field->isType() &&
                !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
     }
 
-    if (!field->isType() && !field->hasFlag(FLAG_PARAM)) {
-      if (hadType)
-        init = new CallExpr("_createFieldDefault", exprType->copy(), init);
-      else if (init)
-        init = new CallExpr("chpl__initCopy", init);
-    }
 
-    if (init) {
-      if (hadInit)
-        arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
-      else
-        arg->defaultExpr = new BlockStmt(new SymExpr(gTypeDefaultToken));
+    if (!field->isType() && !field->hasFlag(FLAG_PARAM)) {
+      if (hadType) {
+        if (hadInit)
+          storeFieldInit(ct, field->name, init, NULL);
+        init = new CallExpr("_createFieldDefault", exprType->copy(), init);
+      } else if (init)
+        init = new CallExpr("chpl__initCopy", init);
     }
 
     if (exprType) {
@@ -1221,6 +1212,19 @@ static void build_constructor(AggregateType* ct) {
         arg->typeExpr = new BlockStmt(exprType, BLOCK_TYPE);
       else
         arg->typeExpr = toBlockStmt(exprType);
+    }
+
+    if (init) {
+      if (hadInit)
+        arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
+      else {
+        Expr* initVal = new SymExpr(gTypeDefaultToken);
+        arg->defaultExpr = new BlockStmt(initVal);
+        if (arg->typeExpr)
+          storeFieldInit(ct, field->name, initVal, arg->typeExpr);
+        else
+          storeFieldInit(ct, field->name, NULL, NULL);
+      }
     }
 
     if (field->isType())
@@ -1541,10 +1545,22 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
         CallExpr *call = toCallExpr(parent);
 
         if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
+          //
+          // If we detect that this function reference is within a
+          // c_ptrTo() call then we only need a C pointer to the
+          // function, not a full Chapel first-class function (which
+          // can capture variables).
+          //
+          // TODO: Can we avoid strcmp or ensure it's "our" fn?
+          // 
+          bool captureForC = (call && call->isNamed("c_ptrTo"));
+
           //If the function is being used as a first-class value, handle
           // this with a primitive and unwrap the primitive later in
           // functionResolution
-          CallExpr *prim_capture_fn = new CallExpr(PRIM_CAPTURE_FN);
+          CallExpr *prim_capture_fn = new CallExpr(captureForC ?
+                                                   PRIM_CAPTURE_FN_FOR_C :
+                                                   PRIM_CAPTURE_FN_FOR_CHPL);
 
           unresolvedSymExpr->replace(prim_capture_fn);
           prim_capture_fn->insertAtTail(unresolvedSymExpr);
@@ -1857,7 +1873,7 @@ static bool tryCResolve_set(ModuleSymbol* module, const char* name,
 
     if (c_exprs.count()) {
       forv_Vec(Expr*, c_expr, c_exprs) {
-        Vec<DefExpr*> v;
+        std::vector<DefExpr*> v;
 
         collectDefExprs(c_expr, v);
 
@@ -1910,32 +1926,16 @@ static void resolveEnumeratedTypes() {
         if (EnumType* type = toEnumType(first->var->type)) {
           if (SymExpr* second = toSymExpr(call->get(2))) {
             const char* name;
-            bool found = false;
-
-            CallExpr* parent = toCallExpr(call->parentExpr);
-            if( parent && parent->baseExpr == call ) {
-              // This is a call e.g.
-              // myenum.method( a )
-              // aka call(call(. myenum "method") a)
-              // so that call needs to go through normalize and resolve
-              continue;
-            }
-
 
             INT_ASSERT(get_string(second, &name));
 
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
                 call->replace(new SymExpr(constant->sym));
-                found = true;
               }
             }
-
-            if (!found) {
-              USR_FATAL(call, 
-                        "unresolved enumerated type symbol \"%s\"",
-                        name);
-            }
+            // Unresolved enum symbols are now either resolved or throw an error
+            // during the function resolution pass. Permits paren-less methods.
           }
         }
       }
@@ -2512,6 +2512,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       // Handles case where inner use has an 'except' list, or is
       // just a plain use.  The use returned will have a (longer) 'except'
       // list.
+      SET_LINENO(this);
       UseStmt* newUse = copy();
       for_vector(const char, toExclude, outer->named) {
         newUse->named.push_back(toExclude);
@@ -2606,6 +2607,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
     } else {
       // The inner use did not specify an 'except' or 'only' list,
       // so propagate our 'only' list and/or renamed list to it.
+      SET_LINENO(this);
       UseStmt* newUse = copy();
       for_vector(const char, toInclude, outer->named) {
         newUse->named.push_back(toInclude);

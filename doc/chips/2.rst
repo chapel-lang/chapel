@@ -2,7 +2,7 @@ Constrained Generics
 ====================
 
 Status
-  Draft
+  Partially Accepted, Deferred, Needs Design Adjustment
 
 Author
   Michael Ferguson, Jeremy Siek
@@ -856,7 +856,7 @@ The following function is well typed.
   }
 
 The only thing that needs to be checked is the return type, that is, we need
-tocheck whether C(S) == C(T). But we know this is true using S == T and the
+to check whether C(S) == C(T). But we know this is true using S == T and the
 fact that equality is a congruence.
 
 The propagation of equality can also go in the other direction. For example,
@@ -1017,7 +1017,7 @@ are satisfied.
 So, we need a strategy to indicate that an interface is satisfied. One
 way to do so would be to use special symbols in an interface that by
 convention would only be specified when the programmer is asserting
-that the required behavior is occuring. For example:
+that the required behavior is occurring. For example:
 
 .. code-block:: chapel
 
@@ -1159,7 +1159,7 @@ we use 'require' or some other keyword different from 'where'?
   totally generic types or other sorts of where clauses. For that reason,
   we should keep 'implements' as part of where clauses, but also we will
   support things like ! implements. Such more complicated examples will
-  fall back on theh existing generics machinery and will not be fully
+  fall back on the existing generics machinery and will not be fully
   type checked apart from how they can be instantiated.
 
 How can functions with some unconstrained generic parameters and some

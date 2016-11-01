@@ -27,6 +27,7 @@ module ChapelStandard {
   use CPtr;
   use CString;
   use String;
+  use ChapelDebugPrint;
   use ChapelEnv;
   use ChapelBase;
   use MemConsistency;

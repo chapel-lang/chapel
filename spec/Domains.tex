@@ -121,7 +121,7 @@ any of the domain's dimensions will be characterized by a strided
 range.
 \end{itemize}
 If \chpl{rank} is $1$, the index type represented by a rectangular
-domain is \chpl{idxType}.  Otherwise, the index type is the homogenous
+domain is \chpl{idxType}.  Otherwise, the index type is the homogeneous
 tuple type \chpl{rank*idxType}.
 If unspecified, \chpl{idxType} defaults
 to \chpl{int} and \chpl{stridable} defaults to \chpl{false}.
@@ -145,9 +145,15 @@ using standard type signature.
 The following declarations both create an uninitialized rectangular domain with three dimensions, with \chpl{int} indices:
 \begin{chapel}
 var D1 : domain(rank=3, idxType=int, stridable=false);
-var D2 : domain(3*int);
+var D2 : domain(3);
 \end{chapel}
+\begin{chapelpost}
+writeln(D1);
+writeln(D2);
+\end{chapelpost}
 \begin{chapeloutput}
+{1..0, 1..0, 1..0}
+{1..0, 1..0, 1..0}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -355,8 +361,8 @@ arrays as indices within an associative domain.
 \end{future}
 
 \begin{openissue}
-Assignment of an associative domain literal results in the a warning message
-being printed altering the user that whole-domain assignment has been
+Assignment of an associative domain literal results in a warning message
+being printed alerting the user that whole-domain assignment has been
 serialized. This results from the resize operation over associative arrays not
 being parsafe. 
 \end{openissue}
@@ -708,6 +714,9 @@ regular domains); or a tuple of indices or a loop that enumerates
 indices (for irregular domains).  If the domain variable being
 assigned was used to declare arrays, these arrays are reallocated as
 discussed in~\rsec{Association_of_Arrays_to_Domains}.
+
+It is an error to assign a stridable domain to an unstridable domain
+without an explicit conversion.
 
 \begin{example}
 The following three assignments show ways of assigning indices to a

@@ -15,7 +15,8 @@ icheck(6);
 icheck(4);
 intd.add(4);
 icheck(4);
-intd.remove(53);
+const retval = intd.remove(53);
+writeln("# ind removed: ", retval);
 
 proc icheck( i:int) {
   writeln( "member(", i, ") = ", intd.member( i));

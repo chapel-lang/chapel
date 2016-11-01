@@ -222,14 +222,16 @@ const NeighDom = {-1..1, -1..1, -1..1};
 
 // atom positions
 var Pos: [DistSpace] [perBinSpace] v3;
-var RealPos => Pos[binSpace];
+var RealPos => if useStencilDist then Pos.noFluffView()
+               else Pos[binSpace];
 
 // atom velocity, force, and neighbor lists
 var Bins: [Space] [perBinSpace] atom;
 
 // bin counts
 var Count: [DistSpace] int(32);
-var RealCount => Count[binSpace];
+var RealCount => if useStencilDist then Count.noFluffView()
+                 else Count[binSpace];
 
 // offsets used to wrap ghosts
 var PosOffset: [NeighDom] v3;
@@ -286,7 +288,7 @@ proc setupComms() {
   forall (P, D, S, N) in zip(PosOffset, Dest, Src, NeighDom) {
     P = N * box;
 
-    if !useStencilDist {
+    if !useStencilDist && N != (0,0,0) {
       D = binSpace.exterior(N * numNeed); // section of ghosts
       S = D.translate(-N * numBins); // map to binSpace
 

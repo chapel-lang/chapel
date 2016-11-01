@@ -1,0 +1,1 @@
+generic_initializer.chpl:7: error: initializer for class 'Foo' requires a generic argument called 'x'

@@ -1,4 +1,4 @@
-constAndParamInConstructor.chpl:4: In constructor 'Foo':
-constAndParamInConstructor.chpl:4: error: invalid access of class member in constructor header
-constAndParamInConstructor.chpl:12: In constructor 'Bar':
-constAndParamInConstructor.chpl:12: error: invalid access of class member in constructor header
+constAndParamInConstructor.chpl:4: In initializer 'Foo':
+constAndParamInConstructor.chpl:4: error: invalid access of class member in initializer argument list
+constAndParamInConstructor.chpl:12: In initializer 'Bar':
+constAndParamInConstructor.chpl:12: error: invalid access of class member in initializer argument list

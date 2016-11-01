@@ -1,0 +1,2 @@
+parentAccess.chpl:10: error: explicit access of parent field "f1" before its initialization
+parentAccess.chpl:10: error: implicit access of parent field "f1" before its initialization

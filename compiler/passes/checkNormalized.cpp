@@ -48,13 +48,13 @@ static void checkFunctionSignatures()
     } else if (fn->hasFlag(FLAG_CONSTRUCTOR) &&
                !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
       if (fn->retExprType)
-        USR_FATAL_CONT(fn, "constructors may not declare a return type");
+        USR_FATAL_CONT(fn, "initializers may not declare a return type");
       for_formals(formal, fn) {
         std::vector<SymExpr*> symExprs;
         collectSymExprs(formal, symExprs);
         for_vector(SymExpr, se, symExprs) {
           if (se->var == fn->_this) {
-            USR_FATAL_CONT(se, "invalid access of class member in constructor header");
+            USR_FATAL_CONT(se, "invalid access of class member in initializer argument list");
             break;
           }
         }

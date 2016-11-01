@@ -1,9 +1,6 @@
 locale 0 owns blocks: (1.. by 12)
 locale 1 owns blocks: (5.. by 12)
 locale 2 owns blocks: (9.. by 12)
-locale 0 owns blocks: (1.. by 12)
-locale 1 owns blocks: (5.. by 12)
-locale 2 owns blocks: (9.. by 12)
 Declaring D:
 0: {1..4}
 0: {13..16}

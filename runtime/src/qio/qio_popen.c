@@ -34,6 +34,8 @@
 #include <unistd.h>
 #include <spawn.h>
 
+#include <pthread.h>
+
 // We need to be able to call malloc, free, etc.
 #include "chpl-mem-no-warning-macros.h"
 
@@ -156,7 +158,8 @@ static qioerr setup_actions(
    executable == NULL or "" -> search the path for argv[0]
 
  */
-qioerr qio_openproc(const char** argv,
+static
+qioerr qio_do_openproc(const char** argv,
                     const char** envp,
                     const char* executable,
                     int* stdin_fd,
@@ -319,6 +322,73 @@ error:
 
   return err;
 }
+
+struct openproc_args_s {
+  const char** argv;
+  const char** envp;
+  const char* executable;
+  int* stdin_fd;
+  int* stdout_fd;
+  int* stderr_fd;
+  int64_t* pid_out;
+  qioerr err;
+};
+
+static
+void* qio_openproc_wrapper(void* arg)
+{
+  struct openproc_args_s* s = (struct openproc_args_s*) arg;
+  s->err = qio_do_openproc(s->argv, s->envp, s->executable,
+                           s->stdin_fd, s->stdout_fd, s->stderr_fd,
+                           s->pid_out);
+  return NULL;
+}
+
+qioerr qio_openproc(const char** argv,
+                    const char** envp,
+                    const char* executable,
+                    int* stdin_fd,
+                    int* stdout_fd,
+                    int* stderr_fd,
+                    int64_t *pid_out)
+{
+  // runs qio_do_openproc in a pthread in order
+  // to avoid issues where a Chapel task is allocated
+  // from memory with MAP_SHARED.
+  //
+  // If such a thread is the thread running fork(),
+  // after the fork() occurs, there will be 2 threads
+  // sharing the same stack.
+  //
+  // If it mattered, we could do this extra step
+  // only for configurations where the Chapel heap
+  // has this problem (GASNet with SEGMENT=fast,large
+  // and possibly others).
+
+  int rc;
+  pthread_t thread;
+  struct openproc_args_s s;
+
+  s.argv = argv;
+  s.envp = envp;
+  s.executable = executable;
+  s.stdin_fd = stdin_fd;
+  s.stdout_fd = stdout_fd;
+  s.stderr_fd = stderr_fd;
+  s.pid_out = pid_out;
+  s.err = 0;
+
+  rc = pthread_create(&thread, NULL, qio_openproc_wrapper, &s);
+  if (rc)
+    QIO_RETURN_CONSTANT_ERROR(EAGAIN, "failed pthread_create in qio_openproc");
+
+  rc = pthread_join(thread, NULL);
+  if (rc)
+    QIO_RETURN_CONSTANT_ERROR(EAGAIN, "failed pthread_join in qio_openproc");
+
+  return s.err;
+}
+
 
 // waitpid
 qioerr qio_waitpid(int64_t pid,

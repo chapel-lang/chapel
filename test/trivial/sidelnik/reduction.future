@@ -1,4 +1,0 @@
-bug: reduction over the arrays in an arrays of arrays does not work
-
-This test fails in different ways for different compilers (?), so for
-now, only it run it for CHPL_HOST_COMPILER=gnu.

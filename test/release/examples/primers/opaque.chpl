@@ -1,32 +1,30 @@
-// The module wrapper is required because module names and type names can conflict.
-// This is a known bug: test/modules/hilde/Writer.future
-module Opaque {
+// Opaque Domains and Arrays
+
 /*
- * Opaque Primer
- *
- * This primer is designed to give a brief introduction to Chapel's
- * opaque domains and arrays.  Opaque domains and arrays are those in
- * which index values are opaque/anonymous, and were designed to
- * support unstructured arrays like graphs.
- */
+   This primer is designed to give a brief introduction to Chapel's
+   opaque domains and arrays.  Opaque domains and arrays are those in
+   which index values are opaque/anonymous. They are designed to
+   support unstructured arrays like graphs. They are a special case of
+   :ref:`associative domains and arrays <primers-associative>`.
+*/
+module Opaque {
 
 //
-// Opaque domains are declared by specifying the keyword "opaque" in
-// place of the normal domain index type and rank specifiers.  In
-// this example, we'll use an opaque domain to represent a group of
-// people.
+// Opaque domains are declared by specifying the ``opaque`` keyword
+// for the domain index type. In this example, we'll use
+// an opaque domain to represent a group of people.
 //
 
 var People: domain(opaque);
 
 //
 // Since opaque domains don't support logical index values, new
-// indices are created by requesting them from the dommain directly.
-// So, to add our first three people to the People domain, we could
-// do the following declarations/assignments:
+// indices are created by requesting them from the domain directly.
+// So, to add our first three people to the ``People`` domain,
+// we could use the following declarations:
 //
 
-var person1 = People.create();  // person inferred to be of type index(People);
+var person1 = People.create();  // person1 inferred to be of type index(People);
 var person2: index(People) = People.create();
 var person3: index(opaque) = People.create();
 
@@ -43,7 +41,7 @@ Name(person3) = "Bob";
 
 //
 // Since opaque indices don't have logical values, printing an opaque
-// domain is not particularly useful.  Opaque arrays can be printed out
+// domain is not particularly useful.  An opaque array can be printed out
 // like any other array.  Like associative domains, there are no
 // guarantees about the order in which elements will be printed.
 //
@@ -65,7 +63,7 @@ writeln();
 
 //
 // To help with this ordering issue, opaque domains support an
-// iterator named "sorted()" which pre-sorts the values and
+// iterator named ``sorted()`` which pre-sorts the values and
 // traverses them in order.  Needless to say, this costs extra
 // time and space, so is meant only as a convenience.
 //
@@ -82,14 +80,14 @@ writeln();
 // In order to do this, we need to store opaque indices for each index
 // in the domain.  For example, let's assume that Barry is the father of
 // Bill and Bob.  We could represent this by declaring an array of
-// indices from the People domain:
-// 
+// indices from the ``People`` domain:
+//
 
 var Father: [People] index(People);
 
 //
-// This declaration says "for every index in the People domain, store
-// an index from the People domain.  We can then assign this array
+// This declaration says "for every index in the ``People`` domain, store
+// an index from the ``People`` domain.  We can then assign this array
 // like any other:
 //
 
@@ -97,8 +95,8 @@ Father(person2) = person1;
 Father(person3) = person1;
 
 //
-// The default value of an opaque index is nil.  Thus, having set up
-// the Father relationship described above, we can print it out as
+// The default value of an opaque index is ``nil``.  Thus, having set up
+// the ``Father`` relationship described above, we can print it out as
 // follows:
 //
 
@@ -113,7 +111,7 @@ for person in People {
 writeln();
 
 //
-// Next, let's create a "Child" array so that each person can refer to
+// Next, let's create a ``Child`` array so that each person can refer to
 // all of their children:
 //
 
@@ -151,16 +149,16 @@ writeln();
 //
 // Note that the graphs above have data associated with their nodes
 // but not their edges.  An interesting note about opaque
-// domains/arrays is that in order to support graphs with data
-// on edges and nodes, a domain is required for the Vertices and the
-// Edges, since each will need to support an array of data.
+// domains/arrays is that in order to support graphs with data on
+// both edges and nodes, a separate domain is required for the edges
+// to support an array of edge data separately from vertex data.
 //
 // As an example, the following code generates and prints a random
-// graph:
+// graph.
 //
 
 //
-// Declare two domains, one for the vertices, one for the edges
+// Declare two domains, one for the vertices, one for the edges.
 //
 var Vertices: domain(opaque);
 var Edges: domain(opaque);
@@ -176,27 +174,27 @@ var numOutEdges: [Vertices] int;
 var VertexWeight: [Vertices] real;
 
 //
-// We'll also store a list of the edges that lead out of it
+// We'll also store a list of the edges that lead out of it.
 //
 var outEdges: [Vertices] [1..numVertices] index(Edges);
 
 //
-// For the edges, we'll store a weight
+// For the edges, we'll store a weight...
 //
 var EdgeWeight: [Edges] real;
 
 //
-// And an indication of the vertices that they lead from and to
+// ... and an indication of the vertices that they lead from and to.
 //
 var from, to: [Edges] index(Vertices);
 
 //
-// Generate a random graph using the routine below
+// Generate a random graph using the routine below.
 //
 createRandomGraph();
 
 //
-// Print out the graph from a vertex-centric point of view...
+// Print out the graph from a vertex-centric point of view.
 //
 writeln("Vertex-oriented view of random graph");
 writeln("------------------------------------");
@@ -219,13 +217,13 @@ for v in Vertices {
 writeln();
 
 //
-// Print out the graph from an edge-centric point of view...
+// Print out the graph from an edge-centric point of view.
 //
 writeln("Edge-oriented view of random graph");
 writeln("----------------------------------");
 for e in Edges do
   //
-  // For each edge, print out its weight, source, and sink
+  // for each edge, print out its weight, source, and sink
   //
   writeln("an edge with weight ", EdgeWeight(e), " links from ", Label(from(e)),
           " to ", Label(to(e)));
@@ -234,15 +232,17 @@ writeln();
 
 
 //
-// create a random graph using the global variables defined above
+// Create a random graph using the global variables defined above.
 //
 proc createRandomGraph() {
+
   //
   // create a random number stream
   //
   // Note: example usage of the standard module Random can be found in
   // the primer randomNumbers.chpl, located in the current directory.
   // Uses the NPB random number generator for historical reasons.
+  //
   use Random;
   var myRandNums = makeRandomStream(seed=314159265,algorithm=RNG.NPB);
 
@@ -289,4 +289,5 @@ proc createRandomGraph() {
   delete myRandNums;
 }
 
-}
+//
+} // module Opaque

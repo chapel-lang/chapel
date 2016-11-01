@@ -1,8 +1,0 @@
-#!/bin/bash -v
-
-aprun -n $1 -N 1 ./s.out_real -nl $1 --tasksPerLocale=1
-aprun -n $1 -N 1 ./s.out_real -nl $1 --tasksPerLocale=2
-aprun -n $1 -N 1 ./s.out_real -nl $1 --tasksPerLocale=3
-aprun -n $1 -N 1 ./s.out_real -nl $1 --tasksPerLocale=4
-aprun -n $1 -N 1 ./s.out_real -nl $1 --tasksPerLocale=5
-aprun -n $1 -N 1 ./s.out_real -nl $1 --tasksPerLocale=6

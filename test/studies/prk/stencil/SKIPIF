@@ -4,7 +4,6 @@
 # We want to keep the problem size constant across single and multi-locale
 # runs, meaning there are strict memory restrictions for running single locale.
 
-
 $memRequiredInGB = 8;
 $memInGB = $memRequiredInGB;
 

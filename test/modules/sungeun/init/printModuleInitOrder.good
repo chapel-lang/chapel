@@ -6,11 +6,11 @@ Initializing Modules:
      BaseStringType
      SysCTypes
      StringCasts
+    ChapelDebugPrint
     ChapelBase
      ChapelStringLiterals
     MemConsistency
     Atomics
-    AtomicsCommon
     ChapelThreads
     ChapelTuple
     ChapelRange
@@ -25,6 +25,7 @@ Initializing Modules:
     LocalesArray
     ChapelDistribution
      List
+     Sort
     ChapelIO
      IO
       Error
@@ -37,5 +38,7 @@ Initializing Modules:
     ChapelDynDispHack
     Assert
     CommDiagnostics
+    AlignedTSupport
+    RangeChunk
    printModuleInitOrder
     moduleInitTest

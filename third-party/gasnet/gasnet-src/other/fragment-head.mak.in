@@ -68,5 +68,9 @@ GASNET_PREFIX = ###INSTALL_PREFIX###
 GASNET_LD_OVERRIDE = @CC@
 GASNET_LDFLAGS_OVERRIDE = @CFLAGS@ @LDFLAGS@
 
+# NOTE: conduits setting GASNET_LD(FLAGS)_OVERRIDE should ALSO set corresponding
+# GASNET_LD_REQUIRES_* feature flags, for consumption by clients who 
+# do not or cannot directly consume GASNET_LD.
+
 # ----------------------------------------------------------------------
 # #conduit_name#-conduit/conduit.mak settings

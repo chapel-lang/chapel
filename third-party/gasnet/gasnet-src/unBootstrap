@@ -45,5 +45,4 @@ rm -f Makefile.in              \
       other/contrib/Makefile.in \
       other/fca/Makefile.in \
       other/firehose/Makefile.in \
-      other/testspawn/Makefile.in \
       tests/Makefile

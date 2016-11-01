@@ -52,7 +52,7 @@ tuple.  If a programmer requires a non-parameter value to define a
 data structure, an array may be a better choice.
 \end{rationale}
 
-\begin{chapelexample}{homogenous.chpl}
+\begin{chapelexample}{homogeneous.chpl}
 The statement
 \begin{chapel}
 var x1: (string, real),
@@ -98,13 +98,14 @@ A value of a tuple type attaches a value to each component type.
 Tuple values can be specified by a parenthesized, comma-separated list
 of expressions.  The number of expressions in the list defines the
 size of the tuple; the types of these expressions specify the
-component types of the tuple.
+component types of the tuple. A trailing comma is allowed.
 
 The syntax of a tuple expression is given by:
 \begin{syntax}
 tuple-expression:
   ( tuple-component , )
   ( tuple-component , tuple-component-list )
+  ( tuple-component , tuple-component-list , )
 
 tuple-component:
   expression
@@ -226,7 +227,7 @@ since the type of an expression must be statically known.
 
 % FYI: Similar to text regarding array iteration.  Slightly less
 % similar for domain iteration.
-Only homogenous tuples support iteration via
+Only homogeneous tuples support iteration via
 standard \chpl{for}, \chpl{forall} and \chpl{coforall} loops.  These loops
 iterate over all of the tuple's elements.  A loop of the form:
 
@@ -236,7 +237,7 @@ iterate over all of the tuple's elements.  A loop of the form:
   ...e...
 \end{chapel}
 
-where t is a homogenous tuple of size \chpl{n}, is semantically
+where t is a homogeneous tuple of size \chpl{n}, is semantically
 equivalent to:
 
 % This is difficult to capture in a test program
@@ -337,6 +338,7 @@ be used to omit storing some of the components.  In this case, the
 full expression on the right-hand side of the assignment operator is
 evaluated, but the omitted values will not be assigned to anything.
 
+\pagebreak
 \begin{chapelexample}{omit-component.chpl}
 The code
 \begin{chapel}
@@ -667,7 +669,7 @@ The binary operators \chpl{\+}, \chpl{\-}, \chpl{\*}, \chpl{\/}, \chpl{\%},
 are overloaded on tuples by applying them to pairs of the respective
 argument components and returning the results as a new tuple.  The
 sizes of the two argument tuples must be the same.  These operators
-are also defined for homogenous tuples and scalar values of matching
+are also defined for homogeneous tuples and scalar values of matching
 type.
 
 The size of the result tuple is the same as the argument tuple(s).

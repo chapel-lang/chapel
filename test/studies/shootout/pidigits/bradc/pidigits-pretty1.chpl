@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://shootout.alioth.debian.org/
+   http://benchmarksgame.alioth.debian.org
 
    contributed by Tom Hildebrandt, Brad Chamberlain, Lydia Duncan
    derived from the GNU C version by Bonzini, Bartlett, and Mellor
@@ -121,7 +121,7 @@ iter gen_digits(numDigits) {
   }
 
   //
-  // Free memory associated with multi-precision valuesx
+  // Free memory associated with multi-precision values
   //
   mpz_clear(tmp2);
   mpz_clear(tmp1);

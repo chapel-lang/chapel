@@ -27,6 +27,8 @@
 #include "stmt.h"
 #include "stlUtil.h"
 
+#include "iterator.h"
+
 #include <set>
 
 // We use RefVector to store a list of symbols that are aliases for the return
@@ -56,10 +58,11 @@ checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-        !fn->isIterator() &&
-        fn->retType->defaultInitializer &&
-        fn->retType->defaultInitializer->defPoint->parentSymbol == fn)
-      USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
+        !fn->isIterator()) {
+      IteratorInfo* ii = toAggregateType(fn->retType)->iteratorInfo;
+      if (ii && ii->iterator && ii->iterator->defPoint->parentSymbol == fn)
+        USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
+    }
     if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)
       USR_FATAL(fn, "The return value of an assignment operator must be 'void'.");
   }
@@ -277,7 +280,7 @@ static void checkExternProcs() {
 
     for_formals(formal, fn) {
       if (formal->typeInfo() == dtString) {
-        if (fn->instantiatedFrom == NULL) {
+        if (!fn->hasFlag(FLAG_INSTANTIATED_GENERIC)) {
           USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
                              "type string, use c_string instead");
         } else {

@@ -75,6 +75,7 @@ const char* CHPL_REGEXP = NULL;
 const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
+const char* CHPL_UNWIND = NULL;
 
 bool widePointersStruct;
 
@@ -101,6 +102,7 @@ bool fNoScalarReplacement = false;
 bool fNoTupleCopyOpt = false;
 bool fNoRemoteValueForwarding = false;
 bool fNoRemoveCopyCalls = false;
+bool fNoOptimizeArrayIndexing = false;
 bool fNoOptimizeLoopIterators = false;
 bool fNoVectorize = true;
 bool fNoGlobalConstOpt = false;
@@ -112,6 +114,7 @@ bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
+bool fReplaceArrayAccessesWithRefTemps = false;
 bool fUserSetStackChecks = false;
 bool fNoCastChecks = false;
 bool fMungeUserIdents = true;
@@ -137,6 +140,7 @@ bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
+bool fIncrementalCompilation = false;
 bool fUseIPE         = false;
 
 int optimize_on_clause_limit = 20;
@@ -154,14 +158,17 @@ bool report_inlining = false;
 char fExplainCall[256] = "";
 int explainCallID = -1;
 int breakOnResolveID = -1;
+bool fDenormalize = false;
 char fExplainInstantiation[256] = "";
 bool fExplainVerbose = false;
+bool fParseOnly = false;
 bool fPrintCallStackOnError = false;
 bool fPrintIDonError = false;
 bool fPrintModuleResolution = false;
 bool fPrintEmittedCodeSize = false;
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
+bool fReportOptimizedArrayIndexing = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportOrderIndependentLoops = false;
 bool fReportOptimizedOn = false;
@@ -489,6 +496,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoloopInvariantCodeMotion= false;
   fNoInline = false;
   fNoInlineIterators = false;
+  fNoOptimizeArrayIndexing = false;
   fNoOptimizeLoopIterators = false;
   fNoLiveAnalysis = false;
   fNoRemoteValueForwarding = false;
@@ -499,6 +507,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoChecks = true;
   fIgnoreLocalClasses = false;
   fNoOptimizeOnClauses = false;
+  //fReplaceArrayAccessesWithRefTemps = true; // don't tie this to --fast yet
   optimizeCCode = true;
   specializeCCode = true;
   turnOffChecks(desc, unused);
@@ -523,23 +532,27 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   //
   // disable all chapel compiler optimizations
   //
-  fBaseline = true;
-  fNoCopyPropagation = true;
-  fNoDeadCodeElimination = true;
-  fNoFastFollowers = true;
-  fNoloopInvariantCodeMotion = true;
-  fNoInline = true;
-  fNoInlineIterators = true;
-  fNoLiveAnalysis = true;
-  fNoOptimizeLoopIterators = true;
-  fNoVectorize = true;
-  fNoRemoteValueForwarding = true;
-  fNoRemoveCopyCalls = true;
-  fNoScalarReplacement = true;
-  fNoTupleCopyOpt = true;
-  fNoPrivatization = true;
-  fNoOptimizeOnClauses = true;
-  fIgnoreLocalClasses = true;
+  fBaseline = true;                   // --baseline
+
+  fNoCopyPropagation = true;          // --no-copy-propagation
+  fNoDeadCodeElimination = true;      // --no-dead-code-elimination
+  fNoFastFollowers = true;            // --no-fast-followers
+  fNoloopInvariantCodeMotion = true;  // --no-loop-invariant-code-motion
+  fNoInline = true;                   // --no-inline
+  fNoInlineIterators = true;          // --no-inline-iterators
+  fNoLiveAnalysis = true;             // --no-live-analysis
+  fNoOptimizeArrayIndexing = true;    // --no-optimize-array-indexing
+  fNoOptimizeLoopIterators = true;    // --no-optimize-loop-iterators
+  fNoVectorize = true;                // --no-vectorize
+  fNoRemoteValueForwarding = true;    // --no-remote-value-forwarding
+  fNoRemoveCopyCalls = true;          // --no-remove-copy-calls
+  fNoScalarReplacement = true;        // --no-scalar-replacement
+  fNoTupleCopyOpt = true;             // --no-tuple-copy-opt
+  fNoPrivatization = true;            // --no-privatization
+  fNoOptimizeOnClauses = true;        // --no-optimize-on-clauses
+  fIgnoreLocalClasses = true;         // --ignore-local-classes
+  //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
+  fDenormalize = false;               // --no-denormalize
   fConditionalDynamicDispatchLimit = 0;
 }
 
@@ -547,7 +560,6 @@ static void setCacheEnable(const ArgumentDescription* desc, const char* unused) 
   const char *val = fCacheRemote ? "true" : "false";
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
-
 
 static void setHtmlUser(const ArgumentDescription* desc, const char* unused) {
   fdump_html = true;
@@ -641,6 +653,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
+ {"optimize-array-indexing", ' ', NULL, "Enable [disable] array indexing optimization", "n", &fNoOptimizeArrayIndexing, "CHPL_DISABLE_OPTIMIZE_ARRAY_INDEXING", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},
  {"optimize-on-clause-limit", ' ', "<limit>", "Limit recursion depth of on clause optimization search", "I", &optimize_on_clause_limit, "CHPL_OPTIMIZE_ON_CLAUSE_LIMIT", NULL},
@@ -754,6 +767,7 @@ static ArgumentDescription arg_desc[] = {
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
+ {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"debug-short-loc", ' ', NULL, "Display long [short] location in certain debug outputs", "N", &debugShortLoc, "CHPL_DEBUG_SHORT_LOC", NULL},
  {"print-emitted-code-size", ' ', NULL, "Print emitted code size", "F", &fPrintEmittedCodeSize, NULL, NULL},
@@ -763,6 +777,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
+ {"report-optimized-array-indexing", ' ', NULL, "Print stats on optimized array indexing", "F", &fReportOptimizedArrayIndexing, NULL, NULL},
  {"report-optimized-loop-iterators", ' ', NULL, "Print stats on optimized single loop iterators", "F", &fReportOptimizedLoopIterators, NULL, NULL},
  {"report-order-independent-loops", ' ', NULL, "Print stats on order independent loops", "F", &fReportOrderIndependentLoops, NULL, NULL},
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},
@@ -777,6 +792,7 @@ static ArgumentDescription arg_desc[] = {
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
+ {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  DRIVER_ARG_DEBUGGERS,
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
@@ -790,6 +806,8 @@ static ArgumentDescription arg_desc[] = {
  {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"remove-unreachable-blocks", ' ', NULL, "[Don't] remove unreachable blocks after resolution", "N", &fRemoveUnreachableBlocks, "CHPL_REMOVE_UNREACHABLE_BLOCKS", NULL},
+ {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
+ {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
@@ -946,6 +964,7 @@ static void setChapelEnvs() {
   CHPL_WIDE_POINTERS   = envMap["CHPL_WIDE_POINTERS"];
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
+  CHPL_UNWIND          = envMap["CHPL_UNWIND"];
 }
 
 static void setupChplGlobals(const char* argv0) {
@@ -1029,6 +1048,15 @@ static void checkTargetArch() {
   }
 }
 
+static void checkIncrementalAndOptimized() {
+  std::size_t optimizationsEnabled = ccflags.find("-O");
+  if(fIncrementalCompilation && ( optimizeCCode ||
+      optimizationsEnabled!=std::string::npos ))
+    USR_WARN("Compiling with --incremental along with optimizations enabled"
+              " may lead to a slower execution time compared to --fast or"
+              " using -O optimizations directly.");
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1049,6 +1077,8 @@ static void postprocess_args() {
   checkLLVMCodeGen();
 
   checkTargetArch();
+
+  checkIncrementalAndOptimized();
 }
 
 int main(int argc, char* argv[]) {

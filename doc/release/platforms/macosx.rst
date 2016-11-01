@@ -17,6 +17,16 @@ following command::
 
     brew install chapel
 
+The above command installs a release version of Chapel. It is also
+possible to use Homebrew_ to build and install a development version
+based on the master branch on GitHub::
+
+    brew install chapel --HEAD
+
+When using a Homebrew install of Chapel, the ``CHPL_HOME`` directory is
+here::
+
+    /usr/local/Cellar/chapel/<chapel-version>/libexec/
 
 .. note::
 
@@ -28,6 +38,6 @@ following command::
    language's rich features should clone the repository_ or
    download a release_, and :ref:`build Chapel from source <readme-building>`.
 
-.. _Homebrew: https://github.com/Homebrew/homebrew
+.. _Homebrew: https://github.com/Homebrew/brew
 .. _repository: https://github.com/chapel-lang/chapel
 .. _release: https://github.com/chapel-lang/chapel/releases

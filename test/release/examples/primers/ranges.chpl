@@ -1,13 +1,18 @@
-/*
- * Range Primer
- *
- * This primer illustrates Chapel ranges and range operations.
- *
- */
+// Ranges
 
+/*
+   This primer illustrates Chapel ranges and range operations.
+*/
+
+/*
+  .. _primers-ranges-general:
+
+  Ranges (general info)
+  ---------------------
+*/
 //
 // Ranges represent sequences of integral numbers, or "indices".
-// A range literal is defined using the '..' operator.
+// A range literal is defined using the ``..`` operator.
 // The lower bound is always on the left;
 // the upper bound is always on the right.
 //
@@ -17,7 +22,7 @@ writeRange(r);
 
 //
 // Ranges are a basic building block for iteration.  Here we use a
-// for-loop to iterate over the sequence represented by 'r' and
+// for-loop to iterate over the sequence represented by ``r`` and
 // compute the sum of the indices in the sequence.
 //
 var sum: int = 0;
@@ -34,7 +39,7 @@ writeln();
 
 //
 // Ranges are also the building blocks for domains.  Here
-// we use the range r to build up a 2-D domain and an array.
+// we use the range ``r`` to build up a 2-D domain and an array.
 //
 writeln("Domains and arrays");
 const D: domain(2) = {r, r};
@@ -61,7 +66,7 @@ writeRange(..);
 // only the necessary number of indices are taken from its sequence.
 //
 // Only ranges whose sequences have a starting point may be used in
-// an iteration. This includes all the above ranges except .. and ..5 .
+// an iteration. This includes all the above ranges except ``..`` and ``..5``.
 //
 writeln("Iterating over (312..315, 1..) generates");
 for (i, j) in zip(312..315, 1..) {
@@ -70,13 +75,23 @@ for (i, j) in zip(312..315, 1..) {
 writeln();
 writeln();
 
+/*
+  .. _primers-ranges-operators:
+
+  Operators
+  ---------
+*/
+
 //
-// There are several operators for working with ranges.
-// The 'by' and 'align' operators create more complex range values.
+// There are several operators for working with ranges.  The ``by`` and
+// ``align`` operators create strided and aligned range values. The ``#``
+// operator counts a number of elements from the range.  The ``+`` and
+// ``-`` operators shift the sequence the range represents.  The ``==``
+// operator compares ranges for equality.
 //
 
 //
-// The 'by' operator applies a stride to a range, selecting a subsequence
+// The ``by`` operator applies a stride to a range, selecting a subsequence
 // from its sequence.  If the range was already strided, the effect is
 // multiplicative.  If the stride is negative, the direction of the sequence
 // is reversed.
@@ -89,17 +104,18 @@ writeRange(5.. by 2);
 writeln();
 
 //
-// The 'align' operator specifies the alignment of a strided range, which
-// determines (i % |stride|) for any index 'i' in the range's sequence.
-// For example, alignment differentiates the sequence of all odd numbers
-// from all even numbers.
+// The ``align`` operator specifies the alignment of a strided range.  The
+// indices in the aligned range are all equivalent to the specified
+// alignment modulo the absolute value of the stride.  For example,
+// alignment can differentiate the sequence of all odd numbers from all
+// even numbers.
 //
 const allOdds = .. by 2 align 1;
 const allEvens = .. by 2 align 2;
 //
 // The alignment is always taken modulo the stride, so one could also say:
-//  const allEvens = .. by 2 align 0;
-//  const allEvens = .. by 2 align -2;
+//  ``const allEvens = .. by 2 align 0;``
+//  ``const allEvens = .. by 2 align -2;``
 // etc.
 //
 writeln("Range alignment and the align operator");
@@ -109,16 +125,16 @@ const evensBetween1and10 = r by 2 align 0;
 writeRange(evensBetween1and10);
 
 //
-// If a range's stride is 1 or -1, its sequence is always defined.
+// If a range's stride is ``1`` or ``-1``, its sequence is always defined.
 // Otherwise, the sequence is defined only when the range's alignment
 // is defined, or "unambiguous". Without alignment, for example, it is
 // unknown whether the sequence contains all odds or all evens.
 // A defined sequence is required when using the range in an iteration
 // or in many other cases.
 //
-// The 'align' operator always defines the alignment, overriding
+// The ``align`` operator always defines the alignment, overriding
 // the existing alignment, if any.
-// When creating a strided range from a range literal, 'by' will define
+// When creating a strided range from a range literal, ``by`` will define
 // the alignment to be the literal's low bound for positive stride,
 // or the literal's high bound for negative stride.
 // The corresponding bound must exist.
@@ -130,13 +146,45 @@ const rangeWithAmbiguousAlignment = 1.. by -3;
 writeln();
 
 //
-// The == operator can be used to test if two ranges are equal.
+// The count operator ``#`` counts off a number of elements from the start
+// of a range. If the count is negative, the elements are taken from the end
+// of the range, instead. It is an error to take a positive count of indices
+// from a range with no starting index, or a negative count of indices
+// from a range with no ending index.
+//
+writeln("The count operator");
+const numElements = 5;
+writeRange(0..#numElements);
+writeRange(r # 4);
+writeRange(r by -1 # 4);
+writeRange(..5 # -3);
+writeln();
+
+//
+// The ``+`` and ``-`` operators are used to shift a range's sequence
+// higher or lower.
+//
+writeln("Operators + and -");
+writeRange(r + 2);
+writeRange(1 + ..5);
+writeRange((r by 2) - 1);
+writeln();
+
+//
+// The ``==`` operator can be used to test if two ranges are equal.
 // Equality means they represent the same sequence of indices.
 //
 writeln("Range equality");
 writeln(r(allOdds) == oddsBetween1and10);          // true
 writeln(r(allEvens) == evensBetween1and10);        // true
 writeln();
+
+/*
+  .. _primers-ranges-slicing:
+
+  Slicing
+  -------
+*/
 
 //
 // Range slicing produces an intersection of the sequences defined
@@ -152,10 +200,19 @@ writeRange(r(r1));
 writeln("A slice of ", r1, " with ", r, " is the same");
 writeRange(r1(r));
 
+//
 // The odds between 1 and 10 (using range slicing):
+//
 writeRange(r(allOdds));
+
+//
 // The evens between 1 and 10 (using range slicing):
+//
 writeRange(r(allEvens));
+
+//
+// Either or both of the ranges in a range slicing operation can be strided
+//
 const r2 = 1..20 by 3;
 writeln("A slice of ", r2, " with ", 1..20 by 2);
 writeRange(r2(1..20 by 2));
@@ -173,32 +230,13 @@ writeln("A slice of ", r, " with ", 5.. by 2);
 writeRange(r(5.. by 2));
 writeln("A slice of ", 1.., " with ", ..5);
 writeRange((1..)(..5));
-writeln();
 
-//
-// The '+' and '-' operators are used to shift a range's sequence
-// higher or lower.
-//
-writeln("Operators + and -");
-writeRange(r + 2);
-writeRange(1 + ..5);
-writeRange((r by 2) - 1);
-writeln();
+/*
+  .. _primers-ranges-writerange:
 
-//
-// The count operator '#' counts off a number of elements from the start
-// of a range. If the count is negative, the elements are taken from the end
-// of the range, instead. It is an error to take a positive count of indices
-// from a range with no starting index, or a negative count of indices
-// from a range with no ending index.
-//
-writeln("The count operator");
-const numElements = 5;
-writeRange(0..#numElements);
-writeRange(r # 4);
-writeRange(r by -1 # 4);
-writeRange(..5 # -3);
-writeln();
+  Definition of writeRange
+  ------------------------
+*/
 
 //
 // The procedure that has been used throughout this primer to print
@@ -224,8 +262,8 @@ proc writeRange(r: range(?)) {
       write(i, ", ");
     write("...");
   } else if r.hasLast() {
-    // The range is not fully bounded, but its sequence has a starting point
-    // - print the last three indices.
+    // The range is not fully bounded, but its sequence has an ending point.
+    // Print the last three indices.
     write(" = ...");
     for i in r # -3 do
       write(", ", i);

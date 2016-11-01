@@ -1,2 +1,2 @@
-todo-constructors-for-const-rec-fields.chpl:15: In constructor 'OUTERREC':
+todo-constructors-for-const-rec-fields.chpl:15: In initializer 'OUTERREC':
 todo-constructors-for-const-rec-fields.chpl:16: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)

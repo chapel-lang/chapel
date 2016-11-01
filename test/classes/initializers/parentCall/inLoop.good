@@ -1,0 +1,1 @@
+inLoop.chpl:13: error: use of super.init() call in loop body

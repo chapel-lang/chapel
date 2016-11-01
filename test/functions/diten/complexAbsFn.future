@@ -1,7 +1,0 @@
-feature request: Use the C complex types and math libraries instead of implementing our own
-
-We currently implement our complex types as a pair of floating point numbers,
-but C99 added a complex type that we could be using instead.  This would give
-us easier access to the C math libraries for complex types.  Right now, we
-implement our own complex math routines and sometimes they are not quite right.
-This test demonstrates one case we get wrong.

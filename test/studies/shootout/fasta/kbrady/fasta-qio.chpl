@@ -1,175 +1,149 @@
 /* The Computer Language Benchmarks Game
  * http://benchmarksgame.alioth.debian.org/
  *
- * contributed by Kyle Brady
+ * contributed by Kyle Brady, Preston Sahabu
  * modified from the Chapel version by Casey Battaglino
  */
 use IO;
 
 config const LINE_LENGTH = 60;
 config const LOOKUP_SIZE = 4*1024;
-config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
+config const LOOKUP_SCALE: real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
-const outfd = openfd(1);
-const stdout = outfd.writer(kind=iokind.native, locking=false);
+const stdout = openfd(1).writer(kind=iokind.native, locking=false);
+param newLine: int(8) = ascii("\n");
 
-class Freq {
-  var c: int(8);
+param
+  A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),
+  a = ascii("a"), c = ascii("c"), g = ascii("g"), t = ascii("t"),
+  B = ascii("B"), D = ascii("D"), H = ascii("H"), K = ascii("K"),
+  M = ascii("M"), N = ascii("N"), R = ascii("R"), S = ascii("S"),
+  V = ascii("V"), W = ascii("W"), Y = ascii("Y");
+
+// Sequence to be repeated
+const ALU: [0..286] int = [
+  G, G, C, C, G, G, G, C, G, C, G, G, T, G, G, C, T, C, A, C,
+  G, C, C, T, G, T, A, A, T, C, C, C, A, G, C, A, C, T, T, T,
+  G, G, G, A, G, G, C, C, G, A, G, G, C, G, G, G, C, G, G, A,
+  T, C, A, C, C, T, G, A, G, G, T, C, A, G, G, A, G, T, T, C,
+  G, A, G, A, C, C, A, G, C, C, T, G, G, C, C, A, A, C, A, T,
+  G, G, T, G, A, A, A, C, C, C, C, G, T, C, T, C, T, A, C, T,
+  A, A, A, A, A, T, A, C, A, A, A, A, A, T, T, A, G, C, C, G,
+  G, G, C, G, T, G, G, T, G, G, C, G, C, G, C, G, C, C, T, G,
+  T, A, A, T, C, C, C, A, G, C, T, A, C, T, C, G, G, G, A, G,
+  G, C, T, G, A, G, G, C, A, G, G, A, G, A, A, T, C, G, C, T,
+  T, G, A, A, C, C, C, G, G, G, A, G, G, C, G, G, A, G, G, T,
+  T, G, C, A, G, T, G, A, G, C, C, G, A, G, A, T, C, G, C, G,
+  C, C, A, C, T, G, C, A, C, T, C, C, A, G, C, C, T, G, G, G,
+  C, G, A, C, A, G, A, G, C, G, A, G, A, C, T, C, C, G, T, C,
+  T, C, A, A, A, A, A
+];
+
+// Deterministic random number generator as specified
+class Random {
+  const IA = 3877;
+  const IC = 29573;
+  const IM = 139968;
+  const SCALE = LOOKUP_SCALE / IM;
+
+  var last = 42;
+  iter get(n: int): (int, real) {
+    for i in 0..#n {
+      last = (last * IA + IC) % IM;
+      yield (i, SCALE * last);
+    }
+  }
+}
+
+// Sequences to be randomly generated (probability table)
+
+record Freq {
+  var c: int;
   var p: real;
 }
 
-//Sequence to be repeated
-// A -> 65  G -> 71
-// C -> 67  T -> 84
-const ALU : [0..286] int(8) = [
-  71:int(8), 71:int(8), 67:int(8), 67:int(8), 71:int(8), 71:int(8), 71:int(8),
-  67:int(8), 71:int(8), 67:int(8), 71:int(8), 71:int(8), 84:int(8), 71:int(8),
-  71:int(8), 67:int(8), 84:int(8), 67:int(8), 65:int(8), 67:int(8), 71:int(8),
-  67:int(8), 67:int(8), 84:int(8), 71:int(8), 84:int(8), 65:int(8), 65:int(8),
-  84:int(8), 67:int(8), 67:int(8), 67:int(8), 65:int(8), 71:int(8), 67:int(8),
-  65:int(8), 67:int(8), 84:int(8), 84:int(8), 84:int(8), 71:int(8), 71:int(8),
-  71:int(8), 65:int(8), 71:int(8), 71:int(8), 67:int(8), 67:int(8), 71:int(8),
-  65:int(8), 71:int(8), 71:int(8), 67:int(8), 71:int(8), 71:int(8), 71:int(8),
-  67:int(8), 71:int(8), 71:int(8), 65:int(8), 84:int(8), 67:int(8), 65:int(8),
-  67:int(8), 67:int(8), 84:int(8), 71:int(8), 65:int(8), 71:int(8), 71:int(8),
-  84:int(8), 67:int(8), 65:int(8), 71:int(8), 71:int(8), 65:int(8), 71:int(8),
-  84:int(8), 84:int(8), 67:int(8), 71:int(8), 65:int(8), 71:int(8), 65:int(8),
-  67:int(8), 67:int(8), 65:int(8), 71:int(8), 67:int(8), 67:int(8), 84:int(8),
-  71:int(8), 71:int(8), 67:int(8), 67:int(8), 65:int(8), 65:int(8), 67:int(8),
-  65:int(8), 84:int(8), 71:int(8), 71:int(8), 84:int(8), 71:int(8), 65:int(8),
-  65:int(8), 65:int(8), 67:int(8), 67:int(8), 67:int(8), 67:int(8), 71:int(8),
-  84:int(8), 67:int(8), 84:int(8), 67:int(8), 84:int(8), 65:int(8), 67:int(8),
-  84:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8), 84:int(8),
-  65:int(8), 67:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8),
-  84:int(8), 84:int(8), 65:int(8), 71:int(8), 67:int(8), 67:int(8), 71:int(8),
-  71:int(8), 71:int(8), 67:int(8), 71:int(8), 84:int(8), 71:int(8), 71:int(8),
-  84:int(8), 71:int(8), 71:int(8), 67:int(8), 71:int(8), 67:int(8), 71:int(8),
-  67:int(8), 71:int(8), 67:int(8), 67:int(8), 84:int(8), 71:int(8), 84:int(8),
-  65:int(8), 65:int(8), 84:int(8), 67:int(8), 67:int(8), 67:int(8), 65:int(8),
-  71:int(8), 67:int(8), 84:int(8), 65:int(8), 67:int(8), 84:int(8), 67:int(8),
-  71:int(8), 71:int(8), 71:int(8), 65:int(8), 71:int(8), 71:int(8), 67:int(8),
-  84:int(8), 71:int(8), 65:int(8), 71:int(8), 71:int(8), 67:int(8), 65:int(8),
-  71:int(8), 71:int(8), 65:int(8), 71:int(8), 65:int(8), 65:int(8), 84:int(8),
-  67:int(8), 71:int(8), 67:int(8), 84:int(8), 84:int(8), 71:int(8), 65:int(8),
-  65:int(8), 67:int(8), 67:int(8), 67:int(8), 71:int(8), 71:int(8), 71:int(8),
-  65:int(8), 71:int(8), 71:int(8), 67:int(8), 71:int(8), 71:int(8), 65:int(8),
-  71:int(8), 71:int(8), 84:int(8), 84:int(8), 71:int(8), 67:int(8), 65:int(8),
-  71:int(8), 84:int(8), 71:int(8), 65:int(8), 71:int(8), 67:int(8), 67:int(8),
-  71:int(8), 65:int(8), 71:int(8), 65:int(8), 84:int(8), 67:int(8), 71:int(8),
-  67:int(8), 71:int(8), 67:int(8), 67:int(8), 65:int(8), 67:int(8), 84:int(8),
-  71:int(8), 67:int(8), 65:int(8), 67:int(8), 84:int(8), 67:int(8), 67:int(8),
-  65:int(8), 71:int(8), 67:int(8), 67:int(8), 84:int(8), 71:int(8), 71:int(8),
-  71:int(8), 67:int(8), 71:int(8), 65:int(8), 67:int(8), 65:int(8), 71:int(8),
-  65:int(8), 71:int(8), 67:int(8), 71:int(8), 65:int(8), 71:int(8), 65:int(8),
-  67:int(8), 84:int(8), 67:int(8), 67:int(8), 71:int(8), 84:int(8), 67:int(8),
-  84:int(8), 67:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8)
+const IUB: [0..14] Freq = [
+  new Freq(a, 0.27), new Freq(c, 0.12), new Freq(g, 0.12), new Freq(t, 0.27),
+  new Freq(B, 0.02), new Freq(D, 0.02), new Freq(H, 0.02), new Freq(K, 0.02),
+  new Freq(M, 0.02), new Freq(N, 0.02), new Freq(R, 0.02), new Freq(S, 0.02),
+  new Freq(V, 0.02), new Freq(W, 0.02), new Freq(Y, 0.02)
 ];
 
-//Sequences to be randomly generated (probability table)
-var IUB : [0..14] Freq;
-IUB[0] = new Freq(97, 0.27);  // a -> 97
-IUB[1] = new Freq(99, 0.12);  // c -> 99
-IUB[2] = new Freq(103, 0.12); // g -> 103
-IUB[3] = new Freq(116, 0.27); // t -> 116
-IUB[4] = new Freq(66, 0.02);  // B -> 66
-IUB[5] = new Freq(68, 0.02);  // D -> 68
-IUB[6] = new Freq(72, 0.02);  // H -> 72
-IUB[7] = new Freq(75, 0.02);  // K -> 75
-IUB[8] = new Freq(77, 0.02);  // M -> 77
-IUB[9] = new Freq(78, 0.02);  // N -> 78
-IUB[10] = new Freq(82, 0.02); // R -> 82
-IUB[11] = new Freq(83, 0.02); // S -> 83
-IUB[12] = new Freq(86, 0.02); // V -> 86
-IUB[13] = new Freq(87, 0.02); // W -> 87
-IUB[14] = new Freq(89, 0.02); // Y -> 89
+const HomoSapiens: [0..3] Freq = [
+  new Freq(a, 0.3029549426680),
+  new Freq(c, 0.1979883004921),
+  new Freq(g, 0.1975473066391),
+  new Freq(t, 0.3015094502008)
+];
 
-var HomoSapiens : [0..3] Freq;
-HomoSapiens[0] = new Freq(97, 0.3029549426680);  // a -> 97
-HomoSapiens[1] = new Freq(99, 0.1979883004921);  // c -> 99
-HomoSapiens[2] = new Freq(103, 0.1975473066391); // g -> 103
-HomoSapiens[3] = new Freq(116, 0.3015094502008); // t -> 116
-
-// (Scan operation)
-proc sumAndScale(a :[?D]) {
-  var p : real = 0;
+// Scan operation
+proc sumAndScale(a) {
+  var p: real = 0;
   for item in a {
     p += item.p;
     item.p = p * LOOKUP_SCALE;
   }
-  a[a.numElements-1].p = LOOKUP_SCALE;
+  a[a.size-1].p = LOOKUP_SCALE;
 }
-
-// Deterministic random number generator as specified
-class Random {
-  var IM : int = 139968;
-  var IA : int = 3877;
-  var IC : int = 29573;
-  var SCALE : real = LOOKUP_SCALE / IM;
-  var last : int = 42;
-
-  proc next() : real {
-    last = (last * IA + IC) % IM;
-    return SCALE * last;
-  }
-}
-
-var lookup : [0..LOOKUP_SIZE-1] Freq;
-var random = new Random();
 
 // Make lookup table for random sequence generation
-proc makeLookup(a :[?D]) {
+var lookup: [0..#LOOKUP_SIZE] Freq;
+proc makeLookup(a) {
   var j: int = 0;
-  for i in 0..LOOKUP_SIZE-1 {
-    while (a[j].p < i) do j = j + 1;
+  for i in 0..#LOOKUP_SIZE {
+    while (a[j].p < i) do
+      j += 1;
+
     lookup[i] = a[j];
   }
 }
 
 // Add a line of random sequence
-var line_buff : [0..LINE_LENGTH] int(8);
+var random = new Random();
+var line_buff: [0..LINE_LENGTH] int(8);
 proc addLine(bytes: int) {
-  for i in 0..bytes-1 {
-    var r  = random.next();
-    var ai = r : int;
-    while (lookup[ai].p < r) {
+  for (i, r) in random.get(bytes) {
+    var ai = r: int;
+    while (lookup[ai].p < r) do
       ai = ai + 1;
-    }
-    line_buff[i] = lookup[ai].c;
+
+    line_buff[i] = lookup[ai].c: int(8);
   }
   line_buff[bytes] = 10;
   stdout.write(line_buff[0..bytes]);
 }
 
 // Output a random sequence of length n using distribution a
-proc randomMake(desc : string, a :[], n : int) {
-  var len : int = n;
+proc randomMake(desc: string, a: [], n: int) {
+  var len: int = n;
   makeLookup(a);
   stdout.writef("%s", desc);
   while (len > 0) {
-    var bytes : int = min(LINE_LENGTH, len);
+    var bytes: int = min(LINE_LENGTH, len);
     addLine(bytes);
     len = len - bytes;
   }
 }
 
 // Repeat sequence "alu" for n characters
-proc repeatMake(desc : string, alu : [], n : int) {
+proc repeatMake(desc: string, alu: [], n: int) {
   stdout.writef("%s", desc);
-  var r : int = alu.size;
-  var s : [0..(r+LINE_LENGTH)] int(8);
-  for indx in s.domain {
-    s[indx] = alu[indx % r];
-  }
-  var j : int;
-
-  for i in 0..(n / LINE_LENGTH)-1 {
+  var r: int = alu.size;
+  var s: [0..(r+LINE_LENGTH)] int(8);
+  for d in s.domain do 
+    s[d] = alu[d % r]: int(8);
+  
+  var j: int;
+  for i in 0..#(n / LINE_LENGTH) {
     j = (i * LINE_LENGTH) % r;
-    stdout.write(s[j..#LINE_LENGTH], 10:int(8));
+    stdout.write(s[j..#LINE_LENGTH], newLine);
   }
-  if (n % LINE_LENGTH) {
-    j = ((n / LINE_LENGTH)*LINE_LENGTH) % r;
-    stdout.write(s[j..#(n % LINE_LENGTH)], 10:int(8));
+
+  const remain = n % LINE_LENGTH;
+  if remain != 0 {
+    j = ((n / LINE_LENGTH) * LINE_LENGTH) % r;
+    stdout.write(s[j..#remain], newLine);
   }
 }
 
@@ -181,6 +155,4 @@ proc main() {
   randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
 
   delete random;
-  for h in HomoSapiens do delete h;
-  for i in IUB         do delete i;
 }

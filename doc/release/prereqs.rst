@@ -52,3 +52,7 @@ We have used the following commands to install the above prerequisites:
   * Debian, Ubuntu::
 
       sudo apt-get install gcc g++ perl python python-dev python-setuptools bash make mawk
+
+  * FreeBSD::
+
+     sudo pkg install bash python py27-setuptools gmake gawk

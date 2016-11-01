@@ -1,0 +1,5 @@
+perfkeys: Array access:, Ref access:
+files: time_array_vs_ref_forall.dat, time_array_vs_ref_forall.dat
+ylabel: Time (seconds)
+graphname: time_array_vs_ref_forall
+graphtitle: Array Access vs. Reference Access in forall loop

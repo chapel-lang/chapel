@@ -143,16 +143,6 @@ module ChapelLocale {
              else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
     /*
-      :proc:`numCores` is a deprecated predecessor to :proc:`numPUs`,
-      equivalent to `numPUs(logical=true, accessible=true)`.  It will
-      be removed after Chapel 1.13 is released.
-     */
-    proc numCores: int {
-      compilerWarning("numCores is deprecated; please use numPUs() instead");
-      return this.numPUs(logical=true, accessible=true);
-    }
-
-    /*
       This is the maximum task concurrency that one can expect to
       achieve on this locale.  The value is an estimate by the
       runtime tasking layer.  Typically it is the number of physical
@@ -267,7 +257,7 @@ module ChapelLocale {
     proc getChildCount() : int {
       _throwPVFCError();
       return 0;
-    }      
+    }
   
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
@@ -297,6 +287,33 @@ module ChapelLocale {
 
     //------------------------------------------------------------------------}
   }
+
+  /* This class is used during initialization and is returned when
+     'here' is used before the locale hierarchy is initialized.
+   */
+  pragma "no doc"
+  class DummyLocale : locale {
+    proc chpl_id() : int {
+      return -1;
+    }
+    proc chpl_localeid() : chpl_localeID_t {
+      return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
+    }
+    proc chpl_name() : string {
+      return "dummy-locale";
+    }
+    proc getChildCount() : int {
+      return 0;
+    }
+    proc getChild(idx:int) : locale {
+      return this;
+    }
+    proc addChild(loc:locale)
+    {
+      halt("addChild on DummyLocale");
+    }
+  }
+
 
   pragma "no doc"
   class AbstractLocaleModel : locale {
@@ -358,7 +375,7 @@ module ChapelLocale {
       return this;
     }
 
-    // These iterators are to be used by RootLocale:init() to
+    // These iterators are to be used by RootLocale:setup() to
     // initialize the LocaleModel.  The calling loop body cannot
     // contain any non-local code, since the rootLocale is not yet
     // initialized.
@@ -460,7 +477,7 @@ module ChapelLocale {
   pragma "no doc"
   proc chpl_init_rootLocale() {
     origRootLocale = new RootLocale();
-    (origRootLocale:RootLocale).init();
+    (origRootLocale:RootLocale).setup();
   }
 
   // This function sets up a private copy of rootLocale by replicating
@@ -497,8 +514,9 @@ module ChapelLocale {
     if locIdx!=0 {
       // We mimic a private Locales array alias by using the move
       // primitive.
-      __primitive("move", Locales,
-                  (rootLocale:RootLocale).getDefaultLocaleArray());
+      pragma "no auto destroy"
+      var tmp = (rootLocale:RootLocale).getDefaultLocaleArray();
+      __primitive("move", Locales, tmp);
     }
   }
 
@@ -509,7 +527,7 @@ module ChapelLocale {
   // representative.
   // The dummy locale provides system-default tasking and memory management.
   pragma "no doc"
-  const dummyLocale = new locale();
+  const dummyLocale = new DummyLocale();
 
   pragma "no doc"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;

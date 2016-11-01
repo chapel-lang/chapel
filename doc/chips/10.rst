@@ -4,7 +4,7 @@ Initializers
 ============
 
 Status:
-  Draft
+  Partially Implemented
 
 Authors:
   Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov, Kyle Brady
@@ -419,7 +419,7 @@ particular field (and as such cannot update this field after initialization), or
 types whose assignment operators assume that a particular field will always
 contain initialized memory.  Because some of these types are complex and large
 enough that the application of ``noinit`` would be a useful optimization, it is
-desireable to provide a mechanism for the type designer to specify how their
+desirable to provide a mechanism for the type designer to specify how their
 type should respond to the ``noinit`` keyword (if at all) rather than have the
 language make the decision and declare that such types cannot support the
 keyword.

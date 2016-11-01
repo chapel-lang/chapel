@@ -32,6 +32,10 @@
 // Need memory tracking prototypes for inlined memory routines
 #include "chplmemtrack.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // CHPL_MEMHOOKS_ACTIVE=1 will enable the memory hooks;
 // CHPL_MEMHOOKS_ACTIVE will be set to 1 if CHPL_DEBUG is defined;
 // or if CHPL_OPTIMIZE is not defined.
@@ -122,6 +126,10 @@ void chpl_memhook_realloc_post(void* moreMemAlloc, void* memAlloc,
     chpl_track_realloc_post(moreMemAlloc, memAlloc, size, description,
                        lineno, filename);
 }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif // LAUNCHER
 

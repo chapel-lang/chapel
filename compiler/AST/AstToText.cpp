@@ -875,6 +875,13 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         appendExpr(expr->get(1), printingType);
       }
 
+      else if (strcmp(fnName, "chpl__distributed")             == 0)
+      {
+        appendExpr(expr->get(2), printingType);
+        mText += " dmapped ";
+        appendExpr(expr->get(1), printingType);
+      }
+
       else if (strcmp(fnName, "chpl__buildDomainExpr")        == 0)
       {
         mText += "{";
@@ -1182,6 +1189,11 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     {
       appendExpr(expr->get(1), printingType);
       mText += ".type ";
+    }
+    else if (expr->isPrimitive(PRIM_NEW))
+    {
+      mText += "new ";
+      appendExpr(expr->get(1), printingType);
     }
     else
     {

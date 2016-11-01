@@ -152,7 +152,7 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
-      init();
+      setup();
     }
 
     proc LocaleModel(parent_loc : locale) {
@@ -160,7 +160,7 @@ module LocaleModel {
         halt("Cannot create additional LocaleModel instances");
       }
       parent = parent_loc;
-      init();
+      setup();
     }
 
     proc chpl_id() return _node_id;     // top-level locale (node) number
@@ -205,20 +205,20 @@ module LocaleModel {
     //------------------------------------------------------------------------{
     //- Implementation (private)
     //-
-    proc init() {
+    proc setup() {
       _node_id = chpl_nodeID: int;
 
       // chpl_nodeName is defined in chplsys.c.
       // It supplies a node name obtained by running uname(3) on the
       // current node.  For this reason (as well), the constructor (or
-      // at least this init method) must be run on the node it is
+      // at least this setup method) must be run on the node it is
       // intended to describe.
       var comm, spawnfn : c_string;
       extern proc chpl_nodeName() : c_string;
       // sys_getenv returns zero on success.
       if sys_getenv(c"CHPL_COMM", comm) == 0 && comm == c"gasnet" &&
         sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 0 && spawnfn == c"L"
-      then local_name = chpl_nodeName() + "-" + _node_id : string;
+      then local_name = chpl_nodeName():string + "-" + _node_id:string;
       else local_name = chpl_nodeName():string;
 
       extern proc chpl_task_getCallStackSize(): size_t;
@@ -287,10 +287,10 @@ module LocaleModel {
       maxTaskPar = 0;
     }
 
-    // The init() function must use chpl_initOnLocales() to iterate (in
+    // The setup() function must use chpl_initOnLocales() to iterate (in
     // parallel) over the locales to set up the LocaleModel object.
     // In addition, the initial 'here' must be set.
-    proc init() {
+    proc setup() {
       forall locIdx in chpl_initOnLocales() {
         chpl_task_setSubloc(c_sublocid_any);
         const node = new LocaleModel(this);
@@ -336,8 +336,8 @@ module LocaleModel {
         yield loc;
     }
 
-    proc getDefaultLocaleSpace() return this.myLocaleSpace;
-    proc getDefaultLocaleArray() return myLocales;
+    proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
+    proc getDefaultLocaleArray() const ref return myLocales;
 
     proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);
@@ -442,7 +442,7 @@ module LocaleModel {
   //
   // returns true if an executeOn can be handled directly
   // by running the function in question.
-  // Applieds to execute on and execute on fast.
+  // Applies to execute on and execute on fast.
   // When performing a blocking on, the compiler will emit this sequence:
   //
   //  if (chpl_doDirectExecuteOn(targetLocale))
@@ -456,7 +456,7 @@ module LocaleModel {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
 
-    if (done != chpl_nodeID) {
+    if (dnode != chpl_nodeID) {
       return false; // need to move to different node
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
@@ -486,7 +486,6 @@ module LocaleModel {
       // run directly on this node
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
-        assert(false); // should be handled by doDirectExecuteOn
         chpl_ftable_call(fn, args);
       } else {
         // move to a different sublocale
@@ -515,7 +514,6 @@ module LocaleModel {
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
-        assert(false); // should be handled by doDirectExecuteOn
         chpl_ftable_call(fn, args);
       } else {
         // move to a different sublocale

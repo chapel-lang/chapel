@@ -2,7 +2,7 @@ Rules for inserting autoCopy
 ============================
 
 Status
-  Draft
+  Superseded, see CHIP 13
 
 Author
   Vassily Litvinov, Chapel Team
@@ -94,7 +94,7 @@ Step 3: insert autoDestroy
 
 * Insert ``autoDestroy(v);`` for each variable at the end of that
   variable's scope. The ``autoCopy`` inserted in Step 2b for value returning
-  is performed before invokign ``autoDestroy`` for the variables
+  is performed before invoking ``autoDestroy`` for the variables
   leaving the procedure's top scope.
 
 Step 4: remove copies

@@ -8,7 +8,7 @@ AUTOMAKE_OPTIONS = foreign 1.4
 ACLOCAL_AMFLAGS = -I other/plpa/config
 
 # Directories for automake to recurse into:
-SUBDIRS = .          \
+SUBDIRS =            \
 	config-aux   \
         other
 
@@ -54,7 +54,8 @@ CONDUITMODE_EXTRA_DIST =    	\
 	gasnet_trace.c
 # GASNET_TOOLSONLY_FALSE_END
 
-DIST_SUBDIRS = $(SUBDIRS) $(CONDUITMODE_DIST_SUBDIRS)
+# bug3285: Order matters here: other should follow conduits to maintain dependencies for distclean
+DIST_SUBDIRS = $(CONDUITMODE_DIST_SUBDIRS) $(SUBDIRS)
 
 configdir = $(includedir)
 config_DATA = $(CONFIG_HEADER)
@@ -222,8 +223,7 @@ endif
 # Build, clean, install, uninstall, etc. the conduits - in parallel if possible.
 # Instead of automake's loop over subdir, we expand to one target per subdir.
 # Care is taken w/ the 'clean-local' rule in case distclean has wiped the 
-# local or conduit Makefiles (order depends on the version of automake).
-# The same goes for 'distclean-local' rule.
+# local or conduit Makefiles
 # Note that if ($VAR:%=%FOO) doesn't work for a given make, then we are
 # reduced to using actual conduit names as PHONY targets, but the rule for
 # $(recurse_local) is tailored to work correctly regardless.
@@ -248,7 +248,9 @@ clean-local:
 	@if test -f Makefile -a -f smp-conduit/Makefile; then \
 	  $(MAKE) $(recurse_local) DO_WHAT=clean || exit $$? ; \
 	 fi
-	@$(MAKE) recurse_special DO_WHAT=clean
+	@if test -f Makefile; then                   \
+	  $(MAKE) recurse_special DO_WHAT=clean ;    \
+	 fi
 check-local: check-exports $(TOOLSONLY_CHECK)
 seq par parsync:
 	@$(MAKE) $(recurse_local) DO_WHAT=$@
@@ -319,19 +321,23 @@ uninstall-local:
 	  rm -f $(DESTDIR)$(includedir)/patched-headers/$$file ; \
 	done
 
-# automake 1.4 doesn't automatically make distclean in DIST_SUBDIRS
-# So, we run it here if it doesn't appear to have already been run.
-# We also take care of tests, which contains a generated Makefile
-# that older autotools fail to automatically remove as well.
-distclean-local:
-	@for dir in $(CONDUIT_DIRS) tests; do               \
+# Bug3285: the behavior of distclean-recursive varies in incompatible ways
+# across automake versions, such that no matter what variables we specify
+# some versions will break the dependencies between subdirectories.
+# Very early automakes ignore DIST_SUBDIRS entirely.
+# We override it with our own top-level rule to ensure consistent ordering.
+distclean: force
+	@for dir in $(DIST_SUBDIRS); do                     \
 	   if test -f "$$dir/Makefile"; then                \
 	     ( cd "$$dir" && $(MAKE) distclean ) || exit 1; \
 	   fi;                                              \
 	 done
-	@if test -f Makefile; then                   \
-	  $(MAKE) recurse_special DO_WHAT=distclean; \
-	 fi
+	$(MAKE) recurse_special DO_WHAT=distclean
+	$(MAKE) $(AM_MAKEFLAGS) distclean-am
+	rm -f tests/Makefile
+	rm -f $(am__CONFIG_DISTCLEAN_FILES)
+	rm -f config.status gasnet_config.h stamp-h1
+	rm -f Makefile
 
 .PHONY: force tests test do-begin-tests do-end-tests                  \
         other-tests other-run-tests tests-seq tests-par tests-parsync \

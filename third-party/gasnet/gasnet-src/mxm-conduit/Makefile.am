@@ -33,7 +33,7 @@ mpi_deps = $(mpi_srcdir)/*.h $(mpi_srcdir)/*.c
 mpi_special_objs = $(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o
 $(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o: force
 	@MPI_CC@ @MPI_CFLAGS@ $(LIBDEFINES) $(CONDUIT_EXTRALIBCFLAGS) $(LIBINCLUDES) \
-		-o $@ -c $(mpi_srcdir)/gasnet_bootstrap_mpi.c
+		$(MANUAL_MPICFLAGS) -o $@ -c $(mpi_srcdir)/gasnet_bootstrap_mpi.c
 endif
 ##
 ## PMI bootstrap support (optional)

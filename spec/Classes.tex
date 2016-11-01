@@ -872,6 +872,36 @@ true
 \end{chapeloutput}
 \end{chapelexample}
 
+\pagebreak
+Type methods can also be iterators.
+
+\begin{chapelexample}{typeMethodIter.chpl}
+In the following code, the class \chpl{C} defines a type method
+iterator which can be invoked on the type itself:
+\begin{chapel}
+class C {
+  var x: int;
+  var y: string;
+
+  iter type myIter() {
+    yield 3;
+    yield 5;
+    yield 7;
+    yield 11;
+  }
+}
+
+for i in C.myIter() do
+  writeln(i);
+\end{chapel}
+\begin{chapeloutput}
+3
+5
+7
+11
+\end{chapeloutput}
+\end{chapelexample}
+
 When \sntx{this-intent} is \chpl{ref}, the receiver argument will be
 passed by reference, allowing modifications to \chpl{this}.  If
 no \sntx{this-intent} is specified, the receiver will be passed with
@@ -949,8 +979,8 @@ thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 \index{these@\chpl{these}}
 \index{classes!these@\chpl{these}}
 
-An iterator method declared with the name \chpl{these} allows a class to be
-``iterated over'' similarly to how a domain or array is iterated over.
+An iterator method declared with the name \chpl{these} allows a class object to be
+``iterated over'' similarly to how a domain or array supports iteration.
 Using a class in the context of a loop where
 an \sntx{iteratable-expression} is expected has the semantics of calling
 a method on the class named \chpl{these}.
@@ -984,6 +1014,36 @@ delete ta;
 3
 \end{chapeloutput}
 
+\end{chapelexample}
+
+An iterator type method with the name \chpl{these} supports iteration
+over the class type itself.
+
+\begin{chapelexample}{typeMethodIterThese.chpl}
+In the following code, the class \chpl{C} defines a type method
+iterator named \chpl{these}, supporting direct iteration over the type:
+\begin{chapel}
+class C {
+  var x: int;
+  var y: string;
+
+  iter type these() {
+    yield 1;
+    yield 2;
+    yield 4;
+    yield 8;
+  }
+}
+
+for i in C do
+  writeln(i);
+\end{chapel}
+\begin{chapeloutput}
+1
+2
+4
+8
+\end{chapeloutput}
 \end{chapelexample}
 
 \section{Common Operations}

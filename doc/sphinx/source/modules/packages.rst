@@ -16,7 +16,7 @@ inclusion there.
    :maxdepth: 1
    :glob:
 
-   packages/**
+   packages/*
 
 
 Index

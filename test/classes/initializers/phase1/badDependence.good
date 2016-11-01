@@ -1,0 +1,2 @@
+badDependence.chpl:11: error: Phase 1 initialization of field "f2" does not match field declaration order
+badDependence.chpl:12: error: Phase 1 initialization of field "f3" does not match field declaration order

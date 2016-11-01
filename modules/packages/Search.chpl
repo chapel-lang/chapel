@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,38 +18,122 @@
  */
 
 /*
-   The `Search` module is designed to support standard search routines. The
-   current interface is minimal and should be expected to grow and evolve
-   over time.
+   The `Search` module is designed to support standard search routines on 1D
+   arrays
  */
 module Search {
+  use Sort;
+
 
 /*
-   Searches through the pre-sorted array `Data` looking for the value `val` using
-   a sequential linear search.  Returns a tuple indicating (1) whether or not
-   the value was found and (2) the location of the value if it was found, or
-   the location where the value should have been if it was not found.
+  A note about lo/hi arguments:
 
-   :arg Data: The sorted array to search
+  These args were kept in the interface since passing sliced arrays is
+  (currently) very expensive, and many fundamental module codes depend on
+  passing sliced arrays to binarySearch. For interface consistency, other
+  search algorithms also support lo/hi arguments.
+
+  TODO -- add performance testing for Search algorithms, and compare
+          passing sliced arrays vs. unsliced arrays with lo/hi args
+          and strided vs unstrided performance
+*/
+
+/*
+   General purpose searching interface for searching through a 1D array.
+   For pre-sorted arrays, denoted by passing ``sorted=true`` as an argument,
+   this function wraps :proc:`binarySearch`, otherwise it wraps
+   :proc`linearSearch`.
+
+   :arg Data: The array to be searched
+   :type Data: [] `eltType`
    :arg val: The value to find in the array
+   :type val: `eltType`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted, and the equality operation for the array data.
+   :arg lo: The lowest index to consider while searching
+   :type lo: `Dom.idxType`
+   :arg hi: The highest index to consider while searching
+   :type hi: `Dom.idxType`
+   :arg sorted: Indicate if the array is pre-sorted, determining which search
+      algorithm to call
+   :type sorted: `bool`
 
-   :returns: A tuple indicating (1) if the value was found and (2) the location of the value if it was found or the location where the value should have been if it was not found.
-
+   :returns: A tuple indicating (1) if the value was found and (2) the location
+      of the value if it was found or the location where the value should have
+      been if it was not found.
+   :rtype: (`bool`, `Dom.idxType`)
  */
-proc LinearSearch(Data:[?Dom], val) {
-  for i in Dom {
-    if (Data(i) == val) {
-      return (true, i);
-    } else if (Data(i) > val) {
-      return (false, i);
-    }
-  }
-  return (false,Dom.high+1);
+proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high, sorted=false) {
+  if sorted then
+    return binarySearch(Data, val, comparator, lo, hi);
+  else
+    return linearSearch(Data, val, comparator, lo, hi);
 }
 
 
-// would really like to drop the lo/hi arguments here, but right now
-// that causes too big of a memory leak
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high, sorted=false)
+  where Dom.rank != 1 {
+    compilerError("search() requires 1-D array");
+}
+
+
+
+/*
+   Searches through the array `Data` looking for the value `val` using
+   a sequential linear search.  Returns a tuple indicating (1) whether or not
+   the value was found and (2) the location of the first occurrence of the
+   value if it was found, or ``Data.domain.high+1`` if it was not found.
+
+   :arg Data: The array to search
+   :type Data: [] `eltType`
+   :arg val: The value to find in the array
+   :type val: `eltType`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines the
+       equality operation for the array data.
+   :arg lo: The lowest index to consider while searching
+   :type lo: `Dom.idxType`
+   :arg hi: The highest index to consider while searching
+   :type hi: `Dom.idxType`
+
+   :returns: A tuple indicating (1) if the value was found and (2) the location
+      of the value if it was found or ``Data.domain.high+1`` if it was not
+      found.
+   :rtype: (`bool`, `Dom.idxType`)
+
+ */
+proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) {
+
+  chpl_check_comparator(comparator, Data.eltType);
+
+  const stride = if Dom.stridable then abs(Dom.stride) else 1;
+  // Domain slicing is cheap, but avoiding it when possible helps performance
+  if lo == Dom.low && hi == Dom.high {
+    for i in Dom {
+      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
+        return (true, i);
+    }
+  } else {
+    const r = if Dom.stridable then lo..hi by stride else lo..hi;
+    for i in Dom[r] {
+      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
+        return (true, i);
+    }
+  }
+
+  return (false, Dom.high+stride);
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high)
+  where Dom.rank != 1 {
+    compilerError("linearSearch() requires 1-D array");
+}
+
+
 /*
    Searches through the pre-sorted array `Data` looking for the value `val`
    using a sequential binary search.  If provided, only the indices `lo`
@@ -59,26 +143,67 @@ proc LinearSearch(Data:[?Dom], val) {
    where the value should have been if it was not found.
 
    :arg Data: The sorted array to search
+   :type Data: [] `eltType`
    :arg val: The value to find in the array
+   :type val: `eltType`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
    :arg lo: The lowest index to consider while searching
-   :type lo: `integral`
+   :type lo: `Dom.idxType`
    :arg hi: The highest index to consider while searching
-   :type hi: `integral`
+   :type hi: `Dom.idxType`
 
-   :returns: A tuple indicating (1) if the value was found and (2) the location of the value if it was found or the location where the value should have been if it was not found.
+   :returns: A tuple indicating (1) if the value was found and (2) the location
+      of the value if it was found or the location where the value should have
+      been if it was not found.
+   :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc BinarySearch(Data:[?Dom], val, in lo = Dom.low, in hi = Dom.high) {
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
+  chpl_check_comparator(comparator, Data.eltType);
+
+  const stride = if Dom.stridable then abs(Dom.stride) else 1;
+
   while (lo <= hi) {
-    const mid = (hi - lo)/2 + lo;
-    if (Data(mid) == val) {
-      return (true, mid);
-    } else if (val > Data(mid)) {
-      lo = mid+1;
-    } else {
-      hi = mid-1;
-    }
+    const size = (hi - lo) / stride,
+          mid = if hi == lo then hi
+                else if size % 2 then lo + ((size - 1)/2) * stride
+                else lo + (size/2 - 1) * stride;
+
+    if chpl_compare(Data[mid], val, comparator=comparator) == 0 then
+        return (true, mid);
+    else if chpl_compare(val, Data[mid], comparator=comparator) > 0 then
+      lo = mid + stride;
+    else
+      hi = mid - stride;
   }
   return (false, lo);
 }
+
+
+pragma "no doc"
+/* Non-stridable binarySearch */
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high)
+  where !Dom.stridable {
+  chpl_check_comparator(comparator, Data.eltType);
+
+  while (lo <= hi) {
+    const mid = (hi - lo)/2 + lo;
+    if chpl_compare(Data[mid], val, comparator=comparator) == 0 then
+        return (true, mid);
+    else if chpl_compare(val, Data[mid], comparator=comparator) > 0 then
+      lo = mid + 1;
+    else
+      hi = mid - 1;
+  }
+  return (false, lo);
 }
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high)
+  where Dom.rank != 1 {
+    compilerError("binarySearch() requires 1-D array");
+}
+} // Search module

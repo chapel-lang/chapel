@@ -100,6 +100,14 @@ module CPtr {
   inline proc _cast(type t, x) where t:c_void_ptr && x.type:object {
     return __primitive("cast", t, x);
   }
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:string && x.type:c_void_ptr {
+    return __primitive("ref to string", x):string;
+  }
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:string && x.type:c_ptr {
+    return __primitive("ref to string", x):string;
+  }
 
 
   pragma "compiler generated"
@@ -113,6 +121,19 @@ module CPtr {
   inline proc _defaultOf(type t) where t:c_ptr {
       return __primitive("cast", t, nil);
   }
+
+  pragma "compiler generated"
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t == c_fn_ptr {
+      return __primitive("cast", t, nil);
+  }
+
+  pragma "no doc"
+  inline proc =(ref a:c_fn_ptr, b:_nilType) { __primitive("=", a, c_nil); }
+
+  pragma "no doc"
+  inline proc =(ref a:c_fn_ptr, b:c_fn_ptr) { __primitive("=", a, b); }
+
 
 
   pragma "no doc"
@@ -223,6 +244,17 @@ module CPtr {
     // Other cases should be avoided, e.g. sync vars
     return c_pointer_return(x);
   }
+
+  inline proc c_ptrTo(x: c_fn_ptr) {
+    return x;
+  }
+  proc c_fn_ptr.this() {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+  proc c_fn_ptr.this(args...) {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+
 
   private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
 

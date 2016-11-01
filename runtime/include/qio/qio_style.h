@@ -43,6 +43,7 @@ typedef uint8_t style_char_t;
 #define QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS 8
 
 
+// If these values change, also change iostringformat in IO.chpl
 #define QIO_STRING_FORMAT_WORD 0
 #define QIO_STRING_FORMAT_BASIC 1
 #define QIO_STRING_FORMAT_CHPL 2
@@ -169,7 +170,7 @@ typedef struct qio_style_s {
 
   // numeric printing and scanning choice
   int32_t precision; // for floating point, number after decimal point.
-                     // or number of significant digits in realfmt 2.
+                     // or number of significant digits in realfmt 0.
                      // for integers, this is always the number
                      // of .000 zeros to print
                      // when reading, this number has no impact on floating
@@ -232,7 +233,7 @@ void qio_style_init_default(qio_style_t* s)
 
   s->binary = 0;
   s->byteorder = QIO_NATIVE;
-  s->str_style = -10;
+  s->str_style = -0xff00; // to EOF
 
   s->min_width_columns = 0;
   s->max_width_columns = UINT32_MAX;

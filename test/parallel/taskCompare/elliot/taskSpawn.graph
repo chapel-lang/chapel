@@ -1,0 +1,5 @@
+perfkeys: Elapsed time:, Elapsed time:, Elapsed time:
+graphkeys: forall, coforall, for+begin
+files: empty-forall.dat, empty-coforall.dat, empty-for+begin.dat
+graphtitle: Empty Task Spawn Timings (500,000 x maxTaskPar)
+ylabel: Time (seconds)

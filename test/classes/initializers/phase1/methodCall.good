@@ -1,0 +1,1 @@
+methodCall.chpl:5: error: attempted method call too early during initialization

@@ -1,6 +1,6 @@
-perfkeys: real, real, real, real
-graphkeys: binary-trees, binary-trees_iter, binarytrees, binary-trees-freeWhileAdding
-files: binary-trees.20.dat, binary-trees_iter.20.dat, binarytrees.20.dat, binarytrees-freeWhileAdding.20.dat
+perfkeys: real, real, real, real, real, real
+graphkeys: binary-trees, binary-trees_iter, binarytrees, binary-trees-freeWhileAdding, binarytrees-blc, binary-trees-freeWhileAdding-exp
+files: binary-trees.20.dat, binary-trees_iter.20.dat, binarytrees.20.dat, binarytrees-freeWhileAdding.20.dat, binarytrees-blc.20.dat, binarytrees-freeWhileAdding-exp.20.dat
 graphtitle: Binary Trees Shootout Benchmark (n=20)
 ylabel: Time (seconds)
 graphname: binary-trees.20

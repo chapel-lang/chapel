@@ -169,6 +169,7 @@ template <class C, class AHashFns, int N> class NBlockHash {
 
   C* end() { return last(); }
   int length() { return N * n; }
+  int size() {return n;}
   C *first();
   C *last();
   C put(C c);

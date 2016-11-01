@@ -308,16 +308,17 @@
      TSHIFTRIGHT = 380,
      TSTAR = 381,
      TSWAP = 382,
-     TIO = 383,
-     TLCBR = 384,
-     TRCBR = 385,
-     TLP = 386,
-     TRP = 387,
-     TLSBR = 388,
-     TRSBR = 389,
-     TNOELSE = 390,
-     TUMINUS = 391,
-     TUPLUS = 392
+     TASSIGNREDUCE = 383,
+     TIO = 384,
+     TLCBR = 385,
+     TRCBR = 386,
+     TLP = 387,
+     TRP = 388,
+     TLSBR = 389,
+     TRSBR = 390,
+     TNOELSE = 391,
+     TUMINUS = 392,
+     TUPLUS = 393
    };
 #endif
 
@@ -383,4 +384,4 @@ void yypstate_delete ();
 
 
 /* Line 2068 of yacc.c  */
-#line 387 "../include/bison-chapel.h"
+#line 388 "../include/bison-chapel.h"

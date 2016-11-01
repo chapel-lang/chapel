@@ -984,6 +984,7 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
       break;
     case QIO_BINARY_STRING_STYLE_TOEOF:
       // Just don't worry about the length - write len bytes.
+      break;
     default:
       if( str_style >= 0 ) {
         // MPF - perhaps we should allow writing a string
@@ -1333,7 +1334,7 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
   ssize_t safe_quoted_bytes = 0;
   ssize_t safe_quoted_chars = 0;
   ssize_t safe_quoted_cols = 0;
-  int elipses_size;
+  int ellipses_size;
   int end_quote_size;
   int start_quote_size;
   int clen = 1;
@@ -1347,11 +1348,11 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
   // write the string itself, possible with some escape-handling.
   if( string_format == QIO_STRING_FORMAT_WORD ||
       string_format == QIO_STRING_FORMAT_TOEND ) {
-    elipses_size = 0;
+    ellipses_size = 0;
     end_quote_size = 0;
     start_quote_size = 0;
   } else {
-    elipses_size = 3; // ie ...
+    ellipses_size = 3; // ie ...
     end_quote_size = 1; // ie a double quote
     start_quote_size = 1;
     // Smallest pattern is ""...
@@ -1378,9 +1379,9 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
       QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
       goto error;
     }
-    if( quoted_bytes + elipses_size + end_quote_size <= max_bytes &&
-        quoted_chars + elipses_size + end_quote_size <= max_chars &&
-        quoted_cols + elipses_size + end_quote_size <= max_cols) {
+    if( quoted_bytes + ellipses_size + end_quote_size <= max_bytes &&
+        quoted_chars + ellipses_size + end_quote_size <= max_chars &&
+        quoted_cols + ellipses_size + end_quote_size <= max_cols) {
       safe_i = i;
       safe_quoted_bytes = quoted_bytes;
       safe_quoted_chars = quoted_chars;
@@ -1400,7 +1401,7 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
 
   if( overfull ) {
     i = safe_i;
-    // and add end quote and elipses.
+    // and add end quote and ellipses.
     quoted_bytes = safe_quoted_bytes;
     quoted_chars = safe_quoted_chars;
     quoted_cols = safe_quoted_cols;
@@ -1412,10 +1413,10 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
   quoted_cols += end_quote_size;
 
   if( overfull ) {
-    // Account for the elipses
-    quoted_bytes += elipses_size;
-    quoted_chars += elipses_size;
-    quoted_cols += elipses_size;
+    // Account for the ellipses
+    quoted_bytes += ellipses_size;
+    quoted_chars += ellipses_size;
+    quoted_cols += ellipses_size;
   }
 
   if( ti ) {

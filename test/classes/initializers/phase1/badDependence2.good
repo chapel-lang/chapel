@@ -1,0 +1,1 @@
+badDependence2.chpl:2: error: 'f5' used before defined (first used here)

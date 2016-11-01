@@ -11,6 +11,10 @@
 #define signal(a,b) bsd_signal(a,b)
 #endif
 
+#ifdef __cplusplus
+  extern "C" {
+#endif
+
 typedef void (*LPSIGHANDLER)(int);
 
 // all signal handlers must match prototype above
@@ -40,5 +44,8 @@ const char* sigstr(int sig);
 
 SIGTYPE getsigtype(int sig);
 
+#ifdef __cplusplus
+  }
+#endif
 
 #endif

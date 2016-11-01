@@ -11,6 +11,10 @@
 GASNET_LD_OVERRIDE = @MPI_CC@
 GASNET_LDFLAGS_OVERRIDE = @MPI_CFLAGS@ @LDFLAGS@
 
+# Linker feature requirements embedded in GASNET_LD(FLAGS) which are not satisfied solely by GASNET_LIBS 
+# (eg possible dependence on implicit MPI or C++ libraries added by a linker wrapper in GASNET_LD):
+GASNET_LD_REQUIRES_MPI = 1
+
 # hooks for using AMMPI library from within build tree ###NOINSTALL### 
 # (nothing additional required for installed copy)     ###NOINSTALL###
 CONDUIT_INCLUDES = -I@TOP_SRCDIR@/other/ammpi          ###NOINSTALL###

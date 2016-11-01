@@ -56,12 +56,14 @@ extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
+extern bool fNoOptimizeArrayIndexing;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoVectorize;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
 extern bool fRemoveUnreachableBlocks;
+extern bool fReplaceArrayAccessesWithRefTemps;
 extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
 extern int  tuple_copy_limit;
@@ -98,6 +100,7 @@ extern const char* CHPL_REGEXP;
 extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
+extern const char* CHPL_UNWIND;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
@@ -111,10 +114,12 @@ extern bool widePointersStruct;
 extern char fExplainCall[256];
 extern int  explainCallID;
 extern int  breakOnResolveID;
+extern bool fDenormalize;
 extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
 /// resolution.
 extern bool fExplainVerbose;
+extern bool fParseOnly;
 extern bool fPrintCallStackOnError;
 extern bool fPrintIDonError;
 extern bool fPrintModuleResolution;
@@ -163,6 +168,7 @@ extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 
+extern bool fReportOptimizedArrayIndexing;
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportOrderIndependentLoops;
 extern bool fReportOptimizedOn;
@@ -189,6 +195,9 @@ extern char compileVersion[64];
 // This flag is useful for testing
 // the compiler but breaks the language!
 extern bool fMinimalModules;
+
+// Set to true if we want to enable incremental compilation.
+extern bool fIncrementalCompilation;
 
 // Set to true if we want to use the experimental
 // Interactive Programming Environment (IPE) mode.

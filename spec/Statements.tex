@@ -356,12 +356,15 @@ A,other
 \end{chapeloutput}
 \end{chapelexample}
 
+\pagebreak
 \section{The Select Statement}
 \label{The_Select_Statement}
 \index{select@\chpl{select}}
 \index{when@\chpl{when}}
+\index{otherwise@\chpl{otherwise}}
 \index{statements!select@\chpl{select}}
 \index{statements!when@\chpl{when}}
+\index{statements!otherwise@\chpl{otherwise}}
 
 The select statement is a multi-way variant of the conditional
 statement.  The syntax is given by:
@@ -377,6 +380,7 @@ when-statement:
   `when' expression-list `do' statement
   `when' expression-list block-statement
   `otherwise' statement
+  `otherwise' `do' statement
 
 expression-list:
   expression
@@ -396,7 +400,7 @@ will be selected and control transferred to it.  There may be at most
 one \chpl{otherwise} statement and its location within the select
 statement does not matter.
 
-Each statement embedded in the {\em when-statement} has its own scope
+Each statement embedded in the {\em when-statement} or the {\em otherwise-statement} has its own scope
 whether or not an explicit block surrounds it.
 
 \section{The While Do and Do While Loops}
@@ -421,6 +425,7 @@ In both variants, the expression evaluates to a value of type \chpl{bool}
 which determines when the loop terminates and control continues with
 the statement following the loop.
 
+\pagebreak
 The while-do loop is executed as follows:
 \begin{enumerate}
 \item The expression is evaluated.
@@ -473,13 +478,14 @@ Scope of while loop:
 \end{chapelprintoutput}
 \end{chapelexample}
 
+\pagebreak
 Chapel do-while loops differ from those found in most other languages in
 one important regard.  If the body of a do-while statement is a block
 statement and new variables are defined within that block statement,
 then the scope of those variables extends to cover the loop's
 termination expression.
 \begin{chapelexample}{do-while.chpl}
-The following example demonstrates that the scope of the variable t 
+The following example demonstrates that the scope of the variable t
 includes the loop termination expression.
 \begin{chapel}
 var i = 0;
@@ -590,6 +596,7 @@ Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be
 parameters.  The loop is then unrolled for each iteration.
 
+\pagebreak
 \section{The Break, Continue and Label Statements}
 \label{Label_Break_Continue}
 \index{statements!jumps}
@@ -628,7 +635,7 @@ label-statement:
   `label' identifier statement
 \end{syntax}
 
-Break-statements cannot be used to exit parallel loops.  
+Break-statements cannot be used to exit parallel loops.
 
 \begin{rationale}
 Breaks are not permitted in parallel loops because the execution order
@@ -684,8 +691,12 @@ module-or-enum-name:
   identifier . module-or-enum-name
 
 limitation-clause:
-  `except' identifier-list
-  `only' rename-list
+  `except' exclude-list
+  `only' rename-list[OPT]
+
+exclude-list:
+  identifier-list
+  $ * $
 
 rename-list:
   rename-base
@@ -737,6 +748,7 @@ module M2 {
   }
 }
 \end{chapel}
+
 which also prints out
 \begin{chapelprintoutput}{}
 In M2's main.
@@ -781,7 +793,9 @@ listed visible symbols in the module or enumerated type will be made available
 without prefix.  All visible symbols not provided via these limited use
 statements are still accessible with the module or enumerated type name prefix.
 It is an error to provide a name in a \sntx{limitation-clause} that does not
-exist or is not visible in the respective module or enumerated type.
+exist or is not visible in the respective module or enumerated type.  If an
+\chpl{only} list is left empty or \chpl{except} is followed by $*$ then no
+symbols are made available to the scope without prefix.
 
 Within an \chpl{only} list, a visible symbol from that module may optionally be
 given a new name using the \chpl{as} keyword.  This new name will be usable from

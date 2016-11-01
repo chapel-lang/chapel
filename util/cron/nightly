@@ -181,37 +181,43 @@ if (@ARGV) {
 }
 
 if ($printusage == 1) {
-    print "nightly [-debug|-cron] {[-notest] [-valgrind] [-componly] [-[no-]futures] [-performance]}\n";
+    print "nightly [-debug|-cron] {[see below]}\n";
     print "\t-debug                         : check out sources and run for individual user (default)\n";
     print "\t-cron                          : use for nightly cron runs only\n";
-    print "\t-notest                        : don't run the tests (check the build only)\n";
-    print "\t-noruntime                     : don't build the runtime or run the tests\n";
+    print "\t-baseline                      : run testins using --baseline\n";
+    print "\t-componly                      : only run the compiler, not the generated binary\n";
+    print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
+    print "\t-compperformance <description> : run tests with compiler performance tracking\n";
+    print "\t-cron-recipient <addr>         : send -cron emails to this address instead of SourceForge mailing list(s)\n";
+    print "\t-dist <dist>                   : run distribution robustness tests\n";
     print "\t-examples                      : run the release/examples tests only\n";
-    print "\t-localeModel                   : run localeModel suite only\n";
-    print "\t-multilocale                   : run multilocale suite only\n";
+    print "\t-execopts <opt>                : run tests with -execopts <opt>\n";
+    print "\t-fast                          : run tests using --fast\n";
+    print "\t-futures                       : run all futures, not just those with skipifs\n";
     print "\t-hello                         : run the release/examples/hello.chpl test only\n";
     print "\t-hellos                        : run the release/examples/hello*.chpl tests only\n";
-    print "\t-valgrind                      : run tests in valgrind mode\n";
-#    print "\t-interpret                    : run tests in interpreted mode\n";
-    print "\t-performance                   : run performance tests\n";
-    print "\t-performance-description       : run performance tests with additional description\n";
-    print "\t-performance-configs           : comma seperated configs to graph, ': v' after config to be visible by default\n";
-    print "\t-compperformance <description> : run tests with compiler performance tracking\n";
-    print "\t-numtrials <number>            : number of trials to run\n";
-    print "\t-startdate                     : run performance tests providing a common start date to all the graphs\n";
-    print "\t-baseline                      : run testins using --baseline\n";
-    print "\t-dist <dist>                   : run distribution robustness tests\n";
-    print "\t-fast                          : run tests using --fast\n";
-    print "\t-llvm                          : run tests using --llvm\n";
-    print "\t-memleaks <log>                : run memleaks tests\n";
-    print "\t-no-local                      : run tests using --no-local\n";
-    print "\t-componly                      : only run the compiler, not the generated binary\n";
-    print "\t-futures                       : run all futures, not just those with skipifs\n";
-    print "\t-no-futures                    : do not run future tests\n";
-    print "\t-no-buildcheck                 : do not run `make check` before running tests\n";
-    print "\t-parnodefile                   : specify a node file to use for parallel testing\n";
-    print "\t-cron-recipient                : send -cron emails to this address instead of SourceForge mailing list(s)\n";
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
+    print "\t-llvm                          : run tests using --llvm\n";
+    print "\t-localeModel                   : run localeModel suite only\n";
+    print "\t-memleaks <log>                : run memleaks tests\n";
+    print "\t-multilocale                   : run multilocale suite only\n";
+    print "\t-no-buildcheck                 : do not run `make check` before running tests\n";
+    print "\t-no-futures                    : do not run future tests\n";
+    print "\t-no-local                      : run tests using --no-local\n";
+    print "\t-noruntime                     : don't build the runtime or run the tests\n";
+    print "\t-notest                        : don't run the tests (check the build only)\n";
+    print "\t-numtrials <number>            : number of trials to run\n";
+    print "\t-parnodefile <file>            : specify a node file to use for parallel testing\n";
+    print "\t-performance                   : run performance tests\n";
+    print "\t-performance-configs <configs> : comma seperated configs to graph, ': v' after config to be visible by default\n";
+    print "\t-performance-description <...> : run performance tests with additional description\n";
+    print "\t-releasePerformance            : \$releasePerformance=1 ?\n";
+   #print "\t-retaintree                    : \$retaintree=1 ?\n";
+    print "\t-startdate <date>              : run performance tests providing a common start date to all the graphs\n";
+    print "\t-sync-dir-suffix <suffix>      : \$syncsuffix = <suffix> ?\n";
+    print "\t-valgrind                      : run tests in valgrind mode\n";
+    print "\t-verify                        : -compopts --verify ?\n";
+   #print "\t-interpret                     : run tests in interpreted mode\n";
     exit 1;
 }
 
@@ -517,14 +523,18 @@ if ($buildruntime == 0) {
     $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $nochangerecipient";
 
-    print "Mailing to minimal group\n";
-    open(MAIL, $mailcommand);
+    if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+        print "Mailing to minimal group\n";
+        open(MAIL, $mailcommand);
 
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
-    print MAIL "Built compiler but not runtime, and did not run tests\n";
-    print MAIL endMailHeader();
-    print MAIL endMailChplenv();
-    close(MAIL);
+        print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
+        print MAIL "Built compiler but not runtime, and did not run tests\n";
+        print MAIL endMailHeader();
+        print MAIL endMailChplenv();
+        close(MAIL);
+    } else {
+        print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+    }
     exit 0;
 }
 
@@ -593,6 +603,12 @@ if ($examples == 1) {
 }
 if ($parnodefile eq "") {
     $testflags = "$testflags $testdirs";
+} else {
+    if ($testdirs ne "") {
+        mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE",
+                 "making directory file", 1, 1);
+        $testflags = "$testflags -dirfile DIRFILE";
+    }
 }
 
 if (!($dist eq "")) {
@@ -697,14 +713,18 @@ if ($runtests == 0) {
     $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
-    open(MAIL, $mailcommand);
+    if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+        open(MAIL, $mailcommand);
 
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
-    print MAIL "Built compiler and runtime but did not run tests\n";
-    print MAIL endMailHeader();
-    print MAIL endMailChplenv();
+        print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
+        print MAIL "Built compiler and runtime but did not run tests\n";
+        print MAIL endMailHeader();
+        print MAIL endMailChplenv();
 
-    close(MAIL);
+        close(MAIL);
+    } else {
+        print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+    }
 
 } else {
 

@@ -426,11 +426,16 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
             INT_ASSERT(e->value == markUnspecified);
 
           newFormal = new ArgSymbol(argTag, sym->name, sym->type);
+          if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
+            newFormal->addFlag(FLAG_COFORALL_INDEX_VAR);
+
           if (ArgSymbol* symArg = toArgSymbol(sym))
             if (symArg->hasFlag(FLAG_MARKED_GENERIC))
               newFormal->addFlag(FLAG_MARKED_GENERIC);
           newActual = e->key;
           symReplace = newFormal;
+          if (!newActual->isConstant() && newFormal->isConstant())
+            newFormal->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }
 
         call->insertAtTail(newActual);
@@ -609,58 +614,15 @@ void createTaskFunctions(void) {
         INT_ASSERT(isTaskFun(fn));
         CallExpr* call = new CallExpr(fn);
 
-        // These variables are only used if fCacheRemote is set.
-        bool needsMemFence = true;
+        bool needsMemFence = true; // only used with fCacheRemote
         bool isBlockingOn = false;
 
         if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
           isBlockingOn = true;
         }
 
-        if( isBlockingOn ) {
-          // Generate an if statement
-          // if ( chpl_doDirectExecuteOn( targetLocale ) )
-          //     call un-wrapped task function
-          // else
-          //     proceed as with chpl_executeOn/chpl_executeOnFast
-          //     fid call to wrapper function on a remote local
-          //     (possibly just a different sublocale)
-
-          VarSymbol* isDirectTmp = newTemp("isdirect", dtBool);
-          CallExpr* isCall;
-          isCall = new CallExpr("chpl_doDirectExecuteOn",
-                                block->blockInfoGet()->get(1)->copy() // target
-                               );
-
-          block->insertBefore(new DefExpr(isDirectTmp));
-          block->insertBefore(new CallExpr(PRIM_MOVE, isDirectTmp, isCall));
-
-          // Build comparison
-          SymExpr* isTrue = new SymExpr(isDirectTmp);
-
-          // Build true branch
-          CallExpr* directcall = new CallExpr(fn);
-
-          VarSymbol* dummyArg = newTemp("local_locale");
-          dummyArg->addFlag(FLAG_DIRECT_ON_ARGUMENT);
-          block->insertBefore(new DefExpr(dummyArg));
-          block->insertBefore(new CallExpr(PRIM_MOVE, dummyArg,
-                block->blockInfoGet()->get(1)->copy()));
-
-          directcall->insertAtTail(dummyArg);
-
-          // False branch is call.
-
-          // Build condition
-          CondStmt* cond = new CondStmt(isTrue, directcall, call);
-          // Add the condition which calls the outlined task function
-          // somehow.
-          block->insertBefore(cond);
-        } else {
-          // Add the call to the outlined task function.
-          block->insertBefore(call);
-        }
-
+        // Add the call to the outlined task function.
+        block->insertBefore(call);
 
         if( fCacheRemote ) {
           Symbol* parent = block->parentSymbol;

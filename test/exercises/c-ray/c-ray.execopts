@@ -1,0 +1,5 @@
+--printTiming=false                   # c-ray.good
+#
+# skipping this due to it taking too long under valgrind and baseline testing:
+#
+#--printTiming=false --scene=sphfract  # c-ray.sphfract.good

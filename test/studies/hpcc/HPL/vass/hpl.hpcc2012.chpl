@@ -155,7 +155,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   record psRedResultT {
     var row: indexType;
     var elmx, absmx: elemType;
-    proc init() { absmx = min(absmx.type); }
+    proc initResult() { absmx = min(absmx.type); }
     // updateE: // caller to ensure exclusive access
     proc updateE(r: indexType, e: elemType) { updateE(r, e, abs(e)); }
     proc updateE(alt: psRedResultT) { updateE(alt.row, alt.elmx, alt.absmx); }
@@ -486,7 +486,7 @@ proc psReduce(blk, k) {
   coforall lid1 in 0..#tl1 {
     on targetLocalesRepl[lid1, lid2] {
       var locResult: psRedResultT;
-      locResult.init();
+      locResult.initResult();
 
       local {
         // guard updates to locResult and maxRes within the forall
@@ -498,7 +498,7 @@ proc psReduce(blk, k) {
           forall iStart in panelStarts with (ref locResult) {
             const iRange = max(iStart, k)..min(iStart + blkSize - 1, n);
             var myResult: psRedResultT;
-            myResult.init();
+            myResult.initResult();
             var locAB => Ab._value.dsiLocalSlice1((iRange, k));
             for i in iRange do myResult.updateE(i, locAB[i]);
             if myResult.absmx > maxRes.read() { // only lock if we might update
@@ -520,7 +520,7 @@ proc psReduce(blk, k) {
 
   // Merge the results from psRedLocalResults.
   var pivotAll: psRedResultT;
-  pivotAll.init();
+  pivotAll.initResult();
   for rlr in psRedLocalResults do pivotAll.updateE(rlr);
 
   return (pivotAll.row, pivotAll.elmx);

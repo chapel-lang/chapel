@@ -56,6 +56,7 @@ typedef struct {
 
 typedef struct task_pool_struct {
   chpl_taskID_t    id;           // task identifier
+  chpl_fn_int_t    fid;          // function id
   chpl_fn_p        fun;          // function to call for task
   void*            arg;          // argument to the function
   chpl_bool        is_executeOn; // is this the body of an executeOn?
@@ -137,8 +138,8 @@ static chpl_fn_p comm_task_fn;
 static void                    enqueue_task(task_pool_p, task_pool_p*);
 static void                    dequeue_task(task_pool_p);
 static void                    comm_task_wrapper(void*);
-static void                    taskCallBody(chpl_fn_p, void*, void*,
-                                            c_sublocid_t, chpl_bool,
+static void                    taskCallBody(chpl_fn_int_t, chpl_fn_p, void*,
+                                            void*, c_sublocid_t, chpl_bool,
                                             int, int32_t);
 static void                    taskCallWrapper(void* a);
 static chpl_taskID_t           get_next_task_id(void);
@@ -155,8 +156,8 @@ static void                    check_for_deadlock(void);
 static void                    thread_begin(void*);
 static void                    thread_end(void);
 static void                    maybe_add_thread(void);
-static task_pool_p             add_to_task_pool(chpl_fn_p, void*, chpl_bool,
-                                                chpl_task_prvDataImpl_t,
+static task_pool_p             add_to_task_pool(chpl_fn_int_t, chpl_fn_p, void*,
+                                                chpl_bool, chpl_task_prvDataImpl_t,
                                                 task_pool_p*, chpl_bool,
                                                 int, int32_t);
 
@@ -644,7 +645,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
   chpl_thread_mutexLock(&threading_lock);
 
   if (task_list_locale == chpl_nodeID) {
-    (void) add_to_task_pool(chpl_ftable[fid], arg, false, chpl_data,
+    (void) add_to_task_pool(fid, chpl_ftable[fid], arg, false, chpl_data,
                             (task_pool_p*) p_task_list_void, is_begin_stmt,
                             lineno, filename);
 
@@ -656,7 +657,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
     // the context of a cobegin or coforall statement.
     //
     assert(is_begin_stmt);
-    (void) add_to_task_pool(chpl_ftable[fid], arg, false, chpl_data,
+    (void) add_to_task_pool(fid, chpl_ftable[fid], arg, false, chpl_data,
                             NULL, true, 0, CHPL_FILE_IDX_UNKNOWN);
   }
 
@@ -716,6 +717,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
       initializeLockReportForThread();
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
+                           child_ptask->fid,
                            child_ptask->filename,
                            child_ptask->lineno,
                            child_ptask->id,
@@ -724,6 +726,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
     (*task_to_run_fun)(child_ptask->arg);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
+                           child_ptask->fid,
                            child_ptask->filename,
                            child_ptask->lineno,
                            child_ptask->id,
@@ -751,21 +754,22 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
 }
 
 
-void chpl_task_taskCall(chpl_fn_p fp, void* arg, size_t arg_size,
-                        c_sublocid_t subloc,
-                        int lineno, int32_t filename) {
+void chpl_task_taskCallFTable(chpl_fn_int_t fid, void* arg, size_t arg_size,
+                              c_sublocid_t subloc,
+                              int lineno, int32_t filename) {
   void *arg_copy = NULL;
 
   if (arg != NULL) {
     arg_copy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_TASK_ARG, 0, 0);
     chpl_memcpy(arg_copy, arg, arg_size);
   }
-  taskCallBody(fp, NULL, arg_copy, subloc, false, lineno, filename);
+  taskCallBody(fid, chpl_ftable[fid], NULL, arg_copy, subloc, false, lineno, 
+               filename);
 }
 
 
 static inline
-void taskCallBody(chpl_fn_p fp, void* arg, void* arg_copy,
+void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp, void* arg, void* arg_copy,
                   c_sublocid_t subloc, chpl_bool serial_state,
                   int lineno, int32_t filename) {
   taskCallWrapperDesc_t* ptcwd;
@@ -782,7 +786,7 @@ void taskCallBody(chpl_fn_p fp, void* arg, void* arg_copy,
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
-  (void) add_to_task_pool(taskCallWrapper, ptcwd, true, ptcwd->chpl_data,
+  (void) add_to_task_pool(fid, taskCallWrapper, ptcwd, true, ptcwd->chpl_data,
                           NULL, false, lineno, filename);
 
   // end critical section
@@ -808,7 +812,8 @@ taskCallWrapper(void* a) {
 }
 
 
-void chpl_task_startMovedTask(chpl_fn_p fp,
+void chpl_task_startMovedTask(chpl_fn_int_t  fid,
+                              chpl_fn_p fp,
                               void* arg,
                               c_sublocid_t subloc,
                               chpl_taskID_t id,
@@ -821,7 +826,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   //
   assert(id == chpl_nullTaskID);
 
-  taskCallBody(fp, arg, NULL, subloc, serial_state, 0, CHPL_FILE_IDX_UNKNOWN);
+  taskCallBody(fid, fp, arg, NULL, subloc, serial_state, 0, CHPL_FILE_IDX_UNKNOWN);
 }
 
 
@@ -1279,6 +1284,7 @@ thread_begin(void* ptask_void) {
     }
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
+                           ptask->fid,
                            ptask->filename,
                            ptask->lineno,
                            ptask->id,
@@ -1287,6 +1293,7 @@ thread_begin(void* ptask_void) {
     (*ptask->fun)(ptask->arg);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
+                           ptask->fid,
                            ptask->filename,
                            ptask->lineno,
                            ptask->id,
@@ -1371,7 +1378,7 @@ static void maybe_add_thread(void) {
 // and append it to the end of the task pool
 // assumes threading_lock has already been acquired!
 static inline
-task_pool_p add_to_task_pool(chpl_fn_p fp,
+task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
                              void* a,
                              chpl_bool is_executeOn,
                              chpl_task_prvDataImpl_t chpl_data,
@@ -1383,6 +1390,7 @@ task_pool_p add_to_task_pool(chpl_fn_p fp,
                                         CHPL_RT_MD_TASK_POOL_DESC,
                                         0, 0);
   ptask->id           = get_next_task_id();
+  ptask->fid          = fid;
   ptask->fun          = fp;
   ptask->arg          = a;
   ptask->is_executeOn = is_executeOn;
@@ -1395,6 +1403,7 @@ task_pool_p add_to_task_pool(chpl_fn_p fp,
   enqueue_task(ptask, p_task_list_head);
 
   chpl_task_do_callbacks(chpl_task_cb_event_kind_create,
+                         ptask->fid,
                          ptask->filename,
                          ptask->lineno,
                          ptask->id,

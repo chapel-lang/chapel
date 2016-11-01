@@ -24,6 +24,8 @@
 #include "gasnet_coll.h"
 #include "gasnet_tools.h"
 #include "chpl-comm.h"
+#include "chpl-comm-callbacks.h"
+#include "chpl-comm-callbacks-internal.h"
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
@@ -34,7 +36,6 @@
 #include "error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-cache.h" // to call chpl_cache_init()
-#include "chpl-visual-debug.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -247,7 +248,7 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_wrapper, (void*)f,
+  chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -286,7 +287,7 @@ static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper, (void*)f,
+  chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_large_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -306,7 +307,7 @@ static void AM_fork_nb(gasnet_token_t  token,
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)f,
+  chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_nb_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -335,7 +336,7 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
+  chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_nb_large_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -475,7 +476,7 @@ void AM_do_ops(gasnet_token_t token, void* buf, size_t nbytes) {
 
   chpl_memcpy(ops, buf, nbytes);
 
-  chpl_task_startMovedTask((chpl_fn_p)do_ops_wrapper, (void*)ops,
+  chpl_task_startMovedTask(FID_NONE, (chpl_fn_p)do_ops_wrapper, (void*)ops,
                            ops->subloc, chpl_nullTaskID,
                            ops->comm_private.serial_state);
 }
@@ -514,7 +515,7 @@ void AM_do_ops_large(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_op_t* ops = (chpl_op_t*) chpl_mem_allocMany(total_bytes, sizeof(char),
                                        CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
   chpl_memcpy(ops, buf, sizeof(chpl_op_t));
-  chpl_task_startMovedTask((chpl_fn_p)do_ops_large_wrapper, (void*)ops,
+  chpl_task_startMovedTask(FID_NONE,(chpl_fn_p)do_ops_large_wrapper, (void*)ops,
                            ops->subloc, chpl_nullTaskID,
                            ops->comm_private.serial_state);
 }
@@ -570,9 +571,14 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
   gasnet_handle_t ret;
   int remote_in_segment;
 
-  // Should be in the compiler macros file?
-  chpl_vdebug_log_put_nb(addr, node, raddr, size, typeIndex, ln, fn);
-
+  // Communication callbacks
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_nb)) {
+    chpl_comm_cb_info_t cb_data = 
+      {chpl_comm_cb_event_kind_put_nb, chpl_nodeID, node,
+       .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+    
 #ifdef GASNET_SEGMENT_EVERYTHING
     remote_in_segment = 1;
 #else
@@ -603,8 +609,13 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
   gasnet_handle_t ret;
   int remote_in_segment;
 
-  // Visual Debug Support
-  chpl_vdebug_log_get_nb(addr, node, raddr, size, typeIndex, ln, fn);
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_nb)) {
+    chpl_comm_cb_info_t cb_data = 
+      {chpl_comm_cb_event_kind_get_nb, chpl_nodeID, node,
+       .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
 
 #ifdef GASNET_SEGMENT_EVERYTHING
     remote_in_segment = 1;
@@ -1045,8 +1056,13 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
   } else {
-    // Visual Debug support
-    chpl_vdebug_log_put(addr, node, raddr, size, typeIndex, ln, fn);
+    // Communications callback support
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_put, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+    }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
@@ -1122,9 +1138,14 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
   } else {
-    // Visual Debug support
-    chpl_vdebug_log_get(addr, node, raddr, size, typeIndex, ln, fn);
-    
+    // Communications callback support
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
+      chpl_comm_cb_info_t cb_data = 
+        {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+    }
+
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
              chpl_lookupFilename(fn), ln, node);
@@ -1281,10 +1302,15 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
     printf("\n");
   }
 
-  // Visual Debug Support
-  chpl_vdebug_log_get_strd(dstaddr, dststrides, srcnode_id, srcaddr, srcstrides, count,
-                           stridelevels, elemSize, typeIndex, ln, fn);
-
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_strd)) {
+    chpl_comm_cb_info_t cb_data =
+      {chpl_comm_cb_event_kind_get_strd, chpl_nodeID, srcnode_id,
+       .iu.comm_strd={srcaddr, srcstrides, dstaddr, dststrides, count,
+                      stridelevels, elemSize, typeIndex, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+  
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
@@ -1341,9 +1367,14 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
     printf("\n");
   }
 
-  // Visual Debug Support
-  chpl_vdebug_log_put_strd(dstaddr, dststrides, dstnode_id, srcaddr, srcstrides,
-                           count, stridelevels, elemSize, typeIndex, ln, fn);
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_strd)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_put_strd, chpl_nodeID, dstnode_id,
+         .iu.comm_strd={srcaddr, srcstrides, dstaddr, dststrides, count,
+                        stridelevels, elemSize, typeIndex, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
@@ -1372,8 +1403,13 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_nodeID == node) {
     chpl_ftable_call(fid, arg);
   } else {
-    // Visual Debug Support
-    chpl_vdebug_log_fork(node, subloc, fid, arg, arg_size);
+    // Communications callback support
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
+      chpl_comm_cb_info_t cb_data = 
+        {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
+         .iu.executeOn={subloc, fid, arg, arg_size}};
+      chpl_comm_do_callbacks (&cb_data);
+    }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote task created on %d\n", chpl_nodeID, node);
@@ -1456,16 +1492,20 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
   }
 
   if (chpl_nodeID == node) {
-    // Visual Debug?  Should we generate a task here???
     if (info->serial_state)
       fork_nb_wrapper(info);
     else
-      chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
-                               subloc, chpl_nullTaskID,
+      chpl_task_startMovedTask(info->fid, (chpl_fn_p)fork_nb_wrapper,
+                               (void*)info, subloc, chpl_nullTaskID,
                                info->serial_state);
   } else {
-    // Visual Debug Support
-    chpl_vdebug_log_fork_nb(node, subloc, fid, arg, arg_size);
+    // Communications callback support
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
+      chpl_comm_cb_info_t cb_data = 
+        {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
+         .iu.executeOn={subloc, fid, arg, arg_size}};
+      chpl_comm_do_callbacks (&cb_data);
+    }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
@@ -1495,8 +1535,13 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_nodeID == node) {
     chpl_ftable_call(fid, arg);
   } else {
-    // Visual Debug Support
-    chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
+    // Communications callback support
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
+      chpl_comm_cb_info_t cb_data = 
+        {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
+         .iu.executeOn={subloc, fid, arg, arg_size}};
+      chpl_comm_do_callbacks (&cb_data);
+    }
 
     if (passArg) {
       if (chpl_verbose_comm && !chpl_comm_no_debug_private)

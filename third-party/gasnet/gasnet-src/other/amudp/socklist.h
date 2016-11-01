@@ -5,8 +5,9 @@
 #ifndef _SOCKLIST_H
 #define _SOCKLIST_H
 
-#include "socket.h"
 #include <stdlib.h>
+
+#include "socket.h"
 
 #ifdef SOCKLIST_MT
   #include "semaphor.h"

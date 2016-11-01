@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#
+# Replace line numbers with 'nnnn'
+
+fi=$2
+
+tmp=`mktemp "tmp.XXXXXX"`
+regex='\|has been serialized|s/:[0-9:]*:/:nnnn:/'
+
+sed -e "$regex" $fi > $tmp
+
+mv $tmp $fi

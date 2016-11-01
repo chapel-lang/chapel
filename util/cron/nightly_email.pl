@@ -110,52 +110,55 @@ if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpas
 $mailsubject = "$subjectid $config_name";
 $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
-print "Trying... $mailcommand\n";
-open(MAIL, $mailcommand);
+if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+    print "Trying... $mailcommand\n";
+    open(MAIL, $mailcommand);
 
-print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
-print MAIL "$numtestssummary\n";
-print MAIL "$summary\n";
-print MAIL endMailHeader();
+    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
+    print MAIL "$numtestssummary\n";
+    print MAIL "$summary\n";
+    print MAIL endMailHeader();
 
-if ($status == 0) {
-    print MAIL "--- New Errors -------------------------------\n";
-    print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-    print MAIL "\n";
+    if ($status == 0) {
+        print MAIL "--- New Errors -------------------------------\n";
+        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print MAIL "\n";
 
-    print MAIL "--- Resolved Errors --------------------------\n";
-    print MAIL `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-    print MAIL "\n";
-    
-    print MAIL "--- New Passing Future tests------------------\n";
-    print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
-    print MAIL "\n";
+        print MAIL "--- Resolved Errors --------------------------\n";
+        print MAIL `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print MAIL "\n";
 
-    print MAIL "--- Passing Future tests ---------------------\n";
-    print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
-    print MAIL "\n";
+        print MAIL "--- New Passing Future tests------------------\n";
+        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print MAIL "\n";
 
-    print MAIL "--- New Passing Suppress tests------------------\n";
-    print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
-    print MAIL "\n";
+        print MAIL "--- Passing Future tests ---------------------\n";
+        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print MAIL "\n";
 
-    print MAIL "--- Passing Suppress tests ---------------------\n";
-    print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
-    print MAIL "\n";
+        print MAIL "--- New Passing Suppress tests------------------\n";
+        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
+        print MAIL "\n";
 
-    print MAIL "--- Unresolved Errors ------------------------\n";
-    print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-    print MAIL "\n";
+        print MAIL "--- Passing Suppress tests ---------------------\n";
+        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
+        print MAIL "\n";
 
-    print MAIL "--- New Failing Future tests -----------------\n";
-    print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
-    print MAIL "\n";
+        print MAIL "--- Unresolved Errors ------------------------\n";
+        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print MAIL "\n";
+
+        print MAIL "--- New Failing Future tests -----------------\n";
+        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
+        print MAIL "\n";
+    }
+
+    print MAIL endMailChplenv();
+    close(MAIL);
+} else {
+    print "CHPL_TEST_NOMAIL: No $mailcommand\n";
 }
 
-print MAIL endMailChplenv();
-close(MAIL);
-    
-    
 #
 # tuck this run's output away for comparison tomorrow
 #

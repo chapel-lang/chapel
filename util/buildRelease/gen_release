@@ -166,6 +166,7 @@ SystemOrDie("make man-chpldoc");
 SystemOrDie("make clobber");
 
 print "Creating the examples directory...\n";
+SystemOrDie("rm examples"); # remove examples symbolic link
 SystemOrDie("cp -r test/release/examples .");
 SystemOrDie("cd util && cp start_test ../examples/");
 SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
@@ -191,6 +192,9 @@ SystemOrDie("cd runtime/include && rm -r sunos_old");
 
 print "Removing third-party directories that are not intended for release...\n";
 SystemOrDie("cd third-party && rm *.devel*");
+
+print "Removing Git metadata files not intended for release...\n";
+SystemOrDie('find . -type f \( -name .gitignore -o -name .gitattributes \) -exec rm -f {} \; -print');
 
 chdir "$archive_dir";
 

@@ -1,9 +1,9 @@
-:title: Users Guide: On-Clauses
+:title: Users Guide: **on**-clauses
 
 .. default-domain:: chpl
 
-On-Clauses
-==========
+**on**-clauses: controlling locality/affinity
+=============================================
 
 As mentioned previously, all Chapel programs begin execution as a
 single task running on locale #0.  Tasks can execute on remote locales

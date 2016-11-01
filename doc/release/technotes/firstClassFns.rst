@@ -93,7 +93,9 @@ Example. For example the following is acceptable:
   proc myfunc() {
     var x = 3;
     var f = lambda() { x = 4; };
+
     f();
+
     return x;
   }
 
@@ -102,31 +104,67 @@ Example. For example the following is acceptable:
 whereas having ``myfunc()`` return its ``f`` variable is not supported.
 
 
-Function type signatures
-------------------------
+Specifying the type of a first-class function
+---------------------------------------------
 
-The types of first-class functions can be obtained by using
-the 'func' type functions that are provided as follows:
+The previous examples rely on type inference to determine the type
+for those variables that can be assigned to a first-class function.
+Chapel provides three type functions, all named ``func``, that return the
+type that corresponds to a function signature as follows:
 
 .. code-block:: chapel
 
-  // no arguments, void return type (returns no value)
+  // Returns the type for a function of no arguments and void return type (returns no value)
   proc func() type
 
-  // no arguments, the return type is 'rettype' 
-  proc func(type rettype) type
+  // Returns the type for a function of no arguments and return type 'retType'
+  proc func(type retType) type
 
-  // argument types are 'argtypes'
-  proc func(type argtypes...?n, type rettype) type
+  // Returns the type for a function with arguments argTypes and return type 'retType'.
+  proc func(type argTypes...?n, type retType) type
+
+These can be used to declare the type of a variable that can be
+assigned to values of a function type.  For example:
+
+.. code-block:: chapel
+
+  // Two ways to define a function with no arguments and no return value
+  var f1: func();
+  var f2: func(void);
+
+  // A function with no arguments, returning int
+  var g : func(int);
+
+ // A function with two bool arguments, returning int
+  var h : func(bool, bool, int);
+
+Reflection
+----------
+
+First-class functions define a type method ``retType`` that returns the type
+of the value that would be returned if the function were to be invoked, and
+a type method ``argTypes`` that returns a tuple of the types of each formal.
 
 For example:
 
 .. code-block:: chapel
 
-  var f : func(void);  // A function with no arguments, no return value
-  var f1: func();      // A shortcut for the above
-  var g : func(int);   // A function with no arguments, returning int
-  var h : func(bool, int); // A function with one bool argument, returning int
+  var F = lambda (x: int) { return x + 42; };
+
+  writeln(F(13));
+  writeln();
+
+  writeln("retType  = ", F.retType  : string);
+  writeln("argTypes = ", F.argTypes : string);
+  writeln();
+
+generates the output::
+
+  55
+
+  retType  = int(64)
+  argTypes = 1*int(64)
+
 
 
 Future Directions

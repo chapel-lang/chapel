@@ -10,12 +10,12 @@ record R {
 }
 
 
-proc ref R.init(x:int, allow_zero:bool=false) {
+proc ref R.setup(x:int, allow_zero:bool=false) {
   if !allow_zero then assert(x != 0);
   this.x = x;
   
   if canary != 42 {
-    writeln("init with uninitialized record!");
+    writeln("setup with uninitialized record!");
     assert(canary == 42);
   }
 
@@ -70,7 +70,7 @@ proc chpl__autoCopy(arg: R) {
   var ret: R;
 
   // allow copies of a default-initialized record.
-  ret.init(x = arg.x, true);
+  ret.setup(x = arg.x, true);
 
   if debug {
     writeln("leaving auto copy");
@@ -91,7 +91,7 @@ proc chpl__initCopy(arg: R) {
   var ret: R;
 
   // allow copies of a default-initialized record.
-  ret.init(x = arg.x, true);
+  ret.setup(x = arg.x, true);
 
   if debug {
     writeln("leaving init copy");
@@ -111,7 +111,7 @@ proc =(ref lhs: R, rhs: R) {
     assert(rhs.canary == 42);
   }
 
-  lhs.init(x = rhs.x, true);
+  lhs.setup(x = rhs.x, true);
 
   if debug {
     writeln("leaving assign");

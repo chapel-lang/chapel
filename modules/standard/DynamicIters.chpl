@@ -154,6 +154,90 @@ where tag == iterKind.follower
   }
 }
 
+//************************* Dynamic domain iterator
+/*
+
+  :arg c: The domain to iterate over. The rank of the domain must be greater 
+          than zero.
+  :type c: `domain`
+
+  :arg chunkSize: The size of chunks to be yielded to each thread. Must be
+                  greater than zero
+  :type chunkSize: `int`
+
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
+                 has the value 0, it will use the value indicated by
+                 ``dataParTasksPerLocale``.
+  :type numTasks: `int`
+
+  :arg parDim: The index of the dimension to parallelize across. Must be > 0.
+                Must be <= the rank of the domain ``c``. Defaults to 1. 
+  :type parDim: `int`
+
+  :yields: Indices of the domain ``c``
+
+  Given an input domain ``c``, each task is assigned slices of ``c``. The
+  chunks each have ``chunkSize`` slices in them (or the remaining iterations
+  if there are fewer than ``chunkSize``). This continues until there are no 
+  remaining iterations in the dimension of ``c`` indicated by ``parDim``. 
+
+  This iterator can be called in serial and zippered contexts.
+*/
+
+//This is the serial version of this iterator
+iter dynamic(c:domain, chunkSize:int, numTasks:int=0, parDim:int=1) 
+{
+  if debugDynamicIters then
+    writeln("Serial Dynamic Domain Iterator, working with domain: ", c);
+  
+  for yieldTuple in c do yield yieldTuple;
+}
+
+//Leader
+pragma "no doc"
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim : int = 1) 
+  where tag == iterKind.leader 
+  {
+    //caller's responsibility to use a valid chunk size
+    assert(chunkSize > 0, "Chunk size must be greater than zero");
+
+    //caller's responsibility to use a valid domain
+    assert(c.rank > 0, "Must use a valid domain");
+
+    //caller's responsibility to use a valid parDim
+    assert(parDim <= c.rank, "parDim must be a dimension of the domain");
+    assert(parDim > 0, "parDim must be a positive integer");
+
+    var parDimDim = c.dim(parDim);
+    var parDimOffset = c.dim(parDim).low;
+
+    for i in dynamic(tag=iterKind.leader, parDimDim, chunkSize, numTasks) {
+      //Set the new range based on the tuple the dynamic 1d iterator yields
+      var newRange = i(1);
+    
+      type dType = c.type;
+      //does the same thing as densify, but densify makes a stridable domain,
+      // which mismatches here if c (and thus dType) is non-stridable
+      var tempDom : dType = computeZeroBasedDomain(c);
+
+      //rank-change slice the domain along parDim
+      var tempTup = tempDom.dims();
+      //change the value of the parDim elem of the tuple to the new range
+      tempTup(parDim) = newRange;
+
+      yield tempTup;
+    }
+  }
+
+//Follower
+pragma "no doc"
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int, parDim:int, followThis)
+where tag == iterKind.follower
+{
+  //Invoke the default rectangular domain follower iterator
+  for i in c._value.these(tag=iterKind.follower, followThis=followThis) do
+    yield i;
+}
 
 //************************* Guided iterator
 
@@ -391,7 +475,7 @@ where tag == iterKind.leader
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim]);
             if zeroBasedIters2.length !=0 then {
               if debugDynamicIters then 
-                writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
+                writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
             }
           } else {
@@ -404,7 +488,7 @@ where tag == iterKind.leader
                                           //after splitting from a victim range
             if zeroBasedIters2.length !=0 then {
               if debugDynamicIters then 
-                writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
+                writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
             }
           }

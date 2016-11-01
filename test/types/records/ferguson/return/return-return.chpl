@@ -3,7 +3,7 @@ use myrecord;
 proc return1()
 {
   var r:R;
-  r.init(x=1);
+  r.setup(x=1);
   r.verify();
   return r;
 }

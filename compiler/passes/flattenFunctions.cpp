@@ -17,14 +17,38 @@
  * limitations under the License.
  */
 
+#include "passes.h"
+
 #include "alist.h"
 #include "astutil.h"
 #include "expr.h"
-#include "passes.h"
 #include "resolveIntents.h"
 #include "stmt.h"
 #include "stlUtil.h"
 
+static void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+
+void flattenFunctions() {
+  Vec<FnSymbol*> nestedFunctions;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (isFnSymbol(fn->defPoint->parentSymbol)) {
+      nestedFunctions.add(fn);
+    }
+  }
+
+  flattenNestedFunctions(nestedFunctions);
+}
+
+void flattenNestedFunction(FnSymbol* nestedFunction) {
+  if (isFnSymbol(nestedFunction->defPoint->parentSymbol)) {
+    Vec<FnSymbol*> nestedFunctions;
+
+    nestedFunctions.add(nestedFunction);
+
+    flattenNestedFunctions(nestedFunctions);
+  }
+}
 
 //
 // returns true if the symbol is defined in an outer function to fn
@@ -34,10 +58,13 @@ static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
   if (!parent)
     parent = fn->defPoint->parentSymbol;
+
   if (!isFnSymbol(parent))
     return false;
+
   else if (sym->defPoint->parentSymbol == parent)
     return true;
+
   else
     return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
 }
@@ -56,9 +83,8 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
-      if (isLcnSymbol(sym)) {
-        if (isOuterVar(sym, fn))
-          uses->put(sym,gNil);
+      if (isLcnSymbol(sym) && isOuterVar(sym, fn)) {
+        uses->put(sym,gNil);
       }
     }
   }
@@ -101,29 +127,18 @@ passByRef(Symbol* sym) {
     return false;
   }
 
-  if (sym->hasFlag(FLAG_DISTRIBUTION) ||
-      sym->hasFlag(FLAG_DOMAIN) ||
-      sym->hasFlag(FLAG_ARRAY)
-  ) {
-    // These values *are* constant. E.g the symbol with FLAG_ARRAY
-    // stores a pointer to the corresponding array descriptor.  Since
-    // each Chapel variable corresponds to a single Chapel array
-    // throughout the variable's lifetime, the descriptor object stays
-    // the same, and so does a pointer to it. The contents of that
-    // object *can* change, however.
-    return false;
-  }
-
   Type* type = sym->type;
 
-  if (sym->hasFlag(FLAG_ARG_THIS))
-   if (passableByVal(type)) // NB this-in-taskfns-in-ctors.chpl
+  if (sym->hasFlag(FLAG_ARG_THIS) == true &&
+      passableByVal(type)         == true) {
     // This is also constant. TODO: mark with FLAG_CONST.
     // TODO: join with the passableByVal(type) test below.
     return false;
+  }
 
   // These simply document the current state.
   INT_ASSERT(type->symbol->hasFlag(FLAG_REF) == (type->refType == NULL));
+
   // Coforall vars are constant, but are not marked so.
   // todo - mark them with FLAG_CONST and remove this assert,
   //        as well as the special case for FLAG_COFORALL_INDEX_VAR.
@@ -131,8 +146,7 @@ passByRef(Symbol* sym) {
              !sym->hasFlag(FLAG_CONST));
 
   if (sym->hasFlag(FLAG_CONST) ||
-      sym->hasFlag(FLAG_COFORALL_INDEX_VAR)  // These are constant, too.
-  ) {
+      sym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {  // These are constant, too.
     if (passableByVal(type)) {
        return false;
     }
@@ -162,7 +176,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       Type* type = sym->type;
-      if (passByRef(sym))
+      IntentTag intent = INTENT_BLANK;
+
         /* NOTE: This is still conservative.  This avoids passing
            coforall index vars by reference for non-var iterators.
            David came up with an example with nested functions and no
@@ -170,7 +185,32 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            by reference.  With further analysis, we could figure out
            whether this variable is actually going to be returned as
            an LHS expr. */
+      //
+      // BHARSH: TODO: The arg intent set here can have a large impact on
+      // RVF later on. For RVF to be more effective, this might be a good
+      // place to do some analysis and mark arguments as 'const in' and 
+      // 'const ref', even if the actual is not marked with FLAG_CONST.
+      //
+      // Prior to the QualifiedType changes this section would make the type
+      // something like _ref_int, but the intent would be INTENT_CONST_IN and
+      // RVF would fire in some situations.
+      //
+      if (passByRef(sym)) {
+        IntentTag temp = INTENT_REF;
+        if (sym->hasFlag(FLAG_CONST)) {
+          temp = INTENT_CONST_REF;
+        }
+        intent = concreteIntent(temp, type);
         type = type->refType;
+      } else {
+        IntentTag temp = INTENT_BLANK;
+        if (sym->hasFlag(FLAG_CONST) && sym->isRef()) {
+          // Allows for RVF later
+          temp = INTENT_CONST_REF;
+        }
+        intent = concreteIntent(temp, type);
+      }
+
       SET_LINENO(sym);
       //
       // BLC: TODO: This routine is part of the reason that we aren't
@@ -188,7 +228,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       // inconsistencies like this and keep things more
       // uniform/simple; but we haven't made this switch yet.
       //
-      ArgSymbol* arg = new ArgSymbol(blankIntentForType(type), sym->name, type);
+      ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
         arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtTail(new DefExpr(arg));
@@ -214,6 +254,21 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               CallExpr* call = toCallExpr(se->parentExpr);
               INT_ASSERT(call);
               FnSymbol* fnc = call->isResolved();
+              bool canPassToFn = false;
+              if (fnc) {
+                ArgSymbol* form = actual_to_formal(se);
+                if (arg->isRef() && form->isRef() &&
+                    arg->getValType() == form->getValType() &&
+                    !isRecordWrappedType(form->getValType())) {
+                  // removeWrapRecords can modify the formal to have the
+                  // 'const in' intent. For now it's easier to insert the
+                  // DEREF here.
+                  canPassToFn = true;
+                } else if (arg->type == form->type) {
+                  canPassToFn = true;
+                }
+              }
+
               if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_ASSIGN) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
@@ -221,7 +276,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
                   (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_NODE)) ||
-                  (fnc && arg->type == actual_to_formal(se)->type)) {
+                  canPassToFn) {
                 se->var = arg; // do not dereference argument in these cases
               } else if (call->isPrimitive(PRIM_ADDR_OF)) {
                 SET_LINENO(se);
@@ -262,35 +317,47 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
 }
 
 
-void
-flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
+static void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   compute_call_sites();
 
+  Vec<FnSymbol*> outerFunctionSet;
   Vec<FnSymbol*> nestedFunctionSet;
+
   forv_Vec(FnSymbol, fn, nestedFunctions)
     nestedFunctionSet.set_add(fn);
 
   Map<FnSymbol*,SymbolMap*> args_map;
+
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     SymbolMap* uses = new SymbolMap();
+
     findOuterVars(fn, uses);
+
     args_map.put(fn, uses);
   }
 
   // iterate to get outer vars in a function based on outer vars in
   // functions it calls
+  // Also handle finding outer functions that are calling an
+  // inner function, since these will also need the new arguments.
   bool change;
+
   do {
     change = false;
+
     forv_Vec(FnSymbol, fn, nestedFunctions) {
       std::vector<BaseAST*> asts;
+
       collect_top_asts(fn, asts);
+
       SymbolMap* uses = args_map.get(fn);
+
       for_vector(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isResolved()) {
             if (FnSymbol* fcall = call->findFnSymbol()) {
               SymbolMap* call_uses = args_map.get(fcall);
+
               if (call_uses) {
                 form_Map(SymbolMapElem, e, *call_uses) {
                   if (isOuterVar(e->key, fn) && !uses->get(e->key)) {
@@ -299,6 +366,45 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
                   }
                 }
               }
+            }
+          }
+        }
+      }
+
+      forv_Vec(CallExpr, call, *fn->calledBy) {
+        //
+        // call not in a nested function; handle the toFollower/toLeader cases
+        // Note: outerCall=true implies the 'call' does not see defPoint
+        // of the var 'use->key' anywhere in call's enclosing scopes. With
+        // toFollower/toLeader, the 'call' does not see defPoint of 'fn'
+        // either.
+        //
+        bool outerCall = false;
+
+        if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
+          if (!nestedFunctionSet.set_in(parent)) {
+            form_Map(SymbolMapElem, use, *uses) {
+              if (use->key->defPoint->parentSymbol != parent &&
+                  !isOuterVar(use->key, parent)) {
+                outerCall = true;
+              }
+            }
+
+            if (outerCall) {
+              SymbolMap* usesCopy = new SymbolMap();
+
+              outerFunctionSet.set_add(parent);
+              nestedFunctionSet.set_add(parent);
+              nestedFunctions.add(parent);
+
+
+              form_Map(SymbolMapElem, use, *uses) {
+                usesCopy->put(use->key, gNil);
+              }
+
+              args_map.put(parent, usesCopy);
+
+              change = true;
             }
           }
         }
@@ -312,33 +418,12 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   // (in nested functions that call one another)
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     SymbolMap* uses = args_map.get(fn);
-    forv_Vec(CallExpr, call, *fn->calledBy) {
 
-      //
-      // call not in a nested function; handle the toFollower/toLeader cases
-      // Note: outerCall=true implies the 'call' does not see defPoint
-      // of the var 'use->key' anywhere in call's enclosing scopes. With
-      // toFollower/toLeader, the 'call' does not see defPoint of 'fn' either.
-      //
+    forv_Vec(CallExpr, call, *fn->calledBy) {
       bool outerCall = false;
-      if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
-        if (!nestedFunctionSet.set_in(parent)) {
-          form_Map(SymbolMapElem, use, *uses) {
-            if (use->key->defPoint->parentSymbol != parent &&
-                !isOuterVar(use->key, parent))
-              outerCall = true;
-          }
-          if (outerCall) {
-            nestedFunctionSet.set_add(parent);
-            nestedFunctions.add(parent);
-            SymbolMap* usesCopy = new SymbolMap();
-            form_Map(SymbolMapElem, use, *uses) {
-              usesCopy->put(use->key, gNil);
-            }
-            args_map.put(parent, usesCopy);
-          }
-        }
-      }
+
+      if (FnSymbol* parent = toFnSymbol(call->parentSymbol))
+        outerCall = outerFunctionSet.set_in(parent);
 
       addVarsToActuals(call, uses, outerCall);
     }
@@ -366,18 +451,8 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   // remove types from functions
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (FnSymbol* fn = toFnSymbol(ts->defPoint->parentSymbol))
+    if (FnSymbol* fn = toFnSymbol(ts->defPoint->parentSymbol)) {
       fn->defPoint->insertBefore(ts->defPoint->remove());
+    }
   }
-}
-
-
-void flattenFunctions(void) {
-  Vec<FnSymbol*> nestedFunctions;
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (isFnSymbol(fn->defPoint->parentSymbol))
-      nestedFunctions.add(fn);
-  }
-
-  flattenNestedFunctions(nestedFunctions);
 }

@@ -38,6 +38,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CHPL_COMM_YIELD_TASK_WHILE_POLLING
 void chpl_task_yield(void);
 
@@ -120,16 +124,18 @@ typedef struct {
     int32_t task_filename;
     int task_lineno;
     chpl_taskID_t id;
+    chpl_fn_int_t fid;
     chpl_bool is_executeOn;
     c_sublocid_t requestedSubloc;  // requested sublocal for task
     chpl_task_prvData_t prvdata;
 } chpl_task_prvDataImpl_t;
 
 // Define PRV_DATA_IMPL_VAL to set up a chpl_task_prvData_t.
-#define PRV_DATA_IMPL_VAL(_fn, _ln, _id, _is_execOn, _subloc, _serial) \
+#define PRV_DATA_IMPL_VAL(_fn, _ln, _id, _fid, _is_execOn, _subloc, _serial) \
         { .task_filename = _fn, \
           .task_lineno = _ln, \
           .id = _id, \
+          .fid = _fid, \
           .is_executeOn = _is_execOn, \
           .requestedSubloc = _subloc, \
           .prvdata = { .serial_state = _serial } }
@@ -267,6 +273,10 @@ static inline
 int chpl_task_supportsRemoteCache(void) {
   return CHPL_QTHREAD_SUPPORTS_REMOTE_CACHE;
 }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif // ifndef _tasks_qthreads_h_
 /* vim:set expandtab: */

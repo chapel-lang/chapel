@@ -4,7 +4,7 @@ Basics of Initialization
 ========================
 
 Status:
-  Draft
+  Active
 
 Authors:
   Michael Ferguson
@@ -23,7 +23,7 @@ This document provides common language for describing initialization
 and some basic understanding of when initialization occurs. While the
 current language specification covers these topics, this document was
 created as part of a group of CHIPs to do with improvements to
-initializaters and initialization. Thus, this document focuses on
+initializers and initialization. Thus, this document focuses on
 behaviors specific to the new design.
 
 This document provides background for :ref:`Initializers` and

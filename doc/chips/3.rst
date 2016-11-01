@@ -2,7 +2,7 @@ ZeroMQ Integration
 ==================
 
 Status
-  Draft
+  Partially Implemented
 
 Author
   Michael Ferguson
@@ -45,7 +45,7 @@ Chapel is to:
 Low-Level Bindings
 ------------------
 
-Every function in the libzmq core library will be avialable with Chapel's C
+Every function in the libzmq core library will be available with Chapel's C
 compatibility layer. However, Chapel code will need to use C interoperability
 features to call these functions.
 
@@ -63,7 +63,7 @@ includes the idea of a channel which can read or write Chapel objects.
 The basic operations in ZeroMQ are:
 
  * Creating a context. Some language bindings have an idea of a default context.
- * Creating, configuring, and connecting soockets
+ * Creating, configuring, and connecting sockets
  * Moving data between sockets with send and recv calls.
 
 Functions to work with the context and the sockets can be more or less the same
@@ -95,7 +95,7 @@ There are two approaches to address that mismatch:
 
  1) Enhance channels to be aware of message boundaries, or
  2) Provide send/recv as functions on ZeroMQ sockets that work
-    analagously to write/read. In this case we would also want
+    analogously to write/read. In this case we would also want
     to provide a way to do a formatted send or receive (e.g. sendf might
     work with format strings as does writef).
 

@@ -9,21 +9,6 @@
 #include <portable_inttypes.h>
 #include <portable_platform.h>
 
-/*  ------------- win32 -------------------- */
-#if PLATFORM_OS_MSWINDOWS && !PLATFORM_OS_CYGWIN
-#define WINSOCK 1
-#include <winsock2.h>    /*  sockets */
-#include <windows.h>  
-    
-#define SHUT_RD   SD_RECEIVE 
-#define SHUT_WR   SD_SEND 
-#define SHUT_RDWR SD_BOTH 
-
-#define _FIONREAD FIONREAD
-
-/*  ------------ unix ------------------ */
-#else
-
 #include <sys/types.h>     /*  Solaris 2.5.1 fix: u_short, required by sys/socket.h */
 #include <sys/socket.h>    /*  sockets */
 #include <sys/time.h>      /*  timeval */
@@ -55,8 +40,12 @@
   #define _FIONREAD FIONREAD
 #endif
 
-#if PLATFORM_OS_SUPERUX
-  #include <sys/select.h>
+#include <sys/select.h>
+
+#if PLATFORM_COMPILER_CRAY && (PLATFORM_OS_CNL || PLATFORM_OS_LINUX)
+  /* Cray CC botches the inline assembly implementing FD_ZERO in Linux */
+  #undef FD_ZERO
+  #define FD_ZERO(pfd_set) (memset(pfd_set, 0, sizeof(*(pfd_set))))
 #endif
 
 /*  these constants are useful, but appear to be specific to */
@@ -101,35 +90,8 @@
 #  include <unistd.h>         /*  close */
 #endif
 
-/* ioctlsocket */
-#if PLATFORM_OS_MTA
-#define ioctlsocket(a,b,c) ioctl((a),(b),(caddr_t)(c))
-/* these are missing on MTA for some reason */
-#ifdef __cplusplus
-extern "C" {
-#endif
-  ssize_t      recv(int, void *, size_t, int); 
-  ssize_t      send(int, const void *, size_t, int);
-#ifdef __cplusplus
-}
-#endif
-#else
-#define ioctlsocket ioctl
-#endif
-
 typedef unsigned int SOCKET;
 typedef fd_set FD_SET;
-#endif
-
-#ifdef __cplusplus
-  #define SOCK_BEGIN_EXTERNC extern "C" {
-  #define SOCK_END_EXTERNC }
-  #define SOCK_EXTERNC extern "C"
-#else
-  #define SOCK_BEGIN_EXTERNC 
-  #define SOCK_END_EXTERNC 
-  #define SOCK_EXTERNC
-#endif
 
 /*  resolve disagreements about types of arguments to misc. functions */
 #if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || \
@@ -144,13 +106,15 @@ typedef fd_set FD_SET;
 #  define GETSOCKOPT_LENGTH_T int
 #endif
 
-#if PLATFORM_OS_MSWINDOWS || PLATFORM_OS_CYGWIN || PLATFORM_OS_AIX || PLATFORM_OS_SOLARIS || \
+/* ioctlsocket */
+#define ioctlsocket ioctl
+
+#if PLATFORM_OS_CYGWIN || PLATFORM_OS_AIX || PLATFORM_OS_SOLARIS || \
     PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_TRU64 || PLATFORM_OS_SUPERUX || \
+    PLATFORM_OS_DARWIN || /* bug 2428 */ \
     PLATFORM_ARCH_CRAYX1 /* X1 docs claim it's a size_t, they lie */
   #define IOCTL_FIONREAD_ARG_T unsigned int
 #elif PLATFORM_OS_IRIX
-  #define IOCTL_FIONREAD_ARG_T size_t
-#elif PLATFORM_OS_MTA
   #define IOCTL_FIONREAD_ARG_T size_t
 #else
   #define IOCTL_FIONREAD_ARG_T unsigned long
@@ -172,14 +136,18 @@ typedef fd_set FD_SET;
 #endif
 
 #if SOCK_USE_C_BYPASS
-  SOCK_BEGIN_EXTERNC
+ #ifdef __cplusplus
+  extern "C" {
+ #endif
   extern int SOCK_getsockopt(int  s, int level, int optname, void *optval, GETSOCKOPT_LENGTH_T *optlen);
   extern int SOCK_getsockname(int s, struct sockaddr *name, GETSOCKNAME_LENGTH_T *namelen);
   extern int SOCK_getpeername(int s, struct sockaddr *name, GETSOCKNAME_LENGTH_T *namelen);
   extern int SOCK_ioctlsocket(int d, int request, IOCTL_FIONREAD_ARG_T *val);
   extern int SOCK_accept(SOCKET listener, struct sockaddr* calleraddr, LENGTH_PARAM *sz);
   extern int SOCK_recvfrom(SOCKET s, char * buf, int len, int flags, struct sockaddr *from, LENGTH_PARAM *sz);
-  SOCK_END_EXTERNC
+ #ifdef __cplusplus
+  } /* extern C */
+ #endif
 #else
   #define SOCK_getsockopt   getsockopt
   #define SOCK_getsockname  getsockname

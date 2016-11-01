@@ -7,9 +7,9 @@ proc myfunction() {
   on Locales[numLocales-1] {
     var localTup: (R,R);
     
-    localTup(1).init(x = 50);
+    localTup(1).setup(x = 50);
     localTup(1).verify();
-    localTup(2).init(x = 60);
+    localTup(2).setup(x = 60);
     localTup(2).verify();
 
     tup = localTup;

@@ -1,5 +1,5 @@
 ============================================
-Chapel Public Release Goals (version 1.13.0)
+Chapel Public Release Goals (version 1.14.0)
 ============================================
 
 The goals of this release are as follows:

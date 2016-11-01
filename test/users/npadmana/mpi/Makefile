@@ -10,4 +10,4 @@ test_%.x : test_%.chpl
 	${CHPL} ${CHPL_FLAGS} -o $@ $<
 
 clean :
-	-rm *~ a.out *.x
+	-rm *~ a.out *.x *_real

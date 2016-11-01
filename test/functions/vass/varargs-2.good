@@ -1,0 +1,20 @@
+varargs-2.chpl:14: In function 'show_default':
+varargs-2.chpl:16: error: illegal lvalue in assignment
+varargs-2.chpl:20: In function 'show_const':
+varargs-2.chpl:22: error: illegal lvalue in assignment
+varargs-2.chpl:26: In function 'show_const_in':
+varargs-2.chpl:27: error: illegal lvalue in assignment
+varargs-2.chpl:28: error: illegal lvalue in assignment
+varargs-2.chpl:32: In function 'show_const_ref':
+varargs-2.chpl:33: error: illegal lvalue in assignment
+varargs-2.chpl:34: error: illegal lvalue in assignment
+varargs-2.chpl:41: In function 'test_default':
+varargs-2.chpl:43: error: illegal lvalue in assignment
+varargs-2.chpl:46: In function 'test_const':
+varargs-2.chpl:48: error: illegal lvalue in assignment
+varargs-2.chpl:51: In function 'test_const_in':
+varargs-2.chpl:52: error: illegal lvalue in assignment
+varargs-2.chpl:53: error: illegal lvalue in assignment
+varargs-2.chpl:56: In function 'test_const_ref':
+varargs-2.chpl:57: error: illegal lvalue in assignment
+varargs-2.chpl:58: error: illegal lvalue in assignment

@@ -32,13 +32,11 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-
+#include "view.h"
 //
 // getTheIteratorFn(): get the original (user-written) iterator function
 // that corresponds to an _iteratorClass type or symbol
-// or a CallExpr therewith. Its uses were simply:
-//
-//   ... ->defaultInitializer->getFormal(1)->type->defaultInitializer
+// or a CallExpr therewith.
 //
 
 // 'ic' must be an instance of _iteratorClass
@@ -50,26 +48,43 @@ FnSymbol* getTheIteratorFn(CallExpr* call) {
   return getTheIteratorFn(call->get(1)->typeInfo());
 }
 
-// either an _iteratorClass type or a tuple thereof
+// icType is either an _iteratorClass type or a tuple thereof
+// When icType is a tuple, this function returns
+//  the getIterator function for the first tuple element.
+// When icType is an _iteratorClass, this function returns
+//  the original iterator function.
 FnSymbol* getTheIteratorFn(Type* icType)
 {
   // the asserts document the current state
-  bool gotTuple = icType->symbol->hasFlag(FLAG_TUPLE);
-  INT_ASSERT(gotTuple || icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
 
-  // The _getIterator function is in _iteratorClass's defaultInitializer.
-  FnSymbol* getIterFn = icType->defaultInitializer;
+  if (icType->symbol->hasFlag(FLAG_TUPLE)) {
+    FnSymbol* getIterFn = icType->defaultInitializer;
+    // A tuple of iterator classes -> first argument to
+    // tuple constructor is the iterator class type.
+    Type* firstIcType = getIterFn->getFormal(1)->type;
+    INT_ASSERT(firstIcType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
+    AggregateType* firstIcTypeAgg = toAggregateType(firstIcType);
+    FnSymbol* result = firstIcTypeAgg->iteratorInfo->getIterator;
 
-  // The type of _getIterator's first formal arg is _iteratorRecord.
-  Type* irType = getIterFn->getFormal(1)->type;
-  INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
-             (gotTuple && irType->symbol->hasFlag(FLAG_ITERATOR_CLASS)));
+    return result;
+  } else {
+    INT_ASSERT(icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
+    AggregateType* icTypeAgg = toAggregateType(icType);
+    INT_ASSERT(icTypeAgg->iteratorInfo);
+    FnSymbol* getIterFn = icTypeAgg->iteratorInfo->getIterator;
+    // The type of _getIterator's first formal arg is _iteratorRecord.
+    Type* irType = getIterFn->getFormal(1)->type;
+    INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 
-  // The original iterator function is in _iteratorRecord's defaultInitializer.
-  FnSymbol* result = irType->defaultInitializer;
-  INT_ASSERT(gotTuple || result->hasFlag(FLAG_ITERATOR_FN));
+    AggregateType* irTypeAgg = toAggregateType(irType);
+    INT_ASSERT(irTypeAgg->iteratorInfo);
 
-  return result;
+    // Return the original iterator function
+    FnSymbol* result = irTypeAgg->iteratorInfo->iterator;
+    INT_ASSERT(result->hasFlag(FLAG_ITERATOR_FN));
+
+    return result;
+  }
 }
 
 
@@ -95,7 +110,9 @@ static void nonLeaderParCheck()
 static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
 {
   std::vector<CallExpr*> calls;
+
   collectCallExprs(fn, calls);
+
   for_vector(CallExpr, call, calls) {
     if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
         (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
@@ -104,15 +121,20 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
       // If they are not, need issue the USR_FATAL_CONT like below.
       INT_ASSERT(false);
     }
+
     FnSymbol* taskFn = resolvedToTaskFun(call);
+
     bool isParallelConstruct = taskFn &&
-      (taskFn->hasFlag(FLAG_BEGIN) ||
-       taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
+                               (taskFn->hasFlag(FLAG_BEGIN) ||
+                                taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
+
     if (isParallelConstruct ||
         call->isNamed("_toLeader") ||
         call->isNamed("_toStandalone")) {
-      USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
+      USR_FATAL_CONT(call,
+                     "invalid use of parallel construct in serial iterator");
     }
+
     if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
         (call->isPrimitive(PRIM_BLOCK_BEGIN_ON)) ||
         (call->isPrimitive(PRIM_BLOCK_COBEGIN_ON)) ||
@@ -968,17 +990,21 @@ static void convertYieldsAndReturns(std::vector<BaseAST*>& asts, Symbol* index,
 static bool fnContainsOn(FnSymbol* fn)
 {
   std::vector<CallExpr*> calls;
+
   collectCallExprs(fn, calls);
+
   for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_BLOCK_ON) ||
         call->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
         call->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||
         call->isPrimitive(PRIM_BLOCK_COFORALL_ON))
       return true;
+
     if (FnSymbol* taskFn = resolvedToTaskFun(call))
       if (fnContainsOn(taskFn))
         return true;
   }
+
   return false;
 }
 
@@ -1049,8 +1075,8 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
 
   parent->defPoint->insertBefore(new DefExpr(loopBodyFnWrapper));
 
-  ftableVec.add(loopBodyFnWrapper);
-  ftableMap[loopBodyFnWrapper] = ftableVec.n-1;
+  ftableVec.push_back(loopBodyFnWrapper);
+  ftableMap[loopBodyFnWrapper] = ftableVec.size()-1;
 
   //
   // insert a call to the iterator function (using iterator as a
@@ -1090,11 +1116,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   loopBodyFn->retType = dtVoid;
 
   // Move the loop body function out to the module level.
-  Vec<FnSymbol*> nestedFunctions;
-
-  nestedFunctions.add(loopBodyFn);
-
-  flattenNestedFunctions(nestedFunctions);
+  flattenNestedFunction(loopBodyFn);
 
   FnSymbol* iteratorFn = iteratorFnMap.get(iterator);
 
@@ -1191,6 +1213,7 @@ expandIteratorInline(ForLoop* forLoop) {
     // replaced in the functions below though.
     if (isOrderIndependent) {
       std::vector<CallExpr*> callExprs;
+
       collectCallExprs(ibody, callExprs);
 
       for_vector(CallExpr, call, callExprs) {
@@ -1246,6 +1269,12 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         BlockStmt* bodyCopy      = NULL;
         bool       inserted      = false;
 
+        if (forLoop->isCoforallLoop()) {
+          // parallel.cpp wants to know about these when considering whether
+          // or not to insert autoCopies
+          yieldedIndex->addFlag(FLAG_COFORALL_INDEX_VAR);
+        }
+
         SymbolMap  map;
 
         map.put(index, yieldedIndex);
@@ -1297,8 +1326,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // while preserving correct scoping of its SymExprs.
         INT_ASSERT(isGlobal(cfn));
 
-        FnSymbol*      fcopy = taskFnCopies.get(cfn);
-        Vec<FnSymbol*> nestedFnVec;
+        FnSymbol* fcopy = taskFnCopies.get(cfn);
 
         if (!fcopy) {
           // Clone the function. Just once per 'body' should suffice.
@@ -1336,9 +1364,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // We do it because it may eliminate further cloning of 'fcopy'
         // e.g. when the enclosing fn or block are copied for any reason.
         // Ideally, replace with flattenOneFunction().
-        nestedFnVec.add(fcopy);
-
-        flattenNestedFunctions(nestedFnVec);
+        flattenNestedFunction(fcopy);
       }
     }
   }
@@ -1357,8 +1383,11 @@ countYieldsInFn(FnSymbol* fn)
 
 {
   unsigned count = 0;
+
   std::vector<CallExpr*> calls;
+
   collectCallExprs(fn, calls);
+
   for_vector(CallExpr, call, calls)
   {
     if (call->isPrimitive(PRIM_YIELD))
@@ -1407,10 +1436,10 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
   getRecursiveIterators(iterators, gIterator);
 
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol*      iterator = getTheIteratorFn(iterators.v[i]);
-    BlockStmt*     block    = iterator->body;
-    Vec<CallExpr*> calls;
-    int            numYields = 0;
+    FnSymbol*              iterator = getTheIteratorFn(iterators.v[i]);
+    BlockStmt*             block    = iterator->body;
+    std::vector<CallExpr*> calls;
+    int                    numYields = 0;
 
     INT_ASSERT(block);
 
@@ -1419,7 +1448,8 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
     // Replace this loop with an equivalent predicate that uses std::vector in
     // a valid fashion.
     collectCallExprs(block, calls);
-    forv_Vec(CallExpr, call, calls) {
+
+    for_vector(CallExpr, call, calls) {
       if (call && call->isPrimitive(PRIM_YIELD)) {
         numYields++;
 
@@ -1532,7 +1562,8 @@ buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator
   }
   CallExpr* call = new CallExpr(fn, iterator);
   if (ret) {
-    if (fn->retType == ret->type) {
+    if (fn->retType->getValType() == ret->type->getValType()) {
+      INT_ASSERT(fn->retType == ret->type);
       block->insertAtTail(new CallExpr(PRIM_MOVE, ret, call));
     } else {
       VarSymbol* tmp = newTemp("retTmp", fn->retType);
@@ -2127,11 +2158,12 @@ static void handlePolymorphicIterators()
         getIterator->insertBeforeReturn(new DefExpr(label));
         Symbol* ret = getIterator->getReturnSymbol();
         forv_Vec(Type, type, irecord->dispatchChildren) {
+          AggregateType* subTypeAgg = toAggregateType(type);
           VarSymbol* tmp = newTemp(irecord->getField(1)->type);
           VarSymbol* cid = newTemp(dtBool);
           BlockStmt* thenStmt = new BlockStmt();
           VarSymbol* recordTmp = newTemp("recordTmp", type);
-          VarSymbol* classTmp = newTemp("classTmp", type->defaultInitializer->iteratorInfo->getIterator->retType);
+          VarSymbol* classTmp = newTemp("classTmp", subTypeAgg->iteratorInfo->getIterator->retType);
           thenStmt->insertAtTail(new DefExpr(recordTmp));
           thenStmt->insertAtTail(new DefExpr(classTmp));
 
@@ -2150,11 +2182,11 @@ static void handlePolymorphicIterators()
               thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp2));
             }
           }
-          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->defaultInitializer->iteratorInfo->getIterator, recordTmp)));
+          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(subTypeAgg->iteratorInfo->getIterator, recordTmp)));
           thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
           thenStmt->insertAtTail(new GotoStmt(GOTO_GETITER_END, label));
           ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
-          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->defaultInitializer->iteratorInfo->irecord->getField(1)->type->symbol)));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, subTypeAgg->iteratorInfo->irecord->getField(1)->type->symbol)));
           ret->defPoint->insertAfter(new DefExpr(cid));
           ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), irecord->getField(1))));
           ret->defPoint->insertAfter(new DefExpr(tmp));
@@ -2177,10 +2209,18 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
     if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
       Symbol* tmp1 = newTemp(field->name, field->type);
       Symbol* tmp2 = newTemp(autoCopy->retType);
+      Symbol* refTmp = NULL;
       block->insertAtTail(new DefExpr(tmp1));
       block->insertAtTail(new DefExpr(tmp2));
+      if (isReferenceType(autoCopy->getFormal(1)->type)) {
+        refTmp = newTemp(autoCopy->getFormal(1)->type);
+        block->insertAtTail(new DefExpr(refTmp));
+      }
       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, tmp1)));
+      if (refTmp) {
+        block->insertAtTail(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_ADDR_OF, tmp1)));
+      }
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, refTmp?refTmp:tmp1)));
       block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
     } else {
       Symbol* tmp = newTemp(field->name, field->type);

@@ -1,0 +1,7 @@
+bug: multiple destructor calls for nested class in record
+
+When defining a class within a record to use as one of its fields, we have a
+bug where the destructor for the record is getting executed multiple times when
+the record leaves scope.  This doesn't occur when the class is declared outside
+the record, or when the record is made into a class and the destructor is called
+manually.

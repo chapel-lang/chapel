@@ -379,6 +379,21 @@ another record type \chpl{D} provided that \chpl{C} is derived
 from \chpl{D}.  There are no explicit record conversions that are not
 also implicit record conversions.
 
+\subsection{Explicit Range Conversions}
+\label{Explicit_Range_Conversions}
+\index{conversions!range}
+\index{conversions!explicit!range}
+
+An expression of stridable range type can be explicitly converted
+to an unstridable range type, changing the stride to 1 in the process.
+
+\subsection{Explicit Domain Conversions}
+\label{Explicit_Domain_Conversions}
+\index{conversions!domain}
+\index{conversions!explicit!domain}
+
+An expression of stridable domain type can be explicitly converted
+to an unstridable domain type, changing all strides to 1 in the process.
 
 \subsection{Explicit Type to String Conversions}
 \label{Explicit_Type_to_String_Conversions}

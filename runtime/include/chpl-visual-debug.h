@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include "chpl-tasks.h"
+#include "chpl-comm-callbacks.h"
 
 extern int chpl_vdebug_fd;    // fd of output file, 0 => not gathering data
 extern int chpl_vdebug;       // Should we generate debug data
@@ -40,51 +41,21 @@ extern int chpl_dprintf(int fd, const char * format, ...)
 
 //  start and open file if not NULL
 extern void chpl_vdebug_start(const char *, double now); 
+
 //  stop collecting data
 extern void chpl_vdebug_stop(void);
+
 //  Tag the data with a character tag, and possibly resume
-extern void chpl_vdebug_tag(const char *);
-//  resume from a tag point
-extern void chpl_vdebug_pause(void);
+extern void chpl_vdebug_tag(int);
+
+//  Stop logging events 
+extern void chpl_vdebug_pause(int);
+
+//  Identify a tagname with a tag number
+void chpl_vdebug_tagname(const char* tagname, int tagno);
+
 //  mark the current task as a xxxVdebug() task and all children
 extern void chpl_vdebug_mark(void);
-
-
-//  communication logging routines 
-void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                            size_t size, int32_t typeIndex,
-                            int ln, int32_t fn);
-
-void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                            size_t size, int32_t typeIndex,
-                            int ln, int32_t fn);
-
-void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t typeIndex,
-                         int ln, int32_t fn);
-
-void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t typeIndex,
-                         int ln, int32_t fn);
-
-void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
-                               void* srcaddr, void* srcstrides, void* count,
-                               int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
-                               int ln, int32_t fn);
-
-void chpl_vdebug_log_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
-                              void* srcaddr, void* srcstrides, void* count,
-                              int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
-                              int ln, int32_t fn);
-
-void chpl_vdebug_log_fork(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid, void *arg, int32_t arg_size);
-
-void  chpl_vdebug_log_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
-                              chpl_fn_int_t fid, void *arg, int32_t arg_size);
-
-void chpl_vdebug_log_fast_fork(c_nodeid_t node, c_sublocid_t subloc,
-                               chpl_fn_int_t fid, void *arg, int32_t arg_size);
 
 #endif
 

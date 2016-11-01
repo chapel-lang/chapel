@@ -105,7 +105,7 @@ removeIdentityDefs(Symbol* sym) {
 
   for_defs(def, defMap, sym) {
     CallExpr* move = toCallExpr(def->parentExpr);
-    if (move && move->isPrimitive(PRIM_MOVE)) {
+    if (move && isMoveOrAssign(move)) {
       SymExpr* rhs = toSymExpr(move->get(2));
       if (rhs && def->var == rhs->var) {
         move->remove();
@@ -133,7 +133,7 @@ removeUnusedClassInstance(Symbol* sym) {
     for_defs(def, defMap, sym) {
       if (def->parentSymbol) {
         CallExpr* move = toCallExpr(def->parentExpr);
-        if (move && move->isPrimitive(PRIM_MOVE)) {
+        if (move && isMoveOrAssign(move)) {
           move->remove();
           change = true;
         }
@@ -153,7 +153,7 @@ unifyClassInstances(Symbol* sym) {
   for_defs(def, defMap, sym) {
     if (def->parentSymbol) {
       CallExpr* move = toCallExpr(def->parentExpr);
-      if (!move || !move->isPrimitive(PRIM_MOVE))
+      if (!move || !isMoveOrAssign(move))
         return false;
       SymExpr* se = toSymExpr(move->get(2));
       if (!se)
@@ -196,13 +196,13 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
   // first definition is the cast to the appropriate type.  The
   // statement previous to that is the allocation.
   CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
-  if (!move || !move->isPrimitive(PRIM_MOVE))
+  if (!move || !isMoveOrAssign(move))
     return false;
   CallExpr* cast = toCallExpr(move->get(2));
   if (!cast || !cast->isPrimitive(PRIM_CAST))
     return false;
   CallExpr* prevMove = toCallExpr(move->prev);
-  if (!prevMove || !prevMove->isPrimitive(PRIM_MOVE))
+  if (!prevMove || !isMoveOrAssign(prevMove))
     return false;
   CallExpr* alloc = toCallExpr(prevMove->get(2));
   if (!alloc)
@@ -345,7 +345,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
     if (se->parentSymbol) {
       CallExpr* call = toCallExpr(se->parentExpr);
       if (!call ||
-          !call->isPrimitive(PRIM_MOVE) ||
+          !isMoveOrAssign(call)  ||
           // Do we need to add PRIM_ASSIGN here?
           !(isSymExpr(call->get(2)) ||
             toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE))) {
@@ -364,7 +364,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
           !((call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
             call->isPrimitive(PRIM_GET_MEMBER) ||
             call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-            call->isPrimitive(PRIM_MOVE)))
+            isMoveOrAssign(call)))
         // Do we need to add PRIM_ASSIGN here?
         return false;
     }
@@ -396,7 +396,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call) {
         SET_LINENO(sym);
-        INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+        INT_ASSERT(isMoveOrAssign(call));
         Symbol *rhs;
         if (isSymExpr(call->get(2))) {
           rhs = toSymExpr(call->get(2))->var;
@@ -413,9 +413,15 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
           sym->defPoint->insertBefore(new DefExpr(rhs));
 
           // get the reference to the field to use for the rhs
+          // BHARSH TODO: Teach PRIM_GET_MEMBER that if it's accessing a ref
+          // field, it should behave like PRIM_GET_MEMBER_VALUE
           SymExpr *a3 = new SymExpr(rhs);
+          PrimitiveTag op = PRIM_GET_MEMBER;
+          if (a2->isRef() && a3->isRef()) {
+            op = PRIM_GET_MEMBER_VALUE;
+          }
           call->insertBefore(new CallExpr(PRIM_MOVE, a3,
-                               new CallExpr(PRIM_GET_MEMBER, a1, a2)));
+                               new CallExpr(op, a1, a2)));
           addUse(useMap, a1);
           addUse(useMap, a2);
           addDef(defMap, a3);
@@ -452,7 +458,8 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       SET_LINENO(sym);
       // Do we need to add a case for PRIM_ASSIGN?
-      if (call->isPrimitive(PRIM_MOVE)) {
+      if (isMoveOrAssign(call)) {
+        INT_ASSERT(call->get(1)->getValType() == call->get(2)->getValType());
         SymExpr* lhs = toSymExpr(call->get(1));
         for_fields(field, ct) {
           SymExpr* lhsCopy = lhs->copy();
@@ -559,6 +566,11 @@ scalarReplace() {
     //
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (AggregateType* ct = toAggregateType(var->type)) {
+        if (var->isRef() && !isReferenceType(var->type)) {
+          // Handle qualified refs without the _ref type
+          ct = var->type->refType;
+        }
+        INT_ASSERT(ct);
         if (Vec<Symbol*>* varVec = typeVarMap.get(ct)) {
           if (isFnSymbol(var->defPoint->parentSymbol)) {
             varSet.set_add(var);

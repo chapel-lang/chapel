@@ -3,7 +3,7 @@
  * are subject to the following licensing terms: 
  *
  * ---------------------------------------------------------------------------
- * "Copyright (c) 2000-2004 The Regents of the University of California.
+ * "Copyright (c) 2000-2016 The Regents of the University of California.
  * All rights reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -24,12 +24,12 @@
  * ---------------------------------------------------------------------------
  *
  * For more information about AMUDP, visit our home page at:
- *  http://www.cs.berkeley.edu/~bonachea/amudp
+ *  http://gasnet.lbl.gov/amudp
  * Or send email to:
- *  Dan Bonachea <bonachea@cs.berkeley.edu>
+ *  upc-devel@lbl.gov
  *
  * Source code contributions (fixes, patches, extensions etc.) should be 
- * sent to <bonachea@cs.berkeley.edu> to be reviewed for acceptance into the
+ * sent to <upc-devel@lbl.gov> to be reviewed for acceptance into the
  * primary distribution. Contributions are most likely to be accepted if they
  * are provided as public domain, or under a BSD-style license such as 
  * the one above.

@@ -1,1 +1,1 @@
--suseBulkTransfer=false
+-suseBulkTransfer=false -suseBulkTransferStride=false

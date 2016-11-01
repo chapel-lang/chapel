@@ -63,6 +63,7 @@
   macro(DefExpr) sep                               \
   macro(CallExpr) sep                              \
   macro(ContextCallExpr) sep                       \
+  macro(ForallExpr) sep                            \
   macro(NamedExpr) sep                             \
                                                    \
   macro(UseStmt) sep                               \
@@ -73,6 +74,9 @@
 
 #define foreach_ast(macro)                         \
   foreach_ast_sep(macro, ;)
+
+#define for_alive_in_Vec(TYPE, VAR, VEC)           \
+  forv_Vec(TYPE, VAR, VEC) if (VAR->inTree())
 
 class AstVisitor;
 class Expr;
@@ -89,6 +93,8 @@ class DoWhileStmt;
 class ForLoop;
 class CForLoop;
 class ParamForLoop;
+
+class QualifiedType;
 
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
@@ -133,6 +139,7 @@ enum AstTag {
   E_DefExpr,
   E_CallExpr,
   E_ContextCallExpr,
+  E_ForallExpr,
   E_NamedExpr,
   E_UseStmt,
   E_BlockStmt,
@@ -213,7 +220,7 @@ class BaseAST {
 public:
   virtual GenRet    codegen()                                          = 0;
   virtual bool      inTree()                                           = 0;
-  virtual Type*     typeInfo()                                         = 0;
+  virtual QualifiedType qualType()                                     = 0;
   virtual void      verify()                                           = 0;
   virtual void      accept(AstVisitor* visitor)                        = 0;
 
@@ -221,6 +228,10 @@ public:
   int               linenum()                                    const;
   const char*       stringLoc()                                  const;
 
+  Type*             typeInfo(); // note: calls qualType
+  bool              isRef();
+  bool              isWideRef();
+  bool              isRefOrWideRef();
   FnSymbol*         getFunction();
   ModuleSymbol*     getModule();
   Type*             getValType();
@@ -318,6 +329,7 @@ def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
 def_is_ast(DefExpr)
 def_is_ast(ContextCallExpr)
+def_is_ast(ForallExpr)
 def_is_ast(NamedExpr)
 def_is_ast(UseStmt)
 def_is_ast(BlockStmt)
@@ -358,6 +370,7 @@ def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)
 def_to_ast(ContextCallExpr)
+def_to_ast(ForallExpr)
 def_to_ast(NamedExpr)
 def_to_ast(UseStmt)
 def_to_ast(BlockStmt)
@@ -444,6 +457,12 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     break;                                                              \
   case E_ContextCallExpr:                                               \
     AST_CALL_LIST(_a, ContextCallExpr, options, call, __VA_ARGS__);     \
+    break;                                                              \
+  case E_ForallExpr:                                                    \
+    AST_CALL_CHILD(_a, ForallExpr, indices,      call, __VA_ARGS__);    \
+    AST_CALL_CHILD(_a, ForallExpr, iteratorExpr, call, __VA_ARGS__);    \
+    AST_CALL_CHILD(_a, ForallExpr, expr,         call, __VA_ARGS__);    \
+    AST_CALL_CHILD(_a, ForallExpr, cond,         call, __VA_ARGS__);    \
     break;                                                              \
   case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \

@@ -1,4 +1,4 @@
-use Random, Time;
+use Random, Time, Search, Sort;
 
 config const n: int = 30000;
 const linearN: int = n/1000; // problem size for slow "linear" opeations
@@ -70,14 +70,13 @@ class InsertRandom: Runner {
 // generate random numbers and put them in order in the array
 class InsertSorted: Runner {
   const n: int;
-  const linear: bool = false;
   proc run(A: [] int) {
     extern proc srand(int);
     extern proc rand(): int;
     srand(randSeed);
     for i in 1..linearN {
       const val = rand();
-      const (_, loc) = if linear then LinearSearch(A, val) else BinarySearch(A, val);
+      const (_, loc) = binarySearch(A, val);
       A.insert(loc, val);
     }
   }
@@ -145,7 +144,7 @@ proc timeRunList(r: Runner, ref L: list(int)) {
   return t.elapsed();
 }
 
-proc isSorted(A, n) {
+proc isSorted(A: [] int, n:int): bool {
   var prev = A[1];
   for i in 1..n {
     if prev > A[i] then return false;
@@ -181,7 +180,7 @@ proc main {
   assert(isSorted(A,linearN));
 
   r = new PopBack(); r.run(A); delete r; // clean up
-  r = new InsertSorted(n, false); output("InsertSL", timeRun(r,A)); delete r;
+  r = new InsertSorted(n); output("InsertSL", timeRun(r,A)); delete r;
   assert(isSorted(A,linearN));
 
   r = new Remove(n, true); output("RemoveFront", timeRun(r, A)); delete r;

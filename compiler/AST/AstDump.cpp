@@ -180,7 +180,7 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       writeFnSymbol(fn);
 
     } else if (isTypeSymbol(sym)) {
-      if (toAggregateType(sym->type)) {
+      if (isAggregateType(sym->type)) {
         if (sym->hasFlag(FLAG_SYNC))
           write("sync");
 
@@ -191,13 +191,15 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       writeSymbol("type", sym, true);
 
     } else if (VarSymbol* vs = toVarSymbol(sym)) {
-      if (vs->type->symbol->hasFlag(FLAG_SYNC))
+      if (isSyncType(vs->type)) {
         write("sync");
 
-      if (vs->type->symbol->hasFlag(FLAG_SINGLE))
+      } else if (isSingleType(vs->type)) {
         write("single");
+      }
 
-      writeSymbol("var", sym, true);
+      write(true, sym->qualType().qualStr(), false);
+      writeSymbol("", sym, true);
       writeFlags(mFP, sym);
 
     } else if (isLabelSymbol(sym)) {

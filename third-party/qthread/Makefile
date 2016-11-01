@@ -20,6 +20,8 @@ QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
+else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
+CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
 endif
 
 ifeq ($(CHPL_MAKE_HWLOC),hwloc)
@@ -45,10 +47,10 @@ endif
 CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
 # determine which scheduler to use. Default to nemesis, except for numa where
-# we want sherwood. Override with a user provided option if they requested one
+# we want distrib. Override with a user provided option if they requested one
 SCHEDULER = nemesis
 ifeq ($(CHPL_MAKE_LOCALE_MODEL),numa)
-SCHEDULER = sherwood
+SCHEDULER = distrib
 endif
 ifneq (, $(CHPL_QTHREAD_SCHEDULER))
 SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
@@ -92,11 +94,12 @@ qthread-config: FORCE
 # ahead in version numbers as that which was used when packaging the
 # Qthreads release
 #
-	-cd $(QTHREAD_SUBDIR) && find . -name "*.m4" | xargs touch configure.ac
-	sleep 2
+	cd $(QTHREAD_SUBDIR) && touch -c configure.ac
+	cd $(QTHREAD_SUBDIR) && find . -name "*.m4" | xargs touch
+	cd $(QTHREAD_SUBDIR) && touch -c aclocal.m4
 	cd $(QTHREAD_SUBDIR) && touch configure
-	sleep 2
 	cd $(QTHREAD_SUBDIR) && find . -name "*.in" | xargs touch
+
 #
 # Then configure
 #
@@ -104,8 +107,7 @@ qthread-config: FORCE
 	cd $(QTHREAD_BUILD_DIR) \
 	&& $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' \
 	       CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' \
-	       --prefix=$(QTHREAD_INSTALL_DIR) CHPL_HOME=$(CHPL_MAKE_HOME) \
-	       $(CHPL_QTHREAD_CFG_OPTIONS) 
+	       --prefix=$(QTHREAD_INSTALL_DIR) $(CHPL_QTHREAD_CFG_OPTIONS)
 
 qthread-build: FORCE
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE)
@@ -125,7 +127,7 @@ qthread-build: FORCE
 ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
 SUPPORTS_REMOTE_CACHE = 1
 ONE_WORKER_PER_SHEPHERD = 1
-else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),nottingham sherwood))
+else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),distrib nottingham sherwood))
 SUPPORTS_REMOTE_CACHE = 0
 ONE_WORKER_PER_SHEPHERD = 0
 else

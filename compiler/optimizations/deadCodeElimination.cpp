@@ -71,7 +71,7 @@ static unsigned int deadModuleCount;
 static bool isDeadVariable(Symbol* var,
                            Map<Symbol*,Vec<SymExpr*>*>& defMap,
                            Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  if (var->type->symbol->hasFlag(FLAG_REF)) {
+  if (var->isRef()) {
     Vec<SymExpr*>* uses = useMap.get(var);
     Vec<SymExpr*>* defs = defMap.get(var);
     return (!uses || uses->n == 0) && (!defs || defs->n <= 1);
@@ -144,12 +144,15 @@ void deadExpressionElimination(FnSymbol* fn) {
           expr->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
           expr->isPrimitive(PRIM_GET_MEMBER) ||
           expr->isPrimitive(PRIM_DEREF) ||
-          expr->isPrimitive(PRIM_ADDR_OF)) {
+          expr->isPrimitive(PRIM_ARRAY_GET) ||
+          expr->isPrimitive(PRIM_ADDR_OF) ||
+          expr->isPrimitive(PRIM_SET_REFERENCE)) {
         if (expr->isStmtExpr())
           expr->remove();
       }
 
-      if (expr->isPrimitive(PRIM_MOVE) || expr->isPrimitive(PRIM_ASSIGN))
+      if (expr->isPrimitive(PRIM_MOVE) ||
+          expr->isPrimitive(PRIM_ASSIGN))
         if (SymExpr* lhs = toSymExpr(expr->get(1)))
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
             if (lhs->var == rhs->var)
@@ -580,12 +583,11 @@ void removeDeadIterResumeGotos() {
 // Make sure there are no iterResumeGotos to remove.
 // Reset removedIterResumeLabels.
 //
-void verifyNcleanRemovedIterResumeGotos() {
+void verifyRemovedIterResumeGotos() {
   forv_Vec(LabelSymbol, labsym, removedIterResumeLabels) {
     if (!isAlive(labsym) && isAlive(labsym->iterResumeGoto))
       INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label - missing a call to removeDeadIterResumeGotos?");
   }
-  removedIterResumeLabels.clear();
 }
 
 // 2014/10/15

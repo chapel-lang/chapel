@@ -28,6 +28,9 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
+#include "codegen.h"
+#include "llvmDebug.h"
+
 #include "AstVisitor.h"
 
 #include <cstring>
@@ -48,16 +51,30 @@ void codegenStmt(Expr* stmt) {
   info->filename = stmt->fname();
 
   if( outfile ) {
-    if (stmt->linenum() > 0) {
-      if (printCppLineno) {
-        info->cStatements.push_back(
-            "/* ZLINE: " + numToString(stmt->linenum())
-            + " " + stmt->fname() + " */\n");
-      }
-    }
-
+    if (printCppLineno && stmt->linenum() > 0)
+        info->cStatements.push_back(zlineToString(stmt));
     if (fGenIDS)
-      info->cStatements.push_back("/* " + numToString(stmt->id) + " */ ");
+      info->cStatements.push_back(idCommentTemp(stmt));
+  } else {
+#ifdef HAVE_LLVM
+    if (debug_info && stmt->linenum() > 0) {
+      // Adjust the current line number, but leave the scope alone.
+      llvm::MDNode* scope;
+
+      if(stmt->parentSymbol && stmt->parentSymbol->astTag == E_FnSymbol) {
+        scope = debug_info->get_function((FnSymbol *)stmt->parentSymbol);
+      } else {
+        scope = info->builder->getCurrentDebugLocation().getScope(
+#if HAVE_LLVM_VER < 37
+                                                      info->llvmContext
+#endif
+                                                      );
+      }
+
+      info->builder->SetCurrentDebugLocation(
+                  llvm::DebugLoc::get(stmt->linenum(),0 /*col*/,scope));
+    }
+#endif
   }
 
   ++gStmtCount;
@@ -170,6 +187,7 @@ void UseStmt::verify() {
   if (relatedNames.size() != 0 && named.size() == 0 && renamed.size() == 0) {
     INT_FATAL(this, "Have names to avoid, but nothing was listed in the use to begin with");
   }
+  verifyNotOnList(src);
 }
 
 void UseStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
@@ -364,6 +382,10 @@ void BlockStmt::verify() {
         INT_FATAL(this, "BlockStmt::verify. Bad expression kind in byrefVars");
     }
   }
+
+  verifyNotOnList(modUses);
+  verifyNotOnList(byrefVars);
+  verifyNotOnList(blockInfo);
 }
 
 
@@ -426,8 +448,14 @@ GenRet BlockStmt::codegen() {
   codegenStmt(this);
 
   if (outfile) {
-    if (this != getFunction()->body)
+    if (this != getFunction()->body) {
+      if (this->blockInfoGet()) {
+        if (this->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
+          info->cStatements.push_back("/* local block */\n");
+        }
+      }
       info->cStatements.push_back("{\n");
+    }
 
     body.codegen("");
 
@@ -886,6 +914,9 @@ CondStmt::verify() {
   if (elseStmt && elseStmt->parentExpr != this)
     INT_FATAL(this, "Bad CondStmt::elseStmt::parentExpr");
 
+  verifyNotOnList(condExpr);
+  verifyNotOnList(thenStmt);
+  verifyNotOnList(elseStmt);
 }
 
 CondStmt*
@@ -922,7 +953,22 @@ CondStmt::codegen() {
   codegenStmt(this);
 
   if ( outfile ) {
-    info->cStatements.push_back("if (" + codegenValue(condExpr).c + ") ");
+    //here it's very possible that we end up with ( ) around condExpr. Extra
+    //parentheses generated warnings from the backend compiler in some cases.
+    //It didn't feel very safe to strip them at expr level as it might mess up
+    //precedence thus, following conditional -- Engin
+
+    std::string c_condExpr = codegenValue(condExpr).c;
+
+    int numExtraPar = 0;
+    //if (c_condExpr[0] == '(' && c_condExpr[c_condExpr.size()-1] == ')') {
+    if (c_condExpr[numExtraPar] == '(' && 
+        c_condExpr[c_condExpr.size()-(numExtraPar+1)] == ')') {
+      numExtraPar++;
+    }
+    c_condExpr = c_condExpr.substr(numExtraPar,
+        c_condExpr.length()-2*numExtraPar);
+    info->cStatements.push_back("if (" + c_condExpr  + ") ");
 
     thenStmt->codegen();
 
@@ -1145,6 +1191,8 @@ void GotoStmt::verify() {
                   "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
     }
   }
+
+  verifyNotOnList(label);
 }
 
 
@@ -1179,11 +1227,10 @@ GotoStmt::copyInner(SymbolMap* map) {
 // Ensure all remembered Gotos have been taken care of.
 // Reset copiedIterResumeGotos.
 //
-void verifyNcleanCopiedIterResumeGotos() {
+void verifyCopiedIterResumeGotos() {
   for (int i = 0; i < copiedIterResumeGotos.n; i++)
     if (GotoStmt* copy = copiedIterResumeGotos.v[i].value)
       INT_FATAL(copy, "unhandled goto in copiedIterResumeGotos");
-  copiedIterResumeGotos.clear();
 }
 
 

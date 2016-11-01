@@ -1,0 +1,2 @@
+--n=2000 --ntasks=52 # threadring.N=2000.ntasks=52.good
+--n=1000 --ntasks=98 # threadring.N=1000.ntasks=98.good

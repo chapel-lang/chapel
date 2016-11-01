@@ -28,6 +28,11 @@ isTrue = $(filter yes Yes YES y Y true True TRUE t T, $(1))
 MAKEFLAGS = --no-print-directory
 
 
+#
+# Don't let CONFIG_SITE mess up our third-party/ builds.
+#
+unexport CONFIG_SITE
+
 ifndef CHPL_MAKE_HOST_TARGET
 CHPL_MAKE_HOST_TARGET = --host
 endif
@@ -151,8 +156,8 @@ include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
-include $(THIRD_PARTY_DIR)/chpl-venv/Makefile.include
 include $(THIRD_PARTY_DIR)/fltk/Makefile.include
+include $(THIRD_PARTY_DIR)/libunwind/Makefile.include
 
 -include $(THIRD_PARTY_DIR)/Makefile.devel.include
 

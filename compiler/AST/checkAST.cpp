@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,7 +39,7 @@ void checkForDuplicateUses()
   // So, scan the list of functions, cache their arguments, and barf if a
   // duplicate is encountered.
   std::set<ArgSymbol*> args_seen;
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     for_formals(formal, fn)
     {
@@ -50,6 +50,28 @@ void checkForDuplicateUses()
   }
 }
 
+void checkArgsAndLocals()
+{
+  // Check that each VarSymbol and each ArgSymbol
+  // has a DefExpr that is in the FnSymbol
+  // or a parent of it.
+  forv_Vec(SymExpr, se, gSymExprs)
+  {
+    DefExpr* def = se->var->defPoint;
+    Symbol* defInSym = def->parentSymbol;
+    Symbol* useInSym = se->parentSymbol;
+
+    if (isFnSymbol(defInSym) && isFnSymbol(useInSym)) {
+      if (defInSym->hasFlag(FLAG_MODULE_INIT)) {
+        // OK, module init functions can define globals
+      } else {
+        if (defInSym != useInSym) {
+          INT_FATAL(se, "Refers to a local/arg in another function");
+        }
+      }
+    }
+  }
+}
 
 // Check that no unresolved symbols remain in the tree.
 // This one is pretty cheap, so can be run after every pass (following
@@ -61,13 +83,13 @@ void checkNoUnresolveds()
   // resolution ... .
   if (gUnresolvedSymExprs.n > 1)
     INT_FATAL("Structural error: "
-      "At this point, the AST should not contain any unresovled symbols.");
+      "At this point, the AST should not contain any unresolved symbols.");
 }
 
 // Ensures that primitives are used only where they are expected.
 void checkPrimitives()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     // Only interested in primitives
     if (!call->primitive)
@@ -100,13 +122,63 @@ void checkPrimitives()
      case PRIM_IS_TUPLE_TYPE:
      case PRIM_IS_STAR_TUPLE_TYPE:
      case PRIM_NEW:                 // new keyword
+     case PRIM_ERROR:
+     case PRIM_WARNING:
       if (resolved)
         INT_FATAL("Primitive should not appear after resolution is complete.");
       break;
 
+     case PRIM_ADDR_OF:             // set a reference to a value
+      if (resolved) {
+        // Check that the argument is not already a reference.
+        // references can only go 1 level
+        if (isReferenceType(call->get(1)->typeInfo()))
+          INT_FATAL("Invalid PRIM_ADDR_OF of a reference");
+      }
+      break;
+
+     case PRIM_DEREF:               // dereference a reference
+      if (resolved) {
+        // Check that the argument is a reference.
+        if (!isReferenceType(call->get(1)->typeInfo()))
+          INT_FATAL("Invalid PRIM_DEREF of a non-reference");
+      }
+      break;
+
+     case PRIM_MOVE:
+      if (resolved) {
+        // Check that the LHS has the same type as the RHS.
+        if (call->get(1)->typeInfo() != call->get(2)->typeInfo())
+          INT_FATAL("PRIM_MOVE types do not match");
+      }
+      break;
+
+     case PRIM_GET_MEMBER:
+     case PRIM_GET_MEMBER_VALUE:
+     case PRIM_SET_MEMBER:
+      if (resolved) {
+        // For expr.field, check that field is a VarSymbol
+        // in the class expr.type.
+        AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
+        SymExpr* getFieldSe = toSymExpr(call->get(2));
+        Symbol* getField = getFieldSe->var;
+        INT_ASSERT(ct);
+        INT_ASSERT(getField);
+        Symbol* name_match = NULL;
+        for_fields(field, ct) {
+          if (0 == strcmp(field->name, getField->name))
+            name_match = field;
+        }
+        if (name_match != getField) {
+          // Note: name_match contains the field that was
+          // probably meant...
+          INT_FATAL("Field access for field not in type");
+        }
+      }
+      break;
+
      case PRIM_UNKNOWN:
      case PRIM_NOOP:
-     case PRIM_MOVE:
      case PRIM_REF_TO_STRING:
      case PRIM_RETURN:
      case PRIM_YIELD:
@@ -132,6 +204,7 @@ void checkPrimitives()
      case PRIM_XOR:
      case PRIM_POW:
      case PRIM_ASSIGN:
+     case PRIM_SET_REFERENCE:
      case PRIM_ADD_ASSIGN:
      case PRIM_SUBTRACT_ASSIGN:
      case PRIM_MULT_ASSIGN:
@@ -149,41 +222,11 @@ void checkPrimitives()
      case PRIM_GETCID:
      case PRIM_SET_UNION_ID:
      case PRIM_GET_UNION_ID:
-     case PRIM_GET_MEMBER:
-     case PRIM_GET_MEMBER_VALUE:
-     case PRIM_SET_MEMBER:
      case PRIM_CHECK_NIL:
      case PRIM_GET_REAL:            // get complex real component
      case PRIM_GET_IMAG:            // get complex imag component
      case PRIM_QUERY:               // query expression primitive
-     case PRIM_ADDR_OF:             // set a reference to a value
-     case PRIM_DEREF:               // dereference a reference
      case PRIM_LOCAL_CHECK:         // assert that a wide ref is on this locale
-     case PRIM_SYNC_INIT:
-     case PRIM_SYNC_DESTROY:
-     case PRIM_SYNC_LOCK:
-     case PRIM_SYNC_UNLOCK:
-     case PRIM_SYNC_WAIT_FULL:
-     case PRIM_SYNC_WAIT_EMPTY:
-     case PRIM_SYNC_SIGNAL_FULL:
-     case PRIM_SYNC_SIGNAL_EMPTY:
-     case PRIM_SINGLE_INIT:
-     case PRIM_SINGLE_DESTROY:
-     case PRIM_SINGLE_LOCK:
-     case PRIM_SINGLE_UNLOCK:
-     case PRIM_SINGLE_WAIT_FULL:
-     case PRIM_SINGLE_SIGNAL_FULL:
-     case PRIM_WRITEEF:
-     case PRIM_WRITEFF:
-     case PRIM_WRITEXF:
-     case PRIM_READFE:
-     case PRIM_READFF:
-     case PRIM_READXX:
-     case PRIM_SYNC_IS_FULL:
-     case PRIM_SINGLE_WRITEEF:
-     case PRIM_SINGLE_READFF:
-     case PRIM_SINGLE_READXX:
-     case PRIM_SINGLE_IS_FULL:
      case PRIM_GET_END_COUNT:
      case PRIM_SET_END_COUNT:
      case PRIM_GET_SERIAL:              // get serial state
@@ -214,8 +257,6 @@ void checkPrimitives()
      case PRIM_ARRAY_SHIFT_BASE_POINTER:
      case PRIM_ARRAY_SET:
      case PRIM_ARRAY_SET_FIRST:
-     case PRIM_ERROR:
-     case PRIM_WARNING:
      case PRIM_WHEN:
      case PRIM_BLOCK_PARAM_LOOP:        // BlockStmt::blockInfo - param for loop
      case PRIM_BLOCK_WHILEDO_LOOP:      // BlockStmt::blockInfo - while do loop
@@ -241,7 +282,8 @@ void checkPrimitives()
      case PRIM_HEAP_BROADCAST_GLOBAL_VARS:
      case PRIM_PRIVATE_BROADCAST:
      case PRIM_INT_ERROR:
-     case PRIM_CAPTURE_FN:
+     case PRIM_CAPTURE_FN_FOR_CHPL:
+     case PRIM_CAPTURE_FN_FOR_C:
      case PRIM_CREATE_FN_TYPE:
      case PRIM_STRING_COPY:
      case PRIM_CAST_TO_VOID_STAR:       // Cast the object argument to void*.
@@ -267,10 +309,10 @@ void checkPrimitives()
 // and it has no corresponding ref type.
 void checkReturnTypesHaveRefTypes()
 {
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     Type* retType = fn->retType;
-    
+
     if (retType->symbol->hasFlag(FLAG_REF))
       continue;
 

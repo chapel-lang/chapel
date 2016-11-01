@@ -1,1 +1,1 @@
--sprintTimers=1
+-sprintTimers=1 --no-denormalize

@@ -1,4 +1,5 @@
 use Time;
+
 proc main {
   var s: sync int;
   begin {

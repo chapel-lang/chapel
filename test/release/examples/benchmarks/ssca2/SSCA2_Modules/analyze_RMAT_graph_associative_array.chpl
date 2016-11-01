@@ -258,7 +258,6 @@ module analyze_RMAT_graph_associative_array {
       // WARNING: This can't be zippered with anything other than itself
       iter FilteredNeighbors( v : index (vertices), param tag: iterKind, followThis)
       where tag == iterKind.follower {
-        pragma "no copy" pragma "no auto destroy"
         const neighbors => Row(v).neighborList;
         const (low, high, wholeLow) = followThis;
         // 1-d, no stride
@@ -271,7 +270,7 @@ module analyze_RMAT_graph_associative_array {
 
       // iterate over all neighbor (ID, weight) pairs
 
-      proc NeighborPairs( v : index (vertices) ) {   // implies nleAsPair
+      proc NeighborPairs( v : index (vertices) ) ref {   // implies nleAsPair
         return Row (v).neighborList;
       }
 

@@ -2,7 +2,7 @@ use myrecord;
 
 proc make(i:int) : R {
   var ret: R;
-  ret.init(x = i);
+  ret.setup(x = i);
   ret.verify();
   return ret;
 }

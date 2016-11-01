@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015 Inria.  All rights reserved.
+ * Copyright © 2013-2016 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -21,7 +21,7 @@ static int hwloc_diff_read(hwloc_topology_t topo, const char *inputdiff,
 			   hwloc_topology_diff_t *firstdiffp, char **refnamep)
 {
 	size_t buflen, offset, readlen;
-	char *buffer;
+	char *buffer, *tmp;
 	size_t ret;
 	int err;
 
@@ -44,9 +44,12 @@ static int hwloc_diff_read(hwloc_topology_t topo, const char *inputdiff,
 			break;
 
 		buflen *= 2;
-		buffer = realloc(buffer, buflen+1);
-		if (!buffer)
+		tmp = realloc(buffer, buflen+1);
+		if (!tmp) {
+			fprintf(stderr, "Failed to realloc buffer for reading diff.\n");
 			goto out_with_buffer;
+		}
+		buffer = tmp;
 		readlen = buflen/2;
 	}
 

@@ -231,7 +231,13 @@ void beautify(fileinfo* origfile) {
 
     if (cp[0] != '\0') {
       if (zline >= 0 && new_line == TRUE) {
-        fprintf(outputfile, ZLINEFORMAT, zline, zname);
+        int zlineP = zline;
+        if (zline == 0) {
+          zlineP = 1;  // #line 0 ... is illegal in C11
+          if (!strcmp(zname, "<internal>")) //always internal when zline==0 ?
+            zline = -1; //do not print #line until we see ZLINEINPUT again
+        }
+        fprintf(outputfile, ZLINEFORMAT, zlineP, zname);
       }
     }
 

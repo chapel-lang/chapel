@@ -36,6 +36,8 @@
 #include "symbol.h"
 #include "vec.h"
 
+#include "iterator.h"
+
 #include "AstVisitor.h"
 
 static bool isDerivedType(Type* type, Flag flag);
@@ -75,10 +77,21 @@ bool Type::inTree() {
 }
 
 
-Type* Type::typeInfo() {
-  return this;
+QualifiedType Type::qualType() {
+  return QualifiedType(this);
 }
 
+// Are actuals of this type passed with const intent by default?
+bool Type::isDefaultIntentConst() const {
+  bool retval = true;
+
+  if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
+      isReferenceType(this)                       == true ||
+      isRecordWrappedType(this)                   == true)
+    retval = false;
+
+  return retval;
+}
 
 GenRet Type::codegen() {
   if (this == dtUnknown) {
@@ -201,6 +214,14 @@ std::string PrimitiveType::docsDirective() {
 
 void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
+}
+
+bool QualifiedType::isRefType() const {
+  return _type->symbol->hasFlag(FLAG_REF);
+}
+
+bool QualifiedType::isWideRefType() const {
+  return _type->symbol->hasFlag(FLAG_WIDE_REF);
 }
 
 EnumType::EnumType() :
@@ -560,9 +581,11 @@ std::string EnumType::docsDirective() {
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
   aggregateTag(initTag),
+  initializerStyle(DEFINES_NONE_USE_DEFAULT),
   fields(),
   inherits(),
   outer(NULL),
+  iteratorInfo(NULL),
   doc(NULL)
 {
   if (aggregateTag == AGGREGATE_CLASS) { // set defaultValue to nil to keep it
@@ -576,7 +599,15 @@ AggregateType::AggregateType(AggregateTag initTag) :
 }
 
 
-AggregateType::~AggregateType() { }
+AggregateType::~AggregateType() {
+  // Delete references to this in iteratorInfo when destroyed.
+  if (iteratorInfo) {
+    if (iteratorInfo->iclass == this)
+      iteratorInfo->iclass = NULL;
+    if (iteratorInfo->irecord == this)
+      iteratorInfo->irecord = NULL;
+  }
+}
 
 
 void AggregateType::verify() {
@@ -659,6 +690,10 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
 
   if (def->parentSymbol || def->list)
     def->remove();
+
+  // Lydia note (Sept 2, 2016): Based on control flow, this adds even the
+  // function symbols we just handled into the fields alist for the type.
+  // Shouldn't placing them in ct->methods be sufficient?
   if (tail)
     ct->fields.insertAtTail(def);
   else
@@ -1272,6 +1307,50 @@ Symbol* AggregateType::getField(int i) {
   return toDefExpr(fields.get(i))->sym;
 }
 
+QualifiedType AggregateType::getFieldType(Expr* e) {
+  SymExpr* sym = NULL;
+  VarSymbol* var = NULL;
+
+  sym = toSymExpr(e);
+  if (sym)
+    var = toVarSymbol(sym->var);
+
+  const char* name = NULL;
+
+  // Special case: An integer field name is actually a tuple member index.
+  {
+    int64_t i;
+    if (get_int(sym, &i)) {
+      name = astr("x", istr(i));
+    }
+  }
+
+  // Typical case: field is identified by its name
+  if (var && var->immediate)
+    name = var->immediate->v_string;
+
+  // Special case: star tuples can have run-time integer field access
+  if (name == NULL && this->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    name = astr("x1"); // get the 1st field's type, since they're all the same
+  }
+
+  Symbol* fs = NULL;
+  for_fields(field, this) {
+    if (!strcmp(field->name, name)) {
+      fs = field;
+    }
+  }
+
+  if (fs) {
+    Qualifier qual = QUAL_VAL;
+    if (fs->type->symbol->hasFlag(FLAG_REF))
+      qual = QUAL_REF;
+    return QualifiedType(fs->type, qual);
+  }
+  else
+    return QualifiedType(NULL, QUAL_UNKNOWN);
+}
+
 
 void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
   // TODO: Include unions... (thomasvandoren, 2015-02-25)
@@ -1521,6 +1600,9 @@ void initPrimitiveTypes() {
   dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gOpaque;
+  dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
+  dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCFnPtr->defaultValue = gOpaque;
   CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
   gCVoidPtr->cname = "NULL";
   gCVoidPtr->addFlag(FLAG_EXTERN);
@@ -1843,7 +1925,7 @@ bool isUnion(Type* t) {
   return false;
 }
 
-bool isReferenceType(Type* t) {
+bool isReferenceType(const Type* t) {
   return t->symbol->hasFlag(FLAG_REF);
 }
 
@@ -1857,7 +1939,7 @@ bool isRefCountedType(Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
 }
 
-bool isRecordWrappedType(Type* t) {
+bool isRecordWrappedType(const Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
 }
 
@@ -1901,20 +1983,26 @@ static bool isDerivedType(Type* type, Flag flag)
   return retval;
 }
 
-bool isSyncType(Type* t) {
-  return getSyncFlags(t->symbol).any();
+bool isSyncType(const Type* t) {
+  return t->symbol->hasFlag(FLAG_SYNC);
 }
 
-bool isAtomicType(Type* t) {
+bool isSingleType(const Type* t) {
+  return t->symbol->hasFlag(FLAG_SINGLE);
+}
+
+bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
 
 bool isRefIterType(Type* t) {
   Symbol* iteratorRecord = NULL;
 
-  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS))
-    iteratorRecord = t->defaultInitializer->getFormal(1)->type->symbol;
-  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+    AggregateType* at = toAggregateType(t);
+    FnSymbol* getIterator = at->iteratorInfo->getIterator;
+    iteratorRecord = getIterator->getFormal(1)->type->symbol;
+  } else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     iteratorRecord = t->symbol;
 
   if (iteratorRecord)
@@ -1995,7 +2083,9 @@ bool isString(Type* type) {
 // In the longer term we plan to further broaden the cases that the new
 // logic can handle and reduce the exceptions that are filtered out here.
 //
-
+// MPF 2016-09-15
+// This function now includes tuples, distributions, domains, and arrays.
+//
 bool isUserDefinedRecord(Type* type) {
   bool retval = false;
 
@@ -2006,21 +2096,8 @@ bool isUserDefinedRecord(Type* type) {
     // Must be a record type
     if (aggr->aggregateTag != AGGREGATE_RECORD) {
 
-    // Not a tuple
-    } else if (sym->hasFlag(FLAG_TUPLE)              == true) {
-
     // Not a range
     } else if (sym->hasFlag(FLAG_RANGE)              == true) {
-
-    // Not a distribution
-    } else if (sym->hasFlag(FLAG_DISTRIBUTION)       == true) {
-
-    // Not a domain
-    } else if (sym->hasFlag(FLAG_DOMAIN)             == true) {
-
-    // Not an array or an array alias
-    } else if (sym->hasFlag(FLAG_ARRAY)              == true ||
-               sym->hasFlag(FLAG_ARRAY_ALIAS)        == true) {
 
     // Not an atomic type
     } else if (sym->hasFlag(FLAG_ATOMIC_TYPE)        == true) {
@@ -2201,8 +2278,9 @@ bool needsCapture(Type* t) {
     return true;
   } else {
     // Ensure we have covered all types.
-    INT_ASSERT(isRecordWrappedType(t) ||  // domain, array, or distribution
-               isSyncType(t) ||
+    INT_ASSERT(isRecordWrappedType(t) ||
+               isSyncType(t)          ||
+               isSingleType(t)        ||
                isAtomicType(t));
     return false;
   }

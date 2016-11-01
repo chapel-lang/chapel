@@ -86,6 +86,10 @@ config const printParams = true,
 //
 config const useOn = (CHPL_COMM != "ugni") && (CHPL_COMM != "none");
 
+// Use "on" statement in verify kernel? Note that verification
+// is much slower if this is set to false.
+config const useOnVerify = true;
+
 //
 // TableDist is a 1D block distribution for domains storing indices
 // of type "indexType", and it is computed by blocking the bounding
@@ -206,7 +210,7 @@ proc verifyResults(T) {
   // with that table element, but not always, so we cannot reference
   // it safely in the "local" statement.
   //
-  if (useOn) then
+  if (useOnVerify) then
     forall (_, r) in zip(Updates, RAStream()) do
       on TableDist.idxToLocale[r & indexMask] do {
         const myR = r;

@@ -1,2 +1,2 @@
-dflt-ctor-generic-uninit-field-const-err-1.chpl:5: error: unresolved call 'A()'
-dflt-ctor-generic-uninit-field-const-err-1.chpl:1: note: candidates are: A(c)
+dflt-ctor-generic-uninit-field-const-err-1.chpl:5: error: unresolved call 'A.init()'
+dflt-ctor-generic-uninit-field-const-err-1.chpl:1: note: candidates are: A.init(c)

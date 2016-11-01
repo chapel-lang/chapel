@@ -6,7 +6,7 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_compiler, chpl_platform
+import chpl_platform, overrides
 from utils import memoize
 
 
@@ -15,15 +15,12 @@ def get(flag='host'):
     if flag == 'host':
         mem_val = 'cstdlib'
     elif flag == 'target':
-        mem_val = os.environ.get('CHPL_MEM')
+        mem_val = overrides.get('CHPL_MEM')
         if not mem_val:
             platform_val = chpl_platform.get('target')
-            compiler_val = chpl_compiler.get('target')
-
             cygwin = platform_val.startswith('cygwin')
-            gnu_darwin = platform_val == 'darwin' and compiler_val == 'gnu'
 
-            if cygwin or gnu_darwin:
+            if cygwin:
                 mem_val = 'cstdlib'
             else:
                 mem_val = 'jemalloc'

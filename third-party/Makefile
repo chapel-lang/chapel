@@ -2,6 +2,7 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
+include $(THIRD_PARTY_DIR)/chpl-venv/Makefile.include
 
 ifdef CHPL_DEVELOPER
 DEBUG=1
@@ -15,7 +16,7 @@ endif
 
 default: all
 
-all: test-venv chpldoc-venv gasnet gmp hwloc jemalloc qthread llvm
+all: test-venv chpldoc-venv gasnet gmp hwloc jemalloc libunwind qthread llvm
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
@@ -23,6 +24,7 @@ clean: FORCE
 	cd gmp && $(MAKE) clean
 	cd hwloc && $(MAKE) clean
 	cd jemalloc && $(MAKE) clean
+	cd libunwind && $(MAKE) clean
 	cd llvm && $(MAKE) clean
 	cd massivethreads && $(MAKE) clean
 	cd qthread && $(MAKE) clean
@@ -35,6 +37,7 @@ cleanall: FORCE
 	cd gmp && $(MAKE) cleanall
 	cd hwloc && $(MAKE) cleanall
 	cd jemalloc && $(MAKE) cleanall
+	cd libunwind && $(MAKE) cleanall
 	cd llvm && $(MAKE) cleanall
 	cd massivethreads && $(MAKE) cleanall
 	cd qthread && $(MAKE) cleanall
@@ -47,6 +50,7 @@ clobber: FORCE
 	cd gmp && $(MAKE) clobber
 	cd hwloc && $(MAKE) clobber
 	cd jemalloc && $(MAKE) clobber
+	cd libunwind && $(MAKE) clobber
 	cd llvm && $(MAKE) clobber
 	cd massivethreads && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
@@ -87,6 +91,10 @@ $(HWLOC_INSTALL_DIR):
 jemalloc: $(JEMALLOC_INSTALL_DIR)
 $(JEMALLOC_INSTALL_DIR):
 	cd jemalloc && $(MAKE)
+	
+libunwind: $(LIBUNWIND_INSTALL_DIR)
+$(LIBUNWIND_INSTALL_DIR):
+	cd libunwind && $(MAKE)
 
 massivethreads: $(MASSIVETHREADS_INSTALL_DIR)
 $(MASSIVETHREADS_INSTALL_DIR):

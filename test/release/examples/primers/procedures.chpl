@@ -1,10 +1,9 @@
+// Procedures
+
 /*
- * Procedures Primer
- *
- * This primer covers procedures including overloading, argument
- * intents and dynamic dispatch.
- *
- */
+   This primer covers procedures including overloading, argument
+   intents and dynamic dispatch.
+*/
 
 //
 // A procedure groups computations that can be called from another part
@@ -14,7 +13,7 @@
 //
 // Formal arguments are supplied with values when the procedure is called.
 // The arguments supplied at the call site are the "actual" arguments.
-// If a name and '=' preceed an actual argument, the actual is assigned
+// If a name and ``=`` precede an actual argument, the actual is assigned
 // to the formal argument with that name.  Any remaining (unnamed) actual
 // arguments are assigned to the remaining formal arguments in lexical order.
 //
@@ -41,6 +40,8 @@ writeln("6! is ", factorial(6));
 writeln();
 
 //
+// Overloading Functions
+// ---------------------
 // Default integers in Chapel are 64-bits, so we may want to specify
 // a version of factorial that operates on 32-bit integers to save
 // space and potentially time (depending on the target architecture).
@@ -48,7 +49,7 @@ writeln();
 // a factor of two by doing two multiplies.
 //
 // This version "overloads" the previous version of factorial.
-// Upon a call to factorial(), the compiler will choose the best fit.
+// Upon a call to ``factorial()``, the compiler will choose the best fit.
 //
 proc factorial(x: int(32)) : int(32)
 {
@@ -75,7 +76,11 @@ writeln("6! is ", factorial(6:int(32)));
 writeln();
 
 //
-// Procedure definitions allow you to overload operators, too.
+// Overloading Operators
+// ---------------------
+// Procedure definitions allow you to overload operators, too.  Here
+// we define a new type, ``Point``, and overload the definition of ``+``
+// to handle that type.
 //
 record Point { var x, y: real; }
 
@@ -87,7 +92,7 @@ proc +(p1: Point, p2: Point)
 }
 
 //
-// We can also overload the writeThis() routine called by writeln.
+// We can also overload the ``writeThis()`` routine called by writeln.
 //
 proc Point.writeThis(w)
 {
@@ -106,13 +111,27 @@ writeln("down + over = ", down + over);
 writeln();
 
 //
-// Using named actual arguments can prevent confusion.
+// Details on Arguments
+// ----------------------
+// Here we define a class, ``Circle``, and a function which creates a
+// specific instance of it using a different style of argument
+// definition than we have previously encountered.
 //
 class Circle {
   var center : Point;
   var radius : real;
 }
 
+//
+// Note that a default value for an argument can be provided,
+// which will be used if a value for that argument is not
+// specified in the call.  Here, instead of specifying the
+// type of ``x``, ``y``, and ``diameter``, we provide them a default
+// value of ``0.0``.  Because we did not specify their type
+// but did provide a default value, the type of these arguments
+// is inferred to be the type of that value - in this case, it is
+// ``real``.
+//
 proc create_circle(x = 0.0, y = 0.0, diameter = 0.0)
 {
   var result = new Circle();
@@ -126,7 +145,15 @@ proc create_circle(x = 0.0, y = 0.0, diameter = 0.0)
 
 writeln("Using named arguments");
 
-// Creates a circle at (2.0, 0.0) with a radius of 1.5.
+//
+// Using named actual arguments in the call can prevent confusion.
+// Specifying that the first value provided should be used for the
+// argument ``diameter`` allows us to define the arguments in any
+// order. Additionally, we can take advantage of the default value
+// for ``y`` by not specifying a value to use instead.
+// Thus this call creates a circle at ``(2.0, 0.0)`` with a radius
+// of ``1.5``.
+//
 var c = create_circle(diameter=3.0,2.0);
 
 writeln(c);
@@ -158,21 +185,18 @@ unknownArg(boolArg);
 writeln();
 
 //
-// This configuration parameter allows automated tests to run faster
-//  by skipping the sleep delays.
-// You can try this yourself by adding -suseSleep=false as a compiler option.
-//
-config param useSleep = true;
-use Time;
-
-//
+// Argument Intents
+// ----------------
 // Normal (default) intent means that a formal argument cannot be modified
 // in the body of a procedure.
-// To allow changing the formal (but not the actual), use the "in" intent.
+// To allow changing the formal (but not the actual), use the ``in`` intent.
 //
+config param useSleep = true; // Set at compile time, used to speed up testing
+use Time;
+
 proc countDown(in n : uint = 10) : void
 {
-  while n > 0 
+  while n > 0
   {
     writeln(n, " ...");
     if useSleep then sleep(1);
@@ -188,12 +212,12 @@ writeln("s is still ", s);	// 5
 writeln();
 
 //
-// The inout intent will write back the final value of a formal parameter when
-// the procedure exits.
+// The ``inout`` intent will write back the final value of a formal parameter
+// when the procedure exits.
 //
 proc countDownToZero(inout n : uint = 10) : void
 {
-  while n > 0 
+  while n > 0
   {
     writeln(n, " ...");
     if useSleep then sleep(1);
@@ -209,15 +233,15 @@ writeln("t is now ", t);	// 0
 writeln();
 
 //
-// Similar to the inout intent, the ref intent causes the value of the actual
-// to change depending on the function.  However, while the inout copies the
-// argument in upon entering the function and copies the new value out upon
-// exiting, using a ref intent causes any updates to the formal to immediately
-// affect the call site.
+// Similar to the ``inout`` intent, the ``ref`` intent causes the value of
+// the actual to change depending on the function.  However, while the
+// ``inout`` copies the argument in upon entering the function and copies
+// the new value out upon exiting, using a ``ref`` intent causes any updates
+// to the formal to immediately affect the call site.
 //
 proc countDownToZeroToo(ref n : uint = 10) : void
 {
-  while n > 0 
+  while n > 0
   {
     writeln(n, " ...");
     if useSleep then sleep(1);
@@ -233,14 +257,14 @@ writeln("bip is now ", bip);	// 0
 writeln();
 
 //
-// The out intent causes the actual argument to be ignored when the procedure
-// starts. The actual is assigned the value of the corresponding formal when
-// the routine exits.
+// The ``out`` intent causes the actual argument to be ignored when the
+// procedure starts. The actual is assigned the value of the corresponding
+// formal when the routine exits.
 //
-// This arctan routine puts the result in res and returns the number of
-// iterations it needed to converge.
+// This arctan routine puts the result in the argument with ``out`` intent
+// and returns the number of iterations it needed to converge.
 //
-// atan x = x - x^3/3 + x^5/5 + sum_3^inf (-1)^i x^(2i+1)/(2i+1).
+// ``atan x = x - x^3/3 + x^5/5 + sum_3^inf (-1)^i x^(2i+1)/(2i+1)``.
 //
 // This actually converges very slowly for x close to 1 in absolute value.
 // So we set the error limit to be 3 significant digits.
@@ -273,8 +297,8 @@ writeln();
 // It is expanded like a generic procedure, with the required number of
 // arguments having types which match the actual arguments.
 //
-// Note: see varargs.chpl for further information on procedures with a variable
-// number of arguments
+// Note: see the :doc:`varargs` primer for further information on procedures
+// with a variable number of arguments
 //
 proc writeList(x ...?k) {
   var first = true;

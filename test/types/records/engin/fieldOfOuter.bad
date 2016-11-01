@@ -1,0 +1,1 @@
+fieldOfOuter.chpl:9: error: attempt to dereference nil

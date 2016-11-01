@@ -1,0 +1,4 @@
+error message: Need to sugar first-class function (fcf) types
+
+We shouldn't be printing out internal fcf type names when we
+generate errors involving first-class functions.

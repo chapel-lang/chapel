@@ -1,8 +1,8 @@
-.TH "Exporting Topologies to Synthetic" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_syntheticexport" 3 "Sun Aug 28 2016" "Version 1.11.4" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Exporting Topologies to Synthetic \- 
+hwlocality_syntheticexport \- Exporting Topologies to Synthetic
 .SS "Enumerations"
 
 .in +1c
@@ -37,7 +37,7 @@ Export extended types such as L2dcache as basic types such as Cache\&. This is r
 Do not export level attributes\&. Ignore level attributes such as memory/cache sizes or PU indexes\&. This is required if loading the synthetic description with hwloc < 1\&.10\&. 
 .SH "Function Documentation"
 .PP 
-.SS "int hwloc_topology_export_synthetic (\fBhwloc_topology_t\fPtopology, char *buffer, size_tbuflen, unsigned longflags)"
+.SS "int hwloc_topology_export_synthetic (\fBhwloc_topology_t\fP topology, char * buffer, size_t buflen, unsigned long flags)"
 
 .PP
 Export the topology as a synthetic string\&. At most \fCbuflen\fP characters will be written in \fCbuffer\fP, including the terminating \\0\&.

@@ -1,2 +1,1 @@
-var_return-2.chpl:4: In function 'f':
-var_return-2.chpl:5: error: illegal expression to return by ref
+x = 1 y = 7 z = 2

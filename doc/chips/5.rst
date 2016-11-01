@@ -2,7 +2,7 @@ Implement Object Copying Using a "Postblit" Method
 ##################################################
 
 Status
-  Draft
+  Superseded, see CHIP 10
 
 Author
   Tom Hildebrandt, Michael Ferguson
@@ -34,7 +34,7 @@ In addition, this proposal includes the ideas that the compiler can use
 bit-wise copies to move records between temporary storage locations,
 provided that does not change the lifetime of the record. Lastly, the
 proposal includes the idea that the compiler can create temporary bit-wise
-copies or full copios of records, and that the compiler can optimize such
+copies or full copies of records, and that the compiler can optimize such
 copies to produce fewer of them than necessary, as long as the program
 behavior is preserved.
 
@@ -86,7 +86,7 @@ explicit initialization
 copy initialization
   initialize an object to be a copy of an existing object
 
-assigment
+assignment
   replace the contents of an initialized object with another initialized object
 
 destruction
@@ -94,7 +94,7 @@ destruction
   TODO: "invariant state" ?
 
 
-Sepcial Functions before this CHIP
+Special Functions before this CHIP
 ==================================
 
 destruction
@@ -126,7 +126,7 @@ semantics are not really defined. TODO: autocopy for 'in' intent?
 Proposed New Semantics
 ======================
 
-We will decribe the new semantics in several principles.
+We will describe the new semantics in several principles.
 
 Principle 1: Chapel can bit copy records
 ========================================
@@ -375,7 +375,7 @@ allow the postblit function to repair a narrow pointer because it
 would know the original locale.
 
 Along with that, any copying across locales needs to call either
-postblit the assignment overlead. If a record:
+postblit or the assignment overload. If a record:
 
  * has a nontrivial postblit constructor, and
  * has any narrow pointers in fields
@@ -390,7 +390,7 @@ Ways to Support C Pointers Across Locales
   2) always pass records by reference. 
   3) postblit function takes in source locale
   4) Always use assign overload (e.g.) instead of bit-copy/postblit
-     when moving data acrosss locales.
+     when moving data across locales.
   5) compiler automatically promoting local pointers used in postblit
 
 .. code-block:: chapel
@@ -443,7 +443,7 @@ assignment
   Uses the `=` operator. Compiler-supplied default bit copies the
   destination to a temporary, bit copies the source into the destination,
   calls postblit on the destination, and then calls the destructor on 
-  the temporary. Users can overload the assigment operator
+  the temporary. Users can overload the assignment operator
   to do something else that might be more efficient. The assignment
   operator is only called for uses the `=` operator; in other words,
   if the compiler needs to create a copy it will do so using copy
@@ -494,7 +494,7 @@ TODO: Original Outline Material
 
   * Copy-Initialization
 
-    * Bulk copy of array implementations can be very effciient
+    * Bulk copy of array implementations can be very efficient
 
       * All array elements copied in one go
       * Then, postblit applied to each element in turn

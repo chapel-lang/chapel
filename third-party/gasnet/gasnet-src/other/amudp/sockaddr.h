@@ -6,7 +6,6 @@
 #ifndef _SOCKADDR_H
 #define _SOCKADDR_H
 
-#include "socket.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,6 +17,8 @@
 #else
 #include <ctype.h>
 #endif
+
+#include "socket.h"
 
 #define LOCALHOST (u_long)0x7F000001
 

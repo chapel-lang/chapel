@@ -627,13 +627,19 @@ main (int argc, char *argv[])
 	loutput.legend = 0;
       }
       else if (!strcmp (argv[0], "--append-legend")) {
+	char **tmp;
 	if (argc < 2) {
 	  usage (callname, stderr);
 	  exit(EXIT_FAILURE);
 	}
-	lstopo_append_legends = realloc(lstopo_append_legends, (lstopo_append_legends_nr+1) * sizeof(*lstopo_append_legends));
-	lstopo_append_legends[lstopo_append_legends_nr] = strdup(argv[1]);
-	lstopo_append_legends_nr++;
+	tmp = realloc(lstopo_append_legends, (lstopo_append_legends_nr+1) * sizeof(*lstopo_append_legends));
+	if (!tmp) {
+	  fprintf(stderr, "Failed to realloc legend append array, legend ignored.\n");
+	} else {
+	  lstopo_append_legends = tmp;
+	  lstopo_append_legends[lstopo_append_legends_nr] = strdup(argv[1]);
+	  lstopo_append_legends_nr++;
+	}
 	opt = 1;
       }
 

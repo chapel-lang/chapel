@@ -3,32 +3,146 @@
 Chapel Quickstart Instructions
 ==============================
 
-The following instructions are designed to help you build Chapel from
-source.  If you haven't already downloaded Chapel, obtain the latest
-release from http://chapel.cray.com/download.html, or refer to
-http://chapel.cray.com/install.html for other installation options.
+These instructions are designed to help you get started with
+a source distribution of Chapel.
 
 In the following instructions, note that building and using Chapel as
-described in steps 1-7 disables optional and advanced features in the
-interest of getting you a clean build as quickly as possible.  Step 8
-explains how to re-build in the preferred configuration with these
-additional features enabled.  Step 9 explains how to build Chapel for
-distributed memory execution.
+described in steps 2-5 disables optional and advanced features in the
+interest of getting you a clean build as quickly as possible. Later 
+sections explain how to re-build in the preferred configuration and how to
+enable more features, such as distributed memory execution.
 
 
 0) See `doc/prereqs.rst`_ for more information about system tools and
    packages you may need to have installed to build and run Chapel.
 
-.. _doc/prereqs.rst: http://chapel.cray.com/docs/1.13/usingchapel/prereqs.html
+1) If you don't already have Chapel 1.14, see
+   http://chapel.cray.com/download.html .
+
+2) If you are using a source release, build Chapel in a *quickstart*
+   configuration. The *quickstart* script used below is designed to help you
+   get started with Chapel. After that, you may want to switch to a more
+   full-featured configuration. See using-a-more-full-featured-chapel_ below.
+
+   a. Expand the source release if you haven't already:
+
+      .. code-block:: bash
+
+         tar xzf chapel-1.14.0.tar.gz
+
+   b. Make sure that your shell is in the directory containing
+      QUICKSTART.rst, for example:
+
+      .. code-block:: bash
+
+         cd chapel-1.14.0
+
+   c. Set up your environment for Chapel's Quickstart mode.
+      If you are using a shell other than bash,
+      see quickstart-with-other-shells_ below.
+
+      .. code-block:: bash
+
+         source util/quickstart/setchplenv.bash
+
+   d. Use GNU make to build Chapel.
+      On some systems, you will have to use gmake.
+      See `doc/building.rst`_ for more information about building Chapel.
+
+      .. code-block:: bash
+
+         make
+
+   e. Optionally, check that your Chapel build is working correctly
+
+      .. code-block:: bash
+
+         make check
 
 
-1) Make sure that your shell is in the directory containing this
-   ``QUICKSTART.rst`` file.  For example:
+3) Compile an example program:
 
-        ``cd ~/chapel-1.13.0``
+   .. code-block:: bash
+
+      chpl -o hello examples/hello.chpl
+
+4) Run the resulting executable:
+
+   .. code-block:: bash
+
+      ./hello
+
+5) Experiment with Chapel in this Quickstart mode to your heart's
+   content.  Once you are comfortable with Chapel and interested in
+   using a full-featured version in the preferred configuration, see
+   the next section.
 
 
-2) Set up your environment to use Chapel in "Quick Start" mode:
+.. _using-a-more-full-featured-chapel:
+
+Using a More Full-Featured Chapel
+---------------------------------
+
+To use Chapel in a more full-featured and preferred configuration,
+you will need to rebuild Chapel from source in a different configuration.
+
+*  Open up a new shell to avoid inheriting the previous environment
+   settings.
+
+*  Repeat steps 2-5 above, but in Step 2, source ``util/setchplenv.bash``
+   instead of ``util/quickstart/setchplenv.bash``.
+   This will set up your environment to use Chapel in the preferred
+   configuration.  Building this configuration involves compiling
+   third-party packages, which will increase the overall build time.
+   If you run into any portability issues, please let us know via
+   `doc/bugs.rst`_.
+
+   .. code-block:: bash
+
+      # Set environment variables to preferred configuration
+      source util/setchplenv.bash
+
+      # re-build Chapel
+      make
+
+      # make check is available but optional
+      make check
+
+      # compile a sample program
+      chpl -o hello examples/hello.chpl
+
+      # run the sample program
+      ./hello
+
+   At this point, you can choose to continue using ``setchplenv.bash``
+   or use another method to configure Chapel. In particular, you might
+   use a :ref:`chplconfig <readme-chplenv.chplconfig>` file or
+   set environment variables your in dot files or your own script.
+
+   See `doc/chplenv.rst`_ for a complete description of
+   Chapel's configuration variables, what they mean, and how they
+   can be set.
+
+
+Using Chapel in Multi-Locale Mode
+---------------------------------
+
+All of the instructions above describe how to run Chapel programs
+in a single-locale (shared-memory) mode. To run using multiple
+locales (distributed memory), please refer to `doc/multilocale.rst`_.
+
+Performance
+-----------
+
+If you plan to do performance studies of Chapel programs, be sure to use the
+full-featured version from using-a-more-full-featured-chapel_ above and read
+``$CHPL_HOME/PERFORMANCE.md`` to avoid common pitfalls.
+
+
+.. _quickstart-with-other-shells:
+
+Quickstart with Other Shells
+----------------------------
 
 ==================================== ==========================================
 **If you use:**                       **then type:**
@@ -39,84 +153,10 @@ the fish shell (fish)                ``. util/quickstart/setchplenv.fish``
 the Bourne shell (sh)                ``. util/quickstart/setchplenv.sh``
 ==================================== ==========================================
 
-   Note that there is no requirement to use these scripts long-term,
-   they are merely designed to help new users get their environment
-   variables and paths set up quickly.  Long-term, users may want to
-   copy and paste these settings into their dotfiles or set them in
-   other ways.  See `doc/chplenv.rst`_ for a complete description of
-   Chapel's environment variables and their expected values.
-
-.. _doc/chplenv.rst: http://chapel.cray.com/docs/1.13/usingchapel/chplenv.html
-
-
-3) Build the compiler and runtime libraries using:
-
-        ``gmake``
-
-   or if your default make is GNU make compatible (as on Mac OS X or
-   Cygwin), use:
-
-        ``make``
-
-   Parallel builds (e.g. ``gmake -j``) are also supported.
-
-
-4) ``csh``/``tcsh`` users only: Update your shell's path hash table using:
-
-        ``rehash``
-
-
-5) Optionally, check that your Chapel installation is working correctly:
-
-        ``gmake check``
-
-   or:
-
-        ``make check``
-
-
-6) Compile an example program:
-
-        ``chpl -o hello examples/hello.chpl``
-
-
-7) Run the resulting executable:
-
-       ``./hello``
-
-
-8) Experiment with Chapel in this Quickstart mode to your heart's
-   content.  Once you are comfortable with Chapel and interested in
-   using a full-featured version in the preferred configuration:
-
-   a) Open up a new shell to avoid inheriting the previous environment
-      settings.
-
-   b) Repeat steps 1-7 above, but in Step 2, source ``util/setchplenv.*``
-      instead of ``util/quickstart/setchplenv.*``
-
-   This will set up your environment to use Chapel in the preferred
-   configuration.  Building this configuration involves compiling
-   third-party packages, which will increase the overall build time.
-   If you run into any portability issues, please let us know via
-   http://chapel.cray.com/bugs.html.
-
-
-9) All of the instructions above describe how to run Chapel programs
-   in a single-locale (shared-memory) mode. To run using multiple
-   locales (distributed memory), please refer to `doc/multilocale.rst`_.
-
-.. _doc/multilocale.rst: http://chapel.cray.com/docs/1.13/usingchapel/multilocale.html
-
-
-10) If you plan to do performance studies of Chapel programs, be sure
-    to (a) use the full-featured version from steps 8-9 and (b) read
-    ``$CHPL_HOME/PERFORMANCE.md`` to avoid common pitfalls.
-
-
 
 What's next?
 ------------
+
 =============================================== =========================
 **For more detailed information about:**        **refer to:**
 ----------------------------------------------- -------------------------
@@ -136,10 +176,13 @@ What's next?
     changes since the last release              ``CHANGES.md``
 =============================================== =========================
 
-.. _platforms: http://chapel.cray.com/docs/1.13/platforms/index.html
-.. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.13/
-.. _doc/building.rst: http://chapel.cray.com/docs/1.13/usingchapel/building.html
-.. _doc/compiling.rst: http://chapel.cray.com/docs/1.13/usingchapel/compiling.html
-.. _doc/executing.rst: http://chapel.cray.com/docs/1.13/usingchapel/executing.html
-.. _doc/debugging.rst: http://chapel.cray.com/docs/1.13/usingchapel/debugging.html
-.. _doc/bugs.rst: http://chapel.cray.com/docs/1.13/usingchapel/bugs.html
+.. _doc/prereqs.rst: prereqs.html
+.. _doc/multilocale.rst: multilocale.html
+.. _platforms: ../platforms/index.html
+.. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.14/
+.. _doc/chplenv.rst: chplenv.html
+.. _doc/building.rst: building.html
+.. _doc/compiling.rst: compiling.html
+.. _doc/executing.rst: executing.html
+.. _doc/debugging.rst: debugging.html
+.. _doc/bugs.rst: bugs.html

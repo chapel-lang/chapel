@@ -20,6 +20,7 @@ demonstrate Chapel feature areas in detail.
      LAPACKlib.chpl              : the LAPACK standard library
      learnChapelInYMinutes.chpl  : Chapel's entry for learnxinyminutes.com
      locales.chpl                : Chapel Locale types
+     modules.chpl                : Chapel modules and use statements
      opaque.chpl                 : Opaque arrays
      parIters.chpl               : Introduction to parallel iterators
      procedures.chpl             : Procedure examples
@@ -34,4 +35,4 @@ demonstrate Chapel feature areas in detail.
      varargs.chpl                : Variable argument procedures
      variables.chpl              : Variables, constants, and parameters
 
-     chplvis                     : A directory contaning a primer on the chplvis tool
+     chplvis                     : A directory containing a primer on the chplvis tool

@@ -352,16 +352,24 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(stdout, "QSUB script written to '%s'\n", qsubOptions);
     return NULL;
   } else {
-  fprintf(expectFile, "\\n\"\n");
+    fprintf(expectFile, "\\n\"\n");
     fprintf(expectFile, "interact -o -ex \"$chpl_prompt\" {return}\n");
-    fprintf(expectFile, "send \"echo CHPL_EXIT_CODE:\\$?\\n\"\n");
+    fprintf(expectFile, "send \"set retval=$?\\n\"\n");
+    fprintf(expectFile, "send \"\\[ \\$retval = 0 \\] && echo \\\"JOB SUCCEEDED (done)\\\" || echo \\\"JOB FAILED: \\$retval (done)\\\"\\n\"\n");
+    // Being a bit excessive with the expects here
+    fprintf(expectFile, "expect -ex \"(done)\" {}\n");
+    fprintf(expectFile, "expect -ex \"(done)\" {}\n");
     fprintf(expectFile, "expect {\n");
-    fprintf(expectFile, "  -ex \"CHPL_EXIT_CODE:0\" {set exitval \"0\"}\n");
-    fprintf(expectFile, "  -re \"CHPL_EXIT_CODE:.\" {set exitval \"1\"}\n");
+    fprintf(expectFile, "    -ex \"JOB SUCCEEDED\" { set exitval \"0\" }\n");
+    fprintf(expectFile, "    -re \"JOB FAILED:.\" { set exitval \"1\" }\n");
     fprintf(expectFile, "}\n");
     fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
+
     fprintf(expectFile, "send \"exit\\n\"\n"); // exit tcsh
+
     fprintf(expectFile, "send \"exit\\n\"\n"); // exit qsub
+    fprintf(expectFile, "expect -re \"qsub:.*completed\" {}\n"); // flush buffers for good measure
+
     fprintf(expectFile, "close\n");
     if (verbosity > 1) {
       fprintf(expectFile, "send_user \"\\n\\n\"\n");

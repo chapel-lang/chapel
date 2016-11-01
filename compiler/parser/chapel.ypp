@@ -302,7 +302,8 @@
 %token TCOLON TCOMMA TDIVIDE TDOT TDOTDOT TDOTDOTDOT TEQUAL TEXP TGREATER
 %token TGREATEREQUAL THASH TLESS TLESSEQUAL TMINUS TMOD TNOT TNOTEQUAL TOR
 %token TPLUS TQUESTION TSEMI TSHIFTLEFT TSHIFTRIGHT TSTAR TSWAP
-%token TIO
+// recent additions
+%token TASSIGNREDUCE TIO
 
 //
 // braces
@@ -362,7 +363,7 @@
 %type <pblockstmt> stmt_ls
 
 %type <pblockstmt> use_stmt require_stmt
-%type <ponlylist>  only_ls
+%type <ponlylist>  only_ls opt_only_ls except_ls
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -391,7 +392,7 @@
 %type <ptype> class_tag
 %type <penumtype> enum_ls
 
-%type <pexpr> zippered_iterator
+%type <pcallexpr> zippered_iterator
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> literal_expr opt_where_part
@@ -522,10 +523,28 @@ only_ls:
                                          cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
                                          $1->push_back(cur); }
 
+opt_only_ls:
+  /* nothing */                        { $$ = new std::vector<OnlyRename*>();
+                                         OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::SINGLE;
+                                         cur->elem = new UnresolvedSymExpr("");
+                                         $$->push_back(cur); }
+| only_ls
+;
+
+except_ls:
+  TSTAR                                { $$ = new std::vector<OnlyRename*>();
+                                         OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::SINGLE;
+                                         cur->elem = new UnresolvedSymExpr("");
+                                         $$->push_back(cur); }
+| only_ls
+;
+
 use_stmt:
   TUSE expr_ls TSEMI                   { $$ = buildUseStmt($2); }
-| TUSE expr TEXCEPT only_ls TSEMI      { $$ = buildUseStmt($2, $4, true); }
-| TUSE expr TONLY only_ls TSEMI        { $$ = buildUseStmt($2, $4, false); }
+| TUSE expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($2, $4, true); }
+| TUSE expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($2, $4, false); }
 ;
 
 require_stmt:
@@ -546,6 +565,7 @@ assignment_stmt:
 | lhs_expr TASSIGNSR       expr TSEMI  { $$ = buildAssignment($1, $3, ">>="); }
 | lhs_expr TASSIGNSL       expr TSEMI  { $$ = buildAssignment($1, $3, "<<="); }
 | lhs_expr TSWAP           expr TSEMI  { $$ = buildAssignment($1, $3, "<=>"); }
+| lhs_expr TASSIGNREDUCE   expr TSEMI  { $$ = buildAssignment($1, $3, PRIM_REDUCE_ASSIGN); }
 | lhs_expr TASSIGNLAND     expr TSEMI  { $$ = buildLAndAssignment($1, $3);    }
 | lhs_expr TASSIGNLOR      expr TSEMI  { $$ = buildLOrAssignment($1, $3);     }
 ;
@@ -608,7 +628,7 @@ loop_stmt:
   TDO stmt TWHILE expr TSEMI                    { $$ = DoWhileStmt::build($4, $2); }
 | TWHILE expr do_stmt                           { $$ = WhileDoStmt::build($2, $3); }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6); }
-| TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6, true); }
+| TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, zipToTuple($4), $5, $6, true); }
 | TCOFORALL expr opt_task_intent_ls do_stmt     { $$ = buildCoforallLoopStmt(NULL, $2, $3, $4); }
 | TFOR expr TIN expr do_stmt                    { $$ = ForLoop::buildForLoop(  $2, $4, $5, false, false); }
 | TFOR expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForLoop(  $2, $4, $5, false,  true); }
@@ -617,8 +637,8 @@ loop_stmt:
 | TFOR TPARAM ident TIN expr do_stmt            { $$ = buildParamForLoopStmt($3, $5, $6); }
 | TFORALL expr TIN expr                                 do_stmt    { $$ = buildForallLoopStmt($2, $4, NULL, $5); }
 | TFORALL expr TIN expr              task_intent_clause do_stmt    { $$ = buildForallLoopStmt($2, $4, $5,   $6); }
-| TFORALL expr TIN zippered_iterator                    do_stmt    { $$ = buildForallLoopStmt($2, $4, NULL, $5, true); }
-| TFORALL expr TIN zippered_iterator task_intent_clause do_stmt    { $$ = buildForallLoopStmt($2, $4, $5,   $6, true); }
+| TFORALL expr TIN zippered_iterator                    do_stmt    { $$ = buildForallLoopStmt($2, zipToTuple($4), NULL, $5, true); }
+| TFORALL expr TIN zippered_iterator task_intent_clause do_stmt    { $$ = buildForallLoopStmt($2, zipToTuple($4), $5,   $6, true); }
 | TFORALL expr                                          do_stmt    { $$ = buildForallLoopStmt(NULL, $2, NULL, $3); }
 | TFORALL expr                       task_intent_clause do_stmt    { $$ = buildForallLoopStmt(NULL, $2, $3,   $4); }
 | TLSBR expr_ls TIN expr TRSBR stmt
@@ -637,13 +657,13 @@ loop_stmt:
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, NULL, new BlockStmt($6), true);
+      $$ = buildForallLoopStmt($2->get(1)->remove(), zipToTuple($4), NULL, new BlockStmt($6), true);
     }
 | TLSBR expr_ls TIN zippered_iterator task_intent_clause TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, $5,   new BlockStmt($7), true);
+      $$ = buildForallLoopStmt($2->get(1)->remove(), zipToTuple($4), $5,   new BlockStmt($7), true);
     }
 | TLSBR expr_ls TRSBR stmt
     {
@@ -662,7 +682,7 @@ loop_stmt:
 ;
 
 zippered_iterator:
-    TZIP TLP expr_ls TRP    { $$ = new CallExpr("_build_tuple", $3); }
+    TZIP TLP expr_ls TRP    { $$ = new CallExpr(PRIM_ZIP, $3); }
 ;
 
 if_stmt:
@@ -687,6 +707,8 @@ when_stmt:
     { $$ = new CondStmt(new CallExpr(PRIM_WHEN, $2), $3); }
 | TOTHERWISE stmt
     { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $2); }
+| TOTHERWISE TDO stmt
+    { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $3); }
 ;
 
 /** DECLARATION STATEMENTS ***************************************************/
@@ -1331,25 +1353,25 @@ for_expr:
   TFOR expr TIN expr TDO expr %prec TFOR
     { $$ = buildForLoopExpr($2, $4, $6); }
 | TFOR expr TIN zippered_iterator TDO expr %prec TFOR
-    { $$ = buildForLoopExpr($2, $4, $6, NULL, false, true); }
+    { $$ = buildForLoopExpr($2, zipToTuple($4), $6, NULL, false, true); }
 | TFOR expr TDO expr %prec TFOR
     { $$ = buildForLoopExpr(NULL, $2, $4); }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForLoopExpr($2, $4, $9, $7); }
 | TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = buildForLoopExpr($2, $4, $9, $7, false, true); }
+    { $$ = buildForLoopExpr($2, zipToTuple($4), $9, $7, false, true); }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForLoopExpr(NULL, $2, $7, $5); }
 | TFORALL expr TIN expr TDO expr %prec TFOR
     { $$ = buildForallLoopExpr($2, $4, $6); }
 | TFORALL expr TIN zippered_iterator TDO expr %prec TFOR
-    { $$ = buildForallLoopExpr($2, $4, $6, NULL, false, true); }
+    { $$ = buildForallLoopExpr($2, zipToTuple($4), $6, NULL, false, true); }
 | TFORALL expr TDO expr %prec TFOR
     { $$ = buildForallLoopExpr(NULL, $2, $4); }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForallLoopExpr($2, $4, $9, $7); }
 | TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = buildForallLoopExpr($2, $4, $9, $7, false, true); }
+    { $$ = buildForallLoopExpr($2, zipToTuple($4), $9, $7, false, true); }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForallLoopExpr(NULL, $2, $7, $5); }
 | TLSBR expr_ls TRSBR expr %prec TFOR
@@ -1369,7 +1391,7 @@ for_expr:
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6, NULL, false, true);
+      $$ = buildForallLoopExpr($2->get(1)->remove(), zipToTuple($4), $6, NULL, false, true);
     }
 | TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
@@ -1381,7 +1403,7 @@ for_expr:
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $9, $7, false, true);
+      $$ = buildForallLoopExpr($2->get(1)->remove(), zipToTuple($4), $9, $7, false, true);
     }
 ;
 
@@ -1526,6 +1548,7 @@ parenthesized_expr:
   TLP tuple_component TRP           { $$ = $2; }
 | TLP tuple_component TCOMMA TRP    { $$ = buildOneTuple($2); }
 | TLP tuple_expr_ls TRP             { $$ = buildTuple($2); }
+| TLP tuple_expr_ls TCOMMA TRP      { $$ = buildTuple($2); }
 ;
 
 literal_expr:
@@ -1535,11 +1558,18 @@ literal_expr:
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
 | CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
+| TLCBR expr_ls TCOMMA TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
+| TLSBR expr_ls TCOMMA TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR assoc_expr_ls TRSBR
     {
       $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
     }
+| TLSBR assoc_expr_ls TCOMMA TRSBR
+    {
+      $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
+    }
+
 ;
 
 assoc_expr_ls:
@@ -1584,16 +1614,16 @@ unary_op_expr:
 
 reduce_expr:
   expr TREDUCE expr                              { $$ = buildReduceExpr($1, $3); }
-| expr TREDUCE zippered_iterator                 { $$ = buildReduceExpr($1, $3, true); }
+| expr TREDUCE zippered_iterator                 { $$ = buildReduceExpr($1, zipToTuple($3), true); }
 | reduce_scan_op_expr TREDUCE expr               { $$ = buildReduceExpr($1, $3); }
-| reduce_scan_op_expr TREDUCE zippered_iterator  { $$ = buildReduceExpr($1, $3, true); }
+| reduce_scan_op_expr TREDUCE zippered_iterator  { $$ = buildReduceExpr($1, zipToTuple($3), true); }
 ;
 
 scan_expr:
   expr TSCAN expr                              { $$ = buildScanExpr($1, $3); }
-| expr TSCAN zippered_iterator                 { $$ = buildScanExpr($1, $3, true); }
+| expr TSCAN zippered_iterator                 { $$ = buildScanExpr($1, zipToTuple($3), true); }
 | reduce_scan_op_expr TSCAN expr               { $$ = buildScanExpr($1, $3); }
-| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = buildScanExpr($1, $3, true); }
+| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = buildScanExpr($1, zipToTuple($3), true); }
 ;
 
 

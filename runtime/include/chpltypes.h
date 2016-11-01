@@ -46,6 +46,7 @@ typedef unsigned long long c_ulonglong;
 typedef float c_float;
 typedef double c_double;
 typedef void* c_void_ptr;
+typedef void* c_fn_ptr;  // a white lie
 typedef uintptr_t c_uintptr;
 typedef intptr_t c_intptr;
 typedef ptrdiff_t c_ptrdiff;
@@ -190,6 +191,13 @@ typedef int64_t chpl_bool64;
 typedef void (*chpl_fn_p)(void*); // function pointer for runtime ftable
 typedef int16_t chpl_fn_int_t;    // int type for ftable indexing
 
+// Function table names and information, for VisualDebug use
+typedef struct _chpl_fn_info {
+  const char *name;
+  int fileno;
+  int lineno;
+} chpl_fn_info;
+
 // It is tempting to #undef true and false and then #define them just to be sure
 // they expand correctly, but future versions of the C standard may not allow this!
 #ifndef false
@@ -248,10 +256,18 @@ typedef struct chpl_main_argument_s {
 _complex128 _chpl_complex128(_real64 re, _real64 im);
 _complex64 _chpl_complex64(_real32 re, _real32 im);
 
-_real64* complex128GetRealRef(_complex128* cplx);
-_real64* complex128GetImagRef(_complex128* cplx);
-_real32* complex64GetRealRef(_complex64* cplx);
-_real32* complex64GetImagRef(_complex64* cplx);
+static inline _real64* complex128GetRealRef(_complex128* cplx) {
+  return ((_real64*)cplx) + 0;
+}
+static inline _real64* complex128GetImagRef(_complex128* cplx) {
+  return ((_real64*)cplx) + 1;
+}
+static inline _real32* complex64GetRealRef(_complex64* cplx) {
+  return ((_real32*)cplx) + 0;
+}
+static inline _real32* complex64GetImagRef(_complex64* cplx) {
+  return ((_real32*)cplx) + 1;
+}
 
 /* 128 bit complex operators for LLVM use */
 static inline _complex128 complexMultiply128(_complex128 c1, _complex128 c2) {

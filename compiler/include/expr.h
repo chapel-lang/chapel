@@ -38,7 +38,7 @@ public:
   // Interface for BaseAST
   virtual bool    inTree();
   virtual bool    isStmt()                                           const;
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual void    verify();
 
   // New interface
@@ -53,6 +53,11 @@ public:
   virtual bool    isNoInitExpr()                                     const;
 
   virtual void    prettyPrint(std::ostream* o);
+
+
+  bool            isRef();
+  bool            isWideRef();
+  bool            isRefOrWideRef();
 
   /* Returns true if the given expression is contained by this one. */
   bool            contains(const Expr* expr)                         const;
@@ -99,7 +104,7 @@ public:
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
 
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual void    prettyPrint(std::ostream* o);
 
   virtual GenRet  codegen();
@@ -128,7 +133,7 @@ class SymExpr : public Expr {
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
 
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual bool    isNoInitExpr() const;
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
@@ -150,7 +155,7 @@ class UnresolvedSymExpr : public Expr {
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
 
@@ -165,31 +170,50 @@ class UnresolvedSymExpr : public Expr {
 // ContextCallExpr. Therefore, it is important to use toCallExpr()
 // instead of casting to CallExpr* directly.
 class CallExpr : public Expr {
- public:
-  Expr* baseExpr;         // function expression
-  AList argList;          // function actuals
-  PrimitiveOp* primitive; // primitive expression (baseExpr == NULL)
+public:
+  PrimitiveOp* primitive;        // primitive expression (baseExpr == NULL)
+  Expr*        baseExpr;         // function expression
 
-  bool partialTag;
-  bool methodTag; ///< Set to true if the call is a method call.
-  // It is used in gatherCandidates to filter out method field extraction
-  // (partials).
-  // TODO: Maybe use a new primitive to represent partials, and get rid of this tag.
-  bool square; // true if call made with square brackets
+  AList        argList;          // function actuals
 
-  CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
-  CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
-  CallExpr(PrimitiveTag prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
-  CallExpr(const char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
+  bool         partialTag;
+  bool         methodTag;        // Set to true if the call is a method call.
+  bool         square;           // true if call made with square brackets
+
+  CallExpr(BaseAST*     base,
+           BaseAST*     arg1 = NULL,
+           BaseAST*     arg2 = NULL,
+           BaseAST*     arg3 = NULL,
+           BaseAST*     arg4 = NULL,
+           BaseAST*     arg5 = NULL);
+
+  CallExpr(PrimitiveOp* prim,
+           BaseAST*     arg1 = NULL,
+           BaseAST*     arg2 = NULL,
+           BaseAST*     arg3 = NULL,
+           BaseAST*     arg4 = NULL,
+           BaseAST*     arg5 = NULL);
+
+  CallExpr(PrimitiveTag prim,
+           BaseAST*     arg1 = NULL,
+           BaseAST*     arg2 = NULL,
+           BaseAST*     arg3 = NULL,
+           BaseAST*     arg4 = NULL,
+           BaseAST*     arg5 = NULL);
+
+  CallExpr(const char*  name,
+           BaseAST*     arg1 = NULL,
+           BaseAST*     arg2 = NULL,
+           BaseAST*     arg3 = NULL,
+           BaseAST*     arg4 = NULL,
+           BaseAST*     arg5 = NULL);
+
   ~CallExpr();
 
   virtual void    verify();
 
   DECLARE_COPY(CallExpr);
+
 
   virtual void    accept(AstVisitor* visitor);
 
@@ -197,7 +221,7 @@ class CallExpr : public Expr {
 
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
 
   virtual Expr*   getFirstChild();
 
@@ -210,6 +234,10 @@ class CallExpr : public Expr {
   // True if the callExpr has been emptied (aka dead)
   bool            isEmpty()                                              const;
 
+  bool            isPrimitive()                                          const;
+  bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
+  bool            isPrimitive(const char*  primitiveName)                const;
+
   FnSymbol*       isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
 
@@ -221,9 +249,17 @@ class CallExpr : public Expr {
   Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
 
-  bool            isPrimitive()                                          const;
-  bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
-  bool            isPrimitive(const char*  primitiveName)                const;
+
+private:
+  GenRet          codegenPrimitive();
+  GenRet          codegenPrimMove();
+
+  void            codegenInvokeOnFun();
+  void            codegenInvokeTaskFun(const char* name);
+
+  GenRet          codegenBasicPrimitiveExpr()                            const;
+
+  bool            isRefExternStarTuple(Symbol* formal, Expr* actual)     const;
 };
 
 // For storing several call expressions, where
@@ -233,7 +269,7 @@ class CallExpr : public Expr {
 // A ContextCall has a designated call.
 // The designated call will be returned if toCallExpr() is called
 // on the context call.
-// typeInfo on the context call will return the type info for
+// typeInfo/qualType on the context call will return the type info for
 // the designated call.
 // isCallExpr() will return true for a ContextCallExpr.
 class ContextCallExpr : public Expr {
@@ -253,7 +289,7 @@ class ContextCallExpr : public Expr {
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
 
@@ -264,6 +300,34 @@ class ContextCallExpr : public Expr {
   void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
   CallExpr*       getRefCall();
   CallExpr*       getRValueCall();
+};
+
+
+class ForallExpr : public Expr {
+public:
+  Expr* indices;
+  Expr* iteratorExpr;
+  Expr* expr;
+  Expr* cond;
+  bool maybeArrayType;
+  bool zippered;
+
+  ForallExpr(Expr* indices,
+             Expr* iteratorExpr,
+             Expr* expr,
+             Expr* cond,
+             bool maybeArrayType,
+             bool zippered);
+
+  DECLARE_COPY(ForallExpr);
+
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    verify();
+  virtual void    accept(AstVisitor* visitor);
+  virtual GenRet  codegen();
+
+  virtual Expr*   getFirstChild();
+  virtual Expr*   getFirstExpr();
 };
 
 
@@ -280,7 +344,7 @@ class NamedExpr : public Expr {
 
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
 
@@ -345,6 +409,12 @@ static inline bool needsCapture(FnSymbol* taskFn) {
   return taskFn->hasFlag(FLAG_BEGIN) ||
          taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
          taskFn->hasFlag(FLAG_NON_BLOCKING);
+}
+
+// E.g. NamedExpr::actual, DefExpr::init.
+static inline void verifyNotOnList(Expr* expr) {
+  if (expr && expr->list)
+    INT_FATAL(expr, "Expr is in a list incorrectly");
 }
 
 

@@ -1,0 +1,2 @@
+sugarFcfTypes2.chpl:13: error: unresolved call 'barIntInt(func(int(64), int(64)))'
+sugarFcfTypes2.chpl:7: note: candidates are: barIntInt(f: c_fn_ptr)
