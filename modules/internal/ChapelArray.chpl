@@ -878,6 +878,14 @@ module ChapelArray {
   }
   */ /* */
 
+  // This alternative declaration of Sort.defaultComparator
+  // prevents transitive use of module Sort.
+  proc chpl_defaultComparator() {
+    use Sort;
+    return defaultComparator;
+  }
+
+
   //
   // Domain wrapper record.
   //
@@ -1523,8 +1531,8 @@ module ChapelArray {
 
     // associative array interface
     /* Yield the domain indices in sorted order */
-    iter sorted() {
-      for i in _value.dsiSorted() {
+    iter sorted(comparator:?t = chpl_defaultComparator()) {
+      for i in _value.dsiSorted(comparator) {
         yield i;
       }
     }
@@ -2211,9 +2219,19 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
-    iter sorted() {
-      for i in _value.dsiSorted() {
-        yield i;
+    iter sorted(comparator:?t = chpl_defaultComparator()) {
+      use Reflection;
+      if canResolveMethod(_value, "dsiSorted", comparator) {
+        for i in _value.dsiSorted(comparator) {
+          yield i;
+        }
+      } else if canResolveMethod(_value, "dsiSorted") {
+        compilerError(_value.type:string + " does not support dsiSorted(comparator)");
+      } else {
+        var copy = this;
+        quickSort(copy, comparator=comparator);
+        for ind in copy do
+          yield ind;
       }
     }
 

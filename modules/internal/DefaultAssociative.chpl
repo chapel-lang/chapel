@@ -430,14 +430,14 @@ module DefaultAssociative {
       }
     }
   
-    iter dsiSorted() {
+    iter dsiSorted(comparator:?t) {
       use Sort;
       var tableCopy: [0..#numEntries.read()] idxType;
   
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
         tableCopy(tmp) = table[slot].idx;
   
-      sort(tableCopy);
+      sort(tableCopy, comparator=comparator);
   
       for ind in tableCopy do
         yield ind;
