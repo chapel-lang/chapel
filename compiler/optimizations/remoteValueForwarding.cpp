@@ -20,7 +20,7 @@
 #include "optimizations.h"
 
 #include "astutil.h"
-#include "stlutil.h"
+#include "stlUtil.h"
 #include "expr.h"
 #include "stmt.h"
 

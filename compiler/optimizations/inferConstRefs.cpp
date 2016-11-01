@@ -22,7 +22,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "stmt.h"
-#include "stlutil.h"
+#include "stlUtil.h"
 #include <deque>
 
 class RefInfo {
@@ -43,7 +43,7 @@ typedef std::map<Symbol*, RefInfo*>::iterator RefInfoIter;
 
 static bool inferConstRef(Symbol*);
 
-bool handleRHS(CallExpr* parent, CallExpr* call, SymExpr* se) {
+static bool handleRHS(CallExpr* parent, CallExpr* call, SymExpr* se) {
   SymExpr* LHS = toSymExpr(parent->get(1));
   switch (call->primitive->tag) {
     case PRIM_GET_MEMBER:
@@ -242,6 +242,7 @@ bool handleRHS(CallExpr* parent, CallExpr* call, SymExpr* se) {
     case PRIM_INT_ERROR:
       return false;
   }
+  return false;
 }
 
 //
