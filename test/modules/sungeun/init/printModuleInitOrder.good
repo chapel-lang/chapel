@@ -19,13 +19,13 @@ Initializing Modules:
      DefaultRectangular
       DSIUtil
       ChapelArray
+       Sort
      ChapelNumLocales
      Sys
       SysBasic
     LocalesArray
     ChapelDistribution
      List
-     Sort
     ChapelIO
      IO
       Error
