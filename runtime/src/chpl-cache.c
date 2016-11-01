@@ -3366,7 +3366,7 @@ void chpl_cache_startall()
 {
   if( chpl_cache_enabled() ) {
     struct rdcache_s* cache = tls_cache_remote_data();
-    chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+    //chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
 
     cache_start_all(cache);
   }
