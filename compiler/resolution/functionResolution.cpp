@@ -571,7 +571,7 @@ static void
 resolveAutoCopyEtc(Type* type) {
 
   // resolve autoCopy
-  {
+  if (autoCopyMap.get(type) == NULL) {
     SET_LINENO(type->symbol);
     Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
@@ -584,7 +584,7 @@ resolveAutoCopyEtc(Type* type) {
   }
 
   // resolve autoDestroy
-  {
+  if (autoDestroyMap.get(type) == NULL) {
     SET_LINENO(type->symbol);
     Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
@@ -604,7 +604,7 @@ resolveAutoCopyEtc(Type* type) {
   // We make the 'unalias' hook available to all user records,
   // but for now it only applies to array/domain/distribution
   // in order to minimize the changes.
-  if (isRecordWrappedType(type)) {
+  if (isRecordWrappedType(type) && unaliasMap.get(type) == NULL) {
     SET_LINENO(type->symbol);
     Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
@@ -8909,6 +8909,15 @@ resolve() {
   resolveOther();
 
   resolveDynamicDispatches();
+
+  // MPF - this 2nd resolveAutoCopies call is a workaround
+  // for the case when resolving a dynamic dispatch created a
+  // new type. Resolution should instead have some sort of work-queue
+  // and iterate until everything is resolved. (Or at least
+  // resolveDynamicDispatches and resolveAutoCopies should be called
+  // in a loop).
+  resolveAutoCopies();
+
   insertDynamicDispatchCalls();
   insertReturnTemps();
 
