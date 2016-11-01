@@ -147,6 +147,71 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
   }
 }
 
+static inline
+void chpl_gen_comm_start_op(c_nodeid_t node, c_sublocid_t subloc,
+                            chpl_fn_int_t fid,
+                            void* raddr_obj,
+                            void* args,
+                            size_t args_size,
+                            int32_t mode, int64_t idx)
+{
+#ifdef HAS_CHPL_CACHE_FNS
+  if( chpl_cache_enabled() ) {
+    chpl_cache_comm_start_op(node, subloc, fid, raddr_obj, args, args_size, mode, idx);
+    return;
+  }
+#endif
+
+  // TODO -- consider halting if cache is not on...
+  {
+    size_t op_size = sizeof(chpl_op_t) + args_size;
+    size_t sz;
+    unsigned char* buf;
+    chpl_op_t *op;
+    unsigned char *handle_ptr;
+    chpl_comm_nb_ops_handle_t *handle;
+
+    // Round size up to sizeof(chpl_comm_nb_ops_handle_t) bytes
+    while (op_size % sizeof(chpl_comm_nb_ops_handle_t)) op_size++;
+
+    sz = op_size + sizeof(chpl_comm_nb_ops_handle_t);
+    buf = chpl_mem_allocMany(sz, sizeof(char),
+                              CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
+    op = (chpl_op_t*) buf;
+    handle_ptr = buf + op_size;
+    handle = (chpl_comm_nb_ops_handle_t*)handle_ptr;
+
+    op->node = node;
+    op->subloc = subloc;
+    op->fid = fid;
+    op->obj = raddr_obj;
+    op->payload_size = args_size;
+
+    memcpy(&op->payload, args, args_size);
+
+    chpl_comm_start_ops(node, op, /*free op */ 1, handle);
+
+    chpl_wait_op(handle);
+
+    // runtime will free buf/op
+  }
+}
+
+static inline
+void chpl_gen_comm_finish_ops(c_nodeid_t node, c_sublocid_t subloc,
+                              chpl_fn_int_t fid,
+                              void* raddr_obj,
+                              int32_t mode, int64_t idx)
+{
+#ifdef HAS_CHPL_CACHE_FNS
+  if( chpl_cache_enabled() ) {
+    chpl_cache_comm_finish_ops(node, subloc, fid, raddr_obj, mode, idx);
+    return;
+  }
+#endif
+  // Don't need to do anything if cache is not enabled.
+}
+
 // Returns true if the given node ID matches the ID of the currently node,
 // false otherwise.
 static inline

@@ -167,6 +167,12 @@ module CString {
   inline proc _cast(type t, x: c_string) where t == c_void_ptr {
     return __primitive("cast", t, x);
   }
+  //
+  // casts from c_void_ptr to c_string
+  //
+  inline proc _cast(type t, x: c_void_ptr) where t == c_string {
+    return __primitive("cast", t, x);
+  }
 
   //
   // casts from c_string to bool types

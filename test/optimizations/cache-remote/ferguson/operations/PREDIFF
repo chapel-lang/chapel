@@ -1,0 +1,12 @@
+#!/bin/bash
+testname=$1
+outfile=$2
+tmpfile=$outfile.prediff.tmp
+
+cp $outfile $tmpfile
+
+# Sort output
+sort $tmpfile > $outfile
+
+rm $tmpfile
+

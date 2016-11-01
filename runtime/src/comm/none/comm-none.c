@@ -516,6 +516,24 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
   chpl_ftable_call(fid, arg);
 }
 
+extern void chpl_process_operations(void* obj, int64_t size, void* buf);
+
+void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops, int free_ops,
+                         chpl_comm_nb_ops_handle_t *handle)
+{
+  chpl_process_operations(ops->obj, ops->payload_size, ops->payload);
+}
+
+int chpl_test_op_complete(chpl_comm_nb_ops_handle_t *handle)
+{
+  return 1;
+}
+
+void chpl_wait_op(chpl_comm_nb_ops_handle_t *handle)
+{
+}
+
+
 int chpl_comm_numPollingTasks(void) { return 0; }
 
 void chpl_comm_make_progress(void)

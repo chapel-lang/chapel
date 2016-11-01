@@ -83,6 +83,12 @@ void  chpl_cache_comm_put_strd(
                       size_t elemSize, int32_t typeIndex,
                       int ln, int32_t fn);
 
+void chpl_cache_comm_start_op(c_nodeid_t node, c_sublocid_t subloc, chpl_fn_int_t fid, void* raddr_obj, void* args, size_t args_size, int32_t mode, int64_t idx);
+
+void chpl_cache_comm_finish_ops(c_nodeid_t node, c_sublocid_t subloc, chpl_fn_int_t fid, void* raddr_obj, int32_t mode, int64_t idx);
+
+void chpl_cache_startall(void);
+
 // For debugging.
 void chpl_cache_print(void);
 void chpl_cache_assert_released(void);

@@ -17,7 +17,7 @@ Computation consists of these steps:
 /* How can we represent a graph in Chapel?
     * Matrix view - dense or sparse
     * Class instances tree
-    
+
     * Opaque Domain view
     var People = opaque;
     var Child: [People] [1..maxChildren] index(People);
@@ -31,8 +31,8 @@ Computation consists of these steps:
     * Array of Edges view
      -> rectangular array of Vertex by vertex ID
      -> each Vertex contains an array of edges (a bag of values)
-        
-    We don't yet have opaque distributions or associative distributions. 
+
+    We don't yet have opaque distributions or associative distributions.
       -- see test/distributions/bradc/assoc
 
     We don't yet support inner arrays with different sizes.
@@ -47,7 +47,15 @@ config var seed = 0;
 config const maxiter = 20;
 config const output = true;
 config const parallel = true;
-config param distributed = false; // NOTE - could default to CHPL_COMM != none
+config const copyfiles = false;
+config const maxfiles = max(int);
+config const buildset = true;
+config const buildgraph = true;
+config const localarray = true;
+config const bulkadd = true;
+
+param distributed = if CHPL_COMM == "none" then false
+                    else true;
 
 use FileSystem;
 use Spawn;
@@ -56,11 +64,16 @@ use Graph;
 use Random;
 use UserMapAssoc;
 use BlockDist;
+use List;
+use listSorts;
 
 // packing twitter user IDs to numbers
 var total_tweets_processed : atomic int;
 var total_lines_processed : atomic int;
 var max_user_id : atomic int;
+
+// Record of timers
+var t: timings;
 
 proc main(args:[] string) {
   var files = args[1..];
@@ -70,31 +83,35 @@ proc main(args:[] string) {
     if isDir(arg) {
       // Go through files in directories.
       for f in findfiles(arg, true) {
-        todo.append(f);
+        if todo.size < maxfiles then todo.append(f);
       }
     } else {
-      todo.append(arg);
+      if todo.size < maxfiles then todo.append(arg);
     }
   }
 
-  // TODO - using 2 functions because of lack of
-  // domain assignment in UserMapAssoc
+  t.total.start();
+
   // Pairs is for collecting twitter  user ID to user ID mentions
-  if distributed {
-    var Pairs: domain( (int, int) ) dmapped UserMapAssoc(idxType=(int, int));
-    run(todo, Pairs);
-  } else {
-    var Pairs: domain( (int, int) );
-    run(todo, Pairs);
-  }
+  var assocDist = new UserMapAssoc(idxType=(int, int), mapper=new MinMapper()),
+      noDist = new DefaultDist();
+
+  var Dist = if distributed then assocDist
+             else noDist;
+
+  var Pairs: domain( (int, int) ) dmapped new dmap(Dist);
+
+  run(todo, Pairs);
+
+  t.total.stop();
+
+  if timing then
+    t.print();
 }
 
 
 
 proc run(todo:list(string), Pairs) {
-  var t:Timer;
-  t.start();
-
   const FilesSpace = {1..todo.length};
   const BlockSpace = if distributed then
                        FilesSpace dmapped Block(boundingBox=FilesSpace)
@@ -105,19 +122,58 @@ proc run(todo:list(string), Pairs) {
 
   todo.destroy();
 
-  var parseAndMakeSetTime:Timer;
-  parseAndMakeSetTime.start();
+  if copyfiles {
+    t.copy.start();
+    forall f in allfiles {
+      on f {
+        var from = f;
+        var base = basename(f);
+        var uname:c_string;
+        sys_getenv(c"USER", uname);
+        var to = "/tmp/" + uname + base;
+        if progress then writeln("locale ", here.id, " copying ", from, " to ", to);
+        //copy(from, to);
+        var sub = spawn(["cp", from, to]);
+        sub.wait();
+        if progress then writeln("locale ", here.id, " done copying");
+        f = to;
+      }
+    }
+    t.copy.stop();
+  }
 
 
+
+  if buildset then
+    writeln("parse+set build on ", numLocales, " locales");
+  else
+    writeln("parse on ", numLocales, " locales");
+
+  t.parse.start();
   forall f in allfiles {
     // TODO -- performance/scalability
     // we don't want to lock/unlock the hashtable
     // every time we add an entry. Appends could
     // be aggregated.
-    process_json(f, Pairs);
-  }
 
-  parseAndMakeSetTime.stop();
+    const fname_copy = f; // avoids problems with \0 missing
+    process_json(fname_copy, Pairs);
+
+    //process_json(f, Pairs);
+  }
+  t.parse.stop();
+
+  writeln("done parsing");
+  if copyfiles {
+    for f in allfiles {
+      on f {
+        if progress then writeln("locale ", here.id, " removing ", f);
+        const fname_copy = f; // avoids problems with \0 missing
+        var err:syserr;
+        remove(error=err, fname_copy);
+      }
+    }
+  }
 
   if verbose {
     if distributed {
@@ -131,24 +187,13 @@ proc run(todo:list(string), Pairs) {
     }
   }
 
+  writeln("Pairs.size is ", Pairs.size);
+
   if verbose then
     writeln("the maximum user id was ", max_user_id.read());
 
-  var nlines = total_lines_processed.read();
-
-  if timing {
-    writeln("parsed ", nlines, " lines in ", parseAndMakeSetTime.elapsed(), " s ");
-  }
-
-  create_and_analyze_graph(Pairs);
-
-  t.stop();
-  var days = t.elapsed(TimeUnits.hours) / 24.0;
-  var m = 1000000.0;
-  if timing {
-    writeln("processed ", nlines, " lines in ", t.elapsed(), " s ");
-    writeln("that is ", nlines / days / m, "M tweets/day processed");
-  }
+  if buildgraph then
+    create_and_analyze_graph(Pairs);
 }
 
 record TweetUser {
@@ -187,7 +232,10 @@ proc process_json(logfile:channel, fname:string, Pairs) {
 
   if progress then
     writeln(fname, " : processing");
- 
+
+  //var localPairs: domain( (int, int), parSafe=false );
+  var localPairs: [1..0] (int, int);
+
   while true {
     got = logfile.readf("%~jt", tweet, error=err);
     if got && !err {
@@ -200,7 +248,14 @@ proc process_json(logfile:channel, fname:string, Pairs) {
         // Add (id, other_id) to Pairs,
         // but leave out self-mentions
         if id != other_id {
-          Pairs += (id, other_id);
+          if buildset {
+            //localPairs += (id, other_id);
+            if localarray {
+              localPairs.push_back( (id, other_id) );
+            } else {
+              Pairs += (id, other_id);
+            }
+          }
         }
       }
       ntweets += 1;
@@ -228,6 +283,21 @@ proc process_json(logfile:channel, fname:string, Pairs) {
 
   logfile.close();
 
+//  for p in localPairs.sorted(new DestinationComparator()) {
+//    Pairs += p;
+//  }
+
+  if localarray {
+    if bulkadd {
+      quickSort(localPairs, comparator=new DestinationComparator());
+      Pairs._value.dsiAddSorted(localPairs);
+    } else {
+      quickSort(localPairs, comparator=new DestinationComparator());
+      for p in localPairs do
+        Pairs += p;
+    }
+  }
+
   if progress then
     writeln(fname, " : ",
             ntweets, " tweets / ", nlines, " lines");
@@ -246,13 +316,35 @@ proc process_json(logfile:channel, fname:string, Pairs) {
 proc process_json(fname: string, Pairs)
 {
 
+  if progress then writeln("locale ", here.id, " in process_json file is ", fname);
+
   var last3chars = fname[fname.length-2..fname.length];
   if last3chars == ".gz" {
-    var sub = spawn(["gunzip", "-c", fname], stdout=PIPE);
-    process_json(sub.stdout, fname, Pairs);
-  } else {
-    var logfile = openreader(fname);
+    //var sub = spawn(["gunzip", "-c", fname], stdout=PIPE);
+    //process_json(sub.stdout, fname, Pairs);
+
+    var nogz = fname[1..fname.length-3];
+
+    var base = basename(nogz);
+    var uname:c_string;
+    sys_getenv(c"USER", uname);
+    var to = "/tmp/" + uname + base;
+
+    var sub = spawnshell("gunzip --stdout " + fname + " > " + to);
+    sub.wait();
+ 
+    var fi = open(to, iomode.r);
+    var logfile = fi.reader();
     process_json(logfile, fname, Pairs);
+    fi.close();
+
+    remove(to);
+
+  } else {
+    var fi = open(fname, iomode.r);
+    var logfile = fi.reader();
+    process_json(logfile, fname, Pairs);
+    fi.close();
   }
 }
 
@@ -266,7 +358,7 @@ record Triple {
 
 proc create_and_analyze_graph(Pairs)
 {
-  if progress {
+  if true {
     writeln("finding mutual mentions");
 
     writeln(Pairs.size, " pairs / ",
@@ -274,33 +366,36 @@ proc create_and_analyze_graph(Pairs)
             total_lines_processed.read(), " lines");
   }
 
-  var createGraphTime:Timer;
-  createGraphTime.start();
+  t.graph.start();
 
-  var nmutual = 0;
-
+  t.mutualmentions.start();
   // Build idToNode
   var userIds:domain(int);
 
-  forall (id, other_id) in Pairs with (ref userIds) {
+  var nmutual = 0;
+  forall (id, other_id) in Pairs with (ref userIds, + reduce nmutual) {
     if Pairs.member( (other_id, id) ) {
       //writeln("Reciprocal match! ", (id, other_id) );
-      
+
       // add to userIds
       userIds += id;
       // Not necessary to add other_id now since we will
       // add it when processing (other_id, id)
+      if id < other_id then
+        nmutual += 1;
     }
   }
+  t.mutualmentions.stop();
+
+  writeln("total mutual mentions ", nmutual);
 
   if progress then
-    writeln(Pairs.size, " pairs / ",
-            total_tweets_processed.read(), " tweets / ",
-            total_lines_processed.read(), " lines");
+    writeln(userIds.size, " users");
 
   if progress then
     writeln("compacting ids");
 
+  t.compactids.start();
   // compact userIds into idToNode
   var idToNode: [userIds] int(32);
   var nodeToId: [1..userIds.size] int;
@@ -311,7 +406,8 @@ proc create_and_analyze_graph(Pairs)
     idToNode[id] = node:int(32);
     nodeToId[node] = id;
   }
-  
+  t.compactids.stop();
+
   if printall {
     writeln("idToNode:");
     for id in userIds {
@@ -330,9 +426,33 @@ proc create_and_analyze_graph(Pairs)
   if progress then
     writeln("creating triples");
 
+  t.createtriples.start();
+
+
+  // TODO - this is very slow:
+  /*
   var triples = [(id, other_id) in Pairs]
-                   if id < other_id && Pairs.member( (other_id, id) ) then 
+                   if id < other_id && Pairs.member( (other_id, id) ) then
                      new Triple(idToNode[id], idToNode[other_id]);
+                     */
+
+  // TODO - this is still slow, but it's faster
+  var idx : atomic int;
+  idx.write(1);
+  var triples:[1..#nmutual] Triple;
+  forall (id, other_id) in Pairs {
+    if id < other_id && Pairs.member( (other_id, id) ) {
+      var got_idx = idx.fetchAdd(1, memory_order_relaxed);
+      triples[got_idx] = new Triple(idToNode[id], idToNode[other_id]);
+    }
+  }
+
+  // TODO - would like to write it with a zip of assoc and non-assoc
+  // (but then where would be the conditional? Adding dummy nodes e.g.?)
+
+  // A parallel scan might also work... but scan is currently serial.
+
+  t.createtriples.stop();
 
   if printall {
     writeln("triples are:");
@@ -350,25 +470,29 @@ proc create_and_analyze_graph(Pairs)
   // of hashtables.
 
 
+  t.maxnid.start();
   // TODO: This line wouldn't be necessary if we had reduce intents
   max_nid = max reduce [r in triples] max(r.from, r.to);
+  t.maxnid.stop();
 
   if progress then
     writeln("creating graph");
 
+  t.buildgraph.start();
   // TODO - performance - merge graph element updates
   var G = buildUndirectedGraph(triples, false, {1..max_nid} );
+
+  // 'gt' is defined in graph module and populater after a graph build
+  t.buildgraphcomponents = gt;
 
   // Clear out memory used by triples.
   triples.domain.clear();
 
-  createGraphTime.stop();
+  t.buildgraph.stop();
 
-  if timing {
-    writeln("created graph in ", createGraphTime.elapsed(), " s ");
-  }
+  t.graph.stop();
 
-  if progress then 
+  if progress then
     writeln("done creating graph");
 
   if printall {
@@ -381,19 +505,85 @@ proc create_and_analyze_graph(Pairs)
   }
 
   if progress then
+    writeln("connected component analysis");
+
+  t.cca.start();
+
+  // Component ID
+  var cid: int(32) = 0;
+  // Graph of componenent IDs
+  var cids:[G.vertices] int(32);
+  // todo stack
+  var todo: list(int(32));
+
+  for vid in G.vertices {
+    // if vertex has not been visited
+    if cids[vid] then continue;
+
+    cid += 1;
+    todo.prepend(vid: int(32));
+
+    if printall then
+      writeln('Vertex ', vid, ' has neighbors:');
+
+    do {
+      for nid in G.Neighbors(todo.pop_front()) {
+        // TODO -- checking value of nid shouldn't be necessary
+        if nid == 0 then continue;
+        if cids[nid] then continue;
+        cids[nid] = cid;
+        todo.prepend(nid:int(32));
+
+        if printall then
+          writeln(nid);
+
+      }
+    } while todo.first != nil;
+  }
+
+  const totalcomponents = cid;
+
+  if verbose then
+    writeln("number of connected components: ", totalcomponents);
+
+  t.cca.stop();
+
+
+  if progress then
+    writeln("graph partition");
+
+  t.partition.start();
+
+  // TODO -- parallelize (should be easy)
+  var components: [{1..totalcomponents}] list(int(32));
+  for vid in G.vertices {
+    components[cids[vid]].append(vid);
+  }
+
+
+  var partitionedGraph = partition_graph(components);
+
+  if verbose {
+    writeln("partition sizes:");
+    for bin in partitionedGraph{
+      writeln(bin.Array.size);
+    }
+  }
+
+  t.partition.stop();
+
+
+  if progress then
     writeln("label propagation");
 
-  var graphAlgorithmTime:Timer;
-  graphAlgorithmTime.start();
+  t.labelprop.start();
 
   // start with a different label for each node
   // the labels correspond to clusters.
 
   var labels:[1..max_nid] atomic int(32);
-  forall (lab,i) in zip(labels,1:int(32)..) {
-    // TODO -- elegance - use "atomic counter" that acts as normal var 
-    // or change the default for the atomic
-    labels[i].write(i, memory_order_relaxed);
+  forall i in 1..max_nid {
+    labels[i].poke(i);
   }
 
   // label propagation for community detection according to
@@ -457,71 +647,95 @@ proc create_and_analyze_graph(Pairs)
     // stop unless we determine we should continue
     go.write(false, memory_order_relaxed);
 
+    /* for Block Distributed version, we need to:
+
+        * Find a way to dmap with out specific bins from above
+          * 1xnumLocales array of arrays?
+          * coforall { on loc { }}?
+
+        * Make sure all other read/writes are local
+          * Encapsulate inner loop
+          * local copies of:
+            * labels?
+            * G (read-only)
+
+        * After all is said and done, increment labels by largest label from
+          previous locale
+
+        * I assume reorder reduces overlap of neighbors?
+
+    */
     // TODO:  -> forall, but handle races in vertex labels?
     // iterate over G.vertices in a random order
-    serial !parallel { forall vid in reorder {
+    serial !parallel { forall partition in partitionedGraph{
     //for vid in G.vertices {
+      serial !parallel { forall vid in partition.Array {
 
-      if printall then
-        writeln("on node ", vid, " currently in group ", labels[vid]);
-
-      // label -> count
-      var foundLabels:domain(int(32));
-      var counts:[foundLabels] int;
-
-      for nid in G.Neighbors(vid) {
-        // TODO -- shouldn't be needed.
-        if nid == 0 then continue;
+        //if distributed && verbose {
+          //writeln("on locale ", here.id, " there are ",
+          //        distributedVertices._value.locArr[here.id].myElems.size,
+          //        " vertices");
+        //}
 
         if printall then
-          writeln("on neighbor ", nid);
-        var nlabel = labels[nid].read(memory_order_relaxed);
-        if printall then
-          writeln("with label ", nlabel);
+          writeln("on node ", vid, " currently in group ", labels[vid]);
 
-        if ! foundLabels.member(nlabel) {
-          foundLabels += nlabel;
+        // label -> count
+        var foundLabels:domain(int(32));
+        var counts:[foundLabels] int;
+
+        for nid in G.Neighbors(vid) {
+          // TODO -- shouldn't be needed.
+          if nid == 0 then continue;
+
+          if printall then
+            writeln("on neighbor ", nid);
+          var nlabel = labels[nid].read(memory_order_relaxed);
+          if printall then
+            writeln("with label ", nlabel);
+
+          if ! foundLabels.member(nlabel) {
+            foundLabels += nlabel;
+          }
+          counts[nlabel] += 1;
         }
-        counts[nlabel] += 1;
-      }
 
-      var mylabel = labels[vid].read(memory_order_relaxed);
+        var mylabel = labels[vid].read(memory_order_relaxed);
 
-      // TODO: ties should be broken uniformly randomly
-      var maxlabel:int(32) = 0;
-      var maxcount = 0;
-      // TODO -- performance -- this allocates memory.
-      // There might not be a tie.
-      var tiebreaker = makeRandomStream(seed+vid, eltType=bool,
-                                        parSafe=false, algorithm=RNG.PCG);
-      for (count,lab) in zip(counts, counts.domain) {
-        if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
-          maxcount = count;
-          maxlabel = lab;
+        // TODO: ties should be broken uniformly randomly
+        var maxlabel:int(32) = 0;
+        var maxcount = 0;
+        // TODO -- performance -- this allocates memory.
+        // There might not be a tie.
+        var tiebreaker = makeRandomStream(seed+vid, eltType=bool,
+                                          parSafe=false, algorithm=RNG.PCG);
+        for (count,lab) in zip(counts, counts.domain) {
+          if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
+            maxcount = count;
+            maxlabel = lab;
+          }
         }
-      }
-      delete tiebreaker;
+        delete tiebreaker;
 
-      // TODO:
-      // Did the existing label correspond to a maximal label?
-      // stop when every node has a label a maximum number of neighbors have
-      // (e.g. there might be 2 labels each attaining the maximum) 
-      if foundLabels.member[mylabel] && counts[mylabel] < maxlabel {
-        go.write(true, memory_order_relaxed);
-      }
+        // TODO:
+        // Did the existing label correspond to a maximal label?
+        // stop when every node has a label a maximum number of neighbors have
+        // (e.g. there might be 2 labels each attaining the maximum)
+        if foundLabels.member[mylabel] && counts[mylabel] < maxlabel {
+          go.write(true, memory_order_relaxed);
+        }
 
-      // set the current label to the maximum label.
-      if mylabel != maxlabel then
-        labels[vid].write(maxlabel, memory_order_relaxed);
-    }
+        // set the current label to the maximum label.
+        if mylabel != maxlabel then
+          labels[vid].write(maxlabel, memory_order_relaxed);
+      } // forall vid
+      } // serial !parallel
+    } // forall partition
     i += 1;
-  } }
+    } // serial !parallel
+  } // while !go
 
-  graphAlgorithmTime.stop();
-
-  if timing {
-    writeln("graph algorithm ran ", graphAlgorithmTime.elapsed(), " s ");
-  }
+  t.labelprop.stop();
 
 
   if output {
@@ -533,4 +747,102 @@ proc create_and_analyze_graph(Pairs)
   }
 }
 
+/* Partition graph vertices into bins for distribution across locales */
+proc partition_graph(components) {
+  // TODO -- Replace with real numLocales at some point
+  const perLocale= LocaleSpace dmapped Block(LocaleSpace);
+  var bins: [perLocale] Sub(int(32));
 
+  QuickSortLists(components, reverse=true);
+
+  // Populate bins
+  for i in perLocale {
+    bins[i] = new Sub(int(32), {1..0});
+  }
+
+  // Distribute array values across bins
+  for idxlist in components {
+    for idx in idxlist do
+      bins[0].Array.push_back(idx);
+    first_sort(bins);
+  }
+
+  return bins;
+}
+
+/* Sub-region of a domain/array */
+class Sub {
+  type eltType;
+  // TODO -- should these be associative domain/arrays?
+  var Domain: domain(1);
+  var Array: [Domain] eltType;
+}
+
+class MinMapper{
+  proc indexToLocaleIndex(ind, targetLocs: [] locale) : int {
+    var (x, y) = ind;
+    var m = min(x, y);
+    var h: int = _gen_key(m);
+// This statement runs a fence because of domain
+// reference counting. Boo.
+//    const numlocs = targetLocs.domain.size;
+    const numlocs = targetLocs.size;
+    return h % numlocs;
+  }
+}
+
+record DestinationComparator{
+  proc key(p) {
+    var (x,y) = p;
+    var m = min(x,y);
+    var h: int = _gen_key(m);
+    return (h+here.id) % numLocales;
+  }
+}
+
+/* Selection sort that assumes that only the first element is out of order */
+proc first_sort(Data: [?Dom] ?eltType) where Dom.rank == 1 {
+  for j in Dom {
+    var iMin = j;
+    for i in j+1..Dom.high {
+      if Data[i].Array.size < Data[iMin].Array.size then
+        iMin = i;
+    }
+
+    if (iMin != j) then
+      Data[j] <=> Data[iMin];
+    else
+      break;
+  }
+}
+
+record timings {
+  var total, copy, parse, graph, mutualmentions, compactids, createtriples, maxnid, buildgraph, cca, partition, labelprop: Timer;
+  var buildgraphcomponents: graphtimings;
+}
+
+/* Consolidate timings prints to one function */
+proc timings.print() {
+  var nlines = total_lines_processed.read(),
+        days = total.elapsed(TimeUnits.hours) / 24.0,
+           m = 1000000.0;
+
+  writeln("Timings:");
+  if copyfiles then writeln("copy files in ", copy.elapsed(), " s");
+  writeln("parsed ", nlines, " lines in ", parse.elapsed(), " s");
+  writeln("that's ", nlines / parse.elapsed() / 1000.0, " K tweets/s");
+  writeln("created graph in   ", graph.elapsed(), " s");
+  writeln("graph components:");
+  writeln("  mutual mentions: ", mutualmentions.elapsed(), " s");
+  writeln("  compact ids    : ", compactids.elapsed(), " s");
+  writeln("  create triples : ", createtriples.elapsed(), " s");
+  writeln("  max nid        : ", maxnid.elapsed(), " s");
+  writeln("  build graph    : ", buildgraph.elapsed(), " s");
+  buildgraphcomponents.print();
+  writeln("connected component analysis ran in ", cca.elapsed(), " s");
+  writeln("graph partitioning ran in ", partition.elapsed(), " s");
+  writeln("label propagation ran in ", labelprop.elapsed(), " s");
+
+  writeln("processed ", nlines, " lines in ", total.elapsed(), " s");
+  writeln("that is ", nlines / days / m, "M tweets/day processed");
+}

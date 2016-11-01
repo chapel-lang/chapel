@@ -146,16 +146,22 @@ void init_done_obj(done_t* done, int target) {
 }
 
 static inline
-void wait_done_obj(done_t* done)
+void wait_done_flag(volatile int* flag)
 {
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
-  GASNET_BLOCKUNTIL(done->flag);
+  GASNET_BLOCKUNTIL(*flag);
 #else
-  while (!done->flag) {
+  while (! *flag) {
     (void) gasnet_AMPoll();
     chpl_task_yield();
   }
 #endif
+}
+
+static inline
+void wait_done_obj(done_t* done)
+{
+  wait_done_flag(&done->flag);
 }
 
 typedef struct {
@@ -208,7 +214,10 @@ typedef enum {
   EXIT_ANY,             // <unused> to be used for exit_any() cleanup
   BCAST_SEGINFO,        // broadcast for segment info table
   DO_REPLY_PUT,         // do a PUT here from another locale
-  DO_COPY_PAYLOAD       // copy AM payload to another address
+  DO_COPY_PAYLOAD,      // copy AM payload to another address
+  DO_OPS,               // start operations
+  DO_OPS_LARGE,         // start operations with huge argument
+  SIGNAL_OPS            // ack done operations, set int* flag
 } AM_handler_function_idx_t;
 
 static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
@@ -245,6 +254,9 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static void fork_large_wrapper(fork_t* f) {
+  // MPF: I think we could get rid of this allocation by
+  // including space for arg_size in the allocation we did in
+  // AM_fork_large.
   void* arg = chpl_mem_allocMany(1, f->arg_size,
                                  CHPL_RT_MD_COMM_FRK_RCV_ARG, 0, 0);
 
@@ -336,6 +348,7 @@ static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handl
                                                   memory_order_seq_cst);
   if (prev + 1 == done->target)
     done->flag = 1;
+  // TODO -- does this need some kind of fence? Should done be atomic?
 }
 
 static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
@@ -427,6 +440,107 @@ void AM_copy_payload(gasnet_token_t token, void* buf, size_t nbytes,
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, ack0, ack1));
 }
 
+extern void chpl_process_operations(void* obj, int64_t size, void* buf);
+
+static void do_run_ops(chpl_op_t *ops) {
+  // could be this:
+  //chpl_ftable_call(ops->fid, ops);
+
+  // but currently just using an extern...
+  chpl_process_operations(ops->obj, ops->payload_size, ops->payload);
+}
+
+static void do_ops_wrapper(chpl_op_t *ops) {
+  do_run_ops(ops);
+
+  // Send Done Signal
+  {
+    c_nodeid_t requesting_node = ops->comm_private.requesting_node;
+    void* ack = (void*) ops->comm_private.completion;
+    void* freeme = (void*) ops->comm_private.free_this;
+    GASNET_Safe(gasnet_AMRequestShort4(requesting_node,
+                                       SIGNAL_OPS,
+                                       AckArg0(ack), AckArg1(ack),
+                                       AckArg0(freeme), AckArg1(freeme)));
+  }
+
+  // Free the request buffer
+  chpl_mem_free(ops, 0, 0);
+}
+
+// run operations
+static
+void AM_do_ops(gasnet_token_t token, void* buf, size_t nbytes) {
+  chpl_op_t* ops = (chpl_op_t*) chpl_mem_allocMany(nbytes, sizeof(char),
+                                       CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
+
+  chpl_memcpy(ops, buf, nbytes);
+
+  chpl_task_startMovedTask(FID_NONE, (chpl_fn_p)do_ops_wrapper, (void*)ops,
+                           ops->subloc, chpl_nullTaskID,
+                           ops->comm_private.serial_state);
+}
+
+static void do_ops_large_wrapper(chpl_op_t *ops) {
+  // GET the argument data
+  chpl_comm_get(&ops->payload, ops->comm_private.requesting_node,
+                ops->comm_private.arg,
+                ops->payload_size, -1 /*typeIndex: unused*/,
+                0, CHPL_FILE_IDX_FORK_LARGE);
+
+  // Run the task
+  do_run_ops(ops);
+
+  // Send Done Signal
+  {
+    c_nodeid_t requesting_node = ops->comm_private.requesting_node;
+    void* ack = (void*) ops->comm_private.completion;
+    void* freeme = (void*) ops->comm_private.free_this;
+    GASNET_Safe(gasnet_AMRequestShort4(requesting_node,
+                                       SIGNAL_OPS,
+                                       AckArg0(ack), AckArg1(ack),
+                                       AckArg0(freeme), AckArg1(freeme)));
+  }
+
+  // Free the request buffer
+  chpl_mem_free(ops, 0, 0);
+}
+
+
+static
+void AM_do_ops_large(gasnet_token_t token, void* buf, size_t nbytes) {
+  chpl_op_t* ops_arg = (chpl_op_t*) buf;
+  size_t payload_size = ops_arg->payload_size;
+  size_t total_bytes = sizeof(chpl_op_t) + payload_size;
+  chpl_op_t* ops = (chpl_op_t*) chpl_mem_allocMany(total_bytes, sizeof(char),
+                                       CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
+  chpl_memcpy(ops, buf, sizeof(chpl_op_t));
+  chpl_task_startMovedTask(FID_NONE,(chpl_fn_p)do_ops_large_wrapper, (void*)ops,
+                           ops->subloc, chpl_nullTaskID,
+                           ops->comm_private.serial_state);
+}
+
+
+static
+void AM_signal_ops(gasnet_token_t token,
+                   gasnet_handlerarg_t a0, gasnet_handlerarg_t a1,
+                   gasnet_handlerarg_t f0, gasnet_handlerarg_t f1) {
+  chpl_comm_nb_ops_handle_t *completion_handle;
+  void *freeme;
+
+  completion_handle = (chpl_comm_nb_ops_handle_t*) get_ptr_from_args(a0, a1);
+  freeme = get_ptr_from_args(f0, f1);
+
+  if( freeme ) {
+    chpl_mem_free(freeme, 0, 0);
+  }
+
+  *completion_handle = 1;
+  // TODO -- does this need some kind of fence? Should done be atomic?
+}
+
+
+
 static gasnet_handlerentry_t ftable[] = {
   {FORK,          AM_fork},
   {FORK_LARGE,    AM_fork_large},
@@ -441,7 +555,10 @@ static gasnet_handlerentry_t ftable[] = {
   {EXIT_ANY,      AM_exit_any},
   {BCAST_SEGINFO, AM_bcast_seginfo},
   {DO_REPLY_PUT,  AM_reply_put},
-  {DO_COPY_PAYLOAD, AM_copy_payload}
+  {DO_COPY_PAYLOAD, AM_copy_payload},
+  {DO_OPS,        AM_do_ops},
+  {DO_OPS_LARGE,  AM_do_ops_large},
+  {SIGNAL_OPS,    AM_signal_ops}
 };
 
 //
@@ -1459,6 +1576,63 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
     }
   }
 }
+
+
+void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops, int free_ops,
+                         chpl_comm_nb_ops_handle_t *handle)
+{
+  size_t  nbytes = sizeof(chpl_op_t) + ops->payload_size;
+  int     passArg = nbytes <= gasnet_AMMaxMedium();
+
+  if (chpl_nodeID == node) {
+    // Run the operations immediately.
+    // TODO - should this start a task?
+    // If this isn't running a task, we have to set
+    //  it complete before continuing, or else we
+    //  end up waiting for it within the task itself...
+    *handle = 1;
+    do_run_ops(ops);
+    return;
+  } else {
+    // Visual Debug Support : TODO
+    // chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
+
+    // Operation starts out as not complete.
+    *handle = 0;
+    // Set the completion pointer.
+    ops->comm_private.completion = handle;
+    // Set the pointer back to the original payload,
+    // for large ops requests
+    ops->comm_private.arg = &ops->payload;
+    // Set the requesting node
+    ops->comm_private.requesting_node = chpl_nodeID;
+    // Set the pointer to free if any
+    ops->comm_private.free_this = (free_ops)?(ops):(NULL);
+    // Set the requested serial state.
+    ops->comm_private.serial_state = chpl_task_getSerial();
+
+    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+      printf("%d: remote start-ops task created on %d\n", chpl_nodeID, node);
+
+    if (passArg)
+      GASNET_Safe(gasnet_AMRequestMedium0(node, DO_OPS, ops, nbytes));
+    else
+      GASNET_Safe(gasnet_AMRequestMedium0(node, DO_OPS_LARGE, ops, sizeof(chpl_op_t)));
+  }
+}
+
+
+int chpl_test_op_complete(chpl_comm_nb_ops_handle_t *handle)
+{
+  return *handle != 0;
+}
+
+void chpl_wait_op(chpl_comm_nb_ops_handle_t *handle)
+{
+  wait_done_flag(handle);
+}
+
+
 
 void chpl_comm_make_progress(void)
 {

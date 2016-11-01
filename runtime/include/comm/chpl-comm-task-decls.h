@@ -25,6 +25,11 @@
 
 // Define the type of a n.b. communications handle.
 typedef void* chpl_comm_nb_handle_t;
+typedef volatile int chpl_comm_nb_ops_handle_t;
+
+struct chpl_op_comm_use_s {
+  int dummy;
+};
 
 typedef struct {
   int dummy;    // structs must be nonempty

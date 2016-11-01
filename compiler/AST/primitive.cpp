@@ -85,10 +85,12 @@ returnInfoInt64(CallExpr* call) {
   return QualifiedType(dtInt[INT_SIZE_64], QUAL_VAL);
 }
 
+/*
 static QualifiedType
 returnInfoUInt64(CallExpr* call) {
   return QualifiedType(dtUInt[INT_SIZE_64], QUAL_VAL);
 }
+*/
 
 static QualifiedType
 returnInfoSizeType(CallExpr* call) {
@@ -608,14 +610,15 @@ initPrimitive() {
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
-  prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
-  // MPF - 10/9/2015 - neither _wide_get_node nor _wide_get_addr
-  // is used in the module or test code. insertWideReferences uses
+  // MPF - 5/4/2016 - none of these _wide_get primitives are
+  // used in the module or test code. insertWideReferences uses
   // PRIM_WIDE_GET_NODE. It might make sense to keep both of these
   // functions for debugging.
+  prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
-  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoUInt64, false, true);
+  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoCVoidPtr, false, true);
   prim_def(PRIM_IS_WIDE_PTR, "is wide pointer", returnInfoBool);
+  //prim_def(PRIM_MAKE_WIDE, "make wide", returnInfoFirst);
 
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 

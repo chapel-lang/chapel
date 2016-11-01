@@ -69,6 +69,18 @@ static inline void saturating_add(saturating_count_t *x, unsigned int num) {
   tree->NAME##_head = element; \
 }
 
+// Variant where next field is named.
+#define SINGLE_POP_HEAD_N(tree, NAME, NEXT) { \
+  if( tree->NAME##_head ) { \
+    tree->NAME##_head = tree->NAME##_head->NEXT; \
+  } \
+}
+#define SINGLE_PUSH_HEAD_N(tree, element, NAME, NEXT) { \
+  element->NEXT = tree->NAME##_head; \
+  tree->NAME##_head = element; \
+}
+
+
 // doubly linked list/queue
 #define DOUBLE_REMOVE_TAIL(tree, NAME) { \
   if( tree->NAME##_tail ) { \

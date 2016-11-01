@@ -1,0 +1,4 @@
+c 2 locales: starting operations a a b b a
+d 2 locales: done operations
+hello1hello2hello5 in MyOperationsHandler.processOperations
+hello3hello4 in OtherOperationsHandler.processOperations

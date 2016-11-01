@@ -330,6 +330,8 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
 //
 // non-blocking execute_on
 //
+// copies the argument data so it can be immediately re-used.
+//
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid, void *arg, size_t arg_size);
 
@@ -339,6 +341,40 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                          chpl_fn_int_t fid, void *arg, size_t arg_size);
 
+
+// Run an operation
+
+// Part to be usable by comms layer.
+struct chpl_op_comm_use_s;
+
+typedef struct _chpl_op {
+  c_nodeid_t node;
+  c_sublocid_t subloc;
+  chpl_fn_int_t fid;
+  void *obj;        // Chapel object to perform these operations
+  struct chpl_op_comm_use_s comm_private; // usable by comm layer
+  size_t payload_size;     // contains payload object will decode
+  unsigned char payload[];
+} chpl_op_t;
+
+
+// This is really more or less an execute_on_nb with an
+// associated handle that can be waited for.
+// The buffer must not be re-used until the handle indicates completion.
+// handle must point to memory storing a chpl_comm_nb_ops_handle_t
+// that can be used to indicate completion. It must be heap-registered
+// and may not move after this call, until completion.
+//
+// if free_ops is set, the runtime will call chpl_free(ops)
+// once it is safe to do so. 
+void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops, int free_ops,
+                         chpl_comm_nb_ops_handle_t *handle);
+
+
+int chpl_test_op_complete(chpl_comm_nb_ops_handle_t *handle);
+
+// waits for and records complete
+void chpl_wait_op(chpl_comm_nb_ops_handle_t *handle);
 
 //
 // This call specifies the number of polling tasks that the

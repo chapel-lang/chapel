@@ -112,4 +112,7 @@ extern size_t chpl_getFieldOffset(int typeNum, int fieldNum);
 extern size_t chpl_getFieldSize(int typeNum);
 extern const int chpl_max_fields_per_type;
 
+// used for operations -- bundled in chpl-cache.c
+extern void chpl_process_operations(void* obj, int64_t size, void* buf);
+
 #endif

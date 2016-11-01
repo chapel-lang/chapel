@@ -21,10 +21,13 @@
 //
 module DefaultAssociative {
 
+  use Operations;
+
   use DSIUtil;
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
-
+  config param defaultAssocAggregation = CHPL_CACHE_REMOTE;
+  
   // TODO: make the domain parameterized by this?
   type chpl_table_index_type = int;
 
@@ -51,10 +54,108 @@ module DefaultAssociative {
    27021597764222939, 54043195528445869, 108086391056891903, 216172782113783773,
    432345564227567561, 864691128455135207);
 
+  class DefaultAssociativeDomOperationsHandler : OperationsHandler {
+    type idxType;
+    param parSafe: bool;
+    var dom: DefaultAssociativeDom(idxType, parSafe);
+    proc processOperations( size:int, buf:c_void_ptr ) {
+      extern proc sizeof(type t):size_t;
+
+      //extern proc printf(fmt:c_string, sz:c_int);
+
+      //extern proc printf(fmt:c_string, id:c_int, sz:c_int);
+      //printf("%i IN  PROCESS size=%i\n", here.id:c_int, size:c_int);
+
+// Why do I seem to need to use this primitive?
+      var ptr:c_ptr(idxType) = __primitive("cast", c_ptr(idxType), buf);
+      const eltSize = sizeof(idxType):int;
+      var i = 0;
+      var offset = 0;
+
+      var newkeys = size/eltSize;
+      // resize if needed
+      // - flush rdata cache if we will resize
+      // - take lock either way
+
+      // This helps performance for cache+bulk add but I can't understand why
+      var localLock = size < 880*2;
+      //var localLock = true;
+      if localLock {
+        dom._resizeIfNeeded(newkeys, takeLock=parSafe);
+      } else {
+        // This doesn't help
+        //chpl_rmem_consist_release();
+        //dom._resizeIfNeeded(newkeys, takeLock=parSafe);
+
+        // this does
+        dom.lockTable();
+        dom._resizeIfNeeded(newkeys, takeLock=false);
+      }
+
+ 
+// Why can't I use request capacity?
+// It seems to change the result? Losing a small number of elements?
+//      dom.dsiRequestCapacity(dom.dsiNumIndices + size/eltSize, haveLock=true);
+      while offset < size {
+        //writeln("Adding ", ptr[i], " size is ", dom.dsiNumIndices);
+//        dom.dsiAddInternal(ptr[i], haveLock=true);
+        dom._doadd(ptr[i]);
+        //printf("%i\n", ptr[i]:c_int);
+        offset += eltSize;
+        i += 1;
+      }
+      if parSafe {
+        // See above.
+        // dom.unlockTable();
+        dom.unlockTable(onlyLocalFence=true);
+      }
+
+      //printf("%i END PROCESS size=%i\n", here.id:c_int, size:c_int);
+    }
+    proc enqueueAdd(idx: idxType) {
+
+      //extern proc printf(fmt:c_string, sz:c_int);
+      //printf("IN ENQUEUE v=%i\n", idx:c_int);
+
+
+      extern proc sizeof(type t):size_t;
+      var idx_copy = idx;
+      var idx_copy_ptr = c_ptrTo(idx_copy);
+      enqueue_operation(this:OperationsHandler, 0, 0,
+                        sizeof(idxType):int, idx_copy_ptr:c_void_ptr);
+    }
+    proc enqueueAdds(arr: [?Dom] idxType, subrange) where Dom.rank == 1 {
+
+      //extern proc printf(fmt:c_string, sz:c_int);
+      //printf("IN ENQUEUE v=%i\n", idx:c_int);
+
+      // Does this help performance? No.
+      //chpl_rmem_consist_fence(order=memory_order_seq_cst);
+
+
+      extern proc sizeof(type t):size_t;
+      var idx_copy_ptr = c_ptrTo(arr[subrange.low]);
+      var n = subrange.size;
+      enqueue_operation(this:OperationsHandler, 0, 0,
+                        n*sizeof(idxType):int, idx_copy_ptr:c_void_ptr);
+    }
+
+ 
+    // This flush call isn't actually necessary as
+    // long as we lock the table
+    proc flush() {
+      //extern proc printf(fmt:c_string, sz:c_int);
+      //printf("IN FLUSH %i\n", 0:c_int);
+
+
+      flush_operations(this:OperationsHandler, 0, 0);
+    }
+  }
+
   class DefaultAssociativeDom: BaseAssociativeDom {
     type idxType;
     param parSafe: bool;
-  
+
     var dist: DefaultDist;
   
     // The guts of the associative domain
@@ -68,12 +169,54 @@ module DefaultAssociative {
     var tableDom = {0..tableSize-1};
     var table: [tableDom] chpl_TableEntry(idxType);
   
-    inline proc lockTable() {
-      while tableLock.testAndSet() do chpl_task_yield();
+    var opHandler:DefaultAssociativeDomOperationsHandler(idxType, parSafe);
+
+    inline proc lockTable(param onlyLocalFence=false) {
+      extern proc chpl_cache_startall();
+
+      if onlyLocalFence {
+        // TODO: This is a hack to turn off cache flush
+        // Right solution is to make tableLock only a local
+        // lock (not flush the cache) and add such scope arguments
+        // to atomic operations (See LLVM atomic for inspiration).
+        // Don't know if table lock can always be this way or
+        // it should just do it in this routine.
+
+        // This one shouldn't flush the remote data cache
+        while tableLock.testAndSet(order=memory_order_relaxed) do
+          chpl_task_yield();
+
+        // The below has intermediate performance:
+
+        /*
+        // If there is contention, start operations
+        // because remote nodes might make progress while
+        // we are contended.
+        if !tableLock.testAndSet(order=memory_order_relaxed) then
+          return;
+
+        // Otherwise, try starting remote operations 
+        while tableLock.testAndSet(order=memory_order_relaxed) {
+          chpl_task_yield();
+          //chpl_cache_startall(); doesn't help
+          chpl_rmem_consist_release();
+        }
+        */
+
+      } else {
+        // This one needs to flush the remote data cache
+        while tableLock.testAndSet() do
+          chpl_task_yield();
+      }
     }
-  
-    inline proc unlockTable() {
-      tableLock.clear();
+
+    inline proc unlockTable(param onlyLocalFence=false) {
+      if onlyLocalFence {
+        // Hack - see lockTable
+        tableLock.clear(order=memory_order_relaxed);
+      } else {
+        tableLock.clear();
+      }
     }
   
     // TODO: An ugly [0..-1] domain appears several times in the code --
@@ -90,17 +233,26 @@ module DefaultAssociative {
         compilerError("Default Associative domains with idxType=",
                       idxType:string, " are not allowed", 2);
       this.dist = dist;
+      if defaultAssocAggregation then
+        this.opHandler = new DefaultAssociativeDomOperationsHandler(idxType, parSafe, this);
     }
   
+    proc _flushAggregatedOps() {
+      if defaultAssocAggregation then
+        this.opHandler.flush();
+    }
+
     //
     // Standard Internal Domain Interface
     //
     proc dsiBuildArray(type eltType) {
+      _flushAggregatedOps();
       return new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
                                        parSafeDom=parSafe, dom=this);
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
+      _flushAggregatedOps();
       var first = true;
       f <~> new ioLiteral("{");
       for idx in this {
@@ -120,10 +272,12 @@ module DefaultAssociative {
     //
   
     inline proc dsiNumIndices {
+      _flushAggregatedOps();
       return numEntries.read();
     }
   
     iter dsiIndsIterSafeForRemoving() {
+      _flushAggregatedOps();
       postponeResize = true;
       for i in this.these() do
         yield i;
@@ -140,6 +294,7 @@ module DefaultAssociative {
     }
   
     iter these() {
+      _flushAggregatedOps();
       if !isEnumType(idxType) {
         for slot in _fullSlots() {
           yield table[slot].idx;
@@ -154,6 +309,7 @@ module DefaultAssociative {
     }
  
     iter these(param tag: iterKind) where tag == iterKind.standalone {
+      _flushAggregatedOps();
       if debugDefaultAssoc {
         writeln("*** In associative domain standalone iterator");
       }
@@ -189,6 +345,7 @@ module DefaultAssociative {
     }
  
     iter these(param tag: iterKind) where tag == iterKind.leader {
+      _flushAggregatedOps();
       if debugDefaultAssoc then
         writeln("*** In domain leader code:");
       const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
@@ -233,6 +390,7 @@ module DefaultAssociative {
     }
   
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+      _flushAggregatedOps();
       var (chunk, followThisDom) = followThis;
 
       if debugDefaultAssoc then
@@ -267,6 +425,7 @@ module DefaultAssociative {
     }
 
     proc dsiClear() {
+      _flushAggregatedOps();
       on this {
         if parSafe then lockTable();
         for slot in tableDom {
@@ -278,27 +437,10 @@ module DefaultAssociative {
     }
   
     proc dsiMember(idx: idxType): bool {
+      _flushAggregatedOps();
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx){
-      // add helpers will return a tuple like (slotNum, numIndicesAdded);
-
-      // these two seemingly redundant lines were necessary to work around a
-      // compiler bug. I was unable to create a smaller case that has the same
-      // issue.
-      // More: `return _addWrapper(idx)[2]` Call to _addWrapper seems to
-      // have no effect when `idx` is a range and the line is promoted. My
-      // understanding of promotion makes me believe that things might go haywire
-      // since return type of the method becomes an array(?). However, it seemed
-      // that _addWrapper is never called when the return statement is promoted.
-      // I checked the C code and couldn't see any call to _addWrapper.
-      // I tried to replicate the issue with generic classes but it always
-      // worked smoothly.
-      const numInds = _addWrapper(idx)[2];
-      return numInds;
-    }
-
     proc _addWrapper(idx: idxType, in slotNum : index(tableDom) = -1, 
         haveLock = !parSafe) {
 
@@ -321,6 +463,56 @@ module DefaultAssociative {
       return (slotNum, retVal);
     }
 
+   proc dsiAdd(idx: idxType) {
+     if defaultAssocAggregation then
+       this.opHandler.enqueueAdd(idx);
+     else {
+       // add helpers will return a tuple like (slotNum, numIndicesAdded);
+
+       // these two seemingly redundant lines were necessary to work around a
+       // compiler bug. I was unable to create a smaller case that has the same
+       // issue.
+       // More: `return _addWrapper(idx)[2]` Call to _addWrapper seems to
+       // have no effect when `idx` is a range and the line is promoted. My
+       // understanding of promotion makes me believe that things might go haywire
+       // since return type of the method becomes an array(?). However, it seemed
+       // that _addWrapper is never called when the return statement is promoted.
+       // I checked the C code and couldn't see any call to _addWrapper.
+       // I tried to replicate the issue with generic classes but it always
+       // worked smoothly.
+       const numInds = _addWrapper(idx)[2];
+       return numInds;
+     }
+   }
+   proc dsiAdd(arr: [?Dom] idxType, subrange) where Dom.rank == 1 {
+     if defaultAssocAggregation then
+       this.opHandler.enqueueAdds(arr, subrange);
+     else {
+
+      on this {
+       // TODO -- try other versions, like relying
+       // on cache to get locArr data.
+       var locArr = arr[subrange];
+       //writeln("On ", here.id, " adding ", locArr.size);
+       const shouldLock = parSafe;
+       _resizeIfNeeded(subrange.size, takeLock=shouldLock);
+       //if shouldLock then lockTable();
+       //_resizeIfNeeded(subrange.size, takeLock=false);
+
+        //writeln("before resize ", numEntries.read(), " / ", tableSize, " taken");
+        //writeln("after resize ", numEntries.read(), " / ", tableSize, " taken");
+       for idx in subrange {
+         _add(locArr[idx], -1);
+//         _add(arr[idx], -1);
+       }
+       if shouldLock then unlockTable();
+      }
+     }
+   }
+
+    proc _doadd(idx: idxType) {
+      _add(idx, -1);
+    }
     // This routine adds new indices without checking the table size and
     //  is thus appropriate for use by routines like _resize().
     //
@@ -333,10 +525,13 @@ module DefaultAssociative {
       if foundSlot {
         table[slotNum].status = chpl__hash_status.full;
         table[slotNum].idx = idx;
-        numEntries.add(1);
+        numEntries.add(1, order=memory_order_relaxed);
+        //writeln("Adding 1 to num entries");
       } else {
         if (slotNum < 0) {
-          halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
+          halt("couldn't add ", idx, " -- ",
+              numEntries.read(order=memory_order_relaxed),
+              " / ", tableSize, " taken");
           return (-1, 0);
         }
         // otherwise, re-adding an index that's already in there
@@ -346,6 +541,7 @@ module DefaultAssociative {
     }
   
     proc dsiRemove(idx: idxType) {
+      _flushAggregatedOps();
       var retval = 1;
       on this {
         if parSafe then lockTable();
@@ -366,8 +562,12 @@ module DefaultAssociative {
       return retval;
     }
   
-    proc dsiRequestCapacity(numKeys:int) {
+    proc dsiRequestCapacity(numKeys:int, haveLock = !parSafe) {
+      _flushAggregatedOps();
+      const shouldLock = !haveLock && parSafe;
       var entries = numEntries.read();
+
+      // Shouldn't this be in an 'on' statement?
 
       if entries < numKeys {
 
@@ -389,8 +589,14 @@ module DefaultAssociative {
         }
 
         //Changing underlying structure, time for locking
-        if parSafe then lockTable();
+        if shouldLock then lockTable();
         if entries > 0 {
+          if tableSize==prime {
+            if shouldLock then lockTable();
+
+            return;
+          }
+
           // Slow path: back up required
           _backupArrays();
 
@@ -423,21 +629,22 @@ module DefaultAssociative {
         }
 
         //Unlock the table
-        if parSafe then unlockTable();
+        if shouldLock then unlockTable();
       } else if entries > numKeys {
         warning("Requested capacity (" + numKeys + ") " +
                 "is less than current size (" + entries + ")");
       }
     }
   
-    iter dsiSorted() {
+    iter dsiSorted(comparator:?t) {
       use Sort;
+      _flushAggregatedOps();
       var tableCopy: [0..#numEntries.read()] idxType;
   
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
         tableCopy(tmp) = table[slot].idx;
   
-      sort(tableCopy);
+      sort(tableCopy, comparator=comparator);
   
       for ind in tableCopy do
         yield ind;
@@ -446,22 +653,62 @@ module DefaultAssociative {
     //
     // Internal interface (private)
     //
-    // NOTE: Calls to this routine assume that the tableLock has been acquired.
+    // NOTE: Calls to these _resize routines assume that the tableLock
+    // has been acquired.
     //
+    proc _resizeIfNeeded(newKeys:int, param takeLock=false) {
+      if takeLock then
+        lockTable(onlyLocalFence=true);
+
+      var numKeys = numEntries.read(order=memory_order_relaxed) + newKeys;
+      var threshold = (numKeys + 1) * 2;
+      if threshold < tableSize {
+        return;
+      }
+
+      if takeLock {
+        unlockTable(onlyLocalFence=true);
+        lockTable(onlyLocalFence=false);
+        numKeys = numEntries.read(order=memory_order_relaxed) + newKeys;
+        threshold = (numKeys + 1) * 2;
+      }
+
+      // Find the new prime to use.
+      var prime = 0;
+      var primeLoc = 0;
+      for i in 1..chpl__primes.size {
+        if chpl__primes(i) > threshold {
+          prime = chpl__primes(i);
+          primeLoc = i;
+          break;
+        }
+      }
+      _resize(primeIndex=primeLoc);
+    }
+
     proc _resize(grow:bool) {
+      //writeln("in resize grow=", grow, " sz=", tableSizeNum);
       if postponeResize then return;
+      var primeIndex = tableSizeNum;
+      primeIndex += if grow then 1 else -1;
+      _resize(primeIndex=primeIndex);
+    }
+
+    proc _resize(primeIndex:int) {
+      //writeln("in resize index=", primeIndex, " v=", chpl__primes(primeIndex));
       // back up the arrays
       _backupArrays();
   
       // copy the table (TODO: could use swap between two versions)
       var copyDom = tableDom;
       var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
-  
+ 
       // grow original table
       tableDom = {0..(-1:chpl_table_index_type)}; // non-preserving resize
       numEntries.write(0); // reset, because the adds below will re-set this
-      tableSizeNum += if grow then 1 else -1;
+      tableSizeNum = primeIndex;
       if tableSizeNum > chpl__primes.size then halt("associative array exceeds maximum size");
+      if tableSizeNum <= 0 then halt("invalid prime index");
       tableSize = chpl__primes(tableSizeNum);
       tableDom = {0..tableSize-1};
   

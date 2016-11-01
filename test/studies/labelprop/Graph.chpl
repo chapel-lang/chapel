@@ -2,8 +2,10 @@
    This version started out in the SSCA2 benchmark
    and has been modified for the label propagation benchmark.
  */
-
 module Graph {
+  use Time;
+
+    var gt = new graphtimings();
 
     //
     // VertexData: stores the neighbor list of a vertex.
@@ -92,25 +94,25 @@ module Graph {
 
     // ------------------------------------------------------------------------
     // The data structures below are chosen to implement an irregular (sparse)
-    // graph using rectangular domains and arrays.  
+    // graph using rectangular domains and arrays.
     // Each node in the graph has a list of neighbors and a corresponding list
-    // of (integer) weights for the implicit edges.  
+    // of (integer) weights for the implicit edges.
     // ------------------------------------------------------------------------
 
 
-    /* store a graph 
+    /* store a graph
      */
     class Graph {
       type nodeIdType = int(64);
       param weighted = false;
       type edgeWeightType = int(64);
- 
+
       const vertices; // generic type - domain of vertices
-      
+
       param initialFirstAvail = 1;
       param initialLastAvail = 1;
 
-      var   Row      : [vertices] VertexData(nodeIdType, weighted, 
+      var   Row      : [vertices] VertexData(nodeIdType, weighted,
                                      edgeWeightType,
                                      initialFirstAvail, initialLastAvail);
       var num_edges = -1;
@@ -171,24 +173,24 @@ module Graph {
 
       /* return the number of neighbors
        */
-      proc   n_Neighbors (v : index (vertices) ) 
+      proc   n_Neighbors (v : index (vertices) )
       {return Row (v).numNeighbors();}
 
     } // class Associative_Graph
 
     /* how to use Graph: e.g.
-    const vertex_domain = 
+    const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
         {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
       else
     {1..N_VERTICES} ;
-	
+
     writeln("allocating Associative_Graph");
     var G = new Associative_Graph (vertex_domain);
     */
 
     /* Helps to construct a graph from row, column, value
-       format. 
+       format.
     */
     proc buildUndirectedGraph(triples, param weighted:bool, vertices) where
       isRecordType(triples.eltType)
@@ -219,12 +221,13 @@ module Graph {
                         edgeWeightType = r.weight.type,
                         vertices = vertices,
                         initialLastAvail=0);
-      var next$: [vertices] atomic int;
+      var next: [vertices] atomic int;
 
-      forall x in next$ {
-        next$.write(G.initialFirstAvail);
-      }
+      gt.next.start();
+      next.poke(G.initialFirstAvail);
+      gt.next.stop();
 
+      gt.count.start();
       // Pass 1: count.
       forall trip in triples {
         var u = trip.from;
@@ -232,19 +235,26 @@ module Graph {
         var w = trip.weight;
         // edge from u to v will be represented in both u and v's edge
         // lists
-        next$[u].add(1, memory_order_relaxed);
-        next$[v].add(1, memory_order_relaxed);
+        next[u].add(1, memory_order_relaxed);
+        next[v].add(1, memory_order_relaxed);
       }
+      gt.count.stop();
+
+      gt.resize.start();
       // resize the edge lists
       forall v in vertices {
         var min = G.initialFirstAvail;
-        var max = next$[v].read(memory_order_relaxed) - 1; 
+        var max = next[v].read(memory_order_relaxed) - 1;
         G.Row[v].ndom = {min..max};
       }
+      gt.resize.stop();
+
+      gt.reset.start();
       // reset all of the counters.
-      forall x in next$ {
-        next$.write(G.initialFirstAvail, memory_order_relaxed);
-      }
+      next.poke(G.initialFirstAvail);
+      gt.reset.stop();
+
+      gt.populate.start();
       // Pass 2: populate.
       forall trip in triples {
         var u = trip.from;
@@ -252,13 +262,29 @@ module Graph {
         var w = trip.weight;
         // edge from u to v will be represented in both u and v's edge
         // lists
-        var uslot = next$[u].fetchAdd(1, memory_order_relaxed);
-        var vslot = next$[v].fetchAdd(1, memory_order_relaxed);
+        var uslot = next[u].fetchAdd(1, memory_order_relaxed);
+        var vslot = next[v].fetchAdd(1, memory_order_relaxed);
         G.Row[u].neighborList[uslot] = (v,);
         G.Row[v].neighborList[vslot] = (u,);
       }
+      gt.populate.stop();
 
       return G;
     }
+
+  /* Timings */
+  record graphtimings {
+    var next, count, resize, reset, populate: Timer;
+  }
+
+  proc graphtimings.print() {
+    writeln("  build graph components: ");
+    writeln("    next         : ", next.elapsed(), " s");
+    writeln("    count        : ", count.elapsed(), " s");
+    writeln("    resize       : ", resize.elapsed(), " s");
+    writeln("    reset        : ", reset.elapsed(), " s");
+    writeln("    populate     : ", populate.elapsed(), " s");
+  }
+
 }
 

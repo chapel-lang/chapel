@@ -93,6 +93,7 @@ symbolFlag( FLAG_DEFAULT_INTENT_IS_REF, ypr, "default intent is ref", "The defau
 symbolFlag( FLAG_DEFAULT_CONSTRUCTOR , npr, "default constructor" , ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
+symbolFlag( FLAG_DIRECT_ON_ARGUMENT , npr, "direct on argument" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
 symbolFlag( FLAG_DONOR_FN, ypr, "donor fn" , "function donates ownership of the returned object to the calling function" )
 symbolFlag( FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING , ypr, "dont disable remote value forwarding" , ncm )
@@ -281,6 +282,8 @@ symbolFlag( FLAG_WIDE_CLASS , npr, "wide class" , ncm )
 symbolFlag( FLAG_WRAPPER , npr, "wrapper" , "wrapper function" )
 symbolFlag( FLAG_WRAPPER_NEEDS_START_FENCE , npr, "wrapper needs start fence" , "add PRIM_START_RMEM_FENCE to the start of the wrapper function" )
 symbolFlag( FLAG_WRAPPER_NEEDS_FINISH_FENCE , npr, "wrapper needs finish fence" , "add PRIM_FINISH_RMEM_FENCE to the end of the wrapper function" )
+symbolFlag( FLAG_WRAPPER_CALL_NEEDS_RELEASE_BEFORE , npr, "call to wrapper needs release fence" , "add chpl_rmem_consist_release just before the call to the task function")
+symbolFlag( FLAG_WRAPPER_CALL_NEEDS_ACQUIRE_AFTER , npr, "call to wrapper needs acquire fence" , "add chpl_rmem_consist_acquire just after the call to the task function")
 symbolFlag( FLAG_WRAP_WRITTEN_FORMAL , npr, "wrap written formal" , "formal argument for wrapper for out/inout intent" )
 
 #undef ypr

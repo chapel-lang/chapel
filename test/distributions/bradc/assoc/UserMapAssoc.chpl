@@ -247,6 +247,18 @@ class UserMapAssoc : BaseDist {
 }
 */
 
+record DestinationComparator {
+  var dist; // :UserMapAssoc;
+  proc key(ind) {
+    var localeIndex = dist.indexToLocaleIndex(ind);
+    var low = dist.targetLocDom.low;
+    var n = dist.targetLocDom.size;
+    localeIndex += here.id;
+    localeIndex = low + (localeIndex % n);
+    return (localeIndex, ind);
+  }
+}
+
 //
 // The global domain class
 //
@@ -301,6 +313,36 @@ class UserMapAssocDom: BaseAssociativeDom {
     return locDoms(dist.indexToLocaleIndex(i)).add(i);
   }
 
+  proc dsiAddSorted(arr: [?Dom] idxType) where Dom.rank == 1 {
+    var start, end, cur, next :int;
+    start = Dom.low;
+    end = Dom.high;
+    cur = start;
+
+    // TODO -- is this sync/begin helping?
+    /*sync*/ { 
+      while cur <= end {
+        // Find the range of keys that map to the same locale.
+        var dst = dist.indexToLocaleIndex(arr[cur]);
+        next = cur + 1;
+        while next <= end && dist.indexToLocaleIndex(arr[next]) == dst {
+          next += 1;
+        }
+        // Now send cur .. next - 1 to the destination.
+        /*begin*/ {
+          locDoms[dst].myInds._value.dsiAdd(arr, cur..next-1);
+        }
+        cur = next;
+      }
+    }
+  }
+  proc dsiAddUnsorted(arr: [?Dom] idxType) where Dom.rank == 1 {
+    var copy = arr;
+    sort(copy, comparator=new DestinationComparator(dist));
+    dsiAddSorted(copy);
+  }
+
+
   proc dsiRemove(i: idxType) {
     return locDoms(dist.indexToLocaleIndex(i)).remove(i);
   }
@@ -320,7 +362,7 @@ class UserMapAssocDom: BaseAssociativeDom {
     // TODO
   }
 
-  iter dsiSorted() {
+  iter dsiSorted(comparator:?t) {
     use Sort;
     // This function creates a local copy of an entire distributed
     // data structure, which is probably a bad idea.
@@ -354,7 +396,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       }
     }
 
-    quickSort(tableCopy);
+    sort(tableCopy, comparator=comparator);
 
     for ind in tableCopy do
       yield ind;
