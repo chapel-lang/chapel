@@ -2228,8 +2228,9 @@ module ChapelArray {
       } else if canResolveMethod(_value, "dsiSorted") {
         compilerError(_value.type:string + " does not support dsiSorted(comparator)");
       } else {
+        use Sort;
         var copy = this;
-        quickSort(copy, comparator=comparator);
+        sort(copy, comparator=comparator);
         for ind in copy do
           yield ind;
       }
