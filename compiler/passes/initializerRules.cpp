@@ -155,6 +155,10 @@ static
 bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
 
 static
+DefExpr* verifyLoopIsClean(BlockStmt* loop, DefExpr* curField, bool* seenField,
+                           int* index, AggregateType* t);
+
+static
 void insertOmittedField(Expr* next, const char* nextField,
                         std::map<const char*, std::pair<Expr*, Expr*> >* inits,
                         AggregateType* t);
@@ -198,6 +202,9 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
       if (BlockStmt* block = toBlockStmt(curExpr)) {
         if (block->isLoopStmt()) {
           // Special handling for loops.
+          verifyLoopIsClean(block, curField, seenField, &index, t);
+          curExpr = getNextStmt(curExpr, body);
+          continue;
         } else {
           // Need to dive into the block statement.
           curExpr = block->body.head;
@@ -428,6 +435,48 @@ void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this) {
     }
   }
 }
+
+
+// Takes in the current expr (which must be a loop), the current field
+// expected, the list of fields seen, the index into that list, and the type
+// whose fields are being iterated over (the last is for error message
+// purposes).  Walks the statements in the loop, and if any of them are field
+// initializations, will generate an error message (as field initialization
+// must be executed in order during Phase 1, and cannot be repeated).
+static
+DefExpr* verifyLoopIsClean(BlockStmt* loop, DefExpr* curField, bool* seenField,
+                           int* index, AggregateType* t) {
+  DefExpr* nextField = curField;
+  Expr* stmt = loop->body.head;
+  while(stmt != NULL) {
+    if (BlockStmt* inner = toBlockStmt(stmt)) {
+      nextField = verifyLoopIsClean(inner, curField, seenField, index, t);
+    }
+    if (const char* fieldname = getFieldName(stmt)) {
+      if (!strcmp(fieldname, curField->sym->name)) {
+        USR_FATAL_CONT(stmt, "can't initialize field \"%s\" inside a loop during phase 1 of initialization", fieldname);
+        seenField[*index] = true;
+        (*index)++;
+        stmt = getNextStmt(stmt, loop);
+      } else if (isLaterFieldAccess(curField, fieldname)) {
+        (*index)++;
+        curField = toDefExpr(curField->next);
+      } else {
+        // Something else invalid has occurred
+        // Should I also warn that it is occuring inside a loop?
+        errorCases(t, curField, fieldname, seenField, stmt);
+        stmt = getNextStmt(stmt, loop);
+      }
+    } else {
+      stmt = getNextStmt(stmt, loop);
+    }
+  }
+  // traverse the statements of the loop.  If one of those statements is also
+  // a loop, make a recursive call
+
+  return nextField;
+}
+
 
 // Takes in the type, the name of the field, and the expr used to initialize it.
 // This will be stored in a Map of type to a Map of fields to init expressions,
