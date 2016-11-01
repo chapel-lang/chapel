@@ -3,5 +3,4 @@ files: insertionSort.dat, selectionSort.dat, bubbleSort.dat
 graphkeys: insertionSort, selectionSort, bubbleSort
 graphtitle: Quadratic sorts on 2^12 bytes of shuffled data
 ylabel: Time (seconds)
-graphname: sorts-quadratics
 
