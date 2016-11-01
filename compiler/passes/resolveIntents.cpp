@@ -47,6 +47,7 @@ static IntentTag constIntentForType(Type* t) {
              t == dtStringCopy ||
              t == dtCVoidPtr ||
              t == dtCFnPtr ||
+             // TODO: t->symbol->hasFlag(FLAG_RANGE) ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
     return INTENT_CONST_IN;
   }

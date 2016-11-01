@@ -160,7 +160,7 @@ CC_FAMILY = @CC_FAMILY@
 CC_SUBFAMILY = @CC_SUBFAMILY@
 CC_UNWRAPPED = @CC_UNWRAPPED@
 CC_WRAPPED = @CC_WRAPPED@
-CFLAGS = @CFLAGS@ @MISC_CFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags) $(strict_proto_flags)
+CFLAGS = @GASNET_OPT_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags) $(strict_proto_flags)
 COMPLETE_INTTYPES_H = @COMPLETE_INTTYPES_H@
 COMPLETE_STDINT_H = @COMPLETE_STDINT_H@
 COMPLETE_SYS_TYPES_H = @COMPLETE_SYS_TYPES_H@
@@ -171,9 +171,8 @@ CPPFLAGS = @CPPFLAGS@
 CROSS_COMPILING = @CROSS_COMPILING@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
-CXXCPPFLAGS = @CXXCPPFLAGS@
 CXXDEPMODE = @CXXDEPMODE@
-CXXFLAGS = @CXXFLAGS@ @MISC_CXXFLAGS@  @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
+CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
 CXX_FAMILY = @CXX_FAMILY@
 CXX_SUBFAMILY = @CXX_SUBFAMILY@
 CXX_UNWRAPPED = @CXX_UNWRAPPED@
@@ -204,6 +203,8 @@ GASNET_INSTALL_CMD = @GASNET_INSTALL_CMD@
 GASNET_MACHINE_DEFINES = @GASNET_MACHINE_DEFINES@
 GASNET_MXM_SPAWNER_CONF = @GASNET_MXM_SPAWNER_CONF@
 GASNET_OFI_SPAWNER_CONF = @GASNET_OFI_SPAWNER_CONF@
+GASNET_OPT_CFLAGS = @GASNET_OPT_CFLAGS@
+GASNET_OPT_CXXFLAGS = @GASNET_OPT_CXXFLAGS@
 GASNET_PERL_BYTESFLAG = @GASNET_PERL_BYTESFLAG@
 GASNET_PERL_LANG = @GASNET_PERL_LANG@
 GASNET_PLATFORM = @GASNET_PLATFORM@
@@ -393,8 +394,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 yod = @yod@
 AUTOMAKE_OPTIONS = foreign 1.4 no-dependencies
-@PLATFORM_ILP32_FALSE@apputils_flags = -DAPPUTILS_OMIT_READWRITE
-@PLATFORM_ILP32_TRUE@apputils_flags = 
+apputils_flags = 
 @BUILDCONFIG_DEBUG_FALSE@BUILDCONFIG_DEFINES = -DAMUDP_NDEBUG=1
 @BUILDCONFIG_DEBUG_TRUE@BUILDCONFIG_DEFINES = -DAMUDP_DEBUG=1
 @BLCR_ENABLED_FALSE@blcr_defines = 
@@ -416,6 +416,7 @@ linkend = $(platform_libraries) $(MANUAL_LIBS)
 @USE_UDP_CONDUIT_TRUE@lib_LIBRARIES = libamudp.a
 headers = \
 	amudp.h			\
+	amudp_const.h		\
 	amudp_internal.h	\
 	amudp_spmd.h		\
 	exc.h			\
@@ -423,9 +424,7 @@ headers = \
 	sockaddr.h		\
 	socket.h		\
 	socklist.h		\
-	sockutil.h		\
-	ueth.h			\
-	ufxp.h
+	sockutil.h		
 
 libamudp_a_SOURCES = \
 	$(headers)		\
@@ -439,7 +438,7 @@ libamudp_a_SOURCES = \
 	socklist.cpp		\
 	sockutil.cpp		
 
-libamudp_a_DEPENDENCIES = $(libamudp_a_SOURCES:%.cpp=%.o)
+libamudp_a_DEPENDENCIES = $(libamudp_a_SOURCES:%.cpp=%.o) $(libamudp_a_SOURCES:%.c=%.o)
 EXTRA_DIST = \
 	Makefile.common 	\
 	Makefile.generic 	\
@@ -449,14 +448,9 @@ EXTRA_DIST = \
 	amudprun.c              \
 	license.txt
 
-@PLATFORM_ILP32_FALSE@testprograms_ILP32only = 
 
 # ---------- test programs -------------
 # all the test executables
-@PLATFORM_ILP32_TRUE@testprograms_ILP32only = \
-@PLATFORM_ILP32_TRUE@    testgetput    		\
-@PLATFORM_ILP32_TRUE@    testreadwrite 
-
 testprograms = \
     testam        		\
     testbounce    		\
@@ -465,7 +459,9 @@ testprograms = \
     testlatencyM   		\
     testping      		\
     testreduce			\
-    $(testprograms_ILP32only)
+    testoutput      		\
+    testgetput    		\
+    testreadwrite 
 
 TESTLOG = `pwd`/.test-results
 TEST_LINE = ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -866,12 +862,12 @@ run-tests: tests
 # make a distribution
 amxdist:
 	@bash -x -c ' \
-         VERSION=`grep "#define AMUDP_LIBRARY_VERSION" $(srcdir)/amudp.h | head -1 | awk '"'"'{ print $$3 }'"'"'` \
+         VERSION=`grep "#define AMUDP_LIBRARY_VERSION" $(srcdir)/amudp_const.h | head -1 | awk '"'"'{ print $$3 }'"'"'` \
          export VERSION ; \
          echo "+++ Building distribution for AMUDP version $${VERSION} +++" && \
 	 rm -Rf amudp$${VERSION}.tar.gz amudp$${VERSION} && \
          mkdir amudp$${VERSION} && \
-         cp $(srcdir)/Makefile* $(srcdir)/*.txt $(srcdir)/*.cpp $(srcdir)/*.c $(srcdir)/*.h $(testdir)/*.[ch]* \
+         cp $(srcdir)/Makefile* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.cpp $(srcdir)/*.c $(srcdir)/*.h $(testdir)/*.[ch]* \
 	    $(altincdir)/portable_inttypes.h $(altincdir)/portable_platform.h \
 	    amudp$${VERSION} && \
          rm -f amudp$${VERSION}/Makefile.in amudp$${VERSION}/Makefile.titanium && \
@@ -905,6 +901,7 @@ $(top_builddir)/libgasnet_tools-seq.a: force
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@            @NM@ --defined-only $$lib |                                             \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@            grep -v -e ' [\._]*amudp_' -e ' [\._]*AMUDP_' -e ' [\._]*AM_'           \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@                    -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
+@GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@                    -e 'get_pc_thunk'                                               \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@                    -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e debug_info_seg |      \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@            @PERL@ -n -e 'print if /^[0-9a-fA-F]+\s+[A-Z]\s+/' > .$$lib.exp;        \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@          if test -s .$$lib.exp ; then                                              \

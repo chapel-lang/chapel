@@ -470,6 +470,15 @@ static void check_afterResolveIntents()
       // Only look at Var or Arg symbols
       if (isLcnSymbol(sym)) {
         QualifiedType qual = sym->qualType();
+        // MPF TODO: This should not be necessary
+        // it is a workaround for problems with --verify
+        // with tuple type constructors accepting domains.
+        // It would be better to treat run-time types as
+        // normal records.
+        if (ArgSymbol* arg = toArgSymbol(sym))
+          if (arg->intent == INTENT_TYPE)
+            continue;
+
         if (qual.getQual() == QUAL_UNKNOWN) {
           INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
         }

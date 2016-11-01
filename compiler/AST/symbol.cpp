@@ -98,6 +98,15 @@ FnSymbol *gPrintModuleInitFn = NULL;
 FnSymbol* gChplHereAlloc = NULL;
 FnSymbol* gChplHereFree = NULL;
 FnSymbol* gChplDoDirectExecuteOn = NULL;
+FnSymbol *gGenericTupleTypeCtor = NULL;
+FnSymbol *gGenericTupleInit = NULL;
+FnSymbol *gGenericTupleDestroy = NULL;
+FnSymbol *gBuildTupleType = NULL;
+FnSymbol *gBuildStarTupleType = NULL;
+FnSymbol *gBuildTupleTypeNoRef = NULL;
+FnSymbol *gBuildStarTupleTypeNoRef = NULL;
+
+
 
 std::map<FnSymbol*,int> ftableMap;
 std::vector<FnSymbol*> ftableVec;

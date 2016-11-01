@@ -110,7 +110,9 @@ static void nonLeaderParCheck()
 static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
 {
   std::vector<CallExpr*> calls;
+
   collectCallExprs(fn, calls);
+
   for_vector(CallExpr, call, calls) {
     if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
         (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
@@ -119,15 +121,20 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
       // If they are not, need issue the USR_FATAL_CONT like below.
       INT_ASSERT(false);
     }
+
     FnSymbol* taskFn = resolvedToTaskFun(call);
+
     bool isParallelConstruct = taskFn &&
-      (taskFn->hasFlag(FLAG_BEGIN) ||
-       taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
+                               (taskFn->hasFlag(FLAG_BEGIN) ||
+                                taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
+
     if (isParallelConstruct ||
         call->isNamed("_toLeader") ||
         call->isNamed("_toStandalone")) {
-      USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
+      USR_FATAL_CONT(call,
+                     "invalid use of parallel construct in serial iterator");
     }
+
     if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
         (call->isPrimitive(PRIM_BLOCK_BEGIN_ON)) ||
         (call->isPrimitive(PRIM_BLOCK_COBEGIN_ON)) ||
@@ -983,17 +990,21 @@ static void convertYieldsAndReturns(std::vector<BaseAST*>& asts, Symbol* index,
 static bool fnContainsOn(FnSymbol* fn)
 {
   std::vector<CallExpr*> calls;
+
   collectCallExprs(fn, calls);
+
   for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_BLOCK_ON) ||
         call->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
         call->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||
         call->isPrimitive(PRIM_BLOCK_COFORALL_ON))
       return true;
+
     if (FnSymbol* taskFn = resolvedToTaskFun(call))
       if (fnContainsOn(taskFn))
         return true;
   }
+
   return false;
 }
 
@@ -1105,11 +1116,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   loopBodyFn->retType = dtVoid;
 
   // Move the loop body function out to the module level.
-  Vec<FnSymbol*> nestedFunctions;
-
-  nestedFunctions.add(loopBodyFn);
-
-  flattenNestedFunctions(nestedFunctions);
+  flattenNestedFunction(loopBodyFn);
 
   FnSymbol* iteratorFn = iteratorFnMap.get(iterator);
 
@@ -1206,6 +1213,7 @@ expandIteratorInline(ForLoop* forLoop) {
     // replaced in the functions below though.
     if (isOrderIndependent) {
       std::vector<CallExpr*> callExprs;
+
       collectCallExprs(ibody, callExprs);
 
       for_vector(CallExpr, call, callExprs) {
@@ -1318,8 +1326,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // while preserving correct scoping of its SymExprs.
         INT_ASSERT(isGlobal(cfn));
 
-        FnSymbol*      fcopy = taskFnCopies.get(cfn);
-        Vec<FnSymbol*> nestedFnVec;
+        FnSymbol* fcopy = taskFnCopies.get(cfn);
 
         if (!fcopy) {
           // Clone the function. Just once per 'body' should suffice.
@@ -1357,9 +1364,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // We do it because it may eliminate further cloning of 'fcopy'
         // e.g. when the enclosing fn or block are copied for any reason.
         // Ideally, replace with flattenOneFunction().
-        nestedFnVec.add(fcopy);
-
-        flattenNestedFunctions(nestedFnVec);
+        flattenNestedFunction(fcopy);
       }
     }
   }
@@ -1378,8 +1383,11 @@ countYieldsInFn(FnSymbol* fn)
 
 {
   unsigned count = 0;
+
   std::vector<CallExpr*> calls;
+
   collectCallExprs(fn, calls);
+
   for_vector(CallExpr, call, calls)
   {
     if (call->isPrimitive(PRIM_YIELD))
@@ -1428,10 +1436,10 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
   getRecursiveIterators(iterators, gIterator);
 
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol*      iterator = getTheIteratorFn(iterators.v[i]);
-    BlockStmt*     block    = iterator->body;
-    Vec<CallExpr*> calls;
-    int            numYields = 0;
+    FnSymbol*              iterator = getTheIteratorFn(iterators.v[i]);
+    BlockStmt*             block    = iterator->body;
+    std::vector<CallExpr*> calls;
+    int                    numYields = 0;
 
     INT_ASSERT(block);
 
@@ -1440,7 +1448,8 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
     // Replace this loop with an equivalent predicate that uses std::vector in
     // a valid fashion.
     collectCallExprs(block, calls);
-    forv_Vec(CallExpr, call, calls) {
+
+    for_vector(CallExpr, call, calls) {
       if (call && call->isPrimitive(PRIM_YIELD)) {
         numYields++;
 
@@ -1553,7 +1562,8 @@ buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator
   }
   CallExpr* call = new CallExpr(fn, iterator);
   if (ret) {
-    if (fn->retType == ret->type) {
+    if (fn->retType->getValType() == ret->type->getValType()) {
+      INT_ASSERT(fn->retType == ret->type);
       block->insertAtTail(new CallExpr(PRIM_MOVE, ret, call));
     } else {
       VarSymbol* tmp = newTemp("retTmp", fn->retType);
@@ -2199,10 +2209,18 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
     if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
       Symbol* tmp1 = newTemp(field->name, field->type);
       Symbol* tmp2 = newTemp(autoCopy->retType);
+      Symbol* refTmp = NULL;
       block->insertAtTail(new DefExpr(tmp1));
       block->insertAtTail(new DefExpr(tmp2));
+      if (isReferenceType(autoCopy->getFormal(1)->type)) {
+        refTmp = newTemp(autoCopy->getFormal(1)->type);
+        block->insertAtTail(new DefExpr(refTmp));
+      }
       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, tmp1)));
+      if (refTmp) {
+        block->insertAtTail(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_ADDR_OF, tmp1)));
+      }
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, refTmp?refTmp:tmp1)));
       block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
     } else {
       Symbol* tmp = newTemp(field->name, field->type);

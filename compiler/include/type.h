@@ -216,6 +216,8 @@ public:
         return "ref";
       case QUAL_CONST_REF:
         return "const-ref";
+      case QUAL_PARAM:
+        return "param";
       case QUAL_VAL:
         return "val";
       case QUAL_NARROW_REF:
@@ -319,6 +321,9 @@ class AggregateType : public Type {
   int getFieldPosition(const char* name, bool fatal = true);
   Symbol* getField(const char* name, bool fatal = true);
   Symbol* getField(int i);
+  // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
+  QualifiedType getFieldType(Expr* e);
+  int numFields() { return fields.length; }
   bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
   bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }
   bool isUnion() { return aggregateTag == AGGREGATE_UNION; }

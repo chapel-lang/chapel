@@ -17,4 +17,5 @@ See the first CHIP for an overview.
 * [13 When Do Record and Array Copies Occur](13.rst)
 * [14 Chapel stack traces](14.rst)
 * [15 Chapel Incremental Compilation](15.rst)
+* [16 Optimizing Record and Array Copies in Chapel](16.rst)
 

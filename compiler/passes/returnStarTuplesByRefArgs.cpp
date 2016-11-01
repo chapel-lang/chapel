@@ -35,6 +35,13 @@ void returnStarTuplesByRefArgs() {
     if ((fn->retType->symbol->hasFlag(FLAG_STAR_TUPLE))) {
       SET_LINENO(fn);
 
+      // MPF 2016-10-02: I expect this code is no longer necessary
+      // since star tuples should be returned through a reference
+      // along with other records in callDestructors.
+      //
+      // Even so, this code still seems to run with --baseline.,
+      // so figuring out how to remove it remains a TODO..
+
       //
       // change function interface to take a reference
       //

@@ -91,6 +91,7 @@ static int id = 0;
 #endif
 
 static void mutex_test(int id);
+static void rwlock_test(int id);
 static void spinlock_test(int id);
 static void cond_test(int id);
 static void semaphore_test(int id);
@@ -139,6 +140,9 @@ extern int gasneti_run_diagnostics(int iter_cnt, int threadcnt, const char *test
 
   BARRIER();
   TEST_HEADER("gasneti_cond_t test") cond_test(0);
+
+  BARRIER();
+  TEST_HEADER("gasneti_rwlock_t test") rwlock_test(0);
 
   BARRIER();
   spinlock_test(0);
@@ -212,9 +216,14 @@ static void malloc_test(int id) {
     PTHREAD_LOCALBARRIER(num_threads);
   }
 
+  // bug 2788: try to isolate this test from conduit allocations that may take place during global barrier
+  sleep(1);
+  gasnet_AMPoll();
+  PTHREAD_LOCALBARRIER(num_threads);
+
   if (!id) gasneti_getheapstats(&stats_before);
     
-  PTHREAD_BARRIER(num_threads);
+  PTHREAD_LOCALBARRIER(num_threads);
 
   gasneti_memcheck_all();
   ptrs = gasneti_malloc_allowfail(8);
@@ -225,7 +234,7 @@ static void malloc_test(int id) {
   gasneti_free(ptrs);
   gasneti_free(NULL);
 
-  PTHREAD_BARRIER(num_threads);
+  PTHREAD_LOCALBARRIER(num_threads);
   
   maxobjs = MIN(iters0,10000/num_threads);
   ptrs = gasneti_calloc(maxobjs,sizeof(void*));
@@ -268,7 +277,7 @@ static void malloc_test(int id) {
   gasneti_free(ptrs);
   gasneti_memcheck_all();
 
-  PTHREAD_BARRIER(num_threads);
+  PTHREAD_LOCALBARRIER(num_threads);
 
   for (i = 0; i < iters/num_threads; i++) {
     int alignsz;
@@ -286,7 +295,7 @@ static void malloc_test(int id) {
   }
   gasneti_memcheck_all();
 
-  PTHREAD_BARRIER(num_threads);
+  PTHREAD_LOCALBARRIER(num_threads);
 
   if (!id) {
     gasneti_getheapstats(&stats_after);
@@ -309,6 +318,9 @@ static void malloc_test(int id) {
     }
     #endif
   }
+
+  sleep(1);
+
   PTHREAD_BARRIER(num_threads);
 }
 /* ------------------------------------------------------------------------------------ */
@@ -372,7 +384,8 @@ static void mutex_test(int id) {
 
   PTHREAD_BARRIER(num_threads);
 
-    if (!id) {
+  if (!id) {
+    for (i=0; i<10; i++) {
       gasneti_mutex_assertunlocked(&lock1);
       gasneti_mutex_lock(&lock1);
       gasneti_mutex_assertlocked(&lock1);
@@ -390,11 +403,9 @@ static void mutex_test(int id) {
       gasneti_mutex_unlock(&lock2);
       gasneti_mutex_assertunlocked(&lock2);
       gasneti_mutex_destroy(&lock2);
-      gasneti_mutex_init(&lock2);
-      gasneti_mutex_assertunlocked(&lock2);
-
-      counter = 0;
     }
+    counter = 0;
+  }
 
   PTHREAD_BARRIER(num_threads);
 
@@ -415,6 +426,122 @@ static void mutex_test(int id) {
 
     if (counter != (num_threads * count)) 
       ERR("failed mutex test: counter=%i expecting=%i", counter, (num_threads * count));
+
+  PTHREAD_BARRIER(num_threads);
+}
+/* ------------------------------------------------------------------------------------ */
+static void rwlock_test(int id) {
+  static gasneti_rwlock_t lock1 = GASNETI_RWLOCK_INITIALIZER;
+  static gasneti_rwlock_t lock2;
+  #define NUMCHECK 256
+  static unsigned int check[NUMCHECK];
+  static unsigned int *numwrites;
+  unsigned int count = iters2 / num_threads;
+  int i;
+  int trywrite = 0;
+
+  PTHREAD_BARRIER(num_threads);
+
+  if (!id) { /* serial tests */
+    for (i=0; i<10; i++) {
+      gasneti_rwlock_assertunlocked(&lock1);
+      gasneti_rwlock_rdlock(&lock1);
+      gasneti_rwlock_assertlocked(&lock1);
+      gasneti_rwlock_assertrdlocked(&lock1);
+      gasneti_rwlock_unlock(&lock1);
+      gasneti_rwlock_assertunlocked(&lock1);
+      gasneti_rwlock_wrlock(&lock1);
+      gasneti_rwlock_assertlocked(&lock1);
+      gasneti_rwlock_assertwrlocked(&lock1);
+      gasneti_rwlock_unlock(&lock1);
+      gasneti_rwlock_assertunlocked(&lock1);
+
+      assert_always(gasneti_rwlock_tryrdlock(&lock1) == GASNET_OK);
+      gasneti_rwlock_assertlocked(&lock1);
+      gasneti_rwlock_assertrdlocked(&lock1);
+      gasneti_rwlock_unlock(&lock1);
+      assert_always(gasneti_rwlock_trywrlock(&lock1) == GASNET_OK);
+      gasneti_rwlock_assertlocked(&lock1);
+      gasneti_rwlock_assertwrlocked(&lock1);
+      gasneti_rwlock_unlock(&lock1);
+
+      gasneti_rwlock_init(&lock2);
+      gasneti_rwlock_assertunlocked(&lock2);
+      gasneti_rwlock_rdlock(&lock2);
+      gasneti_rwlock_assertlocked(&lock2);
+      gasneti_rwlock_assertrdlocked(&lock2);
+      gasneti_rwlock_unlock(&lock2);
+      gasneti_rwlock_wrlock(&lock2);
+      gasneti_rwlock_assertlocked(&lock2);
+      gasneti_rwlock_assertwrlocked(&lock2);
+      gasneti_rwlock_unlock(&lock2);
+      gasneti_rwlock_assertunlocked(&lock2);
+      gasneti_rwlock_destroy(&lock2);
+    }
+    numwrites = gasneti_calloc(num_threads, sizeof(*numwrites));
+    memset(check, 0, sizeof(check));
+  }
+
+  PTHREAD_BARRIER(num_threads);
+
+    for (i=0;i<count;i++) {
+      int j;
+      const int writer = ((id + i + 1) & 0xFF) == 1; /* early and infrequent writes */
+      if (writer) { /* write lock */
+        if (trywrite++ & 1) {
+          int retval;
+          while ((retval=gasneti_rwlock_trywrlock(&lock1)) != 0) {
+            assert_always(retval == EBUSY);
+          }
+        } else {
+          gasneti_rwlock_wrlock(&lock1);
+        }
+        gasneti_rwlock_assertwrlocked(&lock1);
+        /* perform writes */
+        for (j=NUMCHECK-1; j >= 0; j--) {
+          check[j]++;
+        }
+        numwrites[id]++;
+      }
+      if (!writer) { /* read lock */
+        if (i & 1) {
+          int retval;
+          while ((retval=gasneti_rwlock_tryrdlock(&lock1)) != 0) {
+            assert_always(retval == EBUSY);
+          }
+        } else {
+          gasneti_rwlock_rdlock(&lock1);
+        }
+        gasneti_rwlock_assertrdlocked(&lock1);
+      }
+      { /* read-only check */
+        const unsigned int val = check[0]; /* try to detect a concurrent writer */
+        int k;
+        for (j=0; j < 10; j++) {
+          for (k=0; k < NUMCHECK; k++) {
+            unsigned int cv = check[k];
+            if_pf (cv != val)
+             ERR("failed rwlock test: check[%i]=%i expecting=%i", k, cv, val);
+          }
+        }
+      }
+
+      gasneti_rwlock_unlock(&lock1);
+    }
+
+  PTHREAD_BARRIER(num_threads);
+
+    if (!id) { /* final verification */
+      int sum = 0;
+      for (i=0; i < num_threads; i++) sum += numwrites[i];
+      assert_always(sum > 0);
+      for (i=0; i < NUMCHECK; i++) {
+        unsigned int cv = check[i];
+        if_pf (cv != sum)
+          ERR("failed rwlock test: check[%i]=%i expecting=%i", i, cv, sum);
+      }  
+      gasneti_free(numwrites);
+    }
 
   PTHREAD_BARRIER(num_threads);
 }
@@ -1015,6 +1142,9 @@ static void * thread_fn(void *arg) {
 
   PTHREAD_BARRIER(num_threads);
   TEST_HEADER("gasneti_cond_t test") cond_test(id);
+
+  PTHREAD_BARRIER(num_threads);
+  TEST_HEADER("gasneti_rwlock_t test") rwlock_test(id);
 
   PTHREAD_BARRIER(num_threads);
   spinlock_test(id);

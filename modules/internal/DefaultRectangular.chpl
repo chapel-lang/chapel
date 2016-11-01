@@ -65,14 +65,21 @@ module DefaultRectangular {
 
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
+
+    proc trackDomains() param return false;
+    proc dsiTrackDomains()    return false;
+
+    proc singleton() param return true;
   }
 
   //
   // Replicated copies are set up in chpl_initOnLocales() during locale
   // model initialization
   //
-  pragma "locale private" var defaultDist = new dmap(new DefaultDist());
-   proc chpl_defaultDistInitPrivate() {
+  pragma "locale private"
+  var defaultDist = new dmap(new DefaultDist());
+
+  proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
       // FIXME benharsh: Here's what we want to do:
       //   defaultDist = new dmap(new DefaultDist());
@@ -97,6 +104,10 @@ module DefaultRectangular {
 
     proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
       this.dist = dist;
+    }
+
+    proc dsiMyDist() {
+      return dist;
     }
 
     proc dsiDisplayRepresentation() {
@@ -674,7 +685,13 @@ module DefaultRectangular {
     // can the compiler create this automatically?
     proc dsiGetBaseDom() return dom;
 
-    proc dsiDestroyData() {
+    proc dsiDestroyArr(isalias:bool) {
+
+      // data in an array alias will be destroyed when the original array
+      // is destroyed.
+      if isalias then
+        return;
+
       if dom.dsiNumIndices > 0 {
         pragma "no copy" pragma "no auto destroy" var dr = data;
         pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
@@ -1032,6 +1049,9 @@ module DefaultRectangular {
         }
         alias.computeFactoredOffs();
         alias.initShiftedData();
+
+        // it won't work with this.adjustBlkOffStrForNewDomain(d, alias)
+        alias.adjustBlkOffStrForNewDomain(d, alias);
       }
       return alias;
     }
@@ -1081,7 +1101,7 @@ module DefaultRectangular {
         str = copy.str;
         origin = copy.origin;
         factoredOffs = copy.factoredOffs;
-        dsiDestroyData();
+        dsiDestroyArr(false);
         data = copy.data;
         // We can't call initShiftedData here because the new domain
         // has not yet been updated (this is called from within the

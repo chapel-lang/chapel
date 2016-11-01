@@ -1,5 +1,77 @@
 GASNet ChangeLog 
 ----------------
+----------------------------------------------------------------------
+10-21-2016 : Release 1.28.0
+
+* Cray uGNI (gemini- and aries-conduits)
+  - Updated instructions for configuring with SLURM's srun
+  - Modified linker flags for compatibility with dynamic libraries
+
+* Intel OmniPath PSM2 (psm-conduit)
+  - Improved handling of multi-threaded and abnormal exits
+  - Support for PSHM supernode size less than procs/node
+  - Fix bug 3340 - Assertion failure at gasnete_op_markdone()
+  - Work-around bugs 3333 and 3342
+    Note that the work-around for bug 3342 has resulted in a loss
+    of performance for Puts larger than 16KB, relative to previous
+    releases.  We are actively working to restore the prior level
+    of performance in a future patch release.  Please see
+    psm-conduit/README for more detailed information.
+
+* Mellanox ConnectX series HCAs (mxm-conduit)
+  - Enable zero copy in bulk put operations
+  - Fix bug 3344 - mxm-seq link failures
+
+* InfiniBand Verbs (ibv-conduit)
+  - Fixed error in default barrier exposed by libverbs on Omni-Path HCAs
+
+* Libfabric (ofi-conduit)
+  - Improved handling of abnormal exits
+  - Corrected default libfabric installation location to be /usr
+
+* Portable UDP (udp-conduit)
+  - Restructure network buffer management to provide scalable
+    buffer memory utilization to thousands of nodes and beyond.
+  - Adjust the set of available environment tuning knobs for better control of
+    transfer performance at scale. See udp-conduit/README
+  - Adjust default transfer parameters for better performance on 1GbE
+  - Numerous misc changes to improve performance
+  - Improve stdout/stderr routing to be more robust and use fewer descriptors
+  - Restructure AMUDP headers to reduce namespace clutter
+  - Fix a compatibility issue with Cray CNL
+  - Fix a use-after-free bug in argument processing
+
+* Platform support/portability
+  - Cygwin-2.x
+    + Improved performance of mutexes
+    + Improved backtrace support
+    + Fix for compilation issues with Clang
+  - Cray Compilers
+    + Suppress benign (or incorrect) warnings from recent CCE compilers
+  - PGI Compilers
+    + Fix bug 3324 by working around a bug in pgcc-16.4 and newer.
+  - Pathscale/Ekopath Compilers
+    + Fix bug 3343 by working around a bug in version 5.x compilers
+  - GNU Autotools
+    + Fix bug 3285 - issues with recent automake versions
+  - Intel Second Generation Xeon Phi (aka Knights Landing)
+    + Now provide an initial cross-configure-intel-knl script
+  - Configure script
+    + Options --disable-psm, --disable-gemini and --disable-aries now FULLY
+      disable the corresponding configure probes
+
+* GASNet tools (spec v1.9)
+  - Add a tools wrapper for POSIX reader-writer locks (gasnett_rwlock_t)
+
+* General and Misc.
+  - GASNet now requires that the backend C compilers provided to configure
+    ($CC and $MPI_CC, if provided) must support a few widely-implemented C99
+    features.  See bug 3307 for details.
+  - GASNet release version compatibility between client objects and library
+    is now enforced at link time, to ensure correct operation.
+  - Apply optional MANUAL_* make flags more consistently (see README)
+  - Cleanup extern "C" in public headers for more robust C++ client support
+  - Numerous minor fixes to silence harmless warnings on various systems
 
 ----------------------------------------------------------------------
 08-01-2016 :  Release 1.26.4

@@ -81,6 +81,8 @@ General (see also portability section at the bottom of this file)
   # types/records/ferguson/leak-futures/iterate-loop-break2.future
   # types/records/ferguson/leak-futures/iterate-twice-break.future
   # types/records/ferguson/leak-futures/record-in-record-generic.future
+  # arrays/ferguson/semantic-examples/4-init-class-field.future
+  # arrays/ferguson/semantic-examples/4-init-record-field.future
 - Separate compilation of Chapel files is not supported.
   # separate_compilation/jturner/array.future
   # separate_compilation/jturner/use_array.future
@@ -139,7 +141,6 @@ Types, Params, Variables, and Consts
   and/or type inference may result in an internal compiler error.
   # functions/deitz/test_outoforder.future
 - Constant checking is incomplete.
-  # arrays/bradc/refArray3.future
   # domains/bradc/assignConstDom2.future
   # domains/bradc/assignConstDom.future
   # types/records/const-checking/todo-multiple-asgn-errors.future
@@ -251,8 +252,6 @@ Functions and Iterators
   # functions/nspark/generic-varargs2.future
 - Array-of-array formal argument declarations do not work.
   # arrays/bradc/arrayOfArrayArg.future
-- Arrays returned from a ref function result in memory corruption.
-  # arrays/vass/setter-assigned-to-a-var.future
 - Returning arrays from getter/setter functions always uses the setter version
   # functions/bharshbarg/arr-ref-return.future
 - Function argument with type tuple of generic class results in a
@@ -285,9 +284,6 @@ Functions and Iterators
 - Ref functions that return fields from a record argument passed by
   blank intent may produce incorrect results.
   # optimizations/copyPropagation/cp-problem1.future
-- Blank argument intent should be const ref for records, not make a copy
-  # functions/ferguson/record-const-ref-default.future
-  # functions/ferguson/record-const-ref-default-inline.future
 - Type functions with unambiguous return paths may result in "illegal
   cast" errors.
   # users/weili/typefnbug.future
@@ -484,9 +480,6 @@ Classes, Records, and Unions
   # users/ferguson/recordEquivalence.future
 - Array alias arguments to constructors fail to compile.
   # arrays/diten/constructorArrayAliasReindex.future
-- Atomics are not passed by ref by default
-  # functions/bradc/intents/test_construct_atomic_intent.future
-  # functions/iterators/tzakian/atomic_pass_by_ref_leader_follower_iterator.future
 - Atomic operations don't promote cleanly to whole arrays
   # types/atomic/albrecht/arrayatomics.future
 - Using a comparison operator with a record and 'nil' results in an
@@ -545,7 +538,6 @@ Domain Maps, Domains and Arrays
   # arrays/bradc/refArray1.future
   # arrays/diten/replaceArrayAccess/arrayAlias.future
   # arrays/diten/replaceArrayAccess/arrayAlias2.future
-  # arrays/ferguson/choose-array/choose-array2.future
   # arrays/ferguson/choose-array/choose-array10.future
   # distributions/vass/dmap-var-decl.future
   # studies/graph500/v1/main.future
@@ -618,7 +610,12 @@ Domain Maps, Domains and Arrays
 - Associative arrays with associative array element types result in a
   runtime error.
   # arrays/johnk/associative/recursive.future
-
+- Returning a runtime type computed from a local variable does not work
+  # types/type_variables/ferguson/returning-runtime-type-from-local.future
+- Array type expressions evaluate the domain portion twice
+  # types/type_variables/ferguson/runtime-type-call-print.future
+- Slicing a dimensional array with a different type of domain fails
+ # distributions/dm/sx8.future
 
 Task Parallelism and Synchronization
 ------------------------------------
@@ -698,8 +695,6 @@ Data Parallelism
   # parallel/forall/in-intents/both-arr-dom-const-var.future
   # parallel/forall/in-intents/both-arr-dom-var-const.future
   # parallel/forall/in-intents/domain-var-var.future
-- Default forall intent for records results in extra record copies
-  # parallel/forall/vass/default-intent-record-with-int-field.future
 - Iterating over a range where bound+stride overflows the index type
   results in runtime halt
   # users/bguarraci/for_byte.future
@@ -732,11 +727,6 @@ Standard Modules, Standard Distributions, and Standard Layouts
 
 Input and Output
 ----------------
-- Input of whole arrays is not implemented.
-  Workaround: use a loop, e.g., for e in A do read(e);
-  # types/file/fileIO.future
-- Reading of tuple types not supported.
-  # io/bradc/readTuple.future
 - Printing of replicated arrays may not work properly.
   # io/vass/writeThis-on.future
 - Using 'on' in a writeThis() method can lead to a deadlock.
@@ -852,10 +842,6 @@ chpldoc
 
 Developer
 ---------
-- chpl__autoCopy() and chpl__initCopy() functions and callees cannot
-  contain begin statements.
-  # parallel/begin/sungeun/autoCopyWithBegin.future
-  # parallel/begin/sungeun/initCopyWithBegin.future
 - User defined chpl__initCopy() function are ignored in the
   removeUnnecessaryAutoCopyCalls pass.
   # classes/hilde/alwaysOverrideCopyInit.future

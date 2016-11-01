@@ -72,8 +72,7 @@ GASNETI_INLINE(gasnete_syncnb_array)
 int gasnete_syncnb_array(gasnet_handle_t *phandle, size_t numhandles)
 {
 #if GASNET_DEBUG
-  int i;
-  for (i=0; i<numhandles; ++i)
+  for (size_t i=0; i<numhandles; ++i)
     gasneti_assert(phandle[i] == GASNET_INVALID_HANDLE);
 #endif
   gasneti_sync_reads();

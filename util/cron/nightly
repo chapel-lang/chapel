@@ -523,7 +523,7 @@ if ($buildruntime == 0) {
     $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $nochangerecipient";
 
-    if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
+    if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
         print "Mailing to minimal group\n";
         open(MAIL, $mailcommand);
 
@@ -713,7 +713,7 @@ if ($runtests == 0) {
     $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
-    if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
+    if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
         open(MAIL, $mailcommand);
 
         print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");

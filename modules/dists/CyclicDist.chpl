@@ -177,8 +177,6 @@ class Cyclic: BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
 
-  var pid: int = -1;
-
   proc Cyclic(startIdx,
              targetLocales: [] locale = Locales,
              dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -240,16 +238,6 @@ class Cyclic: BaseDist {
       for loc in locDist do writeln(loc);
   }
 
-  proc Cyclic(param rank, type idxType, other: Cyclic(rank, idxType)) {
-    targetLocDom = other.targetLocDom;
-    targetLocs = other.targetLocs;
-    startIdx = other.startIdx;
-    locDist = other.locDist;
-    dataParTasksPerLocale = other.dataParTasksPerLocale;
-    dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
-    dataParMinGranularity = other.dataParMinGranularity;
-  }
-
   proc dsiAssign(other: this.type) {
     coforall locid in targetLocDom do
       on targetLocs(locid) do
@@ -274,7 +262,20 @@ class Cyclic: BaseDist {
     return false;
   }
 
-  proc dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
+  proc dsiClone() {
+    return new Cyclic(startIdx, targetLocs,
+                      dataParTasksPerLocale,
+                      dataParIgnoreRunningTasks,
+                      dataParMinGranularity);
+  }
+
+  proc dsiDestroyDist() {
+    coforall ld in locDist do {
+      on ld do
+        delete ld;
+    }
+  }
+
 }
 
 
@@ -316,7 +317,10 @@ proc Cyclic.dsiSupportsPrivatization() param return true;
 proc Cyclic.dsiGetPrivatizeData() return 0;
 
 proc Cyclic.dsiPrivatize(privatizeData) {
-  return new Cyclic(rank=rank, idxType=idxType, other=this);
+  return new Cyclic(startIdx, targetLocs,
+                    dataParTasksPerLocale,
+                    dataParIgnoreRunningTasks,
+                    dataParMinGranularity);
 }
 
 proc Cyclic.dsiGetReprivatizeData() return 0;
@@ -491,8 +495,6 @@ class CyclicDom : BaseRectangularDom {
   var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
 
   var whole: domain(rank, idxType, stridable);
-
-  var pid: int = -1;
 }
 
 
@@ -510,6 +512,13 @@ proc CyclicDom.setup() {
       }
     }
   }
+}
+
+proc CyclicDom.dsiDestroyDom() {
+    coforall localeIdx in dist.targetLocDom {
+      on dist.targetLocs(localeIdx) do
+        delete locDoms(localeIdx);
+    }
 }
 
 proc CyclicDom.dsiBuildArray(type eltType) {
@@ -713,7 +722,6 @@ class CyclicArr: BaseArr {
 
   var locArr: [dom.dist.targetLocDom] LocCyclicArr(eltType, rank, idxType, stridable);
   var myLocArr: LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1;
   const SENTINEL = max(rank*idxType);
 }
 
@@ -871,6 +879,14 @@ proc CyclicArr.setup() {
     }
   }
   if doRADOpt && disableCyclicLazyRAD then setupRADOpt();
+}
+
+proc CyclicArr.dsiDestroyArr(isslice:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
 }
 
 proc CyclicArr.dsiSupportsPrivatization() param return true;

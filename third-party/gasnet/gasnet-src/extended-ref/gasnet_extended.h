@@ -16,8 +16,6 @@
 #include <gasnet_extended_help.h>
 #include <gasnet_coll.h>
 
-GASNETI_BEGIN_EXTERNC
-
 /*  TODO: add debug code to enforce restrictions on SEQ and PARSYNC config */
 /*        (only one thread calls, HSL's only locked by that thread - how to check without pthread_getspecific()?) */
 /* ------------------------------------------------------------------------------------ */
@@ -448,7 +446,7 @@ int _gasnet_try_syncnbi_all(GASNETE_THREAD_FARG_ALONE) {
 
 #if GASNETI_DIRECT_WAIT_SYNCNBI_GETS
   extern void gasnete_wait_syncnbi_gets(GASNETE_THREAD_FARG_ALONE);
-#elif !defined(gasnete_wait_syncnbi_puts)
+#elif !defined(gasnete_wait_syncnbi_gets)
   #define gasnete_wait_syncnbi_gets \
     gasneti_pollwhile(gasnete_try_syncnbi_gets(GASNETE_THREAD_GET_ALONE) == GASNET_ERR_NOT_READY) \
     GASNETE_THREAD_SWALLOW
@@ -830,7 +828,5 @@ extern int gasnet_barrier_try(int id, int flags);
 extern int gasnet_barrier(int id, int flags);
 extern int gasnet_barrier_result(int *id);
 /* ------------------------------------------------------------------------------------ */
-
-GASNETI_END_EXTERNC
 
 #endif

@@ -3,9 +3,6 @@
  * Copyright 2006, Dan Bonachea <bonachea@cs.berkeley.edu>
  */
 
-#include <amudp.h>
-#include <amudp_spmd.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +10,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef AMUDP_BLCR_ENABLED /* bug 3328: avoid broken clang/Cygwin header */
 #include <dirent.h>
+#endif
 
 #ifdef HAVE_GASNET_TOOLS
 #define GASNETT_LITE_MODE /* preserves AMUDP's threading neutrality */
@@ -21,6 +20,9 @@
 #else
 #include <ctype.h>
 #endif
+
+#include <amudp.h>
+#include <amudp_spmd.h>
 
 static const char *argvzero;
 static void Usage(const char *msg) {
@@ -34,7 +36,7 @@ static void Usage(const char *msg) {
     "  -depth D  Use network depth D\n"
     "  -v        Enable verbose mode spawn\n"
     "  -h        Show this help\n\n"
-    , argvzero, _STRINGIFY(AMUDP_LIBRARY_VERSION), argvzero);
+    , argvzero, AMUDP_LIBRARY_VERSION_STR, argvzero);
 #ifdef AMUDP_BLCR_ENABLED
   fprintf(stderr, 
     "Usage: %s -restart <checkpoint_directory>\n\n"

@@ -1,0 +1,3 @@
+Expecting to fail with new array rules
+
+array deallocated before begin using it might complete 

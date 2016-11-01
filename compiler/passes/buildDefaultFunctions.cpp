@@ -970,6 +970,12 @@ static void build_extern_assignment_function(Type* type)
 // If the coercion is permissible, then the operand can be statically cast to
 // the target type.
 static void build_record_cast_function(AggregateType* ct) {
+
+  // Don't do this for tuples.
+  // Tuple cast function is generated during resolution.
+  if (ct->symbol->hasFlag(FLAG_TUPLE))
+    return;
+
   FnSymbol* fn = new FnSymbol("_cast");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
@@ -1402,6 +1408,10 @@ void buildDefaultDestructor(AggregateType* ct) {
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_DESTRUCTOR);
   fn->addFlag(FLAG_INLINE);
+
+  if (ct->symbol->hasFlag(FLAG_TUPLE))
+    gGenericTupleDestroy = fn;
+
   fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->addFlag(FLAG_METHOD);

@@ -211,6 +211,13 @@ Expr* buildNamedActual(const char* name, Expr* expr) {
 Expr* buildNamedAliasActual(const char* name, Expr* expr) {
   return new CallExpr(PRIM_ACTUALS_LIST,
            new NamedExpr(name, expr),
+           // if we wanted to support expr being another variable,
+           // we could call newAlias on it. For now, the only supported
+           // actuals for this are
+           //   * a local variable declared as an alias with =>
+           //   * a call expression creating an array slice
+           // and additionally, for now the field to be initialized
+           // in this way must have a declared array type.
            new NamedExpr(astr("chpl__aliasField_", name), new SymExpr(gTrue)));
 }
 
@@ -583,6 +590,22 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
 BlockStmt*
 buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   VarSymbol* tmp = newTemp();
+  // MPF - without FLAG_NO_COPY, normalize adds an initCopy here,
+  // but that initCopy is unnecessary because each variable will
+  // be initialized with a tuple element (and initCopy called then).
+  // For the case where type==NULL, it was causing type mismatch
+  // errors; but when type!=NULL, normalize will change to
+  // defaultOf/assign anyway and there isn't a type issue
+  if (type == NULL) {
+    tmp->addFlag(FLAG_NO_COPY);
+
+    // additionally, don't auto-destroy tmp if the RHS
+    // is another variable (vs a call).
+    // This does not correctly handle certain no-parens calls. See
+    // tuple-string-bug.chpl and tuple-string-bug-noparens.chpl
+    if (!isCallExpr(init))
+      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+  }
   int count = 1;
   for_alist(expr, tupleBlock->body) {
     if (DefExpr* def = toDefExpr(expr)) {
@@ -694,30 +717,26 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
 
   FnSymbol* ifFn = new FnSymbol(astr("_if_fn", istr(uid++)));
   ifFn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  ifFn->addFlag(FLAG_IF_EXPR_FN);
   ifFn->addFlag(FLAG_INLINE);
   VarSymbol* tmp1 = newTemp();
-  VarSymbol* tmp2 = newTemp();
   tmp1->addFlag(FLAG_MAYBE_PARAM);
-  tmp2->addFlag(FLAG_MAYBE_TYPE);
 
   ifFn->addFlag(FLAG_MAYBE_PARAM);
   ifFn->addFlag(FLAG_MAYBE_TYPE);
+  ifFn->addFlag(FLAG_MAYBE_REF);
   ifFn->insertAtHead(new DefExpr(tmp1));
-  ifFn->insertAtHead(new DefExpr(tmp2));
   ifFn->insertAtTail(new CallExpr(PRIM_MOVE, new SymExpr(tmp1), new CallExpr("_cond_test", e)));
   ifFn->insertAtTail(new CondStmt(
     new SymExpr(tmp1),
-    new CallExpr(PRIM_MOVE,
-                 new SymExpr(tmp2),
+    new CallExpr(PRIM_RETURN,
                  new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIM_DEREF, e1))),
-    new CallExpr(PRIM_MOVE,
-                 new SymExpr(tmp2),
+                              e1)),
+    new CallExpr(PRIM_RETURN,
                  new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIM_DEREF, e2)))));
-  ifFn->insertAtTail(new CallExpr(PRIM_RETURN, tmp2));
+                              e2))));
   return ifFn;
 }
 
@@ -865,13 +884,11 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, Exp
   thenStmt->insertAtTail(new DefExpr(arrayType));
   Symbol* domain = newTemp("_domain");
   domain->addFlag(FLAG_EXPR_TEMP);
+  domain->addFlag(FLAG_NO_AUTO_DESTROY);
   thenStmt->insertAtTail(new DefExpr(domain));
-  // note that we need the below autoCopy until we start reference
-  // counting domains within runtime array types
   thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, domain,
-                           new CallExpr("chpl__autoCopy",
                              new CallExpr("chpl__ensureDomainExpr",
-                                          iteratorExprArg))));
+                                          iteratorExprArg)));
   if (hasSpecifiedIndices) {
     // we want to swap something like the below commented-out
     // statement with the compiler error statement but skyline
@@ -914,8 +931,9 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
+  iterator->addFlag(FLAG_MAYBE_REF);
   block->insertAtTail(new DefExpr(iterator));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExprArg)));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorExprArg));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
@@ -1047,6 +1065,7 @@ static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
 
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  fn->addFlag(FLAG_MAYBE_ARRAY_TYPE);
 
   // MPF: We'll add the iteratorExpr to the call, so we need an
   // argument to accept it in the new function. This way,
@@ -1068,8 +1087,9 @@ static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
+  iterator->addFlag(FLAG_MAYBE_REF);
   block->insertAtTail(new DefExpr(iterator));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExprArg)));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorExprArg));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
@@ -1298,6 +1318,9 @@ buildStandaloneForallLoopStmt(Expr* indices,
   VarSymbol* saIdxCopy = newTemp("chpl__saIdxCopy");
 
   iterRec->addFlag(FLAG_CHPL__ITER);
+  iterRec->addFlag(FLAG_MAYBE_REF);
+  iterRec->addFlag(FLAG_EXPR_TEMP);
+
   saIter->addFlag(FLAG_EXPR_TEMP);
   saIdx->addFlag(FLAG_INDEX_OF_INTEREST);
   saIdx->addFlag(FLAG_INDEX_VAR);
@@ -1308,7 +1331,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABlock->insertAtTail(new DefExpr(iterRec));
   SABlock->insertAtTail(new DefExpr(saIter));
   SABlock->insertAtTail(new DefExpr(saIdx));
-  SABlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr);
+  SABlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
   SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", saIter, iterRec);
   SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", saIdx, saIter);
 
@@ -1412,7 +1435,7 @@ buildForallLoopStmt(Expr*      indices,
   resultBlock->insertAtTail(new DefExpr(leadIter));
   resultBlock->insertAtTail(new DefExpr(leadIdx));
 
-  resultBlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr->copy());
+  resultBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr->copy()));
 
   if (zippered == false)
     resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))",    leadIter, iterRec);

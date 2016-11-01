@@ -23,4 +23,9 @@ writeln(A4);
 writeln(dist_eq(A1.domain.dist, D1.dist));
 writeln(dist_eq(A2.domain.dist, D2.dist));
 writeln(dist_eq(A3.domain.dist, D3.dist));
-writeln(dist_neq(A4.domain.dist, D1.dist));
+
+// since DefaultDist is a singleton, neq would return false
+if distType == DistType.default then
+  writeln(true);
+else
+  writeln(dist_neq(A4.domain.dist, D1.dist));

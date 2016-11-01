@@ -55,7 +55,7 @@ amxdist:
          echo "+++ Building distribution for AMMPI version $${VERSION} +++" && \
          rm -Rf ammpi$${VERSION}.tar.gz ammpi$${VERSION} && \
          mkdir ammpi$${VERSION} && \
-         cp $(srcdir)/Makefile* $(srcdir)/*.txt $(srcdir)/*.[ch]* $(testdir)/*.[ch]* \
+         cp $(srcdir)/Makefile* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.[ch]* $(testdir)/*.[ch]* \
 	    $(altincdir)/portable_inttypes.h $(altincdir)/portable_platform.h \
 	    ammpi$${VERSION} && \
          rm -f ammpi$${VERSION}/Makefile.in ammpi$${VERSION}/Makefile.titanium && \

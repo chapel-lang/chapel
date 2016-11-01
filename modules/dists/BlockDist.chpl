@@ -312,7 +312,6 @@ class Block : BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
   type sparseLayoutType = DefaultDist;
-  var pid: int = -1; // privatized object id (this should be factored out)
 }
 
 //
@@ -346,7 +345,6 @@ class BlockDom: BaseRectangularDom {
   const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
 }
 
 //
@@ -385,7 +383,6 @@ class BlockArr: BaseArr {
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
 
@@ -510,7 +507,7 @@ proc Block.dsiClone() {
                    sparseLayoutType);
 }
 
-proc Block.dsiDestroyDistClass() {
+proc Block.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
@@ -973,6 +970,13 @@ proc BlockDom.setup() {
   }
 }
 
+proc BlockDom.dsiDestroyDom() {
+  coforall localeIdx in dist.targetLocDom do {
+    on locDoms(localeIdx) do
+      delete locDoms(localeIdx);
+  }
+}
+
 proc BlockDom.dsiMember(i) {
   return whole.member(i);
 }
@@ -1052,6 +1056,14 @@ proc BlockArr.setup() {
   }
 
   if doRADOpt && disableBlockLazyRAD then setupRADOpt();
+}
+
+proc BlockArr.dsiDestroyArr(isslice:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
 }
 
 inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {

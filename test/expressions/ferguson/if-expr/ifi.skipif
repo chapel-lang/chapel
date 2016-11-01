@@ -1,0 +1,2 @@
+# skip this version in baseline testing so it fails
+COMPOPTS <= --baseline
