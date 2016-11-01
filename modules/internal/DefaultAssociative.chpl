@@ -430,7 +430,7 @@ module DefaultAssociative {
       }
     }
   
-    iter dsiSorted(comparator:?t) {
+    iter dsiSorted(comparator) {
       use Sort;
       var tableCopy: [0..#numEntries.read()] idxType;
   
@@ -701,7 +701,7 @@ module DefaultAssociative {
     // Associative array interface
     //
   
-    iter dsiSorted(comparator:?t) {
+    iter dsiSorted(comparator) {
       use Sort;
       var tableCopy: [0..dom.dsiNumIndices-1] eltType;
       for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
