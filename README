@@ -1,0 +1,6 @@
+try
+
+source util/quickstart/setchplenv.bash
+export CHPL_COMM=gasnet
+make
+./util/start_test  test/optimizations/cache-remote/ferguson/operations/
