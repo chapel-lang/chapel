@@ -335,10 +335,6 @@ static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType
 static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call);
 static Expr* createFunctionAsValue(CallExpr *call);
 static Type* resolveTypeAlias(SymExpr* se);
-static bool
-isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL);
-static bool
-usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen);
 static Type* resolveTypeAlias(SymExpr* se);
 static Expr* preFold(Expr* expr);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
@@ -5875,68 +5871,6 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   return call_wrapper;
 }
 
-//
-// returns true if the symbol is defined in an outer function to fn
-// third argument not used at call site
-//
-static bool
-isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent /* = NULL*/) {
-  if (!parent)
-    parent = fn->defPoint->parentSymbol;
-  if (!isFnSymbol(parent))
-    return false;
-  else if (sym->defPoint->parentSymbol == parent)
-    return true;
-  else
-    return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
-}
-
-
-//
-// finds outer vars directly used in a function
-//
-static bool
-usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
-  std::vector<BaseAST*> asts;
-  collect_asts(fn, asts);
-  for_vector(BaseAST, ast, asts) {
-    if (toCallExpr(ast)) {
-      CallExpr *call = toCallExpr(ast);
-
-      //dive into calls
-      Vec<FnSymbol*> visibleFns;
-      Vec<BlockStmt*> visited;
-
-      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited, call);
-
-      forv_Vec(FnSymbol, called_fn, visibleFns) {
-        bool seen_this_fn = false;
-        forv_Vec(FnSymbol, seen_fn, seen) {
-          if (called_fn == seen_fn) {
-            seen_this_fn = true;
-            break;
-          }
-        }
-        if (!seen_this_fn) {
-          seen.add(called_fn);
-          if (usesOuterVars(called_fn, seen)) {
-            return true;
-          }
-        }
-      }
-    }
-    if (SymExpr* symExpr = toSymExpr(ast)) {
-      Symbol* sym = symExpr->var;
-
-      if (isLcnSymbol(sym)) {
-        if (isOuterVar(sym, fn))
-          return true;
-      }
-    }
-  }
-  return false;
-}
-
 // This function returns true for user fields, including
 // const, param, and type fields.
 // It returns false for compiler-introduced fields like
@@ -9478,32 +9412,12 @@ static void insertDynamicDispatchCalls() {
 
     SET_LINENO(call);
 
-    //Check to see if any of the overridden methods reference outer variables.  If they do, then when we later change the
-    //signature in flattenFunctions, the vtable style will break (function signatures will no longer match).  To avoid this
-    //we switch to the if-block style in the case where outer variables are discovered.
-    //Note: This is conservative, as we haven't finished resolving functions and calls yet, we check all possibilities.
-
-    bool referencesOuterVars = false;
-
-    Vec<FnSymbol*> seen;
-    referencesOuterVars = usesOuterVars(key, seen);
-
-    if (!referencesOuterVars) {
-      for (int i = 0; i < fns->n; ++i) {
-        seen.clear();
-        if ( (referencesOuterVars = usesOuterVars(key, seen)) ) {
-          break;
-        }
-      }
-    }
-
     bool isSuperAccess = false;
     if (SymExpr* base = toSymExpr(call->get(2))) {
       isSuperAccess = base->var->hasFlag(FLAG_SUPER_TEMP);
     }
 
-    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) &&
-        (!referencesOuterVars) && !isSuperAccess ) {
+    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) && !isSuperAccess ) {
       //
       // change call of root method into virtual method call;
       // Insert function SymExpr and virtual method temp at head of argument
