@@ -518,7 +518,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 
 extern void chpl_process_operations(void* obj, int64_t size, void* buf);
 
-void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops,
+void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops, int free_ops,
                          chpl_comm_nb_ops_handle_t *handle)
 {
   chpl_process_operations(ops->obj, ops->payload_size, ops->payload);
