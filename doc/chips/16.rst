@@ -192,9 +192,10 @@ aliases another record, the `move` initialization needs to be adjusted by
 the record author to copy the data. This is already the case for arrays
 with the `unalias` function.
 
-This optimization still meets the *unique storage for a record's fields*
-idea from :ref:`record-copies-user-view` since the optimized-away copy is
-from a dead variable.
+.. comment
+  This optimization still meets the *unique storage for a record's fields*
+  idea from :ref:`record-copies-user-view` since the optimized-away copy is
+  from a dead variable.
 
 Alternative designs include:
 
