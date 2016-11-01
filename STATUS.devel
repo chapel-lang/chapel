@@ -727,11 +727,6 @@ Standard Modules, Standard Distributions, and Standard Layouts
 
 Input and Output
 ----------------
-- Input of whole arrays is not implemented.
-  Workaround: use a loop, e.g., for e in A do read(e);
-  # types/file/fileIO.future
-- Reading of tuple types not supported.
-  # io/bradc/readTuple.future
 - Printing of replicated arrays may not work properly.
   # io/vass/writeThis-on.future
 - Using 'on' in a writeThis() method can lead to a deadlock.
