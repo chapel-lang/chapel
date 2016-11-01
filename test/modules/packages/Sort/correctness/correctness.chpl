@@ -127,42 +127,6 @@ proc main() {
         writeln('  for mergeSort() function.\n');
     }
   }
-
-  /* Minimal tests for deprecated sorts */
-  // TODO - remove these for 1.15
-  {
-    var Arr = [3, -2, 1, 4];
-
-    resetArray(Arr);
-    BubbleSort(Arr);
-    if !checkSort(Arr) then
-      writeln('  for BubbleSort() function.\n');
-
-    resetArray(Arr);
-    InsertionSort(Arr);
-    if !checkSort(Arr) then
-      writeln('  for InsertionSort() function.\n');
-
-    resetArray(Arr);
-    QuickSort(Arr);
-    if !checkSort(Arr) then
-      writeln('  for QuickSort() function.\n');
-
-    resetArray(Arr);
-    SelectionSort(Arr);
-    if !checkSort(Arr) then
-      writeln('  for SelectionSort() function.\n');
-
-    resetArray(Arr);
-    HeapSort(Arr);
-    if !checkSort(Arr) then
-      writeln('  for HeapSort() function.\n');
-
-    resetArray(Arr);
-    MergeSort(Arr);
-    if !checkSort(Arr) then
-      writeln('  for MergeSort() function.\n');
-  }
 }
 
 
