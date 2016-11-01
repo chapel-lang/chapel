@@ -1537,9 +1537,11 @@ static void insertEndCounts()
 // if ( chpl_doDirectExecuteOn( targetLocale ) )
 //     call un-wrapped task function
 // else
+//     (chpl_rmem_consist_release for blocking on)
 //     proceed as with chpl_executeOn/chpl_executeOnFast
-//     fid call to wrapper function on a remote local
-//     (possibly just a different sublocale)
+//       fid call to wrapper function on a remote local
+//       (possibly just a different sublocale)
+//     (chpl_rmem_consist_acquire for blocking on)
 //
 // This is called the "direct on" optimization.
 //
@@ -1611,6 +1613,11 @@ static void passArgsToNestedFns() {
           // create conditional for direct-on optimization
           call = createConditionalForDirectOn(call, fn);
         }
+
+        if (fn->hasFlag(FLAG_WRAPPER_CALL_NEEDS_RELEASE_BEFORE))
+          call->insertBefore(new CallExpr("chpl_rmem_consist_release"));
+        if (fn->hasFlag(FLAG_WRAPPER_CALL_NEEDS_ACQUIRE_AFTER))
+          call->insertAfter(new CallExpr("chpl_rmem_consist_acquire"));
 
         bundleArgs(call, baData);
       }

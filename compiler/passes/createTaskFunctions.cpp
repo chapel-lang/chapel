@@ -656,13 +656,18 @@ void createTaskFunctions(void) {
              PRIM_BLOCK_BEGIN
                since upEndCount takes care of it. */
 
-          // If we need memory barriers, put them around the call to the
-          // task function. These memory barriers are ensuring memory
-          // consistency.  Spawn barrier (release) is needed for any
+          // If we need memory fences, put them around the call to the
+          // task function. These memory fences are ensuring memory
+          // consistency.  Release fence is needed for any
           // blocking on statement. Other statements, including cobegin,
           // coforall, begin handle this in upEndCount.
+
+          // In order to support direct calls for on statements
+          // with a target that is local, instead of adding
+          // the fence to the task function, we instruct
+          // passArgsToNestedFns to do it on our behalf.
           if( needsMemFence && isBlockingOn )
-            call->insertBefore(new CallExpr("chpl_rmem_consist_release"));
+            fn->addFlag(FLAG_WRAPPER_CALL_NEEDS_RELEASE_BEFORE);
         }
 
         if( fCacheRemote ) {
@@ -671,8 +676,13 @@ void createTaskFunctions(void) {
           // to the caller. Nonblocking on or begin don't block so it
           // doesn't make sense to acquire barrier after running them.
           // coforall, cobegin, and sync blocks do this in waitEndCount.
+
+          // In order to support direct calls for on statements
+          // with a target that is local, instead of adding
+          // the fence to the task function, we instruct
+          // passArgsToNestedFns to do it on our behalf.
           if( needsMemFence && isBlockingOn )
-            call->insertAfter(new CallExpr("chpl_rmem_consist_acquire"));
+            fn->addFlag(FLAG_WRAPPER_CALL_NEEDS_ACQUIRE_AFTER);
         }
 
         block->blockInfoGet()->remove();
