@@ -71,7 +71,7 @@ static unsigned int deadModuleCount;
 static bool isDeadVariable(Symbol* var,
                            Map<Symbol*,Vec<SymExpr*>*>& defMap,
                            Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  if (var->type->symbol->hasFlag(FLAG_REF)) {
+  if (var->isRef()) {
     Vec<SymExpr*>* uses = useMap.get(var);
     Vec<SymExpr*>* defs = defMap.get(var);
     return (!uses || uses->n == 0) && (!defs || defs->n <= 1);

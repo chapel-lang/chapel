@@ -7,11 +7,14 @@
   #include "gasnet_tools.h"
   #include "test.h"
   typedef gasnet_handlerarg_t handlerarg_t;
+ #define EXTERNC GASNETT_EXTERNC
+ GASNETT_BEGIN_EXTERNC
  #ifdef GASNET_USE_STRICT_PROTOTYPES
   typedef void *handler_fn_t;
  #else
   typedef void (*handler_fn_t)();
  #endif
+ GASNETT_END_EXTERNC
   typedef gasnet_token_t token_t;
   typedef size_t bufsize_t;
   gasnett_atomic_t numreq = gasnett_atomic_init(0);
@@ -283,19 +286,20 @@ typedef struct {
 
 /* ------------------------------------------------------------------------------------ */
 #define SHORTHANDLERS(num)                                                         \
-  void short_##num##req_handler(token_t token FA##num) {                           \
+  EXTERNC void short_##num##req_handler(token_t token FA##num) {                   \
     if (CA##num)                                                                   \
       FATALERR("Arg mismatch in short_%sreq_handler on P%i\n", #num, (int)MYPROC); \
     INCREQ();                                                                      \
     ReplyShort(num,(token, SHORT_##num##REP_HANDLER aa##num));                     \
   }                                                                                \
-  void short_##num##rep_handler(token_t token FA##num) {                           \
+  EXTERNC void short_##num##rep_handler(token_t token FA##num) {                   \
     if (CA##num)                                                                   \
       FATALERR("Arg mismatch in short_%srep_handler on P%i\n", #num, (int)MYPROC); \
     INCREP();                                                                      \
   }
 
 #define MEDIUMHANDLERS(num)                                                            \
+  EXTERNC                                                                              \
   void medium_##num##req_handler(token_t token, void *buf, bufsize_t nbytes FA##num) { \
     testam_payload_t *payload = (testam_payload_t *)buf;                               \
     if (CA##num)                                                                       \
@@ -310,6 +314,7 @@ typedef struct {
     ReplyMedium(num,(token, MEDIUM_##num##REP_HANDLER, buf, nbytes aa##num));          \
     memset(buf, 0xBB, sizeof(testam_payload_t));                                       \
   }                                                                                    \
+  EXTERNC                                                                              \
   void medium_##num##rep_handler(token_t token, void *buf, bufsize_t nbytes FA##num) { \
     testam_payload_t *payload = (testam_payload_t *)buf;                               \
     if (CA##num)                                                                       \
@@ -323,6 +328,7 @@ typedef struct {
   }
 
 #define LONGHANDLERS(num)                                                                     \
+  EXTERNC                                                                                     \
   void long_##num##req_handler(token_t token, void *buf, bufsize_t nbytes FA##num) {          \
     testam_payload_t *payload = (testam_payload_t *)buf;                                      \
     testam_payload_t mybuf;                                                                   \
@@ -345,6 +351,7 @@ typedef struct {
                    ((testam_payload_t*)TEST_SEG(partner))+NUMHANDLERS_PER_TYPE+num aa##num)); \
     memset(&mybuf, 0xBB, sizeof(testam_payload_t));                                           \
   }                                                                                           \
+  EXTERNC                                                                                     \
   void long_##num##rep_handler(token_t token, void *buf, bufsize_t nbytes FA##num) {          \
     testam_payload_t *payload = (testam_payload_t *)buf;                                      \
     if (CA##num)                                                                              \

@@ -139,9 +139,8 @@ proc do_array(A:[]) {
   if printProgress then writeln("Creating A_slice");
   var A_slice = A[2..n-1];             // create new descriptor, ref count
 
-  if printProgress then writeln("Creating A_reindex");
-  var A_reindex = A.reindex({4..n+3}); // create new descriptor, ref count
-
+//  if printProgress then writeln("Creating A_reindex");
+//  var A_reindex = A.reindex({4..n+3}); // create new descriptor, ref count
 }
 
 

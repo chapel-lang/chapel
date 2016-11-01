@@ -136,10 +136,8 @@
 #undef GASNETI_HAVE_CXX_SYNC_ATOMICS_64
 #undef GASNETI_HAVE_MPI_CC_SYNC_ATOMICS_64
 
-/* Does CC support C99-type non-constant initializers for structs? */
-#undef HAVE_NONCONST_STRUCT_INIT
-/* Does CC support C99-type constructor expressions? */
-#undef HAVE_CONSTRUCTOR_EXPR
+/* Does CXX support C99 __VA_ARGS__ */
+#undef GASNETI_CXX_HAS_VA_ARGS
 
 /* Defined if __PIC__ defined at configure time */
 #undef GASNETI_CONFIGURED_PIC
@@ -246,6 +244,9 @@
 
 /* has pthread_kill_other_threads_np() */
 #undef HAVE_PTHREAD_KILL_OTHER_THREADS_NP
+
+/* has pthread rwlock support */
+#undef GASNETI_HAVE_PTHREAD_RWLOCK
 
 /* has __thread thread-local-storage support */
 #undef GASNETI_HAVE_TLS_SUPPORT
@@ -723,6 +724,9 @@
 #define _LARGEFILE64_SOURCE 1
 #define _LARGEFILE_SOURCE 1
 #ifdef HAVE_FEATURES_H
+ #if _FORTIFY_SOURCE > 0 && __OPTIMIZE__ <= 0 /* silence an annoying MPICH/Linux warning */
+ #trueundef _FORTIFY_SOURCE
+ #endif
 # include <features.h>
 #endif
 

@@ -141,5 +141,4 @@ proc main() {
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemAllocs();
-
 }

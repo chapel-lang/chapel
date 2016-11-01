@@ -23,6 +23,7 @@
 #include "iterator.h"
 #include "stringutil.h"
 #include "type.h"
+#include "resolution.h"
 
 static QualifiedType
 returnInfoUnknown(CallExpr* call) {
@@ -145,6 +146,10 @@ static QualifiedType
 returnInfoFirstDeref(CallExpr* call) {
   QualifiedType tmp = call->get(1)->qualType();
   Type* type = tmp.type()->getValType();
+  // if it's a tuple, also remove references in the elements
+  if (type->symbol->hasFlag(FLAG_TUPLE)) {
+    type = computeNonRefTuple(type);
+  }
   return QualifiedType(type, QUAL_VAL);
 }
 

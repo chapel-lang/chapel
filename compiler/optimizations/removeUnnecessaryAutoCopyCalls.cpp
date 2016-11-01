@@ -292,7 +292,7 @@ static void removePODinitDestroy()
     {
       // We expect both initCopy and autoCopy functions to have one argument
       // whose type is the same as the return type.
-      INT_ASSERT(fn->numFormals() == 1);
+      INT_ASSERT(fn->numFormals() >= 1);
 
       if (fn->getFormal(1)->type != fn->retType)
         // In some cases, the autoCopy function has a different return type than
@@ -345,6 +345,8 @@ void removeUnnecessaryAutoCopyCalls() {
   // primitive types
   //
   removePODinitDestroy();
+
+  return; // TODO -- delete more in removeUnnecessaryAutoCopyCalls.
 
   //
   // remove matched pairs of autoCopy and autoDestroy calls marked with the

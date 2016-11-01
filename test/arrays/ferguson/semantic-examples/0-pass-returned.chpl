@@ -8,5 +8,5 @@ proc consumesArray(A:[] R) {
 }
 consumesArray(createArray());
 
-// It seems pretty clear that it's undesireable for the pattern above to copy
+// It seems pretty clear that it's undesirable for the pattern above to copy
 // the array elements.

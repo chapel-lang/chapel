@@ -356,14 +356,11 @@ static bool setupShadowVarForRefIntents(CallExpr* lcCall,
     // createShadowVars() keeps 'const ref'-intent vars, drops 'ref'-vars
     INT_ASSERT(svar->hasFlag(FLAG_CONST));
     lcCall->insertBefore(new DefExpr(svar));
-    if (isRecordWrappedType(ovar->type)) {
-      // Just bit-copy, not "assign". Since 'svar' lives within the
-      // forall loop body, no ref counter increment/decrement is needed.
-      lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar, ovar));
-    } else {
+    {
       // Need to adjust svar's type.
       INT_ASSERT(svar->type == ovar->type->getValType()); // current state
       svar->type = ovar->type->getRefType();
+      INT_ASSERT(svar->type);
       if (isReferenceType(ovar->type)) {
         // 'ovar' is already a reference, copy that reference.
         lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar, ovar));

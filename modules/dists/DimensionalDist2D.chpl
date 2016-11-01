@@ -272,9 +272,6 @@ class DimensionalDist2D : BaseDist {
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
   var dataParIgnoreRunningTasks: bool = getDataParIgnoreRunningTasks();
   var dataParMinGranularity: int      = getDataParMinGranularity();
-
-  // for privatization
-  var pid: int = -1;
 }
 
 // class LocDimensionalDist - no local distribution descriptor - for now
@@ -325,9 +322,6 @@ class DimensionalDom : BaseRectangularDom {
 
   // local domain descriptors
   var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
-
-  // for privatization
-  var pid: int = -1;
 }
 
 class LocDimensionalDom {
@@ -364,9 +358,6 @@ class DimensionalArr : BaseArr {
   // NOTE: 'dom' must be initialized prior to initializing 'localAdescs'
   var localAdescs: [dom.targetIds]
                       LocDimensionalArr(eltType, allocDom.locDdescType);
-
-  // for privatization
-  var pid: int = -1;
 }
 
 class LocDimensionalArr {

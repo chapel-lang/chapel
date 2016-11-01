@@ -68,9 +68,9 @@ const HomoSapiens = [(a, 0.3029549426680),
 
 
 proc main() {
-  repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
-  randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
-  randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
+  repeatMake(">ONE Homo sapiens alu", ALU, n * 2);
+  randomMake(">TWO IUB ambiguity codes", IUB, n * 3);
+  randomMake(">THREE Homo sapiens frequency", HomoSapiens, n * 5);
 }
 
 //
@@ -83,7 +83,7 @@ param newline = ascii("\n");
 // Repeat sequence "alu" for n characters
 //
 proc repeatMake(desc, alu, n) {
-  stdout.write(desc);
+  stdout.writeln(desc);
 
   const r = alu.size,
         s = [i in 0..(r+lineLength)] alu[i % r];
@@ -99,7 +99,7 @@ proc repeatMake(desc, alu, n) {
 // Output a random sequence of length 'n' using distribution a
 //
 proc randomMake(desc, nucleotides: [?D], n) {
-  stdout.write(desc);
+  stdout.writeln(desc);
 
   var cumulProb: [D] int;
   var p = 0.0;
@@ -114,19 +114,11 @@ proc randomMake(desc, nucleotides: [?D], n) {
     const bytes = min(lineLength, n-i+1);
 
     for (r, i) in zip(getRands(bytes), 0..) {
-      if r < cumulProb[1] {
-        line_buff[i] = nucleotides[1](nucl);
-      } else {
-        var lo = D.low,
-            hi = D.high;
-        while (hi > lo+1) {
-          var ai = (hi + lo) / 2;
-          if (r < cumulProb[ai]) then
-            hi = ai;
-          else
-            lo = ai;
+      for j in D {
+        if r < cumulProb[j] {
+          line_buff[i] = nucleotides[j](nucl);
+          break;
         }
-        line_buff[i] = nucleotides[hi](nucl);
       }
     }
     line_buff[bytes] = newline:int(8);

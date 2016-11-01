@@ -43,10 +43,10 @@ typedef struct {
 #define PROLOGUE(NAME) \
   GASNET_BEGIN_FUNCTION(); \
   const char name[] = NAME; \
-  GASNETI_UNUSED int myproc = (randomize(td), td->myproc); \
+  GASNETT_UNUSED int myproc = (randomize(td), td->myproc); \
   int mythread = td->mythread; \
-  GASNETI_UNUSED int peerthread = td->peerthread; \
-  GASNETI_UNUSED gasnet_coll_handle_t *hndl = td->hndl
+  GASNETT_UNUSED int peerthread = td->peerthread; \
+  GASNETT_UNUSED gasnet_coll_handle_t *hndl = td->hndl
 
 static int *R;
 static int **Aw, **Bw, **Cw, **Dw, **Ew, **Fw, **Gw;
@@ -489,7 +489,8 @@ int main(int argc, char **argv)
     if (argc > 2) {
       threads = atoi(argv[2]);
     }
-    if (threads > TEST_MAXTHREADS || threads < 1) {
+    threads = test_thread_limit(threads);
+    if (threads < 1) {
       printf("ERROR: Threads must be between 1 and %d\n", TEST_MAXTHREADS);
       exit(EXIT_FAILURE);
     }

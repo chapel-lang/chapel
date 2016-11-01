@@ -242,6 +242,18 @@ inlineFunctions() {
       if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
         inlineFunction(fn, inlinedSet, canRemoveRefTempSet);
     }
+
+    forv_Vec(SymExpr, se, gSymExprs) {
+      CallExpr* def = toCallExpr(se->parentExpr);
+      if (def && def->isPrimitive(PRIM_DEREF)) {
+        CallExpr* move = toCallExpr(def->parentExpr);
+        INT_ASSERT(isMoveOrAssign(move));
+        if (!se->isRef()) {
+          SET_LINENO(se);
+          def->replace(se->copy());
+        }
+      }
+    }
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {

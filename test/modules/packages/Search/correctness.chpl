@@ -88,18 +88,6 @@ proc main() {
   result = search(A, 0, sorted=true);
   checkSearch(result, (false, 3), A, 'search');
 
-
-  /* Minimal tests for deprecated search functions */
-  // TODO - remove these for 1.15
-
-  // linearSearch
-  result = LinearSearch(A, 2);
-  checkSearch(result, (true, 3), A, 'LinearSearch');
-
-  // binarySearch
-  result = BinarySearch(A, 2);
-  checkSearch(result, (true, 3), A, 'BinarySearch');
-
 }
 
 

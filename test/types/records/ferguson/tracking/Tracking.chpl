@@ -3,9 +3,16 @@ var opsLock$: sync bool = true;
 
 var counter: atomic int;
 
+require "gdb.h";
+config const breakOnAllocateId = -1;
+
 proc trackAllocation(c: object, id:int, x:int) {
   opsLock$.readFE();
   ops.push_back( (1, c, id, x, 1+counter.fetchAdd(1)) );
+  if id == breakOnAllocateId {
+    extern proc gdbShouldBreakHere();
+    gdbShouldBreakHere();
+  }
   opsLock$.writeEF(true);
 }
 
@@ -65,7 +72,7 @@ proc checkAllocations() {
     printthem(alloc_freed);
     writeln();
 
-    assert(false);
+    return false;
   }
 
   // check order of each id. Each id should be freed after being allocated.
@@ -75,8 +82,9 @@ proc checkAllocations() {
       // OK
     } else {
       writeln("id ", id, " was allocated after being freed!");
-      assert(false);
+      return false;
     }
   }
+  return true;
 }
 
