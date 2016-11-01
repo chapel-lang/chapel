@@ -102,10 +102,11 @@ module CPtr {
   inline proc _cast(type t, x) where t:string && x.type:c_ptr {
     return __primitive("ref to string", x):string;
   }
-
+  pragma "no doc"
   inline proc _cast(type t, x) where t:object && x.type:c_void_ptr {
     return __primitive("cast", t, x);
   }
+  pragma "no doc"
   inline proc _cast(type t, x) where t:c_void_ptr && x.type:object {
     return __primitive("cast", t, x);
   }
