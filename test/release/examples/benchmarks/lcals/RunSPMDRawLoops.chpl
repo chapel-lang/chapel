@@ -539,9 +539,7 @@ module RunSPMDRawLoops {
             var x1 => loop_data.RealArray_1D[3];
             var x2 => loop_data.RealArray_1D[4];
 
-          if false {
-            //const nTasks = here.maxTaskPar;
-            const nTasks = 1;
+            const nTasks = here.maxTaskPar;
             var bar = new Barrier(nTasks);
             var isamp = 0;
 
@@ -566,24 +564,6 @@ module RunSPMDRawLoops {
             delete bar;
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
-          } else {
-            ltimer.start();
-            for 0..#num_samples {
-              forall i in 0..#len {
-                var s = b[i]*b[i] - 4.0*a[i]*c[i];
-                if s >= 0 {
-                  s = sqrt(s);
-                  x2[i] = (-b[i]+s) / (2.0*a[i]);
-                  x1[i] = (-b[i]-s) / (2.0*a[i]);
-                } else {
-                  x2[i] = 0.0;
-                  x1[i] = 0.0;
-                }
-              }
-            }
-            ltimer.stop();
-            loopFinalize(iloop, stat, ilength);
-          }
           }
           when LoopKernelID.TRAP_INT {
             loopInit(iloop, stat);
