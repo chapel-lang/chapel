@@ -29,7 +29,7 @@ else
 endif
 
 LCALSMain: $(LCALS_SOURCES)
-	$(CHPL) $(CHPL_FLAGS) LCALSMain.chpl -o LCALSMain
+	+$(CHPL) $(CHPL_FLAGS) LCALSMain.chpl -o LCALSMain
 
 clean:
 	rm -f LCALSMain LCALSMain_real
