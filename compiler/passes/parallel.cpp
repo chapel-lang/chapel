@@ -169,8 +169,8 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->getValType());
 
     // If it's a record-wrapped type we can just bit-copy into the arg bundle.
-    // TODO: This really belongs in RVF
-    // TODO: Use 'formal->isRef()' instead of the var's ref-ness
+    // BHARSH TODO: This really belongs in RVF
+    // BHARSH TODO: Use 'formal->isRef()' instead of the var's ref-ness
     if (!isRecordWrappedType(var->getValType()) && !autoCopy && var->isRef()) field->qual = QUAL_REF;
 
     ctype->fields.insertAtTail(new DefExpr(field));
@@ -216,17 +216,25 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
     return true;
   }
 
-  // TODO: Move this into RVF. If we do, then we need to handle the following
-  // case:
+  // BHARSH TODO: Move this into RVF. If we do, then we need to handle the
+  // following case:
   // ```
-  // var a : sync int;
+  // var a : sync int; // a GLOBAL variable
   // begin {
+  //   writeln("inner begin");
   //   on {
+  //     writeln("on-stmt");
   //     begin {
-  //     a += 1;
+  //       a += 1;
   //     }
   //   }
   // }
+  // ```
+  //
+  // This issue was exposed by the following test:
+  //   test/multilocale/diten/needMultiLocales/DijkstraTermination.chpl
+  //
+  // The 'writeln's exist to make sure nothing is considered a begin-on.
   //
   // If the sync is rvf'd onto the on-statement's stack, we should not take
   // a reference to it as it is about to go out of scope with the outer begin.
@@ -301,7 +309,7 @@ static void insertAutoDestroyForVar(Symbol *arg, FnSymbol* wrap_fn)
 
   if (autoDestroyFn == NULL) return;
 
-  // TODO: This seems to be (poorly) checking if arg is a ref
+  // BHARSH TODO: This seems to be (poorly) checking if arg is a ref
   if (arg->typeInfo() != baseType)
   {
     // BHARSH: This code used to be special cased for ref counted types.
@@ -919,7 +927,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
               }
               if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
                 Symbol* toAdd = toSymExpr(call->get(1))->var;
-                // TODO: we really want something like a set that we can
+                // BHARSH TODO: we really want something like a set that we can
                 // modify while iterating over it.
                 if (!varsToTrack.in(toAdd)) {
                   varsToTrack.add(toAdd);
@@ -1151,11 +1159,11 @@ makeHeapAllocations() {
         // to match the ArgSymbol.  And that formal should have the
         // ref flag, since we obtained it through the refVec.
         //
-        // TODO: This INT_ASSERT existed before the switch to qualified types.
-        // After the switch it's now possible to pass a non-ref actual to a
-        // ref formal, and codegen will just take care of it.
-        // With that in mind, do we need to do something here if the actual
-        // is not a ref, or can we just skip that case?
+        // BHARSH TODO: This INT_ASSERT existed before the switch to qualified
+        // types. After the switch it's now possible to pass a non-ref actual
+        // to a ref formal, and codegen will just take care of it.  With that
+        // in mind, do we need to do something here if the actual is not a ref,
+        // or can we just skip that case?
         //INT_ASSERT(se->var->isRef());
         if (se->var->isRef() && !refSet.set_in(se->var)) {
           refSet.set_add(se->var);
@@ -1629,7 +1637,14 @@ static void passArgsToNestedFns() {
 
 Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
-  if (type->symbol->hasFlag(FLAG_REF)) return type;
+  // BHARSH TODO: This check causes a failure for the following test:
+  //   execflags/tmacd/config_ref
+  //
+  // For some reason this test wants a reference to a reference. To make
+  // progress I'm commenting out the check for now, but I think we'll
+  // eventually want it when we complete the qualified refs work.
+  //
+  // if (type->symbol->hasFlag(FLAG_REF)) return type;
   refType = type->refType;
   if( ! refType ) {
     SET_LINENO(type->symbol);

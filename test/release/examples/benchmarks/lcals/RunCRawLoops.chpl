@@ -366,35 +366,30 @@ module RunCRawLoops {
             const t = 0.0037;
             const s = 0.0041;
 
-            var kn = 6, jn = len;
+            const kn = 6, jn = len;
+            const kjDom = {1..kn-1, 1..jn-1};
 
             ltimer.start();
             for 0..#num_samples {
-              for k in 1..kn-1 {
-                for j in 1..jn-1 {
-                  za[k,j] = ( zp[k+1,j-1] +zq[k+1,j-1] -zp[k,j-1] -zq[k,j-1] )*
-                            ( zr[k,j] +zr[k,j-1] ) / ( zm[k,j-1] +zm[k+1,j-1]);
-                  zb[k,j] = ( zp[k,j-1] +zq[k,j-1] -zp[k,j] -zq[k,j] ) *
-                            ( zr[k,j] +zr[k-1,j] ) / ( zm[k,j] +zm[k,j-1]);
-                }
+              for (k,j) in kjDom {
+                za[k,j] = (zp[k+1,j-1] + zq[k+1,j-1] - zp[k,j-1] - zq[k,j-1]) *
+                          (zr[k,j] + zr[k,j-1]) / (zm[k,j-1] + zm[k+1,j-1]);
+                zb[k,j] = (zp[k,j-1] + zq[k,j-1] - zp[k,j] - zq[k,j]) *
+                          (zr[k,j] + zr[k-1,j]) / (zm[k,j] + zm[k,j-1]);
               }
-              for k in 1..kn-1 {
-                for j in 1..jn-1 {
-                  zu[k,j] += s*( za[k,j]   *( zz[k,j] - zz[k,j+1] ) -
-                                 za[k,j-1] *( zz[k,j] - zz[k,j-1] ) -
-                                 zb[k,j]   *( zz[k,j] - zz[k-1,j] ) +
-                                 zb[k+1,j] *( zz[k,j] - zz[k+1,j] ) );
-                  zv[k,j] += s*( za[k,j]   *( zr[k,j] - zr[k,j+1] ) -
-                                 za[k,j-1] *( zr[k,j] - zr[k,j-1] ) -
-                                 zb[k,j]   *( zr[k,j] - zr[k-1,j] ) +
-                                 zb[k+1,j] *( zr[k,j] - zr[k+1,j] ) );
-                }
+              for (k,j) in kjDom {
+                zu[k,j] += s * (za[k,j]   * (zz[k,j] - zz[k,j+1]) -
+                                za[k,j-1] * (zz[k,j] - zz[k,j-1]) -
+                                zb[k,j]   * (zz[k,j] - zz[k-1,j]) +
+                                zb[k+1,j] * (zz[k,j] - zz[k+1,j]));
+                zv[k,j] += s * (za[k,j]   * (zr[k,j] - zr[k,j+1]) -
+                                za[k,j-1] * (zr[k,j] - zr[k,j-1]) -
+                                zb[k,j]   * (zr[k,j] - zr[k-1,j]) +
+                                zb[k+1,j] * (zr[k,j] - zr[k+1,j]));
               }
-              for k in 1..kn-1 {
-                for j in 1..jn-1 {
-                  zrout[k,j] = zr[k,j] + t*zu[k,j];
-                  zzout[k,j] = zz[k,j] + t*zv[k,j];
-                }
+              for (k,j) in kjDom {
+                zrout[k,j] = zr[k,j] + t*zu[k,j];
+                zzout[k,j] = zz[k,j] + t*zv[k,j];
               }
             }
 

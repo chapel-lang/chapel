@@ -195,8 +195,14 @@ void doit2(void) { GASNET_BEGIN_FUNCTION();
 
     #if defined(GASNET_PAR) || defined (GASNET_PARSYNC)
       { static gasnett_mutex_t mutex = GASNETT_MUTEX_INITIALIZER;
-        TIME_OPERATION("lock/unlock uncontended pthread mutex",
+        TIME_OPERATION("lock/unlock uncontended gasnet mutex",
           { gasnett_mutex_lock(&mutex); gasnett_mutex_unlock(&mutex); });
+      }
+      { static gasnett_rwlock_t rwlock = GASNETT_RWLOCK_INITIALIZER;
+        TIME_OPERATION("rdlock/unlock uncontended gasnet rwlock",
+          { gasnett_rwlock_rdlock(&rwlock); gasnett_rwlock_unlock(&rwlock); });
+        TIME_OPERATION("wrlock/unlock uncontended gasnet rwlock",
+          { gasnett_rwlock_wrlock(&rwlock); gasnett_rwlock_unlock(&rwlock); });
       }
     #endif
 
@@ -426,7 +432,7 @@ void doit7(void) { GASNET_BEGIN_FUNCTION();
       { gasnet_wait_syncnb(GASNET_INVALID_HANDLE);  });
 
     TIME_OPERATION("do-nothing gasnet_try_syncnb()",
-      { GASNETI_UNUSED int junk = gasnet_try_syncnb(GASNET_INVALID_HANDLE); });
+      { GASNETT_UNUSED int junk = gasnet_try_syncnb(GASNET_INVALID_HANDLE); });
 
     TIME_OPERATION("do-nothing gasnet_wait_syncnb_all() (8 handles)",
       { gasnet_wait_syncnb_all(handles, 8); });
@@ -450,13 +456,13 @@ void doit7(void) { GASNET_BEGIN_FUNCTION();
       { gasnet_wait_syncnbi_gets(); });
 
     TIME_OPERATION("do-nothing gasnet_try_syncnbi_all()",
-      { GASNETI_UNUSED int junk = gasnet_try_syncnbi_all(); });
+      { GASNETT_UNUSED int junk = gasnet_try_syncnbi_all(); });
 
     TIME_OPERATION("do-nothing gasnet_try_syncnbi_puts()",
-      { GASNETI_UNUSED int junk = gasnet_try_syncnbi_puts(); });
+      { GASNETT_UNUSED int junk = gasnet_try_syncnbi_puts(); });
 
     TIME_OPERATION("do-nothing gasnet_try_syncnbi_gets()",
-      { GASNETI_UNUSED int junk = gasnet_try_syncnbi_gets(); });
+      { GASNETT_UNUSED int junk = gasnet_try_syncnbi_gets(); });
 
     TIME_OPERATION("do-nothing begin/end nbi accessregion",
       { gasnet_begin_nbi_accessregion();
@@ -491,31 +497,31 @@ void doit8(void) { GASNET_BEGIN_FUNCTION();
     }
 
     TIME_OPERATION("1024-byte gasnett_count0s()",
-      { GASNETI_UNUSED int junk = gasnett_count0s(s, 1024); });
+      { GASNETT_UNUSED int junk = gasnett_count0s(s, 1024); });
     TIME_OPERATION("1024-byte gasnett_count0s_copy()",
-      { GASNETI_UNUSED int junk = gasnett_count0s_copy(d, s, 1024); });
+      { GASNETT_UNUSED int junk = gasnett_count0s_copy(d, s, 1024); });
     TIME_OPERATION("1024-byte gasnett_count0s() + memcpy()",
-      { GASNETI_UNUSED int junk = gasnett_count0s(s, 1024);
+      { GASNETT_UNUSED int junk = gasnett_count0s(s, 1024);
         (void)memcpy(d,s,1024);
       });
 
     s += sizeof(void*) / 2;
     d += sizeof(void*) / 2;
     TIME_OPERATION("unaligned 1024-byte gasnett_count0s()",
-      { GASNETI_UNUSED int junk = gasnett_count0s(s, 1024); });
+      { GASNETT_UNUSED int junk = gasnett_count0s(s, 1024); });
     TIME_OPERATION("unaligned 1024-byte gasnett_count0s_copy()",
-      { GASNETI_UNUSED int junk = gasnett_count0s_copy(d, s, 1024); });
+      { GASNETT_UNUSED int junk = gasnett_count0s_copy(d, s, 1024); });
     TIME_OPERATION("unaligned 1024-byte gasnett_count0s() + memcpy()",
-      { GASNETI_UNUSED int junk = gasnett_count0s(s, 1024);
+      { GASNETT_UNUSED int junk = gasnett_count0s(s, 1024);
         (void)memcpy(d,s,1024);
       });
 
     s -= 1;
     d += 1;
     TIME_OPERATION("misaligned 1024-byte gasnett_count0s_copy()",
-      { GASNETI_UNUSED int junk = gasnett_count0s_copy(d, s, 1024); });
+      { GASNETT_UNUSED int junk = gasnett_count0s_copy(d, s, 1024); });
     TIME_OPERATION("misaligned 1024-byte gasnett_count0s() + memcpy()",
-      { GASNETI_UNUSED int junk = gasnett_count0s(s, 1024);
+      { GASNETT_UNUSED int junk = gasnett_count0s(s, 1024);
         (void)memcpy(d,s,1024);
       });
 

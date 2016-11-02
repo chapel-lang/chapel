@@ -1,2 +1,0 @@
-choose-array10.chpl:2: In function 'chooseArray':
-choose-array10.chpl:4: error: illegal expression to return by ref

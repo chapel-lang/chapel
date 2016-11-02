@@ -141,8 +141,23 @@ const char* DefExpr::name() const {
   return retval;
 }
 
-// TODO: Fix up PRIM_ADDR_OF's return type function to correctly
+//
+// BHARSH TODO: Fix up PRIM_ADDR_OF's return type function to correctly
 // handle this
+//
+// The 'returnInfoRef' function for PRIM_ADDR_OF is currently set up to
+// always return with the Qualifier QUAL_REF. This function is intended
+// as a workaround to handle the case where we have a wide-ref in a
+// PRIM_ADDR_OF:
+//
+// (move "wide-ref dest" (addr-of "wide-ref src"))
+//
+// Otherwise, 'returnInfoRef' would hide the fact that the actual is a wide-ref
+// and it would appear as though we had a local reference.
+//
+// Note that this case is actually just a copy of a pointer's address, and
+// will not generate an addrof in the generated code.
+//
 static
 bool isAddrOfWideRefVar(Expr* e)
 {
@@ -157,7 +172,7 @@ bool isAddrOfWideRefVar(Expr* e)
 }
 
 bool Expr::isRef() {
-  if(SymExpr* se = toSymExpr(this))
+  if (SymExpr* se = toSymExpr(this))
     return se->var->isRef();
 
   if (isAddrOfWideRefVar(this))
@@ -308,6 +323,17 @@ void Expr::verify() {
 
   if (list && parentExpr && list->parent != parentExpr)
     INT_FATAL(this, "Bad Expr::list::parent");
+
+  if (list && !parentExpr) {
+    if (Symbol* lps = toSymbol(list->parent))
+      if (lps != parentSymbol)
+        INT_FATAL(this, "Bad symbol Expr::list::parent");
+    if (Type* lpt = toType(list->parent))
+      if (lpt->symbol != parentSymbol)
+        INT_FATAL(this, "Bad type Expr::list::parent");
+    if (isExpr(list->parent))
+      INT_FATAL(this, "Expr::list::parent is an Expr unexpectedly");
+  }
 }
 
 
@@ -3417,6 +3443,8 @@ GenRet codegenCastToVoidStar(GenRet value)
   return ret;
 }
 
+/* Commented out because it is not currently used.
+
 static
 GenRet codegenCastPtrToInt(Type* toType, GenRet value)
 {
@@ -3437,7 +3465,7 @@ GenRet codegenCastPtrToInt(Type* toType, GenRet value)
     return ret;
   }
 }
-
+*/
 
 // Generates code to perform an "assignment" operation, given
 //  a destination pointer and a value.
@@ -4294,7 +4322,7 @@ GenRet CallExpr::codegen() {
       //should this be else if?
       if (fn->hasFlag(FLAG_EXTERN)) {
         if (actual->isWideRef() == true ||
-            arg.isLVPtr                                == GEN_WIDE_PTR) {
+            arg.isLVPtr         == GEN_WIDE_PTR) {
           arg = codegenRaddr(codegenValue(arg));
 
         } else if (isRefExternStarTuple(formal, actual) == true) {
@@ -4525,8 +4553,9 @@ GenRet CallExpr::codegenPrimitive() {
       ret = codegenValue(get(1));
     }
 
-    // _wide_get_addr promises to return a uint.  Hence the cast.
-    ret            = codegenCastPtrToInt(dtUInt[INT_SIZE_64], ret);
+    // _wide_get_addr promises to return a c void ptr.  Hence the cast.
+    ret = codegenCast(dtCVoidPtr, ret);
+    ret.isUnsigned = true;
 
     break;
   }
@@ -5089,7 +5118,7 @@ GenRet CallExpr::codegenPrimitive() {
     // set tuple base=get(1) at index=get(2) to value=get(3)
     GenRet ptr = codegenElementPtr(get(1), codegenExprMinusOne(get(2)));
     GenRet val = get(3);
-    // TODO: 'getSvecSymbol' may also be useful here...
+    // BHARSH TODO: 'getSvecSymbol' may also be useful here...
     if (get(3)->isRefOrWideRef() && !ptr.chplType->symbol->isRefOrWideRef()) {
       val = codegenDeref(val);
     }
@@ -6012,12 +6041,12 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_DEREF: {
-      // TODO: What if get(1) for this first branch is not a ref?
+      // BHARSH TODO: What if get(1) for this first branch is not a ref?
       if (call->get(1)->isWideRef() ||
           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         Type* valueType;
 
-        // TODO: It seems odd to use a PRIM_DEREF on a wide class, why do we?
+        // BHARSH TODO: It seems odd to use a PRIM_DEREF on a wide class, why do we?
         if (call->get(1)->isWideRef())
           valueType = call->get(1)->getValType();
         else
@@ -6215,7 +6244,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
           call->isWideRef()) {
         GenRet tmp = call->get(2);
-        // TODO:  Should we check if we're casting to a ref?
+        // BHARSH TODO:  Should we check if we're casting to a ref?
         if (call->get(2)->isRef()) {
           tmp = codegenDeref(tmp);
         }

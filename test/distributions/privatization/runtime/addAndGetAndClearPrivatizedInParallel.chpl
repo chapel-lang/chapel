@@ -23,6 +23,8 @@ for classNum in 3..classSizes.size-1 {
 
     {
       for i in classSizes[classNum-2]..classSizes[classNum-1]-1 {
+        var c = getPrivatized(i);
+        delete c;
         clearPrivatized(i);
       }
     }
@@ -36,6 +38,15 @@ for classNum in 3..classSizes.size-1 {
     }
 
   }
+}
+
+// Report no leaks
+var big:int;
+big = max reduce classSizes;
+for i in 0..big-1 {
+  var c = getPrivatized(i);
+  delete c;
+  clearPrivatized(i);
 }
 
 writeln("OK");

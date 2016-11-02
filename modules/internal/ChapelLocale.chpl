@@ -289,7 +289,7 @@ module ChapelLocale {
   }
 
   /* This class is used during initialization and is returned when
-     'here' is used before the locale heirarchy is initialized.
+     'here' is used before the locale hierarchy is initialized.
    */
   pragma "no doc"
   class DummyLocale : locale {
@@ -515,7 +515,7 @@ module ChapelLocale {
       // We mimic a private Locales array alias by using the move
       // primitive.
       pragma "no auto destroy"
-      var tmp = (rootLocale:RootLocale).getDefaultLocaleArray();
+      const tmp => (rootLocale:RootLocale).getDefaultLocaleArray();
       __primitive("move", Locales, tmp);
     }
   }

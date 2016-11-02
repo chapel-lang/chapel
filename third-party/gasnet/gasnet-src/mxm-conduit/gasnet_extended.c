@@ -462,7 +462,7 @@ void gasnete_fill_get_request(mxm_send_req_t * mxm_sreq, void *dest,
 /* -------------------------------------------------------------------------- */
 GASNETI_INLINE(gasnete_fill_put_request)
 void gasnete_fill_put_request(mxm_send_req_t * mxm_sreq, void *dest,
-                              gasnet_node_t node, void *src, size_t nbytes)
+                              gasnet_node_t node, void *src, size_t nbytes, const int isbulk)
 {
     mxm_sreq->base.state = MXM_REQ_NEW;
     mxm_sreq->base.conn = gasnet_mxm_module.connections[node];
@@ -473,7 +473,11 @@ void gasnete_fill_put_request(mxm_send_req_t * mxm_sreq, void *dest,
     mxm_sreq->base.flags = MXM_REQ_FLAG_BLOCKING|MXM_REQ_FLAG_SEND_SYNC;
 #else
     mxm_sreq->opcode = MXM_REQ_OP_PUT_SYNC;
-    mxm_sreq->flags = MXM_REQ_SEND_FLAG_BLOCKING;
+    if (!isbulk) {
+        mxm_sreq->flags = MXM_REQ_SEND_FLAG_BLOCKING;
+    } else {
+       mxm_sreq->flags = 0;
+    }
 #endif
     mxm_sreq->base.data_type = MXM_REQ_DATA_BUFFER;
 
@@ -569,7 +573,7 @@ gasnet_handle_t gasnete_put_nb_inner(
     mxm_send_req_t *mxm_sreq = &gasnet_mxm_sreq->mxm_sreq;
     mxm_error_t mxm_res;
 
-    gasnete_fill_put_request(mxm_sreq, dest, node, src, nbytes);
+    gasnete_fill_put_request(mxm_sreq, dest, node, src, nbytes, isbulk);
 
     mxm_res = mxm_req_send(mxm_sreq);
     if (mxm_res != MXM_OK)
@@ -600,12 +604,12 @@ extern gasnet_handle_t gasnete_put_nb_bulk (gasnet_node_t node, void *dest, void
 
 GASNETI_INLINE(gasnete_put_inner)
 void gasnete_put_inner(gasnet_node_t node, void* dest, void *src,
-                       size_t nbytes GASNETE_THREAD_FARG)
+                       size_t nbytes, const int isbulk GASNETE_THREAD_FARG)
 {
     mxm_send_req_t mxm_sreq;
     mxm_error_t mxm_res;
 
-    gasnete_fill_put_request(&mxm_sreq, dest, node, src, nbytes);
+    gasnete_fill_put_request(&mxm_sreq, dest, node, src, nbytes, isbulk);
 
     if (!gasnet_mxm_module.strict_api) {
 #if MXM_API < MXM_VERSION(2,0)
@@ -636,7 +640,7 @@ extern void gasnete_put(gasnet_node_t node, void* dest, void *src,
                         size_t nbytes GASNETE_THREAD_FARG)
 {
     GASNETI_CHECKPSHM_PUT(ALIGNED,V);
-    gasnete_put_inner(node, dest, src, nbytes GASNETE_THREAD_PASS);
+    gasnete_put_inner(node, dest, src, nbytes, 0 GASNETE_THREAD_PASS);
 }
 
 #endif /* if  (GASNETI_DIRECT_PUT) */
@@ -651,7 +655,7 @@ extern void gasnete_put_bulk(gasnet_node_t node, void* dest, void *src,
                              size_t nbytes GASNETE_THREAD_FARG)
 {
     GASNETI_CHECKPSHM_PUT(UNALIGNED,V);
-    gasnete_put_inner(node, dest, src, nbytes GASNETE_THREAD_PASS);
+    gasnete_put_inner(node, dest, src, nbytes, 1 GASNETE_THREAD_PASS);
 }
 
 #endif /* if  (GASNETI_DIRECT_PUT_BULK) */
@@ -903,7 +907,7 @@ void gasnete_put_nbi_inner(gasnet_node_t node, void *dest, void *src,
     mxm_nbi_cb_data->gasnet_mxm_sreq_send = gasnet_mxm_sreq;
     mxm_nbi_cb_data->op = op;
 
-    gasnete_fill_put_request(mxm_sreq, dest, node, src, nbytes);
+    gasnete_fill_put_request(mxm_sreq, dest, node, src, nbytes, isbulk);
 
     mxm_sreq->base.completed_cb = (void (*)(void *))mxm_nbi_put_callback;
     mxm_sreq->base.context = mxm_nbi_cb_data;

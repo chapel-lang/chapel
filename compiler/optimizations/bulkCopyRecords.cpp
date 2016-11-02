@@ -43,7 +43,7 @@ static bool isAssignment(FnSymbol* fn)
   return true;
 }
 
-std::map<Type*, bool> containsRef;
+static std::map<Type*, bool> containsRef;
 
 static bool typeContainsRef(Type* t, bool isRoot = true)
 {

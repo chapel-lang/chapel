@@ -388,20 +388,11 @@ class FnSymbol : public Symbol {
   int codegenUniqueNum;
   const char *doc;
 
-  // The following fields are used only when hasFlag(FLAG_PARTIAL_COPY)
-  // to pass information from partialCopy() to finalizeCopy().
-  /// Used to keep track of symbol substitutions during partial copying.
-  SymbolMap partialCopyMap;
-  /// Source of a partially copied function.
-  FnSymbol* partialCopySource;
-  /// Vararg formal to be replaced with individual formals, or NULL.
-  ArgSymbol* varargOldFormal;
-  /// Individual formals to replace varargOldFormal.
-  std::vector<ArgSymbol*> varargNewFormals;
-
-  /// Used to store the return symbol during partial copying.
+  // Used to store the return symbol during partial copying.
+  // Move to PartialCopyData?
   Symbol* retSymbol;
-  /// Number of formals before tuple type constructor formals are added.
+
+  // Number of formals before tuple type constructor formals are added.
   int numPreTupleFormals;
 
 #ifdef HAVE_LLVM
@@ -641,6 +632,30 @@ const char* intentDescrString(IntentTag intent);
 // pass-by-reference intents are used.
 bool argMustUseCPtr(Type* t);
 
+//
+// Used to pass information from partialCopy() to finalizeCopy().
+//
+class PartialCopyData {
+ public:
+  // Used to keep track of symbol substitutions during partial copying.
+  SymbolMap partialCopyMap;
+  // Source of a partially copied function.
+  FnSymbol* partialCopySource;
+  // Vararg formal to be replaced with individual formals, or NULL.
+  ArgSymbol* varargOldFormal;
+  // Individual formals to replace varargOldFormal.
+  std::vector<ArgSymbol*> varargNewFormals;
+
+  PartialCopyData() : partialCopySource(NULL), varargOldFormal(NULL) { }
+  ~PartialCopyData() { partialCopyMap.clear(); varargNewFormals.clear(); }
+};
+
+PartialCopyData* getPartialCopyInfo(FnSymbol* fn);
+PartialCopyData& addPartialCopyInfo(FnSymbol* fn);
+void clearPartialCopyInfo(FnSymbol* fn);
+void clearPartialCopyFnMap();
+void checkEmptyPartialCopyFnMap();
+
 void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
                                std::vector<ArgSymbol*>& varargFormals);
 
@@ -689,6 +704,9 @@ extern FnSymbol *gChplDoDirectExecuteOn;
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gGenericTupleDestroy;
+
+// These global symbols point to generic functions that
+// will be instantiated.
 extern FnSymbol *gBuildTupleType;
 extern FnSymbol *gBuildStarTupleType;
 extern FnSymbol *gBuildTupleTypeNoRef;

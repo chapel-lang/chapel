@@ -209,7 +209,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // Forward array values and references to array values.
   // This is OK because the array/domain/distribution wrapper
   // records have fields that do not vary.
-  // It does not matter if the on-body synchonizes.
+  // It does not matter if the on-body synchronizes.
   // (The array class, e.g. DefaultRectangularArr, is what varies,
   //  and it contains a pointer to the actual data, which might
   //  be replaced with another pointer).
@@ -236,15 +236,12 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // to convert atomic formals to ref formals.
   } else if (isAtomicType(arg->type)) {
     retval = false;
-  } else if (arg->intent == INTENT_CONST_REF /*&&
-                                               !isRecordWrappedType(arg->typeInfo())*/) {
-    // TODO: Failure for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr.chpl on --no-local
-    // when RVF-ing a domain. For now, simply do not RVF record-wrapped things
+  } else if (arg->intent == INTENT_CONST_REF) {
     retval = true;
   } else if (arg->intent == INTENT_CONST_IN &&
       !arg->type->symbol->hasFlag(FLAG_REF)) {
-    // TODO: This can currently happen when the arg is the lhs of a +=, but
-    // it obviously needs to have the 'ref' intent. One example can be seen
+    // BHARSH TODO: This can currently happen when the arg is the lhs of a +=,
+    // but it obviously needs to have the 'ref' intent. One example can be seen
     // for += between strings.
     retval = true;
 
@@ -316,6 +313,9 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
 
     // Insert de-reference temp of value.
     VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
+    if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
+      deref->addFlag(FLAG_COFORALL_INDEX_VAR);
+    }
 
     Expr* rhs = NULL;
     if (actual->isRef()) {

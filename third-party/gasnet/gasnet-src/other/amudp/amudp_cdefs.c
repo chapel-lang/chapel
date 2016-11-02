@@ -4,8 +4,10 @@
  */
 
 #include <stddef.h>
+
 #include <amudp.h>
-#include <socket.h>
+
+#include "socket.h"
 
 #if AMUDP_DEBUG
   /* use the gasnet debug malloc functions if a debug libgasnet is linked
@@ -14,7 +16,11 @@
    */
   void *(*gasnett_debug_malloc_fn)(size_t sz, const char *curloc);
   void *(*gasnett_debug_calloc_fn)(size_t N, size_t S, const char *curloc);
+  void *(*gasnett_debug_realloc_fn)(void *ptr, size_t sz, const char *curloc);
   void (*gasnett_debug_free_fn)(void *ptr, const char *curloc);
+  void (*gasnett_debug_memcheck_fn)(void *ptr, const char *curloc);
+  void (*gasnett_debug_memcheck_one_fn)(const char *curloc);
+  void (*gasnett_debug_memcheck_all_fn)(const char *curloc);
 #endif
 
 #if SOCK_USE_C_BYPASS

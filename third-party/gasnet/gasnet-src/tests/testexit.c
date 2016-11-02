@@ -229,6 +229,7 @@ int main(int argc, char **argv) {
   if (argc > 0) { testid = atoi(*argv); argv++; argc--; }
   #ifdef GASNET_PAR
     if (argc > 0) { numpthreads = atoi(*argv); argv++; argc--; }
+    numpthreads = test_thread_limit(numpthreads);
   #endif
   if (argc > 0 || testid <= 0 || 
       (testid > NUMTEST && testid < 100) || 

@@ -359,7 +359,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
 
 
   Type* retType = NULL;
-  Qualifier retQ = QUAL_BLANK;
+  Qualifier retQ = QUAL_UNKNOWN;
 
   if (Type* t = toType(bs)) {
     if (t->symbol->qualType().isRefOrWideRef()) {
@@ -1548,7 +1548,7 @@ static void propagateVar(Symbol* sym) {
         }
         else if (sym->isRefOrWideRef() && call->isPrimitive(PRIM_MOVE)) {
           // Catch (move _ref_wide_T _ref_T)
-          // TODO: This should use a PRIM_SET_REFERENCE...
+          // BHARSH TODO: This should use a PRIM_SET_REFERENCE...
           // Exposed by: --baseline --inline
           if (SymExpr* rhs = toSymExpr(call->get(2))) {
             if (rhs->isRefOrWideRef()) {
@@ -2005,7 +2005,6 @@ static void localizeCall(CallExpr* call) {
       }
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
           !call->get(2)->isRefOrWideRef()) {
-        // TODO: use to check if get(2) did not have the ref type, why?
         insertLocalTemp(call->get(1));
       }
       break;
@@ -2229,8 +2228,6 @@ static void insertWideTemp(Type* type, SymExpr* src) {
 
 static void makeMatch(Symbol* dst, SymExpr* src) {
   bool mismatch = true;
-  // TODO: Should building a qualifiedType set the .type field to the
-  // getValType()?
   if (dst->isRef() && src->isRef() && dst->getValType() == src->getValType()) {
     mismatch = false;
   } else if (dst->isWideRef() && src->isWideRef() && dst->getValType() == src->getValType()) {
@@ -2239,7 +2236,7 @@ static void makeMatch(Symbol* dst, SymExpr* src) {
     mismatch = false;
   }
 
-  // TODO: Have insertWideTemp take a QualifiedType
+  // BHARSH TODO: Have insertWideTemp take a QualifiedType
   Type* dstType = dst->type;
   if (!dstType->symbol->hasFlag(FLAG_REF) && dst->isRef()) {
     dstType = dstType->refType;
@@ -2659,21 +2656,16 @@ shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
 }
 
 static void
-changeArgumentTypeToRef(ArgSymbol* arg) {
-
-  arg->qual = QUAL_REF;
-  arg->intent = INTENT_REF;
-}
-
-static void
 adjustArgSymbolTypesForIntent(void)
 {
   // Adjust ArgSymbols that have ref/const ref concrete
   // intent so that their type is ref. This allows the
   // rest of this code to work as expected.
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (shouldChangeArgumentTypeToRef(arg))
-      changeArgumentTypeToRef(arg);
+    if (shouldChangeArgumentTypeToRef(arg)) {
+      arg->qual   = QUAL_REF;
+      arg->intent = INTENT_REF;
+    }
   }
 }
 
@@ -2684,8 +2676,8 @@ void
 insertWideReferences(void) {
   FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
 
-  // TODO: Should this be in some other pass? It would be nice if one could
-  // assume this pass does nothing in --local mode
+  // BHARSH TODO: Should this be in some other pass? It would be nice if one
+  // could assume this pass does nothing in --local mode
   adjustArgSymbolTypesForIntent();
 
   if (!requireWideReferences()) {

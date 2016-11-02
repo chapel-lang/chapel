@@ -49,9 +49,9 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
     if((formal->intent & INTENT_REF)) {
-      // TODO: this code will not be necessary if
-      // arguments by ref always work with ref attached
-      // to the ArgSymbol instead of to the formal's type
+      // BHARSH TODO: Michael suggested this code will be unnecessary when
+      // QualifiedType is used everywhere and ref-ness is no longer stored in
+      // the 'type' field.
       if (canRemoveRefTempSet.set_in(fn)) {
         if (se->var->hasFlag(FLAG_REF_TEMP)) {
           if (CallExpr* move = findRefTempInit(se)) {
@@ -71,7 +71,6 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
         }
       }
 
-      // TODO: we shouldn't actually need this anymore...
      if(!isReferenceType(formal->type) &&
         formal->type->getRefType() == actual->typeInfo()) {
         // Passing an actual that is ref(t) to a formal t with intent ref.

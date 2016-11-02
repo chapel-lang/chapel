@@ -243,6 +243,7 @@ enum PrimitiveTag {
   PRIM_GET_COMPILER_VAR,
 
   PRIM_ZIP,
+  PRIM_REQUIRE,
 
   NUM_KNOWN_PRIMS
 };

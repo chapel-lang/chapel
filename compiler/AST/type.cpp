@@ -1307,7 +1307,7 @@ Symbol* AggregateType::getField(int i) {
   return toDefExpr(fields.get(i))->sym;
 }
 
-Type* AggregateType::getFieldType(Expr* e) {
+QualifiedType AggregateType::getFieldType(Expr* e) {
   SymExpr* sym = NULL;
   VarSymbol* var = NULL;
 
@@ -1341,8 +1341,14 @@ Type* AggregateType::getFieldType(Expr* e) {
     }
   }
 
-  if (fs) return fs->type;
-  else return NULL;
+  if (fs) {
+    Qualifier qual = QUAL_VAL;
+    if (fs->type->symbol->hasFlag(FLAG_REF))
+      qual = QUAL_REF;
+    return QualifiedType(fs->type, qual);
+  }
+  else
+    return QualifiedType(NULL, QUAL_UNKNOWN);
 }
 
 

@@ -1,3 +1,6 @@
+// aif-param.chpl
+// test if expression of arrays where the
+// conditional is param
 config param param_useA = true;
 
 proc update(ref x)

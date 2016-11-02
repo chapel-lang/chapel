@@ -7,4 +7,4 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.bradc-lnx"
 
-$CWD/nightly -cron -performance -numtrials 5 -startdate 02/19/10
+$CWD/nightly -cron -performance -numtrials 3 -startdate 02/19/10

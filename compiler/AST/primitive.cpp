@@ -85,10 +85,12 @@ returnInfoInt64(CallExpr* call) {
   return QualifiedType(dtInt[INT_SIZE_64], QUAL_VAL);
 }
 
+/*
 static QualifiedType
 returnInfoUInt64(CallExpr* call) {
   return QualifiedType(dtUInt[INT_SIZE_64], QUAL_VAL);
 }
+*/
 
 static QualifiedType
 returnInfoSizeType(CallExpr* call) {
@@ -157,7 +159,7 @@ static QualifiedType
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
-  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS) /*&& !call->get(2)->isRef()*/) {
+  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS)) {
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
   }
@@ -195,7 +197,7 @@ returnInfoVal(CallExpr* call) {
   return QualifiedType(NULL);
 }
 
-// TODO: merge this with returnInfoAsRef and fix the WIDE_REF case...
+// BHARSH TODO: merge this with returnInfoAsRef and fix the WIDE_REF case...
 static QualifiedType
 returnInfoRef(CallExpr* call) {
   Type* t = call->get(1)->getValType();
@@ -526,8 +528,8 @@ initPrimitive() {
 
   prim_def(PRIM_ADDR_OF, "addr of", returnInfoRef);
   prim_def(PRIM_DEREF,   "deref",   returnInfoVal, false, true);
-  // sets a reference to another reference value
-  // it is the RHS of a PRIM_MOVE with the argument reference to point to
+  // If the argument is a reference, simply return it. Otherwise, return a
+  // ref to the arg. The result is always a reference.
   prim_def(PRIM_SET_REFERENCE, "set reference", returnInfoAsRef);
 
   // local block primitives
@@ -614,7 +616,7 @@ initPrimitive() {
   // PRIM_WIDE_GET_NODE. It might make sense to keep both of these
   // functions for debugging.
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
-  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoUInt64, false, true);
+  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoCVoidPtr, false, true);
   prim_def(PRIM_IS_WIDE_PTR, "is wide pointer", returnInfoBool);
 
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
@@ -694,6 +696,7 @@ initPrimitive() {
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
 
   prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
+  prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

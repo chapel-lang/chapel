@@ -19,9 +19,6 @@
 
 #include "iterator.h"
 
-#include <map>
-#include <vector>
-
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"
@@ -35,6 +32,9 @@
 #include "stringutil.h"
 #include "view.h"
 #include "WhileStmt.h"
+
+#include <map>
+#include <vector>
 
 //
 // This file implements lowerIterator() called by the lowerIterators pass
@@ -210,7 +210,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
                                       bool           is_use,
                                       Vec<BaseAST*>& asts)
 {
-  // TODO: fix this to correctly utilize qualified refs
+  // BHARSH TODO: fix this to correctly utilize qualified refs
   // Get the expression that sets or uses the symexpr.
   CallExpr* call = toCallExpr(se->parentExpr);
 
@@ -928,25 +928,35 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
 
   int block = 0;
+
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
     bool collect = false;
+
     for_vector(Expr, expr, bb->exprs) {
       CallExpr* call = toCallExpr(expr);
+
       if (call && call->isPrimitive(PRIM_YIELD))
         collect = true;
+
       if (singleLoop && expr == singleLoop->next)
         collect = true;
+
       if (singleLoop && expr == singleLoop->body.head)
         collect = true;
     }
+
     if (collect) {
       BitVec live(locals.n);
+
       for (int j = 0; j < locals.n; j++) {
         if (OUT[block]->get(j))
           live.set(j);
       }
+
       for (int k = bb->exprs.size() - 1; k >= 0; k--) {
-        CallExpr* call = toCallExpr(bb->exprs[k]);
+        CallExpr*             call = toCallExpr(bb->exprs[k]);
+        std::vector<SymExpr*> symExprs;
+
         if ((call && call->isPrimitive(PRIM_YIELD)) ||
             (singleLoop && bb->exprs[k] == singleLoop->next) ||
             (singleLoop && bb->exprs[k] == singleLoop->body.head)) {
@@ -956,16 +966,19 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
             }
           }
         }
-        Vec<SymExpr*> symExprs;
+
         collectSymExprs(bb->exprs[k], symExprs);
-        forv_Vec(SymExpr, se, symExprs) {
+
+        for_vector(SymExpr, se, symExprs) {
           if (defSet.set_in(se))
             live.unset(localMap.get(se->var));
+
           if (useSet.set_in(se))
             live.set(localMap.get(se->var));
         }
       }
     }
+
     block++;
   }
 
@@ -976,12 +989,12 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   // converted to fields.  The test/incr fields are handled correctly
   // as a result of being inserted in to the body of the loop
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
-    Vec<SymExpr*> symExprs;
-    CForLoop*     cforLoop = toCForLoop(singleLoop);
+    std::vector<SymExpr*> symExprs;
+    CForLoop*             cforLoop = toCForLoop(singleLoop);
 
     collectSymExprs(cforLoop->initBlockGet(), symExprs);
 
-    forv_Vec(SymExpr, se, symExprs) {
+    for_vector(SymExpr, se, symExprs) {
       if (useSet.set_in(se)) {
         syms.add_exclusive(se->var);
       }
@@ -990,7 +1003,8 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
 }
 
 
-static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn,
+static bool containsRefVar(Vec<Symbol*>& syms,
+                           FnSymbol*     fn,
                            Vec<Symbol*>& yldSymSet)
 {
   forv_Vec(Symbol, sym, syms)
@@ -1168,13 +1182,13 @@ rebuildIterator(IteratorInfo* ii,
                 SymbolMap&    local2field,
                 Vec<Symbol*>& locals) {
   // Remove the original iterator function.
-  FnSymbol*      fn = ii->iterator;
-  Vec<CallExpr*> icalls;
+  FnSymbol*              fn = ii->iterator;
+  std::vector<CallExpr*> icalls;
 
   collectCallExprs(fn, icalls);
 
   // ... and the task functions that it calls.
-  forv_Vec(CallExpr, call, icalls) {
+  for_vector(CallExpr, call, icalls) {
     if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
       // What to do if multiple calls? may or may not cause unwanted deletion.
       if (fVerify) // this assert is expensive to compute

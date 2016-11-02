@@ -161,7 +161,12 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
     } else if (NamedExpr* e = toNamedExpr(expr)) {
       printf("%s = ", e->name);
     } else if (toDefExpr(expr)) {
-      printf("def %s ", toDefExpr(expr)->sym->qualType().qualStr());
+      Symbol* sym = toDefExpr(expr)->sym;
+      if (sym->type != NULL) {
+        printf("def %s ", sym->qualType().qualStr());
+      } else {
+        printf("def ");
+      }
     } else if (SymExpr* e = toSymExpr(expr)) {
       list_sym(e->var, false);
     } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {

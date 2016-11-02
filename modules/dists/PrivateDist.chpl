@@ -81,7 +81,6 @@ class Private: BaseDist {
   proc dsiTrackDomains()    return false;
 
   proc singleton() param return true;
-  proc dsiSingleton()    return true;
 }
 
 class PrivateDom: BaseRectangularDom {

@@ -4,6 +4,10 @@
  * Terms of use are as specified in license.txt
  */
 
+#if _FORTIFY_SOURCE > 0 && __OPTIMIZE__ <= 0 /* silence an annoying MPICH/Linux warning */
+#undef _FORTIFY_SOURCE
+#endif
+
 #include <mpi.h>
 
 #define TEST_MPI 1
@@ -164,7 +168,7 @@ void mpi_barrier(threaddata_t *tdata) {
   #define MPI_LOCK()
   #define MPI_UNLOCK()
 #else
-  GASNETI_UNUSED_UNLESS_THREADS
+  GASNETT_UNUSED
   static gasnet_hsl_t  mpi_hsl = GASNET_HSL_INITIALIZER;
   #define MPI_LOCK()   gasnet_hsl_lock(&mpi_hsl)
   #define MPI_UNLOCK() gasnet_hsl_unlock(&mpi_hsl)

@@ -76,7 +76,7 @@ class Tree {
   proc init(item, depth) {
     this.item = item;
     super.init();
-    if depth > 1 {
+    if depth > 0 {
       left = new Tree(2*item-1, depth-1);
       right = new Tree(2*item, depth-1);
     }

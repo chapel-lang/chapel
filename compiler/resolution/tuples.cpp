@@ -556,49 +556,63 @@ instantiate_tuple_cast(FnSymbol* fn)
     Symbol*    toName = new_CStringSymbol(  toField->name);
     const char* name  = toField->name;
 
-    VarSymbol* read = NULL;
+    VarSymbol* readF = NULL;
     VarSymbol* element = NULL;
 
     CallExpr* get = NULL;
 
-    if (!isReferenceType(fromField->type) &&
-        fromField->type->getRefType() == toField->type) {
-      // Converting from a value to a reference
-      read = new VarSymbol(astr("read_", name), toField->type);
-      block->insertAtTail(new DefExpr(read));
-      get = new CallExpr(PRIM_GET_MEMBER, arg, fromName);
-    } else {
-      read = new VarSymbol(astr("read_", name), fromField->type);
-      block->insertAtTail(new DefExpr(read));
+    if (isReferenceType(fromField->type)) {
+      // Use PRIM_GET_MEMBER_VALUE if the element is already a reference
+      readF = new VarSymbol(astr("read_", name), fromField->type);
+      block->insertAtTail(new DefExpr(readF));
       get = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fromName);
+    } else {
+      // Otherwise, use PRIM_GET_MEMBER
+      readF = new VarSymbol(astr("read_", name), fromField->type->getRefType());
+      block->insertAtTail(new DefExpr(readF));
+      get = new CallExpr(PRIM_GET_MEMBER, arg, fromName);
     }
 
-    block->insertAtTail(new CallExpr(PRIM_MOVE, read, get));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, readF, get));
 
-    if (!isReferenceType(toField->type) &&
-        fromField->type == toField->type->getRefType()) {
-      // converting a reference to a value
+    // now readF is some kind of reference
+    // the code below needs to handle the following 5 cases:
+    //
+    // fromField : t1     toField : t2       (value types differ)
+    // fromField: ref(t)  toField : ref(t)   (preserve field ref)
+    // fromField: t       toField : ref(t)   (create field ref to element)
+    // fromField : ref(t)      toField : t   (copy field)
+    // fromField : t           toField : t   (copy field)
+
+    if (fromField->type->getValType() != toField->getValType()) {
+      // fromField : t1     toField : t2
+      // even with ref level adjustment, types do not match.
+      // create a _cast call.
+
+      // It would be an error to create a reference
+      // to the (function local) result of the cast
+      INT_ASSERT(!isReferenceType(toField->type));
+
       element = new VarSymbol(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
 
-      CallExpr* deref = new CallExpr(PRIM_DEREF, read);
-      block->insertAtTail(new CallExpr(PRIM_MOVE, element, deref));
-    } else if (toField->type != get->typeInfo()) {
-      // Types do not match - add a _cast call
-      element = new VarSymbol(astr("elt_", name), toField->type);
-      block->insertAtTail(new DefExpr(element));
-
-      CallExpr* cast = new CallExpr("_cast", toField->type->symbol, read);
+      CallExpr* cast = new CallExpr("_cast", toField->type->symbol, readF);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, cast));
     } else if (isReferenceType(toField->type)) {
-      // If creating a reference, no copy call necessary
-      element = read;
+      // fromField: ref(t)  toField : ref(t)
+      // fromField: t       toField : ref(t)
+      // we are converting to a reference
+      // since 'readF' is already a reference, just use it.
+      element = readF;
     } else {
+      // fromField : ref(t)      toField : t
+      // fromField : t           toField : t
+
       element = new VarSymbol(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
 
       // otherwise copy construct it
-      CallExpr* copy = new CallExpr("chpl__autoCopy", read);
+      CallExpr* copy = new CallExpr("chpl__autoCopy", readF);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
     }
     // Expecting insertCasts to fix any type mismatch in the last MOVE added

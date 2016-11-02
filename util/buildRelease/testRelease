@@ -170,7 +170,7 @@ if ($debug == 1) {
     $mailcommand = "| $mailer -s \"$mailsubject \" $successmail";
 }
     
-if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
+if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
     open(MAIL, $mailcommand);
 
     print MAIL "=== Results - testRelease =================================================\n";
@@ -225,7 +225,7 @@ sub mysystem {
             $mailcommand = "| $mailer -s \"$mailsubject \" $failuremail";
         }
 
-        if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
             print "Trying to mail message... using $mailcommand\n";
             open(MAIL, $mailcommand);
             print MAIL "=== Summary - testRelease ===================================================\n";

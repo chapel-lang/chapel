@@ -393,22 +393,37 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
 }
 
 //
-// Given a string literal argument from a 'require' statement, process
-// that argument.  We assume it's either a "-llib" flag,
-// or a source filename like "foo.h", "foo.c", "foo.o", etc.  
+// Given an expression from a 'require' statement, process it.  We
+// assume it's going to either be a "-llib" flag, or a source filename
+// like "foo.h", "foo.c", "foo.o", "foo.chpl", etc.  If this call is
+// made at parseTime, we only look for ".chpl" files and add them to
+// the list of source files we need to parse; if it's made later
+// (i.e., function resolution time) then we add the string to our list
+// of library information or to our list of source files.
 //
-// - For the former, pass to addLibInfo(), the same function that
-//   handles command line -l flags.
-//
-// - Otherwise, assume it's the latter and pass it to our source file
-//   handler (which itself handles cases it doesn't recognize).
-//
-static void processStringInRequireStmt(const char* str) {
+bool processStringInRequireStmt(const char* str, bool parseTime) {
   if (strncmp(str, "-l", 2) == 0) {
-    addLibInfo(str);
+    if (!parseTime) {
+      addLibInfo(str);
+      return true;
+    }
   } else {
-    addSourceFile(str);
+    if (isChplSource(str)) {
+      if (parseTime) {
+        addSourceFile(str);
+        return true;
+      } else {
+        USR_FATAL("'require' cannot handle non-literal '.chpl' files");
+        return false;
+      }
+    } else {
+      if (!parseTime) {
+        addSourceFile(str);
+        return true;
+      }
+    }
   }
+  return false;
 }
 
 // UseStmt builder's helper.  If the Expr* provided was wrong in some way,
@@ -519,17 +534,27 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
     Expr* useArg = expr->remove();
 
     //
-    // if this is a string argument to 'require', process it
+    // if this is a string literal, process it if we should
     //
     if (const char* str = toImmediateString(useArg)) {
-      processStringInRequireStmt(str);
+      if (processStringInRequireStmt(str, true)) {
+        continue;
+      }
+    }
+    //
+    // otherwise, store it in a require statement to handle later
+    // (during resolution)
+    //
+    CallExpr* requireCall = new CallExpr(PRIM_REQUIRE, useArg);
+    if (list == NULL) {
+      list = buildChapelStmt(requireCall);
     } else {
-      USR_FATAL(useArg, "'require' currently only accepts string literal arguments");
+      list->insertAtTail(requireCall);
     }
   }
 
   //
-  // If all of them are consumed, replace the use statement by a no-op
+  // If we didn't create anything, return a no-op
   //
   if (list == NULL) {
     list = buildChapelStmt(new CallExpr(PRIM_NOOP));

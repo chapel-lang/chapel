@@ -184,7 +184,7 @@ static void extractReferences(Expr* expr,
     // 4. A field assignment that has an 'addr of' primitive on its rhs. (not
     //    implemented)
     // 5. An assign or move that has a PRIM_GET_MEMBER on the rhs. (not implemented)
-    // TODO: Is this actually accurate for PRIM_ASSIGN? ASSIGN should do
+    // BHARSH TODO: Is this actually accurate for PRIM_ASSIGN? ASSIGN should do
     // a content-copy for (= ref ref), not a pointer-copy
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
     {
@@ -219,7 +219,7 @@ static void extractReferences(Expr* expr,
               printf("Setting pair to NULL: %s[%d]\n", lhs->name, lhs->id);
             }
 #endif
-            // If we can't reason about this useage of a reference, mark it's
+            // If we can't reason about this usage of a reference, mark its
             // corresponding value with NULL to indicate that nothing should
             // happen.
             refs[lhs] = NULL;
@@ -1219,7 +1219,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                    Symbol* var) {
   if (CallExpr* move = findRefDef(defMap, var)) {
     if (CallExpr* rhs = toCallExpr(move->get(2))) {
-      if (rhs->isPrimitive(PRIM_ADDR_OF)) {
+      if (rhs->isPrimitive(PRIM_ADDR_OF) || rhs->isPrimitive(PRIM_SET_REFERENCE)) {
         bool stillAlive = false;
         for_uses(se, useMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
@@ -1245,13 +1245,26 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             ++s_ref_repl_count;
             addUse(useMap, se);
           }
-          else if (parent && isMoveOrAssign(parent)) {
+          else if (parent && (parent->isPrimitive(PRIM_MOVE) || parent->isPrimitive(PRIM_SET_REFERENCE))) {
             CallExpr* rhsCopy = rhs->copy();
+            if (parent->isPrimitive(PRIM_SET_REFERENCE)) {
+              // Essentially a pointer copy like a (move refA refB)
+              parent = toCallExpr(parent->parentExpr);
+              INT_ASSERT(parent && isMoveOrAssign(parent));
+            }
             parent->get(2)->replace(rhsCopy);
             ++s_ref_repl_count;
             SymExpr* se = toSymExpr(rhsCopy->get(1));
             INT_ASSERT(se);
             addUse(useMap, se);
+            // BHARSH TODO: Is it possible to handle the following case safely
+            // for PRIM_ASSIGN?
+            //
+            // ref i_foo : T;
+            // (move i_foo (set reference bar))
+            // (= call_tmp i_foo)
+            //
+            // Should that turn into (= call_tmp bar)?
           } else
             stillAlive = true;
         }

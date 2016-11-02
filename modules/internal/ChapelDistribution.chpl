@@ -35,7 +35,7 @@ module ChapelDistribution {
     var _domsLock: atomicbool;    //   and lock for concurrent access
     var _free_when_no_doms: bool; // true when the original _distribution
                                   // has been destroyed
-    var pid:int = -1; // privatized ID, if privatization is supported
+    var pid:int = nullPid; // privatized ID, if privatization is supported
   
     proc ~BaseDist() {
     }
@@ -138,17 +138,17 @@ module ChapelDistribution {
   
     proc dsiDisplayRepresentation() { }
 
-    // false for default distribution so that we don't increment the
-    // default distribution's reference count and add domains to the
-    // default distribution's list of domains
-    // AKA tracks domains
+    // Does the distribution keep a list of domains? Can the domains
+    // keep the distribution alive longer? false for DefaultDist.
     proc trackDomains() param return true;
 
     // dynamically-dispatched counterpart of linksDistribution
     proc dsiTrackDomains() return true;
 
+    // indicates if a distribution is a singleton. If so, we make no
+    // effort to free it. DefaultDist is a singleton.
     proc singleton() param return false;
-    proc dsiSingleton() return false;
+    // We could add dsiSingleton as a dynamically-dispatched counterpart
   }
   
   //
@@ -165,7 +165,7 @@ module ChapelDistribution {
                                    // is using {1..2}
     var _arrsLock: atomicbool; //   and lock for concurrent access
     var _free_when_no_arrs: bool;
-    var pid:int = -1; // privatized ID, if privatization is supported
+    var pid:int = nullPid; // privatized ID, if privatization is supported
   
     proc ~BaseDom() {
     }
@@ -299,9 +299,8 @@ module ChapelDistribution {
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
   
-    // false for default distribution so that we don't increment the
-    // default distribution's reference count and add domains to the
-    // default distribution's list of domains
+    // Does the distribution keep a list of domains? Can the
+    // domains keep the distribution alive longer?
     proc linksDistribution() param return true;
   
     // dynamically-dispatched counterpart of linksDistribution
@@ -577,7 +576,7 @@ module ChapelDistribution {
     // will use explicit processor atomics, even when network
     // atomics are available
     var _arrAlias: BaseArr;    // reference to base array if an alias
-    var pid:int = -1; // privatized ID, if privatization is supported
+    var pid:int = nullPid; // privatized ID, if privatization is supported
   
     proc ~BaseArr() {
     }
@@ -797,15 +796,18 @@ module ChapelDistribution {
     // decide whether or not the array is an alias
     var isalias = (arr._arrAlias != nil);
 
+    // array implementation can destroy data or other members
+    arr.dsiDestroyArr(isalias);
+
     if !isalias {
       // unlink domain referred to by arr.eltType
       // not necessary for aliases/slices because the original
       // array will take care of it.
+      // This needs to be done after the array elements are destroyed
+      // (by dsiDestroyArray above) because the array elements might
+      // refer to this inner domain.
       chpl_decRefCountsForDomainsInArrayEltTypes(arr, arr.eltType);
     }
-
-    // array implementation can destroy data or other members
-    arr.dsiDestroyArr(isalias);
 
     if privatized {
       _freePrivatizedClass(arr.pid, arr);

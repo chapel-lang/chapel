@@ -335,10 +335,6 @@ static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType
 static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call);
 static Expr* createFunctionAsValue(CallExpr *call);
 static Type* resolveTypeAlias(SymExpr* se);
-static bool
-isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL);
-static bool
-usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen);
 static Type* resolveTypeAlias(SymExpr* se);
 static Expr* preFold(Expr* expr);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
@@ -571,7 +567,7 @@ static void
 resolveAutoCopyEtc(Type* type) {
 
   // resolve autoCopy
-  {
+  if (autoCopyMap.get(type) == NULL) {
     SET_LINENO(type->symbol);
     Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
@@ -584,7 +580,7 @@ resolveAutoCopyEtc(Type* type) {
   }
 
   // resolve autoDestroy
-  {
+  if (autoDestroyMap.get(type) == NULL) {
     SET_LINENO(type->symbol);
     Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
@@ -604,7 +600,7 @@ resolveAutoCopyEtc(Type* type) {
   // We make the 'unalias' hook available to all user records,
   // but for now it only applies to array/domain/distribution
   // in order to minimize the changes.
-  if (isRecordWrappedType(type)) {
+  if (isRecordWrappedType(type) && unaliasMap.get(type) == NULL) {
     SET_LINENO(type->symbol);
     Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
@@ -962,18 +958,18 @@ static bool
 doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet)
 {
 
-  if( fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) || // but not _type_construct__tuple
-      fn->hasFlag(FLAG_CONSTRUCTOR) || // but not _construct__tuple
-      fn->hasFlag(FLAG_BUILD_TUPLE) || // and not _build_tuple(_allow_ref)
-      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) || // and not _build_tuple_type
-      fn->hasFlag(FLAG_TUPLE_CAST_FN) || // and not _cast for tuples
-      fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) || // not iteratorIndex
-      (!forRet && fn->hasFlag(FLAG_INIT_COPY_FN)) || // not tuple chpl__initCopy
-      fn->hasFlag(FLAG_AUTO_COPY_FN) || // not tuple chpl__autoCopy
-      fn->hasFlag(FLAG_AUTO_DESTROY_FN) || // not tuple chpl__autoDestroy
-      fn->hasFlag(FLAG_UNALIAS_FN) || // not tuple chpl__unalias
-      fn->hasFlag(FLAG_ALLOW_REF) || // not iteratorIndex
-      (forRet && fn->hasFlag(FLAG_ITERATOR_FN)) // iterators b/c
+  if( fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
+      fn->hasFlag(FLAG_CONSTRUCTOR)              || // _construct__tuple
+      fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
+      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
+      fn->hasFlag(FLAG_TUPLE_CAST_FN)            || // _cast for tuples
+      fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES)|| // iteratorIndex
+      (!forRet && fn->hasFlag(FLAG_INIT_COPY_FN))|| // tuple chpl__initCopy
+      fn->hasFlag(FLAG_AUTO_COPY_FN)             || // tuple chpl__autoCopy
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN)          || // tuple chpl__autoDestroy
+      fn->hasFlag(FLAG_UNALIAS_FN)               || // tuple chpl__unalias
+      fn->hasFlag(FLAG_ALLOW_REF)                || // iteratorIndex
+      (forRet && fn->hasFlag(FLAG_ITERATOR_FN)) // not iterators b/c
                                     //  * they might return by ref
                                     //  * might need to return a ref even
                                     //    when not indicated return by ref.
@@ -1014,7 +1010,6 @@ getReturnedTupleType(FnSymbol* fn, Type* retType)
     return computeTupleWithIntent(INTENT_REF, retType);
   } else {
     // Compute the tuple type without any refs
-    // Set the function return type to that type.
     return computeNonRefTuple(retType);
   }
 }
@@ -2095,15 +2090,15 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       bool needTupleInBody = true; //avoid "may be used uninitialized" warning
 
       // Replace mappings to the old formal with mappings to the new variable.
-      if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
+      if (PartialCopyData* pci = getPartialCopyInfo(workingFn)) {
         bool gotFormal = false; // for assertion only
-        for (int index = workingFn->partialCopyMap.n; --index >= 0;) {
-          SymbolMapElem& mapElem = workingFn->partialCopyMap.v[index];
+        for (int index = pci->partialCopyMap.n; --index >= 0;) {
+          SymbolMapElem& mapElem = pci->partialCopyMap.v[index];
 
           if (mapElem.value == formal) {
             gotFormal = true;
             needTupleInBody =
-              needVarArgTupleAsWhole(workingFn->partialCopySource->body, n,
+              needVarArgTupleAsWhole(pci->partialCopySource->body, n,
                                      toArgSymbol(mapElem.key));
 
             if (needTupleInBody) {
@@ -2111,8 +2106,8 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
             } else {
               // We will rely on mapElem.value==formal to replace it away
               // in finalizeCopy().  This assumes a single set of varargs.
-              workingFn->varargOldFormal = formal;
-              workingFn->varargNewFormals = varargFormals;
+              pci->varargOldFormal = formal;
+              pci->varargNewFormals = varargFormals;
             }
 
             break;
@@ -2217,9 +2212,9 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
           workingFn->insertAtHead(new DefExpr(var));
         }
 
-        if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
+        if (PartialCopyData* pci = getPartialCopyInfo(workingFn)) {
           // If this is a partial copy, store the mapping for substitution later.
-          workingFn->partialCopyMap.put(formal, var);
+          pci->partialCopyMap.put(formal, var);
         } else {
           // Otherwise, do the substitution now.
           subSymbol(workingFn->body, formal, var);
@@ -4748,7 +4743,7 @@ static void resolveSetMember(CallExpr* call) {
 
 static void resolveMove(CallExpr* call) {
   if (call->id == breakOnResolveID )
-      gdbShouldBreakHere();
+    gdbShouldBreakHere();
 
   Expr* rhs = call->get(2);
   Symbol* lhs = NULL;
@@ -4824,7 +4819,7 @@ static void resolveMove(CallExpr* call) {
           rhsType = rhsType->refType;
 
           // Add PRIM_ADDR_OF
-          //  (this won't be necessary with QualifiiedType/PRIM_SET_REFERENCE)
+          //  (this won't be necessary with QualifiedType/PRIM_SET_REFERENCE)
           VarSymbol* addrOfTmp = newTemp("moveAddr", rhsType);
           call->insertBefore(new DefExpr(addrOfTmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, addrOfTmp,
@@ -5876,68 +5871,6 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   return call_wrapper;
 }
 
-//
-// returns true if the symbol is defined in an outer function to fn
-// third argument not used at call site
-//
-static bool
-isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent /* = NULL*/) {
-  if (!parent)
-    parent = fn->defPoint->parentSymbol;
-  if (!isFnSymbol(parent))
-    return false;
-  else if (sym->defPoint->parentSymbol == parent)
-    return true;
-  else
-    return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
-}
-
-
-//
-// finds outer vars directly used in a function
-//
-static bool
-usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
-  std::vector<BaseAST*> asts;
-  collect_asts(fn, asts);
-  for_vector(BaseAST, ast, asts) {
-    if (toCallExpr(ast)) {
-      CallExpr *call = toCallExpr(ast);
-
-      //dive into calls
-      Vec<FnSymbol*> visibleFns;
-      Vec<BlockStmt*> visited;
-
-      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited, call);
-
-      forv_Vec(FnSymbol, called_fn, visibleFns) {
-        bool seen_this_fn = false;
-        forv_Vec(FnSymbol, seen_fn, seen) {
-          if (called_fn == seen_fn) {
-            seen_this_fn = true;
-            break;
-          }
-        }
-        if (!seen_this_fn) {
-          seen.add(called_fn);
-          if (usesOuterVars(called_fn, seen)) {
-            return true;
-          }
-        }
-      }
-    }
-    if (SymExpr* symExpr = toSymExpr(ast)) {
-      Symbol* sym = symExpr->var;
-
-      if (isLcnSymbol(sym)) {
-        if (isOuterVar(sym, fn))
-          return true;
-      }
-    }
-  }
-  return false;
-}
-
 // This function returns true for user fields, including
 // const, param, and type fields.
 // It returns false for compiler-introduced fields like
@@ -6200,7 +6133,12 @@ static Expr* resolvePrimInit(CallExpr* call)
   return result;
 }
 
-
+// This function helps when checking that we aren't returning
+// a local variable by reference. In particular, it checks for two
+// cases:
+//   * returning a ref-intent argument by ref
+//   * returning a const-ref-intent argument by const ref
+//
 static bool
 returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
 {
@@ -6645,11 +6583,6 @@ preFold(Expr* expr) {
 
       result = paramLoop->foldForResolve();
     } else if (call->isPrimitive(PRIM_LOGICAL_FOLDER)) {
-
-      if(call->parentSymbol &&
-          call->parentSymbol->id == 950612)
-        gdbShouldBreakHere();
-
       SymExpr* sym1 = toSymExpr(call->get(1));
       VarSymbol* lhs = NULL;
       if (VarSymbol* sym = toVarSymbol(sym1->var)) {
@@ -6670,15 +6603,17 @@ preFold(Expr* expr) {
         bool isImmediate = false;
         IntentTag intent = INTENT_BLANK;
 
-        if (v)
+        if (v) {
           if (v->immediate)
             isImmediate = true;
+          intent = concreteIntent(INTENT_BLANK, v->type);
+        }
 
         if (a) {
           intent = concreteIntent(a->intent, a->type);
         }
 
-        if (v || a) { // works if a is removed from this conditional
+        if (v || a) {
           if (isRef) {
             // can't take address of something already a ref
           } else if (sym2->type == dtNil) {
@@ -6693,6 +6628,12 @@ preFold(Expr* expr) {
           } else if (a && (intent & INTENT_FLAG_IN)) {
             // don't take the address of arguments passed with in intent
             // (it doesn't help and causes problems with inlining)
+          } else if (v &&
+                     (intent & INTENT_FLAG_IN) &&
+                     v->isConstValWillNotChange()) {
+            // don't take address of outer variables declared to be const
+            // (otherwise, after flattenFunctions, we will take the
+            //  address of a by-value argument).
           } else {
             Expr* stmt = call->getStmtExpr();
             Type* t = sym2->type;
@@ -7101,8 +7042,8 @@ preFold(Expr* expr) {
       if (ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         FnSymbol* inFn = toFnSymbol(call->parentSymbol);
         if (inFn && inFn->hasFlag(FLAG_STAR_TUPLE_ACCESSOR)) {
-          Type* fieldType = ct->getFieldType(call->get(2));
-          if (fieldType && fieldType->isRef()) {
+          QualifiedType fieldType = ct->getFieldType(call->get(2));
+          if (fieldType.type() && fieldType.isRef()) {
             if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
               Expr* base = call->get(1);
               Expr* field = call->get(2);
@@ -7605,6 +7546,16 @@ postFold(Expr* expr) {
       FOLD_CALL2(P_prim_lsh);
     } else if (call->isPrimitive(PRIM_RSH)) {
       FOLD_CALL2(P_prim_rsh);
+    } else if (call->isPrimitive(PRIM_REQUIRE)) {
+      Expr* arg = call->argList.only();
+      const char* str;
+      if (get_string(arg, &str)) {
+        processStringInRequireStmt(str, false);
+      } else {
+        USR_FATAL(call, "'require' statements require string arguments");
+      }
+      result = new CallExpr(PRIM_NOOP);
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_ARRAY_ALLOC) ||
                (call->primitive &&
                 (!strncmp("_fscan", call->primitive->name, 6) ||
@@ -7868,7 +7819,7 @@ resolveExpr(Expr* expr) {
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           resolveFormals(ct->defaultTypeConstructor);
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
-            if (ct->defaultTypeConstructor->hasFlag(FLAG_PARTIAL_COPY))
+            if (getPartialCopyInfo(ct->defaultTypeConstructor))
               instantiateBody(ct->defaultTypeConstructor);
             resolveFns(ct->defaultTypeConstructor);
           }
@@ -8090,7 +8041,6 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     FnSymbol* instantiatedFrom = fn->instantiatedFrom;
     while (instantiatedFrom->instantiatedFrom)
       instantiatedFrom = instantiatedFrom->instantiatedFrom;
-
 
     CallExpr* call = new CallExpr(instantiatedFrom->retType->defaultInitializer);
 
@@ -8885,13 +8835,22 @@ resolve() {
 
   resolveExports();
   resolveEnumTypes();
-  resolveDynamicDispatches();
 
   insertRuntimeTypeTemps();
 
   resolveAutoCopies();
   resolveRecordInitializers();
   resolveOther();
+
+  resolveDynamicDispatches();
+
+  // MPF - this 2nd resolveAutoCopies call is a workaround
+  // for the case when resolving a dynamic dispatch created a
+  // new type. Resolution should instead have some sort of work-queue
+  // and iterate until everything is resolved. (Or at least
+  // resolveDynamicDispatches and resolveAutoCopies should be called
+  // in a loop).
+  resolveAutoCopies();
 
   insertDynamicDispatchCalls();
   insertReturnTemps();
@@ -8923,6 +8882,7 @@ resolve() {
   }
   visibleFunctionMap.clear();
   visibilityBlockCache.clear();
+  clearPartialCopyFnMap();
 
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
     stmt->moduleUseClear();
@@ -9452,32 +9412,12 @@ static void insertDynamicDispatchCalls() {
 
     SET_LINENO(call);
 
-    //Check to see if any of the overridden methods reference outer variables.  If they do, then when we later change the
-    //signature in flattenFunctions, the vtable style will break (function signatures will no longer match).  To avoid this
-    //we switch to the if-block style in the case where outer variables are discovered.
-    //Note: This is conservative, as we haven't finished resolving functions and calls yet, we check all possibilities.
-
-    bool referencesOuterVars = false;
-
-    Vec<FnSymbol*> seen;
-    referencesOuterVars = usesOuterVars(key, seen);
-
-    if (!referencesOuterVars) {
-      for (int i = 0; i < fns->n; ++i) {
-        seen.clear();
-        if ( (referencesOuterVars = usesOuterVars(key, seen)) ) {
-          break;
-        }
-      }
-    }
-
     bool isSuperAccess = false;
     if (SymExpr* base = toSymExpr(call->get(2))) {
       isSuperAccess = base->var->hasFlag(FLAG_SUPER_TEMP);
     }
 
-    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) &&
-        (!referencesOuterVars) && !isSuperAccess ) {
+    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) && !isSuperAccess ) {
       //
       // change call of root method into virtual method call;
       // Insert function SymExpr and virtual method temp at head of argument
@@ -10561,7 +10501,7 @@ static void removeInitFields()
   {
     if (! def->inTree()) continue;
     if (! def->init) continue;
-    if (! def->sym->hasFlag(FLAG_TYPE_VARIABLE)) continue;
+    if (! (def->sym->hasFlag(FLAG_TYPE_VARIABLE) || def->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))) continue;
     def->init->remove();
     def->init = NULL;
   }

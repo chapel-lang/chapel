@@ -165,9 +165,10 @@ module String {
       the user to ensure that the underlying buffer is not freed if the
       `c_string` is not copied in.
      */
-    proc string(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
+    proc string(cs: c_string, length: int = cs.length,
+                owned: bool = true, needToCopy:  bool = true) {
       this.owned = owned;
-      const cs_len = cs.length;
+      const cs_len = length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
     }
 

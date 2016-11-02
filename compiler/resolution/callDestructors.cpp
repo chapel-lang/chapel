@@ -506,7 +506,8 @@ void ReturnByRef::transform()
     {
       FnSymbol * calledFn = call->isResolved();
       if (!calledFn->hasFlag(FLAG_NEW_ALIAS_FN))
-        // fixupNewAlias removes such calls from the tree
+        // fixupNewAlias removes some - but not all - calls
+        // to the newAlias function from the tree.
         INT_ASSERT(false);
     }
   }
@@ -1275,8 +1276,8 @@ void fixupNewAlias(void) {
       bool isArrayAliasField = false;
       const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
       for_formals(fml, fn)
-	if (fml->name == aliasFieldArg)
-	  isArrayAliasField = true;
+        if (fml->name == aliasFieldArg)
+          isArrayAliasField = true;
 
       if (isArrayAliasField) {
         SymExpr* se = toSymExpr(actual);

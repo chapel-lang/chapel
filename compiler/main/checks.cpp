@@ -422,6 +422,7 @@ void check_afterEveryPass()
     verify();
     checkForDuplicateUses();
     checkFlagRelationships();
+    checkEmptyPartialCopyFnMap();
   }
 }
 
@@ -469,17 +470,17 @@ static void check_afterResolveIntents()
       // Only look at Var or Arg symbols
       if (isLcnSymbol(sym)) {
         QualifiedType qual = sym->qualType();
-	// MPF TODO: This should not be necessary
-	// it is a workaround for problems with --verify
-	// with tuple type constructors accepting domains.
-	// It would be better to treat run-time types a
-        // normal record.
+        // MPF TODO: This should not be necessary
+        // it is a workaround for problems with --verify
+        // with tuple type constructors accepting domains.
+        // It would be better to treat run-time types as
+        // normal records.
         if (ArgSymbol* arg = toArgSymbol(sym))
           if (arg->intent == INTENT_TYPE)
             continue;
 
-        if (qual.getQual() == QUAL_BLANK) {
-          INT_FATAL("Symbol should not have blank qualifier: %s (%d)", sym->cname, sym->id);
+        if (qual.getQual() == QUAL_UNKNOWN) {
+          INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
         }
       }
     }
@@ -730,26 +731,12 @@ checkFormalActualTypesMatch()
                     formal->name);
         }
 
-        if (formal->type != actual->typeInfo()) {
-          TypeSymbol* actualTS = actual->typeInfo()->symbol;
-          TypeSymbol* formalTS = formal->type->symbol;
-          if ((formal->intent & INTENT_FLAG_REF) &&
-              actualTS->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
-              formal->type == actualTS->type->getValType()) {
-            // OK to pass a ref to a ref-intent function
-          } else if((formal->isRefOrWideRef()) &&
-                    formalTS->type->getValType() == actualTS->type->getValType()) {
-            // OK to pass a value to a ref-intent function
-          } else if (!formal->isRefOrWideRef() && actual->isRefOrWideRef() &&
-                    formal->getValType() == actual->getValType()) {
-            // OK to pass ref to non-ref, codegen will insert dereference
-          } else {
-            INT_FATAL(call,
-                      "actual formal type mismatch for %s: %s != %s",
-                      fn->name,
-                      actual->typeInfo()->symbol->name,
-                      formal->type->symbol->name);
-          }
+        if (formal->getValType() != actual->getValType()) {
+          INT_FATAL(call,
+                    "actual formal type mismatch for %s: %s != %s",
+                    fn->name,
+                    actual->typeInfo()->symbol->name,
+                    formal->type->symbol->name);
         }
       }
     }

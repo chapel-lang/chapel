@@ -1,0 +1,2 @@
+requireChapelParam.chpl:5: error: 'require' cannot handle non-literal '.chpl' files
+Note: This source location is a guess.

@@ -532,7 +532,8 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   //
   // disable all chapel compiler optimizations
   //
-  fBaseline = true;
+  fBaseline = true;                   // --baseline
+
   fNoCopyPropagation = true;          // --no-copy-propagation
   fNoDeadCodeElimination = true;      // --no-dead-code-elimination
   fNoFastFollowers = true;            // --no-fast-followers

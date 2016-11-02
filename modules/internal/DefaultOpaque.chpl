@@ -24,9 +24,6 @@ module DefaultOpaque {
   // record _OpaqueIndex is defined in ChapelArray
 
   pragma "no doc"
-  pragma "locale private"
-  var _OpaqueIndexNext: atomic uint;
-  pragma "no doc"
   proc _OpaqueIndexGetNext():uint {
     var n:uint;
     local {

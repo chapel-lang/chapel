@@ -11,7 +11,7 @@ var dataM: [dataDom] int = [i in 1..n] i % b + 1;
 var dataB: [dataDom] int = 1..n;
 
 type HistM = [1..b] int;
-var histoM, histoP: HistM;
+var histoM: HistM;
 
 type HistB = [1..n] uint(8);
 var histoBA, histoBO, histoBX: HistB;
@@ -24,13 +24,11 @@ proc showBits(name: string, histo: HistB) {
 proc main {
 
   forall d in dataM with (* reduce histoM,
-                          PlusReduceOp reduce histoP,
                           & reduce histoBA,
                           | reduce histoBO,
                           ^ reduce histoBX)
   {
     histoM[d] *= 2;
-    histoP[d] += 2;
     histoBA[d]     &= ~(1<<d):uint(8); // make it 0 in that position
     histoBA[n+1-d] &= ~(1<<d):uint(8);
     histoBO[d]     |=  (1<<d):uint(8); // make it 1 in that position
@@ -39,9 +37,7 @@ proc main {
     histoBX[n+1-d] |=  (1<<d):uint(8);
   }
 
-  // cute: histoM and histoP are the same
   writeln("histoM = ", histoM);
-  writeln("histoP = ", histoP);
   showBits("histoBA", histoBA);
   showBits("histoBO", histoBO);
   showBits("histoBX", histoBX);
