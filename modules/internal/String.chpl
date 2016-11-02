@@ -1772,6 +1772,7 @@ module String {
     for c in 0..#(x.length) {
       hash = ((hash << 5) + hash) ^ x.buff[c];
     }
+    return hash;
   }
 
   //
