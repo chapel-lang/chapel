@@ -3443,6 +3443,8 @@ GenRet codegenCastToVoidStar(GenRet value)
   return ret;
 }
 
+/* Commented out because it is not currently used.
+
 static
 GenRet codegenCastPtrToInt(Type* toType, GenRet value)
 {
@@ -3463,7 +3465,7 @@ GenRet codegenCastPtrToInt(Type* toType, GenRet value)
     return ret;
   }
 }
-
+*/
 
 // Generates code to perform an "assignment" operation, given
 //  a destination pointer and a value.
@@ -4551,8 +4553,9 @@ GenRet CallExpr::codegenPrimitive() {
       ret = codegenValue(get(1));
     }
 
-    // _wide_get_addr promises to return a uint.  Hence the cast.
-    ret            = codegenCastPtrToInt(dtUInt[INT_SIZE_64], ret);
+    // _wide_get_addr promises to return a c void ptr.  Hence the cast.
+    ret = codegenCast(dtCVoidPtr, ret);
+    ret.isUnsigned = true;
 
     break;
   }
