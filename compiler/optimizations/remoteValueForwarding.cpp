@@ -192,10 +192,6 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
 static bool isSufficientlyConst(ArgSymbol* arg);
 
-static bool isSafeToDerefArg(Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                             Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                             Symbol*                       arg);
-
 static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
                           FnSymbol*                     fn,
                           ArgSymbol*                    arg);
@@ -273,10 +269,8 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     // for += between strings.
     retval = true;
 
-  } else if (arg->isRef()  == true &&
-             isSafeToDerefArg(defMap, useMap, arg) == true) {
-    retval = true;
-
+  } else if (arg->isRef()  == true) {
+    retval = false;
   } else {
     retval = false;
   }
@@ -316,12 +310,6 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   }
 
   return retval;
-}
-
-static bool isSafeToDerefArg(Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                             Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                             Symbol*                       arg) {
-  return isSafeToDeref(defMap, useMap, NULL, arg);
 }
 
 static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
