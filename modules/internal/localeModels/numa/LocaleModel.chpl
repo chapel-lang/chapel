@@ -75,14 +75,17 @@ module LocaleModel {
 
   // Compiler (and module code) interface for manipulating global locale IDs..
   pragma "insert line file info"
+  export
   proc chpl_buildLocaleID(node: chpl_nodeID_t, subloc: chpl_sublocID_t)
     return chpl_rt_buildLocaleID(node, subloc);
 
   pragma "insert line file info"
+  export
   proc chpl_nodeFromLocaleID(loc: chpl_localeID_t)
     return chpl_rt_nodeFromLocaleID(loc);
 
   pragma "insert line file info"
+  export
   proc chpl_sublocFromLocaleID(loc: chpl_localeID_t)
     return chpl_rt_sublocFromLocaleID(loc);
 
