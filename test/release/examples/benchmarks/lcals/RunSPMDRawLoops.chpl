@@ -608,7 +608,7 @@ module RunSPMDRawLoops {
             ltimer.start();
             coforall tid in 0..#nTasks with (ref isamp, + reduce sumx, ref val) {
               while isamp < num_samples {
-                for i in chunk(0..#len, nTasks, tid) {
+                for i in chunk(0..(len-1):int(32), nTasks, tid) {
                   var x = x0 + i*h;
                   sumx += trap_int_func(x, y, xp, yp);
                 }
