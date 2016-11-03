@@ -483,9 +483,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
     }
   }
 
-  // YAH, make sure that we do not return a negative hash value for now
-  call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL, INT_SIZE_64), call);
-  CallExpr* ret = new CallExpr(PRIM_RETURN, new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
+  CallExpr* ret = new CallExpr(PRIM_RETURN, call);
 
   fn->body->replace( new BlockStmt( ret));
   normalize(fn);

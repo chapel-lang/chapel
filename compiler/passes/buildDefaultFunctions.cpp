@@ -1101,7 +1101,7 @@ static void build_record_hash_function(AggregateType *ct) {
   fn->insertFormalAtTail(arg);
 
   if (ct->fields.length == 0) {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(0)));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new_UIntSymbol(0)));
     fn->addFlag(FLAG_INLINE);
   } else {
     CallExpr *call = NULL;
