@@ -12,21 +12,21 @@ td.add(two);
 s(two) = 2.0;
 
 //The two outputs match
-writeln(s);
+writeln("A  ", s);
 for ele in s do
-  writeln(ele);
+  writeln("A ", ele);
 
 td.remove(two);
 //The two outputs match
-writeln(s);
+writeln("B  ", s);
 for ele in s do
-  writeln(ele);
+  writeln("B ", ele);
 
 td.remove(one);
 //The two outputs match
-writeln(s);
+writeln("C  ", s);
 for ele in s do
-  writeln(ele);
+  writeln("C ", ele);
 //Scenario 1 ends
 
 //Scenario 2 begins
@@ -36,19 +36,19 @@ td.add(two);
 s(two) = 2.0;
 
 //The two outputs match
-writeln(s);
+writeln("D  ", s);
 for ele in s do
-  writeln(ele);
+  writeln("D ", ele);
 
 td.remove(one);
 //The two outputs *do not* match
-writeln(s);
+writeln("E  ", s);
 for ele in s do
-  writeln(ele); 
+  writeln("E ", ele); 
 
 td.remove(two);
 //The two outputs match
-writeln(s);
+writeln("F  ", s);
 for ele in s do
-  writeln(ele);
+  writeln("F ", ele);
 //Scenario 2 ends

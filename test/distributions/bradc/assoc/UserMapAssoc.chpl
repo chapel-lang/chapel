@@ -30,9 +30,10 @@ record DefaultMapper {
     const hash = chpl__defaultHashWrapper(ind);
     // Mix the bits around
     const mixed = _gen_key(hash);
+    const int_hash = (mixed & max(int)): int;
     const numlocs = targetLocales.domain.size;
     // Now extract the low bits
-    const idx = mixed % numlocs;
+    const idx = int_hash % numlocs;
     return idx;
   }
 }
