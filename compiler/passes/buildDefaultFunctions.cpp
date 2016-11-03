@@ -1040,13 +1040,16 @@ static void build_record_copy_function(AggregateType* ct) {
   const char* copyCtorName = astr("_construct_", ct->symbol->name);
   const char* copyInitName = "init";
   bool foundUserDefinedCopy = false;
-  if (FnSymbol* ctor = function_exists(copyCtorName, 1, ct))
-    // note: default ctor has 1 arg, meme
-    if (!ctor->getFormal(1)->hasFlag(FLAG_IS_MEME))
-      foundUserDefinedCopy = true;
+  // as an optimization, the below conditionals use ct->initializerStyle
+  if (ct->initializerStyle == DEFINES_CONSTRUCTOR)
+    if (FnSymbol* ctor = function_exists(copyCtorName, 1, ct))
+      // note: default ctor has 1 arg, meme
+      if (!ctor->getFormal(1)->hasFlag(FLAG_IS_MEME))
+        foundUserDefinedCopy = true;
 
-  if (function_exists(copyInitName, 2, ct, ct /*meme*/ ))
-    foundUserDefinedCopy = true;
+  if (ct->initializerStyle == DEFINES_INITIALIZER)
+    if (function_exists(copyInitName, 2, ct, ct /*meme*/ ))
+      foundUserDefinedCopy = true;
 
   // if no copy-init function existed...
   FnSymbol* fn = new FnSymbol("chpl__initCopy");
