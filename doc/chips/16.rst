@@ -176,7 +176,7 @@ copy is made from `alias` to `x`. Finally, the value pointed to within
       var x = alias; // a copy might be expected here.
                      // if the copy occurs, x.ptr != g.ptr.
                      // if it does not, x.ptr == g.ptr.
-      mutate(copy.ptr);
+      mutate(x.ptr);
       // has g.ptr changed?
     }
 
@@ -209,7 +209,7 @@ Alternative designs include:
    copy is not logically modified
    (This choice is possible but would require an understanding
    of `const` or some other concept that includes mutation through
-   a pointer field, such a transitive immutability).
+   a pointer field, such as transitive immutability).
 
 Optimizing Assignment
 +++++++++++++++++++++
@@ -245,7 +245,7 @@ reference-conting record type to be built.
 When using reference counting in Objective C for example, the assignment
 operation for a reference-counted field normally follows the discipline
 of doing a `retain` before a `release`. The `retain` increments the
-reference count and the `release` decrements it. In this way, if the a
+reference count and the `release` decrements it. In this way, if the
 field is set to its original value, the reference count is increased and
 then decreased back to its original value without any other effect.
 Compare that with the `release` and then `retain` ordering - where the
@@ -274,7 +274,7 @@ as:
 
   proc =(ref lhs:bigint, rhs:bigint) {
     lhs.~bigint(); // destroy lhs
-    var tmp = lhs; // copy-initialize tmp from lhs
+    var tmp = rhs; // copy-initialize tmp from rhs
     // now shallow-copy from tmp to lhs
     lhs.mpz = tmp.mpz; // move over pointer
     lhs.localeId = tmp.localeId; // move over locale
@@ -298,9 +298,9 @@ assignment function, the compiler-generated assignment function would
 switch to a strategy calling the assignment function on each field in
 turn.
 
-And so we have two assignment function possiblitiies. A record might have
-an assigment function that amounts to destroy-copy or it might have one
-that is more complicated. And the default assigment function for a record
+And so we have two assignment function possibilities. A record might have
+an assignment function that amounts to destroy-copy or it might have one
+that is more complicated. And the default assignment function for a record
 could be in either category.
 
 Now, for a record with a destroy-copy assignment function, the compiler
