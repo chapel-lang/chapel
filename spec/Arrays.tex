@@ -218,10 +218,17 @@ var A = [1 => "one", 10 => "ten", 3 => "three", 16 => "sixteen"];
 for da in zip (A.domain, A) do
   writeln(da);
 \end{chapel}
+\begin{chapelprediff}
+\#!/usr/bin/env sh
+testname=$1
+outfile=$2
+sort $outfile > $outfile.2
+mv $outfile.2 $outfile
+\end{chapelprediff}
 \begin{chapeloutput}
 (1, one)
-(16, sixteen)
 (10, ten)
+(16, sixteen)
 (3, three)
 \end{chapeloutput}
 \end{chapelexample}

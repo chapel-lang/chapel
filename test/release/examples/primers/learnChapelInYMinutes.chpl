@@ -360,7 +360,7 @@ stringSet += "b";
 stringSet += "c";
 stringSet += "a"; // Redundant add "a"
 stringSet -= "c"; // Remove "c"
-writeln( stringSet );
+writeln( stringSet.sorted() );
 
 // Both ranges and domains can be sliced to produce a range or domain with the
 // intersection of indices.
@@ -426,7 +426,7 @@ writeln( rSum, "\n", realArray );
 var dictDomain: domain(string) = { "one", "two" };
 var dict: [dictDomain] int = [ "one" => 1, "two" => 2 ];
 dict["three"] = 3;
-for key in dictDomain do
+for key in dictDomain.sorted() do
   writeln( dict[key] );
 
 // Arrays can be assigned to each other in a few different ways.
