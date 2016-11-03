@@ -259,6 +259,9 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
                 ArgSymbol* form = actual_to_formal(se);
                 if (arg->isRef() && form->isRef() &&
                     arg->getValType() == form->getValType() &&
+                    // BHARSH TODO: Can we remove that now that removeWrapRecords is gone?
+                    // I observed some increase comm-counts with stream, but
+                    // maybe we shouldn't have deref'd before
                     !isRecordWrappedType(form->getValType())) {
                   // removeWrapRecords can modify the formal to have the
                   // 'const in' intent. For now it's easier to insert the
