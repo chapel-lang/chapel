@@ -51,7 +51,7 @@ DotInfo::DotInfo() : finalized(false), usesDotLocale(false) { }
 static std::map<Symbol*, DotInfo*> dotLocaleMap;
 typedef std::map<Symbol*, DotInfo*>::iterator DotInfoIter;
 
-static void computeDotLocale();
+static void computeUsesDotLocale();
 
 /************************************* | **************************************
 *                                                                             *
@@ -65,7 +65,7 @@ static void computeDotLocale();
 void remoteValueForwarding() {
   if (fNoRemoteValueForwarding == false) {
     inferConstRefs();
-    computeDotLocale();
+    computeUsesDotLocale();
     Map<Symbol*, Vec<SymExpr*>*> defMap;
     Map<Symbol*, Vec<SymExpr*>*> useMap;
 
@@ -258,6 +258,8 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   } else if (arg->intent == INTENT_CONST_REF) {
     DotInfo* info = dotLocaleMap[arg];
     if (info == NULL) {
+      // 'info' can be NULL if there are no uses of 'arg', so we can RVF it
+      // (though it doesn't really matter).
       retval = true;
     } else {
       retval = !info->usesDotLocale;
@@ -602,7 +604,8 @@ static bool computeDotLocale(Symbol* sym) {
   DotInfo* info = dotLocaleMap[sym];
 
   if (info == NULL) {
-    return false; // No uses for this symbol
+    // No uses of this symbol, so definitely no uses of dot-locale
+    return false;
   } else if (info->finalized) {
     return info->usesDotLocale;
   }
@@ -651,8 +654,10 @@ static bool computeDotLocale(Symbol* sym) {
         retval = true;
       }
     } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-      // Not sure how to handle the homogeneous tuple case yet, so to be safe
-      // simply return true;
+      // BHARSH 2016-11-02: We could try to handle the homogeneous tuple case
+      // by iterating over all of the fields, but to keep this initial
+      // implementation simple I'm tempted to just return true and leave this
+      // case for later.
       retval = true;
     }
   }
@@ -663,7 +668,7 @@ static bool computeDotLocale(Symbol* sym) {
   return retval;
 }
 
-static void computeDotLocale() {
+static void computeUsesDotLocale() {
   std::vector<Symbol*> todo;
 
   forv_Vec(SymExpr, se, gSymExprs) {

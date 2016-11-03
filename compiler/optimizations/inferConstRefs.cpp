@@ -43,9 +43,24 @@ typedef std::map<Symbol*, RefInfo*>::iterator RefInfoIter;
 
 static bool inferConstRef(Symbol*);
 
-static bool handleRHS(CallExpr* parent, CallExpr* call, SymExpr* se) {
+//
+// Assumes 'parent' is a PRIM_MOVE or PRIM_ASSIGN
+//
+// Returns false if the LHS of the move/assign indicates that the rhs cannot
+// be a const-ref. For example, if we have a case like this:
+//
+// (move A, (set-reference B))
+//
+// where 'A' and 'B' are references, B cannot be a const-ref if A is not a
+// const-ref.
+//
+// In the case of a dereference, (move A, (deref B)), this function will return
+// true because we're simply reading B.
+//
+static bool canRHSBeConstRef(CallExpr* parent, CallExpr* rhs, SymExpr* use) {
+  INT_ASSERT(isMoveOrAssign(parent));
   SymExpr* LHS = toSymExpr(parent->get(1));
-  switch (call->primitive->tag) {
+  switch (rhs->primitive->tag) {
     case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_GET_SVEC_MEMBER:
@@ -54,6 +69,9 @@ static bool handleRHS(CallExpr* parent, CallExpr* call, SymExpr* se) {
     case PRIM_GET_IMAG:
     case PRIM_ADDR_OF:
     case PRIM_SET_REFERENCE: {
+      // If LHS is a reference and is not a const-ref, the reference in 'rhs'
+      // should not be considered a const-ref either. A writable reference
+      // obtained from a const-reference doesn't make sense.
       if (LHS->isRef()) {
         if (!inferConstRef(LHS->var)) {
           return false;
@@ -260,14 +278,16 @@ static bool inferConstRef(Symbol* sym) {
 
   RefInfo* info = infoMap[sym];
 
-  // 'info' may be null if the argument is never used.
-  if (info == NULL || info->finalized) {
+  // 'info' may be null if the argument is never used. In that case we can
+  // consider 'sym' to be a const-ref. By letting the rest of the function
+  // proceed, we'll fix up the qualifier for such symbols at the end.
+  if ((info && info->finalized) || wasConstRef) {
     return wasConstRef;
   }
 
   bool retval = true;
 
-  while (!info->todo.empty() && retval) {
+  while (info && !info->todo.empty() && retval) {
     SymExpr* use = info->todo.front();
 
     // By popping, recursive calls won't try to deal with the same SymExpr.
@@ -280,27 +300,38 @@ static bool inferConstRef(Symbol* sym) {
 
     if (call->isResolved()) {
       ArgSymbol* form = actual_to_formal(use);
-      if (!inferConstRef(form)) {
+      if (form->isRef() && !inferConstRef(form)) {
         retval = false;
       }
     }
     else if (parent && isMoveOrAssign(parent)) {
-      if (!handleRHS(parent, call, use)) {
+      if (!canRHSBeConstRef(parent, call, use)) {
         retval = false;
       }
     }
     else if (call->isPrimitive(PRIM_MOVE)) {
-      if (use == call->get(1) && !call->get(2)->isRef()) {
-        retval = false;
+      //
+      // Handles three cases:
+      // 1) MOVE use value - writing to a reference, so 'use' cannot be const
+      // 2) MOVE ref use - if the LHS is not const, use cannot be const either
+      // 3) MOVE value use - a dereference of 'use'
+      //
+      if (use == call->get(1)) {
+        // CASE 1
+        if (!call->get(2)->isRef()) {
+          retval = false;
+        }
       } else {
         // 'use' is the RHS of a MOVE
         if (call->get(1)->isRef()) {
+          // CASE 2
           SymExpr* se = toSymExpr(call->get(1));
           INT_ASSERT(se);
           if (!inferConstRef(se->var)) {
             retval = false;
           }
-        } // otherwise, it's a deref-move
+        }
+        // else CASE 3: don't need to do anything because retval is true
       }
     }
     else if (call->isPrimitive(PRIM_ASSIGN)) {
@@ -310,7 +341,25 @@ static bool inferConstRef(Symbol* sym) {
     }
     else if (call->isPrimitive(PRIM_SET_MEMBER) ||
              call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-      retval = false;
+      // BHARSH 2016-11-02
+      // In the expr (set_member base member rhs),
+      // If use == base, I take the conservative approach and decide that 'use'
+      // is not a const-ref. I'm not sure that we've decided what const means
+      // for fields yet, so this seems safest.
+      //
+      // If use == rhs, then we would need to do analysis for the member field.
+      // That's beyond the scope of what I'm attempting at the moment, so to
+      // be safe we'll return false for that case.
+      if (use == call->get(1) || use == call->get(3)) {
+        retval = false;
+      } else {
+        // use == member
+        // If 'rhs' is not a ref, then we're writing into 'use'. Otherwise it's
+        // a pointer copy and we don't care if 'rhs' is writable.
+        if (!call->get(3)->isRef()) {
+          retval = false;
+        }
+      }
     } else {
       // To be safe, exit the loop with 'false' if we're unsure of how to
       // handle a primitive.
@@ -329,7 +378,9 @@ static bool inferConstRef(Symbol* sym) {
   }
 
   // TODO: assert that it's not already finalized?
-  info->finalized = true;
+  if (info) {
+    info->finalized = true;
+  }
 
   return retval;
 }
@@ -342,9 +393,6 @@ static bool inferConstRef(Symbol* sym) {
 // This function can be called multiple times.
 //
 void inferConstRefs() {
-  // List of Symbols to infer const-ness of
-  std::vector<Symbol*> todo;
-
   // Build a map from Symbols to RefInfo. Like buildDefUseMaps, except we don't
   // care about the distinction between a def and a use. We just want all
   // SymExprs for a Symbol.
@@ -356,7 +404,6 @@ void inferConstRefs() {
     RefInfoIter it = infoMap.find(se->var);
     if (it == infoMap.end()) {
       info = new RefInfo(se->var);
-      todo.push_back(se->var);
       infoMap[se->var] = info;
     } else {
       info = it->second;
@@ -365,12 +412,12 @@ void inferConstRefs() {
     info->todo.push_back(se);
   }
 
-  for_vector(Symbol, sym, todo) {
-    inferConstRef(sym);
+  for (RefInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+    inferConstRef(it->first);
   }
 
   // Free the RefInfo maps and clear the infoMap for the next call
-  for(RefInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+  for (RefInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
     delete it->second;
   }
   infoMap.clear();
