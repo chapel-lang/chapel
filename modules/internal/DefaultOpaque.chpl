@@ -186,8 +186,8 @@ module DefaultOpaque {
     }
   
   
-    iter dsiSorted() {
-      for e in anarray.dsiSorted() do
+    iter dsiSorted(comparator) {
+      for e in anarray.dsiSorted(comparator) do
         yield e;
     }
   }
