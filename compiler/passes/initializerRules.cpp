@@ -132,16 +132,38 @@ Expr* getInitCall(FnSymbol* fn) {
   return NULL;
 }
 
+// Finds the appropriate next statement to examine
 static
-Expr* getNextStmt(Expr* curExpr, BlockStmt* body) {
+Expr* getNextStmt(Expr* curExpr, BlockStmt* body, bool enterLoops) {
+  Expr* toReturn = NULL;
   if (curExpr->next) {
-    return curExpr->next;
+    // If there is a next statement at this level, return it (in some form)
+    toReturn = curExpr->next;
   } else if (curExpr->parentExpr != body) {
-    return curExpr->parentExpr->next;
+    // Otherwise, if we have dived into some nested scope, try going up a level
+    // from that scope to find the next statement.  If there isn't one, keep
+    // going up until there is a next statement or we reach "body".
+    Expr* scope = curExpr->parentExpr;
+    while (scope->next == NULL && scope->parentExpr != body) {
+      scope = scope->parentExpr;
+    }
+    toReturn = scope->next;
   }
-  // Shouldn't reach here unless Phase 1 is our default (or we are using
-  // this function on something other than Phase 1 analysis)
-  return NULL;
+  if (toReturn != NULL) {
+    while (BlockStmt* block = toBlockStmt(toReturn)) {
+      if (block->isLoopStmt() && !enterLoops) {
+        // We found a loop and we don't want to dive into loops.  Return it.
+        return block;
+      } else {
+        // continue to dive in
+        toReturn = block->body.head;
+      }
+    }
+    // While loop is exited the first time we find an Expr that isn't a
+    // BlockStmt.  We return from the loop if the Expr is a BlockStmt we don't
+    // want to dive into.
+  }
+  return toReturn;
 }
 
 static
@@ -181,6 +203,14 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
   std::map<const char*, std::pair<Expr*, Expr*> >* inits = defaultInits[t];
 
   Expr* curExpr = body->body.head;
+  if (curExpr != initCall) {
+    // solution to fence post issue of diving into nested block statements
+    BlockStmt* block = toBlockStmt(curExpr);
+    while (block && !block->isLoopStmt()) {
+      curExpr = block->body.head;
+      block = toBlockStmt(curExpr);
+    }
+  }
   // We are guaranteed to never reach the end of the body, due to the
   // conditional surrounding the call to this function.
   while (curField != NULL || curExpr != initCall) {
@@ -203,11 +233,8 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
         if (block->isLoopStmt()) {
           // Special handling for loops.
           verifyLoopIsClean(block, curField, seenField, &index, t);
-          curExpr = getNextStmt(curExpr, body);
+          curExpr = getNextStmt(curExpr, body, false);
           continue;
-        } else {
-          // Need to dive into the block statement.
-          curExpr = block->body.head;
         }
       }/* else if (CondStmt* cond = toCondStmt(curExpr)) {
         // Special handling for conditionals.
@@ -218,7 +245,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
         if (!strcmp(fieldname, curField->sym->name)) {
           // It's a match!  Advance both and move on
           curField = toDefExpr(curField->next);
-          curExpr = getNextStmt(curExpr, body);
+          curExpr = getNextStmt(curExpr, body, false);
           seenField[index] = true;
           index++;
         } else if (isLaterFieldAccess(curField, fieldname)) {
@@ -228,11 +255,11 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
         } else {
           // It's not a valid field access at all.  Error cases!
           errorCases(t, curField, fieldname, seenField, curExpr);
-          curExpr = getNextStmt(curExpr, body);
+          curExpr = getNextStmt(curExpr, body, false);
         }
       } else {
         // Wasn't a field access, only update curExpr;
-        curExpr = getNextStmt(curExpr, body);
+        curExpr = getNextStmt(curExpr, body, false);
       }
     } else if (curField != NULL) {
       // only fields left
@@ -246,7 +273,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
       if (const char* fieldname = getFieldName(curExpr)) {
         errorCases(t, curField, fieldname, seenField, curExpr);
       }
-      curExpr = getNextStmt(curExpr, body);
+      curExpr = getNextStmt(curExpr, body, false);
     }
   }
 
@@ -457,7 +484,7 @@ DefExpr* verifyLoopIsClean(BlockStmt* loop, DefExpr* curField, bool* seenField,
         USR_FATAL_CONT(stmt, "can't initialize field \"%s\" inside a loop during phase 1 of initialization", fieldname);
         seenField[*index] = true;
         (*index)++;
-        stmt = getNextStmt(stmt, loop);
+        stmt = getNextStmt(stmt, loop, true);
       } else if (isLaterFieldAccess(curField, fieldname)) {
         (*index)++;
         curField = toDefExpr(curField->next);
@@ -465,14 +492,14 @@ DefExpr* verifyLoopIsClean(BlockStmt* loop, DefExpr* curField, bool* seenField,
         // Something else invalid has occurred
         // Should I also warn that it is occuring inside a loop?
         errorCases(t, curField, fieldname, seenField, stmt);
-        stmt = getNextStmt(stmt, loop);
+        stmt = getNextStmt(stmt, loop, true);
       }
     } else {
-      stmt = getNextStmt(stmt, loop);
+      stmt = getNextStmt(stmt, loop, true);
     }
   }
-  // traverse the statements of the loop.  If one of those statements is also
-  // a loop, make a recursive call
+  // traverse the statements of the loop, diving into loops and blocks as
+  // encountered
 
   return nextField;
 }
