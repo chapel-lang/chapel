@@ -8,7 +8,9 @@ class Scoping {
     {
       {
         a = aVal;
-        b = bVal;
+        {
+          b = bVal;
+        }
       }
       c = cVal;
     }
