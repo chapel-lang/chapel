@@ -1,14 +1,17 @@
 /* c-ray.chpl - a simple raytracing filter.
  *
- * Based on c-ray-f, developed by John Tsiombikas
- * Ported to Chapel by Brad Chamberlain, September 2016
+ * Based on c-ray-f.c, developed by John Tsiombikas
+ * Ported to Chapel by Brad Chamberlain, September/November 2016
  *
- * ---------------------------------------------------------------------
+ * -----------------------------------------------------------------------
  * Usage:
- *   compile:  chpl -o c-ray c-ray.chpl
- *   run:      cat scene | ./c-ray >foo.ppm
- *   enjoy:    emacs foo.ppm (with a modern version of emacs)
- * ---------------------------------------------------------------------
+ *   compile:  chpl c-ray.chpl -o c-ray  # add --fast for performance runs
+ *   run:      ./c-ray         # reads from 'scene', writes to 'image.ppm'
+ *     or:     ./c-ray --scene myscene --image myimage.ppm
+ *     or:     cat scene | ./c-ray --scene stdin --image stdout > out.ppm
+ *     or:     ./c-ray --help            # for further options
+ *   enjoy:    emacs foo.ppm (with a modern non-terminal version of emacs)
+ * -----------------------------------------------------------------------
  * Scene file format:
  *   # sphere (many)
  *   s  x y z  rad   r g b   shininess   reflectivity
@@ -16,91 +19,100 @@
  *   l  x y z
  *   # camera (one)
  *   c  x y z  fov   tx ty tz
- * ---------------------------------------------------------------------
+ * -----------------------------------------------------------------------
  */
 
 use Time;
 
-config const rayMagnitude = 1000.0,    // trace rays of this magnitude
-             maxRayDepth = 5,          // raytrace recurion limit
-             fieldOfView = quarter_pi,
-             errorMargin = 1e-6;
+//
+// Configuration constants
+// Set on command line via --<cfg> <val> or --<cfg>=<val>.
+//
+config const size = "800x600",            // size of output image
+             rays = 1,                    // number of rays per pixel
+             scene = "scene",             // input scene filename, or stdin
+             image = "image.ppm",         // output image filename, or stdout
 
-config const printTiming = true;
+             rayMagnitude = 1000.0,       // trace rays of this magnitude
+             maxRayDepth = 5,             // raytrace recurion limit
+             fieldOfView = quarter_pi,    // field of view in radians
+             errorMargin = 1e-6,          // avoids surface acne
 
-const halfFieldOfView = fieldOfView / 2;
+             printTiming = true;          // print rendering times?
 
-param redShift = 16,
+//
+// Compute values that are dependent on configs
+//
+const ssize = size.partition("x");        // split size into components
+
+if (ssize.size != 3 || ssize(2) != "x") then
+  halt("--s option requires argument to be in WxH format");
+
+const xres = ssize(1):int,                // grab x- and y-resolutions
+      yres = ssize(3):int,
+      aspect = xres:real / yres;          // aspect ratio of the image
+
+const halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
+
+
+//
+// Define types and params (compile-time constants) for use later
+//
+
+param redShift = 16,                      // bit shift amounts for each color
       greenShift = 8,
       blueShift = 0;
 
-type vec3 = 3*real;
+type vec3 = 3*real;                       // a 3-tuple for positions, vectors
 
-param X = 1,
+param X = 1,                              // names for accessing vec3 elements
       Y = 2,
       Z = 3;
 
 record ray {
-  var orig, dir: vec3;
+  var orig,           // origin
+      dir: vec3;      // direction
 }
 
 record material {
-  var color: vec3,
+  var color: vec3,    // color
       spow,           // specular power
       refl: real;     // reflection intensity
 }
 
 class sphere {
-  var pos: vec3,
-      rad: real,
-      mat: material;
+  var pos: vec3,      // position
+      rad: real,      // radius
+      mat: material;  // material
 }
 
 record spoint {
-  var pos,         // position
-      normal,      // normal
-      vref: vec3,  // view reflection
-      dist: real;  // parametric distance of intersection along the ray
+  var pos,            // position
+      normal,         // normal
+      vref: vec3,     // view reflection
+      dist: real;     // parametric distance of intersection along the ray
 }
 
 record camera {
-  var pos, targ: vec3,
-      fov: real;
+  var pos,            // position
+      targ: vec3,     // target
+      fov: real;      // field-of-view
 }
 
-config const size = "800x600";
 
-const ssize = size.partition("x");
+//
+// variables used by the computation
+//
 
-if (ssize(2) != "x") then
-  halt("--s option requires format WxH specifying the image Width x Height");
-
-const xres = ssize(1):int,
-      yres = ssize(3):int;
-
-config const scene = "scene",
-             image = "image.ppm";
-
-config const rays = 1;
-
-const aspect = xres:real / yres;
-
-var objList: [0..-1] sphere;
-
-config const numLights = 16;
-
-var lights: [0..-1] vec3;
-
-var cam: camera;
+var objects: [1..0] sphere,  // the scene's spheres; start with an empty list
+    lights: [1..0] vec3,     // the scene's lights
+    cam: camera;             // camera (there will be only one)
 
 param nran = 1024,
       mask = nran - 1;
 
 var urand: [0..#nran] vec3,
     irand: [0..#nran] int;
-
-// TODO: implement usage
-// config const help = false;
 
 proc main(args: [] string) {
   if (args.size > 1) then usage(args);
@@ -155,12 +167,18 @@ proc usage(args) {
       writeln("Usage: ", args[0], " [options]");
       writeln(" Reads a scene file, writes a ray-traced image file, prints timing to stderr.");
       writeln();
-      writeln("Options:");
+      writeln("Main Options:");
       writeln("  --size WxH     where W is the width and H the height of the image");
       writeln("  --rays <rays>  shoot <rays> rays per pixel (antialiasing)");
       writeln("  --scene <file> read scene from <file> (can be 'stdin')");
       writeln("  --image <file> write image to <file> (can be 'stdout')");
       writeln("  --help         this help screen");
+      writeln();
+      writeln("Other options:");
+      writeln("  --rayMagnitude <mag>  trace rays of this magnitude");
+      writeln("  --maxRayDepth <max>   the number of times a ray can reflect");
+      writeln("  --fieldOfView <fov>   the field-of-view in radians");
+      writeln("  --errorMargin <err>   an error margin to avoid surface acne");
       writeln();
       exit(0);
     } else {
@@ -209,7 +227,7 @@ proc loadScene(infile) {
     const refl = substrs[10]: real;
 
     if intype == 's' then
-      objList.push_back(new sphere(pos, rad, new material(col, spow, refl)));
+      objects.push_back(new sphere(pos, rad, new material(col, spow, refl)));
 
     else
       stderr.writeln("unknown type: ", intype);
@@ -281,7 +299,7 @@ proc trace(ray, depth=0): vec3 {
   // TODO: This would clean up nicely if using a vector
   //
   // TODO: minloc reduction?
-  for obj in objList {
+  for obj in objects {
     if raySphere(obj, ray, sp, useSp=true) {
       if (nearestObj == nil || sp.dist < nearestSp.dist) {
         nearestObj = obj;
@@ -376,7 +394,7 @@ proc shade(obj, sp, depth) {
     // the light
     //
     var dummy: spoint;
-    for obj in objList {
+    for obj in objects {
       if (raySphere(obj, shadowRay, useSp=false, dummy)) {
         inShadow = true;
         break;
