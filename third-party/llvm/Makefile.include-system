@@ -1,4 +1,4 @@
-include $(THIRD_PARTY_DIR)/llvm/Makefile.share-included
+include $(THIRD_PARTY_DIR)/llvm/Makefile.share-system
 
 # we need access to CodeGenModule.h which is not normally
 # installed to the include directory.
@@ -10,17 +10,16 @@ ifndef LLVM_LLVM_LIBS
   export LLVM_LLVM_LIBS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets)
 endif
 
-# Use this version for LLVM 3.4 and 3.3
-#LLVM_LLVM_LIBS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --ldflags --libs bitreader bitwriter ipo instrumentation option objcarcopts all-targets)
-
 LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
 
-LLVM_CXXFLAGS=$(LLVM_CONFIG_CXXFLAGS) -DHAVE_LLVM
+# Ubuntu 16.04 needed -fno-rtti for LLVM 3.7
+# tested on that stystem after installing
+#   llvm-3.7-dev llvm-3.7 clang-3.7 libclang-3.7-dev libedit-dev
+LLVM_MY_CXXFLAGS=-fno-rtti
+
+LLVM_CXXFLAGS=$(LLVM_CONFIG_CXXFLAGS) $(LLVM_MY_CXXFLAGS) -DHAVE_LLVM
 LLVM_CFLAGS=$(LLVM_CONFIG_CFLAGS) -DHAVE_LLVM
 
-LLVM_INCLUDES=-I$(LLVM_INCLUDE_DIR) -I$(LLVM_CLANG_CODEGEN_INCLUDE_DIR)
-LLVM_LIBS=-L$(LLVM_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS)
-
-CLANG_CC=$(LLVM_BIN_DIR)/clang
-CLANG_CXX=$(LLVM_BIN_DIR)/clang++
+LLVM_INCLUDES=-I$(LLVM_CONFIG_INCLUDE_DIR) -I$(LLVM_CLANG_CODEGEN_INCLUDE_DIR)
+LLVM_LIBS=-L$(LLVM_CONFIG_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS)
 
