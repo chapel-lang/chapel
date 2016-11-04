@@ -1,6 +1,8 @@
 This document briefly describes how to add a new tasking model to the
 runtime.
 
+Also see adding-a-runtime-component.txt on how to set up the build for
+a new runtime component.
 
 Getting Things Working Quickly
 ==============================
