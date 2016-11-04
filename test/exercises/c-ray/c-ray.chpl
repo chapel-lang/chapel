@@ -33,12 +33,12 @@ config const size = "800x600",            // size of output image
              scene = "scene",             // input scene filename, or stdin
              image = "image.ppm",         // output image filename, or stdout
 
-             rayMagnitude = 1000.0,       // trace rays of this magnitude
-             maxRayDepth = 5,             // raytrace recurion limit
              fieldOfView = quarter_pi,    // field of view in radians
+             maxRayDepth = 5,             // raytrace recurion limit
+             rayMagnitude = 1000.0,       // trace rays of this magnitude
              errorMargin = 1e-6,          // avoids surface acne
 
-             printTiming = true;          // print rendering times?
+             noTiming = false;        // print rendering times?
 
 //
 // Compute config-dependent constants.
@@ -131,7 +131,7 @@ var urand: [0..#nran] vec3,
 //
 proc main(args: [] string) {
   if (args.size > 1) then
-    usage(args);
+    handleArgs(args);
 
   var pixels: [0..#yres, 0..#xres] uint(32);
 
@@ -147,7 +147,7 @@ proc main(args: [] string) {
 
   const rendTime = t.elapsed();
 
-  if printTiming then
+  if !noTiming then
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
 
@@ -155,29 +155,42 @@ proc main(args: [] string) {
 }
 
 
-proc usage(args) {
+proc handleArgs(args) {
   for i in 1..args.size-1 {
     if (args[i] == "--help" || args[i] == "-h") {
-      writeln("Usage: ", args[0], " [options]");
-      writeln(" Reads a scene file, writes a ray-traced image file, prints timing to stderr.");
-      writeln();
-      writeln("Primary Options:");
-      writeln("  --size WxH        the [W]idth and [H]eight of the image");
-      writeln("  --samples <rays>  shoot <rays> rays per pixel (to antialias)");
-      writeln("  --scene <file>    read scene from <file> (can be 'stdin')");
-      writeln("  --image <file>    write image to <file> (can be 'stdout')");
-      writeln("  --help            this help screen");
-      writeln();
-      writeln("Other options:");
-      writeln("  --rayMagnitude <mag>  trace rays of this magnitude");
-      writeln("  --maxRayDepth <max>   the number of times a ray can reflect");
-      writeln("  --fieldOfView <fov>   the field-of-view in radians");
-      writeln("  --errorMargin <err>   an error margin to avoid surface acne");
-      writeln();
-      exit(0);
+      printUsage();
     } else {
-      stderr.writeln("unrecognized argument: ", args[i]);
-      exit(1);
+      stderr.writeln("error: unrecognized argument: '", args[i], "'");
+      stderr.writeln();
+      printUsage(error=true);
+    }
+  }
+
+  proc printUsage(error=false) {
+    const outChannel = if error then stderr else stdout;
+
+    usage("Usage: " + args[0] + " [options]");
+    usage("  Reads a scene file, writes a ray-traced image file, " +
+          "prints timing to stderr.");
+    usage();
+    usage("Primary Options:");
+    usage("  --size <w>x<h>        plot an image of 'w'idth x 'h'eight pixels");
+    usage("  --samples <rays>      antialias using 'rays' samples per pixel");
+    usage("  --scene <file>        read scene from 'file' (can be 'stdin')");
+    usage("  --image <file>        write image to 'file' (can be 'stdout')");
+    usage("  --help / -h           print this help screen");
+    usage();
+    usage("Other options:");
+    usage("  --fieldOfView <fov>   use a field-of-view of 'fov' radians");
+    usage("  --maxRayDepth <max>   rays will reflect no more than 'max' times");
+    usage("  --rayMagnitude <mag>  trace rays with magnitude 'mag'");
+    usage("  --errorMargin <err>   avoid surface acne via error margin 'err'");
+    usage("  --noTiming            don't print timing information");
+
+    exit(error);
+
+    proc usage(str = "") {
+      outChannel.writeln(str);
     }
   }
 }
