@@ -26,10 +26,10 @@ use Time;
 
 //
 // Configuration constants
-// Set on command line via --<cfg> <val> or --<cfg>=<val>.
+// (Override defaults on command line using --<cfg> <val> or --<cfg>=<val>)
 //
 config const size = "800x600",            // size of output image
-             rays = 1,                    // number of rays per pixel
+             samples = 1,                 // number of rays sampled per pixel
              scene = "scene",             // input scene filename, or stdin
              image = "image.ppm",         // output image filename, or stdout
 
@@ -41,31 +41,41 @@ config const size = "800x600",            // size of output image
              printTiming = true;          // print rendering times?
 
 //
-// Compute values that are dependent on configs
+// Compute config-dependent constants.
 //
-const ssize = size.partition("x");        // split size into components
+const ssize = size.partition("x");        // split size string into components
 
 if (ssize.size != 3 || ssize(2) != "x") then
   halt("--s option requires argument to be in WxH format");
 
-const xres = ssize(1):int,                // grab x- and y-resolutions
+const xres = ssize(1):int,         // x- and y-resolutions of the image
       yres = ssize(3):int,
-      aspect = xres:real / yres;          // aspect ratio of the image
+      aspect = xres:real / yres;   // aspect ratio of the image
+
+const rcpSamples = 1.0 / samples;  // the reciprocal of the # of samples
+
+//
+// the input and output file channels
+//
+const infile = if scene == "stdin" then stdin
+                                   else open(scene, iomode.r).reader(),
+      outfile = if image == "stdout" then stdout
+                                     else open(image, iomode.cw).writer();
 
 const halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 
 
 //
-// Define types and params (compile-time constants) for use later
+// Define types and params (compile-time constants).
 //
 
-param redShift = 16,                      // bit shift amounts for each color
+param redShift = 16,  // bit shift amounts for each color
       greenShift = 8,
       blueShift = 0;
 
-type vec3 = 3*real;                       // a 3-tuple for positions, vectors
+type vec3 = 3*real;   // a 3-tuple for positions, vectors
 
-param X = 1,                              // names for accessing vec3 elements
+param X = 1,          // names for accessing vec3 elements
       Y = 2,
       Z = 3;
 
@@ -101,65 +111,49 @@ record camera {
 
 
 //
-// variables used by the computation
+// variables used to store the scene
 //
-
-var objects: [1..0] sphere,  // the scene's spheres; start with an empty list
-    lights: [1..0] vec3,     // the scene's lights
+var objects: [1..0] sphere,  // the scene's spheres; start with an empty array
+    lights: [1..0] vec3,     // the scene's lights;  "
     cam: camera;             // camera (there will be only one)
 
-param nran = 1024,
-      mask = nran - 1;
+//
+// arrays of random numbers
+//
+param nran = 1024;
 
 var urand: [0..#nran] vec3,
     irand: [0..#nran] int;
 
+
+//
+// The program's entry point
+//
 proc main(args: [] string) {
-  if (args.size > 1) then usage(args);
+  if (args.size > 1) then
+    usage(args);
 
   var pixels: [0..#yres, 0..#xres] uint(32);
-  const infile = if scene == "stdin" then stdin
-                                     else open(scene, iomode.r).reader(),
-        outfile = if image == "stdout" then stdout
-                                       else open(image, iomode.cw).writer();
 
   loadScene(infile);
-
-  /* initialize the random number tables for the jitter */
-  //
-  // TODO: If specifics of random numbers don't matter, could switch to PCG
-  // and gen in parallal?
-  //
-  {
-    extern const RAND_MAX: c_int;
-    extern proc rand(): c_int;
-
-    for u in urand do
-      u(X) = rand():real / RAND_MAX - 0.5;
-    for u in urand do
-      u(Y) = rand():real / RAND_MAX - 0.5;
-    for r in irand do
-      r = (nran * (rand():real / RAND_MAX)): int;
-  }
-
+  initRands();
+  
   var t: Timer;
   t.start();
-  render(pixels, rays);
+
+  /* render a frame of xsz/ysz dimensions into the provided framebuffer */
+  forall (y, x) in pixels.domain do
+    pixels[y, x] = computePixel(y, x);
+
   const rendTime = t.elapsed();
 
   if printTiming then
-    stderr.writeln("Rendering took: ", rendTime, " seconds (", rendTime*1000,
-                   " milliseconds)");
+    stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
+                  rendTime, rendTime*1000);
 
-  outfile.writeln("P6");
-  outfile.writeln(xres, " ", yres);
-  outfile.writeln(255);
-  for p in pixels {
-    outfile.writef("%|1i", ((p >> redShift)   & 0xff):uint(8));
-    outfile.writef("%|1i", ((p >> greenShift) & 0xff):uint(8));
-    outfile.writef("%|1i", ((p >> blueShift)  & 0xff):uint(8));
-  }
+  writeImage(pixels);
 }
+
 
 proc usage(args) {
   for i in 1..args.size-1 {
@@ -167,12 +161,12 @@ proc usage(args) {
       writeln("Usage: ", args[0], " [options]");
       writeln(" Reads a scene file, writes a ray-traced image file, prints timing to stderr.");
       writeln();
-      writeln("Main Options:");
-      writeln("  --size WxH     where W is the width and H the height of the image");
-      writeln("  --rays <rays>  shoot <rays> rays per pixel (antialiasing)");
-      writeln("  --scene <file> read scene from <file> (can be 'stdin')");
-      writeln("  --image <file> write image to <file> (can be 'stdout')");
-      writeln("  --help         this help screen");
+      writeln("Primary Options:");
+      writeln("  --size WxH        the [W]idth and [H]eight of the image");
+      writeln("  --samples <rays>  shoot <rays> rays per pixel (to antialias)");
+      writeln("  --scene <file>    read scene from <file> (can be 'stdin')");
+      writeln("  --image <file>    write image to <file> (can be 'stdout')");
+      writeln("  --help            this help screen");
       writeln();
       writeln("Other options:");
       writeln("  --rayMagnitude <mag>  trace rays of this magnitude");
@@ -187,6 +181,7 @@ proc usage(args) {
     }
   }
 }
+
 
 proc loadScene(infile) {
   var line: string;
@@ -235,21 +230,57 @@ proc loadScene(infile) {
 }
 
 
-/* render a frame of xsz/ysz dimensions into the provided framebuffer */
-proc render(fb: [?D], samples) {
-  const rcpSamples = 1.0 / samples;
-    
-  forall (y, x) in D {
-    var rgb: vec3;
+//
+// initialize the random number tables for the jitter
+//
+proc initRands() {
+  //
+  // extern declarations of C's random number generators.
+  //
+  // TODO: The following could be changed to use Chapel's 'Random'
+  //   module and to generate random numbers in parallel if the
+  //   program is not particularly sensitive to the specific random
+  //   number generator used.
+  //
+  extern const RAND_MAX: c_int;
+  extern proc rand(): c_int;
+  
+  for u in urand do
+    u(X) = rand():real / RAND_MAX - 0.5;
+  for u in urand do
+    u(Y) = rand():real / RAND_MAX - 0.5;
+  for r in irand do
+    r = (nran * (rand():real / RAND_MAX)): int;
+}
 
-    for s in 0..#samples do
-      rgb += trace(getPrimaryRay(x, y, s));
 
-    rgb *= rcpSamples;
 
-    fb[y,x] = ((min(rgb(1), 1.0) * 255.0):uint(32) & 0xff) << redShift |
-              ((min(rgb(2), 1.0) * 255.0):uint(32) & 0xff) << greenShift |
-              ((min(rgb(3), 1.0) * 255.0):uint(32) & 0xff) << blueShift;
+proc computePixel(y, x) {
+  var rgb: vec3;
+
+  for s in 0..#samples do
+    rgb += trace(getPrimaryRay(x, y, s));
+
+  rgb *= rcpSamples;
+
+  return colorRealToInt(rgb(1)) << redShift |
+         colorRealToInt(rgb(2)) << greenShift |
+         colorRealToInt(rgb(3)) << blueShift;
+
+  inline proc colorRealToInt(component) {
+    return ((min(component, 1.0) * 255.0):uint(32) & 0xff);
+  }
+}
+
+
+proc writeImage(pixels) {
+  outfile.writeln("P6");
+  outfile.writeln(xres, " ", yres);
+  outfile.writeln(255);
+  for p in pixels {
+    outfile.writef("%|1i", ((p >> redShift)   & 0xff):uint(8));
+    outfile.writef("%|1i", ((p >> greenShift) & 0xff):uint(8));
+    outfile.writef("%|1i", ((p >> blueShift)  & 0xff):uint(8));
   }
 }
 
@@ -283,13 +314,14 @@ proc getPrimaryRay(x, y, sample) {
 }
 
 
-/* trace a ray throught the scene recursively (the recursion happens through
- * shade() to calculate reflection rays if necessary).
- */
+//
+// trace a ray throught the scene recursively (the recursion happens
+// through shade() to calculate reflection rays if necessary).
+//
 proc trace(ray, depth=0): vec3 {
   var nearestObj: sphere;
   var sp, nearestSp: spoint;
-  
+
   /* if we reached the recursion limit, bail out */
   if depth > maxRayDepth then
     return (0.0, 0.0, 0.0);
@@ -314,6 +346,7 @@ proc trace(ray, depth=0): vec3 {
     return (0.0, 0.0, 0.0);
 }
 
+
 proc getSamplePos(x, y, sample) {
   const sf = 2.0 / xres;
 
@@ -330,7 +363,10 @@ proc getSamplePos(x, y, sample) {
   return pt;
 }
 
+
 proc jitter(x, y, s) {
+  param mask = nran - 1;
+
   return (urand[(x + (y << 2) + irand[(x + s) & mask]) & mask](X),
           urand[(y + (x << 2) + irand[(y + s) & mask]) & mask](Y));
 }
@@ -364,7 +400,7 @@ proc raySphere(sph, ray, ref sp, useSp=false) {
     if (t1 < errorMargin) then t1 = t2;
     if (t2 < errorMargin) then t2 = t1;
     sp.dist = min(t1, t2);
-    
+
     sp.pos = ray.orig + ray.dir * sp.dist;
 
     sp.normal = (sp.pos - sph.pos) / sph.rad;
@@ -374,12 +410,12 @@ proc raySphere(sph, ray, ref sp, useSp=false) {
   }
 
   return 1;
+
+  proc reflect(v, n) {
+    return -(2.0 * dot(v, n) * n - v);
+  }
 }
 
-
-proc reflect(v, n) {
-  return -(2.0 * dot(v, n) * n - v);
-}
 
 proc shade(obj, sp, depth) {
   var col: vec3;  // TODO: reduction?
@@ -425,15 +461,18 @@ proc shade(obj, sp, depth) {
 }
 
 
+//
+// Simple vector functions
+//
 inline proc normalize(ref a) {
-  a /= sqrt(dot(a,a));
+  a /= sqrt(dot(a, a));
 }
 
-inline proc dot(a,b) {
+inline proc dot(a, b) {
   return a(X)*b(X) + a(Y)*b(Y) + a(Z)*b(Z);
 }
 
-proc crossProduct(v1, v2) {
+inline proc crossProduct(v1, v2) {
   return (v1(Y)*v2(Z) - v1(Z)*v2(Y),
           v1(Z)*v2(X) - v1(X)*v2(Z),
           v1(X)*v2(Y) - v1(Y)*v2(X));
