@@ -135,7 +135,7 @@ proc main(args: [] string) {
 
   var pixels: [0..#yres, 0..#xres] uint(32);
 
-  loadScene(infile);
+  loadScene();
   initRands();
   
   var t: Timer;
@@ -183,49 +183,86 @@ proc usage(args) {
 }
 
 
-proc loadScene(infile) {
-  var line: string;
-  param delim = " \t\n";
+proc loadScene() {
+  const inputs = {'l', 'c', 's'},
+        expectedArgs: [inputs] int = ['l'=>4, 'c'=>8, 's'=>10];
+                                 
+  for (rawLine, lineno) in zip(infile.readlines(), 1..) {
+    //
+    // drop any comments (text following '#')
+    // TODO: string library experts, is there a better way to do this?
+    //
+    const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
+          line = linePlusComment[1];
 
-  while (infile.readline(line)) {
-    var comment = false;
-    for c in line {
-      if c == '#' {
-        comment = true;  // TODO: use a labeled break?
-        break;
-      }
-      if (c != ' ' || c != '\t') then break;
-    }
-    if comment then continue;
+    //
+    // split the line into its whitespace-separated strings
+    //
+    const columns = line.split();
+    if columns.size == 0 then continue;
 
-    const substrs = line.split();
-    if substrs.size == 0 then continue;
+    //
+    // grab the input type
+    //
+    const inType = columns[1];
 
-    const intype = substrs[1];
-    const pos: vec3 = (substrs[2]:real, substrs[3]:real, substrs[4]:real);
-    if intype == 'l' {
+    //
+    // handle error conditions
+    //
+    if !inputs.member(inType) then
+      inputError("unexpected input type: " + inType);
+    else if columns.size < expectedArgs(inType) then
+      inputError("not enough arguments for input of type '" + inType + "'");
+    else if columns.size > expectedArgs(inType) then
+      inputError("too many arguments for input of type '" + inType + "'");
+
+    //
+    // grab the position columns
+    //
+    const pos = (columns[2]:real, columns[3]:real, columns[4]:real);
+
+    //
+    // if this is a light, store it as such
+    //
+    if inType == 'l' {
       lights.push_back(pos);
       continue;
     }
-    const rad = substrs[5]:real;
 
-    const col: vec3 = (substrs[6]:real, substrs[7]:real, substrs[8]:real);
+    //
+    // grab the radius/field-of-view and color/target columnsx
+    //
+    const rad = columns[5]:real,
+          col = (columns[6]:real, columns[7]:real, columns[8]:real);
 
-    if intype == 'c' {
+    //
+    // if this is the camera, store it
+    //
+    if inType == 'c' {
       cam.pos = pos;
       cam.targ = col;
       cam.fov = rad;
       continue;
     }
 
-    const spow = substrs[9]: real;
-    const refl = substrs[10]: real;
+    //
+    // grab the shininess and reflectivity columns
+    //
+    const spow = columns[9]: real,
+          refl = columns[10]: real;
 
-    if intype == 's' then
-      objects.push_back(new sphere(pos, rad, new material(col, spow, refl)));
+    //
+    // this must be a sphere, so store it
+    //
+    objects.push_back(new sphere(pos, rad, new material(col, spow, refl)));
 
-    else
-      stderr.writeln("unknown type: ", intype);
+    //
+    // helper routine for printing errors in the input file
+    //
+    proc inputError(msg) {
+      stderr.writeln(scene, ":", lineno, ": ", msg);
+      exit(1);
+    }
   }
 }
 
@@ -476,4 +513,12 @@ inline proc crossProduct(v1, v2) {
   return (v1(Y)*v2(Z) - v1(Z)*v2(Y),
           v1(Z)*v2(X) - v1(X)*v2(Z),
           v1(X)*v2(Y) - v1(Y)*v2(X));
+}
+
+
+iter channel.readlines() {
+  var line: string;
+  
+  while (infile.readline(line)) do
+    yield line;
 }
