@@ -30,6 +30,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 TARGETS =
 
 SUBDIRS = $(CHPL_MAKE_THREADS)
+ALL_SUBDIRS = none pthreads
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.emptydirrules
 

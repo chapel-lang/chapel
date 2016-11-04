@@ -30,6 +30,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 TARGETS =
 
 SUBDIRS = $(CHPL_MAKE_TASKS)
+ALL_SUBDIRS = fifo massivethreads qthreads
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.emptydirrules
 

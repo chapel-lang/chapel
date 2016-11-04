@@ -30,6 +30,20 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 TARGETS =
 
 SUBDIRS = $(CHPL_MAKE_LAUNCHER)
+ALL_SUBDIRS =   amudprun \
+                aprun \
+                dummy \
+                gasnetrun_ibv \
+                gasnetrun_mpi \
+                loadleveler \
+                lsf-gasnetrun_ibv \
+                marenostrum \
+                mpirun \
+                none \
+                pbs-aprun \
+                pbs-gasnetrun_ibv \
+                slurm-gasnetrun_ibv \
+                slurm-srun
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.emptydirrules
 

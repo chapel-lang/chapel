@@ -30,6 +30,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 TARGETS =
 
 SUBDIRS = $(CHPL_MAKE_TIMERS)
+ALL_SUBDIRS = generic
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.emptydirrules
 

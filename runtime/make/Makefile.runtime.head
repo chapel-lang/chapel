@@ -92,11 +92,11 @@ CLOBBER_TARGS = \
 	*.a \
 	*~
 
-
-
+# if ALL_SUBDIRS is not set, default to SUBDIRS
+ALL_SUBDIRS ?= $(SUBDIRS)
 
 MAKEALLSUBDIRS = $(SUBDIRS:%=%.makedir)
 CLEANSUBDIRS = $(SUBDIRS:%=%.cleandir)
-CLEANALLSUBDIRS = $(SUBDIRS:%=%.cleanalldir)
+CLEANALLSUBDIRS = $(ALL_SUBDIRS:%=%.cleanalldir)
 CLEANSUBDIRDEPS = $(SUBDIRS:%=%.cleandirdeps)
-CLOBBERSUBDIRS = $(SUBDIRS:%=%.clobberdir)
+CLOBBERSUBDIRS = $(ALL_SUBDIRS:%=%.clobberdir)

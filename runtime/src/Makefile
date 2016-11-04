@@ -46,8 +46,8 @@ SUBDIRS = \
 	mem \
 	tasks \
 	threads \
-        timers \
-        qio \
+	timers \
+	qio \
 
 else
 TARGETS = \
@@ -59,6 +59,15 @@ SUBDIRS = \
 	launch \
 
 endif
+
+ALL_SUBDIRS = \
+	comm \
+	launch \
+	mem \
+	tasks \
+	threads \
+	timers \
+	qio \
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 
