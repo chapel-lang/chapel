@@ -232,7 +232,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
       if (BlockStmt* block = toBlockStmt(curExpr)) {
         if (block->isLoopStmt()) {
           // Special handling for loops.
-          verifyLoopIsClean(block, curField, seenField, &index, t);
+          curField = verifyLoopIsClean(block, curField, seenField, &index, t);
           curExpr = getNextStmt(curExpr, body, false);
           continue;
         }
@@ -477,21 +477,21 @@ DefExpr* verifyLoopIsClean(BlockStmt* loop, DefExpr* curField, bool* seenField,
   Expr* stmt = loop->body.head;
   while(stmt != NULL) {
     if (BlockStmt* inner = toBlockStmt(stmt)) {
-      nextField = verifyLoopIsClean(inner, curField, seenField, index, t);
+      nextField = verifyLoopIsClean(inner, nextField, seenField, index, t);
     }
     if (const char* fieldname = getFieldName(stmt)) {
-      if (!strcmp(fieldname, curField->sym->name)) {
+      if (!strcmp(fieldname, nextField->sym->name)) {
         USR_FATAL_CONT(stmt, "can't initialize field \"%s\" inside a loop during phase 1 of initialization", fieldname);
         seenField[*index] = true;
         (*index)++;
         stmt = getNextStmt(stmt, loop, true);
       } else if (isLaterFieldAccess(curField, fieldname)) {
         (*index)++;
-        curField = toDefExpr(curField->next);
+        nextField = toDefExpr(nextField->next);
       } else {
         // Something else invalid has occurred
         // Should I also warn that it is occuring inside a loop?
-        errorCases(t, curField, fieldname, seenField, stmt);
+        errorCases(t, nextField, fieldname, seenField, stmt);
         stmt = getNextStmt(stmt, loop, true);
       }
     } else {
