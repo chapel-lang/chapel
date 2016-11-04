@@ -69,9 +69,33 @@ const halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 // Define types and params (compile-time constants).
 //
 
-param redShift = 16,  // bit shift amounts for each color
-      greenShift = 8,
-      blueShift = 0;
+config type pixelType = int;  //
+
+config param bitsPerColor = 8;
+
+param red = 2,
+      green = 1,
+      blue = 0,
+      numColors = 3;
+
+// TODO: Should be able to use an enum above:
+//   enum colors {red=0, green, blue};
+//   use colors;
+//   param numColors = colors.size;
+
+if (isIntegral(pixelType)) {
+  if (numColors*bitsPerColor > numBits(pixelType)) then
+    compilerError("pixelType '" + pixelType:string +
+                  "' isn't big enough to store " +
+                  bitsPerColor + " bits per color");
+} else {
+  compilerError("pixelType must be an integral type");
+}
+
+
+const redShift   = red   * bitsPerColor,  // bit shift amounts for each color
+      greenShift = green * bitsPerColor,
+      blueShift  = blue  * bitsPerColor;
 
 type vec3 = 3*real;   // a 3-tuple for positions, vectors
 
@@ -133,7 +157,7 @@ proc main(args: [] string) {
   if (args.size > 1) then
     handleArgs(args);
 
-  var pixels: [0..#yres, 0..#xres] uint(32);
+  var pixels: [0..#yres, 0..#xres] int;
 
   loadScene();
   initRands();
@@ -318,7 +342,7 @@ proc computePixel(y, x) {
          colorRealToInt(rgb(3)) << blueShift;
 
   inline proc colorRealToInt(component) {
-    return ((min(component, 1.0) * 255.0):uint(32) & 0xff);
+    return ((min(component, 1.0) * 255.0): int & 0xff);
   }
 }
 
