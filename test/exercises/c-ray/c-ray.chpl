@@ -22,11 +22,21 @@
  * -----------------------------------------------------------------------
  */
 
-use Time;
+use Time;  // Bring in timers to measure the rendering time
+
+
+//
+// Configuration params
+// (Override defaults on compiler line using -s<cfg>=<val>)
+//
+config type pixelType = int;
+
+config param bitsPerColor = 8;
+
 
 //
 // Configuration constants
-// (Override defaults on command line using --<cfg> <val> or --<cfg>=<val>)
+// (Override defaults on executable line using --<cfg> <val> or --<cfg>=<val>)
 //
 config const size = "800x600",            // size of output image
              samples = 1,                 // number of rays sampled per pixel
@@ -41,6 +51,14 @@ config const size = "800x600",            // size of output image
              noTiming = false;        // print rendering times?
 
 //
+// Define config-dependent types and params.
+//
+param colorMask = (0x1 << bitsPerColor) - 1;
+
+type colorType = uint(bitsPerColor);
+
+
+//
 // Compute config-dependent constants.
 //
 const ssize = size.partition("x");        // split size string into components
@@ -49,8 +67,7 @@ if (ssize.size != 3 || ssize(2) != "x") then
   halt("--s option requires argument to be in WxH format");
 
 const xres = ssize(1):int,         // x- and y-resolutions of the image
-      yres = ssize(3):int,
-      aspect = xres:real / yres;   // aspect ratio of the image
+      yres = ssize(3):int;
 
 const rcpSamples = 1.0 / samples;  // the reciprocal of the # of samples
 
@@ -66,23 +83,27 @@ const halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 
 
 //
-// Define types and params (compile-time constants).
+// set params for colors and dimensions
 //
 
-config type pixelType = int;  //
-
-config param bitsPerColor = 8;
-
-param red = 1,
+param red = 1,        // names for referring to colors
       green = 2,
       blue = 3,
       numColors = 3;
 
-// TODO: Should be able to use an enum above:
+param X = 1,          // names for accessing vec3 elements
+      Y = 2,
+      Z = 3,
+      numdims = 3;
+
+// TODO: Should be able to use an enum for both of the above:
 //   enum colors {red=0, green, blue};
 //   use colors;
 //   param numColors = colors.size;
 
+//
+// Verify that config-specified pixelType is appropriate for storing colors
+//
 if (isIntegral(pixelType)) {
   if (numColors*bitsPerColor > numBits(pixelType)) then
     compilerError("pixelType '" + pixelType:string +
@@ -93,18 +114,15 @@ if (isIntegral(pixelType)) {
 }
 
 
-//
-// TODO: Should this be an enum?
-//
-param X = 1,          // names for accessing vec3 elements
-      Y = 2,
-      Z = 3,
-      numdims = 3;
 
 //
-// TODO: Making this an array [0..3] doesn't work
+// establish types
 //
+
 type vec3 = numdims*real;   // a 3-tuple for positions, vectors
+//
+// TODO: Making this an array [0..3] doesn't work -- why?
+//
 
 record ray {
   var orig,           // origin
@@ -145,7 +163,7 @@ var objects: [1..0] sphere,  // the scene's spheres; start with an empty array
     cam: camera;             // camera (there will be only one)
 
 //
-// arrays of random numbers
+// arrays for storing random numbers
 //
 param nran = 1024;
 
@@ -157,10 +175,7 @@ var urand: [0..#nran] vec3,
 // The program's entry point
 //
 proc main(args: [] string) {
-  if (args.size > 1) then
-    handleArgs(args);
-
-  var pixels: [0..#yres, 0..#xres] pixelType;
+  processArgs(args);
 
   loadScene();
   initRands();
@@ -168,7 +183,9 @@ proc main(args: [] string) {
   var t: Timer;
   t.start();
 
-  /* render a frame of xsz/ysz dimensions into the provided framebuffer */
+  var pixels: [0..#yres, 0..#xres] pixelType;
+
+  /* render a frame of xsz x ysz dimensions into the provided framebuffer */
   forall (y, x) in pixels.domain do
     pixels[y, x] = computePixel(y, x);
 
@@ -182,7 +199,10 @@ proc main(args: [] string) {
 }
 
 
-proc handleArgs(args) {
+//
+// process any arguments
+//
+proc processArgs(args) {
   for i in 1..args.size-1 {
     if (args[i] == "--help" || args[i] == "-h") {
       printUsage();
@@ -222,7 +242,9 @@ proc handleArgs(args) {
   }
 }
 
-
+//
+// Read the input scene file
+//
 proc loadScene() {
   const inputs = {'l', 'c', 's'},
         expectedArgs: [inputs] int = ['l'=>4, 'c'=>8, 's'=>10];
@@ -332,41 +354,42 @@ proc initRands() {
 
 
 //
-// Take in the (y, x) coordinates of a pixel and return
+// Take in the (y, x) coordinates of a pixel and return a pixel value
 //
-proc computePixel(y, x) {
+proc computePixel(y: int, x: int): pixelType {
   var rgb: vec3;
 
   for s in 0..#samples do
-    rgb += trace(getPrimaryRay(x, y, s));
+    rgb += trace(getPrimaryRay((x, y), s));
 
   rgb *= rcpSamples;
 
   return realColorToInt(red) | realColorToInt(green) | realColorToInt(blue);
 
   inline proc realColorToInt(param color) {
-    const colorAsInt = 0xff & ((min(rgb(color), 1.0) * 255.0): pixelType);
-    return colorAsInt << colorShift(color);
+    const colorAsInt = colorMask & ((min(rgb(color), 1.0) * 255.0): pixelType);
+    return colorAsInt << colorOffset(color);
   }
 }
 
 
+//
+// write the image to the output file
+//
 proc writeImage(pixels) {
   outfile.writeln("P6");
   outfile.writeln(xres, " ", yres);
   outfile.writeln(255);
-  for p in pixels {
-    outfile.writef("%|1i", ((p >> colorShift(red))   & 0xff):uint(8));
-    outfile.writef("%|1i", ((p >> colorShift(green)) & 0xff):uint(8));
-    outfile.writef("%|1i", ((p >> colorShift(blue))  & 0xff):uint(8));
-  }
+  for p in pixels do
+    for param c in 1..numColors do
+      outfile.writef("%|1i", ((p >> colorOffset(c)) & colorMask));
 }
 
 
 //
 // how far to shift a color component when packing into a pixelType
 //
-inline proc colorShift(param color) param {
+inline proc colorOffset(param color) param {
   return (color - 1) * bitsPerColor;
 }
 
@@ -374,7 +397,7 @@ inline proc colorShift(param color) param {
 //
 // TODO: can x, y be made into a 2-tuple
 //
-proc getPrimaryRay(x, y, sample) {
+proc getPrimaryRay(xy, sample) {
   var k = cam.targ - cam.pos,
       j = (0.0, 1.0, 0.0);
   normalize(k);
@@ -382,7 +405,7 @@ proc getPrimaryRay(x, y, sample) {
   j = crossProduct(k, i);
   const m: [0..2] vec3 = [i, j, k];
   var pRay = new ray();
-  pRay.dir = getSamplePos(x, y, sample);
+  (pRay.dir(X), pRay.dir(Y)) = getSamplePos(xy, sample);
   pRay.dir(Z) = 1.0 / halfFieldOfView;
   pRay.dir *= rayMagnitude;
 
@@ -433,24 +456,34 @@ proc trace(ray, depth=0): vec3 {
 }
 
 
-proc getSamplePos(x, y, sample) {
-  const sf = 2.0 / xres;
+//
+// Convert pixel coordinates 'xy' into a 2D point 'pt' in 3-space
+//
+proc getSamplePos(xy, sample) {
+  //
+  // TODO: remove this?
+  //
 
-  var pt: vec3;
-  pt(X) = x:real / xres:real - 0.5;
-  pt(Y) = -((y:real / yres:real) - 0.65) / aspect;
+  var pt = xy / (xres: real, yres: real);
+  pt -= (0.5, 0.65);
+  pt(Y) = -pt(Y);
 
   if sample {
-    const jt = jitter(x, y, sample);
-    pt(X) += jt(X) * sf;
-    pt(Y) += jt(Y) * sf / aspect;
+    const sf = 2.0 / xres; // TODO: This really wants to be a local static
+    pt += jitter(xy, sample) * sf;
   }
+
+  const aspect = xres:real / yres;   // image aspect ratio; TODO: local static
+  pt(Y) /= aspect;
 
   return pt;
 }
 
 
-proc jitter(x, y, s) {
+//
+// compute jitter values for subsequent samples to the same pixel
+//
+proc jitter((x, y), s) {
   param mask = nran - 1;
 
   return (urand[(x + (y << 2) + irand[(x + s) & mask]) & mask](X),

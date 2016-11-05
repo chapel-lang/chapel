@@ -1,1 +1,1 @@
-c-ray.chpl:88: error: pixelType 'int(8)' isn't big enough to store 8 bits per color
+c-ray.chpl:109: error: pixelType 'int(8)' isn't big enough to store 8 bits per color
