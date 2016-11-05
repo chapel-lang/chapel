@@ -73,9 +73,9 @@ config type pixelType = int;  //
 
 config param bitsPerColor = 8;
 
-param red = 2,
-      green = 1,
-      blue = 0,
+param red = 3,
+      green = 2,
+      blue = 1,
       numColors = 3;
 
 // TODO: Should be able to use an enum above:
@@ -93,15 +93,29 @@ if (isIntegral(pixelType)) {
 }
 
 
+//
+// TODO: replace these with an expression where used
+//
+inline proc colorShift(param color) param {
+  return (color - 1) * bitsPerColor;
+}
+
 const redShift   = red   * bitsPerColor,  // bit shift amounts for each color
       greenShift = green * bitsPerColor,
       blueShift  = blue  * bitsPerColor;
 
-type vec3 = 3*real;   // a 3-tuple for positions, vectors
-
+//
+// TODO: Should this be an enum?
+//
 param X = 1,          // names for accessing vec3 elements
       Y = 2,
-      Z = 3;
+      Z = 3,
+      numdims = 3;
+
+//
+// TODO: Making this an array [0..3] doesn't work
+//
+type vec3 = numdims*real;   // a 3-tuple for positions, vectors
 
 record ray {
   var orig,           // origin
@@ -157,11 +171,11 @@ proc main(args: [] string) {
   if (args.size > 1) then
     handleArgs(args);
 
-  var pixels: [0..#yres, 0..#xres] int;
+  var pixels: [0..#yres, 0..#xres] pixelType;
 
   loadScene();
   initRands();
-  
+
   var t: Timer;
   t.start();
 
@@ -223,7 +237,7 @@ proc handleArgs(args) {
 proc loadScene() {
   const inputs = {'l', 'c', 's'},
         expectedArgs: [inputs] int = ['l'=>4, 'c'=>8, 's'=>10];
-                                 
+
   for (rawLine, lineno) in zip(infile.readlines(), 1..) {
     //
     // drop any comments (text following '#')
@@ -318,7 +332,7 @@ proc initRands() {
   //
   extern const RAND_MAX: c_int;
   extern proc rand(): c_int;
-  
+
   for u in urand do
     u(X) = rand():real / RAND_MAX - 0.5;
   for u in urand do
@@ -328,7 +342,9 @@ proc initRands() {
 }
 
 
-
+//
+// Take in the (y, x) coordinates of a pixel and return
+//
 proc computePixel(y, x) {
   var rgb: vec3;
 
@@ -337,12 +353,11 @@ proc computePixel(y, x) {
 
   rgb *= rcpSamples;
 
-  return colorRealToInt(rgb(1)) << redShift |
-         colorRealToInt(rgb(2)) << greenShift |
-         colorRealToInt(rgb(3)) << blueShift;
+  return realColorToInt(red) | realColorToInt(green) | realColorToInt(blue);
 
-  inline proc colorRealToInt(component) {
-    return ((min(component, 1.0) * 255.0): int & 0xff);
+  proc realColorToInt(param color) {
+    const colorAsInt = 0xff & ((min(rgb(color), 1.0) * 255.0): pixelType);
+    return colorAsInt << colorShift(color);
   }
 }
 
@@ -352,9 +367,9 @@ proc writeImage(pixels) {
   outfile.writeln(xres, " ", yres);
   outfile.writeln(255);
   for p in pixels {
-    outfile.writef("%|1i", ((p >> redShift)   & 0xff):uint(8));
-    outfile.writef("%|1i", ((p >> greenShift) & 0xff):uint(8));
-    outfile.writef("%|1i", ((p >> blueShift)  & 0xff):uint(8));
+    outfile.writef("%|1i", ((p >> colorShift(red))   & 0xff):uint(8));
+    outfile.writef("%|1i", ((p >> colorShift(green)) & 0xff):uint(8));
+    outfile.writef("%|1i", ((p >> colorShift(blue))  & 0xff):uint(8));
   }
 }
 
@@ -553,9 +568,12 @@ inline proc crossProduct(v1, v2) {
 }
 
 
+//
+// TODO: Add this to the IO module
+//
 iter channel.readlines() {
   var line: string;
-  
+
   while (infile.readline(line)) do
     yield line;
 }
