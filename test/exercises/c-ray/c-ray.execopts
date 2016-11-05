@@ -2,6 +2,7 @@
 # basic test
 #
 --noTiming
+--noTiming --samples=4      # c-ray.4samples.good
 
 #
 # skipping this due to it taking too long under valgrind and baseline testing:
