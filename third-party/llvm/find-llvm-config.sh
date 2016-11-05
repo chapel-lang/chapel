@@ -3,15 +3,17 @@
 # takes in a single argument: the preferred version, e.g. 3.7
 PREFERRED_VERSION=$1
 
-novers=`which llvm-config`
-prefvers=`which llvm-config-$PREFERRED_VERSION`
+command_exists()
+{
+  command -v "$1" >/dev/null 2>&1
+}
 
-if [ -x $prefvers ]
+if command_exists llvm-config-$PREFERRED_VERSION
 then
-  echo $prefvers
-elif [ -x $novers ]
+  command -v llvm-config-$PREFERRED_VERSION
+elif command_exists llvm-config
 then
-  echo $novers
+  command -v llvm-config
 else
   echo missing-llvm-config
 fi
