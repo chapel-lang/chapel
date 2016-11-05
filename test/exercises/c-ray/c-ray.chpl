@@ -73,9 +73,9 @@ config type pixelType = int;  //
 
 config param bitsPerColor = 8;
 
-param red = 3,
+param red = 1,
       green = 2,
-      blue = 1,
+      blue = 3,
       numColors = 3;
 
 // TODO: Should be able to use an enum above:
@@ -92,17 +92,6 @@ if (isIntegral(pixelType)) {
   compilerError("pixelType must be an integral type");
 }
 
-
-//
-// TODO: replace these with an expression where used
-//
-inline proc colorShift(param color) param {
-  return (color - 1) * bitsPerColor;
-}
-
-const redShift   = red   * bitsPerColor,  // bit shift amounts for each color
-      greenShift = green * bitsPerColor,
-      blueShift  = blue  * bitsPerColor;
 
 //
 // TODO: Should this be an enum?
@@ -355,7 +344,7 @@ proc computePixel(y, x) {
 
   return realColorToInt(red) | realColorToInt(green) | realColorToInt(blue);
 
-  proc realColorToInt(param color) {
+  inline proc realColorToInt(param color) {
     const colorAsInt = 0xff & ((min(rgb(color), 1.0) * 255.0): pixelType);
     return colorAsInt << colorShift(color);
   }
@@ -371,6 +360,14 @@ proc writeImage(pixels) {
     outfile.writef("%|1i", ((p >> colorShift(green)) & 0xff):uint(8));
     outfile.writef("%|1i", ((p >> colorShift(blue))  & 0xff):uint(8));
   }
+}
+
+
+//
+// how far to shift a color component when packing into a pixelType
+//
+inline proc colorShift(param color) param {
+  return (color - 1) * bitsPerColor;
 }
 
 
