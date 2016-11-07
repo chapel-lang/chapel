@@ -1036,51 +1036,85 @@ static void build_record_copy_function(AggregateType* ct) {
   if (function_exists("chpl__initCopy", 1, ct))
     return;
 
+  // if there is a copy-initializer for this record type, use that.
+  const char* copyCtorName = astr("_construct_", ct->symbol->name);
+  const char* copyInitName = "init";
+  bool foundUserDefinedCopy = false;
+  // as an optimization, the below conditionals use ct->initializerStyle
+  if (ct->initializerStyle == DEFINES_CONSTRUCTOR)
+    if (FnSymbol* ctor = function_exists(copyCtorName, 1, ct))
+      // note: default ctor has 1 arg, meme
+      if (!ctor->getFormal(1)->hasFlag(FLAG_IS_MEME))
+        foundUserDefinedCopy = true;
+
+  if (ct->initializerStyle == DEFINES_INITIALIZER)
+    if (function_exists(copyInitName, 2, ct, ct /*meme*/ ))
+      foundUserDefinedCopy = true;
+
+  // if no copy-init function existed...
   FnSymbol* fn = new FnSymbol("chpl__initCopy");
   fn->addFlag(FLAG_INIT_COPY_FN);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   arg->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg);
-  CallExpr* call = new CallExpr(ct->defaultInitializer);
-  for_fields(tmp, ct)
-  {
-    // Weed out implicit alias and promotion type fields.
-    if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
-      continue;
-    // TODO: This needs to be done uniformly, using an ignore_field flag or...
-    if (!strcmp("_promotionType", tmp->name))
-      continue;
 
-    CallExpr* init = new CallExpr(".", arg, new_CStringSymbol(tmp->name));
-    call->insertAtTail(new NamedExpr(tmp->name, init));
+  CallExpr* call = NULL;
 
-    // Special handling for nested record types:
-    // We need to convert the constructor call into a method call.
-    if (!strcmp(tmp->name, "outer"))
-      call->insertAtHead(gMethodToken);
-  }
-  if (ct->symbol->hasFlag(FLAG_EXTERN)) {
-    int actualsNeeded = ct->defaultInitializer->formals.length;
-    int actualsGiven = call->argList.length;
-    // This code assumes that in the case where an extern has not been fully
-    // specified in Chapel code, its default constructor will require one more
-    // actual than the fields specified: another object of that extern type
-    // whose contents can be used.
-    if (actualsNeeded == actualsGiven + 1) {
-      call->insertAtTail(arg);
-    } else if (actualsNeeded != actualsGiven) {
-      // The user didn't partially specify the type in Chapel code, but the
-      // number of actuals provided didn't match the expected number.  This is
-      // an internal error.
-      INT_FATAL(arg, "Extern type's constructor call didn't create expected # of actuals");
+  if (foundUserDefinedCopy) {
+    call = new CallExpr(PRIM_NEW, ct->symbol, new SymExpr(arg));
+    // If it has a user-defined copy initializer, it's not POD
+    ct->symbol->addFlag(FLAG_NOT_POD);
+  } else {
+    // generate the default copy initializer in chpl__initCopy for now
+
+    // MPF 2016-11-03: It would be better to move all of the logic below
+    // into the construction of a compiler-generated initializer. However,
+    // at the moment, compiler-generated initializers follow a very different
+    // code path from initializers.
+    // In addition, we could entirely remove chpl__initCopy and instead
+    // rely on the copy initializer.
+
+    call = new CallExpr(ct->defaultInitializer);
+    for_fields(tmp, ct)
+    {
+      // Weed out implicit alias and promotion type fields.
+      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+        continue;
+      // TODO: This needs to be done uniformly, using an ignore_field flag or...
+      if (!strcmp("_promotionType", tmp->name))
+        continue;
+
+      CallExpr* init = new CallExpr(".", arg, new_CStringSymbol(tmp->name));
+      call->insertAtTail(new NamedExpr(tmp->name, init));
+
+      // Special handling for nested record types:
+      // We need to convert the constructor call into a method call.
+      if (!strcmp(tmp->name, "outer"))
+        call->insertAtHead(gMethodToken);
     }
-  }
-  if (ct->initializerStyle == DEFINES_INITIALIZER) {
-    // We want the initializer to take in the memory it will initialize
-    VarSymbol* meme = newTemp("meme_tmp", ct);
-    fn->insertAtHead(new DefExpr(meme));
-    call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
+    if (ct->symbol->hasFlag(FLAG_EXTERN)) {
+      int actualsNeeded = ct->defaultInitializer->formals.length;
+      int actualsGiven = call->argList.length;
+      // This code assumes that in the case where an extern has not been fully
+      // specified in Chapel code, its default constructor will require one more
+      // actual than the fields specified: another object of that extern type
+      // whose contents can be used.
+      if (actualsNeeded == actualsGiven + 1) {
+        call->insertAtTail(arg);
+      } else if (actualsNeeded != actualsGiven) {
+        // The user didn't partially specify the type in Chapel code, but the
+        // number of actuals provided didn't match the expected number.  This is
+        // an internal error.
+        INT_FATAL(arg, "Extern type's constructor call didn't create expected # of actuals");
+      }
+    }
+    if (ct->initializerStyle == DEFINES_INITIALIZER) {
+      // We want the initializer to take in the memory it will initialize
+      VarSymbol* meme = newTemp("meme_tmp", ct);
+      fn->insertAtHead(new DefExpr(meme));
+      call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
+    }
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);

@@ -177,10 +177,10 @@ module ChapelArray {
 
   // MPF 2016-10-02: This simple implementation of privatization has some
   // drawbacks:
-  // 1) Creating a new privatizated object necessarily does something on all
+  // 1) Creating a new privatized object necessarily does something on all
   //    locales; this would be surprising if the user explicitly requested a
   //    Block array on 2 locales for example.
-  // 2) Privitized object ids are managed by Locale 0 in a way that, while
+  // 2) Privatized object ids are managed by Locale 0 in a way that, while
   //    relatively low overhead, adds work to Locale 0 that is not present on
   //    the other locales, and again would be surprising if a Block array were
   //    created over other locales only (say, Locales[2] and Locales[3]).
@@ -222,7 +222,7 @@ module ChapelArray {
   }
 
   // original is the value this method shouldn't free, because it's the
-  // canonical verison. The rest are copies on other locales.
+  // canonical version. The rest are copies on other locales.
   proc _freePrivatizedClass(pid:int, original:object):void
   {
     // Do nothing for null pids.
@@ -878,6 +878,14 @@ module ChapelArray {
   }
   */ /* */
 
+  // This alternative declaration of Sort.defaultComparator
+  // prevents transitive use of module Sort.
+  proc chpl_defaultComparator() {
+    use Sort;
+    return defaultComparator;
+  }
+
+
   //
   // Domain wrapper record.
   //
@@ -1523,8 +1531,8 @@ module ChapelArray {
 
     // associative array interface
     /* Yield the domain indices in sorted order */
-    iter sorted() {
-      for i in _value.dsiSorted() {
+    iter sorted(comparator:?t = chpl_defaultComparator()) {
+      for i in _value.dsiSorted(comparator) {
         yield i;
       }
     }
@@ -2211,9 +2219,20 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
-    iter sorted() {
-      for i in _value.dsiSorted() {
-        yield i;
+    iter sorted(comparator:?t = chpl_defaultComparator()) {
+      use Reflection;
+      if canResolveMethod(_value, "dsiSorted", comparator) {
+        for i in _value.dsiSorted(comparator) {
+          yield i;
+        }
+      } else if canResolveMethod(_value, "dsiSorted") {
+        compilerError(_value.type:string + " does not support dsiSorted(comparator)");
+      } else {
+        use Sort;
+        var copy = this;
+        sort(copy, comparator=comparator);
+        for ind in copy do
+          yield ind;
       }
     }
 

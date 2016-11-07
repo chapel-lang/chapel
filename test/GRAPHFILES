@@ -230,6 +230,7 @@ studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 # suite: String perf tests
+types/string/cassella/cast-from-string.graph
 types/string/ferguson/temporary-copies.graph
 types/string/psahabu/split-whitespace-perf.graph
 types/string/psahabu/perf/allocate.graph

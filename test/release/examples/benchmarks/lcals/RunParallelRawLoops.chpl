@@ -469,7 +469,7 @@ module RunParallelRawLoops {
             var val = 0.0;
             ltimer.start();
             for 0..#num_samples {
-              forall i in 0..#len with (+ reduce sumx) {
+              forall i in 0..(len-1):int(32) with (+ reduce sumx) {
                 var x = x0 + i*h;
                 sumx += trap_int_func(x, y, xp, yp);
               }

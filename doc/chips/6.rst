@@ -150,7 +150,7 @@ This section clarifies the "Return Intents" section of the
 When a function's return intent is not specified explicitly,
 the function is said to have the "default" return intent.
 The "default" return intent always corresponds to returning a value for
-all types. This behavior can be overriden by specifying the `ref` or
+all types. This behavior can be overridden by specifying the `ref` or
 `const ref` return intent.
 
 
