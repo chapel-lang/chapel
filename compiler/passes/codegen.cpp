@@ -946,7 +946,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
         SymExpr* se = toSymExpr(call->get(1));
         INT_ASSERT(se);
         SET_LINENO(call);
-        fprintf(hdrfile, ",\n&%s", se->var->cname);
+        fprintf(hdrfile, ",\n&%s", se->symbol()->cname);
         // To preserve operand order, this should be insertAtTail.
         // The change must also be made below (for LLVM) and in the signature
         // of chpl_comm_broadcast_private().
@@ -1342,7 +1342,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
 
         private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
               info->builder->CreatePointerCast(
-                info->lvt->getValue(se->var->cname).val,
+                info->lvt->getValue(se->symbol()->cname).val,
                 private_broadcastTableEntryType)));
         // To preserve operand order, this should be insertAtTail.
         call->insertAtHead(new_IntSymbol(broadcastID++));

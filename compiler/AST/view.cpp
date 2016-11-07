@@ -137,7 +137,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
     if (GotoStmt* e = toGotoStmt(ast)) {
       printf("goto ");
       if (SymExpr* label = toSymExpr(e->label)) {
-        if (label->var != gNil) {
+        if (label->symbol() != gNil) {
           list_ast(e->label, ast, indent+1);
         }
       } else {
@@ -168,7 +168,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         printf("def ");
       }
     } else if (SymExpr* e = toSymExpr(expr)) {
-      list_sym(e->var, false);
+      list_sym(e->symbol(), false);
     } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {
       printf("%s ", e->unresolved);
     } else if (isUseStmt(expr)) {
@@ -389,7 +389,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
 
     if (SymExpr* sym = toSymExpr(expr)) {
       printf(" ");
-      view_sym(sym->var, number, mark);
+      view_sym(sym->symbol(), number, mark);
     } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
       printf(" '%s'", sym->unresolved);
     }
@@ -773,7 +773,7 @@ void whocalls(BaseAST* ast) {
   }
   printf("whocalls(%s[%d])\n", ast->astTagAsString(), ast->id);
   if (SymExpr* se = toSymExpr(ast)) {
-    whocalls(se->var->id);
+    whocalls(se->symbol()->id);
   } else if (isSymbol(ast)) {
     whocalls(ast->id);
   } else {
@@ -799,7 +799,7 @@ void whocalls(int id) {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
       callAll++;
-      if (se->var->id == id) {
+      if (se->symbol()->id == id) {
         printf("  call %d  %s  %s\n", call->id,
                parentMsg(call, &callMatch, &callNonTreeMatch), debugLoc(call));
         if (whocalls_nview) nprint_view(call);
@@ -813,7 +813,7 @@ void whocalls(int id) {
       forAll++;
       // check each step, just in case
       if (SymExpr* act2 = toSymExpr(call->get(2)))
-        if (Symbol* ic = act2->var)
+        if (Symbol* ic = act2->symbol())
           if (AggregateType* ty = toAggregateType(ic->type))
             if (FnSymbol* init = ty->iteratorInfo->getIterator)
               if (ArgSymbol* form1 = init->getFormal(1))

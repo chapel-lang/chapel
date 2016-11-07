@@ -161,7 +161,7 @@ static bool type_match(Type* type, Symbol* sym) {
   if (sym->type == type)
     return true;
   SymExpr* se = toSymExpr(sym->defPoint->exprType);
-  if (se && se->var->type == type)
+  if (se && se->symbol()->type == type)
     return true;
   return false;
 }
@@ -411,7 +411,7 @@ static FnSymbol* chpl_gen_main_exists() {
         if (!sym)
           INT_FATAL(fn, "function is not normalized");
 
-        if( sym->var != gVoid ) {
+        if( sym->symbol() != gVoid ) {
           mainReturnsInt = true;
         } else {
           mainReturnsInt = false;

@@ -1003,7 +1003,7 @@ void AstDumpToNode::exitNamedExpr(NamedExpr* node)
 
 void AstDumpToNode::visitSymExpr(SymExpr* node)
 {
-  Symbol* sym = node->var;
+  Symbol* sym = node->symbol();
 
   enterNode(node);
 
@@ -1158,12 +1158,12 @@ bool AstDumpToNode::enterGotoStmt(GotoStmt* node)
 
   if (SymExpr* label = toSymExpr(node->label))
   {
-    if (label->var != gNil)
+    if (label->symbol() != gNil)
     {
       newline();
       fprintf(mFP, "label: ");
       mOffset = mOffset + 2;
-      ast_symbol(label->var, true);
+      ast_symbol(label->symbol(), true);
       mOffset = mOffset - 2;
     }
   }

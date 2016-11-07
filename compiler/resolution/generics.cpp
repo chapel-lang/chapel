@@ -150,9 +150,9 @@ evaluateWhereClause(FnSymbol* fn) {
     SymExpr* se = toSymExpr(fn->where->body.last());
     if (!se)
       USR_FATAL(fn->where, "invalid where clause");
-    if (se->var == gFalse)
+    if (se->symbol() == gFalse)
       return false;
-    if (se->var != gTrue)
+    if (se->symbol() != gTrue)
       USR_FATAL(fn->where, "invalid where clause");
   }
   return true;

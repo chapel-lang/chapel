@@ -144,7 +144,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
   int i = 0;    // Fields are numbered for uniqueness.
   for_actuals(arg, fcall) {
     SymExpr *s = toSymExpr(arg);
-    Symbol  *var = s->var; // arg or var
+    Symbol  *var = s->symbol(); // arg or var
 
     //
     // If we need to do an autoCopy for a BEGIN, and the result is placed on
@@ -205,7 +205,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
 {
   SymExpr* s        = toSymExpr(arg);
-  Symbol*  var      = s->var;
+  Symbol*  var      = s->symbol();
   Type*    baseType = arg->getValType();
   ArgSymbol*  formal   = toArgSymbol(actual_to_formal(s));
   QualifiedType qual = formal->qualType();
@@ -279,7 +279,7 @@ static Symbol* insertAutoCopyForTaskArg
    FnSymbol* fn) ///< The task function.
 {
   SymExpr* s        = toSymExpr(arg);
-  Symbol*  var      = s->var;
+  Symbol*  var      = s->symbol();
   Type*    baseType = arg->getValType();
 
   FnSymbol* autoCopyFn = getAutoCopy(baseType);
@@ -355,7 +355,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     if (autoCopy)
       var = insertAutoCopyForTaskArg(arg, fcall, fn);
     else
-      var = toSymExpr(arg)->var;
+      var = toSymExpr(arg)->symbol();
     baData.needsDestroy.push_back(autoCopy);
 
     Symbol* field = ctype->getField(i);
@@ -418,7 +418,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
       if( type_found || strcmp_found ) {
         SymExpr* symexp = toSymExpr(arg);
-        endCount = symexp->var;
+        endCount = symexp->symbol();
 
         // Turns out there can be more than one such field. See e.g.
         //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
@@ -523,7 +523,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
     // This loop is meant to handle control-flow regions only.
     while (true) {
       SymExpr* se = toSymExpr(endCountTmp);
-      if (ArgSymbol* arg = toArgSymbol(se->var)) {
+      if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
         whichArg = arg;
         break;
       }
@@ -532,7 +532,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
       if (CallExpr* call = toCallExpr(cur))
         if (call->isPrimitive(PRIM_MOVE))
           if (SymExpr* dst = toSymExpr(call->get(1)))
-            if (dst->var == se->var) {
+            if (dst->symbol() == se->symbol()) {
               if (SymExpr* src = toSymExpr(call->get(2)))
                 endCountTmp = src;
               else if (CallExpr* subcall = toCallExpr(call->get(2)))
@@ -789,7 +789,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
     std::vector<SymExpr*> symExprs;
     collectSymExprs(stmt, symExprs);
     for_vector(SymExpr, se, symExprs) {
-      if (se->var == currDefSym) {
+      if (se->symbol() == currDefSym) {
         INT_ASSERT(se->parentExpr);
         int result = isDefAndOrUse(se);
         if (result & 1) {
@@ -808,7 +808,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
             INT_ASSERT(isCallExpr(parent->parentExpr));
             // Now start looking for the first use of the captured
             // reference
-            currDefSym = toSymExpr(toCallExpr(parent->parentExpr)->get(1))->var;
+            currDefSym = toSymExpr(toCallExpr(parent->parentExpr)->get(1))->symbol();
             INT_ASSERT(currDefSym);
             // This is used to flag that we have found the first use
             // of the variable
@@ -926,7 +926,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
                 call = toCallExpr(call->parentExpr);
               }
               if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-                Symbol* toAdd = toSymExpr(call->get(1))->var;
+                Symbol* toAdd = toSymExpr(call->get(1))->symbol();
                 // BHARSH TODO: we really want something like a set that we can
                 // modify while iterating over it.
                 if (!varsToTrack.in(toAdd)) {
@@ -1164,10 +1164,10 @@ makeHeapAllocations() {
         // to a ref formal, and codegen will just take care of it.  With that
         // in mind, do we need to do something here if the actual is not a ref,
         // or can we just skip that case?
-        //INT_ASSERT(se->var->isRef());
-        if (se->var->isRef() && !refSet.set_in(se->var)) {
-          refSet.set_add(se->var);
-          refVec.add(se->var);
+        //INT_ASSERT(se->symbol()->isRef());
+        if (se->symbol()->isRef() && !refSet.set_in(se->symbol())) {
+          refSet.set_add(se->symbol());
+          refVec.add(se->symbol());
         }
         // BHARSH TODO: Need to add to varVec here?
       }
@@ -1182,9 +1182,9 @@ makeHeapAllocations() {
                   rhs->isPrimitive(PRIM_SET_REFERENCE)) {
                 SymExpr* se = toSymExpr(rhs->get(1));
                 INT_ASSERT(se);
-                if (!se->isRef() && !varSet.set_in(se->var)) {
-                  varSet.set_add(se->var);
-                  varVec.add(se->var);
+                if (!se->isRef() && !varSet.set_in(se->symbol())) {
+                  varSet.set_add(se->symbol());
+                  varVec.add(se->symbol());
                 }
                 // BHARSH TODO: Need to add to refVec here?
               } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
@@ -1193,14 +1193,14 @@ makeHeapAllocations() {
                          rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
                 SymExpr* se = toSymExpr(rhs->get(1));
                 INT_ASSERT(se);
-                if (se->var->isRef()) {
-                  if (!refSet.set_in(se->var)) {
-                    refSet.set_add(se->var);
-                    refVec.add(se->var);
+                if (se->symbol()->isRef()) {
+                  if (!refSet.set_in(se->symbol())) {
+                    refSet.set_add(se->symbol());
+                    refVec.add(se->symbol());
                   }
-                } else if (!varSet.set_in(se->var)) {
-                  varSet.set_add(se->var);
-                  varVec.add(se->var);
+                } else if (!varSet.set_in(se->symbol())) {
+                  varSet.set_add(se->symbol());
+                  varVec.add(se->symbol());
                 }
               }
               //
@@ -1220,10 +1220,10 @@ makeHeapAllocations() {
               // To debug this case, add an else INT_FATAL here.
               //
             } else if (SymExpr* rhs = toSymExpr(call->get(2))) {
-              INT_ASSERT(rhs->var->isRef());
-              if (!refSet.set_in(rhs->var)) {
-                refSet.set_add(rhs->var);
-                refVec.add(rhs->var);
+              INT_ASSERT(rhs->symbol()->isRef());
+              if (!refSet.set_in(rhs->symbol())) {
+                refSet.set_add(rhs->symbol());
+                refVec.add(rhs->symbol());
               }
             } else
               INT_FATAL(ref, "unexpected case");
@@ -1287,11 +1287,11 @@ makeHeapAllocations() {
       addDef(defMap, firstDef);
       arg->getFunction()->insertAtHead(new DefExpr(tmp));
       for_defs(def, defMap, arg) {
-        def->var = tmp;
+        def->setSymbol(tmp);
         addDef(defMap, def);
       }
       for_uses(use, useMap, arg) {
-        use->var = tmp;
+        use->setSymbol(tmp);
         addUse(useMap, use);
       }
       continue;
@@ -1322,7 +1322,7 @@ makeHeapAllocations() {
           call->replace(new CallExpr(PRIM_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
         } else if (call->isPrimitive(PRIM_ASSIGN)) {
           // ensure what we assign into is what we expect
-          INT_ASSERT(toSymExpr(call->get(1))->var == var);
+          INT_ASSERT(toSymExpr(call->get(1))->symbol() == var);
           VarSymbol* tmp = newTemp(var->type->refType);
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
@@ -1337,13 +1337,13 @@ makeHeapAllocations() {
                 op = PRIM_GET_MEMBER_VALUE;
               }
               call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(op, def->var, heapType->getField(1))));
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(op, def->symbol(), heapType->getField(1))));
               def->replace(new SymExpr(tmp));
             }
         } else {
           VarSymbol* tmp = newTemp(var->type);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, def->var, heapType->getField(1))));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, def->symbol(), heapType->getField(1))));
           def->replace(new SymExpr(tmp));
         }
       } else
@@ -1358,7 +1358,7 @@ makeHeapAllocations() {
           if (move->get(1)->typeInfo() == heapType) {
             call->replace(use->copy());
           } else {
-            call->replace(new CallExpr(PRIM_GET_MEMBER, use->var, heapType->getField(1)));
+            call->replace(new CallExpr(PRIM_GET_MEMBER, use->symbol(), heapType->getField(1)));
           }
         } else if (call->isResolved()) {
           ArgSymbol* formal = actual_to_formal(use);
@@ -1378,7 +1378,7 @@ makeHeapAllocations() {
                 op = PRIM_GET_MEMBER_VALUE;
               }
               call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(op, use->var, heapType->getField(1))));
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(op, use->symbol(), heapType->getField(1))));
               use->replace(new SymExpr(tmp));
             } else {
               // formal takes in argument by value, so read from the
@@ -1386,7 +1386,7 @@ makeHeapAllocations() {
               VarSymbol* tmp = newTemp(var->type);
 
               call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->var, heapType->getField(1))));
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->symbol(), heapType->getField(1))));
               use->replace(new SymExpr(tmp));
             }
           }
@@ -1401,12 +1401,12 @@ makeHeapAllocations() {
                    call->get(1) == use) {
           VarSymbol* tmp = newTemp(var->type->refType);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, use->var, heapType->getField(1))));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
         } else {
           VarSymbol* tmp = newTemp(var->type);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->var, heapType->getField(1))));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
         }
       } else if (use->parentExpr)
@@ -1441,23 +1441,23 @@ reprivatizeIterators() {
   }
 
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (privatizedFields.set_in(se->var)) {
+    if (privatizedFields.set_in(se->symbol())) {
       SET_LINENO(se);
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
         if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* lhs = toSymExpr(move->get(1));
-          AggregateType* ct = toAggregateType(se->var->type);
+          AggregateType* ct = toAggregateType(se->symbol()->type);
           VarSymbol* tmp = newTemp(ct->getField("pid")->type);
           move->insertBefore(new DefExpr(tmp));
           lhs->replace(new SymExpr(tmp));
-          move->insertAfter(new CallExpr(PRIM_MOVE, lhs->var, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->var->type->symbol, tmp)));
+          move->insertAfter(new CallExpr(PRIM_MOVE, lhs->symbol(), new CallExpr(PRIM_GET_PRIV_CLASS, lhs->symbol()->type->symbol, tmp)));
         } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* lhs = toSymExpr(move->get(1));
-          AggregateType* ct = toAggregateType(se->var->type);
+          AggregateType* ct = toAggregateType(se->symbol()->type);
           VarSymbol* tmp = newTemp(ct->getField("pid")->type);
           move->insertBefore(new DefExpr(tmp));
           lhs->replace(new SymExpr(tmp));
@@ -1467,7 +1467,7 @@ reprivatizeIterators() {
           move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_ADDR_OF, valTmp)));
           move->insertAfter(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->getValType()->symbol, tmp)));
         } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-          AggregateType* ct = toAggregateType(se->var->type);
+          AggregateType* ct = toAggregateType(se->symbol()->type);
           VarSymbol* tmp = newTemp(ct->getField("pid")->type);
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(3)->remove(), ct->getField("pid"))));
@@ -1623,7 +1623,7 @@ static void passArgsToNestedFns() {
         collectSymExprs(fn->body, symExprs);
 
         for_vector(SymExpr, sym, symExprs) {
-          if (sym->var->defPoint == localeArg) {
+          if (sym->symbol()->defPoint == localeArg) {
             sym->getStmtExpr()->remove();
           }
         }

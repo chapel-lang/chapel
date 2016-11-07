@@ -2479,7 +2479,7 @@ FnSymbol::getReturnSymbol() {
     SymExpr* sym = toSymExpr(ret->get(1));
     if (!sym)
       INT_FATAL(this, "function is not normal");
-    return sym->var;
+    return sym->symbol();
   }
 }
 
@@ -2497,10 +2497,10 @@ FnSymbol::replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType)
   SymExpr* sym = toSymExpr(ret->get(1));
   if (!sym)
     INT_FATAL(this, "function is not normal");
-  Symbol* prevRetSymbol = sym->var;
+  Symbol* prevRetSymbol = sym->symbol();
 
   // updating
-  sym->var = newRetSymbol;
+  sym->setSymbol(newRetSymbol);
   this->retSymbol = newRetSymbol;
   if (newRetType)
     this->retType = newRetType;
@@ -2812,7 +2812,7 @@ void EnumSymbol::codegenDef() { }
 
 Immediate* EnumSymbol::getImmediate(void) {
   if (SymExpr* init = toSymExpr(defPoint->init)) {
-    if (VarSymbol* initvar = toVarSymbol(init->var)) {
+    if (VarSymbol* initvar = toVarSymbol(init->symbol())) {
       return initvar->immediate;
     }
   }

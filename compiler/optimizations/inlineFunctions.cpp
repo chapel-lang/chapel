@@ -53,7 +53,7 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
       // QualifiedType is used everywhere and ref-ness is no longer stored in
       // the 'type' field.
       if (canRemoveRefTempSet.set_in(fn)) {
-        if (se->var->hasFlag(FLAG_REF_TEMP)) {
+        if (se->symbol()->hasFlag(FLAG_REF_TEMP)) {
           if (CallExpr* move = findRefTempInit(se)) {
             SymExpr* origSym = NULL;
             if (CallExpr* addrOf = toCallExpr(move->get(2))) {
@@ -63,8 +63,8 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
               origSym = toSymExpr(move->get(2));
             }
             INT_ASSERT(origSym);
-            map.put(formal, origSym->var);
-            se->var->defPoint->remove();
+            map.put(formal, origSym->symbol());
+            se->symbol()->defPoint->remove();
             move->remove();
             continue;
           }
@@ -81,14 +81,14 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
         CallExpr* move;
         move = new CallExpr(PRIM_MOVE,
                             tmp,
-                            new CallExpr(PRIM_SET_REFERENCE, se->var));
+                            new CallExpr(PRIM_SET_REFERENCE, se->symbol()));
         point->insertBefore(def);
         point->insertBefore(move);
         map.put(formal, tmp);
         continue;
       }
     }
-    map.put(formal, se->var);
+    map.put(formal, se->symbol());
   }
 
   //
@@ -107,7 +107,7 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
   // returned value is originally one of the formal argument symbols, that
   // symbol was replaced by it actual argument in the call to copy(&map) above.
   for_formals(formal, fn)
-    INT_ASSERT(formal != toArgSymbol(se->var));
+    INT_ASSERT(formal != toArgSymbol(se->symbol()));
   return_stmt->remove();
   return_value->remove();
   stmt->insertBefore(block);
@@ -148,11 +148,11 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
 // because a ref temp's DefExpr and initial assignment are inserted together
 // inside of insertReferenceTemps.
 static CallExpr* findRefTempInit(SymExpr* se) {
-  Expr* expr = se->var->defPoint->next;
+  Expr* expr = se->symbol()->defPoint->next;
   while (expr) {
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_MOVE)) {
-        if (se->var == toSymExpr(call->get(1))->var) {
+        if (se->symbol() == toSymExpr(call->get(1))->symbol()) {
           if (CallExpr* nestedCall = toCallExpr(call->get(2))) {
             if (!nestedCall->isPrimitive(PRIM_ADDR_OF)) {
               return NULL;

@@ -125,10 +125,9 @@ class SymExpr : public Expr {
   // Allow Symbol to access symbolSymExprsPrev/symbolSymExprsNext
   friend class Symbol;
 
- public:
+ private:
   Symbol* var;
 
- private:
   // List entries to support enumerating SymExprs in a Symbol
   // These are public because they are managed by Symbol rather than SymExpr.
   // They should not be set directly.
@@ -153,7 +152,7 @@ class SymExpr : public Expr {
 
   virtual Expr*   getFirstExpr();
 
-  Symbol* getSymbol() {
+  Symbol* symbol() {
     return var;
   }
 

@@ -179,7 +179,7 @@ void compute_call_sites() {
       //      should this call be added to some function's calledBy list?
 
     } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      FnSymbol*       fn       = toFnSymbol(toSymExpr(call->get(1))->var);
+      FnSymbol*       fn       = toFnSymbol(toSymExpr(call->get(1))->symbol());
       Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
 
       fn->calledBy->add(call);
@@ -251,13 +251,13 @@ void buildDefUseMaps(BlockStmt* block,
 }
 
 static void addUseOrDef(Map<Symbol*,Vec<SymExpr*>*>& ses, SymExpr* se) {
-  Vec<SymExpr*>* sev = ses.get(se->var);
+  Vec<SymExpr*>* sev = ses.get(se->symbol());
   if (sev) {
     sev->add(se);
   } else {
     sev = new Vec<SymExpr*>();
     sev->add(se);
-    ses.put(se->var, sev);
+    ses.put(se->symbol(), sev);
   }
 }
 
@@ -345,7 +345,7 @@ int isDefAndOrUse(SymExpr* se) {
     if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
         call->get(1) == se) {
       CallExpr* rhsCall = toCallExpr(call->get(2));
-      QualifiedType lhsQual = se->var->qualType();
+      QualifiedType lhsQual = se->symbol()->qualType();
       if ((lhsQual.isRef() || lhsQual.isWideRef()) &&
           !isReferenceType(lhsQual.type()) &&
           !(rhsCall && rhsCall->isPrimitive(PRIM_SET_REFERENCE))) {
@@ -380,7 +380,7 @@ void buildDefUseMaps(Vec<Symbol*>& symSet,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   forv_Vec(SymExpr, se, symExprs) {
-    if (se->parentSymbol && symSet.set_in(se->var)) {
+    if (se->parentSymbol && symSet.set_in(se->symbol())) {
       int result = isDefAndOrUse(se);
 
       if (result & 1)
@@ -414,7 +414,7 @@ buildDefUseSetsInternal(BaseAST* ast,
                         Vec<SymExpr*>& defSet,
                         Vec<SymExpr*>& useSet) {
   if (SymExpr* se = toSymExpr(ast)) {
-    if (se->parentSymbol && se->var && symSet.set_in(se->var)) {
+    if (se->parentSymbol && se->symbol() && symSet.set_in(se->symbol())) {
       int result = isDefAndOrUse(se);
       if (result & 1)
         defSet.set_add(se);
@@ -440,8 +440,8 @@ void buildDefUseSets(Vec<Symbol*>& syms,
 
 void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym) {
   if (SymExpr* se = toSymExpr(ast))
-    if (se->var == oldSym)
-      se->var = newSym;
+    if (se->symbol() == oldSym)
+      se->setSymbol(newSym);
   AST_CHILDREN_CALL(ast, subSymbol, oldSym, newSym);
 }
 
@@ -515,7 +515,7 @@ actual_to_formal(Expr *a) {
           return formal;
       }
     } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
+      FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->symbol());
       int i = 0;
       for_actuals(actual, call) {
         i++;
@@ -547,13 +547,13 @@ bool isTypeExpr(Expr* expr)
 {
   if (SymExpr* sym = toSymExpr(expr))
   {
-    if (isTypeSymbol(sym->var))
+    if (isTypeSymbol(sym->symbol()))
       return true;
 
-    if (sym->var->hasFlag(FLAG_TYPE_VARIABLE))
+    if (sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
       return true;
 
-    if (FnSymbol* fn = toFnSymbol(sym->var))
+    if (FnSymbol* fn = toFnSymbol(sym->symbol()))
       if (fn->retTag == RET_TYPE)
         return true;
   }
@@ -574,12 +574,12 @@ bool isTypeExpr(Expr* expr)
 
       SymExpr* left = toSymExpr(call->get(1));
 
-      if (left->var->type->symbol->hasFlag(FLAG_TUPLE) &&
-          left->var->hasFlag(FLAG_TYPE_VARIABLE))
+      if (left->symbol()->type->symbol->hasFlag(FLAG_TUPLE) &&
+          left->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
         return true;
 
       SymExpr* right = toSymExpr(call->get(2));
-      VarSymbol* var = toVarSymbol(right->var);
+      VarSymbol* var = toVarSymbol(right->symbol());
 
       if (var->isType())
         return true;
@@ -646,11 +646,11 @@ pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(fn, symExprs);
   for_vector(SymExpr, se, symExprs) {
-    if (FnSymbol* next = toFnSymbol(se->var))
+    if (FnSymbol* next = toFnSymbol(se->symbol()))
       if (!fns.set_in(next))
         pruneVisit(next, fns, types);
-    if (se->var && se->var->type)
-      pruneVisit(se->var, fns, types);
+    if (se->symbol() && se->symbol()->type)
+      pruneVisit(se->symbol(), fns, types);
   }
   for_formals(formal, fn) {
     pruneVisit(formal, fns, types);
@@ -810,7 +810,7 @@ static void removeVoidMoves()
       continue;
 
     SymExpr* se = toSymExpr(call->get(1));
-    if (se->var->type != dtVoid)
+    if (se->symbol()->type != dtVoid)
       continue;
 
     call->remove();
@@ -858,7 +858,7 @@ Symbol* getSvecSymbol(CallExpr* call) {
   Type* type = call->get(1)->getValType();
   AggregateType* tuple = toAggregateType(type);
   SymExpr* fieldVal = toSymExpr(call->get(2));
-  VarSymbol* fieldSym = toVarSymbol(fieldVal->var);
+  VarSymbol* fieldSym = toVarSymbol(fieldVal->symbol());
   if (fieldSym) {
     int immediateVal = fieldSym->immediate->int_value();
 

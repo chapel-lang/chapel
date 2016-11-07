@@ -377,9 +377,9 @@ CallExpr* ParamForLoop::foldForResolve()
   if (!lse             || !hse             || !sse)
     USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
-  VarSymbol* lvar      = toVarSymbol(lse->var);
-  VarSymbol* hvar      = toVarSymbol(hse->var);
-  VarSymbol* svar      = toVarSymbol(sse->var);
+  VarSymbol* lvar      = toVarSymbol(lse->symbol());
+  VarSymbol* hvar      = toVarSymbol(hse->symbol());
+  VarSymbol* svar      = toVarSymbol(sse->symbol());
 
   CallExpr*  noop      = new CallExpr(PRIM_NOOP);
 
@@ -389,7 +389,7 @@ CallExpr* ParamForLoop::foldForResolve()
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
     USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
-  Symbol*      idxSym  = idxExpr->var;
+  Symbol*      idxSym  = idxExpr->symbol();
   Symbol*      continueSym = continueLabelGet();
   Type*        idxType = indexType();
   IF1_int_type idxSize = (get_width(idxType) == 32) ? INT_SIZE_32 : INT_SIZE_64;

@@ -106,7 +106,7 @@ removeEmptyRecords() {
   }
 
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->parentSymbol && emptyRecordSymbolSet.set_in(se->var)) {
+    if (se->parentSymbol && emptyRecordSymbolSet.set_in(se->symbol())) {
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
         if (call->primitive) {
           //call->isPrimitive(PRIM_SET_MEMBER) ||
