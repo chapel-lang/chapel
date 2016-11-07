@@ -126,7 +126,9 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   qual(QUAL_UNKNOWN),
   type(init_type),
   flags(),
-  defPoint(NULL)
+  defPoint(NULL),
+  symExprsHead(NULL),
+  symExprsTail(NULL)
 {
   if (init_name) {
     name = astr(init_name);
@@ -289,6 +291,44 @@ bool Symbol::noDocGen() const {
   return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE);
 }
 
+
+void Symbol::addSymExpr(SymExpr* se) {
+
+  if (symExprsTail == NULL) {
+    se->symbolSymExprsPrev = NULL;
+    se->symbolSymExprsNext = NULL;
+    symExprsHead = se;
+    symExprsTail = se;
+  } else {
+    SymExpr* oldTail = symExprsTail;
+    se->symbolSymExprsPrev = oldTail;
+    se->symbolSymExprsNext = NULL;
+    symExprsTail = se;
+    oldTail->symbolSymExprsNext = se;
+  }
+}
+
+void Symbol::removeSymExpr(SymExpr* se) {
+  SymExpr*& prev = se->symbolSymExprsPrev;
+  SymExpr*& next = se->symbolSymExprsNext;
+  if (next)
+    next->symbolSymExprsPrev = prev;
+  else
+    symExprsTail = prev;
+
+  if (prev)
+    prev->symbolSymExprsNext = next;
+  else
+    symExprsHead = next;
+
+  next = NULL;
+  prev = NULL;
+}
+
+
+SymExpr* Symbol::firstSymExpr() const {
+  return symExprsHead;
+}
 
 bool Symbol::isImmediate() const {
   return false;

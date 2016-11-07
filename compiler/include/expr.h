@@ -125,6 +125,13 @@ class SymExpr : public Expr {
  public:
   Symbol* var;
 
+  // List entries to support enumerating SymExprs in a Symbol
+  // These are public because they are managed by Symbol rather than SymExpr.
+  // They should not be set directly.
+  SymExpr* symbolSymExprsPrev;
+  SymExpr* symbolSymExprsNext;
+
+ public:
   SymExpr(Symbol* init_var);
 
   DECLARE_COPY(SymExpr);
