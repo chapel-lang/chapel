@@ -270,7 +270,12 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
     } else {
       // only phase 1 statements left.
 
-      if (const char* fieldname = getFieldName(curExpr)) {
+      if (BlockStmt* block = toBlockStmt(curExpr)) {
+        if (block->isLoopStmt()) {
+          // Special handling for loops.
+          verifyLoopIsClean(block, curField, seenField, &index, t);
+        }
+      } else if (const char* fieldname = getFieldName(curExpr)) {
         errorCases(t, curField, fieldname, seenField, curExpr);
       }
       curExpr = getNextStmt(curExpr, body, false);
@@ -480,12 +485,12 @@ DefExpr* verifyLoopIsClean(BlockStmt* loop, DefExpr* curField, bool* seenField,
       nextField = verifyLoopIsClean(inner, nextField, seenField, index, t);
     }
     if (const char* fieldname = getFieldName(stmt)) {
-      if (!strcmp(fieldname, nextField->sym->name)) {
+      if (nextField && !strcmp(fieldname, nextField->sym->name)) {
         USR_FATAL_CONT(stmt, "can't initialize field \"%s\" inside a loop during phase 1 of initialization", fieldname);
         seenField[*index] = true;
         (*index)++;
         stmt = getNextStmt(stmt, loop, true);
-      } else if (isLaterFieldAccess(curField, fieldname)) {
+      } else if (nextField && isLaterFieldAccess(nextField, fieldname)) {
         (*index)++;
         nextField = toDefExpr(nextField->next);
       } else {
