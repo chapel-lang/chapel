@@ -397,8 +397,7 @@ void EnumType::sizeAndNormalize() {
           constant->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
         }
       }
-      constant->init->parentExpr = constant;
-      constant->init->parentSymbol = constant->parentSymbol;
+      parent_insert_help(constant, constant->init);
     }
     if( first ) {
       min_v = v;

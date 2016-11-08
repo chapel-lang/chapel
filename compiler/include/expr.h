@@ -156,9 +156,7 @@ class SymExpr : public Expr {
     return var;
   }
 
-  void setSymbol(Symbol* s) {
-    var = s;
-  }
+  void setSymbol(Symbol* s);
 };
 
 

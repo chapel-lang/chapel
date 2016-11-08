@@ -531,11 +531,16 @@ Expr::insertAfter(const char* format, ...) {
 
 SymExpr::SymExpr(Symbol* init_var) :
   Expr(E_SymExpr),
-  var(init_var)
+  var(init_var),
+  symbolSymExprsPrev(NULL),
+  symbolSymExprsNext(NULL)
 {
   if (!init_var)
     INT_FATAL(this, "Bad call to SymExpr");
   gSymExprs.add(this);
+
+  // No need to call var->addSymExpr here since it will be called
+  // when the SymExpr is added to the tree.
 }
 
 bool SymExpr::isNoInitExpr() const {
@@ -565,6 +570,19 @@ void SymExpr::verify() {
 
   if (var != NULL && var->defPoint != NULL && var->defPoint->parentSymbol == NULL)
     INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
+
+  // Check that we can find this SymExpr in the Symbol's list
+  bool found = false;
+  for_SymbolSymExprs(se, var) {
+    if (se == this) {
+      found = true;
+      break;
+    }
+  }
+
+  if (!found)
+    INT_FATAL(this, "SymExpr::verify %12d:  SymExpr not in Symbol's list", id);
+
 }
 
 SymExpr* SymExpr::copyInner(SymbolMap* map) {
@@ -631,6 +649,22 @@ void SymExpr::prettyPrint(std::ostream *o) {
 
 void SymExpr::accept(AstVisitor* visitor) {
   visitor->visitSymExpr(this);
+}
+
+void SymExpr::setSymbol(Symbol* s)
+{
+  // If the old symbol is not NULL and the SymExpr
+  // is in the tree, remove the SymExpr from the old Symbol's list.
+  if (var != NULL && parentSymbol != NULL) {
+    var->removeSymExpr(this);
+  }
+  // Update the symbol
+  var = s;
+  // If the symbol is not NULL and the SymExpr is in the tree,
+  // add the SymExpr to the new Symbol's list.
+  if (s != NULL && parentSymbol != NULL) {
+    s->addSymExpr(this);
+  }
 }
 
 /************************************ | *************************************

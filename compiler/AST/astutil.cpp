@@ -484,6 +484,14 @@ void insert_help(BaseAST* ast,
     parentSymbol = sym;
     parentExpr = NULL;
   } else if (Expr* expr = toExpr(ast)) {
+    if (SymExpr* se = toSymExpr(expr)) {
+      Symbol* symbol = se->symbol();
+      if (symbol && parentSymbol && !expr->parentSymbol) {
+        // Add the SymExpr to the list if the SymExpr is
+        // being added to the tree
+        symbol->addSymExpr(se);
+      }
+    }
     expr->parentSymbol = parentSymbol;
     expr->parentExpr = parentExpr;
     parentExpr = expr;
@@ -496,6 +504,14 @@ void remove_help(BaseAST* ast, int trace_flag) {
   trace_remove(ast, trace_flag);
   AST_CHILDREN_CALL(ast, remove_help, trace_flag);
   if (Expr* expr = toExpr(ast)) {
+    if (SymExpr* se = toSymExpr(expr)) {
+      Symbol* symbol = se->symbol();
+      if (symbol && expr->parentSymbol) {
+        // Remove the SymExpr from the list if the SymExpr is
+        // being removed from the tree.
+        symbol->removeSymExpr(se);
+      }
+    }
     expr->parentSymbol = NULL;
     expr->parentExpr = NULL;
   } else if (LabelSymbol* labsym = toLabelSymbol(ast)) {

@@ -153,6 +153,12 @@ void Symbol::verify() {
   if (defPoint && this != defPoint->sym)
     INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
   verifyInTree(type, "Symbol::type");
+
+  if (symExprsHead && symExprsHead->symbolSymExprsPrev != NULL)
+    INT_FATAL(this, "Symbol's SymExpr list is malformed (head)");
+
+  if (symExprsTail && symExprsTail->symbolSymExprsNext != NULL)
+    INT_FATAL(this, "Symbol's SymExpr list is malformed (tail)");
 }
 
 
@@ -293,6 +299,13 @@ bool Symbol::noDocGen() const {
 
 
 void Symbol::addSymExpr(SymExpr* se) {
+
+  // MPF 2016-11-08: Consider not tracking SymExprs
+  // that refer Symbols that have an immediate.
+  // The reason is that immediates are usually
+  // unique-ifiied and so the symbol for 3 would refer
+  // to all the uses of 3, and that probably isn't adding
+  // any value.
 
   if (symExprsTail == NULL) {
     se->symbolSymExprsPrev = NULL;
@@ -3555,6 +3568,9 @@ VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   imm.const_kind = NUM_KIND_BOOL;
   imm.num_index = size;
   VarSymbol *s;
+  // doesn't use uniqueConstantsHash because new_BoolSymbol is only
+  // called to initialize dtBools[i]->defaultValue.
+  // gTrue and gFalse are set up directly in initPrimitiveTypes.
   PrimitiveType* dtRetType = dtBools[size];
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
