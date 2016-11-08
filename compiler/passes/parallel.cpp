@@ -1429,19 +1429,20 @@ reprivatizeIterators() {
   if (fLocal)
     return; // no need for privatization
 
-  Vec<Symbol*> privatizedFields;
+  std::vector<Symbol*> privatizedFields;
 
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     for_fields(field, ct) {
       if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
           field->type->symbol->hasFlag(FLAG_PRIVATIZED_CLASS)) {
-        privatizedFields.set_add(field);
+        privatizedFields.push_back(field);
       }
     }
   }
 
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (privatizedFields.set_in(se->symbol())) {
+
+  for_vector(Symbol, sym, privatizedFields) {
+    for_SymbolSymExprs(se, sym) {
       SET_LINENO(se);
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
         if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
@@ -1479,8 +1480,9 @@ reprivatizeIterators() {
     }
   }
 
-  forv_Vec(Symbol, sym, privatizedFields) if (sym) {
-    sym->type = dtInt[INT_SIZE_DEFAULT];
+  for_vector(Symbol, sym2, privatizedFields) {
+    if (sym2)
+      sym2->type = dtInt[INT_SIZE_DEFAULT];
   }
 }
 
