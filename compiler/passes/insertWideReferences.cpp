@@ -1801,53 +1801,51 @@ static void narrowWideClassesThroughCalls()
 //
 static void insertWideClassTempsForNil()
 {
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->symbol() == gNil) {
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
-        SET_LINENO(se);
-        if (call->isResolved()) {
-          if (Type* type = actual_to_formal(se)->typeInfo()) {
-            if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              VarSymbol* tmp = newTemp(type);
-              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              se->replace(new SymExpr(tmp));
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-            }
-          }
-        } else if (call->isPrimitive(PRIM_MOVE)) {
-          TypeSymbol* ts = call->get(1)->typeInfo()->symbol;
-          if (ts->hasFlag(FLAG_WIDE_REF) && valIsWideClass(ts)) {
-            VarSymbol* tmp = newTemp(call->get(1)->getValType());
+  for_SymbolSymExprs(se, gNil) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      SET_LINENO(se);
+      if (call->isResolved()) {
+        if (Type* type = actual_to_formal(se)->typeInfo()) {
+          if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            VarSymbol* tmp = newTemp(type);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             se->replace(new SymExpr(tmp));
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
           }
-        } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-          if (Type* wctype = call->get(2)->typeInfo()) {
-            if (isFullyWide(wctype)) {
-              VarSymbol* tmp = newTemp(wctype);
-              call->insertBefore(new DefExpr(tmp));
-              se->replace(new SymExpr(tmp));
-              call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-            }
-          }
-        } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-          Type* valueType = call->get(1)->getValType();
-          Type* componentType = valueType->getField("x1")->type;
-          if (isFullyWide(componentType)) {
-            VarSymbol* tmp = newTemp(componentType);
+        }
+      } else if (call->isPrimitive(PRIM_MOVE)) {
+        TypeSymbol* ts = call->get(1)->typeInfo()->symbol;
+        if (ts->hasFlag(FLAG_WIDE_REF) && valIsWideClass(ts)) {
+          VarSymbol* tmp = newTemp(call->get(1)->getValType());
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          se->replace(new SymExpr(tmp));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+        }
+      } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+        if (Type* wctype = call->get(2)->typeInfo()) {
+          if (isFullyWide(wctype)) {
+            VarSymbol* tmp = newTemp(wctype);
             call->insertBefore(new DefExpr(tmp));
             se->replace(new SymExpr(tmp));
             call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
           }
-        } else if (call->isPrimitive(PRIM_RETURN)) {
-          FnSymbol* fn = toFnSymbol(call->parentSymbol);
-          INT_ASSERT(fn);
-          VarSymbol* tmp = newTemp(fn->retType);
-          call->insertBefore(new DefExpr(tmp));
-          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, gNil));
-          se->setSymbol(tmp);
         }
+      } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+        Type* valueType = call->get(1)->getValType();
+        Type* componentType = valueType->getField("x1")->type;
+        if (isFullyWide(componentType)) {
+          VarSymbol* tmp = newTemp(componentType);
+          call->insertBefore(new DefExpr(tmp));
+          se->replace(new SymExpr(tmp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+        }
+      } else if (call->isPrimitive(PRIM_RETURN)) {
+        FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(fn);
+        VarSymbol* tmp = newTemp(fn->retType);
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, gNil));
+        se->setSymbol(tmp);
       }
     }
   }
