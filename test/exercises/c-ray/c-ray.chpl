@@ -394,16 +394,13 @@ inline proc colorOffset(param color) param {
 }
 
 
-//
-// TODO: can x, y be made into a 2-tuple
-//
 proc getPrimaryRay(xy, sample) {
-  var k = cam.targ - cam.pos,
-      j = (0.0, 1.0, 0.0);
+  var k = cam.targ - cam.pos;
   normalize(k);
-  const i = crossProduct(j, k);
-  j = crossProduct(k, i);
-  const m: [0..2] vec3 = [i, j, k];
+  const i = crossProduct((0.0, 1.0, 0.0), k),
+        j = crossProduct(k, i);
+
+  const m: [1..numdims] vec3 = [i, j, k];
   var pRay = new ray();
   (pRay.dir(X), pRay.dir(Y)) = getSamplePos(xy, sample);
   pRay.dir(Z) = 1.0 / halfFieldOfView;
@@ -411,8 +408,8 @@ proc getPrimaryRay(xy, sample) {
 
   const dir = pRay.dir + pRay.orig,
         // TODO: there has to be a better way to write this:
-        foo = dir(X) * m[0] + dir(Y) * m[1] + dir(Z) * m[2],
-        orig = pRay.orig(X) * m[0] + pRay.orig(Y)*m[1] + pRay.orig(Z) * m[2] + cam.pos;
+        foo = dir(X) * m[1] + dir(Y) * m[2] + dir(Z) * m[3],
+        orig = pRay.orig(X) * m[1] + pRay.orig(Y)*m[2] + pRay.orig(Z) * m[3] + cam.pos;
 
   // TODO: assign directly into orig?
   pRay.orig = orig;
