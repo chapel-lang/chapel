@@ -181,10 +181,10 @@ all:
     - Improve Array Memory Management (#4762)
   11/04/16:
     - text: Improve RVF by inferring const-refs (#4814)
-    - config: 16 node XC
+      config: 16 node XC
   11/08/16:
     - text: RVF arrays in records (#4821)
-    - config: 16 node XC
+      config: 16 node XC
 
 
 AllCompTime:
