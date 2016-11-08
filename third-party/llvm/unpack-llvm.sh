@@ -9,6 +9,11 @@ else
 
 echo Unpacking LLVM
 
+#tar xf llvm-3.8.1.src.tar.xz
+#tar xf cfe-3.8.1.src.tar.xz
+#mv llvm-3.8.1.src llvm
+#mv cfe-3.8.1.src llvm/tools/clang
+
 tar xf llvm-3.7.0.src.tar.xz
 tar xf cfe-3.7.0.src.tar.xz
 mv llvm-3.7.0.src llvm
