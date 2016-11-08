@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-OPTIMIZATIONS_OBJDIR = $(COMPILER_ROOT)/optimizations/$(OBJ_SUBDIR)
+OPTIMIZATIONS_OBJDIR = $(COMPILER_BUILD)/optimizations
 
 ALL_SRCS += optimizations/*.cpp
 
