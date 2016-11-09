@@ -68,6 +68,7 @@ COMP_CFLAGS := $(COMP_CFLAGS) $(LLVM_CFLAGS)
 #
 CLEAN_TARGS = \
 	./$(OBJ_SUBDIR)/*.o \
+	./$(OBJ_SUBDIR)/*.d \
 	./$(OBJ_SUBDIR)/*.gcda \
 	./$(OBJ_SUBDIR)/*.gcno \
 	./$(OBJ_SUBDIR)/*.gcov \

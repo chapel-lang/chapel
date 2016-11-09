@@ -75,7 +75,9 @@ SVN_DEPENDS = ./$(DEPEND_DIR)/*.d
 #
 CLEAN_TARGS = \
 	./$(RUNTIME_OBJ_DIR)/*.o \
+	./$(RUNTIME_OBJ_DIR)/*.d \
 	./$(LAUNCHER_OBJ_DIR)/*.o \
+	./$(LAUNCHER_OBJ_DIR)/*.d \
 	core \
 	*.core \
 	*.gmon \
