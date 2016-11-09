@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import optparse
 import os
 import sys
 
@@ -31,7 +32,22 @@ def get():
 
 def _main():
     llvm_val = get()
-    sys.stdout.write("{0}\n".format(llvm_val))
+
+    parser = optparse.OptionParser(usage='usage: %prog [--needs-llvm-runtime]')
+    parser.add_option('--needs-llvm-runtime', dest='needsllvm',
+                      action='store_const',
+                      const='needsllvm', default='')
+    (options, args) = parser.parse_args()
+
+    #if --needs-llvm-runtime is set, print out llvm if runtime is needed,
+    # and print out nothing if it is not.
+    if options.needsllvm:
+      if llvm_val == 'system' or llvm_val == 'llvm':
+        sys.stdout.write("llvm\n");
+    else:
+      sys.stdout.write("{0}\n".format(llvm_val))
+
+
 
 
 if __name__ == '__main__':

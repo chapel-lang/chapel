@@ -111,6 +111,11 @@ printmaino:
 printllvminstall:
 	@echo $(LLVM_INSTALL_DIR)
 
+printclangcc:
+	@echo $(CLANG_CC)
+
+printclangcxx:
+	@echo $(CLANG_CXX)
 
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)

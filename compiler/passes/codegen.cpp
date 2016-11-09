@@ -1802,7 +1802,8 @@ void makeBinary(void) {
 
 #ifdef HAVE_LLVM
 GenInfo::GenInfo(
-    std::string clangInstallDirIn,
+    std::string clangCcIn,
+    std::string clangCxxIn,
     std::string compilelineIn,
     std::vector<std::string> clangCCArgsIn,
     std::vector<std::string> clangLDArgsIn,
@@ -1812,7 +1813,8 @@ GenInfo::GenInfo(
            lineno(-1), filename(NULL), parseOnly(parseOnlyIn),
            // the rest of these are only in GenInfo with HAVE_LLVM
            module(NULL), builder(NULL), lvt(NULL),
-           clangInstallDir(clangInstallDirIn),
+           clangCC(clangCcIn),
+           clangCXX(clangCxxIn),
            compileline(compilelineIn),
            clangCCArgs(clangCCArgsIn), clangLDArgs(clangLDArgsIn),
            clangOtherArgs(clangOtherArgsIn),
