@@ -1498,6 +1498,7 @@ static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall,
   }
 
   FnSymbol* iterFn = copyLeaderFn(origIterFn, /*ignore_isResolved:*/false);
+  iterFn->instantiationPoint = getVisibilityBlock(call);
   call->baseExpr->replace(new SymExpr(iterFn));
 
   // Setup the new return/yield symbol.
@@ -1605,6 +1606,7 @@ void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
     // and may be reused for an unrelated call. Create a clone.
     FnSymbol* wDest = dest->copy();
     wDest->addFlag(FLAG_INVISIBLE_FN);
+    wDest->instantiationPoint = getVisibilityBlock(call);
     // Do we also need to update paramMap like in copyLeaderFn() ?
     dest->defPoint->insertAfter(new DefExpr(wDest));
     call->baseExpr->replace(new SymExpr(wDest));
