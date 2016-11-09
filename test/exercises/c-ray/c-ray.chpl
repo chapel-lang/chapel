@@ -141,7 +141,7 @@ class sphere {
       mat: material;  // material
 }
 
-record spoint {
+record spoint {     // a surface point
   var pos,            // position
       normal,         // normal
       vref: vec3,     // view reflection
@@ -196,6 +196,9 @@ proc main(args: [] string) {
                   rendTime, rendTime*1000);
 
   writeImage(pixels);
+
+  for obj in objects do
+    delete obj;
 }
 
 
@@ -425,7 +428,7 @@ proc getPrimaryRay(xy, sample) {
 //
 proc trace(ray, depth=0): vec3 {
   var nearestObj: sphere;
-  var sp, nearestSp: spoint;
+  var nearestSp: spoint;
 
   /* if we reached the recursion limit, bail out */
   if depth > maxRayDepth then
@@ -435,7 +438,8 @@ proc trace(ray, depth=0): vec3 {
   //
   // TODO: minloc reduction?
   for obj in objects {
-    if raySphere(obj, ray, sp, useSp=true) {
+    const (hit, sp) = raySphere(obj, ray);
+    if hit {
       if (nearestObj == nil || sp.dist < nearestSp.dist) {
         nearestObj = obj;
         nearestSp = sp;
@@ -481,7 +485,14 @@ proc jitter((x, y), s) {
 }
 
 
-proc raySphere(sph, ray, ref sp, useSp=false) {
+//
+// Calculate ray-sphere intersection, returning (hit, surface point)
+// where 'hit' is true/false depending on whether or not there's a hit
+// and 'surface point' is the point on the surface if there was a hit.
+//
+proc raySphere(sph, ray) {
+  var sp: spoint;
+
   // TODO: simplify this
   const a = ray.dir(X)**2 + ray.dir(Y)**2 + ray.dir(Z)**2,
         b = 2.0 * ray.dir(X) * (ray.orig(X) - sph.pos(X)) +
@@ -495,7 +506,7 @@ proc raySphere(sph, ray, ref sp, useSp=false) {
             - sph.rad**2,
         d = b**2 - 4.0 * a * c;
 
-  if (d < 0.0) then return 0;
+  if (d < 0.0) then return (0, sp);
 
   const sqrtD = sqrt(d);
   var t1 = (-b + sqrtD) / (2.0 * a),
@@ -503,22 +514,18 @@ proc raySphere(sph, ray, ref sp, useSp=false) {
 
   // TODO: simplify?
   if (t1 < errorMargin && t2 < errorMargin) || (t1 > 1.0 && t2 > 1.0) then
-    return 0;
+    return (0, sp);
 
-  if (useSp) {
-    if (t1 < errorMargin) then t1 = t2;
-    if (t2 < errorMargin) then t2 = t1;
-    sp.dist = min(t1, t2);
+  if (t1 < errorMargin) then t1 = t2;
+  if (t2 < errorMargin) then t2 = t1;
 
-    sp.pos = ray.orig + ray.dir * sp.dist;
+  sp.dist = min(t1, t2);
+  sp.pos = ray.orig + ray.dir * sp.dist;
+  sp.normal = (sp.pos - sph.pos) / sph.rad;
+  sp.vref = reflect(ray.dir, sp.normal);
+  normalize(sp.vref);
 
-    sp.normal = (sp.pos - sph.pos) / sph.rad;
-
-    sp.vref = reflect(ray.dir, sp.normal);
-    normalize(sp.vref);
-  }
-
-  return 1;
+  return (1, sp);
 
   proc reflect(v, n) {
     return -(2.0 * dot(v, n) * n - v);
@@ -533,14 +540,15 @@ proc shade(obj, sp, depth) {
     var ldir = l - sp.pos;
     const shadowRay = new ray(orig = sp.pos, dir = ldir);
     var inShadow = false;
+    //
     // TODO: use reduction
     //
     // shoot shadow rays to determine if we have a line of sight with
     // the light
     //
-    var dummy: spoint;
     for obj in objects {
-      if (raySphere(obj, shadowRay, useSp=false, dummy)) {
+      const (hit, sp) = raySphere(obj, shadowRay);
+      if (hit) {
         inShadow = true;
         break;
       }
