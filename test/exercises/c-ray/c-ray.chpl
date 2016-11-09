@@ -394,6 +394,9 @@ inline proc colorOffset(param color) param {
 }
 
 
+//
+// determine the primary ray corresponding to the specified pixel xy
+//
 proc getPrimaryRay(xy, sample) {
   var k = cam.targ - cam.pos;
   normalize(k);
@@ -401,20 +404,16 @@ proc getPrimaryRay(xy, sample) {
         j = crossProduct(k, i);
 
   const m: [1..numdims] vec3 = [i, j, k];
+
   var pRay = new ray();
   (pRay.dir(X), pRay.dir(Y)) = getSamplePos(xy, sample);
   pRay.dir(Z) = 1.0 / halfFieldOfView;
   pRay.dir *= rayMagnitude;
 
-  const dir = pRay.dir + pRay.orig,
-        // TODO: there has to be a better way to write this:
-        foo = dir(X) * m[1] + dir(Y) * m[2] + dir(Z) * m[3],
-        orig = pRay.orig(X) * m[1] + pRay.orig(Y)*m[2] + pRay.orig(Z) * m[3] + cam.pos;
+  const dir = pRay.dir + pRay.orig;
 
-  // TODO: assign directly into orig?
-  pRay.orig = orig;
-
-  pRay.dir = foo + orig;
+  pRay.orig = dot(pRay.orig, m) + cam.pos;
+  pRay.dir = dot(dir, m) + pRay.orig;
 
   return pRay;
 }
@@ -434,8 +433,6 @@ proc trace(ray, depth=0): vec3 {
 
   /* find the nearest intersection ... */
   //
-  // TODO: This would clean up nicely if using a vector
-  //
   // TODO: minloc reduction?
   for obj in objects {
     if raySphere(obj, ray, sp, useSp=true) {
@@ -454,13 +451,9 @@ proc trace(ray, depth=0): vec3 {
 
 
 //
-// Convert pixel coordinates 'xy' into a 2D point 'pt' in 3-space
+// Convert pixel coordinates 'xy' into a 2D point 'pt' in scene space
 //
 proc getSamplePos(xy, sample) {
-  //
-  // TODO: remove this?
-  //
-
   var pt = xy / (xres: real, yres: real);
   pt -= (0.5, 0.65);
   pt(Y) = -pt(Y);
@@ -470,7 +463,7 @@ proc getSamplePos(xy, sample) {
     pt += jitter(xy, sample) * sf;
   }
 
-  const aspect = xres:real / yres;   // image aspect ratio; TODO: local static
+  const aspect = xres:real / yres;  // image aspect ratio; TODO: local static
   pt(Y) /= aspect;
 
   return pt;
