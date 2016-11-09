@@ -2,7 +2,7 @@
 # basic test
 #
 --noTiming
---noTiming --samples=4      # c-ray.4samples.good
+--noTiming --samples=4 --seed=1 --size=400x300  # c-ray.4samples.good
 
 #
 # skipping this due to it taking too long under valgrind and baseline testing:

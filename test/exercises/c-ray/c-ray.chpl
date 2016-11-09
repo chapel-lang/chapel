@@ -23,11 +23,9 @@
  * -----------------------------------------------------------------------
  */
 
-use Time;  // Bring in timers to measure the rendering time
-
 
 //
-// Configuration params
+// Configuration params/types
 // (Override defaults on compiler line using -s<cfg>=<val>)
 //
 config type pixelType = int;
@@ -48,7 +46,9 @@ config const size = "800x600",            // size of output image
              rayMagnitude = 1000.0,       // trace rays of this magnitude
              errorMargin = 1e-6,          // margin to avoid surface acne
 
-             noTiming = false;        // print rendering times?
+             noTiming = false,            // print rendering times?
+             useCRand = false,            // use C rand() (vs. Chapel PCG)?
+             seed = 0;                    // if non-zero, use as the RNG 'seed'
 
 //
 // Define config-dependent types and params.
@@ -173,6 +173,8 @@ var urand: [0..#nran] vec3,
 // The program's entry point
 //
 proc main(args: [] string) {
+  use Time;   // Bring in timers to measure the rendering time
+
   processArgs(args);
 
   loadScene();
@@ -307,26 +309,38 @@ proc loadScene() {
 }
 
 //
-// initialize the random number tables for the jitter
+// initialize the random number tables for the jitter using either C
+// rand() (because the reference version does) or Chapel rand (because
+// its results are portable, and it can optionally be used in parallel).
 //
 proc initRands() {
-  //
-  // extern declarations of C's random number generators.
-  //
-  // TODO: The following could be changed to use Chapel's 'Random'
-  //   module and to generate random numbers in parallel if the
-  //   program is not particularly sensitive to the specific random
-  //   number generator used.
-  //
-  extern const RAND_MAX: c_int;
-  extern proc rand(): c_int;
+  if useCRand {
+    // extern declarations of C's random number generators.
+    extern const RAND_MAX: c_int;
+    extern proc rand(): c_int;
+    extern proc srand(seed: c_uint);
 
-  for u in urand do
-    u(X) = rand():real / RAND_MAX - 0.5;
-  for u in urand do
-    u(Y) = rand():real / RAND_MAX - 0.5;
-  for r in irand do
-    r = (nran * (rand():real / RAND_MAX)): int;
+    if seed then
+      srand(seed.safeCast(c_uint));
+    for u in urand do
+      u(X) = rand():real / RAND_MAX - 0.5;
+    for u in urand do
+      u(Y) = rand():real / RAND_MAX - 0.5;
+    for r in irand do
+      r = (nran * (rand():real / RAND_MAX)): int;
+  } else {
+    use Random;
+
+    var rng = new RandomStream(seed=(if seed then seed
+                                             else SeedGenerator.currentTime),
+                               eltType=real);
+    for u in urand do
+      u(X) = rng.getNext() - 0.5;
+    for u in urand do
+      u(Y) = rng.getNext() - 0.5;
+    for r in irand do
+      r = (nran * rng.getNext()): int;
+  }
 }
 
 //
