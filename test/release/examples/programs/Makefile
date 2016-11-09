@@ -23,6 +23,6 @@ clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
 %: %.chpl
-	$(CHPL) -o $@ $<
+	+$(CHPL) -o $@ $<
 
 FORCE:

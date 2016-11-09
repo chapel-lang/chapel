@@ -43,7 +43,7 @@ void localizeGlobals() {
     collect_asts(fn->body, asts);
     for_vector(BaseAST, ast, asts) {
       if (SymExpr* se = toSymExpr(ast)) {
-        Symbol* var = se->var;
+        Symbol* var = se->symbol();
         ModuleSymbol* parentmod = toModuleSymbol(var->defPoint->parentSymbol);
         CallExpr* parentExpr = toCallExpr(se->parentExpr);
         bool inAddrOf = parentExpr && parentExpr->isPrimitive(PRIM_ADDR_OF);

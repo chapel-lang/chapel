@@ -442,14 +442,14 @@ replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
   for_formals(formal, iterator) {
     for_vector(BaseAST, ast, asts) {
       if (SymExpr* se = toSymExpr(ast)) {
-        if (se->var == formal) {
+        if (se->symbol() == formal) {
           // count is used to get the nth field out of the iterator class;
           // it is replaced by the field once the iterator class is created
           Expr* stmt = se->getStmtExpr();
           VarSymbol* tmp = newTemp(formal->name, formal->type);
           stmt->insertBefore(new DefExpr(tmp));
           stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, ic, new_IntSymbol(count))));
-          se->var = tmp;
+          se->setSymbol(tmp);
         }
       }
     }
@@ -821,7 +821,7 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> as
   Map<BlockStmt*,Symbol*> retReplacementMap;
   for_vector(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast)) {
-      if (se->var == ret) {
+      if (se->symbol() == ret) {
         BlockStmt* block = NULL;
         for (Expr* parent = se->parentExpr; parent; parent = parent->parentExpr) {
           block = toBlockStmt(parent);
@@ -831,13 +831,13 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> as
         INT_ASSERT(block);
         if (block != ret->defPoint->parentExpr) {
           if (Symbol* repl = retReplacementMap.get(block)) {
-            se->var = repl;
+            se->setSymbol(repl);
           } else {
             SET_LINENO(se);
             Symbol* newRet = newTemp("newRet", ret->type);
             newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
             block->insertAtHead(new DefExpr(newRet));
-            se->var = newRet;
+            se->setSymbol(newRet);
             retReplacementMap.put(block, newRet);
           }
         }
@@ -1064,7 +1064,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   FnSymbol*  loopBodyFn        = new FnSymbol(astr("_rec_iter_loop_", parent->name));
 
   // The index is passed to the loop body function as its first argument.
-  Symbol*    index             = forLoop->indexGet()->var;
+  Symbol*    index             = forLoop->indexGet()->symbol();
   ArgSymbol* indexArg          = new ArgSymbol(blankIntentForType(index->type), "_index", index->type);
 
   // The recursive iterator loop wrapper is ... .
@@ -1086,7 +1086,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   // build this to capture the actual arguments that should be
   // passed to it when this function is flattened)
   //
-  Symbol*    ic             = forLoop->iteratorGet()->var;
+  Symbol*    ic             = forLoop->iteratorGet()->symbol();
   FnSymbol*  iterator       = getTheIteratorFn(ic);
   CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap[loopBodyFnWrapper]));
 
@@ -1167,7 +1167,7 @@ static bool
 // Returns true if the given ForLoop was handled (converted and removed from
 // the tree); false otherwise.
 expandIteratorInline(ForLoop* forLoop) {
-  Symbol*   ic       = forLoop->iteratorGet()->var;
+  Symbol*   ic       = forLoop->iteratorGet()->symbol();
   FnSymbol* iterator = getTheIteratorFn(ic);
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
@@ -1195,7 +1195,7 @@ expandIteratorInline(ForLoop* forLoop) {
   } else {
     SET_LINENO(forLoop);
 
-    Symbol*       index = forLoop->indexGet()->var;
+    Symbol*       index = forLoop->indexGet()->symbol();
     BlockStmt*    ibody = iterator->body->copy();
     std::vector<BaseAST*> asts;
 
@@ -1266,7 +1266,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
         Symbol*    yieldedIndex  = newTemp("_yieldedIndex", index->type);
-        Symbol*    yieldedSymbol = toSymExpr(call->get(1))->var;
+        Symbol*    yieldedSymbol = toSymExpr(call->get(1))->symbol();
         BlockStmt* bodyCopy      = NULL;
         bool       inserted      = false;
 
@@ -1294,8 +1294,8 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         if (CallExpr* prev = toCallExpr(call->prev)) {
           if (prev->isPrimitive(PRIM_MOVE)) {
             if (SymExpr* lhs = toSymExpr(prev->get(1))) {
-              if (lhs->var == yieldedSymbol) {
-                lhs->var = yieldedIndex;
+              if (lhs->symbol() == yieldedSymbol) {
+                lhs->setSymbol(yieldedIndex);
 
                 prev->insertBefore(new DefExpr(yieldedIndex));
 
@@ -1605,10 +1605,10 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
   SET_LINENO(forLoop);
 
   SymExpr*     se1      = forLoop->indexGet();
-  VarSymbol*   index    = toVarSymbol(se1->var);
+  VarSymbol*   index    = toVarSymbol(se1->symbol());
 
   SymExpr*     se2      = forLoop->iteratorGet();
-  VarSymbol*   iterator = toVarSymbol(se2->var);
+  VarSymbol*   iterator = toVarSymbol(se2->symbol());
 
   CallExpr*    noop     = new CallExpr(PRIM_NOOP);
 
@@ -1655,8 +1655,8 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
     for_formals(formal, iterator) {
       for_vector(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
-          if (se->var == formal) {
-            //if ((se->var->type == formal->type) && (!strcmp(se->var->name, formal->name))) {
+          if (se->symbol() == formal) {
+            //if ((se->symbol()->type == formal->type) && (!strcmp(se->symbol()->name, formal->name))) {
             // count is used to get the nth field out of the iterator class;
             // it is replaced by the field once the iterator class is created
             Expr*      stmt = se->getStmtExpr();
@@ -1665,7 +1665,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
             stmt->insertBefore(new DefExpr(tmp));
             stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterators.v[i], new_IntSymbol(count))));
 
-            se->var = tmp;
+            se->setSymbol(tmp);
           }
         }
       }
@@ -1689,7 +1689,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
 static void
 expandForLoop(ForLoop* forLoop) {
   SymExpr*   se2      = forLoop->iteratorGet();
-  VarSymbol* iterator = toVarSymbol(se2->var);
+  VarSymbol* iterator = toVarSymbol(se2->symbol());
   bool converted = false;
 
   if (!fNoInlineIterators)
@@ -1743,7 +1743,7 @@ expandForLoop(ForLoop* forLoop) {
     Vec<Symbol*> indices;
 
     SymExpr*     se1       = toSymExpr(forLoop->indexGet());
-    VarSymbol*   index     = toVarSymbol(se1->var);
+    VarSymbol*   index     = toVarSymbol(se1->symbol());
 
     BlockStmt*   initBlock = new BlockStmt();
     BlockStmt*   testBlock = NULL;
@@ -1911,7 +1911,7 @@ inlineIterators() {
       continue;
 
     if (ForLoop* forLoop = toForLoop(block)) {
-      Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
+      Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->symbol();
       FnSymbol* ifn = getTheIteratorFn(iterator);
       if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
         // The Boolean return value from expandIteratorInline() is being
@@ -1945,7 +1945,7 @@ static bool iteratorDefPrecedesGoto(CallExpr*  freeIterCall,
       if (call->isPrimitive(PRIM_MOVE)) {
         SymExpr* lhs = toSymExpr(call->get(1));
 
-        if (lhs->var == iterator->var) {
+        if (lhs->symbol() == iterator->symbol()) {
           // This is a def of the iterator symbol, so it is initialized
           // before the goto statement.
           return true;
@@ -1968,7 +1968,7 @@ static void addCrossedFreeIteratorCalls(GotoStmt* stmt)
 
   INT_ASSERT(lsym); // These should always have a target label.
 
-  DefExpr* label      = lsym->var->defPoint;
+  DefExpr* label      = lsym->symbol()->defPoint;
   Expr*    top_scope  = toBlockStmt(label->parentExpr);
 
   // We expect the top scope to exist and be a block and not be the root scope.
@@ -2084,7 +2084,7 @@ static void fixNumericalGetMemberPrims()
         call->get(2)->replace(new SymExpr(field));
         CallExpr* parent = toCallExpr(call->parentExpr);
         INT_ASSERT(parent->isPrimitive(PRIM_MOVE));
-        Symbol* local = toSymExpr(parent->get(1))->var;
+        Symbol* local = toSymExpr(parent->get(1))->symbol();
         if (local->type == field->type)
           call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
         else if (local->type != field->type->refType)
@@ -2117,15 +2117,15 @@ static void cleanupLeaderFollowerIteratorCalls()
             int i = 2; // first field is super
             for_actuals(actual, call) {
               SymExpr* se = toSymExpr(actual);
-              if (isArgSymbol(se->var) && call->parentSymbol != se->var->defPoint->parentSymbol) {
+              if (isArgSymbol(se->symbol()) && call->parentSymbol != se->symbol()->defPoint->parentSymbol) {
                 Symbol* field = toAggregateType(iteratorType)->getField(i);
                 VarSymbol* tmp = NULL;
                 SET_LINENO(call);
-                if (field->type == se->var->type) {
+                if (field->type == se->symbol()->type) {
                   tmp = newTemp(field->name, field->type);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                   call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, iterator, field)));
-                } else if (field->type->refType == se->var->type) {
+                } else if (field->type->refType == se->symbol()->type) {
                   tmp = newTemp(field->name, field->type->refType);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                   call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterator, field)));

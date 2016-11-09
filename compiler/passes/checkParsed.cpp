@@ -223,7 +223,7 @@ checkFunction(FnSymbol* fn) {
         USR_FATAL_CONT(call, "return statement is not in a function or iterator");
       else {
         SymExpr* sym = toSymExpr(call->get(1));
-        if (sym && sym->var == gVoid)
+        if (sym && sym->symbol() == gVoid)
           numVoidReturns++;
         else {
           if (isIterator)

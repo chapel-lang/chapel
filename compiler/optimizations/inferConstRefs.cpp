@@ -73,7 +73,7 @@ static bool canRHSBeConstRef(CallExpr* parent, CallExpr* rhs, SymExpr* use) {
       // should not be considered a const-ref either. A writable reference
       // obtained from a const-reference doesn't make sense.
       if (LHS->isRef()) {
-        if (!inferConstRef(LHS->var)) {
+        if (!inferConstRef(LHS->symbol())) {
           return false;
         }
       }
@@ -327,7 +327,7 @@ static bool inferConstRef(Symbol* sym) {
           // CASE 2
           SymExpr* se = toSymExpr(call->get(1));
           INT_ASSERT(se);
-          if (!inferConstRef(se->var)) {
+          if (!inferConstRef(se->symbol())) {
             retval = false;
           }
         }
@@ -397,14 +397,14 @@ void inferConstRefs() {
   // care about the distinction between a def and a use. We just want all
   // SymExprs for a Symbol.
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (!(isVarSymbol(se->var) || isArgSymbol(se->var))) continue;
-    if (!se->var->isRef()) continue;
+    if (!(isVarSymbol(se->symbol()) || isArgSymbol(se->symbol()))) continue;
+    if (!se->symbol()->isRef()) continue;
 
     RefInfo* info = NULL;
-    RefInfoIter it = infoMap.find(se->var);
+    RefInfoIter it = infoMap.find(se->symbol());
     if (it == infoMap.end()) {
-      info = new RefInfo(se->var);
-      infoMap[se->var] = info;
+      info = new RefInfo(se->symbol());
+      infoMap[se->symbol()] = info;
     } else {
       info = it->second;
     }

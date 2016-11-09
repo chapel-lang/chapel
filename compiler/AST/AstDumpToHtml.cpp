@@ -343,7 +343,7 @@ void AstDumpToHtml::exitNamedExpr(NamedExpr* node) {
 // SymExpr
 //
 void AstDumpToHtml::visitSymExpr(SymExpr* node) {
-  Symbol*    sym = node->var;
+  Symbol*    sym = node->symbol();
   VarSymbol* var = toVarSymbol(sym);
 
   if (isBlockStmt(node->parentExpr) == true) {
@@ -599,8 +599,8 @@ bool AstDumpToHtml::enterGotoStmt(GotoStmt* node) {
   }
 
   if (SymExpr* label = toSymExpr(node->label))
-    if (label->var != gNil)
-      writeSymbol(label->var, true);
+    if (label->symbol() != gNil)
+      writeSymbol(label->symbol(), true);
 
   return true;
 }

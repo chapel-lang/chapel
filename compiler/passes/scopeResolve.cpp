@@ -205,7 +205,7 @@ void scopeResolve() {
         fn->_this->type->methods.add(fn);
 
       } else if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
-        fn->_this->type = sym->var->type;
+        fn->_this->type = sym->symbol()->type;
         fn->_this->type->methods.add(fn);
       }
     }
@@ -402,7 +402,7 @@ static Symbol* getUsedSymbol(Expr* expr, UseStmt* useCall) {
   // cases that try to use non-module or non-enum symbols)
   //
   if (SymExpr* sym = toSymExpr(expr)) {
-    if (Symbol* symbol = sym->var) {
+    if (Symbol* symbol = sym->symbol()) {
       if (isValidUsedSymbol(useCall, symbol)) {
         return symbol;
       }
@@ -498,7 +498,7 @@ void UseStmt::validateList() {
     if (!sym) {
       SymExpr* se = toSymExpr(src);
       INT_ASSERT(se);
-      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in '%s'", it->second, se->var->name);
+      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in '%s'", it->second, se->symbol()->name);
     } else if (!sym->isVisible(this)) {
       USR_FATAL_CONT(this, "Bad identifier in rename, '%s' is private", it->second);
     }
@@ -1386,7 +1386,7 @@ static void resolveGotoLabels() {
     SET_LINENO(gs);
 
     if (SymExpr* label = toSymExpr(gs->label)) {
-      if (label->var == gNil) {
+      if (label->symbol() == gNil) {
         LoopStmt* loop = LoopStmt::findEnclosingLoop(gs);
 
         if (!loop)
@@ -1591,7 +1591,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
         if (sym && sym->defPoint->getFunction() == method)
           break;
 
-        if (method->_this && (!symExpr || symExpr->var != method->_this)) {
+        if (method->_this && (!symExpr || symExpr->symbol() != method->_this)) {
           Type*       type = method->_this->type;
           TypeSymbol* cts  =
             (sym) ? toTypeSymbol(sym->defPoint->parentSymbol) : NULL;
@@ -1603,7 +1603,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
             if (call && call->baseExpr == expr &&
                 call->numActuals() >= 2 &&
                 toSymExpr(call->get(1)) &&
-                toSymExpr(call->get(1))->var == gMethodToken) {
+                toSymExpr(call->get(1))->symbol() == gMethodToken) {
               UnresolvedSymExpr* use = new UnresolvedSymExpr(name);
 
               expr->replace(use);
@@ -1780,7 +1780,7 @@ static void checkIdInsideWithClause(Expr* exprInAst,
 static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) {
   if (call->isNamed(".")) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
-      if (ModuleSymbol* mod = toModuleSymbol(se->var)) { 
+      if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) { 
         ModuleSymbol* enclosingModule = call->getModule();
 
         enclosingModule->moduleUseAdd(mod);
@@ -1923,7 +1923,7 @@ static void resolveEnumeratedTypes() {
       SET_LINENO(call);
 
       if (SymExpr* first = toSymExpr(call->get(1))) {
-        if (EnumType* type = toEnumType(first->var->type)) {
+        if (EnumType* type = toEnumType(first->symbol()->type)) {
           if (SymExpr* second = toSymExpr(call->get(2))) {
             const char* name;
 
@@ -2381,7 +2381,7 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
     } else {
       SymExpr* se = toSymExpr(source->src);
       INT_ASSERT(se);
-      if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
+      if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         if (mod->block->modUses) {
           for_actuals(expr, mod->block->modUses) {
             UseStmt* use = toUseStmt(expr);
@@ -2391,7 +2391,7 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
             INT_ASSERT(useSE);
 
             UseStmt* useToAdd = NULL;
-            if (!useSE->var->hasFlag(FLAG_PRIVATE)) {
+            if (!useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
               // Uses of private modules are not transitive - the symbols in the
               // private modules are only visible to itself and its immediate
               // parent.  Therefore, if the symbol is private, we will not
@@ -2406,11 +2406,11 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
               // could be provided from this use was 0, so it didn't need to be
               // added to the alreadySeen map.
               if (useToAdd != NULL) {
-                (*alreadySeen)[useSE->var].push_back(useToAdd);
+                (*alreadySeen)[useSE->symbol()].push_back(useToAdd);
               }
 
             } else {
-              (*alreadySeen)[useSE->var].push_back(use);
+              (*alreadySeen)[useSE->symbol()].push_back(use);
             }
           }
         }
@@ -2732,7 +2732,7 @@ static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
   SymExpr* useSE = toSymExpr(current->src);
   INT_ASSERT(useSE);
 
-  std::vector<UseStmt*> vec = (*seen)[useSE->var];
+  std::vector<UseStmt*> vec = (*seen)[useSE->symbol()];
   if (vec.size() > 0) {
     // We've already seen at least one use of this module, but it might not be
     // thorough enough to justify skipping the newest 'use'.

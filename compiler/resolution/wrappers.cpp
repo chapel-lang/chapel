@@ -361,7 +361,7 @@ buildDefaultWrapper(FnSymbol* fn,
           !formal->defaultExpr ||
           (formal->defaultExpr->body.length == 1 &&
            isSymExpr(formal->defaultExpr->body.tail) &&
-           toSymExpr(formal->defaultExpr->body.tail)->var == gTypeDefaultToken)) {
+           toSymExpr(formal->defaultExpr->body.tail)->symbol() == gTypeDefaultToken)) {
         // use default value for type as default value for formal argument
         if (formal->typeExpr) {
           BlockStmt* typeExpr = formal->typeExpr->copy();
@@ -677,10 +677,10 @@ static void addArgCoercion(FnSymbol*  fn,
     castCall   = new CallExpr(PRIM_DEREF, prevActual);
 
     if (SymExpr* prevSE = toSymExpr(prevActual))
-      if (prevSE->var->hasFlag(FLAG_REF_TO_CONST)) {
+      if (prevSE->symbol()->hasFlag(FLAG_REF_TO_CONST)) {
         castTemp->addFlag(FLAG_CONST);
 
-        if (prevSE->var->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
+        if (prevSE->symbol()->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
           castTemp->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
       }
 

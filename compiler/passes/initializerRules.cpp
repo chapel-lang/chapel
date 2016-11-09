@@ -52,7 +52,7 @@ void temporaryInitializerFixup(CallExpr* call) {
         if (NamedExpr* named = toNamedExpr(actual)) {
           if (!strcmp(named->name, "meme")) {
             if (SymExpr* sym = toSymExpr(named->actual)) {
-              if (AggregateType* ct = toAggregateType(sym->var->type)) {
+              if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
                 if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
                   // This code should be removed when the compiler generates
                   // initializers as the default method of construction and
@@ -102,7 +102,7 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
 static
 bool storesThisTop (Expr* expr) {
   if (SymExpr* stores = toSymExpr(expr)) {
-    return stores->var->hasFlag(FLAG_ARG_THIS);
+    return stores->symbol()->hasFlag(FLAG_ARG_THIS);
   }
   return false;
 }
@@ -110,7 +110,7 @@ bool storesThisTop (Expr* expr) {
 static
 bool storesSpecificName (Expr* expr, const char* name) {
   if (SymExpr* sym = toSymExpr(expr)) {
-    if (VarSymbol* var = toVarSymbol(sym->var)) {
+    if (VarSymbol* var = toVarSymbol(sym->symbol())) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
         if (!strcmp(var->immediate->v_string, name)) {
           return true;
@@ -363,12 +363,12 @@ const char* getFieldName(Expr* curExpr) {
       if (CallExpr* inner = toCallExpr(call->get(1))) {
         if (inner->isNamed(".")) {
           SymExpr* potenThis = toSymExpr(inner->get(1));
-          if (potenThis && potenThis->var->hasFlag(FLAG_ARG_THIS)) {
+          if (potenThis && potenThis->symbol()->hasFlag(FLAG_ARG_THIS)) {
             // It's an access of this!
             SymExpr* sym = toSymExpr(inner->get(2));
             INT_ASSERT(sym);
             // Could it be . . . a field?  The anticipation is killing me!
-            if (VarSymbol* var = toVarSymbol(sym->var)) {
+            if (VarSymbol* var = toVarSymbol(sym->symbol())) {
               if (var->immediate->const_kind == CONST_KIND_STRING) {
                 return var->immediate->v_string;
               }
@@ -480,7 +480,7 @@ void insertOmittedField(Expr* next, const char* nextField,
   CallExpr* newInit = NULL;
   if (initExpr.first != NULL &&
       !(isSymExpr(initExpr.first) &&
-        toSymExpr(initExpr.first)->var == gTypeDefaultToken)) {
+        toSymExpr(initExpr.first)->symbol() == gTypeDefaultToken)) {
     Expr* init = initExpr.first->copy();
 
     // Since the init expression we're storing utilizes the arguments
@@ -494,7 +494,7 @@ void insertOmittedField(Expr* next, const char* nextField,
     INT_ASSERT(secondBody);
     Expr* typeStart = secondBody->body.head;
     if (SymExpr* simpleCase = toSymExpr(typeStart)) {
-      if (TypeSymbol* sym = toTypeSymbol(simpleCase->var)) {
+      if (TypeSymbol* sym = toTypeSymbol(simpleCase->symbol())) {
         newInit = new CallExpr(PRIM_SET_MEMBER,
                                toFnSymbol(next->parentSymbol)->_this,
                                new_CStringSymbol(nextField),
@@ -525,7 +525,7 @@ void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this) {
   std::vector<SymExpr*> syms;
   collectSymExprs(context, syms);
   for_vector(SymExpr, se, syms) {
-    if (ArgSymbol* arg = toArgSymbol(se->var)) {
+    if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
       for_fields(field, t) {
         if (!strcmp(field->name, arg->name)) {
           CallExpr* fieldAccess = new CallExpr(".", _this, new_CStringSymbol(field->name));

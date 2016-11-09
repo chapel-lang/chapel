@@ -564,7 +564,10 @@ void registerModule(ModuleSymbol* mod) {
 
 void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
-    SUB_SYMBOL(sym_expr->var);
+    if (sym_expr->symbol())
+      if (Symbol* y = map->get(sym_expr->symbol()))
+        sym_expr->setSymbol(y);
+
 
   } else if (DefExpr* defExpr = toDefExpr(ast)) {
     SUB_TYPE(defExpr->sym->type);

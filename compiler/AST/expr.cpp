@@ -165,7 +165,7 @@ bool isAddrOfWideRefVar(Expr* e)
   if (CallExpr* call = toCallExpr(e))
     if (call->isPrimitive(PRIM_ADDR_OF))
       if (SymExpr* se = toSymExpr(call->get(1)))
-        if (se->var->qualType().isWideRef())
+        if (se->symbol()->qualType().isWideRef())
           return true;
 
   return false;
@@ -173,7 +173,7 @@ bool isAddrOfWideRefVar(Expr* e)
 
 bool Expr::isRef() {
   if (SymExpr* se = toSymExpr(this))
-    return se->var->isRef();
+    return se->symbol()->isRef();
 
   if (isAddrOfWideRefVar(this))
     return false; // wide ref, not ref
@@ -183,7 +183,7 @@ bool Expr::isRef() {
 
 bool Expr::isWideRef() {
   if(SymExpr* se = toSymExpr(this))
-    return se->var->isWideRef();
+    return se->symbol()->isWideRef();
 
   if (isAddrOfWideRefVar(this))
     return true;
@@ -531,11 +531,16 @@ Expr::insertAfter(const char* format, ...) {
 
 SymExpr::SymExpr(Symbol* init_var) :
   Expr(E_SymExpr),
-  var(init_var)
+  var(init_var),
+  symbolSymExprsPrev(NULL),
+  symbolSymExprsNext(NULL)
 {
   if (!init_var)
     INT_FATAL(this, "Bad call to SymExpr");
   gSymExprs.add(this);
+
+  // No need to call var->addSymExpr here since it will be called
+  // when the SymExpr is added to the tree.
 }
 
 bool SymExpr::isNoInitExpr() const {
@@ -565,6 +570,19 @@ void SymExpr::verify() {
 
   if (var != NULL && var->defPoint != NULL && var->defPoint->parentSymbol == NULL)
     INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
+
+  // Check that we can find this SymExpr in the Symbol's list
+  bool found = false;
+  for_SymbolSymExprs(se, var) {
+    if (se == this) {
+      found = true;
+      break;
+    }
+  }
+
+  if (!found)
+    INT_FATAL(this, "SymExpr::verify %12d:  SymExpr not in Symbol's list", id);
+
 }
 
 SymExpr* SymExpr::copyInner(SymbolMap* map) {
@@ -631,6 +649,22 @@ void SymExpr::prettyPrint(std::ostream *o) {
 
 void SymExpr::accept(AstVisitor* visitor) {
   visitor->visitSymExpr(this);
+}
+
+void SymExpr::setSymbol(Symbol* s)
+{
+  // If the old symbol is not NULL and the SymExpr
+  // is in the tree, remove the SymExpr from the old Symbol's list.
+  if (var != NULL && parentSymbol != NULL) {
+    var->removeSymExpr(this);
+  }
+  // Update the symbol
+  var = s;
+  // If the symbol is not NULL and the SymExpr is in the tree,
+  // add the SymExpr to the new Symbol's list.
+  if (s != NULL && parentSymbol != NULL) {
+    s->addSymExpr(this);
+  }
 }
 
 /************************************ | *************************************
@@ -1625,8 +1659,8 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
     cname = de->sym->cname;
     name = de->sym->name;
   } else if(SymExpr *se = toSymExpr(field)) {
-    cname = se->var->cname;
-    name = se->var->name;
+    cname = se->symbol()->cname;
+    name = se->symbol()->name;
   } else if(NamedExpr *ne = toNamedExpr(field)) {
     cname = name = ne->name;
   } else {
@@ -3869,8 +3903,8 @@ void CallExpr::verify() {
     if (actual->parentExpr != this)
       INT_FATAL(this, "Bad CallExpr::argList::parentExpr");
 
-    if (isSymExpr(actual)                      &&
-        toSymExpr(actual)->var == gMethodToken &&
+    if (isSymExpr(actual)                           &&
+        toSymExpr(actual)->symbol() == gMethodToken &&
         actual != this->get(1))
       INT_FATAL(this,
                 "If present, the method token must be the first argument.");
@@ -3988,15 +4022,15 @@ FnSymbol* CallExpr::resolvedFunction() const {
     if (isUnresolvedSymExpr(baseExpr) == true) {
 
     } else if (SymExpr* base = toSymExpr(baseExpr)) {
-      if (FnSymbol* fn = toFnSymbol(base->var)) {
+      if (FnSymbol* fn = toFnSymbol(base->symbol())) {
         retval = fn;
 
       // Probably an array index
-      } else if (isArgSymbol(base->var)  == true ||
-                 isVarSymbol(base->var)  == true) {
+      } else if (isArgSymbol(base->symbol())  == true ||
+                 isVarSymbol(base->symbol())  == true) {
 
       // A type specifier
-      } else if (isTypeSymbol(base->var) == true) {
+      } else if (isTypeSymbol(base->symbol()) == true) {
 
       } else {
         INT_ASSERT(false);
@@ -4023,7 +4057,7 @@ FnSymbol* CallExpr::theFnSymbol() const {
   FnSymbol* retval = NULL;
 
   if (SymExpr* base = toSymExpr(baseExpr))
-    retval = toFnSymbol(base->var);
+    retval = toFnSymbol(base->symbol());
 
   return retval;
 }
@@ -4031,7 +4065,7 @@ FnSymbol* CallExpr::theFnSymbol() const {
 
 bool CallExpr::isNamed(const char* name) {
   if (SymExpr* base = toSymExpr(baseExpr))
-    if (strcmp(base->var->name, name) == 0)
+    if (strcmp(base->symbol()->name, name) == 0)
       return true;
 
   if (UnresolvedSymExpr* base = toUnresolvedSymExpr(baseExpr))
@@ -4056,7 +4090,7 @@ FnSymbol* CallExpr::findFnSymbol(void) {
   FnSymbol* fn = NULL;
 
   if (SymExpr* variable = toSymExpr(baseExpr))
-    fn = toFnSymbol(variable->var);
+    fn = toFnSymbol(variable->symbol());
 
   if (!fn)
     INT_FATAL(this, "Cannot find FnSymbol in CallExpr");
@@ -4306,7 +4340,7 @@ GenRet CallExpr::codegen() {
       SymExpr* se         = toSymExpr(actual);
       GenRet   arg        = actual;
 
-      if (se && isFnSymbol(se->var)) {
+      if (se && isFnSymbol(se->symbol())) {
         if(this->theFnSymbol()->hasFlag(FLAG_EXTERN)) {
           arg = codegenCast("c_fn_ptr", arg);
         }
@@ -5806,7 +5840,7 @@ GenRet CallExpr::codegenPrimitive() {
     SymExpr*  se        = toSymExpr(get(1));  // the function symbol
 
     INT_ASSERT(se);
-    fn = toFnSymbol(se->var);
+    fn = toFnSymbol(se->symbol());
     INT_ASSERT(fn);
 
     {
@@ -5923,7 +5957,7 @@ GenRet CallExpr::codegenPrimMove() {
   } else if (isCallExpr(get(2)) &&
              toCallExpr(get(2))->isPrimitive(PRIM_SET_REFERENCE)) {
       SymExpr*    lhsSe      = toSymExpr(get(1));
-      VarSymbol*  var        = toVarSymbol(lhsSe->var);
+      VarSymbol*  var        = toVarSymbol(lhsSe->symbol());
       CallExpr*   call       = toCallExpr(get(2));
       Expr*       from       = call->get(1);
       QualifiedType  q       = var->qualType();
@@ -6075,7 +6109,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
 
       if (target && call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
+        if (se->symbol()->hasFlag(FLAG_SUPER_CLASS)) {
           // We're getting the super class pointer.
           GenRet srcwide  = call->get(1);
           Type*  addrType = target->typeInfo()->getField("addr")->type;
@@ -6094,7 +6128,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       } else if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         ret = codegenFieldPtr(call->get(1), se);
 
-      } else if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
+      } else if (se->symbol()->hasFlag(FLAG_SUPER_CLASS)) {
         // We're getting the super class pointer.
         GenRet ref = codegenFieldPtr(call->get(1), se);
 
@@ -6690,7 +6724,7 @@ bool
 get_int(Expr *e, int64_t *i) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
-      if (VarSymbol *v = toVarSymbol(l->var)) {
+      if (VarSymbol *v = toVarSymbol(l->symbol())) {
         if (v->immediate) {
           if (v->immediate->const_kind == NUM_KIND_INT) {
             *i = v->immediate->int_value();
@@ -6707,7 +6741,7 @@ bool
 get_uint(Expr *e, uint64_t *i) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
-      if (VarSymbol *v = toVarSymbol(l->var)) {
+      if (VarSymbol *v = toVarSymbol(l->symbol())) {
         if (v->immediate) {
           if (v->immediate->const_kind == NUM_KIND_UINT) {
             *i = v->immediate->uint_value();
@@ -6724,7 +6758,7 @@ bool
 get_string(Expr *e, const char **s) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
-      if (VarSymbol *v = toVarSymbol(l->var)) {
+      if (VarSymbol *v = toVarSymbol(l->symbol())) {
         if (v->immediate && v->immediate->const_kind == CONST_KIND_STRING) {
           *s = v->immediate->v_string;
           return true;

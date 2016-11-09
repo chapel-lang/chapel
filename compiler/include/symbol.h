@@ -152,6 +152,11 @@ public:
 
   DefExpr*           defPoint; // Point of definition
 
+  // Managing the list of SymExprs that refer to this Symbol
+  void               addSymExpr(SymExpr* se);
+  void               removeSymExpr(SymExpr* se);
+  SymExpr*           firstSymExpr()                            const;
+
 protected:
                      Symbol(AstTag      astTag,
                             const char* init_name,
@@ -163,9 +168,20 @@ private:
                      Symbol();
 
   virtual void       codegenPrototype(); // ie type decl
+
+  SymExpr*           symExprsHead;
+  SymExpr*           symExprsTail;
 };
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
+
+#define for_SymbolSymExprs(se, symbol)                                  \
+  for (SymExpr *se = (symbol)->firstSymExpr(),                          \
+         *_se_next = se ? se->symbolSymExprsNext : NULL;                \
+       se;                                                              \
+       se = _se_next,                                                   \
+         _se_next = se ? se->symbolSymExprsNext : NULL)
+
 
 bool isString(Symbol* symbol);
 bool isUserDefinedRecord(Symbol* symbol);

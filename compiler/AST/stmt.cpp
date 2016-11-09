@@ -310,9 +310,9 @@ const char* UseStmt::getRename(const char* name) {
 // Should only be called when the mod field has been resolved
 BaseAST* UseStmt::getSearchScope() {
   if (SymExpr* se = toSymExpr(src)) {
-    if (ModuleSymbol* module = toModuleSymbol(se->var)) {
+    if (ModuleSymbol* module = toModuleSymbol(se->symbol())) {
       return module->block;
-    } else if (TypeSymbol* enumTypeSym = toTypeSymbol(se->var)) {
+    } else if (TypeSymbol* enumTypeSym = toTypeSymbol(se->symbol())) {
       // Assumes we have correctly verified that the type was an enum.
       return enumTypeSym;
     } else {
@@ -751,7 +751,7 @@ BlockStmt::moduleUseRemove(ModuleSymbol* mod) {
   if (modUses != NULL) {
     for_alist(expr, modUses->argList) {
       if (SymExpr* symExpr = toSymExpr(expr)) {
-        if (ModuleSymbol* curMod = toModuleSymbol(symExpr->var)) {
+        if (ModuleSymbol* curMod = toModuleSymbol(symExpr->symbol())) {
           if (curMod == mod) {
             symExpr->remove();
 
@@ -845,7 +845,7 @@ CondStmt::foldConstantCondition() {
   Expr* result = NULL;
 
   if (SymExpr* cond = toSymExpr(condExpr)) {
-    if (VarSymbol* var = toVarSymbol(cond->var)) {
+    if (VarSymbol* var = toVarSymbol(cond->symbol())) {
       if (var->immediate && var->immediate->const_kind == NUM_KIND_BOOL) {
 
         SET_LINENO(this);
@@ -1136,8 +1136,8 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, Expr* init_label) :
 LabelSymbol* getGotoLabelSymbol(GotoStmt* gs) {
   if (gs->label)
     if (SymExpr* labse = toSymExpr(gs->label))
-      if (labse->var)
-        return toLabelSymbol(labse->var);
+      if (labse->symbol())
+        return toLabelSymbol(labse->symbol());
   return NULL;
 }
 
@@ -1164,8 +1164,8 @@ void GotoStmt::verify() {
 
   // If the label has been resolved to a label
   if (SymExpr* se = toSymExpr(label)) {
-    if (isLabelSymbol(se->var)) {
-      Symbol* parent = se->var->defPoint->parentSymbol;
+    if (isLabelSymbol(se->symbol())) {
+      Symbol* parent = se->symbol()->defPoint->parentSymbol;
 
       // The parent should either be a function or a
       // module that does not yet have the initFn installed
@@ -1177,7 +1177,7 @@ void GotoStmt::verify() {
         }
       }
 
-      if (se->var->defPoint->parentSymbol != this->parentSymbol)
+      if (se->symbol()->defPoint->parentSymbol != this->parentSymbol)
         INT_FATAL(this, "goto label is in a different function than the goto");
 
       GotoStmt* igs = getGotoLabelsIterResumeGoto(this);
@@ -1260,7 +1260,7 @@ GenRet GotoStmt::codegen() {
       cname = toDefExpr(label)->sym->cname;
     }
     else {
-      cname = toSymExpr(label)->var->cname;
+      cname = toSymExpr(label)->symbol()->cname;
     }
 
     llvm::BasicBlock *blockLabel;
@@ -1285,7 +1285,7 @@ GenRet GotoStmt::codegen() {
 
 const char* GotoStmt::getName() {
   if (SymExpr* se = toSymExpr(label))
-    return se->var->name;
+    return se->symbol()->name;
   else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(label))
     return use->unresolved;
   else
@@ -1318,7 +1318,7 @@ LabelSymbol* GotoStmt::gotoTarget() const {
   LabelSymbol* retval = NULL;
 
   if (SymExpr* labelExpr = toSymExpr(label)) {
-    if (LabelSymbol* label = toLabelSymbol(labelExpr->var)) {
+    if (LabelSymbol* label = toLabelSymbol(labelExpr->symbol())) {
       retval = label;
     } else {
       INT_ASSERT(false);

@@ -20,6 +20,7 @@
 #include "optimizations.h"
 
 #include "astutil.h"
+#include "stringutil.h"
 #include "stlUtil.h"
 #include "expr.h"
 #include "stmt.h"
@@ -165,7 +166,7 @@ static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
       INT_ASSERT(lhs);
 
-      if (isSafeToDeref(defMap, useMap, field, lhs->var) == false) {
+      if (isSafeToDeref(defMap, useMap, field, lhs->symbol()) == false) {
         retval = false;
         break;
       }
@@ -196,6 +197,87 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
                           FnSymbol*                     fn,
                           ArgSymbol*                    arg);
 
+static void buildRVFWrapper(FnSymbol* fn,
+                            std::map<Symbol*, std::vector<Symbol*> >& fieldsToRVF) {
+  typedef std::map<Symbol*, std::vector<Symbol*> >::iterator argIter;
+  SET_LINENO(fn);
+  AggregateType* wrapType = new AggregateType(AGGREGATE_RECORD);
+  TypeSymbol* wrapSym = new TypeSymbol("RVF_wrapType", wrapType);
+  fn->getModule()->block->insertAtTail(new DefExpr(wrapSym));
+  // TODO: Do we need to create a ref type at this point?
+  ArgSymbol* wrapArg = new ArgSymbol(INTENT_CONST_IN, "RVF_wrapper", wrapType);
+  fn->insertFormalAtTail(wrapArg);
+
+  // Map from fields in the original record to fields in the RVF wrapper
+  std::map<Symbol*, Symbol*> fieldToField;
+
+  //
+  // Create the fields in the wrapper record and unpack them within the
+  // on-statement's body.
+  //
+
+  // Use a counter to make the new fields have unique names
+  int counter = 0;
+
+  // Use this call as an anchor point for the unpacking calls inserted
+  // with insertBefore.
+  CallExpr* anchor = new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Do not leave this call in the tree"));
+  fn->body->insertAtHead(anchor);
+  for (argIter it = fieldsToRVF.begin(); it != fieldsToRVF.end(); ++it) {
+    ArgSymbol* origArg = toArgSymbol(it->first);
+    for_vector(Symbol, oldField, it->second) {
+      VarSymbol* rvfField = new VarSymbol(astr("RVF_", istr(counter), "_", oldField->cname), oldField->getValType());
+      INT_ASSERT(oldField->isRef() && !rvfField->isRef());
+      wrapType->fields.insertAtTail(new DefExpr(rvfField));
+      fieldToField[oldField] = rvfField;
+
+      // Get the RVF'd field from the wrapper, and load it into the
+      // original reference field.
+
+      VarSymbol* rvfTemp = newTemp(rvfField->type);
+      anchor->insertBefore(new DefExpr(rvfTemp));
+      anchor->insertBefore(new CallExpr(PRIM_MOVE, rvfTemp, new CallExpr(PRIM_GET_MEMBER_VALUE, wrapArg, rvfField)));
+
+      VarSymbol* refTemp = newTemp(oldField->qualType());
+      anchor->insertBefore(new DefExpr(refTemp));
+      anchor->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_SET_REFERENCE, rvfTemp)));
+
+      anchor->insertBefore(new CallExpr(PRIM_SET_MEMBER, origArg, oldField, refTemp));
+    }
+  }
+  anchor->remove();
+  INT_ASSERT(!anchor->inTree());
+
+  // At the callsites for 'fn', pack the original fields into the RVF
+  // wrapper.
+  forv_Vec(CallExpr, call, *fn->calledBy) {
+    VarSymbol* wrapper = new VarSymbol("RVF_wrapper", wrapType);
+    call->insertBefore(new DefExpr(wrapper));
+    call->insertAtTail(new SymExpr(wrapper));
+
+    for (argIter it = fieldsToRVF.begin(); it != fieldsToRVF.end(); ++it) {
+      ArgSymbol* origArg = toArgSymbol(it->first);
+      Symbol* actual = toSymExpr(formal_to_actual(call, origArg))->symbol();
+      INT_ASSERT(actual);
+
+      for_vector(Symbol, oldField, it->second) {
+        VarSymbol* rvfField = toVarSymbol(fieldToField[oldField]);
+
+        VarSymbol* refTemp = newTemp(oldField->qualType());
+        call->insertBefore(new DefExpr(refTemp));
+        call->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_GET_MEMBER_VALUE, actual, oldField)));
+
+        // Dereference the 'refTemp'
+        VarSymbol* rvfTemp = newTemp(rvfField->type);
+        call->insertBefore(new DefExpr(rvfTemp));
+        call->insertBefore(new CallExpr(PRIM_MOVE, rvfTemp, refTemp));
+
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, wrapper, rvfField, rvfTemp));
+      }
+    }
+  }
+}
+
 
 static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                 Map<Symbol*, Vec<SymExpr*>*>& useMap) {
@@ -208,11 +290,32 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       // Would need to flatten them if they are not already.
       INT_ASSERT(isGlobal(fn));
 
+      // Map from an aggregate-type argument to a list of its fields that will
+      // be RVF'd
+      std::map<Symbol*, std::vector<Symbol*> > fieldsToRVF;
+
       // For each reference arg that is safe to dereference
       for_formals(arg, fn) {
         if (canForwardValue(defMap, useMap, syncSet, fn, arg)) {
           updateTaskArg(useMap, fn, arg);
+
+          // Find references fields that can be RVF'd in addition to the formal
+          AggregateType* aggType = toAggregateType(arg->type);
+          if (aggType && isRecord(aggType)) {
+            for_fields(field, aggType) {
+              if (isRecordWrappedType(field->getValType()) && field->isRef()) {
+                if (fieldsToRVF.find(arg) == fieldsToRVF.end()) {
+                  fieldsToRVF[arg] = std::vector<Symbol*>();
+                }
+                fieldsToRVF[arg].push_back(field);
+              }
+            }
+          }
         }
+      }
+
+      if (fieldsToRVF.size() > 0) {
+        buildRVFWrapper(fn, fieldsToRVF);
       }
     }
   }
@@ -338,9 +441,9 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
 
     Expr* rhs = NULL;
     if (actual->isRef()) {
-      rhs = new CallExpr(PRIM_DEREF, new SymExpr(actual->var));
+      rhs = new CallExpr(PRIM_DEREF, new SymExpr(actual->symbol()));
     } else {
-      rhs = new SymExpr(actual->var);
+      rhs = new SymExpr(actual->symbol());
     }
 
     call->insertBefore(new DefExpr(deref));
@@ -574,7 +677,7 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       retval = isSafeToDeref(defMap,
                              useMap,
                              field,
-                             newRef->var,
+                             newRef->symbol(),
                              visited);
 
     } else if (call->isPrimitive(PRIM_SET_MEMBER) == true &&
@@ -583,7 +686,7 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
       INT_ASSERT(se);
 
-      if (se->var != field) {
+      if (se->symbol() != field) {
         retval = false;
       }
 
@@ -626,7 +729,7 @@ static bool computeDotLocale(Symbol* sym) {
     } else if (parent && isMoveOrAssign(parent)) {
       // If something copies this reference, we need to see if the new
       // reference also uses .locale
-      Symbol* LHS = toSymExpr(parent->get(1))->var;
+      Symbol* LHS = toSymExpr(parent->get(1))->symbol();
       if (call->isPrimitive(PRIM_ADDR_OF) ||
           call->isPrimitive(PRIM_SET_REFERENCE)) {
         if (computeDotLocale(LHS)) retval = true;
@@ -644,13 +747,13 @@ static bool computeDotLocale(Symbol* sym) {
       }
     } else if (call->isPrimitive(PRIM_MOVE)) {
       SymExpr* LHS = toSymExpr(call->get(1));
-      if (LHS->isRef() && use != LHS && computeDotLocale(LHS->var)) retval = true;
+      if (LHS->isRef() && use != LHS && computeDotLocale(LHS->symbol())) retval = true;
     } else if (call->isPrimitive(PRIM_SET_MEMBER) && use == call->get(3)) {
       // See if the field we're setting may use .locale
       // This could be improved by only looking at the base object's instance,
       // but that's much more complicated.
       SymExpr* member = toSymExpr(call->get(2));
-      if (member->isRef() && computeDotLocale(member->var)) {
+      if (member->isRef() && computeDotLocale(member->symbol())) {
         retval = true;
       }
     } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
@@ -672,15 +775,15 @@ static void computeUsesDotLocale() {
   std::vector<Symbol*> todo;
 
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (!(isVarSymbol(se->var) || isArgSymbol(se->var))) continue;
+    if (!(isVarSymbol(se->symbol()) || isArgSymbol(se->symbol()))) continue;
     if (!se->isRef()) continue;
 
     DotInfo* info = NULL;
-    DotInfoIter it = dotLocaleMap.find(se->var);
+    DotInfoIter it = dotLocaleMap.find(se->symbol());
     if (it == dotLocaleMap.end()) {
       info = new DotInfo();
-      todo.push_back(se->var);
-      dotLocaleMap[se->var] = info;
+      todo.push_back(se->symbol());
+      dotLocaleMap[se->symbol()] = info;
     } else {
       info = it->second;
     }
