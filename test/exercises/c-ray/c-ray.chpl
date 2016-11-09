@@ -443,6 +443,7 @@ proc trace(ray, depth=0): vec3 {
     }
   }
 
+  /* and perform shading calculations as needed by calling shade() */
   if nearestObj then
     return shade(nearestObj, nearestSp, depth);
   else
@@ -529,6 +530,10 @@ proc raySphere(sph, ray) {
 }
 
 
+//
+// Calculates direct illumination with the phong reflectance model.
+// Also handles reflections by calling trace again, if necessary.
+//
 proc shade(obj, sp, depth) {
   var col: vec3;  // TODO: reduction?
 
