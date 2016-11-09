@@ -29,10 +29,10 @@
 
 #include <map>
 
-typedef struct initcall {
+struct InitCall {
   Expr* initExpr;
   bool sup; // True if super.init() call, false if this.init() call
-} initcall;
+};
 
 // Helper file for verifying the rules placed on initializers, and providing
 // the extra functionality associated with them.
@@ -74,16 +74,16 @@ void temporaryInitializerFixup(CallExpr* call) {
 }
 
 static
-initcall* getInitCall(FnSymbol* fn);
+InitCall* getInitCall(FnSymbol* fn);
 
 static
-void phase1Analysis(BlockStmt* body, AggregateType* t, initcall* initCall);
+void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall);
 
 
 
 
 void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
-  initcall* initCall = getInitCall(fn);
+  InitCall* initCall = getInitCall(fn);
 
   if (initCall != NULL) {
     phase1Analysis(fn->body, t, initCall);
@@ -122,12 +122,12 @@ bool storesSpecificName (Expr* expr, const char* name) {
 }
 
 static
-initcall* getInitCall (Expr* expr) {
+InitCall* getInitCall (Expr* expr) {
   // The following set of nested if statements is looking for a CallExpr
   // representing this.init(args) or super.init(args), which at this point
   // in compilation will be represented by:
   // call (call ("." [ super | this ] "init") args)
-  // If we match, return the initcall struct which wraps the expr and provides
+  // If we match, return the InitCall struct which wraps the expr and provides
   // information on whether the call is a super.init() or this.init() call
   if (CallExpr* call = toCallExpr(expr)) {
     if (CallExpr* inner = toCallExpr(call->baseExpr)) {
@@ -137,7 +137,7 @@ initcall* getInitCall (Expr* expr) {
             if (storesThisTop(subject->get(1))) {
               if (storesSpecificName(subject->get(2), "super")) {
                 // The expr is a "(this.)super.init()" call
-                initcall* init = (initcall*)malloc(sizeof(initcall));
+                InitCall* init = (InitCall*)malloc(sizeof(InitCall));
                 init->initExpr = expr;
                 init->sup = true;
                 return init;
@@ -145,7 +145,7 @@ initcall* getInitCall (Expr* expr) {
             }
           } else if (storesThisTop(inner->get(1))) {
             // The expr is a "this.init()" call
-            initcall* init = (initcall*)malloc(sizeof(initcall));
+            InitCall* init = (InitCall*)malloc(sizeof(InitCall));
             init->initExpr = expr;
             init->sup = false;
             return init;
@@ -165,7 +165,7 @@ Expr* getNextStmt(Expr* curExpr, BlockStmt* body, bool enterLoops);
 // initializer's body, whichever comes first.  It will return that call,
 // or NULL if it didn't find a call matching that description.
 static
-initcall* getInitCall(FnSymbol* fn) {
+InitCall* getInitCall(FnSymbol* fn) {
   // Behavior is not yet correct for super/this.init() calls within
   // if statements.  TODO: fix this
   Expr* curExpr = fn->body->body.head;
@@ -177,7 +177,7 @@ initcall* getInitCall(FnSymbol* fn) {
   }
 
   while (curExpr != NULL) {
-    if (initcall* init = getInitCall(curExpr)) {
+    if (InitCall* init = getInitCall(curExpr)) {
       return init;
     }
     curExpr = getNextStmt(curExpr, fn->body, true);
@@ -231,7 +231,7 @@ bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
 
 static
 bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
-                       int* index, AggregateType* t, initcall* initCall);
+                       int* index, AggregateType* t, InitCall* initCall);
 
 static
 void insertOmittedField(Expr* next, const char* nextField,
@@ -243,7 +243,7 @@ static
 bool isParentField(AggregateType* t, const char* name);
 
 static
-void phase1Analysis(BlockStmt* body, AggregateType* t, initcall* initCall) {
+void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall) {
   DefExpr* curField = toDefExpr(t->fields.head);
   bool *seenField = (bool*)calloc(t->fields.length, sizeof(bool));
   if (curField) {
@@ -549,7 +549,7 @@ void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this) {
 // encountered it by returning "true".
 static
 bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
-                  int* index, AggregateType* t, initcall* initCall) {
+                  int* index, AggregateType* t, InitCall* initCall) {
   Expr* stmt = loop->body.head;
   while(stmt != NULL) {
     if (BlockStmt* inner = toBlockStmt(stmt)) {
