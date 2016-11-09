@@ -1,7 +1,8 @@
 /* c-ray.chpl - a simple raytracing filter.
  *
  * Based on c-ray-f.c, developed by John Tsiombikas
- * Ported to Chapel by Brad Chamberlain, September/November 2016
+ * Ported to Chapel and parallelized by Brad Chamberlain,
+ *   September/November 2016
  *
  * -----------------------------------------------------------------------
  * Usage:
