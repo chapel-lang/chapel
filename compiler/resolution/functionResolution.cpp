@@ -9691,13 +9691,97 @@ static void cleanupAfterRemoves() {
   }
 }
 
+static FnSymbol* findMainFn();
+static void printCallGraph(FnSymbol* startPoint = NULL,
+                           int indent = 0,
+                           std::set<FnSymbol*>* alreadyCalled = NULL);
+
+
+//
+// Print a representation of the call graph of the program.
+// This needs to be done after function resolution so we can follow calls
+// into the called function.  However, it needs to be done before
+// removeUnusedFunctions so that we can consider multiple instantiations
+// of a function to be the same by tracking them using the function they
+// were instantiated from before they are removed as unused.
+//
+static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>* alreadyCalled) {
+
+  std::vector<BaseAST*> asts;
+  std::set<FnSymbol*> alreadySeenLocally;
+  bool freeAlreadyCalledSet = false;
+  const bool printLocalMultiples = false;
+
+  if (!startPoint) {
+    startPoint = findMainFn();
+  }
+
+  if (alreadyCalled == NULL) {
+    alreadyCalled = new std::set<FnSymbol*>();
+    freeAlreadyCalledSet = true;
+  }
+
+  collect_asts_postorder(startPoint, asts);
+
+  fprintf(stdout, "%*s%s\n", indent, "", startPoint->name);
+
+  for_vector(BaseAST, ast, asts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (FnSymbol* fn = call->isResolved()) {
+        if (fn->getModule()->modTag == MOD_USER &&
+            !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+            !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+          FnSymbol* instFn = fn;
+          if (fn->instantiatedFrom) {
+            instFn = fn->instantiatedFrom;
+          }
+          if (printLocalMultiples || 0 == alreadySeenLocally.count(instFn)) {
+            alreadySeenLocally.insert(instFn);
+            if (0 == alreadyCalled->count(fn)) {
+              alreadyCalled->insert(fn);
+              printCallGraph(fn, indent+2, alreadyCalled);
+              alreadyCalled->erase(fn);
+            } else {
+              fprintf(stdout, "%*s(Recursive) %s\n", indent, "", fn->name);
+            }
+          }
+        }
+      }
+    }
+  }
+  if (freeAlreadyCalledSet) {
+    delete alreadyCalled;
+  }
+}
+
+//
+// Return the user main function if it exists. If there is no user main,
+// return the compiler generated main instead.
+//
+static FnSymbol* findMainFn() {
+  FnSymbol* genMain = NULL;
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!strcmp("main", fn->name)) {
+      return fn;
+    } else if (!strcmp("chpl_gen_main", fn->name)) {
+      genMain = fn;
+    }
+  }
+  assert(genMain != NULL);
+  return genMain;
+}
+
+
+
 //
 // pruneResolvedTree -- prunes and cleans the AST after all of the
 // function calls and types have been resolved
 //
 static void
 pruneResolvedTree() {
-
+  if (fPrintCallGraph) {
+    printCallGraph();
+  }
   removeUnusedFunctions();
   if (fRemoveUnreachableBlocks)
     deadBlockElimination();
