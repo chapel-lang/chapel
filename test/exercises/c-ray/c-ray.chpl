@@ -427,23 +427,19 @@ proc getPrimaryRay(xy, sample) {
 // through shade() to calculate reflection rays if necessary).
 //
 proc trace(ray, depth=0): vec3 {
-  var nearestObj: sphere;
-  var nearestSp: spoint;
-
-  /* if we reached the recursion limit, bail out */
-  if depth > maxRayDepth then
+  /* if we've reached the recursion limit, bail out */
+  if depth >= maxRayDepth then
     return (0.0, 0.0, 0.0);
 
   /* find the nearest intersection ... */
-  //
-  // TODO: minloc reduction?
+  var nearestObj: sphere,
+      nearestSp: spoint;
+
   for obj in objects {
     const (hit, sp) = raySphere(obj, ray);
-    if hit {
-      if (nearestObj == nil || sp.dist < nearestSp.dist) {
-        nearestObj = obj;
-        nearestSp = sp;
-      }
+    if hit && (nearestObj == nil || sp.dist < nearestSp.dist) {
+      nearestObj = obj;
+      nearestSp = sp;
     }
   }
 
@@ -506,7 +502,7 @@ proc raySphere(sph, ray) {
             - sph.rad**2,
         d = b**2 - 4.0 * a * c;
 
-  if (d < 0.0) then return (0, sp);
+  if (d < 0.0) then return (false, sp);
 
   const sqrtD = sqrt(d);
   var t1 = (-b + sqrtD) / (2.0 * a),
@@ -514,7 +510,7 @@ proc raySphere(sph, ray) {
 
   // TODO: simplify?
   if (t1 < errorMargin && t2 < errorMargin) || (t1 > 1.0 && t2 > 1.0) then
-    return (0, sp);
+    return (false, sp);
 
   if (t1 < errorMargin) then t1 = t2;
   if (t2 < errorMargin) then t2 = t1;
@@ -525,7 +521,7 @@ proc raySphere(sph, ray) {
   sp.vref = reflect(ray.dir, sp.normal);
   normalize(sp.vref);
 
-  return (1, sp);
+  return (true, sp);
 
   proc reflect(v, n) {
     return -(2.0 * dot(v, n) * n - v);
