@@ -156,7 +156,7 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     Type* castTo = defCastPair.second;
 
     if(def->parentExpr == NULL) {
-      deferredSyms.add(use->var);
+      deferredSyms.add(use->symbol());
       continue;
     }
     denormalize(def, use, castTo);
@@ -402,7 +402,7 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
   Expr* defPar = def->parentExpr;
 
   //remove variable declaration
-  use->var->defPoint->remove();
+  use->symbol()->defPoint->remove();
 
   //remove def
   Expr* replExpr = def->remove();

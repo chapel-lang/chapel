@@ -169,7 +169,7 @@ FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
     {
       SymExpr* arg1 = toSymExpr(call->get(1));
 
-      theCall = toFnSymbol(arg1->var);
+      theCall = toFnSymbol(arg1->symbol());
     }
   }
 
@@ -298,8 +298,8 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 
       if (lhs != NULL && rhs != NULL)
       {
-        VarSymbol* symLhs = toVarSymbol(lhs->var);
-        ArgSymbol* symRhs = toArgSymbol(rhs->var);
+        VarSymbol* symLhs = toVarSymbol(lhs->symbol());
+        ArgSymbol* symRhs = toArgSymbol(rhs->symbol());
 
         if (symLhs != NULL && symRhs != NULL)
         {
@@ -360,9 +360,9 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
 
       if (symLhs && callRhs && callRhs->isPrimitive(PRIM_DEREF))
       {
-        VarSymbol* varLhs = toVarSymbol(symLhs->var);
+        VarSymbol* varLhs = toVarSymbol(symLhs->symbol());
         SymExpr*   symRhs = toSymExpr(callRhs->get(1));
-        VarSymbol* varRhs = toVarSymbol(symRhs->var);
+        VarSymbol* varRhs = toVarSymbol(symRhs->symbol());
 
         // MPF 2016-10-02: It seems to me that this code should also handle the
         // case that symRhs is an ArgSymbol, but adding that caused problems
@@ -431,8 +431,8 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
 
       if (lhs != NULL && rhs != NULL)
       {
-        VarSymbol* symLhs = toVarSymbol(lhs->var);
-        VarSymbol* symRhs = toVarSymbol(rhs->var);
+        VarSymbol* symLhs = toVarSymbol(lhs->symbol());
+        VarSymbol* symRhs = toVarSymbol(rhs->symbol());
 
         if (symLhs != NULL && symRhs != NULL)
         {
@@ -550,7 +550,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   Expr*     nextExpr = moveExpr->next;
   CallExpr* copyExpr = NULL;
 
-  Symbol*   useLhs   = toSymExpr(lhs)->var;
+  Symbol*   useLhs   = toSymExpr(lhs)->symbol();
   Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
 
   // Make sure that we created a temp with a type
@@ -689,7 +689,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
   // call to the useFn -- effectively sucking the use function call
   // inside the clone function.
   for_vector(SymExpr, se, symExprs) {
-    if (se->var == ret) {
+    if (se->symbol() == ret) {
       CallExpr* move = toCallExpr(se->parentExpr);
       if (move && move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
         SET_LINENO(move);
@@ -706,7 +706,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
           Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
           se->getStmtExpr()->insertBefore(new DefExpr(tmp));
           se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
-          se->var = tmp;
+          se->setSymbol(tmp);
         }
       }
     }
@@ -737,7 +737,7 @@ static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
             // moving information back to us.
 
             // Copy the information we currently have into the temp
-            se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, se->var, new CallExpr(PRIM_DEREF, actual)));
+            se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, se->symbol(), new CallExpr(PRIM_DEREF, actual)));
           }
         }
       }
@@ -806,7 +806,7 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
         {
           INT_ASSERT(isMoveOrAssign(useMove));
 
-          Symbol* useLhs = toSymExpr(useMove->get(1))->var;
+          Symbol* useLhs = toSymExpr(useMove->get(1))->symbol();
           if (!useLhs->isRef())
           {
             useLhs = newTemp("ret_to_arg_ref_tmp_", useFn->retType->refType);
@@ -834,7 +834,7 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
           // call to fn to useLhs.
           INT_ASSERT(firstUse == useCall->get(2));
 
-          Symbol* useLhs = toSymExpr(useCall->get(1))->var;
+          Symbol* useLhs = toSymExpr(useCall->get(1))->symbol();
           move->replace(call->remove());
           call->insertAtTail(useLhs);
 
@@ -868,7 +868,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
       std::vector<SymExpr*> symExprs;
       collectSymExprs(stmt, symExprs);
       for_vector(SymExpr, se, symExprs) {
-        if (se->var == lhs) {
+        if (se->symbol() == lhs) {
           use.add(se);
         }
       }
@@ -899,8 +899,8 @@ returnRecordsByReferenceArguments() {
         INT_ASSERT(move->isPrimitive(PRIM_MOVE) ||
                    move->isPrimitive(PRIM_ASSIGN));
         SymExpr* lhs = toSymExpr(move->get(1));
-        INT_ASSERT(!lhs->var->hasFlag(FLAG_TYPE_VARIABLE));
-        changeRetToArgAndClone(move, lhs->var, call, fn, defMap, useMap);
+        INT_ASSERT(!lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE));
+        changeRetToArgAndClone(move, lhs->symbol(), call, fn, defMap, useMap);
       }
     }
   }
@@ -1154,7 +1154,7 @@ static void insertYieldTemps()
 
     // The transformation is applied only if is has a normal record type
     // (passed by value).
-    Type* type = yieldExpr->var->type;
+    Type* type = yieldExpr->symbol()->type;
 
     if (isRecord(type) &&
         !type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
@@ -1258,11 +1258,11 @@ void fixupNewAlias(void) {
 
   for_vector(CallExpr, call, newAliasCalls) {
     SymExpr* se = toSymExpr(call->get(1));
-    if (se->var->hasFlag(FLAG_TEMP) &&
+    if (se->symbol()->hasFlag(FLAG_TEMP) &&
         se->isRef() == false) {
       // Note: these flags are added in functionResolution's postFold
-      se->var->removeFlag(FLAG_INSERT_AUTO_COPY);
-      se->var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+      se->symbol()->removeFlag(FLAG_INSERT_AUTO_COPY);
+      se->symbol()->removeFlag(FLAG_INSERT_AUTO_DESTROY);
       call->replace(se->remove());
     }
   }
@@ -1281,12 +1281,12 @@ void fixupNewAlias(void) {
 
       if (isArrayAliasField) {
         SymExpr* se = toSymExpr(actual);
-        bool isTemp = se->var->hasFlag(FLAG_TEMP);
-        bool isAlias = se->var->hasFlag(FLAG_ARRAY_ALIAS);
+        bool isTemp = se->symbol()->hasFlag(FLAG_TEMP);
+        bool isAlias = se->symbol()->hasFlag(FLAG_ARRAY_ALIAS);
         if ((isTemp || isAlias) &&
              se->isRef() == false) {
-          se->var->removeFlag(FLAG_INSERT_AUTO_COPY);
-          se->var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+          se->symbol()->removeFlag(FLAG_INSERT_AUTO_COPY);
+          se->symbol()->removeFlag(FLAG_INSERT_AUTO_DESTROY);
         }
       }
     }

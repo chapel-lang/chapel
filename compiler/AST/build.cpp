@@ -95,7 +95,7 @@ checkControlFlow(Expr* expr, const char* context) {
     } else if (GotoStmt* gs = toGotoStmt(ast1)) {
       if (labelSet.set_in(gs->getName()))
         continue; // break or continue target is in scope
-      if (toSymExpr(gs->label) && toSymExpr(gs->label)->var == gNil && loopSet.set_in(gs))
+      if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil && loopSet.set_in(gs))
         continue; // break or continue loop is in scope
       if (!strcmp(context, "on statement")) {
         USR_PRINT(gs, "the following error is a current limitation");
@@ -172,7 +172,7 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
 //
 static const char* toImmediateString(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr)) {
-    if (VarSymbol* var = toVarSymbol(se->var)) {
+    if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->isImmediate()) {
         Immediate* imm = var->immediate;
         if (imm->const_kind == CONST_KIND_STRING) {
@@ -812,11 +812,11 @@ destructureIndices(BlockStmt* block,
   } else if (SymExpr* sym = toSymExpr(indices)) {
     // BHARSH TODO: I think this should be a PRIM_ASSIGN. I've seen a case
     // where 'sym' becomes a reference.
-    block->insertAtHead(new CallExpr(PRIM_MOVE, sym->var, init));
-    sym->var->addFlag(FLAG_INDEX_VAR);
+    block->insertAtHead(new CallExpr(PRIM_MOVE, sym->symbol(), init));
+    sym->symbol()->addFlag(FLAG_INDEX_VAR);
     if (coforall)
-      sym->var->addFlag(FLAG_COFORALL_INDEX_VAR);
-    sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      sym->symbol()->addFlag(FLAG_COFORALL_INDEX_VAR);
+    sym->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else {
     INT_FATAL("Unexpected");
   }
@@ -1269,7 +1269,7 @@ static void setupForallIntents(CallExpr* withClause,
     if (markerTurn) {
       markerTurn = false;
       if (SymExpr* se = toSymExpr(actual)) {
-        ArgSymbol* tiMarker =  toArgSymbol(se->var);
+        ArgSymbol* tiMarker =  toArgSymbol(se->symbol());
         INT_ASSERT(tiMarker); // confirm my thinking
       } else {
         reduceOp = actual;
@@ -1719,7 +1719,7 @@ static void adjustEltTypeFE(FnSymbol* fn, Symbol* eltType, ForallExpr* fe)
   CallExpr* moveToET = toCallExpr(typeBlock->body.head);
   INT_ASSERT(moveToET && moveToET->isPrimitive(PRIM_MOVE));
   SymExpr* moveDest = toSymExpr(moveToET->get(1));
-  INT_ASSERT(moveDest && moveDest->var == eltType);
+  INT_ASSERT(moveDest && moveDest->symbol() == eltType);
   CallExpr* moveSrc = toCallExpr(moveToET->get(2));
   INT_ASSERT(moveSrc && moveSrc->isPrimitive(PRIM_TYPEOF));
 
@@ -2177,13 +2177,13 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
     INT_ASSERT(stmts->blockInfoGet()->isNamed("_check_tuple_var_decl"));
     SymExpr* tuple = toSymExpr(stmts->blockInfoGet()->get(1));
     Expr* varCount = stmts->blockInfoGet()->get(2);
-    tuple->var->defPoint->insertAfter(
+    tuple->symbol()->defPoint->insertAfter(
       buildIfStmt(new CallExpr("!=", new CallExpr(".", tuple->remove(),
                                                   new_CStringSymbol("size")),
                                varCount->remove()),
                   new CallExpr("compilerError", new_StringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
 
-    tuple->var->defPoint->insertAfter(
+    tuple->symbol()->defPoint->insertAfter(
       buildIfStmt(new CallExpr("!", new CallExpr("isTuple", tuple->copy())),
                   new CallExpr("compilerError", new_StringSymbol("illegal tuple variable declaration with non-tuple initializer"), new_IntSymbol(0))));
     stmts->blockInfoSet(NULL);
@@ -2506,7 +2506,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 
     CallExpr* call = toCallExpr(onBlock->blockInfoGet());
     SymExpr* head = toSymExpr(call->argList.head);
-    if (head->var == gTrue) {
+    if (head->symbol() == gTrue) {
       // avoiding 'local local on'
       onBlock = NULL;
     }

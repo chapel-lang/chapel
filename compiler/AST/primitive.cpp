@@ -270,7 +270,7 @@ returnInfoGetMember(CallExpr* call) {
   SymExpr* sym = toSymExpr(call->get(2));
   if (!sym)
     INT_FATAL(call, "bad member primitive");
-  VarSymbol* var = toVarSymbol(sym->var);
+  VarSymbol* var = toVarSymbol(sym->symbol());
   if (!var)
     INT_FATAL(call, "bad member primitive");
   if (var->immediate) {
@@ -313,7 +313,7 @@ returnInfoGetMemberRef(CallExpr* call) {
   INT_ASSERT(ct);
   SymExpr* se = toSymExpr(call->get(2));
   INT_ASSERT(se);
-  VarSymbol* var = toVarSymbol(se->var);
+  VarSymbol* var = toVarSymbol(se->symbol());
   INT_ASSERT(var);
   Type* retType = NULL;
   if (Immediate* imm = var->immediate)
@@ -364,7 +364,7 @@ static QualifiedType
 returnInfoVirtualMethodCall(CallExpr* call) {
   SymExpr* se = toSymExpr(call->get(1));
   INT_ASSERT(se);
-  FnSymbol* fn = toFnSymbol(se->var);
+  FnSymbol* fn = toFnSymbol(se->symbol());
   INT_ASSERT(fn);
   return fn->getReturnQualType();
 }

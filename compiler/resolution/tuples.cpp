@@ -888,7 +888,7 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
       if (i == 0 && firstArgIsSize) {
         // First argument is the tuple size
         SymExpr* se = toSymExpr(actual);
-        VarSymbol* v = toVarSymbol(se->var);
+        VarSymbol* v = toVarSymbol(se->symbol());
         if (v == NULL || v->immediate == NULL) {
           // leads to an error later in resolution.
           return NULL;
@@ -903,7 +903,7 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
         // should be captured as ref, but not in the type function.
         if (shouldChangeTupleType(t->getValType()) && !noChangeTypes) {
           if (SymExpr* se = toSymExpr(actual)) {
-            if (ArgSymbol* arg = toArgSymbol(se->var)) {
+            if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
               IntentTag intent = concreteIntentForArg(arg);
               if ( (intent & INTENT_FLAG_REF) )
                 t = t->getRefType();

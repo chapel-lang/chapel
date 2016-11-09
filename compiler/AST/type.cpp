@@ -302,7 +302,7 @@ void EnumType::codegenDef() {
 
         if(constant->init == NULL) INT_FATAL(this, "no constant->init");
 
-        VarSymbol* s = toVarSymbol(toSymExpr(constant->init)->var);
+        VarSymbol* s = toVarSymbol(toSymExpr(constant->init)->symbol());
         INT_ASSERT(s);
         INT_ASSERT(s->immediate);
 
@@ -352,7 +352,7 @@ void EnumType::sizeAndNormalize() {
         SymExpr* sym = toSymExpr(constant->init);
 
         // We think that all params should have init values by now.
-        INT_ASSERT(sym && !sym->var->hasFlag(FLAG_PARAM));
+        INT_ASSERT(sym && !sym->symbol()->hasFlag(FLAG_PARAM));
 
         // So we're going to blame this on the user.
         USR_FATAL(constant,
@@ -397,8 +397,7 @@ void EnumType::sizeAndNormalize() {
           constant->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
         }
       }
-      constant->init->parentExpr = constant;
-      constant->init->parentSymbol = constant->parentSymbol;
+      parent_insert_help(constant, constant->init);
     }
     if( first ) {
       min_v = v;
@@ -1313,7 +1312,7 @@ QualifiedType AggregateType::getFieldType(Expr* e) {
 
   sym = toSymExpr(e);
   if (sym)
-    var = toVarSymbol(sym->var);
+    var = toVarSymbol(sym->symbol());
 
   const char* name = NULL;
 

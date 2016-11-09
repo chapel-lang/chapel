@@ -114,7 +114,7 @@ static void cullForDefaultConstructor(FnSymbol* fn) {
             CallExpr* call = toCallExpr(se->parentExpr);
 
             if (call->isPrimitive(PRIM_SET_MEMBER) == true &&
-                toSymExpr(call->get(3))->var       == var) {
+                toSymExpr(call->get(3))->symbol()  == var) {
               var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
             }
           }
@@ -344,13 +344,13 @@ bool Scope::startingToHandleFormalTemps(const Expr* stmt) const {
       SymExpr*  lhs =  NULL;
       SymExpr*  rhs =  NULL;
 
-      if ((fn  = call->isResolved())          != NULL &&
-          fn->hasFlag(FLAG_ASSIGNOP)          == true &&
-          call->numActuals()                  ==    2 &&
-          (lhs = toSymExpr(call->get(1)))     != NULL &&
-          (rhs = toSymExpr(call->get(2)))     != NULL &&
-          isArgSymbol(lhs->var)               == true &&
-          rhs->var->hasFlag(FLAG_FORMAL_TEMP) == true) {
+      if ((fn  = call->isResolved())               != NULL &&
+          fn->hasFlag(FLAG_ASSIGNOP)               == true &&
+          call->numActuals()                       ==    2 &&
+          (lhs = toSymExpr(call->get(1)))          != NULL &&
+          (rhs = toSymExpr(call->get(2)))          != NULL &&
+          isArgSymbol(lhs->symbol())               == true &&
+          rhs->symbol()->hasFlag(FLAG_FORMAL_TEMP) == true) {
         retval = true;
       }
     }
@@ -448,11 +448,11 @@ static VarSymbol* variableToExclude(FnSymbol*  fn, Expr* refStmt) {
         if (CallExpr* move = toCallExpr(expr)) {
           if (move->isPrimitive(PRIM_MOVE) == true) {
             SymExpr*   lhs    = toSymExpr(move->get(1));
-            VarSymbol* lhsVar = toVarSymbol(lhs->var);
+            VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
 
             if (needle == lhsVar) {
               SymExpr*   rhs    = toSymExpr(move->get(2));
-              VarSymbol* rhsVar = (rhs != NULL) ? toVarSymbol(rhs->var) : NULL;
+              VarSymbol* rhsVar = (rhs != NULL) ? toVarSymbol(rhs->symbol()) : NULL;
 
               if (isAutoDestroyedVariable(rhsVar) == true)
                 retval = rhsVar;
@@ -485,7 +485,7 @@ static BlockStmt* findBlockForTarget(GotoStmt* stmt) {
 
   if (stmt != NULL && stmt->isGotoReturn() == false) {
     SymExpr*   labelSymExpr = toSymExpr(stmt->label);
-    Expr*      ptr          = labelSymExpr->var->defPoint;
+    Expr*      ptr          = labelSymExpr->symbol()->defPoint;
 
     while (ptr != NULL && isBlockStmt(ptr) == false)
       ptr = ptr->parentExpr;

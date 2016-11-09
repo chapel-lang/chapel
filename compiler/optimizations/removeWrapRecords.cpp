@@ -74,7 +74,7 @@ removeWrapRecords() {
         call->isPrimitive(PRIM_GET_MEMBER) ||
         call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       if (SymExpr* se = toSymExpr(call->get(2))) {
-        if (!strcmp(se->var->name, "_valueType")) {
+        if (!strcmp(se->symbol()->name, "_valueType")) {
           se->getStmtExpr()->remove();
         }
       }
@@ -144,7 +144,7 @@ removeWrapRecords() {
           if (se->parentSymbol == NULL)
             continue;
           // Weed out all but the formal we're interested in.
-          if (se->var != formal)
+          if (se->symbol() != formal)
             continue;
           // OK, remove the entire statement accessing the _valueType formal.
           Expr* stmt = se->getStmtExpr();
@@ -165,24 +165,24 @@ removeWrapRecords() {
 
     if (call->isPrimitive(PRIM_SET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (isRecordWrappedType(se->var->type)) {
+        if (isRecordWrappedType(se->symbol()->type)) {
           call->primitive = primitives[PRIM_MOVE];
           call->get(2)->remove();
         }
       }
     } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (isRecordWrappedType(se->var->type)) {
+        if (isRecordWrappedType(se->symbol()->type)) {
           call->primitive = primitives[PRIM_ADDR_OF];
           call->get(2)->remove();
         }
       }
     } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (isRecordWrappedType(se->var->type)) {
+        if (isRecordWrappedType(se->symbol()->type)) {
           call->replace(se->remove());
         }
-        if (se->var->type->symbol->hasFlag(FLAG_REF)) {
+        if (se->symbol()->type->symbol->hasFlag(FLAG_REF)) {
           Type* vt = se->getValType();
           if (isRecordWrappedType(vt)) {
             SET_LINENO(call);

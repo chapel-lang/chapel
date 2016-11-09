@@ -57,7 +57,7 @@ void checkArgsAndLocals()
   // or a parent of it.
   forv_Vec(SymExpr, se, gSymExprs)
   {
-    DefExpr* def = se->var->defPoint;
+    DefExpr* def = se->symbol()->defPoint;
     Symbol* defInSym = def->parentSymbol;
     Symbol* useInSym = se->parentSymbol;
 
@@ -161,7 +161,7 @@ void checkPrimitives()
         // in the class expr.type.
         AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
         SymExpr* getFieldSe = toSymExpr(call->get(2));
-        Symbol* getField = getFieldSe->var;
+        Symbol* getField = getFieldSe->symbol();
         INT_ASSERT(ct);
         INT_ASSERT(getField);
         Symbol* name_match = NULL;

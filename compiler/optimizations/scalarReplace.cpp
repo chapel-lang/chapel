@@ -107,7 +107,7 @@ removeIdentityDefs(Symbol* sym) {
     CallExpr* move = toCallExpr(def->parentExpr);
     if (move && isMoveOrAssign(move)) {
       SymExpr* rhs = toSymExpr(move->get(2));
-      if (rhs && def->var == rhs->var) {
+      if (rhs && def->symbol() == rhs->symbol()) {
         move->remove();
         change = true;
       }
@@ -158,9 +158,9 @@ unifyClassInstances(Symbol* sym) {
       SymExpr* se = toSymExpr(move->get(2));
       if (!se)
         return false;
-      if (rhs && rhs->var != gNil && se->var != gNil)
+      if (rhs && rhs->symbol() != gNil && se->symbol() != gNil)
         return false;
-      if (!rhs || se->var != gNil)
+      if (!rhs || se->symbol() != gNil)
         rhs = se;
     }
   }
@@ -169,7 +169,7 @@ unifyClassInstances(Symbol* sym) {
     return false;
 
   for_uses(se, useMap, sym) {
-    se->var = rhs->var;
+    se->setSymbol(rhs->symbol());
     addUse(useMap, se);
   }
 
@@ -277,12 +277,12 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
       SET_LINENO(call);
       if (call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
-        SymExpr* use = new SymExpr(fieldMap.get(member->var));
+        SymExpr* use = new SymExpr(fieldMap.get(member->symbol()));
         call->replace(new CallExpr(PRIM_ADDR_OF, use));
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
-        SymExpr* use = new SymExpr(fieldMap.get(member->var));
+        SymExpr* use = new SymExpr(fieldMap.get(member->symbol()));
         call->replace(use);
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_SETCID) ||
@@ -311,7 +311,7 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
         call->primitive = primitives[PRIM_MOVE];
         call->get(2)->remove();
         call->get(1)->remove();
-        SymExpr* def = new SymExpr(fieldMap.get(member->var));
+        SymExpr* def = new SymExpr(fieldMap.get(member->symbol()));
         call->insertAtHead(def);
         addDef(defMap, def);
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
@@ -399,7 +399,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
         INT_ASSERT(isMoveOrAssign(call));
         Symbol *rhs;
         if (isSymExpr(call->get(2))) {
-          rhs = toSymExpr(call->get(2))->var;
+          rhs = toSymExpr(call->get(2))->symbol();
         } else if (isCallExpr(call->get(2))) {
           // rhs is a tuple in a record
           CallExpr* oldrhs = toCallExpr(call->get(2));
@@ -472,12 +472,12 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
         call->remove();
       } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
-        SymExpr* use = new SymExpr(fieldMap.get(member->var));
+        SymExpr* use = new SymExpr(fieldMap.get(member->symbol()));
         call->replace(new CallExpr(PRIM_ADDR_OF, use));
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
-        SymExpr* use = new SymExpr(fieldMap.get(member->var));
+        SymExpr* use = new SymExpr(fieldMap.get(member->symbol()));
         call->replace(use);
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
@@ -485,7 +485,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
         call->primitive = primitives[PRIM_MOVE];
         call->get(2)->remove();
         call->get(1)->remove();
-        SymExpr* def = new SymExpr(fieldMap.get(member->var));
+        SymExpr* def = new SymExpr(fieldMap.get(member->symbol()));
         call->insertAtHead(def);
         addDef(defMap, def);
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)

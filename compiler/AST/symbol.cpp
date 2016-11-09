@@ -126,7 +126,9 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   qual(QUAL_UNKNOWN),
   type(init_type),
   flags(),
-  defPoint(NULL)
+  defPoint(NULL),
+  symExprsHead(NULL),
+  symExprsTail(NULL)
 {
   if (init_name) {
     name = astr(init_name);
@@ -151,6 +153,12 @@ void Symbol::verify() {
   if (defPoint && this != defPoint->sym)
     INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
   verifyInTree(type, "Symbol::type");
+
+  if (symExprsHead && symExprsHead->symbolSymExprsPrev != NULL)
+    INT_FATAL(this, "Symbol's SymExpr list is malformed (head)");
+
+  if (symExprsTail && symExprsTail->symbolSymExprsNext != NULL)
+    INT_FATAL(this, "Symbol's SymExpr list is malformed (tail)");
 }
 
 
@@ -289,6 +297,51 @@ bool Symbol::noDocGen() const {
   return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE);
 }
 
+
+void Symbol::addSymExpr(SymExpr* se) {
+
+  // MPF 2016-11-08: Consider not tracking SymExprs
+  // that refer Symbols that have an immediate.
+  // The reason is that immediates are usually
+  // unique-ifiied and so the symbol for 3 would refer
+  // to all the uses of 3, and that probably isn't adding
+  // any value.
+
+  if (symExprsTail == NULL) {
+    se->symbolSymExprsPrev = NULL;
+    se->symbolSymExprsNext = NULL;
+    symExprsHead = se;
+    symExprsTail = se;
+  } else {
+    SymExpr* oldTail = symExprsTail;
+    se->symbolSymExprsPrev = oldTail;
+    se->symbolSymExprsNext = NULL;
+    symExprsTail = se;
+    oldTail->symbolSymExprsNext = se;
+  }
+}
+
+void Symbol::removeSymExpr(SymExpr* se) {
+  SymExpr*& prev = se->symbolSymExprsPrev;
+  SymExpr*& next = se->symbolSymExprsNext;
+  if (next)
+    next->symbolSymExprsPrev = prev;
+  else
+    symExprsTail = prev;
+
+  if (prev)
+    prev->symbolSymExprsNext = next;
+  else
+    symExprsHead = next;
+
+  next = NULL;
+  prev = NULL;
+}
+
+
+SymExpr* Symbol::firstSymExpr() const {
+  return symExprsHead;
+}
 
 bool Symbol::isImmediate() const {
   return false;
@@ -2441,7 +2494,7 @@ FnSymbol::getReturnSymbol() {
     SymExpr* sym = toSymExpr(ret->get(1));
     if (!sym)
       INT_FATAL(this, "function is not normal");
-    return sym->var;
+    return sym->symbol();
   }
 }
 
@@ -2459,10 +2512,10 @@ FnSymbol::replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType)
   SymExpr* sym = toSymExpr(ret->get(1));
   if (!sym)
     INT_FATAL(this, "function is not normal");
-  Symbol* prevRetSymbol = sym->var;
+  Symbol* prevRetSymbol = sym->symbol();
 
   // updating
-  sym->var = newRetSymbol;
+  sym->setSymbol(newRetSymbol);
   this->retSymbol = newRetSymbol;
   if (newRetType)
     this->retType = newRetType;
@@ -2774,7 +2827,7 @@ void EnumSymbol::codegenDef() { }
 
 Immediate* EnumSymbol::getImmediate(void) {
   if (SymExpr* init = toSymExpr(defPoint->init)) {
-    if (VarSymbol* initvar = toVarSymbol(init->var)) {
+    if (VarSymbol* initvar = toVarSymbol(init->symbol())) {
       return initvar->immediate;
     }
   }
@@ -3517,6 +3570,9 @@ VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   imm.const_kind = NUM_KIND_BOOL;
   imm.num_index = size;
   VarSymbol *s;
+  // doesn't use uniqueConstantsHash because new_BoolSymbol is only
+  // called to initialize dtBools[i]->defaultValue.
+  // gTrue and gFalse are set up directly in initPrimitiveTypes.
   PrimitiveType* dtRetType = dtBools[size];
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));

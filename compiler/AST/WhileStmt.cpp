@@ -153,7 +153,7 @@ void WhileStmt::checkConstLoops()
   // This gets set to 'true' if an update of the loop condition is found.
 
   // Get the loop condition variable.
-  if (VarSymbol* condSym = toVarSymbol(tmpVar->var))
+  if (VarSymbol* condSym = toVarSymbol(tmpVar->symbol()))
   {
     // Look for definitions of the loop condition variable within the body of
     // the loop.
@@ -184,13 +184,13 @@ void WhileStmt::checkConstLoops()
             else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2)))
             {
               // ... in which case, we expect it to be a literal 'true' or 'false'.
-              if (moveSrc->var == gTrue)
+              if (moveSrc->symbol() == gTrue)
               {
                 // while true do ... ;  -- probably OK.
                 // User said to loop forever ... .
               }
 
-              else if (moveSrc->var == gFalse)
+              else if (moveSrc->symbol() == gFalse)
               {
                 // while false do ...; -- probably nothing to worry about
                 // We probably don't get here unless fRemoveUnreachableBlocks
@@ -241,7 +241,7 @@ SymExpr* WhileStmt::getWhileCondDef(VarSymbol* condSym)
 
   for_vector(SymExpr, se, symExprs)
   {
-    if (se->var == condSym)
+    if (se->symbol() == condSym)
     {
       if (se == mCondExpr)
       {
@@ -272,7 +272,7 @@ void WhileStmt::checkWhileLoopCondition(Expr* condExp)
 {
   if (SymExpr* condSE = toSymExpr(condExp))
   {
-    Symbol* condSym = condSE->var;
+    Symbol* condSym = condSE->symbol();
 
     if (condSym->isConstant() == true && symDeclaredInBlock(condSym) == false)
       checkConstWhileLoop();
