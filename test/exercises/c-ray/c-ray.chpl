@@ -33,7 +33,6 @@ config type pixelType = int;
 
 config param bitsPerColor = 8;
 
-
 //
 // Configuration constants
 // (Override defaults on executable line using --<cfg> <val> or --<cfg>=<val>)
@@ -46,7 +45,7 @@ config const size = "800x600",            // size of output image
              fieldOfView = quarter_pi,    // field of view in radians
              maxRayDepth = 5,             // raytrace recurion limit
              rayMagnitude = 1000.0,       // trace rays of this magnitude
-             errorMargin = 1e-6,          // avoids surface acne
+             errorMargin = 1e-6,          // margin to avoid surface acne
 
              noTiming = false;        // print rendering times?
 
@@ -56,7 +55,6 @@ config const size = "800x600",            // size of output image
 param colorMask = (0x1 << bitsPerColor) - 1;
 
 type colorType = uint(bitsPerColor);
-
 
 //
 // Compute config-dependent constants.
@@ -81,7 +79,6 @@ const infile = if scene == "stdin" then stdin
 
 const halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 
-
 //
 // set params for colors and dimensions
 //
@@ -96,10 +93,12 @@ param X = 1,          // names for accessing vec3 elements
       Z = 3,
       numdims = 3;
 
+//
 // TODO: Should be able to use an enum for both of the above:
 //   enum colors {red=0, green, blue};
 //   use colors;
 //   param numColors = colors.size;
+//
 
 //
 // Verify that config-specified pixelType is appropriate for storing colors
@@ -154,7 +153,6 @@ record camera {
       fov: real;      // field-of-view
 }
 
-
 //
 // variables used to store the scene
 //
@@ -170,7 +168,6 @@ param nran = 1024;
 var urand: [0..#nran] vec3,
     irand: [0..#nran] int;
 
-
 //
 // The program's entry point
 //
@@ -185,7 +182,7 @@ proc main(args: [] string) {
 
   var pixels: [0..#yres, 0..#xres] pixelType;
 
-  /* render a frame of xsz x ysz dimensions into the provided framebuffer */
+  // render a frame of xsz x ysz pixels into the provided framebuffer
   forall (y, x) in pixels.domain do
     pixels[y, x] = computePixel(y, x);
 
@@ -200,7 +197,6 @@ proc main(args: [] string) {
   for obj in objects do
     delete obj;
 }
-
 
 //
 // process any arguments
@@ -246,34 +242,26 @@ proc processArgs(args) {
 }
 
 //
-// Read the input scene file
+// Load the scene from an extremely simple scene description file
 //
 proc loadScene() {
   const inputs = {'l', 'c', 's'},
         expectedArgs: [inputs] int = ['l'=>4, 'c'=>8, 's'=>10];
 
   for (rawLine, lineno) in zip(infile.readlines(), 1..) {
-    //
     // drop any comments (text following '#')
     // TODO: string library experts, is there a better way to do this?
-    //
     const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
           line = linePlusComment[1];
 
-    //
     // split the line into its whitespace-separated strings
-    //
     const columns = line.split();
     if columns.size == 0 then continue;
 
-    //
     // grab the input type
-    //
     const inType = columns[1];
 
-    //
     // handle error conditions
-    //
     if !inputs.member(inType) then
       inputError("unexpected input type: " + inType);
     else if columns.size < expectedArgs(inType) then
@@ -281,28 +269,20 @@ proc loadScene() {
     else if columns.size > expectedArgs(inType) then
       inputError("too many arguments for input of type '" + inType + "'");
 
-    //
     // grab the position columns
-    //
     const pos = (columns[2]:real, columns[3]:real, columns[4]:real);
 
-    //
     // if this is a light, store it as such
-    //
     if inType == 'l' {
       lights.push_back(pos);
       continue;
     }
 
-    //
     // grab the radius/field-of-view and color/target columnsx
-    //
     const rad = columns[5]:real,
           col = (columns[6]:real, columns[7]:real, columns[8]:real);
 
-    //
     // if this is the camera, store it
-    //
     if inType == 'c' {
       cam.pos = pos;
       cam.targ = col;
@@ -310,27 +290,20 @@ proc loadScene() {
       continue;
     }
 
-    //
     // grab the shininess and reflectivity columns
-    //
     const spow = columns[9]: real,
           refl = columns[10]: real;
 
-    //
     // this must be a sphere, so store it
-    //
     objects.push_back(new sphere(pos, rad, new material(col, spow, refl)));
 
-    //
     // helper routine for printing errors in the input file
-    //
     proc inputError(msg) {
       stderr.writeln(scene, ":", lineno, ": ", msg);
       exit(1);
     }
   }
 }
-
 
 //
 // initialize the random number tables for the jitter
@@ -355,9 +328,11 @@ proc initRands() {
     r = (nran * (rand():real / RAND_MAX)): int;
 }
 
-
 //
-// Take in the (y, x) coordinates of a pixel and return a pixel value
+// Given the (y, x) coordinates of a pixel and return a pixel color
+// value as 'pixelType'.  For each subpixel, trace a ray through the
+// scene, accumulate the colors of the subpixels of each pixel, then
+// pack the color and put it into the framebuffer.
 //
 proc computePixel(y: int, x: int): pixelType {
   var rgb: vec3;
@@ -375,7 +350,6 @@ proc computePixel(y: int, x: int): pixelType {
   }
 }
 
-
 //
 // write the image to the output file
 //
@@ -388,14 +362,12 @@ proc writeImage(pixels) {
       outfile.writef("%|1i", ((p >> colorOffset(c)) & colorMask));
 }
 
-
 //
 // how far to shift a color component when packing into a pixelType
 //
 inline proc colorOffset(param color) param {
   return (color - 1) * bitsPerColor;
 }
-
 
 //
 // determine the primary ray corresponding to the specified pixel xy
@@ -421,17 +393,16 @@ proc getPrimaryRay(xy, sample) {
   return pRay;
 }
 
-
 //
 // trace a ray throught the scene recursively (the recursion happens
 // through shade() to calculate reflection rays if necessary).
 //
 proc trace(ray, depth=0): vec3 {
-  /* if we've reached the recursion limit, bail out */
+  // if we've reached the recursion limit, bail out
   if depth >= maxRayDepth then
     return (0.0, 0.0, 0.0);
 
-  /* find the nearest intersection ... */
+  // find the nearest intersection...
   var nearestObj: sphere,
       nearestSp: spoint;
 
@@ -443,13 +414,12 @@ proc trace(ray, depth=0): vec3 {
     }
   }
 
-  /* and perform shading calculations as needed by calling shade() */
+  // and perform shading calculations as needed by calling shade()
   if nearestObj then
     return shade(nearestObj, nearestSp, depth);
   else
     return (0.0, 0.0, 0.0);
 }
-
 
 //
 // Convert pixel coordinates 'xy' into a 2D point 'pt' in scene space
@@ -470,9 +440,8 @@ proc getSamplePos(xy, sample) {
   return pt;
 }
 
-
 //
-// compute jitter values for subsequent samples to the same pixel
+// compute jitter values for subsequent samples to the same pixel.
 //
 proc jitter((x, y), s) {
   param mask = nran - 1;
@@ -480,7 +449,6 @@ proc jitter((x, y), s) {
   return (urand[(x + (y << 2) + irand[(x + s) & mask]) & mask](X),
           urand[(y + (x << 2) + irand[(y + s) & mask]) & mask](Y));
 }
-
 
 //
 // Calculate ray-sphere intersection, returning (hit, surface point)
@@ -524,6 +492,7 @@ proc raySphere(sph, ray) {
 
   return (true, sp);
 
+  // calculate reflection vector
   proc reflect(v, n) {
     return -(2.0 * dot(v, n) * n - v);
   }
@@ -537,16 +506,14 @@ proc raySphere(sph, ray) {
 proc shade(obj, sp, depth) {
   var col: vec3;  // TODO: reduction?
 
+  // for all lights...
   for l in lights {
     var ldir = l - sp.pos;
     const shadowRay = new ray(orig = sp.pos, dir = ldir);
     var inShadow = false;
-    //
-    // TODO: use reduction
-    //
+
     // shoot shadow rays to determine if we have a line of sight with
     // the light
-    //
     for obj in objects {
       const (hit, sp) = raySphere(obj, shadowRay);
       if (hit) {
@@ -555,6 +522,8 @@ proc shade(obj, sp, depth) {
       }
     }
 
+    // and if we're not in shadow, calculate direct illumination with
+    // the phong model.
     if (!inShadow) {
       normalize(ldir);
       const idiff = max(dot(sp.normal, ldir), 0.0),
@@ -565,10 +534,9 @@ proc shade(obj, sp, depth) {
     }
   }
 
-  /* Also, if the object is reflective, spawn a reflection ray, and
-   * call trace() to calculate the light arriving from the
-   * mirror direction.
-   */
+  // Also, if the object is reflective, spawn a reflection ray, and
+  // call trace() to calculate the light arriving from the mirror
+  // direction.
   if obj.mat.refl > 0.0 {
     const rRay = new ray(orig = sp.pos, dir = sp.vref * rayMagnitude),
           rcol = trace(rRay, depth + 1);
@@ -577,7 +545,6 @@ proc shade(obj, sp, depth) {
 
   return col;
 }
-
 
 //
 // Simple vector functions
@@ -596,9 +563,8 @@ inline proc crossProduct(v1, v2) {
           v1(X)*v2(Y) - v1(Y)*v2(X));
 }
 
-
 //
-// TODO: Add this to the IO module
+// TODO: We should really add this to the IO module
 //
 iter channel.readlines() {
   var line: string;
