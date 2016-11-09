@@ -132,7 +132,7 @@ $(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	$(RANLIB) $@
 	$(TAGS_COMMAND)
 
-$(RUNTIME_DIR)/main.o: src/$(RUNTIME_OBJDIR)/main.o
+$(RUNTIME_DIR)/main.o: $(RUNTIME_OBJDIR)/src/main.o
 	cp $< $@
 
 $(RUNTIME_MALLOC_LIB): $(RUNTIME_MALLOC_OBJS) $(RUNTIME_DIR_TIMESTAMP)
@@ -150,7 +150,7 @@ $(LAUNCHER_LIB): $(LAUNCH_LIB_OBJS) $(LAUNCHER_DIR_TIMESTAMP)
 	$(AR) -rc $@ $(LAUNCH_LIB_OBJS)
 	$(RANLIB) $@
 
-$(LAUNCHER_DIR)/main_launcher.o: src/$(LAUNCHER_OBJDIR)/main_launcher.o
+$(LAUNCHER_DIR)/main_launcher.o: $(LAUNCHER_OBJDIR)/src/main_launcher.o
 	cp $< $@
 
 

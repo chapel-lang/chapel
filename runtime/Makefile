@@ -15,14 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+RUNTIME_ROOT = .
+RUNTIME_SUBDIR = .
+
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
+
 CHPL_ENV_HEADER_TEMPLATE=$(CHPL_MAKE_HOME)/runtime/etc/chpl-env-gen-template.h
-CHPL_ENV_HEADER_DIR=$(CHPL_MAKE_HOME)/runtime/src/$(RUNTIME_OBJDIR)
+CHPL_ENV_HEADER_DIR=$(RUNTIME_OBJDIR)/include/
 CHPL_ENV_HEADER=$(CHPL_ENV_HEADER_DIR)/chpl-env-gen.h
 
 all: $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
