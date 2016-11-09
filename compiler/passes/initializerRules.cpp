@@ -98,7 +98,7 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
   // it when we're done with it.
 }
 
-// Returns true only if what was provided was a SymExpr whose var is "this"
+// Returns true only if what was provided was a SymExpr whose symbol is "this"
 static
 bool storesThisTop (Expr* expr) {
   if (SymExpr* stores = toSymExpr(expr)) {
@@ -153,8 +153,6 @@ initcall* getInitCall (Expr* expr) {
         }
       }
     }
-    // Behavior is not yet correct for super/this.init() calls within
-    // loops or if statements.  TODO: fix this
   }
   return NULL;
 }
@@ -168,6 +166,8 @@ Expr* getNextStmt(Expr* curExpr, BlockStmt* body, bool enterLoops);
 // or NULL if it didn't find a call matching that description.
 static
 initcall* getInitCall(FnSymbol* fn) {
+  // Behavior is not yet correct for super/this.init() calls within
+  // if statements.  TODO: fix this
   Expr* curExpr = fn->body->body.head;
 
   BlockStmt* block = toBlockStmt(curExpr);
@@ -230,7 +230,7 @@ static
 bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
 
 static
-bool verifyLoopIsClean(BlockStmt* loop, DefExpr* curField, bool* seenField,
+bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
                        int* index, AggregateType* t, initcall* initCall);
 
 static
@@ -285,7 +285,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, initcall* initCall) {
       if (BlockStmt* block = toBlockStmt(curExpr)) {
         if (block->isLoopStmt()) {
           // Special handling for loops.
-          bool foundInit = verifyLoopIsClean(block, curField, seenField, &index, t, initCall);
+          bool foundInit = loopAnalysis(block, curField, seenField, &index, t, initCall);
           if (foundInit) {
             // If the init call was in the loop body we just checked, any
             // further action is incorrect (including the insertion of leftover
@@ -334,7 +334,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, initcall* initCall) {
       if (BlockStmt* block = toBlockStmt(curExpr)) {
         if (block->isLoopStmt()) {
           // Special handling for loops.
-          bool foundInit = verifyLoopIsClean(block, curField, seenField, &index, t, initCall);
+          bool foundInit = loopAnalysis(block, curField, seenField, &index, t, initCall);
           if (foundInit) {
             // If the init call was in the loop body we just checked, any
             // further action is incorrect (including the insertion of leftover
@@ -548,12 +548,12 @@ void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this) {
 // traversal, immediately cease performing this check and indicate that we
 // encountered it by returning "true".
 static
-bool verifyLoopIsClean(BlockStmt* loop, DefExpr* curField, bool* seenField,
-                       int* index, AggregateType* t, initcall* initCall) {
+bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
+                  int* index, AggregateType* t, initcall* initCall) {
   Expr* stmt = loop->body.head;
   while(stmt != NULL) {
     if (BlockStmt* inner = toBlockStmt(stmt)) {
-      bool sawInit = verifyLoopIsClean(inner, curField, seenField, index, t, initCall);
+      bool sawInit = loopAnalysis(inner, curField, seenField, index, t, initCall);
       if (sawInit) {
         return sawInit;
       }
