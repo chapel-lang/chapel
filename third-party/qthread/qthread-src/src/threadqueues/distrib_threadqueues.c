@@ -29,7 +29,7 @@
 #include "qt_subsystems.h"
 
 // Non portable
-typedef uint8_t cacheline[64];
+typedef uint8_t cacheline[CACHELINE_WIDTH];
 
 /* Cutoff variables */
 int max_backoff; 

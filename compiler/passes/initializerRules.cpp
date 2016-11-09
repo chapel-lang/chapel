@@ -21,13 +21,20 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
 
+#include <map>
+
 // Helper file for verifying the rules placed on initializers, and providing
 // the extra functionality associated with them.
+
+// Map storing the default initialization for fields of a type.  Will be used
+// when traversing initializer bodies if a field is omitted
+static std::map<AggregateType*, std::map<const char*, std::pair<Expr*, Expr*> >* > defaultInits;
 
 void temporaryInitializerFixup(CallExpr* call) {
   if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
@@ -40,7 +47,7 @@ void temporaryInitializerFixup(CallExpr* call) {
         if (NamedExpr* named = toNamedExpr(actual)) {
           if (!strcmp(named->name, "meme")) {
             if (SymExpr* sym = toSymExpr(named->actual)) {
-              if (AggregateType* ct = toAggregateType(sym->var->type)) {
+              if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
                 if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
                   // This code should be removed when the compiler generates
                   // initializers as the default method of construction and
@@ -78,6 +85,8 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
 
     // Insert analysis of initCall here
   }
+  // Insert else branch which adds default initialization of all fields and an
+  // argumentless super.init() call at the beginning of the body.
 
   // Insert phase 2 analysis here
 }
@@ -93,7 +102,7 @@ bool isInitCall (Expr* expr) {
     if (CallExpr* inner = toCallExpr(call->baseExpr)) {
       if (inner->isNamed(".")) {
         if (SymExpr* sym = toSymExpr(inner->get(2))) {
-          if (VarSymbol* var = toVarSymbol(sym->var)) {
+          if (VarSymbol* var = toVarSymbol(sym->symbol())) {
             if (var->immediate->const_kind == CONST_KIND_STRING) {
               if (!strcmp(var->immediate->v_string, "init")) {
                 return true;
@@ -124,8 +133,20 @@ Expr* getInitCall(FnSymbol* fn) {
 }
 
 static
-DefExpr* handleField(AggregateType* t, DefExpr* curField, const char* fieldname,
-                     bool seenField[], CallExpr* call);
+void errorCases(AggregateType* t, DefExpr* curField, const char* fieldname,
+                bool seenField[], Expr* call);
+
+static
+const char* getFieldName(Expr* curExpr);
+
+static
+bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
+
+static
+void insertOmittedField(Expr* next, const char* nextField,
+                        std::map<const char*, std::pair<Expr*, Expr*> >* inits,
+                        AggregateType* t);
+
 
 static
 bool isParentField(AggregateType* t, const char* name);
@@ -139,11 +160,14 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
     // the super field is always first
     seenField[0] = true;
   }
+  int index = 0;
+
+  std::map<const char*, std::pair<Expr*, Expr*> >* inits = defaultInits[t];
 
   Expr* curExpr = body->body.head;
   // We are guaranteed to never reach the end of the body, due to the
   // conditional surrounding the call to this function.
-  while (curExpr != initCall) {
+  while (curField != NULL || curExpr != initCall) {
     // Verify that:
     // - fields are initialized in declaration order
     // - The "this" instance is only used to clarify a field initialization (or
@@ -156,42 +180,85 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
 
     // Additionally, perform the following actions:
     // - add initialization for omitted fields
+    if (curField != NULL && curExpr != initCall) {
+      // still have phase 1 statements and fields left to traverse
 
-    if (CallExpr* call = toCallExpr(curExpr)) {
-      if (call->isNamed("=")) {
-        if (CallExpr* inner = toCallExpr(call->get(1))) {
-          if (inner->isNamed(".")) {
-            SymExpr* potenThis = toSymExpr(inner->get(1));
-            if (potenThis && potenThis->var->hasFlag(FLAG_ARG_THIS)) {
-              // It's an access of this!
-              if (t->fields.length == 0) {
-                // If there aren't fields, then this is obviously wrong.
-                // I don't think we'll actually reach this branch, though.
-                USR_FATAL_CONT(call, "attempted method call too early during initialization");
-              }
-              INT_ASSERT(curField);
+      if (const char* fieldname = getFieldName(curExpr)) {
+        if (!strcmp(fieldname, curField->sym->name)) {
+          // It's a match!  Advance both and move on
+          curField = toDefExpr(curField->next);
+          curExpr = curExpr->next;
+          seenField[index] = true;
+          index++;
+        } else if (isLaterFieldAccess(curField, fieldname)) {
+          insertOmittedField(curExpr, curField->sym->name, inits, t);
+          index++;
+          curField = toDefExpr(curField->next);
+        } else {
+          // It's not a valid field access at all.  Error cases!
+          errorCases(t, curField, fieldname, seenField, curExpr);
+          curExpr = curExpr->next;
+        }
+      } else {
+        // Wasn't a field access, only update curExpr;
+        curExpr = curExpr->next;
+      }
+    } else if (curField != NULL) {
+      // only fields left
 
-              SymExpr* sym = toSymExpr(inner->get(2));
-              INT_ASSERT(sym);
-              // Could it be . . . a field?  The anticipation is killing me!
-              if (VarSymbol* var = toVarSymbol(sym->var)) {
-                if (var->immediate->const_kind == CONST_KIND_STRING) {
-                  curField = handleField(t, curField, var->immediate->v_string,
-                                         seenField, call);
-                }
+      insertOmittedField(curExpr, curField->sym->name, inits, t);
+      curField = toDefExpr(curField->next);
+      index++;
+    } else {
+      // only phase 1 statements left.
+
+      if (const char* fieldname = getFieldName(curExpr)) {
+        errorCases(t, curField, fieldname, seenField, curExpr);
+      }
+      curExpr = curExpr->next;
+    }
+  }
+
+  free (seenField);
+}
+
+// Checks if the current expression is a call expression that sets the value
+// of a field, and if so returns that field name.
+static
+const char* getFieldName(Expr* curExpr) {
+  if (CallExpr* call = toCallExpr(curExpr)) {
+    if (call->isNamed("=")) {
+      if (CallExpr* inner = toCallExpr(call->get(1))) {
+        if (inner->isNamed(".")) {
+          SymExpr* potenThis = toSymExpr(inner->get(1));
+          if (potenThis && potenThis->symbol()->hasFlag(FLAG_ARG_THIS)) {
+            // It's an access of this!
+            SymExpr* sym = toSymExpr(inner->get(2));
+            INT_ASSERT(sym);
+            // Could it be . . . a field?  The anticipation is killing me!
+            if (VarSymbol* var = toVarSymbol(sym->symbol())) {
+              if (var->immediate->const_kind == CONST_KIND_STRING) {
+                return var->immediate->v_string;
               }
             }
-            // otherwise, we're accessing the field or method of something else.
-            // Carry on.
           }
         }
       }
     }
-
-    curExpr = curExpr->next;
   }
+  return NULL;
+}
 
-  free (seenField);
+static
+bool isLaterFieldAccess(DefExpr* curField, const char* fieldname) {
+  DefExpr* next = curField;
+  while (next) {
+    if (!strcmp(next->sym->name, fieldname)) {
+      return true;
+    }
+    next = toDefExpr(next->next);
+  }
+  return false;
 }
 
 // If the fieldname given is the name of a field after the last seen field in
@@ -200,35 +267,22 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
 // if the field has already been initialized, or if what is being initialized
 // is not a field at all.
 static
-DefExpr* handleField(AggregateType* t, DefExpr* lastSeen, const char* fieldname,
-                     bool seenField[], CallExpr* call) {
-  bool passedLastSeen = false;
+void errorCases(AggregateType* t, DefExpr* curField, const char* fieldname,
+                bool seenField[], Expr* call) {
   int index = 0;
-  for (DefExpr* fieldDef = toDefExpr(t->fields.head); fieldDef;
+  for (DefExpr* fieldDef = toDefExpr(t->fields.head); fieldDef != curField;
        fieldDef = toDefExpr(fieldDef->next), index++) {
-    if (!passedLastSeen) {
-      if (!strcmp(fieldDef->sym->name, fieldname)) {
-        // We found a field match before the field we most recently saw
-        // initialization for.
-        if (seenField[index]) {
-          // There was a previous initialization of this same field
-          USR_FATAL_CONT(call, "multiple initializations of field \"%s\"", fieldname);
-        } else {
-          USR_FATAL_CONT(call, "field initialization out of order");
-          USR_PRINT(call, "initialization of fields before .init() call must be in field declaration order");
-        }
-        return lastSeen; // exit early due to error case.
-      } else if (!strcmp(fieldDef->sym->name, lastSeen->sym->name)) {
-        // We didn't find a field matching this name yet, but we did just run
-        // into the last field we saw initialized.  If we find a match after
-        // this point, it fulfills the phase 1 order of initialization rules.
-        passedLastSeen = true;
+    if (!strcmp(fieldDef->sym->name, fieldname)) {
+      // We found a field match before the field we most recently saw
+      // initialization for.
+      if (seenField[index]) {
+        // There was a previous initialization of this same field
+        USR_FATAL_CONT(call, "multiple initializations of field \"%s\"", fieldname);
+      } else {
+        USR_FATAL_CONT(call, "field initialization out of order");
+        USR_PRINT(call, "initialization of fields before .init() call must be in field declaration order");
       }
-    } else {
-      if (!strcmp(fieldDef->sym->name, fieldname)) {
-        seenField[index] = true;
-        return fieldDef;
-      }
+      return; // exit early due to error case.
     }
   }
   if (isParentField(t, fieldname)) {
@@ -237,7 +291,6 @@ DefExpr* handleField(AggregateType* t, DefExpr* lastSeen, const char* fieldname,
     // We didn't find the field match, even on our parent type.  It is a method.
     USR_FATAL_CONT(call, "attempted method call too early during initialization");
   }
-  return lastSeen;
 }
 
 static
@@ -258,5 +311,114 @@ bool isParentField(AggregateType* t, const char *name) {
     return false;
   } else {
     return false;
+  }
+}
+
+static
+void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this);
+
+static
+void insertOmittedField(Expr* next, const char* nextField,
+                        std::map<const char*,
+                        std::pair<Expr*, Expr*> >* inits,
+                        AggregateType* t) {
+  SET_LINENO(next);
+  // Do something appropriate with "super"
+  if (!strcmp(nextField, "super")) {
+    return;
+  }
+  // For all other fields, insert an assignment into that field with the given
+  // initialization, if we have one.
+  if (inits->find(nextField) == inits->end()) {
+    USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
+    return;
+  }
+
+  std::pair<Expr*, Expr*> initExpr = (*inits)[nextField];
+
+  // If that field has no initialization or type, we can't insert the omitted
+  // initialization for it, it must be explicitly initialized.
+  if (initExpr.first == NULL && initExpr.second == NULL) {
+    USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
+    return;
+  }
+  Symbol* _this = toFnSymbol(next->parentSymbol)->_this;
+  CallExpr* thisAccess = new CallExpr(".", _this,
+                                      new_CStringSymbol(nextField));
+  CallExpr* newInit = NULL;
+  if (initExpr.first != NULL &&
+      !(isSymExpr(initExpr.first) &&
+        toSymExpr(initExpr.first)->symbol() == gTypeDefaultToken)) {
+    Expr* init = initExpr.first->copy();
+
+    // Since the init expression we're storing utilizes the arguments
+    // corresponding to the fields instead of the fields themselves, we must
+    // replace those references to the ArgSymbols with references to the fields
+    replaceArgsWithFields(t, init, _this);
+
+    newInit = new CallExpr("=", thisAccess, init);
+  } else {
+    BlockStmt* secondBody = toBlockStmt(initExpr.second);
+    INT_ASSERT(secondBody);
+    Expr* typeStart = secondBody->body.head;
+    if (SymExpr* simpleCase = toSymExpr(typeStart)) {
+      if (TypeSymbol* sym = toTypeSymbol(simpleCase->symbol())) {
+        newInit = new CallExpr(PRIM_SET_MEMBER,
+                               toFnSymbol(next->parentSymbol)->_this,
+                               new_CStringSymbol(nextField),
+                               new CallExpr(PRIM_INIT, new SymExpr(sym)));
+      } else {
+        INT_FATAL("Expected TypeSymbol to be stored, got other symbol");
+      }
+    } else {
+      VarSymbol* tmp = newTemp("call_tmp");
+      next->insertBefore(new DefExpr(tmp));
+      next->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(tmp),
+                                      new CallExpr(PRIM_INIT,
+                                                   typeStart->copy())));
+      newInit = new CallExpr("=", thisAccess, new SymExpr(tmp));
+    }
+  }
+  next->insertBefore(newInit);
+}
+
+// Should only be called over expressions that were inserted into the ArgSymbol
+// information for the default constructor on t.  Because the default
+// constructor for t has only the fields of t and "meme" as its arguments, if
+// we find an ArgSymbol mentioned in context, it should be a field (as "meme"
+// is inserted by the compiler and not utilized for the default expression of
+// anything we would encounter).
+static
+void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this) {
+  std::vector<SymExpr*> syms;
+  collectSymExprs(context, syms);
+  for_vector(SymExpr, se, syms) {
+    if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
+      for_fields(field, t) {
+        if (!strcmp(field->name, arg->name)) {
+          CallExpr* fieldAccess = new CallExpr(".", _this, new_CStringSymbol(field->name));
+          se->replace(fieldAccess);
+          break;
+        }
+      }
+    }
+  }
+}
+
+// Takes in the type, the name of the field, and the expr used to initialize it.
+// This will be stored in a Map of type to a Map of fields to init expressions,
+// which will be used to provide omitted initialization of fields when
+// traversing the body of a user-defined initializer.
+void storeFieldInit(AggregateType* t, const char* fieldname, Expr* init,
+                    Expr* type) {
+  // Lydia NOTE 09/13/16: This code depends on our generation of default
+  // constructors.  It should not be used as a justification to keep the old
+  // implementation around, but should instead be regarded as a step that should
+  // eventually become unnecessary.
+  if (defaultInits[t] != NULL) {
+    defaultInits[t]->insert(std::pair<const char*, std::pair<Expr*, Expr*> >(fieldname, std::pair<Expr*, Expr*>(init, type)));
+  } else {
+    defaultInits[t] = new std::map<const char*, std::pair<Expr*, Expr*> >;
+    defaultInits[t]->insert(std::pair<const char*, std::pair<Expr*, Expr*> >(fieldname, std::pair<Expr*, Expr*>(init, type)));
   }
 }

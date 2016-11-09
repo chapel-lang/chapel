@@ -9,6 +9,11 @@
 config const n = 1000,   // controls the length of the generated strings
              lineLength = 60;
 
+config param IM = 139968, // parameters for the RNG
+             IA = 3877,
+             IC = 29573,
+             seed = 42;
+
 //
 // Nucleotide definitions
 //
@@ -63,22 +68,9 @@ const HomoSapiens = [(a, 0.3029549426680),
 
 
 proc main() {
-  sumProbs(IUB);
-  sumProbs(HomoSapiens);
-  repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
-  randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
-  randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
-}
-
-//
-// Scan the alphabets' probabilities to compute cut-offs
-//
-proc sumProbs(alphabet: []) {
-  var p = 0.0;
-  for letter in alphabet {
-    p += letter(prob);
-    letter(prob) = p;
-  }
+  repeatMake(">ONE Homo sapiens alu", ALU, n * 2);
+  randomMake(">TWO IUB ambiguity codes", IUB, n * 3);
+  randomMake(">THREE Homo sapiens frequency", HomoSapiens, n * 5);
 }
 
 //
@@ -91,7 +83,7 @@ param newline = ascii("\n");
 // Repeat sequence "alu" for n characters
 //
 proc repeatMake(desc, alu, n) {
-  stdout.writef("%s", desc);
+  stdout.writeln(desc);
 
   const r = alu.size,
         s = [i in 0..(r+lineLength)] alu[i % r];
@@ -106,31 +98,27 @@ proc repeatMake(desc, alu, n) {
 //
 // Output a random sequence of length 'n' using distribution a
 //
-proc randomMake(desc, a, n) {
-  var line_buff: [0..lineLength] int(8);
-    
-  stdout.writef("%s", desc);
-  for i in 1..n by lineLength do
-    addLine(min(lineLength, n-i+1));
+proc randomMake(desc, nucleotides: [?D], n) {
+  stdout.writeln(desc);
 
-  //
-  // Add a line of random sequence
-  //
-  proc addLine(bytes) {
+  var cumulProb: [D] int;
+  var p = 0.0;
+  for i in D {
+    p += nucleotides[i](prob);
+    cumulProb[i] = 1 + (p*IM):int;
+  }
+
+  var line_buff: [0..lineLength] int(8);
+
+  for i in 1..n by lineLength {
+    const bytes = min(lineLength, n-i+1);
+
     for (r, i) in zip(getRands(bytes), 0..) {
-      if r < a[1](prob) {
-        line_buff[i] = a[1](nucl);
-      } else {
-        var lo = a.domain.low,
-            hi = a.domain.high;
-        while (hi > lo+1) {
-          var ai = (hi + lo) / 2;
-          if (r < a[ai](prob)) then
-            hi = ai;
-          else
-            lo = ai;
+      for j in D {
+        if r < cumulProb[j] {
+          line_buff[i] = nucleotides[j](nucl);
+          break;
         }
-        line_buff[i] = a[hi](nucl);
       }
     }
     line_buff[bytes] = newline:int(8);
@@ -143,15 +131,11 @@ proc randomMake(desc, a, n) {
 //
 // Deterministic random number generator
 //
-var lastRand = 42;
+var lastRand = seed;
 
 iter getRands(n) {
-  param IA = 3877,
-        IC = 29573,
-        IM = 139968;
-
   for 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
-    yield lastRand: real / IM;
+    yield lastRand;
   }
 }

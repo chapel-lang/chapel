@@ -21,8 +21,10 @@
 #define INFOBAR_H
 
 #include <FL/Fl.H>
-#include <FL/Fl_Box.H>
+#include <FL/Fl_Group.H>
 #include <string.h>
+#include <list>
+#include "LocCommBox.h"
 
 // Top bar of display showing Max values and reference colors.
 
@@ -31,7 +33,9 @@
 
 Fl_Color heatColor(double val, double max);
 
-class InfoBar : public Fl_Box {
+enum showWhat { show_Tasks, show_CPU, show_Clock, show_Concurrency };
+
+class InfoBar : public Fl_Group {
 
  private:
   int maxTasks;
@@ -40,19 +44,24 @@ class InfoBar : public Fl_Box {
   double maxCpu;
   double maxClock;
   long maxConcurrent;
-  enum showWhat { show_Tasks, show_CPU, show_Clock, show_Concurrent} infoTop;
+  showWhat infoTop;
   bool showcomms;
+  bool showcolorref;
+  bool showtag;
 
   char *fileName;
   char *tagName;
 
+  std::list<LocCommBox *> infoBoxes;
+  std::list<LocCommBox *> boxCache;
+
  public:
 
   InfoBar (int x, int y, int w, int h/*, const char *label = 0*/)
-#ifdef __APPLE__    
-    : Fl_Box(x,0,w,h+20) {
+#ifdef __APPLE__
+    : Fl_Group(x,0,w,h+20) {
 #else
-    : Fl_Box(x,y,w,h) {
+    : Fl_Group(x,y,w,h) {
 #endif
     maxTasks = 0;
     maxComms = 0;
@@ -61,6 +70,8 @@ class InfoBar : public Fl_Box {
     maxClock = 0;
     infoTop = show_Tasks;
     showcomms = true;
+    showtag = true;
+    showcolorref = true;
     fileName = NULL;
     tagName = NULL;
    };
@@ -80,16 +91,35 @@ class InfoBar : public Fl_Box {
   void setFileName(const char *name);
   void setTagName(const char *name);
   void clearTagName() { if (tagName != NULL) free(tagName); tagName = NULL; }
+  char *getTagName() { return tagName; }
 
   void showTasks() { infoTop = show_Tasks; }
   void showCpu() { infoTop = show_CPU; }
   void showClock() { infoTop = show_Clock; }
-  void showConcurrency() { infoTop = show_Concurrent; }
+  void showConcurrency() { infoTop = show_Concurrency; }
   void showComms() { showcomms = true; }
   void showSize() { showcomms = false; }
 
-};
+  void showColorRef() { showcolorref = true; }
+  void hideColorRef() { showcolorref = false; }
 
+  void showTag() { showtag = true; }
+  void hideTag() { showtag = false; }
+
+  showWhat dataToShow() { return infoTop; }
+  bool commToShow() { return showcomms; }
+
+  void addLocOrComm(LocCommBox *box);
+  void delLocOrComm(LocCommBox *box);
+  void rmAllLocOrComm();
+
+  LocCommBox *getNewLocComm(void);
+
+  bool isOnList (LocCommBox *box);
+
+  void resize (int X, int Y, int W, int H);
+
+};
 
 #endif
 

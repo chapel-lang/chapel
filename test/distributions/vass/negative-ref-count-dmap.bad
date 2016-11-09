@@ -1,3 +1,0 @@
-Invalid read of size 8
-Address xxx is 104 bytes inside a block of size 112 free'd
-test: bd1 dereference OK

@@ -286,12 +286,13 @@ def get(location, map_to_compiler=False, get_lcd=False):
     isprgenv = compiler_is_prgenv(compiler_val)
 
     if isprgenv:
-        if arch and (arch != 'none' or arch != 'unknown'):
+        cray_arch = os.environ.get('CRAY_CPU_TARGET', 'none')
+        if arch and (arch != 'none' and arch != 'unknown' and arch != cray_arch):
             stderr.write("Warning: Setting the processor type through "
                          "environment variables is not supported for "
                          "cray-prgenv-*. Please use the appropriate craype-* "
                          "module for your processor type.\n")
-        arch = os.environ.get('CRAY_CPU_TARGET', 'none')
+        arch = cray_arch
         if arch == 'none':
             stderr.write("Warning: No craype-* processor type module was "
                          "detected, please load the appropriate one if you want "

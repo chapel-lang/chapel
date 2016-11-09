@@ -50,6 +50,28 @@ void checkForDuplicateUses()
   }
 }
 
+void checkArgsAndLocals()
+{
+  // Check that each VarSymbol and each ArgSymbol
+  // has a DefExpr that is in the FnSymbol
+  // or a parent of it.
+  forv_Vec(SymExpr, se, gSymExprs)
+  {
+    DefExpr* def = se->symbol()->defPoint;
+    Symbol* defInSym = def->parentSymbol;
+    Symbol* useInSym = se->parentSymbol;
+
+    if (isFnSymbol(defInSym) && isFnSymbol(useInSym)) {
+      if (defInSym->hasFlag(FLAG_MODULE_INIT)) {
+        // OK, module init functions can define globals
+      } else {
+        if (defInSym != useInSym) {
+          INT_FATAL(se, "Refers to a local/arg in another function");
+        }
+      }
+    }
+  }
+}
 
 // Check that no unresolved symbols remain in the tree.
 // This one is pretty cheap, so can be run after every pass (following
@@ -61,7 +83,7 @@ void checkNoUnresolveds()
   // resolution ... .
   if (gUnresolvedSymExprs.n > 1)
     INT_FATAL("Structural error: "
-      "At this point, the AST should not contain any unresovled symbols.");
+      "At this point, the AST should not contain any unresolved symbols.");
 }
 
 // Ensures that primitives are used only where they are expected.
@@ -139,7 +161,7 @@ void checkPrimitives()
         // in the class expr.type.
         AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
         SymExpr* getFieldSe = toSymExpr(call->get(2));
-        Symbol* getField = getFieldSe->var;
+        Symbol* getField = getFieldSe->symbol();
         INT_ASSERT(ct);
         INT_ASSERT(getField);
         Symbol* name_match = NULL;
@@ -182,6 +204,7 @@ void checkPrimitives()
      case PRIM_XOR:
      case PRIM_POW:
      case PRIM_ASSIGN:
+     case PRIM_SET_REFERENCE:
      case PRIM_ADD_ASSIGN:
      case PRIM_SUBTRACT_ASSIGN:
      case PRIM_MULT_ASSIGN:

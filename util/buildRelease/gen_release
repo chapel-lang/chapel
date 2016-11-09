@@ -166,6 +166,7 @@ SystemOrDie("make man-chpldoc");
 SystemOrDie("make clobber");
 
 print "Creating the examples directory...\n";
+SystemOrDie("rm examples"); # remove examples symbolic link
 SystemOrDie("cp -r test/release/examples .");
 SystemOrDie("cd util && cp start_test ../examples/");
 SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");

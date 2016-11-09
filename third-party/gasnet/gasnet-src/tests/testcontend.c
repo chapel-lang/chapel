@@ -196,7 +196,7 @@ PGFIGHT(get_put_active, gasnet_get(&tmp, peer, peerseg, 8), gasnet_put(peer, pee
 PGFIGHT(get_get_active, gasnet_get(&tmp, peer, peerseg, 8), gasnet_get(&tmp, peer, peerseg, 8))
 
 void * poll_passive(void *args) {
-  GASNETI_UNUSED
+  GASNETT_UNUSED
   int mythread = ARG2THREAD(args);
   signal_done = 0;
   thread_barrier();
@@ -205,7 +205,7 @@ void * poll_passive(void *args) {
   return NULL;
 }
 void * block_passive(void *args) {
-  GASNETI_UNUSED
+  GASNETT_UNUSED
   int mythread = ARG2THREAD(args);
   signal_done = 0;
   thread_barrier();

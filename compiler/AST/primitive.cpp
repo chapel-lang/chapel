@@ -23,6 +23,7 @@
 #include "iterator.h"
 #include "stringutil.h"
 #include "type.h"
+#include "resolution.h"
 
 static QualifiedType
 returnInfoUnknown(CallExpr* call) {
@@ -84,10 +85,12 @@ returnInfoInt64(CallExpr* call) {
   return QualifiedType(dtInt[INT_SIZE_64], QUAL_VAL);
 }
 
+/*
 static QualifiedType
 returnInfoUInt64(CallExpr* call) {
   return QualifiedType(dtUInt[INT_SIZE_64], QUAL_VAL);
 }
+*/
 
 static QualifiedType
 returnInfoSizeType(CallExpr* call) {
@@ -145,6 +148,10 @@ static QualifiedType
 returnInfoFirstDeref(CallExpr* call) {
   QualifiedType tmp = call->get(1)->qualType();
   Type* type = tmp.type()->getValType();
+  // if it's a tuple, also remove references in the elements
+  if (type->symbol->hasFlag(FLAG_TUPLE)) {
+    type = computeNonRefTuple(type);
+  }
   return QualifiedType(type, QUAL_VAL);
 }
 
@@ -152,12 +159,14 @@ static QualifiedType
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
-  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS))
+  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS)) {
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
-  if (t2->symbol->hasFlag(FLAG_WIDE_REF))
+  }
+  if (t2->symbol->hasFlag(FLAG_WIDE_REF)) {
     if (wideRefMap.get(t1))
       t1 = wideRefMap.get(t1);
+  }
   return QualifiedType(t1); // what should qual be here?
 }
 
@@ -165,23 +174,52 @@ static QualifiedType
 returnInfoVal(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
   if (ct) {
-    if(ct->symbol->hasFlag(FLAG_REF)) {
-      return QualifiedType(ct->getField(1)->type, QUAL_VAL);
-    }
-    else if(ct->symbol->hasFlag(FLAG_WIDE_REF)) {
-      return QualifiedType(ct->getField(2)->type, QUAL_VAL);
+    if (call->get(1)->isRef()) {
+      if(ct->symbol->hasFlag(FLAG_REF)) {
+        return QualifiedType(ct->getField(1)->type, QUAL_VAL);
+      } else {
+        return QualifiedType(ct, QUAL_VAL);
+      }
+    } else if (call->get(1)->isWideRef()) {
+      if(ct->symbol->hasFlag(FLAG_WIDE_REF)) {
+        return QualifiedType(ct->getField(2)->type, QUAL_VAL);
+      } else {
+        return QualifiedType(ct, QUAL_VAL);
+      }
+    } else if (ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      // insertWideReferences will sometimes insert a PRIM_DEREF to a
+      // wide class. There should probably be a better way of expressing the
+      // desired pattern...
+      return QualifiedType(ct, QUAL_VAL);
     }
   }
   INT_FATAL(call, "attempt to get value type of non-reference type");
   return QualifiedType(NULL);
 }
 
+// BHARSH TODO: merge this with returnInfoAsRef and fix the WIDE_REF case...
 static QualifiedType
 returnInfoRef(CallExpr* call) {
-  Type* t = call->get(1)->typeInfo();
+  Type* t = call->get(1)->getValType();
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
   return QualifiedType(t->refType, QUAL_REF);
+}
+
+static QualifiedType
+returnInfoAsRef(CallExpr* call) {
+  Type* t = call->get(1)->typeInfo();
+  if (isReferenceType(t)) {
+    return QualifiedType(t, QUAL_REF);
+  }
+  else if (t->symbol->hasFlag(FLAG_WIDE_REF)) {
+    return QualifiedType(t, QUAL_WIDE_REF);
+  }
+  else {
+    if (!t->refType)
+      INT_FATAL(call, "invalid attempt to get reference type");
+    return QualifiedType(t->refType, QUAL_REF);
+  }
 }
 
 // NEEDS TO BE FINISHED WHEN PRIMITIVES ARE REDONE
@@ -232,17 +270,17 @@ returnInfoGetMember(CallExpr* call) {
   SymExpr* sym = toSymExpr(call->get(2));
   if (!sym)
     INT_FATAL(call, "bad member primitive");
-  VarSymbol* var = toVarSymbol(sym->var);
+  VarSymbol* var = toVarSymbol(sym->symbol());
   if (!var)
     INT_FATAL(call, "bad member primitive");
   if (var->immediate) {
     const char* name = var->immediate->v_string;
     for_fields(field, ct) {
       if (!strcmp(field->name, name))
-        return QualifiedType(field->type, QUAL_VAL);
+        return field->qualType();
     }
   } else
-    return QualifiedType(var->type, QUAL_VAL);
+    return sym->qualType();
   INT_FATAL(call, "bad member primitive");
   return QualifiedType(NULL);
 }
@@ -259,7 +297,14 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
   Type* type = returnInfoGetTupleMember(call).type();
   if (type->refType)
     type = type->refType;
-  return QualifiedType(type, QUAL_REF);
+  Qualifier q = QUAL_REF;
+  if (call->get(1)->isWideRef()) {
+    q = QUAL_WIDE_REF;
+    if (Type* t = wideRefMap.get(type)) {
+      type = t;
+    }
+  }
+  return QualifiedType(type, q);
 }
 
 static QualifiedType
@@ -268,8 +313,9 @@ returnInfoGetMemberRef(CallExpr* call) {
   INT_ASSERT(ct);
   SymExpr* se = toSymExpr(call->get(2));
   INT_ASSERT(se);
-  VarSymbol* var = toVarSymbol(se->var);
+  VarSymbol* var = toVarSymbol(se->symbol());
   INT_ASSERT(var);
+  Type* retType = NULL;
   if (Immediate* imm = var->immediate)
   {
     Symbol* field = NULL;
@@ -284,12 +330,18 @@ returnInfoGetMemberRef(CallExpr* call) {
       field = ct->getField(i);
     }
     INT_ASSERT(field);
-    Type* t = field->type->refType ? field->type->refType : field->type;
-    return QualifiedType(t, QUAL_REF);
+    retType = field->type->refType ? field->type->refType : field->type;
   } else {
-    Type* t = var->type->refType ? var->type->refType : var->type;
-    return QualifiedType(t, QUAL_REF);
+    retType = var->type->refType ? var->type->refType : var->type;
   }
+  Qualifier q = QUAL_REF;
+  if (call->get(1)->isWideRef()) {
+    q = QUAL_WIDE_REF;
+    if (Type* t = wideRefMap.get(retType)) {
+      retType = t;
+    }
+  }
+  return QualifiedType(retType, q);
 }
 
 static QualifiedType
@@ -312,7 +364,7 @@ static QualifiedType
 returnInfoVirtualMethodCall(CallExpr* call) {
   SymExpr* se = toSymExpr(call->get(1));
   INT_ASSERT(se);
-  FnSymbol* fn = toFnSymbol(se->var);
+  FnSymbol* fn = toFnSymbol(se->symbol());
   INT_ASSERT(fn);
   return fn->getReturnQualType();
 }
@@ -323,6 +375,11 @@ returnInfoSecondType(CallExpr* call) {
   return t;
 }
 
+static QualifiedType
+returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
+  QualifiedType t = call->get(2)->qualType();
+  return t;
+}
 
 // print the number of each type of primitive present in the AST
 void printPrimitiveCounts(const char* passName) {
@@ -415,26 +472,26 @@ initPrimitive() {
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
-  prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirst);
-  prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirst);
-  prim_def(PRIM_UNARY_NOT, "u~", returnInfoFirst);
+  prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirstDeref);
+  prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirstDeref);
+  prim_def(PRIM_UNARY_NOT, "u~", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_LNOT, "!", returnInfoBool);
   prim_def(PRIM_ADD, "+", returnInfoNumericUp);
   prim_def(PRIM_SUBTRACT, "-", returnInfoNumericUp);
   prim_def(PRIM_MULT, "*", returnInfoNumericUp);
   prim_def(PRIM_DIV, "/", returnInfoNumericUp, true); // div by zero is visible
-  prim_def(PRIM_MOD, "%", returnInfoFirst); // mod by zero?
-  prim_def(PRIM_LSH, "<<", returnInfoFirst);
-  prim_def(PRIM_RSH, ">>", returnInfoFirst);
+  prim_def(PRIM_MOD, "%", returnInfoFirstDeref); // mod by zero?
+  prim_def(PRIM_LSH, "<<", returnInfoFirstDeref);
+  prim_def(PRIM_RSH, ">>", returnInfoFirstDeref);
   prim_def(PRIM_EQUAL, "==", returnInfoBool);
   prim_def(PRIM_NOTEQUAL, "!=", returnInfoBool);
   prim_def(PRIM_LESSOREQUAL, "<=", returnInfoBool);
   prim_def(PRIM_GREATEROREQUAL, ">=", returnInfoBool);
   prim_def(PRIM_LESS, "<", returnInfoBool);
   prim_def(PRIM_GREATER, ">", returnInfoBool);
-  prim_def(PRIM_AND, "&", returnInfoFirst);
-  prim_def(PRIM_OR, "|", returnInfoFirst);
-  prim_def(PRIM_XOR, "^", returnInfoFirst);
+  prim_def(PRIM_AND, "&", returnInfoFirstDeref);
+  prim_def(PRIM_OR, "|", returnInfoFirstDeref);
+  prim_def(PRIM_XOR, "^", returnInfoFirstDeref);
   prim_def(PRIM_POW, "**", returnInfoNumericUp);
 
   prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
@@ -448,13 +505,14 @@ initPrimitive() {
   prim_def(PRIM_AND_ASSIGN, "&=", returnInfoVoid, true);
   prim_def(PRIM_OR_ASSIGN, "|=", returnInfoVoid, true);
   prim_def(PRIM_XOR_ASSIGN, "^=", returnInfoVoid, true);
+  prim_def(PRIM_REDUCE_ASSIGN, "reduce=", returnInfoVoid, true);
 
   prim_def(PRIM_MIN, "_min", returnInfoFirst);
   prim_def(PRIM_MAX, "_max", returnInfoFirst);
 
   prim_def(PRIM_SETCID, "setcid", returnInfoVoid, true, true);
   prim_def(PRIM_TESTCID, "testcid", returnInfoBool, false, true);
-  prim_def(PRIM_GETCID, "getcid", returnInfoBool, false, true);
+  prim_def(PRIM_GETCID, "getcid", returnInfoInt32, false, true);
   prim_def(PRIM_SET_UNION_ID, "set_union_id", returnInfoVoid, true, true);
   prim_def(PRIM_GET_UNION_ID, "get_union_id", returnInfoDefaultInt, false, true);
   prim_def(PRIM_GET_MEMBER, ".", returnInfoGetMemberRef);
@@ -470,6 +528,9 @@ initPrimitive() {
 
   prim_def(PRIM_ADDR_OF, "addr of", returnInfoRef);
   prim_def(PRIM_DEREF,   "deref",   returnInfoVal, false, true);
+  // If the argument is a reference, simply return it. Otherwise, return a
+  // ref to the arg. The result is always a reference.
+  prim_def(PRIM_SET_REFERENCE, "set reference", returnInfoAsRef);
 
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
@@ -506,6 +567,7 @@ initPrimitive() {
   prim_def(PRIM_CHPL_COMM_GET_STRD, "chpl_comm_get_strd", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT_STRD, "chpl_comm_put_strd", returnInfoVoid, true, true);
 
+  prim_def(PRIM_OPTIMIZE_ARRAY_BLK_MULT, "optimize_array_blk_mult", returnInfoBool);
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
@@ -554,7 +616,7 @@ initPrimitive() {
   // PRIM_WIDE_GET_NODE. It might make sense to keep both of these
   // functions for debugging.
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
-  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoUInt64, false, true);
+  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoCVoidPtr, false, true);
   prim_def(PRIM_IS_WIDE_PTR, "is wide pointer", returnInfoBool);
 
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
@@ -606,6 +668,7 @@ initPrimitive() {
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
   prim_def(PRIM_FIELD_NAME_TO_NUM, "field name to num", returnInfoInt32);
   prim_def(PRIM_FIELD_BY_NUM, "field by num", returnInfoUnknown);
+  prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
@@ -631,6 +694,9 @@ initPrimitive() {
   prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
 
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
+
+  prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
+  prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

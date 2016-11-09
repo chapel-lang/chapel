@@ -56,8 +56,7 @@ enum direction {
   NW,
   N,
   NE,
-  ENE,
-  PIVOT
+  ENE
 }
 use direction;
 
@@ -323,12 +322,12 @@ proc recordPiece(piece, minimum, firstEmpty, pieceMask) {
 
 /* Returns the direction rotated 60 degrees clockwise */
 proc rotate(dir) {
-  return ((dir + 2) % PIVOT:int): direction;
+  return ((dir + 2) % direction.size): direction;
 }
 
 /* Returns the direction flipped on the horizontal axis */
 proc flip(dir) {
-  return ((PIVOT - dir:int) % PIVOT:int): direction;
+  return ((direction.size - dir) % direction.size): direction;
 }
 
 /* Calculate all 32 possible states for a 5-bit row and all rows that

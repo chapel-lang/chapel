@@ -30,16 +30,16 @@ CallInfo::CallInfo(CallExpr* icall, bool checkonly) :
   badcall(false)
 {
   if (SymExpr* se = toSymExpr(call->baseExpr))
-    name = se->var->name;
+    name = se->symbol()->name;
   else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(call->baseExpr))
     name = use->unresolved;
   if (call->numActuals() >= 2) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
-      if (se->var == gModuleToken) {
+      if (se->symbol() == gModuleToken) {
         se->remove();
         se = toSymExpr(call->get(1));
         INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
+        ModuleSymbol* mod = toModuleSymbol(se->symbol());
         INT_ASSERT(mod);
         se->remove();
         scope = mod->block;
@@ -55,17 +55,17 @@ CallInfo::CallInfo(CallExpr* icall, bool checkonly) :
     }
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
-    Type* t = se->var->type;
-    if (t == dtUnknown && ! se->var->hasFlag(FLAG_TYPE_VARIABLE) ) {
+    Type* t = se->symbol()->type;
+    if (t == dtUnknown && ! se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) ) {
       if (checkonly) badcall = true;
       else USR_FATAL(call, "use of '%s' before encountering its definition, "
-                           "type unknown", se->var->name);
+                           "type unknown", se->symbol()->name);
     }
     if (t->symbol->hasFlag(FLAG_GENERIC)) {
       if (checkonly) badcall = true;
       else INT_FATAL(call, "the type of the actual argument '%s' is generic",
-                            se->var->name);
+                            se->symbol()->name);
     }
-    actuals.add(se->var);
+    actuals.add(se->symbol());
   }
 }

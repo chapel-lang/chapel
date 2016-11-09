@@ -28,10 +28,15 @@
 #include <unistd.h>
 #include <errno.h>
 
-static const int CR_Left = 210;
+// Color Reference location and height
+static const int cr_x = 180;
+static const int cr_y = 35;  
+static const int cr_h = 20;
+
 
 Settings::Settings (int x, int y, int W, int H, const char *l)
-  :  Fl_Double_Window (W, H, l) {
+  :  Fl_Group (x, y, W, H, l) {
+  VisSettings.readFromFile();
   copyIn();
 }
 
@@ -94,23 +99,18 @@ void Settings::setHotColor(void)
 
 void Settings::draw(void)
 {
-  int cr_y = 45;  
-  int cr_h = 25;
-
-  //saveWH->value(VisSettings.save_WH);
-
-  Fl_Double_Window::draw();
+  Fl_Group::draw();
 
   // Color Reference
   int ix;
   for (ix = 0; ix <= 30; ix++) {
     fl_color(heatColor(ix+1,31));
     fl_line_style(FL_SOLID,3,NULL);
-    fl_line(CR_Left+3*ix,cr_y,CR_Left+3*ix,cr_y+cr_h);
+    fl_line(x()+cr_x+3*ix, y()+cr_y, x()+cr_x+3*ix, y()+cr_y+cr_h);
     if ((ix%3) == 0) {
       fl_color(FL_BLACK);
       fl_line_style(FL_SOLID,1,NULL);
-      fl_line(CR_Left+3*ix, cr_y+cr_h+2, CR_Left+3*ix, cr_y+cr_h+6);
+      fl_line(x()+cr_x+3*ix, y()+cr_y+cr_h+2, x()+cr_x+3*ix, y()+cr_y+cr_h+6);
     }
   }
 
@@ -123,7 +123,7 @@ void Settings::draw(void)
 //           minR minG minB maxR maxG maxB save_WH
 //
 
-void SettingsData::saveToFile (void)
+void SettingsData::saveToFile (bool saveAll)
 {
   char *home = getenv("HOME");
   if (!home) {
@@ -148,9 +148,27 @@ void SettingsData::saveToFile (void)
 
   FILE *setF = fopen(name, "w");
   if (setF) {
+    if (saveAll) {
+      file_minG = minG;
+      file_minB = minB;
+      file_minR = minR;
+      file_maxG = maxG;
+      file_maxB = maxB;
+      file_maxR = maxR;
+    } else if (!didReadFile) {
+      // Set the defaults to write to the file.
+      file_minR = 0;
+      file_minG = 180;
+      file_minB = 255;
+      file_maxR = 255;
+      file_maxG = 0;
+      file_maxB = 0;
+    }
+
     // Write the data
     fprintf (setF, "%lf %lf %lf %lf %lf %lf %d %d %d\n",
-             minR, minG, minB, maxR, maxG, maxB, save_WH, mainW, mainH);
+             file_minR, file_minG, file_minB, file_maxR, file_maxG, file_maxB,
+             save_WH, mainW, mainH);
     fclose(setF);
   } else {
     fl_alert ("Could not make %s: %s.\n", name, strerror(errno));
@@ -167,21 +185,36 @@ void SettingsData::readFromFile (void)
   int namelen = strlen(home)+20;
   char name[namelen];
   snprintf (name, namelen, "%s/.cache/chplvis", home);
+  didReadFile = false;
 
   FILE *setF;
   if (access(name, R_OK) == 0) {
     setF = fopen(name, "r");
     if (setF) {
       int sWH;
-      int nr = fscanf (setF, "%lf %lf %lf %lf %lf %lf %d %d %d", &minR, &minG, &minB,
-                      &maxR, &maxG, &maxB, &sWH, &mainW, &mainH);
+      int nr = fscanf (setF, "%lf %lf %lf %lf %lf %lf %d %d %d", &file_minR,
+                       &file_minG, &file_minB, &file_maxR, &file_maxG,
+                       &file_maxB, &sWH, &mainW, &mainH);
       if (nr != 9) {
         fl_alert ("Settings corrupt, reverting to default settings.");
-        VisSettings.setDefaults();
+        setDefaults();
       } else {
         save_WH = sWH == 1;
+        minG = file_minG;
+        minB = file_minB;
+        minR = file_minR;
+        maxG = file_maxG;
+        maxB = file_maxB;
+        maxR = file_maxR;
+        if (!save_WH) {
+          // Ignore file's W and H if not "saved"
+          mainW = 560;
+          mainH = 600;
+        }
+        didReadFile = true;
       }
       fclose(setF);
     }
-  }
+  } else
+    setDefaults();
 }

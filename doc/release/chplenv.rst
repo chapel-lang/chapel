@@ -33,7 +33,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.13.1
+        export CHPL_HOME=~/chapel-1.14.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -403,6 +403,8 @@ CHPL_ATOMICS
         ===========  =====================================================
         Value        Description
         ===========  =====================================================
+        cstdlib      implement Chapel atomics as a wrapper around C
+                     standard atomics (from C11)
         intrinsics   implement atomics using target compiler intrinsics
                      (which typically map down to hardware capabilities)
         locks        implement atomics by using Chapel sync variables to
@@ -411,7 +413,10 @@ CHPL_ATOMICS
 
    If unset, CHPL_ATOMICS defaults to ``intrinsics`` for most configurations.
    On some 32 bit platforms, or if the target compiler is ``pgi`` or
-   ``cray-prgenv-pgi`` it defaults to ``locks``.
+   ``cray-prgenv-pgi`` it defaults to ``locks``.  In a future release,
+   ``cstdlib`` will become the default whenever possible.  At this
+   time, though, most C compilers either do not support standard
+   atomics or have bugs in their implementation.
 
    .. note::
      gcc 4.8.1 added support for 64 bit atomics on 32 bit platforms.  We
@@ -629,6 +634,8 @@ the option via an environment variable.  To see a list of the environment
 variables that support each option, run the compiler with the ``--help-env``
 flag.  For boolean flags and toggles, setting the environment variable to any
 value selects that flag.
+
+.. _readme-chplenv.chplconfig:
 
 Chapel Configuration File
 -------------------------

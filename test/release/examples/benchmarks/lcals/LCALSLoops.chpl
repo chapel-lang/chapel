@@ -45,152 +45,99 @@ module LCALSLoops {
     stat.loop_is_run = true;
     select iloop {
       when LoopKernelID.REF_LOOP {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
+        for i in 1..3 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.PRESSURE_CALC {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
-        initData(loop_data.RealArray_1D[4], 5);
+        for i in 1..5 do
+          initData(loop_data.RealArray_1D[i-1], i);
 
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.PRESSURE_CALC_ALT {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
-        initData(loop_data.RealArray_1D[4], 5);
+        for i in 1..5 do
+          initData(loop_data.RealArray_1D[i-1], i);
 
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.ENERGY_CALC {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
-        initData(loop_data.RealArray_1D[4], 5);
-        initData(loop_data.RealArray_1D[5], 6);
-        initData(loop_data.RealArray_1D[6], 7);
-        initData(loop_data.RealArray_1D[7], 8);
-        initData(loop_data.RealArray_1D[8], 9);
-        initData(loop_data.RealArray_1D[9], 10);
-        initData(loop_data.RealArray_1D[10], 11);
-        initData(loop_data.RealArray_1D[11], 12);
-        initData(loop_data.RealArray_1D[12], 13);
-        initData(loop_data.RealArray_1D[13], 14);
-        initData(loop_data.RealArray_1D[14], 15);
+        for i in 1..15 do
+          initData(loop_data.RealArray_1D[i-1], i);
 
         initData(loop_data.RealArray_scalars, 1);
       }
-      when LoopKernelID.ENERGY_CALC {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
-        initData(loop_data.RealArray_1D[4], 5);
-        initData(loop_data.RealArray_1D[5], 6);
-        initData(loop_data.RealArray_1D[6], 7);
-        initData(loop_data.RealArray_1D[7], 8);
-        initData(loop_data.RealArray_1D[8], 9);
-        initData(loop_data.RealArray_1D[9], 10);
-        initData(loop_data.RealArray_1D[10], 11);
-        initData(loop_data.RealArray_1D[11], 12);
-        initData(loop_data.RealArray_1D[12], 13);
-        initData(loop_data.RealArray_1D[13], 14);
-        initData(loop_data.RealArray_1D[14], 15);
+      when LoopKernelID.ENERGY_CALC_ALT {
+        for i in 1..15 do
+          initData(loop_data.RealArray_1D[i-1], i);
 
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.VOL3D_CALC {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
+        for i in 1..4 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.DEL_DOT_VEC_2D {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
-        initData(loop_data.RealArray_1D[4], 5);
+        for i in 1..5 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.COUPLE {
-        initData(loop_data.ComplexArray_1D[0], 1);
-        initData(loop_data.ComplexArray_1D[1], 2);
-        initData(loop_data.ComplexArray_1D[2], 3);
-        initData(loop_data.ComplexArray_1D[3], 4);
-        initData(loop_data.ComplexArray_1D[4], 5);
+        for i in 1..5 do
+          initData(loop_data.ComplexArray_1D[i-1], i);
       }
       when LoopKernelID.FIR {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
+        for i in 1..2 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.INIT3 {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
-        initData(loop_data.RealArray_1D[4], 5);
+        for i in 1..5 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.MULADDSUB {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
-        initData(loop_data.RealArray_1D[4], 5);
+        for i in 1..5 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.IF_QUAD {
-         initData(loop_data.RealArray_1D[0], 1);
-         initData(loop_data.RealArray_1D[1], 2);
-         initData(loop_data.RealArray_1D[2], 3);
-         initData(loop_data.RealArray_1D[3], 4);
-         initData(loop_data.RealArray_1D[4], 5);
+         for i in 1..5 do
+           initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.TRAP_INT {
         initData(loop_data.IndxArray_1D[0], 1);
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.HYDRO_1D {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
+        for i in 1..3 do
+          initData(loop_data.RealArray_1D[i-1], i);
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.ICCG {
-        initData(loop_data.RealArray_1D_Nx4[0], 1);
-        initData(loop_data.RealArray_1D_Nx4[1], 2);
+        for i in 1..2 do
+          initData(loop_data.RealArray_1D_Nx4[i-1], i);
       }
       when LoopKernelID.INNER_PROD {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
+        for i in 1..2 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.BAND_LIN_EQ {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
+        for i in 1..2 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.TRIDIAG_ELIM {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
+        for i in 1..2 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.EOS {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
+        for i in 1..4 do
+          initData(loop_data.RealArray_1D[i-1], i);
+
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.ADI {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_3D_2xNx4[0], 1);
-        initData(loop_data.RealArray_3D_2xNx4[1], 2);
-        initData(loop_data.RealArray_3D_2xNx4[2], 3);
+        for i in 1..3 do
+          initData(loop_data.RealArray_1D[i-1], i);
+
+        for i in 1..3 do
+          initData(loop_data.RealArray_3D_2xNx4[i-1], i);
+
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.INT_PREDICT {
@@ -198,98 +145,66 @@ module LCALSLoops {
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.DIFF_PREDICT {
-        initData(loop_data.RealArray_2D_Nx25[0], 1);
-        initData(loop_data.RealArray_2D_Nx25[1], 2);
+        for i in 1..2 do
+          initData(loop_data.RealArray_2D_Nx25[i-1], i);
       }
       when LoopKernelID.FIRST_SUM {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
+        for i in 1..2 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.FIRST_DIFF {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
+        for i in 1..2 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.PIC_2D {
-        initData(loop_data.RealArray_2D_Nx25[0], 1);
-        initData(loop_data.RealArray_2D_Nx25[1], 2);
-        initData(loop_data.RealArray_2D_Nx25[2], 3);
+        for i in 1..3 do
+          initData(loop_data.RealArray_2D_Nx25[i-1], i);
 
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.IndxArray_1D[0], 1);
-        initData(loop_data.IndxArray_1D[1], 2);
+        for i in 1..2 do
+          initData(loop_data.RealArray_1D[i-1], i);
+
+        for i in 1..2 do
+          initData(loop_data.IndxArray_1D[i-1], i);
 
         initData(loop_data.RealArray_2D_64x64[0], 1);
       }
       when LoopKernelID.PIC_1D {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
-        initData(loop_data.RealArray_1D[4], 5);
-        initData(loop_data.RealArray_1D[5], 6);
-        initData(loop_data.RealArray_1D[6], 7);
-        initData(loop_data.RealArray_1D[7], 8);
-        initData(loop_data.RealArray_1D[8], 9);
+        for i in 1..9 do
+          initData(loop_data.RealArray_1D[i-1], i);
 
         initData(loop_data.RealArray_scalars, 1);
-
-        initData(loop_data.IndxArray_1D[2], 3);
-        initData(loop_data.IndxArray_1D[3], 4);
-        initData(loop_data.IndxArray_1D[4], 5);
+        for i in 3..5 do
+          initData(loop_data.IndxArray_1D[i-1], i);
       }
       when LoopKernelID.HYDRO_2D {
-        initData(loop_data.RealArray_2D_7xN[0], 1);
-        initData(loop_data.RealArray_2D_7xN[1], 2);
-        initData(loop_data.RealArray_2D_7xN[2], 3);
-        initData(loop_data.RealArray_2D_7xN[3], 4);
-        initData(loop_data.RealArray_2D_7xN[4], 5);
-        initData(loop_data.RealArray_2D_7xN[5], 6);
-        initData(loop_data.RealArray_2D_7xN[6], 7);
-        initData(loop_data.RealArray_2D_7xN[7], 8);
-        initData(loop_data.RealArray_2D_7xN[8], 9);
-        initData(loop_data.RealArray_2D_7xN[9], 10);
-        initData(loop_data.RealArray_2D_7xN[10], 11);
+        for i in 1..11 do
+          initData(loop_data.RealArray_2D_7xN[i-1], i);
       }
       when LoopKernelID.GEN_LIN_RECUR {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
+        for i in 1..3 do
+          initData(loop_data.RealArray_1D[i-1], i);
 
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.DISC_ORD {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
-        initData(loop_data.RealArray_1D[4], 5);
-        initData(loop_data.RealArray_1D[5], 6);
-        initData(loop_data.RealArray_1D[6], 7);
-        initData(loop_data.RealArray_1D[7], 8);
-        initData(loop_data.RealArray_1D[8], 9);
+        for i in 1..9 do
+          initData(loop_data.RealArray_1D[i-1], i);
 
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.MAT_X_MAT {
-        initData(loop_data.RealArray_2D_Nx25[0], 1);
-        initData(loop_data.RealArray_2D_Nx25[1], 2);
+        for i in 1..2 do
+          initData(loop_data.RealArray_2D_Nx25[i-1], i);
+
         initData(loop_data.RealArray_2D_64x64[0], 1);
       }
       when LoopKernelID.PLANCKIAN {
-        initData(loop_data.RealArray_1D[0], 1);
-        initData(loop_data.RealArray_1D[1], 2);
-        initData(loop_data.RealArray_1D[2], 3);
-        initData(loop_data.RealArray_1D[3], 4);
-        initData(loop_data.RealArray_1D[4], 5);
+        for i in 1..5 do
+          initData(loop_data.RealArray_1D[i-1], i);
       }
       when LoopKernelID.IMP_HYDRO_2D {
-        initData(loop_data.RealArray_2D_7xN[0], 1);
-        initData(loop_data.RealArray_2D_7xN[1], 2);
-        initData(loop_data.RealArray_2D_7xN[2], 3);
-        initData(loop_data.RealArray_2D_7xN[3], 4);
-        initData(loop_data.RealArray_2D_7xN[4], 5);
-        initData(loop_data.RealArray_2D_7xN[5], 6);
+        for i in 1..6 do
+          initData(loop_data.RealArray_2D_7xN[i-1], i);
       }
       when LoopKernelID.FIND_FIRST_MIN {
         initData(loop_data.RealArray_1D[0], 1);

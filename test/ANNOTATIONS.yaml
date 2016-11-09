@@ -166,7 +166,26 @@ all:
     - remove volatile on real atomics, make atomic_load atomic (#4491)
     - use "distrib" scheduler for numa instead of "sherwood" (#4505)
   09/14/16:
-    - enable native qthreds sync vars (#4506)
+    - enable native qthreads sync vars (#4506)
+  09/15/16:
+    - use atomic spin-lock instead of sync for reductions (#4532)
+  09/16/16:
+    - Turn denormalization off by default (#4545)
+  09/18/16:
+    - Added optimization to remove inner multiply in dsiAccess (#4510)
+  09/20/16:
+    - Add promoted fast follower support (#4558)
+  10/18/16:
+    - First step to transition to qualified references (#4745)
+  10/27/16:
+    - Improve Array Memory Management (#4762)
+  11/04/16:
+    - text: Improve RVF by inferring const-refs (#4814)
+      config: 16 node XC
+  11/08/16:
+    - text: RVF arrays in records (#4821)
+      config: 16 node XC
+
 
 AllCompTime:
   11/09/14:
@@ -214,6 +233,16 @@ binary-trees:
     - upgrade jemalloc to 4.2.0 (#3919)
   06/13/16:
     - polish to binary-trees versions (#4017)
+  09/21/16:
+    - switch from type method factory to init()-based implementation (#4598)
+  09/22/16:
+    - simplify init()-based implementation (#4609)
+
+binarytrees-submitted:
+  09/21/16:
+    - switch from type method factory to init()-based implementation (#4598)
+  09/22/16:
+    - simplify init()-based implementation (#4609)
 
 chameneos-redux:
   07/08/13:
@@ -224,6 +253,12 @@ compSampler-timecomp:
     - disable function resolution optimization (#4476)
   09/14/16:
     - re-enable function resolution optimization (#4517)
+
+cg:
+  09/20/16:
+    - Strided Array Support in Sort/Search Modules (#4569)
+  09/22/16:
+    - Added overloaded compileErrors for Sort/Search (#4621)
 
 cg-sparse-timecomp:
   09/09/16:
@@ -509,6 +544,14 @@ parOpEquals:
 pidigits:
   05/16/16:
     - switched release version to use ledrug algorithm
+  09/24/16:
+    - rearranged pidigits; release versions now use bigints (#4655-6)
+
+pidigits-submitted:
+  05/16/16:
+    - switched release version to use ledrug algorithm
+  09/24/16:
+    - rearranged pidigits; release versions now use bigints (#4655-6)
 
 prk-stencil:
   02/14/16:

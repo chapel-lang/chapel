@@ -19,7 +19,7 @@
 
 /*
 
-   Support for the visualization tool "chplvis"
+   Support for the visualization tool :ref:`chplvis`.
 
    This module provides access to and enables hooks to dump out
    task and communication information for post-run visualization
@@ -38,7 +38,7 @@ module VisualDebug
   config param DefaultVisualDebugOn = true;
 
   /*
-    If this is `true`, data collection to support chplvis reporting is
+    If this is `true`, data collection to support :ref:`chplvis` reporting is
     turned on.
     It defaults to the value of :param:`DefaultVisualDebugOn`, but can
     be changed at execution time.
@@ -111,7 +111,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
 
 /*
   Start logging events for VisualDebug.  Open a new set of data
-  files, one for each locale, for chplvis.  This routine should be
+  files, one for each locale, for :ref:`chplvis`.  This routine should be
   called only once for each program.  It creates a directory with the
   rootname and creates the files in that directory.  The files are
   named with the rootname and "-n" is added where n is the locale
@@ -128,7 +128,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
   }
 
 /*
-  Add a tag to the data for chplvis to allow "view points" in the data.
+  Add a tag to the data for :ref:`chplvis` to allow "view points" in the data.
 
   :arg tagname: name of the tag
 */

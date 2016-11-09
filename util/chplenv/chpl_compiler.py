@@ -54,7 +54,7 @@ def get(flag='host'):
             compiler_val = 'ibm'
         elif platform_val == 'marenostrum':
             compiler_val = 'ibm'
-        elif platform_val == 'darwin':
+        elif platform_val == 'darwin' or platform_val == 'freebsd':
             if find_executable('clang'):
                 compiler_val = 'clang'
             else:

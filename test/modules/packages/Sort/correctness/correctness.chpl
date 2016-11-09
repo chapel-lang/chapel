@@ -7,199 +7,208 @@ use Random;
 
 proc main() {
 
-  // Array to sort
-  var Arr = [-1,-4, 2, 3],
-   StrArr = ['anthony', 'david', 'Brad', 'ben'];
-
-  // Correctness arrays
-  const ArrAbsSorted = [-1, 2, 3, -4],
-           ArrSorted = [-4, -1, 2, 3],
-        ArrRevSorted = [ 3, 2, -1, -4],
-     ArrAbsRevSorted = [ -4, 3, 2, -1],
-        StrArrSorted = ['Brad', 'anthony', 'ben', 'david'];
-
   // Comparators
-  const key = new keycomparator(),
-        compare = new compcomparator(),
-        keycompare = new keycompcomparator(),
-        revkey = new ReverseComparator(key),
-        revcompare = new ReverseComparator(compare),
-        tuplekey = new tuplecomparator();
+  const absKey = new AbsKeyCmp(),
+        absComp = new AbsCompCmp(),
+        absKeyComp = new AbsKeyCompCmp(),
+        revAbsKey = new ReverseComparator(absKey),
+        revAbsComp = new ReverseComparator(absComp),
+        tupleKey = new TupleCmp();
+
+  // Arrays and Domains
+  const largeD = {1..20}, // quickSort requires domain.size > 16
+        strideD = {2..8 by 2},
+      strideRevD = {2..8 by -2};
+  var largeA: [largeD] int,
+      strideA: [strideD] int = [-3, -1, 4, 5],
+      strideRevA: [strideRevD] int = [-3, -1, 4, 5];
+    [i in largeD] largeA[i] = i;
+
+  // Pre-sorted arrays paired with comparators to test
+  var tests = (
+                // Testing A.eltType
+                ([-4, -1, 2, 3], defaultComparator),
+                (['Brad', 'anthony', 'ben', 'david'], defaultComparator),
+
+                // Testing D.idxType / D.dims()
+                (largeA, defaultComparator),
+                (strideA, defaultComparator),
+                (strideRevA, defaultComparator),
+
+                // Testing comparators
+                ([-1, 2, 3, -4], absKey),
+                ([-1, 2, 3, -4], absComp),
+                ([-1, 2, 3, -4], absKeyComp),
+                ([ 3, 2, -1, -4], reverseComparator),
+                ([ -4, 3, 2, -1], revAbsKey),
+                ([ -4, 3, 2, -1], revAbsComp),
+                ([-4, -1, 2, 3], tupleKey)
+              );
 
 
-  /* Test data types */
+  /* Correctness test isSorted(), so that it can test the remaining sorts*/
+  {
+    var isSortedWorks= true;
 
-  // Integers
-  sort(Arr);
-  checkSort(Arr, ArrSorted, 'sort');
+    for param i in 1..tests.size {
+      var (arr, cmp) = tests(i);
 
-  // Strings
-  sort(StrArr);
-  checkSort(StrArr, StrArrSorted, 'sort');
+      if !isSorted(arr, comparator=cmp) {
+        writeln('isSorted failed to sort array:');
+        writeln('failed to sort:');
+        writeln('eltType:    ', arr.eltType:string);
+        writeln('idxType:    ', arr.domain.idxType:string);
+        writeln('dimensions: ', arr.domain.dims());
+        writeln('comparator: ', cmp.name());
+        isSortedWorks = false;
+      }
+    }
 
-  // Integers sorted as tuples
-  sort(Arr, comparator=tuplekey);
-  checkSort(Arr, ArrSorted, 'sort');
-
-  /* Key + Compare */
-
-  // key method sorts by abs(a), while compare is normal sort
-  sort(Arr, comparator=keycompare);
-  checkSort(Arr, ArrAbsSorted, 'sort');
-
-  /* Reverse */
-
-  // Default reversecomparator
-  sort(Arr, comparator=reverseComparator);
-  checkSort(Arr, ArrRevSorted, 'sort');
-
-  // Reverse key comparator (absolute value)
-  sort(Arr, comparator=revkey);
-  checkSort(Arr, ArrAbsRevSorted, 'sort');
-
-  // Reverse compare comparator (absolute value)
-  sort(Arr, comparator=revcompare);
-  checkSort(Arr, ArrAbsRevSorted, 'sort');
-
-  /* Test Sorts */
-
-  // bubbleSort
-  bubbleSort(Arr);
-  checkSort(Arr, ArrSorted, 'bubbleSort');
-
-  bubbleSort(Arr, comparator=key);
-  checkSort(Arr, ArrAbsSorted, 'bubbleSort', 'key');
-
-  bubbleSort(Arr, comparator=compare);
-  checkSort(Arr, ArrAbsSorted, 'bubbleSort', 'compare');
-
-  // insertionSort
-  insertionSort(Arr);
-  checkSort(Arr, ArrSorted, 'insertionSort');
-
-  insertionSort(Arr, comparator=key);
-  checkSort(Arr, ArrAbsSorted, 'insertionSort', 'key');
-
-  insertionSort(Arr, comparator=compare);
-  checkSort(Arr, ArrAbsSorted, 'insertionSort', 'compare');
-
-  // quickSort
-  quickSort(Arr);
-  checkSort(Arr, ArrSorted, 'quickSort');
-
-  quickSort(Arr, comparator=key);
-  checkSort(Arr, ArrAbsSorted, 'quickSort', 'key');
-
-  quickSort(Arr, comparator=compare);
-  checkSort(Arr, ArrAbsSorted, 'quickSort', 'compare');
-
-  // heapSort
-  heapSort(Arr);
-  checkSort(Arr, ArrSorted, 'heapSort');
-
-  heapSort(Arr, comparator=key);
-  checkSort(Arr, ArrAbsSorted, 'heapSort', 'key');
-
-  heapSort(Arr, comparator=compare);
-  checkSort(Arr, ArrAbsSorted, 'heapSort', 'compare');
-
-  // selectionSort
-  selectionSort(Arr);
-  checkSort(Arr, ArrSorted, 'selectionSort');
-
-  selectionSort(Arr, comparator=key);
-  checkSort(Arr, ArrAbsSorted, 'selectionSort', 'key');
-
-  selectionSort(Arr, comparator=compare);
-  checkSort(Arr, ArrAbsSorted, 'selectionSort', 'compare');
-
-  /* Test deprecated sorts */
-  // TODO - remove these for 1.15
-
-  // BubbleSort
-  BubbleSort(Arr);
-  checkSort(Arr, ArrSorted, 'BubbleSort');
-
-  BubbleSort(Arr, doublecheck=true);
-  checkSort(Arr, ArrSorted, 'BubbleSort');
-
-  BubbleSort(Arr, reverse=true);
-  checkSort(Arr, ArrRevSorted, 'BubbleSort');
-
-  // InsertionSort
-  InsertionSort(Arr);
-  checkSort(Arr, ArrSorted, 'InsertionSort');
-
-  InsertionSort(Arr, doublecheck=true);
-  checkSort(Arr, ArrSorted, 'InsertionSort');
-
-  InsertionSort(Arr, reverse=true);
-  checkSort(Arr, ArrRevSorted, 'InsertionSort');
-
-  // quickSort
-  QuickSort(Arr);
-  checkSort(Arr, ArrSorted, 'quickSort');
-
-  QuickSort(Arr, doublecheck=true);
-  checkSort(Arr, ArrSorted, 'quickSort');
-
-  QuickSort(Arr, reverse=true);
-  checkSort(Arr, ArrRevSorted, 'quickSort');
-
-  // HeapSort
-  HeapSort(Arr);
-  checkSort(Arr, ArrSorted, 'HeapSort');
-
-  HeapSort(Arr, doublecheck=true);
-  checkSort(Arr, ArrSorted, 'HeapSort');
-
-  HeapSort(Arr, reverse=true);
-  checkSort(Arr, ArrRevSorted, 'HeapSort');
-
-  // SelectionSort (not actually deprecated yet)
-  SelectionSort(Arr);
-  checkSort(Arr, ArrSorted, 'SelectionSort');
-
-  SelectionSort(Arr, doublecheck=true);
-  checkSort(Arr, ArrSorted, 'SelectionSort');
-
-  SelectionSort(Arr, reverse=true);
-  checkSort(Arr, ArrRevSorted, 'SelectionSort');
-
-}
-
-
-/* Checks array and resets values -- any output results in failure */
-proc checkSort(ref array, correct, sort:string, comparator:string='none') {
-  if !array.equals(correct) {
-    writeln(sort, ' with comparator: ', comparator, ' failed');
-    writeln('Incorrect array:');
-    writeln(array);
-    writeln('Expected correct array:');
-    writeln(correct);
+    if !isSortedWorks then
+      halt('isSorted() failed - cannot test remaining sort functions');
   }
-  shuffle(array, seed=42);
+
+  /* Correctness tests for sort routines */
+  // TODO -- functionalize these tests when FCF support allows it
+  {
+    for param i in 1..tests.size {
+      var (arr, cmp) = tests(i);
+      resetArray(arr, cmp);
+      sort(arr, comparator=cmp);
+      if !checkSort(arr, cmp) then
+        writeln('  for sort() function.\n');
+    }
+
+    for param i in 1..tests.size {
+      ref (arr, cmp) = tests(i);
+      resetArray(arr, cmp);
+      bubbleSort(arr, comparator=cmp);
+      if !checkSort(arr, cmp) then
+        writeln('  for bubbleSort() function.\n');
+    }
+
+    for param i in 1..tests.size {
+      var (arr, cmp) = tests(i);
+      resetArray(arr, cmp);
+      insertionSort(arr, comparator=cmp);
+      if !checkSort(arr, cmp) then
+        writeln('  for insertionSort() function.\n');
+    }
+
+    for param i in 1..tests.size {
+      var (arr, cmp) = tests(i);
+      resetArray(arr, cmp);
+      quickSort(arr, comparator=cmp);
+      if !checkSort(arr, cmp) then
+        writeln('  for quickSort() function.\n');
+    }
+
+    for param i in 1..tests.size {
+      var (arr, cmp) = tests(i);
+      resetArray(arr, cmp);
+      heapSort(arr, comparator=cmp);
+      if !checkSort(arr, cmp) then
+        writeln('  for heapSort() function.\n');
+    }
+
+    for param i in 1..tests.size {
+      var (arr, cmp) = tests(i);
+      resetArray(arr, cmp);
+      selectionSort(arr, comparator=cmp);
+      if !checkSort(arr, cmp) then
+        writeln('  for selectionSort() function.\n');
+    }
+
+    for param i in 1..tests.size {
+      var (arr, cmp) = tests(i);
+      resetArray(arr, cmp);
+      mergeSort(arr, comparator=cmp);
+      if !checkSort(arr, cmp) then
+        writeln('  for mergeSort() function.\n');
+    }
+  }
 }
 
 
-/* Defines manipulation of value that should be used for comparison */
-record keycomparator { }
-proc keycomparator.key(a) { return abs(a); }
+/* Checks if array is sorted with provided comparator */
+proc checkSort(arr, cmp) {
+  var result = true;
 
-
-/* Defines compare behavior, return 1, 0, or -1 */
-record compcomparator { }
-proc compcomparator.compare(a, b) {
-  return abs(a) - abs(b);
+  // Check result
+  if !isSorted(arr, cmp) {
+      writeln('failed to sort:');
+      writeln('eltType:    ', arr.eltType:string);
+      writeln('idxType:    ', arr.domain.idxType:string);
+      writeln('dimensions: ', arr.domain.dims());
+      writeln('comparator: ', cmp.name());
+      result = false;
+  }
+  return result;
 }
 
-/* key method should take priority over compare method */
-record keycompcomparator { }
-proc keycompcomparator.key(a) { return abs(a); }
-proc keycompcomparator.compare(a, b) {
-  return a - b;
+
+/* Checks if array is sorted */
+proc checkSort(arr) {
+  var result = true;
+
+  // Check result
+  if !isSorted(arr) {
+      writeln('failed to sort:');
+      writeln('eltType:    ', arr.eltType:string);
+      writeln('idxType:    ', arr.domain.idxType:string);
+      writeln('dimensions: ', arr.domain.dims());
+      result = false;
+  }
+  return result;
 }
+
+
+/* Reset array by shuffling until it's not sorted */
+proc resetArray(ref array) {
+  while isSorted(array) {
+    Random.shuffle(array);
+  }
+}
+
+
+/* Reset array by shuffling until it's not sorted with provided comparator */
+proc resetArray(ref array, cmp) {
+  while isSorted(array, cmp) {
+    Random.shuffle(array);
+  }
+}
+
+
+/* Enables more useful error messages */
+proc DefaultComparator.name() { return 'DefaultComparator';}
+proc ReverseComparator.name() { return 'ReverseComparator';}
+
+
+/* Key Sort by absolute value */
+record AbsKeyCmp {
+  proc key(a) { return abs(a); }
+  proc name() { return 'AbsKeyCmp'; }
+}
+
+
+/* Compare Sort by absolute value */
+record AbsCompCmp {
+  proc compare(a, b) { return abs(a) - abs(b); }
+  proc name() { return 'AbsCompCmp'; }
+}
+
+
+/* Key method should take priority over compare method */
+record AbsKeyCompCmp {
+  proc key(a) { return abs(a); }
+  proc compare(a, b) { return a - b; }
+  proc name() { return 'AbsKeyCompCmp'; }
+}
+
 
 /* Key method can return a non-numerical/string type, such as tuple */
-record tuplecomparator { }
-proc tuplecomparator.key(a) { return (a, a); }
+record TupleCmp {
+  proc key(a) { return (a, a); }
+  proc name() { return 'TupleCmp'; }
+}
+

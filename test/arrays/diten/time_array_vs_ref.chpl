@@ -2,6 +2,7 @@ config param printTimes = false;
 config param maxAdds = 5;
 config const size = 100000;
 config const nTrials = 100;
+config const maxDiff = 0.0001;
 
 proc arrayAccess(A: [] real, B: [] real, param nAdds) {
   const n = A.numElements;
@@ -44,7 +45,7 @@ proc main {
   t2.stop();
 
   for i in 0..#size do
-    if B[i] != C[i] then
+    if abs(B[i] - C[i]) > maxDiff then
       halt("At index ", i, ": ", B[i], " != ", C[i]);
 
   if printTimes {

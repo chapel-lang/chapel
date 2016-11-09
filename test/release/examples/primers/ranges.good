@@ -37,6 +37,17 @@ Implicit alignment set using 'by'
 Range 1..10 by -2 = 10, 8, 6, 4, 2
 Range ..5 by -3 = 5, 2, -1, ...
 
+The count operator
+Range 0..4 = 0, 1, 2, 3, 4
+Range 1..4 = 1, 2, 3, 4
+Range 7..10 by -1 = 10, 9, 8, 7
+Range 3..5 = 3, 4, 5
+
+Operators + and -
+Range 3..12 = 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+Range ..6 = ..., 4, 5, 6
+Range 0..9 by 2 = 0, 2, 4, 6, 8
+
 Range equality
 true
 true
@@ -61,15 +72,3 @@ A slice of 1..10 with 5.. by 2
 Range 5..10 by 2 = 5, 7, 9
 A slice of 1.. with ..5
 Range 1..5 = 1, 2, 3, 4, 5
-
-Operators + and -
-Range 3..12 = 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
-Range ..6 = ..., 4, 5, 6
-Range 0..9 by 2 = 0, 2, 4, 6, 8
-
-The count operator
-Range 0..4 = 0, 1, 2, 3, 4
-Range 1..4 = 1, 2, 3, 4
-Range 7..10 by -1 = 10, 9, 8, 7
-Range 3..5 = 3, 4, 5
-

@@ -198,7 +198,8 @@ bool AstDump::enterDefExpr(DefExpr* node) {
         write("single");
       }
 
-      writeSymbol("var", sym, true);
+      write(true, sym->qualType().qualStr(), false);
+      writeSymbol("", sym, true);
       writeFlags(mFP, sym);
 
     } else if (isLabelSymbol(sym)) {
@@ -236,7 +237,7 @@ void AstDump::exitNamedExpr(NamedExpr* node) {
 // SymExpr
 //
 void AstDump::visitSymExpr(SymExpr* node) {
-  Symbol*    sym = node->var;
+  Symbol*    sym = node->symbol();
   VarSymbol* var = toVarSymbol(sym);
 
   if (isBlockStmt(node->parentExpr) == true) {
@@ -500,8 +501,8 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
   }
 
   if (SymExpr* label = toSymExpr(node->label)) {
-    if (label->var != gNil) {
-      writeSymbol(label->var, true);
+    if (label->symbol() != gNil) {
+      writeSymbol(label->symbol(), true);
     }
   }
 

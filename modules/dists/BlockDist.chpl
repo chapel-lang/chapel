@@ -213,7 +213,8 @@ The ``Block`` class constructor is defined as follows:
       dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
       dataParMinGranularity     = // value of  dataParMinGranularity      config const,
       param rank                = boundingBox.rank,
-      type  idxType             = boundingBox.idxType)
+      type  idxType             = boundingBox.idxType,
+      type  sparseLayoutType    = DefaultDist)
 
 The arguments ``boundingBox`` (a domain) and ``targetLocales`` (an array)
 define the mapping of any index of ``idxType`` type to a locale
@@ -238,6 +239,9 @@ domains "dmapped" using that Block instance. If the ``boundingBox`` argument is
 a stridable domain, the stride information will be ignored and the
 ``boundingBox`` will only use the lo..hi bounds.
 
+When a ``sparse subdomain`` is created for a ``Block`` distributed domain, the
+``sparseLayoutType`` will be the layout of these sparse domains. The default is
+currently coordinate, but :class:`LayoutCSR.CSR` is an interesting alternative.
 
 **Data-Parallel Iteration**
 
@@ -250,6 +254,52 @@ Parallelism within each locale is guided by the values of
 ``dataParMinGranularity`` of the respective Block instance.
 Updates to these values, if any, take effect only on the locale
 where the updates are made.
+
+**Sparse Subdomains**
+
+When a ``sparse subdomain`` is declared as a subdomain to a Block-distributed
+domain, the resulting sparse domain will also be Block-distributed. The
+sparse layout used in this sparse subdomain can be controlled with the
+``sparseLayoutType`` constructor argument to Block.
+
+This example demonstrates a Block-distributed sparse domain and array:
+
+  .. code-block:: chapel
+
+   use BlockDist;
+
+    const Space = {1..8, 1..8};
+
+    // Declare a dense, Block-distributed domain.
+    const DenseDom: domain(2) dmapped Block(boundingBox=Space) = Space;
+
+    // Declare a sparse subdomain.
+    // Since DenseDom is Block-distributed, SparseDom will be as well.
+    var SparseDom: sparse subdomain(DenseDom);
+
+    // Add some elements to the sparse subdomain.
+    // SparseDom.bulkAdd is another way to do this that allows more control.
+    SparseDom += [ (1,2), (3,6), (5,4), (7,8) ];
+
+    // Declare a sparse array.
+    // This array is also Block-distributed.
+    var A: [SparseDom] int;
+
+    A = 1;
+
+    writeln( "A[(1, 1)] = ", A[1,1]);
+    for (ij,x) in zip(SparseDom, A) {
+      writeln( "A[", ij, "] = ", x, " on locale ", x.locale);
+    }
+
+   // Results in this output when run on 4 locales:
+   // A[(1, 1)] = 0
+   // A[(1, 2)] = 1 on locale LOCALE0
+   // A[(3, 6)] = 1 on locale LOCALE1
+   // A[(5, 4)] = 1 on locale LOCALE2
+   // A[(7, 8)] = 1 on locale LOCALE3
+
+
 */
 class Block : BaseDist {
   param rank: int;
@@ -262,7 +312,6 @@ class Block : BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
   type sparseLayoutType = DefaultDist;
-  var pid: int = -1; // privatized object id (this should be factored out)
 }
 
 //
@@ -296,7 +345,6 @@ class BlockDom: BaseRectangularDom {
   const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
 }
 
 //
@@ -335,7 +383,6 @@ class BlockArr: BaseArr {
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
 
@@ -460,7 +507,7 @@ proc Block.dsiClone() {
                    sparseLayoutType);
 }
 
-proc Block.dsiDestroyDistClass() {
+proc Block.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
@@ -923,6 +970,13 @@ proc BlockDom.setup() {
   }
 }
 
+proc BlockDom.dsiDestroyDom() {
+  coforall localeIdx in dist.targetLocDom do {
+    on locDoms(localeIdx) do
+      delete locDoms(localeIdx);
+  }
+}
+
 proc BlockDom.dsiMember(i) {
   return whole.member(i);
 }
@@ -1004,6 +1058,14 @@ proc BlockArr.setup() {
   if doRADOpt && disableBlockLazyRAD then setupRADOpt();
 }
 
+proc BlockArr.dsiDestroyArr(isslice:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
+}
+
 inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
   // modified from DefaultRectangularArr.getDataIndex
   if stridable {
@@ -1033,7 +1095,11 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 // By splitting the non-local case into its own function, we can inline the
 // fast/local path and get better performance.
 //
-inline proc BlockArr.dsiAccess(i: rank*idxType) ref {
+// BHARSH TODO: Should this argument have the 'const in' intent? If it is
+// remote, the commented-out local block will fail.
+//
+inline proc BlockArr.dsiAccess(idx: rank*idxType) ref {
+  var i = idx;
   local {
     if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);

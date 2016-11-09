@@ -85,6 +85,30 @@ struct localeData {
                  numTasks(0), runConc(0), maxConc(0) {};
 };
 
+// File names, rel2Home says the names starts with $CHPL_HOME
+typedef struct filename {
+  char * name;
+  bool rel2Home;
+} filename;
+
+// Function names
+typedef struct funcInfo {
+  char *name;
+  long  fileNo;
+  long  lineNo;
+  std::list<Event *> func_events;
+  long  noOnTasks;
+  long  noTasks;
+  long  noGets;
+  long  noPuts;
+  double clockTime;
+
+  funcInfo(): name(NULL), fileNo(0), lineNo(0), noOnTasks(0), noTasks(0),
+    noGets(0), noPuts(0), clockTime() {};
+  
+} funcInfo;
+
+
 // Primary data structure built by reading the data files dumped by using VisualDebug.chpl
 
 class DataModel {
@@ -103,11 +127,21 @@ class DataModel {
 
  private:
 
+  int      mainTID;
   taskData mainTask;
 
   StringCache strDB;
-  char **strTbl;
-  int strTblSize;
+
+  // File name help
+  const char *chpl_home;
+  const char *dir;
+
+  filename *fileTbl;
+  int fileTblSize;
+
+  funcInfo *funcTbl;
+  int funcTblSize;
+  
   std::vector<const char *> tagNames;
 
   typedef std::list<Event*>::iterator evItr;
@@ -209,6 +243,39 @@ class DataModel {
 
   double start_clock() {
     return (*theEvents.begin())->clock_time();
+  }
+
+  // File name access
+
+  int numFileNames (void) { return fileTblSize; }
+
+  const char *fileName (long fileNo) {
+    return (fileNo >= 0 && fileNo < fileTblSize) ?
+      fileTbl[fileNo].name : "<unknown>";
+  }
+
+  bool fileIsRel2Home (long fileNo) {
+    return (fileNo >= 0 && fileNo < fileTblSize) ?
+      fileTbl[fileNo].rel2Home : false ; 
+  }
+
+  // void CHPL_HOME(const char *h) { chpl_home = h; }
+  const char * CHPL_HOME() { return chpl_home; }
+
+  // void DIR(const char *d) { dir = d; }
+  const char * DIR() { return dir; }
+
+  // Function name access
+
+  int numFunctionNames (void) { return funcTblSize; }
+
+  const funcInfo* getFunctionInfo (int funcNo) {
+    if (funcNo >= 0 && funcNo < funcTblSize) {
+      return &funcTbl[funcNo];
+    } else {
+      printf("getFunctionInfo returning NULL for %d.\n", funcNo);
+      return NULL;
+    }
   }
   
   // Constructor for DataModel

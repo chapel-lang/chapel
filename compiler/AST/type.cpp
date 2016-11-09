@@ -216,6 +216,14 @@ void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
 }
 
+bool QualifiedType::isRefType() const {
+  return _type->symbol->hasFlag(FLAG_REF);
+}
+
+bool QualifiedType::isWideRefType() const {
+  return _type->symbol->hasFlag(FLAG_WIDE_REF);
+}
+
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
   constants(), integerType(NULL),
@@ -294,7 +302,7 @@ void EnumType::codegenDef() {
 
         if(constant->init == NULL) INT_FATAL(this, "no constant->init");
 
-        VarSymbol* s = toVarSymbol(toSymExpr(constant->init)->var);
+        VarSymbol* s = toVarSymbol(toSymExpr(constant->init)->symbol());
         INT_ASSERT(s);
         INT_ASSERT(s->immediate);
 
@@ -344,7 +352,7 @@ void EnumType::sizeAndNormalize() {
         SymExpr* sym = toSymExpr(constant->init);
 
         // We think that all params should have init values by now.
-        INT_ASSERT(sym && !sym->var->hasFlag(FLAG_PARAM));
+        INT_ASSERT(sym && !sym->symbol()->hasFlag(FLAG_PARAM));
 
         // So we're going to blame this on the user.
         USR_FATAL(constant,
@@ -389,8 +397,7 @@ void EnumType::sizeAndNormalize() {
           constant->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
         }
       }
-      constant->init->parentExpr = constant;
-      constant->init->parentSymbol = constant->parentSymbol;
+      parent_insert_help(constant, constant->init);
     }
     if( first ) {
       min_v = v;
@@ -682,6 +689,10 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
 
   if (def->parentSymbol || def->list)
     def->remove();
+
+  // Lydia note (Sept 2, 2016): Based on control flow, this adds even the
+  // function symbols we just handled into the fields alist for the type.
+  // Shouldn't placing them in ct->methods be sufficient?
   if (tail)
     ct->fields.insertAtTail(def);
   else
@@ -1293,6 +1304,50 @@ Symbol* AggregateType::getField(const char* name, bool fatal) {
 
 Symbol* AggregateType::getField(int i) {
   return toDefExpr(fields.get(i))->sym;
+}
+
+QualifiedType AggregateType::getFieldType(Expr* e) {
+  SymExpr* sym = NULL;
+  VarSymbol* var = NULL;
+
+  sym = toSymExpr(e);
+  if (sym)
+    var = toVarSymbol(sym->symbol());
+
+  const char* name = NULL;
+
+  // Special case: An integer field name is actually a tuple member index.
+  {
+    int64_t i;
+    if (get_int(sym, &i)) {
+      name = astr("x", istr(i));
+    }
+  }
+
+  // Typical case: field is identified by its name
+  if (var && var->immediate)
+    name = var->immediate->v_string;
+
+  // Special case: star tuples can have run-time integer field access
+  if (name == NULL && this->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    name = astr("x1"); // get the 1st field's type, since they're all the same
+  }
+
+  Symbol* fs = NULL;
+  for_fields(field, this) {
+    if (!strcmp(field->name, name)) {
+      fs = field;
+    }
+  }
+
+  if (fs) {
+    Qualifier qual = QUAL_VAL;
+    if (fs->type->symbol->hasFlag(FLAG_REF))
+      qual = QUAL_REF;
+    return QualifiedType(fs->type, qual);
+  }
+  else
+    return QualifiedType(NULL, QUAL_UNKNOWN);
 }
 
 
@@ -2027,7 +2082,9 @@ bool isString(Type* type) {
 // In the longer term we plan to further broaden the cases that the new
 // logic can handle and reduce the exceptions that are filtered out here.
 //
-
+// MPF 2016-09-15
+// This function now includes tuples, distributions, domains, and arrays.
+//
 bool isUserDefinedRecord(Type* type) {
   bool retval = false;
 
@@ -2038,21 +2095,8 @@ bool isUserDefinedRecord(Type* type) {
     // Must be a record type
     if (aggr->aggregateTag != AGGREGATE_RECORD) {
 
-    // Not a tuple
-    } else if (sym->hasFlag(FLAG_TUPLE)              == true) {
-
     // Not a range
     } else if (sym->hasFlag(FLAG_RANGE)              == true) {
-
-    // Not a distribution
-    } else if (sym->hasFlag(FLAG_DISTRIBUTION)       == true) {
-
-    // Not a domain
-    } else if (sym->hasFlag(FLAG_DOMAIN)             == true) {
-
-    // Not an array or an array alias
-    } else if (sym->hasFlag(FLAG_ARRAY)              == true ||
-               sym->hasFlag(FLAG_ARRAY_ALIAS)        == true) {
 
     // Not an atomic type
     } else if (sym->hasFlag(FLAG_ATOMIC_TYPE)        == true) {

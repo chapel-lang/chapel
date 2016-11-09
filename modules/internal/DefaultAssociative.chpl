@@ -262,6 +262,10 @@ module DefaultAssociative {
     //
     // Associative Domain Interface
     //
+    proc dsiMyDist() : BaseDist {
+      return dist;
+    }
+
     proc dsiClear() {
       on this {
         if parSafe then lockTable();
@@ -426,14 +430,14 @@ module DefaultAssociative {
       }
     }
   
-    iter dsiSorted() {
+    iter dsiSorted(comparator) {
       use Sort;
       var tableCopy: [0..#numEntries.read()] idxType;
   
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
         tableCopy(tmp) = table[slot].idx;
   
-      sort(tableCopy);
+      sort(tableCopy, comparator=comparator);
   
       for ind in tableCopy do
         yield ind;
@@ -697,13 +701,13 @@ module DefaultAssociative {
     // Associative array interface
     //
   
-    iter dsiSorted() {
+    iter dsiSorted(comparator) {
       use Sort;
       var tableCopy: [0..dom.dsiNumIndices-1] eltType;
       for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
         tableCopy(copy) = data(slot);
   
-      sort(tableCopy);
+      sort(tableCopy, comparator=comparator);
   
       for elem in tableCopy do
         yield elem;

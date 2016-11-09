@@ -277,7 +277,7 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
     // Should we have a compiler warning about this expensive operation?
     for i in nnzDom.low..#nnz {
       if colIdx[i] == otherIdx {
-        const (found, loc) = BinarySearch(rowStart, i);
+        const (found, loc) = binarySearch(rowStart, i);
         yield if found then loc else loc-1;
       }
     }
@@ -320,7 +320,7 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
   if onlyDim==1 {
     for i in followRange {
       if colIdx[i] == otherIdx {
-        const (found, loc) = BinarySearch(rowStart, i);
+        const (found, loc) = binarySearch(rowStart, i);
         yield if found then loc else loc-1;
       }
     }
@@ -350,7 +350,7 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
       const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
       for i in myChunk.translate(l) {
         if colIdx[i] == otherIdx {
-          const (found, loc) = BinarySearch(rowStart, i);
+          const (found, loc) = binarySearch(rowStart, i);
           yield if found then loc else loc-1;
         }
       }

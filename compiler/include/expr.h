@@ -54,6 +54,11 @@ public:
 
   virtual void    prettyPrint(std::ostream* o);
 
+
+  bool            isRef();
+  bool            isWideRef();
+  bool            isRefOrWideRef();
+
   /* Returns true if the given expression is contained by this one. */
   bool            contains(const Expr* expr)                         const;
 
@@ -117,8 +122,16 @@ public:
 
 
 class SymExpr : public Expr {
- public:
+ private:
   Symbol* var;
+
+ public:
+  // List entries to support enumerating SymExprs in a Symbol
+  // These are public because:
+  //  * they are managed in Symbol (but could friend class Symbol)
+  //  * they are used in for_SymbolSymExprs (but could create a real iterator)
+  SymExpr* symbolSymExprsPrev;
+  SymExpr* symbolSymExprsNext;
 
   SymExpr(Symbol* init_var);
 
@@ -136,6 +149,12 @@ class SymExpr : public Expr {
   virtual Expr*   getFirstChild();
 
   virtual Expr*   getFirstExpr();
+
+  Symbol* symbol() {
+    return var;
+  }
+
+  void setSymbol(Symbol* s);
 };
 
 

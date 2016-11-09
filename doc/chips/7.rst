@@ -2,7 +2,7 @@ Rules for inserting autoCopy
 ============================
 
 Status
-  Draft
+  Superseded, see CHIP 13
 
 Author
   Vassily Litvinov, Chapel Team

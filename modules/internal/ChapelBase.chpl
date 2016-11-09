@@ -29,6 +29,9 @@ module ChapelBase {
   // Is the cache for remote data enabled at compile time?
   config param CHPL_CACHE_REMOTE: bool = false;
 
+  // TODO -- remove this param, it is no longer used.
+  // That will require updating tests that throw it, especially
+  // performance tests.
   config param noRefCount = false;
 
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
@@ -1006,37 +1009,20 @@ module ChapelBase {
   pragma "init copy fn"
   inline proc chpl__initCopy(x) return x;
 
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn" proc chpl__autoCopy(x: _distribution) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn"  proc chpl__autoCopy(x: domain) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn" proc chpl__autoCopy(x: []) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
-
   pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
     // body inserted during generic instantiation
   }
+
+  pragma "compiler generated"
+  pragma "donor fn"
+  pragma "unref fn"
+  inline proc chpl__unref(x: _tuple) {
+    // body inserted during generic instantiation
+  }
+
 
   pragma "donor fn"
   pragma "auto copy fn"
@@ -1049,6 +1035,15 @@ module ChapelBase {
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
+
+  pragma "compiler generated"
+  pragma "unalias fn"
+  inline proc chpl__unalias(ref x) { }
+
+  pragma "unalias fn"
+  inline proc chpl__unalias(x:_iteratorClass) { }
+  pragma "unalias fn"
+  inline proc chpl__unalias(const ref x:_iteratorRecord) { }
 
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
@@ -1095,8 +1090,14 @@ module ChapelBase {
     __primitive("call destructor", x);
   }
 
-  // = for c_void_ptr
+  // c_void_ptr operations
   inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+  inline proc ==(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_eq", a, b);
+  }
+  inline proc !=(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_neq", a, b);
+  }
 
   // Type functions for representing function types
   inline proc func() type { return __primitive("create fn type", void); }
@@ -1470,23 +1471,6 @@ module ChapelBase {
   }
   inline proc <=(param a: uint(64), b: uint(64)) {
     if a == 0 then return true; else return __primitive("<=", a, b);
-  }
-
-  // numFields moved to Reflection
-
-  pragma "no doc"
-  proc fieldNumToName(type t, param i) param {
-    compilerError("fieldNumToName deprecated. Use getFieldName");
-  }
-
-  pragma "no doc"
-  proc fieldValueByNum(x, param i) {
-    compilerError("fieldValueByNum deprecated. Use getField");
-  }
-
-  pragma "no doc"
-  proc fieldValueByName(x, param name) {
-    compilerError("fieldValueByName deprecated. Use getField");
   }
 
   proc isClassType(type t) param where t:object return true;

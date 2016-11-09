@@ -109,14 +109,23 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 //
 
 /*
+  The Stencil distribution is a variant of the :mod:`Block <BlockDist>`
+  distribution that attempts to improve performance for stencil computations by
+  reducing the amount of communication necessary during array accesses. From
+  the user's perspective, it behaves very similarly to the Block distribution
+  where reads, writes, and iteration are concerned.
 
-  .. warning::
-
-    As of 1.13 the Stencil distribution is neither heavily documented nor tested.
-    We aim to improve this situation in the future.
-
-  For information on how indices are partitioned, see the Block distribution
-  documentation. The Stencil distribution re-uses that same logic.
+  This distribution reduces communication by creating read-only caches for
+  elements adjacent to the block of elements owned by each locale. This
+  documentation may refer to these cached regions as 'ghost cells' or 'fluff'.
+  This approach can avoid many fine-grained GETs and PUTs when performing a
+  stencil computation near the boundary of the current locale's chunk of array
+  elements. The user must manually refresh these caches after writes by calling
+  the ``updateFluff`` method. Otherwise, reading and writing array elements
+  behaves the same as a Block-distributed array.
+  
+  The indices are partitioned in the same way as the :mod:`Block <BlockDist>`
+  distribution.
 
   The ``Stencil`` class constructor is defined as follows:
 
@@ -133,22 +142,47 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
         fluff: rank*idxType       = makeZero(rank),
         periodic: bool            = false)
 
-  The ``fluff`` argument indicates the requested space for ghost cells. ``fluff``
-  will be used to expand the ``boundingBox`` in each direction to increase the
-  index space that can be accessed. The default for each component of the tuple
-  is zero.
+  The ``fluff`` argument indicates the requested number of cached elements in
+  each dimension. If an element of ``fluff`` is greater than zero, the user can
+  use indices outside of ``boundingBox`` to index into the array. If the domain
+  is not strided, you can consider indices for dimension ``i`` to be:
 
-  The ``periodic`` argument indicates whether or not the stencil should treat
-  the array as a discrete chunk in a larger system. When enabled, the ghost cells
-  outside of ``boundingBox`` will contain values as if the array data were
-  replicated on all sides of the array. The ``periodic`` feature is disabled by
-  default.
+  .. code-block:: chapel
 
-  ** Updating the Ghost Cache **
+     boundingBox.dim(i).expand(fluff(i))
+
+  If the domain is strided:
+
+  .. code-block:: chapel
+
+     const bb = boundingBox.dim(i);
+     bb.expand(fluff(i) * abs(bb.stride));
+
+  The same logic is used when determining the cached index set on each locale,
+  except you can imagine ``boundingBox`` to be replaced with the returned
+  value from :proc:`~ChapelArray.localSubdomain`.
+
+  The ``periodic`` argument indicates whether or not the stencil distribution
+  should treat the array as a discrete chunk in a larger space. When enabled,
+  the ghost cells outside of ``boundingBox`` will contain values as if the
+  array was replicated on all sides of the space. When disabled, the outermost
+  ghost cells will be initialized with the default value of the element's type.
+  The ``periodic`` functionality is disabled by default.
+
+  .. note::
+  
+     Note that this domain does not currently handle indices outside of
+     the expanded bounding box, so a user must manually wrap periodic indices
+     themselves.
+  
+  Iterating directly over a Stencil-distributed domain or array will only yield
+  indices and elements within the ``boundingBox``.
+
+  **Updating the Cached Elements**
 
   Once you have completed a series of writes to the array, you will need to
-  call the special ``updateFluff`` function to update the ghost cache for each
-  locale:
+  call the ``updateFluff`` function to update the cached elements for each
+  locale. Here is a simple example:
 
   .. code-block:: chapel
 
@@ -160,23 +194,27 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
     [(i,j) in Space] A[i,j] = i*10 + j;
 
+    // At this point, the ghost cell caches are out of date
+
     A.updateFluff();
 
-  After updating, any read from the array should be up-to-date. The ``updateFluff``
-  function does not currently accept any arguments.
+    // ghost caches are now up-to-date
 
-  ** Reading and Writing to Array Elements **
+  After updating, any read from the array should be up-to-date. The
+  ``updateFluff`` function does not currently accept any arguments.
 
-  The Stencil distribution uses ghost cells as cached read-only values from other
-  locales. When reading from a Stencil-distributed array, the distribution will
-  attempt to read from the local ghost cache first. If the index is not owned by
-  the ghost space, then a remote read from the owner locale occurs.
+  **Reading and Writing to Array Elements**
 
-  Any write to array data will be applied to the 'actual', non-ghost-cache data.
-  If you do write to the ghost cache, that value will be overwritten during the
-  next ``updateFluff`` call.
+  The Stencil distribution uses ghost cells as cached read-only values from
+  other locales. When reading from a Stencil-distributed array, the
+  distribution will attempt to read from the local ghost cache first. If the
+  index is not within the cached index set of the current locale, then we
+  default to a remote read from the locale on which the element is located.
 
-  ** Modifying Exterior Ghost Cells **
+  Any write to array data will be applied to the actual element, the same as if
+  you were using a Block-distributed array.
+
+  **Modifying Exterior Ghost Cells**
 
   Updating the outermost ghost cells can be useful when working with a periodic
   stencil-distributed array. If your array contains position information, you may
@@ -186,9 +224,10 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   stencil-distributed array. This iterator yields a tuple where the first component
   is the ghost cell element to be modified, and the second component is a tuple
   indicating the side on which this ghost cell lives. This direction tuple will
-  contain values in the range "-1..1".
+  contain values in the range ``-1..1``.
 
-  See miniMD for an example of how to use this iterator.
+  The release benchmark 'miniMD' contains an example of how one might use this
+  iterator.
 
   .. warning::
 
@@ -206,7 +245,6 @@ class Stencil : BaseDist {
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
-  var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
   var periodic: bool = false;
 }
@@ -241,7 +279,6 @@ class StencilDom: BaseRectangularDom {
   const dist: Stencil(rank, idxType);
   var locDoms: [dist.targetLocDom] LocStencilDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
   var periodic: bool = false;
   var wholeFluff : domain(rank=rank, idxType=idxType, stridable=stridable);
@@ -285,7 +322,6 @@ class StencilArr: BaseArr {
   var dom: StencilDom(rank, idxType, stridable);
   var locArr: [dom.dist.targetLocDom] LocStencilArr(eltType, rank, idxType, stridable);
   var myLocArr: LocStencilArr(eltType, rank, idxType, stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
 
@@ -416,7 +452,7 @@ proc Stencil.dsiClone() {
                    dataParMinGranularity, fluff=fluff, periodic=periodic);
 }
 
-proc Stencil.dsiDestroyDistClass() {
+proc Stencil.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
@@ -959,6 +995,13 @@ proc StencilDom.setup() {
   }
 }
 
+proc StencilDom.dsiDestroyDom() {
+  coforall localeIdx in dist.targetLocDom {
+    on locDoms(localeIdx) do
+      delete locDoms(localeIdx);
+  }
+}
+
 proc StencilDom.dsiMember(i) {
   return whole.member(i);
 }
@@ -1042,6 +1085,14 @@ proc StencilArr.setup() {
   if doRADOpt && disableStencilLazyRAD then setupRADOpt();
 }
 
+proc StencilArr.dsiDestroyArr(isslice : bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
+}
+
 // Re-use _remoteAccessData.getDataIndex from BlockDist
 
 
@@ -1054,8 +1105,12 @@ inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
+// BHARSH TODO: Like BlockDist, 'idx' should probably have a 'const in' or 'in'
+// intent
+//
 inline
-proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
+proc StencilArr.do_dsiAccess(param setter, idx: rank*idxType) ref {
+  var i = idx;
   local {
     if myLocArr != nil {
       if setter {
@@ -1480,7 +1535,6 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
   a._arrAlias = _value;
-  if !noRefCount then a._arrAlias.incRefCount();
   return _newArray(a);
 }
 
@@ -1488,10 +1542,9 @@ proc StencilArr.dsiNoFluffView() {
   var tempDist = new Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity);
-  var newDist = _newDistribution(tempDist);
-  var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
+  pragma "no auto destroy" var newDist = _newDistribution(tempDist);
+  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
   newDist._value.add_dom(tempDom._value);
-  if !noRefCount then newDist._value.incRefCount();
   tempDom.setIndices(dom.whole);
 
   var newDom = tempDom._value;
@@ -1509,7 +1562,8 @@ proc StencilArr.dsiNoFluffView() {
     }
   }
   if doRADOpt then alias.setupRADOpt();
-  if !noRefCount then tempDom._value.incRefCount();
+  // this doesn't need to lock since we just created the domain newDom
+  newDom.add_arr(alias, locking=false);
   return alias;
 }
 

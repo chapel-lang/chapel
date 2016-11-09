@@ -95,7 +95,7 @@ param newline = ascii("\n");
 // Repeat sequence "alu" for n characters
 //
 proc repeatMake(desc, alu, n) {
-  stdout.writef("%s", desc);
+  stdout.write(desc);
 
   const r = alu.size,
         s = [i in 0..(r+lineLength)] alu[i % r];
@@ -114,7 +114,7 @@ proc randomMake(desc, a, n) {
   var lookup = initLookup();
   var line_buff: [0..lineLength] int(8);
     
-  stdout.writef("%s", desc);
+  stdout.write(desc);
   for i in 1..n by lineLength do
     addLine(min(lineLength, n-i+1));
 

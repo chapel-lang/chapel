@@ -2,6 +2,453 @@
 Release Changes List
 ====================
 
+==============
+version 1.14.0
+==============
+
+Seventeenth public release of Chapel, October 6, 2016
+
+Highlights (see subsequent sections for more details)
+-----------------------------------------------------
+* performance optimization highlights:
+  - optimized array accesses for programs using simple/common array operations
+  - dramatically improved performance of promoted expressions over aligned data
+  - streamlined memory management through new jemalloc upgrades and features
+  - optimized reductions by using an atomic spin lock rather than a sync var
+  - enabled the bulk transfer of strided array slices by default
+  - significantly optimized 'sync' variables when using 'qthreads' tasking
+* standard library highlights:
+  - added a new standard 'BigInteger' module providing value-based 'bigint's
+    (see http://chapel.cray.com/docs/1.14/modules/standard/BigInteger.html)
+  - added new communication package modules for MPI and ZeroMQ
+    (see http://chapel.cray.com/docs/1.14/modules/packages/MPI.html and
+     http://chapel.cray.com/docs/1.14/modules/packages/ZMQ.html)
+  - added new package modules for BLAS, MatrixMarket, and range chunking
+    (see http://chapel.cray.com/docs/1.14/modules/packages/BLAS.html,
+     $CHPL_HOME/modules/packages/MatrixMarket.chpl, and
+     http://chapel.cray.com/docs/1.14/modules/packages/RangeChunk.html)
+  - dramatically revamped the Sort and Search modules, including comparators
+    (see http://chapel.cray.com/docs/1.14/modules/packages/Sort.html and
+     http://chapel.cray.com/docs/1.14/modules/packages/Search.html)
+* domain map highlights:
+  - added support for Block-distributed sparse domains and arrays
+    (see http://chapel.cray.com/docs/1.14/modules/dists/BlockDist.html)
+  - added a new 'StencilDist' distribution in support of stencil access patterns
+    (see http://chapel.cray.com/docs/1.14/modules/dists/StencilDist.html)
+* implementation improvement highlights:
+  - added a capability for generating stack traces on 'halt's
+    (see http://chapel.cray.com/docs/1.14/usingchapel/chplenv.html#chpl-unwind)
+  - improved support for reduce intents on parallel loops
+    (see http://chapel.cray.com/docs/1.14/technotes/reduceIntents.html)
+  - added the ability to implement Chapel's atomics using C atomics
+    (see http://chapel.cray.com/docs/1.14/usingchapel/chplenv.html#chpl-atomics)
+  - added the ability to pass Chapel functions to extern C routines
+    (see http://chapel.cray.com/docs/1.14/technotes/extern.html#c-fn-ptr)
+* documentation and example code highlights:
+  - added the primer and "hello world" example codes to the online documentation
+    (see http://chapel.cray.com/docs/1.14/primers/index.html and
+     http://chapel.cray.com/docs/1.14/examples/index.html)
+  - completed and updated our suite of Computer Language Benchmark Game codes
+    (see $CHPL_HOME/examples/benchmarks/shootout/* and
+     http://benchmarksgame.alioth.debian.org/)
+  - added several new pages to the online users guide
+    (see http://chapel.cray.com/docs/1.14/users-guide/index.html)
+* additional highlights:
+  - made significant improvements to the 'chplvis' execution analysis tool
+    (see http://chapel.cray.com/docs/1.14/tools/chplvis/chplvis.html)
+  - added support for a new .chplconfig file supporting default CHPL_* settings
+    (see http://chapel.cray.com/docs/1.14/usingchapel/chplenv.html)
+  - clarified errors related to modifying 'const' intent-based shadow variables
+  - updated versions of: jemalloc, GASNet, qthreads, hwloc, massivethreads
+    (see $CHPL_HOME/third-party/*)
+  - closed several classes of memory leaks, most notably due to sync/single vars
+  - improved the portability of the code base
+  - numerous bug fixes
+
+Configuration Changes
+---------------------
+* added support for a new .chplconfig file supporting default CHPL_* settings
+  (see http://chapel.cray.com/docs/1.14/usingchapel/chplenv.html)
+* added an '--anonymize' flag to 'printchplenv' to hide potential sensitivities
+* enabled 'jemalloc' by default on 'darwin' platforms using 'gnu' compilers
+* enabled 'jemalloc' for target compilers 'pgi' and 'cray-prgenv-cray'
+* changed the 'numa' locale model to use the 'distrib' scheduler for 'qthreads'
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+* Chapel now permits trailing commas within tuples and array literals
+  (see 'Tuple Values' and 'Rectangular Array Literals' in the language spec)
+* made casts between 'real' and 'imag' types preserve floating point values
+* added support for empty 'only'/'except *' qualifiers on 'use' statements
+  (e.g., 'use M only ;' or 'use M except *;' requires qualified naming)
+* added a new reduce= operator for intent-based reductions
+  (see http://chapel.cray.com/docs/1.14/technotes/reduceIntents.html)
+* made assigning stridable ranges and domains to non-stridable an error
+* stopped implicit 'use' of standard automatic modules within user sub-modules
+
+Syntactic/Naming Changes
+------------------------
+* added the ability to specify an optional 'do' on 'otherwise' statements
+
+New Features
+------------
+* added a capability for generating stack traces on 'halt's
+  (see http://chapel.cray.com/docs/1.14/usingchapel/chplenv.html#chpl-unwind)
+* added support for iterating over, and querying the 'size' of enumerated types
+  (see 'Enumerated Types' in the language specification)
+* added support for recursive record/class initializers
+* added new .bulkAdd()/+= features for sparse domains supporting bulk index adds
+  (see http://chapel.cray.com/docs/1.14/builtins/ChapelArray.html)
+* added support for reduce intents with different input/state/output types
+* added an 'align' operator for domains
+  (see 'Domain Alignment' in the language specification)
+* added casts and safeCasts to turn stridable ranges/domains into non-stridable
+* added support for 'retType' and 'argTypes' queries to first-class functions
+  (http://chapel.cray.com/docs/1.14/technotes/firstClassFns.html#reflection)
+* added the ability to create serial iterators for types
+  (see 'The Method Receiver and the 'this' Argument' in the language spec)
+* added early prototype support for class/record initializers (constructors)
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/chips/10.rst)
+
+Feature Improvements
+--------------------
+* added support for a requestCapacity() method on associative domains
+  (see http://chapel.cray.com/docs/1.14/builtins/ChapelArray.html)
+* added the ability to query locality information of domains and distributions
+  (see http://chapel.cray.com/docs/1.14/builtins/ChapelArray.html)
+* improved the support for compilerError, compilerWarning, and compilerAssert
+  (see http://chapel.cray.com/docs/1.14/builtins/UtilMisc_forDocs.html)
+* made promoted array assignments always use a parallel loop
+* extended the number of indices that an associative domain can store
+* added the ability to have 'param' formal arguments on parallel iterators
+* preserved 'param' values within the context of 'forall' loops
+* added support for casting from 'param' values to arrays
+
+Interoperability Improvements
+-----------------------------
+* added the ability to pass Chapel functions to extern C routines
+  (see http://chapel.cray.com/docs/1.14/technotes/extern.html#c-fn-ptr)
+* added support for casts to 'string' from 'c_void_ptr' and 'c_ptr'
+
+Standard Modules/Library
+------------------------
+* added a new 'BigInteger' module providing a value-based 'bigint' type
+  (see http://chapel.cray.com/docs/1.14/modules/standard/BigInteger.html)
+* strings:
+  - improved the flexibility of arguments passed to join() calls
+    (see http://chapel.cray.com/docs/1.14/builtins/String.html#String.string.join)
+  - made a version of split() that handles arbitrary whitespace
+    (see http://chapel.cray.com/docs/1.14/builtins/String.html#String.string.split)
+  - made the 'ascii()' routine return uint(8)s rather than int(32)/int(64)s
+  - changed the default binary string format to data_toeof
+  - removed most library functions on c_strings
+* Math module: added support for standard operations on 'complex' values
+  (see http://chapel.cray.com/docs/1.14/modules/standard/Math.html)
+* Buffers module: added support for buffer.copyin/copyout methods
+  (see http://chapel.cray.com/docs/1.14/modules/standard/Buffers.html)
+* Reflection module:
+  - added getFieldRef() functions to obtain a reference to a field
+    (see http://chapel.cray.com/docs/1.14/modules/standard/Reflection.html)
+  - added the ability to query whether a type method can be called
+    (see http://chapel.cray.com/docs/1.14/modules/standard/Reflection.html)
+* DynamicIters module: added a dynamic iterator for domains
+  (see http://chapel.cray.com/docs/1.14/modules/standard/DynamicIters.html)
+* GMP module: deprecated the 'BigInt' class in favor of 'bigint'
+
+Package Modules
+---------------
+* added initial support for a 'BLAS' module supporting the level 3 routines
+  (see http://chapel.cray.com/docs/1.14/modules/packages/BLAS.html)
+* added an MPI module supporting message passing between Chapel images/locales
+  (see http://chapel.cray.com/docs/1.14/modules/packages/MPI.html)
+* added a ZeroMQ module supporting inter-application communication via 0MQ
+  (see http://chapel.cray.com/docs/1.14/modules/packages/ZMQ.html)
+* added support for a 'MatrixMarket' module providing file serialization
+  (see $CHPL_HOME/modules/packages/MatrixMarket.chpl)
+* added a new 'RangeChunk' package for dividing ranges into multiple chunks
+  (see http://chapel.cray.com/docs/1.14/modules/packages/RangeChunk.html)
+* Sort module: dramatically revamped the module, including comparator support
+  (see http://chapel.cray.com/docs/1.14/modules/packages/Sort.html)
+* Search module: dramatically revamped the module, including comparator support
+  (see http://chapel.cray.com/docs/1.14/modules/packages/Search.html)
+
+Domain Maps (Layouts and Distributions)
+---------------------------------------
+* added a new 'StencilDist' distribution in support of stencil access patterns
+  (see http://chapel.cray.com/docs/1.14/modules/dists/StencilDist.html)
+* added support for Block-distributed sparse domains and arrays
+  (see http://chapel.cray.com/docs/1.14/modules/dists/BlockDist.html)
+* extended Block distributions to support strided bounding boxes
+
+Performance Optimizations/Improvements
+--------------------------------------
+* optimized array accesses for programs that use simple/common array operations
+* optimized the performance of promoted expressions over aligned data
+* optimized memory management through new jemalloc upgrades and features
+* optimized reductions by using an atomic spin lock rather than a sync var
+* enabled the bulk transfer of strided array slices by default
+* implemented 'sync' variables natively for 'qthreads' tasking
+* optimized functions returning references to avoid widening them when possible
+* optimized on-statements that end up being local
+* optimized the implementation of decrementing remote task counters
+* stopped heap-allocating variables due to on-clauses for 'fifo' and 'muxed'
+* improved the performance of intrinsic-based floating-point atomic 'fetchAdd's
+* fixed a potential performance issue when growing/shrinking arrays as vectors
+* made modest improvements to the performance of associative domains
+* optimized the implementation of .re and .im for complex values
+* optimized base**exp operations when 'base' is a param power of two
+
+Memory Improvements
+-------------------
+* obtained memory allocation improvements through 'jemalloc' upgrades and usage
+* closed memory leaks caused by 'sync'/'single' variables
+* closed a memory leak relating to 'args' arguments sent to main()
+* closed a memory leak caused by module-scope detuple variable declarations
+
+Example Codes
+-------------
+* added all remaining Computer Language Benchmark Game programs
+  (see $CHPL_HOME/examples/benchmarks/shootout/* and
+   http://benchmarksgame.alioth.debian.org/)
+* significantly improved existing Computer Language Benchmark Game programs
+  (see $CHPL_HOME/examples/benchmarks/shootout/*)
+* made improvements to LCALS for style and performance
+  (see $CHPL_HOME/examples/benchmarks/lcals/*)
+* changed ISx to use low-level PCG interface to match the reference version
+  (see $CHPL_HOME/examples/benchmarks/isx/*)
+
+Tool Changes
+------------
+* 'chplvis' improvements:
+  - added a "settings" window
+  - fixed undetected 'chplvis' regressions in 1.13
+  - made significant improvements to the user interface
+  - added new views of execution-time data
+  (see http://chapel.cray.com/docs/1.14/tools/chplvis/chplvis.html)
+* 'chpldoc' improvements: improved formatting and handling of many situations
+
+Documentation
+-------------
+* added the primer example codes to the online documentation
+  (see http://chapel.cray.com/docs/1.14/primers/index.html)
+* added the 'hello world' examples to the online documentation
+  (see http://chapel.cray.com/docs/1.14/examples/index.html)
+* added a new primer example for modules and 'use' statements
+  (see doc/release/examples/primers/modules.chpl)
+* added a number of new sections to the user's guide
+  (see http://chapel.cray.com/docs/1.14/users-guide/index.html)
+* significantly re-worked the multi-locale execution and quickstart docs
+  (see http://chapel.cray.com/docs/1.14/usingchapel/multilocale.html and
+   http://chapel.cray.com/docs/1.14/usingchapel/QUICKSTART.html)
+* moved information about execution on UDP-based systems into its own document
+  (see http://chapel.cray.com/docs/1.14/platforms/udp.html)
+* added usage ('use ...') information to chpldoc-generated module documentation
+  (e.g., see http://chapel.cray.com/docs/1.14/modules/standard/Assert.html)
+* added documentation for the 'chplvis' file format
+  (see $CHPL_HOME/tools/chplvis/TextDataFormat.txt)
+* updated the steps required to build Chapel with newer HDFS sources
+  (see http://chapel.cray.com/docs/1.14/modules/packages/HDFS.html and
+   http://chapel.cray.com/docs/1.14/technotes/auxIO.html#setting-up-hdfs)
+* added an archive of past language specification versions to the online docs
+  (see http://chapel.cray.com/docs/1.14/language/archivedSpecs.html)
+* updated and fixed minor issues in the language specification
+* fixed a plethora of spelling mistakes throughout the documentation
+* fixed several online documentation formatting errors
+
+Compiler Flags (see 'man chpl' for details)
+-------------------------------------------
+* added a new --denormalize flag that cleans up generated code before codegen
+* stopped throwing --vectorize when --fast is thrown
+
+Portability Improvements
+------------------------
+* improved the portability of the code base to gcc 6.x
+* improved portability to FreeBSD, Solaris, illumos, OmniOS, Ubuntu
+* added initial support for compiling single-locale programs for 64-bit ARM
+
+Cray-specific Changes
+---------------------
+* removed an obsolete warning about having hugepage modules loaded on Crays
+
+Syntax Highlighting
+-------------------
+* added instructions for using vim highlighting for Vundle and vim-plug users
+* fixed portability of Chapel's emacs mode for emacs 24.x
+* added support for nested block comments to emacs and 'highlight' highlighting
+* fixed the highlighting of binary literals in Pygments
+* updated our support for Andre Simon's highlighter to support version 3.x
+
+Error Message Improvements
+--------------------------
+* added a clarifying statement for 'const' errors due to task/forall intents
+* made string OOB messages print the offending index
+* squashed C warnings considered to be noise in the back-end compiler
+* added an error message for declaring constructors/initializers without parens
+* added an error for user fields named 'outer'
+* fixed some spelling errors in error messages
+* removed warnings for assigning serial iterators/iterables to arrays
+* removed a misleading warning about records and forall intents
+
+Runtime Error Checks
+--------------------
+* added bounds checking to string index/slice operations
+
+Bug Fixes
+---------
+* fixed a bug in which having CONFIG_SITE set could break third-party builds
+* made 'compare_exchange' conform to memory order requirements on failure
+* fixed incorrect 'fetchAdd' and 'fetchSub' implementations on atomics
+* fixed a bug in which 64-bit atomic loads on 32-bit systems were not atomic
+* fixed a longstanding but infrequent race condition in privatization
+* fixed a bug in handling 'ref' return intents
+* fixed a bug involving 'ref's to array elements
+* fixed a bug for recursive functions that return records
+* fixed a bug in accessing overridden methods
+* fixed a bug in which reduce intents could not be applied to arrays
+* fixed a bug in iterating over strided, unsigned domains and arrays
+* fixed a bug in BlockCyclic array accesses for 3D+ arrays
+* fixed a bug for membership queries in sparse CSR layouts
+* fixed a bug when storing max(int) in an associative domain of ints
+* fixed a bug in which arrays within records were incorrectly being localized
+* fixed a bug in which (+/-1)**k was incorrect for negative values of k
+* fixed a bug in advancing I/O channels
+* fixed bugs in the mapping of GMP functions down to the underlying C library
+* fixed a bug in which readline()'s 'amount' argument was used incorrectly
+* fixed a bug in which writeln(str) and writef("%s", str) behaved differently
+* fixed a bug related to using an 'enum' within a library module
+* fixed a bug ignoring whitespace when casting strings to values
+* fixed a bug in which the back-end compiler would warn about dead code
+* fixed a bug in which 'printchplenv --sh' was missing some variables
+* reduced cases when standard modules were automatically 'use'd in user code
+* fixed some issues with copy propagation
+* fixed an occasional compile-time failure in inserting wide references
+* fixed a bug in which sleep() could under-sleep by 1 microsecond
+* fixed some bugs with the --llvm-wide-opt flag
+* fixed a race condition in the 'pbs-aprun' launcher
+* improved how we handled environment variables with backtics in 'amudprun'
+* fixed a bug related to locale models and order of resolution
+
+Launchers
+---------
+* added an --spmd flag to the 'mpirun' launcher for SPMD Chapel+MPI runs
+* added --walltime, --partition, --exclude flags to 'slurm_gasnet_ibv' launcher
+
+Runtime Library Changes
+-----------------------
+* added the ability to implement atomics using C atomics ('cstdlib')
+  (see http://chapel.cray.com/docs/1.14/technotes/atomics.html and
+   http://chapel.cray.com/docs/1.14/usingchapel/chplenv.html#chpl-atomics)
+* re-enabled support for massivethreads for single-locale executions
+* added support for out-of-segment non-blocking puts and gets for 'gasnet'
+* changed the 'fifo' tasking layer to allocate task stacks in heap memory
+
+Generated Code
+--------------
+* improved generated code readability when using the new --denormalize flag
+* added function IDs and a function ID -> name table to the generated code
+* enabled the LLVM back-end compiler to produce debug information
+* improved #line directives in the generated code when using --cpp-lines
+* improved the generated code quality for 'local' blocks
+
+Third-Party Software Changes
+----------------------------
+* added 'libunwind' as a new third-party package in support of backtraces
+* upgraded jemalloc to version 4.2.1
+* upgraded GASNet to version 1.26.4
+* upgraded qthreads to version 1.11
+* upgraded hwloc to version 1.11.4
+* updated massivethreads to a new version
+* enabled decay-based purging in jemalloc
+* improved 'jemalloc's detection of 'librt' when using cray-prgenv-* compilers
+* disabled 'jemalloc's statistics gathering features by default
+* added support for the new Qthreads 'distrib' scheduler
+
+Testing System
+--------------
+* added a 'close' button to the performance graphs to simplify screening them
+* improved support for 'notest'ing and 'skipif'ing directories
+* added the ability to perform multiple trials in correctness testing
+* added the ability to limit the number of concurrently executing tests
+* added the ability to squash email notifications by setting CHPL_TEST_NOMAIL
+* fixed graph annotations for days without any associated data
+* removed the need to provide an argument to '-[no]stdinredirect
+* improved how compilation errors are reported for performance testing
+* made the test system accept empty .compopts/COMPOPTS files
+* avoided the use of spool files when using moab/torque via 'chpl_launchcmd.py'
+
+Removal of Deprecated Features
+------------------------------
+* removed 'locale.numCores' which was deprecated in 1.13
+* removed 'typeToString()', deprecated in 1.13 in favor of casts to strings
+* removed support for 'setter', 'reader, 'writer', deprecated in 1.13
+* removed support for 'fieldNumToName' & 'fieldValueByNum', deprecated in 1.13
+* removed the deprecated 'AdvancedIters' module
+* removed support for KNC
+
+Developer-oriented changes: Module changes
+------------------------------------------
+* significantly refactored sparse domain map modules
+* reimplemented 'sync' and 'single' variables as records
+* made string code call more directly to mem* routines in C
+* made the chpl_here_* routines more generic w.r.t. integral types
+* added a 'PODValAccess' config param that returns POD array elements by value
+* added a method to the 'bytes' type to get a raw pointer to memory
+* adjusted printing within 'DefaultRectangular' to avoid IO dependences
+* cleaned up the use of '_desync' functions
+* unified the formatting of the 'ChapelSyncVar' module
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+* removed no-longer-used RUNTIME_GEN_C[XX]_FLAGS macros
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+* re-enabled support for the --minimal-modules flag
+* added a --[no-]parse-only flag to optionally stop compilation after parsing
+* added an experimental --incremental flag that generates multiple .o files
+* added an experimental flag for performing CSE on array accesses
+  (see --[no-]replace-array-accesses-with-ref-temps
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+* moved the handling of PROC_NEW to the resolution pass
+* cleaned up the representation and handling of varargs
+* refactored the remote value forwarding pass
+* refactored the gatherCandidates stage of function resolution
+* fixed a bug in tryStack when resolving constructor calls
+* optimized away the creation of tuples for varargs functions in some cases
+* refactored CallExpr::codegen()
+* revised isSyncType() to be more consistent and meaningful
+* moved the "direct on" optimization to the parallel pass
+* stopped treating 'defaultInitializer' specially for iterators
+* fixed some filename arguments that were still strings rather than 'int's
+* stopped unnecessarily remote value forwarding values to task functions
+* improved how sync/single operations are identified by remote value forwarding
+* changed how the compiler represents parallel iterable expressions
+* improved the number and quality of checks performed by the --verify flag
+* replaced uses of homegrown containers with STL equivalents in the compiler
+* added QualifiedType support to prepare for revamping representation of 'ref's
+* fixed the indentation of --html output when viewed within Google Chrome
+* added support for a simple 'ForallExpr' AST node, used only during parsing
+* implemented certain reduction expressions using forall expressions
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+* added callbacks to the Chapel runtime's communication calls
+* simplified and sped up the implementation of chpl_executeOnNB()
+* eliminated type punning and use of volatile in the implementation of atomics
+* refactored 'extern "C"' declarations to avoid crossing #include boundaries
+* changed uses of 'atomic_flag's to 'atomic_bool's to match C11's atomics
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+* added developer support for console-/man-based chpldocumentation
+  ('make man-chapel')
+
+Developer-oriented changes: Third-party improvements
+----------------------------------------------------
+* changed many third-party directory structures to avoid using version numbers
+
 
 ==============
 version 1.13.1
@@ -587,7 +1034,7 @@ New Features
 * added the ability to rename extern records for use within Chapel
   (see 'Interoperation::...::Shared Types::Referring to External C Structs')
 * added support for -lchplmalloc for compilers supporting weak symbols
-  (see http://chapel.cray.com/docs/1.12/technotes/allocators.html))
+  (see http://chapel.cray.com/docs/1.12/technotes/allocators.html)
 * added the ability to use 'continue' statements in 'param' for-loops
 * added support for == and != operators on domain maps
 
@@ -713,7 +1160,7 @@ Bug Fixes
 * fixed bugs with applying reduce intents to forall loops over domains/arrays
 * fixed bugs with scope resolution's choice of which symbol to resolve to
 * fixed a bug in which overloads of '|' broke internal modules
-* fixed a bug related to extern variables of types like c_ptr(c_int))
+* fixed a bug related to extern variables of types like c_ptr(c_int)
 * fixed an internal error when a class calls its parent class's destructor
 * fixed a bug in which large array copies could overflow runtime arguments
 * fixed a bug in which calls of the form '<type>(x)' would cause internal errors
@@ -1441,7 +1888,7 @@ Standard Modules
 * added a new standard module supporting a prefetch() operation
   (see modules/standard/Prefetch.chpl)
 * added some initial file/directory utility routines (more planned for 1.11)
-  (e.g., remove(), rename(), cwd(), chdir(), mkdir(), chown())
+  (e.g., remove(), rename(), cwd(), chdir(), mkdir(), chown()
 * added draft support for glob() and walking directory trees
   (see modules/standard/Filerator.chpl -- feedback desired)
 * added readstring()/readline() methods that read bytes into strings/arrays

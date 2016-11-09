@@ -48,25 +48,47 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
   for_formals_actuals(formal, actual, call) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
-    if ((formal->intent & INTENT_REF) && canRemoveRefTempSet.set_in(fn)) {
-      if (se->var->hasFlag(FLAG_REF_TEMP)) {
-        if (CallExpr* move = findRefTempInit(se)) {
-          SymExpr* origSym = NULL;
-          if (CallExpr* addrOf = toCallExpr(move->get(2))) {
-            INT_ASSERT(addrOf->isPrimitive(PRIM_ADDR_OF));
-            origSym = toSymExpr(addrOf->get(1));
-          } else {
-            origSym = toSymExpr(move->get(2));
+    if((formal->intent & INTENT_REF)) {
+      // BHARSH TODO: Michael suggested this code will be unnecessary when
+      // QualifiedType is used everywhere and ref-ness is no longer stored in
+      // the 'type' field.
+      if (canRemoveRefTempSet.set_in(fn)) {
+        if (se->symbol()->hasFlag(FLAG_REF_TEMP)) {
+          if (CallExpr* move = findRefTempInit(se)) {
+            SymExpr* origSym = NULL;
+            if (CallExpr* addrOf = toCallExpr(move->get(2))) {
+              INT_ASSERT(addrOf->isPrimitive(PRIM_ADDR_OF));
+              origSym = toSymExpr(addrOf->get(1));
+            } else {
+              origSym = toSymExpr(move->get(2));
+            }
+            INT_ASSERT(origSym);
+            map.put(formal, origSym->symbol());
+            se->symbol()->defPoint->remove();
+            move->remove();
+            continue;
           }
-          INT_ASSERT(origSym);
-          map.put(formal, origSym->var);
-          se->var->defPoint->remove();
-          move->remove();
-          continue;
         }
       }
+
+     if(!isReferenceType(formal->type) &&
+        formal->type->getRefType() == actual->typeInfo()) {
+        // Passing an actual that is ref(t) to a formal t with intent ref.
+        Expr* point = call->getStmtExpr();
+        VarSymbol* tmp = newTemp(astr("i_", formal->name), formal->type);
+        tmp->qual = QUAL_REF;
+        DefExpr* def = new DefExpr(tmp);
+        CallExpr* move;
+        move = new CallExpr(PRIM_MOVE,
+                            tmp,
+                            new CallExpr(PRIM_SET_REFERENCE, se->symbol()));
+        point->insertBefore(def);
+        point->insertBefore(move);
+        map.put(formal, tmp);
+        continue;
+      }
     }
-    map.put(formal, se->var);
+    map.put(formal, se->symbol());
   }
 
   //
@@ -85,7 +107,7 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
   // returned value is originally one of the formal argument symbols, that
   // symbol was replaced by it actual argument in the call to copy(&map) above.
   for_formals(formal, fn)
-    INT_ASSERT(formal != toArgSymbol(se->var));
+    INT_ASSERT(formal != toArgSymbol(se->symbol()));
   return_stmt->remove();
   return_value->remove();
   stmt->insertBefore(block);
@@ -126,11 +148,11 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
 // because a ref temp's DefExpr and initial assignment are inserted together
 // inside of insertReferenceTemps.
 static CallExpr* findRefTempInit(SymExpr* se) {
-  Expr* expr = se->var->defPoint->next;
+  Expr* expr = se->symbol()->defPoint->next;
   while (expr) {
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_MOVE)) {
-        if (se->var == toSymExpr(call->get(1))->var) {
+        if (se->symbol() == toSymExpr(call->get(1))->symbol()) {
           if (CallExpr* nestedCall = toCallExpr(call->get(2))) {
             if (!nestedCall->isPrimitive(PRIM_ADDR_OF)) {
               return NULL;
@@ -219,6 +241,18 @@ inlineFunctions() {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
         inlineFunction(fn, inlinedSet, canRemoveRefTempSet);
+    }
+
+    forv_Vec(SymExpr, se, gSymExprs) {
+      CallExpr* def = toCallExpr(se->parentExpr);
+      if (def && def->isPrimitive(PRIM_DEREF)) {
+        CallExpr* move = toCallExpr(def->parentExpr);
+        INT_ASSERT(isMoveOrAssign(move));
+        if (!se->isRef()) {
+          SET_LINENO(se);
+          def->replace(se->copy());
+        }
+      }
     }
   }
 

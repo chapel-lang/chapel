@@ -39,10 +39,10 @@ void doit5(int partner, int *partnerseg);
   test_everything_seginfo_t myinfo;
   test_everything_seginfo_t partnerinfo;
   int done = 0;
-  void seg_everything_reqh(gasnet_token_t token) {
+  GASNETT_EXTERNC void seg_everything_reqh(gasnet_token_t token) {
     GASNET_Safe(gasnet_AMReplyMedium0(token, 251, &myinfo, sizeof(test_everything_seginfo_t)));
   }
-  void seg_everything_reph(gasnet_token_t token, void *buf, size_t nbytes) {
+  GASNETT_EXTERNC void seg_everything_reph(gasnet_token_t token, void *buf, size_t nbytes) {
     assert(nbytes == sizeof(test_everything_seginfo_t));
     memcpy(&partnerinfo, buf, nbytes);
     gasnett_local_wmb();
@@ -95,19 +95,16 @@ void doit5(int partner, int *partnerseg);
 #endif
 
 #if GASNET_PAR
-#if (TEST_MAXTHREADS < 10)
-  #define NUM_THREADS TEST_MAXTHREADS
+  #define MAX_THREADS 10
 #else
-  #define NUM_THREADS 10
+  #define MAX_THREADS 1
 #endif
-#else
-  #define NUM_THREADS 1
-#endif
+int num_threads = MAX_THREADS;
 
 void test_threadinfo(int threadid, int numthreads) {
   int i;
   gasnet_threadinfo_t my_ti;
-  static gasnet_threadinfo_t all_ti[NUM_THREADS];
+  static gasnet_threadinfo_t all_ti[MAX_THREADS];
 
   { GASNET_BEGIN_FUNCTION();
     my_ti = GASNET_GET_THREADINFO();
@@ -119,7 +116,7 @@ void test_threadinfo(int threadid, int numthreads) {
     gasnet_threadinfo_t ti = GASNET_GET_THREADINFO();
     assert_always(ti == my_ti);
   }
-  assert(threadid < numthreads && numthreads <= NUM_THREADS);
+  assert(threadid < numthreads && numthreads <= MAX_THREADS);
   all_ti[threadid] = my_ti;
   PTHREAD_LOCALBARRIER(numthreads);
   for (i = 0; i < numthreads; i++) {
@@ -136,9 +133,9 @@ void test_threadinfo(int threadid, int numthreads) {
   #endif
   void *test_libgasnetpar_tools(void *p) {
     int idx = (int)(uintptr_t)p;
-    PTHREAD_LOCALBARRIER(NUM_THREADS);
-    test_threadinfo(idx, NUM_THREADS);
-    PTHREAD_LOCALBARRIER(NUM_THREADS);
+    PTHREAD_LOCALBARRIER(num_threads);
+    test_threadinfo(idx, num_threads);
+    PTHREAD_LOCALBARRIER(num_threads);
   #if GASNETI_ARCH_ALTIX
     /* Don't pin threads because system is either shared or using cgroups */
   #elif GASNETI_ARCH_IBMPE
@@ -146,7 +143,7 @@ void test_threadinfo(int threadid, int numthreads) {
   #else
     gasnett_set_affinity(idx);
   #endif
-    PTHREAD_LOCALBARRIER(NUM_THREADS);
+    PTHREAD_LOCALBARRIER(num_threads);
     return NULL;
   }
 #endif
@@ -183,7 +180,8 @@ void test_libgasnet_tools(void) {
   }
   #endif
   #if GASNET_PAR
-    test_createandjoin_pthreads(NUM_THREADS, &test_libgasnetpar_tools, NULL, 0);
+    num_threads = test_thread_limit(num_threads);
+    test_createandjoin_pthreads(num_threads, &test_libgasnetpar_tools, NULL, 0);
   #endif
   MSG("*** passed libgasnet_tools test!!");
 }
@@ -677,6 +675,7 @@ void doit5(int partner, int *partnerseg) {
   } while(0)
   {
     gasnett_atomic_sval_t stmp = gasnett_atomic_signed((gasnett_atomic_val_t)0);
+    gasnett_atomic_increment((gasnett_atomic_t*)&stmp,0);
     TEST_ATOMICS(gasnett_atomic_val_t, atomic);
     TEST_ATOMICS(gasnett_atomic_val_t, strongatomic);
     TEST_ATOMICS(uint32_t, atomic32);

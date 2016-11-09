@@ -2,31 +2,32 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Casey Battaglino, Ben Harshbarger, and Brad Chamberlain
+   derived from the GNU C version by Jeremy Zerfas
 */
 
 
-use DynamicIters;            // get access to the dynamic() iterator
+use DynamicIters;
 
-config const n = 10;         // the maximum tree depth (if > 5)
+config const n = 10;         // the maximum tree depth
 
 proc main() {
   const minDepth = 4,                      // the shallowest tree
         maxDepth = max(minDepth + 2, n),   // the deepest normal tree
         strDepth = maxDepth + 1,           // the depth of the "stretch" tree
         depths = minDepth..maxDepth by 2;  // the range of depths to create
-  var stats: [depths] (int,int);         // stores statistics for the trees
+  var stats: [depths] (int,int);           // stores statistics for the trees
 
   //
   // Create the "stretch" tree, checksum it, print its stats, and free it.
   //
-  const strTree = Tree.build(0, strDepth);
+  const strTree = new Tree(0, strDepth);
   writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
   delete strTree;
 
   //
   // Build the long-lived tree.
   //
-  const llTree = Tree.build(0, maxDepth);
+  const llTree = new Tree(0, maxDepth);
 
   //
   // Iterate over the depths in parallel, dynamically assigning them
@@ -34,12 +35,12 @@ proc main() {
   // their sums, and free them.
   //
   forall depth in dynamic(depths, chunkSize=1) {
-    const iterations = 1 << (maxDepth - depth + minDepth);
+    const iterations = 2**(maxDepth - depth + minDepth);
     var sum = 0;
 			
     for i in 1..iterations {
-      const posT = Tree.build( i, depth), 
-            negT = Tree.build(-i, depth);
+      const posT = new Tree( i, depth), 
+            negT = new Tree(-i, depth);
       sum += posT.sum() + negT.sum();
       delete posT;
       delete negT;
@@ -69,22 +70,29 @@ class Tree {
   const item: int;
   const left, right: Tree;
 
-  proc type build(item, depth): Tree {
-    if depth <= 0 then
-      return new Tree(item);
-    else
-      return new Tree(item, Tree.build(2*item-1, depth-1),
-                            Tree.build(2*item  , depth-1));
+  //
+  // Two initializers (constructors) for a Tree object
+  //
+  proc init(item, depth) {
+    this.item = item;
+    super.init();
+    if depth > 0 {
+      left = new Tree(2*item-1, depth-1);
+      right = new Tree(2*item, depth-1);
+    }
+    // TODO: want this here    super.init();
   }
-  
+
+  //
+  // Add up tree node, freeing as we go
+  //
   proc sum(): int {
-    return item + (if left then (left.sum() - right.sum()) else 0);
-  }
-  
-  proc ~Tree {
-    if left {  // TODO: Shouldn't we be able to drop this?
+    var sum = item;
+    if left {
+      sum += left.sum() - right.sum();
       delete left;
       delete right;
     }
+    return sum;
   }
 }

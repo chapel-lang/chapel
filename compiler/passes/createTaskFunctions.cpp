@@ -291,7 +291,7 @@ findOuterVars(FnSymbol* fn, SymbolMap& uses) {
 
   for_vector(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
-      Symbol* sym = symExpr->var;
+      Symbol* sym = symExpr->symbol();
 
       if (isLcnSymbol(sym)) {
         if (!isCorrespCoforallIndex(fn, sym) && isOuterVar(sym, fn))
@@ -314,7 +314,7 @@ void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
                     // should have been resolved in ScopeResolve
                     // or it is a SymExpr over a tiMark ArgSymbol
                     //                 or over chpl__reduceGlob
-    Symbol* var = se->var;
+    Symbol* var = se->symbol();
     if (marker) {
       SymbolMapElem* elem = uses.get_record(var);
       if (elem) {
@@ -426,11 +426,16 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
             INT_ASSERT(e->value == markUnspecified);
 
           newFormal = new ArgSymbol(argTag, sym->name, sym->type);
+          if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
+            newFormal->addFlag(FLAG_COFORALL_INDEX_VAR);
+
           if (ArgSymbol* symArg = toArgSymbol(sym))
             if (symArg->hasFlag(FLAG_MARKED_GENERIC))
               newFormal->addFlag(FLAG_MARKED_GENERIC);
           newActual = e->key;
           symReplace = newFormal;
+          if (!newActual->isConstant() && newFormal->isConstant())
+            newFormal->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }
 
         call->insertAtTail(newActual);
@@ -451,8 +456,8 @@ void replaceVarUses(Expr* topAst, SymbolMap& vars) {
       SET_LINENO(oldSym);
       Symbol* newSym = e->value;
       for_vector(SymExpr, se, symExprs)
-        if (se->var == oldSym)
-          se->var = newSym;
+        if (se->symbol() == oldSym)
+          se->setSymbol(newSym);
     }
   }
 }
@@ -563,7 +568,7 @@ void createTaskFunctions(void) {
 
         // Remove the param arg that distinguishes a local-on
         SymExpr* isLocalOn = toSymExpr(info->argList.head->remove());
-        if (isLocalOn->var == gTrue) {
+        if (isLocalOn->symbol() == gTrue) {
           fn->addFlag(FLAG_LOCAL_ON);
 
           // Insert runtime check

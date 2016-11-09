@@ -6,15 +6,27 @@ Building Chapel
 
 To build the Chapel compiler, set up your environment as described in
 :ref:`chapelhome-quickstart` (or :ref:`readme-chplenv` for more
-settings), cd to ``$CHPL_HOME``, and type:
+settings), cd to ``$CHPL_HOME``, and run GNU make.
 
-.. code-block:: sh
+On many systems, GNU make is available simply as ``make``. On others, it is
+called ``gmake``. So, first check if ``make`` refers to GNU make:
 
-     gmake
+.. code-block:: bash
 
-(or simply "make" if your make utility is gmake-compatible, as on
-Cygwin platforms).
+   # If the first line includes "GNU Make", you have GNU Make.
+   make -v
 
+Further instructions will assume ``make`` refers to GNU Make. If that's not
+the case, you'll need to replace ``make`` with ``gmake``.
+
+Now build the Chapel compiler:
+
+.. code-block:: bash
+
+   cd $CHPL_HOME
+   make
+
+Parallel builds such as ``make -j 6`` are also supported.
 
 If everything works as intended, you ought to see:
 

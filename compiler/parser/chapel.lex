@@ -200,6 +200,7 @@ zip              return processToken(yyscanner, TZIP);
 "||="            return processToken(yyscanner, TASSIGNLOR);
 "<<="            return processToken(yyscanner, TASSIGNSL);
 ">>="            return processToken(yyscanner, TASSIGNSR);
+"reduce="        return processToken(yyscanner, TASSIGNREDUCE);
 
 "=>"             return processToken(yyscanner, TALIAS);
 

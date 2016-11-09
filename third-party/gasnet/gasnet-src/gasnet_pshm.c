@@ -485,7 +485,7 @@ struct gasneti_pshmnet {
   gasneti_pshmnet_queue_t *my_queue;
   /* only need to see one's own allocator */
   gasneti_pshmnet_allocator_t *my_allocator;
-#if GASNET_PAR
+#if GASNET_PAR || GASNETI_CONDUIT_THREADS
   /* serializes dequeue operations */
   gasneti_mutex_t lock;
 #endif
@@ -583,7 +583,7 @@ gasneti_pshmnet_init(void *region, size_t regionlen, gasneti_pshm_rank_t pshmnod
 
   vnet = gasneti_malloc(sizeof(gasneti_pshmnet_t));
   vnet->nodecount = pshmnodes;
-#if GASNET_PAR
+#if GASNET_PAR || GASNETI_CONDUIT_THREADS
   gasneti_mutex_init(&vnet->lock);
 #endif
 
@@ -658,7 +658,7 @@ int gasneti_pshmnet_recv(gasneti_pshmnet_t *vnet, void **pbuf, size_t *psize,
   gasneti_pshmnet_payload_t *p = NULL;
   gasneti_pshmnet_queue_t *q = vnet->my_queue;
 
-#if GASNET_PAR
+#if GASNET_PAR || GASNETI_CONDUIT_THREADS
   if (gasneti_pshmnet_queue_peek(q)) {
     gasneti_mutex_lock(&vnet->lock);
 #endif
@@ -683,7 +683,7 @@ int gasneti_pshmnet_recv(gasneti_pshmnet_t *vnet, void **pbuf, size_t *psize,
       }
       q->shead = next;
     }
-#if GASNET_PAR
+#if GASNET_PAR || GASNETI_CONDUIT_THREADS
     gasneti_mutex_unlock(&vnet->lock);
   }
 #endif

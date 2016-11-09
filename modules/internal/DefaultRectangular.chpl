@@ -38,7 +38,6 @@ module DefaultRectangular {
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
-  config param assertNoSlicing = false;
 
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -66,14 +65,21 @@ module DefaultRectangular {
 
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
+
+    proc trackDomains() param return false;
+    proc dsiTrackDomains()    return false;
+
+    proc singleton() param return true;
   }
 
   //
   // Replicated copies are set up in chpl_initOnLocales() during locale
   // model initialization
   //
-  pragma "locale private" var defaultDist = new dmap(new DefaultDist());
-   proc chpl_defaultDistInitPrivate() {
+  pragma "locale private"
+  var defaultDist = new dmap(new DefaultDist());
+
+  proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
       // FIXME benharsh: Here's what we want to do:
       //   defaultDist = new dmap(new DefaultDist());
@@ -98,6 +104,10 @@ module DefaultRectangular {
 
     proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
       this.dist = dist;
+    }
+
+    proc dsiMyDist() {
+      return dist;
     }
 
     proc dsiDisplayRepresentation() {
@@ -675,7 +685,13 @@ module DefaultRectangular {
     // can the compiler create this automatically?
     proc dsiGetBaseDom() return dom;
 
-    proc dsiDestroyData() {
+    proc dsiDestroyArr(isalias:bool) {
+
+      // data in an array alias will be destroyed when the original array
+      // is destroyed.
+      if isalias then
+        return;
+
       if dom.dsiNumIndices > 0 {
         pragma "no copy" pragma "no auto destroy" var dr = data;
         pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
@@ -842,24 +858,32 @@ module DefaultRectangular {
           sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
         return sum;
       } else {
-        var sum = if earlyShiftData then 0:idxType else origin;
-
-        // If the user asserts that there is no slicing in their program,
-        // then blk(rank) == 1. Knowing this, we need not multiply the final
-        // ind(...) by anything. This may lead to performance improvements for
-        // array accesses.
-        if assertNoSlicing {
-          for param i in 1..rank-1 {
-            sum += ind(i) * blk(i);
+        // optimize common case to get cleaner generated code
+        if (rank == 1 && earlyShiftData) {
+          if __primitive("optimize_array_blk_mult") {
+            return ind(1);
+          } else {
+            return ind(1) * blk(1);
           }
-          sum += ind(rank);
         } else {
-          for param i in 1..rank {
-            sum += ind(i) * blk(i);
+          var sum = if earlyShiftData then 0:idxType else origin;
+
+          // If we detect that blk is never changed then then blk(rank) == 1.
+          // Knowing this, we need not multiply the final ind(...) by anything.
+          // This relies on us marking every function that modifies blk
+          if __primitive("optimize_array_blk_mult") {
+            for param i in 1..rank-1 {
+              sum += ind(i) * blk(i);
+            }
+            sum += ind(rank);
+          } else {
+            for param i in 1..rank {
+              sum += ind(i) * blk(i);
+            }
           }
+          if !earlyShiftData then sum -= factoredOffs;
+          return sum;
         }
-        if !earlyShiftData then sum -= factoredOffs;
-        return sum;
       }
     }
 
@@ -967,6 +991,7 @@ module DefaultRectangular {
       return alias;
     }
 
+    pragma "modifies array blk"
     proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
                                      alias: DefaultRectangularArr)
     {
@@ -985,6 +1010,18 @@ module DefaultRectangular {
         alias.str(i) = d.dsiDim(i).stride;
       }
     }
+
+    proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
+                                     alias: DefaultRectangularArr)
+      where dom.stridable == false && this.stridable == false
+    {
+      for param i in 1..rank {
+        alias.off(i) = d.dsiDim(i).low;
+        alias.blk(i) = blk(i);
+        alias.str(i) = d.dsiDim(i).stride;
+      }
+    }
+
 
     proc dsiSlice(d: DefaultRectangularDom) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=rank,
@@ -1012,10 +1049,14 @@ module DefaultRectangular {
         }
         alias.computeFactoredOffs();
         alias.initShiftedData();
+
+        // it won't work with this.adjustBlkOffStrForNewDomain(d, alias)
+        alias.adjustBlkOffStrForNewDomain(d, alias);
       }
       return alias;
     }
 
+    pragma "modifies array blk"
     proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=newRank,
                                         idxType=idxType,
@@ -1060,7 +1101,7 @@ module DefaultRectangular {
         str = copy.str;
         origin = copy.origin;
         factoredOffs = copy.factoredOffs;
-        dsiDestroyData();
+        dsiDestroyArr(false);
         data = copy.data;
         // We can't call initShiftedData here because the new domain
         // has not yet been updated (this is called from within the

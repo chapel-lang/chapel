@@ -46,28 +46,6 @@ upcoming releases.  Both are available for use "at your own risk" in
 that they are not guaranteed to maintain program correctness (detailed
 after the flag's description).
 
-* chpl -sassertNoSlicing ...
-
-  At present, indexing into a Chapel array tends to require an extra
-  multiply compared to C/Fortran, in order to support Chapel's rich
-  array semantics.  More specifically, Chapel's support for striding,
-  reindexing, and rank-change of arrays requires a multiplication to
-  index into an array's innermost dimension in the general case; but
-  we pay this cost for every array.  In contrast, C and Fortran do not
-  require such multiplications.  For memory-bound programs, this
-  multiplication is rarely noticeable, but for programs that are
-  well-tuned for the memory hierarchy, this extra multiplication can
-  have a significant performance impact.
-
-  Work is currently underway to automatically distinguish between
-  arrays that require this multiplication and those that do not in
-  order to remove the overhead in the (common) cases where it is
-  unnecessary.  In the meantime, one can request that this
-  multiplication never be used for a given Chapel program by compiling
-  with this flag.  The flag should be safe for any program that does
-  not reindex a strided array or perform rank changes on an array to
-  remove the innermost dimension.
-
 * chpl -snoRefCount ...
 
   At present, Chapel reference counts arrays, domains, and domain maps

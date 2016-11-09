@@ -116,7 +116,7 @@ static void findOuterVars(BlockStmt* block, SymbolMap& uses) {
   collectSymExprs(block, symExprs);
 
   for_vector(SymExpr, symExpr, symExprs) {
-    Symbol* sym = symExpr->var;
+    Symbol* sym = symExpr->symbol();
 
     if (isLcnSymbol(sym)) {
       if (!isCorrespIndexVar(block, sym) &&
@@ -128,9 +128,12 @@ static void findOuterVars(BlockStmt* block, SymbolMap& uses) {
 }
 
 // Not to be invoked upon a reduce intent.
-static void setShadowVarFlags(VarSymbol* svar, IntentTag intent) {
-  if (intent & INTENT_FLAG_CONST)
+static void setShadowVarFlags(Symbol* ovar, VarSymbol* svar, IntentTag intent) {
+  if (intent & INTENT_FLAG_CONST) {
     svar->addFlag(FLAG_CONST);
+    if (!ovar->isConstant())
+      svar->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+  }
   if (intent & INTENT_FLAG_REF) {
     INT_ASSERT(!(intent & INTENT_FLAG_IN));
     svar->addFlag(FLAG_REF_VAR);
@@ -270,9 +273,9 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
           "reduce intent is applied to a 'const' variable %s", ovar->name);
       // The shadow variable will assume the reference from the leadIdx tuple.
       svar->addFlag(FLAG_REF_VAR);
-      svar->type = valtype->getRefType();
+      svar->type = dtUnknown;
     } else {
-      setShadowVarFlags(svar, tiIntent); // instead of arg intents
+      setShadowVarFlags(ovar, svar, tiIntent); // instead of arg intents
     }
 
     outerVars.push_back(ovar);
@@ -353,14 +356,11 @@ static bool setupShadowVarForRefIntents(CallExpr* lcCall,
     // createShadowVars() keeps 'const ref'-intent vars, drops 'ref'-vars
     INT_ASSERT(svar->hasFlag(FLAG_CONST));
     lcCall->insertBefore(new DefExpr(svar));
-    if (isRecordWrappedType(ovar->type)) {
-      // Just bit-copy, not "assign". Since 'svar' lives within the
-      // forall loop body, no ref counter increment/decrement is needed.
-      lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar, ovar));
-    } else {
+    {
       // Need to adjust svar's type.
       INT_ASSERT(svar->type == ovar->type->getValType()); // current state
       svar->type = ovar->type->getRefType();
+      INT_ASSERT(svar->type);
       if (isReferenceType(ovar->type)) {
         // 'ovar' is already a reference, copy that reference.
         lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar, ovar));
@@ -385,9 +385,9 @@ static CallExpr* findLeadIdxCopyInit(Symbol* leadIdxSym,
     if (CallExpr* seekCall = toCallExpr(seekExpr))
       if (seekCall->isPrimitive(PRIM_MOVE))
         if (SymExpr* seekArg1 = toSymExpr(seekCall->get(1)))
-          if (seekArg1->var == leadIdxCopySym)
+          if (seekArg1->symbol() == leadIdxCopySym)
             if (SymExpr* seekArg2 = toSymExpr(seekCall->get(2)))
-              if (seekArg2->var == leadIdxSym) {
+              if (seekArg2->symbol() == leadIdxSym) {
                 lcCall = seekCall;
                 break;
               }
@@ -495,7 +495,7 @@ static BlockStmt* discoverFromFollowIter(DefExpr* defFollowIter)
   for (Expr* curr = defFollowIter->next; curr; curr = curr->next) {
     if (ForLoop* forLoop = toForLoop(curr)) {
       if (SymExpr* seFollowIter = forLoop->iteratorGet()) {
-        if (seFollowIter->var == defFollowIter->sym) {
+        if (seFollowIter->symbol() == defFollowIter->sym) {
           bFollowerLoop = forLoop;
           break;
         }
@@ -628,9 +628,9 @@ static void getIterSymbols(BlockStmt* body, Symbol*& serIterSym,
   SymExpr* leadIdxCopySE = toSymExpr(byrefVars->get(1)->remove());
   INT_ASSERT(serIterSE && leadIdxSE && leadIdxCopySE);
 
-  serIterSym     = serIterSE->var;
-  leadIdxSym     = leadIdxSE->var;
-  leadIdxCopySym = leadIdxCopySE->var;
+  serIterSym     = serIterSE->symbol();
+  leadIdxSym     = leadIdxSE->symbol();
+  leadIdxCopySym = leadIdxCopySE->symbol();
 }
 
 static void getOuterVars(BlockStmt* body, SymbolMap& uses)
@@ -868,7 +868,7 @@ static void propagateExtraArgsForLoopIter(CallExpr* call,
   // Clone 'origIter' because we are messing with it.
   FnSymbol* newIter = copyLeaderFn(origIter, false);
   SymExpr* baseSE = toSymExpr(call->baseExpr);
-  INT_ASSERT(baseSE && baseSE->var == origIter);
+  INT_ASSERT(baseSE && baseSE->symbol() == origIter);
   baseSE->replace(new SymExpr(newIter));
 
   // Find the _toLeader call.
@@ -890,7 +890,7 @@ static void propagateExtraArgsForLoopIter(CallExpr* call,
   // Handle the other args
   while (Expr* secondArg = firstArg->next) {
     SymExpr* currActual = toSymExpr(secondArg->remove());
-    Symbol* currVar = currActual->var;
+    Symbol* currVar = currActual->symbol();
     call->insertAtTail(currActual);
     ArgSymbol* currFormal = new ArgSymbol(INTENT_BLANK, currVar->name, currVar->type);
     newIter->insertFormalAtTail(currFormal);
@@ -912,16 +912,16 @@ static void propagateExtraArgsForLoopIter(CallExpr* call,
 static VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref) {
   SymExpr* orse = toSymExpr(origRetExpr);
   INT_ASSERT(orse);
-  Symbol* origRetSym = orse->var;
+  Symbol* origRetSym = orse->symbol();
   for (Expr* curr = ref->prev; curr; curr = curr->prev)
     if (CallExpr* call = toCallExpr(curr))
       if (call->isPrimitive(PRIM_MOVE) ||
           call->isNamed("="))
         if (SymExpr* dest = toSymExpr(call->get(1)))
-          if (dest->var == origRetSym) {
+          if (dest->symbol() == origRetSym) {
             VarSymbol* newOrigRet = newTemp("localRet", origRetSym->type);
             call->insertBefore(new DefExpr(newOrigRet));
-            dest->var = newOrigRet;
+            dest->setSymbol(newOrigRet);
             if (call->isNamed("=")) {
               // We are "initializing" localRet, not "assigning" to it.
               // An autoCopy of the r.h.s. will be inserted by a later pass.
@@ -948,7 +948,7 @@ static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(parentFn, symExprs);
   for_vector(SymExpr, se, symExprs)
-    if (se->var == origRet) {
+    if (se->symbol() == origRet) {
       // It may appear in a no-init assignment.
       bool OK = false;
       if (CallExpr* parent = toCallExpr(se->parentExpr))
@@ -1057,7 +1057,7 @@ static bool callingParallelIterator(CallExpr* call) {
     }
 
     if (SymExpr* se = toSymExpr(nonameActual)) {
-      Symbol* tag = se->var;
+      Symbol* tag = se->symbol();
       // a quick check first
       if (tag->type == gLeaderTag->type) {
         if (tag == gLeaderTag ||
@@ -1076,7 +1076,7 @@ static bool callingParallelIterator(CallExpr* call) {
 // Is 'forLoop' a loop over a parallel iterator?
 // If so, return the call to that iterator.
 static CallExpr* findCallToParallelIterator(ForLoop* forLoop) {
-  Symbol* iterSym = forLoop->iteratorGet()->var;
+  Symbol* iterSym = forLoop->iteratorGet()->symbol();
 
   // Find an assignment to 'iterSym'.
   CallExpr* asgnToIter = NULL;
@@ -1084,7 +1084,7 @@ static CallExpr* findCallToParallelIterator(ForLoop* forLoop) {
     if (CallExpr* call = toCallExpr(curr))
       if (call->isPrimitive(PRIM_MOVE))
         if (SymExpr* lhs1 = toSymExpr(call->get(1)))
-          if (lhs1->var == iterSym) {
+          if (lhs1->symbol() == iterSym) {
             asgnToIter = call;
             break;
           }
@@ -1097,13 +1097,13 @@ static CallExpr* findCallToParallelIterator(ForLoop* forLoop) {
   // 'asgnToIter' is the second of the above moves. Find the first one.
   CallExpr* rhs1 = toCallExpr(asgnToIter->get(2));
   INT_ASSERT(rhs1 && rhs1->isNamed("_getIterator"));
-  Symbol* calltemp = toSymExpr(rhs1->get(1))->var;
+  Symbol* calltemp = toSymExpr(rhs1->get(1))->symbol();
   CallExpr* asgnToCallTemp = NULL;
   for (Expr* curr = asgnToIter->prev; curr; curr = curr->prev)
     if (CallExpr* call = toCallExpr(curr))
       if (call->isPrimitive(PRIM_MOVE))
         if (SymExpr* lhs2 = toSymExpr(call->get(1)))
-          if (lhs2->var == calltemp) {
+          if (lhs2->symbol() == calltemp) {
             asgnToCallTemp = call;
             break;
           }
@@ -1155,7 +1155,7 @@ static void eflopiFind(CallExpr* rcall,
 //  * replace all previously-existing references to origIOI with newIOI
 //
 static void redirectToNewIOI(ForLoop* eflopiLoop) {
-  Symbol* origIOI   = eflopiLoop->indexGet()->var;
+  Symbol* origIOI   = eflopiLoop->indexGet()->symbol();
   VarSymbol* newIOI = newTemp("origIndexOfInterest");
 
   SymbolMap ioiMap;
@@ -1240,7 +1240,7 @@ static void propagateThroughYield(CallExpr* rcall,
           // do only once for this yield
           redirectToNewIOI(eflopiLoop);
         }
-        Symbol* origIOI = eflopiLoop->indexGet()->var;
+        Symbol* origIOI = eflopiLoop->indexGet()->symbol();
         // If it fails, replace newOrigRet with newIOI in buildTuple.
         INT_ASSERT(newOrigRet != origIOI);
 
@@ -1520,7 +1520,7 @@ static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall,
     origArg = origArg->next;
     SymExpr* origSE = toSymExpr(origArg);
     INT_ASSERT(origSE); // if it is not a symbol, still need to make it happen
-    extraActuals[ix] = origSE->var;
+    extraActuals[ix] = origSE->symbol();
   }
   INT_ASSERT(!origArg->next); // we should have processed all args
 
@@ -1557,7 +1557,7 @@ static CallExpr* findWrappedCall(FnSymbol* wrapper) {
   // We want the third-last statement.
   CallExpr* move = toCallExpr(ret->prev->prev);
   INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-  INT_ASSERT(!strcmp(toSymExpr(move->get(1))->var->name, "wrap_call_tmp"));
+  INT_ASSERT(!strcmp(toSymExpr(move->get(1))->symbol()->name, "wrap_call_tmp"));
   CallExpr* wCall = toCallExpr(move->get(2));
   INT_ASSERT(wCall);
   return wCall;
@@ -1578,15 +1578,15 @@ static void unresolveWrapper(FnSymbol* wrapper) {
   CallExpr* retCall = toCallExpr(wrapper->body->body.tail);
   INT_ASSERT(retCall && retCall->isPrimitive(PRIM_RETURN));
   SymExpr* retSE = toSymExpr(retCall->get(1));
-  INT_ASSERT(retSE && !strcmp(retSE->var->name, "ret"));
+  INT_ASSERT(retSE && !strcmp(retSE->symbol()->name, "ret"));
   CallExpr* move = toCallExpr(retCall->prev);
   INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-  INT_ASSERT(toSymExpr(move->get(1))->var == retSE->var);
+  INT_ASSERT(toSymExpr(move->get(1))->symbol() == retSE->symbol());
   SymExpr* wrapSE = toSymExpr(move->get(2));
-  INT_ASSERT(wrapSE && !strcmp(wrapSE->var->name, "wrap_call_tmp"));
+  INT_ASSERT(wrapSE && !strcmp(wrapSE->symbol()->name, "wrap_call_tmp"));
 
   // the type of these needs to be resolved anew
-  retSE->var->type = wrapSE->var->type = dtUnknown;
+  retSE->symbol()->type = wrapSE->symbol()->type = dtUnknown;
 }
 
 // Handle the wrapper if applicable.

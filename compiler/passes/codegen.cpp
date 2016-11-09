@@ -749,6 +749,7 @@ static void codegen_header_compilation_config() {
 
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
+    genGlobalString("chpl_compileDirectory", getCwd());
     genGlobalString("CHPL_HOME",           CHPL_HOME);
 
     genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
@@ -945,7 +946,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
         SymExpr* se = toSymExpr(call->get(1));
         INT_ASSERT(se);
         SET_LINENO(call);
-        fprintf(hdrfile, ",\n&%s", se->var->cname);
+        fprintf(hdrfile, ",\n&%s", se->symbol()->cname);
         // To preserve operand order, this should be insertAtTail.
         // The change must also be made below (for LLVM) and in the signature
         // of chpl_comm_broadcast_private().
@@ -1341,7 +1342,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
 
         private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
               info->builder->CreatePointerCast(
-                info->lvt->getValue(se->var->cname).val,
+                info->lvt->getValue(se->symbol()->cname).val,
                 private_broadcastTableEntryType)));
         // To preserve operand order, this should be insertAtTail.
         call->insertAtHead(new_IntSymbol(broadcastID++));
@@ -1596,6 +1597,48 @@ void codegen(void) {
   GenInfo* info     = gGenInfo;
 
   INT_ASSERT(info);
+
+  forv_Vec(VarSymbol, sym, gVarSymbols) {
+    QualifiedType q = sym->qualType();
+    Type* type      = q.type();
+
+    if (q.isRef() && !q.isRefType()) {
+      type = getOrMakeRefTypeDuringCodegen(type);
+    } else if (q.isWideRef() && !q.isWideRefType()) {
+      type = getOrMakeRefTypeDuringCodegen(type);
+      type = getOrMakeWideTypeDuringCodegen(type);
+    }
+
+    sym->type = type;
+    if (type->symbol->hasFlag(FLAG_REF)) {
+      sym->qual = QUAL_REF;
+    } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) {
+      sym->qual = QUAL_WIDE_REF;
+    }
+  }
+  forv_Vec(ArgSymbol, sym, gArgSymbols) {
+    QualifiedType q = sym->qualType();
+    Type* type      = q.type();
+
+    if (q.isRef() && !q.isRefType()) {
+      type = getOrMakeRefTypeDuringCodegen(type);
+    } else if (q.isWideRef() && !q.isWideRefType()) {
+      type = getOrMakeRefTypeDuringCodegen(type);
+      type = getOrMakeWideTypeDuringCodegen(type);
+    }
+
+    sym->type = type;
+    if (type->symbol->hasFlag(FLAG_REF)) {
+      sym->qual = QUAL_REF;
+    } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) {
+      sym->qual = QUAL_WIDE_REF;
+    }
+  }
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->getReturnSymbol()) {
+      fn->retType = fn->getReturnSymbol()->type;
+    }
+  }
 
   if( llvmCodegen ) {
 #ifdef HAVE_LLVM

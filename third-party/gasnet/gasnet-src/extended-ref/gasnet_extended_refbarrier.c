@@ -1205,10 +1205,10 @@ typedef struct {
  * in just 2 reads instead of 4.
  */
 typedef struct gasnete_coll_rmdbarrier_inbox_s {
-  int volatile value;
   int volatile flags;
-  int volatile flags2;
+  int volatile value;
   int volatile value2;
+  int volatile flags2;
 } gasnete_coll_rmdbarrier_inbox_t;
   
 /* Pad struct to a specfic size and interleave */

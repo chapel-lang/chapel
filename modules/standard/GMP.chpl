@@ -21,23 +21,22 @@
 
 Support for GNU Multiple Precision Arithmetic
 
-This module supports integration with the GMP library (the GNU Multiple
-Precision Arithmetic Library. See the `GMP homepage <https://gmplib.org/>`_
-for more information on this library.
+This module provides a low-level interface to a substantial fraction
+of the GMP library (the GNU Multiple Precision arithmetic library).
+This support includes the C types for GMP integers, floating point
+numbers, and random numbers, and nearly every operation on those
+types. These types and functions enable efficient multi-precision
+computation within a single locale.  See the `GMP homepage
+<https://gmplib.org/>`_ for more information on this library.
 
-This module is a prototype implementation of a standard GMP (GNU
-Multiple Precision Arithmetic Library) module in Chapel.  It should be
-considered incomplete in that (a) only a subset of the full GMP interface is
-supported, and (b) the performance is currently lacking due to extraneous
-copies in the Chapel code that have not yet been optimized away.  If there is
-sufficient interest, this prototype can be expanded to support the full GMP
-interface and performance.
-
-This prototype GMP module has been used to implement a port of the standard GMP
-Chudnovsky algorithm for computing pi to arbitrary digits.  If you are
-interested in receiving a copy of this Chapel program, or simply in expressing
-your support for GMP within Chapel, please contact us at chapel_info@cray.com.
-
+The module :mod:`BigInteger` leverages this interface to define the
+record :record:`~BigInteger.bigint`.  The methods on the record
+:record:`~BigInteger.bigint` are locale aware so that Chapel programs
+can, for example, create a distributed array of GMP integers. That
+record also provides operator overloads for the standard arithmetic
+and assignment operators which tend to enable a more natural
+expression of some algorithms.  Please see the documentation in
+:mod:`BigInteger` for details.
 
 Using the GMP Module
 --------------------
@@ -64,51 +63,16 @@ Step 2:
 
 
 Step 3:
-  Start using the supported subset of GMP types and routines
-  or the BigInt class (see below for a complete listing).
+  Start using the supported subset of GMP types and routines defined
+  in this module or the bigint record (see :mod:`BigInteger`).
 
-
-Using the BigInt class
-----------------------
-
-The GMP Chapel module provides a :class:`BigInt` class wrapping GMP integers.
-At the present time, only the functions for ``mpz`` (ie signed integer)
-GMP types are supported with :class:`BigInt`; future work will be to
-extend this support to floating-point types. Also, in the future,
-we hope to provide these GMP functions as records that support
-operators like ``+``, ``*``, ``-``, etc.
-
-:class:`BigInt` methods all wrap GMP functions with obviously similar names.
-The :class:`BigInt` methods are locale aware - so Chapel programs can create a
-distributed array of GMP numbers. The method of :class:`BigInt` objects are
-setting the receiver, so e.g. myBigInt.add(x,y) sets myBigInt to ``x + y``.
-
-A code example::
-
- use GMP;
-
- // initialize a GMP value, set it to zero
- var a = new BigInt();
-
- a.fac_ui(100);     // set a to 100!
-
- writeln(a);        // output 100!
-
- delete a;          // free memory used by the GMP value
-
- // initialize from a decimal string
- var b = new BigInt("48473822929893829847");
-
- b.add_ui(b, 1);    // add one to b
-
- delete b;          // free memory used by b
 
 Calling GMP functions directly
 ------------------------------
 
-The second option for Chapel programs using this module is to call the GMP
-functions directly. For a full reference to GMP capabilities, please refer to
-the `GMP website <https://gmplib.org>`_ and the
+The low-level option for Chapel programs using multi-precision numbers
+is to the GMP functions directly. For a full reference to GMP capabilities,
+please refer to the `GMP website <https://gmplib.org>`_ and the
 `GMP documentation <https://gmplib.org/manual/>`_.
 
 
@@ -139,59 +103,114 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
   * :proc:`mpf_ui_div()`
   * :proc:`mpf_ui_sub()`
 
- */
+The BigInt class
+----------------
+
+This class is deprecated for release 1.14 (Fall 2016) and will not be
+present in release 1.15 (Spring 2017).  Please see the record
+:record:`~BigInteger.bigint` in the module :mod:`BigInteger` for
+the replacement for this class.
+
+This module also provides a class :class:`BigInt` that wraps GMP
+integers.  Nearly every GMP function for the GMP type ``mpz_t`` is
+wrapped by a method with a similar name.  These methods are locale
+aware - so Chapel programs can, for example, create a distributed
+array of GMP numbers.  A method of a :class:`BigInt` object set the
+receiver so that, for example, myBigInt.add(x,y) sets myBigInt to ``x
++ y``.
+
+A code example::
+
+ use GMP;
+
+ // initialize a GMP value, set it to zero
+ var a = new BigInt();
+
+ a.fac_ui(100);     // set a to 100!
+
+ writeln(a);        // output 100!
+
+ delete a;          // free memory used by the GMP value
+
+ // initialize from a decimal string
+ var b = new BigInt("48473822929893829847");
+
+ b.add_ui(b, 1);    // add one to b
+
+ delete b;          // free memory used by b
+
+*/
 module GMP {
   use SysBasic;
   use Error;
+  use BigInteger;
+
+  /* The GMP ``mp_bitcnt_t`` type */
+  extern type mp_bitcnt_t     = c_ulong;
+
+  /* The GMP ``mp_size_t``   type */
+  extern type mp_size_t       = size_t;
+
+  /* The GMP ``mp_limb_t``   type. */
+  extern type mp_limb_t       = uint(64);
+
+  /* The GMP `mp_bits_per_limb`` constant */
+  extern const mp_bits_per_limb: c_int;
+
+
+  //
+  // GMP represents a multi-precision integer as an __mpz_struct.
+  // This is treated as an internal type by GMP and is not intended to
+  // used directly by C developers.  Chapel treats this as an opaque object.
+  //
+  // In practice the implementation is a dynamically-sized packed vector
+  // of platform-specific integers i.e.
+  //
+  //     typedef struct {
+  //       int        _mp_alloc;  // capacity
+  //       int        _mp_size;   // current size
+  //       mp_limb_t* _mp_d;      // a packed vector of integers
+  //     } __mpz_struct;
+  //
+  //
+  // GMP then defines the type mpz_t as
+  //
+  //     typedef __mpz_struct mpz_t[1];
+  //
+  // When used to define a C value, this is simply a single __mpz_struct.
+  // As an argument to a function, this causes the value to be passed by
+  // reference rather than by value as would be expected for a struct.
+  //
+  //
+  // For single locale applications the application programmer is
+  // responsible for ensuring that every mpz_t is initialized correctly
+  // and that it is cleared/freed when it is no longer needed.
+  //
+  // For multi-locale applications the application programmer must be aware
+  // that Chapel creates shallow copies of this data structure within
+  // on-statements; the _mp_d value will not be valid on the remote locale.
+  // The developer may invoke chpl_gmp_get_mpz() to create a local copy of
+  // the actual GMP data.
+  //
+
+  pragma "no doc"
+  extern type __mpz_struct;
+
+  /* The GMP ``mpz_t`` type */
+  extern type mpz_t           = 1 * __mpz_struct;
 
   pragma "no doc"
   extern type __mpf_struct;
 
-  pragma "no doc"
-  extern type __mpz_struct;
+  /*  The GMP ``mpf_t`` type */
+  extern type mpf_t           = 1 * __mpf_struct;
 
   pragma "no doc"
   extern type __gmp_randstate_struct;
 
 
-  /*  The GMP ``mpf_t`` type */
-  extern type mpf_t           = 1 * __mpf_struct;
-
-  /* The GMP ``mpz_t`` type */
-  extern type mpz_t           = 1 * __mpz_struct;
-
   /* The GMP ``gmp_randstate_t`` type */
   extern type gmp_randstate_t = 1 * __gmp_randstate_struct;
-
-  /* The GMP ``mp_bitcnt_t`` type */
-  extern type mp_bitcnt_t     = c_ulong;
-
-  /* The GMP ``mp_size_t`` type */
-  extern type mp_size_t       = size_t;
-
-  /* The GMP ``mp_limb_t`` type */
-  extern type mp_limb_t       = uint(64);
-
-  /* The GMP ``mp_ptr`` type */
-  extern type mp_ptr; // mp_limb_t *
-
-  /* The GMP `mp_bits_per_limb`` constant */
-  extern const mp_bits_per_limb: c_int;
-
-  /* All these external functions are ref, which may
-     seem surprising. They are that way because identity
-     matters and they may get reallocated otherwise;
-     ref is currently the only way to avoid that.
-
-     Note that GMP defines e.g. gmp_randstate_t with
-     typedef struct __gmp_randstate_struct gmp_randstate_t[1],
-
-     and the natural way to wrap that in Chapel is with a 1-element
-     tuple. These tuples would be passed by value to the extern
-     routines if not for ref.
-   */
-
-
 
   //
   // The organization of the following interfaces is aligned with
@@ -209,9 +228,10 @@ module GMP {
   // 5.1 Initializing Functions
   //
 
+  /* */
   extern proc mpz_init(ref x: mpz_t);
 
-  extern proc mpz_init2(ref x: mpz_t, n: c_ulong);
+  extern proc mpz_init2(ref x: mpz_t, n: mp_bitcnt_t);
 
   extern proc mpz_clear(ref x: mpz_t);
 
@@ -222,7 +242,7 @@ module GMP {
   // 5.2 Assignment Functions
   //
 
-  extern proc mpz_set(ref rop: mpz_t, const op: mpz_t);
+  extern proc mpz_set(ref rop: mpz_t, const ref op: mpz_t);
 
   extern proc mpz_set_ui(ref rop: mpz_t, op: c_ulong);
 
@@ -324,7 +344,7 @@ module GMP {
 
   extern proc mpz_mul_2exp(ref rop: mpz_t,
                            const ref op1: mpz_t,
-                           op2: c_ulong);
+                           op2: mp_bitcnt_t);
 
   extern proc mpz_neg(ref rop: mpz_t,
                       const ref op: mpz_t);
@@ -652,10 +672,12 @@ module GMP {
   extern proc mpz_cmp_d(const ref op1: mpz_t,
                         op2: c_double) : c_int;
 
-  extern proc mpz_cmp_si(const ref op1: mpz_t,
+  extern chpl_mpz_cmp_si
+         proc mpz_cmp_si(const ref op1: mpz_t,
                          op2: c_long) : c_int;
 
-  extern proc mpz_cmp_ui(const ref op1: mpz_t,
+  extern chpl_mpz_cmp_ui
+         proc mpz_cmp_ui(const ref op1: mpz_t,
                          op2: c_ulong) : c_int;
 
   extern proc mpz_cmpabs(const ref op1: mpz_t,
@@ -667,7 +689,8 @@ module GMP {
   extern proc mpz_cmpabs_ui(const ref op1: mpz_t,
                             op2: c_ulong) : c_int;
 
-  extern proc mpz_sgn(const ref op: mpz_t) : c_int;
+  extern chpl_mpz_sgn
+         proc mpz_sgn(const ref op: mpz_t) : c_int;
 
 
   //
@@ -762,9 +785,11 @@ module GMP {
 
   extern proc mpz_fits_sshort_p(const ref op: mpz_t) : c_int;
 
-  extern proc mpz_odd_p(const ref op: mpz_t) : c_int;
+  extern chpl_mpz_odd_p
+         proc mpz_odd_p(const ref op: mpz_t) : c_int;
 
-  extern proc mpz_even_p(const ref op: mpz_t) : c_int;
+  extern chpl_mpz_even_p
+         proc mpz_even_p(const ref op: mpz_t) : c_int;
 
   extern proc mpz_sizeinbase(const ref op: mpz_t,
                              base: c_int) : size_t;
@@ -830,6 +855,10 @@ module GMP {
   extern proc mpf_set_q(ref rop: mpf_t,
                         const ref op: mpz_t);
 
+  extern proc mpf_set_str(ref rop: mpz_t,
+                          str: c_string,
+                          base: c_int);
+
   extern proc mpf_swap(ref rop1: mpf_t,
                        ref rop2: mpz_t);
 
@@ -856,6 +885,9 @@ module GMP {
   //
 
   extern proc mpf_get_d(const ref op: mpf_t) : c_double;
+
+  extern proc mpf_get_d_2exp(ref exp: c_long,
+                             const ref op: mpz_t) : c_double;
 
   extern proc mpf_get_si(const ref op: mpf_t) : c_long;
 
@@ -1088,10 +1120,10 @@ module GMP {
   private extern proc chpl_gmp_mpz_nlimbs(from: __mpz_struct) : uint(64);
 
   /* Print out an mpz_t (for debugging) */
-  extern proc chpl_gmp_mpz_print(x: mpz_t);
+  extern proc chpl_gmp_mpz_print(const ref x: mpz_t);
 
   /* Get an mpz_t as a string */
-  extern proc chpl_gmp_mpz_get_str(base: c_int, x: mpz_t) : c_string_copy;
+  extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_string_copy;
 
 
   enum Round {
@@ -1101,9 +1133,15 @@ module GMP {
   }
 
   /*
+    This class is deprecated for release 1.14 (Fall 2016) and will not
+    be present in release 1.15 (Spring 2017).  Please see the record
+    :record:`~BigInteger.bigint` in the module :mod:`BigInteger` for
+    the replacement for this class.
+
+
     The BigInt class provides a more Chapel-friendly interface to the
     GMP integer functions. In particular, this class supports GMP
-    numbers that are stored in distributed arrays.
+    integers that can be stored in distributed arrays.
 
     All methods on BigInt work with Chapel types. Many of them use the gmp
     functions directly, which use C types. Runtime checks are used to ensure
@@ -1113,26 +1151,26 @@ module GMP {
 
     The checks are controlled by the compiler options ``--[no-]cast-checks``,
     ``--fast``, etc.
-
-    TODO: When a Chapel type will not safely cast to a C type, it would be
-    better to promote the Chapel value to a BigInt, then run the operation on
-    that BigInt. This would make the BigInt interface consistent across all
-    platforms (already true today) _and_ always work regardless of platform
-    (not true today).
-   */
+  */
   class BigInt {
     var mpz: mpz_t;
 
     // initializing integers (constructors)
     proc BigInt(init2: bool, nbits: uint) {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       mpz_init2(this.mpz, nbits.safeCast(c_ulong));
     }
 
     proc BigInt(num: int) {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       mpz_init_set_si(this.mpz, num.safeCast(c_long));
     }
 
     proc BigInt(str: string, base: int = 0) {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       var e: c_int;
 
       e = mpz_init_set_str(this.mpz,
@@ -1147,6 +1185,8 @@ module GMP {
     }
 
     proc BigInt(str: string, base: int = 0, out error: syserr) {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       var e: c_int;
 
       error = ENOERR;
@@ -1163,6 +1203,8 @@ module GMP {
     }
 
     proc BigInt(num: BigInt) {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       if num.locale == here {
         mpz_init_set(this.mpz, num.mpz);
       } else {
@@ -1175,6 +1217,8 @@ module GMP {
     }
 
     proc BigInt() {
+      compilerWarning("The class GMP.BigInt has been deprecated.  Please use the record BigInteger.bigint instead");
+
       mpz_init(this.mpz);
     }
 
@@ -2537,15 +2581,14 @@ module GMP {
       gmp_randinit_mt(this.state);
     }
 
-    proc GMPRandom(a: BigInt, c: uint, m2exp: uint) {
-      var (acopy, a_) = a.maybeCopy();
+    proc GMPRandom(a: bigint, c: uint, m2exp: uint) {
+      // Rely on bigint assignment operator to obtain a local copy
+      var a_ = a;
 
       gmp_randinit_lc_2exp(this.state,
                            a_.mpz,
                            c.safeCast(c_ulong),
                            m2exp.safeCast(c_ulong));
-
-      if acopy then delete a_;
     }
 
     proc GMPRandom(size: uint) {
@@ -2566,13 +2609,12 @@ module GMP {
       }
     }
 
-    proc seed(seed: BigInt) {
+    proc seed(seed: bigint) {
       on this {
-        var (scopy, s_) = seed.maybeCopy();
+        // Rely on bigint assignment operator to obtain a local copy
+        var s_ = seed;
 
         gmp_randseed(this.state, s_.mpz);
-
-        if scopy then delete s_;
       }
     }
 
@@ -2582,6 +2624,28 @@ module GMP {
       }
     }
 
+    proc urandomb(nbits: uint) : uint {
+      var ret: c_ulong;
+
+      on this {
+        ret = gmp_urandomb_ui(this.state, nbits.safeCast(c_ulong));
+      }
+
+      return ret.safeCast(uint);
+    }
+
+    proc urandomm(n: uint) : uint {
+      var ret: c_ulong;
+
+      on this {
+        ret = gmp_urandomm_ui(this.state, n.safeCast(c_ulong));
+      }
+
+      return ret.safeCast(uint);
+    }
+
+
+    // TO DEPRECATE
     proc urandomb_ui(nbits: uint) : uint {
       var val: c_ulong;
 
@@ -2592,6 +2656,7 @@ module GMP {
       return val.safeCast(uint);
     }
 
+    // TO DEPRECATE
     proc urandomm_ui(n: uint) : uint {
       var val: c_ulong;
 
@@ -2602,45 +2667,37 @@ module GMP {
       return val.safeCast(uint);
     }
 
-    proc urandomb(r: BigInt, nbits: uint) {
+    proc urandomb(ref r: bigint, nbits: uint) {
       on this {
-        var (rcopy, r_) = r.maybeCopy();
+        // Rely on bigint assignment operator to obtain a local copy
+        var r_ = r;
 
         mpz_urandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
 
-        if rcopy {
-          r.set(r_);
-          delete r_;
-        }
+        r = r_;
       }
     }
 
-    proc urandomm(r: BigInt, n: BigInt) {
+    proc urandomm(ref r: bigint, n: bigint) {
       on this {
-        var (rcopy, r_) = r.maybeCopy();
-        var (ncopy, n_) = n.maybeCopy();
+        // Rely on bigint assignment operator to obtain a local copy
+        var r_ = r;
+        var n_ = n;
 
         mpz_urandomm(r_.mpz, this.state, n_.mpz);
 
-        if rcopy {
-          r.set(r_);
-          delete r_;
-        }
-
-        if ncopy then delete n_;
+        r = r_;
       }
     }
 
-    proc rrandomb(r: BigInt, nbits: uint) {
+    proc rrandomb(ref r: bigint, nbits: uint) {
       on this {
-        var (rcopy, r_) = r.maybeCopy();
+        // Rely on bigint assignment operator to obtain a local copy
+        var r_ = r;
 
         mpz_rrandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
 
-        if rcopy {
-          r.set(r_);
-          delete r_;
-        }
+        r = r_;
       }
     }
   }

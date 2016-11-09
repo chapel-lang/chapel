@@ -288,7 +288,7 @@ proc setupComms() {
   forall (P, D, S, N) in zip(PosOffset, Dest, Src, NeighDom) {
     P = N * box;
 
-    if !useStencilDist {
+    if !useStencilDist && N != (0,0,0) {
       D = binSpace.exterior(N * numNeed); // section of ghosts
       S = D.translate(-N * numBins); // map to binSpace
 

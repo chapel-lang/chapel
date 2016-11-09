@@ -1,3 +1,0 @@
-feature request: zippered iteration of enum-types with values such as ranges
-
-I would expect an iterator yielding values to zip serially with value iterators

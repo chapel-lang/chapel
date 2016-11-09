@@ -9,34 +9,12 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-NO_SLICE_SHORT=assertNoSlice
-OPT_BLK_SHORT=compOptBlk
-SYNC_SUFFIX=noInnerMult
-START_DATE=09/07/16
-NUM_TRIALS=3
+# Test perf of qthreads distrib scheduler compared to nemesis
+export CHPL_QTHREAD_SCHEDULER=distrib
 
-# test the performance of -sassertNoSlicing and then my branch that attempts to
-# achieve the same array inner multiply removal through compiler optimizations
+SHORT_NAME=distrib
+START_DATE=10/27/16
 
-perf_args="-performance-description $NO_SLICE_SHORT -performance-configs default:v,$NO_SLICE_SHORT:v,$OPT_BLK_SHORT:, -sync-dir-suffix $SYNC_SUFFIX"
-perf_args="${perf_args} -performance -numtrials $NUM_TRIALS -startdate $START_DATE"
-perf_args="${perf_args} -compopts -sassertNoSlicing"
-
-$CWD/nightly -cron ${nightly_args} ${perf_args}
-
-
-
-
-GITHUB_USER=ronawho
-GITHUB_BRANCH=optimize-away-inner-array-mult
-
-git checkout .
-git clean -fdx .
-
-git branch -D $GITHUB_USER-$GITHUB_BRANCH
-git checkout -b $GITHUB_USER-$GITHUB_BRANCH
-git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
-
-perf_args="-performance-description $OPT_BLK_SHORT -performance-configs default:v,$NO_SLICE_SHORT:v,$OPT_BLK_SHORT:v -sync-dir-suffix $SYNC_SUFFIX"
-perf_args="${perf_args} -numtrials $NUM_TRIALS -startdate $START_DATE"
+perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
+perf_args="${perf_args} -numtrials 5 -startdate $START_DATE"
 $CWD/nightly -cron ${perf_args} ${nightly_args}

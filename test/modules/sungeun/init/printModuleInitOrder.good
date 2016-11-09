@@ -11,7 +11,6 @@ Initializing Modules:
      ChapelStringLiterals
     MemConsistency
     Atomics
-    AtomicsCommon
     ChapelThreads
     ChapelTuple
     ChapelRange
@@ -20,13 +19,13 @@ Initializing Modules:
      DefaultRectangular
       DSIUtil
       ChapelArray
+       Sort
      ChapelNumLocales
      Sys
       SysBasic
     LocalesArray
     ChapelDistribution
      List
-     Sort
     ChapelIO
      IO
       Error
@@ -40,5 +39,6 @@ Initializing Modules:
     Assert
     CommDiagnostics
     AlignedTSupport
+    RangeChunk
    printModuleInitOrder
     moduleInitTest

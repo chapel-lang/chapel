@@ -47,6 +47,7 @@ static IntentTag constIntentForType(Type* t) {
              t == dtStringCopy ||
              t == dtCVoidPtr ||
              t == dtCFnPtr ||
+             // TODO: t->symbol->hasFlag(FLAG_RANGE) ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
     return INTENT_CONST_IN;
   }
@@ -106,19 +107,72 @@ IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
 
 static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
-  return INTENT_CONST_IN;
+
+  if (isRecord(t) || isUnion(t))
+    return INTENT_REF;
+  else
+    return INTENT_CONST_IN;
+}
+
+IntentTag concreteIntentForArg(ArgSymbol* arg) {
+
+  if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
+    return blankIntentForThisArg(arg->type);
+  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN) &&
+           arg->intent == INTENT_BLANK) {
+    return INTENT_CONST_IN;
+  }
+  else
+    return concreteIntent(arg->intent, arg->type);
+
 }
 
 void resolveArgIntent(ArgSymbol* arg) {
-  if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
-    arg->intent = blankIntentForThisArg(arg->type);
-  else
-    arg->intent = concreteIntent(arg->intent, arg->type);
+  if (!resolved) {
+    if (arg->type == dtMethodToken ||
+      arg->type == dtTypeDefaultToken ||
+      arg->type == dtVoid ||
+      arg->type == dtUnknown ||
+      arg->hasFlag(FLAG_TYPE_VARIABLE) ||
+      arg->hasFlag(FLAG_PARAM))
+      return; // Leave these alone during resolution.
+  }
+
+  IntentTag intent = concreteIntentForArg(arg);
+
+  if (resolved) {
+    // After resolution, change out/inout/in to ref
+    // to be more accurate to the generated code.
+
+    if (intent == INTENT_OUT ||
+        intent == INTENT_INOUT) {
+      // Resolution already handled out/inout copying
+      intent = INTENT_REF;
+    } else if (intent == INTENT_IN) {
+      // Resolution already handled in copying
+      intent = constIntentForType(arg->type);
+    }
+  }
+
+  arg->intent = intent;
 }
 
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     resolveArgIntent(arg);
+  }
+
+  // BHARSH TODO: This shouldn't be necessary, but will be until we fully
+  // switch over to qualified types.
+  forv_Vec(VarSymbol, sym, gVarSymbols) {
+    QualifiedType q = sym->qualType();
+    if (q.getQual() == QUAL_UNKNOWN) {
+      if (sym->isRef()) {
+        sym->qual = QUAL_REF;
+      } else {
+        sym->qual = QUAL_VAL;
+      }
+    }
   }
 
   intentsResolved = true;
