@@ -77,6 +77,8 @@ CLEAN_TARGS = \
 	*.gmon \
 	$(GEN_HEADERS) \
 	$(GEN_SRCS) \
+	TAGS \
+	tags
 
 CLEANALL_TARGS = \
 	$(CLEAN_TARGS)

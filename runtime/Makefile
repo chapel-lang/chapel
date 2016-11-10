@@ -34,8 +34,10 @@ all: $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
 depend:
 
 clean: clean.helpme
+	rm -f tags TAGS
 
 cleanall: cleanall.helpme
+	rm -f tags TAGS
 
 cleandeps: cleandeps.helpme
 
