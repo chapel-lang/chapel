@@ -175,7 +175,11 @@ var urand: [0..#nran] vec3,
 //
 // TODO: Remove for exercise -- meant for testing only
 //
+config param multilocale = (CHPL_COMM != "none"),
+             blockdist = true;
 config const loopStyle = 0;
+
+use BlockDist, CyclicDist;
 
 //
 // The program's entry point
@@ -189,7 +193,10 @@ proc main() {
   var t: Timer;
   t.start();
 
-  const pixdom = {0..#yres, 0..#xres};
+  const pixinds = {0..#yres, 0..#xres},
+        pixdom = if !multilocale then pixinds
+              else (if blockdist then pixinds dmapped Block(pixinds)
+                                 else pixinds dmapped Cyclic((0,0)));
   var pixels: [pixdom] pixelType;
 
   // render a frame of xsz x ysz pixels into the provided framebuffer
