@@ -9,21 +9,21 @@ td.add(one);
 td.add(two);
 
 //The two outputs match
-writeln(td);
+writeln("A  ", td.sorted());
 for ind in td do
-  writeln(ind);
+  writeln("A ", ind);
 
 td.remove(two);
 //The two outputs match
-writeln(td);
+writeln("B  ", td.sorted());
 for ind in td do
-  writeln(ind);
+  writeln("B ", ind);
 
 td.remove(one);
 //The two outputs match
-writeln(td);
+writeln("C  ", td.sorted());
 for ind in td do
-  writeln(ind);
+  writeln("C ", ind);
 //Scenario 1 ends
 
 //Scenario 2 begins
@@ -31,19 +31,19 @@ td.add(one);
 td.add(two);
 
 //The two outputs match
-writeln(td);
+writeln("D  ", td.sorted());
 for ind in td do
-  writeln(ind);
+  writeln("D ", ind);
 
 td.remove(one);
 //The two outputs *do not* match
-writeln(td);
+writeln("E  ", td.sorted());
 for ind in td do
-  writeln(ind); 
+  writeln("E ", ind); 
 
 td.remove(two);
 //The two outputs match
-writeln(td);
+writeln("F  ", td.sorted());
 for ind in td do
-  writeln(ind);
+  writeln("F ", ind);
 //Scenario 2 ends

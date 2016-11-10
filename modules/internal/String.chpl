@@ -1762,6 +1762,20 @@ module String {
   }
 
   //
+  // hashing support
+  //
+
+  pragma "no doc"
+  inline proc chpl__defaultHash(x : string): uint {
+    // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
+    var hash: int(64) = 5381;
+    for c in 0..#(x.length) {
+      hash = ((hash << 5) + hash) ^ x.buff[c];
+    }
+    return hash;
+  }
+
+  //
   // Developer Extras
   //
   pragma "no doc"
