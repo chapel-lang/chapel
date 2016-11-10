@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-UTIL_OBJDIR = $(COMPILER_ROOT)/util/$(OBJ_SUBDIR)
+UTIL_OBJDIR = $(COMPILER_BUILD)/util
 
 ALL_SRCS += util/*.cpp
 

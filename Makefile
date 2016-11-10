@@ -147,6 +147,7 @@ cleanall: FORCE
 	cd third-party && $(MAKE) cleanall
 	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) cleanall
 	rm -f util/chplenv/*.pyc
+	rm -rf build
 
 cleandeps: FORCE
 	cd compiler && $(MAKE) cleandeps
@@ -161,6 +162,7 @@ clobber: FORCE
 	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
+	rm -rf build
 	rm -f util/chplenv/*.pyc
 
 depend:
