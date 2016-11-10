@@ -9761,10 +9761,12 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
 static FnSymbol* findMainFn() {
   FnSymbol* genMain = NULL;
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!strcmp("main", fn->name)) {
-      return fn;
-    } else if (!strcmp("chpl_gen_main", fn->name)) {
-      genMain = fn;
+    if (fn->isResolved()) {
+      if (!strcmp("main", fn->name)) {
+        return fn;
+      } else if (!strcmp("chpl_gen_main", fn->name)) {
+        genMain = fn;
+      }
     }
   }
   assert(genMain != NULL);
