@@ -14,3 +14,5 @@ Other options:
   --rayMagnitude <mag>  trace rays with magnitude 'mag'
   --errorMargin <err>   avoid surface acne via error margin 'err'
   --noTiming            don't print timing information
+  --useCRand            use C's rand() rather than Chapel's RNG
+  --seed                a seed for the RNG, 0 == 'don't care'
