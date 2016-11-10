@@ -3466,6 +3466,21 @@ static void buildVisibleFunctionMap() {
   nVisibleFunctions = gFnSymbols.n;
 }
 
+//
+// Collects functions called 'name' visible in 'block' and up the visibility
+// chain, which is defined by getVisibilityBlock().
+// The functions defined/visible in a block are given by 'visibleFunctionMap'.
+//
+// 'visibilityBlockCache' maps a block to the nearest block up the visibility
+// chain that contains any functions, according to visibleFunctionMap.
+// In other words, it skips those blocks that do not define any visible
+// functions (of any name).
+// Todo: some blocks only define if-functions (i.e. _if_fnNNN); such blocks
+// probabaly should not be present in visibleFunctionMap.
+//
+// getVisibleFunctions returns the block appropriate for visibilityBlockCache
+// or NULL if there is none, e.g. when the next block up is the rootModule.
+//
 static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
