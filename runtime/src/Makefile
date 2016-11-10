@@ -46,8 +46,8 @@ SUBDIRS = \
 	mem \
 	tasks \
 	threads \
-        timers \
-        qio \
+	timers \
+	qio \
 
 else
 TARGETS = \
