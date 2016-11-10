@@ -127,7 +127,7 @@ passByRef(Symbol* sym) {
     return false;
   }
 
-  Type* type = sym->type;
+  Type* type = sym->type->getValType();
 
   if (sym->hasFlag(FLAG_ARG_THIS) == true &&
       passableByVal(type)         == true) {
@@ -201,7 +201,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           temp = INTENT_CONST_REF;
         }
         intent = concreteIntent(temp, type);
-        type = type->refType;
+        type = type->getValType()->refType;
       } else {
         IntentTag temp = INTENT_BLANK;
         if (sym->hasFlag(FLAG_CONST) && sym->isRef()) {
@@ -308,7 +308,7 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
         // This is only a performance issue.
         INT_ASSERT(!sym->hasFlag(FLAG_SHOULD_NOT_PASS_BY_REF));
         /* NOTE: See note above in addVarsToFormals() */
-        VarSymbol* tmp = newTemp(sym->type->refType);
+        VarSymbol* tmp = newTemp(sym->type->getValType()->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, sym)));
         call->insertAtTail(tmp);
