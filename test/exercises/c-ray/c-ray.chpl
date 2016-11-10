@@ -4,15 +4,15 @@
  * Ported to Chapel and parallelized by Brad Chamberlain,
  *   September/November 2016
  *
- * -----------------------------------------------------------------------
+ * ----------------------------------------------------------------------------
  * Usage:
  *   compile:  chpl c-ray.chpl -o c-ray  # add --fast for performance runs
- *   run:      ./c-ray         # reads from 'scene', writes to 'image.ppm'
- *     or:     ./c-ray --scene myscene --image myimage.ppm
+ *   run:      ./c-ray  # reads from 'scene', writes to 'image.ppm' by default
+ *     or:     ./c-ray --scene myscene --image myimage.ppm  # override defaults
  *     or:     cat scene | ./c-ray --scene stdin --image stdout > out.ppm
- *     or:     ./c-ray --help            # for further options
+ *     or:     ./c-ray --usage  # for further options
  *   enjoy:    emacs foo.ppm (with a modern non-terminal version of emacs)
- * -----------------------------------------------------------------------
+ * ----------------------------------------------------------------------------
  * Scene file format:
  *   # sphere (many)
  *   s  x y z  rad   r g b   shininess   reflectivity
@@ -20,7 +20,7 @@
  *   l  x y z
  *   # camera (one)
  *   c  x y z  fov   tx ty tz
- * -----------------------------------------------------------------------
+ * ----------------------------------------------------------------------------
  */
 
 //
