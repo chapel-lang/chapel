@@ -1480,9 +1480,9 @@ reprivatizeIterators() {
     }
   }
 
-  for_vector(Symbol, sym2, privatizedFields) {
-    if (sym2)
-      sym2->type = dtInt[INT_SIZE_DEFAULT];
+  for_vector(Symbol, sym, privatizedFields) {
+    if (sym)
+      sym->type = dtInt[INT_SIZE_DEFAULT];
   }
 }
 
