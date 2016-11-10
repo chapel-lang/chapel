@@ -173,6 +173,11 @@ var urand: [0..#nran] vec3,
     irand: [0..#nran] int;
 
 //
+// TODO: Remove for exercise -- meant for testing only
+//
+config const loopStyle = 0;
+
+//
 // The program's entry point
 //
 proc main() {
@@ -184,11 +189,21 @@ proc main() {
   var t: Timer;
   t.start();
 
-  var pixels: [0..#yres, 0..#xres] pixelType;
+  const pixdom = {0..#yres, 0..#xres};
+  var pixels: [pixdom] pixelType;
 
   // render a frame of xsz x ysz pixels into the provided framebuffer
-  forall (y, x) in pixels.domain do
-    pixels[y, x] = computePixel(y, x);
+  if loopStyle == 0 {
+    forall (y, x) in pixels.domain do
+      pixels[y, x] = computePixel(y, x);
+  } else if loopStyle == 1 {
+    forall (y, x) in pixdom do
+      pixels[y, x] = computePixel(y, x);
+  } else if loopStyle == 2 { 
+    pixels = computePixel(pixdom);
+  } else {
+    pixels = computePixel(pixels.domain);
+  }
 
   const rendTime = t.elapsed();
 
@@ -338,7 +353,7 @@ proc computePixel(y: int, x: int): pixelType {
   var rgb: vec3;
 
   for s in 0..#samples do
-    rgb += trace(getPrimaryRay((x, y), s));
+    rgb += trace(getPrimaryRay((x,y), s));
 
   rgb *= rcpSamples;
 
@@ -348,6 +363,10 @@ proc computePixel(y: int, x: int): pixelType {
     const colorAsInt = colorMask & ((min(rgb(color), 1.0) * 255.0): pixelType);
     return colorAsInt << colorOffset(color);
   }
+}
+
+proc computePixel(yx: 2*int): pixelType {
+  return computePixel((...yx));  // expand the tuple 'yx'
 }
 
 //
