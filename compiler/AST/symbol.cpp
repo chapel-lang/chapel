@@ -301,9 +301,9 @@ bool Symbol::noDocGen() const {
 void Symbol::addSymExpr(SymExpr* se) {
 
   // MPF 2016-11-08: Consider not tracking SymExprs
-  // that refer Symbols that have an immediate.
+  // that refer to Symbols that have an immediate.
   // The reason is that immediates are usually
-  // unique-ifiied and so the symbol for 3 would refer
+  // unique-ified and so the symbol for 3 would refer
   // to all the uses of 3, and that probably isn't adding
   // any value.
 
