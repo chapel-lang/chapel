@@ -21,11 +21,6 @@
 --scene badscene7  # c-ray.badscene7.good
 
 #
-# test help output
+# test usage output
 #
---help  # c-ray.help.good
-
-#
-# test bad argument
-#
---noTiming --goober  # c-ray.badarg.good
+--usage  # c-ray.usage.good

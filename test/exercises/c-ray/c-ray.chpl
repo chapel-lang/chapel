@@ -4,15 +4,15 @@
  * Ported to Chapel and parallelized by Brad Chamberlain,
  *   September/November 2016
  *
- * -----------------------------------------------------------------------
+ * ----------------------------------------------------------------------------
  * Usage:
  *   compile:  chpl c-ray.chpl -o c-ray  # add --fast for performance runs
- *   run:      ./c-ray         # reads from 'scene', writes to 'image.ppm'
- *     or:     ./c-ray --scene myscene --image myimage.ppm
+ *   run:      ./c-ray  # reads from 'scene', writes to 'image.ppm' by default
+ *     or:     ./c-ray --scene myscene --image myimage.ppm  # override defaults
  *     or:     cat scene | ./c-ray --scene stdin --image stdout > out.ppm
- *     or:     ./c-ray --help            # for further options
+ *     or:     ./c-ray --usage  # for further options
  *   enjoy:    emacs foo.ppm (with a modern non-terminal version of emacs)
- * -----------------------------------------------------------------------
+ * ----------------------------------------------------------------------------
  * Scene file format:
  *   # sphere (many)
  *   s  x y z  rad   r g b   shininess   reflectivity
@@ -20,9 +20,8 @@
  *   l  x y z
  *   # camera (one)
  *   c  x y z  fov   tx ty tz
- * -----------------------------------------------------------------------
+ * ----------------------------------------------------------------------------
  */
-
 
 //
 // Configuration params/types
@@ -36,7 +35,9 @@ config param bitsPerColor = 8;
 // Configuration constants
 // (Override defaults on executable line using --<cfg> <val> or --<cfg>=<val>)
 //
-config const size = "800x600",            // size of output image
+config const usage = false,                // print usage message?
+
+             size = "800x600",            // size of output image
              samples = 1,                 // number of rays sampled per pixel
              scene = "scene",             // input scene filename, or stdin
              image = "image.ppm",         // output image filename, or stdout
@@ -47,6 +48,7 @@ config const size = "800x600",            // size of output image
              errorMargin = 1e-6,          // margin to avoid surface acne
 
              noTiming = false,            // print rendering times?
+
              useCRand = false,            // use C rand() (vs. Chapel PCG)?
              seed = 0;                    // if non-zero, use as the RNG 'seed'
 
@@ -58,8 +60,10 @@ param colorMask = (0x1 << bitsPerColor) - 1;
 type colorType = uint(bitsPerColor);
 
 //
-// Compute config-dependent constants.
+// Process config-dependent constants.
 //
+if usage then printUsage();
+
 const ssize = size.partition("x");        // split size string into components
 
 if (ssize.size != 3 || ssize(2) != "x") then
@@ -172,10 +176,8 @@ var urand: [0..#nran] vec3,
 //
 // The program's entry point
 //
-proc main(args: [] string) {
+proc main() {
   use Time;   // Bring in timers to measure the rendering time
-
-  processArgs(args);
 
   loadScene();
   initRands();
@@ -202,46 +204,28 @@ proc main(args: [] string) {
 }
 
 //
-// process any arguments
+// print usage information
 //
-proc processArgs(args) {
-  for i in 1..args.size-1 {
-    if (args[i] == "--help" || args[i] == "-h") {
-      printUsage();
-    } else {
-      stderr.writeln("error: unrecognized argument: '", args[i], "'");
-      stderr.writeln();
-      printUsage(error=true);
-    }
-  }
-
-  proc printUsage(error=false) {
-    const outChannel = if error then stderr else stdout;
-
-    usage("Usage: " + args[0] + " [options]");
-    usage("  Reads a scene file, writes a ray-traced image file, " +
+proc printUsage() {
+  writeln("Usage: c-ray [options]");
+  writeln("  Reads a scene file, writes a ray-traced image file, " +
           "prints timing to stderr.");
-    usage();
-    usage("Primary Options:");
-    usage("  --size <w>x<h>        plot an image of 'w'idth x 'h'eight pixels");
-    usage("  --samples <rays>      antialias using 'rays' samples per pixel");
-    usage("  --scene <file>        read scene from 'file' (can be 'stdin')");
-    usage("  --image <file>        write image to 'file' (can be 'stdout')");
-    usage("  --help / -h           print this help screen");
-    usage();
-    usage("Other options:");
-    usage("  --fieldOfView <fov>   use a field-of-view of 'fov' radians");
-    usage("  --maxRayDepth <max>   rays will reflect no more than 'max' times");
-    usage("  --rayMagnitude <mag>  trace rays with magnitude 'mag'");
-    usage("  --errorMargin <err>   avoid surface acne via error margin 'err'");
-    usage("  --noTiming            don't print timing information");
+  writeln();
+  writeln("Primary Options:");
+  writeln("  --size <w>x<h>        plot an image of 'w'idth x 'h'eight pixels");
+  writeln("  --samples <rays>      antialias using 'rays' samples per pixel");
+  writeln("  --scene <file>        read scene from 'file' (can be 'stdin')");
+  writeln("  --image <file>        write image to 'file' (can be 'stdout')");
+  writeln("  --usage               print this usage information");
+  writeln();
+  writeln("Other options:");
+  writeln("  --fieldOfView <fov>   use a field-of-view of 'fov' radians");
+  writeln("  --maxRayDepth <max>   rays will reflect no more than 'max' times");
+  writeln("  --rayMagnitude <mag>  trace rays with magnitude 'mag'");
+  writeln("  --errorMargin <err>   avoid surface acne via error margin 'err'");
+  writeln("  --noTiming            don't print timing information");
 
-    exit(error);
-
-    proc usage(str = "") {
-      outChannel.writeln(str);
-    }
-  }
+  exit(0);
 }
 
 //
