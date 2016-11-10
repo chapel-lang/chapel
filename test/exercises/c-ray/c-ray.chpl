@@ -255,8 +255,7 @@ proc printUsage() {
 // Load the scene from an extremely simple scene description file
 //
 proc loadScene() {
-  const inputs = {'l', 'c', 's'},
-        expectedArgs: [inputs] int = ['l'=>4, 'c'=>8, 's'=>10];
+  const expectedArgs = ['l'=>4, 'c'=>8, 's'=>10];
 
   for (rawLine, lineno) in zip(infile.readlines(), 1..) {
     // drop any comments (text following '#')
@@ -272,7 +271,7 @@ proc loadScene() {
     const inType = columns[1];
 
     // handle error conditions
-    if !inputs.member(inType) then
+    if !expectedArgs.domain.member(inType) then
       inputError("unexpected input type: " + inType);
     else if columns.size < expectedArgs(inType) then
       inputError("not enough arguments for input of type '" + inType + "'");
