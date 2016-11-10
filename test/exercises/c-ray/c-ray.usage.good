@@ -1,4 +1,4 @@
-Usage: ./c-ray [options]
+Usage: c-ray [options]
   Reads a scene file, writes a ray-traced image file, prints timing to stderr.
 
 Primary Options:
@@ -6,7 +6,7 @@ Primary Options:
   --samples <rays>      antialias using 'rays' samples per pixel
   --scene <file>        read scene from 'file' (can be 'stdin')
   --image <file>        write image to 'file' (can be 'stdout')
-  --help / -h           print this help screen
+  --usage               print this usage information
 
 Other options:
   --fieldOfView <fov>   use a field-of-view of 'fov' radians
