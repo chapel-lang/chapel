@@ -402,6 +402,10 @@ static void removeMootFields();
 static void expandInitFieldPrims();
 static void fixTypeNames(AggregateType* ct);
 static void setScalarPromotionType(AggregateType* ct);
+static FnSymbol* findGenMainFn();
+static void printCallGraph(FnSymbol* startPoint = NULL,
+                           int indent = 0,
+                           std::set<FnSymbol*>* alreadyCalled = NULL);
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   if (formalIdxToActual.n != 0) formalIdxToActual.clear();
@@ -8861,6 +8865,13 @@ resolve() {
 
   handleRuntimeTypes();
 
+  if (fPrintCallGraph) {
+    // This needs to go after resolution is complete, but before
+    // pruneResolvedTree() removes unused functions (like the uninstantiated
+    // versions of generic functions).
+    printCallGraph();
+  }
+
   pruneResolvedTree();
 
   freeCache(ordersCache);
@@ -9691,11 +9702,6 @@ static void cleanupAfterRemoves() {
   }
 }
 
-static FnSymbol* findMainFn();
-static void printCallGraph(FnSymbol* startPoint = NULL,
-                           int indent = 0,
-                           std::set<FnSymbol*>* alreadyCalled = NULL);
-
 
 //
 // Print a representation of the call graph of the program.
@@ -9713,7 +9719,7 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
   const bool printLocalMultiples = false;
 
   if (!startPoint) {
-    startPoint = findMainFn();
+    startPoint = findGenMainFn();
   }
 
   if (alreadyCalled == NULL) {
@@ -9722,8 +9728,15 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
   }
 
   collect_asts_postorder(startPoint, asts);
-
-  fprintf(stdout, "%*s%s\n", indent, "", startPoint->name);
+  if (startPoint->hasFlag(FLAG_COMPILER_GENERATED) ||
+      startPoint->hasFlag(FLAG_MODULE_INIT)) {
+    // Don't print chpl_gen_main and chpl__init_moduleName
+    // Set the indent to -2 so recursing down to the next level
+    // will set it back to 0.
+    indent = -2;
+  } else {
+    fprintf(stdout, "%*s%s\n", indent, "", startPoint->name);
+  }
 
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
@@ -9742,7 +9755,7 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
               printCallGraph(fn, indent+2, alreadyCalled);
               alreadyCalled->erase(fn);
             } else {
-              fprintf(stdout, "%*s(Recursive) %s\n", indent, "", fn->name);
+              fprintf(stdout, "%*s%s (Recursive)\n", indent+2, "", fn->name);
             }
           }
         }
@@ -9755,22 +9768,18 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
 }
 
 //
-// Return the user main function if it exists. If there is no user main,
-// return the compiler generated main instead.
+// Return the compiler generated main function.
 //
-static FnSymbol* findMainFn() {
-  FnSymbol* genMain = NULL;
+static FnSymbol* findGenMainFn() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isResolved()) {
-      if (!strcmp("main", fn->name)) {
+      if (!strcmp("chpl_gen_main", fn->name)) {
         return fn;
-      } else if (!strcmp("chpl_gen_main", fn->name)) {
-        genMain = fn;
       }
     }
   }
-  assert(genMain != NULL);
-  return genMain;
+  INT_FATAL("couldn't find compiler generated main function");
+  return NULL;
 }
 
 
@@ -9781,9 +9790,6 @@ static FnSymbol* findMainFn() {
 //
 static void
 pruneResolvedTree() {
-  if (fPrintCallGraph) {
-    printCallGraph();
-  }
   removeUnusedFunctions();
   if (fRemoveUnreachableBlocks)
     deadBlockElimination();
