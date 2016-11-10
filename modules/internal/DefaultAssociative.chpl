@@ -749,7 +749,8 @@ module DefaultAssociative {
   }
   
   
-  // Thomas Wang's 64b mix function from http://www.concentric.net/~Ttwang/tech/inthash.htm
+  // Thomas Wang's 64b mix function - see
+  // https://web.archive.org/web/20060705164341/http://www.concentric.net/~Ttwang/tech/inthash.htm
   proc _gen_key(i: uint): uint {
     var key = i;
     key += ~(key << 32);
