@@ -35,12 +35,11 @@ config param bitsPerColor = 8;
 // Configuration constants
 // (Override defaults on executable line using --<cfg> <val> or --<cfg>=<val>)
 //
-config const usage = false,                // print usage message?
-
-             size = "800x600",            // size of output image
+config const size = "800x600",            // size of output image
              samples = 1,                 // number of rays sampled per pixel
              scene = "scene",             // input scene filename, or stdin
              image = "image.ppm",         // output image filename, or stdout
+             usage = false,                // print usage message?
 
              fieldOfView = quarter_pi,    // field of view in radians
              maxRayDepth = 5,             // raytrace recurion limit
@@ -224,6 +223,8 @@ proc printUsage() {
   writeln("  --rayMagnitude <mag>  trace rays with magnitude 'mag'");
   writeln("  --errorMargin <err>   avoid surface acne via error margin 'err'");
   writeln("  --noTiming            don't print timing information");
+  writeln("  --useCRand            use C's rand() rather than Chapel's RNG");
+  writeln("  --seed                a seed for the RNG, 0 == 'don't care'");
 
   exit(0);
 }
