@@ -32,9 +32,11 @@ COMM_LAUNCHER_OBJS = \
 	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
 
 ifneq ($(MAKE_LAUNCHER), 1)
-ifeq ($(CHPL_COMM),gasnet)
+ifneq ($(CHPL_MAKE_RULE),clean)
+ifneq ($(CHPL_MAKE_RULE),clobber)
 # get CHPL_GASNET_CFLAGS
-include $(GASNET_SETUP_MAKEFILE)
+-include $(GASNET_SETUP_MAKEFILE)
+endif
 endif
 endif
 

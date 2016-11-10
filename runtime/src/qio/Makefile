@@ -33,13 +33,6 @@ include Makefile.share
 SUBDIRS = regexp/$(CHPL_MAKE_REGEXP)
 SUBDIRS += auxFilesys/hdfs
 SUBDIRS += auxFilesys/curl
-
-ALL_SUBDIRS = \
-              regexp/none \
-              regexp/re2 \
-              auxFilesys/curl \
-              auxFilesys/hdfs
-
 TARGETS = $(QIO_OBJS)
 
 ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))

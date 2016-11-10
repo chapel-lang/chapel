@@ -30,7 +30,6 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 TARGETS =
 
 SUBDIRS = $(CHPL_MAKE_COMM)
-ALL_SUBDIRS = none gasnet
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.emptydirrules
 
