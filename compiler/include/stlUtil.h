@@ -65,7 +65,7 @@
                 STL_UTIL_UNIQUE(for_vector_end) ) ? \
               * STL_UTIL_UNIQUE(for_vector_iter) : \
               (TYPE*)0) ; \
-       STL_UTIL_UNIQUE(for_vector_iter)++ )
+       ++STL_UTIL_UNIQUE(for_vector_iter) )
 
 #define for_set(TYPE, VAL, VEC) \
   const std::set<TYPE*> & STL_UTIL_UNIQUE(for_set_set) = (VEC); \
@@ -78,6 +78,6 @@
                 STL_UTIL_UNIQUE(for_set_end) ) ? \
               * STL_UTIL_UNIQUE(for_set_iter) : \
               (TYPE*)0) ; \
-       STL_UTIL_UNIQUE(for_set_iter)++ )
+       ++STL_UTIL_UNIQUE(for_set_iter) )
 
 #endif
