@@ -20,6 +20,7 @@ where the comments will guide you through STEP 0, STEP 1, STEP 2, etc.
 Important files in this directory are as follows:
 
 c-ray.chpl   : The Chapel source file
+Makefile     : A trivial Makefile showing how to compile the program
 scene        : A simple scene file describing four spheres
 sphfract     : A much more complex file describing a fractal pattern
 scene.ppm    : The expected PPM file for 'scene'
