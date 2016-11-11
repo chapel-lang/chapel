@@ -185,11 +185,10 @@ use BlockDist, CyclicDist;
 // The program's entry point
 //
 proc main() {
-  use Time;   // Bring in timers to measure the rendering time
-
   loadScene();
   initRands();
 
+  use Time;      // Bring in timers to measure the rendering time
   var t: Timer;
   t.start();
 
@@ -350,11 +349,19 @@ proc initRands() {
 }
 
 //
-// Given the (y, x) coordinates of a pixel and return a pixel color
-// value as 'pixelType'.  For each subpixel, trace a ray through the
-// scene, accumulate the colors of the subpixels of each pixel, then
-// pack the color and put it into the framebuffer.
+// Given the (y, x) coordinates of a pixel, computePixel() returns the
+// color value computed for the pixel as a 'pixelType'.  Given the two
+// overloads below, the (y, x) coordinates can either be passed in as
+// a tuple of ints or as two separate int arguments.
 //
+// For each subpixel, trace a ray through the scene, accumulate the
+// colors of the subpixels of each pixel, then pack the color and put
+// it into the framebuffer.
+//
+proc computePixel(yx: 2*int): pixelType {
+  return computePixel((...yx));  // expand the tuple 'yx'
+}
+
 proc computePixel(y: int, x: int): pixelType {
   var rgb: vec3;
 
@@ -369,10 +376,6 @@ proc computePixel(y: int, x: int): pixelType {
     const colorAsInt = colorMask & ((min(rgb(color), 1.0) * 255.0): pixelType);
     return colorAsInt << colorOffset(color);
   }
-}
-
-proc computePixel(yx: 2*int): pixelType {
-  return computePixel((...yx));  // expand the tuple 'yx'
 }
 
 //
