@@ -24,6 +24,14 @@
  */
 
 //
+// STUDENTS: Browse through the code below to your heart's content.
+// When you're ready to start coding, jump down to main() and read
+// through the comments labeled STEP 0, STEP 1, STEP 2, etc.  These
+// will lead you through a number of coding steps and transformations
+// that will exercise Chapel data parallel and base language features.
+//
+
+//
 // Configuration params/types
 // (Override defaults on compiler line using -s<cfg>=<val>)
 //
@@ -178,9 +186,9 @@ proc main() {
   // 'yres' x 'xres' pixel elements of type 'pixelType' (a
   // configurable type alias defined above).
   //
-  // STEP 2: Pass your array into the writeImage() call below,
-  // replacing the 'dummy' array (which is provided here just to make
-  // the code compile out of the box).
+  // STEP 2: Pass your array into the writeImage() call towards the
+  // end of this routine, replacing the 'dummy' array (which is
+  // provided here just to make the code compile out of the box).
   //
 
   loadScene();
@@ -193,7 +201,8 @@ proc main() {
   //
   // STEP 3: Within these timer calls, fill in your array's values via
   // calls to 'computePixel()' (defined below).  Start by trying a
-  // serial loop.  Do you get the image you expect?
+  // serial loop.  Do you get a reasonable image?  Try the 'sphfract'
+  // scene file as well...
   //
   // Step 4: Try experimenting with setting other configuration
   // options on the command-line to see if things work as expected.
@@ -213,16 +222,21 @@ proc main() {
   // with promotion?  Does it affect the speed at all?
   //
   // STEP 8 (optional): Ray tracing can be notoriously poorly load
-  // balanced.  Can you apply the dynamic() iterator from the
-  // DynamicIters module
-  // (http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html)
-  // to achieve a speedup?  Do you need to create a more
-  // load-imbalanced scene in order to see a noticeable difference?
+  // balanced since some pixels result in far more pixel bounces than
+  // others.  Can you achieve a speed improvement by applying the
+  // dynamic() iterator from the DynamicIters module:
+  // http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html
+  // Do you need to create a more load-imbalanced scene (or increase
+  // the value of 'maxRayDepth' in order to see a noticeable
+  // difference?
   //
   // STEP 9 (intended for the afternoon session): Make your array a
-  // distributed array.  Do you see overhead relative to your previous
-  // timings?  Run on multiple locales.  Do you see speedups as you
-  // increase the number of locales?
+  // distributed array (if you implemented STEP 8, note that the
+  // dynamic iterators don't yet work well with distributed
+  // domains/arrays).  Do you see overhead relative to your previous
+  // timings due to the additional complexity of distributed arrays?
+  // Run using multiple locales using the provided Cray accounts.  Do
+  // you see speedups as you increase the number of locales?
   //
 
   const rendTime = t.elapsed();
