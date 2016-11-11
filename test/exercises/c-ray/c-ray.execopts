@@ -2,6 +2,9 @@
 # basic test
 #
 --noTiming
+--noTiming --loopStyle=1
+--noTiming --loopStyle=2
+--noTiming --loopStyle=3
 --noTiming --samples=4 --seed=1 --size=400x300  # c-ray.4samples.good
 
 #

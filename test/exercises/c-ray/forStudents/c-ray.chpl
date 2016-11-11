@@ -24,6 +24,14 @@
  */
 
 //
+// STUDENTS: Browse through the code below to your heart's content.
+// When you're ready to start coding, jump down to main() and read
+// through the comments labeled STEP 0, STEP 1, STEP 2, etc.  These
+// will lead you through a number of coding steps and transformations
+// that will exercise Chapel data parallel and base language features.
+//
+
+//
 // Configuration params/types
 // (Override defaults on compiler line using -s<cfg>=<val>)
 //
@@ -98,13 +106,6 @@ param X = 1,          // names for accessing vec3 elements
       numdims = 3;
 
 //
-// TODO: Should be able to use an enum for both of the above:
-//   enum colors {red=0, green, blue};
-//   use colors;
-//   param numColors = colors.size;
-//
-
-//
 // Verify that config-specified pixelType is appropriate for storing colors
 //
 if (isIntegral(pixelType)) {
@@ -123,9 +124,6 @@ if (isIntegral(pixelType)) {
 //
 
 type vec3 = numdims*real;   // a 3-tuple for positions, vectors
-//
-// TODO: Making this an array [0..3] doesn't work -- why?
-//
 
 record ray {
   var orig,           // origin
@@ -173,18 +171,26 @@ var urand: [0..#nran] vec3,
     irand: [0..#nran] int;
 
 //
-// TODO: Remove for exercise -- meant for testing only
-//
-config param multilocale = (CHPL_COMM != "none"),
-             blockdist = true;
-config const loopStyle = 0;
-
-use BlockDist, CyclicDist;
-
-//
 // The program's entry point
 //
 proc main() {
+
+  //
+  // STEP 0: Compile and run the code as it is.  You should get a
+  // small black square image in the resulting image.ppm file.  View
+  // the image file in gimp, or your favorite image viewer, or a
+  // modern version of emacs running with its own window.
+  //
+  // STEP 1: Declare an array (and optionally a domain for it) here to
+  // describe the image of pixels to render.  The array should store
+  // 'yres' x 'xres' pixel elements of type 'pixelType' (a
+  // configurable type alias defined above).
+  //
+  // STEP 2: Pass your array into the writeImage() call towards the
+  // end of this routine, replacing the 'dummy' array (which is
+  // provided here just to make the code compile out of the box).
+  //
+
   loadScene();
   initRands();
 
@@ -192,24 +198,46 @@ proc main() {
   var t: Timer;
   t.start();
 
-  const pixinds = {0..#yres, 0..#xres},
-        pixdom = if !multilocale then pixinds
-              else (if blockdist then pixinds dmapped Block(pixinds)
-                                 else pixinds dmapped Cyclic((0,0)));
-  var pixels: [pixdom] pixelType;
-
-  // render a frame of xsz x ysz pixels into the provided framebuffer
-  if loopStyle == 0 {
-    forall (y, x) in pixels.domain do
-      pixels[y, x] = computePixel(y, x);
-  } else if loopStyle == 1 {
-    forall (y, x) in pixdom do
-      pixels[y, x] = computePixel(y, x);
-  } else if loopStyle == 2 { 
-    pixels = computePixel(pixdom);
-  } else {
-    pixels = computePixel(pixels.domain);
-  }
+  //
+  // STEP 3: Within these timer calls, fill in your array's values via
+  // calls to 'computePixel()' (defined below).  Start by trying a
+  // serial loop.  Do you get a reasonable image?  Try the 'sphfract'
+  // scene file as well...
+  //
+  // Step 4: Try experimenting with setting other configuration
+  // options on the command-line to see if things work as expected.
+  // See the list of options by searching on 'config' above, or by
+  // running the program with the --usage flag.
+  // 
+  // Step 5: Time how long the rendering takes.  Recompile with the
+  // --fast flag (intended for performance runs, once a program is
+  // working) and retime.  Note these timings for future reference.
+  //
+  // STEP 6: Now try switching to a parallel loop and make sure your
+  // code still produces the right image.  What kind of speed
+  // improvements do you see over the serial loop?  With or without
+  // --fast?
+  //
+  // STEP 7 (optional): As a challenge, can you write this computation
+  // with promotion?  Does it affect the speed at all?
+  //
+  // STEP 8 (optional): Ray tracing can be notoriously poorly load
+  // balanced since some pixels result in far more pixel bounces than
+  // others.  Can you achieve a speed improvement by applying the
+  // dynamic() iterator from the DynamicIters module:
+  // http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html
+  // Do you need to create a more load-imbalanced scene (or increase
+  // the value of 'maxRayDepth' in order to see a noticeable
+  // difference?
+  //
+  // STEP 9 (intended for the afternoon session): Make your array a
+  // distributed array (if you implemented STEP 8, note that the
+  // dynamic iterators don't yet work well with distributed
+  // domains/arrays).  Do you see overhead relative to your previous
+  // timings due to the additional complexity of distributed arrays?
+  // Run using multiple locales using the provided Cray accounts.  Do
+  // you see speedups as you increase the number of locales?
+  //
 
   const rendTime = t.elapsed();
 
@@ -217,7 +245,8 @@ proc main() {
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
 
-  writeImage(pixels);
+  var dummy: [1..100, 1..100] int;
+  writeImage(dummy);
 
   for obj in objects do
     delete obj;
@@ -258,7 +287,6 @@ proc loadScene() {
 
   for (rawLine, lineno) in zip(infile.readlines(), 1..) {
     // drop any comments (text following '#')
-    // TODO: string library experts, is there a better way to do this?
     const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
           line = linePlusComment[1];
 
@@ -458,11 +486,11 @@ proc getSamplePos(xy, sample) {
   pt(Y) = -pt(Y);
 
   if sample {
-    const sf = 2.0 / xres; // TODO: This really wants to be a local static
+    const sf = 2.0 / xres;
     pt += jitter(xy, sample) * sf;
   }
 
-  const aspect = xres:real / yres;  // image aspect ratio; TODO: local static
+  const aspect = xres:real / yres;  // image aspect ratio
   pt(Y) /= aspect;
 
   return pt;
@@ -486,7 +514,6 @@ proc jitter((x, y), s) {
 proc raySphere(sph, ray) {
   var sp: spoint;
 
-  // TODO: simplify this
   const a = ray.dir(X)**2 + ray.dir(Y)**2 + ray.dir(Z)**2,
         b = 2.0 * ray.dir(X) * (ray.orig(X) - sph.pos(X)) +
             2.0 * ray.dir(Y) * (ray.orig(Y) - sph.pos(Y)) +
@@ -505,7 +532,6 @@ proc raySphere(sph, ray) {
   var t1 = (-b + sqrtD) / (2.0 * a),
       t2 = (-b - sqrtD) / (2.0 * a);
 
-  // TODO: simplify?
   if (t1 < errorMargin && t2 < errorMargin) || (t1 > 1.0 && t2 > 1.0) then
     return (false, sp);
 
@@ -532,7 +558,7 @@ proc raySphere(sph, ray) {
 // Also handles reflections by calling trace again, if necessary.
 //
 proc shade(obj, sp, depth) {
-  var col: vec3;  // TODO: reduction?
+  var col: vec3;
 
   // for all lights...
   for l in lights {
@@ -591,9 +617,6 @@ inline proc crossProduct(v1, v2) {
           v1(X)*v2(Y) - v1(Y)*v2(X));
 }
 
-//
-// TODO: We should really add this to the IO module
-//
 iter channel.readlines() {
   var line: string;
 
