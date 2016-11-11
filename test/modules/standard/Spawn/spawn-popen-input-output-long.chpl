@@ -1,6 +1,6 @@
 use Spawn;
 
-var sub = spawn(["cat"], stdin=PIPE, stdout=PIPE, stderr=FORWARD);
+var sub = spawn(["cat"], stdin=BUFFERED_PIPE, stdout=PIPE, stderr=FORWARD);
 
 config const n = 10000;
 for i in 1..n {
