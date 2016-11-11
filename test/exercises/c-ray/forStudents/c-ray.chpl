@@ -407,7 +407,7 @@ proc computePixel(yx: 2*int): pixelType {
 //
 proc writeImage(pixels) {
   outfile.writeln("P6");
-  outfile.writeln(pixels.domain.dim(1).size, " ", pixels.domain.dim(2).size);
+  outfile.writeln(pixels.domain.dim(2).size, " ", pixels.domain.dim(1).size);
   outfile.writeln(255);
   for p in pixels do
     for param c in 1..numColors do
