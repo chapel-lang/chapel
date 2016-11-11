@@ -134,6 +134,13 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
   return false;
 }
 
+void CollapseBlocks::visitForallIntents(ForallIntents* clause) {
+  // Need to define this so CollapseBlocks is not abstract.
+  // However, it should not be invoked.
+  INT_ASSERT(false);
+}
+
+
 // The c for loop primitive is of the form:
 //   __primitive("C for loop", {inits}, {test}, {incrs})
 //

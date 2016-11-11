@@ -45,9 +45,17 @@
 // way, the implementation takes care to evaluate VEC only once
 // and allows multiple loops using the same index variable.
 //
-// NOTE: We should consider replacing these with something else.
+// TODO: We should consider replacing these with something else.
 // In C++11 perhaps these macros could be written
 //  for(TYPE* VAL: VEC)
+//
+// NOTE: unlike forv_Vec et al., these macros require enclosing { }
+// when they are inside an if or similar, e.g.:
+//
+//   if (...some condition...) { // must use open brace here
+//     for_vector(Expr, expr, myVector)
+//       printf("%d", expr->id); // here, simple cases are OK without { }
+//   }
 //
 
 #define STL_UTIL_TOK_PASTE_INTERNAL(a, b) a ## b
@@ -65,6 +73,23 @@
                 STL_UTIL_UNIQUE(for_vector_end) ) ? \
               * STL_UTIL_UNIQUE(for_vector_iter) : \
               (TYPE*)0) ; \
+       ++STL_UTIL_UNIQUE(for_vector_iter) )
+
+#define for_vector_allowing_0s(TYPE, VAL, VEC)                           \
+  const std::vector<TYPE*> & STL_UTIL_UNIQUE(for_vector_vec) = (VEC);    \
+  std::vector<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_vector_iter) =  \
+      STL_UTIL_UNIQUE(for_vector_vec).begin();                           \
+  std::vector<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_vector_end) =   \
+      STL_UTIL_UNIQUE(for_vector_vec).end();                             \
+  bool STL_UTIL_UNIQUE(for_vector_cont);                                 \
+  for (TYPE * VAL = NULL ;                                               \
+       (STL_UTIL_UNIQUE(for_vector_cont) =                               \
+              ( STL_UTIL_UNIQUE(for_vector_iter) !=                      \
+                STL_UTIL_UNIQUE(for_vector_end) )),                      \
+       (VAL =   STL_UTIL_UNIQUE(for_vector_cont) ?                       \
+              * STL_UTIL_UNIQUE(for_vector_iter) :                       \
+                (TYPE*)0),                                               \
+       STL_UTIL_UNIQUE(for_vector_cont);                                 \
        ++STL_UTIL_UNIQUE(for_vector_iter) )
 
 #define for_set(TYPE, VAL, VEC) \

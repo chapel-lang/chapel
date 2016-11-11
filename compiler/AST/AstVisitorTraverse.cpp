@@ -173,6 +173,11 @@ void AstVisitorTraverse::exitBlockStmt(BlockStmt* node)
 
 }
 
+void AstVisitorTraverse::visitForallIntents(ForallIntents* clause)
+{
+
+}
+
 bool AstVisitorTraverse::enterWhileDoStmt(WhileDoStmt* node)
 {
   return true;

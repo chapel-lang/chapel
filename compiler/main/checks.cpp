@@ -553,7 +553,6 @@ checkResolveRemovedPrims(void) {
         case PRIM_QUERY_PARAM_FIELD:
         case PRIM_QUERY_TYPE_FIELD:
         case PRIM_ERROR:
-        case PRIM_FORALL_LOOP:
         case PRIM_COERCE:
           if (call->parentSymbol)
             INT_FATAL("Primitive should no longer be in AST");

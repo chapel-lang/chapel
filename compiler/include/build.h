@@ -87,7 +87,7 @@ BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL
 CallExpr* zipToTuple(CallExpr* zipExpr);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
-                               CallExpr* byref_vars,
+                               ForallIntents* forall_intents,
                                BlockStmt* body,
                                bool zippered = false,
                                VarSymbol* useThisGlobalOp = NULL);

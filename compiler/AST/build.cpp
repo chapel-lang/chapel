@@ -1198,9 +1198,12 @@ buildFollowLoop(VarSymbol* iter,
 // Do whatever is needed for a reduce intent.
 // Return the globalOp symbol.
 static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
-                                 Expr* reduceOp, Expr* reduceVar,
-                                 Expr* otherROp, VarSymbol* useThisGlobalOp)
+                                Expr*& reduceOpRef, Expr* reduceVar,
+                                Expr*& otherROpRef, VarSymbol* useThisGlobalOp)
 {
+  Expr* reduceOp = reduceOpRef;  // save away these
+  Expr* otherROp = otherROpRef;
+
   if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(reduceOp)) {
     if (!strcmp(sym->unresolved, "max"))
       sym->unresolved = astr("MaxReduceScanOp");
@@ -1215,9 +1218,14 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
     globalOp = newTemp("chpl__reduceGlob");
     iterRec->defPoint->insertBefore(new DefExpr(globalOp));
   }
-  reduceOp->replace(new SymExpr(globalOp));
-  if (otherROp)
-    otherROp->replace(new SymExpr(globalOp));
+  // Because of this, can't just do reduceOp->replace(...).
+  // If this fails, need to do something more like replace().
+  INT_ASSERT(!reduceOp->parentExpr);
+  reduceOpRef = new SymExpr(globalOp);
+  if (otherROp) {
+    INT_ASSERT(!otherROp->parentExpr);
+    otherROpRef = new SymExpr(globalOp);
+  }
 
   Expr* eltType = NULL;
   if (isUnresolvedSymExpr(reduceOp)) {
@@ -1248,56 +1256,33 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
 }
 
 // Setup for forall intents
-static void setupForallIntents(CallExpr* withClause,
-                               CallExpr* otherWith,
+static void setupForallIntents(ForallIntents* forallIntents,
+                               ForallIntents* otherFI,
                                VarSymbol* iterRec,
                                VarSymbol* leadIdx,
                                VarSymbol* leadIdxCopy,
                                BlockStmt* parLoop,
                                VarSymbol* useThisGlobalOp)
 {
-  // To iterate over two withClause in parallel.
-  Expr* otherActual = otherWith ? otherWith->argList.head : NULL;
-  Expr* otherNext   = otherActual ? otherActual->next : NULL;
+  int nv = forallIntents->numVars();
+  for (int i = 0; i < nv; i++) {
+    bool isReduce = forallIntents->isReduce(i);
+    INT_ASSERT(!otherFI || otherFI->isReduce(i) == isReduce);
+    if (isReduce) {
+      Expr* otherDum = NULL;
+      INT_ASSERT(!otherFI || otherFI->isReduce(i));
 
-  // Handle reduce intents, if any.
-  // Keep in sync with markOuterVarsWithIntents().
-  bool markerTurn = true;
-  Expr* reduceOp = NULL;
-  Expr* otherROp = NULL;
-  for_actuals(actual, withClause) {
-    if (markerTurn) {
-      markerTurn = false;
-      if (SymExpr* se = toSymExpr(actual)) {
-        ArgSymbol* tiMarker =  toArgSymbol(se->symbol());
-        INT_ASSERT(tiMarker); // confirm my thinking
-      } else {
-        reduceOp = actual;
-        if (otherActual) otherROp = otherActual;
-      }
-    } else {
-      markerTurn = true;
-      if (reduceOp) {
-        setupOneReduceIntent(iterRec, parLoop, reduceOp, actual, otherROp,
-                             useThisGlobalOp);
-        reduceOp = NULL;
-        otherROp = NULL;
-      }
+      setupOneReduceIntent(iterRec, parLoop,
+                           forallIntents->riSpecs[i], forallIntents->fiVars[i],
+                           otherFI ? otherFI->riSpecs[i] : otherDum,
+                           useThisGlobalOp);
     }
-    // Advance the iteration over otherWith.
-    otherActual = otherNext;
-    otherNext = otherNext ? otherNext->next: NULL;
   }
-  INT_ASSERT(markerTurn);
-  INT_ASSERT(!reduceOp);
-  INT_ASSERT(!otherROp);
-  INT_ASSERT(!otherActual);
 
   // ForallLeaderArgs: stash references so we know where things are.
-  INT_ASSERT(withClause->isPrimitive(PRIM_FORALL_LOOP));
-  withClause->insertAtHead(leadIdxCopy); // 3rd arg
-  withClause->insertAtHead(leadIdx);     // 2nd arg
-  withClause->insertAtHead(iterRec);     // 1st arg
+  forallIntents->iterRec     = new SymExpr(iterRec);
+  forallIntents->leadIdx     = new SymExpr(leadIdx);
+  forallIntents->leadIdxCopy = new SymExpr(leadIdxCopy);
 }
 
 /*
@@ -1343,7 +1328,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABody->insertAtTail(loopBody);
   SABlock->insertAtTail(SABody);
   SABlock->insertAtTail("_freeIterator(%S)", saIter);
-  setupForallIntents(loopBody->byrefVars, NULL,
+  setupForallIntents(loopBody->forallIntents, NULL,
                      iterRec, saIdx, saIdxCopy, SABody, useThisGlobalOp);
   return SABlock;
 }
@@ -1373,7 +1358,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
 BlockStmt*
 buildForallLoopStmt(Expr*      indices,
                     Expr*      iterExpr,
-                    CallExpr*  byref_vars,
+                    ForallIntents* forall_intents,
                     BlockStmt* loopBody,
                     bool       zippered,
                     VarSymbol* useThisGlobalOp)
@@ -1389,24 +1374,16 @@ buildForallLoopStmt(Expr*      indices,
 
   checkIndices(indices);
 
-  //
-  // 'byrefVars' will contain a PRIM_FORALL_LOOP, whose "arguments"
-  // are variables listed in the forall's with(ref...) clause.
-  // This list is processed during implementForallIntents1().
-  //
-  INT_ASSERT(!loopBody->byrefVars);
-  if (byref_vars) {
-    INT_ASSERT(byref_vars->isPrimitive(PRIM_ACTUALS_LIST));
-    byref_vars->primitive = primitives[PRIM_FORALL_LOOP];
-  } else {
-    byref_vars = new CallExpr(PRIM_FORALL_LOOP);
-  }
-  loopBody->byrefVars = byref_vars;
+  INT_ASSERT(!loopBody->forallIntents);
+  if (!forall_intents)
+    forall_intents = new_ForallIntents();
+  // This will be processed during implementForallIntents1().
+  loopBody->forallIntents = forall_intents;
 
   // ensure it's normal; prevent flatten_scopeless_block() in cleanup.cpp
   loopBody->blockTag = BLOCK_NORMAL;
 
-  // NB these copies do not get byref_vars updates below.
+  // NB these copies do not get blockIntent updates below.
   BlockStmt* loopBodyForFast =
                      (fNoFastFollowers == false) ? loopBody->copy() : NULL;
   BlockStmt* loopBodyForStandalone = (!zippered) ? loopBody->copy() : NULL;
@@ -1502,8 +1479,8 @@ buildForallLoopStmt(Expr*      indices,
 
   resultBlock->insertAtTail(leadForLoop);
   resultBlock->insertAtTail("_freeIterator(%S)", leadIter);
-  setupForallIntents(byref_vars,
-                     loopBodyForFast ? loopBodyForFast->byrefVars : NULL,
+  setupForallIntents(loopBody->forallIntents,
+                     loopBodyForFast ? loopBodyForFast->forallIntents : NULL,
                      iterRec, leadIdx, leadIdxCopy, leadForLoop,
                      useThisGlobalOp);
 
@@ -1518,6 +1495,24 @@ buildForallLoopStmt(Expr*      indices,
   }
 
   return resultBlock;
+}
+
+// Todo: replace with ForallIntents or similar.
+void addTaskIntent(CallExpr* ti, Expr* var, IntentTag intent, Expr* ri) {
+  if (ri) {
+    // This is a reduce intent. NB 'intent' is undefined.
+    ti->insertAtTail(ri);
+    ti->insertAtTail(var);
+  } else {
+    ArgSymbol* tiMark = tiMarkForIntent(intent);
+    if (!tiMark) {
+      USR_FATAL_CONT(var, "%s is not supported in a 'with' clause",
+                           intentDescrString(intent));
+      tiMark = tiMarkForIntent(INTENT_IN); //dummy, so parser can continue
+    }
+    ti->insertAtTail(tiMark);
+    ti->insertAtTail(var);
+  }
 }
 
 static void
@@ -1908,6 +1903,9 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   loopBody->insertAtTail(new CallExpr("=", result,
                            new CallExpr(opFun, result, elementToReduce)));
 
+  ForallIntents* fi = new ForallIntents();
+  addForallIntent(fi, new SymExpr(result), INTENT_BLANK /*dummy*/, opUnr);
+
   // useThisGlobalOp argument lets us handle the case where the result type
   // differs from eltType, e.g. + reduce over booleans
   // as in test/trivial/deitz/monte.chpl
@@ -1915,7 +1913,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   BlockStmt* forall = buildForallLoopStmt(
     index->copy(),      // indices
     new SymExpr(data),  // iterExpr
-    new CallExpr(PRIM_ACTUALS_LIST, opUnr, result), // byref_vars
+    fi,       // forall_intents
     loopBody, // loopBody
     zippered, // zippered
     globalOp  // useThisGlobalOp

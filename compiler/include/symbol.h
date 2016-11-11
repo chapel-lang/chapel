@@ -92,8 +92,9 @@ enum ModTag {
 
 typedef std::bitset<NUM_FLAGS> FlagSet;
 
-// for task intents and forall intents, in createTaskFunctions.cpp
+// for task intents and forall intents
 ArgSymbol* tiMarkForIntent(IntentTag intent);
+ArgSymbol* tiMarkForTFIntent(int tfIntent);
 
 
 /******************************** | *********************************
@@ -674,6 +675,13 @@ void checkEmptyPartialCopyFnMap();
 
 void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
                                std::vector<ArgSymbol*>& varargFormals);
+
+// Parser support.
+class ForallIntents;
+ForallIntents* new_ForallIntents();
+void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
+void addTaskIntent(CallExpr* ti,        Expr* var, IntentTag intent, Expr* ri);
+
 
 extern bool localTempNames;
 

@@ -126,8 +126,11 @@ void normalize() {
     // function resolution to ensure that sync vars are in the correct
     // state (empty) if they are used but not assigned to anything.
     forv_Vec(SymExpr, se, gSymExprs) {
-      if (isFnSymbol(se->parentSymbol) && se == se->getStmtExpr()) {
-        if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
+      if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
+      if (se == se->getStmtExpr() &&
+          // avoid exprs under ForallIntents
+          (isDirectlyUnderBlockStmt(se) || !isBlockStmt(se->parentExpr)))
+        {
           // Don't add these calls for the return type, since
           // _statementLevelSymbol would do nothing in that case
           // anyway, and it contributes to order-of-resolution issues for
@@ -279,29 +282,16 @@ static void transformLogicalShortCircuit()
 }
 
 
-static Symbol* reduceIntentOp(BlockStmt* block, Symbol* reVar) {
-  // See markOuterVarsWithIntents() on how to decode byrefVars.
-  // Note that here we may have leading iter symbols, see getIterSymbols().
-  CallExpr* byrefVars = block->byrefVars;
-  bool leadingIterSymbols =
-    byrefVars->numActuals() >= 3 &&
-    toSymExpr(byrefVars->get(1))->symbol()->hasFlag(FLAG_CHPL__ITER);
-
-  // The first actual (after the iter symbols when present); null if none.
-  Expr* markExpr = leadingIterSymbols ? byrefVars->get(3)->next :
-    byrefVars->argList.head;
-
-  while (markExpr) {
-    SymExpr* markSE = toSymExpr(markExpr);
-    SymExpr* outervarSE = toSymExpr(markSE->next);
-    markExpr = outervarSE->next;
-
-    if (isVarSymbol(markSE->symbol()))
-      // this is a reduce intent
-      if (outervarSE->symbol() == reVar)
-        // found reVar
-        return markSE->symbol();
-  }
+static Symbol* reduceIntentOp(ForallIntents* fi, Symbol* reVar) {
+  int nv = fi->numVars();
+  for (int i = 0; i < nv; i++)
+    if (fi->isReduce(i))
+      if (SymExpr* varSE = toSymExpr(fi->fiVars[i]))
+        if (varSE->symbol() == reVar) {
+          SymExpr* ri = toSymExpr(fi->riSpecs[i]);
+          INT_ASSERT(ri);
+          return ri->symbol();
+        }
 
   // Did not see 'reVar' with a reduce intent.
   return NULL;
@@ -325,13 +315,11 @@ static void lowerReduceAssign() {
         Symbol* lhsVar = lhsSE->symbol();
         // ... which is mentioned in a with clause with a reduce intent
         Expr* curr = call->parentExpr;
-        BlockStmt* enclosingForall = NULL;
+        ForallIntents* enclosingFI = NULL;
         while (curr) {
           if (BlockStmt* block = toBlockStmt(curr))
-            if (block->byrefVars) {
-              // If non-PRIM_FORALL_LOOP is legit, replace assert with if.
-              INT_ASSERT(block->byrefVars->isPrimitive(PRIM_FORALL_LOOP));
-              enclosingForall = block;
+            if (ForallIntents* fi = block->forallIntents) {
+              enclosingFI = fi;
               break;
             }
           curr = curr->parentExpr;
@@ -341,9 +329,9 @@ static void lowerReduceAssign() {
         // the forall loop body is replicated 3 times, so we would
         // report the same error 3 times. We could have a hashset of
         // astlocs to avoid that with USR_FATAL_CONT, if we wanted.
-        if (!enclosingForall)
+        if (!enclosingFI)
           USR_FATAL_CONT(call, "The reduce= operator must occur within a forall loop.");
-        else if (Symbol* globalOp = reduceIntentOp(enclosingForall, lhsVar))
+        else if (Symbol* globalOp = reduceIntentOp(enclosingFI, lhsVar))
           {
             SET_LINENO(call);
             Expr* rhs = call->get(2)->remove(); // do it before lhsSE->remove()

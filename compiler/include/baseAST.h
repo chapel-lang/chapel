@@ -449,6 +449,11 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     call(next_ast, __VA_ARGS__);                                        \
   }
 
+// Do not use for_vector to avoid #include astutil.h
+#define AST_CALL_STDVEC(_vec, _t, call, ...)                                 \
+  for (std::vector<_t*>::iterator it = _vec.begin(); it != _vec.end(); it++) \
+    { if (*it) call(*it, __VA_ARGS__); }
+
 #define AST_CHILDREN_CALL(_a, call, ...)                                \
   switch (_a->astTag) {                                                 \
   case E_CallExpr:                                                      \
@@ -512,6 +517,13 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
       AST_CALL_CHILD(stmt, BlockStmt,    blockInfoGet(), call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt,    modUses,        call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt,    byrefVars,      call, __VA_ARGS__);   \
+      if (ForallIntents* bi = stmt->forallIntents) {                           \
+        AST_CALL_STDVEC(bi->fiVars,  Expr, call, __VA_ARGS__);                 \
+        AST_CALL_STDVEC(bi->riSpecs, Expr, call, __VA_ARGS__);                 \
+        AST_CALL_CHILD(bi, ForallIntents, iterRec,  call, __VA_ARGS__);        \
+        AST_CALL_CHILD(bi, ForallIntents, leadIdx,  call, __VA_ARGS__);        \
+        AST_CALL_CHILD(bi, ForallIntents, leadIdxCopy,  call, __VA_ARGS__);    \
+      }                                                                        \
     }                                                                          \
     break;                                                                     \
   }                                                                            \

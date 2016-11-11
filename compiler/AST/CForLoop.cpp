@@ -250,6 +250,9 @@ void CForLoop::verify()
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "CForLoop::verify. byrefVars is not NULL");
+
+  if (forallIntents             != 0)
+    INT_FATAL(this, "CForLoop::verify. forallIntents is not NULL");
 }
 
 GenRet CForLoop::codegen()
@@ -383,8 +386,6 @@ GenRet CForLoop::codegen()
     if (blockStmtEnd ) INT_ASSERT(blockStmtEnd->getParent()  == func);
 #endif
   }
-
-  INT_ASSERT(!byrefVars); // these should not persist past parallel()
 
   return ret;
 }

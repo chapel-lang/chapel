@@ -80,6 +80,9 @@ void WhileStmt::verify()
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "WhileStmt::verify. byrefVars is not NULL");
+
+  if (forallIntents             != 0)
+    INT_FATAL(this, "WhileStmt::verify. forallIntents is not NULL");
 }
 
 bool WhileStmt::isWhileStmt() const

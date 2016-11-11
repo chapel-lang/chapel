@@ -1755,12 +1755,14 @@ static void checkIdInsideWithClause(Expr* exprInAst,
                                     UnresolvedSymExpr* origUSE)
 {
   // A 'with' clause for a forall loop.
-  if (CallExpr* call = toCallExpr(exprInAst->parentExpr)) {
-    if (call->isPrimitive(PRIM_FORALL_LOOP)) {
-      errorDotInsideWithClause(origUSE, "forall loop");
-      return;
+  if (BlockStmt* parent = toBlockStmt(exprInAst->parentExpr))
+    if (ForallIntents* fi = parent->forallIntents) {
+      for_vector(Expr, fiVar, fi->fiVars)
+        if (exprInAst == fiVar) {
+          errorDotInsideWithClause(origUSE, "forall loop");
+          return;
+        }
     }
-  }
 
   // A 'with' clause for a task construct.
   if (Expr* parent1 = exprInAst->parentExpr)
