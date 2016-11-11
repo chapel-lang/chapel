@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 
+CLANG=$1
+if [ -z "$CLANG" ]
+then
+  CLANG=clang
+fi
 
 THIS_DIR=`dirname "$0"`
 CHPL_HOME="$THIS_DIR/../../"
 SYS_BASIC="$CHPL_HOME/runtime/include/sys_basic.h"
 
-SYSTEM_CLANG_COMMANDS=`clang -### $SYS_BASIC 2>&1`
+SYSTEM_CLANG_COMMANDS=`$CLANG -### $SYS_BASIC 2>&1`
 
 if [ $? -eq 0 ]; then
   # find something like the path reported here:

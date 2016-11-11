@@ -1,0 +1,10 @@
+#
+# test input file errors
+#
+--scene badscene1  # c-ray.badscene1.good
+--scene badscene2  # c-ray.badscene2.good
+--scene badscene3  # c-ray.badscene3.good
+--scene badscene4  # c-ray.badscene4.good
+--scene badscene5  # c-ray.badscene5.good
+--scene badscene6  # c-ray.badscene6.good
+--scene badscene7  # c-ray.badscene7.good

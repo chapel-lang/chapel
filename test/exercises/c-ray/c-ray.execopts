@@ -2,30 +2,12 @@
 # basic test
 #
 --noTiming
---noTiming --samples=4      # c-ray.4samples.good
+--noTiming --loopStyle=1
+--noTiming --loopStyle=2
+--noTiming --loopStyle=3
+--noTiming --samples=4 --seed=1 --size=400x300  # c-ray.4samples.good
 
 #
 # skipping this due to it taking too long under valgrind and baseline testing:
 #
-#--printTiming=false --scene=sphfract  # c-ray.sphfract.good
-
-#
-# test input file errors
-#
---scene badscene1  # c-ray.badscene1.good
---scene badscene2  # c-ray.badscene2.good
---scene badscene3  # c-ray.badscene3.good
---scene badscene4  # c-ray.badscene4.good
---scene badscene5  # c-ray.badscene5.good
---scene badscene6  # c-ray.badscene6.good
---scene badscene7  # c-ray.badscene7.good
-
-#
-# test help output
-#
---help  # c-ray.help.good
-
-#
-# test bad argument
-#
---noTiming --goober  # c-ray.badarg.good
+#--noTiming --scene=sphfract  # c-ray.sphfract.good

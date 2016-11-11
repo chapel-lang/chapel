@@ -79,7 +79,8 @@ struct GenInfo {
   LayeredValueTable *lvt;
 
   // Clang Stuff
-  std::string clangInstallDir;
+  std::string clangCC;
+  std::string clangCXX;
   std::string compileline;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangLDArgs;
@@ -132,7 +133,8 @@ struct GenInfo {
   //
   //
   // defined in passes/codegen.cpp
-  GenInfo(std::string clangInstallDirIn,
+  GenInfo(std::string clangCC,
+          std::string clangCXX,
           std::string compilelineIn,
           std::vector<std::string> clangCCArgs,
           std::vector<std::string> clangLDArgs,

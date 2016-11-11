@@ -146,23 +146,23 @@ void chpl_comm_pre_task_exit(int all) { }
 
 void chpl_comm_exit(int all, int status) { }
 
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
+void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
                     int ln, int32_t fn) {
-  assert(locale==0);
+  assert(node==0);
 
   memmove(raddr, addr, size);
 }
 
-void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
+void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
                     int ln, int32_t fn) {
-  assert(locale==0);
+  assert(node==0);
 
   memmove(addr, raddr, size);
 }
 
-void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
+void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstnode,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex,
                          int ln, int32_t fn)
@@ -179,7 +179,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, int32_t dstlocal
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
 
-  assert(dstlocale==0);
+  assert(dstnode==0);
 
   //Only count[0] and strides are measured in number of bytes.
   cnt[0] = count[0] * elemSize;
@@ -316,7 +316,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, int32_t dstlocal
   }
 }
 
-void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
+void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcnode,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex,
                          int ln, int32_t fn)
@@ -332,7 +332,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, int32_t srclocal
   size_t srcstr[strlvls];
   size_t cnt[strlvls+1];
 
-  assert(srclocale==0);
+  assert(srcnode==0);
 
   //Only count[0] and strides are measured in number of bytes.
   cnt[0] = count[0] * elemSize;

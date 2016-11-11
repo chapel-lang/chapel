@@ -17,7 +17,7 @@
 
 THREADS_SUBDIR = src/threads/$(CHPL_MAKE_THREADS)
 
-THREADS_OBJDIR = $(RUNTIME_ROOT)/$(THREADS_SUBDIR)/$(RUNTIME_OBJDIR)
+THREADS_OBJDIR = $(RUNTIME_BUILD)/$(THREADS_SUBDIR)
 
 #
 # threads-none has no sources, so don't add anything below, as usual

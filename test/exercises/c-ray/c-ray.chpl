@@ -4,15 +4,15 @@
  * Ported to Chapel and parallelized by Brad Chamberlain,
  *   September/November 2016
  *
- * -----------------------------------------------------------------------
+ * ----------------------------------------------------------------------------
  * Usage:
  *   compile:  chpl c-ray.chpl -o c-ray  # add --fast for performance runs
- *   run:      ./c-ray         # reads from 'scene', writes to 'image.ppm'
- *     or:     ./c-ray --scene myscene --image myimage.ppm
+ *   run:      ./c-ray  # reads from 'scene', writes to 'image.ppm' by default
+ *     or:     ./c-ray --scene myscene --image myimage.ppm  # override defaults
  *     or:     cat scene | ./c-ray --scene stdin --image stdout > out.ppm
- *     or:     ./c-ray --help            # for further options
+ *     or:     ./c-ray --usage  # for further options
  *   enjoy:    emacs foo.ppm (with a modern non-terminal version of emacs)
- * -----------------------------------------------------------------------
+ * ----------------------------------------------------------------------------
  * Scene file format:
  *   # sphere (many)
  *   s  x y z  rad   r g b   shininess   reflectivity
@@ -20,14 +20,11 @@
  *   l  x y z
  *   # camera (one)
  *   c  x y z  fov   tx ty tz
- * -----------------------------------------------------------------------
+ * ----------------------------------------------------------------------------
  */
 
-use Time;  // Bring in timers to measure the rendering time
-
-
 //
-// Configuration params
+// Configuration params/types
 // (Override defaults on compiler line using -s<cfg>=<val>)
 //
 config type pixelType = int;
@@ -42,13 +39,17 @@ config const size = "800x600",            // size of output image
              samples = 1,                 // number of rays sampled per pixel
              scene = "scene",             // input scene filename, or stdin
              image = "image.ppm",         // output image filename, or stdout
+             usage = false,                // print usage message?
 
              fieldOfView = quarter_pi,    // field of view in radians
              maxRayDepth = 5,             // raytrace recurion limit
              rayMagnitude = 1000.0,       // trace rays of this magnitude
              errorMargin = 1e-6,          // margin to avoid surface acne
 
-             noTiming = false;        // print rendering times?
+             noTiming = false,            // print rendering times?
+
+             useCRand = false,            // use C rand() (vs. Chapel PCG)?
+             seed = 0;                    // if non-zero, use as the RNG 'seed'
 
 //
 // Define config-dependent types and params.
@@ -58,8 +59,10 @@ param colorMask = (0x1 << bitsPerColor) - 1;
 type colorType = uint(bitsPerColor);
 
 //
-// Compute config-dependent constants.
+// Process config-dependent constants.
 //
+if usage then printUsage();
+
 const ssize = size.partition("x");        // split size string into components
 
 if (ssize.size != 3 || ssize(2) != "x") then
@@ -170,22 +173,43 @@ var urand: [0..#nran] vec3,
     irand: [0..#nran] int;
 
 //
+// TODO: Remove for exercise -- meant for testing only
+//
+config param multilocale = (CHPL_COMM != "none"),
+             blockdist = true;
+config const loopStyle = 0;
+
+use BlockDist, CyclicDist;
+
+//
 // The program's entry point
 //
-proc main(args: [] string) {
-  processArgs(args);
-
+proc main() {
   loadScene();
   initRands();
 
+  use Time;      // Bring in timers to measure the rendering time
   var t: Timer;
   t.start();
 
-  var pixels: [0..#yres, 0..#xres] pixelType;
+  const pixinds = {0..#yres, 0..#xres},
+        pixdom = if !multilocale then pixinds
+              else (if blockdist then pixinds dmapped Block(pixinds)
+                                 else pixinds dmapped Cyclic((0,0)));
+  var pixels: [pixdom] pixelType;
 
   // render a frame of xsz x ysz pixels into the provided framebuffer
-  forall (y, x) in pixels.domain do
-    pixels[y, x] = computePixel(y, x);
+  if loopStyle == 0 {
+    forall (y, x) in pixels.domain do
+      pixels[y, x] = computePixel(y, x);
+  } else if loopStyle == 1 {
+    forall (y, x) in pixdom do
+      pixels[y, x] = computePixel(y, x);
+  } else if loopStyle == 2 { 
+    pixels = computePixel(pixdom);
+  } else {
+    pixels = computePixel(pixels.domain);
+  }
 
   const rendTime = t.elapsed();
 
@@ -200,54 +224,37 @@ proc main(args: [] string) {
 }
 
 //
-// process any arguments
+// print usage information
 //
-proc processArgs(args) {
-  for i in 1..args.size-1 {
-    if (args[i] == "--help" || args[i] == "-h") {
-      printUsage();
-    } else {
-      stderr.writeln("error: unrecognized argument: '", args[i], "'");
-      stderr.writeln();
-      printUsage(error=true);
-    }
-  }
-
-  proc printUsage(error=false) {
-    const outChannel = if error then stderr else stdout;
-
-    usage("Usage: " + args[0] + " [options]");
-    usage("  Reads a scene file, writes a ray-traced image file, " +
+proc printUsage() {
+  writeln("Usage: c-ray [options]");
+  writeln("  Reads a scene file, writes a ray-traced image file, " +
           "prints timing to stderr.");
-    usage();
-    usage("Primary Options:");
-    usage("  --size <w>x<h>        plot an image of 'w'idth x 'h'eight pixels");
-    usage("  --samples <rays>      antialias using 'rays' samples per pixel");
-    usage("  --scene <file>        read scene from 'file' (can be 'stdin')");
-    usage("  --image <file>        write image to 'file' (can be 'stdout')");
-    usage("  --help / -h           print this help screen");
-    usage();
-    usage("Other options:");
-    usage("  --fieldOfView <fov>   use a field-of-view of 'fov' radians");
-    usage("  --maxRayDepth <max>   rays will reflect no more than 'max' times");
-    usage("  --rayMagnitude <mag>  trace rays with magnitude 'mag'");
-    usage("  --errorMargin <err>   avoid surface acne via error margin 'err'");
-    usage("  --noTiming            don't print timing information");
+  writeln();
+  writeln("Primary Options:");
+  writeln("  --size <w>x<h>        plot an image of 'w'idth x 'h'eight pixels");
+  writeln("  --samples <rays>      antialias using 'rays' samples per pixel");
+  writeln("  --scene <file>        read scene from 'file' (can be 'stdin')");
+  writeln("  --image <file>        write image to 'file' (can be 'stdout')");
+  writeln("  --usage               print this usage information");
+  writeln();
+  writeln("Other options:");
+  writeln("  --fieldOfView <fov>   use a field-of-view of 'fov' radians");
+  writeln("  --maxRayDepth <max>   rays will reflect no more than 'max' times");
+  writeln("  --rayMagnitude <mag>  trace rays with magnitude 'mag'");
+  writeln("  --errorMargin <err>   avoid surface acne via error margin 'err'");
+  writeln("  --noTiming            don't print timing information");
+  writeln("  --useCRand            use C's rand() rather than Chapel's RNG");
+  writeln("  --seed                a seed for the RNG, 0 == 'don't care'");
 
-    exit(error);
-
-    proc usage(str = "") {
-      outChannel.writeln(str);
-    }
-  }
+  exit(0);
 }
 
 //
 // Load the scene from an extremely simple scene description file
 //
 proc loadScene() {
-  const inputs = {'l', 'c', 's'},
-        expectedArgs: [inputs] int = ['l'=>4, 'c'=>8, 's'=>10];
+  const expectedArgs = ['l'=>4, 'c'=>8, 's'=>10];
 
   for (rawLine, lineno) in zip(infile.readlines(), 1..) {
     // drop any comments (text following '#')
@@ -263,7 +270,7 @@ proc loadScene() {
     const inType = columns[1];
 
     // handle error conditions
-    if !inputs.member(inType) then
+    if !expectedArgs.domain.member(inType) then
       inputError("unexpected input type: " + inType);
     else if columns.size < expectedArgs(inType) then
       inputError("not enough arguments for input of type '" + inType + "'");
@@ -307,39 +314,59 @@ proc loadScene() {
 }
 
 //
-// initialize the random number tables for the jitter
+// initialize the random number tables for the jitter using either C
+// rand() (because the reference version does) or Chapel rand (because
+// its results are portable, and it can optionally be used in parallel).
 //
 proc initRands() {
-  //
-  // extern declarations of C's random number generators.
-  //
-  // TODO: The following could be changed to use Chapel's 'Random'
-  //   module and to generate random numbers in parallel if the
-  //   program is not particularly sensitive to the specific random
-  //   number generator used.
-  //
-  extern const RAND_MAX: c_int;
-  extern proc rand(): c_int;
+  if useCRand {
+    // extern declarations of C's random number generators.
+    extern const RAND_MAX: c_int;
+    extern proc rand(): c_int;
+    extern proc srand(seed: c_uint);
 
-  for u in urand do
-    u(X) = rand():real / RAND_MAX - 0.5;
-  for u in urand do
-    u(Y) = rand():real / RAND_MAX - 0.5;
-  for r in irand do
-    r = (nran * (rand():real / RAND_MAX)): int;
+    if seed then
+      srand(seed.safeCast(c_uint));
+    for u in urand do
+      u(X) = rand():real / RAND_MAX - 0.5;
+    for u in urand do
+      u(Y) = rand():real / RAND_MAX - 0.5;
+    for r in irand do
+      r = (nran * (rand():real / RAND_MAX)): int;
+  } else {
+    use Random;
+
+    var rng = new RandomStream(seed=(if seed then seed
+                                             else SeedGenerator.currentTime),
+                               eltType=real);
+    for u in urand do
+      u(X) = rng.getNext() - 0.5;
+    for u in urand do
+      u(Y) = rng.getNext() - 0.5;
+    for r in irand do
+      r = (nran * rng.getNext()): int;
+  }
 }
 
 //
-// Given the (y, x) coordinates of a pixel and return a pixel color
-// value as 'pixelType'.  For each subpixel, trace a ray through the
-// scene, accumulate the colors of the subpixels of each pixel, then
-// pack the color and put it into the framebuffer.
+// Given the (y, x) coordinates of a pixel, computePixel() returns the
+// color value computed for the pixel as a 'pixelType'.  Given the two
+// overloads below, the (y, x) coordinates can either be passed in as
+// a tuple of ints or as two separate int arguments.
 //
+// For each subpixel, trace a ray through the scene, accumulate the
+// colors of the subpixels of each pixel, then pack the color and put
+// it into the framebuffer.
+//
+proc computePixel(yx: 2*int): pixelType {
+  return computePixel((...yx));  // expand the tuple 'yx'
+}
+
 proc computePixel(y: int, x: int): pixelType {
   var rgb: vec3;
 
   for s in 0..#samples do
-    rgb += trace(getPrimaryRay((x, y), s));
+    rgb += trace(getPrimaryRay((x,y), s));
 
   rgb *= rcpSamples;
 
@@ -356,7 +383,7 @@ proc computePixel(y: int, x: int): pixelType {
 //
 proc writeImage(pixels) {
   outfile.writeln("P6");
-  outfile.writeln(xres, " ", yres);
+  outfile.writeln(pixels.domain.dim(2).size, " ", pixels.domain.dim(1).size);
   outfile.writeln(255);
   for p in pixels do
     for param c in 1..numColors do
