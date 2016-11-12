@@ -1,1 +1,1 @@
-c-ray.chpl:110: error: pixelType must be an integral type
+forStudents/Image.chpl:34: error: pixelType must be an integral type
