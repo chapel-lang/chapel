@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * Usage:
  *   compile:  chpl c-ray.chpl -o c-ray  # add --fast for performance runs
- *   run:      ./c-ray  # reads from 'scene', writes to 'image.ppm' by default
+ *   run:      ./c-ray  # reads from 'scene', writes to 'image.bmp' by default
  *     or:     ./c-ray --scene myscene --image myimage.ppm  # override defaults
  *     or:     cat scene | ./c-ray --scene stdin --image stdout > out.ppm
  *     or:     ./c-ray --usage  # for further options
@@ -28,7 +28,6 @@
 // (Override defaults on compiler line using -s<cfg>=<val>)
 //
 config type pixelType = int;
-
 config param bitsPerColor = 8;
 
 //
@@ -38,8 +37,9 @@ config param bitsPerColor = 8;
 config const size = "800x600",            // size of output image
              samples = 1,                 // number of rays sampled per pixel
              scene = "scene",             // input scene filename, or stdin
-             image = "image.ppm",         // output image filename, or stdout
-             usage = false,                // print usage message?
+             image = "image.bmp",         // output image filename, or stdout
+             format = imageFormat(image), // the image file format
+             usage = false,               // print usage message?
 
              fieldOfView = quarter_pi,    // field of view in radians
              maxRayDepth = 5,             // raytrace recurion limit
@@ -205,7 +205,7 @@ proc main() {
   } else if loopStyle == 1 {
     forall (y, x) in pixdom do
       pixels[y, x] = computePixel(y, x);
-  } else if loopStyle == 2 { 
+  } else if loopStyle == 2 {
     pixels = computePixel(pixdom);
   } else {
     pixels = computePixel(pixels.domain);
@@ -236,6 +236,7 @@ proc printUsage() {
   writeln("  --samples <rays>      antialias using 'rays' samples per pixel");
   writeln("  --scene <file>        read scene from 'file' (can be 'stdin')");
   writeln("  --image <file>        write image to 'file' (can be 'stdout')");
+  writeln("  --format [ppm|bmp]    override the default file format");
   writeln("  --usage               print this usage information");
   writeln();
   writeln("Other options:");
@@ -379,19 +380,28 @@ proc computePixel(y: int, x: int): pixelType {
 }
 
 //
+// supported image types
+//
+enum imageType {ppm, bmp};
+
+//
 // write the image to the output file
 //
 proc writeImage(pixels) {
-
-  if image.toLower().endsWith("ppm") {
-    writeImagePPM(pixels);
-  } else if image.toLower().endsWith("bmp") {
-    writeImageBMP(pixels);
-  } else {
-    halt("Unsupported image format for output file ", image);
+  select format {
+    when imageType.ppm do
+      writeImagePPM(pixels);
+    when imageType.bmp do
+      writeImageBMP(pixels);
+    otherwise
+      halt("Don't know how to write images of type: ", format);
   }
 }
 
+//
+// write the image as a PPM file (a simple file format, but not always
+// the best supported)
+//
 proc writeImagePPM(pixels) {
   outfile.writeln("P6");
   outfile.writeln(pixels.domain.dim(2).size, " ", pixels.domain.dim(1).size);
@@ -401,37 +411,41 @@ proc writeImagePPM(pixels) {
       outfile.writef("%|1i", ((p >> colorOffset(c)) & colorMask));
 }
 
+//
+// write the image as a BMP file (a more complex file format, but much
+// more portable)
+//
 proc writeImageBMP(pixels) {
   const rows = pixels.domain.dim(1).length,
-        cols = pixels.domain.dim(2).length;
+        cols = pixels.domain.dim(2).length,
 
-  const header_size = 14;
-  const dib_header_size = 40;  // always use old BITMAPINFOHEADER
-  const   bits_per_pixel = 24;
+        headerSize = 14,
+        dibHeaderSize = 40,  // always use old BITMAPINFOHEADER
+        bitsPerPixel = numColors*bitsPerColor,
 
-  // row size in bytes. Pad each row out to 4 bytes.
-  const row_quads = (bits_per_pixel * cols + 31) / 32;
-  const row_size = 4 * row_quads;
-  const row_size_bits = 8 * row_size;
+        // row size in bytes. Pad each row out to 4 bytes.
+        rowQuads = divceil(bitsPerPixel * cols, 32),
+        rowSize = 4 * rowQuads,
+        rowSizeBits = 8 * rowSize,
 
-  const pixels_size = row_size * rows;
-  const size = header_size + dib_header_size + pixels_size;
+        pixelsSize = rowSize * rows,
+        size = headerSize + dibHeaderSize + pixelsSize,
 
-  const offset_to_pixel_data = header_size + dib_header_size;
+        offsetToPixelData = headerSize + dibHeaderSize;
 
   // Write the BMP image header
   outfile.writef("BM%<4u %<2u %<2u %<4u",
                  size,
                  0 /* reserved1 */,
                  0 /* reserved2 */,
-                 offset_to_pixel_data);
+                 offsetToPixelData);
 
   // Write the DIB header BITMAPINFOHEADER
   outfile.writef("%<4u %<4i %<4i %<2u %<2u %<4u %<4u %<4u %<4u %<4u %<4u",
-                 dib_header_size, cols, -rows /*neg for swap*/,
-                 1 /* 1 color plane */, bits_per_pixel,
+                 dibHeaderSize, cols, -rows /*neg for swap*/,
+                 1 /* 1 color plane */, bitsPerPixel,
                  0 /* no compression */,
-                 pixels_size,
+                 pixelsSize,
                  2835, 2835 /*pixels/meter print resolution=72dpi*/,
                  0 /* colors in palette */,
                  0 /* "important" colors */);
@@ -453,7 +467,7 @@ proc writeImageBMP(pixels) {
     // write the padding.
     // The padding is only rounding up to 4 bytes so
     // can be written in a single writebits call.
-    outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
+    outfile.writebits(0:uint, (rowSizeBits-nbits):int(8));
   }
 }
 
@@ -656,6 +670,24 @@ inline proc crossProduct(v1, v2) {
   return (v1(Y)*v2(Z) - v1(Z)*v2(Y),
           v1(Z)*v2(X) - v1(X)*v2(Z),
           v1(X)*v2(Y) - v1(Y)*v2(X));
+}
+
+//
+// Detect the image type based on the extension of 'filename'.
+// Default to .ppm if using stdout (though the user can override this
+// by setting the 'format' config const.
+//
+proc imageFormat(filename) {
+  if filename == "stdout" then {
+    stderr.writeln("Using .ppm format for 'stdout' (override with --format)");
+    return imageType.ppm;
+  } else {
+    for ext in imageType do
+      if filename.toLower().endsWith(ext:string) then
+        return ext;
+  }
+
+  halt("Unsupported image format for output file '", image, "'");
 }
 
 //
