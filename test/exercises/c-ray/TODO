@@ -1,6 +1,5 @@
 priorities
 ----------
-* move image code into a helper module
 * add case for dynamic iteration
 
 testing improvements
