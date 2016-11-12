@@ -97,7 +97,7 @@ proc producer(b: BoundedBuffer, pid: int) {
 
 //
 // consume items greedily until a sentinel value is found.  Return
-// the number of items we successfuly consumed.
+// the number of items we successfully consumed.
 //
 proc consumer(b: BoundedBuffer, cid: int) {
   var count = 0;
@@ -121,7 +121,7 @@ class BoundedBuffer {
   type eltType = real;    // it can store scalar types; the default is 'real'
 
   const capacity: int,                     // the capacity of the buffer
-        sentinel: eltType = -1.0;          // the senteinel value
+        sentinel: eltType = -1.0;          // the sentinel value
 
   var buff$: [0..#capacity] sync eltType,  // the sync values, empty by default
       head = 0,                            // the head's cursor position
