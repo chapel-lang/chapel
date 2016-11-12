@@ -11,7 +11,7 @@
  *     or:     ./c-ray --scene myscene --image myimage.ppm  # override defaults
  *     or:     cat scene | ./c-ray --scene stdin --image stdout > out.ppm
  *     or:     ./c-ray --usage  # for further options
- *   enjoy:    emacs foo.ppm (with a modern non-terminal version of emacs)
+ *   enjoy:    view image.bmp (with any standard image browser)
  * ----------------------------------------------------------------------------
  * Scene file format:
  *   # sphere (many)
@@ -205,12 +205,6 @@ proc computePixel(y: int, x: int): pixelType {
     const colorAsInt = colorMask & ((min(rgb(color), 1.0) * 255.0): pixelType);
     return colorAsInt << colorOffset(color);
   }
-}
-//
-// how far to shift a color component when packing into a pixelType
-//
-inline proc colorOffset(param color) param {
-  return (color - 1) * bitsPerColor;
 }
 
 //

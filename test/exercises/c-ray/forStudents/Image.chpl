@@ -56,6 +56,12 @@ proc extToFmt(filename) {
   halt("Unsupported image format for output file '", filename, "'");
 }
 
+//
+// how far to shift a color component when packing into a pixelType
+//
+inline proc colorOffset(param color) param {
+  return (color - 1) * bitsPerColor;
+}
 
 //
 // write the image to the output file
