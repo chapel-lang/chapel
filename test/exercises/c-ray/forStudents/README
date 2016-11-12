@@ -7,16 +7,18 @@ pixel coordinate into a color value is provided to you; all you have
 to do is create an array representing the image and compute its pixel
 values.
 
-To get started with the project, browse, compile, and run 'c-ray.chpl'
-which is the Chapel source file for the ray tracer.  Running the
-program without changes should produce a black rectangular image named
-'image.bmp' which you should be able to view in any standard image
-viewer.  You can also create PPM files by supplying an image filename
+To get started with the project, compile 'c-ray.chpl' which is the
+Chapel source file for the ray tracer.  Running the program without
+changes should produce a black rectangular image named 'image.bmp'
+which you should be able to view in any standard image viewing
+program.  You can also create PPM files by supplying an image filename
 with the '.ppm' extension.  Running the program with --usage will
 print out its help message describing this option and others.
 
-Once you're ready to start ray tracing, jump to the main() procedure
-where the comments will guide you through STEP 0, STEP 1, STEP 2, etc.
+Once you're ready to start ray tracing, browse the source code to your
+heart's content, then jump to the main() procedure where comments
+labeled STEP 0, STEP 1, STEP 2, etc. will guide you through the
+exercise.
 
 Important files in this directory are as follows:
 
@@ -31,8 +33,9 @@ sphfract.bmp : The expected BMP file for 'sphfract'
 sphfract.ppm : The expected PPM file for 'sphfract'
 README       : This file
 
-Files related to the Chapel testing system which we use to maintain
-this code (and which can be ignored) are as follows:
+The following files are related to the Chapel testing system, which we
+use to maintain this code.  They can be ignored if they haven't
+already been removed for you:
 
 CATFILES
 CLEANFILES
