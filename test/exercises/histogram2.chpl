@@ -14,7 +14,7 @@ config const printRandomNumbers: bool = true, // print random numbers to screen
              numBuckets: int = 10,            // number of histogram buckets
              numThreads: int = 4;             // number of threads to use
 
-// seed the random stream with something reproducable?
+// seed the random stream with something reproducible?
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
