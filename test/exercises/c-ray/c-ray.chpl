@@ -23,13 +23,7 @@
  * ----------------------------------------------------------------------------
  */
 
-//
-// Configuration params/types
-// (Override defaults on compiler line using -s<cfg>=<val>)
-//
-config type pixelType = int;
-
-config param bitsPerColor = 8;
+use Image;    // use helper module related to writing out images
 
 //
 // Configuration constants
@@ -39,7 +33,7 @@ config const size = "800x600",            // size of output image
              samples = 1,                 // number of rays sampled per pixel
              scene = "scene",             // input scene filename, or stdin
              image = "image.bmp",         // output image filename, or stdout
-             format = imageFormat(image), // the image file format
+             imgType = extToFmt(image),   // the image file format
              usage = false,               // print usage message?
 
              fieldOfView = quarter_pi,    // field of view in radians
@@ -51,13 +45,6 @@ config const size = "800x600",            // size of output image
 
              useCRand = false,            // use C rand() (vs. Chapel PCG)?
              seed = 0;                    // if non-zero, use as the RNG 'seed'
-
-//
-// Define config-dependent types and params.
-//
-param colorMask = (0x1 << bitsPerColor) - 1;
-
-type colorType = uint(bitsPerColor);
 
 //
 // Process config-dependent constants.
@@ -85,36 +72,16 @@ const infile = if scene == "stdin" then stdin
 const halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 
 //
-// set params for colors and dimensions
+// set params for dimensions
 //
-
-param red = 1,        // names for referring to colors
-      green = 2,
-      blue = 3,
-      numColors = 3;
-
 param X = 1,          // names for accessing vec3 elements
       Y = 2,
       Z = 3,
       numdims = 3;
 
 //
-// Verify that config-specified pixelType is appropriate for storing colors
-//
-if (isIntegral(pixelType)) {
-  if (numColors*bitsPerColor > numBits(pixelType)) then
-    compilerError("pixelType '" + pixelType:string +
-                  "' isn't big enough to store " +
-                  bitsPerColor + " bits per color");
-} else {
-  compilerError("pixelType must be an integral type");
-}
-
-
-//
 // establish types
 //
-
 type vec3 = numdims*real;   // a 3-tuple for positions, vectors
 
 record ray {
@@ -204,135 +171,10 @@ proc main() {
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
 
-  writeImage(pixels);
+  writeImage(outfile, imgType, pixels);
 
   for obj in objects do
     delete obj;
-}
-
-//
-// print usage information
-//
-proc printUsage() {
-  writeln("Usage: c-ray [options]");
-  writeln("  Reads a scene file, writes a ray-traced image file, " +
-          "prints timing to stderr.");
-  writeln();
-  writeln("Primary Options:");
-  writeln("  --size <w>x<h>        plot an image of 'w'idth x 'h'eight pixels");
-  writeln("  --samples <rays>      antialias using 'rays' samples per pixel");
-  writeln("  --scene <file>        read scene from 'file' (can be 'stdin')");
-  writeln("  --image <file>        write image to 'file' (can be 'stdout')");
-  writeln("  --format [ppm|bmp]    override the default file format");
-  writeln("  --usage               print this usage information");
-  writeln();
-  writeln("Other options:");
-  writeln("  --fieldOfView <fov>   use a field-of-view of 'fov' radians");
-  writeln("  --maxRayDepth <max>   rays will reflect no more than 'max' times");
-  writeln("  --rayMagnitude <mag>  trace rays with magnitude 'mag'");
-  writeln("  --errorMargin <err>   avoid surface acne via error margin 'err'");
-  writeln("  --noTiming            don't print timing information");
-  writeln("  --useCRand            use C's rand() rather than Chapel's RNG");
-  writeln("  --seed                a seed for the RNG, 0 == 'don't care'");
-
-  exit(0);
-}
-
-//
-// Load the scene from an extremely simple scene description file
-//
-proc loadScene() {
-  const expectedArgs = ['l'=>4, 'c'=>8, 's'=>10];
-
-  for (rawLine, lineno) in zip(infile.readlines(), 1..) {
-    // drop any comments (text following '#')
-    const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
-          line = linePlusComment[1];
-
-    // split the line into its whitespace-separated strings
-    const columns = line.split();
-    if columns.size == 0 then continue;
-
-    // grab the input type
-    const inType = columns[1];
-
-    // handle error conditions
-    if !expectedArgs.domain.member(inType) then
-      inputError("unexpected input type: " + inType);
-    else if columns.size < expectedArgs(inType) then
-      inputError("not enough arguments for input of type '" + inType + "'");
-    else if columns.size > expectedArgs(inType) then
-      inputError("too many arguments for input of type '" + inType + "'");
-
-    // grab the position columns
-    const pos = (columns[2]:real, columns[3]:real, columns[4]:real);
-
-    // if this is a light, store it as such
-    if inType == 'l' {
-      lights.push_back(pos);
-      continue;
-    }
-
-    // grab the radius/field-of-view and color/target columnsx
-    const rad = columns[5]:real,
-          col = (columns[6]:real, columns[7]:real, columns[8]:real);
-
-    // if this is the camera, store it
-    if inType == 'c' {
-      cam.pos = pos;
-      cam.targ = col;
-      cam.fov = rad;
-      continue;
-    }
-
-    // grab the shininess and reflectivity columns
-    const spow = columns[9]: real,
-          refl = columns[10]: real;
-
-    // this must be a sphere, so store it
-    objects.push_back(new sphere(pos, rad, new material(col, spow, refl)));
-
-    // helper routine for printing errors in the input file
-    proc inputError(msg) {
-      stderr.writeln(scene, ":", lineno, ": ", msg);
-      exit(1);
-    }
-  }
-}
-
-//
-// initialize the random number tables for the jitter using either C
-// rand() (because the reference version does) or Chapel rand (because
-// its results are portable, and it can optionally be used in parallel).
-//
-proc initRands() {
-  if useCRand {
-    // extern declarations of C's random number generators.
-    extern const RAND_MAX: c_int;
-    extern proc rand(): c_int;
-    extern proc srand(seed: c_uint);
-
-    if seed then
-      srand(seed.safeCast(c_uint));
-    for u in urand do
-      u(X) = rand():real / RAND_MAX - 0.5;
-    for u in urand do
-      u(Y) = rand():real / RAND_MAX - 0.5;
-    for r in irand do
-      r = (nran * (rand():real / RAND_MAX)): int;
-  } else {
-    use Random;
-
-    var rng = new RandomStream(seed=(if seed then seed
-                                             else SeedGenerator.currentTime),
-                               eltType=real);
-    for u in urand do
-      u(X) = rng.getNext() - 0.5;
-    for u in urand do
-      u(Y) = rng.getNext() - 0.5;
-    for r in irand do
-      r = (nran * rng.getNext()): int;
-  }
 }
 
 //
@@ -364,99 +206,6 @@ proc computePixel(y: int, x: int): pixelType {
     return colorAsInt << colorOffset(color);
   }
 }
-
-//
-// supported image types
-//
-enum imageType {ppm, bmp};
-
-//
-// write the image to the output file
-//
-proc writeImage(pixels) {
-  select format {
-    when imageType.ppm do
-      writeImagePPM(pixels);
-    when imageType.bmp do
-      writeImageBMP(pixels);
-    otherwise
-      halt("Don't know how to write images of type: ", format);
-  }
-}
-
-//
-// write the image as a PPM file (a simple file format, but not always
-// the best supported)
-//
-proc writeImagePPM(pixels) {
-  outfile.writeln("P6");
-  outfile.writeln(pixels.domain.dim(2).size, " ", pixels.domain.dim(1).size);
-  outfile.writeln(255);
-  for p in pixels do
-    for param c in 1..numColors do
-      outfile.writef("%|1i", ((p >> colorOffset(c)) & colorMask));
-}
-
-//
-// write the image as a BMP file (a more complex file format, but much
-// more portable)
-//
-proc writeImageBMP(pixels) {
-  const rows = pixels.domain.dim(1).length,
-        cols = pixels.domain.dim(2).length,
-
-        headerSize = 14,
-        dibHeaderSize = 40,  // always use old BITMAPINFOHEADER
-        bitsPerPixel = numColors*bitsPerColor,
-
-        // row size in bytes. Pad each row out to 4 bytes.
-        rowQuads = divceil(bitsPerPixel * cols, 32),
-        rowSize = 4 * rowQuads,
-        rowSizeBits = 8 * rowSize,
-
-        pixelsSize = rowSize * rows,
-        size = headerSize + dibHeaderSize + pixelsSize,
-
-        offsetToPixelData = headerSize + dibHeaderSize;
-
-  // Write the BMP image header
-  outfile.writef("BM%<4u %<2u %<2u %<4u",
-                 size,
-                 0 /* reserved1 */,
-                 0 /* reserved2 */,
-                 offsetToPixelData);
-
-  // Write the DIB header BITMAPINFOHEADER
-  outfile.writef("%<4u %<4i %<4i %<2u %<2u %<4u %<4u %<4u %<4u %<4u %<4u",
-                 dibHeaderSize, cols, -rows /*neg for swap*/,
-                 1 /* 1 color plane */, bitsPerPixel,
-                 0 /* no compression */,
-                 pixelsSize,
-                 2835, 2835 /*pixels/meter print resolution=72dpi*/,
-                 0 /* colors in palette */,
-                 0 /* "important" colors */);
-
-  for i in pixels.domain.dim(1) {
-    var nbits = 0;
-    for j in pixels.domain.dim(2) {
-      var p = pixels[i,j];
-      var redv = (p >> colorOffset(red)) & colorMask;
-      var greenv = (p >> colorOffset(green)) & colorMask;
-      var bluev = (p >> colorOffset(blue)) & colorMask;
-
-      // write 24-bit color value
-      outfile.writebits(bluev, 8);
-      outfile.writebits(greenv, 8);
-      outfile.writebits(redv, 8);
-      nbits += 24;
-    }
-    // write the padding.
-    // The padding is only rounding up to 4 bytes so
-    // can be written in a single writebits call.
-    outfile.writebits(0:uint, (rowSizeBits-nbits):int(8));
-  }
-}
-
 //
 // how far to shift a color component when packing into a pixelType
 //
@@ -639,6 +388,132 @@ proc shade(obj, sp, depth) {
   return col;
 }
 
+
+//
+// print usage information
+//
+proc printUsage() {
+  writeln("Usage: c-ray [options]");
+  writeln("  Reads a scene file, writes a ray-traced image file, " +
+          "prints timing to stderr.");
+  writeln();
+  writeln("Primary Options:");
+  writeln("  --size <w>x<h>        plot an image of 'w'idth x 'h'eight pixels");
+  writeln("  --samples <rays>      antialias using 'rays' samples per pixel");
+  writeln("  --scene <file>        read scene from 'file' (can be 'stdin')");
+  writeln("  --image <file>        write image to 'file' (can be 'stdout')");
+  writeln("  --imgType [ppm|bmp]   override the default image file type");
+  writeln("  --usage               print this usage information");
+  writeln();
+  writeln("Other options:");
+  writeln("  --fieldOfView <fov>   use a field-of-view of 'fov' radians");
+  writeln("  --maxRayDepth <max>   rays will reflect no more than 'max' times");
+  writeln("  --rayMagnitude <mag>  trace rays with magnitude 'mag'");
+  writeln("  --errorMargin <err>   avoid surface acne via error margin 'err'");
+  writeln("  --noTiming            don't print timing information");
+  writeln("  --useCRand            use C's rand() rather than Chapel's RNG");
+  writeln("  --seed                a seed for the RNG, 0 == 'don't care'");
+
+  exit(0);
+}
+
+//
+// Load the scene from an extremely simple scene description file
+//
+proc loadScene() {
+  const expectedArgs = ['l'=>4, 'c'=>8, 's'=>10];
+
+  for (rawLine, lineno) in zip(infile.readlines(), 1..) {
+    // drop any comments (text following '#')
+    const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
+          line = linePlusComment[1];
+
+    // split the line into its whitespace-separated strings
+    const columns = line.split();
+    if columns.size == 0 then continue;
+
+    // grab the input type
+    const inType = columns[1];
+
+    // handle error conditions
+    if !expectedArgs.domain.member(inType) then
+      inputError("unexpected input type: " + inType);
+    else if columns.size < expectedArgs(inType) then
+      inputError("not enough arguments for input of type '" + inType + "'");
+    else if columns.size > expectedArgs(inType) then
+      inputError("too many arguments for input of type '" + inType + "'");
+
+    // grab the position columns
+    const pos = (columns[2]:real, columns[3]:real, columns[4]:real);
+
+    // if this is a light, store it as such
+    if inType == 'l' {
+      lights.push_back(pos);
+      continue;
+    }
+
+    // grab the radius/field-of-view and color/target columnsx
+    const rad = columns[5]:real,
+          col = (columns[6]:real, columns[7]:real, columns[8]:real);
+
+    // if this is the camera, store it
+    if inType == 'c' {
+      cam.pos = pos;
+      cam.targ = col;
+      cam.fov = rad;
+      continue;
+    }
+
+    // grab the shininess and reflectivity columns
+    const spow = columns[9]: real,
+          refl = columns[10]: real;
+
+    // this must be a sphere, so store it
+    objects.push_back(new sphere(pos, rad, new material(col, spow, refl)));
+
+    // helper routine for printing errors in the input file
+    proc inputError(msg) {
+      stderr.writeln(scene, ":", lineno, ": ", msg);
+      exit(1);
+    }
+  }
+}
+
+//
+// initialize the random number tables for the jitter using either C
+// rand() (because the reference version does) or Chapel rand (because
+// its results are portable, and it can optionally be used in parallel).
+//
+proc initRands() {
+  if useCRand {
+    // extern declarations of C's random number generators.
+    extern const RAND_MAX: c_int;
+    extern proc rand(): c_int;
+    extern proc srand(seed: c_uint);
+
+    if seed then
+      srand(seed.safeCast(c_uint));
+    for u in urand do
+      u(X) = rand():real / RAND_MAX - 0.5;
+    for u in urand do
+      u(Y) = rand():real / RAND_MAX - 0.5;
+    for r in irand do
+      r = (nran * (rand():real / RAND_MAX)): int;
+  } else {
+    use Random;
+
+    var rng = new RandomStream(seed=(if seed then seed
+                                             else SeedGenerator.currentTime),
+                               eltType=real);
+    for u in urand do
+      u(X) = rng.getNext() - 0.5;
+    for u in urand do
+      u(Y) = rng.getNext() - 0.5;
+    for r in irand do
+      r = (nran * rng.getNext()): int;
+  }
+}
+
 //
 // Simple vector functions
 //
@@ -654,24 +529,6 @@ inline proc crossProduct(v1, v2) {
   return (v1(Y)*v2(Z) - v1(Z)*v2(Y),
           v1(Z)*v2(X) - v1(X)*v2(Z),
           v1(X)*v2(Y) - v1(Y)*v2(X));
-}
-
-//
-// Detect the image type based on the extension of 'filename'.
-// Default to .ppm if using stdout (though the user can override this
-// by setting the 'format' config const.
-//
-proc imageFormat(filename) {
-  if filename == "stdout" then {
-    stderr.writeln("Using .ppm format for 'stdout' (override with --format)");
-    return imageType.ppm;
-  } else {
-    for ext in imageType do
-      if filename.toLower().endsWith(ext:string) then
-        return ext;
-  }
-
-  halt("Unsupported image format for output file '", image, "'");
 }
 
 iter channel.readlines() {
