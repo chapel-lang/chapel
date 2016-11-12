@@ -28,6 +28,7 @@
 // (Override defaults on compiler line using -s<cfg>=<val>)
 //
 config type pixelType = int;
+
 config param bitsPerColor = 8;
 
 //
@@ -98,13 +99,6 @@ param X = 1,          // names for accessing vec3 elements
       numdims = 3;
 
 //
-// TODO: Should be able to use an enum for both of the above:
-//   enum colors {red=0, green, blue};
-//   use colors;
-//   param numColors = colors.size;
-//
-
-//
 // Verify that config-specified pixelType is appropriate for storing colors
 //
 if (isIntegral(pixelType)) {
@@ -117,15 +111,11 @@ if (isIntegral(pixelType)) {
 }
 
 
-
 //
 // establish types
 //
 
 type vec3 = numdims*real;   // a 3-tuple for positions, vectors
-//
-// TODO: Making this an array [0..3] doesn't work -- why?
-//
 
 record ray {
   var orig,           // origin
@@ -172,9 +162,6 @@ param nran = 1024;
 var urand: [0..#nran] vec3,
     irand: [0..#nran] int;
 
-//
-// TODO: Remove for exercise -- meant for testing only
-//
 config param multilocale = (CHPL_COMM != "none"),
              blockdist = true;
 config const loopStyle = 0;
@@ -259,7 +246,6 @@ proc loadScene() {
 
   for (rawLine, lineno) in zip(infile.readlines(), 1..) {
     // drop any comments (text following '#')
-    // TODO: string library experts, is there a better way to do this?
     const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
           line = linePlusComment[1];
 
@@ -539,11 +525,11 @@ proc getSamplePos(xy, sample) {
   pt(Y) = -pt(Y);
 
   if sample {
-    const sf = 2.0 / xres; // TODO: This really wants to be a local static
+    const sf = 2.0 / xres;
     pt += jitter(xy, sample) * sf;
   }
 
-  const aspect = xres:real / yres;  // image aspect ratio; TODO: local static
+  const aspect = xres:real / yres;  // image aspect ratio
   pt(Y) /= aspect;
 
   return pt;
@@ -567,7 +553,6 @@ proc jitter((x, y), s) {
 proc raySphere(sph, ray) {
   var sp: spoint;
 
-  // TODO: simplify this
   const a = ray.dir(X)**2 + ray.dir(Y)**2 + ray.dir(Z)**2,
         b = 2.0 * ray.dir(X) * (ray.orig(X) - sph.pos(X)) +
             2.0 * ray.dir(Y) * (ray.orig(Y) - sph.pos(Y)) +
@@ -586,7 +571,6 @@ proc raySphere(sph, ray) {
   var t1 = (-b + sqrtD) / (2.0 * a),
       t2 = (-b - sqrtD) / (2.0 * a);
 
-  // TODO: simplify?
   if (t1 < errorMargin && t2 < errorMargin) || (t1 > 1.0 && t2 > 1.0) then
     return (false, sp);
 
@@ -613,7 +597,7 @@ proc raySphere(sph, ray) {
 // Also handles reflections by calling trace again, if necessary.
 //
 proc shade(obj, sp, depth) {
-  var col: vec3;  // TODO: reduction?
+  var col: vec3;
 
   // for all lights...
   for l in lights {
@@ -690,9 +674,6 @@ proc imageFormat(filename) {
   halt("Unsupported image format for output file '", image, "'");
 }
 
-//
-// TODO: We should really add this to the IO module
-//
 iter channel.readlines() {
   var line: string;
 
