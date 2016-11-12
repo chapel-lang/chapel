@@ -5,11 +5,24 @@
  *
  */
 
-config const numProducers = 1,   // the number of producers to create
-             numConsumers = 1,   // the number of consumers to create
-             bufferSize = 4,     // the capacity of the bounded buffer
-             numItems = 1000,    // the number of items to produce/consume
-             verbose = true;     // print what's produced/consumed?
+use Random, Time;                  // get a RNG and sleep() to introduce noise
+
+config const numProducers = 1,     // the number of producers to create
+             numConsumers = 1,     // the number of consumers to create
+             bufferSize = 30,      // the capacity of the bounded buffer
+             numItems = 1000,      // the number of items to produce/consume
+
+             verbose = true,       // print what's produced/consumed?
+
+             //
+             // the following configs control whether or not noise is
+             // injected into the computation in the form of sleep()
+             // calls for random numbers of seconds (0.0-1.0), scaled
+             // by the given factors for the producer and consumer.
+             //
+             noisy = true,         // inject noise into the computation?
+             prodNoiseScale = 100,
+             consNoiseScale = prodNoiseScale;
 
 //
 // You'll need to modify the program to handle multiple producers and
@@ -114,12 +127,16 @@ class BoundedBuffer {
       head = 0,                            // the head's cursor position
       tail = 0;                            // the tail's cursor position
 
+  var rng = new RandomStream();
+
   //
   // Place an item at the head position of the buffer, assuming
   // it's available (empty).  If not, the write to 'buff$[head]' will
   // block until it is.  Then advance the 'head' position.
   //
   proc produce(item: eltType) {
+    if noisy then sleep(rng.getNext() / prodNoiseScale);
+
     buff$[head] = item;
     advance(head);
   }
@@ -141,6 +158,8 @@ class BoundedBuffer {
   // 'false' otherwise.
   //
   proc consume(): (eltType, bool) {
+    if noisy then sleep(rng.getNext() / consNoiseScale);
+
     const val = buff$[tail];
     advance(tail);
     return (val, val != sentinel);
