@@ -37,7 +37,7 @@ config const size = "800x600",            // size of output image
              usage = false,               // print usage message?
 
              fieldOfView = quarter_pi,    // field of view in radians
-             maxRayDepth = 5,             // raytrace recurion limit
+             maxRayDepth = 5,             // raytrace recursion limit
              rayMagnitude = 1000.0,       // trace rays of this magnitude
              errorMargin = 1e-6,          // margin to avoid surface acne
 
@@ -232,7 +232,7 @@ proc getPrimaryRay(xy, sample) {
 }
 
 //
-// trace a ray throught the scene recursively (the recursion happens
+// trace a ray through the scene recursively (the recursion happens
 // through shade() to calculate reflection rays if necessary).
 //
 proc trace(ray, depth=0): vec3 {
@@ -446,7 +446,7 @@ proc loadScene() {
       continue;
     }
 
-    // grab the radius/field-of-view and color/target columnsx
+    // grab the radius/field-of-view and color/target columns
     const rad = columns[5]:real,
           col = (columns[6]:real, columns[7]:real, columns[8]:real);
 
