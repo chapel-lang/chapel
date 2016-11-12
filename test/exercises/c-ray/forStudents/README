@@ -1,5 +1,5 @@
-Data Parallelism Hands-on exercise: C-ray ray tracing
-=====================================================
+Data Parallel Hands-on exercise: C-ray ray tracing
+==================================================
 
 This directory contains the framework for writing a ray-tracing
 program in Chapel.  All of the ray tracing complexity that converts a
@@ -9,21 +9,25 @@ values.
 
 To get started with the project, browse, compile, and run 'c-ray.chpl'
 which is the Chapel source file for the ray tracer.  Running the
-program without changes should produce a black square image named
-'image.ppm' which you can view in an image viewing program that
-supports .ppm files like gimp or a modern version of emacs running in
-native (not terminal) mode.
+program without changes should produce a black rectangular image named
+'image.bmp' which you should be able to view in any standard image
+viewer.  You can also create PPM files by supplying an image filename
+with the '.ppm' extension.  Running the program with --usage will
+print out its help message describing this option and others.
 
 Once you're ready to start ray tracing, jump to the main() procedure
 where the comments will guide you through STEP 0, STEP 1, STEP 2, etc.
 
 Important files in this directory are as follows:
 
-c-ray.chpl   : The Chapel source file
+c-ray.chpl   : The main Chapel ray-tracing source file
+Image.chpl   : A helper module for creating image files
 Makefile     : A trivial Makefile showing how to compile the program
 scene        : A simple scene file describing four spheres
-sphfract     : A much more complex file describing a fractal pattern
+sphfract     : A more complex scene file describing a fractal pattern
+scene.bmp    : The expected BMP file for 'scene'
 scene.ppm    : The expected PPM file for 'scene'
+sphfract.bmp : The expected BMP file for 'sphfract'
 sphfract.ppm : The expected PPM file for 'sphfract'
 README       : This file
 
@@ -34,3 +38,4 @@ CATFILES
 CLEANFILES
 c-ray.execopts
 c-ray.good
+Image.notest
