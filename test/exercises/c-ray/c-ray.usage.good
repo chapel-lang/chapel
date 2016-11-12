@@ -6,6 +6,7 @@ Primary Options:
   --samples <rays>      antialias using 'rays' samples per pixel
   --scene <file>        read scene from 'file' (can be 'stdin')
   --image <file>        write image to 'file' (can be 'stdout')
+  --format [ppm|bmp]    override the default file format
   --usage               print this usage information
 
 Other options:

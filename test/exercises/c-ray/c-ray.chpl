@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * Usage:
  *   compile:  chpl c-ray.chpl -o c-ray  # add --fast for performance runs
- *   run:      ./c-ray  # reads from 'scene', writes to 'image.ppm' by default
+ *   run:      ./c-ray  # reads from 'scene', writes to 'image.bmp' by default
  *     or:     ./c-ray --scene myscene --image myimage.ppm  # override defaults
  *     or:     cat scene | ./c-ray --scene stdin --image stdout > out.ppm
  *     or:     ./c-ray --usage  # for further options
@@ -38,8 +38,9 @@ config param bitsPerColor = 8;
 config const size = "800x600",            // size of output image
              samples = 1,                 // number of rays sampled per pixel
              scene = "scene",             // input scene filename, or stdin
-             image = "image.ppm",         // output image filename, or stdout
-             usage = false,                // print usage message?
+             image = "image.bmp",         // output image filename, or stdout
+             format = imageFormat(image), // the image file format
+             usage = false,               // print usage message?
 
              fieldOfView = quarter_pi,    // field of view in radians
              maxRayDepth = 5,             // raytrace recurion limit
@@ -98,13 +99,6 @@ param X = 1,          // names for accessing vec3 elements
       numdims = 3;
 
 //
-// TODO: Should be able to use an enum for both of the above:
-//   enum colors {red=0, green, blue};
-//   use colors;
-//   param numColors = colors.size;
-//
-
-//
 // Verify that config-specified pixelType is appropriate for storing colors
 //
 if (isIntegral(pixelType)) {
@@ -117,15 +111,11 @@ if (isIntegral(pixelType)) {
 }
 
 
-
 //
 // establish types
 //
 
 type vec3 = numdims*real;   // a 3-tuple for positions, vectors
-//
-// TODO: Making this an array [0..3] doesn't work -- why?
-//
 
 record ray {
   var orig,           // origin
@@ -172,9 +162,6 @@ param nran = 1024;
 var urand: [0..#nran] vec3,
     irand: [0..#nran] int;
 
-//
-// TODO: Remove for exercise -- meant for testing only
-//
 config param multilocale = (CHPL_COMM != "none"),
              blockdist = true;
 config const loopStyle = 0;
@@ -205,7 +192,7 @@ proc main() {
   } else if loopStyle == 1 {
     forall (y, x) in pixdom do
       pixels[y, x] = computePixel(y, x);
-  } else if loopStyle == 2 { 
+  } else if loopStyle == 2 {
     pixels = computePixel(pixdom);
   } else {
     pixels = computePixel(pixels.domain);
@@ -236,6 +223,7 @@ proc printUsage() {
   writeln("  --samples <rays>      antialias using 'rays' samples per pixel");
   writeln("  --scene <file>        read scene from 'file' (can be 'stdin')");
   writeln("  --image <file>        write image to 'file' (can be 'stdout')");
+  writeln("  --format [ppm|bmp]    override the default file format");
   writeln("  --usage               print this usage information");
   writeln();
   writeln("Other options:");
@@ -258,7 +246,6 @@ proc loadScene() {
 
   for (rawLine, lineno) in zip(infile.readlines(), 1..) {
     // drop any comments (text following '#')
-    // TODO: string library experts, is there a better way to do this?
     const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
           line = linePlusComment[1];
 
@@ -379,19 +366,28 @@ proc computePixel(y: int, x: int): pixelType {
 }
 
 //
+// supported image types
+//
+enum imageType {ppm, bmp};
+
+//
 // write the image to the output file
 //
 proc writeImage(pixels) {
-
-  if image.toLower().endsWith("ppm") {
-    writeImagePPM(pixels);
-  } else if image.toLower().endsWith("bmp") {
-    writeImageBMP(pixels);
-  } else {
-    halt("Unsupported image format for output file ", image);
+  select format {
+    when imageType.ppm do
+      writeImagePPM(pixels);
+    when imageType.bmp do
+      writeImageBMP(pixels);
+    otherwise
+      halt("Don't know how to write images of type: ", format);
   }
 }
 
+//
+// write the image as a PPM file (a simple file format, but not always
+// the best supported)
+//
 proc writeImagePPM(pixels) {
   outfile.writeln("P6");
   outfile.writeln(pixels.domain.dim(2).size, " ", pixels.domain.dim(1).size);
@@ -401,37 +397,41 @@ proc writeImagePPM(pixels) {
       outfile.writef("%|1i", ((p >> colorOffset(c)) & colorMask));
 }
 
+//
+// write the image as a BMP file (a more complex file format, but much
+// more portable)
+//
 proc writeImageBMP(pixels) {
   const rows = pixels.domain.dim(1).length,
-        cols = pixels.domain.dim(2).length;
+        cols = pixels.domain.dim(2).length,
 
-  const header_size = 14;
-  const dib_header_size = 40;  // always use old BITMAPINFOHEADER
-  const   bits_per_pixel = 24;
+        headerSize = 14,
+        dibHeaderSize = 40,  // always use old BITMAPINFOHEADER
+        bitsPerPixel = numColors*bitsPerColor,
 
-  // row size in bytes. Pad each row out to 4 bytes.
-  const row_quads = (bits_per_pixel * cols + 31) / 32;
-  const row_size = 4 * row_quads;
-  const row_size_bits = 8 * row_size;
+        // row size in bytes. Pad each row out to 4 bytes.
+        rowQuads = divceil(bitsPerPixel * cols, 32),
+        rowSize = 4 * rowQuads,
+        rowSizeBits = 8 * rowSize,
 
-  const pixels_size = row_size * rows;
-  const size = header_size + dib_header_size + pixels_size;
+        pixelsSize = rowSize * rows,
+        size = headerSize + dibHeaderSize + pixelsSize,
 
-  const offset_to_pixel_data = header_size + dib_header_size;
+        offsetToPixelData = headerSize + dibHeaderSize;
 
   // Write the BMP image header
   outfile.writef("BM%<4u %<2u %<2u %<4u",
                  size,
                  0 /* reserved1 */,
                  0 /* reserved2 */,
-                 offset_to_pixel_data);
+                 offsetToPixelData);
 
   // Write the DIB header BITMAPINFOHEADER
   outfile.writef("%<4u %<4i %<4i %<2u %<2u %<4u %<4u %<4u %<4u %<4u %<4u",
-                 dib_header_size, cols, -rows /*neg for swap*/,
-                 1 /* 1 color plane */, bits_per_pixel,
+                 dibHeaderSize, cols, -rows /*neg for swap*/,
+                 1 /* 1 color plane */, bitsPerPixel,
                  0 /* no compression */,
-                 pixels_size,
+                 pixelsSize,
                  2835, 2835 /*pixels/meter print resolution=72dpi*/,
                  0 /* colors in palette */,
                  0 /* "important" colors */);
@@ -453,7 +453,7 @@ proc writeImageBMP(pixels) {
     // write the padding.
     // The padding is only rounding up to 4 bytes so
     // can be written in a single writebits call.
-    outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
+    outfile.writebits(0:uint, (rowSizeBits-nbits):int(8));
   }
 }
 
@@ -525,11 +525,11 @@ proc getSamplePos(xy, sample) {
   pt(Y) = -pt(Y);
 
   if sample {
-    const sf = 2.0 / xres; // TODO: This really wants to be a local static
+    const sf = 2.0 / xres;
     pt += jitter(xy, sample) * sf;
   }
 
-  const aspect = xres:real / yres;  // image aspect ratio; TODO: local static
+  const aspect = xres:real / yres;  // image aspect ratio
   pt(Y) /= aspect;
 
   return pt;
@@ -553,7 +553,6 @@ proc jitter((x, y), s) {
 proc raySphere(sph, ray) {
   var sp: spoint;
 
-  // TODO: simplify this
   const a = ray.dir(X)**2 + ray.dir(Y)**2 + ray.dir(Z)**2,
         b = 2.0 * ray.dir(X) * (ray.orig(X) - sph.pos(X)) +
             2.0 * ray.dir(Y) * (ray.orig(Y) - sph.pos(Y)) +
@@ -572,7 +571,6 @@ proc raySphere(sph, ray) {
   var t1 = (-b + sqrtD) / (2.0 * a),
       t2 = (-b - sqrtD) / (2.0 * a);
 
-  // TODO: simplify?
   if (t1 < errorMargin && t2 < errorMargin) || (t1 > 1.0 && t2 > 1.0) then
     return (false, sp);
 
@@ -599,7 +597,7 @@ proc raySphere(sph, ray) {
 // Also handles reflections by calling trace again, if necessary.
 //
 proc shade(obj, sp, depth) {
-  var col: vec3;  // TODO: reduction?
+  var col: vec3;
 
   // for all lights...
   for l in lights {
@@ -659,8 +657,23 @@ inline proc crossProduct(v1, v2) {
 }
 
 //
-// TODO: We should really add this to the IO module
+// Detect the image type based on the extension of 'filename'.
+// Default to .ppm if using stdout (though the user can override this
+// by setting the 'format' config const.
 //
+proc imageFormat(filename) {
+  if filename == "stdout" then {
+    stderr.writeln("Using .ppm format for 'stdout' (override with --format)");
+    return imageType.ppm;
+  } else {
+    for ext in imageType do
+      if filename.toLower().endsWith(ext:string) then
+        return ext;
+  }
+
+  halt("Unsupported image format for output file '", image, "'");
+}
+
 iter channel.readlines() {
   var line: string;
 
