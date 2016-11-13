@@ -72,6 +72,8 @@ proc main() {
                   consTot, numItems);
   else
     stderr.writef("Producers/consumers processed %i items total.\n", numItems);
+
+  delete buffer;
 }
 
 
@@ -122,12 +124,17 @@ class BoundedBuffer {
       head: atomic int,                    // the head's cursor position
       tail: atomic int;                    // the tail's cursor position
 
+  var rng = new RandomStream();
+
+
+  //
+  // Set up the atomics; in the future we should be able to initialize
+  // these in their field declarations.
+  //
   proc BoundedBuffer() {
     head.write(0);
     tail.write(0);
   }
-
-  var rng = new RandomStream();
 
   //
   // Place an item at the head position of the buffer, assuming
@@ -175,5 +182,11 @@ class BoundedBuffer {
 
     return prevPos;
   }
-}
 
+  //
+  // Clean up after ourselves
+  //
+  proc ~BoundedBuffer() {
+    delete rng;
+  }
+}
