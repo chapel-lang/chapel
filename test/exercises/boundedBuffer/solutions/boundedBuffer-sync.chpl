@@ -72,6 +72,8 @@ proc main() {
                   consTot, numItems);
   else
     stderr.writef("Producers/consumers processed %i items total.\n", numItems);
+
+  delete buffer;
 }
 
 
@@ -169,5 +171,11 @@ class BoundedBuffer {
 
     return prevPos;
   }
-}
 
+  //
+  // Clean up after ourselves
+  //
+  proc ~BoundedBuffer() {
+    delete rng;
+  }
+}
