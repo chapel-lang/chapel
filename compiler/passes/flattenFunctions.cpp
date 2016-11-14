@@ -127,7 +127,9 @@ passByRef(Symbol* sym) {
     return false;
   }
 
-  Type* type = sym->type->getValType();
+  if (sym->isRef()) return true;
+
+  Type* type = sym->type;
 
   if (sym->hasFlag(FLAG_ARG_THIS) == true &&
       passableByVal(type)         == true) {
