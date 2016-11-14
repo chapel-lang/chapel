@@ -27,7 +27,7 @@ timer.stop();
 if printTime then
   stderr.writeln(timer.elapsed());
 if timer.elapsed() < 1e-3*100 then
-  halt("Slept short on TimeUnits.milliseconds");
+  halt("Slept short on TimeUnits.milliseconds: ", timer.elapsed());
 timer.clear();
 
 timer.start();
@@ -36,7 +36,7 @@ timer.stop();
 if printTime then
   stderr.writeln(timer.elapsed());
 if timer.elapsed() < 3 then
-  halt("Slept short on TimeUnits.seconds");
+  halt("Slept short on TimeUnits.seconds: ", timer.elapsed());
 timer.clear();
 
 writeln("Done");
