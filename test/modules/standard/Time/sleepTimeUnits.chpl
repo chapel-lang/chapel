@@ -1,7 +1,14 @@
 use Time;
 
 config param printTime = false;
-config const tolerance = 2.0;
+
+// nanosecond
+config const tolerance = 1e-9;
+
+// Returns true if 'a' is less than 'b' by the above tolerance
+proc lt(a : real, b : real) {
+  return a < (b-tolerance);
+}
 
 var timer: Timer;
 
@@ -17,7 +24,7 @@ sleep(100, TimeUnits.microseconds);
 timer.stop();
 if printTime then
   stderr.writeln(timer.elapsed());
-if timer.elapsed() < 1e-6*100 then
+if lt(timer.elapsed(), 1e-6*100) then
   halt("Slept short on TimeUnits.microseconds", ": ", timer.elapsed());
 timer.clear();
 
@@ -26,7 +33,7 @@ sleep(100, TimeUnits.milliseconds);
 timer.stop();
 if printTime then
   stderr.writeln(timer.elapsed());
-if timer.elapsed() < 1e-3*100 then
+if lt(timer.elapsed(), 1e-3*100) then
   halt("Slept short on TimeUnits.milliseconds: ", timer.elapsed());
 timer.clear();
 
@@ -35,7 +42,7 @@ sleep(3);
 timer.stop();
 if printTime then
   stderr.writeln(timer.elapsed());
-if timer.elapsed() < 3 then
+if lt(timer.elapsed(), 3) then
   halt("Slept short on TimeUnits.seconds: ", timer.elapsed());
 timer.clear();
 
