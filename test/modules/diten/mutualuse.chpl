@@ -1,9 +1,9 @@
 module M1 {
-  use M2, Time;
+  use M2;
   class C {
     var field: int;
   }
-  sleep(3);
+
   var a = new C(1);
 }
 
