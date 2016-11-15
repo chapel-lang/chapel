@@ -169,7 +169,14 @@ class Chameneos {
   // to become 'true' and then resetting it to 'false'.
   //
   proc waitForMeetingToEnd() {
-    meetingCompleted.waitFor(true);
+    var spin_count = 15;
+    while meetingCompleted.read() == false {
+      if spin_count {
+        spin_count -= 1;
+      } else {
+        chpl_task_yield();
+      }
+    }
     meetingCompleted.write(false);
   }
 
