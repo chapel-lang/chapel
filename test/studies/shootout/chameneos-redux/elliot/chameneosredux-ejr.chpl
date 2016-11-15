@@ -19,8 +19,20 @@ use Color;                         // permit unqualified references to them
 proc main() {
   printColorEquations();
 
-  simulate(popSize1);
-  simulate(popSize2);
+  const group1 = new Population(popSize1);
+  const group2 = new Population(popSize2);
+
+  cobegin {
+    group1.holdMeetings(n);
+    group2.holdMeetings(n);
+  }
+
+  group1.printColors();
+  group1.printNotes();
+
+  group2.printColors();
+  group2.printNotes();
+
 }
 
 
@@ -32,20 +44,6 @@ proc printColorEquations() {
     for c2 in Color do
       writeln(c1, " + ", c2, " -> ", getNewColor(c1, c2));
   writeln();
-}
-
-
-//
-// Given a number of chameneos as input, create a population of that
-// size, have it print its colors, host 'n' meetings, and print notes
-// about the meetings.
-//
-proc simulate(numChameneos) {
-  const group = new Population(numChameneos);
-
-  group.printColors();
-  group.holdMeetings(n);
-  group.printNotes();
 }
 
 
@@ -68,11 +66,11 @@ record Population {
                                                    else ((i-1)%3): Color);
 
   //
-  // Print the colors of the current population.
+  // Print the initial colors of the population.
   //
   proc printColors() {
     for c in chameneos do
-      write(" ", c.color);
+      write(" ", c.initialColor);
     writeln();
   }
 
@@ -121,6 +119,7 @@ record Population {
 class Chameneos {
   const id: int;                       // its unique ID
   var color: Color;                    // its current color
+  const initialColor = color;          // its initial color
   var meetings,                        // the number of meetings it's had
       meetingsWithSelf: int;           // the number of meetings with itself
   var meetingCompleted: atomic bool;   // used to coordinate meeting endings
