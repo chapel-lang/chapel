@@ -17,19 +17,16 @@
  * limitations under the License.
  */
 
-#include "optimizations.h"
+#include "passes.h"
 
 #include "astutil.h"
 #include "expr.h"
-#include "passes.h"
+#include "optimizations.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 
 #include <vector>
-
-static bool canRemoveRefTemps(FnSymbol* fn);
-static CallExpr* findRefTempInit(SymExpr* se);
 
 //
 // inlines the function called by 'call' at that call site
@@ -95,56 +92,6 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
     call->replace(return_value);
 }
 
-// Ideally we would compute this after inlining all nested functions, but that
-// doesn't work due to some cases that explicitly expect a ref and have deref
-// calls. Future work would be to find those cases and change this check to
-// support nested inlining if possible.
-static bool canRemoveRefTemps(FnSymbol* fn) {
-  if (!fn) // primitive
-    return true;
-
-  std::vector<CallExpr*> callExprs;
-  collectCallExprs(fn, callExprs);
-
-  for_vector(CallExpr, call, callExprs) {
-    if (!call->primitive) {
-      return false;
-    } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-      return false;
-    } else if (call->isPrimitive(PRIM_GET_REAL)) {
-      return false;
-    } else if (call->isPrimitive(PRIM_GET_IMAG)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-// Search for the first assignment (a PRIM_MOVE) to a ref temp. If found, the
-// CallExpr doing the assignment will be returned, otherwise NULL. This works
-// because a ref temp's DefExpr and initial assignment are inserted together
-// inside of insertReferenceTemps.
-static CallExpr* findRefTempInit(SymExpr* se) {
-  Expr* expr = se->symbol()->defPoint->next;
-  while (expr) {
-    if (CallExpr* call = toCallExpr(expr)) {
-      if (call->isPrimitive(PRIM_MOVE)) {
-        if (se->symbol() == toSymExpr(call->get(1))->symbol()) {
-          if (CallExpr* nestedCall = toCallExpr(call->get(2))) {
-            if (!nestedCall->isPrimitive(PRIM_ADDR_OF)) {
-              return NULL;
-            }
-          }
-          return call;
-        }
-      }
-    }
-    expr = expr->next;
-  }
-  return NULL;
-}
-
 //
 // inline function fn at all call sites
 // add inlined function to inlinedSet
@@ -152,7 +99,7 @@ static CallExpr* findRefTempInit(SymExpr* se) {
 // should be inlined first
 //
 static void
-inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet, Vec<FnSymbol*>& canRemoveRefTempSet) {
+inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
   std::vector<CallExpr*> calls;
 
   inlinedSet.set_add(fn);
@@ -165,7 +112,7 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet, Vec<FnSymbol*>& canRemo
       if (fn->hasFlag(FLAG_INLINE)) {
         if (inlinedSet.set_in(fn))
           INT_FATAL(call, "recursive inlining detected");
-        inlineFunction(fn, inlinedSet, canRemoveRefTempSet);
+        inlineFunction(fn, inlinedSet);
       }
     }
   }
@@ -206,19 +153,12 @@ void
 inlineFunctions() {
   if (!fNoInline) {
     Vec<FnSymbol*> inlinedSet;
-    Vec<FnSymbol*> canRemoveRefTempSet;
 
     compute_call_sites();
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (canRemoveRefTemps(fn)) {
-        canRemoveRefTempSet.set_add(fn);
-      }
-    }
-
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
-        inlineFunction(fn, inlinedSet, canRemoveRefTempSet);
+        inlineFunction(fn, inlinedSet);
     }
 
     forv_Vec(SymExpr, se, gSymExprs) {
