@@ -247,7 +247,7 @@ bool Expr::isStmtExpr() const {
     retval = (parent->indexGet() != this && parent->iteratorGet() != this) ? true : false;
 
   } else {
-    retval = isBlockStmt(parentExpr);
+    retval = isDirectlyUnderBlockStmt(this);
   }
 
   return retval;
@@ -271,7 +271,7 @@ Expr* Expr::getStmtExpr() {
       if (parent->indexGet() != this && parent->iteratorGet() != this)
         return expr;
 
-    } else if (isBlockStmt(expr->parentExpr) == true) {
+    } else if (isDirectlyUnderBlockStmt(expr)) {
       return expr;
     }
   }

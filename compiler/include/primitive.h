@@ -162,7 +162,6 @@ enum PrimitiveTag {
   PRIM_BLOCK_LOCAL,             // BlockStmt::blockInfo - local block
   PRIM_BLOCK_UNLOCAL,           // BlockStmt::blockInfo - unlocal local block
 
-  PRIM_FORALL_LOOP,             // BlockStmt::byrefVars - forall loop body
   PRIM_TO_LEADER,
   PRIM_TO_FOLLOWER,
   PRIM_TO_STANDALONE,

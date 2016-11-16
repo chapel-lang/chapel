@@ -98,7 +98,6 @@ void buildDefaultDestructor(AggregateType* ct);
 // createTaskFunctions.cpp -> implementForallIntents.cpp
 extern Symbol* markPruned;
 extern Symbol* markUnspecified;
-void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses);
 void replaceVarUses(Expr* topAst, SymbolMap& vars);
 void pruneThisArg(Symbol* parent, SymbolMap& uses);
 

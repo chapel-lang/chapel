@@ -219,8 +219,6 @@ GenRet WhileDoStmt::codegen()
 #endif
   }
 
-  INT_ASSERT(!byrefVars); // these should not persist past parallel()
-
   return ret;
 }
 

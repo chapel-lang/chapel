@@ -338,6 +338,7 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   modUses(NULL),
   userLabel(NULL),
   byrefVars(NULL),
+  forallIntents(NULL),
   blockInfo(NULL) {
   body.parent = this;
 
@@ -349,7 +350,8 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
 
 
 BlockStmt::~BlockStmt() {
-
+  if (forallIntents)
+    delete forallIntents;
 }
 
 void BlockStmt::verify() {
@@ -377,11 +379,20 @@ void BlockStmt::verify() {
     if (byrefVars->parentExpr != this)
       INT_FATAL(this, "BlockStmt::verify. Bad byrefVars->parentExpr");
 
+    if (!byrefVars->isPrimitive(PRIM_ACTUALS_LIST))
+      INT_FATAL(this, "BlockStmt::byrefVars not PRIM_ACTUALS_LIST");
+
     for_actuals(varExp, byrefVars) {
       if (!isSymExpr(varExp) && !isUnresolvedSymExpr(varExp))
         INT_FATAL(this, "BlockStmt::verify. Bad expression kind in byrefVars");
     }
   }
+
+  if (forallIntents)
+    forallIntents->verifyFI(this);
+
+  if (byrefVars && forallIntents)
+    INT_FATAL(this,"BlockStmt: byrefVars and forallIntents are both non-NULL");
 
   verifyNotOnList(modUses);
   verifyNotOnList(byrefVars);
@@ -397,6 +408,7 @@ BlockStmt::copyInner(SymbolMap* map) {
   _this->blockInfo = COPY_INT(blockInfo);
   _this->modUses   = COPY_INT(modUses);
   _this->byrefVars = COPY_INT(byrefVars);
+  _this->forallIntents = COPY_INT(forallIntents);
 
   for_alist(expr, body)
     _this->insertAtTail(COPY_INT(expr));
@@ -409,9 +421,10 @@ BlockStmt::copyInner(SymbolMap* map) {
 void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   CallExpr* oldExpr = toCallExpr(oldAst);
   CallExpr* newExpr = (newAst != NULL) ? toCallExpr(newAst) : NULL;
+  bool handled = true;
 
   if (oldExpr == NULL)
-    INT_FATAL(this, "BlockStmt::replaceChild. oldAst is not a CallExpr");
+    handled = false;
 
   else if (oldExpr == blockInfo)
     blockInfo = newExpr;
@@ -423,11 +436,34 @@ void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
     byrefVars = newExpr;
 
   else
+    handled = false;
+
+  if (!handled &&
+      forallIntents && forallIntents->replaceChildFI(oldAst, newAst))
+    handled = true; // OK
+
+  if (!handled)
     INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
 
   // TODO: Handle the above special cases uniformly by specializing the
   // traversal of the children by block statement type.  I think blockInfo is
   // being deprecated anyway....
+}
+
+void BlockStmt::removeForallIntents() {
+  forallIntents->removeFI(this);
+  forallIntents = NULL;
+}
+
+//
+// Return true when parentExpr is a BlockStmt, except for exprs
+// under BlockStmt::forallIntents.
+//
+bool isDirectlyUnderBlockStmt(const Expr* expr) {
+  if (BlockStmt* parent = toBlockStmt(expr->parentExpr))
+    return !astUnderFI(expr, parent->forallIntents);
+
+  return false;
 }
 
 CallExpr* BlockStmt::blockInfoGet() const {
@@ -494,8 +530,6 @@ GenRet BlockStmt::codegen() {
     INT_ASSERT(blockStmtBody->getParent() == func);
 #endif
   }
-
-  INT_ASSERT(!byrefVars); // these should not persist past parallel()
 
   return ret;
 }
@@ -796,6 +830,9 @@ BlockStmt::accept(AstVisitor* visitor) {
 
     if (byrefVars)
       byrefVars->accept(visitor);
+
+    if (forallIntents)
+      forallIntents->acceptFI(visitor);
 
     visitor->exitBlockStmt(this);
   }
