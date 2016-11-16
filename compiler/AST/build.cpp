@@ -1375,10 +1375,9 @@ buildForallLoopStmt(Expr*      indices,
   checkIndices(indices);
 
   INT_ASSERT(!loopBody->forallIntents);
-  if (!forall_intents)
-    forall_intents = new_ForallIntents();
-  // This will be processed during implementForallIntents1().
+  if (!forall_intents) forall_intents = new ForallIntents();
   loopBody->forallIntents = forall_intents;
+  // forallIntents will be processed during implementForallIntents1().
 
   // ensure it's normal; prevent flatten_scopeless_block() in cleanup.cpp
   loopBody->blockTag = BLOCK_NORMAL;

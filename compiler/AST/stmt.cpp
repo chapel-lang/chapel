@@ -350,8 +350,8 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
 
 
 BlockStmt::~BlockStmt() {
-  if (ForallIntents* fi = forallIntents)
-    delete fi;
+  if (forallIntents)
+    delete forallIntents;
 }
 
 void BlockStmt::verify() {

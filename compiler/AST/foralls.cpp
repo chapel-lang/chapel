@@ -201,10 +201,6 @@ static TFITag it2tfi(Expr* ref, IntentTag intent) {
   return TFI_DEFAULT; // dummy
 }
 
-ForallIntents* new_ForallIntents() {
-  return new ForallIntents();
-}
-
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
   TFITag tfi = ri ? TFI_REDUCE : it2tfi(var, intent);
   fi->fiVars.push_back(var);

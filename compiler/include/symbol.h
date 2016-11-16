@@ -678,10 +678,8 @@ void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
 
 // Parser support.
 class ForallIntents;
-ForallIntents* new_ForallIntents();
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
 void addTaskIntent(CallExpr* ti,        Expr* var, IntentTag intent, Expr* ri);
-
 
 extern bool localTempNames;
 
