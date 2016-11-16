@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,7 @@ static CallExpr* findRefTempInit(SymExpr* se);
 // inlines the function called by 'call' at that call site
 //
 static void
-inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
+inlineCall(FnSymbol* fn, CallExpr* call) {
   INT_ASSERT(call->isResolved() == fn);
   SET_LINENO(call);
 
@@ -49,28 +49,6 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
     if((formal->intent & INTENT_REF)) {
-      // BHARSH TODO: Michael suggested this code will be unnecessary when
-      // QualifiedType is used everywhere and ref-ness is no longer stored in
-      // the 'type' field.
-      if (canRemoveRefTempSet.set_in(fn)) {
-        if (se->symbol()->hasFlag(FLAG_REF_TEMP)) {
-          if (CallExpr* move = findRefTempInit(se)) {
-            SymExpr* origSym = NULL;
-            if (CallExpr* addrOf = toCallExpr(move->get(2))) {
-              INT_ASSERT(addrOf->isPrimitive(PRIM_ADDR_OF));
-              origSym = toSymExpr(addrOf->get(1));
-            } else {
-              origSym = toSymExpr(move->get(2));
-            }
-            INT_ASSERT(origSym);
-            map.put(formal, origSym->symbol());
-            se->symbol()->defPoint->remove();
-            move->remove();
-            continue;
-          }
-        }
-      }
-
      if(!isReferenceType(formal->type) &&
         formal->type->getRefType() == actual->typeInfo()) {
         // Passing an actual that is ref(t) to a formal t with intent ref.
@@ -210,7 +188,7 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet, Vec<FnSymbol*>& canRemo
 
   forv_Vec(CallExpr, call, *fn->calledBy) {
     if (call->isResolved()) {
-      inlineCall(fn, call, canRemoveRefTempSet);
+      inlineCall(fn, call);
 
       if (report_inlining)
         printf("chapel compiler: reporting inlining, %s function was inlined\n",
