@@ -32,9 +32,9 @@
 //
 // inlines the function called by 'call' at that call site
 //
-static void
-inlineCall(FnSymbol* fn, CallExpr* call) {
+static void inlineCall(FnSymbol* fn, CallExpr* call) {
   INT_ASSERT(call->isResolved() == fn);
+
   SET_LINENO(call);
 
   Expr* stmt = call->getStmtExpr();
@@ -43,28 +43,33 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
   // calculate a map from actual symbols to formal symbols
   //
   SymbolMap map;
+
   for_formals_actuals(formal, actual, call) {
     SymExpr* se = toSymExpr(actual);
+
     INT_ASSERT(se);
-    if((formal->intent & INTENT_REF)) {
-     if(!isReferenceType(formal->type) &&
-        formal->type->getRefType() == actual->typeInfo()) {
-        // Passing an actual that is ref(t) to a formal t with intent ref.
-        Expr* point = call->getStmtExpr();
-        VarSymbol* tmp = newTemp(astr("i_", formal->name), formal->type);
-        tmp->qual = QUAL_REF;
-        DefExpr* def = new DefExpr(tmp);
-        CallExpr* move;
-        move = new CallExpr(PRIM_MOVE,
-                            tmp,
-                            new CallExpr(PRIM_SET_REFERENCE, se->symbol()));
-        point->insertBefore(def);
-        point->insertBefore(move);
-        map.put(formal, tmp);
-        continue;
-      }
+
+    if ((formal->intent & INTENT_REF) != 0     &&
+        isReferenceType(formal->type) == false &&
+        formal->type->getRefType()    == actual->typeInfo()) {
+
+      // Passing an actual that is ref(t) to a formal t with intent ref.
+      Expr*      point = call->getStmtExpr();
+      VarSymbol* tmp   = newTemp(astr("i_", formal->name), formal->type);
+      DefExpr*   def   = new DefExpr(tmp);
+      CallExpr*  move  = new CallExpr(PRIM_MOVE,
+                                      tmp,
+                                      new CallExpr(PRIM_SET_REFERENCE,
+                                                   se->symbol()));
+      tmp->qual = QUAL_REF;
+
+      point->insertBefore(def);
+      point->insertBefore(move);
+
+      map.put(formal, tmp);
+    } else {
+      map.put(formal, se->symbol());
     }
-    map.put(formal, se->symbol());
   }
 
   //
