@@ -33,7 +33,7 @@
 // inlines the function called by 'call' at that call site
 //
 static void inlineCall(FnSymbol* fn, CallExpr* call) {
-  INT_ASSERT(call->isResolved() == fn);
+  INT_ASSERT(call->resolvedFunction() == fn);
 
   SET_LINENO(call);
 
@@ -52,8 +52,6 @@ static void inlineCall(FnSymbol* fn, CallExpr* call) {
     if ((formal->intent & INTENT_REF) != 0     &&
         isReferenceType(formal->type) == false &&
         formal->type->getRefType()    == actual->typeInfo()) {
-
-      // Passing an actual that is ref(t) to a formal t with intent ref.
       Expr*      point = call->getStmtExpr();
       VarSymbol* tmp   = newTemp(astr("i_", formal->name), formal->type);
       DefExpr*   def   = new DefExpr(tmp);
@@ -76,26 +74,36 @@ static void inlineCall(FnSymbol* fn, CallExpr* call) {
   // copy function body, inline it at call site, and update return
   //
   BlockStmt* block = fn->body->copy(&map);
+
   if (!preserveInlinedLineNumbers)
     reset_ast_loc(block, call);
-  CallExpr* return_stmt = toCallExpr(block->body.last());
-  if (!return_stmt || !return_stmt->isPrimitive(PRIM_RETURN))
+
+  CallExpr* returnStmt = toCallExpr(block->body.last());
+
+  if (returnStmt == NULL || !returnStmt->isPrimitive(PRIM_RETURN))
     INT_FATAL(call, "function is not normalized");
-  Expr* return_value = return_stmt->get(1);
-  SymExpr* se = toSymExpr(return_value);
+
+  Expr*    returnValue = returnStmt->get(1);
+  SymExpr* se          = toSymExpr(returnValue);
+
   // Ensure that the inlined function body does not attempt to return one of
   // the original function's formals.  This is equivalent to saying that if the
   // returned value is originally one of the formal argument symbols, that
   // symbol was replaced by it actual argument in the call to copy(&map) above.
-  for_formals(formal, fn)
+  for_formals(formal, fn) {
     INT_ASSERT(formal != toArgSymbol(se->symbol()));
-  return_stmt->remove();
-  return_value->remove();
+  }
+
+  returnStmt->remove();
+  returnValue->remove();
+
   stmt->insertBefore(block);
-  if (fn->retType == dtVoid)
+
+  if (fn->retType == dtVoid) {
     stmt->remove();
-  else
-    call->replace(return_value);
+  } else {
+    call->replace(returnValue);
+  }
 }
 
 //
@@ -104,8 +112,7 @@ static void inlineCall(FnSymbol* fn, CallExpr* call) {
 // inline any functions that are called from within this function and
 // should be inlined first
 //
-static void
-inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
+static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
   std::vector<CallExpr*> calls;
 
   inlinedSet.insert(fn);
@@ -114,7 +121,8 @@ inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
 
   for_vector(CallExpr, call, calls) {
     if (call->parentSymbol) {
-      FnSymbol* fn = call->isResolved();
+      FnSymbol* fn = call->resolvedFunction();
+
       if (fn->hasFlag(FLAG_INLINE)) {
         if (inlinedSet.find(fn) != inlinedSet.end()) {
           INT_FATAL(call, "recursive inlining detected");
@@ -145,9 +153,11 @@ inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
     if (call->isResolved()) {
       inlineCall(fn, call);
 
-      if (report_inlining)
-        printf("chapel compiler: reporting inlining, %s function was inlined\n",
+      if (report_inlining) {
+        printf("chapel compiler: reporting inlining, "
+               "%s function was inlined\n",
                fn->cname);
+      }
     }
   }
 }
@@ -157,24 +167,27 @@ inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
 // inline all functions with the inline flag
 // remove unnecessary block statements and gotos
 //
-void
-inlineFunctions() {
+void inlineFunctions() {
   if (!fNoInline) {
     std::set<FnSymbol*> inlinedSet;
 
     compute_call_sites();
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_INLINE) && inlinedSet.find(fn) == inlinedSet.end()) {
+      if (fn->hasFlag(FLAG_INLINE) == true &&
+          inlinedSet.find(fn)      == inlinedSet.end()) {
         inlineFunction(fn, inlinedSet);
       }
     }
 
     forv_Vec(SymExpr, se, gSymExprs) {
       CallExpr* def = toCallExpr(se->parentExpr);
+
       if (def && def->isPrimitive(PRIM_DEREF)) {
         CallExpr* move = toCallExpr(def->parentExpr);
+
         INT_ASSERT(isMoveOrAssign(move));
+
         if (!se->isRef()) {
           SET_LINENO(se);
           def->replace(se->copy());
