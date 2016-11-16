@@ -6158,8 +6158,8 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         ret = codegenAddrOf(codegenFieldPtr(call->get(1), se));
 
         retval = true;
-      } else if ((target->isRef() && call->get(2)->isRef()) ||
-                 (target->isWideRef() && call->get(2)->isWideRef())) {
+      } else if (target && ((target->isRef() && call->get(2)->isRef()) ||
+                 (target->isWideRef() && call->get(2)->isWideRef()))) {
         ret = codegenFieldPtr(call->get(1), se);
         retval = true;
 
