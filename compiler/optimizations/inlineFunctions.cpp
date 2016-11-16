@@ -26,6 +26,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+#include <set>
 #include <vector>
 
 //
@@ -99,10 +100,10 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
 // should be inlined first
 //
 static void
-inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
+inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
   std::vector<CallExpr*> calls;
 
-  inlinedSet.set_add(fn);
+  inlinedSet.insert(fn);
 
   collectFnCalls(fn, calls);
 
@@ -110,8 +111,10 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
     if (call->parentSymbol) {
       FnSymbol* fn = call->isResolved();
       if (fn->hasFlag(FLAG_INLINE)) {
-        if (inlinedSet.set_in(fn))
+        if (inlinedSet.find(fn) != inlinedSet.end()) {
           INT_FATAL(call, "recursive inlining detected");
+        }
+
         inlineFunction(fn, inlinedSet);
       }
     }
@@ -152,13 +155,14 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
 void
 inlineFunctions() {
   if (!fNoInline) {
-    Vec<FnSymbol*> inlinedSet;
+    std::set<FnSymbol*> inlinedSet;
 
     compute_call_sites();
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
+      if (fn->hasFlag(FLAG_INLINE) && inlinedSet.find(fn) == inlinedSet.end()) {
         inlineFunction(fn, inlinedSet);
+      }
     }
 
     forv_Vec(SymExpr, se, gSymExprs) {
