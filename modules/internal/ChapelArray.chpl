@@ -2736,44 +2736,47 @@ module ChapelArray {
   }
 
   proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    var newDom : a.domain.type;
+    var newDom = a.domain | b.domain;
     var ret : [newDom] a.eltType;
     serial !newDom._value.parSafe {
       forall (k,v) in zip(a.domain, a) do ret[k] = v;
-      ret |= b;
+      forall (k,v) in zip(b.domain, b) do ret[k] = v;
     }
     return ret;
   }
 
   proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     a.chpl__assertSingleArrayDomain("|=");
-    serial !a.domain._value.parSafe do forall (k,v) in zip(b.domain, b) do a[k] = v;
+    serial !a.domain._value.parSafe {
+      forall i in b.domain do a.domain.add(i);
+      forall (k,v) in zip(b.domain, b) do a[k] = v;
+    }
   }
 
   proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    var newDom : a.domain.type;
+    var newDom = a.domain & b.domain;
     var ret : [newDom] a.eltType;
 
     serial !newDom._value.parSafe do
-      forall k in a.domain do
-        if b.domain.member(k) then ret[k] = a[k];
+      forall k in newDom do ret[k] = a[k];
     return ret;
   }
 
   proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     a.chpl__assertSingleArrayDomain("&=");
-    serial !a.domain._value.parSafe do
-      forall k in a.domain do
+    serial !a.domain._value.parSafe {
+      forall k in a.domain {
         if !b.domain.member(k) then a.domain.remove(k);
+      }
+    }
   }
 
   proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    var newDom : a.domain.type;
+    var newDom = a.domain - b.domain;
     var ret : [newDom] a.eltType;
 
     serial !newDom._value.parSafe do
-      forall k in a.domain do
-        if !b.domain.member(k) then ret[k] = a[k];
+      forall k in newDom do ret[k] = a[k];
 
     return ret;
   }
@@ -2787,7 +2790,7 @@ module ChapelArray {
 
 
   proc ^(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    var newDom : a.domain.type;
+    var newDom = a.domain ^ b.domain;
     var ret : [newDom] a.eltType;
 
     serial !newDom._value.parSafe {
@@ -2802,10 +2805,15 @@ module ChapelArray {
 
   proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     a.chpl__assertSingleArrayDomain("^=");
-    serial !a.domain._value.parSafe do
-      forall k in b.domain do
+    serial !a.domain._value.parSafe {
+      forall k in b.domain {
         if a.domain.member(k) then a.domain.remove(k);
-        else a[k] = b[k];
+        else a.domain.add(k);
+      }
+      forall k in b.domain {
+        if a.domain.member(k) then a[k] = b[k];
+      }
+    }
   }
 
   proc -(a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
