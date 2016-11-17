@@ -23,6 +23,7 @@ CODEGEN_SRCS =                                          \
                WhileDoStmt.cpp                          \
                alist.cpp                                \
                stmt.cpp                                 \
+               symbol.cpp                               \
 
 
 SVN_SRCS = $(CODEGEN_SRCS)
