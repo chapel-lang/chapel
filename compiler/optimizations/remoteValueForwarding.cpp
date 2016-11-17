@@ -88,6 +88,15 @@ void remoteValueForwarding() {
   }
 }
 
+static void fixLHSArray(CallExpr* move, std::vector<Symbol*>& todo) {
+  Symbol* LHS = toSymExpr(move->get(1))->symbol();
+  if (LHS->isRef()) {
+    LHS->type = LHS->getValType();
+    LHS->qual = QUAL_VAL;
+    todo.push_back(LHS);
+  }
+}
+
 static void replaceRecordWrappedRefs() {
   std::vector<Symbol*> todo;
   forv_Vec(AggregateType, aggType, gAggregateTypes) {
@@ -98,6 +107,19 @@ static void replaceRecordWrappedRefs() {
           field->qual = QUAL_VAL;
           todo.push_back(field);
         }
+      }
+    }
+  }
+
+  // I'd like to be able to just iterate over the uses of tuple fields, but
+  // we don't have a good way of doing that today.
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+      CallExpr* move = toCallExpr(call->parentExpr);
+      INT_ASSERT(isMoveOrAssign(move));
+
+      if (!call->isRef()) {
+        fixLHSArray(move, todo);
       }
     }
   }
@@ -114,10 +136,7 @@ static void replaceRecordWrappedRefs() {
 
       if (call->isPrimitive(PRIM_MOVE)) {
         if (se == call->get(2)) {
-          Symbol* LHS = toSymExpr(call->get(1))->symbol();
-          LHS->type = LHS->getValType();
-          LHS->qual = QUAL_VAL;
-          todo.push_back(LHS);
+          fixLHSArray(call, todo);
         }
       }
       else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
@@ -125,12 +144,18 @@ static void replaceRecordWrappedRefs() {
         if (se == call->get(2)) {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(isMoveOrAssign(move));
+          fixLHSArray(move, todo);
+        }
+      }
+      else if (call->isPrimitive(PRIM_RETURN)) {
+        FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(fn);
+        fn->retType = sym->type;
 
-          Symbol* LHS = toSymExpr(move->get(1))->symbol();
-          if (LHS->isRef()) {
-            LHS->type = LHS->getValType();
-            LHS->qual = QUAL_VAL;
-            todo.push_back(LHS);
+        forv_Vec(CallExpr, fncall, *fn->calledBy) {
+          CallExpr* move = toCallExpr(fncall->parentExpr);
+          if (move && isMoveOrAssign(move)) {
+            fixLHSArray(move, todo);
           }
         }
       }
