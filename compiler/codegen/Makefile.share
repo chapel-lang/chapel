@@ -19,6 +19,7 @@ CODEGEN_SRCS =                                          \
                expr.cpp                                 \
                CForLoop.cpp                             \
                DoWhileStmt.cpp                          \
+               LoopStmt.cpp                             \
 
 
 SVN_SRCS = $(CODEGEN_SRCS)
