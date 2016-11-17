@@ -54,6 +54,8 @@ typedef std::map<Symbol*, DotInfo*>::iterator DotInfoIter;
 
 static void computeUsesDotLocale();
 
+static void replaceRecordWrappedRefs();
+
 /************************************* | **************************************
 *                                                                             *
 * Convert reference args into values if they are only read and reading them   *
@@ -70,6 +72,8 @@ void remoteValueForwarding() {
     Map<Symbol*, Vec<SymExpr*>*> defMap;
     Map<Symbol*, Vec<SymExpr*>*> useMap;
 
+    replaceRecordWrappedRefs();
+
     buildDefUseMaps(defMap, useMap);
 
     updateLoopBodyClasses(defMap, useMap);
@@ -81,6 +85,52 @@ void remoteValueForwarding() {
       delete it->second;
     }
     dotLocaleMap.clear();
+  }
+}
+
+static void replaceRecordWrappedRefs() {
+  std::vector<Symbol*> todo;
+  forv_Vec(AggregateType, aggType, gAggregateTypes) {
+    if (isRecord(aggType)) {
+      for_fields(field, aggType) {
+        if (field->isRef() && isRecordWrappedType(field->getValType())) {
+          field->type = field->getValType();
+          field->qual = QUAL_VAL;
+          todo.push_back(field);
+        }
+      }
+    }
+  }
+
+  // Try and find references that were initialized with the field reference,
+  // and fix them to be QUAL_VAL
+  while (todo.size() > 0) {
+    Symbol* sym = todo.back();
+    todo.pop_back();
+
+    for_SymbolSymExprs(se, sym) {
+      CallExpr* call = toCallExpr(se->parentExpr);
+      INT_ASSERT(call);
+
+      if (call->isPrimitive(PRIM_MOVE)) {
+        if (se == call->get(2)) {
+          Symbol* LHS = toSymExpr(call->get(1))->symbol();
+          LHS->type = LHS->getValType();
+          LHS->qual = QUAL_VAL;
+          todo.push_back(LHS);
+        }
+      } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+        CallExpr* move = toCallExpr(call->parentExpr);
+        INT_ASSERT(isMoveOrAssign(move));
+
+        Symbol* LHS = toSymExpr(move->get(1))->symbol();
+        if (LHS->isRef()) {
+          LHS->type = LHS->getValType();
+          LHS->qual = QUAL_VAL;
+          todo.push_back(LHS);
+        }
+      }
+    }
   }
 }
 
@@ -197,88 +247,6 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
                           FnSymbol*                     fn,
                           ArgSymbol*                    arg);
 
-static void buildRVFWrapper(FnSymbol* fn,
-                            std::map<Symbol*, std::vector<Symbol*> >& fieldsToRVF) {
-  typedef std::map<Symbol*, std::vector<Symbol*> >::iterator argIter;
-  SET_LINENO(fn);
-  AggregateType* wrapType = new AggregateType(AGGREGATE_RECORD);
-  TypeSymbol* wrapSym = new TypeSymbol("RVF_wrapType", wrapType);
-  fn->getModule()->block->insertAtTail(new DefExpr(wrapSym));
-  // TODO: Do we need to create a ref type at this point?
-  ArgSymbol* wrapArg = new ArgSymbol(INTENT_CONST_IN, "RVF_wrapper", wrapType);
-  fn->insertFormalAtTail(wrapArg);
-
-  // Map from fields in the original record to fields in the RVF wrapper
-  std::map<Symbol*, Symbol*> fieldToField;
-
-  //
-  // Create the fields in the wrapper record and unpack them within the
-  // on-statement's body.
-  //
-
-  // Use a counter to make the new fields have unique names
-  int counter = 0;
-
-  // Use this call as an anchor point for the unpacking calls inserted
-  // with insertBefore.
-  CallExpr* anchor = new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Do not leave this call in the tree"));
-  fn->body->insertAtHead(anchor);
-  for (argIter it = fieldsToRVF.begin(); it != fieldsToRVF.end(); ++it) {
-    ArgSymbol* origArg = toArgSymbol(it->first);
-    for_vector(Symbol, oldField, it->second) {
-      VarSymbol* rvfField = new VarSymbol(astr("RVF_", istr(counter), "_", oldField->cname), oldField->getValType());
-      INT_ASSERT(oldField->isRef() && !rvfField->isRef());
-      wrapType->fields.insertAtTail(new DefExpr(rvfField));
-      fieldToField[oldField] = rvfField;
-
-      // Get the RVF'd field from the wrapper, and load it into the
-      // original reference field.
-
-      VarSymbol* rvfTemp = newTemp(rvfField->type);
-      anchor->insertBefore(new DefExpr(rvfTemp));
-      anchor->insertBefore(new CallExpr(PRIM_MOVE, rvfTemp, new CallExpr(PRIM_GET_MEMBER_VALUE, wrapArg, rvfField)));
-
-      VarSymbol* refTemp = newTemp(oldField->qualType());
-      anchor->insertBefore(new DefExpr(refTemp));
-      anchor->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_SET_REFERENCE, rvfTemp)));
-
-      anchor->insertBefore(new CallExpr(PRIM_SET_MEMBER, origArg, oldField, refTemp));
-    }
-  }
-  anchor->remove();
-  INT_ASSERT(!anchor->inTree());
-
-  // At the callsites for 'fn', pack the original fields into the RVF
-  // wrapper.
-  forv_Vec(CallExpr, call, *fn->calledBy) {
-    VarSymbol* wrapper = new VarSymbol("RVF_wrapper", wrapType);
-    call->insertBefore(new DefExpr(wrapper));
-    call->insertAtTail(new SymExpr(wrapper));
-
-    for (argIter it = fieldsToRVF.begin(); it != fieldsToRVF.end(); ++it) {
-      ArgSymbol* origArg = toArgSymbol(it->first);
-      Symbol* actual = toSymExpr(formal_to_actual(call, origArg))->symbol();
-      INT_ASSERT(actual);
-
-      for_vector(Symbol, oldField, it->second) {
-        VarSymbol* rvfField = toVarSymbol(fieldToField[oldField]);
-
-        VarSymbol* refTemp = newTemp(oldField->qualType());
-        call->insertBefore(new DefExpr(refTemp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_GET_MEMBER_VALUE, actual, oldField)));
-
-        // Dereference the 'refTemp'
-        VarSymbol* rvfTemp = newTemp(rvfField->type);
-        call->insertBefore(new DefExpr(rvfTemp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, rvfTemp, refTemp));
-
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, wrapper, rvfField, rvfTemp));
-      }
-    }
-  }
-}
-
-
 static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                 Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   Vec<FnSymbol*> syncSet;
@@ -290,32 +258,11 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       // Would need to flatten them if they are not already.
       INT_ASSERT(isGlobal(fn));
 
-      // Map from an aggregate-type argument to a list of its fields that will
-      // be RVF'd
-      std::map<Symbol*, std::vector<Symbol*> > fieldsToRVF;
-
       // For each reference arg that is safe to dereference
       for_formals(arg, fn) {
         if (canForwardValue(defMap, useMap, syncSet, fn, arg)) {
           updateTaskArg(useMap, fn, arg);
-
-          // Find references fields that can be RVF'd in addition to the formal
-          AggregateType* aggType = toAggregateType(arg->type);
-          if (aggType && isRecord(aggType)) {
-            for_fields(field, aggType) {
-              if (isRecordWrappedType(field->getValType()) && field->isRef()) {
-                if (fieldsToRVF.find(arg) == fieldsToRVF.end()) {
-                  fieldsToRVF[arg] = std::vector<Symbol*>();
-                }
-                fieldsToRVF[arg].push_back(field);
-              }
-            }
-          }
         }
-      }
-
-      if (fieldsToRVF.size() > 0) {
-        buildRVFWrapper(fn, fieldsToRVF);
       }
     }
   }
