@@ -29,6 +29,8 @@
 #include <set>
 #include <vector>
 
+static void  updateRefCalls();
+
 //
 // inlines the function called by 'call' at that call site
 //
@@ -168,10 +170,22 @@ static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
 // remove unnecessary block statements and gotos
 //
 void inlineFunctions() {
+  compute_call_sites();
+
+  // NOAKES 2016/11/17
+  //   This is a transition step for straightening out ref intents.
+  //
+  //   The inner loop of inlining has some "cleanup logic" for handling
+  //   some deficiences in the current ref-intent logic.
+  //
+  //   This logic is being moved to the top level
+  //     a) So that all calls benefit from the logical consistency
+  //     b) To simplify the business logic for inlining
+  //
+  updateRefCalls();
+
   if (!fNoInline) {
     std::set<FnSymbol*> inlinedSet;
-
-    compute_call_sites();
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_INLINE) == true &&
@@ -204,4 +218,87 @@ void inlineFunctions() {
       removeUnnecessaryGotos(fn);
     }
   }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* The following is transition logic while ref intents are being cleaned up.   *
+* It was being applied in the inner loop of inlineFunctions but               *
+*   1) That made inline functions a little more convoluted                    *
+*   2) Could be applied more generally                                        *
+*                                                                             *
+* There are now many functions that have at least one formal with a ref       *
+* intent and a non-ref type e.g. a Record rather than a Class _ref(Record).   *
+* However there are still call sites that continue to pass a temp with a      *
+* ref-type.                                                                   *
+*                                                                             *
+* The longer term path is to eliminate the creation of those ref types but in *
+* the short term this inserts another tmp var that has the correct type and   *
+* then uses a relatively new PRIMOP to fix up the type information.           *
+*                                                                             *
+* NB: This function assumes that compute_call_sites() has been called.        *
+*                                                                             *
+************************************** | *************************************/
+
+static bool hasFormalWithRefIntent(FnSymbol* fn);
+
+static void updateRefCalls() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (hasFormalWithRefIntent(fn) == true) {
+
+      // Walk all of the call-sites and check types of actuals vs. formals
+      forv_Vec(CallExpr, call, *fn->calledBy) {
+        if (call->isResolved()) {
+          Expr* stmt = call->getStmtExpr();
+
+          SET_LINENO(call);
+
+          for_formals_actuals(formal, actual, call) {
+            SymExpr* se = toSymExpr(actual);
+
+            // Is this a case in which we are Passing an actual that is
+            // a ref(t) to a formal with type t and intent ref?
+            //
+            // If so modify the call site and
+            //
+            //   a) Introduce a tmp with qualified type ref t
+            //   b) Pass that tmp instead
+            if ((formal->intent & INTENT_REF) != 0     &&
+                isReferenceType(formal->type) == false &&
+                formal->type->getRefType()    == actual->typeInfo()) {
+
+              // Introduce a ref temp
+              VarSymbol* tmp  = newTemp(astr("i_", formal->name),
+                                        formal->type);
+              DefExpr*   def  = new DefExpr(tmp);
+              CallExpr*  move = NULL;
+
+              tmp->qual = QUAL_REF;
+              move      = new CallExpr(PRIM_MOVE,
+                                       tmp,
+                                       new CallExpr(PRIM_SET_REFERENCE,
+                                                    se->symbol()));
+
+              stmt->insertBefore(def);
+              stmt->insertBefore(move);
+
+              // Replace the actual with the ref-temp
+              actual->replace(new SymExpr(tmp));
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+static bool hasFormalWithRefIntent(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if ((formal->intent & INTENT_REF) != 0     &&
+        isReferenceType(formal->type) == false) {
+      return true;
+    }
+  }
+
+  return false;
 }
