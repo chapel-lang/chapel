@@ -201,14 +201,15 @@ void inlineFunctions() {
 /************************************* | **************************************
 *                                                                             *
 * The following is transition logic while ref intents are being cleaned up.   *
+*                                                                             *
 * It was being applied in the inner loop of inlineFunctions but               *
-*   1) That made inline functions a little more convoluted                    *
-*   2) Could be applied more generally                                        *
+*   1) That made inlineFunctions() a little more convoluted                   *
+*   2) This transformation could/should be applied more generally             *
 *                                                                             *
 * There are now many functions that have at least one formal with a ref       *
-* intent and a non-ref type e.g. a Record rather than a Class _ref(Record).   *
-* However there are still call sites that continue to pass a temp with a      *
-* ref-type.                                                                   *
+* intent and, correctly, a non-ref type e.g. a Record rather than a           *
+* Class _ref(Record).  However there are still call sites that continue to    *
+* pass a temp that is Class _ref(t).                                          *
 *                                                                             *
 * The longer term path is to eliminate the creation of those ref types but in *
 * the short term this inserts another tmp var that has the correct type and   *
