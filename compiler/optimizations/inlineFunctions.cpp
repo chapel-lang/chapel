@@ -47,29 +47,7 @@ static void inlineCall(FnSymbol* fn, CallExpr* call) {
   SymbolMap map;
 
   for_formals_actuals(formal, actual, call) {
-    SymExpr* se = toSymExpr(actual);
-
-    INT_ASSERT(se);
-
-    if ((formal->intent & INTENT_REF) != 0     &&
-        isReferenceType(formal->type) == false &&
-        formal->type->getRefType()    == actual->typeInfo()) {
-      Expr*      point = call->getStmtExpr();
-      VarSymbol* tmp   = newTemp(astr("i_", formal->name), formal->type);
-      DefExpr*   def   = new DefExpr(tmp);
-      CallExpr*  move  = new CallExpr(PRIM_MOVE,
-                                      tmp,
-                                      new CallExpr(PRIM_SET_REFERENCE,
-                                                   se->symbol()));
-      tmp->qual = QUAL_REF;
-
-      point->insertBefore(def);
-      point->insertBefore(move);
-
-      map.put(formal, tmp);
-    } else {
-      map.put(formal, se->symbol());
-    }
+    map.put(formal, toSymExpr(actual)->symbol());
   }
 
   //
