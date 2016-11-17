@@ -17,6 +17,7 @@
 
 CODEGEN_SRCS =                                          \
                expr.cpp                                 \
+               CForLoop.cpp                             \
 
 
 SVN_SRCS = $(CODEGEN_SRCS)
