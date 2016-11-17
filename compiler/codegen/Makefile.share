@@ -24,6 +24,7 @@ CODEGEN_SRCS =                                          \
                alist.cpp                                \
                stmt.cpp                                 \
                symbol.cpp                               \
+               type.cpp
 
 
 SVN_SRCS = $(CODEGEN_SRCS)
