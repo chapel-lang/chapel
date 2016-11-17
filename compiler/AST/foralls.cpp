@@ -94,7 +94,7 @@ bool ForallIntents::replaceChildFI(Expr* oldAst, Expr* newAst) {
     UPDATE(*itv, newAst);
     
   for (std::vector<Expr*>::iterator itr = riSpecs.begin();
-       itr != fiVars.end(); itr++)
+       itr != riSpecs.end(); itr++)
     UPDATE(*itr, newAst);
 
   // Does this ever get invoked with newAst==NULL?
