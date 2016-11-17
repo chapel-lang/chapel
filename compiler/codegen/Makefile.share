@@ -21,6 +21,7 @@ CODEGEN_SRCS =                                          \
                DoWhileStmt.cpp                          \
                LoopStmt.cpp                             \
                WhileDoStmt.cpp                          \
+               alist.cpp                                \
 
 
 SVN_SRCS = $(CODEGEN_SRCS)
