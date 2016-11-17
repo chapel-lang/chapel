@@ -91,7 +91,7 @@ void remoteValueForwarding() {
 static void replaceRecordWrappedRefs() {
   std::vector<Symbol*> todo;
   forv_Vec(AggregateType, aggType, gAggregateTypes) {
-    if (isRecord(aggType)) {
+    if (!aggType->symbol->hasFlag(FLAG_REF)) {
       for_fields(field, aggType) {
         if (field->isRef() && isRecordWrappedType(field->getValType())) {
           field->type = field->getValType();
@@ -119,15 +119,19 @@ static void replaceRecordWrappedRefs() {
           LHS->qual = QUAL_VAL;
           todo.push_back(LHS);
         }
-      } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-        CallExpr* move = toCallExpr(call->parentExpr);
-        INT_ASSERT(isMoveOrAssign(move));
+      }
+      else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+        // what about PRIM_GET_SVEC_MEMBER_VALUE?
+        if (se == call->get(2)) {
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(isMoveOrAssign(move));
 
-        Symbol* LHS = toSymExpr(move->get(1))->symbol();
-        if (LHS->isRef()) {
-          LHS->type = LHS->getValType();
-          LHS->qual = QUAL_VAL;
-          todo.push_back(LHS);
+          Symbol* LHS = toSymExpr(move->get(1))->symbol();
+          if (LHS->isRef()) {
+            LHS->type = LHS->getValType();
+            LHS->qual = QUAL_VAL;
+            todo.push_back(LHS);
+          }
         }
       }
     }
