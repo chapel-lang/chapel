@@ -22,6 +22,7 @@ CODEGEN_SRCS =                                          \
                LoopStmt.cpp                             \
                WhileDoStmt.cpp                          \
                alist.cpp                                \
+               stmt.cpp                                 \
 
 
 SVN_SRCS = $(CODEGEN_SRCS)
