@@ -98,12 +98,13 @@ proc repeatMake(desc, alu, n) {
 //
 // Output a random sequence of length 'n' using distribution a
 //
-proc randomMake(desc, nucleotides: [?D], n) {
+proc randomMake(desc, nucleotides, n) {
   stdout.writeln(desc);
 
-  var cumulProb: [D] int;
+  const numNucls = nucleotides.size;
+  var cumulProb: [1..numNucls] int;
   var p = 0.0;
-  for i in D {
+  for i in 1..numNucls {
     p += nucleotides[i](prob);
     cumulProb[i] = 1 + (p*IM):int;
   }
@@ -114,7 +115,7 @@ proc randomMake(desc, nucleotides: [?D], n) {
     const bytes = min(lineLength, n-i+1);
 
     for (r, i) in zip(getRands(bytes), 0..) {
-      for j in D {
+      for j in 1..numNucls {
         if r < cumulProb[j] {
           line_buff[i] = nucleotides[j](nucl);
           break;
