@@ -175,13 +175,29 @@ all:
     - Added optimization to remove inner multiply in dsiAccess (#4510)
   09/20/16:
     - Add promoted fast follower support (#4558)
+  10/08/16:
+    - text: now using Intel compiler version 17 instead of 15
+      config: Single node XC
+  10/11/16:
+    - text: Fix of races in the ugni comm layer (#253 and #258)
+      config: 16 node XC
   10/18/16:
     - First step to transition to qualified references (#4745)
   10/27/16:
     - Improve Array Memory Management (#4762)
+  11/01/16:
+    - text: update Cray compiler version to 8.5.3 from 8.4.0
+      config: Single node XC
+    - text: update gnu compiler version to 6.2.0 from 5.3.0
+      config: Single node XC, 16 node XC
+  11/02/16:
+    - text: remove usesOuterVars from virtual method call resolution due to bug in application (#4794)
+      config: Single node XC
   11/04/16:
     - text: Improve RVF by inferring const-refs (#4814)
       config: 16 node XC
+    - text: revert Cray compiler version change
+      config: Single node XC
   11/08/16:
     - text: RVF arrays in records (#4821)
       config: 16 node XC
@@ -201,6 +217,10 @@ arrayPerformance-1d:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
+
+arrayPerformance-2d:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
 
 array-of-strings-read:
   04/14/16:
@@ -237,12 +257,24 @@ binary-trees:
     - switch from type method factory to init()-based implementation (#4598)
   09/22/16:
     - simplify init()-based implementation (#4609)
+  10/10/16:
+    - Brad's fix of off-by-one error in checksum (#4734)
 
 binarytrees-submitted:
   09/21/16:
     - switch from type method factory to init()-based implementation (#4598)
   09/22/16:
     - simplify init()-based implementation (#4609)
+  10/10/16:
+    - Brad's fix of off-by-one error in checksum (#4734)
+
+blackscholes:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+
+blackscholes_promote:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
 
 chameneos-redux:
   07/08/13:
@@ -265,6 +297,12 @@ cg-sparse-timecomp:
     - disable function resolution optimization (#4476)
   09/14/16:
     - re-enable function resolution optimization (#4517)
+
+c-ray:
+  10/11/16:
+    - C-ray timeout-related improvements (#4743)
+  11/09/16:
+    - Additional clean ups (#4830)
 
 dgemm.128:
   09/06/13:
@@ -300,6 +338,10 @@ fannkuch-redux:
     - replacement with more elegant version (#4089)
 
 fasta:
+  10/24/16:
+    - Update fasta to operate in parallel, other clean ups (#4765)
+
+fastaredux:
   01/14/14:
     - enabled unlocked I/O on fasta and fasta-printf
   10/07/14:
@@ -411,13 +453,24 @@ jacobi:
     - Improve and enable strided bulk transfer optimization as default (#4318)
   08/13/16:
     - Fix bulk transfer stride failure, cast to size_t for 32-bit support (#4329)
-
-
+  10/07/16:
+    - Vass's PARTIAL_COPY related flags to hash_table improvement (#4709)
+  11/02/16:
+    - work around visible fns issue (#4804)
+    - Remove usesOuterVars from virtual method call resolution (#4794)
+    - Allow casts between c_void_ptr and object types (#4802)
+  11/10/16:
+    - Make each Symbol keep a list of SymExprs (#4827)
 
 knucleotide:
   10/16/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
+
+LCALSMain:
+  10/20/16:
+    - Clean up to HYDRO_2D kernel (#4757)
+    - update to TRAP_INT serial kernel (#4756)
 
 lulesh:
   03/15/14:
@@ -506,6 +559,10 @@ meteor:
     - Chapel level improvement by using implicit domains
   08/10/16:
     - Updated meteor's lock to yield less frequently (#4300)
+
+meteor-submitted:
+  10/26/16:
+    - Fix to avoid race condition after array memory management improvements will not be applied to submitted version (#4762)
 
 miniMD:
   12/21/13:
@@ -609,6 +666,10 @@ spectral-norm-specify-step:
   01/21/15:
     - qthreads updated to yield every ~100 uncontested sync var locks
 
+split-whitespace-perf:
+  11/02/16:
+    - fix bugs when reading null bytes (#4806)
+
 SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
@@ -628,6 +689,14 @@ STREAM_performance:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+STREAM_study:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+
+STREAM_study_promote:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
 
 stencil:
   07/21/14:
