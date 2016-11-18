@@ -176,19 +176,19 @@ all:
   09/20/16:
     - Add promoted fast follower support (#4558)
   10/08/16:
-    - text: now using Intel compiler version 17 instead of 15
+    - text: upgrade Intel target compiler from 15.0.3.187 to 17.0.0.098
       config: Single node XC
   10/11/16:
-    - text: Fix of races in the ugni comm layer (#253 and #258)
+    - text: Fix of races in the ugni comm layer (internal #253 and #258)
       config: 16 node XC
   10/18/16:
     - First step to transition to qualified references (#4745)
   10/27/16:
     - Improve Array Memory Management (#4762)
   11/01/16:
-    - text: update Cray compiler version to 8.5.3 from 8.4.0
+    - text: upgrade Cray target compiler version from 8.4.0 to 8.5.3
       config: Single node XC
-    - text: update gnu compiler version to 6.2.0 from 5.3.0
+    - text: upgrade gnu target compiler from 5.3.0 to 6.2.0
       config: Single node XC, 16 node XC
   11/02/16:
     - text: remove usesOuterVars from virtual method call resolution due to bug in application (#4794)
@@ -196,7 +196,7 @@ all:
   11/04/16:
     - text: Improve RVF by inferring const-refs (#4814)
       config: 16 node XC
-    - text: revert Cray compiler version change
+    - text: downgrade Cray target compiler from 8.5.3 to 8.4.0
       config: Single node XC
   11/08/16:
     - text: RVF arrays in records (#4821)
