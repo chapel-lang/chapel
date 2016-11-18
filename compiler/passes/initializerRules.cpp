@@ -29,9 +29,11 @@
 
 #include <map>
 
-struct InitCall {
-  Expr* initExpr;
-  bool sup; // True if super.init() call, false if this.init() call
+enum InitBody {
+  PHASE_2,
+  PHASE_1_ONLY_SUPER,
+  PHASE_1_ONLY_THIS,
+  PHASE_1_MIXED
 };
 
 // Helper file for verifying the rules placed on initializers, and providing
@@ -74,19 +76,19 @@ void temporaryInitializerFixup(CallExpr* call) {
 }
 
 static
-InitCall* getInitCall(FnSymbol* fn);
+InitBody getInitCall(FnSymbol* fn);
 
 static
-void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall);
+void phase1Analysis(BlockStmt* body, AggregateType* t);
 
 
 
 
 void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
-  InitCall* initCall = getInitCall(fn);
+  InitBody bodyStyle = getInitCall(fn);
 
-  if (initCall != NULL) {
-    phase1Analysis(fn->body, t, initCall);
+  if (bodyStyle != PHASE_2) {
+    phase1Analysis(fn->body, t);
 
     // Insert analysis of initCall here
   }
@@ -94,8 +96,6 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
   // argumentless super.init() call at the beginning of the body.
 
   // Insert phase 2 analysis here
-  free (initCall); // Since it was malloc'ed and returned by getInitCall, free
-  // it when we're done with it.
 }
 
 // Returns true only if what was provided was a SymExpr whose symbol is "this"
@@ -122,13 +122,13 @@ bool storesSpecificName (Expr* expr, const char* name) {
 }
 
 static
-InitCall* getInitCall (Expr* expr) {
+InitBody getInitCall (Expr* expr) {
   // The following set of nested if statements is looking for a CallExpr
   // representing this.init(args) or super.init(args), which at this point
   // in compilation will be represented by:
   // call (call ("." [ super | this ] "init") args)
-  // If we match, return the InitCall struct which wraps the expr and provides
-  // information on whether the call is a super.init() or this.init() call
+  // If we match, return the InitBody enum which represents whether the call is
+  // a super.init() or this.init() call
   if (CallExpr* call = toCallExpr(expr)) {
     if (CallExpr* inner = toCallExpr(call->baseExpr)) {
       if (inner->isNamed(".")) {
@@ -137,24 +137,18 @@ InitCall* getInitCall (Expr* expr) {
             if (storesThisTop(subject->get(1))) {
               if (storesSpecificName(subject->get(2), "super")) {
                 // The expr is a "(this.)super.init()" call
-                InitCall* init = (InitCall*)malloc(sizeof(InitCall));
-                init->initExpr = expr;
-                init->sup = true;
-                return init;
+                return PHASE_1_ONLY_SUPER;
               }
             }
           } else if (storesThisTop(inner->get(1))) {
             // The expr is a "this.init()" call
-            InitCall* init = (InitCall*)malloc(sizeof(InitCall));
-            init->initExpr = expr;
-            init->sup = false;
-            return init;
+            return PHASE_1_ONLY_THIS;
           }
         }
       }
     }
   }
-  return NULL;
+  return PHASE_2;
 }
 
 static
@@ -162,10 +156,11 @@ Expr* getNextStmt(Expr* curExpr, BlockStmt* body, bool enterLoops);
 
 // This function traverses the body of the initializer until it finds a
 // super.init(...) or this.init(...) call, or it reaches the end of the
-// initializer's body, whichever comes first.  It will return that call,
-// or NULL if it didn't find a call matching that description.
+// initializer's body, whichever comes first.  It will return the enum
+// description of that call, or PHASE_2 if it didn't find a call matching
+// that description.
 static
-InitCall* getInitCall(FnSymbol* fn) {
+InitBody getInitCall(FnSymbol* fn) {
   // Behavior is not yet correct for super/this.init() calls within
   // if statements.  TODO: fix this
   Expr* curExpr = fn->body->body.head;
@@ -176,13 +171,15 @@ InitCall* getInitCall(FnSymbol* fn) {
     block = toBlockStmt(curExpr);
   }
 
+  InitBody body = PHASE_2;
   while (curExpr != NULL) {
-    if (InitCall* init = getInitCall(curExpr)) {
-      return init;
+    body = getInitCall(curExpr);
+    if (body != PHASE_2) {
+      return body;
     }
     curExpr = getNextStmt(curExpr, fn->body, true);
   }
-  return NULL;
+  return body;
 }
 
 // Finds the appropriate next statement to examine
@@ -231,7 +228,7 @@ bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
 
 static
 bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
-                       int* index, AggregateType* t, InitCall* initCall);
+                       int* index, AggregateType* t);
 
 static
 void insertOmittedField(Expr* next, const char* nextField,
@@ -243,7 +240,7 @@ static
 bool isParentField(AggregateType* t, const char* name);
 
 static
-void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall) {
+void phase1Analysis(BlockStmt* body, AggregateType* t) {
   DefExpr* curField = toDefExpr(t->fields.head);
   bool *seenField = (bool*)calloc(t->fields.length, sizeof(bool));
   if (curField) {
@@ -256,7 +253,8 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall) {
   std::map<const char*, std::pair<Expr*, Expr*> >* inits = defaultInits[t];
 
   Expr* curExpr = body->body.head;
-  if (curExpr != initCall->initExpr) {
+  InitBody isInit = getInitCall(curExpr);
+  if (isInit != PHASE_1_ONLY_SUPER && isInit != PHASE_1_ONLY_THIS) {
     // solution to fence post issue of diving into nested block statements
     BlockStmt* block = toBlockStmt(curExpr);
     while (block && !block->isLoopStmt()) {
@@ -266,7 +264,8 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall) {
   }
   // We are guaranteed to never reach the end of the body, due to the
   // conditional surrounding the call to this function.
-  while (curField != NULL || curExpr != initCall->initExpr) {
+  while (curField != NULL || (isInit != PHASE_1_ONLY_SUPER &&
+                              isInit != PHASE_1_ONLY_THIS)) {
     // Verify that:
     // - fields are initialized in declaration order
     // - The "this" instance is only used to clarify a field initialization (or
@@ -279,13 +278,14 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall) {
 
     // Additionally, perform the following actions:
     // - add initialization for omitted fields
-    if (curField != NULL && curExpr != initCall->initExpr) {
+    if (curField != NULL && (isInit != PHASE_1_ONLY_SUPER &&
+                             isInit != PHASE_1_ONLY_THIS)) {
       // still have phase 1 statements and fields left to traverse
 
       if (BlockStmt* block = toBlockStmt(curExpr)) {
         if (block->isLoopStmt()) {
           // Special handling for loops.
-          bool foundInit = loopAnalysis(block, curField, seenField, &index, t, initCall);
+          bool foundInit = loopAnalysis(block, curField, seenField, &index, t);
           if (foundInit) {
             // If the init call was in the loop body we just checked, any
             // further action is incorrect (including the insertion of leftover
@@ -295,6 +295,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall) {
             break;
           }
           curExpr = getNextStmt(curExpr, body, false);
+          isInit = getInitCall(curExpr);
           continue;
         }
       }/* else if (CondStmt* cond = toCondStmt(curExpr)) {
@@ -307,6 +308,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall) {
           // It's a match!  Advance both and move on
           curField = toDefExpr(curField->next);
           curExpr = getNextStmt(curExpr, body, false);
+          isInit = getInitCall(curExpr);
           seenField[index] = true;
           index++;
         } else if (isLaterFieldAccess(curField, fieldname)) {
@@ -317,10 +319,12 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall) {
           // It's not a valid field access at all.  Error cases!
           errorCases(t, curField, fieldname, seenField, curExpr);
           curExpr = getNextStmt(curExpr, body, false);
+          isInit = getInitCall(curExpr);
         }
       } else {
         // Wasn't a field access, only update curExpr;
         curExpr = getNextStmt(curExpr, body, false);
+        isInit = getInitCall(curExpr);
       }
     } else if (curField != NULL) {
       // only fields left
@@ -334,7 +338,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall) {
       if (BlockStmt* block = toBlockStmt(curExpr)) {
         if (block->isLoopStmt()) {
           // Special handling for loops.
-          bool foundInit = loopAnalysis(block, curField, seenField, &index, t, initCall);
+          bool foundInit = loopAnalysis(block, curField, seenField, &index, t);
           if (foundInit) {
             // If the init call was in the loop body we just checked, any
             // further action is incorrect (including the insertion of leftover
@@ -348,6 +352,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, InitCall* initCall) {
         errorCases(t, curField, fieldname, seenField, curExpr);
       }
       curExpr = getNextStmt(curExpr, body, false);
+      isInit = getInitCall(curExpr);
     }
   }
 
@@ -549,19 +554,20 @@ void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this) {
 // encountered it by returning "true".
 static
 bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
-                  int* index, AggregateType* t, InitCall* initCall) {
+                  int* index, AggregateType* t) {
   Expr* stmt = loop->body.head;
+  InitBody isInit = getInitCall(stmt);
   while(stmt != NULL) {
     if (BlockStmt* inner = toBlockStmt(stmt)) {
-      bool sawInit = loopAnalysis(inner, curField, seenField, index, t, initCall);
+      bool sawInit = loopAnalysis(inner, curField, seenField, index, t);
       if (sawInit) {
         return sawInit;
       }
     }
-    if (stmt == initCall->initExpr) {
+    if (isInit == PHASE_1_ONLY_SUPER || isInit == PHASE_1_ONLY_THIS) {
       // We encountered the .init() call while traversing this loop.  Stop
       // performing Phase 1 analysis and return.
-      USR_FATAL_CONT(stmt, "use of %s.init() call in loop body", initCall->sup ? "super" : "this");
+      USR_FATAL_CONT(stmt, "use of %s.init() call in loop body", isInit == PHASE_1_ONLY_SUPER ? "super" : "this");
       return true;
     }
 
@@ -571,6 +577,7 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
         seenField[*index] = true;
         (*index)++;
         stmt = getNextStmt(stmt, loop, true);
+        isInit = getInitCall(stmt);
       } else if (curField && isLaterFieldAccess(curField, fieldname)) {
         (*index)++;
         curField = toDefExpr(curField->next);
@@ -579,9 +586,11 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
         // Should I also warn that it is occuring inside a loop?
         errorCases(t, curField, fieldname, seenField, stmt);
         stmt = getNextStmt(stmt, loop, true);
+        isInit = getInitCall(stmt);
       }
     } else {
       stmt = getNextStmt(stmt, loop, true);
+      isInit = getInitCall(stmt);
     }
   }
   // traverse the statements of the loop, diving into loops and blocks as
