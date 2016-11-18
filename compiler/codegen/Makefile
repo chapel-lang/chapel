@@ -20,17 +20,17 @@ export CHPL_MAKE_HOME=$(shell pwd)/../..
 endif
 
 COMPILER_ROOT = ..
-COMPILER_SUBDIR = passes
+COMPILER_SUBDIR = codegen
 
 #
 # standard header
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-PASSES_OBJDIR = $(OBJ_SUBDIR)
+CODEGEN_OBJDIR = $(OBJ_SUBDIR)
 include Makefile.share
 
-TARGETS = $(PASSES_OBJS)
+TARGETS = reservedSymbolNames.h $(CODEGEN_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
@@ -40,3 +40,9 @@ FORCE:
 # standard footer
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
+
+reservedSymbolNames.h: reservedSymbolNames Makefile
+	sed -e 's/^\([ 	]*\)\([A-Za-z_][A-Za-z0-9_]*\)/\1cnames.insert(astr("\2"));/' <$< >$@
+
+$(OBJ_SUBDIR)/codegen.o: reservedSymbolNames.h
+
