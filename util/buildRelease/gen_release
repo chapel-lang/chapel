@@ -105,7 +105,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "README.rst",
        "README.files",
        "STATUS",
-       "compiler/passes/reservedSymbolNames",
+       "compiler/codegen/reservedSymbolNames",
        "highlight/README.md",
        "util/README",
        "util/build_configs.py",
