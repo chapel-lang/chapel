@@ -3480,7 +3480,7 @@ static void buildVisibleFunctionMap() {
 // In other words, it skips those blocks that do not define any visible
 // functions (of any name).
 // Todo: some blocks only define if-functions (i.e. _if_fnNNN); such blocks
-// probabaly should not be present in visibleFunctionMap.
+// probably should not be present in visibleFunctionMap.
 //
 // getVisibleFunctions returns the block appropriate for visibilityBlockCache
 // or NULL if there is none, e.g. when the next block up is the rootModule.
