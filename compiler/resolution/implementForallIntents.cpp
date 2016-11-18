@@ -22,9 +22,7 @@
 #include "ForLoop.h"
 #include "passes.h"
 #include "stlUtil.h"
-#include "stmt.h"
 #include "stringutil.h"
-#include "symbol.h"
 #include "resolveIntents.h"
 
 
@@ -96,12 +94,16 @@ static bool isOuterVar(Symbol* sym, BlockStmt* block) {
 }
 
 
-// Do not count variables in 'with' clauses as "outer".
+// Return true if 'se' corresponds to a variable listed in a 'with' clause.
+// (We do not consider those variables as "outer".)
+// Exprs in riSpecs do not get this special treatment, however.
 static bool isInWithClause(SymExpr* se) {
-  if (Expr* parentExpr = se->parentExpr)
-    if (CallExpr* parentCall = toCallExpr(parentExpr))
-      if (parentCall->isPrimitive(PRIM_FORALL_LOOP))
-        return true;
+  if (BlockStmt* parent = toBlockStmt(se->parentExpr))
+    if (ForallIntents* fi = parent->forallIntents) {
+      for_vector(Expr, expr, fi->fiVars)
+        if (expr == se)
+          return true;
+    }
   return false;
 }
 
@@ -510,9 +512,7 @@ static BlockStmt* discoverFromFollowIter(DefExpr* defFollowIter)
 
   for (Expr* curr = bFollowerLoop->body.head; curr; curr = curr->next) {
     if (BlockStmt* nestB = toBlockStmt(curr)) {
-      if (nestB->byrefVars) {
-        // what else can it be?
-        INT_ASSERT(nestB->byrefVars->isPrimitive(PRIM_FORALL_LOOP));
+      if (nestB->forallIntents) {
         bForallBody = nestB;
         break;
       }
@@ -546,7 +546,7 @@ static void discoverForallBodies(DefExpr* defChplIter,
     secondForallBody = NULL;
     for (Expr* curr = defLeadIdxCopy->next; curr; curr = curr->next)
       if (BlockStmt* block = toBlockStmt(curr)) {
-        INT_ASSERT(block->byrefVars->isPrimitive(PRIM_FORALL_LOOP));
+        INT_ASSERT(block->forallIntents);
         firstForallBody = block;
         // this loop is for asserts only
         for (Expr* check = firstForallBody->next; check; check = check->next)
@@ -573,9 +573,8 @@ static void discoverForallBodies(DefExpr* defChplIter,
     // If the function has been resolved, the current implementation is doomed
     // - because the 'if' that we will rely on may have been folded away.
     //
-    // In that case we'd have to traverse all CallExprs
-    // looking for SymExpr(s) for defChplIter->sym
-    // that is/are in the PRIM_FORALL_LOOP CallExpr.
+    // In that case we'd have to traverse all forallIntents
+    // looking for SymExpr(s) for defChplIter->sym.
     // That/those will be our forall loop bodies.
     //
     // BTW FLAG_RESOLVED is already set on defChplIter->parentSymbol.
@@ -618,29 +617,52 @@ static void discoverForallBodies(DefExpr* defChplIter,
 static void getIterSymbols(BlockStmt* body, Symbol*& serIterSym,
                            Symbol*& leadIdxSym, Symbol*& leadIdxCopySym)
 {
-  CallExpr* const byrefVars = body->byrefVars;
-  INT_ASSERT(byrefVars->isPrimitive(PRIM_FORALL_LOOP));
+  ForallIntents* const fi = body->forallIntents;
 
   // Extract  chpl__iterLF,  chpl__leadIdx,  chpl__leadIdxCopy
   // or       chpl__iterSA,  chpl__saIdx,    chpl__saIdxCopy
-  SymExpr* serIterSE     = toSymExpr(byrefVars->get(1)->remove());
-  SymExpr* leadIdxSE     = toSymExpr(byrefVars->get(1)->remove());
-  SymExpr* leadIdxCopySE = toSymExpr(byrefVars->get(1)->remove());
-  INT_ASSERT(serIterSE && leadIdxSE && leadIdxCopySE);
+  serIterSym     = fi->iterRec->symbol();
+  leadIdxSym     = fi->leadIdx->symbol();
+  leadIdxCopySym = fi->leadIdxCopy->symbol();
+}
 
-  serIterSym     = serIterSE->symbol();
-  leadIdxSym     = leadIdxSE->symbol();
-  leadIdxCopySym = leadIdxCopySE->symbol();
+// Mark the variables listed in 'with' clauses, if any, with tiMark markers.
+// Same as markOuterVarsWithIntents() in createTaskFunctions.cpp,
+// except uses ForallIntents.
+static void markOuterVarsWithIntents(ForallIntents* fi, SymbolMap& uses) {
+  if (!fi) return;
+  int nv = fi->numVars();
+
+  for (int i = 0; i < nv; i++) {
+    Symbol* marker = NULL;
+    if (fi->isReduce(i))
+      marker = toSymExpr(fi->riSpecs[i])->symbol();
+    else
+      // TODO: avoid this wrapper, which is here for historical reasons.
+      // Requires using something fancier than SymbolMap.
+      marker = tiMarkForTFIntent((int)(fi->fIntents[i]));
+
+    Symbol* var = toSymExpr(fi->fiVars[i])->symbol();
+    SymbolMapElem* elem = uses.get_record(var);
+    if (elem) {
+      elem->value = marker;
+    } else {
+      if (isVarSymbol(marker)) {
+        // this is a globalOp created in setupOneReduceIntent()
+        INT_ASSERT(!strcmp(marker->name, "chpl__reduceGlob"));
+        USR_WARN(fi->riSpecs[i], "the variable '%s' is given a reduce intent and not mentioned in the loop body - it will have the unit value after the loop", var->name);
+      }
+    }
+  }
 }
 
 static void getOuterVars(BlockStmt* body, SymbolMap& uses)
 {
-  CallExpr* const byrefVars = body->byrefVars;
-  INT_ASSERT(byrefVars->isPrimitive(PRIM_FORALL_LOOP));
+  INT_ASSERT(body->forallIntents);
 
   // do the same as in 'if (needsCapture(fn))' in createTaskFunctions()
   findOuterVars(body, uses);
-  markOuterVarsWithIntents(byrefVars, uses);
+  markOuterVarsWithIntents(body->forallIntents, uses);
   pruneThisArg(body->parentSymbol, uses);
 }
 
@@ -678,27 +700,29 @@ void implementForallIntents1(DefExpr* defChplIter)
   //
   // - Leader-follower case, when fast followers are enabled:
   //  - forallBody1 and forallBody2 are non-NULL
-  //  - forallBody2->byrefVars is a PRIM_FORALL_LOOP whose first arguments are:
+  //  - forallBody2->forallIntents->{iterRec,leadIdx,leadIdxCopy} contain:
   //      chpl__iterLF, chpl__leadIdx, chpl__leadIdxCopy
   //
   // - Leader-follower case, when fast followers are disabled:
   //  - forallBody2 == NULL
-  //  - forallBody1->byrefVars is what forallBody2->byrefVars is above
-  //
-  // - In all three cases, the user-specified contents of the 'with' clause
-  //   are appended to forallBody1/2->byrefVars specified above
+  //  - forallBody1->forallIntents contains what's listed above for
+  //      forallBody2->forallIntents
   //
   // - Standalone case:
   //  - forallBody2 == NULL
-  //  - forallBody1->byrefVars is a PRIM_FORALL_LOOP whose first arguments are:
+  //  - forallBody1-forallIntents->{iterRec,leadIdx,leadIdxCopy} contain:
   //      chpl__iterSA, chpl__saIdx, chpl__saIdxCopy
+  //
+  // - In all three cases, the user-specified contents of the 'with' clause
+  //   are in forallBody1/2->forallIntents (when non-NULL, see above),
+  //   specifically in fiVars/fIntents/riSpecs.
   //
   BlockStmt* forallBody1;
   BlockStmt* forallBody2;
   discoverForallBodies(defChplIter, forallBody1, forallBody2);
 
   // If both bodies are present, I expect them to be copies of one another,
-  // except for byrefVars field (see above).
+  // except for forallIntents field (see above).
   // So we discover everything for the first one and verify
   // that it's the same for the second one.
   // Once we found it/them, process the first forall body clone.
@@ -745,7 +769,7 @@ void implementForallIntents1(DefExpr* defChplIter)
     replaceVarUses(forallBody1, uses1);
   }
 
-  forallBody1->byrefVars->remove();
+  forallBody1->removeForallIntents();
 
   // Now process the second clone, using what we already computed.
 
@@ -761,7 +785,7 @@ void implementForallIntents1(DefExpr* defChplIter)
       // same outer variables, same shadow variables as for forallBody1
       replaceVarUses(forallBody2, uses1);
 
-    forallBody2->byrefVars->remove();
+    forallBody2->removeForallIntents();
   }
 }
 

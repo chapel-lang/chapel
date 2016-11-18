@@ -80,6 +80,16 @@ using namespace llvm;
 //
 // This one is not normally included by clang clients
 // and not normally installed in the include directory.
+//
+// Q. Could we instead call methods on clang::CodeGenerator subclass of
+// ASTConsumer such as HandleTopLevelDecl to achieve what we want?
+// We would have a different AST visitor for populating the LVT.
+//
+// It is likely that we can leave the C parser "open" somehow and then
+// add statements to it at the end.
+// BUT we couldn't call EmitDeferredDecl.
+//
+//
 #include "CodeGenModule.h"
 #include "CGRecordLayout.h"
 #include "CGDebugInfo.h"

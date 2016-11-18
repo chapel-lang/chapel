@@ -402,6 +402,10 @@ static void removeMootFields();
 static void expandInitFieldPrims();
 static void fixTypeNames(AggregateType* ct);
 static void setScalarPromotionType(AggregateType* ct);
+static FnSymbol* findGenMainFn();
+static void printCallGraph(FnSymbol* startPoint = NULL,
+                           int indent = 0,
+                           std::set<FnSymbol*>* alreadyCalled = NULL);
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   if (formalIdxToActual.n != 0) formalIdxToActual.clear();
@@ -7303,6 +7307,15 @@ postFold(Expr* expr) {
           expr->replace(result);
         }
       }
+      if (call->isNamed("=")) {
+        if (SymExpr* lhs = toSymExpr(call->get(1))) {
+          if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) || lhs->symbol()->isParameter()) {
+            if (paramMap.get(lhs->symbol())) {
+              USR_FATAL(call, "parameter set multiple times");
+            }
+          }
+        }
+      }
     } else if (call->isPrimitive(PRIM_QUERY_TYPE_FIELD) ||
                call->isPrimitive(PRIM_QUERY_PARAM_FIELD)) {
       SymExpr* classWrap = toSymExpr(call->get(1));
@@ -7594,17 +7607,31 @@ postFold(Expr* expr) {
       CallExpr* call = toCallExpr(sym->parentExpr);
       if (call && call->get(1) == sym) {
         // This is a place where param substitution has already determined the
-        // value of a move or assignment, so we can just ignore the update.
-        if (call->isPrimitive(PRIM_MOVE)) {
-          makeNoop(call);
-          return result;
-        }
-
+        // value of a move or assignment. If it's a RVV, then we should ignore
+        // the update because the RVV may have multiple valid defs in the AST
+        // that we currently cannot squash if there are multiple return
+        // statements. For example, consider the following param function:
+        //
+        // proc foo(type t) param {
+        //   if firstCheck(t) then return true;
+        //   if otherCheck(t) then return false;
+        //   return true;
+        // }
+        //
+        // The final "return true" can manifest as a PRIM_MOVE into the RVV
+        // variable. I think we're currently unable to move the def because
+        // of GOTOs.
+        //
+        // If it's not a RVV, then we might be assigning to a user-defined
+        // param multiple times. In that case, we'll just return the result
+        // and let resolution catch the problem later.
+        //
         // The substitution usually happens before resolution, so for
         // assignment, we key off of the name :-(
-        if (call->isNamed("="))
-        {
-          makeNoop(call);
+        if (call->isPrimitive(PRIM_MOVE) || call->isNamed("=")) {
+          if (sym->symbol()->hasFlag(FLAG_RVV)) {
+            makeNoop(call);
+          }
           return result;
         }
       }
@@ -8881,6 +8908,13 @@ resolve() {
 
   handleRuntimeTypes();
 
+  if (fPrintCallGraph) {
+    // This needs to go after resolution is complete, but before
+    // pruneResolvedTree() removes unused functions (like the uninstantiated
+    // versions of generic functions).
+    printCallGraph();
+  }
+
   pruneResolvedTree();
 
   freeCache(ordersCache);
@@ -9712,13 +9746,94 @@ static void cleanupAfterRemoves() {
   }
 }
 
+
+//
+// Print a representation of the call graph of the program.
+// This needs to be done after function resolution so we can follow calls
+// into the called function.  However, it needs to be done before
+// removeUnusedFunctions so that we can consider multiple instantiations
+// of a function to be the same by tracking them using the function they
+// were instantiated from before they are removed as unused.
+//
+static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>* alreadyCalled) {
+
+  std::vector<BaseAST*> asts;
+  std::set<FnSymbol*> alreadySeenLocally;
+  bool freeAlreadyCalledSet = false;
+  const bool printLocalMultiples = false;
+
+  if (!startPoint) {
+    startPoint = findGenMainFn();
+  }
+
+  if (alreadyCalled == NULL) {
+    alreadyCalled = new std::set<FnSymbol*>();
+    freeAlreadyCalledSet = true;
+  }
+
+  collect_asts_postorder(startPoint, asts);
+  if (startPoint->hasFlag(FLAG_COMPILER_GENERATED) ||
+      startPoint->hasFlag(FLAG_MODULE_INIT)) {
+    // Don't print chpl_gen_main and chpl__init_moduleName
+    // Set the indent to -2 so recursing down to the next level
+    // will set it back to 0.
+    indent = -2;
+  } else {
+    fprintf(stdout, "%*s%s\n", indent, "", startPoint->name);
+  }
+
+  for_vector(BaseAST, ast, asts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (FnSymbol* fn = call->isResolved()) {
+        if (fn->getModule()->modTag == MOD_USER &&
+            !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+            !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+          FnSymbol* instFn = fn;
+          if (fn->instantiatedFrom) {
+            instFn = fn->instantiatedFrom;
+          }
+          if (printLocalMultiples || 0 == alreadySeenLocally.count(instFn)) {
+            alreadySeenLocally.insert(instFn);
+            if (0 == alreadyCalled->count(fn)) {
+              alreadyCalled->insert(fn);
+              printCallGraph(fn, indent+2, alreadyCalled);
+              alreadyCalled->erase(fn);
+            } else {
+              fprintf(stdout, "%*s%s (Recursive)\n", indent+2, "", fn->name);
+            }
+          }
+        }
+      }
+    }
+  }
+  if (freeAlreadyCalledSet) {
+    delete alreadyCalled;
+  }
+}
+
+//
+// Return the compiler generated main function.
+//
+static FnSymbol* findGenMainFn() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isResolved()) {
+      if (!strcmp("chpl_gen_main", fn->name)) {
+        return fn;
+      }
+    }
+  }
+  INT_FATAL("couldn't find compiler generated main function");
+  return NULL;
+}
+
+
+
 //
 // pruneResolvedTree -- prunes and cleans the AST after all of the
 // function calls and types have been resolved
 //
 static void
 pruneResolvedTree() {
-
   removeUnusedFunctions();
   if (fRemoveUnreachableBlocks)
     deadBlockElimination();

@@ -640,6 +640,8 @@ Task Parallelism and Synchronization
 - A 'sync' statement with a 'begin' statement in it at module scope can cause
   an internal compiler error.
   # users/ferguson/bug-zhao.future
+- Specifying one variable multiple times in a with clause should be an error
+  # parallel/taskPar/cassella/too-many-intents.future
 
 Data Parallelism
 ----------------

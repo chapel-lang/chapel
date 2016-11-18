@@ -34,6 +34,7 @@ SUBDIRS = \
 	adt \
 	AST \
 	backend \
+	codegen \
 	ifa \
 	ipe \
 	main \
@@ -67,6 +68,7 @@ BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
 include adt/Makefile.include
 include AST/Makefile.include
 include backend/Makefile.include
+include codegen/Makefile.include
 include ifa/Makefile.include
 include ipe/Makefile.include
 include main/Makefile.include
@@ -82,6 +84,7 @@ CHPL_OBJS = \
 	$(ADT_OBJS) \
 	$(AST_OBJS) \
 	$(BACKEND_OBJS) \
+	$(CODEGEN_OBJS) \
 	$(IFA_OBJS) \
 	$(IPE_OBJS) \
 	$(MAIN_OBJS) \

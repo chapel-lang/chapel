@@ -47,9 +47,25 @@ ArgSymbol* tiMarkForIntent(IntentTag intent) {
     case INTENT_REF:       return tiMarkRef;       break;
     case INTENT_PARAM:     return NULL;            break;
     case INTENT_TYPE:      return NULL;            break;
-    default: INT_FATAL("unexpected intent in tiMarkForIntent()");
-             return NULL; break;
   }
+  INT_FATAL("unexpected intent in tiMarkForIntent()");
+  return NULL; // dummy
+}
+
+// Same except uses TFITag. It is encoded as int to deal with header ordering.
+// Do not invoke on TFI_REDUCE.
+ArgSymbol* tiMarkForTFIntent(int tfIntent) {
+  switch ((TFITag)tfIntent) {
+    case TFI_DEFAULT:   return tiMarkBlank;     break;
+    case TFI_CONST:     return tiMarkConstDflt; break;
+    case TFI_IN:        return tiMarkIn;        break;
+    case TFI_CONST_IN:  return tiMarkConstIn;   break;
+    case TFI_REF:       return tiMarkRef;       break;
+    case TFI_CONST_REF: return tiMarkConstRef;  break;
+    case TFI_REDUCE:    break; // there is tiMark for reduce intents
+  }
+  INT_FATAL("unexpected intent in tiMarkForTFIntent()");
+  return NULL; // dummy
 }
 
 #define tiMarkAdd(intent, mark) \
@@ -302,7 +318,9 @@ findOuterVars(FnSymbol* fn, SymbolMap& uses) {
 }
 
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
-void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
+// Same as markOuterVarsWithIntents() in implementForallIntents.cpp,
+// except uses byrefVars instead of forallIntents.
+static void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
   if (!byrefVars) return;
   Symbol* marker = NULL;
 
@@ -537,11 +555,11 @@ void createTaskFunctions(void) {
   }
 
   // Process task-creating constructs. We include 'on' blocks, too.
-  // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    bool hasTaskIntentClause = false;  // this 'block' has task intent clause ?
-    // Loops are not a parallel block construct
     if (block->isLoopStmt() == true) {
+      // Loops are not a parallel block construct, so do nothing.
+      // The isLoopStmt() test guards the call blockInfoGet() below
+      // from issuing "Migration" warnings.
 
     } else if (CallExpr* info = block->blockInfoGet()) {
       SET_LINENO(block);
@@ -718,7 +736,6 @@ void createTaskFunctions(void) {
         fn->retType = dtVoid;
 
         if (needsCapture(fn)) { // note: does not apply to blocking on stmts.
-          hasTaskIntentClause = true;
 
           // Convert referenced variables to explicit arguments.
           SymbolMap uses;
@@ -738,10 +755,7 @@ void createTaskFunctions(void) {
 
     // 'byrefVars' should have been eliminated for those blocks where it is
     // syntactically allowed, and should be always empty for anything else.
-    // Except where it marks a forall loop body.
-    INT_ASSERT(!block->byrefVars ||
-               (!hasTaskIntentClause &&
-                block->byrefVars->isPrimitive(PRIM_FORALL_LOOP)));
+    INT_ASSERT(!block->byrefVars);
 
   } // for block
 
