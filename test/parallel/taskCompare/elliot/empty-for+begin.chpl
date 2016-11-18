@@ -3,18 +3,16 @@ use Time;
 config const numTrials = 100;
 config const printTimings = false;
 
+proc forBeginTaskSpawn(trials, numTasks) {
+  for 1..numTrials do
+    sync { for 1..here.maxTaskPar do begin { } }
+}
+
 proc main() {
   var t: Timer;
 
   t.start();
-  for 1..numTrials {
-    sync {
-      for 1..here.maxTaskPar {
-        begin {
-        }
-      }
-    }
-  }
+  forBeginTaskSpawn(numTrials, here.maxTaskPar);
   t.stop();
 
   if printTimings {
