@@ -1,2 +1,2 @@
 # cce optimizes away the loop entirely resulting in a no-op test
-CHPL_TARGET_COMPILER=cray-prgenv-cray
+CHPL_TARGET_COMPILER==cray-prgenv-cray
