@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import subprocess
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
