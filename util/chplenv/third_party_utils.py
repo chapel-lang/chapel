@@ -1,13 +1,14 @@
 import os
 import re
 import sys
+import subprocess
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_arch, chpl_compiler, chpl_locale_model, chpl_platform
 from chpl_home_utils import get_chpl_home, using_chapel_module
-from utils import memoize
+from utils import memoize, run_command
 
 
 #
@@ -57,6 +58,41 @@ def handle_la(la_path):
                             args.append(tok)
     return args
 
+#
+# Return linker arguments required to link with a library
+# known to pkgconfig. The pkg can be a path to a .pc file or
+# the name of a system-installed package or the name of
+# a third-party package.
+#
+# if system=True, searches for a system-instaled package.
+# if static=True, uses --static (suitable for static linking)
+@memoize
+def pkgconfig_get_link_args(pkg, ucp='', system=True, static=True):
+  havePcFile = pkg.endswith('.pc')
+  pcArg = pkg
+  if not havePcFile:
+    if system:
+      # check that pkg-config knows about the package in question
+      subprocess.check_call(['pkg-config', '--exists', pkg])
+    else:
+      # look for a .pc file
+      if ucp == '':
+        ucp = default_uniq_cfg_path()
+      pcfile = pkg + '.pc' # maybe needs to be an argument later?
+
+      pcArg = os.path.join(get_cfg_install_path(pkg, ucp), 'lib',
+                           'pkgconfig', pcfile)
+
+      if not os.access(pcArg, os.R_OK):
+        raise ValueError("Could not find '{0}'".format(pcArg))
+
+  static_arg = [ ]
+  if static:
+    static_arg = ['--static']
+
+  libs_line = run_command(['pkg-config', '--libs'] + static_arg + [pcArg]);
+  libs = libs_line.split()
+  return libs
 
 #
 # This returns the default link args for the given third-party package.
