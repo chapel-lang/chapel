@@ -308,11 +308,13 @@ checkBadLocalReturn(FnSymbol* fn, Symbol* retVar) {
             if (ret->symbol()->defPoint->getFunction() == fn &&
                 !returnsRefArgumentByRef(rhsCall, fn)) {
               USR_FATAL_CONT(ret, "illegal expression to return by ref");
-            }
-            // Check: Are we returning a constant by ref?
-            if (fn->retTag == RET_REF &&
-                (ret->symbol()->isConstant() || ret->symbol()->isParameter())) {
-              USR_FATAL_CONT(rhs, "function cannot return constant by ref");
+            } else {
+              // Check: Are we returning a constant by ref?
+              if (fn->retTag == RET_REF &&
+                  (ret->symbol()->isConstant() ||
+                   ret->symbol()->isParameter())) {
+                USR_FATAL_CONT(rhs, "function cannot return constant by ref");
+              }
             }
           }
         }
@@ -335,7 +337,8 @@ checkBadLocalReturn(FnSymbol* fn, Symbol* retVar) {
       SymExpr* rhsSe = toSymExpr(source);
       if (rhsSe &&
           isVarSymbol(rhsSe->symbol()) &&
-          rhsSe->symbol()->defPoint->getFunction() == fn) {
+          rhsSe->symbol()->defPoint->getFunction() == fn &&
+          !rhsSe->isRef()) {
         USR_FATAL_CONT(rhsSe, "illegal return of array aliasing a local array");
       }
     }
