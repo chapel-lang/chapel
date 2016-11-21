@@ -196,8 +196,8 @@ Syntax
 Because Phase 1 and Phase 2 have such divergent rules, it is necessary to
 distinguish when Phase 1 ends and Phase 2 begins, both for clarity to the
 compiler and to the type designer.  The chosen syntax to represent this divide
-hinges on a call to another initializer, whether parent or sibling.  It looks
-like this:
+hinges on a call to another initializer, whether parent or defined on the same
+type.  It looks like this:
 
 .. code-block:: chapel
 
@@ -210,14 +210,14 @@ like this:
 
 The alternate implementation which came in a close second follows.  It
 designates the phases through separate bodies which are executed in sequence.
-Any calls to parent or sibling initializers must occur as the last statement in
-the Phase 1 body:
+Any calls to parent initializers or other initializers defined on the type must
+occur as the last statement in the Phase 1 body:
 
 .. code-block:: chapel
 
 	 proc init() {
 	   ... // Phase 1 code
-	   // Optional call to parent or sibling initializer would occur here
+	   // Optional call to parent or other initializer would occur here
 	 } finalize {
 	   ... // Phase 2 code
 	 }
@@ -287,7 +287,7 @@ name so that the value may be relied upon in all circumstances.
 Referencing Other Initializers
 ++++++++++++++++++++++++++++++
 
-For either initializer syntax, the strategy to call parent and sibling
+For either initializer syntax, the strategy to call parent and other
 initializers remains the same.  Both also require that such calls only occur at
 the end of Phase 1 for the current initializer.  The syntax of choice explicitly
 enforces this rule by separating the two phases based on these calls, while the
@@ -340,14 +340,14 @@ initialization:
 	Child Phase 2
 
 
-The syntax to call a sibling initializer is ``this.init(<args>);``.  Similarly
-to in the parent-referential case, the return from that call will indicate that
-the calling initializer has begun Phase 2. In contrast to the parent case,
-however, a call to a sibling initializer may not be made if the current
-initializer has defined any fields.  The rationale for this decision is that a
-valid sibling initializer will initialize all of its fields, and so any
-initialization prior to that call will lead to the occurrence of an unexpected
-double initialization.
+The syntax to call another initializer defined on the same type is
+``this.init(<args>);``.  Similarly to in the parent-referential case, the return
+from that call will indicate that the calling initializer has begun Phase 2. In
+contrast to the parent case, however, a call to an outside initializer may not
+be made if the current initializer has defined any fields.  The rationale for
+this decision is that a valid alternate initializer will initialize all of its
+fields, and so any initialization prior to that call will lead to the occurrence
+of an unexpected double initialization.
 
 An initializer may only contain one ``this.init(<args>)`` or
 ``super.init(<args>)`` call in a single path through the body – it may not
@@ -368,6 +368,15 @@ the initializer body:
      this.someOtherMethod(); // This call is valid, because we are in Phase 2
    }
 
+The compiler generated initializer will also include an argument-less
+``super.init()`` call after the initialization of its fields has been completed,
+meaning that if the parent type has defined an initializer with more than zero
+arguments, attempts to initialize the child will result in an error.  Parent
+types with a zero-argument defined initializer, or that rely on the compiler
+generated initializer, will resolve appropriately.  We may consider expanding to
+support the case where the parent has defined just a single initializer with
+any number of arguments, but that decision and its implementation are future
+work.
 
 For backwards compatibility purposes, unless the divide between Phase 1 and 2 is
 explicitly stated, the compiler assumes the body of an initializer to be in
@@ -460,50 +469,17 @@ their type when copies of it must be made, such as when the type is passed to a
 function or task by the ``in`` intent, or copied across locale boundaries.  An
 example of when such control would be desired is if the type designer wanted to
 implement reference counting for their type.  For these situations, the type
-designer may define a copy initializer, to handle the final state of the type's
-fields once a shallow bit copy has been made.
-
-Note that the cases handled by a copy initializer are not the same as user
-specified calls of the form:
+designer may define a copy initializer, to handle the state of the type's
+fields.  The copy initializer would be an initializer with a single argument, of
+the same type as the type being created.  The copy initializer would be called
+both in these cases and in user specified calls of the form:
 
 .. code-block:: chapel
 
    var x = new R(y);
 
-Such statements would be handled by an initializer with a single argument of the
-same type as the object being created, if the type designer intends for such
-actions to occur.
-
-Copy initializers will be quite different from normal initializers.  In the
-first place, the object in question is expected to be “initialized” once the
-body is entered – the shallow bit copy will have provided all fields with an
-initial value, and the copy initializer is intended to mend or improve upon what
-has been done.  Thus, a division into phases similar to those in normal
-initializers is unnecessary in the copy initializer body.  The body will behave
-in a similar manner to Phase 2 of the normal initializers, with the ability to
-modify a field in any order and to call methods on the instance as a whole.
-However, since the type designer would otherwise be unable to directly control
-the value of a ``const`` field, ``const`` fields can be modified in the body of
-a copy initializer.  Due to concerns about providing a field value to a method
-which could change unexpectedly in the middle of the method's operations,
-ideally ``const`` fields would only be modifiable before the first method call
-on the instance during the copy initializer body – this may prove infeasible,
-though.  If doable, this permissive behavior could be extended to Phase 2 of the
-normal initializer body.
-
-The method header for a copy initializer will not allow as much variation as a
-normal initializer – the compiler will be the only client directly making calls
-to the method and will thus expect a single style of header.  This trivially
-means that a type cannot define multiple copy initializers, as doing so would
-result in ambiguity.
-
-Due to the unfinished status of record method inheritance, no support for calls
-to a parent copy initializer will be provided; any necessary operations on a
-parent field must be done in the body of the child copy initializer.  When
-record method inheritance is finalized, this policy may change.
-
-Final details for the syntax of this particular style of initializer have not
-been fully ironed out, stay tuned!
+A more complicated strategy, similar to that employed in D's postblit, may be
+considered at a later time, but for now, we view this support as sufficient.
 
 Summary
 +++++++
@@ -528,4 +504,4 @@ to the initializer.  The type designer may also utilize ``noinit`` on individual
 fields during the first phase of the initializer body.  If there are operations
 which must occur on a copy made by the compiler before it is operated on by
 other code, such as via an ``in`` intent, the type designer may supply a copy
-initializer which will be executed on the freshly made copy.
+initializer to specify these operations.
