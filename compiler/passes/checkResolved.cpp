@@ -206,6 +206,141 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   return 0;
 }
 
+// This function helps when checking that we aren't returning
+// a local variable by reference. In particular, it checks for two
+// cases:
+//   * returning a ref-intent argument by ref
+//   * returning a const-ref-intent argument by const ref
+//
+static bool
+returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
+{
+  INT_ASSERT(returnedCall->isPrimitive(PRIM_ADDR_OF));
+  if (SymExpr* rhs = toSymExpr(returnedCall->get(1))) {
+    if (ArgSymbol* formal = toArgSymbol(rhs->symbol())) {
+      IntentTag intent = formal->intent;
+      if (fn->retTag == RET_CONST_REF && (intent & INTENT_FLAG_REF))
+        return true;
+      else if(fn->retTag == RET_REF && intent == INTENT_REF)
+        return true;
+    }
+  }
+
+  return false;
+}
+
+// This function finds the original Symbol that a local array
+// refers to (through aliasing or slicing).
+// It returns the number of Exprs added to sources.
+static int
+findOriginalArrays(FnSymbol* fn, Symbol* sym, std::set<Expr*> & sources)
+{
+  int ret = 0;
+  for_SymbolSymExprs(se, sym) {
+    Expr* stmt = se->getStmtExpr();
+    if (CallExpr* call = toCallExpr(stmt)) {
+      if (call->isPrimitive(PRIM_MOVE) ||
+          call->isPrimitive(PRIM_ASSIGN)) {
+        Expr* lhs = call->get(1);
+        Expr* rhs = call->get(2);
+        if (se == lhs) {
+          // Handle the following cases:
+          //   rhs is a call_tmp -> recurse on the call_tmp
+          //   rhs is a call to a function returning an aliasing array ->
+          //      recurse into the source array argument
+          if (SymExpr* rhsSe = toSymExpr(rhs)) {
+            VarSymbol* rhsSym = toVarSymbol(rhsSe->symbol());
+            // is RHS a local variable (user or temp)?
+            // if so, find the definitions for that, and further
+            // traverse if they are aliases.
+            if (rhsSym && rhsSym->defPoint->getFunction() == fn &&
+                (rhsSym->hasFlag(FLAG_TEMP) ||
+                 rhsSym->hasFlag(FLAG_ARRAY_ALIAS))) {
+              ret += findOriginalArrays(fn, rhsSym, sources);
+            }
+          } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
+            FnSymbol* calledFn = rhsCall->isResolved();
+            SymExpr* aliased = NULL; // the array that is sliced or aliased
+            if (calledFn && calledFn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
+              aliased = toSymExpr(rhsCall->get(1));
+            }
+            if (aliased) {
+              int got = 0;
+              if (aliased->symbol()->defPoint->getFunction() == fn) {
+                // further traverse if aliased was a local variable.
+                got = findOriginalArrays(fn, aliased->symbol(), sources);
+              }
+              if (got == 0) {
+                // If we didn't find another local source array, add
+                // aliased as the source.
+                got = 1;
+                sources.insert(aliased);
+              }
+              ret += got;
+            }
+          }
+        }
+      }
+    }
+  }
+  return ret;
+}
+
+static void
+checkBadLocalReturn(FnSymbol* fn, Symbol* retVar) {
+
+  for_SymbolSymExprs(se, retVar) {
+    // se is a use or def of 'ret'
+    Expr* stmt = se->getStmtExpr();
+    if (CallExpr* call = toCallExpr(stmt)) {
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+        Expr* lhs = call->get(1);
+        Expr* rhs = call->get(2);
+        CallExpr* rhsCall = toCallExpr(rhs);
+        // is the se on the LHS of the PRIM_MOVE/PRIM_ASSIGN
+        // i.e. is it a definition?
+        if (se == lhs) {
+          // Are we returning a variable by ref?
+          if (rhsCall && rhsCall->isPrimitive(PRIM_ADDR_OF)) {
+            // What variable are we returning with PRIM_ADDR_OF?
+            SymExpr* ret = toSymExpr(rhsCall->get(1));
+            // Check: Are we returning a local variable by ref?
+            if (ret->symbol()->defPoint->getFunction() == fn &&
+                !returnsRefArgumentByRef(rhsCall, fn)) {
+              USR_FATAL_CONT(ret, "illegal expression to return by ref");
+            }
+            // Check: Are we returning a constant by ref?
+            if (fn->retTag == RET_REF &&
+                (ret->symbol()->isConstant() || ret->symbol()->isParameter())) {
+              USR_FATAL_CONT(rhs, "function cannot return constant by ref");
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // if it's an array, collect the definitions for the
+  // returned array. We need to go in to chains of
+  // array slicing or aliasing as well as call_tmp copies.
+
+  std::set<Expr*> sources;
+  if (retVar->typeInfo()->symbol->hasFlag(FLAG_ARRAY)) {
+    findOriginalArrays(fn, retVar, sources);
+
+    for_set(Expr, source, sources) {
+      // Check: Are we returning a slice or alias of a local variable
+      // by value? (The above code should have found the case returning
+      // such things by ref).
+      SymExpr* rhsSe = toSymExpr(source);
+      if (rhsSe &&
+          isVarSymbol(rhsSe->symbol()) &&
+          rhsSe->symbol()->defPoint->getFunction() == fn) {
+        USR_FATAL_CONT(rhsSe, "illegal return of array aliasing a local array");
+      }
+    }
+  }
+}
 
 static void
 checkReturnPaths(FnSymbol* fn) {
@@ -242,6 +377,18 @@ checkReturnPaths(FnSymbol* fn) {
   //
   if (result == 0)
     USR_FATAL_CONT(fn->body, "control reaches end of function that returns a value");
+
+  //
+  // Issue an error if returning a local variable by ref.
+  // Issue an error if returning a slice of a local variable.
+  //
+  if (!fn->hasFlag(FLAG_WRAPPER)) {
+    // Add returned aliases to refs.
+    checkBadLocalReturn(fn, ret);
+    for_set(Symbol, alias, refs) {
+      checkBadLocalReturn(fn, alias);
+    }
+  }
 }
 
 
