@@ -73,7 +73,7 @@ def pkgconfig_get_link_args(pkg, ucp='', system=True, static=True):
   if not havePcFile:
     if system:
       # check that pkg-config knows about the package in question
-      subprocess.check_call(['pkg-config', '--exists', pkg])
+      run_command(['pkg-config', '--exists', pkg])
     else:
       # look for a .pc file
       if ucp == '':
