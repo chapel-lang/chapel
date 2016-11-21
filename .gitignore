@@ -28,6 +28,7 @@ tags
 # Compiler ignores.
 /compiler/BROWSE
 /compiler/chpl
+/compiler/codegen/reservedSymbolNames.h
 /compiler/ifa/prim_data.cpp
 /compiler/ifa/prim_data.h
 /compiler/ifa/make_prims/make_prims
@@ -36,7 +37,6 @@ tags
 /compiler/main/COPYRIGHT
 /compiler/main/LICENSE
 /compiler/parser/bison-chapel.output
-/compiler/passes/reservedSymbolNames.h
 
 # Doc ignores.
 /doc/**/*.aux
