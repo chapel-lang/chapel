@@ -154,7 +154,7 @@ void inlineFunctions() {
   //   This is a transition step for straightening out ref intents.
   //
   //   The inner loop of inlining has some "cleanup logic" for handling
-  //   some deficiences in the current ref-intent logic.
+  //   some deficiencies in the current ref-intent logic.
   //
   //   This logic is being moved to the top level
   //     a) So that all calls benefit from the logical consistency
