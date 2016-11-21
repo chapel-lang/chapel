@@ -1,2 +1,4 @@
 # cce optimizes away the loop entirely resulting in a no-op test
 CHPL_TARGET_COMPILER==cray-prgenv-cray
+# older versions of clang don't support openmp
+CHPL_TARGET_COMPILER==clang
