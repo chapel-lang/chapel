@@ -30,10 +30,10 @@
 #include <map>
 
 enum InitBody {
-  PHASE_2,
-  PHASE_1_ONLY_SUPER,
-  PHASE_1_ONLY_THIS,
-  PHASE_1_MIXED
+  DID_NOT_FIND_INIT,
+  FOUND_SUPER_INIT,
+  FOUND_THIS_INIT,
+  FOUND_BOTH
 };
 
 // Helper file for verifying the rules placed on initializers, and providing
@@ -87,7 +87,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t);
 void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
   InitBody bodyStyle = getInitCall(fn);
 
-  if (bodyStyle != PHASE_2) {
+  if (bodyStyle != DID_NOT_FIND_INIT) {
     phase1Analysis(fn->body, t);
 
     // Insert analysis of initCall here
@@ -137,18 +137,18 @@ InitBody getInitCall (Expr* expr) {
             if (storesThisTop(subject->get(1))) {
               if (storesSpecificName(subject->get(2), "super")) {
                 // The expr is a "(this.)super.init()" call
-                return PHASE_1_ONLY_SUPER;
+                return FOUND_SUPER_INIT;
               }
             }
           } else if (storesThisTop(inner->get(1))) {
             // The expr is a "this.init()" call
-            return PHASE_1_ONLY_THIS;
+            return FOUND_THIS_INIT;
           }
         }
       }
     }
   }
-  return PHASE_2;
+  return DID_NOT_FIND_INIT;
 }
 
 static
@@ -157,8 +157,8 @@ Expr* getNextStmt(Expr* curExpr, BlockStmt* body, bool enterLoops);
 // This function traverses the body of the initializer until it finds a
 // super.init(...) or this.init(...) call, or it reaches the end of the
 // initializer's body, whichever comes first.  It will return the enum
-// description of that call, or PHASE_2 if it didn't find a call matching
-// that description.
+// description of that call, or DID_NOT_FIND_INIT if it didn't find a call
+// matching that description.
 static
 InitBody getInitCall(FnSymbol* fn) {
   // Behavior is not yet correct for super/this.init() calls within
@@ -171,10 +171,10 @@ InitBody getInitCall(FnSymbol* fn) {
     block = toBlockStmt(curExpr);
   }
 
-  InitBody body = PHASE_2;
+  InitBody body = DID_NOT_FIND_INIT;
   while (curExpr != NULL) {
     body = getInitCall(curExpr);
-    if (body != PHASE_2) {
+    if (body != DID_NOT_FIND_INIT) {
       return body;
     }
     curExpr = getNextStmt(curExpr, fn->body, true);
@@ -254,7 +254,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
 
   Expr* curExpr = body->body.head;
   InitBody isInit = getInitCall(curExpr);
-  if (isInit != PHASE_1_ONLY_SUPER && isInit != PHASE_1_ONLY_THIS) {
+  if (isInit == DID_NOT_FIND_INIT) {
     // solution to fence post issue of diving into nested block statements
     BlockStmt* block = toBlockStmt(curExpr);
     while (block && !block->isLoopStmt()) {
@@ -264,8 +264,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
   }
   // We are guaranteed to never reach the end of the body, due to the
   // conditional surrounding the call to this function.
-  while (curField != NULL || (isInit != PHASE_1_ONLY_SUPER &&
-                              isInit != PHASE_1_ONLY_THIS)) {
+  while (curField != NULL || (isInit == DID_NOT_FIND_INIT)) {
     // Verify that:
     // - fields are initialized in declaration order
     // - The "this" instance is only used to clarify a field initialization (or
@@ -278,8 +277,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
 
     // Additionally, perform the following actions:
     // - add initialization for omitted fields
-    if (curField != NULL && (isInit != PHASE_1_ONLY_SUPER &&
-                             isInit != PHASE_1_ONLY_THIS)) {
+    if (curField != NULL && (isInit == DID_NOT_FIND_INIT)) {
       // still have phase 1 statements and fields left to traverse
 
       if (BlockStmt* block = toBlockStmt(curExpr)) {
@@ -564,10 +562,10 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
         return sawInit;
       }
     }
-    if (isInit == PHASE_1_ONLY_SUPER || isInit == PHASE_1_ONLY_THIS) {
+    if (isInit == FOUND_SUPER_INIT || isInit == FOUND_THIS_INIT) {
       // We encountered the .init() call while traversing this loop.  Stop
       // performing Phase 1 analysis and return.
-      USR_FATAL_CONT(stmt, "use of %s.init() call in loop body", isInit == PHASE_1_ONLY_SUPER ? "super" : "this");
+      USR_FATAL_CONT(stmt, "use of %s.init() call in loop body", isInit == FOUND_SUPER_INIT ? "super" : "this");
       return true;
     }
 
