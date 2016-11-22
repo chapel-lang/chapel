@@ -436,14 +436,16 @@ checkBadAddrOf(CallExpr* call)
       //
       // check that the operand of 'addr of' is a legal lvalue.
       if (SymExpr* rhs = toSymExpr(call->get(1))) {
-        if (rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
-            rhs->symbol()->isConstant() || rhs->symbol()->isParameter()) {
-          if (lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR)) {
-            if (rhs->symbol()->isImmediate()) {
-              USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
-            } else {
-              // This case should be handled elsewhere in the compiler
-              INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
+        if (!(lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR) && lhs->symbol()->hasFlag(FLAG_CONST))) {
+          if (rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
+              rhs->symbol()->isConstant() || rhs->symbol()->isParameter()) {
+            if (lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR)) {
+              if (rhs->symbol()->isImmediate()) {
+                USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
+              } else {
+                // This case should be handled elsewhere in the compiler
+                INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
+              }
             }
           }
         }
