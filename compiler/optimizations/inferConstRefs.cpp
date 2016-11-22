@@ -73,7 +73,7 @@ void ConstInfo::reset() {
 }
 
 bool ConstInfo::hasMore() {
-  return curTodo < todo.size();
+  return ((unsigned int)curTodo) < todo.size();
 }
 
 std::map<Symbol*, ConstInfo*> infoMap;
@@ -400,7 +400,7 @@ static bool inferConst(Symbol* sym) {
   return retval;
 }
 
-bool inferRefToConst(Symbol* sym) {
+static bool inferRefToConst(Symbol* sym) {
   if (!sym->isRef()) return false;
 
   bool isConstRef = sym->qualType().getQual() == QUAL_CONST_REF;
