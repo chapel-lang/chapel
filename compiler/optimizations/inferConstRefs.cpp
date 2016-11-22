@@ -23,62 +23,74 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stlUtil.h"
-#include <deque>
 
-class RefInfo {
+class ConstInfo {
   public:
-    bool                 finalized; // Indicates if analysis is done
-    Symbol*              sym;
-    std::deque<SymExpr*> todo;
-    RefInfo(Symbol*);
+    bool                  finalizedConstness;
+    bool                  finalizedRefToConst;
+    bool                  alreadyCalled;
+    Symbol*               sym;
+    std::vector<SymExpr*> todo;
+
+    ConstInfo(Symbol*);
+    SymExpr* next();
+    void reset();
+    bool hasMore();
+
+  private:
+    int curTodo;
 };
 
-RefInfo::RefInfo(Symbol* s) {
+ConstInfo::ConstInfo(Symbol* s) {
   sym = s;
-  finalized = sym->qualType().getQual() == QUAL_CONST_REF;
+  Qualifier q = sym->qualType().getQual();
+  if (ArgSymbol* arg = toArgSymbol(s)) {
+    // Work around a bug where we can have an arg with the in-intent, but it's
+    // a reference
+    if (arg->intent == INTENT_CONST_IN && arg->isRef()) {
+      finalizedConstness = false;
+    }
+  } else {
+    finalizedConstness = q == QUAL_CONST_REF || q == QUAL_CONST_VAL;
+  }
+  finalizedRefToConst = sym->hasFlag(FLAG_REF_TO_CONST);
+
+  curTodo = 0;
+  alreadyCalled = false;
 }
 
-std::map<Symbol*, RefInfo*> infoMap;
-typedef std::map<Symbol*, RefInfo*>::iterator RefInfoIter;
+SymExpr* ConstInfo::next() {
+  return todo[curTodo++];
+}
+
+// Reset certain states so another loop over the infoMap can use these
+// properties
+void ConstInfo::reset() {
+  curTodo = 0;
+  alreadyCalled = false;
+}
+
+bool ConstInfo::hasMore() {
+  return curTodo < todo.size();
+}
+
+std::map<Symbol*, ConstInfo*> infoMap;
+typedef std::map<Symbol*, ConstInfo*>::iterator ConstInfoIter;
 
 static bool inferConstRef(Symbol*);
 
 //
-// Assumes 'parent' is a PRIM_MOVE or PRIM_ASSIGN
+// Returns true if 'use' appears in a non-side-effecting primitive.
 //
-// Returns false if the LHS of the move/assign indicates that the rhs cannot
-// be a const-ref. For example, if we have a case like this:
-//
-// (move A, (set-reference B))
-//
-// where 'A' and 'B' are references, B cannot be a const-ref if A is not a
-// const-ref.
-//
-// In the case of a dereference, (move A, (deref B)), this function will return
-// true because we're simply reading B.
-//
-static bool canRHSBeConstRef(CallExpr* parent, CallExpr* rhs, SymExpr* use) {
-  INT_ASSERT(isMoveOrAssign(parent));
-  SymExpr* LHS = toSymExpr(parent->get(1));
-  switch (rhs->primitive->tag) {
-    case PRIM_GET_MEMBER:
-    case PRIM_GET_MEMBER_VALUE:
-    case PRIM_GET_SVEC_MEMBER:
-    case PRIM_GET_SVEC_MEMBER_VALUE:
-    case PRIM_GET_REAL:
-    case PRIM_GET_IMAG:
-    case PRIM_ADDR_OF:
-    case PRIM_SET_REFERENCE: {
-      // If LHS is a reference and is not a const-ref, the reference in 'rhs'
-      // should not be considered a const-ref either. A writable reference
-      // obtained from a const-reference doesn't make sense.
-      if (LHS->isRef()) {
-        if (!inferConstRef(LHS->symbol())) {
-          return false;
-        }
-      }
-    }
+static bool isSafeRefPrimitive(SymExpr* use) {
+  CallExpr* call = toCallExpr(use->parentExpr);
+  INT_ASSERT(call);
 
+  switch (call->primitive->tag) {
+    case PRIM_ADDR_OF:
+    case PRIM_SET_REFERENCE:
+    case PRIM_DEREF:
+    case PRIM_WIDE_GET_LOCALE:
     case PRIM_NOOP:
     case PRIM_UNARY_MINUS:
     case PRIM_UNARY_PLUS:
@@ -103,163 +115,62 @@ static bool canRHSBeConstRef(CallExpr* parent, CallExpr* rhs, SymExpr* use) {
     case PRIM_POW:
     case PRIM_MIN:
     case PRIM_MAX:
-
     case PRIM_CHECK_NIL:
     case PRIM_LOCAL_CHECK:
     case PRIM_PTR_EQUAL:
     case PRIM_PTR_NOTEQUAL:
-
-    case PRIM_BLOCK_LOCAL:
-    case PRIM_ON_LOCALE_NUM:
-
-    case PRIM_GET_SERIAL:
-    case PRIM_SET_SERIAL:
-
-    case PRIM_START_RMEM_FENCE:
-    case PRIM_FINISH_RMEM_FENCE:
-
     case PRIM_SIZEOF:
-
-    case PRIM_GET_USER_LINE:
-    case PRIM_GET_USER_FILE:
-    case PRIM_LOOKUP_FILENAME:
-    case PRIM_WIDE_GET_LOCALE:
     case PRIM_WIDE_GET_NODE:
-
-    // Just a 'read'
-    case PRIM_DEREF:
-
-    case PRIM_TYPEOF:
-    case PRIM_TYPE_TO_STRING:
-    case PRIM_ENUM_MIN_BITS:
-    case PRIM_ENUM_IS_SIGNED:
-    case PRIM_IS_UNION_TYPE:
-    case PRIM_IS_ATOMIC_TYPE:
-    case PRIM_IS_TUPLE_TYPE:
-    case PRIM_IS_STAR_TUPLE_TYPE:
-    case PRIM_IS_SUBTYPE:
-    case PRIM_IS_WIDE_PTR:
-    case PRIM_ERROR:
-    case PRIM_WARNING:
-
-    case PRIM_BLOCK_PARAM_LOOP:
-    case PRIM_BLOCK_BEGIN:
-    case PRIM_BLOCK_COBEGIN:
-    case PRIM_BLOCK_COFORALL:
-    case PRIM_BLOCK_ON:
-    case PRIM_BLOCK_BEGIN_ON:
-    case PRIM_BLOCK_COBEGIN_ON:
-    case PRIM_BLOCK_COFORALL_ON:
-    case PRIM_BLOCK_UNLOCAL:
       return true;
-
-    // Unsure how to handle these yet, so to be safe we'll just return false.
-    case PRIM_ADD_ASSIGN:
-    case PRIM_SUBTRACT_ASSIGN:
-    case PRIM_MULT_ASSIGN:
-    case PRIM_DIV_ASSIGN:
-    case PRIM_MOD_ASSIGN:
-    case PRIM_LSH_ASSIGN:
-    case PRIM_RSH_ASSIGN:
-    case PRIM_AND_ASSIGN:
-    case PRIM_OR_ASSIGN:
-    case PRIM_XOR_ASSIGN:
-
-    case PRIM_CHPL_COMM_GET:
-    case PRIM_CHPL_COMM_PUT:
-    case PRIM_CHPL_COMM_ARRAY_GET:
-    case PRIM_CHPL_COMM_ARRAY_PUT:
-    case PRIM_CHPL_COMM_REMOTE_PREFETCH:
-    case PRIM_CHPL_COMM_GET_STRD:
-    case PRIM_CHPL_COMM_PUT_STRD:
-    case PRIM_UNKNOWN:
-    case PRIM_REF_TO_STRING:
-    case PRIM_RETURN:
-    case PRIM_GET_PRIV_CLASS:
-    case PRIM_NEW_PRIV_CLASS:
-    case PRIM_CAST:
-    case PRIM_CAST_TO_VOID_STAR:
-    case PRIM_INIT_FIELDS:
-    case PRIM_MOVE:
-    case PRIM_ASSIGN:
-
-    case PRIM_WIDE_GET_ADDR:
-    case PRIM_ARRAY_SHIFT_BASE_POINTER:
-    case PRIM_SET_UNION_ID:
-    case PRIM_GET_UNION_ID:
-    case PRIM_ARRAY_SET:
-    case PRIM_ARRAY_SET_FIRST:
-    case PRIM_SETCID:
-    case PRIM_TESTCID:
-    case PRIM_GETCID:
-    case PRIM_ARRAY_GET:
-    case PRIM_ARRAY_GET_VALUE:
-    case PRIM_DYNAMIC_CAST:
-    case PRIM_SET_MEMBER:
-    case PRIM_SET_SVEC_MEMBER:
-    case PRIM_REDUCE_ASSIGN:
-    case PRIM_NEW:
-    case PRIM_INIT:
-    case PRIM_NO_INIT:
-    case PRIM_TYPE_INIT:
-    case PRIM_LOGICAL_FOLDER:
-    case PRIM_TUPLE_EXPAND:
-    case PRIM_TUPLE_AND_EXPAND:
-    case PRIM_QUERY:
-    case PRIM_QUERY_PARAM_FIELD:
-    case PRIM_QUERY_TYPE_FIELD:
-    case PRIM_OPTIMIZE_ARRAY_BLK_MULT:
-    case PRIM_ACTUALS_LIST:
-    case PRIM_YIELD:
-
-    case PRIM_USED_MODULES_LIST:
-
-    case PRIM_WHEN:
-    case PRIM_CAPTURE_FN_FOR_C:
-    case PRIM_CAPTURE_FN_FOR_CHPL:
-    case PRIM_CREATE_FN_TYPE:
-
-    case PRIM_NUM_FIELDS:
-    case PRIM_IS_POD:
-    case PRIM_FIELD_NUM_TO_NAME:
-    case PRIM_FIELD_NAME_TO_NUM:
-    case PRIM_FIELD_BY_NUM:
-
-    case PRIM_TO_STANDALONE:
-    case PRIM_IS_REF_ITER_TYPE:
-    case PRIM_COERCE:
-    case PRIM_CALL_RESOLVES:
-    case PRIM_METHOD_CALL_RESOLVES:
-    case PRIM_GET_COMPILER_VAR:
-    case PRIM_ZIP:
-    case PRIM_REQUIRE:
-    case NUM_KNOWN_PRIMS:
-    case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
-    case PRIM_BLOCK_WHILEDO_LOOP:
-    case PRIM_BLOCK_DOWHILE_LOOP:
-    case PRIM_BLOCK_FOR_LOOP:
-    case PRIM_BLOCK_C_FOR_LOOP:
-    case PRIM_ARRAY_ALLOC:
-    case PRIM_ARRAY_FREE:
-    case PRIM_ARRAY_FREE_ELTS:
-    case PRIM_STRING_COPY:
-    case PRIM_GET_END_COUNT:
-    case PRIM_SET_END_COUNT:
-    case PRIM_TO_LEADER:
-    case PRIM_TO_FOLLOWER:
-    case PRIM_DELETE:
-    case PRIM_CALL_DESTRUCTOR:
-    case PRIM_HEAP_REGISTER_GLOBAL_VAR:
-    case PRIM_HEAP_BROADCAST_GLOBAL_VARS:
-    case PRIM_PRIVATE_BROADCAST:
-    case PRIM_RT_ERROR:
-    case PRIM_RT_WARNING:
-    case PRIM_FTABLE_CALL:
-    case PRIM_VIRTUAL_METHOD_CALL:
-    case PRIM_INT_ERROR:
+    default:
       return false;
   }
-  return false;
+}
+
+//
+// Assumes 'parent' is a PRIM_MOVE or PRIM_ASSIGN
+//
+// Returns false if the LHS of the move/assign indicates that the rhs cannot
+// be a const-ref. For example, if we have a case like this:
+//
+// (move A, (set-reference B))
+//
+// where 'A' and 'B' are references, B cannot be a const-ref if A is not a
+// const-ref.
+//
+// In the case of a dereference, (move A, (deref B)), this function will return
+// true because we're simply reading B.
+//
+static bool canRHSBeConstRef(CallExpr* parent, SymExpr* use) {
+  INT_ASSERT(isMoveOrAssign(parent));
+  SymExpr* LHS = toSymExpr(parent->get(1));
+  CallExpr* rhs = toCallExpr(parent->get(2));
+  INT_ASSERT(rhs);
+  switch (rhs->primitive->tag) {
+    case PRIM_GET_MEMBER:
+    case PRIM_GET_MEMBER_VALUE:
+    case PRIM_GET_SVEC_MEMBER:
+    case PRIM_GET_SVEC_MEMBER_VALUE:
+    case PRIM_GET_REAL:
+    case PRIM_GET_IMAG:
+    case PRIM_ADDR_OF:
+    case PRIM_SET_REFERENCE: {
+      // If LHS is a reference and is not a const-ref, the reference in 'rhs'
+      // should not be considered a const-ref either.
+      //
+      // For the get-member primitives, I intend this to be a safe approach
+      // until we know what const-ref means for fields. Basically, if any field
+      // might be modified I do not consider the base object to be const-ref.
+      if (LHS->isRef()) {
+        if (!inferConstRef(LHS->symbol())) {
+          return false;
+        }
+      }
+    }
+    default:
+      break;
+  }
+  return isSafeRefPrimitive(use);
 }
 
 //
@@ -275,22 +186,25 @@ static bool inferConstRef(Symbol* sym) {
     return wasConstRef;
   }
 
-  RefInfo* info = infoMap[sym];
+  ConstInfo* info = infoMap[sym];
 
   // 'info' may be null if the argument is never used. In that case we can
   // consider 'sym' to be a const-ref. By letting the rest of the function
   // proceed, we'll fix up the qualifier for such symbols at the end.
-  if ((info && info->finalized) || wasConstRef) {
+  if ((info && info->finalizedConstness) || wasConstRef) {
     return wasConstRef;
+  }
+
+  bool isFirstCall = false;
+  if (info && info->alreadyCalled == false) {
+    isFirstCall = true;
+    info->alreadyCalled = true;
   }
 
   bool retval = true;
 
-  while (info && !info->todo.empty() && retval) {
-    SymExpr* use = info->todo.front();
-
-    // By popping, recursive calls won't try to deal with the same SymExpr.
-    info->todo.pop_front();
+  while (info && info->hasMore() && retval) {
+    SymExpr* use = info->next();
 
     CallExpr* call = toCallExpr(use->parentExpr);
     INT_ASSERT(call);
@@ -304,7 +218,7 @@ static bool inferConstRef(Symbol* sym) {
       }
     }
     else if (parent && isMoveOrAssign(parent)) {
-      if (!canRHSBeConstRef(parent, call, use)) {
+      if (!canRHSBeConstRef(parent, use)) {
         retval = false;
       }
     }
@@ -330,7 +244,8 @@ static bool inferConstRef(Symbol* sym) {
             retval = false;
           }
         }
-        // else CASE 3: don't need to do anything because retval is true
+        // else CASE 3: don't need to do anything because retval is already
+        // true
       }
     }
     else if (call->isPrimitive(PRIM_ASSIGN)) {
@@ -366,43 +281,253 @@ static bool inferConstRef(Symbol* sym) {
     }
   }
 
-  // Should we 'correct' the ref if retval is false?
-  if (retval) {
-    if (ArgSymbol* arg = toArgSymbol(sym)) {
-      arg->intent = INTENT_CONST_REF;
+  if (isFirstCall) {
+    if (retval) {
+      if (ArgSymbol* arg = toArgSymbol(sym)) {
+        arg->intent = INTENT_CONST_REF;
+      } else {
+        INT_ASSERT(isVarSymbol(sym));
+        sym->qual = QUAL_CONST_REF;
+      }
+    }
+
+    if (info) {
+      info->reset();
+      info->finalizedConstness = true;
+    }
+  } else if (!retval && info) {
+    info->finalizedConstness = true;
+  }
+
+  return retval;
+}
+
+static bool inferConst(Symbol* sym) {
+  if (sym->isRef()) {
+    return inferConstRef(sym);
+  }
+
+  const bool wasConstVal = sym->qualType().getQual() == QUAL_CONST_VAL;
+
+  ConstInfo* info = infoMap[sym];
+
+  // 'info' may be null if the argument is never used. In that case we can
+  // consider 'sym' to be a const-ref. By letting the rest of the function
+  // proceed, we'll fix up the qualifier for such symbols at the end.
+  if ((info && info->finalizedConstness) || wasConstVal) {
+    return wasConstVal;
+  }
+
+  // If 'isFirstCall' is false, then this function as been called recursively.
+  // This means that within the scope of this current invocation we should not
+  // update any properties of this symbol, and should instead let the first
+  // call on this symbol update such properties.
+  bool isFirstCall = false;
+  if (info && info->alreadyCalled == false) {
+    isFirstCall = true;
+    info->alreadyCalled = true;
+  }
+
+  bool retval = true;
+  int numDefs = 0;
+
+  while (info && info->hasMore() && retval) {
+    SymExpr* use = info->next();
+
+    CallExpr* call = toCallExpr(use->parentExpr);
+    if (call == NULL) {
+      // Could be a DefExpr, or the condition for a while loop.
+      // BHARSH: I'm not sure of all the possibilities
+      continue;
+    }
+
+    CallExpr* parent = toCallExpr(call->parentExpr);
+
+    if (call->isResolved()) {
+      ArgSymbol* form = actual_to_formal(use);
+      if (form->isRef()) {
+        if (!inferConstRef(form)) {
+          retval = false;
+        }
+      }
+    }
+    else if (parent && isMoveOrAssign(parent)) {
+      if (call->isPrimitive(PRIM_ADDR_OF) ||
+          call->isPrimitive(PRIM_SET_REFERENCE)) {
+        SymExpr* LHS = toSymExpr(parent->get(1));
+        if (LHS->isRef() && !inferConstRef(LHS->symbol())) {
+          retval = false;
+        }
+      }
+    }
+    else if (isMoveOrAssign(call)) {
+      if (use == call->get(1)) {
+        numDefs += 1;
+        if (numDefs > 1) {
+          retval = false;
+        }
+      }
     } else {
-      INT_ASSERT(isVarSymbol(sym));
-      sym->qual = QUAL_CONST_REF;
+      // To be safe, exit the loop with 'false' if we're unsure of how to
+      // handle a primitive.
+      retval = false;
     }
   }
 
-  // TODO: assert that it's not already finalized?
-  if (info) {
-    info->finalized = true;
+  if (isFirstCall) {
+    if (retval) {
+      if (ArgSymbol* arg = toArgSymbol(sym)) {
+        INT_ASSERT(arg->intent & INTENT_FLAG_IN);
+        arg->intent = INTENT_CONST_IN;
+      } else {
+        INT_ASSERT(isVarSymbol(sym));
+        sym->qual = QUAL_CONST_VAL;
+      }
+    }
+
+    if (info) {
+      info->reset();
+      info->finalizedConstness = true;
+    }
+  } else if (!retval && info) {
+    // Not the first call, but something happened that prevents us from marking
+    // this symbol as const. Now that we know, indicate that this is finalized.
+    info->finalizedConstness = true;
+  }
+
+  return retval;
+}
+
+bool inferRefToConst(Symbol* sym) {
+  if (!sym->isRef()) return false;
+
+  bool isConstRef = sym->qualType().getQual() == QUAL_CONST_REF;
+  const bool wasRefToConst = sym->hasFlag(FLAG_REF_TO_CONST);
+
+  ConstInfo* info = infoMap[sym];
+
+  // If this ref isn't const, then it can't point to a const thing
+  if ((info && info->finalizedRefToConst) || wasRefToConst || !isConstRef) {
+    return wasRefToConst;
+  }
+
+  bool isFirstCall = false;
+  if (info && info->alreadyCalled == false) {
+    isFirstCall = true;
+    info->alreadyCalled = true;
+  }
+
+  bool retval = true;
+
+  if (isArgSymbol(sym)) {
+    // Check each call and set retval to false if any actual is not a ref
+    // to a const.
+    FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
+    if (fn->hasFlag(FLAG_VIRTUAL)) {
+      // Not sure how to best handle virtual calls, so simply set false for now
+      retval = false;
+    } else {
+      for_SymbolSymExprs(se, fn) {
+        if (!retval) break;
+
+        CallExpr* call = toCallExpr(se->parentExpr);
+        INT_ASSERT(call && call->isResolved());
+
+        Symbol* actual = toSymExpr(formal_to_actual(call, sym))->symbol();
+
+        if (actual->isRef()) {
+          if (!inferRefToConst(actual)) {
+            retval = false;
+          }
+        } else {
+          // Passing a non-ref actual to a reference formal is currently
+          // considered to be the same as an addr-of
+          if (actual->qualType().getQual() != QUAL_CONST_VAL) {
+            retval = false;
+          }
+        }
+      }
+    }
+  }
+
+  while (info && info->hasMore() && retval) {
+    SymExpr* use = info->next();
+
+    CallExpr* call = toCallExpr(use->parentExpr);
+    if (call == NULL) continue;
+
+    if (isMoveOrAssign(call)) {
+      if (use == call->get(1)) {
+        if (SymExpr* se = toSymExpr(call->get(2))) {
+          if (se->isRef() && !inferRefToConst(se->symbol())) {
+            retval = false;
+          }
+        }
+        else {
+          CallExpr* RHS = toCallExpr(call->get(2));
+          INT_ASSERT(RHS);
+          if (RHS->isPrimitive(PRIM_ADDR_OF) ||
+              RHS->isPrimitive(PRIM_SET_REFERENCE)) {
+            SymExpr* src = toSymExpr(RHS->get(1));
+            if (src->isRef()) {
+              if (!inferRefToConst(src->symbol())) {
+                retval = false;
+              }
+            } else {
+              if (src->symbol()->qualType().getQual() != QUAL_CONST_VAL) {
+                retval = false;
+              }
+            }
+          } else {
+            retval = false;
+          }
+        }
+      }
+    }
+    else if (call->isResolved()) {
+      retval = true;
+    }
+    else {
+      retval = isSafeRefPrimitive(use);
+    }
+  }
+
+  if (isFirstCall) {
+    if (retval) {
+      sym->addFlag(FLAG_REF_TO_CONST);
+    }
+
+    if (info) {
+      info->reset();
+      info->finalizedRefToConst = true;
+    }
+  } else if (!retval && info) {
+    info->finalizedRefToConst = true;
   }
 
   return retval;
 }
 
 //
-// For each reference in the AST, determine whether or not it can be a
-// const-ref. If it can, this function will change the intent or qual of the
-// Symbol.
-//
-// This function can be called multiple times.
+// For each VarSymbol and ArgSymbol, determine whether or not any of these
+// properties can be applied:
+// 1) QUAL_CONST_VAL
+// 2) QUAL_CONST_REF / INTENT_CONST_REF
+// 3) FLAG_REF_TO_CONST
 //
 void inferConstRefs() {
-  // Build a map from Symbols to RefInfo. Like buildDefUseMaps, except we don't
-  // care about the distinction between a def and a use. We just want all
-  // SymExprs for a Symbol.
+  // Build a map from Symbols to ConstInfo. This is somewhat like
+  // buildDefUseMaps, except we don't care about the distinction between a def
+  // and a use. We just want all SymExprs for a Symbol.
   forv_Vec(SymExpr, se, gSymExprs) {
     if (!(isVarSymbol(se->symbol()) || isArgSymbol(se->symbol()))) continue;
-    if (!se->symbol()->isRef()) continue;
+    // BHARSH: Skip classes for now. Not sure how to deal with aliasing
+    if (!se->isRef() && isClass(se->typeInfo())) continue;
 
-    RefInfo* info = NULL;
-    RefInfoIter it = infoMap.find(se->symbol());
+    ConstInfo* info = NULL;
+    ConstInfoIter it = infoMap.find(se->symbol());
     if (it == infoMap.end()) {
-      info = new RefInfo(se->symbol());
+      info = new ConstInfo(se->symbol());
       infoMap[se->symbol()] = info;
     } else {
       info = it->second;
@@ -411,13 +536,18 @@ void inferConstRefs() {
     info->todo.push_back(se);
   }
 
-  for (RefInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
-    inferConstRef(it->first);
+  for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+    inferConst(it->first);
   }
 
-  // Free the RefInfo maps and clear the infoMap for the next call
-  for (RefInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
-    delete it->second;
+  for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+    inferRefToConst(it->first);
+  }
+
+  // Free the ConstInfo maps and clear the infoMap in case this function is
+  // called again.
+  for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+    delete it->second; // Free our ConstInfo class
   }
   infoMap.clear();
 }
