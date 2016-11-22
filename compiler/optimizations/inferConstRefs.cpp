@@ -46,14 +46,14 @@ ConstInfo::ConstInfo(Symbol* s) {
   sym = s;
   fnUses = NULL;
   Qualifier q = sym->qualType().getQual();
+  finalizedConstness = q == QUAL_CONST_REF || q == QUAL_CONST_VAL;
   if (ArgSymbol* arg = toArgSymbol(s)) {
     // Work around a bug where we can have an arg with the in-intent, but it's
     // a reference
+    // BHARSH TODO: this shouldn't be possible in the qualified refs impl.
     if (arg->intent == INTENT_CONST_IN && arg->isRef()) {
       finalizedConstness = false;
     }
-  } else {
-    finalizedConstness = q == QUAL_CONST_REF || q == QUAL_CONST_VAL;
   }
   finalizedRefToConst = sym->hasFlag(FLAG_REF_TO_CONST);
 
