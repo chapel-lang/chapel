@@ -344,11 +344,11 @@ initialization:
 The syntax to call another initializer defined on the same type is
 ``this.init(<args>);``.  Similarly to in the parent-referential case, the return
 from that call will indicate that the calling initializer has begun Phase 2. In
-contrast to the parent case, however, a call to an outside initializer may not
-be made if the current initializer has defined any fields.  The rationale for
-this decision is that a valid alternate initializer will initialize all of its
-fields, and so any initialization prior to that call will lead to the occurrence
-of an unexpected double initialization.
+contrast to the parent case, however, a call to another initializer may not be
+made if the current initializer includes field initialization statements in
+Phase 1.  The rationale for this decision is that a valid other initializer will
+initialize all of its fields, and so any initialization prior to that call will
+lead to the occurrence of an unexpected double initialization.
 
 An initializer may only contain one ``this.init(<args>)`` or
 ``super.init(<args>)`` call in a single path through the body – it may not
@@ -370,14 +370,12 @@ the initializer body:
    }
 
 The compiler generated initializer will also include an argument-less
-``super.init()`` call after the initialization of its fields has been completed,
-meaning that if the parent type has defined an initializer with more than zero
-arguments, attempts to initialize the child will result in an error.  Parent
-types with a zero-argument defined initializer, or that rely on the compiler
-generated initializer, will resolve appropriately.  We may consider expanding to
-support the case where the parent has defined just a single initializer with
-any number of arguments, but that decision and its implementation are future
-work.
+``super.init()`` call after the initialization of its fields has been completed.
+If the parent type has defined an initializer that this call cannot resolve to,
+attempts to initialize the child will result in an error.  Otherwise, it will
+resolve appropriately.  We may consider expanding to support the case where the
+parent has defined just a single initializer with any number of arguments, but
+that decision and its implementation are future work.
 
 For backwards compatibility purposes, unless the divide between Phase 1 and 2 is
 explicitly stated, the compiler assumes the body of an initializer to be in
@@ -409,8 +407,8 @@ a generic ``var`` or ``const`` field to be omitted during Phase 1.
 This is a departure from the previous implementation of generic fields, which
 required the presence of an argument with the same name as the field in the
 argument list for all constructors, but forbid the manipulation of these fields
-within the constructor body.  That specification was deemed unnecessarily
-confusing and restrictive for users.
+within the constructor body.  That design was deemed unnecessarily confusing and
+restrictive for users.
 
 
 Implementation Strategy, Misc.
@@ -499,16 +497,14 @@ function or task by the ``in`` intent, or copied across locale boundaries.  An
 example of when such control would be desired is if the type designer wanted to
 implement reference counting for their type.  For these situations, the type
 designer may define a copy initializer, to handle the state of the type's
-fields.  The copy initializer would be an initializer with a single argument, of
-the same type as the type being created.  The copy initializer would be called
-both in these cases and in user specified calls of the form:
-
-.. code-block:: chapel
-
-   var x = new R(y);
+fields.  The copy initializer is an initializer with a single argument, of the
+same type as the type being created.
 
 A more complicated strategy, similar to that employed in D's postblit, may be
 considered at a later time, but for now, we view this support as sufficient.
+
+For more details on when the copy initializer would be called, please refer to
+[CHIP 13 - When Do Record and Array Copies Occur] (13.rst)
 
 Summary
 +++++++
@@ -532,5 +528,5 @@ initializer, or may exert explicit control by utilizing an additional argument
 to the initializer.  The type designer may also utilize ``noinit`` on individual
 fields during the first phase of the initializer body.  If there are operations
 which must occur on a copy made by the compiler before it is operated on by
-other code, such as via an ``in`` intent, the type designer may supply a copy
-initializer to specify these operations.
+other code, the type designer may supply a copy initializer to specify these
+operations.
