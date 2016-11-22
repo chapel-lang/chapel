@@ -28,6 +28,11 @@ isTrue = $(filter yes Yes YES y Y true True TRUE t T, $(1))
 MAKEFLAGS = --no-print-directory
 
 
+#
+# Don't let CONFIG_SITE mess up our third-party/ builds.
+#
+unexport CONFIG_SITE
+
 ifndef CHPL_MAKE_HOST_TARGET
 CHPL_MAKE_HOST_TARGET = --host
 endif
@@ -151,7 +156,6 @@ include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
-include $(THIRD_PARTY_DIR)/chpl-venv/Makefile.include
 include $(THIRD_PARTY_DIR)/fltk/Makefile.include
 include $(THIRD_PARTY_DIR)/libunwind/Makefile.include
 
@@ -194,7 +198,10 @@ print-%: ; @echo "$*" is "$($*)"
 #
 GEN_SUBDIR = gen
 PLAT_COMPILER_SUBDIR = $(CHPL_MAKE_HOST_PLATFORM)/$(CHPL_MAKE_COMPILER)
-OBJ_SUBDIR = $(GEN_SUBDIR)/$(CHPL_MAKE_COMPILER_SUBDIR)
+
+COMPILER_BUILD = $(COMPILER_ROOT)/../build/compiler/$(CHPL_MAKE_COMPILER_SUBDIR)
+OBJ_SUBDIR = $(COMPILER_BUILD)/$(COMPILER_SUBDIR)
+
 OBJ_SUBDIR_TIMESTAMP = $(OBJ_SUBDIR)/.timestamp
 OBJ_SUBDIR_MADE = $(OBJ_SUBDIR_TIMESTAMP)
 OBJ_SUBDIR_SAFESLASH = $(subst /,\\/, $(OBJ_SUBDIR))
@@ -204,8 +211,14 @@ OBJ_SUBDIR_SAFESLASH = $(subst /,\\/, $(OBJ_SUBDIR))
 	@mkdir -p $*
 	@-touch $*/.timestamp
 
-RUNTIME_OBJDIR = $(GEN_SUBDIR)/$(CHPL_MAKE_RUNTIME_SUBDIR)
-LAUNCHER_OBJDIR = $(GEN_SUBDIR)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+RUNTIME_BUILD = $(RUNTIME_ROOT)/../build/runtime/$(CHPL_MAKE_RUNTIME_SUBDIR)
+RUNTIME_OBJDIR = $(RUNTIME_BUILD)/$(RUNTIME_SUBDIR)
+RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
+
+LAUNCHER_BUILD = $(RUNTIME_ROOT)/../build/runtime-launch/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+LAUNCHER_OBJDIR = $(LAUNCHER_BUILD)/$(RUNTIME_SUBDIR)
+LAUNCHER_OBJ_DIR_STAMP = $(LAUNCHER_OBJ_DIR)/.timestamp
+
 LIB_RT_DIR = lib/$(CHPL_MAKE_RUNTIME_SUBDIR)
 LIB_LN_DIR = lib/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 

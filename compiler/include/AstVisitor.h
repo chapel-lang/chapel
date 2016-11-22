@@ -41,6 +41,7 @@ class UnresolvedSymExpr;
 
 class UseStmt;
 class BlockStmt;
+class ForallIntents;
 class WhileDoStmt;
 class DoWhileStmt;
 class CForLoop;
@@ -123,6 +124,8 @@ public:
 
   virtual bool   enterBlockStmt      (BlockStmt*         node) = 0;
   virtual void   exitBlockStmt       (BlockStmt*         node) = 0;
+
+  virtual void   visitForallIntents  (ForallIntents*   clause) = 0;
 
   virtual bool   enterWhileDoStmt    (WhileDoStmt*       node) = 0;
   virtual void   exitWhileDoStmt     (WhileDoStmt*       node) = 0;

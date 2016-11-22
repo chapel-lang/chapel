@@ -316,10 +316,11 @@ chunk_recycle(tsdn_t *tsdn, arena_t *arena, chunk_hooks_t *chunk_hooks,
 			size_t i;
 			size_t *p = (size_t *)(uintptr_t)ret;
 
-			JEMALLOC_VALGRIND_MAKE_MEM_DEFINED(ret, size);
 			for (i = 0; i < size / sizeof(size_t); i++)
 				assert(p[i] == 0);
 		}
+		if (config_valgrind)
+			JEMALLOC_VALGRIND_MAKE_MEM_DEFINED(ret, size);
 	}
 	return (ret);
 }
@@ -384,23 +385,21 @@ chunk_alloc_base(size_t size)
 
 void *
 chunk_alloc_cache(tsdn_t *tsdn, arena_t *arena, chunk_hooks_t *chunk_hooks,
-    void *new_addr, size_t size, size_t alignment, bool *zero, bool dalloc_node)
+    void *new_addr, size_t size, size_t alignment, bool *zero, bool *commit,
+    bool dalloc_node)
 {
 	void *ret;
-	bool commit;
 
 	assert(size != 0);
 	assert((size & chunksize_mask) == 0);
 	assert(alignment != 0);
 	assert((alignment & chunksize_mask) == 0);
 
-	commit = true;
 	ret = chunk_recycle(tsdn, arena, chunk_hooks,
 	    &arena->chunks_szad_cached, &arena->chunks_ad_cached, true,
-	    new_addr, size, alignment, zero, &commit, dalloc_node);
+	    new_addr, size, alignment, zero, commit, dalloc_node);
 	if (ret == NULL)
 		return (NULL);
-	assert(commit);
 	if (config_valgrind)
 		JEMALLOC_VALGRIND_MAKE_MEM_UNDEFINED(ret, size);
 	return (ret);
@@ -421,15 +420,11 @@ chunk_arena_get(tsdn_t *tsdn, unsigned arena_ind)
 }
 
 static void *
-chunk_alloc_default(void *new_addr, size_t size, size_t alignment, bool *zero,
-    bool *commit, unsigned arena_ind)
+chunk_alloc_default_impl(tsdn_t *tsdn, arena_t *arena, void *new_addr,
+    size_t size, size_t alignment, bool *zero, bool *commit)
 {
 	void *ret;
-	tsdn_t *tsdn;
-	arena_t *arena;
 
-	tsdn = tsdn_fetch();
-	arena = chunk_arena_get(tsdn, arena_ind);
 	ret = chunk_alloc_core(tsdn, arena, new_addr, size, alignment, zero,
 	    commit, arena->dss_prec);
 	if (ret == NULL)
@@ -438,6 +433,20 @@ chunk_alloc_default(void *new_addr, size_t size, size_t alignment, bool *zero,
 		JEMALLOC_VALGRIND_MAKE_MEM_UNDEFINED(ret, size);
 
 	return (ret);
+}
+
+static void *
+chunk_alloc_default(void *new_addr, size_t size, size_t alignment, bool *zero,
+    bool *commit, unsigned arena_ind)
+{
+	tsdn_t *tsdn;
+	arena_t *arena;
+
+	tsdn = tsdn_fetch();
+	arena = chunk_arena_get(tsdn, arena_ind);
+
+	return (chunk_alloc_default_impl(tsdn, arena, new_addr, size, alignment,
+	    zero, commit));
 }
 
 static void *
@@ -472,14 +481,23 @@ chunk_alloc_wrapper(tsdn_t *tsdn, arena_t *arena, chunk_hooks_t *chunk_hooks,
 	ret = chunk_alloc_retained(tsdn, arena, chunk_hooks, new_addr, size,
 	    alignment, zero, commit);
 	if (ret == NULL) {
-		ret = chunk_hooks->alloc(new_addr, size, alignment, zero,
-		    commit, arena->ind);
+		if (chunk_hooks->alloc == chunk_alloc_default) {
+			/* Call directly to propagate tsdn. */
+			ret = chunk_alloc_default_impl(tsdn, arena, new_addr,
+			    size, alignment, zero, commit);
+		} else {
+			ret = chunk_hooks->alloc(new_addr, size, alignment,
+			    zero, commit, arena->ind);
+		}
+
 		if (ret == NULL)
 			return (NULL);
+
+		if (config_valgrind && chunk_hooks->alloc !=
+		    chunk_alloc_default)
+			JEMALLOC_VALGRIND_MAKE_MEM_UNDEFINED(ret, chunksize);
 	}
 
-	if (config_valgrind && chunk_hooks->alloc != chunk_alloc_default)
-		JEMALLOC_VALGRIND_MAKE_MEM_UNDEFINED(ret, chunksize);
 	return (ret);
 }
 
@@ -591,19 +609,27 @@ chunk_dalloc_cache(tsdn_t *tsdn, arena_t *arena, chunk_hooks_t *chunk_hooks,
 }
 
 static bool
+chunk_dalloc_default_impl(void *chunk, size_t size)
+{
+
+	if (!have_dss || !chunk_in_dss(chunk))
+		return (chunk_dalloc_mmap(chunk, size));
+	return (true);
+}
+
+static bool
 chunk_dalloc_default(void *chunk, size_t size, bool committed,
     unsigned arena_ind)
 {
 
-	if (!have_dss || !chunk_in_dss(tsdn_fetch(), chunk))
-		return (chunk_dalloc_mmap(chunk, size));
-	return (true);
+	return (chunk_dalloc_default_impl(chunk, size));
 }
 
 void
 chunk_dalloc_wrapper(tsdn_t *tsdn, arena_t *arena, chunk_hooks_t *chunk_hooks,
     void *chunk, size_t size, bool zeroed, bool committed)
 {
+	bool err;
 
 	assert(chunk != NULL);
 	assert(CHUNK_ADDR2BASE(chunk) == chunk);
@@ -612,7 +638,13 @@ chunk_dalloc_wrapper(tsdn_t *tsdn, arena_t *arena, chunk_hooks_t *chunk_hooks,
 
 	chunk_hooks_assure_initialized(tsdn, arena, chunk_hooks);
 	/* Try to deallocate. */
-	if (!chunk_hooks->dalloc(chunk, size, committed, arena->ind))
+	if (chunk_hooks->dalloc == chunk_dalloc_default) {
+		/* Call directly to propagate tsdn. */
+		err = chunk_dalloc_default_impl(chunk, size);
+	} else
+		err = chunk_hooks->dalloc(chunk, size, committed, arena->ind);
+
+	if (!err)
 		return;
 	/* Try to decommit; purge if that fails. */
 	if (committed) {
@@ -681,26 +713,30 @@ chunk_split_default(void *chunk, size_t size, size_t size_a, size_t size_b,
 }
 
 static bool
-chunk_merge_default(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b,
-    bool committed, unsigned arena_ind)
+chunk_merge_default_impl(void *chunk_a, void *chunk_b)
 {
 
 	if (!maps_coalesce)
 		return (true);
-	if (have_dss) {
-		tsdn_t *tsdn = tsdn_fetch();
-		if (chunk_in_dss(tsdn, chunk_a) != chunk_in_dss(tsdn, chunk_b))
-			return (true);
-	}
+	if (have_dss && !chunk_dss_mergeable(chunk_a, chunk_b))
+		return (true);
 
 	return (false);
+}
+
+static bool
+chunk_merge_default(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b,
+    bool committed, unsigned arena_ind)
+{
+
+	return (chunk_merge_default_impl(chunk_a, chunk_b));
 }
 
 static rtree_node_elm_t *
 chunks_rtree_node_alloc(size_t nelms)
 {
 
-	return ((rtree_node_elm_t *)base_alloc(tsdn_fetch(), nelms *
+	return ((rtree_node_elm_t *)base_alloc(TSDN_NULL, nelms *
 	    sizeof(rtree_node_elm_t)));
 }
 
@@ -737,32 +773,11 @@ chunk_boot(void)
 	chunksize_mask = chunksize - 1;
 	chunk_npages = (chunksize >> LG_PAGE);
 
-	if (have_dss && chunk_dss_boot())
-		return (true);
+	if (have_dss)
+		chunk_dss_boot();
 	if (rtree_new(&chunks_rtree, (unsigned)((ZU(1) << (LG_SIZEOF_PTR+3)) -
 	    opt_lg_chunk), chunks_rtree_node_alloc, NULL))
 		return (true);
 
 	return (false);
-}
-
-void
-chunk_prefork(tsdn_t *tsdn)
-{
-
-	chunk_dss_prefork(tsdn);
-}
-
-void
-chunk_postfork_parent(tsdn_t *tsdn)
-{
-
-	chunk_dss_postfork_parent(tsdn);
-}
-
-void
-chunk_postfork_child(tsdn_t *tsdn)
-{
-
-	chunk_dss_postfork_child(tsdn);
 }

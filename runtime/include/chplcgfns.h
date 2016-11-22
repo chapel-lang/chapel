@@ -39,6 +39,8 @@
 /* defined in chpl_compilation_config.c: */
 extern const char* chpl_compileCommand;
 extern const char* chpl_compileVersion;
+extern const char* chpl_compileDirectory;
+
 extern const char* CHPL_HOME;
 extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
@@ -82,6 +84,7 @@ extern char* chpl_executionCommand;
 
 /* generated */
 extern chpl_fn_p chpl_ftable[];
+extern chpl_fn_info chpl_finfo[];
 
 extern void chpl__initStringLiterals(void);
 

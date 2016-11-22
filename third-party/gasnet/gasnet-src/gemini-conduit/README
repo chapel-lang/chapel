@@ -9,6 +9,41 @@ series) and aries-conduit (for the Cray XC).  The terms "Gemini" and
 "gemini-conduit" are used throughout this document when both gemini
 and aries are meant.
 
+Because these Cray systems have non-trivial differences between the login
+nodes and the compute nodes, one must use a cross-configure script to build
+either of these conduits.  See other/contrib/cross-configure-crayxe-linux
+for Gemini and other/contrib/cross-configure-crayxc-linux for Aries.
+
+Where this conduit runs:
+-----------------------
+
+The gemini-conduit runs on systems with Cray's "Gemini" interconnect,
+including their XE and XK series machines.  There is no known minimum version
+required of any hardware or software component, but it is likely that
+sufficiently old releases of the system software are not supported correctly.
+
+The aries-conduit runs on systems with Cray's "Aries" interconnect, including
+their XC series machines.  To the best of our knowledge, there are no known
+compatibility issues with any release of the XC series system software.
+
+Configuring job launch:
+----------------------
+
+Both ALPS (srun) and native SLURM (srun) are supported for job-launch by the
+provided gasnetrun_gemini and gasnetrun_aries scripts.  The value of the
+environment variable MPIRUN_CMD can be used to choose between these two.  The
+value when configure is run establishes a default, which a value set at
+job-launch time can override.  Our recommended settings are
+ + For ALPS (default):   MPIRUN_CMD="aprun -n %N %C"
+ + For native SLURM:     MPIRUN_CMD="srun -K0 -W60 %V -mblock -n %N %C"
+
+For SLURM-based systems, one can simply set APRUN="srun -K0 -W60 %V -mblock"
+in ones environment when running the appropriate cross-configure script.
+
+If you desire additional customization, please see mpi-conduit's README for
+documentation regarding the MPIRUN_CMD environment variable.  Note, that it
+is NOT required that one compile mpi-conduit to use gemini or aries conduits.
+
 Recognized environment variables:
 ---------------------------------
 

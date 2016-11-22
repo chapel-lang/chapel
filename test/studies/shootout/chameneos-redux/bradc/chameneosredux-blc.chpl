@@ -28,10 +28,8 @@ proc main() {
 // Print the results of getNewColor() for all color pairs.
 //
 proc printColorEquations() {
-  const colors = (blue, red, yellow);
-
-  for c1 in colors do
-    for c2 in colors do
+  for c1 in Color do
+    for c2 in Color do
       writeln(c1, " + ", c2, " -> ", getNewColor(c1, c2));
   writeln();
 }
@@ -189,7 +187,6 @@ class Chameneos {
 
     peer.color = newColor;
     peer.meetings += 1;
-    peer.meetingsWithSelf += (peer == this);
     peer.meetingCompleted.write(true);
 
     color = newColor;

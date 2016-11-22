@@ -35,7 +35,6 @@ typedef struct {
 // Comm layer private area within executeOn argument bundles
 // (bundle.comm)
 typedef struct {
-  chpl_fn_int_t fid;
   int caller;
 
   void* ack; // address on caller to post acknowledgement

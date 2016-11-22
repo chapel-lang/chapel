@@ -1,7 +1,12 @@
 use StencilDist;
 use util;
 
+config const debug = false;
+
 proc test(dom : domain) {
+
+  if debug then writeln("Testing domain ", dom);
+
   param rank = dom.rank;
   var fluff : rank * int;
   for i in 1..rank do fluff(i) = 2;
@@ -9,21 +14,28 @@ proc test(dom : domain) {
   const max = dom.expand(fluff*dom.stride);
 
   var Space = dom dmapped Stencil(dom, fluff=fluff, periodic=true);
+  var abstr : rank*int;
+  for i in 1..rank do abstr(i) = abs(dom.dim(i).stride);
 
   {
-    var rs : rank*range;
-    rs(1) = 1..dom.dim(1).size/2;
-    for param i in 2..rank do rs(i) = Space.dim(i);
-    var HalfOne = Space[(...rs)];
-    assert(HalfOne._value.fluff == fluff);
+    // Create a tuple of ranges where the first dimension is halved
+    var rs : rank*Space.dim(1).type;
+    rs(1) = dom.dim(1)[dom.dim(1).low..dom.dim(1).high/2];
+    for param i in 2..rank do rs(i) = dom.dim(i);
+
+    var HalfDom = Space[(...rs)];
+
+    // Slicing used to drop the fluff, make sure that doesn't happen
+    assert(HalfDom._value.fluff == fluff);
 
     var Data : [Space] int;
     ref Same = Data[Space];
-    // Make sure the fluff is still there
+
     assert(Data._value.dom.fluff == Same._value.dom.fluff);
-    ref Half = Data[HalfOne];
+    ref Half = Data[HalfDom];
     assert(Data._value.dom.fluff == Half._value.dom.fluff);
 
+    // Fill our array with dummy values
     forall idx in Space {
       var temp = if isTuple(idx) then idx else (idx,);
       var m = 1;
@@ -33,22 +45,28 @@ proc test(dom : domain) {
     }
     Data.updateFluff();
 
-    // Make sure the slice can see changes
+    // Make sure the slice can see changes. Relies on the current locale being
+    // on a corner or edge of Space so that we check a periodic region.
     const sub = Half.localSubdomain();
-    const max = sub.expand(fluff*dom.stride);
+    const max = sub.expand(fluff*abstr);
     for m in max {
       var idx = if isTuple(m) then m else (m,);
+
+      // Translate our index if needed
       if !Space.member(idx) {
         for param i in 1..rank {
-          if idx(i) < Space.dim(i).low then idx(i) += Space.dim(i).size*Space.dim(i).stride;
-          else if idx(i) > Space.dim(i).high then idx(i) -= Space.dim(i).size * Space.dim(i).stride;
+          if idx(i) < Space.dim(i).low then idx(i) += Space.dim(i).size * abstr(i);
+          else if idx(i) > Space.dim(i).high then idx(i) -= Space.dim(i).size * abstr(i);
         }
       }
+
       assert(Half(m) == Data[idx]);
     }
   }
 
   {
+    // Test the 'noFluffView' feature of StencilDist, which gives us an
+    // array that behaves like a BlockDist
     var Data : [Space] int;
     ref Actual = Data.noFluffView();
     assert(Actual._value.dom.whole == Actual._value.dom.wholeFluff);
@@ -68,12 +86,12 @@ proc test(dom : domain) {
     // Assert that we can read remote values without having to call updateFluff
     on Locales[numLocales-1] {
       const sub = Data.localSubdomain();
-      const max = sub.expand(fluff*dom.stride);
+      const max = sub.expand(fluff*abstr);
       for idx in max {
         var temp = if isTuple(idx) then idx else (idx,);
-        // Only look at indices in 'Space' since no updateFluff call has
-        // occurred.
-        if Space.member(idx) {
+        // Look at indices that should be in the cache, but are not in the
+        // periodic region.
+        if !sub.member(idx) && Space.member(idx) {
           var m = 1;
           for i in temp do m *= i;
           assert(Actual[idx] == m);
@@ -87,4 +105,8 @@ test({1..40});
 test({1..10, 1..10});
 test({10..50, 10..50});
 test({1..10, 1..10, 1..10});
+test({1..15, 1..15} by 2);
+test({-10..60, 5..75, -100..-23} by 4);
+// TODO: domain with negative stride?
+
 writeln("SUCCESS");

@@ -26,6 +26,7 @@ MAKE_COMP_GEN_CFLAGS =
 ifeq ($(COMP_GEN_WARN), 1)
   MAKE_COMP_GEN_CFLAGS += $(WARN_GEN_CFLAGS)
 endif
+MAKE_COMP_GEN_CFLAGS += $(SQUASH_WARN_GEN_CFLAGS)
 ifeq ($(COMP_GEN_DEBUG), 1)
   MAKE_COMP_GEN_CFLAGS += $(DEBUG_CFLAGS)
   DEBUG = 1
@@ -110,6 +111,11 @@ printmaino:
 printllvminstall:
 	@echo $(LLVM_INSTALL_DIR)
 
+printclangcc:
+	@echo $(CLANG_CC)
+
+printclangcxx:
+	@echo $(CLANG_CXX)
 
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)

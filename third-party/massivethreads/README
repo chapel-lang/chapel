@@ -6,12 +6,10 @@ This copy of MassiveThreads is being released with Chapel for
 convenience and uses a snapshot obtained from the MassiveThreads
 team at:
 
-   http://code.google.com/p/massivethreads/
+   https://github.com/massivethreads/massivethreads
 
 We have applied the following configuration settings for Chapel users
 for simplicity:
-
-* disabled the internal malloc wrapper (alternative:CHPL_MEM=tcmalloc)
 
 * disabled worker thread binding with CPU (can be enabled at runtime
   by setting an environmental varibale MYTH_BIND_WORKERS=1)

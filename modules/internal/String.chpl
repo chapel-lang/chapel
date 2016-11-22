@@ -165,9 +165,10 @@ module String {
       the user to ensure that the underlying buffer is not freed if the
       `c_string` is not copied in.
      */
-    proc string(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
+    proc string(cs: c_string, length: int = cs.length,
+                owned: bool = true, needToCopy:  bool = true) {
       this.owned = owned;
-      const cs_len = cs.length;
+      const cs_len = length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
     }
 
@@ -340,7 +341,7 @@ module String {
      */
     proc this(i: int) : string {
       if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of string");
+        then halt("index out of bounds of string: ", i);
 
       var ret: string;
       const newSize = chpl_here_good_alloc_size(2);
@@ -1464,17 +1465,6 @@ module String {
   //
   // Param procs
   //
-  pragma "no doc"
-  proc typeToString(type t) param {
-    compilerWarning("typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'");
-    return __primitive("typeToString", t);
-  }
-
-  pragma "no doc"
-  proc typeToString(x) param {
-    compilerWarning("typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'");
-    compilerError("typeToString()'s argument must be a type, not a value");
-  }
 
   pragma "no doc"
   inline proc ==(param s0: string, param s1: string) param  {
@@ -1690,16 +1680,16 @@ module String {
   //
   // Helper routines
   //
-  private const uint_A: uint(8) = ascii('A');
-  private const uint_Z: uint(8) = ascii('Z');
-  private const uint_a: uint(8) = ascii('a');
-  private const uint_z: uint(8) = ascii('z');
-  private const uint_0: uint(8) = ascii('0');
-  private const uint_9: uint(8) = ascii('9');
-  private const uint_space   : uint(8) = ascii(' ');
-  private const uint_tab     : uint(8) = ascii('\t');
-  private const uint_newline : uint(8) = ascii('\n');
-  private const uint_return  : uint(8) = ascii ('\r');
+  private const uint_A = ascii('A');
+  private const uint_Z = ascii('Z');
+  private const uint_a = ascii('a');
+  private const uint_z = ascii('z');
+  private const uint_0 = ascii('0');
+  private const uint_9 = ascii('9');
+  private const uint_space    = ascii(' ');
+  private const uint_tab      = ascii('\t');
+  private const uint_newline  = ascii('\n');
+  private const uint_return   = ascii('\r');
 
   private inline proc byte_isUpper(b: uint(8)) : bool {
     return b >= uint_A && b <= uint_Z;
@@ -1730,15 +1720,15 @@ module String {
   /*
      :returns: The byte value of the first character in `a` as an integer.
   */
-  inline proc ascii(a: string) : int(32) {
+  inline proc ascii(a: string) : uint(8) {
     if a.isEmptyString() then return 0;
 
     if _local || a.locale_id == chpl_nodeID {
       // the string must be local so we can index into buff
-      return a.buff[0]:int(32);
+      return a.buff[0];
     } else {
       // a[1] grabs the first character as a string (making it local)
-      return a[1].buff[0]:int(32);
+      return a[1].buff[0];
     }
   }
 
@@ -1769,6 +1759,20 @@ module String {
     ret.owned = true;
 
     return ret;
+  }
+
+  //
+  // hashing support
+  //
+
+  pragma "no doc"
+  inline proc chpl__defaultHash(x : string): uint {
+    // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
+    var hash: int(64) = 5381;
+    for c in 0..#(x.length) {
+      hash = ((hash << 5) + hash) ^ x.buff[c];
+    }
+    return hash;
   }
 
   //

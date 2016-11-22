@@ -1,0 +1,3 @@
+COMPOPTS <= --no-remote-value-forwarding
+COMPOPTS <= --baseline
+CHPL_COMM == none

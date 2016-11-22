@@ -15,5 +15,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RUNTIME_DEFS += -DCHPL_UNWIND_LIBUNWIND
+RUNTIME_DEFS += -DCHPL_DO_UNWIND
 RUNTIME_INCLS += -I$(LIBUNWIND_INCLUDE_DIR)

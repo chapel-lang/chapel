@@ -110,17 +110,20 @@ array-literal:
 \end{syntax}
 
 \subsection{Rectangular Array Literals}
+\label{Rectangular_Array_Literals}
 \index{rectangular array literals}
 \index{arrays!rectangular!literals}
 
 Rectangular array literals are specified by enclosing a comma separated list of 
 expressions representing values in square brackets. A 1-based domain will 
 automatically be generated for the given array literal.  The type of the array's 
-values will be the type of the first element listed.
+values will be the type of the first element listed. A trailing comma is
+allowed.
 
 \begin{syntax}
 rectangular-array-literal:
   [ expression-list ]
+  [ expression-list , ]
 \end{syntax}
 
 \begin{chapelexample}{adecl-literal.chpl}
@@ -175,17 +178,19 @@ An rectangular array's default value is for each array element to be initialized
 the default value of the element type.
 
 \subsection{Associative Array Literals}
+\label{Associative_Array_Literals}
 \index{associative array literals}
 \index{arrays!associative!literals}
 
 Associative array values are specified by enclosing a comma separated list of
 index-to-value bindings within square brackets. It is expected that the indices 
 in the listing match in type and, likewise, the types of values in the listing 
-also match. 
+also match. A trailing comma is allowed.
 
 \begin{syntax}
 associative-array-literal:
   [ associative-expr-list ]
+  [ associative-expr-list , ]
 
 associative-expr-list:
   index-expr => value-expr
@@ -213,10 +218,17 @@ var A = [1 => "one", 10 => "ten", 3 => "three", 16 => "sixteen"];
 for da in zip (A.domain, A) do
   writeln(da);
 \end{chapel}
+\begin{chapelprediff}
+\#!/usr/bin/env sh
+testname=$1
+outfile=$2
+sort $outfile > $outfile.2
+mv $outfile.2 $outfile
+\end{chapelprediff}
 \begin{chapeloutput}
 (1, one)
-(16, sixteen)
 (10, ten)
+(16, sixteen)
 (3, three)
 \end{chapeloutput}
 \end{chapelexample}
@@ -426,6 +438,7 @@ The iterator variable for an array iteration is a reference to the
 array element type.
 
 
+\pagebreak
 \section{Array Assignment}
 \label{Array_Assignment}
 \index{arrays!assignment}
@@ -784,7 +797,7 @@ equivalent to \chpl{A(3,3)}.
 \label{Sparse_Arrays}
 \index{arrays!sparse}
 
-Sparse arrays in Chapel are those whose domain is a sparse array.  A
+Sparse arrays in Chapel are those whose domain is sparse.  A
 sparse array differs from other array types in that it stores a single
 value corresponding to multiple indices.  This value is commonly
 referred to as the \emph{zero value}, but we refer to it as the

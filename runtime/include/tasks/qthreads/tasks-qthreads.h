@@ -38,6 +38,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CHPL_COMM_YIELD_TASK_WHILE_POLLING
 void chpl_task_yield(void);
 
@@ -126,6 +130,7 @@ typedef struct {
   int lineno;
   int filename;
   c_sublocid_t requestedSubloc;
+  chpl_fn_int_t requested_fid;
   chpl_fn_p requested_fn;
   chpl_taskID_t id;
 } chpl_task_bundle_t;
@@ -266,6 +271,10 @@ static inline
 int chpl_task_supportsRemoteCache(void) {
   return CHPL_QTHREAD_SUPPORTS_REMOTE_CACHE;
 }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif // ifndef _tasks_qthreads_h_
 /* vim:set expandtab: */

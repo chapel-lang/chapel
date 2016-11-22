@@ -203,7 +203,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 void chpl_comm_post_task_init(void);
 
 //
-// a final comm layer stub before barrier synching and calling into
+// a final comm layer stub before barrier syncing and calling into
 // the user code.  It is recommended that a debugging message be
 // printed here indicating that each locale has started using
 // chpl_msg() and a verbosity level of 2 (which will cause it to be
@@ -334,7 +334,7 @@ void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 //   Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
 //   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 //
-void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, int32_t dstlocale, 
+void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
                      void* srcaddr, size_t* srcstrides, size_t* count,
                      int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
                      int ln, int32_t fn);
@@ -342,7 +342,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, int32_t dstlocale,
 //
 // same as chpl_comm_puts(), but do get instead
 //
-void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, int32_t srclocale, 
+void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode,
                      void* srcaddr, size_t* srcstrides, size_t* count,
                      int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
                      int ln, int32_t fn);

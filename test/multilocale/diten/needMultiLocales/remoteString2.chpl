@@ -1,5 +1,3 @@
-use Time;
-config const sleepTime:uint = 1;
 config const printIterations = false;
 proc main() {
   var s: string = "a string";

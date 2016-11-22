@@ -25,6 +25,7 @@ AST_SRCS =                                          \
            dominator.cpp                            \
            expr.cpp                                 \
            iterator.cpp                             \
+           foralls.cpp                              \
            flags.cpp                                \
            primitive.cpp                            \
            stmt.cpp                                 \

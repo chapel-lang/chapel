@@ -478,6 +478,7 @@ hwloc_distances__finalize_logical(struct hwloc_topology *topology,
 				  unsigned nbobjs,
 				  hwloc_obj_t *objs, float *osmatrix)
 {
+  struct hwloc_distances_s ** tmpdistances;
   unsigned i, j, li, lj, minl;
   float min = FLT_MAX, max = FLT_MIN;
   hwloc_obj_t root;
@@ -585,8 +586,12 @@ hwloc_distances__finalize_logical(struct hwloc_topology *topology,
   }
 
   /* store the normalized latency matrix in the root object */
+  tmpdistances = realloc(root->distances, (root->distances_count+1) * sizeof(struct hwloc_distances_s *));
+  if (!tmpdistances)
+    return; /* Failed to allocate, ignore this distance matrix */
+
+  root->distances = tmpdistances;
   idx = root->distances_count++;
-  root->distances = realloc(root->distances, root->distances_count * sizeof(struct hwloc_distances_s *));
   root->distances[idx] = malloc(sizeof(struct hwloc_distances_s));
   root->distances[idx]->relative_depth = relative_depth;
   root->distances[idx]->nbobjs = nbobjs;

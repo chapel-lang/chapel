@@ -1,5 +1,3 @@
-use Time;
-
 proc main {
   var x: int;
   var z: int;

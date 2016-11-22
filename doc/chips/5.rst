@@ -2,7 +2,7 @@ Implement Object Copying Using a "Postblit" Method
 ##################################################
 
 Status
-  Draft
+  Superseded, see CHIP 10
 
 Author
   Tom Hildebrandt, Michael Ferguson
@@ -375,7 +375,7 @@ allow the postblit function to repair a narrow pointer because it
 would know the original locale.
 
 Along with that, any copying across locales needs to call either
-postblit the assignment overlead. If a record:
+postblit or the assignment overload. If a record:
 
  * has a nontrivial postblit constructor, and
  * has any narrow pointers in fields

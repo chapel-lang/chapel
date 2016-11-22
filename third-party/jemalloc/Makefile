@@ -10,26 +10,18 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_JEMALLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
-endif
-
-# Can't build under CCE with gcc extensions enabled or with high levels of
-# interprocedural analysis on. The build fails with -hipa3 (the default) or
-# higher so we limit to a max of -hipa2. Additionally, CCE doesn't have the
-# dependency flags that jemalloc expects (-MM -MT)
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
-CFLAGS += -hnognu
-
-ifeq ($(OPTIMIZE), 1)
-CFLAGS += -hipa2
-else
-CFLAGS += -hipa0
-endif
-
-CHPL_JEMALLOC_MAKE_OPTIONS += CC_MM=''
+else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
+CHPL_JEMALLOC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
 endif
 
 CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \
 			     --with-jemalloc-prefix=je_
+
+# Unless the user explicitly asks for stats gathering, disable it since
+# there is some runtime overhead of this capability
+ifeq (, $(CHPL_JEMALLOC_ENABLE_STATS))
+CHPL_JEMALLOC_CFG_OPTIONS += --disable-stats
+endif
 
 # As an optimization, use jemalloc's decay-based purging instead of the
 # default ratio-based purging
@@ -72,7 +64,7 @@ configure-jemalloc: FORCE
 	cd $(JEMALLOC_BUILD_DIR) && $(JEMALLOC_SUBDIR)/configure CC='$(CC)' EXTRA_CFLAGS='$(CHPL_JEMALLOC_EXTRA_CFLAGS)' $(CHPL_JEMALLOC_CFG_OPTIONS)
 
 build-jemalloc: FORCE
-	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) $(CHPL_JEMALLOC_MAKE_OPTIONS) build_lib_static
+	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) build_lib_static
 
 install-jemalloc: FORCE
 	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) install_lib_static

@@ -784,7 +784,8 @@ static IpeCallExpr* resolveCallExpr(CallExpr* callExpr, IpeEnv* env)
     {
       if (procSymExpr->typeInfo() == gIpeTypeProcedure)
       {
-        IpeValue           procValue = env->fetch(toLcnSymbol(procSymExpr->var));
+        IpeValue           procValue =
+          env->fetch(toLcnSymbol(procSymExpr->symbol()));
         IpeProcedure*      procPtr   = procValue.procedureGet();
         std::vector<Expr*> resolvedActuals;
 

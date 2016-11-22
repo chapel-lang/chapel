@@ -81,6 +81,14 @@ class AbstractJob(object):
     # argument name for specifying number of cpus (i.e. mppdepth)
     num_cpus_resource = None
 
+    # argument name for specifying number of processing elements per node (i.e.
+    # mppnppn)
+    processing_elems_per_node_resource = None
+
+    # redirect_output decides whether we redirect output directly to the output
+    # file or whether we let the launcher and queueing system do it.
+    redirect_output = None
+
     def __init__(self, test_command, reservation_args):
         """Initialize new job runner.
 
@@ -104,15 +112,15 @@ class AbstractJob(object):
                               ['test_command', 'num_locales', 'walltime', 'hostlist']))
         return '{0}({1})'.format(cls_name, attrs)
 
-    @property
-    def full_test_command(self):
+    def full_test_command(self, output_file):
         """Returns instance's test_command prefixed with command to change to
         testing_dir. This is required to support both PBSPro and moab flavors
         of PBS. Whereas moab provides a -d argument when calling qsub, both
-        support the $PBS_O_WORKDIR argument.
+        support the $PBS_O_WORKDIR argument. This also adds stdout/stderr
+        redirection directly to the output file to avoid using a spool file.
 
         :rtype: list
-        :returns: command to run in qsub with changedir call
+        :returns: command to run in qsub with changedir call and redirection
         """
         full_test_command = ['cd', '$PBS_O_WORKDIR', '&&']
 
@@ -127,6 +135,8 @@ class AbstractJob(object):
             full_test_command += ['test', '-f', self.test_command[0], '&&']
 
         full_test_command.extend(self.test_command)
+        if self.redirect_output:
+            full_test_command.extend(['&>{0}'.format(output_file)])
         return full_test_command
 
     @property
@@ -140,6 +150,9 @@ class AbstractJob(object):
         :returns: Number of cpus to reserve, or -1 if there was no cnselect output
         """
         try:
+            n_cpus = os.environ.get('CHPL_LAUNCHCMD_NUM_CPUS')
+            if n_cpus is not None:
+                return n_cpus
             logging.debug('Checking for number of cpus to reserve.')
             cnselect_proc = subprocess.Popen(
                 ['cnselect', '-Lnumcores'],
@@ -203,8 +216,9 @@ class AbstractJob(object):
         :rtype: list
         :returns: qsub command as list of strings
         """
-        submit_command =  [self.submit_bin, '-V', '-N', self.job_name,
-                           '-j', 'oe', '-o', output_file]
+        submit_command =  [self.submit_bin, '-V', '-N', self.job_name]
+        if not self.redirect_output:
+            submit_command.extend(['-j', 'oe', '-o', output_file])
         if self.walltime is not None:
             submit_command.append('-l')
             submit_command.append('walltime={0}'.format(self.walltime))
@@ -235,6 +249,11 @@ class AbstractJob(object):
             submit_command.append('-l')
             submit_command.append('{0}={1}'.format(
                 self.num_cpus_resource, self.num_cpus))
+        if self.processing_elems_per_node_resource is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.processing_elems_per_node_resource, 1))
+
 
         logging.debug('qsub command: {0}'.format(submit_command))
         return submit_command
@@ -412,6 +431,8 @@ class AbstractJob(object):
             return SlurmJob
         elif qsub_callable and os.environ.has_key('MOABHOMEDIR'):
             return MoabJob
+        elif qsub_callable and os.environ.has_key('CHPL_PBSPRO_USE_MPP'):
+            return MppPbsProJob
         elif qsub_callable:
             return PbsProJob
         else:  # not (qsub_callable or srun_callable)
@@ -449,7 +470,7 @@ class AbstractJob(object):
             env=os.environ.copy()
         )
 
-        test_command_str = ' '.join(self.full_test_command)
+        test_command_str = ' '.join(self.full_test_command(output_file))
         logging.debug('Communicating with {0} subprocess. Sending test command on stdin: {1}'.format(
             self.submit_bin, test_command_str))
         stdout, stderr = submit_proc.communicate(input=test_command_str)
@@ -681,6 +702,7 @@ class MoabJob(AbstractJob):
     hostlist_resource = 'hostlist'
     num_nodes_resource = 'nodes'
     num_cpus_resource = None
+    redirect_output = True
 
     @classmethod
     def status(cls, job_id):
@@ -728,6 +750,7 @@ class PbsProJob(AbstractJob):
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
     num_cpus_resource = 'ncpus'
+    redirect_output = False
 
     @property
     def job_name(self):
@@ -847,6 +870,20 @@ class PbsProJob(AbstractJob):
         """
         return self._launch_qsub(testing_dir, output_file)
 
+
+class MppPbsProJob(PbsProJob):
+    """PBSPro implementation of pbs job runner that uses the mpp* options."""
+
+    submit_bin = 'qsub'
+    status_bin = 'qstat'
+    hostlist_resource = 'mppnodes'
+    num_nodes_resource = 'mppwidth'
+    num_cpus_resource = 'mppdepth' if 'CHPL_PBSPRO_NO_MPPDEPTH' not in os.environ else None
+    processing_elems_per_node_resource = 'mppnppn'
+    redirect_output = False
+
+    def _qsub_command(self, output_file):
+        return AbstractJob._qsub_command(self, output_file)
 
 class SlurmJob(AbstractJob):
     """SLURM implementation of abstract job runner."""

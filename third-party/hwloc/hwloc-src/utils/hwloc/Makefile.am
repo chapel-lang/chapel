@@ -74,6 +74,10 @@ TESTS += test-fake-plugin.sh
 endif HWLOC_HAVE_PLUGINS
 endif !HWLOC_HAVE_MINGW32
 
+SEDMAN = $(SED) -e 's/\#PACKAGE_NAME\#/@PACKAGE_NAME@/g' \
+	  -e 's/\#PACKAGE_VERSION\#/@PACKAGE_VERSION@/g' \
+	  -e 's/\#HWLOC_DATE\#/@HWLOC_RELEASE_DATE@/g'
+
 # Only install man pages if we're building in standalone mode
 man7_pages = hwloc.7
 EXTRA_DIST += $(man7_pages:.7=.7in)
@@ -114,32 +118,31 @@ endif
 hdh_page = hwloc-dump-hwdata.1
 EXTRA_DIST += $(hdh_page:.1=.1in)
 if HWLOC_HAVE_LINUX
+# WARNING: The SEDMAN line below isn't portable ($(subst ...) is GNU-make only).
+# Keep this rule Linux-only, or stop using $(subst ...). See issue #187.
 if HWLOC_HAVE_X86
 nodist_man_MANS += $(hdh_page)
+hwloc-dump-hwdata.1: hwloc-dump-hwdata.1in
+	@ echo Creating $@ man page...
+	@ $(SEDMAN) \
+	  -e 's/#RUNSTATEDIR#/$(subst /,\/,$(HWLOC_runstatedir))/g' \
+	  > $@ < $<
 endif HWLOC_HAVE_X86
 endif HWLOC_HAVE_LINUX
 
-
 .1in.1:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
-	  -e 's/#RUNSTATEDIR#/$(subst /,\/,$(HWLOC_runstatedir))/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 .3in.3:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 .7in.7:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 install-exec-hook:

@@ -1,0 +1,1 @@
+bug: record with generic field leaks memory

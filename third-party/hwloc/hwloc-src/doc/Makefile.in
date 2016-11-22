@@ -16,7 +16,7 @@
 
 # Copyright © 2009-2016 Inria.  All rights reserved.
 # Copyright © 2009-2013 Université Bordeaux
-# Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
+# Copyright © 2009-2016 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
 
 VPATH = @srcdir@
@@ -392,7 +392,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PDFLATEX = @PDFLATEX@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
-RMPATH = @RMPATH@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -2302,8 +2301,21 @@ uninstall-man: uninstall-man3
 
 @HWLOC_BUILD_DOXYGEN_TRUE@doc: $(DOX_TAG) $(DOX_LETTERPDF) $(DOX_A4PDF)
 
-# When we don't have doxygen, nothing to do
+# When we don't have doxygen, nothing to do for a normal build
 @HWLOC_BUILD_DOXYGEN_FALSE@doc:
+
+# But if the user tries to "make dist" and doesn't have all the right
+# tools, and prebuilt doc aren't available, fail with a helpful error
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@$(BUILT_IMAGES) $(DOX_A4PDF) $(DOX_LETTERPDF):
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo " "
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "*** ERROR: You do not have all the documentation generation tools"
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "*** that hwloc needs.  Check the output from when you ran 'configure'"
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "*** (in section \"Configuring hwloc documentation\") to see what tools"
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "*** you are missing."
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "***"
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "*** 'make' will now abort with an error."
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo " "
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@exit 1
 
 # end of manpages(3) if HWLOC_BUILD_DOXYGEN
 

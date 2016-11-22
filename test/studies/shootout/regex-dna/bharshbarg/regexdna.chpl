@@ -2,10 +2,10 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Ben Harshbarger
-   based on C++ RE2 implementation by Alexey Zolotov
+   derived from the GNU C++ RE2 version by Alexey Zolotov
 */
 
-proc main() {
+proc main(args: [] string) {
   var variants = [
     "agggtaaa|tttaccct",
     "[cgt]gggtaaa|tttaccc[acg]",
@@ -24,37 +24,36 @@ proc main() {
     ("V", "(a|c|g)"), ("W", "(a|t)"), ("Y", "(c|t)")
   ];
 
-  var data, copy : string;
-  stdin.readstring(data); // reads the entire file in
+  var data: string;
+  stdin.readstring(data); // read in the entire file
   const initLen = data.length;
 
   // remove newlines
   data = compile(">.*\n|\n").sub("", data);
-  const noLineLen = data.length;
 
-  copy = data; // grab a copy so we can replace in parallel
+  var copy = data; // make a copy so we can perform replacements in parallel
 
-  var results : [variants.domain] int;
+  var results: [variants.domain] int;
 
-  // waits for tasks to finish
   sync {
-    // fire off a task to do replacing
+    // fire off a task to perform replacements
     begin with (ref copy) {
       for (f, r) in subst do
         copy = compile(f).sub(r, copy);
     }
 
     // count patterns
-    forall (pattern, result) in zip(variants, results) {
+    forall (pattern, result) in zip(variants, results) do
       for m in compile(pattern).matches(data) do
         result += 1;
-    }
   }
 
   // print results
-  for (p,r) in zip(variants, results) do writeln(p, " ", r);
+  for (p,r) in zip(variants, results) do
+    writeln(p, " ", r);
+  writeln();
 
-  writeln("\n", initLen);
-  writeln(noLineLen);
+  writeln(initLen);
+  writeln(data.length);
   writeln(copy.length);
 }

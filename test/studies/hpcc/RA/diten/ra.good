@@ -1,5 +1,4 @@
 ra.chpl:185: warning: atomic keyword is ignored (not implemented)
-ra-randstream.chpl:15: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
 Problem size = 1024 (2**10)
 Bytes per array = 8192
 Total memory required (GB) = 7.62939e-06

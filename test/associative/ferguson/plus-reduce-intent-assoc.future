@@ -1,6 +1,0 @@
-bug: reduce intent on assoc array ref counting
-
-There appears to be a problem maintaining the domain
-reference count in this example.
-
-Compiling with -snoRefCount=true lets the program run.

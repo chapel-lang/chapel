@@ -38,7 +38,7 @@ public:
   // Interface for BaseAST
   virtual bool    inTree();
   virtual bool    isStmt()                                           const;
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual void    verify();
 
   // New interface
@@ -53,6 +53,11 @@ public:
   virtual bool    isNoInitExpr()                                     const;
 
   virtual void    prettyPrint(std::ostream* o);
+
+
+  bool            isRef();
+  bool            isWideRef();
+  bool            isRefOrWideRef();
 
   /* Returns true if the given expression is contained by this one. */
   bool            contains(const Expr* expr)                         const;
@@ -99,7 +104,7 @@ public:
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
 
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual void    prettyPrint(std::ostream* o);
 
   virtual GenRet  codegen();
@@ -117,8 +122,16 @@ public:
 
 
 class SymExpr : public Expr {
- public:
+ private:
   Symbol* var;
+
+ public:
+  // List entries to support enumerating SymExprs in a Symbol
+  // These are public because:
+  //  * they are managed in Symbol (but could friend class Symbol)
+  //  * they are used in for_SymbolSymExprs (but could create a real iterator)
+  SymExpr* symbolSymExprsPrev;
+  SymExpr* symbolSymExprsNext;
 
   SymExpr(Symbol* init_var);
 
@@ -128,7 +141,7 @@ class SymExpr : public Expr {
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
 
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual bool    isNoInitExpr() const;
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
@@ -136,6 +149,12 @@ class SymExpr : public Expr {
   virtual Expr*   getFirstChild();
 
   virtual Expr*   getFirstExpr();
+
+  Symbol* symbol() {
+    return var;
+  }
+
+  void setSymbol(Symbol* s);
 };
 
 
@@ -150,7 +169,7 @@ class UnresolvedSymExpr : public Expr {
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
 
@@ -216,7 +235,7 @@ public:
 
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
 
   virtual Expr*   getFirstChild();
 
@@ -248,7 +267,6 @@ public:
 private:
   GenRet          codegenPrimitive();
   GenRet          codegenPrimMove();
-  bool            codegenPrimMoveRhsIsSpecialPrimop();
 
   void            codegenInvokeOnFun();
   void            codegenInvokeTaskFun(const char* name);
@@ -265,7 +283,7 @@ private:
 // A ContextCall has a designated call.
 // The designated call will be returned if toCallExpr() is called
 // on the context call.
-// typeInfo on the context call will return the type info for
+// typeInfo/qualType on the context call will return the type info for
 // the designated call.
 // isCallExpr() will return true for a ContextCallExpr.
 class ContextCallExpr : public Expr {
@@ -285,7 +303,7 @@ class ContextCallExpr : public Expr {
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
 
@@ -296,6 +314,34 @@ class ContextCallExpr : public Expr {
   void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
   CallExpr*       getRefCall();
   CallExpr*       getRValueCall();
+};
+
+
+class ForallExpr : public Expr {
+public:
+  Expr* indices;
+  Expr* iteratorExpr;
+  Expr* expr;
+  Expr* cond;
+  bool maybeArrayType;
+  bool zippered;
+
+  ForallExpr(Expr* indices,
+             Expr* iteratorExpr,
+             Expr* expr,
+             Expr* cond,
+             bool maybeArrayType,
+             bool zippered);
+
+  DECLARE_COPY(ForallExpr);
+
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    verify();
+  virtual void    accept(AstVisitor* visitor);
+  virtual GenRet  codegen();
+
+  virtual Expr*   getFirstChild();
+  virtual Expr*   getFirstExpr();
 };
 
 
@@ -312,7 +358,7 @@ class NamedExpr : public Expr {
 
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
 
@@ -377,6 +423,12 @@ static inline bool needsCapture(FnSymbol* taskFn) {
   return taskFn->hasFlag(FLAG_BEGIN) ||
          taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
          taskFn->hasFlag(FLAG_NON_BLOCKING);
+}
+
+// E.g. NamedExpr::actual, DefExpr::init.
+static inline void verifyNotOnList(Expr* expr) {
+  if (expr && expr->list)
+    INT_FATAL(expr, "Expr is in a list incorrectly");
 }
 
 

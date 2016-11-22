@@ -25,8 +25,9 @@ This directory's contents are as follows:
 
   RunARawLoops.chpl             :\
   RunBRawLoops.chpl             : \
-  RunCRawLoops.chpl             :  | The kernel implementations
-  RunParallelRawLoops.chpl      : /
+  RunCRawLoops.chpl             :  \ The kernel implementations
+  RunParallelRawLoops.chpl      :  /
+  RunSPMDRawLoops.chpl          : /
   RunVectorizeOnlyRawLoops.chpl :/
 
   LCALSConfiguration.chpl : Configuration constants to define what to run
@@ -49,14 +50,15 @@ This directory's contents are as follows:
 
   *.notest               :\
   LCALSMain.graph        : \
-  LCALSMain.perfexecopts :  \
-  LCALSMain.perfkeys     :   | Used by the Chapel testing system
+  LCALSMain.perfcompopts :  \
+  LCALSMain.perfexecopts :   \ Used by the Chapel testing system
+  LCALSMain.perfkeys     :   /
   LCALSMain.perftimeout  :  /
-  LCALSMain.prediff      : /
-  LCALSMain.skipif       :/
+  LCALSMain.skipif       : /
+  LCALSMain.timeout      :/
 
   README                   : This file
-  README-LCALS_license.txt : The 
+  README-LCALS_license.txt : The LCALS reference license
 
 -----------------
 Execution Options

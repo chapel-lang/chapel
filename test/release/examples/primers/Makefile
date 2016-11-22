@@ -37,10 +37,6 @@ TARGETS = \
 ifdef FFTW_DIR
 	TARGETS += FFTWlib
 	FFTW_OPTS = -I$(FFTW_DIR)/include -L$(FFTW_DIR)/lib
-else ifeq ($(wildcard /sbin/ldconfig),/sbin/ldconfig)
-ifneq ($(shell /sbin/ldconfig -p | grep -i fftw),)
-	TARGETS += FFTWlib
-endif
 endif
 
 ifdef CRAY_LIBSCI_PREFIX_DIR
@@ -58,12 +54,12 @@ clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
 %: %.chpl
-	$(CHPL) -o $@ $<
+	+$(CHPL) -o $@ $<
 
 FFTWlib: FFTWlib.chpl
-	$(CHPL) -o $@ $(FFTW_OPTS) $<
+	+$(CHPL) -o $@ $(FFTW_OPTS) $<
 
 LAPACKlib: LAPACKlib.chpl
-	$(CHPL) -o $@ $(LAPACK_OPTS) $<
+	+$(CHPL) -o $@ $(LAPACK_OPTS) $<
 
 FORCE:

@@ -1,12 +1,17 @@
 The Chapel runtime atomics interface is modelled after the
 C11 standard. See: http://en.cppreference.com/w/c/atomic
 
-Currently we have an intrinsic and a locks implementation. The intrinsics
-implementation uses compiler atomic intrinsics to implement atomics and the
-locks version uses chapel locks. The intrinsic version has better performance
-but the intrinsics are not available on all systems. As C compilers start
-supporting the C11 standard we will add an implementation that is basically a
-wrapper for C11 atomics (except for the implementation of the reals.)  
+Currently we have a cstdlib, an intrinsics, and a locks
+implementation. The cstdlib implementation is basically a wrapper for
+C11 atomics. The intrinsics implementation uses compiler atomic
+intrinsics to implement atomics and the locks version uses Chapel
+locks. The cstdlib implementation is expected to have the best
+performance in the long run, depending on the compiler's native
+handling of C11 atomics, and the intrinsic version has better
+performance than locks, but neither the standard atomics nor the
+intrinsics are available on all systems.  (For gcc up to at least
+6.2.0, though, there is a performance bug that inhibits more
+optimization than necessary with standard atomics.)
 
 We require the C11 standard atomic functions for the types:
    atomic_uint_least8_t
@@ -18,10 +23,12 @@ We require the C11 standard atomic functions for the types:
    atomic_int_least16_t
    atomic_int_least32_t
    atomic_int_least64_t
-   atomic_flag
-and we require that the generic routines have the type appended
-to them, so that (for example), atomic_fetch_add( (uint_least64_t*) ptr, 100 )
-will be written atomic_fetch_add_uint_least64_t( (uint_least64_t*) ptr, 100 )
+   atomic_bool
+and we require that the namespace has room for us to provide
+type-specific routines that have the type appended to the names of the
+equivalent generic functions, so that (for example),
+atomic_fetch_add((uint_least64_t*) ptr, 100 ) will be written
+atomic_fetch_add_uint_least64_t( (uint_least64_t*) ptr, 100 )
 
 In addition, we assume that there is a function e.g.
 void atomic_destroy_uint_least64_t(volatile A* obj, C value);
@@ -59,23 +66,7 @@ Memory Fences:
    void atomic_thread_fence(memory_order order);
    
    // fence between a thread and a signal handler executed in the same thread 
-   void atomic_signal_thread_fence(memory_order order);
-
-
-/////////////////
-For Atomic Bools:
-/////////////////
-
-   // an atomic flag; set or not; must be lock-free according to the standard.
-   atomic_flag type
- 
-   // sets an atomic flag to true and returns the old value 
-   bool atomic_flag_test_and_set(volatile atomic_flag *object);
-   bool atomic_flag_test_and_set_explicit(volatile atomic_flag *object, memory_order order);
-
-   // sets atomic flag to false 
-   void atomic_flag_clear(volatile atomic_flag *object);
-   void atomic_flag_clear_explicit(volatile atomic_flag *object, memory_order order);
+   void atomic_signal_fence(memory_order order);
 
 
 ////////////////////
@@ -92,7 +83,7 @@ For Atomic Integers:
    atomic_int_least16_t
    atomic_int_least32_t
    atomic_int_least64_t
-   atomic_flag
+   atomic_bool
 
    // All the following functions are generic - the Chapel runtime will assume
    // that we have implementations with e.g. _uint_least64_t appended to the function
@@ -132,6 +123,7 @@ For Atomic Integers:
 
    // atomic fetch and op, for op in add, sub, or, and:
    // (atomic xor only supported on some platforms)
+   // for non-bool integers
    C atomic_fetch_op(volatile A *object, M operand);
    C atomic_fetch_op_explicit(volatile A *object, M operand, memory_order order);
 
@@ -140,9 +132,10 @@ For Atomic Integers:
 For Atomic Reals:
 /////////////////
 
-   // Chapel also has atomic support for reals (_real32 and _real64) These are not
-   // part of the C11 standard. The main difference is that the fetch_op operations 
-   // that do not make sense for reals are not part of the interface.  
+   // Chapel also has atomic support for reals (_real32 and _real64).
+   // The main difference is that the fetch_op operations are not part
+   // of the C standard, and those that do not make sense for reals
+   // are not part of the interface.
 
    // non-atomically initialize an atomic variable (the name is a little confusing.)
    void atomic_init(volatile A* object, C value);

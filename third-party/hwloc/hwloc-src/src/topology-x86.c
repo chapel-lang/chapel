@@ -81,7 +81,7 @@ enum cpuid_type {
 
 static void fill_amd_cache(struct procinfo *infos, unsigned level, int type, unsigned cpuid)
 {
-  struct cacheinfo *cache;
+  struct cacheinfo *cache, *tmpcaches;
   unsigned cachenum;
   unsigned long size = 0;
 
@@ -94,8 +94,13 @@ static void fill_amd_cache(struct procinfo *infos, unsigned level, int type, uns
   if (!size)
     return;
 
+  tmpcaches = realloc(infos->cache, (infos->numcaches+1)*sizeof(*infos->cache));
+  if (!tmpcaches)
+    /* failed to allocated, ignore that cache */
+    return;
+  infos->cache = tmpcaches;
   cachenum = infos->numcaches++;
-  infos->cache = realloc(infos->cache, infos->numcaches*sizeof(*infos->cache));
+
   cache = &infos->cache[cachenum];
 
   cache->type = type;

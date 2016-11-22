@@ -20,11 +20,15 @@ all: $(TARGETS)
 clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 	cd benchmarks && $(MAKE) clean
+	cd patterns && $(MAKE) clean
 	cd primers && $(MAKE) clean
 	cd programs && $(MAKE) clean
 
 benchmarks: FORCE
 	cd benchmarks && $(MAKE)
+
+patterns: FORCE
+	cd patterns && $(MAKE)
 
 primers: FORCE
 	cd primers && $(MAKE)
@@ -33,6 +37,6 @@ programs: FORCE
 	cd programs && $(MAKE)
 
 %: %.chpl
-	$(CHPL) -o $@ $<
+	+$(CHPL) -o $@ $<
 
 FORCE:

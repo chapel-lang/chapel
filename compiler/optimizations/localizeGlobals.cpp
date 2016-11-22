@@ -43,10 +43,11 @@ void localizeGlobals() {
     collect_asts(fn->body, asts);
     for_vector(BaseAST, ast, asts) {
       if (SymExpr* se = toSymExpr(ast)) {
-        Symbol* var = se->var;
+        Symbol* var = se->symbol();
         ModuleSymbol* parentmod = toModuleSymbol(var->defPoint->parentSymbol);
         CallExpr* parentExpr = toCallExpr(se->parentExpr);
         bool inAddrOf = parentExpr && parentExpr->isPrimitive(PRIM_ADDR_OF);
+        bool lhsOfMove = parentExpr && isMoveOrAssign(parentExpr) && (parentExpr->get(1) == se);
 
         // Is var a global constant?
         // Don't replace the var name in its init function since that's
@@ -59,6 +60,7 @@ void localizeGlobals() {
             fn != parentmod->initFn &&
             fn != initStringLiterals &&
             !inAddrOf &&
+            !lhsOfMove &&
             var->hasFlag(FLAG_CONST) &&
             var->defPoint->parentSymbol != rootModule) {
           VarSymbol* local_global = globals.get(var);
@@ -68,6 +70,15 @@ void localizeGlobals() {
             local_global = newTemp(newname, var->type);
             fn->insertAtHead(new CallExpr(PRIM_MOVE, local_global, var));
             fn->insertAtHead(new DefExpr(local_global));
+
+            // Copy string immediates to localized strings so that
+            // we can show the string value in comments next to uses.
+            if (!llvmCodegen)
+              if (VarSymbol* localVarSym = toVarSymbol(var))
+                if (Immediate* immediate = localVarSym->immediate)
+                  if (immediate->const_kind == CONST_KIND_STRING)
+                    local_global->immediate =
+                      new Immediate(immediate->v_string, immediate->string_kind);
 
             globals.put(var, local_global);
           }

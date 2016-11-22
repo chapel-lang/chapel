@@ -53,7 +53,7 @@ static void checkFunctionSignatures()
         std::vector<SymExpr*> symExprs;
         collectSymExprs(formal, symExprs);
         for_vector(SymExpr, se, symExprs) {
-          if (se->var == fn->_this) {
+          if (se->symbol() == fn->_this) {
             USR_FATAL_CONT(se, "invalid access of class member in initializer argument list");
             break;
           }
@@ -99,7 +99,7 @@ static void checkPrimNew()
         continue;
 
       if (SymExpr* se = toSymExpr(typeExpr))
-        if (se->var->hasFlag(FLAG_MAYBE_TYPE))
+        if (se->symbol()->hasFlag(FLAG_MAYBE_TYPE))
           // E.g. new gettype()
           // where gettype is a parentheses-less method returning a type
           continue;

@@ -28,14 +28,15 @@ Parsing module files:
   $CHPL_HOME/modules/standard/gen/.../SysCTypes.chpl
   $CHPL_HOME/modules/standard/Sys.chpl
   $CHPL_HOME/modules/dists/DSIUtil.chpl
+  $CHPL_HOME/modules/packages/Sort.chpl
+  $CHPL_HOME/modules/standard/Reflection.chpl
   $CHPL_HOME/modules/standard/List.chpl
   $CHPL_HOME/modules/standard/SysBasic.chpl
   $CHPL_HOME/modules/standard/IO.chpl
-  $CHPL_HOME/modules/packages/Sort.chpl
+  $CHPL_HOME/modules/packages/RangeChunk.chpl
   $CHPL_HOME/modules/packages/Search.chpl
   $CHPL_HOME/modules/standard/Error.chpl
   $CHPL_HOME/modules/standard/Regexp.chpl
-  $CHPL_HOME/modules/standard/Reflection.chpl
 In bar
 In baz
 In bak

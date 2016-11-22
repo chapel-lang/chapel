@@ -49,22 +49,28 @@ static bool
 refNecessary(SymExpr*                      se,
              Map<Symbol*, Vec<SymExpr*>*>& defMap,
              Map<Symbol*, Vec<SymExpr*>*>& useMap) {
-  Vec<SymExpr*>* defs = defMap.get(se->var);
+  Vec<SymExpr*>* defs = defMap.get(se->symbol());
+
+  // The ref is necessary if it is for an explicit ref var
+  if (se->symbol()->hasFlag(FLAG_REF_VAR)) {
+    return true;
+  }
+
+  // a ref is not necessary if the LHS is a value
+  // (this can come up in recursive handling of a PRIM_MOVE).
+  if (se->getValType() == se->typeInfo())
+    return false;
 
   if (defs && defs->n > 1) {
     // If se is a reference that is written to,
     // we need to keep the ref version.
-
-    // If it is not a reference, it's not clear why
-    // this code is being run...
-    INT_ASSERT(se->getValType() != se->typeInfo());
 
     // We're only looking for things that set the value.
     // We don't care about PRIM_MOVEs b/c they only set the reference.
     // We do care about PRIM_ASSIGN or if the argument is passed
     // to a function (typically = ) as ref, inout, or out argument.
     bool valueIsSet = false;
-    for_defs(def, defMap, se->var) {
+    for_defs(def, defMap, se->symbol()) {
       if (def->parentExpr) {
         if (CallExpr* parentCall = toCallExpr(def->parentExpr)) {
           if (parentCall->isPrimitive(PRIM_MOVE)) {
@@ -83,7 +89,7 @@ refNecessary(SymExpr*                      se,
     }
   }
 
-  for_uses(use, useMap, se->var) {
+  for_uses(use, useMap, se->symbol()) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if (FnSymbol* fn = call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
@@ -135,7 +141,7 @@ refNecessary(SymExpr*                      se,
         return true;
 
       } else if (call->isPrimitive(PRIM_DEREF) &&
-                 isRecordWrappedType(se->var->type->getValType())) {
+                 isRecordWrappedType(se->symbol()->type->getValType())) {
         // Heuristic: if we are dereferencing an array reference,
         // that reference may still be needed.
         Expr* callParent = call->parentExpr;
@@ -150,7 +156,7 @@ refNecessary(SymExpr*                      se,
 
             INT_ASSERT(dest);
 
-            if (dest->var->hasFlag(FLAG_COERCE_TEMP))
+            if (dest->symbol()->hasFlag(FLAG_COERCE_TEMP))
               return true;
           }
         }
@@ -280,7 +286,7 @@ void cullOverReferences() {
           }
         }
 
-        if (lhs && useMap.get(lhs->var) && useMap.get(lhs->var)->n > 0) {
+        if (lhs && useMap.get(lhs->symbol()) && useMap.get(lhs->symbol())->n > 0) {
           // If the LHS was used, set it to the address of the
           // new temporary (which is the function return value)
 
@@ -288,28 +294,28 @@ void cullOverReferences() {
           INT_ASSERT(moveInFn);
           Symbol* retSymbol = moveInFn->getReturnSymbol();
           // Check: are we adding a return of a local variable ?
-          for_uses(use, useMap, lhs->var) {
+          for_uses(use, useMap, lhs->symbol()) {
             if (CallExpr* useCall = toCallExpr(use->parentExpr))
               if (useCall->isPrimitive(PRIM_MOVE))
                 if (SymExpr* useCallLHS = toSymExpr(useCall->get(1)))
-                  if (useCallLHS->var == retSymbol) {
+                  if (useCallLHS->symbol() == retSymbol) {
                     USR_FATAL_CONT(move, "illegal expression to return by ref");
                     USR_PRINT(refCall, "called function returns a value not a reference");
                   }
           }
 
           move->insertAfter(new CallExpr(PRIM_MOVE,
-                                         lhs->var,
+                                         lhs->symbol(),
                                          new CallExpr(PRIM_ADDR_OF, tmp)));
         } else {
           // If the LHS was not used,
           // remove the old definition point since we have
           // provided a new one above.
-          lhs->var->defPoint->remove();
+          lhs->symbol()->defPoint->remove();
         }
 
         // Replace the LHS with our new temporary
-        lhs->var = tmp;
+        lhs->setSymbol(tmp);
       }
 
     } else {
@@ -319,63 +325,4 @@ void cullOverReferences() {
   }
 
   freeDefUseMaps(defMap, useMap);
-
-  //
-  // remove references to array wrapper records, domain wrapper
-  // records, and iterator records; otherwise we can end up returning
-  // a reference to a location that is on the stack
-  //
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (!isTypeSymbol(def->sym) && def->sym->type) {
-      if (Type* vt = def->sym->getValType()) {
-        if (isRecordWrappedType(vt)) {
-          def->sym->type = vt;
-        }
-      }
-
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (Type* vt = fn->retType->getValType()) {
-          if (isRecordWrappedType(vt)) {
-            fn->retType = vt;
-            fn->retTag  = RET_VALUE;
-          }
-        }
-      }
-    }
-  }
-
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_DEREF) ||
-        call->isPrimitive(PRIM_ADDR_OF)) {
-      Type* vt = call->get(1)->typeInfo();
-
-      if (isReferenceType(vt))
-        vt = vt->getValType();
-
-      if (isRecordWrappedType(vt))
-        call->replace(call->get(1)->remove());
-    }
-
-    if (call->isPrimitive(PRIM_GET_MEMBER)) {
-      Type* vt = call->get(2)->getValType();
-
-      if (isRecordWrappedType(vt))
-        call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
-    }
-
-    if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
-      Type* tupleType = call->get(1)->getValType();
-      Type* vt        = tupleType->getField("x1")->getValType();
-
-      if (isRecordWrappedType(vt))
-        call->primitive = primitives[PRIM_GET_SVEC_MEMBER_VALUE];
-    }
-
-    if (call->isPrimitive(PRIM_ARRAY_GET)) {
-      Type* vt = call->getValType();
-
-      if (isRecordWrappedType(vt))
-        call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
-    }
-  }
 }

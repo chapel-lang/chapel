@@ -203,7 +203,6 @@ CPPFLAGS = @CPPFLAGS@
 CROSS_COMPILING = @CROSS_COMPILING@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
-CXXCPPFLAGS = @CXXCPPFLAGS@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CXX_FAMILY = @CXX_FAMILY@
@@ -236,6 +235,8 @@ GASNET_INSTALL_CMD = @GASNET_INSTALL_CMD@
 GASNET_MACHINE_DEFINES = @GASNET_MACHINE_DEFINES@
 GASNET_MXM_SPAWNER_CONF = @GASNET_MXM_SPAWNER_CONF@
 GASNET_OFI_SPAWNER_CONF = @GASNET_OFI_SPAWNER_CONF@
+GASNET_OPT_CFLAGS = @GASNET_OPT_CFLAGS@
+GASNET_OPT_CXXFLAGS = @GASNET_OPT_CXXFLAGS@
 GASNET_PERL_BYTESFLAG = @GASNET_PERL_BYTESFLAG@
 GASNET_PERL_LANG = @GASNET_PERL_LANG@
 GASNET_PLATFORM = @GASNET_PLATFORM@
@@ -512,14 +513,6 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	$(am__cd) $(top_srcdir) && \
 	  $(AUTOMAKE) --foreign smp-conduit/Makefile
 .PRECIOUS: Makefile
-Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
-	@case '$?' in \
-	  *config.status*) \
-	    cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh;; \
-	  *) \
-	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)'; \
-	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe);; \
-	esac;
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh

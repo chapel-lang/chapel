@@ -66,9 +66,9 @@ def syncToSourceForge(dirToSync, destDir, logFile):
     getShellDesc = 'create interactive sourceforge shell'
     executeCommand(getShellCommand, getShellDesc, logFile)
 
-    # Delete files older than 10 days. Don't just use `rsync --del` because
+    # Delete files older than 100 days. Don't just use `rsync --del` because
     # there might be subdirectories we don't want to delete, ignore errors
-    delOldCommand = 'ssh {0} "find {1} -ctime +10 | xargs rm -rf "'.format(sfShellHost, sfPerfDir)
+    delOldCommand = 'ssh {0} "find {1} -ctime +100 | xargs rm -rf "'.format(sfShellHost, sfPerfDir)
     delOldDesc = 'delete old files'
     executeCommand(delOldCommand, delOldDesc, logFile)
 

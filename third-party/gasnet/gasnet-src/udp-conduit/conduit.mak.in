@@ -11,6 +11,10 @@
 GASNET_LD_OVERRIDE = @CXX@
 GASNET_LDFLAGS_OVERRIDE = @CXXFLAGS@ @LDFLAGS@ @cxxLDFLAGS@
 
+# Linker feature requirements embedded in GASNET_LD(FLAGS) which are not satisfied solely by GASNET_LIBS 
+# (eg possible dependence on implicit MPI or C++ libraries added by a linker wrapper in GASNET_LD):
+GASNET_LD_REQUIRES_CXX = 1
+
 CONDUIT_LIBDIRS = @BLCR_LIBDIR@
 CONDUIT_LIBS = -lamudp @GASNET_UDP_LIBS@ @BLCR_LIBS@
 

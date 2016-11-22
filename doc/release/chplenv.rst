@@ -33,7 +33,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.13.1
+        export CHPL_HOME=~/chapel-1.14.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -198,9 +198,9 @@ CHPL_TARGET_ARCH
         none      No specialization will be performed (will not warn)
         ========  =============================================================
 
+        **Architecture-specific values**
+
         =========== ================
-        Architecture-specific values
-        ----------------------------
         intel       amd
         =========== ================
         core2           k8
@@ -376,13 +376,11 @@ CHPL_MEM
         Value     Description
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
-        jemalloc  use Jason Evan's memory allocation package
+        jemalloc  use Jason Evan's memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
-   If the target platform is ``cygwin*``, the target compiler is ``*pgi``,
-   or the target platform is ``darwin`` and the target compiler is ``gnu``
-   it defaults to ``cstdlib``
+   If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
 
 .. _readme-chplenv.CHPL_LAUNCHER:
@@ -405,6 +403,8 @@ CHPL_ATOMICS
         ===========  =====================================================
         Value        Description
         ===========  =====================================================
+        cstdlib      implement Chapel atomics as a wrapper around C
+                     standard atomics (from C11)
         intrinsics   implement atomics using target compiler intrinsics
                      (which typically map down to hardware capabilities)
         locks        implement atomics by using Chapel sync variables to
@@ -413,7 +413,10 @@ CHPL_ATOMICS
 
    If unset, CHPL_ATOMICS defaults to ``intrinsics`` for most configurations.
    On some 32 bit platforms, or if the target compiler is ``pgi`` or
-   ``cray-prgenv-pgi`` it defaults to ``locks``.
+   ``cray-prgenv-pgi`` it defaults to ``locks``.  In a future release,
+   ``cstdlib`` will become the default whenever possible.  At this
+   time, though, most C compilers either do not support standard
+   atomics or have bugs in their implementation.
 
    .. note::
      gcc 4.8.1 added support for 64 bit atomics on 32 bit platforms.  We
@@ -605,6 +608,24 @@ CHPL_WIDE_POINTERS
    communication a program performs.  See :ref:`readme-llvm` for more
    information about ``CHPL_WIDE_POINTERS=nodeN``.
 
+
+.. _readme-chplenv.CHPL_UNWIND:
+
+CHPL_UNWIND
+~~~~~~~~~~~
+   Optionally, the ``CHPL_UNWIND`` environment variable can be used to select
+   an unwind library for stack tracing. Current options are:
+
+       ========= =======================================================
+       Value     Description
+       ========= =======================================================
+       libunwind use the libunwind bundled with Chapel in third-party
+       system    assume libunwind is already installed on the system
+       none      don't use an unwind library, disabling stack tracing
+       ========= =======================================================
+
+   If unset, ``CHPL_UNWIND`` defaults to ``none``
+
 Compiler Command Line Option Defaults
 -------------------------------------
 
@@ -613,6 +634,121 @@ the option via an environment variable.  To see a list of the environment
 variables that support each option, run the compiler with the ``--help-env``
 flag.  For boolean flags and toggles, setting the environment variable to any
 value selects that flag.
+
+.. _readme-chplenv.chplconfig:
+
+Chapel Configuration File
+-------------------------
+
+The Chapel configuration file is a file named either ``chplconfig`` or
+``.chplconfig`` that can store overrides of the inferred environment variables
+listed as a result of executing ``printchplenv``.
+
+Syntax
+~~~~~~
+
+Below are the valid forms of syntax for Chapel configuration files. All other
+usages will result in a syntax error.
+
+**Definitions**
+
+Users can define variables with the following format:
+
+.. code-block:: python
+
+    CHPL_ENV=value
+
+
+Above, the default value of ``CHPL_ENV`` will be overridden to be ``value``.
+All white space is stripped away from definitions.
+
+**Ignored Lines**
+
+Any lines containing nothing or only white space will be ignored.  Comments,
+which are denoted by the ``#`` character, similar to ``bash`` or ``python``,
+are also ignored.
+
+
+Example
+~~~~~~~
+
+Below is an example of a Chapel configuration file with comments:
+
+.. code-block:: python
+
+    # ~/.chplconfig
+
+    # Default to multi-locale
+    CHPL_COMM=gasnet
+
+    CHPL_TASKS=qthreads # Use Qthreads
+
+    # System GMP is available on these machines
+    CHPL_GMP=system
+
+
+
+Generating Configuration Files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The format of the ``printchplenv --overrides`` and ``printchplenv --simple``
+commands is compatible with Chapel configuration files.
+
+The ``printchplenv --overrides`` flag can be used to print the variables
+currently overridden by either environment variables or Chapel
+configuration file.
+
+A user can dump their current overrides into a Chapel configuration file:
+
+.. code-block:: sh
+
+    printchplenv --overrides > ~/.chplconfig
+
+The ``printchplenv --simple`` flag can be used to print all the variables
+of the current configuration.
+
+A user can dump their current configuration into a Chapel configuration file as
+well:
+
+.. code-block:: sh
+
+    printchplenv --simple > ~/.chplconfig
+
+
+
+Search Paths and File Names
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Though you can put your Chapel configuration file anywhere by setting the
+``$CHPL_CONFIG`` environment variable to its enclosing directory, you can also
+place it in your ``$HOME`` or ``$CHPL_HOME`` directory and Chapel will be able to
+find it.
+
+The search priority for Chapel configuration files is as follows:
+
+1. ``$CHPL_CONFIG``
+2. ``$HOME`` (``~/``)
+3. ``$CHPL_HOME``
+
+When both a ``chplconfig`` and ``.chplconfig`` are present, the visible
+``chplconfig`` will be prioritized.
+
+Only a single ``chplconfig`` file will be used. That is, as soon as a valid
+Chapel configuration file is found, the definitions of that file are used.
+
+.. note::
+
+    The ``$CHPL_CONFIG`` variable is the path to the *enclosing*
+    directory - not the full path including ``chplconfig`` itself.
+
+Variable Priority
+~~~~~~~~~~~~~~~~~
+
+Variable precedence goes in the following order:
+
+1. Explicit compiler flags: ``chpl --env=value``
+2. Environment variables: ``CHPL_ENV=value``
+3. Chapel configuration file: ``~/.chplconfig``
+4. Inferred environment variables: ``printchplenv``
 
 
 .. |trade|  unicode:: U+02122 .. TRADE MARK SIGN

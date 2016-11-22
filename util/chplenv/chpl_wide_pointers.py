@@ -2,18 +2,18 @@
 import optparse
 import os
 import re
-from sys import stderr, stdout
 import sys
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
+import overrides
 from utils import memoize
 
 
 @memoize
 def get(flag='wide'):
-    wide_val = os.environ.get('CHPL_WIDE_POINTERS', 'struct')
+    wide_val = overrides.get('CHPL_WIDE_POINTERS', 'struct')
     define = ''
 
     if wide_val == 'struct':
@@ -23,12 +23,12 @@ def get(flag='wide'):
         if match:
             node_bits = int(match.group(1))
             if node_bits < 2 or node_bits > 60:
-                stderr.write("Error: Bad wide pointer node bit width: {0}\n".format(node_bits))
+                sys.stderr.write("Error: Bad wide pointer node bit width: {0}\n".format(node_bits))
             else:
                 define = "-DCHPL_WIDE_POINTER_PACKED " \
                          "-DCHPL_WIDE_POINTER_NODE_BITS={0}".format(node_bits)
         else:
-            stderr.write("Error: Unknown wide pointer format: {0}\n".format(wide_val))
+            sys.stderr.write("Error: Unknown wide pointer format: {0}\n".format(wide_val))
 
     if flag == 'wide':
         return wide_val
@@ -47,7 +47,7 @@ def _main():
     (options, args) = parser.parse_args()
 
     wide_val = get(options.flag)
-    stdout.write("{0}\n".format(wide_val))
+    sys.stdout.write("{0}\n".format(wide_val))
 
 
 if __name__ == '__main__':

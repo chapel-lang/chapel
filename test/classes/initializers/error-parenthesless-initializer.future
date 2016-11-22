@@ -1,8 +1,0 @@
-semantic: disallow parenthesis-less initializers
-
-Brad and Vass feel that Chapel should not allow initializer methods to
-be declared without parentheses.
-
-Note: in the current implementation one can write both initializers
-(both with no arguments) at the same time. Then when invoking
-new classname(), the compiler finds that call ambiguous.

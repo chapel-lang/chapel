@@ -122,7 +122,7 @@ static chpl_fn_p comm_task_fn;
 static void                    enqueue_task(task_pool_p, task_pool_p*);
 static void                    dequeue_task(task_pool_p);
 static void                    comm_task_wrapper(void*);
-static void                    taskCallBody(chpl_fn_p,
+static void                    taskCallBody(chpl_fn_int_t, chpl_fn_p,
                                             chpl_task_bundle_t*, size_t,
                                             c_sublocid_t, chpl_bool,
                                             int, int32_t);
@@ -140,7 +140,7 @@ static void                    check_for_deadlock(void);
 static void                    thread_begin(void*);
 static void                    thread_end(void);
 static void                    maybe_add_thread(void);
-static task_pool_p             add_to_task_pool(chpl_fn_p,
+static task_pool_p             add_to_task_pool(chpl_fn_int_t, chpl_fn_p,
                                                 chpl_task_bundle_t*, size_t,
                                                 chpl_bool, chpl_bool, chpl_bool,
                                                 task_pool_p*, chpl_bool,
@@ -636,7 +636,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
   chpl_thread_mutexLock(&threading_lock);
 
   if (task_list_locale == chpl_nodeID) {
-    (void) add_to_task_pool(chpl_ftable[fid], arg, arg_size,
+    (void) add_to_task_pool(fid, chpl_ftable[fid], arg, arg_size,
                             false, false, false,
                             (task_pool_p*) p_task_list_void, is_begin_stmt,
                             lineno, filename);
@@ -649,7 +649,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
     // the context of a cobegin or coforall statement.
     //
     assert(is_begin_stmt);
-    (void) add_to_task_pool(chpl_ftable[fid], arg, arg_size,
+    (void) add_to_task_pool(fid, chpl_ftable[fid], arg, arg_size,
                             false, false, false,
                             NULL, true, 0, CHPL_FILE_IDX_UNKNOWN);
   }
@@ -710,6 +710,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
       initializeLockReportForThread();
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
+                           child_ptask->bundle.requested_fid,
                            child_ptask->bundle.filename,
                            child_ptask->bundle.lineno,
                            child_ptask->bundle.id,
@@ -724,6 +725,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
         chpl_taskRunningCntDec(0, 0);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
+                           child_ptask->bundle.requested_fid,
                            child_ptask->bundle.filename,
                            child_ptask->bundle.lineno,
                            child_ptask->bundle.id,
@@ -751,23 +753,23 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
 }
 
 
-void chpl_task_taskCall(chpl_fn_p fp,
+void chpl_task_taskCallFTable(chpl_fn_int_t fid,
                         chpl_task_bundle_t* arg, size_t arg_size,
                         c_sublocid_t subloc,
                         int lineno, int32_t filename) {
-  taskCallBody(fp, arg, arg_size, subloc, false, lineno, filename);
+  taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, false, lineno, filename);
 }
 
 
 static inline
-void taskCallBody(chpl_fn_p fp,
+void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
                   chpl_task_bundle_t* arg, size_t arg_size,
                   c_sublocid_t subloc, chpl_bool serial_state,
                   int lineno, int32_t filename) {
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
-  (void) add_to_task_pool(fp, arg, arg_size,
+  (void) add_to_task_pool(fid, fp, arg, arg_size,
                           serial_state, canCountRunningTasks, true,
                           NULL, false, lineno, filename);
 
@@ -777,7 +779,7 @@ void taskCallBody(chpl_fn_p fp,
 
 
 
-void chpl_task_startMovedTask(chpl_fn_p fp,
+void chpl_task_startMovedTask(chpl_fn_int_t  fid, chpl_fn_p fp,
                               chpl_task_bundle_t* arg, size_t arg_size,
                               c_sublocid_t subloc,
                               chpl_taskID_t id,
@@ -790,7 +792,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   //
   assert(id == chpl_nullTaskID);
 
-  taskCallBody(fp, arg, arg_size, subloc, serial_state,
+  taskCallBody(fid, fp, arg, arg_size, subloc, serial_state,
                0, CHPL_FILE_IDX_UNKNOWN);
 }
 
@@ -1249,6 +1251,7 @@ thread_begin(void* ptask_void) {
     }
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
+                           ptask->bundle.requested_fid,
                            ptask->bundle.filename,
                            ptask->bundle.lineno,
                            ptask->bundle.id,
@@ -1263,6 +1266,7 @@ thread_begin(void* ptask_void) {
         chpl_taskRunningCntDec(0, 0);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
+                           ptask->bundle.requested_fid,
                            ptask->bundle.filename,
                            ptask->bundle.lineno,
                            ptask->bundle.id,
@@ -1347,7 +1351,7 @@ static void maybe_add_thread(void) {
 // and append it to the end of the task pool
 // assumes threading_lock has already been acquired!
 static inline
-task_pool_p add_to_task_pool(chpl_fn_p fp,
+task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
                              chpl_task_bundle_t* a, size_t a_size,
                              chpl_bool serial_state,
                              chpl_bool countRunningTasks,
@@ -1384,12 +1388,14 @@ task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->bundle.lineno          = lineno;
   ptask->bundle.filename        = filename;
   ptask->bundle.requestedSubloc = c_sublocid_any_val;
+  ptask->bundle.requested_fid   = fid;
   ptask->bundle.requested_fn    = fp;
   ptask->bundle.id              = get_next_task_id();
 
   enqueue_task(ptask, p_task_list_head);
 
   chpl_task_do_callbacks(chpl_task_cb_event_kind_create,
+                         ptask->bundle.requested_fid,
                          ptask->bundle.filename,
                          ptask->bundle.lineno,
                          ptask->bundle.id,

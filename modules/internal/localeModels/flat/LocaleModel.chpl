@@ -83,14 +83,17 @@ module LocaleModel {
 
   // Compiler (and module code) interface for manipulating global locale IDs..
   pragma "insert line file info"
+  export
   proc chpl_buildLocaleID(node: chpl_nodeID_t, subloc: chpl_sublocID_t)
     return chpl_rt_buildLocaleID(node, subloc);
 
   pragma "insert line file info"
+  export
   proc chpl_nodeFromLocaleID(loc: chpl_localeID_t)
     return chpl_rt_nodeFromLocaleID(loc);
 
   pragma "insert line file info"
+  export
   proc chpl_sublocFromLocaleID(loc: chpl_localeID_t)
     return chpl_rt_sublocFromLocaleID(loc);
 
@@ -177,7 +180,7 @@ module LocaleModel {
       // sys_getenv returns zero on success.
       if sys_getenv(c"CHPL_COMM", comm) == 0 && comm == c"gasnet" &&
         sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 0 && spawnfn == c"L"
-      then local_name = chpl_nodeName() + "-" + _node_id : string;
+      then local_name = chpl_nodeName():string + "-" + _node_id:string;
       else local_name = chpl_nodeName():string;
 
       extern proc chpl_task_getCallStackSize(): size_t;
@@ -266,8 +269,8 @@ module LocaleModel {
         yield loc;
     }
 
-    proc getDefaultLocaleSpace() return this.myLocaleSpace;
-    proc getDefaultLocaleArray() return myLocales;
+    proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
+    proc getDefaultLocaleArray() const ref return myLocales;
 
     proc localeIDtoLocale(id : chpl_localeID_t) {
       // In the default architecture, there are only nodes and no sublocales.

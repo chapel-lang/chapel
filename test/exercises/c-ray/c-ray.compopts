@@ -1,0 +1,3 @@
+-M forStudents -smultilocale=false
+-M forStudents -smultilocale=true -sblockdist=true
+-M forStudents -smultilocale=true -sblockdist=false

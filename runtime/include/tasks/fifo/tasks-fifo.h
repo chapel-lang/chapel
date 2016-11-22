@@ -56,6 +56,7 @@ typedef struct {
   int lineno;
   int filename;
   c_sublocid_t requestedSubloc;  
+  chpl_fn_int_t requested_fid;
   chpl_fn_p requested_fn;
   chpl_taskID_t id;
 } chpl_task_bundle_t;
@@ -127,5 +128,9 @@ static inline
 int chpl_task_supportsRemoteCache(void) {
   return 1;
 }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

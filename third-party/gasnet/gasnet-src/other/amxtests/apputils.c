@@ -151,14 +151,14 @@ extern void outputTimerStats(void) {
   }
 }
 /* ------------------------------------------------------------------------------------ */
-#define REQ_32BITPTRS() \
-  if (sizeof(void *) != 4) AMX_FatalErr("This test not supported on 64-bit ptr architectures.")
-/* ------------------------------------------------------------------------------------ */
-#ifndef APPUTILS_OMIT_READWRITE
+#define MAKEDWORD(hi,lo) ((((uint64_t)(hi)) << 32) | (((uint64_t)(lo)) & 0xFFFFFFFF))
+#define HIWORD(arg)      ((uint32_t)(((uint64_t)(uintptr_t)(arg)) >> 32))
+#define LOWORD(arg)      ((uint32_t)((uint64_t)(uintptr_t)(arg) & 0xFFFFFFFF))
+
 /*  synchronous gets and puts */
-static void get_reply_handler(void *token, int ctr, int dest, int val) {
-  uint32_t *pctr = (uint32_t *)(uintptr_t)ctr;
-  uint32_t *pdest = (uint32_t *)(uintptr_t)dest;
+static void get_reply_handler(void *token, int ctrH, int ctrL, int destH, int destL, int val) {
+  uint32_t *pctr = (uint32_t *)(uintptr_t)MAKEDWORD(ctrH,ctrL);
+  uint32_t *pdest = (uint32_t *)(uintptr_t)MAKEDWORD(destH,destL);
   
   assert(pctr);
   assert(pdest);
@@ -166,56 +166,60 @@ static void get_reply_handler(void *token, int ctr, int dest, int val) {
   *pctr = TRUE;
 }
 
-static void get_request_handler(void *token, int ctr, int dest, int addr) {
-  uint32_t *paddr = (uint32_t *)(uintptr_t)addr;
+static void get_request_handler(void *token, int ctrH, int ctrL, int destH, int destL, int addrH, int addrL) {
+  uint32_t *paddr = (uint32_t *)(uintptr_t)MAKEDWORD(addrH,addrL);
 
   assert(paddr);
 
-  AM_Safe(AM_Reply3(token, GET_REP_HANDLER, 
-                    ctr, dest, *paddr));
+  AM_Safe(AM_Reply5(token, GET_REP_HANDLER, 
+                    ctrH, ctrL, destH, destL, *paddr));
 }
 
 uint32_t getWord(int proc, void *addr) {
   volatile uint32_t getdone = FALSE;
   volatile uint32_t getval = 0;
-  REQ_32BITPTRS();
-  AM_Safe(AM_Request3(ep, proc, GET_REQ_HANDLER, 
-                     (int)(uintptr_t)&getdone, (int)(uintptr_t)&getval, 
-                     (int)(uintptr_t)addr));
+
+  AM_Safe(AM_Request6(ep, proc, GET_REQ_HANDLER, 
+                     HIWORD(&getdone), LOWORD(&getdone),
+                     HIWORD(&getval), LOWORD(&getval),
+                     HIWORD(addr), LOWORD(addr)));
+
   while (!getdone) AM_PollBlock(eb);
   return getval;
 }
 /* ------------------------------------------------------------------------------------ */
-static void put_reply_handler(void *token, int ctr) {
-  uint32_t *pctr = (uint32_t *)(uintptr_t)ctr;
+static void put_reply_handler(void *token, int ctrH, int ctrL) {
+  uint32_t *pctr = (uint32_t *)(uintptr_t)MAKEDWORD(ctrH,ctrL);
   assert(pctr);
   *pctr = TRUE;
 }
 
-static void put_request_handler(void *token, int ctr, int dest, int val) {
-  uint32_t *paddr = (uint32_t *)(uintptr_t)dest;
+static void put_request_handler(void *token, int ctrH, int ctrL, int destH, int destL, int val) {
+  uint32_t *paddr = (uint32_t *)(uintptr_t)MAKEDWORD(destH,destL);
   assert(paddr);
   *paddr = (uint32_t)val;
 
-  AM_Safe(AM_Reply1(token, PUT_REP_HANDLER, 
-                    ctr));
+  AM_Safe(AM_Reply2(token, PUT_REP_HANDLER, 
+                    ctrH, ctrL));
 }
 
 void putWord(int proc, void *addr, uint32_t val) {
   volatile uint32_t putdone = FALSE;
-  REQ_32BITPTRS();
-  AM_Safe(AM_Request3(ep, proc, PUT_REQ_HANDLER, 
-                      (int)(uintptr_t)&putdone, (int)(uintptr_t)addr, 
+
+  AM_Safe(AM_Request5(ep, proc, PUT_REQ_HANDLER, 
+                      HIWORD(&putdone), LOWORD(&putdone),
+                      HIWORD(addr), LOWORD(addr),
                       (int)val));
+
   while (!putdone) AM_PollBlock(eb);
   return;
 }
 /* ------------------------------------------------------------------------------------ */
 /*  asynchronous reads and writes */
 static volatile uint32_t readCtr = 0;
-static void read_reply_handler(void *token, int ctr, int dest, int val) {
-  uint32_t *pctr = (uint32_t *)(uintptr_t)ctr;
-  uint32_t *pdest = (uint32_t *)(uintptr_t)dest;
+static void read_reply_handler(void *token, int ctrH, int ctrL, int destH, int destL, int val) {
+  uint32_t *pctr = (uint32_t *)(uintptr_t)MAKEDWORD(ctrH,ctrL);
+  uint32_t *pdest = (uint32_t *)(uintptr_t)MAKEDWORD(destH,destL);
 
   assert(pctr);
   assert(pdest);
@@ -223,22 +227,22 @@ static void read_reply_handler(void *token, int ctr, int dest, int val) {
   (*pctr)--;
 }
 
-static void read_request_handler(void *token, int ctr, int dest, int addr) {
-  uint32_t *paddr = (uint32_t *)(uintptr_t)addr;
+static void read_request_handler(void *token, int ctrH, int ctrL, int destH, int destL, int addrH, int addrL) {
+  uint32_t *paddr = (uint32_t *)(uintptr_t)MAKEDWORD(addrH,addrL);
   assert(paddr);
 
-  AM_Safe(AM_Reply3(token, READ_REP_HANDLER, 
-                    ctr, dest, *paddr));
+  AM_Safe(AM_Reply5(token, READ_REP_HANDLER, 
+                    ctrH, ctrL, destH, destL, *paddr));
 }
 
 
 void readWord(void *destaddr, int proc, void *addr) {
-  REQ_32BITPTRS();
-  AM_Safe(AM_Request3(ep, proc, READ_REQ_HANDLER, 
-                      (int)(uintptr_t)&readCtr, (int)(uintptr_t)destaddr, 
-                      (int)(uintptr_t)addr));
   readCtr++;
-  return;
+
+  AM_Safe(AM_Request6(ep, proc, READ_REQ_HANDLER, 
+                     HIWORD(&readCtr), LOWORD(&readCtr),
+                     HIWORD(destaddr), LOWORD(destaddr),
+                     HIWORD(addr), LOWORD(addr)));
 }
 
 void readSync(void) {
@@ -246,33 +250,33 @@ void readSync(void) {
 }
 /* ------------------------------------------------------------------------------------ */
 static volatile uint32_t writeCtr = 0;
-static void write_reply_handler(void *token, int ctr) {
-  uint32_t *pctr = (uint32_t *)(uintptr_t)ctr;
+static void write_reply_handler(void *token, int ctrH, int ctrL) {
+  uint32_t *pctr = (uint32_t *)(uintptr_t)MAKEDWORD(ctrH,ctrL);
   assert(pctr);
   (*pctr)--;
 }
 
-static void write_request_handler(void *token, int ctr, int dest, int val) {
-  uint32_t *paddr = (uint32_t *)(uintptr_t)dest;
+static void write_request_handler(void *token, int ctrH, int ctrL, int destH, int destL, int val) {
+  uint32_t *paddr = (uint32_t *)(uintptr_t)MAKEDWORD(destH,destL);
   assert(paddr);
   *paddr = (uint32_t)val;
 
-  AM_Safe(AM_Reply1(token, WRITE_REP_HANDLER, 
-                    ctr));
+  AM_Safe(AM_Reply2(token, WRITE_REP_HANDLER, 
+                    ctrH, ctrL));
 }
 
 void writeWord(int proc, void *addr, uint32_t val) {
-  REQ_32BITPTRS();
-  AM_Safe(AM_Request3(ep, proc, WRITE_REQ_HANDLER, 
-                      (int)(uintptr_t)&writeCtr, (int)(uintptr_t)addr, (int)val));
   writeCtr++;
-  return;
+
+  AM_Safe(AM_Request5(ep, proc, WRITE_REQ_HANDLER, 
+                      HIWORD(&writeCtr), LOWORD(&writeCtr),
+                      HIWORD(addr), LOWORD(addr),
+                      (int)val));
 }
 
 void writeSync(void) {
   while (writeCtr) AM_PollBlock(eb);
 }
-#endif
 /* ------------------------------------------------------------------------------------ */
 void free_resource_handler(int sig) {
   #if !PLATFORM_OS_MSWINDOWS
@@ -319,8 +323,6 @@ void setupUtilHandlers(ep_t activeep, eb_t activeeb) {
 
   AM_Safe(AM_SetHandler(ep, STATS_REQ_HANDLER, (amx_handler_fn_t)stats_request_handler));
 
-#ifndef APPUTILS_OMIT_READWRITE
- if (sizeof(void*) == 4) {
   AM_Safe(AM_SetHandler(ep, GET_REQ_HANDLER, (amx_handler_fn_t)get_request_handler));
   AM_Safe(AM_SetHandler(ep, GET_REP_HANDLER, (amx_handler_fn_t)get_reply_handler));
   AM_Safe(AM_SetHandler(ep, PUT_REQ_HANDLER, (amx_handler_fn_t)put_request_handler));
@@ -330,8 +332,6 @@ void setupUtilHandlers(ep_t activeep, eb_t activeeb) {
   AM_Safe(AM_SetHandler(ep, READ_REP_HANDLER, (amx_handler_fn_t)read_reply_handler));
   AM_Safe(AM_SetHandler(ep, WRITE_REQ_HANDLER, (amx_handler_fn_t)write_request_handler));
   AM_Safe(AM_SetHandler(ep, WRITE_REP_HANDLER, (amx_handler_fn_t)write_reply_handler));
- }
-#endif
 
   #if !PLATFORM_OS_MSWINDOWS
     /* some MPI implementations don't cleanup well and leave orphaned nodes

@@ -1,0 +1,5 @@
+perfkeys: real, real
+graphkeys: release, submitted
+files: threadring.dat, threadring-submitted.dat
+graphtitle: Submitted Thread Ring Shootout Benchmark (n=50,000,000)
+ylabel: Time (seconds)

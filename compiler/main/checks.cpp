@@ -39,6 +39,7 @@ static void check_afterNormalization(); // Checks to be performed after
                                         // normalization.
 static void check_afterResolution(); // Checks to be performed after every pass
                                      // following resolution.
+static void check_afterResolveIntents();
 static void check_afterCallDestructors(); // Checks to be performed after every
                                           // pass following callDestructors.
 static void check_afterLowerIterators();
@@ -146,6 +147,7 @@ void check_resolveIntents()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
+  check_afterResolveIntents();
   // Suggestion: Ensure now using a reduced set of intents.
 }
 
@@ -154,10 +156,19 @@ void check_checkResolved()
   // The checkResolved pass should not make any changes, so skip checks.
 }
 
+void check_replaceArrayAccessesWithRefTemps()
+{
+  check_afterEveryPass();
+  check_afterNormalization();
+  check_afterResolution();
+  check_afterResolveIntents();
+}
+
 void check_processIteratorYields() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
+  check_afterResolveIntents();
 }
 
 void check_flattenFunctions()
@@ -165,6 +176,7 @@ void check_flattenFunctions()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
+  check_afterResolveIntents();
   // Suggestion: Ensure no nested functions.
 }
 
@@ -173,9 +185,10 @@ void check_cullOverReferences()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
+  check_afterResolveIntents();
 
   // No ContextCallExprs should remain in the tree.
-  forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
+  for_alive_in_Vec(ContextCallExpr, cc, gContextCallExprs) {
     INT_FATAL("ContextCallExpr should no longer be in AST");
   }
 }
@@ -194,6 +207,7 @@ void check_lowerIterators()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
 //  check_afterResolution(); // Oho! Iterator functions do not obey the invariant
   // checked in checkReturnPaths() [semanticChecks.cpp:250].
   // So check_afterResolution has been disabled in this and all subsequent post-pass
@@ -208,6 +222,7 @@ void check_parallel()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
   // Suggestion: Ensure parallelization applied (if not --local).
 }
 
@@ -217,6 +232,7 @@ void check_prune()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
   // Suggestion: Ensure no dead classes or functions.
 }
 
@@ -226,6 +242,7 @@ void check_bulkCopyRecords()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
 }
 
 void check_removeUnnecessaryAutoCopyCalls()
@@ -234,6 +251,7 @@ void check_removeUnnecessaryAutoCopyCalls()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
   // Suggestion: Ensure no unnecessary autoCopy calls.
 }
 
@@ -243,6 +261,7 @@ void check_inlineFunctions()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
 }
 
 void check_scalarReplace()
@@ -251,6 +270,7 @@ void check_scalarReplace()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
   // Suggestion: Ensure no constant expressions.
 }
 
@@ -260,6 +280,7 @@ void check_refPropagation()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
 }
 
 void check_copyPropagation()
@@ -267,7 +288,9 @@ void check_copyPropagation()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
-  check_afterLowerIterators();}
+  check_afterLowerIterators();
+  check_afterResolveIntents();
+}
 
 
 void check_deadCodeElimination()
@@ -276,6 +299,7 @@ void check_deadCodeElimination()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators(); 
+  check_afterResolveIntents();
   // Suggestion: Ensure no dead code.
 }
 
@@ -285,6 +309,7 @@ void check_removeWrapRecords()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
   // Suggestion: Ensure no more wrap records.
 }
 
@@ -294,6 +319,7 @@ void check_removeEmptyRecords()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
   // Suggestion: Ensure no empty records.
 }
 
@@ -303,6 +329,7 @@ void check_localizeGlobals()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
 }
 
 void check_loopInvariantCodeMotion()
@@ -311,6 +338,7 @@ void check_loopInvariantCodeMotion()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
 }
 
 void check_prune2()
@@ -319,6 +347,7 @@ void check_prune2()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
   // Suggestion: Ensure no dead classes or functions.
 }
 
@@ -328,6 +357,7 @@ void check_returnStarTuplesByRefArgs()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
 }
 
 void check_insertWideReferences()
@@ -336,6 +366,7 @@ void check_insertWideReferences()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
 }
 
 void check_optimizeOnClauses()
@@ -344,6 +375,7 @@ void check_optimizeOnClauses()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
 }
 
 void check_addInitCalls()
@@ -352,6 +384,7 @@ void check_addInitCalls()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterResolveIntents();
 }
 
 void check_insertLineNumbers()
@@ -360,6 +393,11 @@ void check_insertLineNumbers()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+}
+
+void check_denormalize() {
+  //do we need to call any checks here ?
+  //or implement new checks ?
 }
 
 void check_codegen()
@@ -384,6 +422,7 @@ void check_afterEveryPass()
     verify();
     checkForDuplicateUses();
     checkFlagRelationships();
+    checkEmptyPartialCopyFnMap();
   }
 }
 
@@ -423,6 +462,31 @@ static void check_afterResolution()
   }
 }
 
+static void check_afterResolveIntents()
+{
+  if (fVerify) {
+    for_alive_in_Vec(DefExpr, def, gDefExprs) {
+      Symbol* sym = def->sym;
+      // Only look at Var or Arg symbols
+      if (isLcnSymbol(sym)) {
+        QualifiedType qual = sym->qualType();
+        // MPF TODO: This should not be necessary
+        // it is a workaround for problems with --verify
+        // with tuple type constructors accepting domains.
+        // It would be better to treat run-time types as
+        // normal records.
+        if (ArgSymbol* arg = toArgSymbol(sym))
+          if (arg->intent == INTENT_TYPE)
+            continue;
+
+        if (qual.getQual() == QUAL_UNKNOWN) {
+          INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
+        }
+      }
+    }
+  }
+}
+
 
 // Checks that should remain true after the callDestructors pass is complete.
 static void check_afterCallDestructors()
@@ -444,6 +508,8 @@ static void check_afterCallDestructors()
 static void check_afterLowerIterators()
 {
   checkLowerIteratorsRemovedPrims();
+  if (fVerify)
+    checkArgsAndLocals();
 }
 
 
@@ -453,7 +519,7 @@ static void check_afterLowerIterators()
 //
 static void checkAggregateTypes()
 {
-  forv_Vec(AggregateType, at, gAggregateTypes)
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes)
   {
     if (! at->defaultInitializer)
       INT_FATAL(at, "aggregate type has no initializer");
@@ -468,7 +534,7 @@ static void checkAggregateTypes()
 //
 static void
 checkResolveRemovedPrims(void) {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (call->primitive) {
       switch(call->primitive->tag) {
         case PRIM_BLOCK_PARAM_LOOP:
@@ -478,17 +544,15 @@ checkResolveRemovedPrims(void) {
         case PRIM_LOGICAL_FOLDER:
         case PRIM_TYPEOF:
         case PRIM_TYPE_TO_STRING:
-        case PRIM_IS_SYNC_TYPE:
-        case PRIM_IS_SINGLE_TYPE:
         case PRIM_IS_TUPLE_TYPE:
         case PRIM_IS_STAR_TUPLE_TYPE:
         case PRIM_IS_SUBTYPE:
+        case PRIM_REDUCE_ASSIGN:
         case PRIM_TUPLE_EXPAND:
         case PRIM_QUERY:
         case PRIM_QUERY_PARAM_FIELD:
         case PRIM_QUERY_TYPE_FIELD:
         case PRIM_ERROR:
-        case PRIM_FORALL_LOOP:
         case PRIM_COERCE:
           if (call->parentSymbol)
             INT_FATAL("Primitive should no longer be in AST");
@@ -500,10 +564,10 @@ checkResolveRemovedPrims(void) {
   }
 }
 
-static void 
+static void
 checkTaskRemovedPrims()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
     if (call->primitive)
       switch(call->primitive->tag)
       {
@@ -525,7 +589,7 @@ checkTaskRemovedPrims()
 static void 
 checkLowerIteratorsRemovedPrims()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
     if (call->primitive)
       switch(call->primitive->tag)
       {
@@ -543,7 +607,7 @@ checkLowerIteratorsRemovedPrims()
 static void
 checkFlagRelationships()
 {
-  forv_Vec(DefExpr, def, gDefExprs)
+  for_alive_in_Vec(DefExpr, def, gDefExprs)
   {
     // These tests apply to function symbols.
     if (FnSymbol* fn = toFnSymbol(def->sym))
@@ -575,7 +639,7 @@ checkAutoCopyMap()
 static void
 checkFormalActualBaseTypesMatch()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     if (! call->parentSymbol)
       // Call is not in tree
@@ -625,7 +689,7 @@ checkFormalActualBaseTypesMatch()
 static void
 checkRetTypeMatchesRetVarType()
 {
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     if (fn->isIterator())
       // Iterators break this rule.
@@ -643,7 +707,7 @@ checkRetTypeMatchesRetVarType()
 static void
 checkFormalActualTypesMatch()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     if (FnSymbol* fn = call->isResolved())
     {
@@ -666,12 +730,13 @@ checkFormalActualTypesMatch()
                     formal->name);
         }
 
-        if (formal->type != actual->typeInfo())
+        if (formal->getValType() != actual->getValType()) {
           INT_FATAL(call,
                     "actual formal type mismatch for %s: %s != %s",
                     fn->name,
                     actual->typeInfo()->symbol->name,
                     formal->type->symbol->name);
+        }
       }
     }
   }

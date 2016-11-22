@@ -1,0 +1,1 @@
+oldAndNew2.chpl:8: error: Definition of both constructor 'badClass' and initializer 'init'.  Please choose one.

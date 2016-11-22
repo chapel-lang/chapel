@@ -30,14 +30,18 @@ sub mysystem {
             $mailsubject = "$subjectid $config_name Failure";
             $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
-            print "Trying to mail message... using $mailcommand\n";
-            open(MAIL, $mailcommand);
-            print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, "");
-            print MAIL "ERROR $errorname: $status\n";
-            print MAIL "(workspace left at $tmpdir)\n";
-            print MAIL endMailHeader();
-            print MAIL endMailChplenv();
-            close(MAIL);
+            if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+                print "Trying to mail message... using $mailcommand\n";
+                open(MAIL, $mailcommand);
+                print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, "");
+                print MAIL "ERROR $errorname: $status\n";
+                print MAIL "(workspace left at $tmpdir)\n";
+                print MAIL endMailHeader();
+                print MAIL endMailChplenv();
+                close(MAIL);
+            } else {
+                print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+            }
         }
 
         if ($fatal != 0) {
@@ -127,7 +131,7 @@ sub endMailChplenv {
     if (exists($ENV{"CHPL_HOME"})) {
         $ch = $ENV{"CHPL_HOME"};
     }
-    my $chplenv = `$ch/util/printchplenv --debug`;
+    my $chplenv = `$ch/util/printchplenv --debug --anonymize`;
 
     my $mystr =
         "===============================================================\n" .

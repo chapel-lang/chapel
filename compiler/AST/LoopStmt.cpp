@@ -18,7 +18,6 @@
  */
 
 #include "LoopStmt.h"
-#include "codegen.h"
 
 LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
 {
@@ -82,31 +81,4 @@ LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr)
 
   return retval;
 
-}
-
-// If vectorization is enabled and this loop is order independent, codegen
-// CHPL_PRAGMA_IVDEP. This method is a no-op if vectorization is off, or the
-// loop is not order independent.
-void LoopStmt::codegenOrderIndependence()
-{
-  if (fNoVectorize == false && isOrderIndependent())
-  {
-    GenInfo* info = gGenInfo;
-
-    // Note: This *must* match the macro definitions provided in the runtime
-    std:: string ivdepStr = "CHPL_PRAGMA_IVDEP";
-    if (fReportOrderIndependentLoops)
-    {
-      ModuleSymbol *mod = toModuleSymbol(this->getModule());
-      INT_ASSERT(mod);
-
-      if (developer || mod->modTag == MOD_USER)
-      {
-        printf("Adding %s to %s for %s:%d\n", ivdepStr.c_str(),
-            this->astTagAsString(), mod->name, this->linenum());
-      }
-    }
-
-    info->cStatements.push_back(ivdepStr+'\n');
-  }
 }

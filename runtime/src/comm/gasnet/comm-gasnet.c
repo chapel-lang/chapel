@@ -24,6 +24,8 @@
 #include "gasnet_coll.h"
 #include "gasnet_tools.h"
 #include "chpl-comm.h"
+#include "chpl-comm-callbacks.h"
+#include "chpl-comm-callbacks-internal.h"
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
@@ -34,7 +36,6 @@
 #include "error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-cache.h" // to call chpl_cache_init()
-#include "chpl-visual-debug.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -254,7 +255,7 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_comm_on_bundle_t *f = buf;
 
   // Run the function
-  chpl_ftable_call(f->comm.fid, f);
+  chpl_ftable_call(f->task_bundle.requested_fid, f);
 
   // Signal that the handler has completed if that was requested.
   if (f->comm.ack)
@@ -265,8 +266,7 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
 static inline
 size_t setup_small_fork_task(small_fork_task_t* dst, small_fork_hdr_t* f, size_t nbytes)
 {
-  chpl_comm_bundleData_t comm  = { .fid    = f->fid,
-                                   .caller = f->caller,
+  chpl_comm_bundleData_t comm  = { .caller = f->caller,
                                    .ack    = f->ack };
   chpl_comm_on_bundle_t bundle = { .comm =  comm };
   chpl_comm_on_bundle_t *bptr  = &dst->bundle;
@@ -284,8 +284,7 @@ size_t setup_small_fork_task(small_fork_task_t* dst, small_fork_hdr_t* f, size_t
 static inline
 size_t setup_large_fork_task(large_fork_task_t* dst, large_fork_t* f, size_t nbytes)
 {
-  chpl_comm_bundleData_t comm  = { .fid    = f->hdr.fid,
-                                   .caller = f->hdr.caller,
+  chpl_comm_bundleData_t comm  = { .caller = f->hdr.caller,
                                    .ack    = f->hdr.ack };
   chpl_comm_on_bundle_t bundle = { .comm =  comm };
   chpl_comm_on_bundle_t *bptr  = &dst->bundle;
@@ -317,7 +316,7 @@ static void AM_fork_fast_small(gasnet_token_t token, void* buf, size_t nbytes) {
 
 
 static void fork_wrapper(chpl_comm_on_bundle_t *f) {
-  chpl_ftable_call(f->comm.fid, f);
+  chpl_ftable_call(f->task_bundle.requested_fid, f);
 
   GASNET_Safe(gasnet_AMRequestShort2(f->comm.caller, SIGNAL,
                                      Arg0(f->comm.ack), Arg1(f->comm.ack)));
@@ -325,7 +324,8 @@ static void fork_wrapper(chpl_comm_on_bundle_t *f) {
 
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_comm_on_bundle_t *f = (chpl_comm_on_bundle_t*) buf;
-  chpl_task_startMovedTask((chpl_fn_p)fork_wrapper,
+  chpl_task_startMovedTask(f->task_bundle.requested_fid,
+                           (chpl_fn_p)fork_wrapper,
                            chpl_comm_on_bundle_task_bundle(f), nbytes,
                            f->task_bundle.requestedSubloc, chpl_nullTaskID,
                            f->task_bundle.serial_state);
@@ -340,7 +340,7 @@ static void AM_fork_small(gasnet_token_t token, void* buf, size_t nbytes) {
   // Copy the data into a chpl_comm_on_bundle_t
   size = setup_small_fork_task(&task, f, nbytes);
  
-  chpl_task_startMovedTask((chpl_fn_p)fork_wrapper,
+  chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_wrapper,
                            chpl_comm_on_bundle_task_bundle(bptr),
                            size,
                            f->subloc, chpl_nullTaskID,
@@ -394,21 +394,23 @@ static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
   // Copy the data into a chpl_comm_on_bundle_t
   size = setup_large_fork_task(&task, f, nbytes);
 
-  chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper,
+  chpl_task_startMovedTask(f->hdr.fid, (chpl_fn_p)fork_large_wrapper,
                            chpl_comm_on_bundle_task_bundle(bptr), size,
                            f->hdr.subloc, chpl_nullTaskID,
                            f->hdr.serial_state);
 }
 
 static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
-  chpl_ftable_call(f->comm.fid, f);
+  chpl_ftable_call(f->task_bundle.requested_fid, f);
 }
 
 static void AM_fork_nb(gasnet_token_t  token,
                         void           *buf,
                         size_t          nbytes) {
   chpl_comm_on_bundle_t *f = (chpl_comm_on_bundle_t*) buf;
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper,
+  
+  chpl_task_startMovedTask(f->task_bundle.requested_fid,
+                           (chpl_fn_p)fork_nb_wrapper,
                            chpl_comm_on_bundle_task_bundle(f), nbytes,
                            f->task_bundle.requestedSubloc, chpl_nullTaskID,
                            f->task_bundle.serial_state);
@@ -425,7 +427,7 @@ static void AM_fork_nb_small(gasnet_token_t  token,
   // Copy the data into a chpl_comm_on_bundle_t
   size = setup_small_fork_task(&task, f, nbytes);
  
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper,
+  chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_nb_wrapper,
                            chpl_comm_on_bundle_task_bundle(bptr), size,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
@@ -474,7 +476,7 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
   // Copy the data into a chpl_comm_on_bundle_t
   size = setup_large_fork_task(&task, f, nbytes);
 
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper,
+  chpl_task_startMovedTask(f->hdr.fid, (chpl_fn_p)fork_nb_large_wrapper,
                            chpl_comm_on_bundle_task_bundle(bptr), size,
                            f->hdr.subloc, chpl_nullTaskID,
                            f->hdr.serial_state);
@@ -602,9 +604,14 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
   gasnet_handle_t ret;
   int remote_in_segment;
 
-  // Should be in the compiler macros file?
-  chpl_vdebug_log_put_nb(addr, node, raddr, size, typeIndex, ln, fn);
-
+  // Communication callbacks
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_nb)) {
+    chpl_comm_cb_info_t cb_data = 
+      {chpl_comm_cb_event_kind_put_nb, chpl_nodeID, node,
+       .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+    
 #ifdef GASNET_SEGMENT_EVERYTHING
     remote_in_segment = 1;
 #else
@@ -635,8 +642,13 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
   gasnet_handle_t ret;
   int remote_in_segment;
 
-  // Visual Debug Support
-  chpl_vdebug_log_get_nb(addr, node, raddr, size, typeIndex, ln, fn);
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_nb)) {
+    chpl_comm_cb_info_t cb_data = 
+      {chpl_comm_cb_event_kind_get_nb, chpl_nodeID, node,
+       .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
 
 #ifdef GASNET_SEGMENT_EVERYTHING
     remote_in_segment = 1;
@@ -1077,8 +1089,13 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
   } else {
-    // Visual Debug support
-    chpl_vdebug_log_put(addr, node, raddr, size, typeIndex, ln, fn);
+    // Communications callback support
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_put, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+    }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
@@ -1154,9 +1171,14 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
   } else {
-    // Visual Debug support
-    chpl_vdebug_log_get(addr, node, raddr, size, typeIndex, ln, fn);
-    
+    // Communications callback support
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
+      chpl_comm_cb_info_t cb_data = 
+        {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+    }
+
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
              chpl_lookupFilename(fn), ln, node);
@@ -1313,10 +1335,15 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
     printf("\n");
   }
 
-  // Visual Debug Support
-  chpl_vdebug_log_get_strd(dstaddr, dststrides, srcnode_id, srcaddr, srcstrides, count,
-                           stridelevels, elemSize, typeIndex, ln, fn);
-
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_strd)) {
+    chpl_comm_cb_info_t cb_data =
+      {chpl_comm_cb_event_kind_get_strd, chpl_nodeID, srcnode_id,
+       .iu.comm_strd={srcaddr, srcstrides, dstaddr, dststrides, count,
+                      stridelevels, elemSize, typeIndex, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+  
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
@@ -1373,9 +1400,14 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
     printf("\n");
   }
 
-  // Visual Debug Support
-  chpl_vdebug_log_put_strd(dstaddr, dststrides, dstnode_id, srcaddr, srcstrides,
-                           count, stridelevels, elemSize, typeIndex, ln, fn);
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_strd)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_put_strd, chpl_nodeID, dstnode_id,
+         .iu.comm_strd={srcaddr, srcstrides, dstaddr, dststrides, count,
+                        stridelevels, elemSize, typeIndex, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
@@ -1490,11 +1522,10 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
   } else {
     // Neither small nor large
 
-    chpl_task_bundle_t bundle = { .serial_state    = serial_state,
-                                  .requestedSubloc = subloc };
-
+    arg->task_bundle.serial_state = serial_state;
+    arg->task_bundle.requestedSubloc = subloc;
+    arg->task_bundle.requested_fid = fid;
     arg->comm.caller = chpl_nodeID;
-    arg->comm.fid = fid;
     arg->comm.ack = blocking ? &done : NULL;
 
     GASNET_Safe(gasnet_AMRequestMedium0(node, op, arg, arg_size));
@@ -1515,8 +1546,13 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
     assert(0);
     chpl_ftable_call(fid, arg);
   } else {
-    // Visual Debug Support
-    chpl_vdebug_log_fork(node, subloc, fid, arg, arg_size);
+    // Communications callback support
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
+      chpl_comm_cb_info_t cb_data = 
+        {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
+         .iu.executeOn={subloc, fid, arg, arg_size}};
+      chpl_comm_do_callbacks (&cb_data);
+    }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote task created on %d\n", chpl_nodeID, node);
@@ -1535,7 +1571,6 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                         chpl_fn_int_t fid,
                         chpl_comm_on_bundle_t *arg, size_t arg_size) {
 
-
   if (chpl_nodeID == node) {
     chpl_bool serial_state = chpl_task_getSerial();
 
@@ -1545,26 +1580,30 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
     if (serial_state)
       chpl_ftable_call(fid, arg);
     else
-      chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper,
+      chpl_task_startMovedTask(fid, (chpl_fn_p)fork_nb_wrapper,
                                chpl_comm_on_bundle_task_bundle(arg), arg_size,
                                subloc, chpl_nullTaskID,
                                serial_state);
-    return;
-  }
+  } else {
+    // Communications callback support
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
+      chpl_comm_cb_info_t cb_data = 
+        {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
+         .iu.executeOn={subloc, fid, arg, arg_size}};
+      chpl_comm_do_callbacks (&cb_data);
+    }
 
-  // Visual Debug Support
-  chpl_vdebug_log_fork_nb(node, subloc, fid, arg, arg_size);
-
-  if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
-  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-    chpl_sync_lock(&chpl_comm_diagnostics_sync);
-    chpl_comm_commDiagnostics.execute_on_nb++;
-    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
-  }
+    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+      printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
+      chpl_comm_commDiagnostics.execute_on_nb++;
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+    }
   
-  execute_on_common(node, subloc, fid, arg, arg_size,
-                    /*fast*/ false, /*blocking*/ false);
+    execute_on_common(node, subloc, fid, arg, arg_size,
+                      /*fast*/ false, /*blocking*/ false);
+  }
 }
 
 // GASNET - should only be called for "small" functions
@@ -1577,8 +1616,13 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
     assert(0);
     chpl_ftable_call(fid, arg);
   } else {
-    // Visual Debug Support
-    chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
+    // Communications callback support
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
+      chpl_comm_cb_info_t cb_data = 
+        {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
+         .iu.executeOn={subloc, fid, arg, arg_size}};
+      chpl_comm_do_callbacks (&cb_data);
+    }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote (no-fork) task created on %d\n",

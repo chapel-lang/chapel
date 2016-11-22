@@ -97,7 +97,7 @@ Qthreads thread scheduling
 When qthreads tasking is used, different Qthreads thread schedulers are
 selected depending upon the ``CHPL_LOCALE_MODEL`` setting.  For the flat
 locale model the "nemesis" thread scheduler is used, and for the NUMA
-locale model the "sherwood" thread scheduler is used.  This selection is
+locale model the "distrib" thread scheduler is used.  This selection is
 done at the time the Qthreads third-party package is built, and cannot
 be adjusted later, either at user compile time or at execution time.
 

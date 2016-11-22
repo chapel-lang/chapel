@@ -1,3 +1,0 @@
-real
-reject: ^\d+ (?!zero).*$
-reject: Error, total meetings was

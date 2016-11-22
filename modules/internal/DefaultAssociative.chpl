@@ -20,27 +20,25 @@
 // DefaultAssociative.chpl
 //
 module DefaultAssociative {
-  
+
   use DSIUtil;
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
-  
-  use Sort; /* only sort */;
-  
+
   // TODO: make the domain parameterized by this?
   type chpl_table_index_type = int;
-  
-  
+
+
   /* These declarations could/should both be nested within
      DefaultAssociativeDom? */
   enum chpl__hash_status { empty, full, deleted };
-  
+
   record chpl_TableEntry {
     type idxType;
     var status: chpl__hash_status = chpl__hash_status.empty;
     var idx: idxType;
   }
-  
+
   proc chpl__primes return
   (23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
    196597, 393209, 786431, 1572853, 3145721, 6291449, 12582893, 25165813,
@@ -64,7 +62,7 @@ module DefaultAssociative {
     // We explicitly use processor atomics here since this is not
     // by design a distributed data structure
     var numEntries: atomic_int64;
-    var tableLock: atomicflag; // do not access directly, use function below
+    var tableLock: atomicbool; // do not access directly, use function below
     var tableSizeNum = 1;
     var tableSize = chpl__primes(tableSizeNum);
     var tableDom = {0..tableSize-1};
@@ -264,6 +262,10 @@ module DefaultAssociative {
     //
     // Associative Domain Interface
     //
+    proc dsiMyDist() : BaseDist {
+      return dist;
+    }
+
     proc dsiClear() {
       on this {
         if parSafe then lockTable();
@@ -279,8 +281,29 @@ module DefaultAssociative {
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx: idxType, in slotNum : index(tableDom) = -1, haveLock = !parSafe): index(tableDom) {
+    proc dsiAdd(idx){
+      // add helpers will return a tuple like (slotNum, numIndicesAdded);
+
+      // these two seemingly redundant lines were necessary to work around a
+      // compiler bug. I was unable to create a smaller case that has the same
+      // issue.
+      // More: `return _addWrapper(idx)[2]` Call to _addWrapper seems to
+      // have no effect when `idx` is a range and the line is promoted. My
+      // understanding of promotion makes me believe that things might go haywire
+      // since return type of the method becomes an array(?). However, it seemed
+      // that _addWrapper is never called when the return statement is promoted.
+      // I checked the C code and couldn't see any call to _addWrapper.
+      // I tried to replicate the issue with generic classes but it always
+      // worked smoothly.
+      const numInds = _addWrapper(idx)[2];
+      return numInds;
+    }
+
+    proc _addWrapper(idx: idxType, in slotNum : index(tableDom) = -1, 
+        haveLock = !parSafe) {
+
       const inSlot = slotNum;
+      var retVal = 0;
       on this {
         const shouldLock = !haveLock && parSafe;
         if shouldLock then lockTable();
@@ -290,12 +313,12 @@ module DefaultAssociative {
           findAgain = true;
         }
         if findAgain then
-          slotNum = _add(idx, -1);
+          (slotNum, retVal) = _add(idx, -1);
         else
-          _add(idx, inSlot);
+          (_, retVal) = _add(idx, inSlot);
         if shouldLock then unlockTable();
       }
-      return slotNum;
+      return (slotNum, retVal);
     }
 
     // This routine adds new indices without checking the table size and
@@ -303,7 +326,7 @@ module DefaultAssociative {
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
-    proc _add(idx: idxType, in slotNum : index(tableDom) = -1): index(tableDom) {
+    proc _add(idx: idxType, in slotNum : index(tableDom) = -1) {
       var foundSlot : bool = (slotNum != -1);
       if !foundSlot then
         (foundSlot, slotNum) = _findEmptySlot(idx);
@@ -314,14 +337,16 @@ module DefaultAssociative {
       } else {
         if (slotNum < 0) {
           halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
-          return -1;
+          return (-1, 0);
         }
         // otherwise, re-adding an index that's already in there
+        return (slotNum, 0);
       }
-      return slotNum;
+      return (slotNum, 1);
     }
   
     proc dsiRemove(idx: idxType) {
+      var retval = 1;
       on this {
         if parSafe then lockTable();
         const (foundSlot, slotNum) = _findFilledSlot(idx, haveLock=parSafe);
@@ -331,13 +356,14 @@ module DefaultAssociative {
           table[slotNum].status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
-          halt("index not in domain: ", idx);
+          retval = 0;
         }
         if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
           _resize(grow=false);
         }
         if parSafe then unlockTable();
       }
+      return retval;
     }
   
     proc dsiRequestCapacity(numKeys:int) {
@@ -372,8 +398,11 @@ module DefaultAssociative {
           var copyDom = tableDom;
           var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
 
-          tableSizeNum=primeLoc;
-          tableSize=prime;
+          // Do not preserve entries
+          tableDom = {0..-1};
+
+          tableSizeNum = primeLoc;
+          tableSize = prime;
           tableDom = {0..tableSize-1};
 
           //numEntries will be reconstructed as keys are readded
@@ -381,7 +410,7 @@ module DefaultAssociative {
 
           // insert old data into newly resized table
           for slot in _fullSlots(copyTable) {
-            const newslot = _add(copyTable[slot].idx);
+            const (newslot, _) = _add(copyTable[slot].idx);
             _preserveArrayElements(oldslot=slot, newslot=newslot);
           }
             
@@ -401,13 +430,14 @@ module DefaultAssociative {
       }
     }
   
-    iter dsiSorted() {
+    iter dsiSorted(comparator) {
+      use Sort;
       var tableCopy: [0..#numEntries.read()] idxType;
   
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
         tableCopy(tmp) = table[slot].idx;
   
-      sort(tableCopy);
+      sort(tableCopy, comparator=comparator);
   
       for ind in tableCopy do
         yield ind;
@@ -437,7 +467,7 @@ module DefaultAssociative {
   
       // insert old data into newly resized table
       for slot in _fullSlots(copyTable) {
-        const newslot = _add(copyTable[slot].idx);
+        const (newslot, _) = _add(copyTable[slot].idx);
         _preserveArrayElements(oldslot=slot, newslot=newslot);
       }
       
@@ -547,7 +577,7 @@ module DefaultAssociative {
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
         } else {
-          const newSlot = dom.dsiAdd(idx, slotNum, haveLock=true);
+          const (newSlot, _) = dom._addWrapper(idx, slotNum, haveLock=true);
           if shouldLock then dom.unlockTable();
           return data(newSlot);
         }
@@ -671,12 +701,13 @@ module DefaultAssociative {
     // Associative array interface
     //
   
-    iter dsiSorted() {
+    iter dsiSorted(comparator) {
+      use Sort;
       var tableCopy: [0..dom.dsiNumIndices-1] eltType;
       for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
         tableCopy(copy) = data(slot);
   
-      sort(tableCopy);
+      sort(tableCopy, comparator=comparator);
   
       for elem in tableCopy do
         yield elem;
@@ -718,71 +749,72 @@ module DefaultAssociative {
   }
   
   
-  // Thomas Wang's 64b mix function from http://www.concentric.net/~Ttwang/tech/inthash.htm
-  proc _gen_key(i: int(64)): int(64) {
+  // Thomas Wang's 64b mix function - see
+  // https://web.archive.org/web/20060705164341/http://www.concentric.net/~Ttwang/tech/inthash.htm
+  proc _gen_key(i: uint): uint {
     var key = i;
     key += ~(key << 32);
-    key = key ^ (key >> 22);
+    key ^= (key >> 22);
     key += ~(key << 13);
-    key = key ^ (key >> 8);
+    key ^= (key >> 8);
     key += (key << 3);
-    key = key ^ (key >> 15);
+    key ^= (key >> 15);
     key += ~(key << 27);
-    key = key ^ (key >> 31);
-    return (key & max(int(64))): int(64);  // YAH, make non-negative
+    key ^= (key >> 31);
+    return key;
+  }
+  proc _gen_key(i: int): uint {
+    return _gen_key(i:uint);
   }
   
-  inline proc chpl__defaultHash(b: bool): int(64) {
+  inline proc chpl__defaultHashCombine(a:uint, b:uint, fieldnum:int): uint {
+    extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
+    var n:uint = (17 + fieldnum):uint;
+    return a ^ chpl_bitops_rotl_64(b, n);
+  }
+
+  inline proc chpl__defaultHash(b: bool): uint {
     if (b) then
       return 0;
     else
       return 1;
   }
   
-  inline proc chpl__defaultHash(i: int(64)): int(64) {
+  inline proc chpl__defaultHash(i: int(64)): uint {
     return _gen_key(i);
   }
   
-  inline proc chpl__defaultHash(u: uint(64)): int(64) {
-    return _gen_key(u:int(64));
+  inline proc chpl__defaultHash(u: uint(64)): uint {
+    return _gen_key(u);
   }
   
-  inline proc chpl__defaultHash(f: real): int(64) {
+  inline proc chpl__defaultHash(f: real): uint {
     return _gen_key(__primitive( "real2int", f));
   }
   
-  inline proc chpl__defaultHash(c: complex): int(64) {
+  inline proc chpl__defaultHash(c: complex): uint {
     return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
   }
   
-  inline proc chpl__defaultHash(a: imag): int(64) {
+  inline proc chpl__defaultHash(a: imag): uint {
     return _gen_key(__primitive( "real2int", _i2r(a)));
   }
   
-  inline proc chpl__defaultHash(u: chpl_taskID_t): int(64) {
+  inline proc chpl__defaultHash(u: chpl_taskID_t): uint {
     return _gen_key(u:int(64));
   }
   
-  // TODO: maybe move this into Strings.chpl
-  // Use djb2 (Dan Bernstein in comp.lang.c)
-  inline proc chpl__defaultHash(x : string): int(64) {
-    var hash: int(64) = 0;
-    for c in 0..#(x.length) {
-      hash = ((hash << 5) + hash) ^ x.buff[c];
+  inline proc chpl__defaultHash(l : []): uint {
+    var hash : uint = 0;
+    var i = 1;
+    for obj in l {
+      hash = chpl__defaultHashCombine(chpl__defaultHash(obj), hash, i);
+      i += 1;
     }
-    return _gen_key(hash);
-  }
-
-  inline proc chpl__defaultHash(l : []) {
-      var hash : int(64) = 0;
-      for obj in l {
-          hash = (31 * hash) + chpl__defaultHash(obj);
-      }
-  
-      return _gen_key(hash);
+    return hash;
   }
   
-  inline proc chpl__defaultHash(o: object): int(64) {
+  inline proc chpl__defaultHash(o: object): uint {
     return _gen_key(__primitive( "object2int", o));
   }
   

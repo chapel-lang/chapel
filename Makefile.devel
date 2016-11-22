@@ -15,11 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+PYTHON_VERSION_DIR = py$(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py)
 
 develall: STATUS
 	@$(MAKE) always-build-man
 
-docs: module-docs
+docs: chpldoc
 	cd doc/sphinx && $(MAKE) docs
 
 checkdocs: FORCE
@@ -30,6 +31,11 @@ man: third-party-chpldoc-venv FORCE
 
 man-chpldoc: FORCE
 	cd man && $(MAKE) chpldoc
+
+man-chapel: FORCE
+	cd doc/sphinx && $(MAKE) man-chapel
+	mkdir -p man/man3
+	cp doc/sphinx/build/man/chapel.3 man/man3/chapel.3
 
 always-build-man: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_MAN" ]; then \
@@ -76,4 +82,4 @@ future_stats: FUTURES
 # Makefile...
 #
 %.docs: FORCE
-	third-party/chpl-venv/install/linux64/chpl-virtualenv/bin/sphinx-build -c doc/sphinx/source doc/sphinx/source/ doc/sphinx/build/html/$* && chmod -R ugo+rX doc/sphinx/build
+	third-party/chpl-venv/install/linux64/$(PYTHON_VERSION_DIR)/chpl-virtualenv/bin/sphinx-build -c doc/sphinx/source doc/sphinx/source/ doc/sphinx/build/html/$* && chmod -R ugo+rX doc/sphinx/build

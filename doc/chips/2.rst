@@ -2,7 +2,7 @@ Constrained Generics
 ====================
 
 Status
-  Draft
+  Partially Accepted, Deferred, Needs Design Adjustment
 
 Author
   Michael Ferguson, Jeremy Siek

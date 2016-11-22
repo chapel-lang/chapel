@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,6 +44,7 @@ void copyPropagation();
 void createTaskFunctions();
 void cullOverReferences();
 void deadCodeElimination();
+void denormalize();
 void docs();
 void expandExternArrayCalls();
 void flattenClasses();
@@ -67,6 +68,7 @@ void refPropagation();
 void removeEmptyRecords();
 void removeUnnecessaryAutoCopyCalls();
 void removeWrapRecords();
+void replaceArrayAccessesWithRefTemps();
 void resolve();
 void resolveIntents();
 void returnStarTuplesByRefArgs();
@@ -83,6 +85,7 @@ void checkPostResolution();
 void checkNoUnresolveds();
 // These checks can be applied after any pass.
 void checkForDuplicateUses();
+void checkArgsAndLocals();
 void checkReturnTypesHaveRefTypes();
 
 //
@@ -95,7 +98,6 @@ void buildDefaultDestructor(AggregateType* ct);
 // createTaskFunctions.cpp -> implementForallIntents.cpp
 extern Symbol* markPruned;
 extern Symbol* markUnspecified;
-void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses);
 void replaceVarUses(Expr* topAst, SymbolMap& vars);
 void pruneThisArg(Symbol* parent, SymbolMap& uses);
 
@@ -103,7 +105,7 @@ void pruneThisArg(Symbol* parent, SymbolMap& uses);
 void deadBlockElimination();
 
 // flattenFunctions.cpp
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+void flattenNestedFunction(FnSymbol* nestedFunction);
 
 // callDestructors.cpp
 void insertReferenceTemps(CallExpr* call);

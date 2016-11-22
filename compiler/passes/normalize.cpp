@@ -27,6 +27,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
+#include "initializerRules.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -44,6 +45,7 @@ bool normalized = false;
 //
 static void insertModuleInit();
 static void transformLogicalShortCircuit();
+static void lowerReduceAssign();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
 static void insertUseForExplicitModuleCalls(void);
@@ -56,7 +58,6 @@ static void insert_call_temps(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
 static void hack_resolve_types(ArgSymbol* arg);
 static void fixup_array_formals(FnSymbol* fn);
-static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                                       DefExpr* def,
                                                       int width);
@@ -74,6 +75,7 @@ static void find_printModuleInit_stuff();
 void normalize() {
   insertModuleInit();
   transformLogicalShortCircuit();
+  lowerReduceAssign();
 
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -109,7 +111,6 @@ void normalize() {
     if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       fixup_array_formals(fn);
-    clone_parameterized_primitive_methods(fn);
     fixup_query_formals(fn);
     change_method_into_constructor(fn);
   }
@@ -125,8 +126,11 @@ void normalize() {
     // function resolution to ensure that sync vars are in the correct
     // state (empty) if they are used but not assigned to anything.
     forv_Vec(SymExpr, se, gSymExprs) {
-      if (isFnSymbol(se->parentSymbol) && se == se->getStmtExpr()) {
-        if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
+      if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
+        if (se == se->getStmtExpr() &&
+            // avoid exprs under ForallIntents
+            (isDirectlyUnderBlockStmt(se) || !isBlockStmt(se->parentExpr)))
+        {
           // Don't add these calls for the return type, since
           // _statementLevelSymbol would do nothing in that case
           // anyway, and it contributes to order-of-resolution issues for
@@ -277,6 +281,75 @@ static void transformLogicalShortCircuit()
   }
 }
 
+
+static Symbol* reduceIntentOp(ForallIntents* fi, Symbol* reVar) {
+  int nv = fi->numVars();
+  for (int i = 0; i < nv; i++)
+    if (fi->isReduce(i))
+      if (SymExpr* varSE = toSymExpr(fi->fiVars[i]))
+        if (varSE->symbol() == reVar) {
+          SymExpr* ri = toSymExpr(fi->riSpecs[i]);
+          INT_ASSERT(ri);
+          return ri->symbol();
+        }
+
+  // Did not see 'reVar' with a reduce intent.
+  return NULL;
+}
+
+//
+// lowerReduceAssign(): lower the reduce= calls, verifying their correct use.
+//
+// Parser represents "x reduce= y" in source code as PRIM_REDUCE_ASSIGN(x,y).
+// lowerReduceAssign() converts it into globalOp.accumulateOntoState(x,y)
+// where globalOp comes from the reduce intent for x.
+// This includes checking that there is, indeed, a reduce intent for x:
+// without it, there is no globalOp.
+//
+static void lowerReduceAssign() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
+
+      // l.h.s. must be a single variable
+      if (SymExpr* lhsSE = toSymExpr(call->get(1))) {
+        Symbol* lhsVar = lhsSE->symbol();
+        // ... which is mentioned in a with clause with a reduce intent
+        Expr* curr = call->parentExpr;
+        ForallIntents* enclosingFI = NULL;
+        while (curr) {
+          if (BlockStmt* block = toBlockStmt(curr))
+            if (ForallIntents* fi = block->forallIntents) {
+              enclosingFI = fi;
+              break;
+            }
+          curr = curr->parentExpr;
+        }
+
+        // I'd love these to be USR_FATAL_CONT, however currently
+        // the forall loop body is replicated 3 times, so we would
+        // report the same error 3 times. We could have a hashset of
+        // astlocs to avoid that with USR_FATAL_CONT, if we wanted.
+        if (!enclosingFI)
+          USR_FATAL_CONT(call, "The reduce= operator must occur within a forall loop.");
+        else if (Symbol* globalOp = reduceIntentOp(enclosingFI, lhsVar))
+          {
+            SET_LINENO(call);
+            Expr* rhs = call->get(2)->remove(); // do it before lhsSE->remove()
+            Expr* repl = new_Expr(".(%S, 'accumulateOntoState')(%E,%E)",
+                           globalOp, lhsSE->remove(), rhs);
+            call->replace(repl);
+          }
+        else
+          USR_FATAL(lhsSE, "The l.h.s. of a reduce= operator, '%s', must be passed by a reduce intent into the nearest enclosing forall loop", lhsVar->name);
+
+      } else {
+        USR_FATAL(call->get(1), "The l.h.s. of a reduce= operator must be just a variable");
+      }
+    }
+  }
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -346,7 +419,7 @@ checkUseBeforeDefs() {
           // assignment.
           if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
             if (SymExpr* se = toSymExpr(call->get(1)))
-              defined.set_add(se->var);
+              defined.set_add(se->symbol());
         } else if (DefExpr* def = toDefExpr(ast)) {
 
           // All arg symbols are defined.
@@ -374,24 +447,24 @@ checkUseBeforeDefs() {
                 call->get(1) == sym)
               continue; // We already handled this case above.
 
-            if (toModuleSymbol(sym->var)) {
+            if (toModuleSymbol(sym->symbol())) {
               if (!toFnSymbol(fn->defPoint->parentSymbol)) {
                 UseStmt* use = toUseStmt(sym->parentExpr);
                 if (!use) {
                   SymExpr* prev = toSymExpr(sym->prev);
-                  if (!prev || prev->var != gModuleToken)
-                    USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
+                  if (!prev || prev->symbol() != gModuleToken)
+                    USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->symbol()->name);
                 }
               }
-            } else if (isLcnSymbol(sym->var)) {
-              if (sym->var->defPoint->parentExpr != rootModule->block &&
-                  (sym->var->defPoint->parentSymbol == fn ||
-                   (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
-                if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
-                  if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
-                      !sym->var->hasFlag(FLAG_TEMP)) {
-                    USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
-                    undefined.set_add(sym->var);
+            } else if (isLcnSymbol(sym->symbol())) {
+              if (sym->symbol()->defPoint->parentExpr != rootModule->block &&
+                  (sym->symbol()->defPoint->parentSymbol == fn ||
+                   (sym->symbol()->defPoint->parentSymbol == mod && mod->initFn == fn))) {
+                if (!defined.set_in(sym->symbol()) && !undefined.set_in(sym->symbol())) {
+                  if (!sym->symbol()->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
+                      !sym->symbol()->hasFlag(FLAG_TEMP)) {
+                    USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->symbol()->name);
+                    undefined.set_add(sym->symbol());
                   }
                 }
               }
@@ -412,12 +485,6 @@ checkUseBeforeDefs() {
                   USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
                                  sym->unresolved);
                   undeclared.set_add(sym->unresolved);
-                  // Also include a note about setter being deprecated if it
-                  // looks like that was the problem.
-                  if (call && call->parentSymbol)
-                    if (FnSymbol* inFn = toFnSymbol(call->parentSymbol))
-                      if(0 == strcmp(sym->unresolved, "setter") && inFn->retTag == RET_REF)
-                        USR_FATAL_CONT(sym, "setter is deprecated. Use a ref-pair instead.");
                 }
               }
             }
@@ -485,13 +552,13 @@ moveGlobalDeclarationsToModuleScope() {
 static void
 insertUseForExplicitModuleCalls(void) {
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->parentSymbol && se->var == gModuleToken) {
+    if (se->parentSymbol && se->symbol() == gModuleToken) {
       SET_LINENO(se);
       CallExpr* call = toCallExpr(se->parentExpr);
       INT_ASSERT(call);
       SymExpr* mse = toSymExpr(call->get(2));
       INT_ASSERT(mse);
-      ModuleSymbol* mod = toModuleSymbol(mse->var);
+      ModuleSymbol* mod = toModuleSymbol(mse->symbol());
       INT_ASSERT(mod);
       Expr* stmt = se->getStmtExpr();
       BlockStmt* block = new BlockStmt();
@@ -517,14 +584,14 @@ processSyntacticDistributions(CallExpr* call) {
   if (call->isPrimitive(PRIM_NEW))
     if (CallExpr* type = toCallExpr(call->get(1)))
       if (SymExpr* base = toSymExpr(type->baseExpr))
-        if (base->var->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+        if (base->symbol()->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
           type->baseExpr->replace(new UnresolvedSymExpr("chpl__buildDistValue"));
           call->replace(type->remove());
         }
   if (call->isNamed("chpl__distributed"))
     if (CallExpr* distCall = toCallExpr(call->get(1)))
       if (SymExpr* distClass = toSymExpr(distCall->baseExpr))
-        if (TypeSymbol* ts = toTypeSymbol(distClass->var))
+        if (TypeSymbol* ts = toTypeSymbol(distClass->symbol()))
           if (isDistClass(ts->type))
             call->insertAtHead(
               new CallExpr("chpl__buildDistValue",
@@ -536,7 +603,7 @@ static bool is_void_return(CallExpr* call) {
     SymExpr* arg = toSymExpr(call->argList.first());
     if (arg)
       // NB false for 'return void' in type functions, as it should be
-      if (arg->var == gVoid)
+      if (arg->symbol() == gVoid)
         return true;
   }
   return false;
@@ -554,32 +621,17 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
                       new CallExpr(PRIM_COERCE, ret_expr,
                         fn->retExprType->body.tail->copy())));
   }
-  else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
+  else if (fn->hasFlag(FLAG_IF_EXPR_FN))
+  {
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
+  }
+  else if (!fn->hasFlag(FLAG_WRAPPER) &&
+           strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_DEREF, ret_expr)));
   else
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
 }
-
-
-// Look in the block statement determining a return value type, and see if it
-// looks like an array type expression.
-static bool
-returnTypeIsArray(BlockStmt* retExprType)
-{
-  CallExpr* call = toCallExpr(retExprType->body.tail);
-  if (! call)
-    return false;
-  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
-  if (! urse)
-    return false;
-  if (strcmp(urse->unresolved, "chpl__buildArrayRuntimeType"))
-    // Does not match.
-    return false;
-  // Very likely an array type.
-  return true;
-}
-
 
 // Following normalization, each function contains only one return statement
 // preceded by a label.  The first half of the function counts the
@@ -626,7 +678,7 @@ static void normalize_returns(FnSymbol* fn) {
             !strncmp("_if_fn", fn->name, 6) ||
             !strcmp("=", fn->name) ||
             !strcmp("_init", fn->name) ||
-            !strcmp("_ret", se->var->name)) {
+            !strcmp("_ret", se->symbol()->name)) {
           return;
         }
       }
@@ -674,7 +726,7 @@ static void normalize_returns(FnSymbol* fn) {
 
       if (isIterator)
         if (SymExpr* lastRTE = toSymExpr(retExprType->body.tail))
-          if (TypeSymbol* retSym = toTypeSymbol(lastRTE->var))
+          if (TypeSymbol* retSym = toTypeSymbol(lastRTE->symbol()))
             if (retSym->type == dtVoid)
               USR_FATAL_CONT(fn,
                              "an iterator's return type cannot be 'void'; "
@@ -682,23 +734,6 @@ static void normalize_returns(FnSymbol* fn) {
                              "expressions the iterator yields");
 
       fn->addFlag(FLAG_SPECIFIED_RETURN_TYPE);
-
-      // I recommend a rework of function representation in the AST.
-      // Because we strip type information off of variable declarations and
-      // use the type of the initializer instead, initialization is obligatory.
-      // I think we should heed the declared type.
-      // Then at least these two lines can go away, and other simplifications
-      // may follow.
-
-      // We do not need to do this for iterators returning arrays
-      // because it adds initialization code that is later removed.
-      // Also, we want arrays returned from iterators to behave like
-      // references, so we add the 'var' return intent here.
-      if (fn->isIterator() &&
-          returnTypeIsArray(retExprType))
-        // Treat iterators returning arrays as if they are always returned
-        // by ref.
-        fn->retTag = RET_REF;
     }
 
     fn->insertAtHead(new DefExpr(retval));
@@ -766,7 +801,7 @@ static TypeSymbol* resolveTypeAlias(SymExpr* se)
 {
   while (se)
   {
-    Symbol* sym = se->var;
+    Symbol* sym = se->symbol();
 
     if (TypeSymbol* ts = toTypeSymbol(sym))
       return ts;
@@ -885,14 +920,24 @@ static void applyGetterTransform(CallExpr* call) {
     SymExpr* symExpr = toSymExpr(call->get(2));
     INT_ASSERT(symExpr);
     symExpr->remove();
-    if (VarSymbol* var = toVarSymbol(symExpr->var)) {
+    if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
         call->baseExpr->replace(new UnresolvedSymExpr(var->immediate->v_string));
-        call->insertAtHead(gMethodToken);
+        if (!strcmp(var->immediate->v_string, "init")) {
+          // Transform:
+          //   call(call(. x "init") args)
+          // into:
+          //   call(call(init meme=x) args)
+          // because initializers are handled differently from other methods
+          Expr* firstArg = call->get(1)->remove();
+          call->insertAtHead(new NamedExpr("meme", firstArg));
+        } else {
+          call->insertAtHead(gMethodToken);
+        }
       } else {
         INT_FATAL(call, "unexpected case");
       }
-    } else if (TypeSymbol* type = toTypeSymbol(symExpr->var)) {
+    } else if (TypeSymbol* type = toTypeSymbol(symExpr->symbol())) {
       call->baseExpr->replace(new SymExpr(type));
       call->insertAtHead(gMethodToken);
     } else {
@@ -956,8 +1001,46 @@ static void insert_call_temps(CallExpr* call)
       parentCall->isNamed("_build_tuple")   == true)
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
+  // MPF 2016-10-20
+  //   This is a workaround for a problem in
+  //     types/typedefs/bradc/arrayTypedef
+  //   I'm sure that there is a better way to handle this
+  {
+    // either in module init fn or in a sequence of parloopexpr fns
+    // computing an array type than are in a module init fn
+    FnSymbol* fn = call->getFunction();
+    while( fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) ) {
+      fn = fn->defPoint->getFunction();
+    }
+    if (fn == fn->getModule()->initFn) {
+      CallExpr* cur = parentCall;
+      CallExpr* sub = call;
+      // Look for a parent call that is either:
+      //  * making an array type alias, or
+      //  * passing the result into the 2nd argument of buildArrayRuntimeType.
+      while (cur != NULL) {
+        if (cur->isNamed("chpl__typeAliasInit") ||
+            (cur->isNamed("chpl__buildArrayRuntimeType") && cur->get(2) == sub))
+          break;
+        sub = cur;
+        cur = toCallExpr(cur->parentExpr);
+      }
+      if (cur) {
+        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+      }
+    }
+  }
+
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
+
+  if (call->isNamed("super") && parentCall && parentCall->isNamed(".") &&
+      parentCall->get(1) == call) {
+    // We've got an access to a method or field on the super type.  This means
+    // we should preserve that knowledge for when we attempt to access the
+    // method on the super type.
+    tmp->addFlag(FLAG_SUPER_TEMP);
+  }
 
   call->replace(new SymExpr(tmp));
 
@@ -1061,6 +1144,10 @@ static void fix_def_expr(VarSymbol* var) {
   //
   if (var->hasFlag(FLAG_NO_COPY)) {
     INT_ASSERT(init);
+    // If a type expression is set, normalize would normally
+    // use defaultOf/assignment anyway. As of 9-21-2016
+    // setting FLAG_NO_COPY and having a type leads to some
+    // unresolved type expression hanging around in the AST.
     INT_ASSERT(!type);
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
     return;
@@ -1076,6 +1163,8 @@ static void fix_def_expr(VarSymbol* var) {
                                    var,
                                    new CallExpr("chpl__typeAliasInit",
                                                 init->copy())));
+    // note: insert_call_temps adjusts auto-destroy in this case
+    // by checking for chpl__typeAliasInit
 
     return;
   }
@@ -1129,7 +1218,6 @@ static void init_array_alias(VarSymbol* var,
                              Expr*      init,
                              Expr*      stmt) {
   CallExpr* partial  = NULL;
-  CallExpr* autoCopy = NULL;
 
   if (!type) {
     partial = new CallExpr("newAlias", gMethodToken, init->remove());
@@ -1145,9 +1233,7 @@ static void init_array_alias(VarSymbol* var,
     partial = new CallExpr(reindex, type->remove());
   }
 
-  autoCopy = new CallExpr("chpl__autoCopy", partial);
-
-  stmt->insertAfter(new CallExpr(PRIM_MOVE, var, autoCopy));
+  stmt->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
 }
 
 
@@ -1164,7 +1250,7 @@ static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt) {
   // immediate are not allowed.
   if (var->hasFlag(FLAG_CONST)) {
     if (SymExpr* initSym = toSymExpr(init)) {
-      if (initSym->var->isImmediate()) {
+      if (initSym->symbol()->isImmediate()) {
         VarSymbol* constRefTemp  = newTemp("const_ref_immediate_tmp");
 
         stmt->insertBefore(new DefExpr(constRefTemp));
@@ -1182,7 +1268,7 @@ static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt) {
   }
 
   if (SymExpr* sym = toSymExpr(varLocation)) {
-    if (!var->hasFlag(FLAG_CONST) && sym->var->isConstant()) {
+    if (!var->hasFlag(FLAG_CONST) && sym->symbol()->isConstant()) {
       USR_FATAL_CONT(sym,
                      "Cannot set a non-const reference to a const variable.");
     }
@@ -1406,7 +1492,7 @@ static void hack_resolve_types(ArgSymbol* arg) {
         SymExpr* se = NULL;
         if (arg->defaultExpr->body.length == 1)
           se = toSymExpr(arg->defaultExpr->body.tail);
-        if (!se || se->var != gTypeDefaultToken) {
+        if (!se || se->symbol() != gTypeDefaultToken) {
           SET_LINENO(arg->defaultExpr);
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
@@ -1448,7 +1534,7 @@ static void fixup_array_formals(FnSymbol* fn) {
 
       if (call && call->isNamed("chpl__buildArrayRuntimeType")) {
         // We are building an array type.
-        bool noDomain = (isSymExpr(call->get(1))) ? toSymExpr(call->get(1))->var == gNil : false;
+        bool noDomain = (isSymExpr(call->get(1))) ?  toSymExpr(call->get(1))->symbol() == gNil : false;
         DefExpr* queryDomain = toDefExpr(call->get(1));
         bool noEltType = (call->numActuals() == 1);
         DefExpr* queryEltType = (!noEltType) ? toDefExpr(call->get(2)) : NULL;
@@ -1463,7 +1549,7 @@ static void fixup_array_formals(FnSymbol* fn) {
         // "arg.eltType", so we use the instantiated element type.
         if (queryEltType) {
           for_vector(SymExpr, se, symExprs) {
-            if (se->var == queryEltType->sym) {
+            if (se->symbol() == queryEltType->sym) {
               SET_LINENO(se);
               se->replace(new CallExpr(".", arg, new_CStringSymbol("eltType")));
             }
@@ -1489,7 +1575,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           // Array type is built using a domain.
           // If we match the domain symbol, replace it with arg._dom.
           for_vector(SymExpr, se, symExprs) {
-            if (se->var == queryDomain->sym) {
+            if (se->symbol() == queryDomain->sym) {
               SET_LINENO(se);
               se->replace(new CallExpr(".", arg, new_CStringSymbol("_dom")));
             }
@@ -1510,40 +1596,6 @@ static void fixup_array_formals(FnSymbol* fn) {
   }
 }
 
-static void clone_parameterized_primitive_methods(FnSymbol* fn) {
-  if (toArgSymbol(fn->_this)) {
-    /* The following works but is not currently necessary:
-    if (fn->_this->type == dtIntegral) {
-      for (int i=INT_SIZE_8; i<INT_SIZE_NUM; i++) {
-        if (dtInt[i]) { // Need this because of our bogus dtInt sizes
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtInt[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-      for (int i=INT_SIZE_8; i<INT_SIZE_NUM; i++) {
-        if (dtUInt[i]) { // Need this because of our bogus dtUint sizes
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtUInt[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-      fn->defPoint->remove();
-    }
-    */
-    if (fn->_this->type == dtAnyComplex) {
-      for (int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++) {
-        if (dtComplex[i]) { // Need this because of our bogus dtComplex sizes
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtComplex[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-      fn->defPoint->remove();
-    }
-  }
-}
-
 static void
 clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                           DefExpr* def,
@@ -1555,8 +1607,8 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
   std::vector<SymExpr*> symExprs;
   collectSymExprs(newfn, symExprs);
   for_vector(SymExpr, se, symExprs) {
-    if (se->var == newsym)
-      se->var = new_IntSymbol(width);
+    if (se->symbol() == newsym)
+      se->setSymbol(new_IntSymbol(width));
   }
   fn->defPoint->insertAfter(new DefExpr(newfn));
 }
@@ -1565,7 +1617,7 @@ static void
 replace_query_uses(ArgSymbol* formal, DefExpr* def, CallExpr* query,
                    std::vector<SymExpr*>& symExprs) {
   for_vector(SymExpr, se, symExprs) {
-    if (se->var == def->sym) {
+    if (se->symbol() == def->sym) {
       if (formal->variableExpr) {
         CallExpr* parent = toCallExpr(se->parentExpr);
         if (!parent || parent->numActuals() != 1)
@@ -1614,7 +1666,7 @@ fixup_query_formals(FnSymbol* fn) {
       std::vector<SymExpr*> symExprs;
       collectSymExprs(fn, symExprs);
       for_vector(SymExpr, se, symExprs) {
-        if (se->var == def->sym)
+        if (se->symbol() == def->sym)
           se->replace(new CallExpr(PRIM_TYPEOF, formal));
       }
       // Consider saving as origTypeExpr instead?
@@ -1624,7 +1676,7 @@ fixup_query_formals(FnSymbol* fn) {
       // clone query primitive types
       SymExpr* callFnSymExpr = toSymExpr(call->baseExpr);
       if (callFnSymExpr && call->numActuals() == 1) {
-        Symbol* callFnSym = callFnSymExpr->var;
+        Symbol* callFnSym = callFnSymExpr->symbol();
         if (DefExpr* def = toDefExpr(call->get(1))) {
           if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol) {
             for (int i=BOOL_SIZE_8; i<BOOL_SIZE_NUM; i++)
@@ -1742,9 +1794,10 @@ static void change_method_into_constructor(FnSymbol* fn) {
     INT_FATAL(fn, "'this' argument has unknown type");
 
   // Now check that the function name matches the name of the type
-  // attached to 'this'.
-  if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name) &&
-      strcmp(fn->name, "init"))
+  // attached to 'this' or matches 'init'.
+  bool isCtor = (0 == strcmp(fn->getFormal(2)->type->symbol->name, fn->name));
+  bool isInit = (0 == strcmp(fn->name, "init"));
+  if (!isCtor && !isInit)
     return;
 
   // The type must be a class type.
@@ -1752,6 +1805,29 @@ static void change_method_into_constructor(FnSymbol* fn) {
   AggregateType* ct = toAggregateType(fn->getFormal(2)->type);
   if (!ct)
     INT_FATAL(fn, "initializer on non-class type");
+
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    USR_FATAL(fn, "a%s cannot be declared without parentheses", isCtor ? " constructor" : "n initializer");
+  }
+
+  if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+    // We hadn't previously seen a constructor or initializer definition.
+    // Update the field on the type appropriately.
+    if (isInit) {
+      ct->initializerStyle = DEFINES_INITIALIZER;
+    } else if (isCtor) {
+      ct->initializerStyle = DEFINES_CONSTRUCTOR;
+    } else {
+      // Should never reach here, but just in case...
+      INT_FATAL(fn, "Function was neither a constructor nor an initializer");
+    }
+  } else if ((ct->initializerStyle == DEFINES_CONSTRUCTOR && !isCtor) ||
+             (ct->initializerStyle == DEFINES_INITIALIZER && !isInit)) {
+    // We've previously seen a constructor but this new method is an initializer
+    // or we've previously seen an initializer but this new method is a
+    // constructor.  We don't allow both to be defined on a type.
+    USR_FATAL_CONT(fn, "Definition of both constructor '%s' and initializer 'init'.  Please choose one.", ct->symbol->name);
+  }
 
   // Call the initializer, passing in just the generic arguments.
   // This call ensures that the object is default-initialized before the user's
@@ -1772,6 +1848,16 @@ static void change_method_into_constructor(FnSymbol* fn) {
     }
   }
 
+  if (ct->initializerStyle == DEFINES_INITIALIZER) {
+    ArgSymbol* meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL,
+                                    new SymExpr(gTypeDefaultToken));
+    meme->addFlag(FLAG_IS_MEME);
+    fn->insertFormalAtTail(meme);
+    call->insertAtTail(new NamedExpr ("meme", new SymExpr(meme)));
+
+    handleInitializerRules(fn, ct);
+  }
+
   fn->_this = new VarSymbol("this");
   fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
@@ -1784,7 +1870,11 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
 
-  fn->name = ct->defaultInitializer->name;
+  if (isCtor) {
+    // The constructor's name is the name of the type.  Replace it with
+    // _construct_typename
+    fn->name = ct->defaultInitializer->name;
+  }
   fn->addFlag(FLAG_CONSTRUCTOR);
 }
 

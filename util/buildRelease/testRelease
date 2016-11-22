@@ -170,19 +170,23 @@ if ($debug == 1) {
     $mailcommand = "| $mailer -s \"$mailsubject \" $successmail";
 }
     
-open(MAIL, $mailcommand);
+if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+    open(MAIL, $mailcommand);
 
-print MAIL "=== Results - testRelease =================================================\n";
-print MAIL "Hostname:   ", `hostname`;
-print MAIL "Build: ", $buildurl, "\n";
-print MAIL "\$tmpdir:    $tmpdir\n";
-print MAIL "\$chplhome:  $chplhome\n";
-print MAIL "Ended:      ", scalar(localtime()), "\n";
-print MAIL "\n";
+    print MAIL "=== Results - testRelease =================================================\n";
+    print MAIL "Hostname:   ", `hostname`;
+    print MAIL "Build: ", $buildurl, "\n";
+    print MAIL "\$tmpdir:    $tmpdir\n";
+    print MAIL "\$chplhome:  $chplhome\n";
+    print MAIL "Ended:      ", scalar(localtime()), "\n";
+    print MAIL "\n";
 
-print MAIL `cat $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log.summary`;
+    print MAIL `cat $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log.summary`;
     
-close(MAIL);
+    close(MAIL);
+} else {
+    print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+}
     
     
 #
@@ -212,24 +216,28 @@ sub mysystem {
         $status = $status / 256;
 	print "Error $_[1]: $status\n";
 
-	if ($mailmsg != 0) {
-            if ($debug == 1) {
-                $mailsubject = "Dbug Release Failed ($platform)";
-                $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
-            } else {
-                $mailsubject = "Cron Release Failed ($platform)";
-                $mailcommand = "| $mailer -s \"$mailsubject \" $failuremail";
-            }
+    if ($mailmsg != 0) {
+        if ($debug == 1) {
+            $mailsubject = "Dbug Release Failed ($platform)";
+            $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
+        } else {
+            $mailsubject = "Cron Release Failed ($platform)";
+            $mailcommand = "| $mailer -s \"$mailsubject \" $failuremail";
+        }
 
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
             print "Trying to mail message... using $mailcommand\n";
-	    open(MAIL, $mailcommand);
-	    print MAIL "=== Summary - testRelease ===================================================\n";
-	    print MAIL "ERROR $_[1]: $status\n";
+            open(MAIL, $mailcommand);
+            print MAIL "=== Summary - testRelease ===================================================\n";
+            print MAIL "ERROR $_[1]: $status\n";
             $host = `hostname`; chomp($host);
-	    print MAIL "(workspace left at $host:$tmpdir)\n";
-	    print MAIL "===============================================================\n";
-	    close(MAIL);
-	}
+            print MAIL "(workspace left at $host:$tmpdir)\n";
+            print MAIL "===============================================================\n";
+            close(MAIL);
+        } else {
+            print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+        }
+    }
 
 	if ($fatal != 0) {
 	    exit 1;

@@ -27,6 +27,8 @@
 #include "stmt.h"
 #include "stlUtil.h"
 
+#include "iterator.h"
+
 #include <set>
 
 // We use RefVector to store a list of symbols that are aliases for the return
@@ -56,10 +58,11 @@ checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-        !fn->isIterator() &&
-        fn->retType->defaultInitializer &&
-        fn->retType->defaultInitializer->defPoint->parentSymbol == fn)
-      USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
+        !fn->isIterator()) {
+      IteratorInfo* ii = toAggregateType(fn->retType)->iteratorInfo;
+      if (ii && ii->iterator && ii->iterator->defPoint->parentSymbol == fn)
+        USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
+    }
     if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)
       USR_FATAL(fn, "The return value of an assignment operator must be 'void'.");
   }
@@ -69,8 +72,8 @@ checkResolved() {
       for_enums(def, et) {
         if (def->init) {
           SymExpr* sym = toSymExpr(def->init);
-          if (!sym || (!sym->var->hasFlag(FLAG_PARAM) &&
-                       !toVarSymbol(sym->var)->immediate))
+          if (!sym || (!sym->symbol()->hasFlag(FLAG_PARAM) &&
+                       !toVarSymbol(sym->symbol())->immediate))
             USR_FATAL_CONT(def, "enumerator '%s' is not an integer param value",
                            def->sym->name);
         }
@@ -108,10 +111,10 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
     {
       SymExpr* lhs = toSymExpr(call->get(1));
 
-      if (lhs->var == ret)
+      if (lhs->symbol() == ret)
         return 1;
 
-      if (refs.find(lhs->var) != refs.end())
+      if (refs.find(lhs->symbol()) != refs.end())
         return 1;
 
       if (CallExpr* rhs = toCallExpr(call->get(2)))
@@ -119,9 +122,9 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
         {
           // We expect only a SymExpr as the operand of 'addr of'.
           SymExpr* se = toSymExpr(rhs->get(1));
-          if (se->var == ret)
+          if (se->symbol() == ret)
             // lhs <- ('addr of' ret)
-            refs.insert(lhs->var);
+            refs.insert(lhs->symbol());
         }
     }
 
@@ -133,7 +136,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
         {
           ArgSymbol* arg = actual_to_formal(se);
           // If ret is passed as an out or inout argument, that's a definition.
-          if (se->var == ret &&
+          if (se->symbol() == ret &&
               (arg->intent == INTENT_OUT ||
                arg->intent == INTENT_INOUT ||
                arg->intent == INTENT_REF))
@@ -148,7 +151,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
           //     i != refs.end(); ++i)
           //  printf("%d\n", (*i)->id);
 
-          if (refs.find(se->var) != refs.end() &&
+          if (refs.find(se->symbol()) != refs.end() &&
               arg->intent == INTENT_REF)
             return 1;
         }
@@ -277,7 +280,7 @@ static void checkExternProcs() {
 
     for_formals(formal, fn) {
       if (formal->typeInfo() == dtString) {
-        if (fn->instantiatedFrom == NULL) {
+        if (!fn->hasFlag(FLAG_INSTANTIATED_GENERIC)) {
           USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
                              "type string, use c_string instead");
         } else {

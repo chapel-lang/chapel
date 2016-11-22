@@ -440,8 +440,9 @@ hwloc_look_lgrp(struct hwloc_topology *topology)
           distances[i*curlgrp+j] = (float) lgrp_latency_cookie(cookie, glob_lgrps[i]->os_index, glob_lgrps[j]->os_index, LGRP_LAT_CPU_TO_MEM);
       }
       hwloc_distances_set(topology, HWLOC_OBJ_NUMANODE, curlgrp, indexes, glob_lgrps, distances, 0 /* OS cannot force */);
-    }
+    } else
 #endif /* HAVE_LGRP_LATENCY_COOKIE */
+      free(glob_lgrps);
   }
   lgrp_fini(cookie);
 }
@@ -520,8 +521,11 @@ hwloc_look_kstat(struct hwloc_topology *topology)
       hwloc_debug("cpu%u\n", cpuid);
 
       if (cpuid >= Pproc_alloc) {
+	struct hwloc_solaris_Pproc *tmp = realloc(Pproc, 2*Pproc_alloc * sizeof(*Pproc));
+	if (!tmp)
+	  goto err;
+	Pproc = tmp;
 	Pproc_alloc *= 2;
-	Pproc = realloc(Pproc, Pproc_alloc * sizeof(*Pproc));
 	for(i = Pproc_alloc/2; i < Pproc_alloc; i++) {
 	  Pproc[i].Lproc = -1;
 	  Pproc[i].Lpkg = -1;
@@ -532,8 +536,11 @@ hwloc_look_kstat(struct hwloc_topology *topology)
       Pproc[cpuid].Lproc = Lproc_num;
 
       if (Lproc_num >= Lproc_alloc) {
+	struct hwloc_solaris_Lproc *tmp = realloc(Lproc, 2*Lproc_alloc * sizeof(*Lproc));
+	if (!tmp)
+	  goto err;
+	Lproc = tmp;
 	Lproc_alloc *= 2;
-	Lproc = realloc(Lproc, Lproc_alloc * sizeof(*Lproc));
       }
       Lproc[Lproc_num].Pproc = cpuid;
       Lproc_num++;
@@ -594,8 +601,11 @@ hwloc_look_kstat(struct hwloc_topology *topology)
 	hwloc_debug("%u on package %u (%u)\n", cpuid, i, pkgid);
 	if (i == Lpkg_num) {
 	  if (Lpkg_num == Lpkg_alloc) {
+	    struct hwloc_solaris_Lpkg *tmp = realloc(Lpkg, 2*Lpkg_alloc * sizeof(*Lpkg));
+	    if (!tmp)
+	      goto err;
+	    Lpkg = tmp;
 	    Lpkg_alloc *= 2;
-	    Lpkg = realloc(Lpkg, Lpkg_alloc * sizeof(*Lpkg));
 	  }
 	  Lpkg[Lpkg_num++].Ppkg = pkgid;
 	}
@@ -640,8 +650,11 @@ hwloc_look_kstat(struct hwloc_topology *topology)
 	hwloc_debug("%u on core %u (%u)\n", cpuid, i, coreid);
 	if (i == Lcore_num) {
 	  if (Lcore_num == Lcore_alloc) {
+	    struct hwloc_solaris_Lcore *tmp = realloc(Lcore, 2*Lcore_alloc * sizeof(*Lcore));
+	    if (!tmp)
+	      goto err;
+	    Lcore = tmp;
 	    Lcore_alloc *= 2;
-	    Lcore = realloc(Lcore, Lcore_alloc * sizeof(*Lcore));
 	  }
 	  Lcore[Lcore_num].Ppkg = Pproc[cpuid].Ppkg;
 	  Lcore[Lcore_num++].Pcore = coreid;
@@ -710,8 +723,16 @@ hwloc_look_kstat(struct hwloc_topology *topology)
   free(Lproc);
   free(Lcore);
   free(Lpkg);
-
   return Lproc_num > 0;
+
+ err:
+  kstat_close(kc);
+
+  free(Pproc);
+  free(Lproc);
+  free(Lcore);
+  free(Lpkg);
+  return 0;
 }
 #endif /* LIBKSTAT */
 

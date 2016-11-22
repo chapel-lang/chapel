@@ -754,6 +754,7 @@ The design of constructors, especially for generic classes, is
 under development, so the above specification may change.
 \end{openissue}
 
+\pagebreak
 \section{Where Expressions}
 \label{Where_Expressions}
 \index{where@\chpl{where}}
@@ -890,8 +891,10 @@ record Stack {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
+    var oldItem = top.item;
     top = top.next;
-    return oldTop.item;
+    delete oldTop;
+    return oldItem;
   }
 
   proc isEmpty return top == nil;

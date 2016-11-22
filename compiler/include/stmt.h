@@ -24,6 +24,7 @@
 #include <map>
 
 #include "expr.h"
+#include "foralls.h"
 
 #ifdef HAVE_LLVM
 
@@ -155,6 +156,7 @@ public:
   virtual bool        isCForLoop()                                 const;
 
   virtual void        checkConstLoops();
+  void                removeForallIntents();
 
   virtual bool        deadBlockCleanup();
 
@@ -187,7 +189,8 @@ public:
   AList               body;
   CallExpr*           modUses;       // module uses
   const char*         userLabel;
-  CallExpr*           byrefVars; //ref-clause in begin/cobegin/coforall/forall
+  CallExpr*           byrefVars;     // task intents - task constructs only
+  ForallIntents*      forallIntents; // only for forall-body blocks
 
 private:
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
@@ -306,14 +309,15 @@ extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 // statement-level expression.
 void         codegenStmt(Expr* stmt);
 
+bool isDirectlyUnderBlockStmt(const Expr* expr);
+
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,
 // if possible; NULL otherwise.
 LabelSymbol* getGotoLabelSymbol(GotoStmt* gs);
 GotoStmt*    getGotoLabelsIterResumeGoto(GotoStmt* gs);
 
 void         removeDeadIterResumeGotos();
-void         verifyNcleanRemovedIterResumeGotos();
-
-void         verifyNcleanCopiedIterResumeGotos();
+void         verifyRemovedIterResumeGotos();
+void         verifyCopiedIterResumeGotos();
 
 #endif

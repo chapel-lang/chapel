@@ -26,7 +26,7 @@ typedef const char* chpl_string;
 
 #ifdef _stdchpl_H_
 /*** only needed for generated code ***/
-chpl_string defaultStringValue="";
+extern chpl_string defaultStringValue;
 #endif
 
 struct chpl_chpl____wide_chpl_string_s;

@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <pthread.h>
 
-extern "C" {
   #include <stdlib.h>
   #include <stdio.h>
 #ifndef CHPL_RT_UNIT_TEST
@@ -18,7 +17,6 @@ extern "C" {
   #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
   #include "qio.h" // for channel operations
   #undef printf
-}
 
 #include "re2/re2.h"
 //#include "re2/regexp.h"

@@ -1,5 +1,0 @@
-#! /bin/bash -norc
-#
-# Ignore whole array assignment has been serialized warnings
-#
-grep 'twitter user' < $2 > $2.tmp && mv $2.tmp $2

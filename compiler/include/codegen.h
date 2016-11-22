@@ -79,7 +79,8 @@ struct GenInfo {
   LayeredValueTable *lvt;
 
   // Clang Stuff
-  std::string clangInstallDir;
+  std::string clangCC;
+  std::string clangCXX;
   std::string compileline;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangLDArgs;
@@ -132,7 +133,8 @@ struct GenInfo {
   //
   //
   // defined in passes/codegen.cpp
-  GenInfo(std::string clangInstallDirIn,
+  GenInfo(std::string clangCC,
+          std::string clangCXX,
           std::string compilelineIn,
           std::vector<std::string> clangCCArgs,
           std::vector<std::string> clangLDArgs,
@@ -157,8 +159,10 @@ bool isBuiltinExternCFunction(const char* cname);
 std::string numToString(int64_t num);
 std::string int64_to_string(int64_t i);
 std::string uint64_to_string(uint64_t i);
+std::string zlineToString(BaseAST* ast);
+void zlineToFileIfNeeded(BaseAST* ast, FILE* outfile);
+const char* idCommentTemp(BaseAST* ast);
 void genComment(const char* comment, bool push=false);
-void genIdComment(int id);
 void flushStatements(void);
 
 

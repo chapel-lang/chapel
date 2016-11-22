@@ -1,0 +1,9 @@
+#! /usr/bin/env bash
+
+# This looks for a non-existent .chplconfig file in the directory above
+# Note that this is run in a subprocess, so it does not actually modify the
+# compilation environment for this test
+export CHPL_CONFIG=${PWD}/../
+
+# Note that this is the actual test:
+$CHPL_HOME/util/printchplenv --simple 1> /dev/null 2> notfound.good

@@ -520,7 +520,7 @@ typedef struct {
   struct {
     gasnetc_atomic_t		count;
     gasnetc_atomic_val_t	mask;
-    gasneti_atomic_t		state;
+    gasnetc_atomic_t		state;
     gasnetc_atomic_val_t	floor;
     gasnetc_amrdma_balance_tbl_t *table;
   }	  amrdma_balance;

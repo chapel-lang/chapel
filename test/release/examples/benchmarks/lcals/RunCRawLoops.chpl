@@ -23,7 +23,7 @@ module RunCRawLoops {
                   r = loop_data.RealArray_scalars[1],
                   t = loop_data.RealArray_scalars[2];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for k in 0..#len {
                 x[k] = q + y[k]*(r*z[k+10] + t*z[k+11]);
               }
@@ -37,7 +37,7 @@ module RunCRawLoops {
                 v => loop_data.RealArray_1D_Nx4[1];
             var ii, ipnt, ipntp, i: int;
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               ii = len;
               ipntp = 0;
               do {
@@ -78,7 +78,7 @@ module RunCRawLoops {
             var lw = 0, temp = 0.0;
 
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               var m = (1001-7)/2;
               for k in 6..1000 by m {
                 lw = k-6;
@@ -99,7 +99,7 @@ module RunCRawLoops {
                 y => loop_data.RealArray_1D[1],
                 z => loop_data.RealArray_1D[2];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for i in 1..len-1 {
                 x[i] = z[i]*(y[i] - x[i-1]);
               }
@@ -118,7 +118,7 @@ module RunCRawLoops {
                   r = loop_data.RealArray_scalars[1],
                   t = loop_data.RealArray_scalars[2];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for k in 0..#len {
                 x[k] = u[k] + r*(z[k] + r*y[k]) +
                        t*(u[k+3] + r*(u[k+2] + r*u[k+1]) +
@@ -152,7 +152,7 @@ module RunCRawLoops {
             const nl1 = 0, nl2 = 1;
 
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for kx in 1..3-1 {
                 for ky in 1..len-1 {
                   du1[ky] = u1[nl1, ky+1, kx] - u1[nl1, ky-1, kx];
@@ -187,7 +187,7 @@ module RunCRawLoops {
                   dm28 = loop_data.RealArray_scalars[6],
                   c0 = loop_data.RealArray_scalars[7];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for i in 0..#len {
                 px[i,0] = dm28*px[i,12] + dm27*px[i,11] + dm26*px[i,10] +
                           dm25*px[i,9]  + dm24*px[i,8]  + dm23*px[i,7]  +
@@ -202,7 +202,7 @@ module RunCRawLoops {
             var px => loop_data.RealArray_2D_Nx25[0];
             var cx => loop_data.RealArray_2D_Nx25[1];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for i in 0..#len {
                 var ar, br, cr: real;
                 ar       =      cx[i,4];
@@ -234,7 +234,7 @@ module RunCRawLoops {
             var x => loop_data.RealArray_1D[0],
                 y => loop_data.RealArray_1D[1];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               x[0] = y[0];
               for k in 1..len-1 {
                 x[k] = x[k-1] + y[k];
@@ -248,7 +248,7 @@ module RunCRawLoops {
             var x => loop_data.RealArray_1D[0],
                 y => loop_data.RealArray_1D[1];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for k in 0..#len {
                 x[k] = y[k+1] - y[k];
               }
@@ -277,7 +277,7 @@ module RunCRawLoops {
                  Convert the over-indexed pairs into in-bounds pairs */
               return (i+j/25, j%25);
             }
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for ip in 0..#len {
                 var i1, j1, i2, j2: int;
                 // These casts to int(32) overflow and behave differently
@@ -323,7 +323,7 @@ module RunCRawLoops {
                 ir => loop_data.IndxArray_1D[3],
                 grd => loop_data.IndxArray_1D[4];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for k in 0..#len {
                 vx[k] = 0.0;
                 xx[k] = 0.0;
@@ -366,35 +366,30 @@ module RunCRawLoops {
             const t = 0.0037;
             const s = 0.0041;
 
-            var kn = 6, jn = len;
+            const kn = 6, jn = len;
+            const kjDom = {1..kn-1, 1..jn-1};
 
             ltimer.start();
-            for isamp in 0..#num_samples {
-              for k in 1..kn-1 {
-                for j in 1..jn-1 {
-                  za[k,j] = ( zp[k+1,j-1] +zq[k+1,j-1] -zp[k,j-1] -zq[k,j-1] )*
-                            ( zr[k,j] +zr[k,j-1] ) / ( zm[k,j-1] +zm[k+1,j-1]);
-                  zb[k,j] = ( zp[k,j-1] +zq[k,j-1] -zp[k,j] -zq[k,j] ) *
-                            ( zr[k,j] +zr[k-1,j] ) / ( zm[k,j] +zm[k,j-1]);
-                }
+            for 0..#num_samples {
+              for (k,j) in kjDom {
+                za[k,j] = (zp[k+1,j-1] + zq[k+1,j-1] - zp[k,j-1] - zq[k,j-1]) *
+                          (zr[k,j] + zr[k,j-1]) / (zm[k,j-1] + zm[k+1,j-1]);
+                zb[k,j] = (zp[k,j-1] + zq[k,j-1] - zp[k,j] - zq[k,j]) *
+                          (zr[k,j] + zr[k-1,j]) / (zm[k,j] + zm[k,j-1]);
               }
-              for k in 1..kn-1 {
-                for j in 1..jn-1 {
-                  zu[k,j] += s*( za[k,j]   *( zz[k,j] - zz[k,j+1] ) -
-                                 za[k,j-1] *( zz[k,j] - zz[k,j-1] ) -
-                                 zb[k,j]   *( zz[k,j] - zz[k-1,j] ) +
-                                 zb[k+1,j] *( zz[k,j] - zz[k+1,j] ) );
-                  zv[k,j] += s*( za[k,j]   *( zr[k,j] - zr[k,j+1] ) -
-                                 za[k,j-1] *( zr[k,j] - zr[k,j-1] ) -
-                                 zb[k,j]   *( zr[k,j] - zr[k-1,j] ) +
-                                 zb[k+1,j] *( zr[k,j] - zr[k+1,j] ) );
-                }
+              for (k,j) in kjDom {
+                zu[k,j] += s * (za[k,j]   * (zz[k,j] - zz[k,j+1]) -
+                                za[k,j-1] * (zz[k,j] - zz[k,j-1]) -
+                                zb[k,j]   * (zz[k,j] - zz[k-1,j]) +
+                                zb[k+1,j] * (zz[k,j] - zz[k+1,j]));
+                zv[k,j] += s * (za[k,j]   * (zr[k,j] - zr[k,j+1]) -
+                                za[k,j-1] * (zr[k,j] - zr[k,j-1]) -
+                                zb[k,j]   * (zr[k,j] - zr[k-1,j]) +
+                                zb[k+1,j] * (zr[k,j] - zr[k+1,j]));
               }
-              for k in 1..kn-1 {
-                for j in 1..jn-1 {
-                  zrout[k,j] = zr[k,j] + t*zu[k,j];
-                  zzout[k,j] = zz[k,j] + t*zv[k,j];
-                }
+              for (k,j) in kjDom {
+                zrout[k,j] = zr[k,j] + t*zu[k,j];
+                zzout[k,j] = zz[k,j] + t*zv[k,j];
               }
             }
 
@@ -410,7 +405,7 @@ module RunCRawLoops {
             var stb5 = loop_data.RealArray_scalars[0];
             var kb5i = 0;
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for k in 0..#len {
                 b5[k+kb5i] = sa[k] + stb5*sb[k];
                 stb5 = b5[k+kb5i] - stb5;
@@ -439,7 +434,7 @@ module RunCRawLoops {
                   t = loop_data.RealArray_scalars[1],
                   dk = loop_data.RealArray_scalars[2];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for k in 0..#len {
                 var di = y[k] - g[k] / (xx[k] + dk);
                 var dn = 0.2;
@@ -461,7 +456,7 @@ module RunCRawLoops {
                 cx => loop_data.RealArray_2D_Nx25[1],
                 vy => loop_data.RealArray_2D_64x64[0];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for k in 0..#25 {
                 for i in 0..#25 {
                   for j in 0..#len {
@@ -483,7 +478,7 @@ module RunCRawLoops {
             var expmax = 20.0;
             u[len-1] = 0.99 * expmax*v[len-1];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for k in 0..#len {
                 y[k] = u[k] / v[k];
                 w[k] = x[k] / (exp(y[k]) - 1.0);
@@ -502,7 +497,7 @@ module RunCRawLoops {
                 zz => loop_data.RealArray_2D_7xN[5];
 
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for j in 1..6-1 {
                 for k in 1..len-1 {
                   var qa = za[j+1,k]*zr[j,k] + za[j-1,k]*zb[j,k] +

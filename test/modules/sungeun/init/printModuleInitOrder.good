@@ -6,11 +6,11 @@ Initializing Modules:
      BaseStringType
      SysCTypes
      StringCasts
+    ChapelDebugPrint
     ChapelBase
      ChapelStringLiterals
     MemConsistency
     Atomics
-    AtomicsCommon
     ChapelThreads
     ChapelTuple
     ChapelRange
@@ -19,6 +19,7 @@ Initializing Modules:
      DefaultRectangular
       DSIUtil
       ChapelArray
+       Sort
      ChapelNumLocales
      Sys
       SysBasic
@@ -31,12 +32,13 @@ Initializing Modules:
       Regexp
     LocaleTree
     DefaultAssociative
-     Sort
     ChapelTaskTable
     MemTracking
     ChapelUtil
     ChapelDynDispHack
     Assert
     CommDiagnostics
+    AlignedTSupport
+    RangeChunk
    printModuleInitOrder
     moduleInitTest

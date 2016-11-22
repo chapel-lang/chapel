@@ -28,6 +28,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 // Memory tracking activated?
 extern chpl_bool chpl_memTrack;
@@ -74,5 +78,9 @@ void chpl_track_realloc_post(void* moreMemAlloc,
 #define chpl_setMemtrack()
 
 #endif // LAUNCHER
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

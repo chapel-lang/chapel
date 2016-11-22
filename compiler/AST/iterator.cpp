@@ -33,6 +33,9 @@
 #include "view.h"
 #include "WhileStmt.h"
 
+#include <map>
+#include <vector>
+
 //
 // This file implements lowerIterator() called by the lowerIterators pass
 //
@@ -85,7 +88,7 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
   SymExpr* rse = toSymExpr(ret->get(1));
   INT_ASSERT(rse);
-  Symbol*  rsym = rse->var;
+  Symbol*  rsym = rse->symbol();
 
   // Yank the return statement.
   ret->remove();
@@ -207,11 +210,12 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
                                       bool           is_use,
                                       Vec<BaseAST*>& asts)
 {
+  // BHARSH TODO: fix this to correctly utilize qualified refs
   // Get the expression that sets or uses the symexpr.
   CallExpr* call = toCallExpr(se->parentExpr);
 
   // Create a new temp and load the field value into it.
-  VarSymbol* tmp = newTemp(se->var->type);
+  VarSymbol* tmp = newTemp(se->symbol()->type);
 
   // Find the statement containing the symexpr access.
   Expr* stmt = se->getStmtExpr();
@@ -226,6 +230,18 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
     // type of the corresponding temp to a reference type.
     INT_ASSERT(tmp->type->getRefType());
     tmp->type = tmp->type->getRefType();
+  }
+  if (call && call->isResolved()) {
+    // If se is an argument to a function that takes in
+    // that argument by a ref concrete intent, make the temporary
+    // here a ref to the iterator class field.
+    ArgSymbol* arg = actual_to_formal(se);
+    INT_ASSERT(arg);
+    if (!isReferenceType(tmp->type) &&
+        (arg->intent & INTENT_FLAG_REF)) {
+      INT_ASSERT(tmp->type->getRefType());
+      tmp->type = tmp->type->getRefType();
+    }
   }
 
   // OK, insert the declaration.
@@ -249,7 +265,8 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
     }
   }
 
-  // If the symexpr is set here,
+  bool add_writeback = false;
+
   if (is_def ||
       // Currently buildDefUseSets() does not identify PRIM_SET_MEMBER and
       // PRIM_SVEC_SET_MEMBER as defs.
@@ -258,7 +275,22 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
         call->isPrimitive(PRIM_SET_SVEC_MEMBER)) &&
        call->get(1) == se))
   {
-    ArgSymbol* arg = toArgSymbol(se->var);
+    add_writeback = true;
+  }
+
+  // If the temporary is a ref to the iterator class field,
+  // there is never a need to add a writeback.
+  if (tmp->type == field->type->refType) {
+    add_writeback = false;
+
+    // The above code only initializes a reference tmp if is_use is set.
+    // This assert will help to identify the issue if that becomes
+    // no longer sufficient.
+    INT_ASSERT(is_use);
+  }
+
+  if (add_writeback) {
+    ArgSymbol* arg = toArgSymbol(se->symbol());
 
     if (arg)
     {
@@ -300,7 +332,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
   }
 
   // After all of that, the local variable is bridged out and the temp used instead.
-  se->var = tmp;
+  se->setSymbol(tmp);
 }
 
 
@@ -354,7 +386,7 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
       if (CallExpr* pc = parentYieldExpr(se)) {
         // SymExpr is in a yield.
 
-        Symbol* ySym = se->var;
+        Symbol* ySym = se->symbol();
         if (oneLocalYS) {
           // ySym is already tracked in ic.value. No need to do anything.
 
@@ -369,7 +401,7 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
           pc->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, valField, upd));
           if (ySym->defPoint->parentSymbol == fn) {
             // Need to convert 'upd' itself, too.
-            Symbol* field = local2field.get(se->var);
+            Symbol* field = local2field.get(se->symbol());
             INT_ASSERT(field && field != valField);
             replaceLocalWithFieldTemp(upd, ic, field, false, true, asts);
           }
@@ -378,7 +410,7 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
         // SymExpr is among those we are interested in: def or use of a live local.
 
         // Get the corresponding field in the iterator class.
-        Symbol* field = local2field.get(se->var);
+        Symbol* field = local2field.get(se->symbol());
 
         // Get the expression that sets or uses the symexpr.
         CallExpr* call = toCallExpr(se->parentExpr);
@@ -387,7 +419,7 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
           // Convert (addr of var) to (. _ic field).
           call->primitive = primitives[PRIM_GET_MEMBER];
           call->insertAtHead(ic);
-          se->var = field;
+          se->setSymbol(field);
         } else {
           replaceLocalWithFieldTemp(se, ic, field,
                                     defSet.set_in(se), useSet.set_in(se), asts);
@@ -896,25 +928,35 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
 
   int block = 0;
+
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
     bool collect = false;
+
     for_vector(Expr, expr, bb->exprs) {
       CallExpr* call = toCallExpr(expr);
+
       if (call && call->isPrimitive(PRIM_YIELD))
         collect = true;
+
       if (singleLoop && expr == singleLoop->next)
         collect = true;
+
       if (singleLoop && expr == singleLoop->body.head)
         collect = true;
     }
+
     if (collect) {
       BitVec live(locals.n);
+
       for (int j = 0; j < locals.n; j++) {
         if (OUT[block]->get(j))
           live.set(j);
       }
+
       for (int k = bb->exprs.size() - 1; k >= 0; k--) {
-        CallExpr* call = toCallExpr(bb->exprs[k]);
+        CallExpr*             call = toCallExpr(bb->exprs[k]);
+        std::vector<SymExpr*> symExprs;
+
         if ((call && call->isPrimitive(PRIM_YIELD)) ||
             (singleLoop && bb->exprs[k] == singleLoop->next) ||
             (singleLoop && bb->exprs[k] == singleLoop->body.head)) {
@@ -924,16 +966,19 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
             }
           }
         }
-        Vec<SymExpr*> symExprs;
+
         collectSymExprs(bb->exprs[k], symExprs);
-        forv_Vec(SymExpr, se, symExprs) {
+
+        for_vector(SymExpr, se, symExprs) {
           if (defSet.set_in(se))
-            live.unset(localMap.get(se->var));
+            live.unset(localMap.get(se->symbol()));
+
           if (useSet.set_in(se))
-            live.set(localMap.get(se->var));
+            live.set(localMap.get(se->symbol()));
         }
       }
     }
+
     block++;
   }
 
@@ -944,21 +989,22 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   // converted to fields.  The test/incr fields are handled correctly
   // as a result of being inserted in to the body of the loop
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
-    Vec<SymExpr*> symExprs;
-    CForLoop*     cforLoop = toCForLoop(singleLoop);
+    std::vector<SymExpr*> symExprs;
+    CForLoop*             cforLoop = toCForLoop(singleLoop);
 
     collectSymExprs(cforLoop->initBlockGet(), symExprs);
 
-    forv_Vec(SymExpr, se, symExprs) {
+    for_vector(SymExpr, se, symExprs) {
       if (useSet.set_in(se)) {
-        syms.add_exclusive(se->var);
+        syms.add_exclusive(se->symbol());
       }
     }
   }
 }
 
 
-static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn,
+static bool containsRefVar(Vec<Symbol*>& syms,
+                           FnSymbol*     fn,
                            Vec<Symbol*>& yldSymSet)
 {
   forv_Vec(Symbol, sym, syms)
@@ -1000,10 +1046,10 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
       if (SymExpr* se = toSymExpr(move->get(2)))
       {
         // The symbol is defined through a bitwise (pointer) copy.
-        INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
+        INT_ASSERT(se->symbol()->type->symbol->hasFlag(FLAG_REF));
 
-        if (se->var->defPoint->parentSymbol == fn) {
-          syms.add_exclusive(se->var);
+        if (se->symbol()->defPoint->parentSymbol == fn) {
+          syms.add_exclusive(se->symbol());
         }
       }
       else if (CallExpr* call = toCallExpr(move->get(2)))
@@ -1013,8 +1059,8 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
           for_actuals(actual, call) {
             SymExpr* se = toSymExpr(actual);
 
-            if (se->var->defPoint->parentSymbol == fn) {
-              syms.add_exclusive(se->var);
+            if (se->symbol()->defPoint->parentSymbol == fn) {
+              syms.add_exclusive(se->symbol());
             }
           }
         }
@@ -1029,7 +1075,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
               call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
             SymExpr* rhs = toSymExpr(call->get(1));
 
-            syms.add_exclusive(rhs->var);
+            syms.add_exclusive(rhs->symbol());
           }
           else
           {
@@ -1136,13 +1182,13 @@ rebuildIterator(IteratorInfo* ii,
                 SymbolMap&    local2field,
                 Vec<Symbol*>& locals) {
   // Remove the original iterator function.
-  FnSymbol*      fn = ii->iterator;
-  Vec<CallExpr*> icalls;
+  FnSymbol*              fn = ii->iterator;
+  std::vector<CallExpr*> icalls;
 
   collectCallExprs(fn, icalls);
 
   // ... and the task functions that it calls.
-  forv_Vec(CallExpr, call, icalls) {
+  for_vector(CallExpr, call, icalls) {
     if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
       // What to do if multiple calls? may or may not cause unwanted deletion.
       if (fVerify) // this assert is expensive to compute
@@ -1155,6 +1201,7 @@ rebuildIterator(IteratorInfo* ii,
   for_alist(expr, fn->body->body)
     expr->remove();
 
+  fn->retSymbol = NULL;
   fn->defPoint->remove();
 
   // Now the iterator creates and returns a copy of the iterator record.
@@ -1251,7 +1298,7 @@ collectYieldSymbols(FnSymbol* fn, Vec<BaseAST*>& asts, Vec<Symbol*>& yldSymSet,
     if (CallExpr* yCall = asYieldExpr(ast)) {
       SymExpr* ySymExpr = toSymExpr(yCall->get(1));
       INT_ASSERT(ySymExpr);
-      Symbol* ySym = ySymExpr->var;
+      Symbol* ySym = ySymExpr->symbol();
       if (ySym->defPoint->parentSymbol == fn) {
         // It is a local symbol, add it.
         yldSymSet.set_add(ySym);
@@ -1302,7 +1349,9 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   if (local) {
     type = local->type;
     // The return value is automatically dereferenced (I guess).
-    if (local == fn->_this && type->symbol->hasFlag(FLAG_REF))
+    if (local == fn->_this && type->symbol->hasFlag(FLAG_REF) &&
+        // TODO -- why is this dereferencing done ever?
+        !isRecordWrappedType(type->getValType()))
       type = type->getValType();
   }
 
@@ -1322,6 +1371,20 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
                                       SymbolMap& local2field, SymbolMap& local2rfield)
 {
   IteratorInfo* ii = fn->iteratorInfo;
+
+  // For the current iterator record, create a map of formals to the primitive
+  // calls for PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL
+  std::map<Symbol*, std::vector<CallExpr*> > formalToPrimMap;
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->parentSymbol && call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
+      AggregateType* ir = toAggregateType(toArgSymbol((toSymExpr(call->get(1))->symbol()))->type);
+      if (ii->irecord == ir) {
+        Symbol* formal = toSymExpr(call->get(2))->symbol();
+        formalToPrimMap[formal].push_back(call);
+      }
+    }
+  }
+
   Symbol* valField = NULL;
 
   int i = 0;    // This numbers the fields.
@@ -1342,6 +1405,16 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
       Symbol* rfield = new VarSymbol(field->name, field->type);
       local2rfield.put(local, rfield);
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
+
+      // while we're creating the iterator record fields based on the original
+      // iterator function arguments, replace the primitive that gets the value
+      // based on the formal with prim_get_member_value of the actual value.
+      if (formalToPrimMap.count(local) > 0) {
+        for_vector(CallExpr, call, formalToPrimMap[local]) {
+          call->get(2)->replace(new SymExpr(rfield));
+          call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
+        }
+      }
     }
   }
 

@@ -9,7 +9,7 @@
  *
 */
 
-config var n = 10000;
+config var n = 1000;
 param PI = 3.141592653589793;
 const solar_mass = (4 * PI * PI);
 const vecLen = {0..2};

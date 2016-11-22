@@ -8,95 +8,138 @@ proc main() {
 
   var result: (bool, int);
 
+  const strideD = {10..40 by 10},
+        revStrideD = {10..40 by -10};
+
   // Sorted arrays
-  const    Arr = [-4, -1, 2, 3],
-        ArrAbs = [-1, 2, 3, -4],
-        ArrRev = [ 3, 2, -1, -4],
-     ArrAbsRev = [ -4, 3, 2, -1],
-        StrArr = ['Brad', 'anthony', 'ben', 'david'];
+  const    A = [-4, -1, 2, 3],
+        absA = [-1, 2, 3, -4],
+        revA = [ 3, 2, -1, -4],
+     revAbsA = [ -4, 3, 2, -1],
+        strA = ['Brad', 'anthony', 'ben', 'david'],
+    strideA : [strideD] int = [-4, -1, 2, 3],
+    revStrideA : [revStrideD] int = [-4, -1, 2, 3];
 
   // Comparators
-  const key = new keycomparator(),
-        compare = new compcomparator(),
-        tuplekey = new tuplecomparator();
+  const absKey = new AbsKeyCmp(),
+        absComp = new AbsCompCmp();
 
 
-  /* Test data types */
+  // search
+  result = search(A, 2);
+  checkSearch(result, (true, 3), A, 'search');
 
-  // Integers
-  result = search(Arr, 2);
-  checkSearch(result, (true, 3), Arr, 'search');
+  // linearSearch
+  result = linearSearch(A, 2);
+  checkSearch(result, (true, 3), A, 'linearSearch');
 
-  // Strings
-  result = search(StrArr, 'ben');
-  checkSearch(result, (true, 3), StrArr, 'search');
+  // binarySearch
+  result = binarySearch(A, 2);
+  checkSearch(result, (true, 3), A, 'binarySearch');
 
-  // Integers sorted as tuples
-  result = search(Arr, 2, comparator=tuplekey);
-  checkSearch(result, (true, 3), Arr, 'search', 'tuplekey');
+  // eltType = string
+  result = search(strA, 'ben');
+  checkSearch(result, (true, 3), strA, 'search');
 
-  /* Reverse */
+  /* Strided Arrays */
+  result = linearSearch(strideA, 2);
+  checkSearch(result, (true, 30), strideA, 'linearSearch');
 
-  // Default reversecomparator
-  result = search(ArrRev, 2, comparator=reverseComparator);
-  checkSearch(result, (true, 2), ArrRev, 'search');
+  result = binarySearch(strideA, 2);
+  checkSearch(result, (true, 30), strideA, 'binarySearch');
 
-  /* Comparator basics */
-  result = search(ArrAbs, 2, comparator=key);
-  checkSearch(result, (true, 2), ArrAbs, 'search', 'key');
+  result = linearSearch(revStrideA, 2);
+  checkSearch(result, (true, 30), revStrideA, 'linearSearch');
 
-  result = search(ArrAbs, 2, comparator=compare);
-  checkSearch(result, (true, 2), ArrAbs, 'search', 'compare');
+  result = binarySearch(revStrideA, 2);
+  checkSearch(result, (true, 30), revStrideA, 'binarySearch');
+
+  result = linearSearch(strideA, 5);
+  checkSearch(result, (false, strideD.high+strideD.stride), strideA, 'linearSearch');
+
+  result = binarySearch(strideA, 5);
+  checkSearch(result, (false, strideD.high+strideD.stride), strideA, 'binarySearch');
+
+  result = linearSearch(revStrideA, 5);
+  checkSearch(result, (false, revStrideD.high+abs(revStrideD.stride)), revStrideA, 'linearSearch');
+
+  result = binarySearch(revStrideA, 5);
+  checkSearch(result, (false, revStrideD.high+abs(revStrideD.stride)), revStrideA, 'binarySearch');
+
+  /* Comparators */
+
+  result = search(revA, 2, comparator=reverseComparator, sorted=true);
+  checkSearch(result, (true, 2), revA, 'search');
+
+  result = search(absA, 2, comparator=absKey, sorted=true);
+  checkSearch(result, (true, 2), absA, 'search');
+
+  result = search(absA, 2, comparator=absComp, sorted=true);
+  checkSearch(result, (true, 2), absA, 'search');
 
   /* Not Found */
 
-  result = search(Arr, 5);
-  checkSearch(result, (false, Arr.domain.high+1), Arr, 'search');
+  result = search(A, 5, sorted=true);
+  checkSearch(result, (false, A.domain.high+1), A, 'search');
 
-  result = search(Arr, -5);
-  checkSearch(result, (false, Arr.domain.low), Arr, 'search');
+  result = search(A, -5, sorted=true);
+  checkSearch(result, (false, A.domain.low), A, 'search');
 
-  result = search(Arr, 0);
-  checkSearch(result, (false, 3), Arr, 'search');
-
-  /* Test Searches */
-
-  // linearSearch
-  result = linearSearch(Arr, 2);
-  checkSearch(result, (true, 3), Arr, 'linearSearch');
-
-  // binarySearch
-  result = binarySearch(Arr, 2);
-  checkSearch(result, (true, 3), Arr, 'binarySearch');
+  result = search(A, 0, sorted=true);
+  checkSearch(result, (false, 3), A, 'search');
 
 }
 
 
 /* Checks array and resets values -- any output results in failure */
-proc checkSearch(result, expected, array, searchProc:string, comparator:string='none') {
+proc checkSearch(result, expected, arr, searchProc:string, cmp=defaultComparator) {
   if result != expected {
-    writeln(searchProc, ' with comparator=', comparator, ' failed');
-    writeln('For array:');
-    writeln(array);
-    writeln('Incorrect result:');
-    writeln(result);
-    writeln('Expected result:');
-    writeln(expected);
+    writeln(searchProc, '() function failed');
+    writeln('eltType:    ', arr.eltType:string);
+    writeln('idxType:    ', arr.domain.idxType:string);
+    writeln('dimensions: ', arr.domain.dims());
+    writeln('comparator: ', cmp.name());
+    writeln('domain:');
+    writeln(arr.domain);
+    writeln('array:');
+    writeln(arr);
+    writeln('Incorrect result: ', result);
+    writeln('Expected result:  ', expected);
   }
 }
 
 
-/* Defines manipulation of value that should be used for comparison */
-record keycomparator { }
-proc keycomparator.key(a) { return abs(a); }
+
+/* Enables more useful error messages */
+proc DefaultComparator.name() { return 'DefaultComparator';}
+proc ReverseComparator.name() { return 'ReverseComparator';}
 
 
-/* Defines compare behavior, return 1, 0, or -1 */
-record compcomparator { }
-proc compcomparator.compare(a, b) {
-  return abs(a) - abs(b);
+/* Key Sort by absolute value */
+record AbsKeyCmp {
+  proc key(a) { return abs(a); }
+  proc name() { return 'AbsKeyCmp'; }
 }
 
+
+/* Compare Sort by absolute value */
+record AbsCompCmp {
+  proc compare(a, b) { return abs(a) - abs(b); }
+  proc name() { return 'AbsCompCmp'; }
+}
+
+
+/* Key method should take priority over compare method */
+record AbsKeyCompCmp {
+  proc key(a) { return abs(a); }
+  proc compare(a, b) { return a - b; }
+  proc name() { return 'AbsKeyCompCmp'; }
+}
+
+
 /* Key method can return a non-numerical/string type, such as tuple */
-record tuplecomparator { }
-proc tuplecomparator.key(a) { return (a, a); }
+record TupleCmp {
+  proc key(a) { return (a, a); }
+  proc name() { return 'TupleCmp'; }
+}
+

@@ -518,7 +518,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PDFLATEX = @PDFLATEX@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
-RMPATH = @RMPATH@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -1078,9 +1077,9 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+@HWLOC_HAVE_WINDOWS_FALSE@uninstall-local:
 @HWLOC_HAVE_MS_LIB_FALSE@clean-local:
 @HWLOC_HAVE_WINDOWS_FALSE@clean-local:
-@HWLOC_HAVE_WINDOWS_FALSE@uninstall-local:
 @HWLOC_HAVE_WINDOWS_FALSE@install-exec-hook:
 clean: clean-am
 

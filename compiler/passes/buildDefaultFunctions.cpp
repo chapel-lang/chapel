@@ -46,6 +46,7 @@ static void build_record_inequality_function(AggregateType* ct);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_first_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
+static void build_enum_size_function(EnumType* et);
 
 //static void buildDefaultReadFunction(AggregateType* type);
 //static void buildDefaultReadFunction(EnumType* type);
@@ -110,6 +111,7 @@ void buildDefaultFunctions() {
         build_enum_cast_function(et);
         build_enum_assignment_function(et);
         build_enum_first_function(et);
+        build_enum_size_function(et);
         build_enum_enumerate_function(et);
       }
       else
@@ -159,7 +161,7 @@ static bool type_match(Type* type, Symbol* sym) {
   if (sym->type == type)
     return true;
   SymExpr* se = toSymExpr(sym->defPoint->exprType);
-  if (se && se->var->type == type)
+  if (se && se->symbol()->type == type)
     return true;
   return false;
 }
@@ -251,25 +253,18 @@ static void fixup_accessor(AggregateType* ct, Symbol *field,
 
 // This function builds the getter or the setter, depending on the
 // 'setter' argument.
-static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
-  const bool fieldIsConst = field->hasFlag(FLAG_CONST);
-  const bool recordLike = ct->isRecord() || ct->isUnion();
-
+static void build_accessor(AggregateType* ct, Symbol* field, bool setter) {
   // Only build a 'ref' version for records and classes.
   // Unions need a special getter and setter.
-  if (!isUnion(ct))
-    if (!setter)
-      return;
+  if (isUnion(ct) == false && setter == false)
+    return;
 
-  FnSymbol* fn = new FnSymbol(field->name);
+  const bool fieldIsConst = field->hasFlag(FLAG_CONST);
+  const bool recordLike   = ct->isRecord() || ct->isUnion();
+  FnSymbol*  fn           = new FnSymbol(field->name);
+
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
   fn->addFlag(FLAG_INLINE);
-
-  if (ct->symbol->hasFlag(FLAG_SYNC))
-    fn->addFlag(FLAG_SYNC);
-
-  if (ct->symbol->hasFlag(FLAG_SINGLE))
-    fn->addFlag(FLAG_SINGLE);
 
   if (ct->symbol->hasFlag(FLAG_ATOMIC_TYPE))
     fn->addFlag(FLAG_ATOMIC_TYPE);
@@ -285,13 +280,17 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   fn->addFlag(FLAG_METHOD);
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+
   _this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(_this);
-  if (field->isParameter())
+
+  if (field->isParameter()) {
     fn->retTag = RET_PARAM;
-  else if (field->hasFlag(FLAG_TYPE_VARIABLE))
+
+  } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
     fn->retTag = RET_TYPE;
-  else if (field->hasFlag(FLAG_SUPER_CLASS)) {
+
+  } else if (field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
   } else {
     if (fieldIsConst || !setter)
@@ -301,7 +300,7 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   }
 
   if (isUnion(ct)) {
-    if (setter)  {
+    if (setter) {
       // Set the union ID in the setter.
       fn->insertAtTail(
           new CallExpr(PRIM_SET_UNION_ID,
@@ -320,26 +319,33 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
           new CallExpr("halt", new_CStringSymbol("illegal union access"))));
     }
   }
+
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
     ct->symbol->defPoint->insertBefore(field->defPoint->remove());
-  } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS))
+  } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                   new CallExpr(PRIM_GET_MEMBER_VALUE,
                                                new SymExpr(_this),
                                                new SymExpr(new_CStringSymbol(field->name)))));
-  else
+  } else {
     fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                   new CallExpr(PRIM_GET_MEMBER,
                                                new SymExpr(_this),
                                                new SymExpr(new_CStringSymbol(field->name)))));
+  }
 
   DefExpr* def = new DefExpr(fn);
+
   ct->symbol->defPoint->insertBefore(def);
+
   reset_ast_loc(fn, field);
+
   normalize(fn);
+
   ct->methods.add(fn);
+
   fn->addFlag(FLAG_METHOD);
   fn->addFlag(FLAG_METHOD_PRIMARY);
   fn->cname = astr("chpl_get_", ct->symbol->cname, "_", fn->cname);
@@ -405,7 +411,7 @@ static FnSymbol* chpl_gen_main_exists() {
         if (!sym)
           INT_FATAL(fn, "function is not normalized");
 
-        if( sym->var != gVoid ) {
+        if( sym->symbol() != gVoid ) {
           mainReturnsInt = true;
         } else {
           mainReturnsInt = false;
@@ -640,6 +646,42 @@ static void build_record_inequality_function(AggregateType* ct) {
   reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
+
+
+static void build_enum_size_function(EnumType* et) {
+  if (function_exists("size", 1, et))
+    return;
+  // Build a function that returns the length of the enum specified
+  FnSymbol* fn = new FnSymbol("size");
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_NO_PARENS);
+  fn->addFlag(FLAG_METHOD);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtAny);
+  fn->_this->addFlag(FLAG_ARG_THIS);
+  fn->_this->addFlag(FLAG_MARKED_GENERIC);
+  fn->_this->addFlag(FLAG_TYPE_VARIABLE);
+
+  fn->insertFormalAtTail(fn->_this);
+
+  fn->retTag = RET_VALUE;
+  //use this function only where the argument is an enum
+  fn->where = new BlockStmt(new CallExpr("==", fn->_this, et->symbol));
+
+  VarSymbol*  varS = new_IntSymbol(et->constants.length);
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, varS));
+
+  DefExpr* fnDef = new DefExpr(fn);
+  // needs to go in the base module because when called from _defaultOf(et),
+  // they are automatically inserted
+  baseModule->block->insertAtTail(fnDef);
+  reset_ast_loc(fnDef, et->symbol);
+
+  normalize(fn);
+}
+
+
 
 static void build_enum_first_function(EnumType* et) {
   if (function_exists("chpl_enum_first", 1, et))
@@ -928,6 +970,12 @@ static void build_extern_assignment_function(Type* type)
 // If the coercion is permissible, then the operand can be statically cast to
 // the target type.
 static void build_record_cast_function(AggregateType* ct) {
+
+  // Don't do this for tuples.
+  // Tuple cast function is generated during resolution.
+  if (ct->symbol->hasFlag(FLAG_TUPLE))
+    return;
+
   FnSymbol* fn = new FnSymbol("_cast");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
@@ -988,44 +1036,84 @@ static void build_record_copy_function(AggregateType* ct) {
   if (function_exists("chpl__initCopy", 1, ct))
     return;
 
+  // if there is a copy-initializer for this record type, use that.
+  const char* copyCtorName = astr("_construct_", ct->symbol->name);
+  const char* copyInitName = "init";
+  bool foundUserDefinedCopy = false;
+  // as an optimization, the below conditionals use ct->initializerStyle
+  if (ct->initializerStyle == DEFINES_CONSTRUCTOR)
+    if (FnSymbol* ctor = function_exists(copyCtorName, 1, ct))
+      // note: default ctor has 1 arg, meme
+      if (!ctor->getFormal(1)->hasFlag(FLAG_IS_MEME))
+        foundUserDefinedCopy = true;
+
+  if (ct->initializerStyle == DEFINES_INITIALIZER)
+    if (function_exists(copyInitName, 2, ct, ct /*meme*/ ))
+      foundUserDefinedCopy = true;
+
+  // if no copy-init function existed...
   FnSymbol* fn = new FnSymbol("chpl__initCopy");
   fn->addFlag(FLAG_INIT_COPY_FN);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   arg->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg);
-  CallExpr* call = new CallExpr(ct->defaultInitializer);
-  for_fields(tmp, ct)
-  {
-    // Weed out implicit alias and promotion type fields.
-    if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
-      continue;
-    // TODO: This needs to be done uniformly, using an ignore_field flag or...
-    if (!strcmp("_promotionType", tmp->name))
-      continue;
 
-    CallExpr* init = new CallExpr(".", arg, new_CStringSymbol(tmp->name));
-    call->insertAtTail(new NamedExpr(tmp->name, init));
+  CallExpr* call = NULL;
 
-    // Special handling for nested record types:
-    // We need to convert the constructor call into a method call.
-    if (!strcmp(tmp->name, "outer"))
-      call->insertAtHead(gMethodToken);
-  }
-  if (ct->symbol->hasFlag(FLAG_EXTERN)) {
-    int actualsNeeded = ct->defaultInitializer->formals.length;
-    int actualsGiven = call->argList.length;
-    // This code assumes that in the case where an extern has not been fully
-    // specified in Chapel code, its default constructor will require one more
-    // actual than the fields specified: another object of that extern type
-    // whose contents can be used.
-    if (actualsNeeded == actualsGiven + 1) {
-      call->insertAtTail(arg);
-    } else if (actualsNeeded != actualsGiven) {
-      // The user didn't partially specify the type in Chapel code, but the
-      // number of actuals provided didn't match the expected number.  This is
-      // an internal error.
-      INT_FATAL(arg, "Extern type's constructor call didn't create expected # of actuals");
+  if (foundUserDefinedCopy) {
+    call = new CallExpr(PRIM_NEW, ct->symbol, new SymExpr(arg));
+    // If it has a user-defined copy initializer, it's not POD
+    ct->symbol->addFlag(FLAG_NOT_POD);
+  } else {
+    // generate the default copy initializer in chpl__initCopy for now
+
+    // MPF 2016-11-03: It would be better to move all of the logic below
+    // into the construction of a compiler-generated initializer. However,
+    // at the moment, compiler-generated initializers follow a very different
+    // code path from initializers.
+    // In addition, we could entirely remove chpl__initCopy and instead
+    // rely on the copy initializer.
+
+    call = new CallExpr(ct->defaultInitializer);
+    for_fields(tmp, ct)
+    {
+      // Weed out implicit alias and promotion type fields.
+      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+        continue;
+      // TODO: This needs to be done uniformly, using an ignore_field flag or...
+      if (!strcmp("_promotionType", tmp->name))
+        continue;
+
+      CallExpr* init = new CallExpr(".", arg, new_CStringSymbol(tmp->name));
+      call->insertAtTail(new NamedExpr(tmp->name, init));
+
+      // Special handling for nested record types:
+      // We need to convert the constructor call into a method call.
+      if (!strcmp(tmp->name, "outer"))
+        call->insertAtHead(gMethodToken);
+    }
+    if (ct->symbol->hasFlag(FLAG_EXTERN)) {
+      int actualsNeeded = ct->defaultInitializer->formals.length;
+      int actualsGiven = call->argList.length;
+      // This code assumes that in the case where an extern has not been fully
+      // specified in Chapel code, its default constructor will require one more
+      // actual than the fields specified: another object of that extern type
+      // whose contents can be used.
+      if (actualsNeeded == actualsGiven + 1) {
+        call->insertAtTail(arg);
+      } else if (actualsNeeded != actualsGiven) {
+        // The user didn't partially specify the type in Chapel code, but the
+        // number of actuals provided didn't match the expected number.  This is
+        // an internal error.
+        INT_FATAL(arg, "Extern type's constructor call didn't create expected # of actuals");
+      }
+    }
+    if (ct->initializerStyle == DEFINES_INITIALIZER) {
+      // We want the initializer to take in the memory it will initialize
+      VarSymbol* meme = newTemp("meme_tmp", ct);
+      fn->insertAtHead(new DefExpr(meme));
+      call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
     }
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
@@ -1047,11 +1135,12 @@ static void build_record_hash_function(AggregateType *ct) {
   fn->insertFormalAtTail(arg);
 
   if (ct->fields.length == 0) {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(0)));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new_UIntSymbol(0)));
     fn->addFlag(FLAG_INLINE);
   } else {
     CallExpr *call = NULL;
     bool first = true;
+    int i = 1;
     for_fields(field, ct) {
       if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
         CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg);
@@ -1059,14 +1148,13 @@ static void build_record_hash_function(AggregateType *ct) {
           call = new CallExpr("chpl__defaultHash", field_access);
           first = false;
         } else {
-          call = new CallExpr("^",
-                              new CallExpr("chpl__defaultHash",
-                                           field_access),
-                              new CallExpr("<<",
-                                           call,
-                                           new_IntSymbol(17)));
+          call = new CallExpr("chpl__defaultHashCombine",
+                              new CallExpr("chpl__defaultHash", field_access),
+                              call,
+                              new_IntSymbol(i));
         }
       }
+      i++;
     }
     fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   }
@@ -1111,7 +1199,12 @@ static void build_record_init_function(AggregateType* ct) {
   } else {
     // To default initialize, call the type specified default constructor (by
     // name), passing in all generic arguments.
-    CallExpr* call = new CallExpr(ct->defaultInitializer->name);
+    CallExpr* call = NULL;
+    if (ct->initializerStyle == DEFINES_INITIALIZER) {
+      call = new CallExpr("init");
+    } else {
+      call = new CallExpr(ct->defaultInitializer->name);
+    }
     // Need to insert all required arguments into this call
     for_formals(formal, ct->defaultInitializer) {
       if (formal->hasFlag(FLAG_IS_MEME))
@@ -1195,6 +1288,13 @@ static void build_record_init_function(AggregateType* ct) {
         }
       }
     }
+    if (ct->initializerStyle == DEFINES_INITIALIZER) {
+      // We want the initializer to take in the memory it will initialize
+      VarSymbol* meme = newTemp("meme_tmp", ct);
+      fn->insertAtHead(new DefExpr(meme));
+      call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
+    }
+
     fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   }
 
@@ -1342,6 +1442,10 @@ void buildDefaultDestructor(AggregateType* ct) {
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_DESTRUCTOR);
   fn->addFlag(FLAG_INLINE);
+
+  if (ct->symbol->hasFlag(FLAG_TUPLE))
+    gGenericTupleDestroy = fn;
+
   fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->addFlag(FLAG_METHOD);

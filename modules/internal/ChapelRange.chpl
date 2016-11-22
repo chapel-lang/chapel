@@ -84,9 +84,9 @@
 
  */
 module ChapelRange {
-  
-  use Math; // for abs().
-  
+
+  use Math;
+
   // Turns on range iterator debugging.
   pragma "no doc"
   config param debugChapelRange = false;
@@ -928,7 +928,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       if chpl_need_to_check_step(step, strType) &&
          step > (max(strType):step.type)
       then
-        __primitive("chpl_error", c"the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string);
+        __primitive("chpl_error", ("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string):c_string);
     }
   }
 
@@ -969,6 +969,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
    *
    * because the parser renames the routine since 'by' is a keyword.
    */
+  pragma "no doc"
   inline proc by(r, step) {
     if !isRange(r) then
       compilerError("the first argument of the 'by' operator is not a range");
@@ -985,6 +986,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
    */
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
+  pragma "no doc"
   inline proc by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step:r.strType);
@@ -2098,8 +2100,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var U = (one, zero, u);
     var V = (zero, one, v);
   
-    while V(3) != 0 do
-      (U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
+    while V(3) != 0 {
+      // This is a workaround for a bug.
+      // The previous version was:
+      //(U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
+      var oldU = U;
+      var q = U(3)/V(3);
+      U = V;
+      V = oldU - V * (q, q, q);
+    }
   
     return (U(3), U(1));
   }

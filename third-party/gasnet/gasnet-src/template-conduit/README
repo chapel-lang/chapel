@@ -4,6 +4,16 @@ Your Name <youremail@whereever.com> ###
 User Information:
 -----------------
 
+### Provide a high-level overview of your conduit
+
+Where this conduit runs:
+-----------------------
+
+### Explain the hardware/systems where your conduit runs. Be sure to use
+### high-level marketing names that should be understandable to any end-user. 
+### Include any software/driver/firmware/hw requirements or limitations.
+### Mention any situation where a different GASNet conduit should be preferred.
+
 Recognized environment variables:
 ---------------------------------
 

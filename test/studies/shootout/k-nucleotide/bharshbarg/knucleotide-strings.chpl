@@ -4,6 +4,7 @@
    contributed by Ben Harshbarger
    derived from the GNU C++ version by Branimir Maksimovic
 */
+use Sort;
 
 // Used to encode a string into a uint
 var tonum : [0..127] int;
@@ -85,7 +86,7 @@ proc write_frequencies(data : string, size : int) {
     s = (f, e);
 
   // QuickSort will sort starting at the tuple's first element.
-  QuickSort(sorted, reverse=true);
+  quickSort(sorted, comparator=reverseComparator);
 
   const sum = data.length - size;
   for (f, e) in sorted do
@@ -99,7 +100,7 @@ proc write_count(data : string, pattern : string) {
   writeln(freqs[d], "\t", decode(d, size));
 }
 
-proc main() {
+proc main(args: [] string) {
   var data, buf : string;
 
   // Read each line until the desired section

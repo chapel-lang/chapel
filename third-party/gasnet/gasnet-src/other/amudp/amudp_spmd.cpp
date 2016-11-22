@@ -3,46 +3,48 @@
  * Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
  */
 
-#include <amudp_internal.h>
-#include <amudp_spmd.h>
+#include <portable_platform.h>
 
 #include <errno.h>
 #include <stdio.h>
-#if PLATFORM_OS_MSWINDOWS
-  #undef sched_yield
-  #define sched_yield() Sleep(0)
-  #define sleep(x) Sleep(x*1000)
-  #include <process.h>
+#include <unistd.h>
+#if PLATFORM_OS_SUPERUX || PLATFORM_OS_NETBSD || \
+    PLATFORM_OS_BLRTS || PLATFORM_OS_OPENBSD
+  /* these implement sched_yield() in libpthread only, which we may not want */
+  #define UNUSABLE_SCHED_YIELD 1
 #else
+  #include <sched.h>
+#endif
+#if (PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX) && !defined(__USE_GNU)
+  /* some Linuxes need this to pull in F_SETSIG */
+  #define __USE_GNU
+  #include <fcntl.h>
+  #undef __USE_GNU
+#else
+  #include <fcntl.h>
+#endif
+
+#ifdef AMUDP_BLCR_ENABLED
+  #include <sys/types.h>
+  #include <sys/stat.h>
   #include <unistd.h>
-  #if PLATFORM_ARCH_CRAYT3E || PLATFORM_OS_SUPERUX || PLATFORM_OS_NETBSD || \
-      PLATFORM_OS_MTA || PLATFORM_OS_BLRTS || PLATFORM_OS_CATAMOUNT || PLATFORM_OS_OPENBSD
-    /* these implement sched_yield() in libpthread only, which we may not want */
-    #undef sched_yield
-    #define sched_yield() sleep(0)
-  #else
-    #include <sched.h>
-  #endif
-  #if (PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX) && !defined(__USE_GNU)
-    /* some Linuxes need this to pull in F_SETSIG */
-    #define __USE_GNU
-    #include <fcntl.h>
-    #undef __USE_GNU
-  #else
-    #include <fcntl.h>
-  #endif
-  #ifdef AMUDP_BLCR_ENABLED
-    #include <sys/types.h>
-    #include <sys/stat.h>
-    #include <unistd.h>
-  #endif
+  #include "libcr.h"
 #endif
 
 extern char **environ; 
 
+#include <amudp_spmd.h>
+
 #include "sockutil.h"
 #include "socklist.h"
 #include "sig.h"
+
+#include "amudp_internal.h" // must come after any other headers
+
+#if UNUSABLE_SCHED_YIELD // must come after system header includes
+  #undef sched_yield
+  #define sched_yield() sleep(0)
+#endif
 
 #define FD_STDIN 0
 #define FD_STDOUT 1
@@ -66,16 +68,19 @@ static void _freezeForDebugger(int depth) {
 static void freezeForDebugger() {
   char name[255];
   gethostname(name, 255);
-  fprintf(stderr,"slave frozen for debugger: host=%s  pid=%i\n", name, (int)getpid()); fflush(stderr);
+  AMUDP_Warn("slave frozen for debugger: host=%s  pid=%i", name, (int)getpid());
   _freezeForDebugger(0);
 }
 
 #if AMUDP_DEBUG_VERBOSE
-  #define DEBUG_SLAVE(msg)  do { fprintf(stderr,"slave %i: %s\n", AMUDP_SPMDMYPROC, msg); fflush(stderr); } while(0)
-  #define DEBUG_MASTER(msg) do { fprintf(stderr,"master: %s\n", msg); fflush(stderr); } while(0)
+  #define DEBUG_SLAVE(msg)  do {                             \
+     if (AMUDP_ProcessLabel) AMUDP_Info("%s", msg);          \
+     else AMUDP_Info("slave %i: %s", AMUDP_SPMDMYPROC, msg); \
+  } while (0)
+  #define DEBUG_MASTER(msg) AMUDP_Info("master: %s", msg)
 #else
-  #define DEBUG_SLAVE(msg)  do {} while(0) /* prevent silly warnings about empty statements */
-  #define DEBUG_MASTER(msg) do {} while(0)
+  #define DEBUG_SLAVE(msg)  ((void)0)
+  #define DEBUG_MASTER(msg) ((void)0)
 #endif
 
 #define AMUDP_SPMDSLAVE_ARGS "AMUDP_SLAVE_ARGS"
@@ -84,9 +89,7 @@ static int AMUDP_SPMDShutdown(int exitcode);
 
 /* master only */
   static SOCKET AMUDP_SPMDListenSocket = INVALID_SOCKET; /* TCP bootstrapping listener */
-  static SOCKET AMUDP_SPMDStdinListenSocket = INVALID_SOCKET; 
-  static SOCKET AMUDP_SPMDStdoutListenSocket = INVALID_SOCKET; 
-  static SOCKET AMUDP_SPMDStderrListenSocket = INVALID_SOCKET; 
+  static SOCKET AMUDP_SPMDStdListenSocket[3];
   static SOCKET *AMUDP_SPMDSlaveSocket = NULL; /* table of TCP control sockets */
   static en_t *AMUDP_SPMDTranslation_name = NULL; 
   static tag_t *AMUDP_SPMDTranslation_tag = NULL; /* network byte order */
@@ -99,9 +102,7 @@ static int AMUDP_SPMDShutdown(int exitcode);
   static eb_t AMUDP_SPMDBundle = NULL;
   static en_t AMUDP_SPMDName = {0};
   volatile int AMUDP_SPMDIsActiveControlSocket = 0; 
-  static SOCKET newstdin = INVALID_SOCKET;
-  static SOCKET newstdout = INVALID_SOCKET;
-  static SOCKET newstderr = INVALID_SOCKET;
+  static SOCKET newstd[3] = { INVALID_SOCKET, INVALID_SOCKET, INVALID_SOCKET };
   static int AMUDP_SPMDMYPROC = AMUDP_PROCID_NEXT; /* -1 requests next avail procid */
   static volatile int AMUDP_SPMDBarrierDone = 0; /* flag barrier as complete */
   static volatile int AMUDP_SPMDGatherDone = 0;  /* flag gather as complete */
@@ -127,8 +128,6 @@ static int AMUDP_SPMDShutdown(int exitcode);
 // used to pass info - always stored in network byte order
 // fields carefully ordered by size to avoid cross-platform struct packing differences
 typedef struct {
-  double faultInjectionRate; // AMUDP_FaultInjectionRate
-
   uint64_t networkpid;  // globally unique pid
 
   tag_t tag;            // tag for this processor
@@ -139,9 +138,7 @@ typedef struct {
   int32_t depth;        // network depth
   uint32_t environtablesz; // size of environment table we're about to send
 
-  uint16_t stdinMaster; // address of stdin listener
-  uint16_t stdoutMaster; // address of stdout listener
-  uint16_t stderrMaster; // address of stderr listener
+  uint16_t stdMaster[3]; // address of std listeners
   uint16_t _pad1; // ensure platform-independent table size
 
 } AMUDP_SPMDBootstrapInfo_t;
@@ -192,8 +189,8 @@ static void flushStreams(const char *context) {
     perror("fflush");
     AMUDP_FatalErr("failed to flush stderr in %s", context); 
   }
-  fsync(STDOUT_FILENO); /* ignore errors for output is a console */
-  fsync(STDERR_FILENO); /* ignore errors for output is a console */
+  fsync(FD_STDOUT); /* ignore errors for output is a console */
+  fsync(FD_STDERR); /* ignore errors for output is a console */
 
   static int do_sync = -1;
   if (do_sync < 0) {
@@ -203,23 +200,15 @@ static void flushStreams(const char *context) {
     do_sync = ((c == '1') || (c == 'y') || (c == 'Y'));
   }
   if (do_sync) {
-  #if PLATFORM_OS_MTA
-    mta_sync();
-  #elif !PLATFORM_OS_CATAMOUNT
     sync();
-  #endif
   }
   sched_yield();
 }
 //------------------------------------------------------------------------------------
 extern char *AMUDP_enStr(en_t en, char *buf) {
   AMUDP_assert(buf != NULL);
-  #ifdef UETH
-    sprintf(buf, "(fixed: %i variable: %i)", en.fixed, en.variable.index);
-  #else
-    SockAddr tmp((sockaddr*)&en);
-    sprintf(buf, "(%s:%i)", tmp.IPStr(), tmp.port());
-  #endif
+  SockAddr tmp((sockaddr*)&en);
+  sprintf(buf, "(%s:%i)", tmp.IPStr(), tmp.port());
   return buf;
 }
 extern char *AMUDP_tagStr(tag_t tag, char *buf) {
@@ -228,9 +217,6 @@ extern char *AMUDP_tagStr(tag_t tag, char *buf) {
     (int)(uint32_t)(tag >> 32), 
     (int)(uint32_t)(tag & 0xFFFFFFFF));
   return buf;
-}
-extern const char *sockErrDesc() {
-  return errorCodeString(getSocketErrorCode());
 }
 //------------------------------------------------------------------------------------
 static void setupStdSocket(SOCKET& ls, SocketList& list, SocketList& allList) {
@@ -249,46 +235,118 @@ static void setupStdSocket(SOCKET& ls, SocketList& list, SocketList& allList) {
 }
 //------------------------------------------------------------------------------------
 static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, SocketList& allList, int nproc) {
+  static size_t bufsz;
+  static uint8_t *sbuf;
+  static struct S_linebuf {
+    size_t  len;
+    uint8_t *buf;
+  } *linebuf;
+  static size_t linebufcnt;
+  static SOCKET *tempSockArr;
+  #ifndef AMUDP_STD_BUFSZ
+  #define AMUDP_STD_BUFSZ 1024  // recv buffer size, should be large enough for decent bandwidth on multi-line chunks
+  #endif
+  #ifndef AMUDP_MAX_LINEBUFSZ
+  #define AMUDP_MAX_LINEBUFSZ 1024*1024  // sanity limit for environment knob
+  #endif
+
+  if (!tempSockArr) { // first call, setup data structures
+    tempSockArr = (SOCKET *)AMUDP_malloc(sizeof(SOCKET)*nproc);
+    bufsz = atoi( AMUDP_getenv_prefixed_withdefault("LINEBUFFERSZ", _STRINGIFY(AMUDP_STD_BUFSZ)) );
+    if (bufsz == 0) { // line buffering disabled, use a static buffer
+      bufsz = AMUDP_STD_BUFSZ;
+      sbuf = (uint8_t *)AMUDP_malloc(bufsz);
+    } else if (bufsz > AMUDP_MAX_LINEBUFSZ) {
+      bufsz = AMUDP_MAX_LINEBUFSZ; 
+    }
+  }
+
   int numset;
-  static SOCKET *tempSockArr = NULL;
-  if (!tempSockArr) tempSockArr = (SOCKET *)AMUDP_malloc(sizeof(SOCKET)*nproc);
   if ((numset = list.getIntersection(psockset, tempSockArr, nproc))) { // we have some active std sockets
     for (int i=0; i < numset; i++) {
       SOCKET s = tempSockArr[i];
       AMUDP_assert(FD_ISSET(s, psockset));
-      #ifndef AMUDP_STD_BUFSZ
-      #define AMUDP_STD_BUFSZ 1024
-      #endif
-      static char buf[AMUDP_STD_BUFSZ+1];
-      ssize_t sz = recv(s, buf, AMUDP_STD_BUFSZ, 0);
-      AMUDP_assert(sz <= AMUDP_STD_BUFSZ);
-      if (sz == SOCKET_ERROR) {
+      ssize_t rsz = SOCKET_ERROR;
+      if (sbuf) { // static buffering
+        rsz = recv(s, sbuf, bufsz, 0);
+        if (rsz > 0) { // other cases handled below
+          AMUDP_assert(rsz <= (ssize_t)bufsz);
+          fwrite(sbuf, 1, rsz, fd);
+          fflush(fd);
+          continue;
+        }
+      } else { // line buffering
+        if ((size_t)s >= linebufcnt) { // grow directory
+          void *newdir = AMUDP_calloc((size_t)s+1,sizeof(struct S_linebuf));
+          if (linebufcnt > 0) {
+            memcpy(newdir, linebuf, linebufcnt*sizeof(struct S_linebuf));
+            AMUDP_free(linebuf);
+          }
+          linebuf = (struct S_linebuf*)newdir;
+          linebufcnt = (size_t)s+1;
+        }
+        struct S_linebuf * const e = &linebuf[s];
+        if (!e->buf) { // first use
+          e->buf = (uint8_t *)AMUDP_malloc(bufsz);
+        }
+        AMUDP_assert(e->len < bufsz);
+        rsz = recv(s, e->buf+e->len, bufsz-e->len, 0);
+        if (rsz == 0) { // socket closed
+          if (e->len) { // drain buffer
+            fwrite(e->buf, 1, e->len, fd);
+            fflush(fd);
+            e->len = 0; 
+          }
+          // close handled below
+        } else if (rsz > 0) {
+          e->len += rsz;
+          AMUDP_assert(e->len <= bufsz);
+          size_t len = e->len;
+          uint8_t *bol = e->buf;
+          int wrote = 0;
+          // could use memrchr here if it ever makes it into the standard..
+          for (uint8_t *eol = bol+len-1; eol >= bol; eol--) {
+            if (*eol == '\n') {
+              size_t llen = eol-bol+1;
+              AMUDP_assert(llen <= len);
+              fwrite(bol, 1, llen, fd);
+              wrote = 1;
+              len -= llen;
+              bol = eol+1;
+              break;
+            }
+          } 
+          if (len == bufsz) { // full buffer with no breaks, drain it
+            fwrite(e->buf, 1, bufsz, fd);
+            wrote = 1;
+            e->len = 0;
+          } else { // save partial-line tail
+            if (len > 0) memmove(e->buf, bol, len);
+            e->len = len;
+          }
+          if (wrote) fflush(fd);
+          continue;
+        }
+      } // line buffering
+
+      // handle recv errors
+      if (rsz == SOCKET_ERROR) {
         DEBUG_MASTER("recv error in handleStdOutput, closing.");
         close_socket(s);
-      } else if (sz == 0) { // socket closed
+      } else if (rsz == 0) { // socket closed
         DEBUG_MASTER("dropping a std output socket...");
+        close_socket(s);
         list.remove(s);
         allList.remove(s);
-      } else {
-        AMUDP_assert(sz > 0);
-        buf[sz] = '\0';
-        #if AMUDP_DEBUG_VERBOSE
-          fprintf(fd, "got some output: %s%s", buf, (buf[sz-1]=='\n'?"":"\n"));
-        #else
-          fwrite(buf, 1, sz, fd);
-        #endif
-        fflush(fd);
       }
     }
   }
 }
 //------------------------------------------------------------------------------------
 #if USE_ASYNC_TCP_CONTROL
-  static void AMUDP_SPMDControlSocketCallback(int sig) {
+  extern "C" void AMUDP_SPMDControlSocketCallback(int sig) {
     AMUDP_SPMDIsActiveControlSocket = TRUE;
-    #if AMUDP_DEBUG_VERBOSE
-      fprintf(stderr, "got an AMUDP_SIGIO signal\n");fflush(stderr);
-    #endif
+    AMUDP_VERBOSE_INFO("got an AMUDP_SIGIO signal");
     reghandler(AMUDP_SIGIO, AMUDP_SPMDControlSocketCallback);
   }
 #endif
@@ -328,6 +386,13 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
                              eb_t *eb, ep_t *ep) {
   
   if (AMUDP_SPMDStartupCalled) AMUDP_RETURN_ERR(RESOURCE);
+
+  char *linebuf = AMUDP_getenv_prefixed("LINEBUFFERSZ");
+  if (!linebuf || atoi(linebuf) > 0) { // ensure we line-buffer early output
+    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+    setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
+  }
+
   /* we need a separate socklibinit for master 
      and to prevent AM_Terminate from murdering all our control sockets */
   if (!socklibinit()) AMUDP_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, "socklibinit() failed");
@@ -341,7 +406,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
   if (! slave_flag) {
     int usingdefaultdegree = 0;
     uint64_t npid;
-    if (nproc < 0 || nproc > AMUDP_MAX_SPMDPROCS) AMUDP_RETURN_ERR(BAD_ARG);
+    if (nproc < 0 || nproc > (int)AMUDP_MAX_SPMDPROCS) AMUDP_RETURN_ERR(BAD_ARG);
 
     if (!argc || !argv) AMUDP_RETURN_ERR(BAD_ARG);
 
@@ -357,6 +422,9 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       networkdepth = atoi(
         AMUDP_getenv_prefixed_withdefault("NETWORKDEPTH", _STRINGIFY(AMUDP_DEFAULT_NETWORKDEPTH)));
       if (networkdepth <= 0) networkdepth = AMUDP_DEFAULT_NETWORKDEPTH;
+    }
+    if (networkdepth > AMUDP_MAX_NETWORKDEPTH) { // provide useful error message
+      AMUDP_FatalErr("NETWORKDEPTH must be <= %d", AMUDP_MAX_NETWORKDEPTH);
     }
 
     if (nproc == 0) { /* default to read from args */
@@ -439,16 +507,8 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     bootstrapinfo.numprocs = hton32(AMUDP_SPMDNUMPROCS);
     bootstrapinfo.depth = hton32(networkdepth);
 
-    { char *faultRate = AMUDP_getenv_prefixed_withdefault("FAULT_RATE", "0.0");
-      if (faultRate && atof(faultRate) != 0.0) {      
-        bootstrapinfo.faultInjectionRate = atof(faultRate);
-      } else bootstrapinfo.faultInjectionRate = 0.0;
-      hton64a(&bootstrapinfo.faultInjectionRate);
-    }
-
     const char *masterHostname = getMyHostName();
-    if (!AMUDP_SilentMode) 
-      printf("master host name: %s\n", masterHostname); fflush(stdout);
+    if (!AMUDP_SilentMode) AMUDP_Info("master host name: %s", masterHostname);
 
     // TCP socket lists
     SocketList allList(AMUDP_SPMDNUMPROCS*4+10); // a list of all active sockets
@@ -456,26 +516,30 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     SocketList stdinList(AMUDP_SPMDNUMPROCS);    // a list of all stdin routing sockets
     SocketList stdoutList(AMUDP_SPMDNUMPROCS);   // a list of all stdout routing sockets
     SocketList stderrList(AMUDP_SPMDNUMPROCS);   // a list of all stderr routing sockets
+    SocketList * const stdList[3] = { &stdinList, &stdoutList, &stderrList };
+    FILE       *stdFILE[3] = { stdin, stdout, stderr };
     AMUDP_SPMDSlaveSocket = (SOCKET*)AMUDP_malloc(AMUDP_SPMDNUMPROCS * sizeof(SOCKET));
 
     try {
       // create our TCP listen ports 
       unsigned short anyport = 0;
       AMUDP_SPMDListenSocket = listen_socket(anyport, false);
-      AMUDP_SPMDStdinListenSocket = listen_socket(anyport, false);
-      AMUDP_SPMDStdoutListenSocket = listen_socket(anyport, false);
-      AMUDP_SPMDStderrListenSocket = listen_socket(anyport, false);
-      bootstrapinfo.stdinMaster = hton16(getsockname(AMUDP_SPMDStdinListenSocket).port());
-      bootstrapinfo.stdoutMaster = hton16(getsockname(AMUDP_SPMDStdoutListenSocket).port());
-      bootstrapinfo.stderrMaster = hton16(getsockname(AMUDP_SPMDStderrListenSocket).port());
+      allList.insert(AMUDP_SPMDListenSocket);
+
+      for (int i=0; i <= 2; i++) {
+        if (i == FD_STDIN) {  // disable stdin forwarding, for now
+          AMUDP_SPMDStdListenSocket[i] = INVALID_SOCKET;
+          bootstrapinfo.stdMaster[i] = hton16(0);
+        } else {
+          SOCKET s = listen_socket(anyport, false);
+          AMUDP_SPMDStdListenSocket[i] = s;
+          allList.insert(s);
+          bootstrapinfo.stdMaster[i] = hton16(getsockname(s).port());
+        }
+      }
     } catch (xBase &exn) {
       AMUDP_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, exn.why());
     }
-
-    allList.insert(AMUDP_SPMDListenSocket);
-    allList.insert(AMUDP_SPMDStdinListenSocket);
-    allList.insert(AMUDP_SPMDStdoutListenSocket);
-    allList.insert(AMUDP_SPMDStderrListenSocket);
 
     { /* flatten a snapshot of the master's environment for transmission to slaves
        * here we assume the standard representation where a pointer to the environment 
@@ -551,8 +615,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         #if HAVE_GETIFADDRS
           strncat(slave_env, network, remain-1);
         #else
-          fprintf(stderr,"AMUDP: Warning: WORKERIP set in the environment, but your platform "
-                         "lacks the required getifaddrs() support.  Ignoring WORKERIP.\n");
+          AMUDP_Warn("WORKERIP set in the environment, but your platform lacks the required getifaddrs() support.  Ignoring WORKERIP.");
         #endif
       }
     }
@@ -642,20 +705,9 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
 
     if (!AMUDP_SPMDRedirectStdsockets) {
       // spawn function disabled our stdsocket redirect - signal the slaves of this fact
-      bootstrapinfo.stdinMaster = hton16(0);
-      bootstrapinfo.stdoutMaster = hton16(0);
-      bootstrapinfo.stderrMaster = hton16(0);
+      for (int i=0; i <= 2; i++)
+        bootstrapinfo.stdMaster[i] = hton16(0);
     }
-#if !PLATFORM_OS_MSWINDOWS
-    else {
-      // Insurance against strangely intermixed stdout/stderr
-      int rc;
-      rc = fcntl(STDOUT_FILENO, F_GETFL, 0);
-      if (rc >= 0) (void)fcntl(STDOUT_FILENO, F_SETFL, rc | O_APPEND);
-      rc = fcntl(STDERR_FILENO, F_GETFL, 0);
-      if (rc >= 0) (void)fcntl(STDERR_FILENO, F_SETFL, rc | O_APPEND);
-    }
-#endif 
 
     // main communication loop for master
     try {
@@ -666,9 +718,10 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       int numset; // helpers for coord socket
       SOCKET *tempSockArr = (SOCKET*)AMUDP_malloc(sizeof(SOCKET)*AMUDP_SPMDNUMPROCS);
       while (1) {
+pollentry:
        #ifdef FD_SETSIZE /* Should always be present, but just in case */
         if (allList.getMaxFd() >= FD_SETSIZE)
-          AMUDP_FatalErr("Open sockets exceed FD_SETSIZE. Exiting...");
+          AMUDP_FatalErr("Open sockets exceed FD_SETSIZE=%d. Exiting...",FD_SETSIZE);
        #endif
         allList.makeFD_SET(psockset);
 
@@ -678,16 +731,14 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         }
         //------------------------------------------------------------------------------------
         // stdin/stderr/stdout listeners - incoming connections
-        // must continue to re-select after accepting a connection that might alias a closed listener socket id
-        if (AMUDP_SPMDStdinListenSocket != INVALID_SOCKET &&
-            FD_ISSET(AMUDP_SPMDStdinListenSocket, psockset))  
-           { setupStdSocket(AMUDP_SPMDStdinListenSocket, stdinList, allList); continue; }
-        if (AMUDP_SPMDStdoutListenSocket != INVALID_SOCKET &&
-            FD_ISSET(AMUDP_SPMDStdoutListenSocket, psockset)) 
-           { setupStdSocket(AMUDP_SPMDStdoutListenSocket, stdoutList, allList); continue; }
-        if (AMUDP_SPMDStderrListenSocket != INVALID_SOCKET &&
-            FD_ISSET(AMUDP_SPMDStderrListenSocket, psockset)) 
-           { setupStdSocket(AMUDP_SPMDStderrListenSocket, stderrList, allList); continue; }
+        for (int i=0; i<=2; i++) {
+          SOCKET &s = AMUDP_SPMDStdListenSocket[i];
+          if (s != INVALID_SOCKET && FD_ISSET(s, psockset))  {
+             setupStdSocket(s, *stdList[i], allList); 
+             // must re-select after accepting a connection that might alias a closed listener socket id
+             goto pollentry; 
+          }
+        }
         //------------------------------------------------------------------------------------
         // stdout/err sockets - must come before possible exit to drain output
         handleStdOutput(stdout, psockset, stdoutList, allList, AMUDP_SPMDNUMPROCS);
@@ -697,15 +748,10 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
           for (int i=0; i < numset; i++) {
             SOCKET s = tempSockArr[i];
             AMUDP_assert(FD_ISSET(s, psockset));
-            if (isClosed(s)) {
-              DEBUG_MASTER("dropping a stdinList socket...");
-              stdinList.remove(s);
-              allList.remove(s);
-            } else {
-              AMUDP_Err("Master got illegal input on a stdin socket");
-              stdinList.remove(s); // prevent subsequent warnings
-              allList.remove(s);
-            }
+            if (isClosed(s)) DEBUG_MASTER("dropping a stdinList socket...");
+            else AMUDP_Err("Master got illegal input on a stdin socket");
+            stdinList.remove(s);
+            allList.remove(s);
           }
         }
         //------------------------------------------------------------------------------------
@@ -771,13 +817,13 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
                 sendAll(AMUDP_SPMDSlaveSocket[i], AMUDP_SPMDMasterEnvironment, ntoh32(bootstrapinfo.environtablesz));
               }
               if (!AMUDP_SilentMode) {
-                printf("Endpoint table (nproc=%i):\n", AMUDP_SPMDNUMPROCS);
+                AMUDP_Info("Endpoint table (nproc=%i):", AMUDP_SPMDNUMPROCS);
                 for (int j=0; j < AMUDP_SPMDNUMPROCS; j++) {
-                  char temp[80];
-                  printf(" P#%i:\t%s", j, AMUDP_enStr(AMUDP_SPMDTranslation_name[j], temp));
-                  printf("\ttag: %s\n", AMUDP_tagStr(ntoh64(AMUDP_SPMDTranslation_tag[j]), temp));
+                  char temp1[80], temp2[80];
+                  AMUDP_Info(" P#%i:\t%s\ttag: %s", j, 
+                             AMUDP_enStr(AMUDP_SPMDTranslation_name[j], temp1),
+                             AMUDP_tagStr(ntoh64(AMUDP_SPMDTranslation_tag[j]), temp2));
                 }
-                fflush(stdout);
               }
             }
           } else AMUDP_Err("master detected some unrecognized activity on AMUDP_SPMDListenSocket");
@@ -790,7 +836,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
             SOCKET s = tempSockArr[i];
             AMUDP_assert(FD_ISSET(s, psockset));
             if (isClosed(s)) {
-              DEBUG_MASTER("dropping a coordList socket...\n");
+              DEBUG_MASTER("dropping a coordList socket...");
               coordList.remove(s);
               allList.remove(s);
 
@@ -870,62 +916,6 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
                 break;
               }
 
-            #ifdef UETH
-              case 'F': { // NIC fail-over
-                // get relevant en_t's
-                en_t olden;
-                en_t newen;
-                int failedidx=-1;
-                int32_t failedidx_nb=-1;
-                try {
-                  recvAll(s, &failedidx_nb, sizeof(int32_t));
-                  recvAll(s, &olden, sizeof(en_t));
-                  recvAll(s, &newen, sizeof(en_t));
-                } catch (xSocket& exn) {
-                  AMUDP_Err("got exn while reading fail-over addresses: %s", exn.why());
-                }
-                failedidx = ntoh32(failedidx_nb);
-                if (failedidx < 0 || failedidx >= AMUDP_SPMDNUMPROCS)
-                  AMUDP_Err("unrecognized endpoint received in fail-over message");
-                if (!enEqual(AMUDP_SPMDTranslation_name[failedidx], olden)) 
-                  AMUDP_Err("mismatched slaveid in fail-over message");
-                // update our local table 
-                AMUDP_SPMDTranslation_name[failedidx] = newen;
-                // tell all slaves about the change
-                for (int i=0; i < (int)coordList.getCount(); i++) {
-                  sendAll(coordList[i], "F");
-                  sendAll(coordList[i], failedidx_nb, sizeof(int32_t));
-                  sendAll(coordList[i], &olden, sizeof(en_t));
-                  sendAll(coordList[i], &newen, sizeof(en_t));
-                }
-                if (!AMUDP_SilentMode) {
-                  char temp[80];
-                  printf("master: processed NIC failover on slave %i: ", failedidx);
-                  printf("%s ->", AMUDP_enStr(olden, temp));
-                  printf(" %s\n", AMUDP_enStr(newen, temp));
-                }
-                break;
-              }
-
-              case 'A': { // NIC fail-over acknowledgement - bounce to slave
-                // get relevant en_t's
-                int failedidx=-1;
-                int32_t failedidx_nb=-1;
-                try {
-                  recvAll(s, &failedidx_nb, sizeof(int32_t));
-                  failedidx = ntoh32(failedidx_nb);
-
-                  AMUDP_assert(failedidx > 0 && failedidx < AMUDP_SPMDNUMPROCS);
-
-                  sendAll(coordList[failedidx], "A");
-                  sendAll(coordList[failedidx], &failedidx_nb, sizeof(int32_t));
-                } catch (xSocket& exn) {
-                  AMUDP_Err("got exn while handling fail-over ack: %s", exn.why());
-                }
-                break;
-              }
-            #endif
-
               case 'E': { // exit code
                 // get slave terminate code
                 int32_t exitCode_nb = -1;
@@ -947,25 +937,17 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
                 /* bug 2029 - wait for any final stdout/stderr to arrive before shutdown */
                 uint64_t wait_iter = 0;
                 while (stdoutList.getCount() || stderrList.getCount()) { // await final output
-                  if (!AMUDP_SilentMode && (!wait_iter++)) {
-                    printf("Awaiting final slave outputs...\n");
-                    fflush(stdout);
-                  }
-                  if (stdoutList.getCount()) {
-                    stdoutList.makeFD_SET(psockset);
-                    handleStdOutput(stdout, psockset, stdoutList, allList, stdoutList.getCount());
-                  }
-                  if (stderrList.getCount()) {
-                    stderrList.makeFD_SET(psockset);
-                    handleStdOutput(stderr, psockset, stderrList, allList, stderrList.getCount());
+                  if (!AMUDP_SilentMode && (!wait_iter++)) AMUDP_Info("Awaiting final slave outputs...");
+                  for (int i=1; i <= 2; i++) {
+                    if (stdList[i]->getCount()) {
+                      stdList[i]->makeFD_SET(psockset);
+                      handleStdOutput(stdFILE[i], psockset, *stdList[i], allList, stdList[i]->getCount());
+                    }
                   }
                   sched_yield();
                 }
                 if (!socklibend()) AMUDP_Err("master failed to socklibend()");
-                if (!AMUDP_SilentMode) {
-                  printf("Exiting after AMUDP_SPMDExit(%i)...\n", exitCode);
-                  fflush(stdout);
-                }
+                if (!AMUDP_SilentMode) AMUDP_Info("Exiting after AMUDP_SPMDExit(%i)...", exitCode);
                 exit(exitCode);
                 break;
               }
@@ -975,7 +957,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
             }
           }
           if (coordList.getCount() == 0) {
-            DEBUG_MASTER("Exiting after losing all worker slave connections (noone called AMUDP_Exit())\n");
+            DEBUG_MASTER("Exiting after losing all worker slave connections (noone called AMUDP_Exit())");
             exit(0); // program exit, noone called terminate
           }
         }
@@ -1030,8 +1012,9 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       if (! endptr || (',' != endptr[0])) AMUDP_Err("Malformed arguments '%s' to slave process", env_var);
       slave_args = endptr + 1;
     }
-  #if HAVE_GETIFADDRS
+    
     // extract appended WORKERIP which it is needed before the master env is sent
+    // must extract this field even without HAVE_GETIFADDRS
     const char *network = "";
     { char *delimiter = strrchr(slave_args,',');
       if (delimiter != NULL) {
@@ -1039,7 +1022,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         *delimiter = '\0';
       }
     }
-  #endif
+
     { // extract master's address
       if (strchr(slave_args,',')) {
         masterAddr = SockAddr(slave_args);
@@ -1067,10 +1050,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     }
 
     try {
-      if (!AMUDP_SilentMode) {
-        fprintf(stderr, "slave connecting to %s:%i\n", masterAddr.IPStr(), masterAddr.port());
-        fflush(stderr);
-      }
+      if (!AMUDP_SilentMode) AMUDP_Info("slave connecting to %s:%i", masterAddr.IPStr(), masterAddr.port());
 
       AMUDP_SPMDControlSocket = connect_socket(masterAddr);
 
@@ -1104,26 +1084,21 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         }
       #endif // AMUDP_BLCR_ENABLED
 
-      #ifndef UETH
-        /* here we assume the interface used to contact the master is the same 
-           one to be used for UDP endpoints */
-        SockAddr myinterface = getsockname(AMUDP_SPMDControlSocket);
-        #if HAVE_GETIFADDRS // allow user to override our same-interface assumption
-          network = AMUDP_getenv_prefixed_withdefault("WORKERIP",network);
-          if (network && network[0]) {
-            SockAddr networkaddr(network, 0);
-            if (! getIfaceAddr(networkaddr, myinterface)) {
-              AMUDP_Err("Failed to find interface on requested subnet %s", network);
-              AMUDP_RETURN(AM_ERR_RESOURCE);
-            }
+      /* here we assume the interface used to contact the master is the same 
+         one to be used for UDP endpoints */
+      SockAddr myinterface = getsockname(AMUDP_SPMDControlSocket);
+      #if HAVE_GETIFADDRS // allow user to override our same-interface assumption
+        if (network && network[0]) {
+          SockAddr networkaddr(network, 0);
+          char subnets[1024];
+          if (! getIfaceAddr(networkaddr, myinterface, subnets, sizeof(subnets))) {
+            AMUDP_Err("Failed to find interface on requested subnet %s. Available subnets: %s", network, subnets);
+            AMUDP_RETURN(AM_ERR_RESOURCE);
           }
-        #endif
-        if (!AMUDP_SilentMode) {
-          fprintf(stderr, "slave using IP %s\n", myinterface.IPStr());
-          fflush(stderr);
         }
-        AMUDP_SetUDPInterface(myinterface.IP());
       #endif
+      if (!AMUDP_SilentMode) AMUDP_Info("slave using IP %s", myinterface.IPStr());
+      AMUDP_SetUDPInterface(myinterface.IP());
         
       /* create endpoint and get name */
       temp = AM_AllocateBundle(AM_SEQ, &AMUDP_SPMDBundle);
@@ -1168,9 +1143,27 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       if (networkpid) *networkpid = ntoh64(bootstrapinfo.networkpid);
 
       // sanity checking on bootstrap info
-      AMUDP_assert(AMUDP_SPMDNUMPROCS > 0 && AMUDP_SPMDNUMPROCS < AMUDP_MAX_SPMDPROCS);
-      AMUDP_assert(AMUDP_SPMDMYPROC >= 0 && AMUDP_SPMDMYPROC < AMUDP_SPMDNUMPROCS);
+      AMUDP_assert(AMUDP_SPMDNUMPROCS > 0 && AMUDP_SPMDNUMPROCS < (int)AMUDP_MAX_SPMDPROCS);
+      AMUDP_assert(AMUDP_SPMDMYPROC >= 0 && AMUDP_SPMDMYPROC < (int)AMUDP_SPMDNUMPROCS);
 
+      #if !DISABLE_STDSOCKET_REDIRECT
+      for (int fd=0; fd <= 2; fd++) {
+        if (bootstrapinfo.stdMaster[fd]) {
+            // perform stdin/out/err redirection
+            newstd[fd]  = connect_socket(SockAddr(masterAddr.IP(),ntoh16(bootstrapinfo.stdMaster[fd])));
+            #if 0
+              // disable buffering
+              setvbuf(stdFILE[fd], NULL, _IONBF, 0);
+            #endif
+            if (dup2(newstd[fd], fd) < 0) { // redirect std FD to socket
+              perror("dup2(std)");
+              _exit(1); 
+            }
+        }
+     }
+     #endif
+
+      // retrieve translation table
       en_t *tempTranslation_name = (en_t *)AMUDP_malloc(AMUDP_SPMDNUMPROCS*sizeof(en_t));
       tag_t *tempTranslation_tag = (tag_t *)AMUDP_malloc(AMUDP_SPMDNUMPROCS*sizeof(tag_t));
       AMUDP_assert(tempTranslation_name && tempTranslation_tag);
@@ -1180,13 +1173,25 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       AMUDP_assert(ntoh64(tempTranslation_tag[AMUDP_SPMDMYPROC]) == ntoh64(bootstrapinfo.tag));
       AMUDP_assert(enEqual(tempTranslation_name[AMUDP_SPMDMYPROC], AMUDP_SPMDName));
 
+
       // setup translation table
+      temp = AM_SetNumTranslations(AMUDP_SPMDEndpoint, AMUDP_SPMDNUMPROCS);
+      if (temp != AM_OK) {
+        AMUDP_Err("Failed to AM_SetNumTranslations() in AMUDP_SPMDStartup");
+        AMUDP_RETURN(temp);
+      }
       for (int i = 0; i < AMUDP_SPMDNUMPROCS; i++) {
         temp = AM_Map(AMUDP_SPMDEndpoint, i, tempTranslation_name[i], ntoh64(tempTranslation_tag[i]));
         if (temp != AM_OK) {
           AMUDP_Err("Failed to AM_Map() in AMUDP_SPMDStartup");
           AMUDP_RETURN(temp);
         }
+      }
+
+      if (!AMUDP_ProcessLabel) {
+        static char label[80];
+        sprintf(label,"Node %i",AMUDP_SPMDMYPROC);
+        AMUDP_ProcessLabel = label;
       }
 
       AMUDP_free(tempTranslation_name);
@@ -1225,67 +1230,6 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         AMUDP_RETURN(temp);
       }
 
-      // BLCR-TODO: problems if we change spawner?
-      #if !DISABLE_STDSOCKET_REDIRECT
-        if (bootstrapinfo.stdinMaster) {
-            // perform stdin/out/err redirection
-            newstdin  = connect_socket(SockAddr(masterAddr.IP(),ntoh16(bootstrapinfo.stdinMaster)));
-            newstdout = connect_socket(SockAddr(masterAddr.IP(),ntoh16(bootstrapinfo.stdoutMaster)));
-            newstderr = connect_socket(SockAddr(masterAddr.IP(),ntoh16(bootstrapinfo.stderrMaster)));
-            #if 0
-              // disable buffering
-              setvbuf(stdin, NULL, _IONBF, 0);
-              setvbuf(stdout, NULL, _IONBF, 0);
-              setvbuf(stderr, NULL, _IONBF, 0);
-            #endif
-            #if PLATFORM_OS_MSWINDOWS
-              #if 0
-              // not sure how to do this on Win32 yet - maybe use _fdopen() and/or _fileno()
-              { FILE* newf;
-                if( ( newf = fopen( "c:\\data", "w" ) ) == NULL ) {
-                  puts( "Can't open file 'data'\n" );
-                  exit( 1 );
-                }
-                if( ( newf = _fdopen( newstdout, "w" ) ) == NULL ) {
-                  puts( "fdopen failed\n" );
-                  exit( 1 );
-                }
-                if (dup2(_fileno(newf), FD_STDOUT) < 0) { // redirect stdout to socket
-                  perror("dup2(stdout)");
-                  _exit(1); 
-                }
-                printf("yomama\n");
-                fflush(stdout);
-                fclose(newf);
-                exit(0);
-              }
-              #endif
-            #else
-              /* UNIX */
-              if (dup2(newstdin, FD_STDIN) < 0) { // redirect stdout to socket
-                perror("dup2(stdin)");
-                _exit(1); 
-              }
-              if (dup2(newstdout, FD_STDOUT) < 0) { // redirect stdout to socket
-                perror("dup2(stdout)");
-                _exit(1); 
-              }
-              if (dup2(newstderr, FD_STDERR) < 0) { // redirect stdout to socket
-                perror("dup2(stderr)");
-                _exit(1); 
-              }
-            #endif
-        }
-     #endif
-
-      AMUDP_FaultInjectionRate = bootstrapinfo.faultInjectionRate;
-      ntoh64a(&AMUDP_FaultInjectionRate);
-      if (AMUDP_FaultInjectionRate != 0.0) {
-        AMUDP_FaultInjectionEnabled = 1;
-        fprintf(stderr, "*** Warning: AMUDP running with fault injection enabled. Rate = %6.2f %%\n",
-          100.0 * AMUDP_FaultInjectionRate);
-        fflush(stderr);
-      }
     } catch (xSocket& exn) {
       AMUDP_FatalErr("Got an xSocket while spawning slave process: %s", exn.why());
     }
@@ -1318,13 +1262,14 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       }
     #endif
 
+    flushStreams("AMUDP_SPMDStartup"); // to get ENV FS_SYNC 
+
     if (!AMUDP_SilentMode) {
       char temp[80];
       tag_t tag;
       AM_GetTag(AMUDP_SPMDEndpoint, &tag);
-      fprintf(stderr, "Slave %i/%i starting (tag=%s)...\n", 
+      AMUDP_Info("Slave %i/%i starting (tag=%s)...", 
         AMUDP_SPMDMyProc(), AMUDP_SPMDNumProcs(), AMUDP_tagStr(tag, temp));
-      fflush(stderr);
     }
 
     return AM_OK;
@@ -1342,27 +1287,24 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
 extern int AMUDP_SPMDHandleControlTraffic(int *controlMessagesServiced) {
   if (AMUDP_SPMDControlSocket == INVALID_SOCKET) return AM_OK; // not running in SPMD mode
   #if USE_ASYNC_TCP_CONTROL
-    if (!AMUDP_SPMDIsActiveControlSocket) return AM_OK; // nothing to do
+    ASYNC_CHECK(1);
+    if_pt (!AMUDP_SPMDIsActiveControlSocket) return AM_OK; // nothing to do
     ASYNC_TCP_DISABLE();
     AMUDP_SPMDIsActiveControlSocket = FALSE; 
   #endif 
   if (controlMessagesServiced) *controlMessagesServiced = 0;
   
   while (1) { // service everything waiting
-    try {
-      if (!inputWaiting(AMUDP_SPMDControlSocket)) {
-        ASYNC_TCP_ENABLE();
-        return AM_OK; // nothing more to do
-      }
-    } catch (xBase &exn) {
-      AMUDP_Err("Error checking AMUDP_SPMDControlSocket: %s", exn.why()); // probably conn reset
+    if_pt (!inputWaiting(AMUDP_SPMDControlSocket,false)) {
+      ASYNC_TCP_ENABLE();
+      return AM_OK; // nothing more to do
     }
 
     try {
       SOCKET s = AMUDP_SPMDControlSocket;
 
       if (isClosed(s)) {
-        DEBUG_SLAVE("master control socket slammed shut. Exiting...\n");
+        DEBUG_SLAVE("master control socket slammed shut. Exiting...");
         AMUDP_SPMDShutdown(1);
       }
 
@@ -1391,110 +1333,6 @@ extern int AMUDP_SPMDHandleControlTraffic(int *controlMessagesServiced) {
           break;
         }
 
-      #ifdef UETH
-        case 'F': { // NIC fail-over
-          // get relevant en_t's
-          en_t olden;
-          en_t newen;
-          int32_t failidx_nb = -1;
-          int failidx = -1;
-          try {
-            recvAll(s, &failidx_nb, sizeof(int32_t));
-            recvAll(s, &olden, sizeof(en_t));
-            recvAll(s, &newen, sizeof(en_t));
-          } catch (xSocket& exn) {
-            AMUDP_FatalErr("got exn while reading fail-over addresses: %s", exn.why());
-          }
-          failidx = ntoh32(failidx_nb);
-
-          // this update could be rather slow, but we expect it to run extremely infrequently
-          DEBUG_SLAVE("Received a NIC fail-over notification. Updating tables...");
-
-          // update all translation tables
-          for (int i = 0; i < AMUDP_SPMDBundle->n_endpoints; i++) {
-            ep_t ep = AMUDP_SPMDBundle->endpoints[i];
-            AMUDP_assert(ep);
-
-            for (int j = 0; j < AMUDP_MAX_NUMTRANSLATIONS; j++) {
-              if (ep->translation[j].inuse) {
-                if (enEqual(ep->translation[j].name, olden)) { // need to re-map
-                  ep->translation[j].name = newen;
-                }
-              }
-            }
-            for (int procid = 0; procid < ep->P; procid++) {
-              if (enEqual(ep->perProcInfo[procid].remoteName, olden)) { // need to re-map
-                AMUDP_assert(procid == failidx);
-                ep->perProcInfo[procid].remoteName = newen;
-                /* need to remap the preset request/reply destinations */
-                for (int inst = 0; inst < ep->depth; inst++) {
-                  amudp_bufdesc_t *reqdesc = GET_REQ_DESC(ep, procid, inst);
-                  amudp_bufdesc_t *repdesc = GET_REP_DESC(ep, procid, inst);
-                  amudp_buf_t *reqbuf = GET_REQ_BUF(ep, procid, inst);
-                  amudp_buf_t *repbuf = GET_REP_BUF(ep, procid, inst);
-
-                  if (reqdesc->transmitCount > 0)
-                    ueth_cancel_send(reqbuf, reqbuf->bufhandle);
-                  if (ueth_set_packet_destination(reqbuf, &newen) != UETH_OK)
-                    AMUDP_Err("ueth_set_packet_destination failed on NIC fail-over");
-
-                  if (repdesc->transmitCount > 0)
-                    ueth_cancel_send(repbuf, repbuf->bufhandle);
-                  if (ueth_set_packet_destination(repbuf, &newen) != UETH_OK)
-                    AMUDP_Err("ueth_set_packet_destination failed on NIC fail-over");
-                }
-              }
-            }
-
-            #ifndef UETH
-              // update any messages already accepted into the rx buffers from this guy
-              // this currently never runs because UETH has no explicit receive buffers we can see
-              for (int i = 0; i < AMUDP_SPMDBundle->n_endpoints; i++) {
-                ep_t ep = AMUDP_SPMDBundle->endpoints[i];
-                AMUDP_assert(ep);
-
-                for (int j = ep->rxReadyIdx; j != ep->rxFreeIdx; j = (j+1)%ep->rxNumBufs) {
-                  if (enEqual(ep->rxBuf[j].source, olden) {
-                    ep->rxBuf[j].source = newen;
-                  }
-                }
-              }
-            #endif
-          }
-          DEBUG_SLAVE("Update complete.");
-          if (!AMUDP_SilentMode) {
-            char temp[80];
-            printf("slave: handled NIC failover: ");
-            printf("%s ->", AMUDP_enStr(olden, temp));
-            printf(" %s\n", AMUDP_enStr(newen, temp));
-          }
-
-          try { // send acknowledgement to master
-            sendAll(s, "A");
-            sendAll(s, &failidx_nb, sizeof(int32_t));
-          } catch (xSocket& exn) {
-            AMUDP_Err("Slave got an xSocket sending failure ACK: %s. Exiting...", exn.why());
-            AMUDP_SPMDShutdown(1);
-          }
-          break;
-        }
-        case 'A': { // NIC fail-over acknowledgement - record an ACK
-          int32_t failedidx_nb = -1;
-          int failedidx = -1;
-          try {
-            recvAll(s, &failedidx_nb, sizeof(int32_t));
-            failedidx = ntoh32(failedidx_nb);
-            AMUDP_assert(failedidx == AMUDP_SPMDMYPROC);
-            AMUDP_assert(AMUDP_FailoverAcksOutstanding > 0);
-
-            AMUDP_FailoverAcksOutstanding--;
-          } catch (xSocket& exn) {
-            AMUDP_Err("got exn while handling fail-over ack: %s", exn.why());
-          }
-          break;
-        }
-      #endif
-
         case 'E': { // exit code
           // get slave terminate code
           int32_t exitCode_nb = -1;
@@ -1505,10 +1343,7 @@ extern int AMUDP_SPMDHandleControlTraffic(int *controlMessagesServiced) {
           } catch (xSocket& exn) {
             AMUDP_Err("got exn while reading exit code: %s", exn.why());
           }
-          if (!AMUDP_SilentMode) {
-            printf("Exiting after exit signal from master (%i)...\n", exitCode);
-            fflush(stdout);
-          }
+          if (!AMUDP_SilentMode) AMUDP_Info("Exiting after exit signal from master (%i)...", exitCode);
           AMUDP_SPMDShutdown(exitCode);
           break;
         }
@@ -1526,91 +1361,6 @@ extern int AMUDP_SPMDHandleControlTraffic(int *controlMessagesServiced) {
     if (controlMessagesServiced) (*controlMessagesServiced)++;
   }
 }
-/* ------------------------------------------------------------------------------------ 
- *  handler for NIC fail-over
- * ------------------------------------------------------------------------------------ */
-#ifdef UETH
-extern void AMUDP_SPMDAddressChangeCallback(ueth_addr_t *address) {
-  DEBUG_SLAVE("AMUDP_SPMDAddressChangeCallback() called.. Fail-over starting...");
-  AMUDP_assert(AMUDP_UETH_endpoint);
-  AMUDP_assert(address);
-  int32_t failid_nb = hton32(AMUDP_SPMDMYPROC);
-  en_t olden = AMUDP_UETH_endpoint->name;
-  en_t newen = *address;
-
-  AMUDP_UETH_endpoint->name = newen;
-  AMUDP_SPMDName = newen;
-
-  // send change to master, who will propagate new address info to peers and back to us
-  // we update our translation table on recieving the reflection from the master
-  AMUDP_FailoverAcksOutstanding = AMUDP_SPMDNUMPROCS;
-  try {
-    ASYNC_TCP_DISABLE();
-    sendAll(AMUDP_SPMDControlSocket, "F");
-    sendAll(AMUDP_SPMDControlSocket, &failid_nb, sizeof(int));
-    sendAll(AMUDP_SPMDControlSocket, &olden, sizeof(en_t));
-    sendAll(AMUDP_SPMDControlSocket, &newen, sizeof(en_t));
-    ASYNC_TCP_ENABLE();
-  } catch (xSocket& exn) {
-    AMUDP_Err("Slave got an xSocket: %s. Exiting...", exn.why());
-    AMUDP_SPMDShutdown(1);
-  } catch (xBase& exn) {
-    AMUDP_Err("Slave got an xBase: %s. Exiting...", exn.why());
-    AMUDP_SPMDShutdown(1);
-  }
-
-  ep_t ep = AMUDP_UETH_endpoint;
-  /* need to remap all preset request/reply destinations for failed node */
-  for (int inst = 0; inst < ep->depth; inst++) {
-    for (int procid = 0; procid < ep->P; procid++) {
-      amudp_bufdesc_t *reqdesc = GET_REQ_DESC(ep, procid, inst);
-      amudp_bufdesc_t *repdesc = GET_REP_DESC(ep, procid, inst);
-      amudp_buf_t *reqbuf = GET_REQ_BUF(ep, procid, inst);
-      amudp_buf_t *repbuf = GET_REP_BUF(ep, procid, inst);
-
-      if (reqdesc->transmitCount > 0)
-        ueth_cancel_send(reqbuf, reqbuf->bufhandle);
-      if (ueth_set_packet_destination(reqbuf, &ep->perProcInfo[procid].remoteName) != UETH_OK)
-        AMUDP_Err("ueth_set_packet_destination failed on NIC fail-over");
-
-      if (repdesc->transmitCount > 0)
-        ueth_cancel_send(repbuf, repbuf->bufhandle);
-      if (ueth_set_packet_destination(repbuf, &ep->perProcInfo[procid].remoteName) != UETH_OK)
-        AMUDP_Err("ueth_set_packet_destination failed on NIC fail-over");
-    }
-  }
-
-  // update any messages already accepted into the rx buffers
-  #ifdef UETH
-    int packetschanged = ueth_fixup_recv(&olden, &newen);
-    if (packetschanged < 0)
-      AMUDP_Err("ueth_fixup_recv failed on NIC fail-over");
-  #else
-    // this currently never runs because UETH has no explicit receive buffers we can see
-    for (int i = 0; i < AMUDP_SPMDBundle->n_endpoints; i++) {
-      ep_t ep = AMUDP_SPMDBundle->endpoints[i];
-      AMUDP_assert(ep);
-
-      for (int j = ep->rxReadyIdx; j != ep->rxFreeIdx; j = (j+1)%ep->rxNumBufs) {
-        if (enEqual(ep->rxBuf[j].dest, olden) {
-          ep->rxBuf[j].dest = newen;
-        }
-      }
-    }
-  #endif
-
-  // wait until all the slaves recieve the failover notification and acknowledge
-  // before we allow this node to continue transmitting on the new NIC
-  // can't use a regular barrier here because it may cause us to poll
-  while (AMUDP_FailoverAcksOutstanding > 0) {
-    int junk=0;
-    AMUDP_SPMDHandleControlTraffic(&junk);
-    sched_yield();
-  }
-
-  DEBUG_SLAVE("Fail-over complete.");
-}
-#endif
 /* ------------------------------------------------------------------------------------ 
  *  process termination
  * ------------------------------------------------------------------------------------ */
@@ -1642,37 +1392,17 @@ static int AMUDP_SPMDShutdown(int exitcode) {
 
   flushStreams("AMUDP_SPMDShutdown");
 
-  if (fclose(stdin)) {
-    #if AMUDP_DEBUG_VERBOSE
-      AMUDP_Warn("failed to fclose stdin in AMUDP_SPMDExit()"); 
-      perror("fclose");
-    #endif
-  }
-  if (fclose(stdout)) {
-    #if AMUDP_DEBUG_VERBOSE
-      AMUDP_Warn("failed to fclose stdout in AMUDP_SPMDExit()"); 
-      perror("fclose");
-    #endif
-  }
-  if (fclose(stderr)) {
-    #if AMUDP_DEBUG_VERBOSE
-      AMUDP_Warn("failed to fclose stderr in AMUDP_SPMDExit()"); 
-      perror("fclose");
-    #endif
-  }
+  if (fclose(stdin))  AMUDP_VERBOSE_INFO(("failed to fclose stdin in AMUDP_SPMDExit(): %s(%i)",strerror(errno),errno)); 
+  if (fclose(stdout)) AMUDP_VERBOSE_INFO(("failed to fclose stdout in AMUDP_SPMDExit(): %s(%i)",strerror(errno),errno)); 
+  if (fclose(stderr)) AMUDP_VERBOSE_INFO(("failed to fclose stderr in AMUDP_SPMDExit(): %s(%i)",strerror(errno),errno)); 
 
   /* use normal shutdown and closesocket to ignore errors */
-  if (newstdin != INVALID_SOCKET) {
-    shutdown(newstdin, SHUT_RDWR);
-    closesocket(newstdin); 
-  }
-  if (newstdout != INVALID_SOCKET) {
-    shutdown(newstdout, SHUT_RDWR);
-    closesocket(newstdout); 
-  }
-  if (newstderr != INVALID_SOCKET) {
-    shutdown(newstderr, SHUT_RDWR);
-    closesocket(newstderr);
+  for (int i=0; i <= 2; i++) {
+    SOCKET s = newstd[i];
+    if (s != INVALID_SOCKET) {
+      shutdown(s, SHUT_RDWR);
+      closesocket(s); 
+    }
   }
 
   sched_yield();
@@ -1712,8 +1442,8 @@ extern int AMUDP_SPMDExit(int exitcode) {
   // GASNet calls here when handling a fatal or termination signal.
   /* try */ {
     int exitcode_nb = hton32(exitcode);
-    sendAll(AMUDP_SPMDControlSocket, "E", -1, 0);
-    sendAll(AMUDP_SPMDControlSocket, &exitcode_nb, sizeof(int32_t), 0);
+    sendAll(AMUDP_SPMDControlSocket, "E", -1, false);
+    sendAll(AMUDP_SPMDControlSocket, &exitcode_nb, sizeof(int32_t), false);
     while (1) { // swallow everything and wait for master to close
       char temp;
       int retval = recv(AMUDP_SPMDControlSocket, &temp, 1, 0); 
@@ -1820,12 +1550,11 @@ extern int AMUDP_SPMDAllGather(void *source, void *dest, size_t len) {
  *  global getenv()
  * ------------------------------------------------------------------------------------ */
 extern const char* AMUDP_SPMDgetenvMaster(const char *keyname) {
-  if (!AMUDP_SPMDStartupCalled) {
+  if (!AMUDP_SPMDMasterEnvironment) {
     AMUDP_Err("called AMUDP_SPMDgetenvMaster before AMUDP_SPMDStartup()");
     return NULL;
   }
 
-  AMUDP_assert(AMUDP_SPMDMasterEnvironment != NULL);
   char *p = AMUDP_SPMDMasterEnvironment;
   if (!keyname) return NULL;
   int keylen = strlen(keyname);
@@ -1843,7 +1572,7 @@ extern char *AMUDP_getenv_prefixed(const char *basekey) {
   const char *val[3];
   int winner = -1;
   char *(*getfn)(const char *) = NULL;
-  if (AMUDP_SPMDStartupCalled && AMUDP_SPMDMasterEnvironment != NULL) getfn = (char *(*)(const char *))AMUDP_SPMDgetenvMaster;
+  if (AMUDP_SPMDMasterEnvironment) getfn = (char *(*)(const char *))AMUDP_SPMDgetenvMaster;
   else getfn = (char *(*)(const char *))getenv;
 
   if (basekey == NULL || !*basekey) return NULL;
@@ -1857,7 +1586,7 @@ extern char *AMUDP_getenv_prefixed(const char *basekey) {
     if (val[i] != NULL) {
       if (winner == -1) winner = i;
       else if (strcmp(val[winner], val[i])) {
-        fprintf(stderr,"AMUDP: Warning: both $%s and $%s are set, to different values. Using the former.\n",
+        AMUDP_Warn("Both $%s and $%s are set, to different values. Using the former.",
           key[winner], key[i]);
       }
     }
@@ -1978,7 +1707,6 @@ static int AMUDP_SPMDReStartup(int fd, eb_t *eb, ep_t *ep) {
   return temp;
 }
 /* ------------------------------------------------------------------------------------ */
-#include "libcr.h"
 int AMUDP_SPMDCheckpoint(eb_t *eb, ep_t *ep, const char *dir) {
   AMUDP_assert(dir != NULL);
 
@@ -2003,7 +1731,7 @@ int AMUDP_SPMDCheckpoint(eb_t *eb, ep_t *ep, const char *dir) {
     const int mode = S_IRUSR;
     contextFd = open(buf, flags, mode); // BLCR-TODO: error checking
     if (contextFd < 0) {
-      fprintf(stderr, "Failed to create '%s' errno=%d(%s)\n", buf, errno, strerror(errno));
+      AMUDP_Err("Failed to create '%s' errno=%d(%s)", buf, errno, strerror(errno));
       AMUDP_free(buf);
       return -1;
     }

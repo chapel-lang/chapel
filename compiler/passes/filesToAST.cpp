@@ -24,6 +24,7 @@
 #include "passes.h"
 
 #include "bison-chapel.h"
+#include "build.h"
 #include "config.h"
 #include "countTokens.h"
 #include "docsDriver.h"
@@ -77,7 +78,11 @@ struct WellKnownFn
 static WellKnownFn sWellKnownFns[] = {
   {"chpl_here_alloc",         &gChplHereAlloc, FLAG_LOCALE_MODEL_ALLOC},
   {"chpl_here_free",          &gChplHereFree,  FLAG_LOCALE_MODEL_FREE},
-  {"chpl_doDirectExecuteOn",  &gChplDoDirectExecuteOn, FLAG_UNKNOWN}
+  {"chpl_doDirectExecuteOn",  &gChplDoDirectExecuteOn, FLAG_UNKNOWN},
+  {"_build_tuple",            &gBuildTupleType, FLAG_BUILD_TUPLE_TYPE},
+  {"_build_tuple_noref",      &gBuildTupleTypeNoRef, FLAG_BUILD_TUPLE_TYPE},
+  {"*",                       &gBuildStarTupleType, FLAG_BUILD_TUPLE_TYPE},
+  {"_build_star_tuple_noref", &gBuildStarTupleTypeNoRef, FLAG_BUILD_TUPLE_TYPE}
 };
 
 void parse() {
@@ -149,6 +154,7 @@ void parse() {
   }
 
   checkConfigs();
+  convertForallExpressions();
 
   finishCountingTokens();
 

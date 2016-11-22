@@ -278,18 +278,31 @@ proc docoforall(param n)
 }
 */
 
-proc dotests(param n) {
-  dobegin(n);
-  dobeginon(n);
-  doon(n);
-  dofaston(n);
-  defastbeginon(n);
-  //docoforall(n);
+proc dotests(param nbytes) {
+  param nwords = (7+nbytes) / 8; 
+  dobegin(nwords);
+  dobeginon(nwords);
+  doon(nwords);
+  dofaston(nwords);
+  defastbeginon(nwords);
+  //docoforall(nwords);
 }
 
+// interesting sizes:
+//  GASNet "small" messages are < 128 bytes
+//  GASNet UDP gasnet_AMMaxMedium() == 512 bytes (the minimum allowed in Gasnet)
+//  GASNet IBV gasnet_AMMaxMedium() == 4024 in one configuration
+//  
 dotests(1);
+dotests(5);
 dotests(10);
+dotests(50);
 dotests(100);
+dotests(250);
+dotests(500);
 dotests(1000);
+dotests(2500);
+dotests(5000);
+dotests(10000);
 
 writeln("OK");

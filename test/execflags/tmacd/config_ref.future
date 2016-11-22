@@ -1,0 +1,4 @@
+error message: 'config ref' declarations should be a compile time error
+
+The second declaration in this test should be a compile time error, possibly
+a syntax error.

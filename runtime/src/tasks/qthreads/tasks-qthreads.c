@@ -75,7 +75,7 @@
 static aligned_t profile_task_yield = 0;
 static aligned_t profile_task_addToTaskList = 0;
 static aligned_t profile_task_executeTasksInList = 0;
-static aligned_t profile_task_taskCall = 0;
+static aligned_t profile_task_taskCallFTable = 0;
 static aligned_t profile_task_startMovedTask = 0;
 static aligned_t profile_task_getId = 0;
 static aligned_t profile_task_sleep = 0;
@@ -99,7 +99,7 @@ static void profile_print(void)
     fprintf(stderr, "task yield: %lu\n", (unsigned long)profile_task_yield);
     fprintf(stderr, "task addToTaskList: %lu\n", (unsigned long)profile_task_addToTaskList);
     fprintf(stderr, "task executeTasksInList: %lu\n", (unsigned long)profile_task_executeTasksInList);
-    fprintf(stderr, "task taskCall: %lu\n", (unsigned long)profile_task_taskCall);
+    fprintf(stderr, "task taskCallFTable: %lu\n", (unsigned long)profile_task_taskCallFTable);
     fprintf(stderr, "task startMovedTask: %lu\n", (unsigned long)profile_task_startMovedTask);
     fprintf(stderr, "task getId: %lu\n", (unsigned long)profile_task_getId);
     fprintf(stderr, "task sleep: %lu\n", (unsigned long)profile_task_sleep);
@@ -154,6 +154,8 @@ chpl_task_bundle_t chpl_qthread_process_bundle = {
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_MAIN_TASK,
                                    .requestedSubloc = c_sublocid_any_val,
+                                   .requested_fid = FID_NONE,
+                                   .requested_fn = NULL,
                                    .id = chpl_nullTaskID };
 
 chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
@@ -163,6 +165,8 @@ chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_COMM_TASK,
                                    .requestedSubloc = c_sublocid_any_val,
+                                   .requested_fid = FID_NONE,
+                                   .requested_fn = NULL,
                                    .id = chpl_nullTaskID };
 
 chpl_qthread_tls_t chpl_qthread_process_tls = {
@@ -174,7 +178,6 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
                                .bundle = &chpl_qthread_comm_task_bundle,
                                .lock_filename = 0,
                                .lock_lineno = 0 };
-
 
 //
 // chpl_qthread_get_tasklocal() is in tasks-qthreads.h
@@ -673,27 +676,40 @@ static void setupTasklocalStorage(void) {
     }
 }
 
+static void setupWorkStealing(void) {
+    // In our experience the current work stealing implementation hurts
+    // performance, so disable it. Note that we don't override, so a user could
+    // try working stealing out by setting {QT,QTHREAD}_STEAL_RATIO. Also note
+    // that not all schedulers support work stealing, but it doesn't hurt to
+    // set this env var for those configs anyways.
+    chpl_qt_setenv("STEAL_RATIO", "0", 0);
+}
+
 void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
     int32_t   hwpar;
     pthread_t initer;
+    pthread_attr_t pAttr;
 
     chpl_qthread_process_pthread = pthread_self();
     chpl_qthread_process_bundle.id = qthread_incr(&next_task_id, 1);
 
     commMaxThreads = chpl_comm_getMaxThreads();
 
-    // Set up hardware parallelism, the stack size and stack guards, and
-    // tasklocal storage.
+    // Set up hardware parallelism, the stack size and stack guards,
+    // tasklocal storage, and work stealing
     hwpar = setupAvailableParallelism(commMaxThreads);
     setupCallStacks(hwpar);
     setupTasklocalStorage();
+    setupWorkStealing();
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
     // Initialize qthreads
-    pthread_create(&initer, NULL, initializer, NULL);
+    pthread_attr_init(&pAttr);
+    pthread_attr_setdetachstate(&pAttr, PTHREAD_CREATE_DETACHED);
+    pthread_create(&initer, &pAttr, initializer, NULL);
     while (chpl_qthread_done_initializing == 0)
         sched_yield();
 
@@ -736,6 +752,7 @@ static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
         if (bundle->id == chpl_nullTaskID)
             bundle->id = qthread_incr(&next_task_id, 1);
         chpl_task_do_callbacks(event_kind,
+                               bundle->requested_fid,
                                bundle->filename,
                                bundle->lineno,
                                bundle->id,
@@ -821,6 +838,7 @@ void chpl_task_callMain(void (*chpl_main)(void))
     arg.arg.countRunning      = false;
     arg.arg.is_executeOn      = false;
     arg.arg.requestedSubloc   = c_sublocid_any_val;
+    arg.arg.requested_fid     = FID_NONE;
     arg.arg.requested_fn      = NULL;
     arg.arg.lineno            = 0;
     arg.arg.filename           = CHPL_FILE_IDX_MAIN_TASK;
@@ -886,6 +904,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
         arg->countRunning      = false;
         arg->is_executeOn      = false;
         arg->requestedSubloc   = subloc;
+        arg->requested_fid     = fid;
         arg->requested_fn      = requested_fn;
         arg->lineno            = lineno;
         arg->filename          = filename;
@@ -907,7 +926,8 @@ void chpl_task_executeTasksInList(void **task_list)
     PROFILE_INCR(profile_task_executeTasksInList,1);
 }
 
-static inline void taskCallBody(chpl_fn_p fp, void *arg, size_t arg_size,
+static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
+                                void *arg, size_t arg_size,
                                 c_sublocid_t subloc,  chpl_bool serial_state,
                                 int lineno, int32_t filename)
 {
@@ -917,6 +937,7 @@ static inline void taskCallBody(chpl_fn_p fp, void *arg, size_t arg_size,
     bundle->countRunning       = canCountRunningTasks;
     bundle->is_executeOn       = true;
     bundle->requestedSubloc    = subloc;
+    bundle->requested_fid      = fid;
     bundle->requested_fn       = fp;
     bundle->lineno             = lineno;
     bundle->filename           = filename;
@@ -932,16 +953,18 @@ static inline void taskCallBody(chpl_fn_p fp, void *arg, size_t arg_size,
     }
 }
 
-void chpl_task_taskCall(chpl_fn_p fp, chpl_task_bundle_t *arg, size_t arg_size,
-                        c_sublocid_t subloc,
-                        int lineno, int32_t filename)
+void chpl_task_taskCallFTable(chpl_fn_int_t fid,
+                              chpl_task_bundle_t *arg, size_t arg_size,
+                              c_sublocid_t subloc,
+                              int lineno, int32_t filename)
 {
     PROFILE_INCR(profile_task_taskCall,1);
 
-    taskCallBody(fp, arg, arg_size, subloc, false, lineno, filename);
+    taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, false, lineno, filename);
 }
 
-void chpl_task_startMovedTask(chpl_fn_p           fp,
+void chpl_task_startMovedTask(chpl_fn_int_t       fid,
+                              chpl_fn_p           fp,
                               chpl_task_bundle_t *arg,
                               size_t              arg_size,
                               c_sublocid_t        subloc,
@@ -958,7 +981,7 @@ void chpl_task_startMovedTask(chpl_fn_p           fp,
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
-    taskCallBody(fp, arg, arg_size, subloc, serial_state, 0, CHPL_FILE_IDX_UNKNOWN);
+    taskCallBody(fid, fp, arg, arg_size, subloc, serial_state, 0, CHPL_FILE_IDX_UNKNOWN);
 }
 
 //
@@ -1022,6 +1045,7 @@ void chpl_task_sleep(double secs)
             qthread_yield();
             qtimer_stop(t);
         } while (qtimer_secs(t) < secs);
+        qtimer_destroy(t);
     }
 }
 

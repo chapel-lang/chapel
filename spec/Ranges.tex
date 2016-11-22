@@ -475,8 +475,8 @@ Range assignment is legal when:
 \item An implicit conversion is allowed from \chpl{idxType} of the source range
        to \chpl{idxType} of the destination range type,
 \item the two range types have the same \chpl{boundedType}, and
-\item either the destination range is stridable or the source range's
-      stride is 1.
+\item either the destination range is stridable or the source range
+      is not stridable.
 \end{itemize}
 
 \subsection{Range Comparisons}
@@ -799,7 +799,7 @@ away.  Specifically:
 \item If the count times the stride is positive, the low bound is preserved
 and the high bound is adjusted to be one less than the low bound plus that
 product.
-\item Iff the count times the stride is negative, the high bound is preserved
+\item If the count times the stride is negative, the high bound is preserved
 and the low bound is adjusted to be one greater than the high bound plus that
 product.
 \end{itemize}
