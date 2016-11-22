@@ -6649,31 +6649,8 @@ preFold(Expr* expr) {
         result = call->get(1)->remove();
         call->replace(result);
       } else {
-        // This test is turned off if we are in a wrapper function.
-        FnSymbol* fn = call->getFunction();
-        if (!fn->hasFlag(FLAG_WRAPPER)) {
-          SymExpr* lhs = NULL;
-          //
-          // check that the operand of 'addr of' is a legal lvalue.
-          if (SymExpr* rhs = toSymExpr(call->get(1))) {
-            if (!(lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR) && lhs->symbol()->hasFlag(FLAG_CONST))) {
-              if (rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
-                  rhs->symbol()->isConstant() || rhs->symbol()->isParameter()) {
-                if (lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR)) {
-                  if (rhs->symbol()->isImmediate()) {
-                    USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
-                  } else {
-                    // We should not fall into this case... should be handled in normalize
-                    INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
-                  }
-                } else {
-                  // Otherwise, we put off further checking until
-                  // checkResolved().
-                }
-              }
-            }
-          }
-        }
+        // Otherwise, we put off further checking until
+        // checkResolved().
       }
     } else if (call->isPrimitive(PRIM_DEREF)) {
       // remove deref if arg is already a value

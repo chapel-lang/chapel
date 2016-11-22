@@ -40,7 +40,7 @@ typedef std::set<Symbol*> RefSet;
 static void checkConstLoops();
 static int isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs);
 static void checkReturnPaths(FnSymbol* fn);
-static void checkNoRecordDeletes();
+static void checkCalls();
 static void checkExternProcs();
 
 
@@ -80,7 +80,8 @@ checkResolved() {
       }
     }
   }
-  checkNoRecordDeletes();
+  // check for no record deletes, no invalid PRIM_ADDR_OF
+  checkCalls();
   checkConstLoops();
   checkExternProcs();
 }
@@ -403,10 +404,8 @@ checkReturnPaths(FnSymbol* fn) {
 // In addition, the ability for user code to explicitly call deletes on fields
 // of record type may be necessary for UMM, but this is yet to be demonstrated.
 static void
-checkNoRecordDeletes()
+checkNoRecordDeletes(CallExpr* call)
 {
-  forv_Vec(CallExpr, call, gCallExprs)
-  {
     FnSymbol* fn = call->isResolved();
 
     // Note that fn can (legally) be null if the call is primitive.
@@ -419,6 +418,48 @@ checkNoRecordDeletes()
       if (isRecord(call->get(1)->typeInfo()->getValType()))
         USR_FATAL_CONT(call, "delete not allowed on records");
     }
+}
+
+static void
+checkBadAddrOf(CallExpr* call)
+{
+    if (call->isPrimitive(PRIM_ADDR_OF)) {
+        // This test is turned off if we are in a wrapper function.
+        FnSymbol* fn = call->getFunction();
+        if (!fn->hasFlag(FLAG_WRAPPER)) {
+          SymExpr* lhs = NULL;
+
+          if (CallExpr* move = toCallExpr(call->parentExpr))
+            if (move->isPrimitive(PRIM_MOVE))
+              lhs = toSymExpr(move->get(1));
+
+          //
+          // check that the operand of 'addr of' is a legal lvalue.
+          if (SymExpr* rhs = toSymExpr(call->get(1))) {
+              if (rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
+                  rhs->symbol()->isConstant() || rhs->symbol()->isParameter()) {
+                if (lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR)) {
+                  if (rhs->symbol()->isImmediate()) {
+                    USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
+                  } else {
+                    // This case should be handled elsewhere in the compiler
+                    INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
+                  }
+                }
+              }
+          }
+        }
+    }
+}
+
+
+static void
+checkCalls()
+{
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    checkNoRecordDeletes(call);
+    checkBadAddrOf(call);
   }
 }
 
