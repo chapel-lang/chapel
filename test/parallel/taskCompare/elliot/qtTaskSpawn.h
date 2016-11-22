@@ -15,9 +15,9 @@ static aligned_t decTask(void* arg) {
 }
 static void qtChplLikeTaskSpawn(int64_t trials, int64_t numTasks) {
   int i, j;
+  atomic_int_least64_t runningTasks;
+  atomic_init_int_least64_t(&runningTasks, 0);
 
-  atomic_int_least64_t runningTasks = 0;
-  int counter = 0;
   for (i=0; i<trials; i++) {
     for (j=0; j<numTasks; j++) {
       atomic_fetch_add_int_least64_t(&runningTasks, 1);
