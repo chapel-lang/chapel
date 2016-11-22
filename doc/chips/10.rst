@@ -30,6 +30,7 @@ Outline
    - `Definition Location`_
 
  * `Referencing Other Initializers`_
+ * `Generics`_
  * `Implementation Strategy, Misc.`_
  * `Noinit`_
  * `Copy Initializers`_
@@ -383,6 +384,34 @@ explicitly stated, the compiler assumes the body of an initializer to be in
 Phase 2.  For optimization purposes, ideally bodies which are compliant with the
 conditions of Phase 1 would be considered Phase 1 only – implementing this is
 future work.
+
+Generics
+++++++++
+
+The current plan for supporting generic fields is to treat them similar to
+normal fields with some exceptions.  For instance, ``type`` and ``param`` fields
+will only be initialized in Phase 1, and cannot be updated during Phase 2
+(similar to the handling of ``const`` and ``ref`` fields, and for the same
+reasons).  Generic ``var`` fields will be reassignable during Phase 2, and the
+normal rules about type constraints apply - the type of the generic ``var``
+field cannot change during Phase 2.
+
+If the initialization of a ``param`` field is omitted during Phase 1 and the
+field is declared with a type or starting value, that information will be used
+as the initialization of the omitted ``param`` field.  If the initialization of
+a ``type`` field is omitted during Phase 1 and the field is declared with a
+starting value, that information will similarly be used as the initialization of
+the omitted ``type`` field.  It is an error for a ``type`` or ``param`` field's
+initialization to be omitted during Phase 1 when none of that information is
+present in the field's declaration, and it is an error for the initialization of
+a generic ``var`` or ``const`` field to be omitted during Phase 1.
+
+This is a departure from the previous implementation of generic fields, which
+required the presence of an argument with the same name as the field in the
+argument list for all constructors, but forbid the manipulation of these fields
+within the constructor body.  That specification was deemed unnecessarily
+confusing and restrictive for users.
+
 
 Implementation Strategy, Misc.
 ++++++++++++++++++++++++++++++
