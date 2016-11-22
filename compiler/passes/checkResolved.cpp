@@ -406,50 +406,50 @@ checkReturnPaths(FnSymbol* fn) {
 static void
 checkNoRecordDeletes(CallExpr* call)
 {
-    FnSymbol* fn = call->isResolved();
+  FnSymbol* fn = call->isResolved();
 
-    // Note that fn can (legally) be null if the call is primitive.
-    if (fn && fn->hasFlag(FLAG_DESTRUCTOR)) {
-      // Statements of the form 'delete x' (PRIM_DELETE) are replaced
-      //  during the normalize pass with a call to the destructor
-      //  followed by a call to chpl_mem_free(), so here we just check
-      //  if the type of the variable being passed to chpl_mem_free()
-      //  is a record.
-      if (isRecord(call->get(1)->typeInfo()->getValType()))
-        USR_FATAL_CONT(call, "delete not allowed on records");
-    }
+  // Note that fn can (legally) be null if the call is primitive.
+  if (fn && fn->hasFlag(FLAG_DESTRUCTOR)) {
+    // Statements of the form 'delete x' (PRIM_DELETE) are replaced
+    //  during the normalize pass with a call to the destructor
+    //  followed by a call to chpl_mem_free(), so here we just check
+    //  if the type of the variable being passed to chpl_mem_free()
+    //  is a record.
+    if (isRecord(call->get(1)->typeInfo()->getValType()))
+      USR_FATAL_CONT(call, "delete not allowed on records");
+  }
 }
 
 static void
 checkBadAddrOf(CallExpr* call)
 {
-    if (call->isPrimitive(PRIM_ADDR_OF)) {
-        // This test is turned off if we are in a wrapper function.
-        FnSymbol* fn = call->getFunction();
-        if (!fn->hasFlag(FLAG_WRAPPER)) {
-          SymExpr* lhs = NULL;
+  if (call->isPrimitive(PRIM_ADDR_OF)) {
+    // This test is turned off if we are in a wrapper function.
+    FnSymbol* fn = call->getFunction();
+    if (!fn->hasFlag(FLAG_WRAPPER)) {
+      SymExpr* lhs = NULL;
 
-          if (CallExpr* move = toCallExpr(call->parentExpr))
-            if (move->isPrimitive(PRIM_MOVE))
-              lhs = toSymExpr(move->get(1));
+      if (CallExpr* move = toCallExpr(call->parentExpr))
+        if (move->isPrimitive(PRIM_MOVE))
+          lhs = toSymExpr(move->get(1));
 
-          //
-          // check that the operand of 'addr of' is a legal lvalue.
-          if (SymExpr* rhs = toSymExpr(call->get(1))) {
-              if (rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
-                  rhs->symbol()->isConstant() || rhs->symbol()->isParameter()) {
-                if (lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR)) {
-                  if (rhs->symbol()->isImmediate()) {
-                    USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
-                  } else {
-                    // This case should be handled elsewhere in the compiler
-                    INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
-                  }
-                }
-              }
+      //
+      // check that the operand of 'addr of' is a legal lvalue.
+      if (SymExpr* rhs = toSymExpr(call->get(1))) {
+        if (rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
+            rhs->symbol()->isConstant() || rhs->symbol()->isParameter()) {
+          if (lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR)) {
+            if (rhs->symbol()->isImmediate()) {
+              USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
+            } else {
+              // This case should be handled elsewhere in the compiler
+              INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
+            }
           }
         }
+      }
     }
+  }
 }
 
 
