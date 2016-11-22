@@ -30,6 +30,7 @@ class ConstInfo {
     bool                  finalizedRefToConst;
     bool                  alreadyCalled;
     Symbol*               sym;
+    SymExpr*              fnUses;
     std::vector<SymExpr*> todo;
 
     ConstInfo(Symbol*);
@@ -43,6 +44,7 @@ class ConstInfo {
 
 ConstInfo::ConstInfo(Symbol* s) {
   sym = s;
+  fnUses = NULL;
   Qualifier q = sym->qualType().getQual();
   if (ArgSymbol* arg = toArgSymbol(s)) {
     // Work around a bug where we can have an arg with the in-intent, but it's
@@ -282,7 +284,7 @@ static bool inferConstRef(Symbol* sym) {
   }
 
   if (isFirstCall) {
-    if (retval) {
+    if (retval && !info->finalizedConstness) {
       if (ArgSymbol* arg = toArgSymbol(sym)) {
         arg->intent = INTENT_CONST_REF;
       } else {
@@ -375,7 +377,7 @@ static bool inferConst(Symbol* sym) {
   }
 
   if (isFirstCall) {
-    if (retval) {
+    if (retval && !info->finalizedConstness) {
       if (ArgSymbol* arg = toArgSymbol(sym)) {
         INT_ASSERT(arg->intent & INTENT_FLAG_IN);
         arg->intent = INTENT_CONST_IN;
@@ -427,8 +429,16 @@ bool inferRefToConst(Symbol* sym) {
       // Not sure how to best handle virtual calls, so simply set false for now
       retval = false;
     } else {
-      for_SymbolSymExprs(se, fn) {
-        if (!retval) break;
+      if (isFirstCall && info) {
+        INT_ASSERT(info->fnUses == NULL);
+        info->fnUses = fn->firstSymExpr();
+      } else if (info == NULL) {
+        retval = false;
+      }
+      // Need this part to be re-entrant in case of recursive functions
+      while (info && info->fnUses != NULL && retval) {
+        SymExpr* se = info->fnUses;
+        info->fnUses = se ? se->symbolSymExprsNext : NULL;
 
         CallExpr* call = toCallExpr(se->parentExpr);
         INT_ASSERT(call && call->isResolved());
@@ -436,7 +446,9 @@ bool inferRefToConst(Symbol* sym) {
         Symbol* actual = toSymExpr(formal_to_actual(call, sym))->symbol();
 
         if (actual->isRef()) {
-          if (!inferRefToConst(actual)) {
+          // I don't think we technically need to skip if the actual is the
+          // same symbol as the formal, but it makes things simpler.
+          if (actual != sym && !inferRefToConst(actual)) {
             retval = false;
           }
         } else {
@@ -493,7 +505,7 @@ bool inferRefToConst(Symbol* sym) {
   }
 
   if (isFirstCall) {
-    if (retval) {
+    if (retval && !info->finalizedRefToConst) {
       sym->addFlag(FLAG_REF_TO_CONST);
     }
 
