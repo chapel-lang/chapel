@@ -1,0 +1,6 @@
+Testing int
+before: 0
+after:  1
+Testing record
+before: (x = 0)
+after: (x = 1)
