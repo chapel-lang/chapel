@@ -504,7 +504,10 @@ A more complicated strategy, similar to that employed in D's postblit, may be
 considered at a later time, but for now, we view this support as sufficient.
 
 For more details on when the copy initializer would be called, please refer to
-[CHIP 13 - When Do Record and Array Copies Occur] (13.rst)
+`CHIP 13 - When Do Records and Array Copies Occur`_
+
+.. _CHIP 13 - When Do Records and Array Copies Occur:
+   https://github.com/chapel-lang/chapel/blob/master/doc/chips/13.rst
 
 Summary
 +++++++
