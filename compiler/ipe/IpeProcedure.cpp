@@ -153,7 +153,7 @@ bool IpeProcedure::isActualRef(Expr* actual) const
 
   if (SymExpr* symExpr = toSymExpr(actual))
   {
-    if (ArgSymbol* arg = toArgSymbol(symExpr->var))
+    if (ArgSymbol* arg = toArgSymbol(symExpr->symbol()))
     {
       retval = (arg->intent & INTENT_REF) ? true : false;
     }

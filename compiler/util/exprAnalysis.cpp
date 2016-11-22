@@ -75,7 +75,7 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
           std::vector<SymExpr*> syms;
           collectSymExprs(exprToMove, syms);
           for_vector(SymExpr, s, syms) {
-            if (s->var == toSymExpr(ce->get(1))->var) {
+            if (s->symbol() == toSymExpr(ce->get(1))->symbol()) {
               safeExprCache[e] = false;
               return false;
             }
@@ -134,7 +134,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     if(!cachedGlobalManip || !cachedExternManip) {
       if(!cachedGlobalManip) {
         if (SymExpr* se = toSymExpr(ast)) {
-          Symbol* var = se->var;
+          Symbol* var = se->symbol();
 
           if(!var->isImmediate() &&  isGlobal(var)){
             safeFnCache[fnSym] = false;
@@ -145,7 +145,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
       }
       if(!cachedExternManip) {
         if (SymExpr* se = toSymExpr(ast)) {
-          Symbol* var = se->var;
+          Symbol* var = se->symbol();
 
           if(var->hasFlag(FLAG_EXTERN)) {
             safeFnCache[fnSym] = false;
@@ -257,6 +257,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG:
     case PRIM_ADDR_OF:
+    case PRIM_SET_REFERENCE:
     case PRIM_DEREF:
     case PRIM_PTR_EQUAL:
     case PRIM_PTR_NOTEQUAL:

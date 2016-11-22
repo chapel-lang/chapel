@@ -48,6 +48,9 @@ MAKEFLAGS = --no-print-directory
 
 export CHPL_MAKE_HOME=$(shell pwd)
 
+NEEDS_LLVM_RUNTIME=${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py \
+                    --needs-llvm-runtime
+
 default: all
 
 all: comprt
@@ -72,7 +75,7 @@ modules: FORCE
 
 runtime: FORCE
 	cd runtime && $(MAKE)
-	-@if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
+	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
 	. ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
 	cd runtime && $(MAKE) ; \
 	fi
@@ -85,7 +88,7 @@ third-party-try-opt: third-party-try-re2 third-party-try-gmp
 third-party-try-re2: FORCE
 	-@if [ -z "$$CHPL_REGEXP" ]; then \
 	cd third-party && $(MAKE) try-re2; \
-	if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
+	if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
 	. ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
 	$(MAKE) try-re2; \
 	fi \
@@ -94,7 +97,7 @@ third-party-try-re2: FORCE
 third-party-try-gmp: FORCE
 	-@if [ -z "$$CHPL_GMP" ]; then \
 	cd third-party && $(MAKE) try-gmp; \
-	if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
+	if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
 	. ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
 	$(MAKE) try-gmp; \
 	fi \
@@ -144,6 +147,7 @@ cleanall: FORCE
 	cd third-party && $(MAKE) cleanall
 	cd doc && $(MAKE) cleanall
 	rm -f util/chplenv/*.pyc
+	rm -rf build
 
 cleandeps: FORCE
 	cd compiler && $(MAKE) cleandeps
@@ -158,6 +162,7 @@ clobber: FORCE
 	cd doc $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
+	rm -rf build
 	rm -f util/chplenv/*.pyc
 
 depend:

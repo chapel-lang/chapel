@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ADT_OBJDIR = $(COMPILER_ROOT)/adt/$(OBJ_SUBDIR)
+ADT_OBJDIR = $(COMPILER_BUILD)/adt
 
 ALL_SRCS += adt/*.cpp
 

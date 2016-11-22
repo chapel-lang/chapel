@@ -3,6 +3,7 @@ LCALS_SOURCES = LCALSMain.chpl \
                 RunBRawLoops.chpl \
                 RunCRawLoops.chpl \
                 RunParallelRawLoops.chpl \
+                RunSPMDRawLoops.chpl \
                 RunVectorizeOnlyRawLoops.chpl \
                 LCALSConfiguration.chpl \
                 LCALSLoops.chpl \
@@ -28,7 +29,7 @@ else
 endif
 
 LCALSMain: $(LCALS_SOURCES)
-	$(CHPL) $(CHPL_FLAGS) LCALSMain.chpl -o LCALSMain
+	+$(CHPL) $(CHPL_FLAGS) LCALSMain.chpl -o LCALSMain
 
 clean:
 	rm -f LCALSMain LCALSMain_real

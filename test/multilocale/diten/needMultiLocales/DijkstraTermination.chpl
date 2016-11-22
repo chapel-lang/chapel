@@ -120,17 +120,17 @@ var a: sync int = 0;
 use Time;
 
 proc foo() {
-  sleep(5);
+  // doWork3();
   turnBlack;
   on Locales(0) {
     incEndCount;
     begin {
-      sleep(3);
+      // doWork4();
       a += 1;
       decEndCount;
     }
   }
-  sleep(4);
+  // doWork5();
   a += 1;
 }
 
@@ -144,14 +144,14 @@ proc main {
   begin {
     turnBlack;
     on Locales(1) {
-      sleep(3);
+      // doWork1();
       a += 1;
     }
     decEndCount;
   }
   incEndCount;
   begin {
-    sleep(4);
+    // doWork2();
     a += 1;
     decEndCount;
   }

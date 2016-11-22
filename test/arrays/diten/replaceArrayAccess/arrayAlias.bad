@@ -1,3 +1,0 @@
-2 6 12 20
-2 6 12 20
-arrayAlias.chpl:2: error: halt reached - array reference count is negative!

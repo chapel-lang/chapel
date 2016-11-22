@@ -3,6 +3,9 @@
  * Copyright 2004, The Regents of the University of California
  * Terms of use are as specified in license.txt
  */
+
+#define _IN_GASNET_TESTS_DELAY_C 1  /* to be removed next release */
+
 #include <float.h>
 #include <gasnet.h>
 #include <gasnet_tools.h>

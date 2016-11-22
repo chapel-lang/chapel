@@ -38,10 +38,10 @@ void removeUnnecessaryGotos(FnSymbol* fn) {
       DefExpr* def = toDefExpr(gotoStmt->next);
       SymExpr* label = toSymExpr(gotoStmt->label);
       INT_ASSERT(label);
-      if (def && def->sym == label->var)
+      if (def && def->sym == label->symbol())
         gotoStmt->remove();
       else
-        labels.insert(label->var);
+        labels.insert(label->symbol());
     }
   }
 

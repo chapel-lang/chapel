@@ -30,7 +30,7 @@ with open(genfile, 'w') as f:
 runtime_path_cmd = [printchplenv, '--runtime']
 runtime_path = subprocess.Popen(runtime_path_cmd, stdout=subprocess.PIPE).communicate()[0]
 runtime_path = runtime_path.strip()
-gen_env_f = os.path.join(chpl_home, 'runtime', 'src', 'gen', runtime_path, 'chpl-env-gen.h')
+gen_env_f = os.path.join(chpl_home, 'build', 'runtime', runtime_path, 'include', 'chpl-env-gen.h')
 
 here_gen_env_f = os.path.join(os.path.dirname(__file__), 'chpl-env-gen.h')
 shutil.copyfile(gen_env_f, here_gen_env_f)

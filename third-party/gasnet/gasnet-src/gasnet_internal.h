@@ -14,6 +14,9 @@
 
 #include <gasnet.h> /* MUST come first to ensure correct inttypes behavior */
 #include <gasnet_tools.h>
+
+GASNETI_BEGIN_EXTERNC
+
 #include <gasnet_syncops.h>
 
 #include <stdarg.h>
@@ -25,8 +28,6 @@
 #if defined(HAVE_MALLOC_H) && !PLATFORM_OS_OPENBSD /* OpenBSD warns that malloc.h is obsolete */
 #include <malloc.h> /* prevent problems with redefinition of malloc on solaris */
 #endif
-
-GASNETI_BEGIN_EXTERNC
 
 #if PLATFORM_COMPILER_SUN_C
   /* disable warnings triggerred by some macro idioms we use */

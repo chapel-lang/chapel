@@ -1,0 +1,3 @@
+autoCopy
+in Child.clone()
+(obj = {})

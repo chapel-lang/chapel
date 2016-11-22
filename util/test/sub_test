@@ -1846,6 +1846,10 @@ for testname in testsrc:
                             launcher_error = 'Jira 17 -- Missing output file for'
                         elif re.search('aprun: Unexpected close of the apsys control connection', output, re.IGNORECASE) != None:
                             launcher_error = 'Jira 193 -- Unexpected close of apsys for'
+                        elif re.search('Transient MPP reservation error on create', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 203 -- Transient MPP reservation error for'
+                        elif re.search('Failed to recv data from background qsub', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 260 -- Failed to recv data from background qsub for'
                         elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
                               re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
                             exectimeout = True

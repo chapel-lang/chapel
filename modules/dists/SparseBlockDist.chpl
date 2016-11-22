@@ -31,12 +31,6 @@
 // mapped to by the distribution.
 //
 
-//
-// TO DO List
-//
-// 1. refactor pid fields from distribution, domain, and array classes
-//
-
 use DSIUtil;
 use ChapelUtil;
 use BlockDist;
@@ -69,7 +63,6 @@ class SparseBlockDom: BaseSparseDomImpl {
   const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
-  var pid: int = -1; // privatized object id (this should be factored out)
 
   proc initialize() {
     setup();
@@ -328,7 +321,6 @@ class SparseBlockArr: BaseSparseArr {
       sparseLayoutType);
   var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable,
       sparseLayoutType);
-  var pid: int = -1; // privatized object id (this should be factored out)
 
   proc SparseBlockArr(type eltType, param rank, type idxType, param stridable,
       type sparseLayoutType ,dom) {

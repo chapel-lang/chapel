@@ -81,6 +81,10 @@ class AbstractJob(object):
     # argument name for specifying number of cpus (i.e. mppdepth)
     num_cpus_resource = None
 
+    # argument name for specifying number of processing elements per node (i.e.
+    # mppnppn)
+    processing_elems_per_node_resource = None
+
     # redirect_output decides whether we redirect output directly to the output
     # file or whether we let the launcher and queueing system do it.
     redirect_output = None
@@ -245,6 +249,11 @@ class AbstractJob(object):
             submit_command.append('-l')
             submit_command.append('{0}={1}'.format(
                 self.num_cpus_resource, self.num_cpus))
+        if self.processing_elems_per_node_resource is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.processing_elems_per_node_resource, 1))
+
 
         logging.debug('qsub command: {0}'.format(submit_command))
         return submit_command
@@ -422,6 +431,8 @@ class AbstractJob(object):
             return SlurmJob
         elif qsub_callable and os.environ.has_key('MOABHOMEDIR'):
             return MoabJob
+        elif qsub_callable and os.environ.has_key('CHPL_PBSPRO_USE_MPP'):
+            return MppPbsProJob
         elif qsub_callable:
             return PbsProJob
         else:  # not (qsub_callable or srun_callable)
@@ -859,6 +870,20 @@ class PbsProJob(AbstractJob):
         """
         return self._launch_qsub(testing_dir, output_file)
 
+
+class MppPbsProJob(PbsProJob):
+    """PBSPro implementation of pbs job runner that uses the mpp* options."""
+
+    submit_bin = 'qsub'
+    status_bin = 'qstat'
+    hostlist_resource = 'mppnodes'
+    num_nodes_resource = 'mppwidth'
+    num_cpus_resource = 'mppdepth' if 'CHPL_PBSPRO_NO_MPPDEPTH' not in os.environ else None
+    processing_elems_per_node_resource = 'mppnppn'
+    redirect_output = False
+
+    def _qsub_command(self, output_file):
+        return AbstractJob._qsub_command(self, output_file)
 
 class SlurmJob(AbstractJob):
     """SLURM implementation of abstract job runner."""

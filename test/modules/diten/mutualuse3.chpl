@@ -1,6 +1,6 @@
 module M1 {
-  use M2, Time;
-  sleep(3);
+  use M2;
+
   var a = 1;
 }
 

@@ -201,7 +201,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
     thread(thenBottom, basicBlock);
 
   } else if (GotoStmt* s = toGotoStmt(stmt)) {
-    LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);
+    LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->symbol());
 
     if (BasicBlock* bb = labelMaps.get(label)) {
       // Thread this block to its destination label.
@@ -246,7 +246,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
         else if (call->isPrimitive(PRIM_MOVE) ||
                  call->isPrimitive(PRIM_ASSIGN)) {
           if (SymExpr* se = toSymExpr(call->get(1))) {
-            if (se->var->type->refType == NULL)
+            if (se->symbol()->type->refType == NULL)
               mark = true;
           }
         }
@@ -683,8 +683,8 @@ void BasicBlock::printDefsVector(std::vector<SymExpr*> defs, Map<SymExpr*,int>& 
   for_vector(SymExpr, def, defs) {
     printf("%2d: %s[%d] in %d\n",
            defMap.get(def),
-           def->var->name,
-           def->var->id,
+           def->symbol()->name,
+           def->symbol()->id,
            def->getStmtExpr()->id);
   }
 

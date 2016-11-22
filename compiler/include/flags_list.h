@@ -38,6 +38,7 @@
 // the allocator function does not retain a reference to the referenced object.
 symbolFlag( FLAG_ALLOCATOR , ypr, "allocator" , "allocates heap storage" )
 symbolFlag( FLAG_ALLOW_REF , ypr, "allow ref" , ncm )
+symbolFlag( FLAG_DONT_ALLOW_REF , ypr, "do not allow ref" , ncm )
 symbolFlag( FLAG_ARG_THIS, npr, "arg this", "the hidden object argument")
 symbolFlag( FLAG_ARRAY , ypr, "array" , ncm )
 symbolFlag( FLAG_ARRAY_ALIAS , npr, "array alias" , "array alias declared via => syntax" )
@@ -53,6 +54,7 @@ symbolFlag( FLAG_BASE_DIST , ypr, "base dist" , ncm )
 symbolFlag( FLAG_BEGIN , npr, "begin" , ncm )
 symbolFlag( FLAG_BEGIN_BLOCK , npr, "begin block" , ncm )
 symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tuple functions")
+symbolFlag( FLAG_BUILD_TUPLE_TYPE , ypr, "build tuple type" , "used to mark the build_tuple type functions")
 
 symbolFlag( FLAG_CHAPEL_STRING_LITERAL, npr, "chapel string literal id" , "mark Chapel strings created from literals")
 // When resolution encounters the def of the variable 'chpl__iter',
@@ -115,6 +117,7 @@ symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible t
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 symbolFlag( FLAG_RVV, npr, "RVV", "variable is the return value variable" )
 symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
+symbolFlag( FLAG_IF_EXPR_FN , npr, "if-expr function" , ncm )
 symbolFlag( FLAG_IMPLICIT_ALIAS_FIELD , npr, "implicit alias field" , ncm )
 symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
 
@@ -151,7 +154,9 @@ symbolFlag( FLAG_LOCAL_FN , npr, "local fn" , "function is completely local (no 
 symbolFlag( FLAG_LOCAL_ON, npr, "local on", ncm)
 symbolFlag( FLAG_LOOP_BODY_ARGUMENT_CLASS , npr, "loop body argument class" , ncm )
 symbolFlag( FLAG_MARKED_GENERIC , npr, "marked generic" , "formal is marked generic using the type query syntax" )
+symbolFlag( FLAG_MAYBE_ARRAY_TYPE , npr, "maybe array type" , "function may be computing array type")
 symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a param" )
+symbolFlag( FLAG_MAYBE_REF , npr, "maybe ref" , "symbol can resolve to a ref" )
 symbolFlag( FLAG_MAYBE_TYPE , npr, "maybe type" , "symbol can resolve to a type" )
 symbolFlag( FLAG_MEMORY_ORDER_TYPE , ypr, "memory order type" , "type implementing memory order (normally called memory_order)" )
 symbolFlag( FLAG_METHOD , npr, "method" , "function that is a method" )
@@ -162,6 +167,7 @@ symbolFlag( FLAG_MODULE_INIT , npr, "module init" , "a module init function" )
 // This flag marks the result of an autoCopy as necessary.
 // Necessary autoCopies are not removed by the removeUnnecessaryAutoCopyCalls optimization.
 symbolFlag( FLAG_NECESSARY_AUTO_COPY, npr, "necessary auto copy", "a variable containing a necessary autoCopy" )
+symbolFlag( FLAG_NEW_ALIAS_FN, ypr, "new alias fn", "newAlias function" )
 symbolFlag( FLAG_IGNORE_NOINIT, ypr, "ignore noinit", "this type must be initialized" )
 symbolFlag( FLAG_NON_BLOCKING , npr, "non blocking" , "with FLAG_ON/FLAG_ON_BLOCK, non-blocking on functions" )
 symbolFlag( FLAG_NO_AUTO_DESTROY , ypr, "no auto destroy" , ncm )
@@ -208,7 +214,6 @@ symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )
 
 symbolFlag( FLAG_PARENT_FIELD , npr, "parent field" , "field from parent type" )
 
-symbolFlag( FLAG_PARTIAL_COPY, npr, "partial copy", ncm )
 symbolFlag( FLAG_PARTIAL_TUPLE, npr, "partial tuple", ncm)
 
 // Is this type a Plain-Old Data (POD) type - ie no autocopy/destructor/=
@@ -250,7 +255,8 @@ symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
 // Based on how this is used, I suggest renaming it to return_value_has_initializer
 // or something similar <hilde>.
 symbolFlag( FLAG_SPECIFIED_RETURN_TYPE , npr, "specified return type" , ncm )
-symbolFlag( FLAG_STAR_TUPLE , npr, "star tuple" , "mark tuple types as star tuple types" )
+symbolFlag( FLAG_STAR_TUPLE , ypr, "star tuple" , "mark tuple types as star tuple types" )
+symbolFlag( FLAG_STAR_TUPLE_ACCESSOR , ypr, "star tuple accessor" , "this function for star tuple types" )
 symbolFlag( FLAG_SUPER_CLASS , npr, "super class" , ncm )
 symbolFlag( FLAG_SUPER_TEMP, npr, "temporary of super field", ncm)
 symbolFlag( FLAG_SUPPRESS_LVALUE_ERRORS , ypr, "suppress lvalue error" , "do not report an lvalue error if it occurs in a function with this flag" )
@@ -259,8 +265,12 @@ symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
 symbolFlag( FLAG_REF_TEMP , npr, "ref temp" , "compiler-inserted reference temporary" )
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
+symbolFlag( FLAG_TUPLE_CAST_FN , ypr, "tuple cast fn" , ncm )
+symbolFlag( FLAG_TUPLE_WITH_REF , npr, "tuple contains ref" , ncm )
 symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
+symbolFlag( FLAG_UNALIAS_FN,  ypr, "unalias fn" , "function to copy array slices when assigning to a user variable")
+symbolFlag( FLAG_UNREF_FN,  ypr, "unref fn" , "function to remove reference fields from tuples when returning")
 symbolFlag( FLAG_VECTORIZE_YIELDING_LOOPS, ypr, "vectorize yielding loops", "used to explicitly vectorize yielding loops in iterators" )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )
 // Used to mark where a compiler generated flag was removed (but is desired

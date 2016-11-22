@@ -84,8 +84,9 @@
   };
 
   struct IntentExpr {
-    Expr*  first;
-    Expr*  second;
+    Expr*     iVar;
+    IntentTag tfIntent; // undefined for a reduce intent
+    Expr*     riExp;    // non-NULL for a reduce intent
   };
 
   struct OnlyRename {
@@ -117,6 +118,7 @@
     ProcIter          procIter;
     FlagSet*          flagSet;
     IntentExpr        pIntentExpr;
+    ForallIntents*    pForallIntents;
     std::vector<OnlyRename*>* ponlylist;
   };
 
@@ -124,7 +126,7 @@
 
 
 /* Line 2068 of yacc.c  */
-#line 132 "chapel.ypp"
+#line 134 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -144,7 +146,7 @@
 
 
 /* Line 2068 of yacc.c  */
-#line 154 "chapel.ypp"
+#line 156 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -175,7 +177,7 @@
 
 
 /* Line 2068 of yacc.c  */
-#line 179 "../include/bison-chapel.h"
+#line 181 "../include/bison-chapel.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -373,7 +375,7 @@ void yypstate_delete ();
 /* "%code provides" blocks.  */
 
 /* Line 2068 of yacc.c  */
-#line 185 "chapel.ypp"
+#line 187 "chapel.ypp"
 
   extern int yydebug;
 
@@ -384,4 +386,4 @@ void yypstate_delete ();
 
 
 /* Line 2068 of yacc.c  */
-#line 388 "../include/bison-chapel.h"
+#line 390 "../include/bison-chapel.h"

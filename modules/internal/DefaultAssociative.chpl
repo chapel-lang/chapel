@@ -262,6 +262,10 @@ module DefaultAssociative {
     //
     // Associative Domain Interface
     //
+    proc dsiMyDist() : BaseDist {
+      return dist;
+    }
+
     proc dsiClear() {
       on this {
         if parSafe then lockTable();
@@ -426,14 +430,14 @@ module DefaultAssociative {
       }
     }
   
-    iter dsiSorted() {
+    iter dsiSorted(comparator) {
       use Sort;
       var tableCopy: [0..#numEntries.read()] idxType;
   
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
         tableCopy(tmp) = table[slot].idx;
   
-      sort(tableCopy);
+      sort(tableCopy, comparator=comparator);
   
       for ind in tableCopy do
         yield ind;
@@ -697,13 +701,13 @@ module DefaultAssociative {
     // Associative array interface
     //
   
-    iter dsiSorted() {
+    iter dsiSorted(comparator) {
       use Sort;
       var tableCopy: [0..dom.dsiNumIndices-1] eltType;
       for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
         tableCopy(copy) = data(slot);
   
-      sort(tableCopy);
+      sort(tableCopy, comparator=comparator);
   
       for elem in tableCopy do
         yield elem;
@@ -745,71 +749,72 @@ module DefaultAssociative {
   }
   
   
-  // Thomas Wang's 64b mix function from http://www.concentric.net/~Ttwang/tech/inthash.htm
-  proc _gen_key(i: int(64)): int(64) {
+  // Thomas Wang's 64b mix function - see
+  // https://web.archive.org/web/20060705164341/http://www.concentric.net/~Ttwang/tech/inthash.htm
+  proc _gen_key(i: uint): uint {
     var key = i;
     key += ~(key << 32);
-    key = key ^ (key >> 22);
+    key ^= (key >> 22);
     key += ~(key << 13);
-    key = key ^ (key >> 8);
+    key ^= (key >> 8);
     key += (key << 3);
-    key = key ^ (key >> 15);
+    key ^= (key >> 15);
     key += ~(key << 27);
-    key = key ^ (key >> 31);
-    return (key & max(int(64))): int(64);  // YAH, make non-negative
+    key ^= (key >> 31);
+    return key;
+  }
+  proc _gen_key(i: int): uint {
+    return _gen_key(i:uint);
   }
   
-  inline proc chpl__defaultHash(b: bool): int(64) {
+  inline proc chpl__defaultHashCombine(a:uint, b:uint, fieldnum:int): uint {
+    extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
+    var n:uint = (17 + fieldnum):uint;
+    return a ^ chpl_bitops_rotl_64(b, n);
+  }
+
+  inline proc chpl__defaultHash(b: bool): uint {
     if (b) then
       return 0;
     else
       return 1;
   }
   
-  inline proc chpl__defaultHash(i: int(64)): int(64) {
+  inline proc chpl__defaultHash(i: int(64)): uint {
     return _gen_key(i);
   }
   
-  inline proc chpl__defaultHash(u: uint(64)): int(64) {
-    return _gen_key(u:int(64));
+  inline proc chpl__defaultHash(u: uint(64)): uint {
+    return _gen_key(u);
   }
   
-  inline proc chpl__defaultHash(f: real): int(64) {
+  inline proc chpl__defaultHash(f: real): uint {
     return _gen_key(__primitive( "real2int", f));
   }
   
-  inline proc chpl__defaultHash(c: complex): int(64) {
+  inline proc chpl__defaultHash(c: complex): uint {
     return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
   }
   
-  inline proc chpl__defaultHash(a: imag): int(64) {
+  inline proc chpl__defaultHash(a: imag): uint {
     return _gen_key(__primitive( "real2int", _i2r(a)));
   }
   
-  inline proc chpl__defaultHash(u: chpl_taskID_t): int(64) {
+  inline proc chpl__defaultHash(u: chpl_taskID_t): uint {
     return _gen_key(u:int(64));
   }
   
-  // TODO: maybe move this into Strings.chpl
-  // Use djb2 (Dan Bernstein in comp.lang.c)
-  inline proc chpl__defaultHash(x : string): int(64) {
-    var hash: int(64) = 0;
-    for c in 0..#(x.length) {
-      hash = ((hash << 5) + hash) ^ x.buff[c];
+  inline proc chpl__defaultHash(l : []): uint {
+    var hash : uint = 0;
+    var i = 1;
+    for obj in l {
+      hash = chpl__defaultHashCombine(chpl__defaultHash(obj), hash, i);
+      i += 1;
     }
-    return _gen_key(hash);
-  }
-
-  inline proc chpl__defaultHash(l : []) {
-      var hash : int(64) = 0;
-      for obj in l {
-          hash = (31 * hash) + chpl__defaultHash(obj);
-      }
-  
-      return _gen_key(hash);
+    return hash;
   }
   
-  inline proc chpl__defaultHash(o: object): int(64) {
+  inline proc chpl__defaultHash(o: object): uint {
     return _gen_key(__primitive( "object2int", o));
   }
   

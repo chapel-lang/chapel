@@ -34,6 +34,7 @@ SUBDIRS = \
 	adt \
 	AST \
 	backend \
+	codegen \
 	ifa \
 	ipe \
 	main \
@@ -67,6 +68,7 @@ BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
 include adt/Makefile.include
 include AST/Makefile.include
 include backend/Makefile.include
+include codegen/Makefile.include
 include ifa/Makefile.include
 include ipe/Makefile.include
 include main/Makefile.include
@@ -82,6 +84,7 @@ CHPL_OBJS = \
 	$(ADT_OBJS) \
 	$(AST_OBJS) \
 	$(BACKEND_OBJS) \
+	$(CODEGEN_OBJS) \
 	$(IFA_OBJS) \
 	$(IPE_OBJS) \
 	$(MAIN_OBJS) \
@@ -94,7 +97,7 @@ CHPL_OBJS = \
 
 EXECS = $(CHPL) $(CHPLDOC) $(CHPLIPE)
 
-PRETARGETS = $(BUILD_VERSION_FILE) third-party-pkgs
+PRETARGETS = $(BUILD_VERSION_FILE) llvm
 TARGETS = $(CHPL)
 
 
@@ -143,13 +146,17 @@ parser: FORCE
 $(CHPL_BIN_DIR):
 	mkdir -p $@
 
-THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs --compiler)
+# third-party pkgs could be automatically built with the below.
+#
+#THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs --compiler)
 # NOTE: If any of these builds fail, we won't stop building
-third-party-pkgs:
-	@for p in $(THIRD_PARTY_PKGS); do \
-		$(MAKE) -C $(THIRD_PARTY_DIR) $$p; \
-	done
+#third-party-pkgs:
+#	@for p in $(THIRD_PARTY_PKGS); do \
+#		$(MAKE) -C $(THIRD_PARTY_DIR) $$p; \
+#	done
 
+llvm: FORCE
+	$(MAKE) -C $(THIRD_PARTY_DIR)/llvm $(CHPL_MAKE_LLVM)
 
 #
 # include standard footer for compiler

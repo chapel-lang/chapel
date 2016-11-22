@@ -205,7 +205,7 @@ void scopeResolve() {
         fn->_this->type->methods.add(fn);
 
       } else if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
-        fn->_this->type = sym->var->type;
+        fn->_this->type = sym->symbol()->type;
         fn->_this->type->methods.add(fn);
       }
     }
@@ -402,7 +402,7 @@ static Symbol* getUsedSymbol(Expr* expr, UseStmt* useCall) {
   // cases that try to use non-module or non-enum symbols)
   //
   if (SymExpr* sym = toSymExpr(expr)) {
-    if (Symbol* symbol = sym->var) {
+    if (Symbol* symbol = sym->symbol()) {
       if (isValidUsedSymbol(useCall, symbol)) {
         return symbol;
       }
@@ -498,7 +498,7 @@ void UseStmt::validateList() {
     if (!sym) {
       SymExpr* se = toSymExpr(src);
       INT_ASSERT(se);
-      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in '%s'", it->second, se->var->name);
+      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in '%s'", it->second, se->symbol()->name);
     } else if (!sym->isVisible(this)) {
       USR_FATAL_CONT(this, "Bad identifier in rename, '%s' is private", it->second);
     }
@@ -808,6 +808,7 @@ static void build_type_constructor(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_TUPLE)) {
     fn->addFlag(FLAG_TUPLE);
     fn->addFlag(FLAG_INLINE);
+    gGenericTupleTypeCtor = fn;
   }
 
   // and insert it into the class type.
@@ -935,17 +936,7 @@ static void build_type_constructor(AggregateType* ct) {
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
                                           new_CStringSymbol(field->name),
-                                          new CallExpr("chpl__initCopy",
-                                                       new CallExpr(PRIM_TYPE_INIT, arg))));
-          #if 0
-          // Leaving this case in for Tom's work.  He will remove it if it is
-          // unnecessary
-          else
-            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                          fn->_this,
-                                          new_CStringSymbol(field->name),
                                           new CallExpr(PRIM_TYPE_INIT, arg)));
-          #endif
         } else if (exprType) {
           CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
           CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
@@ -1018,6 +1009,7 @@ static void build_constructor(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_TUPLE)) {
     fn->addFlag(FLAG_TUPLE);
     fn->addFlag(FLAG_INLINE);
+    gGenericTupleInit = fn;
   }
 
   // And insert it into the class type.
@@ -1394,7 +1386,7 @@ static void resolveGotoLabels() {
     SET_LINENO(gs);
 
     if (SymExpr* label = toSymExpr(gs->label)) {
-      if (label->var == gNil) {
+      if (label->symbol() == gNil) {
         LoopStmt* loop = LoopStmt::findEnclosingLoop(gs);
 
         if (!loop)
@@ -1599,7 +1591,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
         if (sym && sym->defPoint->getFunction() == method)
           break;
 
-        if (method->_this && (!symExpr || symExpr->var != method->_this)) {
+        if (method->_this && (!symExpr || symExpr->symbol() != method->_this)) {
           Type*       type = method->_this->type;
           TypeSymbol* cts  =
             (sym) ? toTypeSymbol(sym->defPoint->parentSymbol) : NULL;
@@ -1611,7 +1603,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
             if (call && call->baseExpr == expr &&
                 call->numActuals() >= 2 &&
                 toSymExpr(call->get(1)) &&
-                toSymExpr(call->get(1))->var == gMethodToken) {
+                toSymExpr(call->get(1))->symbol() == gMethodToken) {
               UnresolvedSymExpr* use = new UnresolvedSymExpr(name);
 
               expr->replace(use);
@@ -1763,12 +1755,14 @@ static void checkIdInsideWithClause(Expr* exprInAst,
                                     UnresolvedSymExpr* origUSE)
 {
   // A 'with' clause for a forall loop.
-  if (CallExpr* call = toCallExpr(exprInAst->parentExpr)) {
-    if (call->isPrimitive(PRIM_FORALL_LOOP)) {
-      errorDotInsideWithClause(origUSE, "forall loop");
-      return;
+  if (BlockStmt* parent = toBlockStmt(exprInAst->parentExpr))
+    if (ForallIntents* fi = parent->forallIntents) {
+      for_vector(Expr, fiVar, fi->fiVars)
+        if (exprInAst == fiVar) {
+          errorDotInsideWithClause(origUSE, "forall loop");
+          return;
+        }
     }
-  }
 
   // A 'with' clause for a task construct.
   if (Expr* parent1 = exprInAst->parentExpr)
@@ -1788,7 +1782,7 @@ static void checkIdInsideWithClause(Expr* exprInAst,
 static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) {
   if (call->isNamed(".")) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
-      if (ModuleSymbol* mod = toModuleSymbol(se->var)) { 
+      if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) { 
         ModuleSymbol* enclosingModule = call->getModule();
 
         enclosingModule->moduleUseAdd(mod);
@@ -1881,7 +1875,7 @@ static bool tryCResolve_set(ModuleSymbol* module, const char* name,
 
     if (c_exprs.count()) {
       forv_Vec(Expr*, c_expr, c_exprs) {
-        Vec<DefExpr*> v;
+        std::vector<DefExpr*> v;
 
         collectDefExprs(c_expr, v);
 
@@ -1931,7 +1925,7 @@ static void resolveEnumeratedTypes() {
       SET_LINENO(call);
 
       if (SymExpr* first = toSymExpr(call->get(1))) {
-        if (EnumType* type = toEnumType(first->var->type)) {
+        if (EnumType* type = toEnumType(first->symbol()->type)) {
           if (SymExpr* second = toSymExpr(call->get(2))) {
             const char* name;
 
@@ -2389,7 +2383,7 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
     } else {
       SymExpr* se = toSymExpr(source->src);
       INT_ASSERT(se);
-      if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
+      if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         if (mod->block->modUses) {
           for_actuals(expr, mod->block->modUses) {
             UseStmt* use = toUseStmt(expr);
@@ -2399,7 +2393,7 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
             INT_ASSERT(useSE);
 
             UseStmt* useToAdd = NULL;
-            if (!useSE->var->hasFlag(FLAG_PRIVATE)) {
+            if (!useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
               // Uses of private modules are not transitive - the symbols in the
               // private modules are only visible to itself and its immediate
               // parent.  Therefore, if the symbol is private, we will not
@@ -2414,11 +2408,11 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
               // could be provided from this use was 0, so it didn't need to be
               // added to the alreadySeen map.
               if (useToAdd != NULL) {
-                (*alreadySeen)[useSE->var].push_back(useToAdd);
+                (*alreadySeen)[useSE->symbol()].push_back(useToAdd);
               }
 
             } else {
-              (*alreadySeen)[useSE->var].push_back(use);
+              (*alreadySeen)[useSE->symbol()].push_back(use);
             }
           }
         }
@@ -2740,7 +2734,7 @@ static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
   SymExpr* useSE = toSymExpr(current->src);
   INT_ASSERT(useSE);
 
-  std::vector<UseStmt*> vec = (*seen)[useSE->var];
+  std::vector<UseStmt*> vec = (*seen)[useSE->symbol()];
   if (vec.size() > 0) {
     // We've already seen at least one use of this module, but it might not be
     // thorough enough to justify skipping the newest 'use'.

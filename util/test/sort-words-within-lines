@@ -1,0 +1,28 @@
+#!/usr/bin/env perl
+
+# sorts the words within each line
+
+$testname = $ARGV[0];
+$goodfile = $ARGV[1];
+$comp = $ARGV[2];
+
+$tmp_file = "$testname.exec.out.tmp";
+
+open TMPFILE, "$tmp_file" or die "can't open $tmp_file $!";
+my @lines = <TMPFILE>;
+close (TMPFILE);
+foreach my $line (@lines) {
+    chomp($line);
+}
+
+open OUTFILE, ">$tmp_file" or die "can't open $tmp_file for writing $!";
+
+foreach my $line (@lines) {
+  my @words = split(/ +|[{}]/, $line);
+  my @sorted_words = sort @words;
+  my $out = join(' ', @sorted_words);
+  print OUTFILE $out . "\n";
+}
+
+close(OUTFILE);
+

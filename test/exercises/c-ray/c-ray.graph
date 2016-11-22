@@ -1,0 +1,5 @@
+perfkeys: Rendering took:, Rendering took:
+files: c-ray-scene.dat, c-ray-sphfract.dat
+graphkeys: 3-sphere scene, fractal sphere scene
+ylabel: Time (seconds)
+graphtitle: C-Ray Tracer

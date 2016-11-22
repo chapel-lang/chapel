@@ -198,7 +198,8 @@ bool AstDump::enterDefExpr(DefExpr* node) {
         write("single");
       }
 
-      writeSymbol("var", sym, true);
+      write(true, sym->qualType().qualStr(), false);
+      writeSymbol("", sym, true);
       writeFlags(mFP, sym);
 
     } else if (isLabelSymbol(sym)) {
@@ -236,7 +237,7 @@ void AstDump::exitNamedExpr(NamedExpr* node) {
 // SymExpr
 //
 void AstDump::visitSymExpr(SymExpr* node) {
-  Symbol*    sym = node->var;
+  Symbol*    sym = node->symbol();
   VarSymbol* var = toVarSymbol(sym);
 
   if (isBlockStmt(node->parentExpr) == true) {
@@ -328,6 +329,18 @@ void AstDump::exitBlockStmt(BlockStmt* node) {
   newline();
   write(false, "}", true);
   printBlockID(node);
+}
+
+void AstDump::visitForallIntents(ForallIntents* clause) {
+  newline();
+  write("with (");
+  for (int i = 0; i < clause->numVars(); i++) {
+    if (i > 0) write(false, ",", true);
+    if (clause->isReduce(i)) clause->riSpecs[i]->accept(this);
+    write(tfiTagDescrString(clause->fIntents[i]));
+    clause->fiVars[i]->accept(this);
+  }
+  write(false, ")", true);
 }
 
 
@@ -500,8 +513,8 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
   }
 
   if (SymExpr* label = toSymExpr(node->label)) {
-    if (label->var != gNil) {
-      writeSymbol(label->var, true);
+    if (label->symbol() != gNil) {
+      writeSymbol(label->symbol(), true);
     }
   }
 

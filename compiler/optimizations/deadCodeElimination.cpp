@@ -71,7 +71,7 @@ static unsigned int deadModuleCount;
 static bool isDeadVariable(Symbol* var,
                            Map<Symbol*,Vec<SymExpr*>*>& defMap,
                            Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  if (var->type->symbol->hasFlag(FLAG_REF)) {
+  if (var->isRef()) {
     Vec<SymExpr*>* uses = useMap.get(var);
     Vec<SymExpr*>* defs = defMap.get(var);
     return (!uses || uses->n == 0) && (!defs || defs->n <= 1);
@@ -145,15 +145,17 @@ void deadExpressionElimination(FnSymbol* fn) {
           expr->isPrimitive(PRIM_GET_MEMBER) ||
           expr->isPrimitive(PRIM_DEREF) ||
           expr->isPrimitive(PRIM_ARRAY_GET) ||
-          expr->isPrimitive(PRIM_ADDR_OF)) {
+          expr->isPrimitive(PRIM_ADDR_OF) ||
+          expr->isPrimitive(PRIM_SET_REFERENCE)) {
         if (expr->isStmtExpr())
           expr->remove();
       }
 
-      if (expr->isPrimitive(PRIM_MOVE) || expr->isPrimitive(PRIM_ASSIGN))
+      if (expr->isPrimitive(PRIM_MOVE) ||
+          expr->isPrimitive(PRIM_ASSIGN))
         if (SymExpr* lhs = toSymExpr(expr->get(1)))
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
-            if (lhs->var == rhs->var)
+            if (lhs->symbol() == rhs->symbol())
               expr->remove();
 
     } else if (CondStmt* cond = toCondStmt(ast)) {
@@ -322,9 +324,9 @@ static void deadStringLiteralElimination() {
 
   for_vector(SymExpr, stringUse, symExprs) {
     // if we're looking at a Chapel string created from a string literal
-    if (stringUse->var->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+    if (stringUse->symbol()->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
       // and there's only a single use of it
-      Vec<SymExpr*>* stringUses = useMap.get(stringUse->var);
+      Vec<SymExpr*>* stringUses = useMap.get(stringUse->symbol());
       if (stringUses && stringUses->n == 1) {
         // then that use is the RHS of `ret_to_arg_ref_tmp = &str_literal_id`,
         // which is only used in the string constructor so the string is dead. 
@@ -334,17 +336,17 @@ static void deadStringLiteralElimination() {
         // using variable names that mimic the current generated code
         CallExpr*      ret_to_arg_assign = toCallExpr(stringUse->getStmtExpr());
         SymExpr*       ret_to_arg        = toSymExpr(ret_to_arg_assign->get(1));
-        Vec<SymExpr*>* ret_to_arg_uses   = useMap.get(ret_to_arg->var);
+        Vec<SymExpr*>* ret_to_arg_uses   = useMap.get(ret_to_arg->symbol());
         INT_ASSERT(ret_to_arg_uses && ret_to_arg_uses->n == 1);
         CallExpr*      stringCtor        = toCallExpr(ret_to_arg_uses->v[0]->parentExpr);
         SymExpr*       call_tmp          = toSymExpr(stringCtor->get(1));
-        Vec<SymExpr*>* call_tmp_defs     = defMap.get(call_tmp->var);
+        Vec<SymExpr*>* call_tmp_defs     = defMap.get(call_tmp->symbol());
         INT_ASSERT(call_tmp_defs && call_tmp_defs->n == 1);
         CallExpr*      call_tmp_assign   = toCallExpr(call_tmp_defs->v[0]->parentExpr);
 
         // remove all the AST, in the order listed in the function comment
-        stringUse->var->defPoint->remove();
-        call_tmp->var->defPoint->remove();
+        stringUse->symbol()->defPoint->remove();
+        call_tmp->symbol()->defPoint->remove();
         call_tmp_assign->remove();
         ret_to_arg->remove();
         ret_to_arg_assign->remove();

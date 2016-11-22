@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-AST_OBJDIR = $(COMPILER_ROOT)/AST/$(OBJ_SUBDIR)
+AST_OBJDIR = $(COMPILER_BUILD)/AST
 
 ALL_SRCS += AST/*.cpp
 

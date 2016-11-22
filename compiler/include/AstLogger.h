@@ -90,6 +90,8 @@ public:
   virtual bool   enterBlockStmt      (BlockStmt*         node);
   virtual void   exitBlockStmt       (BlockStmt*         node);
 
+  virtual void   visitForallIntents  (ForallIntents*   clause);
+
   virtual bool   enterWhileDoStmt    (WhileDoStmt*       node);
   virtual void   exitWhileDoStmt     (WhileDoStmt*       node);
 

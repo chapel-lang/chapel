@@ -44,15 +44,42 @@ class LicenseCommenter(object):
             fp.write(orig_cont)
 
     def get_comment_text(self, source_filename):
-        """Returns comment text with copyright/license for the given files based on its
+        """Return comment text with copyright/license for the given file based on its
         extension and/or name.
 
         :type source_filename: str
         :arg source_filename: name of source file to prepend copyright/license comment
         """
+
+        def commentate_line(comment_prefix, line):
+            """Return line prefixed by comment_prefix.
+
+            So as to not emit trailing spaces, add a space between
+            comment_prefix and line iff line is nonempty.
+
+            :type comment_prefix: str
+            :arg comment_prefix: string each comment line should start with
+            :type line: str
+            :arg line: text for the comment
+            """
+            if line == '':
+                return comment_prefix
+            else:
+                return '{0} {1}'.format(comment_prefix, line)
+
+        def commentate_lines(comment_prefix, lines):
+            """Apply commentate_line to each line in lines.
+
+            :type comment_prefix: str
+            :arg comment_prefix: text each comment line should start with
+            :type lines: list of str
+            :arg lines: text for the comment
+            """
+            return map(lambda l: commentate_line(comment_prefix, l), lines)
+
         if 'Makefile' in source_filename:
             # Add "# " to each line.
-            return '\n'.join(map(lambda l: '# {0}'.format(l), self.comment_text_lines)) + '\n\n'
+            return '\n'.join(commentate_lines('#', self.comment_text_lines)) + '\n\n'
 
         c_style_comments = ['.c', '.chpl', '.cpp', '.h', '.lex', '.ypp', '.y']
 
@@ -65,7 +92,8 @@ class LicenseCommenter(object):
             #  * ...
             #  * last license line
             #  */
-            license_lines = map(lambda l: ' * {0}'.format(l), self.comment_text_lines)
+            # <blank line>
+            license_lines = commentate_lines(' *', self.comment_text_lines)
             comment_lines = ['/*'] + license_lines + [' */', '\n']
             return '\n'.join(comment_lines)
         else:

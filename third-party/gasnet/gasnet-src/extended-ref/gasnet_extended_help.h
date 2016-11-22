@@ -11,8 +11,6 @@
 #ifndef _GASNET_EXTENDED_HELP_H
 #define _GASNET_EXTENDED_HELP_H
 
-GASNETI_BEGIN_EXTERNC
-
 #include <gasnet_help.h>
 
 /* ------------------------------------------------------------------------------------ */
@@ -513,7 +511,5 @@ typedef union {
 #ifdef GASNETE_HAVE_EXTENDED_HELP_EXTRA_H
   #include <gasnet_extended_help_extra.h>
 #endif
-
-GASNETI_END_EXTERNC
 
 #endif

@@ -36,6 +36,7 @@ module DefaultSparse {
         parentDom: domain) {
 
       this.dist = dist;
+      this.parentDom = parentDom;
     }
 
     proc dsiBuildArray(type eltType)
@@ -286,6 +287,10 @@ module DefaultSparse {
         a.sparseBulkShiftArray(arrShiftMap, oldnnz);
 
       return actualAddCnt;
+    }
+
+    proc dsiMyDist() : BaseDist {
+      return dist;
     }
 
     proc dsiClear() {

@@ -162,6 +162,7 @@ bool fDenormalize = false;
 char fExplainInstantiation[256] = "";
 bool fExplainVerbose = false;
 bool fParseOnly = false;
+bool fPrintCallGraph = false;
 bool fPrintCallStackOnError = false;
 bool fPrintIDonError = false;
 bool fPrintModuleResolution = false;
@@ -532,26 +533,27 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   //
   // disable all chapel compiler optimizations
   //
-  fBaseline = true;
-  fNoCopyPropagation = true;
-  fNoDeadCodeElimination = true;
-  fNoFastFollowers = true;
-  fNoloopInvariantCodeMotion = true;
-  fNoInline = true;
-  fNoInlineIterators = true;
-  fNoLiveAnalysis = true;
-  fNoOptimizeArrayIndexing = true;
-  fNoOptimizeLoopIterators = true;
-  fNoVectorize = true;
-  fNoRemoteValueForwarding = true;
-  fNoRemoveCopyCalls = true;
-  fNoScalarReplacement = true;
-  fNoTupleCopyOpt = true;
-  fNoPrivatization = true;
-  fNoOptimizeOnClauses = true;
-  fIgnoreLocalClasses = true;
+  fBaseline = true;                   // --baseline
+
+  fNoCopyPropagation = true;          // --no-copy-propagation
+  fNoDeadCodeElimination = true;      // --no-dead-code-elimination
+  fNoFastFollowers = true;            // --no-fast-followers
+  fNoloopInvariantCodeMotion = true;  // --no-loop-invariant-code-motion
+  fNoInline = true;                   // --no-inline
+  fNoInlineIterators = true;          // --no-inline-iterators
+  fNoLiveAnalysis = true;             // --no-live-analysis
+  fNoOptimizeArrayIndexing = true;    // --no-optimize-array-indexing
+  fNoOptimizeLoopIterators = true;    // --no-optimize-loop-iterators
+  fNoVectorize = true;                // --no-vectorize
+  fNoRemoteValueForwarding = true;    // --no-remote-value-forwarding
+  fNoRemoveCopyCalls = true;          // --no-remove-copy-calls
+  fNoScalarReplacement = true;        // --no-scalar-replacement
+  fNoTupleCopyOpt = true;             // --no-tuple-copy-opt
+  fNoPrivatization = true;            // --no-privatization
+  fNoOptimizeOnClauses = true;        // --no-optimize-on-clauses
+  fIgnoreLocalClasses = true;         // --ignore-local-classes
   //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
-  fDenormalize = false;
+  fDenormalize = false;               // --no-denormalize
   fConditionalDynamicDispatchLimit = 0;
 }
 
@@ -713,6 +715,7 @@ static ArgumentDescription arg_desc[] = {
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"explain-verbose", ' ', NULL, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
+ {"print-callgraph", ' ', NULL, "Print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", NULL},
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
  {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},

@@ -361,7 +361,7 @@ bool ForLoop::isForLoop() const
 // own class that shares a common parent with ForLoop.
 bool ForLoop::isCoforallLoop() const
 {
-  return mIndex->var->hasFlag(FLAG_COFORALL_INDEX_VAR);
+  return mIndex->symbol()->hasFlag(FLAG_COFORALL_INDEX_VAR);
 }
 
 SymExpr* ForLoop::indexGet() const
@@ -420,6 +420,9 @@ void ForLoop::verify()
 
   if (byrefVars != 0)
     INT_FATAL(this, "ForLoop::verify. byrefVars is not NULL");
+
+  if (forallIntents != 0)
+    INT_FATAL(this, "ForLoop::verify. forallIntents is not NULL");
 }
 
 GenRet ForLoop::codegen()

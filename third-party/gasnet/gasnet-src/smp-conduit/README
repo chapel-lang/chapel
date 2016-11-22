@@ -14,9 +14,21 @@ Where this conduit runs:
 smp-conduit is extremely portable and should run anywhere with a POSIX-like
 environment and hardware-shared memory.
 
+smp-conduit jobs can be launched directly in the same manner as normal
+POSIX executables - ie on the command line, no spawner script required.
 
 Recognized environment variables:
 ---------------------------------
+
+* GASNET_PSHM_NODES 
+  When process-shared memory (PSHM) support is enabled at configure time, this
+  variable controls the number of GASNet smp-conduit processes to fork at job
+  launch within gasnet_init (ie the degree of process parallelism). These
+  processes will communicate through shared memory using PSHM. For more details
+  on enabling and using PSHM support, see the top-level README and pshm-design.txt.
+  If PSHM is disabled, this variable is ignored and smp-conduit jobs consist of
+  only a single process (but the client may still utilize thread-level
+  parallelism within that process, in GASNET_PAR mode).
 
 * GASNET_BARRIER=PSHM (default when PSHM support is enabled)
   Enables shared-memory implementation of GASNet barriers

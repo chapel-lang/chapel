@@ -14,6 +14,7 @@ studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/fasta/fasta.graph
+studies/shootout/fasta/fastaredux.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/nbody/nbody.graph
@@ -35,6 +36,7 @@ studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/nbody/nbody.graph
 studies/shootout/thread-ring/thread-ring.graph
 studies/shootout/fasta/fasta.graph
+studies/shootout/fasta/fastaredux.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/meteor/kbrady/meteor.graph
@@ -94,6 +96,7 @@ studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/fasta/fasta.graph
+studies/shootout/fasta/fastaredux.graph
 studies/shootout/k-nucleotide/knucleotide.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/meteor/kbrady/meteor.graph
@@ -227,12 +230,16 @@ studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 # suite: String perf tests
+types/string/cassella/cast-from-string.graph
 types/string/ferguson/temporary-copies.graph
 types/string/psahabu/split-whitespace-perf.graph
 types/string/psahabu/perf/allocate.graph
 types/string/psahabu/perf/arguments.graph
 types/string/psahabu/perf/search.graph
 types/string/psahabu/perf/substring.graph
+# suite: Standard Library
+modules/packages/sort/performance/sorts-linearithmic.graph
+modules/packages/sort/performance/sorts-quadratic.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
@@ -241,6 +248,7 @@ spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
 studies/rbc/tvandoren/RBC.graph
+exercises/c-ray/c-ray.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph

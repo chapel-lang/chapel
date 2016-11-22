@@ -29,3 +29,12 @@ for classNum in 2..classSizes.size-1 {
 
   }
 }
+
+// Report no leaks
+var big:int;
+big = max reduce classSizes;
+for i in 0..big-1 {
+  var c = getPrivatized(i);
+  delete c;
+  clearPrivatized(i);
+}

@@ -53,7 +53,7 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   std::vector<int> localDefs(locals.n);
   forv_Vec(SymExpr, se, defSet) {
     if (se) {
-      localDefs[localMap.get(se->var)]++;
+      localDefs[localMap.get(se->symbol())]++;
       defs.add(NULL);
     }
   }
@@ -65,7 +65,7 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   }
   forv_Vec(SymExpr, se, defSet) {
     if (se) {
-      int i = localDefs[localMap.get(se->var)]++;
+      int i = localDefs[localMap.get(se->symbol())]++;
       defs.v[i] = se;
       defMap.put(se, i);
     }
@@ -87,15 +87,15 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
       collectSymExprs(expr, symExprs);
       for_vector(SymExpr, se, symExprs) {
         if (defSet.set_in(se)) {
-          if (!bbDefSet.set_in(se->var)) {
+          if (!bbDefSet.set_in(se->symbol())) {
             gen->set(defMap.get(se));
           }
-          bbDefSet.set_add(se->var);
+          bbDefSet.set_add(se->symbol());
         }
       }
     }
     for (int i = 0; i < defs.n; i++) {
-      if (bbDefSet.set_in(defs.v[i]->var))
+      if (bbDefSet.set_in(defs.v[i]->symbol()))
         kill->set(i);
     }
     KILL.push_back(kill);
@@ -107,7 +107,11 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
 #ifdef DEBUG_REACHING
   list_view(fn);
   BasicBlock::printBasicBlocks(fn);
-  BasicBlock::printDefsVector(defs, defMap);
+  std::vector<SymExpr*> defs_copy;
+  forv_Vec(SymExpr, se, defs) {
+    defs_copy.push_back(se);
+  }
+  BasicBlock::printDefsVector(defs_copy, defMap);
   printf("KILL:\n"); BasicBlock::printBitVectorSets(KILL);
   printf("GEN:\n");  BasicBlock::printBitVectorSets(GEN);
   printf("IN:\n");   BasicBlock::printBitVectorSets(IN);
@@ -151,9 +155,9 @@ buildDefUseChains(FnSymbol* fn,
   Symbol* last = 0;
   int i = 0;
   forv_Vec(SymExpr, se, defs) {
-    if (se->var != last)
-      defsIndexMap.put(se->var, i);
-    last = se->var;
+    if (se->symbol() != last)
+      defsIndexMap.put(se->symbol(), i);
+    last = se->symbol();
     i++;
   }
 
@@ -170,8 +174,8 @@ buildDefUseChains(FnSymbol* fn,
       for_vector(SymExpr, se, symExprs) {
         if (useSet.set_in(se)) {
           UD[se] = new Vec<SymExpr*>();
-          for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
-            if (defs.v[j]->var != se->var)
+          for (int j = defsIndexMap.get(se->symbol()); j < defs.n; j++) {
+            if (defs.v[j]->symbol() != se->symbol())
               break;
             if (in->get(j)) {
               DU[defs.v[j]]->add(se);
@@ -182,8 +186,8 @@ buildDefUseChains(FnSymbol* fn,
       }
       for_vector(SymExpr, se1, symExprs) {
         if (defSet.set_in(se1)) {
-          for (int j = defsIndexMap.get(se1->var); j < defs.n; j++) {
-            if (defs.v[j]->var != se1->var)
+          for (int j = defsIndexMap.get(se1->symbol()); j < defs.n; j++) {
+            if (defs.v[j]->symbol() != se1->symbol())
               break;
             if (defs.v[j] == se1)
               in->set(j);
@@ -194,6 +198,33 @@ buildDefUseChains(FnSymbol* fn,
       }
     }
   }
+
+#ifdef DEBUG_REACHING
+  printf("DU (def-to-use)\n");
+  for(std::map<SymExpr*,Vec<SymExpr*>*>::iterator it=DU.begin();
+      it != DU.end();
+      ++it) {
+    SymExpr* se = it->first;
+    Vec<SymExpr*>* v = it->second;
+    printf("SymExpr def %s[%d] has uses:\n", se->var->name, se->id);
+    forv_Vec(SymExpr, otherSe, *v) {
+      printf("  %s[%d]\n", otherSe->var->name, otherSe->id);
+    }
+  }
+  printf("UD (use-to-def)\n");
+  for(std::map<SymExpr*,Vec<SymExpr*>*>::iterator it=UD.begin();
+      it != UD.end();
+      ++it) {
+    SymExpr* se = it->first;
+    Vec<SymExpr*>* v = it->second;
+    printf("SymExpr use %s[%d] has defs:\n", se->var->name, se->id);
+    forv_Vec(SymExpr, otherSe, *v) {
+      printf("  %s[%d]\n", otherSe->var->name, otherSe->id);
+    }
+
+  }
+
+#endif
 
   for_vector(BitVec, in, IN)
     delete in, in = 0;

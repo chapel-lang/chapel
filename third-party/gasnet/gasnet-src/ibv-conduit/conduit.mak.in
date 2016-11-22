@@ -13,6 +13,10 @@
 @IBV_BOOTSTRAP_MPI_TRUE@GASNET_LDFLAGS_OVERRIDE = @MPI_CFLAGS@ @LDFLAGS@
 @IBV_BOOTSTRAP_MPI_TRUE@MPI_COMPAT_LIBS = @MPI_LIBS@
 
+# Linker feature requirements embedded in GASNET_LD(FLAGS) which are not satisfied solely by GASNET_LIBS 
+# (eg possible dependence on implicit MPI or C++ libraries added by a linker wrapper in GASNET_LD):
+@IBV_BOOTSTRAP_MPI_TRUE@GASNET_LD_REQUIRES_MPI = 1
+
 # Some platforms need extra -libs for the socket calls in ssh-spawner:
 @IBV_BOOTSTRAP_SSH_TRUE@SSH_LIBS = @SSH_SPAWNER_LIBS@
 

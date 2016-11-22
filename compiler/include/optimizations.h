@@ -70,5 +70,7 @@ void freeDefUseChains(std::map<SymExpr*, Vec<SymExpr*>*>& DU,
 
 void remoteValueForwarding();
 
+void inferConstRefs();
+
 
 #endif

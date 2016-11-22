@@ -329,22 +329,22 @@
   #error Slow membars are only a hack-around for C++ compilers lacking inline assembly support
 #endif
 #if GASNETI_USING_SLOW_MEMBARS || defined(GASNETI_LOCAL_WMB_BODY)
-  GASNETI_EXTERNC void gasneti_slow_local_wmb();
+  extern void gasneti_slow_local_wmb();
   #undef gasneti_local_wmb
   #define gasneti_local_wmb() gasneti_slow_local_wmb()
 #endif
 #if GASNETI_USING_SLOW_MEMBARS || defined(GASNETI_LOCAL_RMB_BODY)
-  GASNETI_EXTERNC void gasneti_slow_local_rmb();
+  extern void gasneti_slow_local_rmb();
   #undef gasneti_local_rmb
   #define gasneti_local_rmb() gasneti_slow_local_rmb()
 #endif
 #if GASNETI_USING_SLOW_MEMBARS || defined(GASNETI_LOCAL_MB_BODY)
-  GASNETI_EXTERNC void gasneti_slow_local_mb();
+  extern void gasneti_slow_local_mb();
   #undef gasneti_local_mb
   #define gasneti_local_mb() gasneti_slow_local_mb()
 #endif
 #if GASNETI_USING_SLOW_MEMBARS || defined(GASNETI_COMPILER_FENCE_BODY)
-  GASNETI_EXTERNC void gasneti_slow_compiler_fence();
+  extern void gasneti_slow_compiler_fence();
   #undef gasneti_compiler_fence
   #define gasneti_compiler_fence() gasneti_slow_compiler_fence()
 #endif

@@ -104,6 +104,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GET_IMAG:
 
   case PRIM_ADDR_OF:
+  case PRIM_SET_REFERENCE:
   case PRIM_LOCAL_CHECK:
 
   case PRIM_INIT_FIELDS:
@@ -145,8 +146,8 @@ classifyPrimitive(CallExpr *call) {
       // the callExpr will be checked in the calling function
       return FAST_AND_LOCAL;
     } else {
-      bool arg1wide = call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF);
-      bool arg2wide = call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF);
+      bool arg1wide = call->get(1)->isWideRef();
+      bool arg2wide = call->get(2)->isWideRef();
 
       // If neither argument is a wide reference, OK: no communication
       if (!arg1wide && !arg2wide) {
@@ -154,8 +155,8 @@ classifyPrimitive(CallExpr *call) {
       }
 
       if (call->isPrimitive(PRIM_MOVE)) {
-        bool arg1ref = call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF);
-        bool arg2ref = call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF);
+        bool arg1ref = call->get(1)->isRef();
+        bool arg2ref = call->get(2)->isRef();
         // Handle (move tmp:ref, other_tmp:wide_ref)
         // and    (move tmp:wide_ref, other_tmp:ref)
         // these does not require communication and merely adjust
@@ -175,7 +176,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_WIDE_GET_NODE:
   case PRIM_WIDE_GET_ADDR:
     // If this test is true, a remote get is required.
-    if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
+    if (!(call->get(1)->isWideRef() &&
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
       return FAST_AND_LOCAL;
     }
@@ -184,9 +185,9 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ARRAY_SHIFT_BASE_POINTER:
     // SHIFT_BASE_POINTER is fast as long as none of the
     // arguments are wide references.
-    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
-        call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
-        call->get(3)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
+    if (call->get(1)->isWideRef() ||
+        call->get(2)->isWideRef() ||
+        call->get(3)->isWideRef())
       return FAST_NOT_LOCAL;
     else
       return FAST_AND_LOCAL;
@@ -195,7 +196,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GET_UNION_ID:
   case PRIM_GET_MEMBER_VALUE:
   case PRIM_GET_SVEC_MEMBER_VALUE:
-    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+    if (!call->get(1)->isWideRef()) {
       return FAST_AND_LOCAL;
     }
     return FAST_NOT_LOCAL;
@@ -216,7 +217,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_DEREF:
   case PRIM_SET_MEMBER:
   case PRIM_SET_SVEC_MEMBER:
-    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
+    if (!call->get(1)->isWideRef() &&
         !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       return FAST_AND_LOCAL;
     }
@@ -286,7 +287,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_FIELD_NAME_TO_NUM:
   case PRIM_FIELD_BY_NUM:
 
-  case PRIM_FORALL_LOOP:
   case PRIM_TO_STANDALONE:
   case PRIM_IS_REF_ITER_TYPE:
   case PRIM_COERCE:
@@ -294,6 +294,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_METHOD_CALL_RESOLVES:
   case PRIM_GET_COMPILER_VAR:
   case PRIM_ZIP:
+  case PRIM_REQUIRE:
   case NUM_KNOWN_PRIMS:
   case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
     INT_FATAL("This primitive should have been removed from the tree by now.");

@@ -19,7 +19,11 @@
 
 /*
 
+
 Support for a variety of kinds of input and output.
+
+.. note:: All Chapel programs automatically ``use`` this module by default.
+          An explicit ``use`` statement is not necessary.
 
 Input/output (I/O) facilities in Chapel include the types :record:`file` and
 :record:`channel`; the constants :record:`stdin`, :record:`stdout` and
@@ -3416,7 +3420,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):
     var len:int(64);
     var tx: c_string_copy;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    x = new string(tx, needToCopy=false);
+    x = new string(tx, length=len, needToCopy=false);
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -3543,7 +3547,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     var ret = qio_channel_read_string(false, byteorder,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
-    x = new string(tx, needToCopy=false);
+    x = new string(tx, length=len, needToCopy=false);
     return ret;
   } else if isEnumType(t) {
     var i:enum_mintype(t);
@@ -4300,7 +4304,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
 
     this.unlock();
 
-    str_out = new string(tx, needToCopy=false);
+    str_out = new string(tx, length=lenread, needToCopy=false);
   }
 
   return !error;
@@ -5150,9 +5154,13 @@ proc _toNumeric(x:?t) where !_isIoPrimitiveType(t)
 }
 
 
-
 private inline
-proc _toString(x:?t) where _isIoPrimitiveType(t)
+proc _toString(x:?t) where t==string
+{
+  return (x, true);
+}
+private inline
+proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=string)
 {
   return (x:string, true);
 }
@@ -6532,7 +6540,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     error =
         qio_channel_read_string(false, iokind.native, stringStyleExactLen(len),
                                 _channel_internal, ts, gotlen, len: ssize_t);
-    s = new string(ts, needToCopy=false);
+    s = new string(ts, length=gotlen, needToCopy=false);
   }
  
   if ! error {
