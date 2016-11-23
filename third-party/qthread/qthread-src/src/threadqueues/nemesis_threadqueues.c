@@ -18,6 +18,7 @@
 #include "qt_asserts.h"
 #include "qt_prefetch.h"
 #include "qt_threadqueues.h"
+#include "qt_envariables.h"
 #include "qt_qthread_struct.h"
 #include "qt_debug.h"
 #ifdef QTHREAD_USE_EUREKAS
@@ -30,6 +31,8 @@
  * http://www.mcs.anl.gov/~buntinas/papers/ccgrid06-nemesis.pdf
  * Note: it is NOT SAFE to use with multiple de-queuers, it is ONLY safe to use
  * with multiple enqueuers and a single de-queuer. */
+
+int num_spins_before_condwait;
 
 /* Data Structures */
 struct _qt_threadqueue_node {
@@ -84,6 +87,9 @@ static void qt_threadqueue_subsystem_shutdown(void)
 
 void INTERNAL qt_threadqueue_subsystem_init(void)
 {   /*{{{*/
+
+    num_spins_before_condwait = qt_internal_get_env_num("SPINCOUNT", 300000, 0);
+
     generic_threadqueue_pools.queues = qt_mpool_create(sizeof(qt_threadqueue_t));
     generic_threadqueue_pools.nodes  = qt_mpool_create_aligned(sizeof(qt_threadqueue_node_t), 8);
     qthread_internal_cleanup(qt_threadqueue_subsystem_shutdown);
@@ -352,6 +358,7 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
                                             qt_threadqueue_private_t *QUNUSED(qc),
                                             uint_fast8_t              QUNUSED(active))
 {                                      /*{{{ */
+    int i;
 #ifdef QTHREAD_USE_EUREKAS
     qt_eureka_disable();
 #endif /* QTHREAD_USE_EUREKAS */
@@ -366,6 +373,15 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
 #ifdef QTHREAD_USE_EUREKAS
         qt_eureka_check(0);
 #endif /* QTHREAD_USE_EUREKAS */
+
+#ifdef QTHREAD_CONDWAIT_BLOCKING_QUEUE
+        i = num_spins_before_condwait;
+        while (q->q.shadow_head == NULL && q->q.head == NULL && i > 0) {
+          SPINLOCK_BODY();
+          i--;
+        }
+#endif      /* QTHREAD_CONDWAIT_BLOCKING_QUEUE */
+
         while (q->q.shadow_head == NULL && q->q.head == NULL) {
 #ifndef QTHREAD_CONDWAIT_BLOCKING_QUEUE
             SPINLOCK_BODY();
