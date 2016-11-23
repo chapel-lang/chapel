@@ -21,14 +21,15 @@ help-source:
 	@echo "  primers        to generate primer docs in primers/"
 	@echo "  hellos         to generate hellos docs in primers/"
 	@echo "  symlinks       to create symlinks from ../man and ../test"
-	@echo "  clean          to remove all generated files excluding build/"
-	@echo "  clean-build    to remove all generated files in build/"
+	@echo "  clean          to remove all generated files excluding ../build/doc"
+	@echo "  clean-build    to remove all generated files in ../build/doc"
 	@echo "  clobber        to remove all generated files"
 	@echo
 
 
 docs: FORCE
-	./util/run-in-venv.bash $(MAKE) html
+	@./util/run-in-venv.bash $(MAKE) html || (echo;echo "If a documentation hierarchy change was made on the master branch, \
+	try resolving with: \`git clean "'$$CHPL_HOME'"/doc/*\`";echo)
 
 man-chapel: FORCE
 	./util/run-in-venv.bash $(MAKE) man

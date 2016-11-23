@@ -5,7 +5,7 @@ SPHINXOPTS    = -W
 SPHINXBUILD   = sphinx-build
 PAPER         =
 SOURCEDIR     = .
-BUILDDIR      = build
+BUILDDIR      = ../build/doc
 BUILDPATH     = $$CHPL_HOME/doc/$(BUILDDIR)
 
 # Explicitly set author
