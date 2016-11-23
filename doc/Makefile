@@ -42,8 +42,8 @@ module-docs: clean-module-docs
 	@echo
 	@echo "Generating module docs from "'$$CHPL_HOME'"/modules/ into "'$$CHPL_HOME'"/doc/"
 	(cd ../modules && make documentation)
-	cp -f .modules/* modules/
-	cp -f .builtins/* builtins/
+	cp -f meta/modules/* modules/
+	cp -f meta/builtins/* builtins/
 
 primers: clean-primers
 	@echo
@@ -51,14 +51,14 @@ primers: clean-primers
 	@#Note - this assumes that we are not in a release tar ball
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*.chpl
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*doc.chpl --codeblock
-	cp -f .primers/* primers
+	cp -f meta/primers/* primers
 
 hellos: clean-hellos
 	@echo
 	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/$(CHPL_DOC_HELLO_DIR)"
 	@#Note - this assumes that we are not in a release tar ball
 	$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../test/release/examples/hello*.chpl
-	cp -f .examples/* examples
+	cp -f meta/examples/* examples
 
 symlinks: clean-symlinks
 	@echo
@@ -106,12 +106,6 @@ clean-symlinks: FORCE
 	@echo
 	@echo "Removing all symbolic links"
 	find . -type l -delete
-
-
-
-
-
-
 
 
 FORCE:

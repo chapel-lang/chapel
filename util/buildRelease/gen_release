@@ -157,7 +157,7 @@ print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
 print "Building the html docs...\n";
 SystemOrDie("make -j docs");
-SystemOrDie("mv doc/build/html doc/");
+SystemOrDie("mv build/doc/html doc/");
 
 # TODO - make this more elegant / maintainable
 print "Pruning the docs directory...\n";
@@ -168,7 +168,7 @@ SystemOrDie("cd doc && rm -f index.rst");
 SystemOrDie("cd doc && rm -f */index.rst");
 SystemOrDie("cd doc && rm -rf developer");
 SystemOrDie("cd doc && rm -rf util");
-SystemOrDie("cd doc && rm -rf ..?* .[!.]*"); # Remove all dot files/directories
+SystemOrDie("cd doc && rm -rf meta"); # Remove all dot files/directories
 
 print "Building the man pages...\n";
 SystemOrDie("make man");
