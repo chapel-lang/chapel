@@ -406,7 +406,7 @@ a generic ``var`` or ``const`` field to be omitted during Phase 1.
 
 This is a departure from the previous implementation of generic fields, which
 required the presence of an argument with the same name as the field in the
-argument list for all constructors, but forbid the manipulation of these fields
+argument list for all constructors, but forbade the manipulation of these fields
 within the constructor body.  That design was deemed unnecessarily confusing and
 restrictive for users.
 
