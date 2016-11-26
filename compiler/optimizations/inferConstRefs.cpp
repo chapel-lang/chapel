@@ -24,6 +24,37 @@
 #include "stmt.h"
 #include "stlUtil.h"
 
+//
+// This file implements the function 'inferConstRefs', which attempts to
+// determine whether or not a symbol can be const-val, const-ref, and/or
+// ref-to-const.
+//
+// At the beginning of the pass, we build up a list of SymExprs for each
+// VarSymbol and ArgSymbol. Each helper function typically iterates over each
+// SymExpr once. This allows us to handle recursion in a re-entrant fashion,
+// where recursive calls to helper functions continue where the earlier call
+// left off. This list of SymExprs, along with other metadata about the Symbol,
+// is stored in a ConstInfo instance.
+//
+// While SymExprs are being processed, we will typically break out of the list
+// of SymExprs early if we encounter a case that violates the constness we're
+// looking for. Either way, once we're done processing the SymExprs the helper
+// function can change the Qualifier or flags on the Symbol if applicable. In
+// the case of recursion, only the first call on the Symbol can update the
+// Qualifier or flags. This avoids potential cases where the recursive calls
+// find nothing wrong (and might otherwise update flags), but the earlier call
+// finds that the Symbol cannot be const.
+//
+// Once we've made a determination either way, the helper function sets the
+// appropriate 'finalized*' field in its ConstInfo instance. If other Symbols
+// then query the constness of this Symbol, we can quickly determine the
+// answer. The helper functions also reset the list of SymExprs to the head, so
+// that later helper functions can use the list re-entrantly.
+//
+// Until we clarify constness more in the language, this pass will not consider
+// a record to be const if any of its fields are modified.
+//
+
 class ConstInfo {
   public:
     bool                  finalizedConstness;
@@ -31,6 +62,8 @@ class ConstInfo {
     bool                  alreadyCalled;
     Symbol*               sym;
     SymExpr*              fnUses;
+
+    // TODO: Should we use the linked-list embedded in each Symbol?
     std::vector<SymExpr*> todo;
 
     ConstInfo(Symbol*);
@@ -529,11 +562,11 @@ static bool inferRefToConst(Symbol* sym) {
 //
 void inferConstRefs() {
   // Build a map from Symbols to ConstInfo. This is somewhat like
-  // buildDefUseMaps, except we don't care about the distinction between a def
-  // and a use. We just want all SymExprs for a Symbol.
+  // buildDefUseMaps, except we don't want to put defs and uses in different
+  // lists (for simplicity).
   forv_Vec(SymExpr, se, gSymExprs) {
     if (!(isVarSymbol(se->symbol()) || isArgSymbol(se->symbol()))) continue;
-    // BHARSH: Skip classes for now. Not sure how to deal with aliasing
+    // TODO: BHARSH: Skip classes for now. Not sure how to deal with aliasing
     if (!se->isRef() && isClass(se->typeInfo())) continue;
 
     ConstInfo* info = NULL;
