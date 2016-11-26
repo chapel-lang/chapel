@@ -53,8 +53,8 @@ on "fake" topologies:
 
 hwloc can display the topology in a human-readable format, either in graphical
 mode (X11), or by exporting in one of several different formats, including:
-plain text, PDF, PNG, and FIG (see CLI Examples below). Note that some of the
-export formats require additional support libraries.
+plain text, PDF, PNG, and FIG (see Command-line Examples below). Note that some
+of the export formats require additional support libraries.
 
 hwloc offers a programming interface for manipulating topologies and objects.
 It also brings a powerful CPU bitmap API that is used to describe topology

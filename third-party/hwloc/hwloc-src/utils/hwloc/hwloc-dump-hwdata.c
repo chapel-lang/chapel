@@ -74,9 +74,9 @@ int main(int argc, char *argv[])
 
     err = asprintf(&filename, "%s/knl_memoryside_cache", dirname);
     assert(err >= 0);
-    hwloc_dump_hwdata_knl_smbios(input_fsroot, filename);
+    err = hwloc_dump_hwdata_knl_smbios(input_fsroot, filename);
     free(filename);
     printf("\n");
 
-    return EXIT_SUCCESS;
+    return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }

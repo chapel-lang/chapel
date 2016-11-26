@@ -1,4 +1,4 @@
-.TH "hwlocality_creation" 3 "Sun Aug 28 2016" "Version 1.11.4" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_creation" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -118,6 +118,8 @@ Build the actual topology\&. Build the actual topology once initialized with \fB
 On failure, the topology is reinitialized\&. It should be either destroyed with \fBhwloc_topology_destroy()\fP or configured and loaded again\&.
 .PP
 This function may be called only once per topology\&.
+.PP
+The binding of the current thread or process may temporarily change during this call but it will be restored before it returns\&.
 .RE
 .PP
 \fBSee also:\fP

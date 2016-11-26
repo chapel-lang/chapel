@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -81,6 +81,9 @@ HWLOC_DECLSPEC int hwloc_get_largest_objs_inside_cpuset (hwloc_topology_t topolo
  * included in \p set.  The next invokation should pass the previous
  * return value in \p prev so as to obtain the next object in \p set.
  *
+ * \note Objects with empty CPU sets are ignored
+ * (otherwise they would be considered included in any given set).
+ *
  * \note This function cannot work if objects at the given depth do
  * not have CPU sets or if the topology is made of different machines.
  */
@@ -91,7 +94,7 @@ hwloc_get_next_obj_inside_cpuset_by_depth (hwloc_topology_t topology, hwloc_cons
   hwloc_obj_t next = hwloc_get_next_obj_by_depth(topology, depth, prev);
   if (!next || !next->cpuset)
     return NULL;
-  while (next && !hwloc_bitmap_isincluded(next->cpuset, set))
+  while (next && (hwloc_bitmap_iszero(next->cpuset) || !hwloc_bitmap_isincluded(next->cpuset, set)))
     next = next->next_cousin;
   return next;
 }
@@ -101,6 +104,9 @@ hwloc_get_next_obj_inside_cpuset_by_depth (hwloc_topology_t topology, hwloc_cons
  * If there are multiple or no depth for given type, return \c NULL
  * and let the caller fallback to
  * hwloc_get_next_obj_inside_cpuset_by_depth().
+ *
+ * \note Objects with empty CPU sets are ignored
+ * (otherwise they would be considered included in any given set).
  *
  * \note This function cannot work if objects of the given type do
  * not have CPU sets or if the topology is made of different machines.
@@ -117,6 +123,9 @@ hwloc_get_next_obj_inside_cpuset_by_type (hwloc_topology_t topology, hwloc_const
 
 /** \brief Return the (logically) \p idx -th object at depth \p depth included in CPU set \p set.
  *
+ * \note Objects with empty CPU sets are ignored
+ * (otherwise they would be considered included in any given set).
+ *
  * \note This function cannot work if objects at the given depth do
  * not have CPU sets or if the topology is made of different machines.
  */
@@ -132,7 +141,7 @@ hwloc_get_obj_inside_cpuset_by_depth (hwloc_topology_t topology, hwloc_const_cpu
   if (!obj || !obj->cpuset)
     return NULL;
   while (obj) {
-    if (hwloc_bitmap_isincluded(obj->cpuset, set)) {
+    if (!hwloc_bitmap_iszero(obj->cpuset) && hwloc_bitmap_isincluded(obj->cpuset, set)) {
       if (count == idx)
 	return obj;
       count++;
@@ -147,6 +156,9 @@ hwloc_get_obj_inside_cpuset_by_depth (hwloc_topology_t topology, hwloc_const_cpu
  * If there are multiple or no depth for given type, return \c NULL
  * and let the caller fallback to
  * hwloc_get_obj_inside_cpuset_by_depth().
+ *
+ * \note Objects with empty CPU sets are ignored
+ * (otherwise they would be considered included in any given set).
  *
  * \note This function cannot work if objects of the given type do
  * not have CPU sets or if the topology is made of different machines.
@@ -166,6 +178,9 @@ hwloc_get_obj_inside_cpuset_by_type (hwloc_topology_t topology, hwloc_const_cpus
 
 /** \brief Return the number of objects at depth \p depth included in CPU set \p set.
  *
+ * \note Objects with empty CPU sets are ignored
+ * (otherwise they would be considered included in any given set).
+ *
  * \note This function cannot work if objects at the given depth do
  * not have CPU sets or if the topology is made of different machines.
  */
@@ -181,7 +196,7 @@ hwloc_get_nbobjs_inside_cpuset_by_depth (hwloc_topology_t topology, hwloc_const_
   if (!obj || !obj->cpuset)
     return 0;
   while (obj) {
-    if (hwloc_bitmap_isincluded(obj->cpuset, set))
+    if (!hwloc_bitmap_iszero(obj->cpuset) && hwloc_bitmap_isincluded(obj->cpuset, set))
       count++;
     obj = obj->next_cousin;
   }
@@ -193,6 +208,9 @@ hwloc_get_nbobjs_inside_cpuset_by_depth (hwloc_topology_t topology, hwloc_const_
  * If no object for that type exists inside CPU set \p set, 0 is
  * returned.  If there are several levels with objects of that type
  * inside CPU set \p set, -1 is returned.
+ *
+ * \note Objects with empty CPU sets are ignored
+ * (otherwise they would be considered included in any given set).
  *
  * \note This function cannot work if objects of the given type do
  * not have CPU sets or if the topology is made of different machines.
@@ -219,6 +237,9 @@ hwloc_get_nbobjs_inside_cpuset_by_type (hwloc_topology_t topology, hwloc_const_c
  * If \p set covers the entire topology, this is the logical index of \p obj.
  * Otherwise, this is similar to a logical index within the part of the topology
  * defined by CPU set \p set.
+ *
+ * \note Objects with empty CPU sets are ignored
+ * (otherwise they would be considered included in any given set).
  */
 static __hwloc_inline int
 hwloc_get_obj_index_inside_cpuset (hwloc_topology_t topology __hwloc_attribute_unused, hwloc_const_cpuset_t set,
@@ -232,7 +253,7 @@ hwloc_get_obj_index_inside_cpuset (hwloc_topology_t topology __hwloc_attribute_u
     return -1;
   /* count how many objects are inside the cpuset on the way from us to the beginning of the level */
   while ((obj = obj->prev_cousin) != NULL)
-    if (hwloc_bitmap_isincluded(obj->cpuset, set))
+    if (!hwloc_bitmap_iszero(obj->cpuset) && hwloc_bitmap_isincluded(obj->cpuset, set))
       idx++;
   return idx;
 }

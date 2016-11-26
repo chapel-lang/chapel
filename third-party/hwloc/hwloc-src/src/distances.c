@@ -481,11 +481,11 @@ hwloc_distances__finalize_logical(struct hwloc_topology *topology,
   struct hwloc_distances_s ** tmpdistances;
   unsigned i, j, li, lj, minl;
   float min = FLT_MAX, max = FLT_MIN;
-  hwloc_obj_t root;
+  hwloc_obj_t root, obj;
   float *matrix;
   hwloc_cpuset_t cpuset, complete_cpuset;
   hwloc_nodeset_t nodeset, complete_nodeset;
-  unsigned relative_depth;
+  unsigned depth;
   int idx;
 
   /* find the root */
@@ -551,13 +551,25 @@ hwloc_distances__finalize_logical(struct hwloc_topology *topology,
   hwloc_bitmap_free(complete_cpuset);
   hwloc_bitmap_free(nodeset);
   hwloc_bitmap_free(complete_nodeset);
-  if (root->depth >= objs[0]->depth) {
+  depth = objs[0]->depth; /* this assume that we have distances between objects of the same level */
+  if (root->depth >= depth) {
     /* strange topology led us to find invalid relative depth, ignore */
     return;
   }
-  relative_depth = objs[0]->depth - root->depth; /* this assume that we have distances between objects of the same level */
 
-  if (nbobjs != hwloc_get_nbobjs_inside_cpuset_by_depth(topology, root->cpuset, root->depth + relative_depth))
+  /* count objects at that depth that are below root.
+   * we can't use hwloc_get_nbobjs_inside_cpuset_by_depth() because it ignore CPU-less objects.
+   */
+  i = 0;
+  obj = NULL;
+  while ((obj = hwloc_get_next_obj_by_depth(topology, depth, obj)) != NULL) {
+    hwloc_obj_t myparent = obj->parent;
+    while (myparent->depth > root->depth)
+      myparent = myparent->parent;
+    if (myparent == root)
+      i++;
+  }
+  if (i != nbobjs)
     /* the root does not cover the right number of objects, maybe we failed to insert a root (bad intersect or so). */
     return;
 
@@ -593,7 +605,7 @@ hwloc_distances__finalize_logical(struct hwloc_topology *topology,
   root->distances = tmpdistances;
   idx = root->distances_count++;
   root->distances[idx] = malloc(sizeof(struct hwloc_distances_s));
-  root->distances[idx]->relative_depth = relative_depth;
+  root->distances[idx]->relative_depth = depth - root->depth;
   root->distances[idx]->nbobjs = nbobjs;
   root->distances[idx]->latency = matrix = malloc(nbobjs*nbobjs*sizeof(float));
   root->distances[idx]->latency_base = (float) min;

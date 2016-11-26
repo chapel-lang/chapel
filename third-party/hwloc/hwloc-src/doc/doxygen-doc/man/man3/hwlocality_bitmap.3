@@ -1,4 +1,4 @@
-.TH "hwlocality_bitmap" 3 "Sun Aug 28 2016" "Version 1.11.4" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_bitmap" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -173,7 +173,7 @@ The \fBhwloc_bitmap_t\fP type represents a set of objects, typically OS processo
 CPU sets and nodesets are described in \fBObject Sets (hwloc_cpuset_t and hwloc_nodeset_t)\fP\&.
 .RE
 .PP
-A bitmap may be of infinite size\&.
+A bitmap may be of infinite size (all bits are set after some point)\&. A bitmap may even be full if all bits are set\&.
 .PP
 \fBNote:\fP
 .RS 4
@@ -190,7 +190,7 @@ Loop macro iterating on bitmap \fCbitmap\fP\&. The loop must start with \fBhwloc
 .PP
 \fCindex\fP is the loop variable; it should be an unsigned int\&. The first iteration will set \fCindex\fP to the lowest index in the bitmap\&. Successive iterations will iterate through, in order, all remaining indexes set in the bitmap\&. To be specific: each iteration will return a value for \fCindex\fP such that hwloc_bitmap_isset(bitmap, index) is true\&.
 .PP
-The assert prevents the loop from being infinite if the bitmap is infinite\&. 
+The assert prevents the loop from being infinite if the bitmap is infinitely set\&. 
 .SS "#define hwloc_bitmap_foreach_end()"
 
 .PP
@@ -287,7 +287,7 @@ Compute the first index (least significant bit) in bitmap \fCbitmap\fP\&.
 .PP
 \fBReturns:\fP
 .RS 4
--1 if no index is set\&. 
+-1 if no index is set in \fCbitmap\fP\&. 
 .RE
 .PP
 
@@ -315,10 +315,24 @@ Test whether bitmap \fCbitmap1\fP is equal to bitmap \fCbitmap2\fP\&.
 
 .PP
 Test whether bitmap \fCbitmap\fP is completely full\&. 
+.PP
+\fBNote:\fP
+.RS 4
+A full bitmap is always infinitely set\&. 
+.RE
+.PP
+
 .SS "int hwloc_bitmap_isincluded (\fBhwloc_const_bitmap_t\fP sub_bitmap, \fBhwloc_const_bitmap_t\fP super_bitmap)"
 
 .PP
 Test whether bitmap \fCsub_bitmap\fP is part of bitmap \fCsuper_bitmap\fP\&. 
+.PP
+\fBNote:\fP
+.RS 4
+The empty bitmap is considered included in any other bitmap\&. 
+.RE
+.PP
+
 .SS "int hwloc_bitmap_isset (\fBhwloc_const_bitmap_t\fP bitmap, unsigned id)"
 
 .PP
@@ -334,7 +348,7 @@ Compute the last index (most significant bit) in bitmap \fCbitmap\fP\&.
 .PP
 \fBReturns:\fP
 .RS 4
--1 if no index is bitmap, or if the index bitmap is infinite\&. 
+-1 if no index is set in \fCbitmap\fP, or if \fCbitmap\fP is infinitely set\&. 
 .RE
 .PP
 
@@ -345,7 +359,7 @@ Stringify a bitmap into a newly allocated list string\&.
 .SS "int hwloc_bitmap_list_snprintf (char *restrict buf, size_t buflen, \fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
-Stringify a bitmap in the list format\&. Lists are comma-separated indexes or ranges\&. Ranges are dash separated indexes\&. The last range may not have a ending indexes if the bitmap is infinite\&.
+Stringify a bitmap in the list format\&. Lists are comma-separated indexes or ranges\&. Ranges are dash separated indexes\&. The last range may not have an ending indexes if the bitmap is infinitely set\&.
 .PP
 Up to \fCbuflen\fP characters may be written in buffer \fCbuf\fP\&.
 .PP
@@ -368,7 +382,7 @@ Compute the next index in bitmap \fCbitmap\fP which is after index \fCprev\fP\&.
 .PP
 \fBReturns:\fP
 .RS 4
--1 if no index with higher index is bitmap\&. 
+-1 if no index with higher index is set in \fCbitmap\fP\&. 
 .RE
 .PP
 
@@ -455,7 +469,9 @@ Compute the 'weight' of bitmap \fCbitmap\fP (i\&.e\&., number of indexes that ar
 .PP
 \fBReturns:\fP
 .RS 4
-the number of indexes that are in the bitmap\&. 
+the number of indexes that are in the bitmap\&.
+.PP
+-1 if \fCbitmap\fP is infinitely set\&. 
 .RE
 .PP
 

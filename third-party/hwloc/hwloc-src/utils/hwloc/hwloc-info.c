@@ -453,12 +453,12 @@ main (int argc, char *argv[])
     DO(membind, get_thisthread_membind);
     DO(membind, set_area_membind);
     DO(membind, get_area_membind);
+    DO(membind, alloc_membind);
     DO(membind, firsttouch_membind);
     DO(membind, bind_membind);
     DO(membind, interleave_membind);
     DO(membind, nexttouch_membind);
     DO(membind, migrate_membind);
-    DO(membind, firsttouch_membind);
     DO(membind, get_area_memlocation);
 
   } else if (mode == HWLOC_INFO_MODE_OBJECTS) {
