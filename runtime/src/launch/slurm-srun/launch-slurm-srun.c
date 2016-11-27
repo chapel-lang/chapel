@@ -675,8 +675,6 @@ static int getCoresPerLocale(void) {
 
 static void chpl_launch_cleanup(void) {
   if (debug == 0) {
-    char* fileToRemove = NULL;
-
     if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL &&
         generate_sbatch_script             == 0) {
       if (unlink(slurmFilename)) {
@@ -685,7 +683,7 @@ static void chpl_launch_cleanup(void) {
         snprintf(msg,
                  1024,
                  "Error removing temporary file '%s': %s",
-                 fileToRemove,
+                 slurmFilename,
                  strerror(errno));
 
         chpl_warning(msg, 0, 0);
