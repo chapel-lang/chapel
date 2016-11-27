@@ -317,29 +317,14 @@ static int         getCoresPerLocale(void);
 
 #define MAX_COM_LEN 4096
 
-// create the command that will actually launch the program and
-// create any files needed for the launch like the batch script
 static char* chpl_launch_create_command(int     argc,
                                         char*   argv[],
                                         int32_t numLocales) {
-  int   i                        = 0;
-  int   size                     = 0;
-  char  baseCommand[MAX_COM_LEN] = { '\0' };
-  char* command                  = NULL;
-  FILE* slurmFile                = NULL;
   char* basenamePtr              = strrchr(argv[0], '/');
-  pid_t mypid                    = 0;
-  const char* tmpDir             = getTmpDir();
 
-  char* account      = getenv("CHPL_LAUNCHER_ACCOUNT");
-  char* constraint   = getenv("CHPL_LAUNCHER_CONSTRAINT");
-  char* outputfn     = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
-  char* bufferStdout = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
-
-  char  stdoutFile        [MAX_COM_LEN];
-  char  stdoutFileNoFmt   [MAX_COM_LEN];
-  char  tmpStdoutFile     [MAX_COM_LEN];
-  char  tmpStdoutFileNoFmt[MAX_COM_LEN];
+  int   size                     = 0;
+  char* command                  = NULL;
+  char  baseCommand[MAX_COM_LEN] = { '\0' };
 
   // command line walltime takes precedence over env var
   if (!walltime) {
@@ -369,12 +354,6 @@ static char* chpl_launch_create_command(int     argc,
 
   chpl_compute_real_binary_name(argv[0]);
 
-  if (debug) {
-    mypid = 0;
-  } else {
-    mypid = getpid();
-  }
-
   // Elliot, 12/02/14: TODO we have a bunch of similar commands to build up the
   // interactive and batch versions. It would be nicer to build up the commands
   // and postprocess depending on interactive vs batch. As in build up "--quiet
@@ -383,11 +362,29 @@ static char* chpl_launch_create_command(int     argc,
 
   // if were running a batch job
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL || generate_sbatch_script) {
+    char*       account      = getenv("CHPL_LAUNCHER_ACCOUNT");
+    char*       bufferStdout = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
+    char*       constraint   = getenv("CHPL_LAUNCHER_CONSTRAINT");
+    char*       outputfn     = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
+
+    int         i            = 0;
+    FILE*       slurmFile    = NULL;
+    pid_t       mypid        = (debug != 0) ? 0 : getpid();
+    const char* tmpDir       = getTmpDir();
+
+    char        stdoutFile        [MAX_COM_LEN];
+    char        stdoutFileNoFmt   [MAX_COM_LEN];
+
+    char        tmpStdoutFile     [MAX_COM_LEN];
+    char        tmpStdoutFileNoFmt[MAX_COM_LEN];
+
     // set the sbatch filename
     sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
     // open the batch file and create the header
     slurmFile = fopen(slurmFilename, "w");
+
+    // NB: There will seg-fault if the file could not be created
     fprintf(slurmFile, "#!/bin/sh\n\n");
 
     // set the job name
@@ -404,7 +401,7 @@ static char* chpl_launch_create_command(int     argc,
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
     fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n",   getCoresPerLocale());
 
-    //request exclusive access to nodes
+    // request exclusive access to nodes
     fprintf(slurmFile, "#SBATCH --exclusive\n");
 
     // Set the walltime if it was specified
@@ -443,8 +440,7 @@ static char* chpl_launch_create_command(int     argc,
     if (outputfn != NULL) {
       sprintf(stdoutFile,      "%s", outputfn);
       sprintf(stdoutFileNoFmt, "%s", outputfn);
-    }
-    else {
+    } else {
       sprintf(stdoutFile,      "%s.%s.out", argv[0], "%j");
       sprintf(stdoutFileNoFmt, "%s.%s.out", argv[0], "$SLURM_JOB_ID");
     }
@@ -516,8 +512,13 @@ static char* chpl_launch_create_command(int     argc,
 
   // else we're running an interactive job
   } else {
-    char iCom[1024] = { '\0' };
-    int  len        = 0;
+    char* account    = getenv("CHPL_LAUNCHER_ACCOUNT");
+    char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
+
+    char  iCom[1024] = { '\0' };
+    int   len        = 0;
+
+    int   i          = 0;
 
     // set the job name
     len += sprintf(iCom + len, "--job-name=CHPL-%.10s ", basenamePtr);
@@ -611,7 +612,7 @@ static const char* getTmpDir(void) {
 
 // Get the number of locales
 //   1) from an environment variable if present and > 0
-//   2) otherwise by invoking the sinfo program otherwise
+//   2) otherwise by invoking the sinfo program
 static int getCoresPerLocale(void) {
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
   int   numCores       = -1;
