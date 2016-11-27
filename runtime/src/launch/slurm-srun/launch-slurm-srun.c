@@ -221,44 +221,56 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 *                                                                             *
 ************************************** | *************************************/
 
-// Check what version of slurm is on the system
-// Since this is c we actually write the version to a file
-// and then get the version out
 static sbatchVersion determineSlurmVersion(void) {
-  char version[versionBuffLen+1] = "";
-  char* versionPtr = version;
-  FILE* sysFile;
-  int i;
-  char * command;
+  char          version[versionBuffLen + 1] = { '\0' };
+  char*         versionPtr                  = version;
+  FILE*         sysFile                     = NULL;
+  char*         command                     = NULL;
+  sbatchVersion retval                      = unknown;
+
   sprintf(sysFilename, "%s", baseSysFilename);
 
   command = chpl_glom_strings(3, "sbatch --version > ", sysFilename, " 2>&1");
+
   system(command);
-  sysFile = fopen(sysFilename, "r");
-  for (i=0; i<versionBuffLen; i++) {
-    char tmp;
-    fscanf(sysFile, "%c", &tmp);
-    if (tmp == '\n') {
-      *versionPtr++ = '\0';
-      break;
+
+  if ((sysFile = fopen(sysFilename, "r")) != NULL) {
+    int i = 0;
+
+    for (i = 0; i < versionBuffLen; i++) {
+      char tmp = '\0';
+
+      fscanf(sysFile, "%c", &tmp);
+
+      if (tmp == '\n') {
+        *versionPtr++ = '\0';
+        break;
+      } else {
+        *versionPtr++ = tmp;
+      }
+    }
+
+    fclose(sysFile);
+
+    sprintf(command, "rm %s", sysFilename);
+
+    system(command);
+
+    if (strstr(version, "SBATCHPro") != NULL) {
+      retval = slurmpro;
+
+    } else if (strstr(version, "wrapper sbatch SBATCH UMA 1.0") != NULL) {
+      retval = uma;
+
+    } else if (strstr(version, "slurm") != NULL) {
+      retval = slurm;
+
     } else {
-      *versionPtr++ = tmp;
+      retval = unknown;
     }
   }
 
-  fclose(sysFile);
-  sprintf(command, "rm %s", sysFilename);
-  system(command);
-
-  if (strstr(version, "SBATCHPro")) {
-    return slurmpro;
-  } else if (strstr(version, "wrapper sbatch SBATCH UMA 1.0")) {
-    return uma;
-  } else if (strstr(version, "slurm")) {
-    return slurm;
-  } else {
-    return unknown;
-  }
+  return retval;
 }
 
 /************************************* | **************************************
