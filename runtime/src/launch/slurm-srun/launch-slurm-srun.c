@@ -81,72 +81,103 @@ static void          chpl_launch_cleanup(void);
 *                                                                             *
 ************************************** | *************************************/
 
-// handle launcher args
-int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, int32_t filename) {
+int chpl_launch_handle_arg(int     argc,
+                           char*   argv[],
+                           int     argNum,
+                           int32_t lineno,
+                           int32_t filename) {
   // handle --walltime <walltime> or --walltime=<walltime>
-  if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
-    walltime = argv[argNum+1];
+  if (strcmp(argv[argNum], CHPL_WALLTIME_FLAG) == 0) {
+    walltime = argv[argNum + 1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_WALLTIME_FLAG"=", strlen(CHPL_WALLTIME_FLAG))) {
-    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG)+1]);
+  } else if (strncmp(argv[argNum],
+                     CHPL_WALLTIME_FLAG"=",
+                     strlen(CHPL_WALLTIME_FLAG)) == 0) {
+    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG) + 1]);
     return 1;
   }
 
   // handle --nodelist <nodelist> or --nodelist=<nodelist>
-  if (!strcmp(argv[argNum], CHPL_NODELIST_FLAG)) {
-    nodelist = argv[argNum+1];
+  if (strcmp(argv[argNum], CHPL_NODELIST_FLAG) == 0) {
+    nodelist = argv[argNum + 1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_NODELIST_FLAG"=", strlen(CHPL_NODELIST_FLAG))) {
-    nodelist = &(argv[argNum][strlen(CHPL_NODELIST_FLAG)+1]);
+  } else if (strncmp(argv[argNum],
+                      CHPL_NODELIST_FLAG"=",
+                      strlen(CHPL_NODELIST_FLAG)) == 0) {
+    nodelist = &(argv[argNum][strlen(CHPL_NODELIST_FLAG) + 1]);
     return 1;
   }
 
   // handle --partition <partition> or --partition=<partition>
-  if (!strcmp(argv[argNum], CHPL_PARTITION_FLAG)) {
-    partition = argv[argNum+1];
+  if (strcmp(argv[argNum], CHPL_PARTITION_FLAG) == 0) {
+    partition = argv[argNum + 1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_PARTITION_FLAG"=", strlen(CHPL_PARTITION_FLAG))) {
-    partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG)+1]);
+  } else if (strncmp(argv[argNum],
+                     CHPL_PARTITION_FLAG"=",
+                     strlen(CHPL_PARTITION_FLAG)) == 0) {
+    partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG) + 1]);
     return 1;
   }
 
   // handle --exclude <nodes> or --exclude=<nodes>
-  if (!strcmp(argv[argNum], CHPL_EXCLUDE_FLAG)) {
-    exclude = argv[argNum+1];
+  if (strcmp(argv[argNum], CHPL_EXCLUDE_FLAG) == 0) {
+    exclude = argv[argNum + 1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_EXCLUDE_FLAG"=", strlen(CHPL_EXCLUDE_FLAG))) {
-    exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG)+1]);
+  } else if (strncmp(argv[argNum],
+                     CHPL_EXCLUDE_FLAG"=",
+                     strlen(CHPL_EXCLUDE_FLAG)) == 0) {
+    exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG) + 1]);
     return 1;
   }
 
   // handle --generate-sbatch-script
-  if (!strcmp(argv[argNum], CHPL_GENERATE_SBATCH_SCRIPT)) {
+  if (strcmp(argv[argNum], CHPL_GENERATE_SBATCH_SCRIPT) == 0) {
     generate_sbatch_script = 1;
     return 1;
   }
 
-  // Elliot, 12/02/14: TODO we should have a core binding option here similar
-  // to aprun's -cc to handle binding to cores / numa domains, etc For now you
-  // can just set the SLURM_CPU_BIND env var
-
+  // Elliot, 12/02/14: TODO we should have a core binding option here
+  // simoilar to aprun's -cc to handle binding to cores / numa domains, etc.
+  // For now you can just set the SLURM_CPU_BIND env var
   return 0;
 }
 
-
-
 void chpl_launch_print_help(void) {
   fprintf(stdout, "LAUNCHER FLAGS:\n");
+
   fprintf(stdout, "===============\n");
-  fprintf(stdout, "  %s : generate an sbatch script and exit\n", CHPL_GENERATE_SBATCH_SCRIPT);
-  fprintf(stdout, "  %s <HH:MM:SS> : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
-  fprintf(stdout, "  %s <nodelist> : specify a nodelist to use\n", CHPL_NODELIST_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_NODELIST)\n");
-  fprintf(stdout, "  %s <partition> : specify a partition to use\n", CHPL_PARTITION_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_PARTITION)\n");
-  fprintf(stdout, "  %s <nodes> : specify node(s) to exclude\n", CHPL_EXCLUDE_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_EXCLUDE)\n");
+
+  fprintf(stdout,
+          "  %s : generate an sbatch script and exit\n",
+          CHPL_GENERATE_SBATCH_SCRIPT);
+
+  fprintf(stdout,
+          "  %s <HH:MM:SS> : specify a wallclock time limit\n",
+          CHPL_WALLTIME_FLAG);
+
+  fprintf(stdout,
+          "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
+
+  fprintf(stdout,
+          "  %s <nodelist> : specify a nodelist to use\n",
+          CHPL_NODELIST_FLAG);
+
+  fprintf(stdout,
+          "                           (or use $CHPL_LAUNCHER_NODELIST)\n");
+
+  fprintf(stdout,
+          "  %s <partition> : specify a partition to use\n",
+          CHPL_PARTITION_FLAG);
+
+  fprintf(stdout,
+          "                           (or use $CHPL_LAUNCHER_PARTITION)\n");
+
+  fprintf(stdout,
+          "  %s <nodes> : specify node(s) to exclude\n",
+          CHPL_EXCLUDE_FLAG);
+
+  fprintf(stdout,
+          "                           (or use $CHPL_LAUNCHER_EXCLUDE)\n");
 }
 
 /************************************* | **************************************
