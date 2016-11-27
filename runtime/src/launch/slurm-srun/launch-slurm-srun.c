@@ -184,34 +184,11 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// /tmp is always available on cray compute nodes (it's a memory mounted dir.)
-// If we ever need this to run on non-cray machines, we should update this to
-// look for the ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
-static const char* getTmpDir(void) {
-  return "/tmp";
-}
+/************************************* | **************************************
+*                                                                             *
+* Use system() to determine what version of slurm is on the system.           *
+*                                                                             *
+************************************** | *************************************/
 
 // Check what version of slurm is on the system
 // Since this is c we actually write the version to a file
@@ -253,6 +230,34 @@ static sbatchVersion determineSlurmVersion(void) {
   }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// /tmp is always available on cray compute nodes (it's a memory mounted dir.)
+// If we ever need this to run on non-cray machines, we should update this to
+// look for the ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
+static const char* getTmpDir(void) {
+  return "/tmp";
+}
 
 // Get the number of locales from the environment variable or if that is not
 // set just use sinfo to get the number of cpus.
