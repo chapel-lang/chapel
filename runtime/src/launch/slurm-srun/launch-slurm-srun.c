@@ -230,6 +230,16 @@ static sbatchVersion determineSlurmVersion(void) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void genSBatchScript(int argc, char *argv[], int numLocales) {
+  chpl_launch_create_command(argc, argv, numLocales);
+}
+
 
 
 
@@ -574,11 +584,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   }
 
   return command;
-}
-
-
-static void genSBatchScript(int argc, char *argv[], int numLocales) {
-  chpl_launch_create_command(argc, argv, numLocales);
 }
 
 
