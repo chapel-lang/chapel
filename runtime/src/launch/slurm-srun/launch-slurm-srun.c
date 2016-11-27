@@ -613,52 +613,53 @@ static const char* getTmpDir(void) {
 //   1) from an environment variable if present and > 0
 //   2) otherwise by invoking the sinfo program otherwise
 static int getCoresPerLocale(void) {
-  char*     numCoresString    = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
-  int       numCores          = -1;
-  const int buflen            = 1024;
-  char      buf[buflen];
-  char      partitionArg[128] = { '\0' };
-  char*     argv[8]           = { NULL };
+  char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
+  int   numCores       = -1;
 
-  memset(buf, 0, buflen);
-
+  // Attempt to deterine numCores from environment
   if (numCoresString != NULL) {
     numCores = atoi(numCoresString);
 
-    if (numCores > 0) {
-      return numCores;
+    if (numCores <= 0) {
+      chpl_warning("CHPL_LAUNCHER_CORES_PER_LOCALE must be > 0.", 0, 0);
+    }
+  }
+
+  // Invoke sinfo application
+  if (numCores <= 0) {
+    const int buflen            = 1024;
+    char      buf[buflen];
+    char      partitionArg[128] = { '\0' };
+    char*     argv[8]           = { NULL };
+
+    memset(buf, 0, buflen);
+
+    argv[0] = (char*)  "sinfo";        // use sinfo to get num cpus
+    argv[1] = (char*)  "--exact";      // get exact otherwise you get 16+, etc
+    argv[2] = (char*)  "--format=%c";  // format to get num cpu per node (%c)
+    argv[3] = (char*)  "--sort=+=#c";  // sort by num cpu (lower to higher)
+    argv[4] = (char*)  "--noheader";   // don't show header (hide "CPU" header)
+    argv[5] = (char*)  "--responding"; // only care about online nodes
+    argv[6] = NULL;
+
+    // Set the partition if it was specified
+    if (partition) {
+      sprintf(partitionArg, "--partition=%s", partition);
+
+      argv[6] = partitionArg;
+      argv[7] = NULL;
     }
 
-    chpl_warning("CHPL_LAUNCHER_CORES_PER_LOCALE must be > 0.", 0, 0);
-  }
+    if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
+      chpl_error("Error trying to determine number of cores per node", 0, 0);
+    }
 
-  argv[0] = (char*)  "sinfo";        // use sinfo to get num cpus
-  argv[1] = (char*)  "--exact";      // get exact otherwise you get 16+, etc
-  argv[2] = (char*)  "--format=%c";  // format to get num cpu per node (%c)
-  argv[3] = (char*)  "--sort=+=#c";  // sort by num cpu (lower to higher)
-  argv[4] = (char*)  "--noheader";   // don't show header (hide "CPU" header)
-  argv[5] = (char*)  "--responding"; // only care about online nodes
-  argv[6] = NULL;
-
-  // Set the partition if it was specified
-  if (partition) {
-    sprintf(partitionArg, "--partition=%s", partition);
-
-    argv[6] = partitionArg;
-    argv[7] = NULL;
-  }
-
-  memset(buf, 0, buflen);
-
-  if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
-    chpl_error("Error trying to determine number of cores per node", 0, 0);
-  }
-
-  if (sscanf(buf, "%d", &numCores) != 1) {
-    chpl_error("unable to determine number of cores per locale; "
-               "please set CHPL_LAUNCHER_CORES_PER_LOCALE",
-               0,
-               0);
+    if (sscanf(buf, "%d", &numCores) != 1) {
+      chpl_error("unable to determine number of cores per locale; "
+                 "please set CHPL_LAUNCHER_CORES_PER_LOCALE",
+                 0,
+                 0);
+    }
   }
 
   return numCores;
