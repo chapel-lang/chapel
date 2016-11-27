@@ -6,4 +6,5 @@ build
 /examples
 
 tools/chpldoc/man.rst
+tools/chplvis/examples
 usingchapel/man.rst
