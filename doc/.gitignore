@@ -1,9 +1,9 @@
 build
 
-builtins
-modules
-primers
-examples
+/builtins
+/modules
+/primers
+/examples
 
 tools/chpldoc/man.rst
 usingchapel/man.rst
