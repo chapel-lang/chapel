@@ -149,6 +149,41 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_EXCLUDE)\n");
 }
 
+/************************************* | **************************************
+*                                                                             *
+* The primary entry point from main_launcher.c                                *
+*                                                                             *
+************************************** | *************************************/
+
+int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+  int retcode;
+
+  // check the slurm version before continuing
+  sbatchVersion sVersion = determineSlurmVersion();
+  if (sVersion != slurm) {
+    printf("Error: This launcher is only compatible with native slurm\n");
+    printf("Slurm version was %d\n", sVersion);
+    return 1;
+  }
+
+  debug = getenv("CHPL_LAUNCHER_DEBUG");
+
+  // generate a batch script and exit if user wanted to
+  if (generate_sbatch_script) {
+    genSBatchScript(argc, argv, numLocales);
+    retcode = 0;
+  }
+  // otherwise generate the batch file or srun command and execute it
+  else {
+    retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv,
+          numLocales), argv[0]);
+
+    chpl_launch_cleanup();
+  }
+  return retcode;
+}
+
+
 
 
 
@@ -558,34 +593,3 @@ static void chpl_launch_cleanup(void) {
     }
   }
 }
-
-
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  int retcode;
-
-  // check the slurm version before continuing
-  sbatchVersion sVersion = determineSlurmVersion();
-  if (sVersion != slurm) {
-    printf("Error: This launcher is only compatible with native slurm\n");
-    printf("Slurm version was %d\n", sVersion);
-    return 1;
-  }
-
-  debug = getenv("CHPL_LAUNCHER_DEBUG");
-
-  // generate a batch script and exit if user wanted to
-  if (generate_sbatch_script) {
-    genSBatchScript(argc, argv, numLocales);
-    retcode = 0;
-  }
-  // otherwise generate the batch file or srun command and execute it
-  else {
-    retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv,
-          numLocales), argv[0]);
-
-    chpl_launch_cleanup();
-  }
-  return retcode;
-}
-
-
