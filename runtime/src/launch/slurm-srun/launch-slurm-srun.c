@@ -616,9 +616,11 @@ static int getCoresPerLocale(void) {
   char*     numCoresString    = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
   int       numCores          = -1;
   const int buflen            = 1024;
-  char      buf[buflen]       = { '\0' };
+  char      buf[buflen];
   char      partitionArg[128] = { '\0' };
   char*     argv[8]           = { NULL };
+
+  memset(buf, 0, buflen);
 
   if (numCoresString != NULL) {
     numCores = atoi(numCoresString);
