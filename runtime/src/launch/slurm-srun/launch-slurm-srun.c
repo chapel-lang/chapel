@@ -322,42 +322,24 @@ static int         getCoresPerLocale(void);
 static char* chpl_launch_create_command(int     argc,
                                         char*   argv[],
                                         int32_t numLocales) {
-  int i;
-  int size;
-  char baseCommand[MAX_COM_LEN];
-  char* command;
-  FILE* slurmFile;
-  char* account = getenv("CHPL_LAUNCHER_ACCOUNT");
-  char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
-  char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
-  char* basenamePtr = strrchr(argv[0], '/');
-  pid_t mypid;
+  int   i                        = 0;
+  int   size                     = 0;
+  char  baseCommand[MAX_COM_LEN] = { '\0' };
+  char* command                  = NULL;
+  FILE* slurmFile                = NULL;
+  char* basenamePtr              = strrchr(argv[0], '/');
+  pid_t mypid                    = 0;
+  const char* tmpDir             = getTmpDir();
 
-  // For programs with large amounts of output, a lot of time can be
-  // spent syncing the stdout buffer to the output file. This can cause
-  // tests to run extremely slow and can cause stdout and stderr to
-  // become mixed in odd ways since stdout is buffered but stderr isn't.
-  // To alleviate this problem (and to allow accurate external timings
-  // of tests) this allows the output to be "buffered" to <tmpDir> and
-  // copied once the job is done.
-  //
-  // Note that this should work even for multi-locale tests since all
-  // the output is piped through a single node.
-  //
-  // The *NoFmt versions are the same as the regular version, except
-  // that instead of using slurms output formatters, they use the
-  // corresponding env var. e.g. you have to use '--output=%j.out to
-  // have the output file be <jobid>.out, but when we copy the tmp file
-  // to the real output file, the %j and other formatters aren't
-  // available so we have to use the equivalent slurm env var
-  // (SLURM_JOB_ID.) The env vars can't be used when specifying --output
-  // because they haven't been initialized yet
-  char* bufferStdout    = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
-  const char* tmpDir    = getTmpDir();
-  char stdoutFile         [MAX_COM_LEN];
-  char stdoutFileNoFmt    [MAX_COM_LEN];
-  char tmpStdoutFile      [MAX_COM_LEN];
-  char tmpStdoutFileNoFmt [MAX_COM_LEN];
+  char* account      = getenv("CHPL_LAUNCHER_ACCOUNT");
+  char* constraint   = getenv("CHPL_LAUNCHER_CONSTRAINT");
+  char* outputfn     = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
+  char* bufferStdout = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
+
+  char  stdoutFile        [MAX_COM_LEN];
+  char  stdoutFileNoFmt   [MAX_COM_LEN];
+  char  tmpStdoutFile     [MAX_COM_LEN];
+  char  tmpStdoutFileNoFmt[MAX_COM_LEN];
 
   // command line walltime takes precedence over env var
   if (!walltime) {
@@ -417,10 +399,10 @@ static char* chpl_launch_create_command(int     argc,
     // request the number of locales, with 1 task per node, and number of cores
     // cpus-per-task. We probably don't need --nodes and --ntasks specified
     // since 1 task-per-node with n --tasks implies -n nodes
-    fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
-    fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
+    fprintf(slurmFile, "#SBATCH --nodes=%d\n",           numLocales);
+    fprintf(slurmFile, "#SBATCH --ntasks=%d\n",          numLocales);
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
-    fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", getCoresPerLocale());
+    fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n",   getCoresPerLocale());
 
     //request exclusive access to nodes
     fprintf(slurmFile, "#SBATCH --exclusive\n");
@@ -445,7 +427,8 @@ static char* chpl_launch_create_command(int     argc,
       fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
     }
 
-    // If needed a constraint can be specified with the env var CHPL_LAUNCHER_CONSTRAINT
+    // If needed a constraint can be specified with the env var
+    // CHPL_LAUNCHER_CONSTRAINT
     if (constraint) {
       fprintf(slurmFile, "#SBATCH --constraint=%s\n", constraint);
     }
@@ -473,16 +456,27 @@ static char* chpl_launch_create_command(int     argc,
     // If we're buffering the output, set the temp output file name.
     // It's always <tmpDir>/binaryName.<jobID>.out.
     if (bufferStdout != NULL) {
-      sprintf(tmpStdoutFile,      "%s/%s.%s.out", tmpDir, argv[0], "%j");
-      sprintf(tmpStdoutFileNoFmt, "%s/%s.%s.out", tmpDir, argv[0], "$SLURM_JOB_ID");
+      sprintf(tmpStdoutFile,
+              "%s/%s.%s.out",
+              tmpDir,
+              argv[0],
+              "%j");
+
+      sprintf(tmpStdoutFileNoFmt,
+              "%s/%s.%s.out",
+              tmpDir,
+              argv[0],
+              "$SLURM_JOB_ID");
     }
 
     // add the srun command and the (possibly wrapped) binary name.
-    fprintf(slurmFile, "srun --kill-on-bad-exit %s %s ",
-        chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
+    fprintf(slurmFile,
+            "srun --kill-on-bad-exit %s %s ",
+            chpl_get_real_binary_wrapper(),
+            chpl_get_real_binary_name());
 
     // add any arguments passed to the launcher to the binary
-    for (i=1; i<argc; i++) {
+    for (i = 1; i < argc; i++) {
       fprintf(slurmFile, "'%s' ", argv[i]);
     }
 
@@ -490,18 +484,26 @@ static char* chpl_launch_create_command(int     argc,
     if (bufferStdout != NULL) {
       fprintf(slurmFile, "&> %s", tmpStdoutFileNoFmt);
     }
+
     fprintf(slurmFile, "\n");
 
     // After the job is run, if we buffered stdout to <tmpDir>, we need
     // to copy the output to the actual output file. The <tmpDir> output
     // will only exist on one node, ignore failures on the other nodes
     if (bufferStdout != NULL) {
-      fprintf(slurmFile, "cat %s >> %s\n", tmpStdoutFileNoFmt, stdoutFileNoFmt);
-      fprintf(slurmFile, "rm  %s &> /dev/null\n", tmpStdoutFileNoFmt);
+      fprintf(slurmFile,
+              "cat %s >> %s\n",
+              tmpStdoutFileNoFmt,
+              stdoutFileNoFmt);
+
+      fprintf(slurmFile,
+              "rm  %s &> /dev/null\n",
+              tmpStdoutFileNoFmt);
     }
 
     // close the batch file and change permissions
     fclose(slurmFile);
+
     chmod(slurmFilename, 0755);
 
     if (generate_sbatch_script) {
@@ -511,71 +513,71 @@ static char* chpl_launch_create_command(int     argc,
     // the baseCommand is what will call the batch file
     // that was just created
     sprintf(baseCommand, "sbatch %s\n", slurmFilename);
-  }
-  // else we're running an interactive job
-  else {
-    char iCom[1024];
-    int len;
 
-    len = 0;
+  // else we're running an interactive job
+  } else {
+    char iCom[1024] = { '\0' };
+    int  len        = 0;
 
     // set the job name
-    len += sprintf(iCom+len, "--job-name=CHPL-%.10s ",basenamePtr);
+    len += sprintf(iCom + len, "--job-name=CHPL-%.10s ", basenamePtr);
 
     // suppress informational messages, will still display errors
-    len += sprintf(iCom+len, "--quiet ");
+    len += sprintf(iCom + len, "--quiet ");
 
     // request the number of locales, with 1 task per node, and number of cores
     // cpus-per-task. We probably don't need --nodes and --ntasks specified
     // since 1 task-per-node with n --tasks implies -n nodes
-    len += sprintf(iCom+len, "--nodes=%d ",numLocales);
-    len += sprintf(iCom+len, "--ntasks=%d ", numLocales);
-    len += sprintf(iCom+len, "--ntasks-per-node=%d ", procsPerNode);
-    len += sprintf(iCom+len, "--cpus-per-task=%d ", getCoresPerLocale());
+    len += sprintf(iCom + len, "--nodes=%d ",           numLocales);
+    len += sprintf(iCom + len, "--ntasks=%d ",          numLocales);
+    len += sprintf(iCom + len, "--ntasks-per-node=%d ", procsPerNode);
+    len += sprintf(iCom + len, "--cpus-per-task=%d ",   getCoresPerLocale());
 
     // request exclusive access
-    len += sprintf(iCom+len, "--exclusive ");
+    len += sprintf(iCom + len, "--exclusive ");
 
     // kill the job if any program instance halts with non-zero exit status
-    len += sprintf(iCom+len, "--kill-on-bad-exit ");
+    len += sprintf(iCom + len, "--kill-on-bad-exit ");
 
     // Set the walltime if it was specified
     if (walltime) {
-      len += sprintf(iCom+len, "--time=%s ",walltime);
+      len += sprintf(iCom + len, "--time=%s ", walltime);
     }
 
     // Set the nodelist if it was specified
     if (nodelist) {
-      len += sprintf(iCom+len, "--nodelist=%s ", nodelist);
+      len += sprintf(iCom + len, "--nodelist=%s ", nodelist);
     }
 
     // Set the partition if it was specified
     if (partition) {
-      len += sprintf(iCom+len, "--partition=%s ", partition);
+      len += sprintf(iCom + len, "--partition=%s ", partition);
     }
 
     // Set the exclude list if it was specified
     if (exclude) {
-      len += sprintf(iCom+len, "--exclude=%s ", exclude);
+      len += sprintf(iCom + len, "--exclude=%s ", exclude);
     }
 
     // set any constraints
     if (constraint) {
-      len += sprintf(iCom+len, " --constraint=%s ", constraint);
+      len += sprintf(iCom + len, " --constraint=%s ", constraint);
     }
 
     // set the account name if one was provided
     if (account && strlen(account) > 0) {
-      len += sprintf(iCom+len, "--account=%s ", account);
+      len += sprintf(iCom + len, "--account=%s ", account);
     }
 
     // add the (possibly wrapped) binary name
-    len += sprintf(iCom+len, "%s %s ",
-        chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
+    len += sprintf(iCom + len,
+                   "%s %s ",
+                   chpl_get_real_binary_wrapper(),
+                   chpl_get_real_binary_name());
 
     // add any arguments passed to the launcher to the binary
-    for (i=1; i<argc; i++) {
-      len += sprintf(iCom+len, "%s ", argv[i]);
+    for (i = 1; i < argc; i++) {
+      len += sprintf(iCom + len, "%s ", argv[i]);
     }
 
     // launch the job using srun
@@ -583,9 +585,16 @@ static char* chpl_launch_create_command(int     argc,
   }
 
   // copy baseCommand into command and return it
-  size = strlen(baseCommand) + 1;
-  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  size    = strlen(baseCommand) + 1;
+
+  command = chpl_mem_allocMany(size,
+                               sizeof(char),
+                               CHPL_RT_MD_COMMAND_BUFFER,
+                               -1,
+                               0);
+
   sprintf(command, "%s", baseCommand);
+
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
