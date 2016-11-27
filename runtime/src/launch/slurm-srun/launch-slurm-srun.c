@@ -64,6 +64,39 @@ typedef enum {
   unknown
 } sbatchVersion;
 
+static sbatchVersion determineSlurmVersion(void);
+
+static void          genSBatchScript(int argc, char* argv[], int numLocales);
+
+static char*         chpl_launch_create_command(int     argc,
+                                                char*   argv[],
+                                                int32_t numLocales);
+
+static void          chpl_launch_cleanup(void);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // /tmp is always available on cray compute nodes (it's a memory mounted dir.)
 // If we ever need this to run on non-cray machines, we should update this to
 // look for the ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
