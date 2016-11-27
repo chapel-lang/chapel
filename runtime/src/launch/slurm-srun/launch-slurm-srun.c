@@ -32,29 +32,29 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define baseSBATCHFilename ".chpl-slurm-sbatch-"
-#define baseSysFilename ".chpl-sys-"
+#define baseSBATCHFilename          ".chpl-slurm-sbatch-"
+#define baseSysFilename             ".chpl-sys-"
 
-#define CHPL_WALLTIME_FLAG "--walltime"
+#define procsPerNode                 1 /* Copies of binary per node */
+#define versionBuffLen              80
+
+
+#define CHPL_WALLTIME_FLAG          "--walltime"
 #define CHPL_GENERATE_SBATCH_SCRIPT "--generate-sbatch-script"
-#define CHPL_NODELIST_FLAG "--nodelist"
-#define CHPL_PARTITION_FLAG "--partition"
-#define CHPL_EXCLUDE_FLAG "--exclude"
+#define CHPL_NODELIST_FLAG          "--nodelist"
+#define CHPL_PARTITION_FLAG         "--partition"
+#define CHPL_EXCLUDE_FLAG           "--exclude"
 
-static char* debug = NULL;
-static char* walltime = NULL;
-static int generate_sbatch_script = 0;
-static char* nodelist = NULL;
-static char* partition = NULL;
-static char* exclude = NULL;
+static char* debug                  = NULL;
+static char* walltime               = NULL;
+static int   generate_sbatch_script = 0;
+static char* nodelist               = NULL;
+static char* partition              = NULL;
+static char* exclude                = NULL;
 
-char slurmFilename[FILENAME_MAX];
-char sysFilename[FILENAME_MAX];
+char         slurmFilename[FILENAME_MAX];
+char         sysFilename[FILENAME_MAX];
 
-/* copies of binary to run per node */
-#define procsPerNode 1
-
-#define versionBuffLen 80
 typedef enum {
   slurmpro,
   nccs,
