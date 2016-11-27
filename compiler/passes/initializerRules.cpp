@@ -581,7 +581,7 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
         curField = toDefExpr(curField->next);
       } else {
         // Something else invalid has occurred
-        // Should I also warn that it is occuring inside a loop?
+        // Should I also warn that it is occurring inside a loop?
         errorCases(t, curField, fieldname, seenField, stmt);
         stmt = getNextStmt(stmt, loop, true);
         isInit = getInitCall(stmt);

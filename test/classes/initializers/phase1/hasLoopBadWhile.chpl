@@ -1,6 +1,6 @@
 // Simplified version of hasLoopBad.chpl, to ensure we detect basic field
 // updates (because hasLoopBad.chpl is failing to act properly both due to 
-// loops and due to the presence of if statements
+// loops and due to the presence of if statements)
 class InLoop {
   var highestNum: int = -7;
 
