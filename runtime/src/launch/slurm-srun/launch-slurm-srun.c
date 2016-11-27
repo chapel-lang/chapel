@@ -674,20 +674,21 @@ static int getCoresPerLocale(void) {
 ************************************** | *************************************/
 
 static void chpl_launch_cleanup(void) {
-  if (debug == 0) {
-    if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL &&
-        generate_sbatch_script             == 0) {
-      if (unlink(slurmFilename)) {
-        char msg[1024];
+  if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL &&
 
-        snprintf(msg,
-                 1024,
-                 "Error removing temporary file '%s': %s",
-                 slurmFilename,
-                 strerror(errno));
+      debug                              == 0    &&
+      generate_sbatch_script             == 0) {
 
-        chpl_warning(msg, 0, 0);
-      }
+    if (unlink(slurmFilename) != 0) {
+      char msg[4096];
+
+      snprintf(msg,
+               4096,
+               "Error removing temporary file '%s': %s",
+               slurmFilename,
+               strerror(errno));
+
+      chpl_warning(msg, 0, 0);
     }
   }
 }
