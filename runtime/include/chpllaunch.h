@@ -52,7 +52,7 @@ char**      chpl_bundle_exec_args(int         argc,
 
 const char* chpl_get_real_binary_wrapper(void);
 
-void        chpl_compute_real_binary_name(const char* argv0);
+const char* chpl_compute_real_binary_name(const char* argv0);
 
 const char* chpl_get_real_binary_name(void);
 

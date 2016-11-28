@@ -170,40 +170,46 @@ void printAdditionalHelp(void) {
 *                                                                             *
 ************************************** | *************************************/
 
-char** chpl_bundle_exec_args(int argc, char *const argv[],
-                              int largc, char *const largv[]) {
-  int len = argc+largc+2;
-  int newargc = 0;
-  char **newargv = chpl_mem_allocMany(len, sizeof(char*),
-                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  if (!newargv) {
+char** chpl_bundle_exec_args(int         argc,
+                             char* const argv[],
+                             int         largc,
+                             char* const largv[]) {
+  const char* realWrap = chpl_get_real_binary_wrapper();
+  int         len      = argc + 1 + largc + 1;
+  int         newArgc  = 0;
+  char**      newArgv  = chpl_mem_allocMany(len,
+                                            sizeof(char*),
+                                            CHPL_RT_MD_COMMAND_BUFFER,
+                                            -1,
+                                            0);
+
+  if (newArgv == NULL) {
     chpl_internal_error("Could not allocate memory");
   }
 
-  newargv[len-1] = NULL;
-  newargv[len-2] = NULL;
+  // Initialize the final 2 slots to NULL
+  newArgv[len - 1] = NULL;
+  newArgv[len - 2] = NULL;
 
-  // add any launcher args
-  if (largc > 0) {
-    memcpy(newargv, largv, largc*sizeof(char *));
-    newargc = largc;
-  }
-  if (argc > 0) {
-    // if there is a wrapper, add it after the launcher args
-    if (strcmp(chpl_get_real_binary_wrapper(), "") != 0) {
-      newargv[newargc++] = (char *) chpl_get_real_binary_wrapper();
-    }
+  // Copy the launcher args
+  memcpy(newArgv, largv, largc * sizeof(char*));
+  newArgc = largc;
 
-    // add the _real binary (after launchers args or wrapper)
-    chpl_compute_real_binary_name(argv[0]);
-    newargv[newargc++] = (char *) chpl_get_real_binary_name();
-    if (argc > 1) {
-      // add args passed to main (skip original binary) after _real binary
-      memcpy(newargv+newargc, argv+1, (argc-1)*sizeof(char *));
-    }
+  // If there is a wrapper, add it after the launcher args
+  // This will absorb the penultimate NULL slot
+  if (realWrap[0] != '\0') {
+    newArgv[newArgc++] = (char*) realWrap;
   }
 
-  return newargv;
+  // add the _real binary (after launchers args or wrapper)
+  newArgv[newArgc++] = (char*) chpl_compute_real_binary_name(argv[0]);
+
+  // add args passed to main (skip original binary) after _real binary
+  if (argc > 1) {
+    memcpy(newArgv + newArgc, argv + 1, (argc - 1) * sizeof(char*));
+  }
+
+  return newArgv;
 }
 
 /************************************* | **************************************
@@ -246,7 +252,7 @@ extern const char launcher_exe_suffix[];    // May be the empty string.
 #define BIN_NAME_SIZE 256
 static char chpl_real_binary_name[BIN_NAME_SIZE];
 
-void chpl_compute_real_binary_name(const char* argv0) {
+const char* chpl_compute_real_binary_name(const char* argv0) {
 
   char* cursor = chpl_real_binary_name;
   int exe_length = strlen(launcher_exe_suffix);
@@ -271,6 +277,8 @@ void chpl_compute_real_binary_name(const char* argv0) {
   strncpy(cursor, argv0, length);
   cursor += length;
   strcpy(cursor, launcher_real_suffix);
+
+  return &chpl_real_binary_name[0];
 }
 
 const char* chpl_get_real_binary_name(void) {
