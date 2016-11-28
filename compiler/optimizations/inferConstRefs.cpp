@@ -52,7 +52,8 @@
 // that later helper functions can use the list re-entrantly.
 //
 // Until we clarify constness more in the language, this pass will not consider
-// a record to be const if any of its fields are modified.
+// a record instance to be const if any of its fields are modified (even in
+// a constructor).
 //
 
 class ConstInfo {
@@ -196,6 +197,9 @@ static bool canRHSBeConstRef(CallExpr* parent, SymExpr* use) {
       // For the get-member primitives, I intend this to be a safe approach
       // until we know what const-ref means for fields. Basically, if any field
       // might be modified I do not consider the base object to be const-ref.
+      //
+      // Note that the get-*-value primitives may return a reference if the
+      // field is a reference.
       if (LHS->isRef()) {
         if (!inferConstRef(LHS->symbol())) {
           return false;
@@ -236,9 +240,9 @@ static bool inferConstRef(Symbol* sym) {
     info->alreadyCalled = true;
   }
 
-  bool retval = true;
+  bool isConstRef = true;
 
-  while (info && info->hasMore() && retval) {
+  while (info && info->hasMore() && isConstRef) {
     SymExpr* use = info->next();
 
     CallExpr* call = toCallExpr(use->parentExpr);
@@ -249,12 +253,12 @@ static bool inferConstRef(Symbol* sym) {
     if (call->isResolved()) {
       ArgSymbol* form = actual_to_formal(use);
       if (form->isRef() && !inferConstRef(form)) {
-        retval = false;
+        isConstRef = false;
       }
     }
     else if (parent && isMoveOrAssign(parent)) {
       if (!canRHSBeConstRef(parent, use)) {
-        retval = false;
+        isConstRef = false;
       }
     }
     else if (call->isPrimitive(PRIM_MOVE)) {
@@ -267,7 +271,7 @@ static bool inferConstRef(Symbol* sym) {
       if (use == call->get(1)) {
         // CASE 1
         if (!call->get(2)->isRef()) {
-          retval = false;
+          isConstRef = false;
         }
       } else {
         // 'use' is the RHS of a MOVE
@@ -276,16 +280,16 @@ static bool inferConstRef(Symbol* sym) {
           SymExpr* se = toSymExpr(call->get(1));
           INT_ASSERT(se);
           if (!inferConstRef(se->symbol())) {
-            retval = false;
+            isConstRef = false;
           }
         }
-        // else CASE 3: don't need to do anything because retval is already
+        // else CASE 3: don't need to do anything because isConstRef is already
         // true
       }
     }
     else if (call->isPrimitive(PRIM_ASSIGN)) {
       if (use == call->get(1)) {
-        retval = false;
+        isConstRef = false;
       }
     }
     else if (call->isPrimitive(PRIM_SET_MEMBER) ||
@@ -300,24 +304,24 @@ static bool inferConstRef(Symbol* sym) {
       // That's beyond the scope of what I'm attempting at the moment, so to
       // be safe we'll return false for that case.
       if (use == call->get(1) || use == call->get(3)) {
-        retval = false;
+        isConstRef = false;
       } else {
         // use == member
         // If 'rhs' is not a ref, then we're writing into 'use'. Otherwise it's
         // a pointer copy and we don't care if 'rhs' is writable.
         if (!call->get(3)->isRef()) {
-          retval = false;
+          isConstRef = false;
         }
       }
     } else {
       // To be safe, exit the loop with 'false' if we're unsure of how to
       // handle a primitive.
-      retval = false;
+      isConstRef = false;
     }
   }
 
   if (isFirstCall) {
-    if (retval && !info->finalizedConstness) {
+    if (isConstRef && !info->finalizedConstness) {
       if (ArgSymbol* arg = toArgSymbol(sym)) {
         arg->intent = INTENT_CONST_REF;
       } else {
@@ -330,11 +334,11 @@ static bool inferConstRef(Symbol* sym) {
       info->reset();
       info->finalizedConstness = true;
     }
-  } else if (!retval && info) {
+  } else if (!isConstRef && info) {
     info->finalizedConstness = true;
   }
 
-  return retval;
+  return isConstRef;
 }
 
 static bool inferConst(Symbol* sym) {
@@ -363,10 +367,10 @@ static bool inferConst(Symbol* sym) {
     info->alreadyCalled = true;
   }
 
-  bool retval = true;
+  bool isConstVal = true;
   int numDefs = 0;
 
-  while (info && info->hasMore() && retval) {
+  while (info && info->hasMore() && isConstVal) {
     SymExpr* use = info->next();
 
     CallExpr* call = toCallExpr(use->parentExpr);
@@ -382,7 +386,7 @@ static bool inferConst(Symbol* sym) {
       ArgSymbol* form = actual_to_formal(use);
       if (form->isRef()) {
         if (!inferConstRef(form)) {
-          retval = false;
+          isConstVal = false;
         }
       }
     }
@@ -391,7 +395,7 @@ static bool inferConst(Symbol* sym) {
           call->isPrimitive(PRIM_SET_REFERENCE)) {
         SymExpr* LHS = toSymExpr(parent->get(1));
         if (LHS->isRef() && !inferConstRef(LHS->symbol())) {
-          retval = false;
+          isConstVal = false;
         }
       }
     }
@@ -399,18 +403,18 @@ static bool inferConst(Symbol* sym) {
       if (use == call->get(1)) {
         numDefs += 1;
         if (numDefs > 1) {
-          retval = false;
+          isConstVal = false;
         }
       }
     } else {
       // To be safe, exit the loop with 'false' if we're unsure of how to
       // handle a primitive.
-      retval = false;
+      isConstVal = false;
     }
   }
 
   if (isFirstCall) {
-    if (retval && !info->finalizedConstness) {
+    if (isConstVal && !info->finalizedConstness) {
       if (ArgSymbol* arg = toArgSymbol(sym)) {
         INT_ASSERT(arg->intent & INTENT_FLAG_IN);
         arg->intent = INTENT_CONST_IN;
@@ -424,13 +428,13 @@ static bool inferConst(Symbol* sym) {
       info->reset();
       info->finalizedConstness = true;
     }
-  } else if (!retval && info) {
+  } else if (!isConstVal && info) {
     // Not the first call, but something happened that prevents us from marking
     // this symbol as const. Now that we know, indicate that this is finalized.
     info->finalizedConstness = true;
   }
 
-  return retval;
+  return isConstVal;
 }
 
 static bool inferRefToConst(Symbol* sym) {
@@ -452,24 +456,24 @@ static bool inferRefToConst(Symbol* sym) {
     info->alreadyCalled = true;
   }
 
-  bool retval = true;
+  bool isRefToConst = true;
 
   if (isArgSymbol(sym)) {
-    // Check each call and set retval to false if any actual is not a ref
+    // Check each call and set isRefToConst to false if any actual is not a ref
     // to a const.
     FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
     if (fn->hasFlag(FLAG_VIRTUAL)) {
       // Not sure how to best handle virtual calls, so simply set false for now
-      retval = false;
+      isRefToConst = false;
     } else {
       if (isFirstCall && info) {
         INT_ASSERT(info->fnUses == NULL);
         info->fnUses = fn->firstSymExpr();
       } else if (info == NULL) {
-        retval = false;
+        isRefToConst = false;
       }
       // Need this part to be re-entrant in case of recursive functions
-      while (info && info->fnUses != NULL && retval) {
+      while (info && info->fnUses != NULL && isRefToConst) {
         SymExpr* se = info->fnUses;
         info->fnUses = se ? se->symbolSymExprsNext : NULL;
 
@@ -482,20 +486,20 @@ static bool inferRefToConst(Symbol* sym) {
           // I don't think we technically need to skip if the actual is the
           // same symbol as the formal, but it makes things simpler.
           if (actual != sym && !inferRefToConst(actual)) {
-            retval = false;
+            isRefToConst = false;
           }
         } else {
           // Passing a non-ref actual to a reference formal is currently
           // considered to be the same as an addr-of
           if (actual->qualType().getQual() != QUAL_CONST_VAL) {
-            retval = false;
+            isRefToConst = false;
           }
         }
       }
     }
   }
 
-  while (info && info->hasMore() && retval) {
+  while (info && info->hasMore() && isRefToConst) {
     SymExpr* use = info->next();
 
     CallExpr* call = toCallExpr(use->parentExpr);
@@ -505,7 +509,7 @@ static bool inferRefToConst(Symbol* sym) {
       if (use == call->get(1)) {
         if (SymExpr* se = toSymExpr(call->get(2))) {
           if (se->isRef() && !inferRefToConst(se->symbol())) {
-            retval = false;
+            isRefToConst = false;
           }
         }
         else {
@@ -516,29 +520,29 @@ static bool inferRefToConst(Symbol* sym) {
             SymExpr* src = toSymExpr(RHS->get(1));
             if (src->isRef()) {
               if (!inferRefToConst(src->symbol())) {
-                retval = false;
+                isRefToConst = false;
               }
             } else {
               if (src->symbol()->qualType().getQual() != QUAL_CONST_VAL) {
-                retval = false;
+                isRefToConst = false;
               }
             }
           } else {
-            retval = false;
+            isRefToConst = false;
           }
         }
       }
     }
     else if (call->isResolved()) {
-      retval = true;
+      isRefToConst = true;
     }
     else {
-      retval = isSafeRefPrimitive(use);
+      isRefToConst = isSafeRefPrimitive(use);
     }
   }
 
   if (isFirstCall) {
-    if (retval && !info->finalizedRefToConst) {
+    if (isRefToConst && !info->finalizedRefToConst) {
       sym->addFlag(FLAG_REF_TO_CONST);
     }
 
@@ -546,11 +550,11 @@ static bool inferRefToConst(Symbol* sym) {
       info->reset();
       info->finalizedRefToConst = true;
     }
-  } else if (!retval && info) {
+  } else if (!isRefToConst && info) {
     info->finalizedRefToConst = true;
   }
 
-  return retval;
+  return isRefToConst;
 }
 
 //
@@ -564,6 +568,8 @@ void inferConstRefs() {
   // Build a map from Symbols to ConstInfo. This is somewhat like
   // buildDefUseMaps, except we don't want to put defs and uses in different
   // lists (for simplicity).
+  //
+  // TODO: Can we use for_SymbolSymExprs here instead?
   forv_Vec(SymExpr, se, gSymExprs) {
     if (!(isVarSymbol(se->symbol()) || isArgSymbol(se->symbol()))) continue;
     // TODO: BHARSH: Skip classes for now. Not sure how to deal with aliasing
