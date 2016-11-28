@@ -245,6 +245,9 @@ const char* chpl_get_real_binary_wrapper(void) {
 *                                                                             *
 ************************************** | *************************************/
 
+static size_t      effectiveExecLength(const char* path);
+static int         pathIncludesSuffix(const char* path, const char* suffix);
+
 static const char* effectiveRealSuffix(void);
 
 // These are defined in the config.c file, which is built
@@ -258,9 +261,10 @@ const char* chpl_compute_real_binary_name(const char* argv0) {
   if (realBinaryName == NULL) {
     size_t      argvLength = strlen(argv0);
 
+    size_t      execLength = effectiveExecLength(argv0);
+
     const char* realSuffix = effectiveRealSuffix();
 
-    int         exeLength  = strlen(launcher_exe_suffix);
     char*       cursor     = NULL;
 
     realBinaryName = (char*) malloc(256);
@@ -270,14 +274,7 @@ const char* chpl_compute_real_binary_name(const char* argv0) {
       chpl_internal_error("Real executable name is too long.");
     }
 
-    // See if the launcher name contains the exe_suffix
-    if (exeLength > 0 &&
-        strncmp(argv0 + argvLength - exeLength,
-                launcher_exe_suffix,
-                exeLength) == 0) {
-      // We matched the exe suffix, so remove it before adding the real suffix.
-      argvLength -= exeLength;
-    }
+    argvLength -= execLength;
 
     // Copy the filename sans exe suffix.
     strncpy(cursor, argv0, argvLength);
@@ -288,6 +285,31 @@ const char* chpl_compute_real_binary_name(const char* argv0) {
   }
 
   return realBinaryName;
+}
+
+static size_t effectiveExecLength(const char* path) {
+  const char* execSuffix = launcher_exe_suffix;
+  size_t      retval     = 0;
+
+  if (execSuffix[0] != '\0' && pathIncludesSuffix(path, execSuffix) != 0) {
+    retval = strlen(execSuffix);
+  }
+
+  return retval;
+}
+
+static int pathIncludesSuffix(const char* path, const char* suffix) {
+  size_t suffixLength = strlen(suffix);
+  int    retval       = 0;
+
+  if (suffixLength > 0) {
+    size_t      pathLength = strlen(path);
+    const char* tail       = path + pathLength - suffixLength;
+
+    retval = (strcmp(tail, suffix) == 0) ? 1 : 0;
+  }
+
+  return retval;
 }
 
 static const char* effectiveRealSuffix(void) {
