@@ -245,6 +245,8 @@ const char* chpl_get_real_binary_wrapper(void) {
 *                                                                             *
 ************************************** | *************************************/
 
+static const char* effectiveRealSuffix(void);
+
 // These are defined in the config.c file, which is built
 // on-the-fly in runtime/etc/Makefile.launcher.
 extern const char launcher_real_suffix[];
@@ -256,18 +258,15 @@ const char* chpl_compute_real_binary_name(const char* argv0) {
   if (realBinaryName == NULL) {
     size_t      argvLength = strlen(argv0);
 
-    const char* realSuffix = getenv("CHPL_LAUNCHER_SUFFIX");
+    const char* realSuffix = effectiveRealSuffix();
+
     int         exeLength  = strlen(launcher_exe_suffix);
     char*       cursor     = NULL;
 
     realBinaryName = (char*) malloc(256);
     cursor         = realBinaryName;
 
-    if (NULL == realSuffix) {
-      realSuffix = launcher_real_suffix;
-    }
-
-    if (argvLength + strlen(launcher_real_suffix) >= 256) {
+    if (argvLength + strlen(realSuffix) >= 256) {
       chpl_internal_error("Real executable name is too long.");
     }
 
@@ -285,10 +284,20 @@ const char* chpl_compute_real_binary_name(const char* argv0) {
 
     cursor += argvLength;
 
-    strcpy(cursor, launcher_real_suffix);
+    strcpy(cursor, realSuffix);
   }
 
   return realBinaryName;
+}
+
+static const char* effectiveRealSuffix(void) {
+  const char* retval = getenv("CHPL_LAUNCHER_SUFFIX");
+
+  if (retval == NULL) {
+    retval = launcher_real_suffix;
+  }
+
+  return retval;
 }
 
 const char* chpl_get_real_binary_name(void) {
