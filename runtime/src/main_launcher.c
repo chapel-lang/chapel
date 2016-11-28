@@ -264,24 +264,15 @@ const char* chpl_compute_real_binary_name(const char* argv0) {
     size_t      execLength = effectiveExecLength(argv0);
 
     const char* realSuffix = effectiveRealSuffix();
+    size_t      realLength = strlen(realSuffix);
 
-    char*       cursor     = NULL;
+    size_t      rootLength = argvLength - execLength;
+    size_t      nodeLength = rootLength + realLength;
 
-    realBinaryName = (char*) malloc(256);
-    cursor         = realBinaryName;
+    realBinaryName = (char*) malloc(nodeLength + 1);
 
-    if (argvLength + strlen(realSuffix) >= 256) {
-      chpl_internal_error("Real executable name is too long.");
-    }
-
-    argvLength -= execLength;
-
-    // Copy the filename sans exe suffix.
-    strncpy(cursor, argv0, argvLength);
-
-    cursor += argvLength;
-
-    strcpy(cursor, realSuffix);
+    strncpy(realBinaryName,              argv0, rootLength);
+    strcpy (realBinaryName + rootLength, realSuffix);
   }
 
   return realBinaryName;
