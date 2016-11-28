@@ -39,14 +39,94 @@
 #include <sys/wait.h>
 
 // used in get_enviro_keys
-extern char** environ;
+extern char**      environ;
+
+// This variable is normally declared in config.h
+// and comes from the generated code.
+extern const int   mainHasArgs;
 
 // This global variable stores the arguments to main
 // that should be handled by the program.
 chpl_main_argument chpl_gen_main_arg;
-// This variable is normally declared in config.h
-// and comes from the generated code.
-extern const int mainHasArgs;
+
+/************************************* | **************************************
+*                                                                             *
+* Multi-locale Chapel programs are partitioned in to a "host" program and a   *
+* "node" program.                                                             *
+*                                                                             *
+* This is the entry point for the "host" program.  It is responsible for      *
+* launching the "real" application on the selected nodes. The entry point     *
+* does some simple setup and then invokes configuration-specific code.        *
+*                                                                             *
+* This file defines a few common "callbacks" that may be invoked from the     *
+* remainder of the launcher.                                                  *
+*                                                                             *
+************************************** | *************************************/
+
+int main(int argc, char* argv[]) {
+  //
+  // This is a user invocation, so parse the arguments to determine
+  // the number of locales.
+  //
+  int32_t execNumLocales;
+
+  // Set up main argument parsing.
+  chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  chpl_gen_main_arg.argv[0] = argv[0];
+  chpl_gen_main_arg.argc = 1;
+  chpl_gen_main_arg.return_value = 0;
+
+  CreateConfigVarTable();
+  parseArgs(true, parse_normally, &argc, argv);
+
+  execNumLocales = getArgNumLocales();
+
+  //
+  // If the user did not specify a number of locales let the
+  // comm layer decide how many to use (or flag an error)
+  //
+  if (execNumLocales == 0) {
+    execNumLocales = chpl_comm_default_num_locales();
+  }
+  //
+  // Before proceeding, allow the comm layer to verify that the
+  // number of locales is reasonable
+  //
+  chpl_comm_verify_num_locales(execNumLocales);
+
+  //
+  // Let the comm layer do any last-minute pre-launch activities it
+  // needs to.
+  //
+  CHPL_COMM_PRELAUNCH();
+
+  //
+  // Launch the program
+  // This may not return (e.g., if calling chpl_launch_using_exec())
+  //
+  return chpl_launch(argc, argv, execNumLocales);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 static void chpl_launch_sanity_checks(const char* argv0) {
@@ -418,47 +498,3 @@ const char* chpl_get_real_binary_name(void) {
   return &chpl_real_binary_name[0];
 }
 
-int main(int argc, char* argv[]) {
-  //
-  // This is a user invocation, so parse the arguments to determine
-  // the number of locales.
-  //
-  int32_t execNumLocales;
-
-  // Set up main argument parsing.
-  chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
-                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  chpl_gen_main_arg.argv[0] = argv[0];
-  chpl_gen_main_arg.argc = 1;
-  chpl_gen_main_arg.return_value = 0;
-
-  CreateConfigVarTable();
-  parseArgs(true, parse_normally, &argc, argv);
-
-  execNumLocales = getArgNumLocales();
-
-  //
-  // If the user did not specify a number of locales let the
-  // comm layer decide how many to use (or flag an error)
-  //
-  if (execNumLocales == 0) {
-    execNumLocales = chpl_comm_default_num_locales();
-  }
-  //
-  // Before proceeding, allow the comm layer to verify that the
-  // number of locales is reasonable
-  //
-  chpl_comm_verify_num_locales(execNumLocales);
-
-  //
-  // Let the comm layer do any last-minute pre-launch activities it
-  // needs to.
-  //
-  CHPL_COMM_PRELAUNCH();
-
-  //
-  // Launch the program
-  // This may not return (e.g., if calling chpl_launch_using_exec())
-  //
-  return chpl_launch(argc, argv, execNumLocales);
-}
