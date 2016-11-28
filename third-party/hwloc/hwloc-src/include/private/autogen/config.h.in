@@ -79,6 +79,10 @@
    don't. */
 #undef HAVE_DECL_HW_NCPU
 
+/* Define to 1 if you have the declaration of `lgrp_latency_cookie', and to 0
+   if you don't. */
+#undef HAVE_DECL_LGRP_LATENCY_COOKIE
+
 /* Define to 1 if you have the declaration of
    `nvmlDeviceGetMaxPcieLinkGeneration', and to 0 if you don't. */
 #undef HAVE_DECL_NVMLDEVICEGETMAXPCIELINKGENERATION

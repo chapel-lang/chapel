@@ -183,8 +183,9 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
   }
   infos->cpustepping = eax & 0xf;
 
-  if (cpuid_type == intel && infos->cpufamilynumber == 0x6 && infos->cpumodelnumber == 0x57)
-    data->is_knl = 1;
+  if (cpuid_type == intel && infos->cpufamilynumber == 0x6 &&
+      (infos->cpumodelnumber == 0x57 || infos->cpumodelnumber == 0x85))
+    data->is_knl = 1; /* KNM is the same as KNL */
 
   /* Get cpu vendor string from cpuid 0x00 */
   memset(regs, 0, sizeof(regs));

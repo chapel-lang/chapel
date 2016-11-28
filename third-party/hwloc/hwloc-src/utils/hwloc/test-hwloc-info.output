@@ -28,12 +28,12 @@ membind:set_thisthread_membind = 0
 membind:get_thisthread_membind = 0
 membind:set_area_membind = 0
 membind:get_area_membind = 0
+membind:alloc_membind = 0
 membind:firsttouch_membind = 0
 membind:bind_membind = 0
 membind:interleave_membind = 0
 membind:nexttouch_membind = 0
 membind:migrate_membind = 0
-membind:firsttouch_membind = 0
 membind:get_area_memlocation = 0
 
 

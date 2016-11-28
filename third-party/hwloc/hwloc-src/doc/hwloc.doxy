@@ -205,7 +205,7 @@ PKG_CONFIG_PATH to the ./configure command line, like this:
 \htmlonly
 </div><div class="section" id="cli_examples">
 \endhtmlonly
-\section cli_examples CLI Examples
+\section cli_examples Command-line Examples
 
 On a 4-package 2-core machine with hyper-threading, the \c lstopo tool
 may show the following graphical output:
@@ -408,9 +408,8 @@ element may exist between a core and a PU.
 
 \subsection interface_example API Example
 
-The following small C example (named ``hwloc-hello.c'') prints the
-topology of the machine and bring the process to the first logical processor
-of the second core of the machine.
+The following small C example (available in the source tree as ``doc/examples/hwloc-hello.c'')
+prints the topology of the machine and performs some thread and memory binding.
 More examples are available in the doc/examples/ directory of the source
 tree.
 
@@ -2765,7 +2764,36 @@ $ hwloc-calc -I numa --logical-input --physical-output numa:2-3 numa:7
 \endverbatim
 
 
-\subsection faq_onedim hwloc only has a one-dimensional view of the architecture, it ignores distances
+\subsection faq_structural hwloc is only a structural model, it ignores performance models, memory bandwidth, etc.?
+
+hwloc is indeed designed to provide applications with a structural model
+of the platform. This is an orthogonal approach to describing the
+machine with performance models, for instance using memory bandwidth
+or latencies measured by benchmarks.
+We believe that both approaches are important for helping application
+make the most of the hardware.
+
+For instance, on a dual-processor host with four cores each, hwloc
+clearly shows which four cores are together.
+Latencies between all pairs of cores of the same processor are likely
+identical, and also likely lower than the latency between cores of
+different processors.
+However the structural model cannot guarantee such implementation
+details.
+On the other side, performance models would reveal such details
+without always clearly identifying which cores are in the same
+processor.
+
+The focus of hwloc is mainly of the structural modeling side.
+However, hwloc lets user adds performance information to the topology
+through distances
+(see ::hwloc_distances_s and hwloc_topology_set_distance_matrix())
+or even custom annotations (see \ref faq_annotate).
+hwloc may also use such distance information for grouping objects
+together (see \ref faq_onedim and \ref faq_groups).
+
+
+\subsection faq_onedim hwloc only has a one-dimensional view of the architecture, it ignores distances?
 
 hwloc places all objects in a tree. Each level is a one-dimensional
 view of a set of similar objects. All children of the same object (siblings)
@@ -2781,6 +2809,9 @@ of each level.
 For instance, the root object may contain a distance matrix that represents
 the latencies between any pairs of NUMA nodes if the BIOS and/or operating
 system reports them.
+
+For more information about the distance API, see ::hwloc_distances_s
+and hwloc_topology_set_distance_matrix().
 
 
 \subsection faq_groups What are these Group objects in my topology?
@@ -3316,10 +3347,15 @@ export PATH=$PATH:/usr/linux-k1om-4.7/bin/
 
 \subsection faq_bgq How do I build hwloc for BlueGene/Q?
 
-IBM BlueGene/Q machines run a standard Linux on the I/O node and a
-custom CNK (<em>Compute Node Kernel</em>) on the compute nodes.
-To run on the compute node, hwloc must be cross-compiled from the I/O
-node with the following configuration line:
+IBM BlueGene/Q machines run a standard Linux on the login/frontend nodes
+and a custom CNK (<em>Compute Node Kernel</em>) on the compute nodes.
+
+To discover the topology of a login/frontend node, hwloc should be
+configured as usual, without any BlueGene/Q-specific option.
+
+However, one would likely rather discover the topology of the compute nodes
+where parallel jobs are actually running.
+If so, hwloc must be cross-compiled with the following configuration line:
 \verbatim
 ./configure --host=powerpc64-bgq-linux --disable-shared --enable-static \
   CPPFLAGS='-I/bgsys/drivers/ppcfloor -I/bgsys/drivers/ppcfloor/spi/include/kernel/cnk/'
