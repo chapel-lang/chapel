@@ -4,8 +4,9 @@
 SPHINXOPTS    = -W
 SPHINXBUILD   = sphinx-build
 PAPER         =
-BUILDDIR      = build
-BUILDPATH     = $$CHPL_HOME/doc/sphinx/$(BUILDDIR)
+SOURCEDIR     = .
+BUILDDIR      = ../build/doc
+BUILDPATH     = $$CHPL_HOME/doc/$(BUILDDIR)
 
 # Explicitly set author
 export CHPLDOC_AUTHOR=Cray Inc
@@ -21,9 +22,9 @@ installed, grab it from http://sphinx-doc.org/"
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
-ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
+ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) $(SOURCEDIR)
 # the i18n builder cannot share the environment and doctrees with the others
-I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
+I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) $(SOURCEDIR)
 
 .PHONY: help check-sphinxbuild clean-build html dirhtml singlehtml pickle json htmlhelp qthelp latex latexpdf text man changes linkcheck gettext
 
@@ -72,14 +73,18 @@ html-dev:
 	@echo
 	@echo "Building HTML documentation with no prerequisites (dev testing)"
 	@echo "Warnings not treated as errors"
-	$(SPHINXBUILD) -b html -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) source $(BUILDDIR)/html
+	$(SPHINXBUILD) -b html -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SOURCEDIR) $(BUILDDIR)/html
 	@chmod -R ugo+rX $(BUILDDIR)
 	@echo
 	@echo "Build finished. The HTML pages are in "'$(BUILDPATH)'"/html."
 
+
+%.html: FORCE
+	$(SPHINXBUILD) . build/html/$* && chmod -R ugo+rX build
+
 check: check-sphinxbuild source clean-build
 	@echo "Checking for broken links or cross-references"
-	$(SPHINXBUILD) -n -b linkcheck -d $(BUILDDIR)/doctrees source $(BUILDDIR)/linkcheck
+	$(SPHINXBUILD) -n -b linkcheck -d $(BUILDDIR)/doctrees $(SOURCEDIR) $(BUILDDIR)/linkcheck
 	@chmod -R ugo+rX $(BUILDDIR)
 	@echo
 	@echo "Link check complete; look for any errors in the above output " \

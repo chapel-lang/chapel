@@ -37,7 +37,7 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ['meta/templates']
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -83,7 +83,12 @@ copyright = u'2016, {0}'.format(author_text)
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = ['Makefile',
+                    'Makefile.sphinx',
+                    'util',
+                    'meta',
+                    'developer',
+                   ]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -151,12 +156,12 @@ html_title = 'Chapel Documentation {0}'.format(shortversion)
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = '_static/favicon.ico'
+html_favicon = 'meta/static/favicon.ico'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ['meta/static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

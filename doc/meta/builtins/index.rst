@@ -13,7 +13,7 @@ amenable to being documented using **chpldoc**:
    :maxdepth: 1
    :glob:
 
-   builtins/**
+   **
 
 
 Index

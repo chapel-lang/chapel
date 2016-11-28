@@ -22,7 +22,7 @@ Chapel Documentation
    Hello World Variants <examples/index>
    Primers <primers/index>
    Language Specification <language/spec>
-   builtins
+   builtins/index
    modules/standard
    modules/packages
    modules/layoutdist
