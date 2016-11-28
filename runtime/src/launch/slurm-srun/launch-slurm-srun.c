@@ -320,6 +320,7 @@ static int         getCoresPerLocale(void);
 static char* chpl_launch_create_command(int     argc,
                                         char*   argv[],
                                         int32_t numLocales) {
+  const char* argv0                    = argv[0];
   const char* basenamePtr              = argv[0];
 
   int         size                     = 0;
@@ -351,7 +352,50 @@ static char* chpl_launch_create_command(int     argc,
     basenamePtr = basenamePtr + 1;
   }
 
-  chpl_compute_real_binary_name(argv[0]);
+  // 2016/11/27 Noakes
+  //
+  // Launch wrappers call chpl_compute_real_binary_name() to translate the
+  // host-app path, argv[0], to a node-app path.
+  //
+  // If the host-app path is a relative path then the generated node-app path
+  // will be as well.  Otherwise both paths are fully qualified.  The final
+  // node-app path becomes part of the state that is passed to Slurm.
+  //
+  // Slurm needs the fully qualified path.  If it receives a relative path
+  // then it uses getcwd(3) to convert this to a full qualified path.
+  // Unfortunately the version of slurm that is currently installed on
+  // Cray-managed hardware truncates the result after 256 characters.
+  // This limit is extended in the latest version of slurm.
+  //
+  // This truncation causes one nightly test to fail on three different
+  // configurations.  As a work-around we perform a safe expansion for
+  // the special case of "./<host-app>" which is the format used by
+  // nightlies
+  //
+
+  if (argv0[0] == '.' && argv0[1] == '/') {
+    // Note the PATH_MAX might not be defined and that some modern file
+    // systems do not have a maximum path length. This hard-coded choice
+    // merely improves the current artificial limit in a significant way.
+    char path[4096];
+
+    if (getcwd(path, sizeof(path)) == path) {
+      if (strlen(path) + strlen(argv0) < sizeof(path)) {
+        strcat(path, argv0 + 1);
+      } else {
+        path[0] = '\0';
+      }
+    }
+
+    if (path[0] != '\0') {
+      chpl_compute_real_binary_name(path);
+    } else {
+      chpl_internal_error("Unable to determine absolute path to host app");
+    }
+
+  } else {
+    chpl_compute_real_binary_name(argv0);
+  }
 
   // Elliot, 12/02/14: TODO we have a bunch of similar commands to build up the
   // interactive and batch versions. It would be nicer to build up the commands
