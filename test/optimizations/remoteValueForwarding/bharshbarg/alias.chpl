@@ -1,11 +1,17 @@
 
+record R {
+  var x : int;
+}
+
+class C {
+  var x : int;
+}
+
 var g : int = 0;
 
 var gr : R;
 
-record R {
-  var x : int;
-}
+var gc : C = new C();
 
 proc test(const ref arg) {
   writeln("Testing int");
@@ -27,5 +33,16 @@ proc testRecord(const ref arg) {
   }
 }
 
+proc testClass(const ref arg) {
+  writeln("Testing class");
+  on Locales[numLocales-1] {
+    writeln("before: ", arg);
+    gc.x += 1;
+    writeln("after: ", arg);
+    if arg.x != gc.x then writeln("ERROR: ", gc, " != ", arg);
+  }
+}
+
 test(g);
 testRecord(gr);
+testClass(gc);
