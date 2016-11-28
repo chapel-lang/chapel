@@ -210,6 +210,57 @@ const char* chpl_get_real_binary_wrapper(void) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+* argv[0] is the name of the host program.  We need to generate and manaage   *
+* the name of the node program.                                               *
+*                                                                             *
+*   1) The host program may have a host-specific   suffix e.g. ".exe"         *
+*   2) The node program may have a target-specific suffix e.g. "_real"        *
+*                                                                             *
+* Remove the former, if present, and add the latter, if required.             *
+*                                                                             *
+************************************** | *************************************/
+
+// These are defined in the config.c file, which is built
+// on-the-fly in runtime/etc/Makefile.launcher.
+extern const char launcher_real_suffix[];
+extern const char launcher_exe_suffix[];    // May be the empty string.
+
+#define BIN_NAME_SIZE 256
+static char chpl_real_binary_name[BIN_NAME_SIZE];
+
+void chpl_compute_real_binary_name(const char* argv0) {
+
+  char* cursor = chpl_real_binary_name;
+  int exe_length = strlen(launcher_exe_suffix);
+  int length;
+  const char* real_suffix = getenv("CHPL_LAUNCHER_SUFFIX");
+
+  if (NULL == real_suffix) {
+    real_suffix = launcher_real_suffix;
+  }
+
+  length = strlen(argv0);
+  if (length + strlen(launcher_real_suffix) >= BIN_NAME_SIZE)
+    chpl_internal_error("Real executable name is too long.");
+
+  // See if the launcher name contains the exe_suffix
+  if (exe_length > 0 &&
+      !strncmp(argv0 + length - exe_length, launcher_exe_suffix, exe_length))
+    // We matched the exe suffix, so remove it before adding the real suffix.
+    length -= exe_length;
+
+  // Copy the filename sans exe suffix.
+  strncpy(cursor, argv0, length);
+  cursor += length;
+  strcpy(cursor, launcher_real_suffix);
+}
+
+const char* chpl_get_real_binary_name(void) {
+  return &chpl_real_binary_name[0];
+}
+
 
 
 
@@ -473,43 +524,3 @@ char* chpl_get_enviro_keys(char sep)
 
   return ret;
 }
-
-// These are defined in the config.c file, which is built
-// on-the-fly in runtime/etc/Makefile.launcher.
-extern const char launcher_real_suffix[];
-extern const char launcher_exe_suffix[];    // May be the empty string.
-
-#define BIN_NAME_SIZE 256
-static char chpl_real_binary_name[BIN_NAME_SIZE];
-
-void chpl_compute_real_binary_name(const char* argv0) {
-
-  char* cursor = chpl_real_binary_name;
-  int exe_length = strlen(launcher_exe_suffix);
-  int length;
-  const char* real_suffix = getenv("CHPL_LAUNCHER_SUFFIX");
-
-  if (NULL == real_suffix) {
-    real_suffix = launcher_real_suffix;
-  }
-
-  length = strlen(argv0);
-  if (length + strlen(launcher_real_suffix) >= BIN_NAME_SIZE)
-    chpl_internal_error("Real executable name is too long.");
-
-  // See if the launcher name contains the exe_suffix
-  if (exe_length > 0 &&
-      !strncmp(argv0 + length - exe_length, launcher_exe_suffix, exe_length))
-    // We matched the exe suffix, so remove it before adding the real suffix.
-    length -= exe_length;
-
-  // Copy the filename sans exe suffix.
-  strncpy(cursor, argv0, length);
-  cursor += length;
-  strcpy(cursor, launcher_real_suffix);
-}
-
-const char* chpl_get_real_binary_name(void) {
-  return &chpl_real_binary_name[0];
-}
-
