@@ -348,7 +348,7 @@ static char* chpl_launch_create_command(int     argc,
   }
 
   // If the path has multiple components, point the final component
-  if ((basenamePtr = strrchr(argv[0])) != NULL) {
+  if ((basenamePtr = strrchr(argv[0], '/')) != NULL) {
     basenamePtr = basenamePtr + 1;
   }
 
