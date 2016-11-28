@@ -37,36 +37,35 @@
 // is stored in a ConstInfo instance. The general flow looks something like
 // this:
 //
-// static bool inferConst(Symbol* sym) {
+// bool inferConst(Symbol* sym) {
 //   bool isAlreadyConst = <test symbol qualifier/flags>;
 //
-//   ConstInfo* info = infoMap[sym];
+//   info = infoMap[sym];
 //
-//   if ((info && info->finalizedConst) || isAlreadyConst) {
+//   if info->finalizedConst || isAlreadyConst {
 //     return isAlreadyConst;
 //   }
 //
 //   bool isFirstCall = false;
-//   if (info && info->alreadyCalled == false) {
+//   if info->alreadyCalled == false {
 //     isFirstCall = true;
 //     info->alreadyCalled = true;
 //   }
 //
 //   bool isConst = true;
 //
-//   while (<info has more SymExprs and isConst == true>) {
+//   while (info->hasMore() && isConst) {
 //     SymExpr* use = info->next();
 //     <look for cases that tell us that 'sym' cannot be const, in which
 //      case we set isConst to false>
 //   }
 //
 //   if (isFirstCall) {
-//     // Only change flags if we didn't find cases that violate constness
-//     // and if this symbol hasn't been finalized by a recursive call
 //     if (isConst && !info->finalizedConst) {
 //       < change flags/qualifier/intent on symbol >
 //     }
-//     < reset info's SymExpr queue and set info->finalizedConst to true>
+//     info->reset()
+//     info->finalizedConst = true
 //   } else if (!isConst) {
 //     // If we know for sure that this thing cannot be const, go ahead and
 //     // mark it as finalized. This can happen in a recursive call.
@@ -110,7 +109,8 @@
 // }
 //
 // var x = 5;
-// foo(x);
+// var n = 5;
+// foo(n, x);
 // writeln(x);
 // ```
 //
