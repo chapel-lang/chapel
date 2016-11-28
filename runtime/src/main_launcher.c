@@ -142,6 +142,54 @@ void printAdditionalHelp(void) {
   chpl_launch_print_help();
 }
 
+/************************************* | **************************************
+*                                                                             *
+* This function generates the argv list that will be required for launching   *
+* the node application.  This vector will consist of                          *
+*                                                                             *
+*     1) The values of largv[] as defined by the launcher                     *
+*     2) The value of CHPL_LAUNCHER_REAL_WRAPPER (if defined)                 *
+*     3) The values of argv[]  as passed to the host application              *
+*     4) A trailing NULL as required by execve(3).                            *
+*                                                                             *
+************************************** | *************************************/
+
+char** chpl_bundle_exec_args(int argc, char *const argv[],
+                              int largc, char *const largv[]) {
+  int len = argc+largc+2;
+  int newargc = 0;
+  char **newargv = chpl_mem_allocMany(len, sizeof(char*),
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  if (!newargv) {
+    chpl_internal_error("Could not allocate memory");
+  }
+
+  newargv[len-1] = NULL;
+  newargv[len-2] = NULL;
+
+  // add any launcher args
+  if (largc > 0) {
+    memcpy(newargv, largv, largc*sizeof(char *));
+    newargc = largc;
+  }
+  if (argc > 0) {
+    // if there is a wrapper, add it after the launcher args
+    if (strcmp(chpl_get_real_binary_wrapper(), "") != 0) {
+      newargv[newargc++] = (char *) chpl_get_real_binary_wrapper();
+    }
+
+    // add the _real binary (after launchers args or wrapper)
+    chpl_compute_real_binary_name(argv[0]);
+    newargv[newargc++] = (char *) chpl_get_real_binary_name();
+    if (argc > 1) {
+      // add args passed to main (skip original binary) after _real binary
+      memcpy(newargv+newargc, argv+1, (argc-1)*sizeof(char *));
+    }
+  }
+
+  return newargv;
+}
+
 
 
 
@@ -302,49 +350,6 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     //  That is a bad program, and I'm not going to deal with it here.
   }
   return numRead;
-}
-
-//
-// This function returns a NULL terminated argv list as required by
-// chpl_launch_using_exec(), i.e., execve(3).
-//
-//     argc, argv: as passed to main()
-//     largc, largv: launcher command and args
-//
-char** chpl_bundle_exec_args(int argc, char *const argv[],
-                              int largc, char *const largv[]) {
-  int len = argc+largc+2;
-  int newargc = 0;
-  char **newargv = chpl_mem_allocMany(len, sizeof(char*),
-                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  if (!newargv) {
-    chpl_internal_error("Could not allocate memory");
-  }
-
-  newargv[len-1] = NULL;
-  newargv[len-2] = NULL;
-
-  // add any launcher args
-  if (largc > 0) {
-    memcpy(newargv, largv, largc*sizeof(char *));
-    newargc = largc;
-  }
-  if (argc > 0) {
-    // if there is a wrapper, add it after the launcher args
-    if (strcmp(chpl_get_real_binary_wrapper(), "") != 0) {
-      newargv[newargc++] = (char *) chpl_get_real_binary_wrapper();
-    }
-
-    // add the _real binary (after launchers args or wrapper)
-    chpl_compute_real_binary_name(argv[0]);
-    newargv[newargc++] = (char *) chpl_get_real_binary_name();
-    if (argc > 1) {
-      // add args passed to main (skip original binary) after _real binary
-      memcpy(newargv+newargc, argv+1, (argc-1)*sizeof(char *));
-    }
-  }
-
-  return newargv;
 }
 
 //
