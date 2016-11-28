@@ -691,7 +691,7 @@ def set_up_environment():
         os.environ["CHPL_LAUNCHER_TIMEOUT"] = str(args.launcher_timeout)
 
     # num trials
-    os.environ["CHPL_TEST_NUM_TRIALS"] = str(args.num_trials)
+    os.environ["CHPL_TEST_NUM_TRIALS"] = args.num_trials
 
     # test root dir
     if args.test_root_dir:
@@ -983,20 +983,20 @@ def set_up_executables():
 
     # comm
     if comm != "none" and args.num_locales == "0":
-        args.num_locales = 1
+        args.num_locales = "1"
 
     if args.num_locales == "0":
         logger.write('[numlocales: "(default)"]')
     else:
         logger.write('[numlocales: "{0}"]'.format(args.num_locales))
 
-    os.environ["NUMLOCALES"] = str(args.num_locales)
+    os.environ["NUMLOCALES"] = args.num_locales
 
     if args.max_locales == "0":
         logger.write('[max_locales: "(default)"]')
     else:
         logger.write('[max_locales: "{0}"]'.format(args.max_locales))
-        os.environ["CHPL_TEST_MAX_LOCALES"] = str(args.max_locales)
+        os.environ["CHPL_TEST_MAX_LOCALES"] = args.max_locales
 
     # only run multilocale tests
     if args.multilocale_only:
