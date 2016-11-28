@@ -34,22 +34,129 @@
 // SymExpr once. This allows us to handle recursion in a re-entrant fashion,
 // where recursive calls to helper functions continue where the earlier call
 // left off. This list of SymExprs, along with other metadata about the Symbol,
-// is stored in a ConstInfo instance.
+// is stored in a ConstInfo instance. The general flow looks something like
+// this:
+//
+// static bool inferConst(Symbol* sym) {
+//   bool isAlreadyConst = <test symbol qualifier/flags>;
+//
+//   ConstInfo* info = infoMap[sym];
+//
+//   if ((info && info->finalizedConst) || isAlreadyConst) {
+//     return isAlreadyConst;
+//   }
+//
+//   bool isFirstCall = false;
+//   if (info && info->alreadyCalled == false) {
+//     isFirstCall = true;
+//     info->alreadyCalled = true;
+//   }
+//
+//   bool isConst = true;
+//
+//   while (<info has more SymExprs and isConst == true>) {
+//     SymExpr* use = info->next();
+//     <look for cases that tell us that 'sym' cannot be const, in which
+//      case we set isConst to false>
+//   }
+//
+//   if (isFirstCall) {
+//     // Only change flags if we didn't find cases that violate constness
+//     // and if this symbol hasn't been finalized by a recursive call
+//     if (isConst && !info->finalizedConst) {
+//       < change flags/qualifier/intent on symbol >
+//     }
+//     < reset info's SymExpr queue and set info->finalizedConst to true>
+//   } else if (!isConst) {
+//     // If we know for sure that this thing cannot be const, go ahead and
+//     // mark it as finalized. This can happen in a recursive call.
+//     info->finalizedConst = true;
+//   }
+//
+//   return isConst;
+// }
+//
 //
 // While SymExprs are being processed, we will typically break out of the list
 // of SymExprs early if we encounter a case that violates the constness we're
 // looking for. Either way, once we're done processing the SymExprs the helper
-// function can change the Qualifier or flags on the Symbol if applicable. In
-// the case of recursion, only the first call on the Symbol can update the
-// Qualifier or flags. This avoids potential cases where the recursive calls
-// find nothing wrong (and might otherwise update flags), but the earlier call
-// finds that the Symbol cannot be const.
+// function can change the Qualifier or flags on the Symbol if applicable.
 //
 // Once we've made a determination either way, the helper function sets the
 // appropriate 'finalized*' field in its ConstInfo instance. If other Symbols
 // then query the constness of this Symbol, we can quickly determine the
 // answer. The helper functions also reset the list of SymExprs to the head, so
 // that later helper functions can use the list re-entrantly.
+//
+// ----- RECURSION -----
+//
+// In the case of recursion, only the first call on the Symbol can update the
+// Qualifier or flags. This is done to avoid cases where the re-entrant
+// recursive calls find nothing wrong with the rest of the SymExprs and
+// 'isConst' is still true. In such cases though, we need to wait for the
+// first call (and all other processing of SymExprs) to finish before making
+// a final determination. For example, let's say we have a program like this:
+//
+// ```
+// proc bar(in n : int, ref q : int) {
+//   foo(n-1, q);
+//   q -= 1;
+// }
+//
+// proc foo(in n : int, ref x : int) {
+//   if n <= 0 then return;
+//   writeln(n, " ", x);
+//   bar(n, x);
+// }
+//
+// var x = 5;
+// foo(x);
+// writeln(x);
+// ```
+//
+// And let's also say that we're processing the ArgSymbol 'x' of 'foo'. The
+// processing steps look a little bit like this:
+//
+// process formal x {
+//   isConst = true
+//
+//   analyze first use: resolved call {
+//     ...
+//     is read-only, no action taken
+//   }
+//
+//   analyze second use: resolved call {
+//     process formal q {
+//       isConst = true
+//
+//       analyze first use: resolved call {
+//         process formal x { // back where we started
+//           isConst = true
+//           no remaining SymExprs, no action taken
+//           < **is recursive call, do not change flags** >
+//           return isConst // true
+//         }
+//         read-only, no action taken
+//       }
+//
+//       analyze second use: LHS of += {
+//         modified, isConst = false
+//       }
+//
+//       return isConst // false
+//     }
+//     modified, isConst = false
+//   }
+//
+//   < is first call, change flags >
+//   return isConst // false
+// }
+//
+// The point here is that 'foo' can be called recursively in such a way that
+// the remaining SymExprs (if any) will leave 'isConst' as true. If we changed
+// flags while waiting on other SymExprs to finish, that could cause problems.
+//
+// ----- MISC -----
 //
 // Until we clarify constness more in the language, this pass will not consider
 // a record instance to be const if any of its fields are modified (even in
