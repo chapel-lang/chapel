@@ -250,40 +250,50 @@ const char* chpl_get_real_binary_wrapper(void) {
 extern const char launcher_real_suffix[];
 extern const char launcher_exe_suffix[];    // May be the empty string.
 
-#define BIN_NAME_SIZE 256
-static char chpl_real_binary_name[BIN_NAME_SIZE];
+static char*      realBinaryName = NULL;
 
 const char* chpl_compute_real_binary_name(const char* argv0) {
+  if (realBinaryName == NULL) {
+    const char* realSuffix = getenv("CHPL_LAUNCHER_SUFFIX");
+    int         exeLength  = strlen(launcher_exe_suffix);
+    char*       cursor     = NULL;
+    int         length     = 0;
 
-  char* cursor = chpl_real_binary_name;
-  int exe_length = strlen(launcher_exe_suffix);
-  int length;
-  const char* real_suffix = getenv("CHPL_LAUNCHER_SUFFIX");
+    realBinaryName = (char*) malloc(256);
+    cursor         = realBinaryName;
 
-  if (NULL == real_suffix) {
-    real_suffix = launcher_real_suffix;
+    if (NULL == realSuffix) {
+      realSuffix = launcher_real_suffix;
+    }
+
+    length = strlen(argv0);
+
+    if (length + strlen(launcher_real_suffix) >= 256) {
+      chpl_internal_error("Real executable name is too long.");
+    }
+
+    // See if the launcher name contains the exe_suffix
+    if (exeLength > 0 &&
+        strncmp(argv0 + length - exeLength,
+                launcher_exe_suffix,
+                exeLength) == 0) {
+      // We matched the exe suffix, so remove it before adding the real suffix.
+      length -= exeLength;
+    }
+
+    // Copy the filename sans exe suffix.
+    strncpy(cursor, argv0, length);
+
+    cursor += length;
+
+    strcpy(cursor, launcher_real_suffix);
   }
 
-  length = strlen(argv0);
-  if (length + strlen(launcher_real_suffix) >= BIN_NAME_SIZE)
-    chpl_internal_error("Real executable name is too long.");
-
-  // See if the launcher name contains the exe_suffix
-  if (exe_length > 0 &&
-      !strncmp(argv0 + length - exe_length, launcher_exe_suffix, exe_length))
-    // We matched the exe suffix, so remove it before adding the real suffix.
-    length -= exe_length;
-
-  // Copy the filename sans exe suffix.
-  strncpy(cursor, argv0, length);
-  cursor += length;
-  strcpy(cursor, launcher_real_suffix);
-
-  return &chpl_real_binary_name[0];
+  return realBinaryName;
 }
 
 const char* chpl_get_real_binary_name(void) {
-  return &chpl_real_binary_name[0];
+  return realBinaryName;
 }
 
 /************************************* | **************************************
