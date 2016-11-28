@@ -320,11 +320,11 @@ static int         getCoresPerLocale(void);
 static char* chpl_launch_create_command(int     argc,
                                         char*   argv[],
                                         int32_t numLocales) {
-  char* basenamePtr              = strrchr(argv[0], '/');
+  const char* basenamePtr              = argv[0];
 
-  int   size                     = 0;
-  char* command                  = NULL;
-  char  baseCommand[MAX_COM_LEN] = { '\0' };
+  int         size                     = 0;
+  char*       command                  = NULL;
+  char        baseCommand[MAX_COM_LEN] = { '\0' };
 
   // command line walltime takes precedence over env var
   if (!walltime) {
@@ -346,10 +346,9 @@ static char* chpl_launch_create_command(int     argc,
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
-  if (basenamePtr == NULL) {
-    basenamePtr = argv[0];
-  } else {
-    basenamePtr++;
+  // If the path has multiple components, point the final component
+  if ((basenamePtr = strrchr(argv[0])) != NULL) {
+    basenamePtr = basenamePtr + 1;
   }
 
   chpl_compute_real_binary_name(argv[0]);
