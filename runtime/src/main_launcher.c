@@ -545,54 +545,83 @@ int chpl_run_utility1K(const char* command,
 
 static void chpl_launch_sanity_checks(const char* argv0);
 
-int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const char* argv0) {
-  int status;
-  pid_t pid = fork();
+int chpl_launch_using_fork_exec(const char* command,
+                                char* const argv1[],
+                                const char* argv0) {
+  int   status = 0;
+  pid_t pid    = fork();
+
   switch (pid) {
-  case 0:
-    chpl_launch_using_exec(command, argv1, argv0);
-    // should not return
-  case -1:
-  {
-    char msg[256];
-    sprintf(msg, "fork() failed: %s", strerror(errno));
-    chpl_internal_error(msg);
-  }
-  default:
+    case 0:
+    {
+      // should not return
+      chpl_launch_using_exec(command, argv1, argv0);
+
+      break;
+    }
+
+    case -1:
+    {
+      char msg[256];
+
+      sprintf(msg, "fork() failed: %s", strerror(errno));
+
+      chpl_internal_error(msg);
+
+      break;
+    }
+
+    default:
     {
       if (waitpid(pid, &status, 0) != pid) {
         char msg[256];
+
         sprintf(msg, "waitpid() failed: %s", strerror(errno));
+
         chpl_internal_error(msg);
       }
+
+      break;
     }
   }
+
   return WEXITSTATUS(status);
 }
 
 //
 // This function calls execvp(3)
 //
-int chpl_launch_using_exec(const char* command, char * const argv1[], const char* argv0) {
+int chpl_launch_using_exec(const char* command,
+                           char* const argv1[],
+                           const char* argv0) {
   if (verbosity > 1) {
-    char * const *arg;
+    char* const* arg = NULL;
+
     printf("%s ", command);
+
     fflush(stdout);
-    for (arg = argv1+1; *arg; arg++) {
+
+    for (arg = argv1 + 1; *arg != NULL; arg++) {
       printf(" %s", *arg);
+
       fflush(stdout);
     }
+
     printf("\n");
+
     fflush(stdout);
   }
+
   chpl_launch_sanity_checks(argv0);
 
-  execvp(command, argv1);
-  {
+  if (execvp(command, argv1) == -1) {
     char msg[256];
+
     sprintf(msg, "execvp() failed: %s", strerror(errno));
+
     chpl_internal_error(msg);
   }
+
   return -1;
 }
 
@@ -600,7 +629,9 @@ int chpl_launch_using_system(char* command, char* argv0) {
   if (verbosity > 1) {
     printf("%s\n", command);
   }
+
   chpl_launch_sanity_checks(argv0);
+
   return system(command);
 }
 
@@ -613,8 +644,11 @@ static void chpl_launch_sanity_checks(const char* argv0) {
   // chpl_compute_real_binary_name() )
   if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
     char errorMsg[256];
-    sprintf(errorMsg, "unable to locate file: %s", chpl_get_real_binary_name());
+
+    sprintf(errorMsg,
+            "unable to locate file: %s",
+            chpl_get_real_binary_name());
+
     chpl_error(errorMsg, 0, 0);
   }
 }
-
