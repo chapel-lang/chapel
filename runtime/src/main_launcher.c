@@ -116,28 +116,42 @@ int main(int argc, char* argv[]) {
 *                                                                             *
 ************************************** | *************************************/
 
-int handleNonstandardArg(int* argc, char* argv[], int argNum,
-                         int32_t lineno, int32_t filename) {
-  int numHandled = chpl_launch_handle_arg(*argc, argv, argNum,
-                                          lineno, filename);
+int handleNonstandardArg(int*    argc,
+                         char*   argv[],
+                         int     argNum,
+                         int32_t lineno,
+                         int32_t filename) {
+  int numHandled = chpl_launch_handle_arg(*argc,
+                                          argv,
+                                          argNum,
+                                          lineno,
+                                          filename);
+
   if (numHandled == 0) {
     if (mainHasArgs) {
       chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
       chpl_gen_main_arg.argc++;
+
     } else {
-      char* message;
-      message = chpl_glom_strings(3,"Unexpected flag:  \"",argv[argNum],"\"");
+      char* message = chpl_glom_strings(3,
+                                        "Unexpected flag:  \"",
+                                        argv[argNum],
+                                        "\"");
+
       chpl_error(message, lineno, filename);
     }
-    return 0;
+
   } else {
-    int i;
-    for (i=argNum+numHandled; i<*argc; i++) {
-      argv[i-numHandled] = argv[i];
+    int i = 0;
+
+    for (i = argNum + numHandled; i < *argc; i++) {
+      argv[i - numHandled] = argv[i];
     }
+
     *argc -= numHandled;
-    return -1;  // back the cursor up in order to re-parse this arg
   }
+
+  return (numHandled == 0) ? 0 : -1;
 }
 
 void printAdditionalHelp(void) {
