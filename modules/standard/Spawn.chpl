@@ -60,16 +60,15 @@ to read the output from the ``ls`` command.
 
   sub.wait();
 
-Finally, this version uses pipes to provide input to
-a subprocess in addition to capturing its output. This
-version uses the ``cat`` command, which just prints
+Here is an example program that provides input to a subprocess in addition to
+capturing its output.  This version uses the ``cat`` command, which just prints
 back its input.
 
 .. code-block:: chapel
 
   use Spawn;
 
-  var sub = spawn(["cat"], stdin=PIPE, stdout=PIPE);
+  var sub = spawn(["cat"], stdin=BUFFERED_PIPE, stdout=PIPE);
 
   sub.stdin.writeln("Hello");
   sub.stdin.writeln("World");
@@ -80,12 +79,46 @@ back its input.
   while sub.stdout.readline(line) {
     write("Got line: ", line);
   }
-  sub.close();
 
   // prints out:
   // Got line: Hello
   // Got line: World
 
+
+Here is a final example in which the Chapel program uses 2 tasks
+to work with a subprocess. One task is producing data and the
+other task is consuming it.
+
+.. code-block:: chapel
+
+  use Spawn;
+
+  var input = ["a", "b", "c"];
+
+  var sub = spawn(["cat"], stdin=PIPE, stdout=PIPE);
+  cobegin {
+    {
+      // one task writes data to the subprocess
+      for x in input {
+        sub.stdin.writeln(x);
+      }
+      // this close is important; otherwise the other task blocks forever
+      sub.stdin.close();
+    }
+
+    {
+      var line:string;
+      while sub.stdout.readln(line) {
+        writeln("Got line ", line);
+      }
+    }
+  }
+  sub.wait();
+
+  // prints out:
+  // Got line: a
+  // Got line: b
+  // Got line: c
 
 
 .. note::
@@ -109,11 +142,8 @@ module Spawn {
   private extern proc qio_waitpid(pid:int(64),
     blocking:c_int, ref done:c_int, ref exitcode:c_int):syserr;
   private extern proc qio_proc_communicate(threadsafe:c_int,
-                                           input_file:qio_file_ptr_t,
                                            input:qio_channel_ptr_t,
-                                           output_file:qio_file_ptr_t,
                                            output:qio_channel_ptr_t,
-                                           error_file:qio_file_ptr_t,
                                            error:qio_channel_ptr_t):syserr;
 
   // When spawning, we need to allocate the command line
@@ -127,7 +157,6 @@ module Spawn {
   private extern proc qio_spawn_allocate_ptrvec(count: size_t): c_ptr(c_string);
   private extern proc qio_spawn_free_ptrvec(args: c_ptr(c_string));
   private extern proc qio_spawn_free_str(str: c_string);
-
 
   /* 
      This record represents a subprocess.
@@ -191,8 +220,6 @@ module Spawn {
     // we need to 'commit' in order to actually send the data.
     pragma "no doc"
     var stdin_buffering:bool;
-    pragma "no doc"
-    var stdin_file:file;
     pragma "no doc"
     var stdin_channel:channel(writing=true, kind=kind, locking=locking);
     pragma "no doc"
@@ -294,6 +321,7 @@ module Spawn {
   private extern const QIO_FD_CLOSE:c_int;
   private extern const QIO_FD_PIPE:c_int;
   private extern const QIO_FD_TO_STDOUT:c_int;
+  private extern const QIO_FD_BUFFERED_PIPE:c_int;
 
   /*
      FORWARD indicates that the child process should inherit
@@ -317,6 +345,14 @@ module Spawn {
      should be forwarded to its stdout stream.
    */
   const STDOUT = QIO_FD_TO_STDOUT;
+  /*
+     BUFFERED_PIPE is the same as PIPE, but when used for stdin causes all data
+     to be buffered and sent on the communicate() call. This avoids certain
+     deadlock scenarios where stdout or stderr are PIPE. In particular, without
+     BUFFERED_PIPE, the sub-process might block on writing output which will not
+     be consumed until the communicate() call.
+   */
+  const BUFFERED_PIPE = QIO_FD_BUFFERED_PIPE;
 
   private const empty_env:[1..0] string;
 
@@ -443,9 +479,12 @@ module Spawn {
           }
         }
 
-    if stdin == QIO_FD_PIPE then stdin_pipe = true;
-    if stdout == QIO_FD_PIPE then stdout_pipe = true;
-    if stderr == QIO_FD_PIPE then stderr_pipe = true;
+    if stdin == QIO_FD_PIPE || stdin == QIO_FD_BUFFERED_PIPE then
+      stdin_pipe = true;
+    if stdout == QIO_FD_PIPE || stdout == QIO_FD_BUFFERED_PIPE then
+      stdout_pipe = true;
+    if stderr == QIO_FD_PIPE || stderr == QIO_FD_BUFFERED_PIPE then
+      stderr_pipe = true;
 
     // Create the C pointer structures appropriate for spawn/exec
     // that are NULL terminated and consist of C strings.
@@ -502,16 +541,19 @@ module Spawn {
 
     if stdin_pipe {
       ret.stdin_pipe = true;
-      ret.stdin_file = openfd(stdin_fd, error=err, hints=QIO_HINT_OWNED);
+      // stdin_file will decrement file reference count when it
+      // goes out of scope, but the channel will still keep
+      // the file alive by referring to it.
+      var stdin_file = openfd(stdin_fd, error=err, hints=QIO_HINT_OWNED);
       if err {
         ret.spawn_error = err; return ret;
       }
-      ret.stdin_channel = ret.stdin_file.writer(error=err);
+      ret.stdin_channel = stdin_file.writer(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
 
-      if stdout_pipe || stderr_pipe {
+      if stdin == QIO_FD_BUFFERED_PIPE {
         // mark stdin so that we don't actually send any data
         // until communicate() is called.
 
@@ -525,12 +567,12 @@ module Spawn {
 
     if stdout_pipe {
       ret.stdout_pipe = true;
-      ret.stdout_file = openfd(stdout_fd, error=err, hints=QIO_HINT_OWNED);
+      var stdout_file = openfd(stdout_fd, error=err, hints=QIO_HINT_OWNED);
       if err {
         ret.spawn_error = err; return ret;
       }
 
-      ret.stdout_channel = ret.stdout_file.reader(error=err);
+      ret.stdout_channel = stdout_file.reader(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
@@ -696,7 +738,6 @@ module Spawn {
         // send data to stdin
         _stop_stdin_buffering();
         this.stdin_channel.close(error=error);
-        this.stdin_file.close(error=error);
       }
 
       // wait for child process to terminate
@@ -708,12 +749,13 @@ module Spawn {
         this.exit_status = exitcode;
       }
 
-      // Close stdout/stderr files. Leave the channels open.
+      // Close stdout/stderr channels.
+      // If the channels are to stay open, use buffer=true or communicate.
       if this.stdout_pipe {
-        this.stdout_file.close(error=error);
+        this.stdout_channel.close(error=error);
       }
       if this.stderr_pipe {
-        this.stderr_file.close(error=error);
+        this.stderr_channel.close(error=error);
       }
 
     }
@@ -756,11 +798,8 @@ module Spawn {
 
       error = qio_proc_communicate(
         locking,
-        stdin_file._file_internal,
         stdin_channel._channel_internal,
-        stdout_file._file_internal,
         stdout_channel._channel_internal,
-        stderr_file._file_internal,
         stderr_channel._channel_internal);
     }
 
@@ -803,17 +842,14 @@ module Spawn {
       // send data to stdin
       _stop_stdin_buffering();
       this.stdin_channel.close(error=error);
-      this.stdin_file.close(error=error);
     }
     // Close stdout.
     if this.stdout_pipe {
       this.stdout_channel.close(error=error);
-      this.stdout_file.close(error=error);
     }
     // Close stderr.
     if this.stderr_pipe {
       this.stderr_channel.close(error=error);
-      this.stderr_file.close(error=error);
     }
   }
 
