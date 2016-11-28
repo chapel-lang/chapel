@@ -17,21 +17,26 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/select.h>
-#include <errno.h>
-#include <string.h>
+#include "chpllaunch.h"
+
 #include "chplcgfns.h"
+#include "chpltypes.h"
+
 #include "chpl-comm-launch.h"
 #include "chpl-comm-locales.h"
-#include "chpllaunch.h"
 #include "chpl-mem.h"
-#include "chpltypes.h"
+
 #include "error.h"
+
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <sys/select.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 // used in get_enviro_keys
 extern char** environ;
