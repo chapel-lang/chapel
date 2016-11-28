@@ -64,20 +64,21 @@ chpl_main_argument chpl_gen_main_arg;
 ************************************** | *************************************/
 
 int main(int argc, char* argv[]) {
-  //
-  // This is a user invocation, so parse the arguments to determine
-  // the number of locales.
-  //
   int32_t execNumLocales;
 
   // Set up main argument parsing.
-  chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
-                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  chpl_gen_main_arg.argv[0] = argv[0];
-  chpl_gen_main_arg.argc = 1;
+  chpl_gen_main_arg.argv = chpl_mem_allocMany(argc,
+                                              sizeof(char*),
+                                              CHPL_RT_MD_COMMAND_BUFFER,
+                                              -1,
+                                              0);
+
+  chpl_gen_main_arg.argv[0]      = argv[0];
+  chpl_gen_main_arg.argc         = 1;
   chpl_gen_main_arg.return_value = 0;
 
   CreateConfigVarTable();
+
   parseArgs(true, parse_normally, &argc, argv);
 
   execNumLocales = getArgNumLocales();
@@ -89,6 +90,7 @@ int main(int argc, char* argv[]) {
   if (execNumLocales == 0) {
     execNumLocales = chpl_comm_default_num_locales();
   }
+
   //
   // Before proceeding, allow the comm layer to verify that the
   // number of locales is reasonable
