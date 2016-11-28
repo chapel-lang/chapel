@@ -309,46 +309,18 @@ char* chpl_get_enviro_keys(char sep)
   return ret;
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Use this function to run short utility programs that will return less than  *
+* 1024 characters of output.  The program must not expect any input.          *
+*                                                                             *
+* On success, returns the number of bytes read and the output of the command  *
+* in outbuf.                                                                  *
+*                                                                             *
+* Returns -1 on failure.                                                      *
+*                                                                             *
+************************************** | *************************************/
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-static void chpl_launch_sanity_checks(const char* argv0) {
-  // Do sanity checks just before launching.
-  struct stat statBuf;
-
-  // Make sure the _real binary exists
-  // (this should be called after someone has called
-  // chpl_compute_real_binary_name() )
-  if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
-    char errorMsg[256];
-    sprintf(errorMsg, "unable to locate file: %s", chpl_get_real_binary_name());
-    chpl_error(errorMsg, 0, 0);
-  }
-}
-
-//
-// Use this function to run short utility programs that will return less
-//  than 1024 characters of output.  The program must not expect any input.
-//  On success, returns the number of bytes read and the output of the
-//  command in outbuf.  Returns -1 on failure.
-//
 int
 chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int outbuflen) {
   const int buflen = 1024;
@@ -468,6 +440,40 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     //  That is a bad program, and I'm not going to deal with it here.
   }
   return numRead;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+static void chpl_launch_sanity_checks(const char* argv0) {
+  // Do sanity checks just before launching.
+  struct stat statBuf;
+
+  // Make sure the _real binary exists
+  // (this should be called after someone has called
+  // chpl_compute_real_binary_name() )
+  if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
+    char errorMsg[256];
+    sprintf(errorMsg, "unable to locate file: %s", chpl_get_real_binary_name());
+    chpl_error(errorMsg, 0, 0);
+  }
 }
 
 //
