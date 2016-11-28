@@ -190,6 +190,26 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
   return newargv;
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Undocumented means to wrap the _real binary. Useful for things like timing  *
+* the _real executable or running it through some other program. Note that    *
+* this will not work with launchers that add arguments after the first        *
+* positional argument expecting it to be the binary. e.g. amudprun adds       *
+* __AMUDP_SLAVE_PROCESS__* and the hostname:port. Returns the value of        *
+* CHPL_LAUNCHER_REAL_WRAPPER if set, "" otherwise                             *
+*                                                                             *
+************************************** | *************************************/
+
+const char* chpl_get_real_binary_wrapper(void) {
+  const char* real_wrapper = getenv("CHPL_LAUNCHER_REAL_WRAPPER");
+  if (real_wrapper != NULL) {
+    return real_wrapper;
+  } else {
+    return "";
+  }
+}
+
 
 
 
@@ -487,21 +507,6 @@ void chpl_compute_real_binary_name(const char* argv0) {
   strncpy(cursor, argv0, length);
   cursor += length;
   strcpy(cursor, launcher_real_suffix);
-}
-
-// Undocumented means to wrap the _real binary. Useful for things like timing
-// the _real executable or running it through some other program. Note that
-// this will not work with launchers that add arguments after the first
-// positional argument expecting it to be the binary. e.g. amudprun adds
-// __AMUDP_SLAVE_PROCESS__* and the hostname:port. Returns the value of
-// CHPL_LAUNCHER_REAL_WRAPPER if set, "" otherwise
-const char* chpl_get_real_binary_wrapper(void) {
-  const char* real_wrapper = getenv("CHPL_LAUNCHER_REAL_WRAPPER");
-  if (real_wrapper != NULL) {
-    return real_wrapper;
-  } else {
-    return "";
-  }
 }
 
 const char* chpl_get_real_binary_name(void) {
