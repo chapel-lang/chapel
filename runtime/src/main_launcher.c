@@ -669,16 +669,20 @@ int chpl_launch_using_system(char* command, char* argv0) {
 static void chpl_launch_sanity_checks(const char* argv0) {
   // Do sanity checks just before launching.
   struct stat statBuf;
+  const char* realName = chpl_get_real_binary_name();
 
   // Make sure the _real binary exists
   // (this should be called after someone has called
   // chpl_compute_real_binary_name() )
-  if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
-    char errorMsg[256];
+  if (stat(realName, &statBuf) != 0) {
+    // Allocate the errorMsg on the heap to allow for long paths
+    const char* prefix   = "unable to locate file: ";
+    size_t      prefLen  = strlen(prefix);
+    size_t      realLen  = strlen(realName);
+    char*       errorMsg = (char*) malloc(prefLen + realLen + 1);
 
-    sprintf(errorMsg,
-            "unable to locate file: %s",
-            chpl_get_real_binary_name());
+    strcpy(errorMsg, prefix);
+    strcat(errorMsg, realName);
 
     chpl_error(errorMsg, 0, 0);
   }
