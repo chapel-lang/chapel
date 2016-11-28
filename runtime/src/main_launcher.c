@@ -354,100 +354,157 @@ char* chpl_get_enviro_keys(char sep) {
 *                                                                             *
 ************************************** | *************************************/
 
-int
-chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int outbuflen) {
-  const int buflen = 1024;
-  int curlen;
-  char buf[buflen];
-  char *cur;
-  int fdo[2], outfd;
-  int fde[2], errfd;
-  fd_set set;
-  pid_t pid;
-  int status;
-  int rv, numRead;
+int chpl_run_utility1K(const char* command,
+                       char* const argv[],
+                       char        outbuf[],
+                       int         outbuflen) {
+  const int buflen       = 1024;
+  int       curlen       = 0;
+  char      buf[buflen];
+  char*     cur          = NULL;
+  int       fdo[2]       = { 0, 0 };
+  int       outfd        = 0;
+  int       fde[2]       = { 0, 0 };
+  int       errfd        = 0;
+  fd_set    set;
+  pid_t     pid          = 0;
+  int       status       = 0;
+  int       rv           = 0;
+  int       numRead      = 0;
 
   if (pipe(fdo) < 0) {
-    sprintf(buf, "Unable to run '%s' (pipe failed): %s\n", command, strerror(errno));
+    sprintf(buf,
+            "Unable to run '%s' (pipe failed): %s\n",
+            command,
+            strerror(errno));
+
     chpl_internal_error(buf);
   }
+
   if (pipe(fde) < 0) {
-    sprintf(buf, "Unable to run '%s' (pipe failed): %s\n", command, strerror(errno));
+    sprintf(buf,
+            "Unable to run '%s' (pipe failed): %s\n",
+            command,
+            strerror(errno));
+
     chpl_internal_error(buf);
   }
 
   pid = fork();
+
   switch (pid) {
   case 0: // child should exit on errors
     close(fdo[0]);
+
     if (fdo[1] != STDOUT_FILENO) {
       if (dup2(fdo[1], STDOUT_FILENO) != STDOUT_FILENO) {
-        sprintf(buf, "Unable to run '%s' (dup2 failed): %s",
-                command, strerror(errno));
+        sprintf(buf,
+                "Unable to run '%s' (dup2 failed): %s",
+                command,
+                strerror(errno));
+
         chpl_internal_error(buf);
       }
     }
+
     close(fde[0]);
+
     if (fde[1] != STDERR_FILENO) {
       if (dup2(fde[1], STDERR_FILENO) != STDERR_FILENO) {
-        sprintf(buf, "Unable to run '%s' (dup2 failed): %s",
-                command, strerror(errno));
+        sprintf(buf,
+                "Unable to run '%s' (dup2 failed): %s",
+                command,
+                strerror(errno));
+
         chpl_internal_error(buf);
       }
     }
+
     execvp(command, argv);
+
     // should only return on error
-    sprintf(buf, "Unable to run '%s': %s",
-                command, strerror(errno));
+    sprintf(buf,
+            "Unable to run '%s': %s",
+            command,
+            strerror(errno));
+
     chpl_internal_error(buf);
+
   case -1:
-    sprintf(buf, "Unable to run '%s' (fork failed): %s",
-            command, strerror(errno));
+    sprintf(buf,
+            "Unable to run '%s' (fork failed): %s",
+            command,
+            strerror(errno));
+
     chpl_warning(buf, 0, 0);
+
     return -1;
+
   default:
-    outfd = fdo[0];
-    errfd = fde[0];
+    outfd   = fdo[0];
+    errfd   = fde[0];
     close(fdo[1]);
     close(fde[1]);
+
     numRead = 0;
-    curlen = buflen > outbuflen ? outbuflen : buflen;
-    cur = buf;
+    curlen  = buflen > outbuflen ? outbuflen : buflen;
+    cur     = buf;
+
     while (numRead < buflen) {
       struct timeval tv = { 1, 0 };
+
       FD_ZERO(&set);
       FD_SET(outfd, &set);
       FD_SET(errfd, &set);
-      select(errfd+1, &set, NULL, NULL, &tv);
+
+      select(errfd + 1, &set, NULL, NULL, &tv);
+
       if (FD_ISSET(outfd, &set)) {
         rv = read(outfd, cur, buflen);
+
         if (rv == 0) {
-          if (waitpid(pid, &status, WNOHANG) == pid)
+          if (waitpid(pid, &status, WNOHANG) == pid) {
             break;
+          }
+
         } else if (rv > 0) {
-          cur += rv;
+          cur     += rv;
           numRead += rv;
-          curlen -= rv;
+          curlen  -= rv;
+
         } else {
-          sprintf(buf, "Unable to run '%s' (read failed): %s",
-                  command, strerror(errno));
+          sprintf(buf,
+                  "Unable to run '%s' (read failed): %s",
+                  command,
+                  strerror(errno));
+
           chpl_warning(buf, 0, 0);
+
           return -1;
         }
       }
+
       if (FD_ISSET(errfd, &set)) {
         rv = read(errfd, cur, buflen);
+
         if (rv == 0) {
-          if (waitpid(pid, &status, WNOHANG) == pid)
+          if (waitpid(pid, &status, WNOHANG) == pid) {
             break;
+          }
+
         } else if (rv > 0) {
-          cur += rv;
+          cur     += rv;
           numRead += rv;
-          curlen -= rv;
+          curlen  -= rv;
+
         } else {
-          sprintf(buf, "Unable to run '%s' (read failed): %s",
-                  command, strerror(errno));
+          sprintf(buf,
+                  "Unable to run '%s' (read failed): %s",
+                  command,
+                  strerror(errno));
+
           chpl_warning(buf, 0, 0);
+
           return -1;
         }
       }
@@ -460,18 +517,23 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
         // The utility program ran, but failed with an internal error
         // from child's branch above (dup2 or exevp)
         buf[numRead] = 0;
+
         chpl_warning(buf, 0, 0);
+
         return -1;
       }
     } else {
       sprintf(buf, "Unable to run '%s' (no bytes read)", command);
+
       chpl_warning(buf, 0, 0);
+
       return -1;
     }
 
     // NOTE: We don't do a waitpid() here, so the program may keep running.
     //  That is a bad program, and I'm not going to deal with it here.
   }
+
   return numRead;
 }
 
@@ -482,25 +544,6 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
 ************************************** | *************************************/
 
 static void chpl_launch_sanity_checks(const char* argv0);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const char* argv0) {
   int status;

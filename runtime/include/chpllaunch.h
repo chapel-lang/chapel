@@ -60,7 +60,7 @@ char*       chpl_get_enviro_keys(char sep);
 
 int         chpl_run_utility1K(const char* command,
                                char* const argv[],
-                               char*       outbuf,
+                               char        outbuf[],
                                int         outbuflen);
 
 //
