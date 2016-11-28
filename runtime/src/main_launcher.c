@@ -442,6 +442,13 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
   return numRead;
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Several helpers for invoking exec()                                         *
+*                                                                             *
+************************************** | *************************************/
+
+static void chpl_launch_sanity_checks(const char* argv0);
 
 
 
@@ -462,18 +469,29 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
 
 
 
-static void chpl_launch_sanity_checks(const char* argv0) {
-  // Do sanity checks just before launching.
-  struct stat statBuf;
-
-  // Make sure the _real binary exists
-  // (this should be called after someone has called
-  // chpl_compute_real_binary_name() )
-  if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
-    char errorMsg[256];
-    sprintf(errorMsg, "unable to locate file: %s", chpl_get_real_binary_name());
-    chpl_error(errorMsg, 0, 0);
+int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const char* argv0) {
+  int status;
+  pid_t pid = fork();
+  switch (pid) {
+  case 0:
+    chpl_launch_using_exec(command, argv1, argv0);
+    // should not return
+  case -1:
+  {
+    char msg[256];
+    sprintf(msg, "fork() failed: %s", strerror(errno));
+    chpl_internal_error(msg);
   }
+  default:
+    {
+      if (waitpid(pid, &status, 0) != pid) {
+        char msg[256];
+        sprintf(msg, "waitpid() failed: %s", strerror(errno));
+        chpl_internal_error(msg);
+      }
+    }
+  }
+  return WEXITSTATUS(status);
 }
 
 //
@@ -502,36 +520,25 @@ int chpl_launch_using_exec(const char* command, char * const argv1[], const char
   return -1;
 }
 
-int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const char* argv0) {
-  int status;
-  pid_t pid = fork();
-  switch (pid) {
-  case 0:
-    chpl_launch_using_exec(command, argv1, argv0);
-    // should not return
-  case -1:
-  {
-    char msg[256];
-    sprintf(msg, "fork() failed: %s", strerror(errno));
-    chpl_internal_error(msg);
-  }
-  default:
-    {
-      if (waitpid(pid, &status, 0) != pid) {
-        char msg[256];
-        sprintf(msg, "waitpid() failed: %s", strerror(errno));
-        chpl_internal_error(msg);
-      }
-    }
-  }
-  return WEXITSTATUS(status);
-}
-
 int chpl_launch_using_system(char* command, char* argv0) {
   if (verbosity > 1) {
     printf("%s\n", command);
   }
   chpl_launch_sanity_checks(argv0);
   return system(command);
+}
+
+static void chpl_launch_sanity_checks(const char* argv0) {
+  // Do sanity checks just before launching.
+  struct stat statBuf;
+
+  // Make sure the _real binary exists
+  // (this should be called after someone has called
+  // chpl_compute_real_binary_name() )
+  if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
+    char errorMsg[256];
+    sprintf(errorMsg, "unable to locate file: %s", chpl_get_real_binary_name());
+    chpl_error(errorMsg, 0, 0);
+  }
 }
 
