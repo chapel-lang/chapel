@@ -224,12 +224,13 @@ char** chpl_bundle_exec_args(int         argc,
 ************************************** | *************************************/
 
 const char* chpl_get_real_binary_wrapper(void) {
-  const char* real_wrapper = getenv("CHPL_LAUNCHER_REAL_WRAPPER");
-  if (real_wrapper != NULL) {
-    return real_wrapper;
-  } else {
-    return "";
+  const char* retval = getenv("CHPL_LAUNCHER_REAL_WRAPPER");
+
+  if (retval == NULL) {
+    retval = "";
   }
+
+  return retval;
 }
 
 /************************************* | **************************************
