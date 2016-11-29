@@ -299,6 +299,9 @@ void ParamForLoop::verify()
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "ParamForLoop::verify. byrefVars is not NULL");
+
+  if (forallIntents             != 0)
+    INT_FATAL(this, "ParamForLoop::verify. forallIntents is not NULL");
 }
 
 GenRet ParamForLoop::codegen()

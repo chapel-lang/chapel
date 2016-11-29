@@ -477,6 +477,15 @@ OPTIONS
     instantiated. This flag raises that maximum in the event that a legal
     instantiation is being pruned too aggressively.
 
+**--[no-]print-callgraph**
+
+    Print a textual call graph representing the program being compiled. The
+    output is in top-down and depth first order. Recursive calls are marked
+    and cause the traversal to stop along the path containing the recursion.
+    Only a single call to each function is displayed from within any given
+    parent function.
+
+
 **--[no-]print-callstack-on-error**
 
     Accompany certain error and warning messages with the Chapel call stack

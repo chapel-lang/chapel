@@ -331,6 +331,18 @@ void AstDump::exitBlockStmt(BlockStmt* node) {
   printBlockID(node);
 }
 
+void AstDump::visitForallIntents(ForallIntents* clause) {
+  newline();
+  write("with (");
+  for (int i = 0; i < clause->numVars(); i++) {
+    if (i > 0) write(false, ",", true);
+    if (clause->isReduce(i)) clause->riSpecs[i]->accept(this);
+    write(tfiTagDescrString(clause->fIntents[i]));
+    clause->fiVars[i]->accept(this);
+  }
+  write(false, ")", true);
+}
+
 
 //
 // WhileDoStmt

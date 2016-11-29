@@ -231,10 +231,8 @@ public:
         return "const-narrow-ref";
       case QUAL_CONST_WIDE_REF:
         return "const-wide-ref";
-
-      default:
-        INT_FATAL("Unhandled Qualifier");
     }
+    INT_FATAL("Unhandled Qualifier");
     return "UNKNOWN-QUAL";
   }
 

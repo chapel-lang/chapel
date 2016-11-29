@@ -3,14 +3,16 @@ use Time;
 config const numTrials = 100;
 config const printTimings = false;
 
+proc forallTaskSpawn(trials, numTasks) {
+  for 1..trials do
+    forall 1..numTasks { }
+}
+
 proc main() {
   var t: Timer;
 
   t.start();
-  for 1..numTrials {
-    forall 1..here.maxTaskPar {
-    }
-  }
+  forallTaskSpawn(numTrials, here.maxTaskPar);
   t.stop();
 
   if printTimings {

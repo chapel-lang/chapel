@@ -112,6 +112,8 @@ Miscellaneous Options:
       --[no-]explain-verbose          Enable [disable] tracing of
                                       disambiguation with 'explain' options
       --instantiate-max <max>         Limit number of instantiations
+      --[no-]print-callgraph          Print a representation of the callgraph
+                                      for the program
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning
   -s, --set <name>[=<value>]          Set config param value

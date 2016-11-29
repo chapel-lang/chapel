@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -34,7 +34,8 @@ extern "C" {
  *
  * \note CPU sets and nodesets are described in \ref hwlocality_object_sets.
  *
- * A bitmap may be of infinite size.
+ * A bitmap may be of infinite size (all bits are set after some point).
+ * A bitmap may even be full if all bits are set.
  *
  * \note Several examples of using the bitmap API are available under the
  * doc/examples/ directory in the source tree.
@@ -111,7 +112,7 @@ HWLOC_DECLSPEC int hwloc_bitmap_sscanf(hwloc_bitmap_t bitmap, const char * __hwl
  *
  * Lists are comma-separated indexes or ranges.
  * Ranges are dash separated indexes.
- * The last range may not have a ending indexes if the bitmap is infinite.
+ * The last range may not have an ending indexes if the bitmap is infinitely set.
  *
  * Up to \p buflen characters may be written in buffer \p buf.
  *
@@ -226,12 +227,15 @@ HWLOC_DECLSPEC int hwloc_bitmap_isset(hwloc_const_bitmap_t bitmap, unsigned id) 
 /** \brief Test whether bitmap \p bitmap is empty */
 HWLOC_DECLSPEC int hwloc_bitmap_iszero(hwloc_const_bitmap_t bitmap) __hwloc_attribute_pure;
 
-/** \brief Test whether bitmap \p bitmap is completely full */
+/** \brief Test whether bitmap \p bitmap is completely full
+ *
+ * \note A full bitmap is always infinitely set.
+ */
 HWLOC_DECLSPEC int hwloc_bitmap_isfull(hwloc_const_bitmap_t bitmap) __hwloc_attribute_pure;
 
 /** \brief Compute the first index (least significant bit) in bitmap \p bitmap
  *
- * \return -1 if no index is set.
+ * \return -1 if no index is set in \p bitmap.
  */
 HWLOC_DECLSPEC int hwloc_bitmap_first(hwloc_const_bitmap_t bitmap) __hwloc_attribute_pure;
 
@@ -239,13 +243,13 @@ HWLOC_DECLSPEC int hwloc_bitmap_first(hwloc_const_bitmap_t bitmap) __hwloc_attri
  *
  * If \p prev is -1, the first index is returned.
  *
- * \return -1 if no index with higher index is bitmap.
+ * \return -1 if no index with higher index is set in \p bitmap.
  */
 HWLOC_DECLSPEC int hwloc_bitmap_next(hwloc_const_bitmap_t bitmap, int prev) __hwloc_attribute_pure;
 
 /** \brief Compute the last index (most significant bit) in bitmap \p bitmap
  *
- * \return -1 if no index is bitmap, or if the index bitmap is infinite.
+ * \return -1 if no index is set in \p bitmap, or if \p bitmap is infinitely set.
  */
 HWLOC_DECLSPEC int hwloc_bitmap_last(hwloc_const_bitmap_t bitmap) __hwloc_attribute_pure;
 
@@ -253,6 +257,8 @@ HWLOC_DECLSPEC int hwloc_bitmap_last(hwloc_const_bitmap_t bitmap) __hwloc_attrib
  * indexes that are in the bitmap).
  *
  * \return the number of indexes that are in the bitmap.
+ *
+ * \return -1 if \p bitmap is infinitely set.
  */
 HWLOC_DECLSPEC int hwloc_bitmap_weight(hwloc_const_bitmap_t bitmap) __hwloc_attribute_pure;
 
@@ -267,7 +273,7 @@ HWLOC_DECLSPEC int hwloc_bitmap_weight(hwloc_const_bitmap_t bitmap) __hwloc_attr
  * indexes set in the bitmap.  To be specific: each iteration will return a
  * value for \p index such that hwloc_bitmap_isset(bitmap, index) is true.
  *
- * The assert prevents the loop from being infinite if the bitmap is infinite.
+ * The assert prevents the loop from being infinite if the bitmap is infinitely set.
  *
  * \hideinitializer
  */
@@ -332,7 +338,10 @@ HWLOC_DECLSPEC void hwloc_bitmap_not (hwloc_bitmap_t res, hwloc_const_bitmap_t b
 /** \brief Test whether bitmaps \p bitmap1 and \p bitmap2 intersects */
 HWLOC_DECLSPEC int hwloc_bitmap_intersects (hwloc_const_bitmap_t bitmap1, hwloc_const_bitmap_t bitmap2) __hwloc_attribute_pure;
 
-/** \brief Test whether bitmap \p sub_bitmap is part of bitmap \p super_bitmap */
+/** \brief Test whether bitmap \p sub_bitmap is part of bitmap \p super_bitmap.
+ *
+ * \note The empty bitmap is considered included in any other bitmap.
+ */
 HWLOC_DECLSPEC int hwloc_bitmap_isincluded (hwloc_const_bitmap_t sub_bitmap, hwloc_const_bitmap_t super_bitmap) __hwloc_attribute_pure;
 
 /** \brief Test whether bitmap \p bitmap1 is equal to bitmap \p bitmap2 */

@@ -2433,10 +2433,14 @@ static void fixAST() {
         // TODO: Local checks for references from GET_MEMBER_VALUE
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (rhs->isPrimitive(PRIM_ADDR_OF)) {
-            Type* val = toSymExpr(call->get(1))->getValType();
+            SymExpr* LHS = toSymExpr(call->get(1));
             SymExpr* src = toSymExpr(rhs->get(1));
-            if (val != src->symbol()->type) {
-              insertWideTemp(val, src);
+            bool same = LHS->getValType() == src->getValType() &&
+                 ((LHS->isRef() && src->isRef()) ||
+                  (LHS->isWideRef() && src->isWideRef()) ||
+                  (LHS->isRefOrWideRef() && !src->isRefOrWideRef()));
+            if (!same) {
+              insertWideTemp(LHS->getValType(), src);
             }
           }
           else if (rhs->isPrimitive(PRIM_DEREF)) {

@@ -102,7 +102,7 @@ other task is consuming it.
       for x in input {
         sub.stdin.writeln(x);
       }
-      // this close is important so that the kkkkkkk
+      // this close is important; otherwise the other task blocks forever
       sub.stdin.close();
     }
 
@@ -441,7 +441,6 @@ module Spawn {
      */
   proc spawn(args:[] string, env:[] string=Spawn.empty_env, executable="",
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
-
              param kind=iokind.dynamic, param locking=true)
   {
     var stdin_fd:c_int = QIO_FD_FORWARD;
@@ -756,7 +755,7 @@ module Spawn {
         this.stdout_channel.close(error=error);
       }
       if this.stderr_pipe {
-        this.stdout_channel.close(error=error);
+        this.stderr_channel.close(error=error);
       }
 
     }

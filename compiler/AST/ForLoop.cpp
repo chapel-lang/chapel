@@ -420,6 +420,9 @@ void ForLoop::verify()
 
   if (byrefVars != 0)
     INT_FATAL(this, "ForLoop::verify. byrefVars is not NULL");
+
+  if (forallIntents != 0)
+    INT_FATAL(this, "ForLoop::verify. forallIntents is not NULL");
 }
 
 GenRet ForLoop::codegen()

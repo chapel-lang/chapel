@@ -287,7 +287,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_FIELD_NAME_TO_NUM:
   case PRIM_FIELD_BY_NUM:
 
-  case PRIM_FORALL_LOOP:
   case PRIM_TO_STANDALONE:
   case PRIM_IS_REF_ITER_TYPE:
   case PRIM_COERCE:
