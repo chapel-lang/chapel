@@ -20,6 +20,15 @@
 #include "TryStmt.h"
 #include "AstVisitor.h"
  
+BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body) {
+  BlockStmt* retval = new BlockStmt();
+  TryStmt*   stmt   = new TryStmt(tryBang, body);
+
+  retval->insertAtTail(stmt);
+
+  return retval;
+}
+
 TryStmt::TryStmt(bool _tryBang, BlockStmt* _body) : Stmt(E_TryStmt) {
   tryBang = _tryBang;
   body    = _body; 

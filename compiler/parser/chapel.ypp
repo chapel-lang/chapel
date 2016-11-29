@@ -201,6 +201,7 @@
   #include "parser.h"
   #include "stmt.h"
   #include "stringutil.h"
+  #include "TryStmt.h"
   #include "vec.h"
   #include "WhileDoStmt.h"
 
@@ -292,7 +293,7 @@
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
 %token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
+%token TSYNC TTHEN TTRY TTYPE TUNDERSCORE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TWITH TYIELD TZIP
 
 //
@@ -376,6 +377,7 @@
 %type <pblockstmt> private_decl
 %type <pblockstmt> extern_block_stmt
 %type <pblockstmt> return_stmt
+%type <pblockstmt> try_stmt
 
 %type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt
 %type <pblockstmt> enum_decl_stmt
@@ -452,6 +454,7 @@ stmt:
 | if_stmt
 | loop_stmt
 | select_stmt
+| try_stmt
 | return_stmt
 | stmt_level_expr TSEMI                { $$ = buildChapelStmt($1); }
 | TATOMIC stmt                         { $$ = buildAtomicStmt($2); }
@@ -693,6 +696,10 @@ if_stmt:
 | TIF expr block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
 | TIF expr TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
 | TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
+;
+
+try_stmt:
+  TTRY block_stmt { $$ = TryStmt::build(false, $2); }
 ;
 
 select_stmt:
