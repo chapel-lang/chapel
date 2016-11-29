@@ -5,11 +5,19 @@ use Sort;
 // a SHA-1 hash is 160 bits, so it fits in 3 64-bit ints.
 type Hash = (20*uint(8));
 
+// This require statement allows this module to add
+// some required libraries to the link line
 require "-lcrypto", "-lssl";
+
+// The extern block allows Chapel source code to include C declarations.
+// The declarations are automatically added to the enclosing Chapel
+// scope. Functions, variables, and types are supported - including
+// inline functions. Macros have limited support.
+// See
+//   http://chapel.cray.com/docs/latest/technotes/extern.html
 extern {
   #include <openssl/sha.h>
 }
-
 
 
 proc main(args:[] string)
@@ -34,6 +42,11 @@ proc main(args:[] string)
     var data:string;
     var f = open(path, iomode.r);
     f.reader(kind=iokind.native).readstring(data);
+    // The extern block above included everything in openssl/sha.h,
+    // including the SHA1 function. But, in order to call it, we
+    // need to create C types from some Chapel data.
+    //   string.c_str() returns a C string referring to the string's data
+    //   c_ptrTo(something) returns a C pointer referring to something
     SHA1(data.c_str(), data.length:uint, c_ptrTo(mdArray));
     var hash:Hash;
     for i in 1..20 do

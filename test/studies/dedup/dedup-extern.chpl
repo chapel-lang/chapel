@@ -5,7 +5,12 @@ use Sort;
 // a SHA-1 hash is 160 bits, so it fits in 3 64-bit ints.
 type Hash = (20*uint(8));
 
+// This require statement indicates that the generated code
+// should #include "openssl/sha.h" and be compiled with -lcrypto -lssl
 require "openssl/sha.h", "-lcrypto", "-lssl";
+// This 'extern proc' declaration tells the Chapel compiler that a C
+// function SHA1 is available and describes the arguments in the
+// Chapel type system.
 extern proc SHA1(d:c_string, n:size_t, md:c_ptr(uint(8)));
 
 proc main(args:[] string)
