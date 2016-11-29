@@ -29,11 +29,6 @@ module ChapelBase {
   // Is the cache for remote data enabled at compile time?
   config param CHPL_CACHE_REMOTE: bool = false;
 
-  // TODO -- remove this param, it is no longer used.
-  // That will require updating tests that throw it, especially
-  // performance tests.
-  config param noRefCount = false;
-
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
   proc _throwOpError(param op: string) {
