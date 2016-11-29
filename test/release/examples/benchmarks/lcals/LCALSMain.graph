@@ -33,21 +33,3 @@ graphkeys: pressure_calc, energy_calc, vol3d_calc, del_dot_vec_2d, couple, fir, 
 repeat-files: LCALSMain.dat
 graphtitle: LCALS (raw_omp, long)
 ylabel: Time (seconds)
-
-perfkeys: raw_vector_only_pressure_calc_short, raw_vector_only_energy_calc_short, raw_vector_only_vol3d_calc_short, raw_vector_only_del_dot_vec_2d_short, raw_vector_only_couple_short, raw_vector_only_fir_short, raw_vector_only_init3_short, raw_vector_only_muladdsub_short, raw_vector_only_if_quad_short, raw_vector_only_trap_int_short, raw_vector_only_pic_2d_short
-graphkeys: pressure_calc, energy_calc, vol3d_calc, del_dot_vec_2d, couple, fir, init3, muladdsub, if_quad, trap_int, pic_2d
-repeat-files: LCALSMain.dat
-graphtitle: LCALS (raw_vector_only, short)
-ylabel: Time (seconds)
-
-perfkeys: raw_vector_only_pressure_calc_medium, raw_vector_only_energy_calc_medium, raw_vector_only_vol3d_calc_medium, raw_vector_only_del_dot_vec_2d_medium, raw_vector_only_couple_medium, raw_vector_only_fir_medium, raw_vector_only_init3_medium, raw_vector_only_muladdsub_medium, raw_vector_only_if_quad_medium, raw_vector_only_trap_int_medium, raw_vector_only_pic_2d_medium
-graphkeys: pressure_calc, energy_calc, vol3d_calc, del_dot_vec_2d, couple, fir, init3, muladdsub, if_quad, trap_int, pic_2d
-repeat-files: LCALSMain.dat
-graphtitle: LCALS (raw_vector_only, medium)
-ylabel: Time (seconds)
-
-perfkeys: raw_vector_only_pressure_calc_long, raw_vector_only_energy_calc_long, raw_vector_only_vol3d_calc_long, raw_vector_only_del_dot_vec_2d_long, raw_vector_only_couple_long, raw_vector_only_fir_long, raw_vector_only_init3_long, raw_vector_only_muladdsub_long, raw_vector_only_if_quad_long, raw_vector_only_trap_int_long, raw_vector_only_pic_2d_long
-graphkeys: pressure_calc, energy_calc, vol3d_calc, del_dot_vec_2d, couple, fir, init3, muladdsub, if_quad, trap_int, pic_2d
-repeat-files: LCALSMain.dat
-graphtitle: LCALS (raw_vector_only, long)
-ylabel: Time (seconds)
