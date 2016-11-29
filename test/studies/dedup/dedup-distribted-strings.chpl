@@ -6,6 +6,7 @@ use VisualDebug;
 
 config const verbose = false;
 config const vis = "vis_strings";
+config const visualize = false;
 
 proc main(args:[] string)
 {
@@ -42,7 +43,8 @@ proc main(args:[] string)
   // find duplicates.
   var hashAndFile:[1..paths.size] (string, string);
  
-  startVdebug(vis);
+  if visualize then
+    startVdebug(vis);
 
   // Using the Spawn module, compute the SHA1 sums using an external program
   forall (id,path) in zip(distributedPaths.domain, distributedPaths) {
@@ -65,7 +67,8 @@ proc main(args:[] string)
     sub.wait();
   }
 
-  stopVdebug();
+  if visualize then
+    stopVdebug();
 
   if verbose then
     writeln("Sorting by hash to find duplicates");

@@ -6,6 +6,7 @@ use VisualDebug;
 
 config const verbose = false;
 config const vis = "vis_ints";
+config const visualize = false;
 
 // a SHA-1 hash is 160 bits, so it fits in 3 64-bit ints.
 type Hash = (int,int,int);
@@ -31,7 +32,8 @@ proc main(args:[] string)
   // a file id is just the index into the paths array.
   var hashAndFileId:[1..paths.size] (Hash, int);
  
-  startVdebug(vis);
+  if visualize then
+    startVdebug(vis);
 
   // Compute the SHA1 sums using the external program
   forall (id,path) in zip(distributedPaths.domain, distributedPaths) {
@@ -49,7 +51,8 @@ proc main(args:[] string)
     sub.wait();
   }
 
-  stopVdebug();
+  if visualize then
+    stopVdebug();
 
   if verbose then
     writeln("Sorting by hash to find duplicates");
