@@ -124,3 +124,5 @@ post-install: FORCE
 gasnet: gasnet-install
 
 FORCE:
+
+.NOTPARALLEL:
