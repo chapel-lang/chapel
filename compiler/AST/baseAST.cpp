@@ -456,6 +456,10 @@ const char* BaseAST::astTagAsString() const {
       retval = "ExternBlockStmt";
       break;
 
+    case E_TryStmt:
+      retval = "TryStmt";
+      break;
+
     case E_ModuleSymbol:
       retval = "ModuleSymbol";
       break;
