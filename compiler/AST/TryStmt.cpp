@@ -18,6 +18,7 @@
  */
 
 #include "TryStmt.h"
+#include "AstVisitor.h"
  
 TryStmt::TryStmt(bool _tryBang, BlockStmt* _body) : Stmt(E_TryStmt) {
   tryBang = _tryBang;
@@ -33,7 +34,12 @@ BlockStmt* TryStmt::getBody() {
 }
 
 void TryStmt::accept(AstVisitor* visitor) {
-  
+  if (visitor->enterTryStmt(this)) {
+    if (body) {
+      body->accept(visitor);
+    }
+    visitor->exitTryStmt(this);
+  } 
 }
 
 Expr* TryStmt::copy(SymbolMap* map, bool internal) {
