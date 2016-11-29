@@ -43,6 +43,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "WhileStmt.h"
 #include "../ifa/prim_data.h"
 #include "view.h"
