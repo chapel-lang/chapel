@@ -61,7 +61,7 @@
 //   }
 //
 //   if (isFirstCall) {
-//     if (isConst && !info->finalizedConst) {
+//     if (isConst) {
 //       < change flags/qualifier/intent on symbol >
 //     }
 //     info->reset()
@@ -175,18 +175,21 @@ class ConstInfo {
     std::vector<SymExpr*> todo;
 
     ConstInfo(Symbol*);
+
     SymExpr* next();
-    void reset();
-    bool hasMore();
+    void     reset();
+    bool     hasMore();
 
   private:
-    int curTodo;
+    size_t curTodo;
+    ConstInfo();
 };
 
 ConstInfo::ConstInfo(Symbol* s) {
   sym = s;
   fnUses = NULL;
   Qualifier q = sym->qualType().getQual();
+
   finalizedConstness = q == QUAL_CONST_REF || q == QUAL_CONST_VAL;
   if (ArgSymbol* arg = toArgSymbol(s)) {
     // Work around a bug where we can have an arg with the in-intent, but it's
@@ -195,7 +198,13 @@ ConstInfo::ConstInfo(Symbol* s) {
     if (arg->intent == INTENT_CONST_IN && arg->isRef()) {
       finalizedConstness = false;
     }
+
+    // Since we know 'sym' is an ArgSymbol, initialize the uses of the
+    // symbol's function.
+    FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
+    fnUses = fn->firstSymExpr();
   }
+
   finalizedRefToConst = sym->hasFlag(FLAG_REF_TO_CONST);
 
   curTodo = 0;
@@ -214,7 +223,7 @@ void ConstInfo::reset() {
 }
 
 bool ConstInfo::hasMore() {
-  return ((unsigned int)curTodo) < todo.size();
+  return curTodo < todo.size();
 }
 
 std::map<Symbol*, ConstInfo*> infoMap;
@@ -337,19 +346,21 @@ static bool inferConstRef(Symbol* sym) {
   // 'info' may be null if the argument is never used. In that case we can
   // consider 'sym' to be a const-ref. By letting the rest of the function
   // proceed, we'll fix up the qualifier for such symbols at the end.
-  if ((info && info->finalizedConstness) || wasConstRef) {
+  if (info == NULL) {
+    return true;
+  } else if (info->finalizedConstness || wasConstRef) {
     return wasConstRef;
   }
 
   bool isFirstCall = false;
-  if (info && info->alreadyCalled == false) {
+  if (info->alreadyCalled == false) {
     isFirstCall = true;
     info->alreadyCalled = true;
   }
 
   bool isConstRef = true;
 
-  while (info && info->hasMore() && isConstRef) {
+  while (info->hasMore() && isConstRef) {
     SymExpr* use = info->next();
 
     CallExpr* call = toCallExpr(use->parentExpr);
@@ -390,8 +401,7 @@ static bool inferConstRef(Symbol* sym) {
             isConstRef = false;
           }
         }
-        // else CASE 3: don't need to do anything because isConstRef is already
-        // true
+        // else CASE 3: do nothing because isConstRef is already true
       }
     }
     else if (call->isPrimitive(PRIM_ASSIGN)) {
@@ -428,7 +438,8 @@ static bool inferConstRef(Symbol* sym) {
   }
 
   if (isFirstCall) {
-    if (isConstRef && !info->finalizedConstness) {
+    if (isConstRef) {
+      INT_ASSERT(info->finalizedConstness == false);
       if (ArgSymbol* arg = toArgSymbol(sym)) {
         arg->intent = INTENT_CONST_REF;
       } else {
@@ -437,22 +448,18 @@ static bool inferConstRef(Symbol* sym) {
       }
     }
 
-    if (info) {
-      info->reset();
-      info->finalizedConstness = true;
-    }
-  } else if (!isConstRef && info) {
+    info->reset();
+    info->finalizedConstness = true;
+  } else if (!isConstRef) {
     info->finalizedConstness = true;
   }
 
   return isConstRef;
 }
 
+// Note: This function is currently not recursive
 static bool inferConst(Symbol* sym) {
-  if (sym->isRef()) {
-    return inferConstRef(sym);
-  }
-
+  INT_ASSERT(!sym->isRef());
   const bool wasConstVal = sym->qualType().getQual() == QUAL_CONST_VAL;
 
   ConstInfo* info = infoMap[sym];
@@ -460,24 +467,16 @@ static bool inferConst(Symbol* sym) {
   // 'info' may be null if the argument is never used. In that case we can
   // consider 'sym' to be a const-ref. By letting the rest of the function
   // proceed, we'll fix up the qualifier for such symbols at the end.
-  if ((info && info->finalizedConstness) || wasConstVal) {
+  if (info == NULL) {
+    return true;
+  } else if (info->finalizedConstness || wasConstVal) {
     return wasConstVal;
-  }
-
-  // If 'isFirstCall' is false, then this function as been called recursively.
-  // This means that within the scope of this current invocation we should not
-  // update any properties of this symbol, and should instead let the first
-  // call on this symbol update such properties.
-  bool isFirstCall = false;
-  if (info && info->alreadyCalled == false) {
-    isFirstCall = true;
-    info->alreadyCalled = true;
   }
 
   bool isConstVal = true;
   int numDefs = 0;
 
-  while (info && info->hasMore() && isConstVal) {
+  while (info->hasMore() && isConstVal) {
     SymExpr* use = info->next();
 
     CallExpr* call = toCallExpr(use->parentExpr);
@@ -520,32 +519,24 @@ static bool inferConst(Symbol* sym) {
     }
   }
 
-  if (isFirstCall) {
-    if (isConstVal && !info->finalizedConstness) {
-      if (ArgSymbol* arg = toArgSymbol(sym)) {
-        INT_ASSERT(arg->intent & INTENT_FLAG_IN);
-        arg->intent = INTENT_CONST_IN;
-      } else {
-        INT_ASSERT(isVarSymbol(sym));
-        sym->qual = QUAL_CONST_VAL;
-      }
+  if (isConstVal && !info->finalizedConstness) {
+    if (ArgSymbol* arg = toArgSymbol(sym)) {
+      INT_ASSERT(arg->intent & INTENT_FLAG_IN);
+      arg->intent = INTENT_CONST_IN;
+    } else {
+      INT_ASSERT(isVarSymbol(sym));
+      sym->qual = QUAL_CONST_VAL;
     }
-
-    if (info) {
-      info->reset();
-      info->finalizedConstness = true;
-    }
-  } else if (!isConstVal && info) {
-    // Not the first call, but something happened that prevents us from marking
-    // this symbol as const. Now that we know, indicate that this is finalized.
-    info->finalizedConstness = true;
   }
+
+  info->reset();
+  info->finalizedConstness = true;
 
   return isConstVal;
 }
 
 static bool inferRefToConst(Symbol* sym) {
-  if (!sym->isRef()) return false;
+  INT_ASSERT(sym->isRef());
 
   bool isConstRef = sym->qualType().getQual() == QUAL_CONST_REF;
   const bool wasRefToConst = sym->hasFlag(FLAG_REF_TO_CONST);
@@ -553,12 +544,14 @@ static bool inferRefToConst(Symbol* sym) {
   ConstInfo* info = infoMap[sym];
 
   // If this ref isn't const, then it can't point to a const thing
-  if ((info && info->finalizedRefToConst) || wasRefToConst || !isConstRef) {
+  if (info == NULL) {
+    return false;
+  } else if ((info && info->finalizedRefToConst) || wasRefToConst || !isConstRef) {
     return wasRefToConst;
   }
 
   bool isFirstCall = false;
-  if (info && info->alreadyCalled == false) {
+  if (info->alreadyCalled == false) {
     isFirstCall = true;
     info->alreadyCalled = true;
   }
@@ -569,18 +562,17 @@ static bool inferRefToConst(Symbol* sym) {
     // Check each call and set isRefToConst to false if any actual is not a ref
     // to a const.
     FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
-    if (fn->hasFlag(FLAG_VIRTUAL)) {
+    if (fn->hasFlag(FLAG_VIRTUAL) ||
+        fn->hasFlag(FLAG_EXPORT)  ||
+        fn->hasFlag(FLAG_EXTERN)) {
       // Not sure how to best handle virtual calls, so simply set false for now
+      //
+      // For export or extern functions, return false because we don't have
+      // all the information about how the function is called.
       isRefToConst = false;
     } else {
-      if (isFirstCall && info) {
-        INT_ASSERT(info->fnUses == NULL);
-        info->fnUses = fn->firstSymExpr();
-      } else if (info == NULL) {
-        isRefToConst = false;
-      }
       // Need this part to be re-entrant in case of recursive functions
-      while (info && info->fnUses != NULL && isRefToConst) {
+      while (info->fnUses != NULL && isRefToConst) {
         SymExpr* se = info->fnUses;
         info->fnUses = se ? se->symbolSymExprsNext : NULL;
 
@@ -606,7 +598,7 @@ static bool inferRefToConst(Symbol* sym) {
     }
   }
 
-  while (info && info->hasMore() && isRefToConst) {
+  while (info->hasMore() && isRefToConst) {
     SymExpr* use = info->next();
 
     CallExpr* call = toCallExpr(use->parentExpr);
@@ -649,15 +641,14 @@ static bool inferRefToConst(Symbol* sym) {
   }
 
   if (isFirstCall) {
-    if (isRefToConst && !info->finalizedRefToConst) {
+    if (isRefToConst) {
+      INT_ASSERT(info->finalizedRefToConst == false);
       sym->addFlag(FLAG_REF_TO_CONST);
     }
 
-    if (info) {
-      info->reset();
-      info->finalizedRefToConst = true;
-    }
-  } else if (!isRefToConst && info) {
+    info->reset();
+    info->finalizedRefToConst = true;
+  } else if (!isRefToConst) {
     info->finalizedRefToConst = true;
   }
 
@@ -695,11 +686,18 @@ void inferConstRefs() {
   }
 
   for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
-    inferConst(it->first);
+    Symbol* sym = it->first;
+    if (sym->isRef()) {
+      inferConstRef(sym);
+    } else {
+      inferConst(sym);
+    }
   }
 
   for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
-    inferRefToConst(it->first);
+    if (it->first->isRef()) {
+      inferRefToConst(it->first);
+    }
   }
 
   // Free the ConstInfo maps and clear the infoMap in case this function is
