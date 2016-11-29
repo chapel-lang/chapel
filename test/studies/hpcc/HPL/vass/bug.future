@@ -4,8 +4,7 @@ To be investigated. This is what is known so far:
 
 This runs OK with
 * CHPL_COMM=none, or
-* --no-local, or
-* -s noRefCount=true.
+* --no-local.
 
 With CHPL_COMM=gasnet I get this output:
 
