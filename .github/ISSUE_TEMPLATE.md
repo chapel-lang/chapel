@@ -1,7 +1,7 @@
 ## Bug Report
 <!--
 If you are filing an issue that is not a bug report, please feel free to erase
-this template and describe the issue as clearly as possible
+this template and describe the issue as clearly as possible.
 -->
 
 
