@@ -358,14 +358,24 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // to convert atomic formals to ref formals.
   } else if (isAtomicType(arg->type)) {
     retval = false;
-  } else if (arg->intent == INTENT_CONST_REF) {
+  } else if (arg->isRef()) {
+    // can forward if the actual is a QUAL_CONST_VAL or a ref-to-const
     DotInfo* info = dotLocaleMap[arg];
-    if (info == NULL) {
-      // 'info' can be NULL if there are no uses of 'arg', so we can RVF it
-      // (though it doesn't really matter).
-      retval = true;
+    if (info && info->usesDotLocale) {
+      retval = false;
+    } else if (arg->intent == INTENT_CONST_REF) {
+      if (isClass(arg->getValType())) {
+        // When passing a reference to a class across an on-statement, it will
+        // normally be generated as a wide-reference to a wide-class. When the
+        // reference is a const-ref, this introduces unnecessary communication
+        // to simply get to the wide class pointer. Because the reference is
+        // never written to, we can simply RVF the class pointer.
+        retval = true;
+      } else {
+        retval = arg->hasFlag(FLAG_REF_TO_CONST);
+      }
     } else {
-      retval = !info->usesDotLocale;
+      retval = false;
     }
   } else if (arg->intent == INTENT_CONST_IN &&
       !arg->type->symbol->hasFlag(FLAG_REF)) {
@@ -374,8 +384,6 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     // for += between strings.
     retval = true;
 
-  } else if (arg->isRef()  == true) {
-    retval = false;
   } else {
     retval = false;
   }
