@@ -32,7 +32,7 @@ static void qtChplLikeTaskSpawn(int64_t trials, int64_t numTasks) {
 // Spawn and wait for tasks in a manner than an optimized chapel might (regular
 // non-copy fork, avoid EndCount allocation, increment atomic once instead of
 // once per task.)
-static void qtOptimizedChplSpawn(int64_t trials, int64_t numTasks) {
+static void qtChplOptTaskSpawn(int64_t trials, int64_t numTasks) {
   int i, j;
 
   for (i=0; i<trials; i++) {
@@ -41,7 +41,7 @@ static void qtOptimizedChplSpawn(int64_t trials, int64_t numTasks) {
     initEndCount(endCount);
     upEndCount(endCount, numTasks);
     for (j=0; j<numTasks; j++) {
-      qthread_fork_copyargs(decTask, &(endCount), sizeof(EndCount), NULL);
+      qthread_fork(decTask, &(endCount), NULL);
     }
     waitEndCount(endCount);
   }
