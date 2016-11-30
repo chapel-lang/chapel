@@ -1,5 +1,8 @@
 ## Bug Report
-<!-- If you are not submitting a bug report, erase this template -->
+<!--
+If you are filing an issue that is not a bug report, please feel free to erase
+this template and describe the issue as clearly as possible
+-->
 
 
 ### Summary of Problem
@@ -12,15 +15,13 @@ What behavior did you expect to observe?
 ### Steps to Reproduce
 
 **Source Code:**
-<!--
-Please provide source code that will reproduce the problem as an
-attachment, an inline code block, or via a URL.  To the extent possible,
-providing reduced reproducers of the problem will be appreciated.
--->
 
 ```chapel
-// You can insert your code inline if it's not too long
-// Otherwise, you can attach it as a file or provide a URL to it
+// Please provide source code that will reproduce the problem.
+// You can insert your code inline if it's not too long.
+// Otherwise, you can attach it as a file or provide a URL to it.
+// To the extent possible, providing simplified programs demonstrating the
+// problem will be appreciated.
 ```
 
 **Compile command:**
@@ -34,6 +35,6 @@ providing reduced reproducers of the problem will be appreciated.
 
 - Output of `chpl --version`:
 - Output of `$CHPL_HOME/util/printchplenv --anonymize`:
-- Back-end compiler and version:
+- Back-end compiler and version, e.g. `gcc --version` or `clang --version`:
 - (For Cray systems only) Output of `module list`:
 
