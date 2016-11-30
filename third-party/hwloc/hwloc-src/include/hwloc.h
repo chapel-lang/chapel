@@ -631,6 +631,9 @@ HWLOC_DECLSPEC int hwloc_topology_init (hwloc_topology_t *topologyp);
  *
  * \note This function may be called only once per topology.
  *
+ * \note The binding of the current thread or process may temporarily change
+ * during this call but it will be restored before it returns.
+ *
  * \sa hwlocality_configuration
  */
 HWLOC_DECLSPEC int hwloc_topology_load(hwloc_topology_t topology);

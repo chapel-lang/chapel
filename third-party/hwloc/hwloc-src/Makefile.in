@@ -96,7 +96,7 @@ host_triplet = @host@
 target_triplet = @target@
 # We need doc/ if HWLOC_BUILD_DOXYGEN, or during make install if HWLOC_INSTALL_DOXYGEN.
 # There's no INSTALL_SUBDIRS, so always enter doc/ and check HWLOC_BUILD/INSTALL_DOXYGEN there
-@HWLOC_BUILD_STANDALONE_TRUE@am__append_1 = tests utils \
+@HWLOC_BUILD_STANDALONE_TRUE@am__append_1 = utils tests \
 @HWLOC_BUILD_STANDALONE_TRUE@	contrib/systemd doc
 
 # Only install entire visual studio subdirectory if we're building in standalone mode
@@ -926,10 +926,10 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@HWLOC_BUILD_STANDALONE_FALSE@uninstall-local:
-@HWLOC_HAVE_WINDOWS_FALSE@uninstall-local:
 @HWLOC_BUILD_STANDALONE_FALSE@install-data-local:
 @HWLOC_HAVE_WINDOWS_FALSE@install-data-local:
+@HWLOC_BUILD_STANDALONE_FALSE@uninstall-local:
+@HWLOC_HAVE_WINDOWS_FALSE@uninstall-local:
 clean: clean-recursive
 
 clean-am: clean-generic clean-libtool mostlyclean-am

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015 Inria.  All rights reserved.
+ * Copyright © 2013-2016 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -35,14 +35,16 @@ hwloc_look_bgq(struct hwloc_backend *backend)
     /* mark the 17th core (OS-reserved) as disallowed */
     hwloc_bitmap_clr_range(topology->levels[0][0]->allowed_cpuset, (HWLOC_BGQ_CORES-1)*4, HWLOC_BGQ_CORES*4-1);
 
-    env = getenv("BG_THREADMODEL");
-    if (!env || atoi(env) != 2) {
-      /* process cannot use cores/threads outside of its Kernel_ThreadMask() */
-      uint64_t bgmask = Kernel_ThreadMask(Kernel_MyTcoord());
-      /* the mask is reversed, manually reverse it */
-      for(i=0; i<64; i++)
+    if (topology->is_thissystem) {
+      env = getenv("BG_THREADMODEL");
+      if (!env || atoi(env) != 2) {
+	/* process cannot use cores/threads outside of its Kernel_ThreadMask() */
+	uint64_t bgmask = Kernel_ThreadMask(Kernel_MyTcoord());
+	/* the mask is reversed, manually reverse it */
+	for(i=0; i<64; i++)
 	if (((bgmask >> i) & 1) == 0)
 	  hwloc_bitmap_clr(topology->levels[0][0]->allowed_cpuset, 63-i);
+      }
     }
 
     /* a single memory bank */
@@ -204,17 +206,23 @@ hwloc_bgq_component_instantiate(struct hwloc_disc_component *component,
 {
   struct utsname utsname;
   struct hwloc_backend *backend;
-  const char *env;
+  int forced_nonbgq = 0;
   int err;
 
-  env = getenv("HWLOC_FORCE_BGQ");
-  if (!env || !atoi(env)) {
-    err = uname(&utsname);
-    if (err || strcmp(utsname.sysname, "CNK") || strcmp(utsname.machine, "BGQ")) {
-      fprintf(stderr, "*** Found unexpected uname sysname `%s' machine `%s'\n", utsname.sysname, utsname.machine);
-      fprintf(stderr, "*** The BGQ backend is only enabled on compute nodes by default (sysname=CNK machine=BGQ)\n");
-      fprintf(stderr, "*** Set HWLOC_FORCE_BGQ=1 in the environment to enforce the BGQ backend anyway.\n");
+  err = uname(&utsname);
+  if (err || strcmp(utsname.sysname, "CNK") || strcmp(utsname.machine, "BGQ")) {
+    const char *env = getenv("HWLOC_FORCE_BGQ");
+    if (!env || !atoi(env)) {
+      fprintf(stderr, "*** Found unexpected uname sysname `%s' machine `%s'.\n", utsname.sysname, utsname.machine);
+      fprintf(stderr, "*** The BlueGene/Q backend (bgq) is only enabled by default on compute nodes\n"
+		      "*** (where uname returns sysname=CNK and machine=BGQ).\n"
+		      "*** If you know you *really* want to run the bgq backend on this non-compute node,\n"
+		      "*** set HWLOC_FORCE_BGQ=1 in the environment.\n"
+		      "*** If you just want to discover the native topology of this non-compute node,\n"
+		      "*** do not pass any BlueGene/Q-specific options on the configure command-line.\n");
       return NULL;
+    } else {
+      forced_nonbgq = 1;
     }
   }
 
@@ -222,6 +230,7 @@ hwloc_bgq_component_instantiate(struct hwloc_disc_component *component,
   if (!backend)
     return NULL;
   backend->discover = hwloc_look_bgq;
+  backend->is_thissystem = !forced_nonbgq;
   return backend;
 }
 

@@ -3480,7 +3480,7 @@ static void buildVisibleFunctionMap() {
 // In other words, it skips those blocks that do not define any visible
 // functions (of any name).
 // Todo: some blocks only define if-functions (i.e. _if_fnNNN); such blocks
-// probabaly should not be present in visibleFunctionMap.
+// probably should not be present in visibleFunctionMap.
 //
 // getVisibleFunctions returns the block appropriate for visibilityBlockCache
 // or NULL if there is none, e.g. when the next block up is the rootModule.
@@ -7307,6 +7307,15 @@ postFold(Expr* expr) {
           expr->replace(result);
         }
       }
+      if (call->isNamed("=")) {
+        if (SymExpr* lhs = toSymExpr(call->get(1))) {
+          if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) || lhs->symbol()->isParameter()) {
+            if (paramMap.get(lhs->symbol())) {
+              USR_FATAL(call, "parameter set multiple times");
+            }
+          }
+        }
+      }
     } else if (call->isPrimitive(PRIM_QUERY_TYPE_FIELD) ||
                call->isPrimitive(PRIM_QUERY_PARAM_FIELD)) {
       SymExpr* classWrap = toSymExpr(call->get(1));
@@ -7598,17 +7607,31 @@ postFold(Expr* expr) {
       CallExpr* call = toCallExpr(sym->parentExpr);
       if (call && call->get(1) == sym) {
         // This is a place where param substitution has already determined the
-        // value of a move or assignment, so we can just ignore the update.
-        if (call->isPrimitive(PRIM_MOVE)) {
-          makeNoop(call);
-          return result;
-        }
-
+        // value of a move or assignment. If it's a RVV, then we should ignore
+        // the update because the RVV may have multiple valid defs in the AST
+        // that we currently cannot squash if there are multiple return
+        // statements. For example, consider the following param function:
+        //
+        // proc foo(type t) param {
+        //   if firstCheck(t) then return true;
+        //   if otherCheck(t) then return false;
+        //   return true;
+        // }
+        //
+        // The final "return true" can manifest as a PRIM_MOVE into the RVV
+        // variable. I think we're currently unable to move the def because
+        // of GOTOs.
+        //
+        // If it's not a RVV, then we might be assigning to a user-defined
+        // param multiple times. In that case, we'll just return the result
+        // and let resolution catch the problem later.
+        //
         // The substitution usually happens before resolution, so for
         // assignment, we key off of the name :-(
-        if (call->isNamed("="))
-        {
-          makeNoop(call);
+        if (call->isPrimitive(PRIM_MOVE) || call->isNamed("=")) {
+          if (sym->symbol()->hasFlag(FLAG_RVV)) {
+            makeNoop(call);
+          }
           return result;
         }
       }

@@ -48,6 +48,9 @@
 # CHPL_SYSTEM_PREDIFF: If set, run that script on each test output
 # CHPL_COMM: Chapel communication layer
 # CHPL_COMPONLY: Only build the test (same as -noexec flag)
+# CHPL_TEST_NUM_LOCALES_AVAILABLE: same as CHPL_TEST_MAX_LOCALES (for backwards compatibility)
+# CHPL_TEST_MAX_LOCALES: Maximum number of locales to use (overrides above)
+# CHPL_TEST_MULTILOCALE_ONLY: Only run tests that use numlocales > 1
 # CHPL_NO_STDIN_REDIRECT: do not redirect stdin when running tests
 #                         also, skip tests with .stdin files
 # CHPL_LAUNCHER_TIMEOUT: if defined, pass an option/options to the executable
@@ -736,7 +739,9 @@ else:
     globalNumlocales=int(os.getenv('NUMLOCALES', '0'))
 # sys.stdout.write('globalNumlocales=%s\n'%(globalNumlocales))
 
-maxLocalesAvailable = os.getenv('CHPL_TEST_NUM_LOCALES_AVAILABLE')
+maxLocalesAvailable = os.getenv('CHPL_TEST_MAX_LOCALES')
+if maxLocalesAvailable == None:
+    maxLocalesAvailable = os.getenv('CHPL_TEST_NUM_LOCALES_AVAILABLE')
 if maxLocalesAvailable is not None:
     maxLocalesAvailable = int(maxLocalesAvailable)
 
@@ -1197,6 +1202,11 @@ for testname in testsrc:
                                  .format(os.path.join(localdir, test_filename),
                                          numlocales, maxLocalesAvailable))
                 continue
+        if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1):
+            sys.stdout.write('[Warning: skipping {0} because it does not '
+                             'use more than one locale]\n'
+                             .format(os.path.join(localdir, test_filename)))
+            continue
         numlocexecopts = ' -nl '+str(numlocales)
 
     # if any performance test has a timeout longer than the default we only

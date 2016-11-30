@@ -34,6 +34,7 @@ SUBDIRS = \
 	adt \
 	AST \
 	backend \
+	codegen \
 	ifa \
 	ipe \
 	main \
@@ -67,6 +68,7 @@ BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
 include adt/Makefile.include
 include AST/Makefile.include
 include backend/Makefile.include
+include codegen/Makefile.include
 include ifa/Makefile.include
 include ipe/Makefile.include
 include main/Makefile.include
@@ -82,6 +84,7 @@ CHPL_OBJS = \
 	$(ADT_OBJS) \
 	$(AST_OBJS) \
 	$(BACKEND_OBJS) \
+	$(CODEGEN_OBJS) \
 	$(IFA_OBJS) \
 	$(IPE_OBJS) \
 	$(MAIN_OBJS) \
@@ -110,7 +113,8 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 #
 
 CHPL_CONFIG_CHECK_PREFIX = $(CHPL_BIN_DIR)/.built-for
-CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_PREFIX)-$(CHPL_MAKE_COMPILER_SUBDIR)
+CHPL_CONFIG_CHECK_DIR = $(CHPL_CONFIG_CHECK_PREFIX)/$(CHPL_MAKE_COMPILER_SUBDIR)
+CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_DIR)/built-for
 
 UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
@@ -120,7 +124,8 @@ $(BUILD_VERSION_FILE): FORCE
 	test -r $(BUILD_VERSION_FILE) || (echo '"0"' > $@);
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
-	rm -f $(CHPL_CONFIG_CHECK_PREFIX)-*
+	rm -rf $(CHPL_CONFIG_CHECK_PREFIX)
+	mkdir -p $(CHPL_CONFIG_CHECK_DIR)
 	echo $(CHPL_MAKE_COMPILER_SUBDIR) > $(CHPL_CONFIG_CHECK)
 
 

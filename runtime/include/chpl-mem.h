@@ -35,7 +35,7 @@
 
 /* The names and arguments for these functions are part
    of Chapel's user-facing interface because they are
-   documented in a README doc/release
+   documented in a doc/developer README
  */
 // start public interface
 static inline void* chpl_calloc(size_t n, size_t size);

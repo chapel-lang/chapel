@@ -1,1 +1,1 @@
--snoRefCount -M helpers --no-local # miniMD.explicit.perfkeys
+-M helpers --no-local # miniMD.explicit.perfkeys

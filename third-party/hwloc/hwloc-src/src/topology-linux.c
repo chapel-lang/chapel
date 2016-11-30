@@ -2105,7 +2105,7 @@ hwloc_get_procfs_meminfo_info(struct hwloc_topology *topology,
 
   if (topology->is_thissystem) {
     /* Get the page and hugepage sizes from sysconf */
-#ifdef HAVE__SC_LARGE_PAGESIZE
+#if HAVE_DECL__SC_LARGE_PAGESIZE
     memory->page_types[1].size = sysconf(_SC_LARGE_PAGESIZE);
 #endif
     memory->page_types[0].size = data->pagesize; /* might be overwritten later by /proc/meminfo or sysfs */
@@ -4195,7 +4195,8 @@ hwloc_look_linuxfs(struct hwloc_backend *backend)
       }
       if (cpuvendor && !strcmp(cpuvendor, "GenuineIntel")
 	  && cpufamilynumber && !strcmp(cpufamilynumber, "6")
-	  && cpumodelnumber && !strcmp(cpumodelnumber, "87"))
+	  && cpumodelnumber && (!strcmp(cpumodelnumber, "87")
+	  || !strcmp(cpumodelnumber, "133")))
 	data->is_knl = 1;
   }
 
