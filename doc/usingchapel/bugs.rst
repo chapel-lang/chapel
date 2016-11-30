@@ -13,8 +13,7 @@ See the :ref:`private issues <readme-privatebugs>` page for more details.
 
 
 Public issues that predate our issue tracker can be found on the (retired)
-`chapel-bugs mailing list archives`_ and ``$CHPL_HOME/STATUS`` file for bug
-reports that predate the usage of GitHub Issues.
+`chapel-bugs mailing list archives`_ and ``$CHPL_HOME/STATUS`` file.
 
 Futures
 -------
