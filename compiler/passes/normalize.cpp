@@ -1860,7 +1860,18 @@ static void change_method_into_constructor(FnSymbol* fn) {
 
   fn->_this = new VarSymbol("this");
   fn->_this->addFlag(FLAG_ARG_THIS);
-  fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
+  if (ct->initializerStyle != DEFINES_INITIALIZER) {
+    fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
+  } else {
+    DefExpr* memeDef = toDefExpr(fn->formals.tail);
+    INT_ASSERT(memeDef && !strcmp(memeDef->sym->name, "meme"));
+    ArgSymbol* meme = toArgSymbol(memeDef->sym);
+    INT_ASSERT(meme);
+    // known because I just inserted it above
+    // asserts are here because otherwise this is a terrible hack and the
+    // asserts make it a just okay hack.
+    fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, new SymExpr(meme)));
+  }
   fn->insertAtHead(new DefExpr(fn->_this));
   fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
 
