@@ -112,13 +112,15 @@ static void replaceRecordWrappedRefs() {
   }
 
   // I'd like to be able to just iterate over the uses of tuple fields, but
-  // we don't have a good way of doing that today.
+  // we don't have a good way of doing that today. The case to worry about
+  // is when we're indexing into a tuple with an integer (param or otherwise).
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
       CallExpr* move = toCallExpr(call->parentExpr);
       INT_ASSERT(isMoveOrAssign(move));
 
       if (!call->isRef()) {
+        INT_ASSERT(isRecordWrappedType(call->typeInfo()->getValType()));
         fixLHSArray(move, todo);
       }
     }
@@ -129,6 +131,7 @@ static void replaceRecordWrappedRefs() {
   while (todo.size() > 0) {
     Symbol* sym = todo.back();
     todo.pop_back();
+    INT_ASSERT(!sym->isRef() && isRecordWrappedType(sym->type));
 
     for_SymbolSymExprs(se, sym) {
       CallExpr* call = toCallExpr(se->parentExpr);
@@ -140,7 +143,6 @@ static void replaceRecordWrappedRefs() {
         }
       }
       else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-        // what about PRIM_GET_SVEC_MEMBER_VALUE?
         if (se == call->get(2)) {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(isMoveOrAssign(move));
