@@ -47,7 +47,7 @@ proc main(args:[] string)
     // need to create C types from some Chapel data.
     //   string.c_str() returns a C string referring to the string's data
     //   c_ptrTo(something) returns a C pointer referring to something
-    SHA1(data.c_str():c_ptr(uint(8)), data.length:uint, c_ptrTo(mdArray));
+    SHA1(data.c_str(), data.length:uint, c_ptrTo(mdArray));
     var hash:Hash;
     for i in 1..20 do
       hash(i) = mdArray(i);
