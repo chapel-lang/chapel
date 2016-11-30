@@ -546,7 +546,7 @@ static bool inferRefToConst(Symbol* sym) {
   // If this ref isn't const, then it can't point to a const thing
   if (info == NULL) {
     return false;
-  } else if ((info && info->finalizedRefToConst) || wasRefToConst || !isConstRef) {
+  } else if (info->finalizedRefToConst || wasRefToConst || !isConstRef) {
     return wasRefToConst;
   }
 
@@ -574,7 +574,7 @@ static bool inferRefToConst(Symbol* sym) {
       // Need this part to be re-entrant in case of recursive functions
       while (info->fnUses != NULL && isRefToConst) {
         SymExpr* se = info->fnUses;
-        info->fnUses = se ? se->symbolSymExprsNext : NULL;
+        info->fnUses = se->symbolSymExprsNext;
 
         CallExpr* call = toCallExpr(se->parentExpr);
         INT_ASSERT(call && call->isResolved());
