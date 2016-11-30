@@ -20,29 +20,27 @@
 #ifndef _TRY_STMT_H_
 #define _TRY_STMT_H_
 
-#include <vector>
-
 #include "stmt.h"
 
 class TryStmt : public Stmt 
 {
 
 public:
-  TryStmt(bool tryBang, BlockStmt* body);
-  ~TryStmt();
-  BlockStmt* getBody();
+                TryStmt(bool tryBang, BlockStmt* body);
+                ~TryStmt();
+  BlockStmt*    getBody() const;
 
-  void accept(AstVisitor* visitor);
-  Expr* copy(SymbolMap* map = NULL, bool internal = false);
-  Expr* copyInner(SymbolMap* map);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
-  Expr* getFirstChild();
-  Expr* getFirstExpr();
-  Expr* getNextExpr(Expr* expr);
-  GenRet codegen();
+  void          accept(AstVisitor* visitor);
+  Expr*         copy(SymbolMap* map = NULL, bool internal = false);
+  Expr*         copyInner(SymbolMap* map);
+  void          replaceChild(Expr* old_ast, Expr* new_ast);
+  Expr*         getFirstChild();
+  Expr*         getFirstExpr();
+  Expr*         getNextExpr(Expr* expr);
+  GenRet        codegen();
 
 private:
-  bool tryBang;
+  bool       tryBang;
   BlockStmt* body;
   TryStmt();
 

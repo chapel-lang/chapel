@@ -22,14 +22,14 @@
  
 TryStmt::TryStmt(bool _tryBang, BlockStmt* _body) : Stmt(E_TryStmt) {
   tryBang = _tryBang;
-  body = _body; 
+  body    = _body; 
 }
 
 TryStmt::~TryStmt() {
 
 }
 
-BlockStmt* TryStmt::getBody() {
+BlockStmt* TryStmt::getBody() const {
   return body;
 }
 
