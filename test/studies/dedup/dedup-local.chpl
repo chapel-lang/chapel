@@ -44,7 +44,7 @@ proc main(args:[] string)
   sort(hashAndFileId);
 
   if verbose then
-    writeln("Outputing Duplicates");
+    writeln("Outputting Duplicates");
 
   var lasthash, hash : Hash;
   var id, lastid : int;
