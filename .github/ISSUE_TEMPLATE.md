@@ -8,23 +8,26 @@
 
 ### Steps to Reproduce
 
-**What behavior do you observe when encountering this issue?**
+**Behavior:**
+<!-- What behavior did you observe when encountering this issue?  -->
 
-**Please provide one of the following:**
+**Source Code:**
+<!-- Please provide source code that will reproduce the problem as an
+       attachment, an inline code block, or via a URL.  To the extent possible,
+       providing reduced reproducers of the problem will be appreciated. -->
 
-- Reduced program demonstrating issue *(preferred)*:
-- Original program demonstrating issue:
-- Description of how to recreate the issue *(last resort)*:
+```chapel
+// You can insert your code inline if it's not too long
+// Otherwise, you can attach it as a ZIP file or provide a URL to it
+```
 
-**Please provide any of the following that are necessary to reproduce the issue:**
+**Compile command:**
+<!-- e.g., `chpl foo.chpl -o foo` -->
 
-- How to compile:
-- How to run:
-- Input files:
-- Helper modules:
+**Execution command:**
+<!-- e.g., `./foo 42`. If an input file is required, include it as well. -->
 
-
-### General Information
+### Configuration Information
 
 - `chpl --version`:
 - `$CHPL_HOME/util/printchplenv --anonymize`:
