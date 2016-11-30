@@ -105,8 +105,10 @@ gasnet-config: FORCE
 	$(XTRA_CONFIG_COMMAND)
 	cd $(GASNET_BUILD_DIR) && $(CHPL_GASNET_ENV_VARS) $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS) --disable-seq --enable-par --disable-parsync $(CHPL_GASNET_CFG_OPTIONS)
 
+# Temporarily force serial sub-make here, to avoid a file manipulation
+# race that empties gasnet_config.h.
 gasnet-build: gasnet-config
-	cd $(GASNET_BUILD_DIR) && $(MAKE) all
+	cd $(GASNET_BUILD_DIR) && $(MAKE) -j1 all
 
 gasnet-install: gasnet-build
 	cd $(GASNET_BUILD_DIR) && $(MAKE) install
@@ -124,5 +126,3 @@ post-install: FORCE
 gasnet: gasnet-install
 
 FORCE:
-
-.NOTPARALLEL:
