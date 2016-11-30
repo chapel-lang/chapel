@@ -252,3 +252,13 @@ void AstVisitorTraverse::exitGotoStmt(GotoStmt* node)
 {
 
 }
+
+bool AstVisitorTraverse::enterTryStmt(TryStmt* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitTryStmt(TryStmt* node)
+{
+
+}
