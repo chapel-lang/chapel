@@ -2,12 +2,17 @@
 Chapel Contributor Agreements
 =============================
 
-This directory contains Chapel's Apache-2.0-based contributor license
-agreements (CLAs) which serve as a precondition for committing code to
-the Chapel repository.  There are two versions:
+This directory contains Chapel's Apache 2.0 contributor license
+agreements (CLAs).  We require these to be filled out before
+contributing to the repository in order to help us maintain Chapel's
+license terms.
 
-* chapel-ccla.pdf : For corporations (or other organizations) in which
-                    one person is responsible for granting the rights
-                    for other contributors
+There are two versions:
 
-* chapel-icla.pdf : For individual contributors
+* chapel-ccla.pdf : For corporations or other organizations in which
+                    one entity is responsible for granting the rights
+                    for other contributors.  This includes academic
+                    contributors who are working on Chapel as part of
+                    their job or funded research.
+
+* chapel-icla.pdf : For individual contributors.
