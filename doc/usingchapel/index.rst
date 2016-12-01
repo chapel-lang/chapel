@@ -20,4 +20,3 @@ Contents:
    tasks
    debugging
    bugs
-   privatebugs
