@@ -25,7 +25,8 @@
 #include <stdint.h>
 
 size_t chpl_getSysPageSize(void);
-size_t chpl_getHeapPageSize(void);
+size_t chpl_getHeapPageSize(void); // note: only works after mem layer inited
+void chpl_computeHeapPageSize(void);
 uint64_t chpl_bytesPerLocale(void);
 size_t chpl_bytesAvailOnThisLocale(void);
 int chpl_getNumPhysicalCpus(chpl_bool accessible_only);
