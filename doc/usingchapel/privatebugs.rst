@@ -5,7 +5,7 @@ Reporting Private Chapel Issues
 ===============================
 
 Private bug reports can be mailed directly to the Chapel team at Cray Inc.
-through :disguise:`chapel_bugs@cray.com`.
+through: :disguise:`chapel_bugs@cray.com`
 
 
 When submitting a private bug report, please include the following information:
