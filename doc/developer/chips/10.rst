@@ -282,7 +282,7 @@ extensions to the type that the type designer did not intend, the type designer
 may still maintain control over which fields may be manipulated in this way.
 This can be done either by setting fields as private (when private fields and
 methods are supported) so that the knowledge of these fields' existence is
-hidden, or by defining a parenthesesless method instead of a field by the same
+hidden, or by defining a parentheses-less method instead of a field by the same
 name so that the value may be relied upon in all circumstances.
 
 Referencing Other Initializers
