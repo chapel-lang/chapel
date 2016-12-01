@@ -6152,29 +6152,6 @@ static Expr* resolvePrimInit(CallExpr* call)
   return result;
 }
 
-// This function helps when checking that we aren't returning
-// a local variable by reference. In particular, it checks for two
-// cases:
-//   * returning a ref-intent argument by ref
-//   * returning a const-ref-intent argument by const ref
-//
-static bool
-returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
-{
-  INT_ASSERT(returnedCall->isPrimitive(PRIM_ADDR_OF));
-  if (SymExpr* rhs = toSymExpr(returnedCall->get(1))) {
-    if (ArgSymbol* formal = toArgSymbol(rhs->symbol())) {
-      IntentTag intent = concreteIntentForArg(formal);
-      if (fn->retTag == RET_CONST_REF && (intent & INTENT_FLAG_REF))
-        return true;
-      else if(fn->retTag == RET_REF && intent == INTENT_REF)
-        return true;
-    }
-  }
-
-  return false;
-}
-
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
@@ -6672,61 +6649,8 @@ preFold(Expr* expr) {
         result = call->get(1)->remove();
         call->replace(result);
       } else {
-        // This test is turned off if we are in a wrapper function.
-        FnSymbol* fn = call->getFunction();
-        if (!fn->hasFlag(FLAG_WRAPPER)) {
-          SymExpr* lhs = NULL;
-          // check legal var function return
-          if (CallExpr* move = toCallExpr(call->parentExpr)) {
-            if (move->isPrimitive(PRIM_MOVE)) {
-              lhs = toSymExpr(move->get(1));
-              if (lhs && lhs->symbol() == fn->getReturnSymbol()) {
-                SymExpr* ret = toSymExpr(call->get(1));
-                INT_ASSERT(ret);
-
-               if (ret->symbol()->defPoint->getFunction() == move->getFunction() &&
-                   !returnsRefArgumentByRef(call, fn) &&
-                   !ret->symbol()->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-                  USR_FATAL(ret, "illegal expression to return by ref");
-                if (fn->retTag == RET_REF)
-                  if (ret->symbol()->isConstant() || ret->symbol()->isParameter())
-                    USR_FATAL(ret, "function cannot return constant by ref");
-              }
-            }
-          }
-          //
-          // check that the operand of 'addr of' is a legal lvalue.
-          if (SymExpr* rhs = toSymExpr(call->get(1))) {
-            if (!(lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR) && lhs->symbol()->hasFlag(FLAG_CONST))) {
-              if (rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
-                  rhs->symbol()->isConstant() || rhs->symbol()->isParameter()) {
-                if (lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR)) {
-                  if (rhs->symbol()->isImmediate()) {
-                    USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
-                  } else {
-                    // We should not fall into this case... should be handled in normalize
-                    INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
-                  }
-                } else {
-                  // It is not a problem to return a const value by const ref
-                  if (fn->retTag == RET_CONST_REF &&
-                      lhs && lhs->symbol() == fn->getReturnSymbol() ) {
-                    // It's OK
-                    // TODO -- this should be handled differently
-                    // by including the idea of 'const ref' types
-                    // throughout resolution
-                  } else {
-                    // This probably indicates that an invalid 'addr of'
-                    // primitive was inserted, which would be the compiler's
-                    // fault, not the user's.  At least, we might perform the
-                    // check at or before the 'addr of' primitive is inserted.
-                    INT_FATAL(call, "A non-lvalue appears where an lvalue is expected.");
-                  }
-                }
-              }
-            }
-          }
-        }
+        // Otherwise, we put off further checking until
+        // checkResolved().
       }
     } else if (call->isPrimitive(PRIM_DEREF)) {
       // remove deref if arg is already a value
