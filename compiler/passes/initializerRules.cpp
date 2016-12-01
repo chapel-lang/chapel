@@ -91,10 +91,23 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
     phase1Analysis(fn->body, t);
 
     // Insert analysis of initCall here
+  } else {
+    // Adds default initialization of all fields and an argumentless
+    // super.init() call at the beginning of the body for Phase-2-only
+    // initializers.
+    SET_LINENO(fn->body);
+    // LYDIA NOTE (11/30/16): This would be a really good spot for a re-entrant
+    // compiler call on what I'd like to create, which is a much simpler
+    // CallExpr, instead of what I have to do today, which is insert a fragile
+    // copy of the super.init() calls I check for, entirely dependent on how
+    // such a user call gets transformed by the preceding passes.
+    CallExpr* superPortion = new CallExpr(".", new SymExpr(fn->_this), new_StringSymbol("super"));
+    SymExpr* initPortion = new SymExpr(new_StringSymbol("init"));
+    CallExpr* base = new CallExpr(".", superPortion, initPortion);
+    CallExpr* superCall = new CallExpr(base);
+    fn->body->insertAtHead(superCall);
+    phase1Analysis(fn->body, t);
   }
-  // Insert else branch which adds default initialization of all fields and an
-  // argumentless super.init() call at the beginning of the body.
-
   // Insert phase 2 analysis here
 }
 
@@ -464,7 +477,7 @@ void insertOmittedField(Expr* next, const char* nextField,
   }
   // For all other fields, insert an assignment into that field with the given
   // initialization, if we have one.
-  if (inits->find(nextField) == inits->end()) {
+  if (inits == NULL || inits->find(nextField) == inits->end()) {
     USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
     return;
   }
@@ -497,13 +510,13 @@ void insertOmittedField(Expr* next, const char* nextField,
     INT_ASSERT(secondBody);
     Expr* typeStart = secondBody->body.head;
     if (SymExpr* simpleCase = toSymExpr(typeStart)) {
-      if (TypeSymbol* sym = toTypeSymbol(simpleCase->symbol())) {
+      if (simpleCase->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
         newInit = new CallExpr(PRIM_SET_MEMBER,
                                toFnSymbol(next->parentSymbol)->_this,
                                new_CStringSymbol(nextField),
-                               new CallExpr(PRIM_INIT, new SymExpr(sym)));
+                               new CallExpr(PRIM_INIT, new SymExpr(simpleCase->symbol())));
       } else {
-        INT_FATAL("Expected TypeSymbol to be stored, got other symbol");
+        INT_FATAL("Expected type variable to be stored, got other symbol");
       }
     } else {
       VarSymbol* tmp = newTemp("call_tmp");
