@@ -203,11 +203,24 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
 
   initAB();
 
+  if printArrays then
+    writeln("after initAB, Ab=\n", Ab);
+
   const startTime = getCurrentTime();     // capture the start time
 
   LUFactorize(n, piv);                 // compute the LU factorization
 
-  var x => backwardSub(n);  // perform the back substitution
+  if printArrays then
+    writeln("after LUFactorize, Ab=\n", Ab);
+
+  // Note: store result of backwardSub in xtemp instead of
+  // returning a slice of a local variable (which is not supported).
+  var xTemp = backwardSub(n); // perform the back substitution
+  var x => xTemp[0, 1..n];
+
+  if printArrays then
+    writeln("after backwardSub, Ab=\n", Ab, "\nx=\n", x);
+
 
   var execTime = getCurrentTime() - startTime;  // store the elapsed time
   if execTime < 0 then execTime += 24*3600;          // adjust for date change
@@ -752,7 +765,7 @@ proc backwardSub(n: indexType) {
   // the error 'zippered iterations have non-equal lengths'.
   //forall (repl,locl) in zip(replX,x) do locl = repl;
 
-  return xTemp[0, 1..n];
+  return xTemp;
 }
 
 proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {

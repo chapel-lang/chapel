@@ -1050,6 +1050,12 @@ void qio_channel_unlock(qio_channel_t* ch)
   qio_unlock(&ch->lock);
 }
 
+static inline
+qio_file_t* qio_channel_get_file(qio_channel_t* ch)
+{
+  return ch->file;
+}
+
 // You should lock/ get ptr/ unlock
 static inline
 qio_style_t* qio_channel_style_ptr(qio_channel_t* ch)

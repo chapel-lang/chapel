@@ -126,11 +126,14 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.rules
 # target-based rules
 #
 
+RUNTIME_CHPLCONFIG = $(RUNTIME_DIR)/chplconfig
+
 $(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	@rm -f $@
 	$(AR) -rc $@ $(RUNTIME_OBJS)
 	$(RANLIB) $@
 	$(TAGS_COMMAND)
+	../util/printchplenv --simple > $(RUNTIME_CHPLCONFIG)
 
 $(RUNTIME_DIR)/main.o: $(RUNTIME_OBJDIR)/src/main.o
 	cp $< $@

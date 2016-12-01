@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-// Documentation can be found in $CHPL_HOME/doc/release/technotes/IO.hdfs
+// Documentation can be found in $CHPL_HOME/doc/technotes/IO.hdfs
 #define QIOPLUGIN_HDFS_C
 
 #ifndef _DARWIN_C_SOURCE

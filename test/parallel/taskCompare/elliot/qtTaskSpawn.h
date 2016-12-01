@@ -1,45 +1,48 @@
 #include <stdint.h>
 
 #include "qthread/qthread.h"
-#include <qthread/qloop.h>
+#include "qthread/qloop.h"
 
-#include "chpl-atomics.h"
+#include "endCount.h"
 
-// 
-// Spawn and wait for tasks similar to how Chapel does (fork per task, and
-// an atomic counter for task counting.)
-//
 static aligned_t decTask(void* arg) {
-  atomic_fetch_sub_int_least64_t((atomic_int_least64_t*)arg, 1);
+  EndCount* endCount = *((EndCount**)arg);
+  downEndCount(endCount, 1);
   return 0;
 }
+
+// Spawn and wait for tasks similar to how Chapel does (heap allocated end
+// count, fork_copyargs per task, and an atomic task counter incremented once
+// per task.)
 static void qtChplLikeTaskSpawn(int64_t trials, int64_t numTasks) {
   int i, j;
 
-  atomic_int_least64_t runningTasks = 0;
-  int counter = 0;
   for (i=0; i<trials; i++) {
+    EndCount *endCount = constructEndCount();
+    initEndCount(endCount);
     for (j=0; j<numTasks; j++) {
-      atomic_fetch_add_int_least64_t(&runningTasks, 1);
-      qthread_fork(decTask, (void*)(&runningTasks), NULL);
+      upEndCount(endCount, 1);
+      qthread_fork_copyargs(decTask, &(endCount), sizeof(EndCount), NULL);
     }
-    while (atomic_load_int_least64_t(&runningTasks)) { qthread_yield(); }
+    waitEndCount(endCount);
+    freeEndCount(endCount);
   }
 }
 
-//
-// Currently unused: 
-//
-// Spawn with qt_loop (or consider qt_loop_dc, qt_loop_sinc, qt_loop_sv, or
-// qt_loop_aligned variants, which change how task completion is tracked using
-// donecount, sinc_t, syncvar_t, and aligned_t respectively. These all seem to
-// be much slower than the atomic counter we use.)
-//
-static void emptyFunction(size_t start, size_t stop, void* arg) { }
-static void qtLoopTaskSpawn(int64_t trials, int64_t numTasks) {
-  int i;
+// Spawn and wait for tasks in a manner than an optimized chapel might (regular
+// non-copy fork, avoid EndCount allocation, increment atomic once instead of
+// once per task.)
+static void qtOptimizedChplSpawn(int64_t trials, int64_t numTasks) {
+  int i, j;
+
   for (i=0; i<trials; i++) {
-    qt_loop(0, numTasks, emptyFunction, NULL);
+    EndCount endCountBase;
+    EndCount *endCount = &endCountBase;
+    initEndCount(endCount);
+    upEndCount(endCount, numTasks);
+    for (j=0; j<numTasks; j++) {
+      qthread_fork_copyargs(decTask, &(endCount), sizeof(EndCount), NULL);
+    }
+    waitEndCount(endCount);
   }
 }
-

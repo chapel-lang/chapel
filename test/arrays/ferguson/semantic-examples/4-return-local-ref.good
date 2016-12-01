@@ -1,1 +1,2 @@
-0
+4-return-local-ref.chpl:2: In function 'f':
+4-return-local-ref.chpl:4: error: illegal expression to return by ref

@@ -110,6 +110,9 @@ public:
 
   virtual bool   enterGotoStmt       (GotoStmt*          node);
   virtual void   exitGotoStmt        (GotoStmt*          node);
+
+  virtual bool   enterTryStmt        (TryStmt*           node);
+  virtual void   exitTryStmt         (TryStmt*           node);
 };
 
 #endif
