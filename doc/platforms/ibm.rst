@@ -1,8 +1,8 @@
 .. _readme-ibm:
 
-===========================
-Using Chapel on IBM Systems
-===========================
+===========
+IBM Systems
+===========
 
 .. warning::
     We have not used Chapel on IBM Systems in several years.  It is

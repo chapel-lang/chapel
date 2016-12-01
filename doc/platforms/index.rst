@@ -1,15 +1,19 @@
 .. _platforms-index:
 
-Platform-Specific Notes
-=======================
+Platforms
+=========
 
-Contents:
-
-.. toctree::
-   :hidden:
+Platform-specific notes for using Chapel on:
 
 .. toctree::
    :maxdepth: 1
-   :glob:
 
-   **
+   cray
+   macosx
+   cygwin
+   knl
+   infiniband
+   udp
+   ibm
+   marenostrum
+   sgi

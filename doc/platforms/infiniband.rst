@@ -1,8 +1,8 @@
 .. _readme-infiniband:
 
-============================
-Using Chapel with InfiniBand
-============================
+==========
+InfiniBand
+==========
 
 This document describes how to run Chapel across multiple machines in an
 InfiniBand cluster. The :ref:`readme-multilocale` describes general

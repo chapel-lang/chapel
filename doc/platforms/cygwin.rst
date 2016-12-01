@@ -1,8 +1,8 @@
 .. _readme-cygwin:
 
-======================
-Using Chapel on Cygwin
-======================
+======
+Cygwin
+======
 
 Chapel can be used on both 32-bit and 64-bit installations of Cygwin.
 Chapel can be sensitive to directories with spaces, but otherwise it
