@@ -56,7 +56,7 @@ proc main(args:[] string)
     var sub = spawn(["sha1sum", path], stdout=PIPE);
     // Read the hash value from the output of sha1sum.
     // Note that sha1sum output looks like this:
-    // d556d22d3e7b3ae55108442b36b5833523c923b7  dedup-distribted-strings.chpl
+    // d556d22d3e7b3ae55108442b36b5833523c923b7  dedup-distributed-strings.chpl
     var hashString:string;
     sub.stdout.read(hashString);
     if verbose then
@@ -79,7 +79,7 @@ proc main(args:[] string)
   sort(hashAndFile);
 
   if verbose then
-    writeln("Outputing Duplicates");
+    writeln("Outputting Duplicates");
 
   // Print out any duplicate files in groups by finding values
   // with the same hash and printing out the paths.
