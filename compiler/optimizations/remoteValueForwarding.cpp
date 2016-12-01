@@ -88,7 +88,12 @@ void remoteValueForwarding() {
   }
 }
 
-static void fixLHSArray(CallExpr* move, std::vector<Symbol*>& todo) {
+//
+// A helper function for replaceRecordWrappedRefs that updates the type and
+// Qualifier for the LHS of the move and adds it to a list of Symbols whose
+// uses may need updating.
+//
+static void fixLHS(CallExpr* move, std::vector<Symbol*>& todo) {
   Symbol* LHS = toSymExpr(move->get(1))->symbol();
   if (LHS->isRef()) {
     LHS->type = LHS->getValType();
@@ -97,8 +102,30 @@ static void fixLHSArray(CallExpr* move, std::vector<Symbol*>& todo) {
   }
 }
 
+
+//
+// Replaces reference fields to record-wrapped types with QUAL_VAL fields of
+// the same type. This transformation results in less communication as these
+// record-wrapped fields will be bulk-copied across the network such that
+// accessing the 'pid' or '_instance' fields will be a local operation.
+//
+// This is valid because the record-wrapped types (e.g. _array) are immutable.
+// Currently the difference between a ref-array and a val-array is used by the
+// compiler to determine when to copy or destroy these objects. This logic is
+// handled in callDestructors, so by this point the distinction is no longer
+// important.
+//
+// After the fields are transformed, a number of primitives may be used
+// incorrectly. For example, PRIM_GET_MEMBER_VALUE will return a reference if
+// the field is a reference. After this transformation this primitive will
+// return a QUAL_VAL, meaning the LHS of the parent PRIM_MOVE should also
+// become a QUAL_VAL.
+//
 static void replaceRecordWrappedRefs() {
   std::vector<Symbol*> todo;
+
+  // Changes reference fields with a record-wrapped type into value fields.
+  // Note that this will modify arg bundle classes.
   forv_Vec(AggregateType, aggType, gAggregateTypes) {
     if (!aggType->symbol->hasFlag(FLAG_REF)) {
       for_fields(field, aggType) {
@@ -121,13 +148,22 @@ static void replaceRecordWrappedRefs() {
 
       if (!call->isRef()) {
         INT_ASSERT(isRecordWrappedType(call->typeInfo()->getValType()));
-        fixLHSArray(move, todo);
+        fixLHS(move, todo);
       }
     }
   }
 
   // Try and find references that were initialized with the field reference,
   // and fix them to be QUAL_VAL
+  //
+  // These primitives were chosen because without fixing them we would see
+  // testing failures.
+  //
+  // Currently it is not necessary to insert a PRIM_SET_REFERENCE when passing
+  // a value to a reference-formal because codegen will handle that implicitly.
+  // BHARSH TODO: I'm not sure if that's the desired behavior, but that's what
+  // was done for the initial qualified refs merge.
+  //
   while (todo.size() > 0) {
     Symbol* sym = todo.back();
     todo.pop_back();
@@ -139,14 +175,14 @@ static void replaceRecordWrappedRefs() {
 
       if (call->isPrimitive(PRIM_MOVE)) {
         if (se == call->get(2)) {
-          fixLHSArray(call, todo);
+          fixLHS(call, todo);
         }
       }
       else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         if (se == call->get(2)) {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(isMoveOrAssign(move));
-          fixLHSArray(move, todo);
+          fixLHS(move, todo);
         }
       }
       else if (call->isPrimitive(PRIM_RETURN)) {
@@ -157,7 +193,7 @@ static void replaceRecordWrappedRefs() {
         forv_Vec(CallExpr, fncall, *fn->calledBy) {
           CallExpr* move = toCallExpr(fncall->parentExpr);
           if (move && isMoveOrAssign(move)) {
-            fixLHSArray(move, todo);
+            fixLHS(move, todo);
           }
         }
       }
