@@ -24,7 +24,7 @@ When submitting a private bug report, please include the following information:
           problem will be appreciated.
         - If you are unable to submit code, please describe how to recreate the
           issue.
-    - How did you compile your program? e.g. ``chpl foo.chpl -o foo``
+    - **How did you compile your program? e.g.** ``chpl foo.chpl -o foo``
     - How did you execute your program? e.g. ``./foo 42``
         - If any input files are required, please include them as well.
 
