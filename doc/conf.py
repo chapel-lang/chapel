@@ -34,8 +34,7 @@ needs_sphinx = '1.3'
 extensions = [
     'sphinx.ext.todo',
     'sphinxcontrib.chapeldomain',
-    'sphinxcontrib.email',
-    'util.disguise'
+    'util.disguise',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
