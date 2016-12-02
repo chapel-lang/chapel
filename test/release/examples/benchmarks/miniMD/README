@@ -120,7 +120,7 @@ the mantevo website, download the reference version, and use those files.
 Execution Options
 -----------------
 
-The following are config[uration] const[ant]s thatn can be used to
+The following are config[uration] const[ant]s that can be used to
 modify the execution at program launch time. These can bet set on 
 the execution-time command line using the following flag styles:
 
