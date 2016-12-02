@@ -123,7 +123,8 @@ void check_page_size_segv_handler(int signum, siginfo_t* sig, void* ctx)
 //
 // Returns 0 if the real page size is <= page_size_guess
 // Returns 1 if the real page size is > page_size_guess
-// Returns -1 if the real page size could not be determined
+// Returns -1 if the call to mprotect failed
+// Returns -2 if the signal handler could not be installed
 static
 int check_page_size(size_t page_size_guess, size_t max_page_size,
                      unsigned char* ptr,
@@ -146,12 +147,18 @@ int check_page_size(size_t page_size_guess, size_t max_page_size,
     // to install the signal handler for SIGBUS.
     rc = sigaction(SIGSEGV, &act, &check_page_size_oldact);
     if (rc!=0)
-      return -1;
+      return -2;
   }
 
   // Store 0 to avoid false positives:
   // make sure the page exists
   *check_page_size_ptr = 0;
+
+  // Call mprotect
+  // Note that mprotect with huge pages seems to have extra requirements
+  // on linux. In particular, on linux, the len argument needs to also
+  // be a multple of the huge page size. Mac OS X does not seem to have
+  // this requirement.
   rc = mprotect((void*)check_page_size_base, check_page_size_guess, PROT_NONE);
   if (rc!=0) {
     mprotect_failed = 1;
@@ -233,12 +240,23 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
     while(1) {
       small = check_page_size(page_size, max_page_size,
                               best_ptr, heap_start, heap_size);
-      if (small == 1) {
-        page_size *= 2;
-      } else {
+
+      // Stop if real page size <= page_size, or if
+      // a signal handler could not be installed.
+      if (small == 0 || small == -2) {
         heapPageSize = page_size;
         break;
       }
+      // Stop if we have reached the maximum size
+      if (page_size >= max_page_size) {
+        heapPageSize = page_size_in;
+        break;
+      }
+      // Otherwise continue the search
+      // if small == 1, we know we are wrong
+      // if small == -1, mprotect failed, but that might be because
+      // we havn't yet found a page size big enough, so keep trying.
+      page_size *= 2;
     }
   }
 }
