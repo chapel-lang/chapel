@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+// platform-specific headers and defines
 #if defined __CYGWIN__
 #include <windows.h>
 #endif
@@ -28,33 +29,32 @@
 #endif
 #ifdef __linux__
 #define _GNU_SOURCE
-#endif
-#include <sys/utsname.h>
-#include "chplrt.h"
-
-#include "chpl-mem.h"
-#include "chplsys.h"
-#include "chpl-tasks.h"
-#include "chpltypes.h"
-#include "chpl-comm.h"
-#include "error.h"
-
-#ifdef __linux__
 #include <pthread.h>
 #include <sched.h>
-#endif
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#ifdef __linux__
 #include <sys/sysinfo.h>
 #endif
+
+
+// Chapel headers
+#include "chplrt.h"
+
+#include "chpl-align.h"
+#include "chpl-comm.h"
+#include "chpl-mem.h"
+#include "chpl-tasks.h"
+#include "chplsys.h"
+#include "chpltypes.h"
+#include "error.h"
+
+// System headers
 #include <errno.h>
+#include <signal.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 
-#include <signal.h>
-#include <sys/mman.h>
-#include "chpl-align.h"
 
 size_t chpl_getSysPageSize(void) {
   static size_t pageSize = 0;
@@ -131,12 +131,14 @@ int check_page_size(size_t page_size_guess, size_t max_page_size,
   {
     struct sigaction act = { .sa_sigaction = check_page_size_segv_handler,
                              .sa_flags = SA_SIGINFO };
+    // Note: if this code is to work on Mac OS X, we will also need
+    // to install the signal handler for SIGBUS.
     rc = sigaction(SIGSEGV, &act, &check_page_size_oldact);
     if (rc!=0)
       return -1;
   }
 
-  // Set the pointer to 0 to avoid false positives:
+  // Store 0 to avoid false positives:
   // make sure the page exists
   *check_page_size_ptr = 0;
   rc = mprotect((void*)check_page_size_base, check_page_size_guess, PROT_NONE);
@@ -175,7 +177,6 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
 
   void* heap_start = NULL;
   size_t heap_size = 0;
-  unsigned char* ptr;
 
   // If nothing else in this function works, at least we should
   // start with page_size_in as the guess for the size of pages
