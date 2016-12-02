@@ -381,3 +381,13 @@ void CollapseBlocks::exitGotoStmt(GotoStmt* node)
 {
 
 }
+
+bool CollapseBlocks::enterTryStmt(TryStmt* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitTryStmt(TryStmt* node)
+{
+
+}

@@ -141,7 +141,7 @@ proc main() {
   // either use an on-clause to force the table updates to be executed
   // on the locales which own the table elements in question, or we
   // do the updates using direct GETs and PUTs.  Either way could be
-  // faster, depending on the characteristics of the paricular comm
+  // faster, depending on the characteristics of the particular comm
   // layer in use.  Compute the update using r both to compute the
   // index and as the update value.
   //

@@ -115,6 +115,9 @@ public:
   virtual bool   enterGotoStmt       (GotoStmt*          node);
   virtual void   exitGotoStmt        (GotoStmt*          node);
 
+  virtual bool   enterTryStmt        (TryStmt*           node);
+  virtual void   exitTryStmt         (TryStmt*           node);
+
 protected:
   bool outputVector (FILE* fp, std::vector<const char*> vec);
 

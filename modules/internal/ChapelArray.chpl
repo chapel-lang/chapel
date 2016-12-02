@@ -1984,6 +1984,7 @@ module ChapelArray {
     //
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc this(d: domain) {
       if d.rank == rank then
         return this((...d.getIndices()));
@@ -2001,6 +2002,7 @@ module ChapelArray {
     // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc this(ranges: range(?) ...rank) {
       if boundsChecking then
         checkSlice((... ranges));
@@ -2017,6 +2019,7 @@ module ChapelArray {
     // array rank change
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
       if boundsChecking then
         checkRankChange(args);
@@ -2042,6 +2045,7 @@ module ChapelArray {
     // we can't take an alias of the ddata class within that class
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...r));
@@ -2051,6 +2055,7 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc localSlice(d: domain) where _value.type: DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...d.getIndices()));
@@ -2066,6 +2071,7 @@ module ChapelArray {
     }
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc localSlice(r: range(?)... rank) {
       if boundsChecking then
         checkSlice((...r));
@@ -2074,6 +2080,7 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }
@@ -2092,6 +2099,7 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "new alias fn"
+    pragma "fn returns aliasing array"
     proc newAlias() {
       var x = _value;
       pragma "no copy"
@@ -2159,6 +2167,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
+    pragma "fn returns aliasing array"
     proc reindex(d: domain)
       where isRectangularDom(this.domain) && isRectangularDom(d)
     {
@@ -2195,6 +2204,7 @@ module ChapelArray {
     // reindex for all non-rectangular domain types.
     // See above for the rectangular version.
     pragma "no doc"
+    pragma "fn returns aliasing array"
     proc reindex(d:domain) {
       if this.domain != d then
         halt("Reindexing of non-rectangular arrays is undefined.");

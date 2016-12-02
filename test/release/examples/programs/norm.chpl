@@ -57,7 +57,7 @@ module MyNorm {
   }
 
   // this module doesn't implement norms for > 2D arrays, so generate
-  // a compile-timem error if the user tries to call one
+  // a compile-time error if the user tries to call one
   proc norm(x: [], p: normType) where x.rank > 2 {
     compilerError("Norms not implemented for array ranks > 2D");
   }

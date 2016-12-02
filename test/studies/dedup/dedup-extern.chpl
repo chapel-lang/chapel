@@ -11,7 +11,7 @@ require "openssl/sha.h", "-lcrypto", "-lssl";
 // This 'extern proc' declaration tells the Chapel compiler that a C
 // function SHA1 is available and describes the arguments in the
 // Chapel type system.
-extern proc SHA1(d:c_string, n:size_t, md:c_ptr(uint(8)));
+extern proc SHA1(d:c_ptr(uint(8)), n:size_t, md:c_ptr(uint(8)));
 
 proc main(args:[] string)
 {
@@ -35,7 +35,7 @@ proc main(args:[] string)
     var data:string;
     var f = open(path, iomode.r);
     f.reader(kind=iokind.native).readstring(data);
-    SHA1(data.c_str(), data.length:uint, c_ptrTo(mdArray));
+    SHA1(data.c_str():c_ptr(uint(8)), data.length:uint, c_ptrTo(mdArray));
     var hash:Hash;
     for i in 1..20 do
       hash(i) = mdArray(i);
