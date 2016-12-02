@@ -42,7 +42,7 @@ module LCALSChecksums {
   Checksums[LoopKernelID.IMP_HYDRO_2D]   = (17128640997.592403680086135864258,  6020185880.7030686540529131889343,  4839252917.2536934632807970046997);
   Checksums[LoopKernelID.FIND_FIRST_MIN] = (135961480.71599999070167541503906,  101474692.50000000000000000000000,  83639989.545000001788139343261719);
 
-  config const checksumTolerence = 0.17;
+  config const checksumTolerance = 0.17;
   config const noisyChecksumChecks = false;
 
   proc checkChecksums(run_variants: [] bool, run_loop: [] bool, run_loop_length: [] bool) {
@@ -57,7 +57,7 @@ module LCALSChecksums {
           if run_loop[loopKernel] && stat.loop_is_run && stat.loop_run_count[length] > 0 {
             if run_loop_length[length] {
               const diff = abs(Checksums[loopKernel](1+length:int) - stat.loop_chksum[length]);
-              if diff > checksumTolerence {
+              if diff > checksumTolerance {
                 writeln("FAIL: ", (varStr, kerStr, lenStr),
                         " (expected, computed) = ",
                         (Checksums[loopKernel](1+length:int),
