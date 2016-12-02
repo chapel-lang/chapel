@@ -17,43 +17,54 @@
  * limitations under the License.
  */
 
-// platform-specific headers and defines
-#if defined __CYGWIN__
-#include <windows.h>
-#endif
-#if defined(__APPLE__) || defined(__NetBSD__)
-#include <sys/sysctl.h>
-#endif
-#if defined _AIX
-#include <sys/systemcfg.h>
-#endif
+// This #define needs to be before the other #includes
+// since it affects included files
 #ifdef __linux__
 #define _GNU_SOURCE
-#include <pthread.h>
-#include <sched.h>
-#include <sys/sysinfo.h>
 #endif
 
-
-// Chapel headers
 #include "chplrt.h"
+#include "chplsys.h"
 
+// Other Chapel Header
 #include "chpl-align.h"
 #include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
-#include "chplsys.h"
 #include "chpltypes.h"
 #include "error.h"
 
 // System headers
 #include <errno.h>
+
+#ifdef __linux__
+#include <pthread.h>
+#include <sched.h>
+#endif
+
 #include <signal.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/utsname.h>
+
+#if defined(__APPLE__) || defined(__NetBSD__)
+#include <sys/sysctl.h>
+#endif
+
+#ifdef __linux__
+#include <sys/sysinfo.h>
+#endif
+
+#if defined _AIX
+#include <sys/systemcfg.h>
+#endif
+
 #include <unistd.h>
+
+#if defined __CYGWIN__
+#include <windows.h>
+#endif
 
 
 size_t chpl_getSysPageSize(void) {
