@@ -13,9 +13,9 @@ There are two versions:
   working on Chapel on their own.
 
 * [CCLA](chapel-ccla.pdf): This version is for contributors associated
-  with a corporation or other organization that can claim whole or
-  partial ownership over their contributions.  In such cases, the
-  appropriate party from that entity must file a CCLA on the
+  with a corporation or other organization that can claim partial or
+  complete ownership over their contributions.  In such cases, the
+  appropriate party representing that entity must file a CCLA on the
   contributors' behalf.  This includes academic contributors who are
   working on Chapel as part of their job or funded research.
 
