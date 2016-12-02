@@ -68,11 +68,11 @@ Execution Options
   configuration constants with names starting with "run". To see the full
   list, type './LCALSMain --help'.
 
-* checkSumTolerence : allow computed checksums to be off by this amount from
+* checksumTolerance : allow computed checksums to be off by this amount from
   the expected values.
 
 * noisyChecksumChecks : Print computed checksums and differences from expected
-  values even if they are within 'checkSumTolerence'.
+  values even if they are within 'checksumTolerance'.
 
 
 -----
