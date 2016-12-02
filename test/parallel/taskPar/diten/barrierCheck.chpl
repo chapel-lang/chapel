@@ -10,14 +10,14 @@ coforall i in 1..nTasks {
     b.notify();
   } else {
     var spinCount = 0;
-    writeln(b.try()); // false
+    writeln(b.check()); // false
     b.notify();
 
     /* wait until all tasks have notified */
-    while !b.try() {
+    while !b.check() {
       spinCount += 1;
     }
-    writeln(b.try()); // true
+    writeln(b.check()); // true
     if printSpinCount then
       writeln(spinCount);
   }

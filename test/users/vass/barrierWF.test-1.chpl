@@ -17,18 +17,18 @@ const b = new BarrierWF(tk);
 
 // use it
 coforall task in 1..tk {
-  for t in 1..ty {
-    log[cur.fetchAdd(1)+1] = t;
+  for tryN in 1..ty {
+    log[cur.fetchAdd(1)+1] = tryN;
     b.barrier();
   }
 }
 
 // check it
-for t in 1..ty {
+for tryN in 1..ty {
   for task in 1..tk {
-    const ix = (t-1) * tk + task;
-    if log[ix] != t then
-      writeln("try ", t, "  task ", task, "  ix ", ix, "  got ", log[ix]);
+    const ix = (tryN-1) * tk + task;
+    if log[ix] != tryN then
+      writeln("try ", tryN, "  task ", task, "  ix ", ix, "  got ", log[ix]);
   }
 }
 

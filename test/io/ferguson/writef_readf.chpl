@@ -7,7 +7,7 @@ proc testio(fmts: [] string, values: [])
   for fmt in fmts {
     for v in values {
       if noisy then writeln("Testing ",fmt," ",v.type:string," ",v);
-      for t in 1..4 {
+      for tryN in 1..4 {
         // We do it 4x:
         // try 1 is the simple way
         // try 2 puts after the data (in the file, not the format string)
@@ -16,10 +16,10 @@ proc testio(fmts: [] string, values: [])
         
         var writextra = false;
         var usefmt = fmt;
-        if t == 2 then writextra = true;
-        if t == 3 then usefmt = " " + fmt;
-        if t == 4 then usefmt = fmt + " ";
-        if noisy then writeln("Testing try ", t, " with fmt '", usefmt, "'");
+        if tryN == 2 then writextra = true;
+        if tryN == 3 then usefmt = " " + fmt;
+        if tryN == 4 then usefmt = fmt + " ";
+        if noisy then writeln("Testing try ", tryN, " with fmt '", usefmt, "'");
 
         var x = v;
         var f = opentmp();
@@ -41,7 +41,7 @@ proc testio(fmts: [] string, values: [])
           assert( got );
           assert( y == x );
 
-          if t == 1 {
+          if tryN == 1 {
             // Try reading another item -- should get EOF
             if noisy then writeln("Reading another - should get EOF");
             got = ch.readf(usefmt, z);
