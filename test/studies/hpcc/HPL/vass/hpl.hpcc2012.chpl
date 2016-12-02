@@ -1012,7 +1012,7 @@ proc replicateA(abIx, dim2) {
         const locReplAdd = locReplA._value.data;
 
         // (A) copy from the local portion of A[1..n, dim2] into replA[..,..]
-        local {
+        /*local*/ {
           const myStarts = 1..n by blkSize*tl1 align 1+blkSize*lid1;
 
           forall iStart in myStarts {
@@ -1053,7 +1053,7 @@ proc replicateB(abIx, dim1) {
         const locReplBdd = locReplB._value.data;
 
         // (A) copy from the local portion of A[dim1, 1..n+1] into replB[..,..]
-        local {
+        /*local*/ {
           const myStarts = 1..n+1 by blkSize*tl2 align 1+blkSize*lid2;
 
           forall jStart in myStarts {
