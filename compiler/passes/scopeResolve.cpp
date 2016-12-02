@@ -178,14 +178,6 @@ void scopeResolve() {
   addRecordDefaultConstruction();
 
   //
-  // build constructors (type and value versions)
-  //
-  forv_Vec(AggregateType, ct, gAggregateTypes) {
-    SET_LINENO(ct->symbol);
-    build_constructors(ct);
-  }
-
-  //
   // resolve type of this for methods
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -209,6 +201,14 @@ void scopeResolve() {
         fn->_this->type->methods.add(fn);
       }
     }
+  }
+
+  //
+  // build constructors (type and value versions)
+  //
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
+    SET_LINENO(ct->symbol);
+    build_constructors(ct);
   }
 
   resolveGotoLabels();
