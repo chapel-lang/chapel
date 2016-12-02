@@ -3,18 +3,21 @@ Chapel Contributor Agreements
 =============================
 
 This directory contains Chapel's Apache 2.0 contributor license
-agreements (CLAs).  We require these to be filled out before
-contributing to the repository in order to help us maintain Chapel's
-license terms.
+agreements (CLAs).  All contributors must submit completed CLAs prior
+to contributing to the repository in order to help us maintain
+Chapel's license terms.
 
 There are two versions:
 
-* [chapel-ccla.pdf](chapel-ccla.pdf): For corporations or other
-  organizations in which one entity is responsible for granting the
-  rights for other contributors.  This includes academic contributors
-  who are working on Chapel as part of their job or funded research.
+* [ICLA](chapel-icla.pdf) : This version is for contributors who are
+  working on Chapel on their own.
 
-* [chapel-icla.pdf](chapel-icla.pdf) : For individual contributors.
+* [CCLA](chapel-ccla.pdf): This version is for contributors associated
+  with a corporation or other organization that can claim whole or
+  partial ownership over their contributions.  In such cases, the
+  appropriate party from that entity must file a CCLA on the
+  contributors' behalf.  This includes academic contributors who are
+  working on Chapel as part of their job or funded research.
 
-Once completed, CLAs should be scanned as PDFs and mailed to
-chapel<!---deleteme-->_admin<!---deleteme-->@<!---deleteme-->cray.com.
+Once completed, CLAs should be scanned as PDFs and mailed to:
+**chapel<!---deleteme-->_admin<!---deleteme-->@<!---deleteme-->cray.com**
