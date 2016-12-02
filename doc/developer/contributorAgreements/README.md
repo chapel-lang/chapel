@@ -17,4 +17,4 @@ There are two versions:
 * [chapel-icla.pdf](chapel-icla.pdf) : For individual contributors.
 
 Once completed, CLAs should be scanned as PDFs and mailed to
-chapel<!---obfuscation>_admin<!---obfuscation>@<!---obfuscation>cray.com.
+chapel<!---deleteme-->_admin<!---deleteme-->@<!---deleteme-->cray.com.
