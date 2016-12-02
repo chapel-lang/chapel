@@ -91,6 +91,12 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
     phase1Analysis(fn->body, t);
 
     // Insert analysis of initCall here
+    if (bodyStyle == FOUND_SUPER_INIT && isRecord(t)) {
+      // Need to find and remove any and all super.init() statements if the
+      // type is a record, as they will not resolve (inheritance and records
+      // is still being ironed out).
+
+    }
   } else {
     // Adds default initialization of all fields and an argumentless
     // super.init() call at the beginning of the body for Phase-2-only
@@ -107,6 +113,12 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
     CallExpr* superCall = new CallExpr(base);
     fn->body->insertAtHead(superCall);
     phase1Analysis(fn->body, t);
+    if (isRecord(t)) {
+      // We haven't finalized what inheritance means for records yet.  Until we
+      // do, this call (while necessary for the divide between the phases),
+      // won't resolve.
+      superCall->remove();
+    }
   }
   // Insert phase 2 analysis here
 }
@@ -257,9 +269,11 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
   DefExpr* curField = toDefExpr(t->fields.head);
   bool *seenField = (bool*)calloc(t->fields.length, sizeof(bool));
   if (curField) {
-    INT_ASSERT(curField->sym->hasFlag(FLAG_SUPER_CLASS));
-    // the super field is always first
-    seenField[0] = true;
+    if (isClass(t)) {
+      INT_ASSERT(curField->sym->hasFlag(FLAG_SUPER_CLASS));
+      // the super field is always first
+      seenField[0] = true;
+    }
   }
   int index = 0;
 
