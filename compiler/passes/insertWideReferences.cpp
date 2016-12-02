@@ -2477,7 +2477,7 @@ static void fixAST() {
           }
           else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
             SymExpr* lhs = toSymExpr(call->get(1));
-            if (!isFullyWide(lhs)) {
+            if (!isFullyWide(lhs) && (hasSomeWideness(rhs->typeInfo()) || rhs->isWideRef())) {
               SET_LINENO(lhs);
 
               VarSymbol* tmp = newTemp(getTupleField(rhs)->type);

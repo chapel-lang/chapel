@@ -84,7 +84,7 @@ record Barrier {
     }
   }
 
-  inline proc try() {
+  inline proc check() {
     return tasksFinished[here.id];
   }
 }

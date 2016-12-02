@@ -1,5 +1,5 @@
 //
-// Embarassingly Parallel Implementation of STREAM Triad
+// Embarrassingly Parallel Implementation of STREAM Triad
 //
 // This version of the stream benchmark is not as elegant as
 // stream.chpl.  It is a per-locale code with no communication in the

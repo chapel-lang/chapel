@@ -74,7 +74,7 @@ studies/jacobi/jacobi.graph
 performance/elliot/no-op.graph
 performance/bharshbarg/forall-dom-range.graph
 performance/bharshbarg/arr-forall.graph
-studies/prk/stencil/prk-stencil.graph
+studies/prk/stencil/prk-stencil-time.graph
 # suite: HPC Challenge
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
@@ -142,6 +142,7 @@ release/examples/benchmarks/isx/isx-release.graph
 # suite: PRK benchmarks
 studies/prk/synch_p2p/prk-synch_p2p.graph
 studies/prk/stencil/prk-stencil.graph
+studies/prk/stencil/prk-stencil-time.graph
 studies/prk/transpose/prk-transpose.graph
 # suite: NAS Parallel benchmarks
 npb/cg/cg.graph
