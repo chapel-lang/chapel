@@ -104,6 +104,8 @@ static void     addClassToHierarchy(AggregateType* ct);
 
 static void     addRecordDefaultConstruction();
 
+static void     setCreationStyle(TypeSymbol* t, FnSymbol* fn);
+
 static void     resolveGotoLabels();
 static void     resolveUnresolvedSymExprs();
 static void     resolveEnumeratedTypes();
@@ -195,11 +197,14 @@ void scopeResolve() {
 
         fn->_this->type = ts->type;
         fn->_this->type->methods.add(fn);
-
+        setCreationStyle(ts, fn);
       } else if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
         fn->_this->type = sym->symbol()->type;
         fn->_this->type->methods.add(fn);
+        setCreationStyle(sym->symbol()->type->symbol, fn);
       }
+    } else if (fn->_this) {
+      setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
 
@@ -758,6 +763,45 @@ static void addRecordDefaultConstruction()
         insert_help(def->init, def, def->parentSymbol);
       }
     }
+  }
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+static void setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
+  bool isCtor = (0 == strcmp(t->name, fn->name));
+  bool isInit = (0 == strcmp(fn->name, "init"));
+
+  if (!isCtor && !isInit)
+    return;
+
+  AggregateType* ct = toAggregateType(t->type);
+  if (!ct)
+    INT_FATAL(fn, "initializer on non-class type");
+
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    USR_FATAL(fn, "a%s cannot be declared without parentheses", isCtor ? " constructor" : "n initializer");
+  }
+
+  if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+    // We hadn't previously seen a constructor or initializer definition.
+    // Update the field on the type appropriately.
+    if (isInit) {
+      ct->initializerStyle = DEFINES_INITIALIZER;
+    } else if (isCtor) {
+      ct->initializerStyle = DEFINES_CONSTRUCTOR;
+    } else {
+      // Should never reach here, but just in case...
+      INT_FATAL(fn, "Function was neither a constructor nor an initializer");
+    }
+  } else if ((ct->initializerStyle == DEFINES_CONSTRUCTOR && !isCtor) ||
+             (ct->initializerStyle == DEFINES_INITIALIZER && !isInit)) {
+    // We've previously seen a constructor but this new method is an initializer
+    // or we've previously seen an initializer but this new method is a
+    // constructor.  We don't allow both to be defined on a type.
+    USR_FATAL_CONT(fn, "Definition of both constructor '%s' and initializer 'init'.  Please choose one.", ct->symbol->name);
   }
 }
 
