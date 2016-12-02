@@ -337,7 +337,7 @@ proc verifyResults(z, Zblk, Zcyc, Twiddles) {
 }
 
 //
-// print out sucess/failure, the timing, and the Gflop/s value
+// print out success/failure, the timing, and the Gflop/s value
 //
 proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
