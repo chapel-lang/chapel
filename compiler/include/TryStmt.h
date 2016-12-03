@@ -22,7 +22,7 @@
 
 #include "stmt.h"
 
-class TryStmt : public Stmt 
+class TryStmt : public Stmt
 {
 
 public:
@@ -42,9 +42,11 @@ public:
   GenRet              codegen();
 
 private:
-  bool       tryBang;
-  BlockStmt* body;
-  TryStmt();
+  bool                tryBang;
+  BlockStmt*          body;
+
+  static BlockStmt*   buildChplStmt(Expr* expr);
+                      TryStmt();
 
 };
 
