@@ -4,9 +4,11 @@
 Private Issues Guidelines
 =========================
 
+If for any reason you are uncomfortable reporting your bug in a public setting,
+you may submit a private bug report.
+
 Private issues can be sent to the Cray Chapel team at:
 :disguise:`chapel_bugs@cray.com`
-
 
 When submitting a private bug report, please include the following information:
 
