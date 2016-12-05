@@ -3,12 +3,10 @@ import os
 import subprocess
 import sys
 
-CHPL_DEVELOPER = os.environ.get('CHPL_DEVELOPER')
-
 
 def error(msg, exception=Exception):
     """Exception raising wrapper that differentiates developer-mode output"""
-    if CHPL_DEVELOPER:
+    if os.environ.get('CHPL_DEVELOPER'):
         raise exception(msg)
     else:
         sys.stderr.write('\nError: ')
