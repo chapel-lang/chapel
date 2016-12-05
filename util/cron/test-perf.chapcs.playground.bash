@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of stack allocating arg bundles
-GITHUB_USER=mppf
-GITHUB_BRANCH=no-heap-alloc-bundles
-SHORT_NAME=stackArgs
-START_DATE=11/28/16
+# Test performance of jemalloc 4.4.0
+GITHUB_USER=ronawho
+GITHUB_BRANCH=upgrade-jemalloc-4.4.0
+SHORT_NAME=jemalloc-4.4.0
+START_DATE=12/05/16
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
