@@ -24,6 +24,10 @@
 
 #include "chpl-threads.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Because we use the task tracking table for fifo tasking, this gives
 // us the ability to register the main task in the task table and
