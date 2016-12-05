@@ -23,19 +23,20 @@
 
 #include "view.h"
 
+#include "AstDump.h"
+#include "AstDumpToNode.h"
 #include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "iterator.h"
 #include "log.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "WhileStmt.h"
-#include "AstDump.h"
-#include "AstDumpToNode.h"
-#include "iterator.h"
 
 #include <inttypes.h>
 
