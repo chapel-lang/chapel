@@ -30,6 +30,7 @@ def get_compiler_name(compiler):
 
 @memoize
 def get_compiler_version(compiler):
+    """TODO: Handle case where gcc does not exist"""
     version_string = '0'
     if 'gnu' in compiler:
         # Asssuming the 'compiler' version matches the gcc version

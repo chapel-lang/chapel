@@ -1,8 +1,25 @@
 """ Utility functions for chplenv modules """
+import os
 import subprocess
+import sys
+
+# Developer mode affects error output behavior
+CHPL_DEVELOPER = os.getenv('CHPL_DEVELOPER')
+
+
+def error(msg, exception=Exception):
+    """Error function for chplenv modules"""
+    if CHPL_DEVELOPER:
+        raise exception(msg)
+    else:
+        sys.stderr.write('\nError: ')
+        sys.stderr.write(msg)
+        sys.stderr.write('\n')
+        sys.exit(1)
 
 
 def memoize(func):
+    """Function memoizing decorator"""
     cache = func.cache = {}
 
     def memoize_wrapper(*args, **kwargs):
@@ -18,19 +35,24 @@ class CommandError(Exception):
     pass
 
 
-# This could be replaced by subprocess.check_output, but that isn't available
-# until python 2.7 and we only have 2.6 on most machines :(
 def run_command(command, stdout=True, stderr=False, cmd_input=None):
-    process = subprocess.Popen(command,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE,
-                               stdin=subprocess.PIPE)
+    """subprocess convenience wrapper.
+       This should be the only invocation of subprocess in all chplenv scripts.
+       This could be replaced by subprocess.check_output, but that
+       is only available after Python 2.7, and we still support 2.6 :("""
+    try:
+        process = subprocess.Popen(command,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   stdin=subprocess.PIPE)
+    except OSError:
+        error("command not found: {0}".format(command[0]), OSError)
+
     byte_cmd_input = str.encode(cmd_input) if cmd_input else None
     output = process.communicate(input=byte_cmd_input)
     if process.returncode != 0:
-        raise CommandError(
-            "command `{0}` failed - output was \n{1}".format(command,
-                                                             output[1]))
+        error("command failed: {0}\noutput was:\n{1}".format(
+            command, output[1]), CommandError)
     else:
         output = (output[0].decode(), output[1].decode())
         if stdout and stderr:
