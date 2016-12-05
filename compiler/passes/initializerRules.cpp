@@ -39,10 +39,6 @@ enum InitBody {
 // Helper file for verifying the rules placed on initializers, and providing
 // the extra functionality associated with them.
 
-// Map storing the default initialization for fields of a type.  Will be used
-// when traversing initializer bodies if a field is omitted
-static std::map<AggregateType*, std::map<const char*, std::pair<Expr*, Expr*> >* > defaultInits;
-
 void temporaryInitializerFixup(CallExpr* call) {
   if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
     // Support super.init() calls (for instance) when the super type does not
@@ -256,9 +252,7 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
                        int* index, AggregateType* t);
 
 static
-void insertOmittedField(Expr* next, const char* nextField,
-                        std::map<const char*, std::pair<Expr*, Expr*> >* inits,
-                        AggregateType* t);
+void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t);
 
 
 static
@@ -276,8 +270,6 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
     }
   }
   int index = 0;
-
-  std::map<const char*, std::pair<Expr*, Expr*> >* inits = defaultInits[t];
 
   Expr* curExpr = body->body.head;
   InitBody isInit = getInitCall(curExpr);
@@ -337,7 +329,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
           seenField[index] = true;
           index++;
         } else if (isLaterFieldAccess(curField, fieldname)) {
-          insertOmittedField(curExpr, curField->sym->name, inits, t);
+          insertOmittedField(curExpr, curField, t);
           index++;
           curField = toDefExpr(curField->next);
         } else {
@@ -354,7 +346,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
     } else if (curField != NULL) {
       // only fields left
 
-      insertOmittedField(curExpr, curField->sym->name, inits, t);
+      insertOmittedField(curExpr, curField, t);
       curField = toDefExpr(curField->next);
       index++;
     } else {
@@ -477,96 +469,39 @@ bool isParentField(AggregateType* t, const char *name) {
 }
 
 static
-void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this);
+void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
+  const char* nextField = field->sym->name;
 
-static
-void insertOmittedField(Expr* next, const char* nextField,
-                        std::map<const char*,
-                        std::pair<Expr*, Expr*> >* inits,
-                        AggregateType* t) {
   SET_LINENO(next);
   // Do something appropriate with "super"
-  if (!strcmp(nextField, "super")) {
+  if (field->sym->hasFlag(FLAG_SUPER_CLASS)) {
     return;
   }
+
   // For all other fields, insert an assignment into that field with the given
   // initialization, if we have one.
-  if (inits == NULL || inits->find(nextField) == inits->end()) {
+  if (!field->init && !field->exprType) {
     USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
     return;
   }
 
-  std::pair<Expr*, Expr*> initExpr = (*inits)[nextField];
-
-  // If that field has no initialization or type, we can't insert the omitted
-  // initialization for it, it must be explicitly initialized.
-  if (initExpr.first == NULL && initExpr.second == NULL) {
-    USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
-    return;
-  }
   Symbol* _this = toFnSymbol(next->parentSymbol)->_this;
   CallExpr* thisAccess = new CallExpr(".", _this,
                                       new_CStringSymbol(nextField));
   CallExpr* newInit = NULL;
-  if (initExpr.first != NULL &&
-      !(isSymExpr(initExpr.first) &&
-        toSymExpr(initExpr.first)->symbol() == gTypeDefaultToken)) {
-    Expr* init = initExpr.first->copy();
-
-    // Since the init expression we're storing utilizes the arguments
-    // corresponding to the fields instead of the fields themselves, we must
-    // replace those references to the ArgSymbols with references to the fields
-    replaceArgsWithFields(t, init, _this);
-
-    newInit = new CallExpr("=", thisAccess, init);
+  if (field->init) {
+    newInit = new CallExpr("=", thisAccess, field->init->copy());
   } else {
-    BlockStmt* secondBody = toBlockStmt(initExpr.second);
-    INT_ASSERT(secondBody);
-    Expr* typeStart = secondBody->body.head;
-    if (SymExpr* simpleCase = toSymExpr(typeStart)) {
-      if (simpleCase->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-        newInit = new CallExpr(PRIM_SET_MEMBER,
-                               toFnSymbol(next->parentSymbol)->_this,
-                               new_CStringSymbol(nextField),
-                               new CallExpr(PRIM_INIT, new SymExpr(simpleCase->symbol())));
-      } else {
-        INT_FATAL("Expected type variable to be stored, got other symbol");
-      }
-    } else {
-      VarSymbol* tmp = newTemp("call_tmp");
-      next->insertBefore(new DefExpr(tmp));
-      next->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(tmp),
-                                      new CallExpr(PRIM_INIT,
-                                                   typeStart->copy())));
-      newInit = new CallExpr("=", thisAccess, new SymExpr(tmp));
-    }
+    INT_ASSERT(field->exprType);
+    VarSymbol* tmp = newTemp("call_tmp");
+    next->insertBefore(new DefExpr(tmp));
+    next->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(tmp),
+                                    new CallExpr(PRIM_INIT,
+                                                 field->exprType->copy())));
+    newInit = new CallExpr("=", thisAccess, new SymExpr(tmp));
   }
   next->insertBefore(newInit);
 }
-
-// Should only be called over expressions that were inserted into the ArgSymbol
-// information for the default constructor on t.  Because the default
-// constructor for t has only the fields of t and "meme" as its arguments, if
-// we find an ArgSymbol mentioned in context, it should be a field (as "meme"
-// is inserted by the compiler and not utilized for the default expression of
-// anything we would encounter).
-static
-void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this) {
-  std::vector<SymExpr*> syms;
-  collectSymExprs(context, syms);
-  for_vector(SymExpr, se, syms) {
-    if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
-      for_fields(field, t) {
-        if (!strcmp(field->name, arg->name)) {
-          CallExpr* fieldAccess = new CallExpr(".", _this, new_CStringSymbol(field->name));
-          se->replace(fieldAccess);
-          break;
-        }
-      }
-    }
-  }
-}
-
 
 // Takes in the current expr (which must be a loop), the current field
 // expected, the list of fields seen, the index into that list, the type whose
@@ -622,23 +557,4 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
   // encountered
 
   return false;
-}
-
-
-// Takes in the type, the name of the field, and the expr used to initialize it.
-// This will be stored in a Map of type to a Map of fields to init expressions,
-// which will be used to provide omitted initialization of fields when
-// traversing the body of a user-defined initializer.
-void storeFieldInit(AggregateType* t, const char* fieldname, Expr* init,
-                    Expr* type) {
-  // Lydia NOTE 09/13/16: This code depends on our generation of default
-  // constructors.  It should not be used as a justification to keep the old
-  // implementation around, but should instead be regarded as a step that should
-  // eventually become unnecessary.
-  if (defaultInits[t] != NULL) {
-    defaultInits[t]->insert(std::pair<const char*, std::pair<Expr*, Expr*> >(fieldname, std::pair<Expr*, Expr*>(init, type)));
-  } else {
-    defaultInits[t] = new std::map<const char*, std::pair<Expr*, Expr*> >;
-    defaultInits[t]->insert(std::pair<const char*, std::pair<Expr*, Expr*> >(fieldname, std::pair<Expr*, Expr*>(init, type)));
-  }
 }

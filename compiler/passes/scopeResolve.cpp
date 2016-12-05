@@ -1038,6 +1038,14 @@ static void build_type_constructor(AggregateType* ct) {
 // which is also called by user-defined constructors to pre-initialize all
 // fields to their declared or type-specific initial values.
 static void build_constructor(AggregateType* ct) {
+  if (ct->initializerStyle == DEFINES_INITIALIZER) {
+    // Don't want to create the default constructor if we have seen initializers
+    // defined.  The work is completely unnecessary, since we won't call the
+    // default constructor, and it mutates information about the fields that
+    // we would rather stayed unmutated.
+    return;
+  }
+
   // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
 
@@ -1227,13 +1235,6 @@ static void build_constructor(AggregateType* ct) {
                                                                       init->copy())));
 
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
-
-        // This is set up for initializers (but we don't know if this type has
-        // one just yet).  This must be done before the initCopies or
-        // _createFieldDefault information is wrapped around the init, because
-        // we likely don't need those for the initializer omitted fields
-        // TODO: verify my claim about the _createFieldDefault call
-        storeFieldInit(ct, field->name, init, NULL);
       }
     } else if (hadType &&
                !field->isType() &&
@@ -1244,8 +1245,6 @@ static void build_constructor(AggregateType* ct) {
 
     if (!field->isType() && !field->hasFlag(FLAG_PARAM)) {
       if (hadType) {
-        if (hadInit)
-          storeFieldInit(ct, field->name, init, NULL);
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
       } else if (init)
         init = new CallExpr("chpl__initCopy", init);
@@ -1264,10 +1263,6 @@ static void build_constructor(AggregateType* ct) {
       else {
         Expr* initVal = new SymExpr(gTypeDefaultToken);
         arg->defaultExpr = new BlockStmt(initVal);
-        if (arg->typeExpr)
-          storeFieldInit(ct, field->name, initVal, arg->typeExpr);
-        else
-          storeFieldInit(ct, field->name, NULL, NULL);
       }
     }
 
