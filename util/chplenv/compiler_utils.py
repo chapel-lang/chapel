@@ -57,8 +57,8 @@ def CompVersion(version_string):
         build    = int(match.group(7) or 0)
         return CompVersionT(major=major, minor=minor, revision=revision, build=build)
     else:
-        error("Could not convert version"+
-              " '{0}' to a tuple".format(version_string), ValueError)
+        error("Could not convert version '{0}' to a tuple".format(
+            version_string), ValueError)
 
 
 @memoize

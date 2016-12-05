@@ -3,7 +3,7 @@ import os
 import subprocess
 import sys
 
-CHPL_DEVELOPER = os.getenv('CHPL_DEVELOPER')
+CHPL_DEVELOPER = os.environ.get('CHPL_DEVELOPER')
 
 
 def error(msg, exception=Exception):
