@@ -1829,38 +1829,43 @@ static void change_method_into_constructor(FnSymbol* fn) {
     USR_FATAL_CONT(fn, "Definition of both constructor '%s' and initializer 'init'.  Please choose one.", ct->symbol->name);
   }
 
-  // Call the initializer, passing in just the generic arguments.
-  // This call ensures that the object is default-initialized before the user's
-  // constructor body is called.
-  CallExpr* call = new CallExpr(ct->defaultInitializer);
-  for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
-    ArgSymbol* arg = NULL;
-    for_formals(methodArg, fn) {
-      if (defaultTypeConstructorArg->name == methodArg->name) {
-        arg = methodArg;
-      }
-    }
-    if (!arg) {
-      if (!defaultTypeConstructorArg->defaultExpr)
-        USR_FATAL_CONT(fn, "initializer for class '%s' requires a generic argument called '%s'", ct->symbol->name, defaultTypeConstructorArg->name);
-    } else {
-      call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));
-    }
-  }
 
   if (ct->initializerStyle == DEFINES_INITIALIZER) {
     ArgSymbol* meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL,
                                     new SymExpr(gTypeDefaultToken));
     meme->addFlag(FLAG_IS_MEME);
     fn->insertFormalAtTail(meme);
-    call->insertAtTail(new NamedExpr ("meme", new SymExpr(meme)));
 
     handleInitializerRules(fn, ct);
-  }
+    fn->_this = new VarSymbol("this");
+    fn->_this->addFlag(FLAG_ARG_THIS);
+    fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, new SymExpr(meme)));
+  } else {
+    // Call the constructor, passing in just the generic arguments.
+    // This call ensures that the object is default-initialized before the
+    // user's constructor body is called.
+    // NOTE: This operation is not necessary for initializers, as Phase 1 of
+    // the initializer body is intended to perform this operation on its own.
+    CallExpr* call = new CallExpr(ct->defaultInitializer);
+    for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
+      ArgSymbol* arg = NULL;
+      for_formals(methodArg, fn) {
+        if (defaultTypeConstructorArg->name == methodArg->name) {
+          arg = methodArg;
+        }
+      }
+      if (!arg) {
+        if (!defaultTypeConstructorArg->defaultExpr)
+          USR_FATAL_CONT(fn, "constructor for class '%s' requires a generic argument called '%s'", ct->symbol->name, defaultTypeConstructorArg->name);
+      } else {
+        call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));
+      }
+    }
 
-  fn->_this = new VarSymbol("this");
-  fn->_this->addFlag(FLAG_ARG_THIS);
-  fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
+    fn->_this = new VarSymbol("this");
+    fn->_this->addFlag(FLAG_ARG_THIS);
+    fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
+  }
   fn->insertAtHead(new DefExpr(fn->_this));
   fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
 

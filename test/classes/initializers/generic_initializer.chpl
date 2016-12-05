@@ -5,7 +5,9 @@ class Foo {
   var  x;
 
   proc init(type x_t, i:x_t, j:x_t) {
+    this.x_t = x_t;
     x = i+j;
+    super.init();
   }
 }
 
