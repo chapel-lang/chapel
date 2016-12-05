@@ -1576,7 +1576,6 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 
     assert(0); // locale model code should prevent this...
 
-    // Visual Debug?  Should we generate a task here???
     if (serial_state)
       chpl_ftable_call(fid, arg);
     else
