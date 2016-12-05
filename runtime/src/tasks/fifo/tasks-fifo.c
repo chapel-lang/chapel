@@ -332,6 +332,7 @@ static void setup_main_thread_private_data(void)
   tp->ptask->bundle.lineno          = 0;
   tp->ptask->bundle.filename        = CHPL_FILE_IDX_MAIN_PROGRAM;
   tp->ptask->bundle.requestedSubloc = c_sublocid_any_val;
+  tp->ptask->bundle.requested_fid   = FID_NONE;
   tp->ptask->bundle.requested_fn    = NULL;
   tp->ptask->bundle.id              = get_next_task_id();
 
@@ -536,6 +537,7 @@ static void comm_task_wrapper(void* arg) {
   tp->ptask->bundle.lineno          = 0;
   tp->ptask->bundle.filename        = CHPL_FILE_IDX_COMM_TASK;
   tp->ptask->bundle.requestedSubloc = c_sublocid_any_val;
+  tp->ptask->bundle.requested_fid   = FID_NONE;
   tp->ptask->bundle.requested_fn    = NULL;
   tp->ptask->bundle.id              = get_next_task_id();
 
