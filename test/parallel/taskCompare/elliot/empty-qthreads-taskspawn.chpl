@@ -3,16 +3,27 @@ use Time;
 config const numTrials = 100;
 config const printTimings = false;
 
-extern proc qtChplLikeTaskSpawn(trials, numTasks);
+enum TaskingMode {
+  qtChplLikeT, qtChplOptT
+};
+use TaskingMode;
+
+config param taskingMode = qtChplLikeT;
 
 proc main() {
   var t: Timer;
 
   t.start();
-  qtChplLikeTaskSpawn(numTrials, here.maxTaskPar);
+  select taskingMode {
+     when qtChplLikeT do qtChplLikeTaskSpawn(numTrials, here.maxTaskPar);
+     when qtChplOptT  do qtChplOptTaskSpawn (numTrials, here.maxTaskPar);
+  }
   t.stop();
 
   if printTimings {
     writeln("Elapsed time: ", t.elapsed());
   }
 }
+
+extern proc qtChplLikeTaskSpawn(trials, numTasks);
+extern proc qtChplOptTaskSpawn(trials, numTasks);

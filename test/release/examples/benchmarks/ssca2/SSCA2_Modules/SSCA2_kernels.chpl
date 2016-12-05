@@ -659,7 +659,7 @@ module SSCA2_kernels
       }
     }
   
-    inline proc try() {
+    inline proc check() {
       return tasksFinished[here.id].read();
     }
   }

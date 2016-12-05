@@ -82,7 +82,7 @@ var numAtoms : int;
 // default mass
 var mass : real = 1.0; 
 
-// number of bins that define our piece of the continguous space
+// number of bins that define our piece of the contiguous space
 var numBins : v3int;
 
 // constants from c++ version, used in neighboring
@@ -157,7 +157,7 @@ if generating {
   var mass_type: int; 
   dataReader.readln(mass_type, mass);
   
-  // density overriden if data file provided
+  // density overridden if data file provided
   density = numAtoms / (volume);
   const nbs : real = (density * 16) ** (1.0/3.0 : real);
   for i in 1..3 do
@@ -398,7 +398,7 @@ proc inputFile() {
   // starting temperature
   initialTemp = r.readln(real);
 
-  // start density (overriden if data file), used in EAM
+  // start density (overridden if data file), used in EAM
   density = r.readln(real);
 
   // recompute neighbors every N iterations
