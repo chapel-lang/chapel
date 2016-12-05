@@ -10,7 +10,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import overrides
-from utils import memoize
+from utils import error, memoize
 
 #TODO: @memoize causes the calls to this function to get cached
 @memoize
@@ -20,7 +20,7 @@ def get(flag='host'):
     elif flag == 'target':
         FOOBAR_val = overrides.get('CHPL_TARGET_FOOBAR', '')
     else:
-        raise ValueError("Invalid flag: '{0}'".format(flag))
+        error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if not FOOBAR_val:
         #TODO: Set the default for FOOBAR_val

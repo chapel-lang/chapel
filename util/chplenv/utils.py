@@ -1,14 +1,13 @@
-""" Utility functions for chplenv modules """
+"""Utility functions for chplenv modules"""
 import os
 import subprocess
 import sys
 
-# Developer mode affects error output behavior
 CHPL_DEVELOPER = os.getenv('CHPL_DEVELOPER')
 
 
 def error(msg, exception=Exception):
-    """Error function for chplenv modules"""
+    """Exception raising wrapper that differentiates developer-mode output"""
     if CHPL_DEVELOPER:
         raise exception(msg)
     else:
@@ -32,11 +31,12 @@ def memoize(func):
 
 
 class CommandError(Exception):
+    """Custom exception for run_command errors"""
     pass
 
 
 def run_command(command, stdout=True, stderr=False, cmd_input=None):
-    """subprocess convenience wrapper.
+    """Command subprocess wrapper.
        This should be the only invocation of subprocess in all chplenv scripts.
        This could be replaced by subprocess.check_output, but that
        is only available after Python 2.7, and we still support 2.6 :("""

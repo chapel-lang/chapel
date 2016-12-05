@@ -8,7 +8,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import overrides
-from utils import memoize
+from utils import error, memoize
 
 
 @memoize
@@ -35,7 +35,7 @@ def get(flag='wide'):
     elif flag == 'define':
         return define
     else:
-        raise ValueError("Invalid flag: '{0}'".format(flag))
+        error("Invalid flag: '{0}'".format(flag), ValueError)
 
 
 def _main():

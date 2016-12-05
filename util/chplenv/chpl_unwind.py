@@ -6,7 +6,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_platform, overrides
-from utils import memoize
+from utils import error, memoize
 
 @memoize
 def get():
@@ -22,8 +22,8 @@ def get():
             return 'system'
     if osx:
         if val == 'libunwind':
-            raise ValueError("Using CHPL_UNWIND=libunwind is not supported"+
-                            " on Mac OS X. Use CHPL_UNWIND=system instead.")
+            error("Using CHPL_UNWIND=libunwind is not supported"+
+                  " on Mac OS X. Use CHPL_UNWIND=system instead.", ValueError)
         elif val == 'system':
             return 'system'
     return 'none'
