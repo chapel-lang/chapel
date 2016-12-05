@@ -19,10 +19,18 @@
 
 #include "TryStmt.h"
 #include "AstVisitor.h"
- 
+
+BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body) {
+  return buildChplStmt(new TryStmt(tryBang, body));
+}
+
+BlockStmt* TryStmt::buildChplStmt(Expr* expr) {
+  return new BlockStmt(expr, BLOCK_SCOPELESS);
+}
+
 TryStmt::TryStmt(bool _tryBang, BlockStmt* _body) : Stmt(E_TryStmt) {
   tryBang = _tryBang;
-  body    = _body; 
+  body    = _body;
 }
 
 TryStmt::~TryStmt() {
@@ -39,7 +47,7 @@ void TryStmt::accept(AstVisitor* visitor) {
       body->accept(visitor);
     }
     visitor->exitTryStmt(this);
-  } 
+  }
 }
 
 Expr* TryStmt::copy(SymbolMap* map, bool internal) {
@@ -63,7 +71,7 @@ Expr* TryStmt::getFirstExpr() {
 }
 
 Expr* TryStmt::getNextExpr(Expr* expr) {
-  return this; 
+  return this;
 }
 
 GenRet TryStmt::codegen() {

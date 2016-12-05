@@ -35,6 +35,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "type.h"
 #include "WhileStmt.h"
 
@@ -75,8 +76,8 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt;
+  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt + nTryStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kTryStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
     nContextCallExpr + nForallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +

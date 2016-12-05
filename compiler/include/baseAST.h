@@ -70,6 +70,7 @@
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
+  macro(TryStmt) sep                               \
   macro(ExternBlockStmt)
 
 #define foreach_ast(macro)                         \
@@ -336,6 +337,7 @@ def_is_ast(UseStmt)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
+def_is_ast(TryStmt)
 def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
 def_is_ast(VarSymbol)
@@ -377,6 +379,7 @@ def_to_ast(UseStmt)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
+def_to_ast(TryStmt)
 def_to_ast(ExternBlockStmt)
 def_to_ast(Expr)
 def_to_ast(ModuleSymbol)
@@ -536,6 +539,9 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     break;                                                              \
   case E_GotoStmt:                                                      \
     AST_CALL_CHILD(_a, GotoStmt, label, call, __VA_ARGS__);             \
+    break;                                                              \
+  case E_TryStmt:                                                       \
+    AST_CALL_CHILD(_a, TryStmt, getBody(), call, __VA_ARGS__);          \
     break;                                                              \
   case E_ModuleSymbol:                                                  \
     AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \
