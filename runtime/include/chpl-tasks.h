@@ -39,6 +39,7 @@ typedef chpl_task_bundle_t* chpl_task_bundle_p;
 extern "C" {
 #endif
 
+
 //
 // Some function declarations here may be protected like this:
 //   #ifdef CHPL_TASK_func_IMPL_DECL
@@ -51,6 +52,7 @@ extern "C" {
 // present we only support this for a few functions.  We can add more
 // as needed.
 //
+
 
 // Sync variables
 
