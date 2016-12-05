@@ -30,6 +30,7 @@ AST_SRCS =                                          \
            primitive.cpp                            \
            stmt.cpp                                 \
            symbol.cpp                               \
+           TryStmt.cpp                              \
            type.cpp                                 \
            view.cpp                                 \
                                                     \

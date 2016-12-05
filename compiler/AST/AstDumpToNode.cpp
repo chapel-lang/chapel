@@ -347,15 +347,26 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
   if (ForallIntents* fi = node->forallIntents)
   {
     newline();
+
     write(false, "ForallIntents:", false);
+
     mOffset = mOffset + 2;
+
     newline();
-    for (int i = 0; i < fi->numVars(); i++) {
-      if (i > 0) fprintf(mFP, ", ");
-      if (fi->isReduce(i)) fi->riSpecs[i]->accept(this);
+
+    for (int i = 0; i < fi->numVars(); i++)
+    {
+      if (i > 0)
+        fprintf(mFP, ", ");
+
+      if (fi->isReduce(i))
+        fi->riSpecs[i]->accept(this);
+
       write(true, tfiTagDescrString(fi->fIntents[i]), true);
+
       fi->fiVars[i]->accept(this);
     }
+
     mOffset = mOffset - 2;
   }
 
@@ -473,9 +484,9 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
 
     newline();
     fputs("Init: ", mFP);
-    mOffset = mOffset + 5;
+    mOffset = mOffset + 6;
     node->initBlockGet()->accept(this);
-    mOffset = mOffset - 5;
+    mOffset = mOffset - 6;
 
     mOffset = mOffset - 2;
     fputc('\n', mFP);
@@ -487,9 +498,9 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
 
     newline();
     fputs("Test: ", mFP);
-    mOffset = mOffset + 5;
+    mOffset = mOffset + 6;
     node->testBlockGet()->accept(this);
-    mOffset = mOffset - 5;
+    mOffset = mOffset - 6;
 
     mOffset = mOffset - 2;
     fputc('\n', mFP);
@@ -501,9 +512,9 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
 
     newline();
     fputs("Incr: ", mFP);
-    mOffset = mOffset + 5;
+    mOffset = mOffset + 6;
     node->incrBlockGet()->accept(this);
-    mOffset = mOffset - 5;
+    mOffset = mOffset - 6;
 
     mOffset = mOffset - 2;
     fputc('\n', mFP);
@@ -520,6 +531,7 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
       newline();
 
     next_ast->accept(this);
+    fputc('\n', mFP);
   }
 
   mOffset = mOffset - 2;
@@ -915,17 +927,17 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
 bool AstDumpToNode::enterCallExpr(CallExpr* node)
 {
   if (node->primitive == 0)
-    fprintf(mFP, "#<%-12s", "Call");
+    fprintf(mFP, "#<%-13s", "Call");
 
   else if (node->isPrimitive(PRIM_RETURN))
-    fprintf(mFP, "#<%-12s", "Return");
+    fprintf(mFP, "#<%-13s", "Return");
 
   else
   {
     char name[128];
 
     sprintf(name, "PrimOp %s", node->primitive->name);
-    fprintf(mFP, "#<%-12s", name);
+    fprintf(mFP, "#<%-25s", name);
   }
 
   writeNodeID(node, false, false);

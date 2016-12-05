@@ -522,6 +522,24 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
 }
 
 //
+// TryStmt
+//
+bool AstDump::enterTryStmt(TryStmt* node) {
+  newline();
+  write("Try");
+  newline();
+  write("{");
+  ++mIndent;
+  return true;
+}
+
+void AstDump::exitTryStmt(TryStmt* node) {
+  --mIndent;
+  newline();
+  write("}");
+}
+
+//
 // Helper functions
 //
 

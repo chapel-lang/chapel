@@ -445,8 +445,10 @@ int hwloc_dump_hwdata_knl_smbios(const char *input_fsroot, const char *outfile)
     path[PATH_SIZE-1] = 0;
 
     d = opendir(path);
-    if (!d)
+    if (!d) {
+        fprintf(stderr, "Unable to open dmi-sysfs dir: %s", path);
         return -1;
+    }
 
     /* process KNL entries
      * start with group (type 14, dash os to omit 140 types) then find SMBIOS types for
@@ -463,9 +465,9 @@ int hwloc_dump_hwdata_knl_smbios(const char *input_fsroot, const char *outfile)
     }
 
     if (!data.type_count) {
-      printf ("  Couldn't find any KNL information.\n");
+      fprintf (stderr, "  Couldn't find any KNL information.\n");
       closedir(d);
-      return 0;
+      return -1;
     }
 
     /* We probably have KNL type identifiers here */

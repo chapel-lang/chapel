@@ -1,0 +1,1 @@
+--ccflags -fopenmp --ldflags -fopenmp ompTaskSpawn.h # empty-omp-parallel-for

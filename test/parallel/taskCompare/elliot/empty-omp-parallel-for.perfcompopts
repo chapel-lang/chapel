@@ -1,1 +1,0 @@
---ccflags -fopenmp --ldflags -fopenmp ompTaskSpawn.h

@@ -111,7 +111,7 @@ static qioerr setup_actions(
 
   if( *std__fd == QIO_FD_FORWARD ) {
     // Do nothing. Assume file descriptor childfd does not have close-on-exec.
-  } else if( *std__fd == QIO_FD_PIPE ) {
+  } else if( *std__fd == QIO_FD_PIPE || *std__fd == QIO_FD_BUFFERED_PIPE ) {
     // child can't write to the parent end of the pipe. 
     rc = posix_spawn_file_actions_addclose(actions, pipe_parent_end);
     if( rc ) return qio_int_to_err(errno);
@@ -190,21 +190,21 @@ qioerr qio_do_openproc(const char** argv,
 
   // Create pipes
 
-  if( *stdin_fd == QIO_FD_PIPE ) {
+  if( *stdin_fd == QIO_FD_PIPE || *stdin_fd == QIO_FD_BUFFERED_PIPE ) {
     rc = pipe(in_pipe);
     if( rc != 0 ) {
       err = qio_int_to_err(errno);
       goto error;
     }
   }
-  if( *stdout_fd == QIO_FD_PIPE ) {
+  if( *stdout_fd == QIO_FD_PIPE || *stdout_fd == QIO_FD_BUFFERED_PIPE ) {
     rc = pipe(out_pipe);
     if( rc != 0 ) {
       err = qio_int_to_err(errno);
       goto error;
     }
   }
-  if( *stderr_fd == QIO_FD_PIPE ) {
+  if( *stderr_fd == QIO_FD_PIPE || *stderr_fd == QIO_FD_BUFFERED_PIPE ) {
     rc = pipe(err_pipe);
     if( rc != 0 ) {
       err = qio_int_to_err(errno);
@@ -254,7 +254,8 @@ qioerr qio_do_openproc(const char** argv,
   if( err ) goto error;
 
   // handle QIO_FD_TO_STDOUT
-  if( *stderr_fd == QIO_FD_TO_STDOUT && *stdout_fd == QIO_FD_PIPE ) {
+  if( *stderr_fd == QIO_FD_TO_STDOUT &&
+      (*stdout_fd == QIO_FD_PIPE || *stdout_fd == QIO_FD_BUFFERED_PIPE) ) {
     // forward stderr to stdout.
     err = setup_actions(&actions, stderr_fd, out_pipe, 2, false, &hasactions);
     if( err ) goto error;
@@ -429,11 +430,8 @@ qioerr qio_waitpid(int64_t pid,
 // since output channel has the buffered data).
 qioerr qio_proc_communicate(
     const int threadsafe,
-    qio_file_t* input_file,
     qio_channel_t* input,
-    qio_file_t* output_file,
     qio_channel_t* output,
-    qio_file_t* error_file,
     qio_channel_t* error) {
 
   qioerr err = 0;
@@ -450,7 +448,6 @@ qioerr qio_proc_communicate(
   int input_fd = -1;
   int output_fd = -1;
   int error_fd = -1;
-
 
   if( threadsafe ) {
     // lock all three channels.
@@ -522,10 +519,6 @@ qioerr qio_proc_communicate(
     }
   }
 
-
-
-
-
   // mark the output and error channels so that we
   // can just keep advancing to read while buffering
   // up all data. Before returning, we'll revert them
@@ -592,12 +585,9 @@ qioerr qio_proc_communicate(
     if( do_input && input_ready ) {
       err = _qio_channel_flush_qio_unlocked(input);
       if( !err ) {
-        qioerr err2 = 0;
         do_input = false;
         // Close input channel.
         err = qio_channel_close(false, input);
-        err2 = qio_file_close(input_file);
-        if( err2 && !err ) err = err2;
       }
       if( qio_err_to_int(err) == EAGAIN ) err = 0;
       if( err ) break;
@@ -607,10 +597,13 @@ qioerr qio_proc_communicate(
       // read some into our buffer.
       err = qio_channel_advance(false, output, qbytes_iobuf_size);
       if( qio_err_to_int(err) == EEOF ) {
+        qio_file_t* output_file = qio_channel_get_file(output);
+
         do_output = false;
         // close the output file (not channel), in case closing output
         // causes the program to output on stderr, e.g.
-        err = qio_file_close(output_file);
+        if( output_file )
+          err = qio_file_close(output_file);
         // Set the output channel maximum position
         // This prevents a read on output from trying to get
         // more data from the (now closed) file.
@@ -624,9 +617,12 @@ qioerr qio_proc_communicate(
       // read some into our buffer.
       err = qio_channel_advance(false, error, qbytes_iobuf_size);
       if( qio_err_to_int(err) == EEOF ) {
+        qio_file_t* error_file = qio_channel_get_file(error);
+
         do_error = false;
         // close the error file (not channel)
-        err = qio_file_close(error_file);
+        if( error_file )
+          err = qio_file_close(error_file);
         // Set the error channel maximum position
         error->end_pos = qio_channel_offset_unlocked(error);
       }

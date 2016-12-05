@@ -141,8 +141,8 @@ module Barrier {
 
     /* return `true` if `n` tasks have called :proc:`notify`
      */
-    inline proc try(): bool {
-      return bar.try();
+    inline proc check(): bool {
+      return bar.check();
     }
 
     pragma "no doc"
@@ -172,8 +172,8 @@ module Barrier {
     }
 
     pragma "no doc"
-    proc try(): bool {
-      halt("try() not implemented");
+    proc check(): bool {
+      halt("check() not implemented");
     }
 
     pragma "no doc"
@@ -270,7 +270,7 @@ module Barrier {
 
     /* return `true` if `n` tasks have called :proc:`notify`
      */
-    inline proc try(): bool {
+    inline proc check(): bool {
       return done.read();
     }
   }
@@ -332,7 +332,7 @@ module Barrier {
 
     /* return `true` if `n` tasks have called :proc:`notify`
      */
-    inline proc try(): bool {
+    inline proc check(): bool {
       return done.readXX();
     }
   }

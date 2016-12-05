@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance hybrid spin/condwait scheme
-GITHUB_USER=ronawho
-GITHUB_BRANCH=qthreads-hybrid-spin-condwait
-SHORT_NAME=taskSpawn
-START_DATE=11/18/16
+# Test performance of stack allocating arg bundles
+GITHUB_USER=mppf
+GITHUB_BRANCH=no-heap-alloc-bundles
+SHORT_NAME=stackArgs
+START_DATE=11/28/16
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

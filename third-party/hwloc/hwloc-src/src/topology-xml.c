@@ -573,12 +573,13 @@ hwloc__xml_import_distances(struct hwloc_xml_backend_data_s *data,
       free(distances);
     } else {
       /* queue the distance */
+      distances->prev = data->last_distances;
+      distances->next = NULL;
       if (data->last_distances)
 	data->last_distances->next = distances;
       else
 	data->first_distances = distances;
-      distances->prev = data->last_distances;
-      distances->next = NULL;
+      data->last_distances = distances;
     }
   }
 
@@ -965,32 +966,45 @@ hwloc_xml__handle_distances(struct hwloc_topology *topology,
   while ((xmldist = data->first_distances) != NULL) {
     hwloc_obj_t root = xmldist->root;
     unsigned depth = root->depth + xmldist->distances.relative_depth;
-    unsigned nbobjs = hwloc_get_nbobjs_inside_cpuset_by_depth(topology, root->cpuset, depth);
+    unsigned nbobjs = xmldist->distances.nbobjs, j;
+    unsigned *indexes = malloc(nbobjs * sizeof(unsigned));
+    hwloc_obj_t child, *objs = malloc(nbobjs * sizeof(hwloc_obj_t));
 
     data->first_distances = xmldist->next;
-
-    if (nbobjs != xmldist->distances.nbobjs) {
-      /* distances invalid, drop */
-      if (hwloc__xml_verbose())
-	fprintf(stderr, "%s: ignoring invalid distance matrix with %u objs instead of %u\n",
-		msgprefix, xmldist->distances.nbobjs, nbobjs);
-      free(xmldist->distances.latency);
-    } else {
-      /* distances valid, add it to the internal OS distances list for grouping */
-      unsigned *indexes = malloc(nbobjs * sizeof(unsigned));
-      hwloc_obj_t child, *objs = malloc(nbobjs * sizeof(hwloc_obj_t));
-      unsigned j;
-      for(j=0, child = hwloc_get_next_obj_inside_cpuset_by_depth(topology, root->cpuset, depth, NULL);
-	  j<nbobjs;
-	  j++, child = hwloc_get_next_obj_inside_cpuset_by_depth(topology, root->cpuset, depth, child)) {
+    j = 0;
+    child = NULL;
+    /* we can't use hwloc_get_next_obj_inside_cpuset_by_depth() because it ignore CPU-less objects */
+    while ((child = hwloc_get_next_obj_by_depth(topology, depth, child)) != NULL) {
+      hwloc_obj_t myparent = child->parent;
+      while (myparent->depth > root->depth)
+	myparent = myparent->parent;
+      if (myparent == root) {
+	if (j == nbobjs)
+	  goto badnbobjs;
 	indexes[j] = child->os_index;
 	objs[j] = child;
+	j++;
       }
-      for(j=0; j<nbobjs*nbobjs; j++)
-	xmldist->distances.latency[j] *= xmldist->distances.latency_base;
-      hwloc_distances_set(topology, objs[0]->type, nbobjs, indexes, objs, xmldist->distances.latency, 0 /* XML cannot force */);
     }
 
+    if (j < nbobjs)
+      goto badnbobjs;
+
+    /* distances valid, add it to the internal OS distances list for grouping */
+    for(j=0; j<nbobjs*nbobjs; j++)
+      xmldist->distances.latency[j] *= xmldist->distances.latency_base;
+    hwloc_distances_set(topology, objs[0]->type, nbobjs, indexes, objs, xmldist->distances.latency, 0 /* XML cannot force */);
+    free(xmldist);
+    continue;
+
+  badnbobjs:
+    printf("bad nbobjs\n");
+    if (hwloc__xml_verbose())
+      fprintf(stderr, "%s: ignoring invalid distance matrix, there aren't exactly %u objects below root\n",
+	      msgprefix, nbobjs);
+    free(indexes);
+    free(objs);
+    free(xmldist->distances.latency);
     free(xmldist);
   }
 

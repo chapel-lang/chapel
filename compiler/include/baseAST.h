@@ -142,6 +142,7 @@ enum AstTag {
   E_ForallExpr,
   E_NamedExpr,
   E_UseStmt,
+  E_TryStmt,
   E_BlockStmt,
   E_CondStmt,
   E_GotoStmt,

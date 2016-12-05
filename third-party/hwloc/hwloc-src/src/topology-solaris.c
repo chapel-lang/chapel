@@ -382,7 +382,7 @@ browse(struct hwloc_topology *topology, lgrp_cookie_t cookie, lgrp_id_t lgrp, hw
     obj->memory.page_types = malloc(2*sizeof(*obj->memory.page_types));
     memset(obj->memory.page_types, 0, 2*sizeof(*obj->memory.page_types));
     obj->memory.page_types[0].size = hwloc_getpagesize();
-#ifdef HAVE__SC_LARGE_PAGESIZE
+#if HAVE_DECL__SC_LARGE_PAGESIZE
     obj->memory.page_types[1].size = sysconf(_SC_LARGE_PAGESIZE);
 #endif
     hwloc_insert_object_by_cpuset(topology, obj);
@@ -429,7 +429,7 @@ hwloc_look_lgrp(struct hwloc_topology *topology)
   if (nlgrps > 0) {
     hwloc_obj_t *glob_lgrps = calloc(nlgrps, sizeof(hwloc_obj_t));
     browse(topology, cookie, root, glob_lgrps, &curlgrp);
-#ifdef HAVE_LGRP_LATENCY_COOKIE
+#if HAVE_DECL_LGRP_LATENCY_COOKIE
     if (nlgrps > 1) {
       float *distances = calloc(curlgrp*curlgrp, sizeof(float));
       unsigned *indexes = calloc(curlgrp,sizeof(unsigned));
@@ -441,7 +441,7 @@ hwloc_look_lgrp(struct hwloc_topology *topology)
       }
       hwloc_distances_set(topology, HWLOC_OBJ_NUMANODE, curlgrp, indexes, glob_lgrps, distances, 0 /* OS cannot force */);
     } else
-#endif /* HAVE_LGRP_LATENCY_COOKIE */
+#endif /* HAVE_DECL_LGRP_LATENCY_COOKIE */
       free(glob_lgrps);
   }
   lgrp_fini(cookie);

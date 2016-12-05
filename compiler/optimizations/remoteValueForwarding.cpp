@@ -54,6 +54,8 @@ typedef std::map<Symbol*, DotInfo*>::iterator DotInfoIter;
 
 static void computeUsesDotLocale();
 
+static void replaceRecordWrappedRefs();
+
 /************************************* | **************************************
 *                                                                             *
 * Convert reference args into values if they are only read and reading them   *
@@ -70,6 +72,8 @@ void remoteValueForwarding() {
     Map<Symbol*, Vec<SymExpr*>*> defMap;
     Map<Symbol*, Vec<SymExpr*>*> useMap;
 
+    replaceRecordWrappedRefs();
+
     buildDefUseMaps(defMap, useMap);
 
     updateLoopBodyClasses(defMap, useMap);
@@ -81,6 +85,119 @@ void remoteValueForwarding() {
       delete it->second;
     }
     dotLocaleMap.clear();
+  }
+}
+
+//
+// A helper function for replaceRecordWrappedRefs that updates the type and
+// Qualifier for the LHS of the move and adds it to a list of Symbols whose
+// uses may need updating.
+//
+static void fixLHS(CallExpr* move, std::vector<Symbol*>& todo) {
+  Symbol* LHS = toSymExpr(move->get(1))->symbol();
+  if (LHS->isRef()) {
+    LHS->type = LHS->getValType();
+    LHS->qual = QUAL_VAL;
+    todo.push_back(LHS);
+  }
+}
+
+
+//
+// Replaces reference fields to record-wrapped types with QUAL_VAL fields of
+// the same type. This transformation results in less communication as these
+// record-wrapped fields will be bulk-copied across the network such that
+// accessing the 'pid' or '_instance' fields will be a local operation.
+//
+// This is valid because the record-wrapped types (e.g. _array) are immutable.
+// Currently the difference between a ref-array and a val-array is used by the
+// compiler to determine when to copy or destroy these objects. This logic is
+// handled in callDestructors, so by this point the distinction is no longer
+// important.
+//
+// After the fields are transformed, a number of primitives may be used
+// incorrectly. For example, PRIM_GET_MEMBER_VALUE will return a reference if
+// the field is a reference. After this transformation this primitive will
+// return a QUAL_VAL, meaning the LHS of the parent PRIM_MOVE should also
+// become a QUAL_VAL.
+//
+static void replaceRecordWrappedRefs() {
+  std::vector<Symbol*> todo;
+
+  // Changes reference fields with a record-wrapped type into value fields.
+  // Note that this will modify arg bundle classes.
+  forv_Vec(AggregateType, aggType, gAggregateTypes) {
+    if (!aggType->symbol->hasFlag(FLAG_REF)) {
+      for_fields(field, aggType) {
+        if (field->isRef() && isRecordWrappedType(field->getValType())) {
+          field->type = field->getValType();
+          field->qual = QUAL_VAL;
+          todo.push_back(field);
+        }
+      }
+    }
+  }
+
+  // I'd like to be able to just iterate over the uses of tuple fields, but
+  // we don't have a good way of doing that today. The case to worry about
+  // is when we're indexing into a tuple with an integer (param or otherwise).
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+      CallExpr* move = toCallExpr(call->parentExpr);
+      INT_ASSERT(isMoveOrAssign(move));
+
+      if (!call->isRef()) {
+        INT_ASSERT(isRecordWrappedType(call->typeInfo()->getValType()));
+        fixLHS(move, todo);
+      }
+    }
+  }
+
+  // Try and find references that were initialized with the field reference,
+  // and fix them to be QUAL_VAL
+  //
+  // These primitives were chosen because without fixing them we would see
+  // testing failures.
+  //
+  // Currently it is not necessary to insert a PRIM_SET_REFERENCE when passing
+  // a value to a reference-formal because codegen will handle that implicitly.
+  // BHARSH TODO: I'm not sure if that's the desired behavior, but that's what
+  // was done for the initial qualified refs merge.
+  //
+  while (todo.size() > 0) {
+    Symbol* sym = todo.back();
+    todo.pop_back();
+    INT_ASSERT(!sym->isRef() && isRecordWrappedType(sym->type));
+
+    for_SymbolSymExprs(se, sym) {
+      CallExpr* call = toCallExpr(se->parentExpr);
+      INT_ASSERT(call);
+
+      if (call->isPrimitive(PRIM_MOVE)) {
+        if (se == call->get(2)) {
+          fixLHS(call, todo);
+        }
+      }
+      else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+        if (se == call->get(2)) {
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(isMoveOrAssign(move));
+          fixLHS(move, todo);
+        }
+      }
+      else if (call->isPrimitive(PRIM_RETURN)) {
+        FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(fn);
+        fn->retType = sym->type;
+
+        forv_Vec(CallExpr, fncall, *fn->calledBy) {
+          CallExpr* move = toCallExpr(fncall->parentExpr);
+          if (move && isMoveOrAssign(move)) {
+            fixLHS(move, todo);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -197,88 +314,6 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
                           FnSymbol*                     fn,
                           ArgSymbol*                    arg);
 
-static void buildRVFWrapper(FnSymbol* fn,
-                            std::map<Symbol*, std::vector<Symbol*> >& fieldsToRVF) {
-  typedef std::map<Symbol*, std::vector<Symbol*> >::iterator argIter;
-  SET_LINENO(fn);
-  AggregateType* wrapType = new AggregateType(AGGREGATE_RECORD);
-  TypeSymbol* wrapSym = new TypeSymbol("RVF_wrapType", wrapType);
-  fn->getModule()->block->insertAtTail(new DefExpr(wrapSym));
-  // TODO: Do we need to create a ref type at this point?
-  ArgSymbol* wrapArg = new ArgSymbol(INTENT_CONST_IN, "RVF_wrapper", wrapType);
-  fn->insertFormalAtTail(wrapArg);
-
-  // Map from fields in the original record to fields in the RVF wrapper
-  std::map<Symbol*, Symbol*> fieldToField;
-
-  //
-  // Create the fields in the wrapper record and unpack them within the
-  // on-statement's body.
-  //
-
-  // Use a counter to make the new fields have unique names
-  int counter = 0;
-
-  // Use this call as an anchor point for the unpacking calls inserted
-  // with insertBefore.
-  CallExpr* anchor = new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Do not leave this call in the tree"));
-  fn->body->insertAtHead(anchor);
-  for (argIter it = fieldsToRVF.begin(); it != fieldsToRVF.end(); ++it) {
-    ArgSymbol* origArg = toArgSymbol(it->first);
-    for_vector(Symbol, oldField, it->second) {
-      VarSymbol* rvfField = new VarSymbol(astr("RVF_", istr(counter), "_", oldField->cname), oldField->getValType());
-      INT_ASSERT(oldField->isRef() && !rvfField->isRef());
-      wrapType->fields.insertAtTail(new DefExpr(rvfField));
-      fieldToField[oldField] = rvfField;
-
-      // Get the RVF'd field from the wrapper, and load it into the
-      // original reference field.
-
-      VarSymbol* rvfTemp = newTemp(rvfField->type);
-      anchor->insertBefore(new DefExpr(rvfTemp));
-      anchor->insertBefore(new CallExpr(PRIM_MOVE, rvfTemp, new CallExpr(PRIM_GET_MEMBER_VALUE, wrapArg, rvfField)));
-
-      VarSymbol* refTemp = newTemp(oldField->qualType());
-      anchor->insertBefore(new DefExpr(refTemp));
-      anchor->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_SET_REFERENCE, rvfTemp)));
-
-      anchor->insertBefore(new CallExpr(PRIM_SET_MEMBER, origArg, oldField, refTemp));
-    }
-  }
-  anchor->remove();
-  INT_ASSERT(!anchor->inTree());
-
-  // At the callsites for 'fn', pack the original fields into the RVF
-  // wrapper.
-  forv_Vec(CallExpr, call, *fn->calledBy) {
-    VarSymbol* wrapper = new VarSymbol("RVF_wrapper", wrapType);
-    call->insertBefore(new DefExpr(wrapper));
-    call->insertAtTail(new SymExpr(wrapper));
-
-    for (argIter it = fieldsToRVF.begin(); it != fieldsToRVF.end(); ++it) {
-      ArgSymbol* origArg = toArgSymbol(it->first);
-      Symbol* actual = toSymExpr(formal_to_actual(call, origArg))->symbol();
-      INT_ASSERT(actual);
-
-      for_vector(Symbol, oldField, it->second) {
-        VarSymbol* rvfField = toVarSymbol(fieldToField[oldField]);
-
-        VarSymbol* refTemp = newTemp(oldField->qualType());
-        call->insertBefore(new DefExpr(refTemp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_GET_MEMBER_VALUE, actual, oldField)));
-
-        // Dereference the 'refTemp'
-        VarSymbol* rvfTemp = newTemp(rvfField->type);
-        call->insertBefore(new DefExpr(rvfTemp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, rvfTemp, refTemp));
-
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, wrapper, rvfField, rvfTemp));
-      }
-    }
-  }
-}
-
-
 static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                 Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   Vec<FnSymbol*> syncSet;
@@ -290,32 +325,11 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       // Would need to flatten them if they are not already.
       INT_ASSERT(isGlobal(fn));
 
-      // Map from an aggregate-type argument to a list of its fields that will
-      // be RVF'd
-      std::map<Symbol*, std::vector<Symbol*> > fieldsToRVF;
-
       // For each reference arg that is safe to dereference
       for_formals(arg, fn) {
         if (canForwardValue(defMap, useMap, syncSet, fn, arg)) {
           updateTaskArg(useMap, fn, arg);
-
-          // Find references fields that can be RVF'd in addition to the formal
-          AggregateType* aggType = toAggregateType(arg->type);
-          if (aggType && isRecord(aggType)) {
-            for_fields(field, aggType) {
-              if (isRecordWrappedType(field->getValType()) && field->isRef()) {
-                if (fieldsToRVF.find(arg) == fieldsToRVF.end()) {
-                  fieldsToRVF[arg] = std::vector<Symbol*>();
-                }
-                fieldsToRVF[arg].push_back(field);
-              }
-            }
-          }
         }
-      }
-
-      if (fieldsToRVF.size() > 0) {
-        buildRVFWrapper(fn, fieldsToRVF);
       }
     }
   }
@@ -358,14 +372,24 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // to convert atomic formals to ref formals.
   } else if (isAtomicType(arg->type)) {
     retval = false;
-  } else if (arg->intent == INTENT_CONST_REF) {
+  } else if (arg->isRef()) {
+    // can forward if the actual is a QUAL_CONST_VAL or a ref-to-const
     DotInfo* info = dotLocaleMap[arg];
-    if (info == NULL) {
-      // 'info' can be NULL if there are no uses of 'arg', so we can RVF it
-      // (though it doesn't really matter).
-      retval = true;
+    if (info && info->usesDotLocale) {
+      retval = false;
+    } else if (arg->intent == INTENT_CONST_REF) {
+      if (isClass(arg->getValType())) {
+        // When passing a reference to a class across an on-statement, it will
+        // normally be generated as a wide-reference to a wide-class. When the
+        // reference is a const-ref, this introduces unnecessary communication
+        // to simply get to the wide class pointer. Because the reference is
+        // never written to, we can simply RVF the class pointer.
+        retval = true;
+      } else {
+        retval = arg->hasFlag(FLAG_REF_TO_CONST);
+      }
     } else {
-      retval = !info->usesDotLocale;
+      retval = false;
     }
   } else if (arg->intent == INTENT_CONST_IN &&
       !arg->type->symbol->hasFlag(FLAG_REF)) {
@@ -374,8 +398,6 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     // for += between strings.
     retval = true;
 
-  } else if (arg->isRef()  == true) {
-    retval = false;
   } else {
     retval = false;
   }

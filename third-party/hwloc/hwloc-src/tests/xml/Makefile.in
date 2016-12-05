@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2016 Inria.  All rights reserved.
 # Copyright © 2009-2010 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -536,6 +536,7 @@ AM_LDFLAGS = $(HWLOC_LDFLAGS)
 # Add your output files here.
 xml_outputs = \
         16amd64-8n2c-cpusets.xml \
+        16amd64-4distances.xml \
         16em64t-4s2c2t.xml \
         16em64t-4s2c2t-offlines.xml \
         16em64t-4s2c2t.console.output \
@@ -790,6 +791,13 @@ recheck: all
 16amd64-8n2c-cpusets.xml.log: 16amd64-8n2c-cpusets.xml
 	@p='16amd64-8n2c-cpusets.xml'; \
 	b='16amd64-8n2c-cpusets.xml'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+16amd64-4distances.xml.log: 16amd64-4distances.xml
+	@p='16amd64-4distances.xml'; \
+	b='16amd64-4distances.xml'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

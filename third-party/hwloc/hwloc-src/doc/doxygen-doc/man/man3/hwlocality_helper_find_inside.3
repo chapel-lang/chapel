@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_find_inside" 3 "Sun Aug 28 2016" "Version 1.11.4" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_find_inside" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -80,6 +80,8 @@ Return the number of objects at depth \fCdepth\fP included in CPU set \fCset\fP\
 .PP
 \fBNote:\fP
 .RS 4
+Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set)\&.
+.PP
 This function cannot work if objects at the given depth do not have CPU sets or if the topology is made of different machines\&. 
 .RE
 .PP
@@ -91,6 +93,8 @@ Return the number of objects of type \fCtype\fP included in CPU set \fCset\fP\&.
 .PP
 \fBNote:\fP
 .RS 4
+Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set)\&.
+.PP
 This function cannot work if objects of the given type do not have CPU sets or if the topology is made of different machines\&. 
 .RE
 .PP
@@ -102,6 +106,8 @@ Return the next object at depth \fCdepth\fP included in CPU set \fCset\fP\&. If 
 .PP
 \fBNote:\fP
 .RS 4
+Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set)\&.
+.PP
 This function cannot work if objects at the given depth do not have CPU sets or if the topology is made of different machines\&. 
 .RE
 .PP
@@ -113,6 +119,8 @@ Return the next object of type \fCtype\fP included in CPU set \fCset\fP\&. If th
 .PP
 \fBNote:\fP
 .RS 4
+Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set)\&.
+.PP
 This function cannot work if objects of the given type do not have CPU sets or if the topology is made of different machines\&. 
 .RE
 .PP
@@ -120,7 +128,14 @@ This function cannot work if objects of the given type do not have CPU sets or i
 .SS "static int hwloc_get_obj_index_inside_cpuset (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, \fBhwloc_obj_t\fP obj)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Return the logical index among the objects included in CPU set \fCset\fP\&. Consult all objects in the same level as \fCobj\fP and inside CPU set \fCset\fP in the logical order, and return the index of \fCobj\fP within them\&. If \fCset\fP covers the entire topology, this is the logical index of \fCobj\fP\&. Otherwise, this is similar to a logical index within the part of the topology defined by CPU set \fCset\fP\&. 
+Return the logical index among the objects included in CPU set \fCset\fP\&. Consult all objects in the same level as \fCobj\fP and inside CPU set \fCset\fP in the logical order, and return the index of \fCobj\fP within them\&. If \fCset\fP covers the entire topology, this is the logical index of \fCobj\fP\&. Otherwise, this is similar to a logical index within the part of the topology defined by CPU set \fCset\fP\&.
+.PP
+\fBNote:\fP
+.RS 4
+Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set)\&. 
+.RE
+.PP
+
 .SS "static \fBhwloc_obj_t\fP hwloc_get_obj_inside_cpuset_by_depth (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, unsigned depth, unsigned idx)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
@@ -128,6 +143,8 @@ Return the (logically) \fCidx\fP -th object at depth \fCdepth\fP included in CPU
 .PP
 \fBNote:\fP
 .RS 4
+Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set)\&.
+.PP
 This function cannot work if objects at the given depth do not have CPU sets or if the topology is made of different machines\&. 
 .RE
 .PP
@@ -139,6 +156,8 @@ Return the \fCidx\fP -th object of type \fCtype\fP included in CPU set \fCset\fP
 .PP
 \fBNote:\fP
 .RS 4
+Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set)\&.
+.PP
 This function cannot work if objects of the given type do not have CPU sets or if the topology is made of different machines\&. 
 .RE
 .PP

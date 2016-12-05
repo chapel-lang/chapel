@@ -1,4 +1,4 @@
-.TH "hwlocality_object_types" 3 "Sun Aug 28 2016" "Version 1.11.4" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_object_types" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -20,7 +20,7 @@ hwlocality_object_types \- Object Types
 
 .in +1c
 .ti -1c
-.RI "enum \fBhwloc_obj_type_t\fP { \fBHWLOC_OBJ_SYSTEM\fP, \fBHWLOC_OBJ_MACHINE\fP, \fBHWLOC_OBJ_NUMANODE\fP, \fBHWLOC_OBJ_PACKAGE\fP, \fBHWLOC_OBJ_CACHE\fP, \fBHWLOC_OBJ_CORE\fP, \fBHWLOC_OBJ_PU\fP, \fBHWLOC_OBJ_GROUP\fP, \fBHWLOC_OBJ_MISC\fP, \fBHWLOC_OBJ_BRIDGE\fP, \fBHWLOC_OBJ_PCI_DEVICE\fP, \fBHWLOC_OBJ_OS_DEVICE\fP, \fBHWLOC_OBJ_TYPE_MAX\fP }"
+.RI "enum \fBhwloc_obj_type_t\fP { \fBHWLOC_OBJ_SYSTEM\fP, \fBHWLOC_OBJ_MACHINE\fP, \fBHWLOC_OBJ_NUMANODE\fP, \fBHWLOC_OBJ_PACKAGE\fP, \fBHWLOC_OBJ_CACHE\fP, \fBHWLOC_OBJ_CORE\fP, \fBHWLOC_OBJ_PU\fP, \fBHWLOC_OBJ_GROUP\fP, \fBHWLOC_OBJ_MISC\fP, \fBHWLOC_OBJ_BRIDGE\fP, \fBHWLOC_OBJ_PCI_DEVICE\fP, \fBHWLOC_OBJ_OS_DEVICE\fP }"
 .br
 .ti -1c
 .RI "enum \fBhwloc_obj_cache_type_e\fP { \fBHWLOC_OBJ_CACHE_UNIFIED\fP, \fBHWLOC_OBJ_CACHE_DATA\fP, \fBHWLOC_OBJ_CACHE_INSTRUCTION\fP }"
@@ -173,9 +173,6 @@ PCI device\&. These objects have neither CPU sets nor node sets\&. They are not 
 .TP
 \fB\fIHWLOC_OBJ_OS_DEVICE \fP\fP
 Operating system device\&. These objects have neither CPU sets nor node sets\&. They are not added to the topology unless I/O discovery is enabled with \fBhwloc_topology_set_flags()\fP\&. 
-.TP
-\fB\fIHWLOC_OBJ_TYPE_MAX \fP\fP
-Sentinel value 
 .SH "Function Documentation"
 .PP 
 .SS "int hwloc_compare_types (\fBhwloc_obj_type_t\fP type1, \fBhwloc_obj_type_t\fP type2)"

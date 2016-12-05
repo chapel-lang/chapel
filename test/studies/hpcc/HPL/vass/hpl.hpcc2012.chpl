@@ -203,11 +203,24 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
 
   initAB();
 
+  if printArrays then
+    writeln("after initAB, Ab=\n", Ab);
+
   const startTime = getCurrentTime();     // capture the start time
 
   LUFactorize(n, piv);                 // compute the LU factorization
 
-  var x => backwardSub(n);  // perform the back substitution
+  if printArrays then
+    writeln("after LUFactorize, Ab=\n", Ab);
+
+  // Note: store result of backwardSub in xtemp instead of
+  // returning a slice of a local variable (which is not supported).
+  var xTemp = backwardSub(n); // perform the back substitution
+  var x => xTemp[0, 1..n];
+
+  if printArrays then
+    writeln("after backwardSub, Ab=\n", Ab, "\nx=\n", x);
+
 
   var execTime = getCurrentTime() - startTime;  // store the elapsed time
   if execTime < 0 then execTime += 24*3600;          // adjust for date change
@@ -752,7 +765,7 @@ proc backwardSub(n: indexType) {
   // the error 'zippered iterations have non-equal lengths'.
   //forall (repl,locl) in zip(replX,x) do locl = repl;
 
-  return xTemp[0, 1..n];
+  return xTemp;
 }
 
 proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
@@ -999,7 +1012,7 @@ proc replicateA(abIx, dim2) {
         const locReplAdd = locReplA._value.data;
 
         // (A) copy from the local portion of A[1..n, dim2] into replA[..,..]
-        local {
+        /*local*/ {
           const myStarts = 1..n by blkSize*tl1 align 1+blkSize*lid1;
 
           forall iStart in myStarts {
@@ -1040,7 +1053,7 @@ proc replicateB(abIx, dim1) {
         const locReplBdd = locReplB._value.data;
 
         // (A) copy from the local portion of A[dim1, 1..n+1] into replB[..,..]
-        local {
+        /*local*/ {
           const myStarts = 1..n+1 by blkSize*tl2 align 1+blkSize*lid2;
 
           forall jStart in myStarts {

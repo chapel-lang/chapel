@@ -96,6 +96,9 @@ public:
 
   virtual bool     enterGotoStmt    (GotoStmt*          node);
 
+  virtual bool     enterTryStmt     (TryStmt*           node);
+  virtual void     exitTryStmt      (TryStmt*           node);
+
 private:
                    AstDump();
 
