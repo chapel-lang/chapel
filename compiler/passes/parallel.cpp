@@ -96,7 +96,6 @@ typedef struct {
 // bundleArgsFnDataInit: the initial value for BundleArgsFnData
 static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
 
-static bool needHeapVars();
 static void insertEndCounts();
 static void passArgsToNestedFns();
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
@@ -352,14 +351,10 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
 
-  // We could potentially heap-allocate based upon the size of the
-  // argument bundle, but the local case would pass these arguments
-  // on the stack anway, so it seems moot.
-
-  fcall->insertBefore( new CallExpr(PRIM_MOVE,
-                          tempc,
-                          new CallExpr(PRIM_STACK_ALLOCATE_CLASS,
-                            ctype->symbol)));
+  // allocate the argument bundle on the stack
+  Expr* alloc = new CallExpr(PRIM_STACK_ALLOCATE_CLASS, ctype->symbol);
+  Expr* move = new CallExpr(PRIM_MOVE, tempc, alloc);
+  fcall->insertBefore(move);
 
   // Don't destroy rt hdr.
   baData.needsDestroy.push_back(false);
