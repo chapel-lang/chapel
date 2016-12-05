@@ -42,6 +42,16 @@ CHPL_JEMALLOC_CFG_OPTIONS += --with-malloc-conf=purge:decay
 #  """
 CHPL_JEMALLOC_EXTRA_CFLAGS += $(CFLAGS)
 
+
+# Tell configure that __builtin_unreachable is broken on osx+gnu by giving it a
+# "cached" value to use. This is a workaround until the problem an be resolved
+# upstream. See https://github.com/jemalloc/jemalloc/pull/504 for more info.
+ifeq ($(CHPL_MAKE_PLATFORM),darwin)
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),gnu)
+CHPL_JEMALLOC_CFG_OPTIONS += je_cv_gcc_builtin_unreachable=no
+endif
+endif
+
 CHPL_JEMALLOC_CFG_OPTIONS += $(CHPL_JEMALLOC_MORE_CFG_OPTIONS)
 
 default: all
