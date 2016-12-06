@@ -1,8 +1,8 @@
 .. _readme-marenostrum:
 
-===========
-MareNostrum
-===========
+===========================
+Using Chapel on MareNostrum
+===========================
 
 .. warning::
     We have not used Chapel on MareNostrum in several years.  It is

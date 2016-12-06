@@ -1,8 +1,8 @@
 .. _readme-macosx:
 
-========
-Mac OS X
-========
+========================
+Using Chapel on Mac OS X
+========================
 
 By and large, Chapel can be used on a Macintosh running OS X just like
 any other platform -- refer to the :ref:`chapelhome-quickstart` for more

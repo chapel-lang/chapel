@@ -1,8 +1,8 @@
 .. _readme-sgi:
 
-=========
-SGI Altix
-=========
+=========================
+Using Chapel on SGI Altix
+=========================
 
 .. warning::
     We have not used Chapel on SGI Altix in several years.  It is

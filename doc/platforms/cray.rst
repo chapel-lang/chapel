@@ -1,8 +1,8 @@
 .. _readme-cray:
 
-============
-Cray Systems
-============
+============================
+Using Chapel on Cray Systems
+============================
 
 The following information is assembled to help Chapel users get up and running
 on Cray\ |reg| systems including the Cray XC\ |trade|, XE\ |trade|, XK\

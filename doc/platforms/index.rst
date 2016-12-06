@@ -1,9 +1,7 @@
 .. _platforms-index:
 
-Platforms
-=========
-
-Platform-specific notes for using Chapel on:
+Platforms-Specific Notes
+========================
 
 .. toctree::
    :maxdepth: 1

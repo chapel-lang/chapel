@@ -1,8 +1,8 @@
 .. _readme-knl:
 
-=======================
-Intel "Knights Landing"
-=======================
+=======================================
+Using Chapel on Intel "Knights Landing"
+=======================================
 
 The following information is assembled to help Chapel users get up and
 running on Intel Xeon Phi, Knights Landing (KNL).

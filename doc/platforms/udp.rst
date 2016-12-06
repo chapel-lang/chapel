@@ -1,8 +1,8 @@
 .. _using-udp:
 
-====================
-Portable UDP Conduit
-====================
+==============================
+Using the Portable UDP Conduit
+==============================
 
 This document describes how to run Chapel across multiple machines in a
 portable manner using UDP for communication. This strategy is appropriate
