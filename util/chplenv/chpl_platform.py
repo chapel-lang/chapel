@@ -9,7 +9,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import overrides, utils
-from utils import memoize
+from utils import error, memoize
 
 @memoize
 def get(flag='host'):
@@ -20,7 +20,7 @@ def get(flag='host'):
         if not platform_val:
             platform_val = get('host')
     else:
-        raise ValueError("Invalid flag: '{0}'".format(flag))
+        raise error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if not platform_val:
         # Check for cray platform. It is a cray platform if there is an CLEinfo

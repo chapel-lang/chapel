@@ -8,7 +8,7 @@ from collections import namedtuple
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-from utils import memoize, run_command
+from utils import error, memoize, run_command
 
 
 @memoize
@@ -57,8 +57,8 @@ def CompVersion(version_string):
         build    = int(match.group(7) or 0)
         return CompVersionT(major=major, minor=minor, revision=revision, build=build)
     else:
-        raise ValueError("Could not convert version '{0}' to "
-                         "a tuple".format(version_string))
+        error("Could not convert version '{0}' to a tuple".format(
+            version_string), ValueError)
 
 
 @memoize

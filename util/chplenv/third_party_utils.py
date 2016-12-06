@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_arch, chpl_compiler, chpl_locale_model, chpl_platform
 from chpl_home_utils import get_chpl_home, using_chapel_module
-from utils import memoize, run_command
+from utils import error, memoize, run_command
 
 
 #
@@ -83,7 +83,7 @@ def pkgconfig_get_link_args(pkg, ucp='', system=True, static=True):
                            'pkgconfig', pcfile)
 
       if not os.access(pcArg, os.R_OK):
-        raise ValueError("Could not find '{0}'".format(pcArg))
+        error("Could not find '{0}'".format(pcArg), ValueError)
 
   static_arg = [ ]
   if static:
