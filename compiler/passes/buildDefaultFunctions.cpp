@@ -1074,8 +1074,11 @@ static void build_record_copy_function(AggregateType* ct) {
     // code path from initializers.
     // In addition, we could entirely remove chpl__initCopy and instead
     // rely on the copy initializer.
-
-    call = new CallExpr(ct->defaultInitializer);
+    if (ct->initializerStyle == DEFINES_INITIALIZER) {
+      call = new CallExpr("init");
+    } else {
+      call = new CallExpr(ct->defaultInitializer);
+    }
     for_fields(tmp, ct)
     {
       // Weed out implicit alias and promotion type fields.
