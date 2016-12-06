@@ -4,7 +4,8 @@ config const numTrials = 100;
 config const printTimings = false;
 
 enum TaskingMode {
-  forBeginT, coforallT, forallT
+  forBeginT, coforallT, forallT,
+  serialForBeginT, serialCoforallT, serialForallT
 };
 use TaskingMode;
 
@@ -15,9 +16,12 @@ proc main() {
 
   t.start();
   select taskingMode {
-     when forBeginT do forBeginTaskSpawn(numTrials, here.maxTaskPar);
-     when coforallT do coforallTaskSpawn(numTrials, here.maxTaskPar);
-     when forallT   do forallTaskSpawn  (numTrials, here.maxTaskPar);
+     when forBeginT       do           forBeginTaskSpawn(numTrials, here.maxTaskPar);
+     when coforallT       do           coforallTaskSpawn(numTrials, here.maxTaskPar);
+     when forallT         do           forallTaskSpawn  (numTrials, here.maxTaskPar);
+     when serialForBeginT do serial do forBeginTaskSpawn(numTrials, here.maxTaskPar);
+     when serialCoforallT do serial do coforallTaskSpawn(numTrials, here.maxTaskPar);
+     when serialForallT   do serial do forallTaskSpawn  (numTrials, here.maxTaskPar);
   }
   t.stop();
 
