@@ -404,6 +404,9 @@ TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
 TYPE_EXTERN PrimitiveType* dtCVoidPtr; // the type of a C void* (unowned)
 TYPE_EXTERN PrimitiveType* dtCFnPtr;   // a C function pointer (unowned)
 
+TYPE_EXTERN AggregateType* dtOnBundleRecord;
+TYPE_EXTERN AggregateType* dtTaskBundleRecord;
+
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
 

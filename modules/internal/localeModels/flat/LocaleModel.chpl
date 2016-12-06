@@ -50,7 +50,18 @@ module LocaleModel {
     // We need to know that this is a record type in order to pass it to and
     // return it from runtime functions properly, but we don't need or want
     // to see its contents.
-  };
+  }
+
+  extern record chpl_comm_on_bundle_t {
+  }
+  extern record chpl_task_bundle_t {
+  }
+
+  extern type chpl_comm_on_bundle_p;
+
+  extern type chpl_task_bundle_p;
+
+  extern proc chpl_comm_on_bundle_task_bundle(bundle:chpl_comm_on_bundle_p):chpl_task_bundle_p;
 
   // We need an explicit copy constructor because the compiler cannot create
   // a correct one for a record type whose members are not known to it.
@@ -349,16 +360,16 @@ module LocaleModel {
   // runtime interface
   //
   extern proc chpl_comm_execute_on(loc_id: int, subloc_id: int, fn: int,
-                                   args: c_void_ptr, arg_size: size_t);
+                                   args: chpl_comm_on_bundle_p, arg_size: size_t);
   extern proc chpl_comm_execute_on_fast(loc_id: int, subloc_id: int, fn: int,
-                                        args: c_void_ptr, args_size: size_t);
+                                        args: chpl_comm_on_bundle_p, args_size: size_t);
   extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
-                                      args: c_void_ptr, args_size: size_t);
+                                      args: chpl_comm_on_bundle_p, args_size: size_t);
   pragma "insert line file info"
-    extern proc chpl_task_taskCallFTable(fn: int,
-                                         args: c_void_ptr, args_size: size_t,
+    extern proc chpl_comm_taskCallFTable(fn: int,
+                                         args: chpl_comm_on_bundle_p, args_size: size_t,
                                          subloc_id: int): void;
-  extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
+  extern proc chpl_ftable_call(fn: int, args: chpl_comm_on_bundle_p): void;
 
   //
   // returns true if an executeOn can be handled directly
@@ -385,7 +396,7 @@ module LocaleModel {
   export
   proc chpl_executeOn(loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
-                      args: c_void_ptr,     // function args
+                      args: chpl_comm_on_bundle_p,     // function args
                       args_size: size_t     // args size
                      ) {
     const node = chpl_nodeFromLocaleID(loc);
@@ -409,7 +420,7 @@ module LocaleModel {
   export
   proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
-                          args: c_void_ptr,     // function args
+                          args: chpl_comm_on_bundle_p,     // function args
                           args_size: size_t     // args size
                          ) {
     const node = chpl_nodeFromLocaleID(loc);
@@ -429,7 +440,7 @@ module LocaleModel {
   export
   proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
-                        args: c_void_ptr,     // function args
+                        args: chpl_comm_on_bundle_p,     // function args
                         args_size: size_t     // args size
                        ) {
     //
@@ -441,7 +452,7 @@ module LocaleModel {
       if __primitive("task_get_serial") then
         chpl_ftable_call(fn, args);
       else
-        chpl_task_taskCallFTable(fn, args, args_size, c_sublocid_any);
+        chpl_comm_taskCallFTable(fn, args, args_size, c_sublocid_any);
     } else {
       if __primitive("task_get_serial") then
         chpl_comm_execute_on(node, c_sublocid_any, fn, args, args_size);
@@ -459,7 +470,9 @@ module LocaleModel {
   // runtime interface
   //
   pragma "insert line file info"
-  extern proc chpl_task_addToTaskList(fn: int, args: c_void_ptr, subloc_id: int,
+  extern proc chpl_task_addToTaskList(fn: int,
+                                      args: chpl_task_bundle_p, args_size: size_t,
+                                      subloc_id: int,
                                       ref tlist: c_void_ptr, tlist_node_id: int,
                                       is_begin: bool);
   extern proc chpl_task_executeTasksInList(ref tlist: c_void_ptr);
@@ -471,11 +484,13 @@ module LocaleModel {
   export
   proc chpl_taskListAddBegin(subloc_id: int,        // target sublocale
                              fn: int,               // task body function idx
-                             args: c_void_ptr,      // function args
+                             args: chpl_task_bundle_p,      // function args
+                             args_size: size_t,     // args size
                              ref tlist: c_void_ptr, // task list
                              tlist_node_id: int     // task list owner node
                             ) {
-    chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, true);
+    chpl_task_addToTaskList(fn, args, args_size,
+                            subloc_id, tlist, tlist_node_id, true);
   }
 
   //
@@ -486,11 +501,13 @@ module LocaleModel {
   export
   proc chpl_taskListAddCoStmt(subloc_id: int,        // target sublocale
                               fn: int,               // task body function idx
-                              args: c_void_ptr,      // function args
+                              args: chpl_task_bundle_p,      // function args
+                              args_size: size_t,     // args size
                               ref tlist: c_void_ptr, // task list
                               tlist_node_id: int     // task list owner node
                              ) {
-    chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, false);
+    chpl_task_addToTaskList(fn, args, args_size,
+                            subloc_id, tlist, tlist_node_id, false);
   }
 
   //

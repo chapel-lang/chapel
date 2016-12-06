@@ -140,6 +140,15 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
   new_c->addFlag(FLAG_NO_OBJECT);
   new_c->addFlag(FLAG_NO_WIDE_CLASS);
 
+  // Add the runtime header field
+  if (fn->hasFlag(FLAG_ON)) {
+    VarSymbol* field = new VarSymbol("_runtime_hdr", dtOnBundleRecord);
+    ctype->fields.insertAtTail(new DefExpr(field));
+  } else {
+    VarSymbol* field = new VarSymbol("_runtime_hdr", dtTaskBundleRecord);
+    ctype->fields.insertAtTail(new DefExpr(field));
+  }
+
   // add the function args as fields in the class
   int i = 0;    // Fields are numbered for uniqueness.
   for_actuals(arg, fcall) {
@@ -341,8 +350,14 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   // create the class variable instance and allocate space for it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
-  insertChplHereAlloc(fcall, false /*insertAfter*/, tempc,
-                      ctype, newMemDesc("bundled args"));
+
+  // allocate the argument bundle on the stack
+  Expr* alloc = new CallExpr(PRIM_STACK_ALLOCATE_CLASS, ctype->symbol);
+  Expr* move = new CallExpr(PRIM_MOVE, tempc, alloc);
+  fcall->insertBefore(move);
+
+  // Don't destroy rt hdr.
+  baData.needsDestroy.push_back(false);
 
   // set the references in the class instance
   int i = 1;
@@ -358,7 +373,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
       var = toSymExpr(arg)->symbol();
     baData.needsDestroy.push_back(autoCopy);
 
-    Symbol* field = ctype->getField(i);
+    Symbol* field = ctype->getField(i+1); // +1 for rt header
 
     if (field->isRef()) {
       VarSymbol* tmp = newTemp(field->qualType());
@@ -554,7 +569,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
     // Now get the i'th class member. It should be an end count.
     // Change that to the downEndCount call.
 
-    Symbol *field = ctype->getField(i);
+    Symbol *field = ctype->getField(i+1); // +1 for rt header
     INT_ASSERT(field->getValType()->symbol->hasFlag(FLAG_END_COUNT));
 
     VarSymbol* tmp = newTemp("endcount", field->qualType());
@@ -659,43 +674,52 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   // Create a call to the original function
   CallExpr *call_orig = new CallExpr(fn);
   bool first = true;
+  int i = 0;
   for_fields(field, ctype)
   {
-    // insert args
-    VarSymbol* tmp = newTemp(field->name, field->qualType());
-    wrap_fn->insertAtTail(new DefExpr(tmp));
-    wrap_fn->insertAtTail(
-        new CallExpr(PRIM_MOVE, tmp,
-        new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
+    // Skip runtime header
+    if (i > 0) {
+      // insert args
+      VarSymbol* tmp = newTemp(field->name, field->qualType());
+      wrap_fn->insertAtTail(new DefExpr(tmp));
+      wrap_fn->insertAtTail(
+          new CallExpr(PRIM_MOVE, tmp,
+          new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-    // Special case: 
-    // If this is an on block, remember the first field,
-    // but don't add to the list of actuals passed to the original on_fn.
-    // It contains the locale on which the new task is launched.
-    if (first && fn->hasFlag(FLAG_ON))
-      /* no-op */;
-    else
-      call_orig->insertAtTail(tmp);
+      // Special case: 
+      // If this is an on block, remember the first field,
+      // but don't add to the list of actuals passed to the original on_fn.
+      // It contains the locale on which the new task is launched.
+      if (first && fn->hasFlag(FLAG_ON))
+        /* no-op */;
+      else
+        call_orig->insertAtTail(tmp);
 
-    first = false;
+      first = false;
+    }
+
+    i++;
   }
 
   wrap_fn->retType = dtVoid;
   wrap_fn->insertAtTail(call_orig);     // add new call
 
   // Destroy any fields that we should be destroying.
-  int i = 0;
+  i = 0;
   for_fields(field, ctype)
   {
-    // insert auto destroy calls
-    VarSymbol* tmp = newTemp(field->name, field->qualType());
-    wrap_fn->insertAtTail(new DefExpr(tmp));
-    wrap_fn->insertAtTail(
-        new CallExpr(PRIM_MOVE, tmp,
-        new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
+    // Skip runtime header
+    if (i > 0) {
+      // insert auto destroy calls
+      VarSymbol* tmp = newTemp(field->name, field->qualType());
+      wrap_fn->insertAtTail(new DefExpr(tmp));
+      wrap_fn->insertAtTail(
+          new CallExpr(PRIM_MOVE, tmp,
+          new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-    if (baData.needsDestroy[i])
-      insertAutoDestroyForVar(tmp, wrap_fn);
+      if (baData.needsDestroy[i])
+        insertAutoDestroyForVar(tmp, wrap_fn);
+    }
 
     i++;
   }
@@ -704,11 +728,6 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   // Move the downEndCount at the tail of fn, if any,
   // to the wrapper.
   moveDownEndCountToWrapper(fn, wrap_fn, wrap_c, ctype);
-
-  if (fn->hasFlag(FLAG_ON))
-    ; // the caller will free the actual
-  else
-    wrap_fn->insertAtTail(callChplHereFree(wrap_c));
 
   // Add finish fence to wrapper if it was requested
   // This supports --cache-remote and is set in createTaskFunctions
@@ -728,7 +747,9 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   baData.wrap_fn = wrap_fn;
 }
 
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode)
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol*
+    args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn,
+    Symbol* taskList, Symbol* taskListNode)
 {
   // The wrapper function is called with the bundled argument list.
   if (fn->hasFlag(FLAG_ON)) {
@@ -743,11 +764,6 @@ static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args
     INT_ASSERT(taskList);
     fcall->insertBefore(new CallExpr(wrap_fn, new SymExpr(taskList), new SymExpr(taskListNode), args_buf, args_buf_len, tempc));
   }
-
-  if (fn->hasFlag(FLAG_ON))
-    fcall->insertAfter(callChplHereFree(tempc));
-  else
-    ; // wrap_fn will free the formal
 
   fcall->remove();                     // rm orig. call
 }

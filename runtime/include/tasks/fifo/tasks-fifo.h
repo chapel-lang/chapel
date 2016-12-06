@@ -52,6 +52,22 @@ typedef uint64_t chpl_taskID_t;
 #define chpl_nullTaskID 0
 
 //
+// Task layer private area argument bundle header
+//
+typedef struct {
+  chpl_bool serial_state;
+  chpl_bool countRunning;
+  chpl_bool is_executeOn;
+  int lineno;
+  int filename;
+  c_sublocid_t requestedSubloc;  
+  chpl_fn_int_t requested_fid;
+  chpl_fn_p requested_fn;
+  chpl_taskID_t id;
+} chpl_task_bundle_t;
+
+
+//
 // Condition variables
 //
 typedef pthread_cond_t chpl_thread_condvar_t;

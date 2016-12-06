@@ -694,6 +694,9 @@ initPrimitive() {
 
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
 
+  // Allocate a class instance on the stack (where normally it
+  // would be allocated on the heap). The only argument is the class type.
+  prim_def(PRIM_STACK_ALLOCATE_CLASS, "stack allocate class", returnInfoFirst);
   prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
   prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 }
