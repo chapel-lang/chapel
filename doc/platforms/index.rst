@@ -1,7 +1,7 @@
 .. _platforms-index:
 
 Platform-Specific Notes
-========================
+=======================
 
 Major Platforms
 ---------------
