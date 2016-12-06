@@ -2388,7 +2388,7 @@ module ChapelArray {
                     oldRng, " => ", nextAllocRange,
                     " (", newRange, ")");
           this._value.dsiReallocate({nextAllocRange});
-          this._value.dataAllocRange = nextAllocRange;
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2423,7 +2423,7 @@ module ChapelArray {
                     oldRng, " => ", nextAllocRange,
                     " (", newRange, ")");
           this._value.dsiReallocate({nextAllocRange});
-          this._value.dataAllocRange = nextAllocRange;
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2453,7 +2453,7 @@ module ChapelArray {
                     oldRng, " => ", nextAllocRange,
                     " (", newRange, ")");
           this._value.dsiReallocate({nextAllocRange});
-          this._value.dataAllocRange = nextAllocRange;
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2488,7 +2488,7 @@ module ChapelArray {
                     oldRng, " => ", nextAllocRange,
                     " (", newRange, ")");
           this._value.dsiReallocate({nextAllocRange});
-          this._value.dataAllocRange = nextAllocRange;
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2518,7 +2518,7 @@ module ChapelArray {
           }
           const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
           this._value.dsiReallocate({nextAllocRange});
-          this._value.dataAllocRange = nextAllocRange;
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2553,7 +2553,7 @@ module ChapelArray {
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({nextAllocRange});
-          this._value.dataAllocRange = nextAllocRange;
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2586,7 +2586,7 @@ module ChapelArray {
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({nextAllocRange});
-          this._value.dataAllocRange = nextAllocRange;
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();

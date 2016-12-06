@@ -1121,6 +1121,9 @@ module DefaultRectangular {
           // work for something with no immediate reward.
           if d.numIndices > 0 then
             shiftedData = copy.shiftedData;
+
+        // also set dataAllocRange
+        dataAllocRange = copy.dataAllocRange;
         //numelm = copy.numelm;
         delete copy;
         }
