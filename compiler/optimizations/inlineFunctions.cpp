@@ -86,49 +86,86 @@ static void inlineCall(FnSymbol* fn, CallExpr* call) {
   }
 }
 
-//
-// inline function fn at all call sites
-// add inlined function to inlinedSet
-// inline any functions that are called from within this function and
-// should be inlined first
-//
-static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
-  std::vector<CallExpr*> calls;
+/************************************* | **************************************
+*                                                                             *
+* Inline a function at every call site                                        *
+*                                                                             *
+************************************** | *************************************/
 
+static void markFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet);
+static void inlineBody(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet);
+static void simplifyBody(FnSymbol* fn);
+static void inlineAtCallSites(FnSymbol* fn);
+
+static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
+  markFunction(fn, inlinedSet);
+
+  inlineBody(fn, inlinedSet);
+
+  simplifyBody(fn);
+
+  inlineAtCallSites(fn);
+}
+
+static void markFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
   inlinedSet.insert(fn);
+}
+
+//
+// The Chapel specification requires that inlining be performed for any
+// procedure with this linkage specifier.  It is a preventable user error
+// if a recursive cycle is detected (directly or indirectly)
+//
+static void inlineBody(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
+  std::vector<CallExpr*> calls;
 
   collectFnCalls(fn, calls);
 
   for_vector(CallExpr, call, calls) {
     if (call->parentSymbol) {
-      FnSymbol* fn = call->resolvedFunction();
+      FnSymbol* calledFn = call->resolvedFunction();
 
-      if (fn->hasFlag(FLAG_INLINE)) {
-        if (inlinedSet.find(fn) != inlinedSet.end()) {
-          INT_FATAL(call, "recursive inlining detected");
+      if (calledFn->hasFlag(FLAG_INLINE)) {
+        if (inlinedSet.find(calledFn) != inlinedSet.end()) {
+          if (calledFn == fn) {
+            USR_FATAL(call,
+                      "Attempt to inline a function, '%s', that calls itself",
+                      fn->name);
+          } else {
+            USR_FATAL(call,
+                      "Detected a cycle back to inlined function '%s' while "
+                      "inlining '%s'",
+                      calledFn->name,
+                      fn->name);
+          }
         }
 
-        inlineFunction(fn, inlinedSet);
+        inlineFunction(calledFn, inlinedSet);
       }
     }
   }
+}
 
+static void simplifyBody(FnSymbol* fn) {
   fn->collapseBlocks();
 
   removeUnnecessaryGotos(fn);
 
 #if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
-  if (!fNoCopyPropagation) {
+  if (fNoCopyPropagation == false) {
     singleAssignmentRefPropagation(fn);
     localCopyPropagation(fn);
   }
 #endif
 
-  if (!fNoDeadCodeElimination) {
+  if (fNoDeadCodeElimination == false) {
     deadVariableElimination(fn);
     deadExpressionElimination(fn);
   }
 
+}
+
+static void inlineAtCallSites(FnSymbol* fn) {
   forv_Vec(CallExpr, call, *fn->calledBy) {
     if (call->isResolved()) {
       inlineCall(fn, call);
@@ -142,11 +179,13 @@ static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+* inline all functions with the inline flag                                   *
+* remove unnecessary block statements and gotos                               *
+*                                                                             *
+************************************** | *************************************/
 
-//
-// inline all functions with the inline flag
-// remove unnecessary block statements and gotos
-//
 void inlineFunctions() {
   compute_call_sites();
 
