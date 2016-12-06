@@ -1,6 +1,6 @@
 .. _platforms-index:
 
-Platforms-Specific Notes
+Platform-Specific Notes
 ========================
 
 .. toctree::
