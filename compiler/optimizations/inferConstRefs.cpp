@@ -499,8 +499,33 @@ static bool inferConst(Symbol* sym) {
     else if (parent && isMoveOrAssign(parent)) {
       if (call->isPrimitive(PRIM_ADDR_OF) ||
           call->isPrimitive(PRIM_SET_REFERENCE)) {
-        SymExpr* LHS = toSymExpr(parent->get(1));
-        if (LHS->isRef() && !inferConstRef(LHS->symbol())) {
+        Symbol* LHS = toSymExpr(parent->get(1))->symbol();
+        INT_ASSERT(LHS->isRef());
+
+        //
+        // If 'sym' is constructed through a _retArg, we can consider that to
+        // be a single 'def'.
+        //
+        bool isRetArg = true;
+        for_SymbolSymExprs(use, LHS) {
+          if (use->parentExpr == parent) {
+            continue;
+          }
+          CallExpr* lhsCall = toCallExpr(use->parentExpr);
+          if (lhsCall->isResolved()) {
+            ArgSymbol* lhsFormal = actual_to_formal(use);
+            if (lhsFormal->hasFlag(FLAG_RETARG) == false) {
+              isRetArg = false;
+            }
+          } else {
+            isRetArg = false;
+          }
+        }
+
+        if (isRetArg) {
+          numDefs += 1;
+        }
+        else if (!inferConstRef(LHS)) {
           isConstVal = false;
         }
       }
