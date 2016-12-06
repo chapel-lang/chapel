@@ -6,12 +6,14 @@ record R {
 proc R.init(x)
 {
   this.x = x;
+  super.init();
 }
 
 proc R.init(from)
 {
   writeln("In R.init");
   this.x = from.x;
+  super.init();
 }
 
 proc run() {
