@@ -21,8 +21,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'util'))
+sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration ------------------------------------------------
 
@@ -35,7 +34,7 @@ needs_sphinx = '1.3'
 extensions = [
     'sphinx.ext.todo',
     'sphinxcontrib.chapeldomain',
-    'disguise',
+    'util.disguise',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
