@@ -274,6 +274,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_GET_PRIV_CLASS:
     case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_SVEC_MEMBER_VALUE:
+    case PRIM_STACK_ALLOCATE_CLASS:
       return true;
     case PRIM_UNKNOWN:
       if(strcmp(prim->name, "string_length") == 0 ||
