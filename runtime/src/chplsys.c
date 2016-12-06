@@ -17,40 +17,54 @@
  * limitations under the License.
  */
 
-#if defined __CYGWIN__
-#include <windows.h>
-#endif
-#if defined(__APPLE__) || defined(__NetBSD__)
-#include <sys/sysctl.h>
-#endif
-#if defined _AIX
-#include <sys/systemcfg.h>
-#endif
+// This #define needs to be before the other #includes
+// since it affects included files
 #ifdef __linux__
 #define _GNU_SOURCE
 #endif
-#include <sys/utsname.h>
-#include "chplrt.h"
 
-#include "chpl-mem.h"
+#include "chplrt.h"
 #include "chplsys.h"
+
+// Other Chapel Header
+#include "chpl-align.h"
+#include "chpl-comm.h"
+#include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
-#include "chpl-comm.h"
 #include "error.h"
+
+// System headers
+#include <errno.h>
 
 #ifdef __linux__
 #include <pthread.h>
 #include <sched.h>
 #endif
-#include <stdio.h>
+
+#include <signal.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/utsname.h>
+
+#if defined(__APPLE__) || defined(__NetBSD__)
+#include <sys/sysctl.h>
+#endif
+
 #ifdef __linux__
 #include <sys/sysinfo.h>
 #endif
-#include <errno.h>
+
+#if defined _AIX
+#include <sys/systemcfg.h>
+#endif
+
 #include <unistd.h>
+
+#if defined __CYGWIN__
+#include <windows.h>
+#endif
 
 
 size_t chpl_getSysPageSize(void) {
@@ -73,11 +87,183 @@ size_t chpl_getSysPageSize(void) {
   return pageSize;
 }
 
+static size_t heapPageSize = 0;
 
 size_t chpl_getHeapPageSize(void) {
-  static size_t pageSize = 0;
+  return heapPageSize;
+}
 
-  if (pageSize == 0) {
+static volatile unsigned char* check_page_size_ptr;
+static unsigned char* check_page_size_base;
+static size_t check_page_size_guess;
+static unsigned char check_page_size_fault;
+static struct sigaction check_page_size_oldact;
+
+static
+void check_page_size_segv_handler(int signum, siginfo_t* sig, void* ctx)
+{
+  if (sig->si_addr == (void*) check_page_size_ptr) {
+    check_page_size_fault = true;
+    // Re-enable read+write access so the program continues
+    // if the load/store is restarted
+    mprotect((void*)check_page_size_base,
+             check_page_size_guess,
+             PROT_READ | PROT_WRITE);
+  } else {
+    // Run the old handler
+    if ((check_page_size_oldact.sa_flags & SA_SIGINFO))
+      check_page_size_oldact.sa_sigaction(signum, sig, ctx);
+    else
+      check_page_size_oldact.sa_handler(signum);
+  }
+}
+
+// Given a guess at a page size, use mprotect and a signal handler
+// to determine if the page size guess is too small.
+//
+// Returns 0 if the real page size is <= page_size_guess
+// Returns 1 if the real page size is > page_size_guess
+// Returns -1 if the call to mprotect failed
+// Returns -2 if the signal handler could not be installed
+static
+int check_page_size(size_t page_size_guess, size_t max_page_size,
+                     unsigned char* ptr,
+                     void* heap_start, size_t heap_size)
+{
+  int rc;
+  int mprotect_failed = 0;
+
+  // set signal handler variables
+  check_page_size_ptr = ptr + page_size_guess;
+  check_page_size_base = ptr;
+  check_page_size_guess = page_size_guess;
+  check_page_size_fault = 0;
+
+  // install signal handler
+  {
+    struct sigaction act = { .sa_sigaction = check_page_size_segv_handler,
+                             .sa_flags = SA_SIGINFO };
+    // Note: if this code is to work on Mac OS X, we will also need
+    // to install the signal handler for SIGBUS.
+    rc = sigaction(SIGSEGV, &act, &check_page_size_oldact);
+    if (rc!=0)
+      return -2;
+  }
+
+  // Store 0 to avoid false positives:
+  // make sure the page exists
+  *check_page_size_ptr = 0;
+
+  // Call mprotect
+  // Note that mprotect with huge pages seems to have extra requirements
+  // on linux. In particular, on linux, the len argument needs to also
+  // be a multple of the huge page size. Mac OS X does not seem to have
+  // this requirement.
+  rc = mprotect((void*)check_page_size_base, check_page_size_guess, PROT_NONE);
+  if (rc!=0) {
+    mprotect_failed = 1;
+  } else {
+    // This store operation might cause a SEGV that check_page_size_segv_handler
+    // wil handle
+    *check_page_size_ptr = 99;
+
+    // Put the memory protection back
+    rc = mprotect((void*) check_page_size_base, check_page_size_guess,
+                  PROT_READ | PROT_WRITE);
+    if (rc!=0)
+      chpl_internal_error("check_page_size failed in final mprotect call");
+  }
+
+  // un-install the signal handler
+  rc = sigaction(SIGSEGV, &check_page_size_oldact, NULL);
+  if (rc!=0)
+    chpl_internal_error("check_page_size failed in final sigaction call");
+
+  *check_page_size_ptr = 0;
+
+  if (mprotect_failed) return -1;
+  else return check_page_size_fault;
+}
+
+// Given a best-guess page size, sets the global variable
+// heapPageSize by doing experiments with mprotect.
+// In the case that mprotect does not work on that memory region,
+// page_size_in will be used as the best guess.
+static void computeHeapPageSizeByGuessing(size_t page_size_in)
+{
+  // check desired shared heap page size
+
+  void* heap_start = NULL;
+  size_t heap_size = 0;
+
+  // If nothing else in this function works, at least we should
+  // start with page_size_in as the guess for the size of pages
+  // in the heap.
+  heapPageSize = page_size_in;
+
+  chpl_comm_desired_shared_heap(&heap_start, &heap_size);
+
+  if (heap_start != NULL && heap_size != 0) {
+
+    size_t page_size = page_size_in;
+    unsigned char* start = heap_start;
+    unsigned char* ptr = start;
+    unsigned char* best_ptr = ptr;
+    size_t max_page_size = page_size;
+    int small;
+
+    // Compute the most aligned page fully enclosed within
+    // start and size. We compute the "most aligned page"
+    // because we don't know what the actual page size is.
+    // In particular, page_size_in might be smaller than the
+    // real page size. At the same time, the mprotect call
+    // in check_page_size won't work unless the pointer argument
+    // is aligned to the real page size. Which we don't know yet.
+    while(1) {
+      ptr = round_up_to_mask_ptr(ptr, page_size - 1);
+      // make sure underflow has not occurred
+      if (ptr - start < 0)
+        break;
+      // make sure that the new page size fits into
+      // the bounds of the heap, including the 1st byte
+      // of the next page
+      if (ptr - start + 1 + page_size > heap_size)
+        break;
+
+      best_ptr = ptr;
+      max_page_size = page_size;
+
+      page_size = 2*page_size;
+    }
+
+    page_size = page_size_in;
+    while(1) {
+      small = check_page_size(page_size, max_page_size,
+                              best_ptr, heap_start, heap_size);
+
+      // Stop if real page size <= page_size, or if
+      // a signal handler could not be installed.
+      if (small == 0 || small == -2) {
+        heapPageSize = page_size;
+        break;
+      }
+      // Stop if we have reached the maximum size
+      if (page_size >= max_page_size) {
+        heapPageSize = page_size_in;
+        break;
+      }
+      // Otherwise continue the search
+      // if small == 1, we know we are wrong
+      // if small == -1, mprotect failed, but that might be because
+      // we havn't yet found a page size big enough, so keep trying.
+      page_size *= 2;
+    }
+  }
+}
+
+void chpl_computeHeapPageSize(void) {
+    size_t pageSize = 0;
+
 #if defined __linux__
     char* ev;
     if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
@@ -106,9 +292,9 @@ size_t chpl_getHeapPageSize(void) {
 #else
     pageSize = chpl_getSysPageSize();
 #endif
-  }
 
-  return pageSize;
+    // note: sets heapPageSize
+    computeHeapPageSizeByGuessing(pageSize);
 }
 
 
