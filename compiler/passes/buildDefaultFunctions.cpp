@@ -1202,97 +1202,100 @@ static void build_record_init_function(AggregateType* ct) {
     CallExpr* call = NULL;
     if (ct->initializerStyle == DEFINES_INITIALIZER) {
       call = new CallExpr("init");
-    } else {
-      call = new CallExpr(ct->defaultInitializer->name);
-    }
-    // Need to insert all required arguments into this call
-    for_formals(formal, ct->defaultInitializer) {
-      if (formal->hasFlag(FLAG_IS_MEME))
-        // Do not pass in the meme argument.
-        // Resolution creates a wrapper and arranges for "this" to be passed in
-        // in this position
-        continue;
-
-      // If the initializer function is a method, we must call it as a
-      // method.  So just pass the method token along.  (No need to create a
-      // formal temp, etc.)
-      if (formal->type == dtMethodToken)
-      {
-        call->insertAtTail(gMethodToken);
-        continue;
-      }
-
-      VarSymbol* tmp = newTemp(formal->name);
-
-      if (formal->isParameter()) {
-        // Param and type fields are specific to the generic instantiation
-        // of the type, so they cannot be known when we create this method.
-        // However, they are knowable when the method is resolved.  This
-        // utilizes the field query primitives to get the correct values
-        // when those substitutions are known
-        tmp->addFlag(FLAG_PARAM);
-
-        fn->insertAtTail(new CallExpr(PRIM_MOVE,
-                                      tmp,
-                                      new CallExpr(PRIM_QUERY_PARAM_FIELD,
-                                                   arg,
-                                                   new_CStringSymbol(formal->name))));
-        fn->insertAtHead(new DefExpr(tmp));
-        call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
-
-      } else if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-        tmp->addFlag(FLAG_TYPE_VARIABLE);
-        fn->insertAtTail(new CallExpr(PRIM_MOVE,
-                                      tmp,
-                                      new CallExpr(PRIM_QUERY_TYPE_FIELD,
-                                                   arg,
-                                                   new_CStringSymbol(formal->name))));
-        fn->insertAtHead(new DefExpr(tmp));
-        call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
-
-      } else {
-        if (!formal->defaultExpr) {
-          // There are no substitutions for var fields, so if a defaultExpr
-          // has been provided, we don't need to worry about copying values
-          // over.
-          if (formal->type && formal->type != dtAny &&
-              strcmp(formal->name, "outer") != 0) {
-            // We know the type already, make use of it
-            fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, formal->type->symbol)));
-          } else {
-            // Type wasn't currently able to be determined, so we'll have to
-            // get it the long way.
-            VarSymbol* typeTemp = newTemp ("type_tmp");
-            VarSymbol* callTemp = newTemp ("call_tmp");
-
-            typeTemp->addFlag(FLAG_TYPE_VARIABLE);
-
-            fn->insertAtTail(new CallExpr(PRIM_MOVE,
-                                          callTemp,
-                                          new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                                       arg,
-                                                       new_CStringSymbol(formal->name))));
-
-            fn->insertAtTail(new CallExpr(PRIM_MOVE,
-                                          typeTemp,
-                                          new CallExpr(PRIM_TYPEOF, callTemp)));
-
-            fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, typeTemp)));
-            fn->insertAtHead(new DefExpr(callTemp));
-            fn->insertAtHead(new DefExpr(typeTemp));
-          }
-
-          fn->insertAtHead(new DefExpr(tmp));
-
-          call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
-        }
-      }
-    }
-    if (ct->initializerStyle == DEFINES_INITIALIZER) {
       // We want the initializer to take in the memory it will initialize
       VarSymbol* meme = newTemp("meme_tmp", ct);
       fn->insertAtHead(new DefExpr(meme));
       call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
+      // TODO: handle generics in the call
+    } else {
+      call = new CallExpr(ct->defaultInitializer->name);
+      // Need to insert all required arguments into this call
+      for_formals(formal, ct->defaultInitializer) {
+        if (formal->hasFlag(FLAG_IS_MEME))
+          // Do not pass in the meme argument.
+          // Resolution creates a wrapper and arranges for "this" to be passed
+          // in, in this position
+          continue;
+
+        // If the initializer function is a method, we must call it as a
+        // method.  So just pass the method token along.  (No need to create a
+        // formal temp, etc.)
+        if (formal->type == dtMethodToken)
+          {
+            call->insertAtTail(gMethodToken);
+            continue;
+          }
+
+        VarSymbol* tmp = newTemp(formal->name);
+
+        if (formal->isParameter()) {
+          // Param and type fields are specific to the generic instantiation
+          // of the type, so they cannot be known when we create this method.
+          // However, they are knowable when the method is resolved.  This
+          // utilizes the field query primitives to get the correct values
+          // when those substitutions are known
+          tmp->addFlag(FLAG_PARAM);
+
+          fn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                        tmp,
+                                        new CallExpr(PRIM_QUERY_PARAM_FIELD,
+                                                     arg,
+                                                     new_CStringSymbol(formal->name))));
+          fn->insertAtHead(new DefExpr(tmp));
+          call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+
+        } else if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+          tmp->addFlag(FLAG_TYPE_VARIABLE);
+          fn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                        tmp,
+                                        new CallExpr(PRIM_QUERY_TYPE_FIELD,
+                                                     arg,
+                                                     new_CStringSymbol(formal->name))));
+          fn->insertAtHead(new DefExpr(tmp));
+          call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+
+        } else {
+          if (!formal->defaultExpr) {
+            // There are no substitutions for var fields, so if a defaultExpr
+            // has been provided, we don't need to worry about copying values
+            // over.
+            if (formal->type && formal->type != dtAny &&
+                strcmp(formal->name, "outer") != 0) {
+              // We know the type already, make use of it
+              fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                                            new CallExpr(PRIM_INIT,
+                                                         formal->type->symbol)));
+            } else {
+              // Type wasn't currently able to be determined, so we'll have to
+              // get it the long way.
+              VarSymbol* typeTemp = newTemp ("type_tmp");
+              VarSymbol* callTemp = newTemp ("call_tmp");
+
+              typeTemp->addFlag(FLAG_TYPE_VARIABLE);
+
+              fn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                            callTemp,
+                                            new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                                         arg,
+                                                         new_CStringSymbol(formal->name))));
+
+              fn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                            typeTemp,
+                                            new CallExpr(PRIM_TYPEOF,
+                                                         callTemp)));
+
+              fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                                            new CallExpr(PRIM_INIT, typeTemp)));
+              fn->insertAtHead(new DefExpr(callTemp));
+              fn->insertAtHead(new DefExpr(typeTemp));
+            }
+
+            fn->insertAtHead(new DefExpr(tmp));
+
+            call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+          }
+        }
+      }
     }
 
     fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
