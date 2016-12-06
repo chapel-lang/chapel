@@ -1007,11 +1007,15 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
         if (formal->hasFlag(FLAG_NO_CODEGEN))
           continue; // do not print locale argument, end count, dummy class
         if (count > 0)
-          str += ", ";
+          str += ",\n";
         str += formal->codegenType().c;
         if( forHeader ) {
           str += " ";
           str += formal->cname;
+        }
+        if (fGenIDS) {
+          str += " ";
+          str += idCommentTemp(formal);
         }
         count++;
       }
