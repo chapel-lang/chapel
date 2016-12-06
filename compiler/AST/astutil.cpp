@@ -172,7 +172,9 @@ void compute_call_sites() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isEmpty() == true) {
 
-    } else if (FnSymbol* fn = call->isResolved()) {
+    } else if (isAlive(call) == false) {
+
+    } else if (FnSymbol* fn = call->resolvedFunction()) {
       fn->calledBy->add(call);
 
     } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
