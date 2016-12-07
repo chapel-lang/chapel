@@ -1,15 +1,14 @@
 /*
-  The following code leaks memory
-  This was distilled down from the SABNA-Chapel port
+  The following code demonstrates a memory leak
+  that was present at one point.
 */
 
-var wrappedArrays: [1..0] WrappedArray ; // declared before parsing (is record field)
+var wrappedArrays: [1..0] WrappedArray;
 
 const n = 10; // n is parsed from a file
 
 extend(wrappedArrays, n);
 
-// i is also parsed from a file, so we need to access any nodeArrays[i]
 for i in 1..n do
  wrappedArrays[i].push_back(i);
 
