@@ -31,9 +31,10 @@
 
 static void updateRefCalls();
 static void inlineFunctionsImpl();
+static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet);
+static void inlineCall(CallExpr* call);
 static void updateDerefCalls();
 static void inlineCleanup();
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -56,59 +57,20 @@ void inlineFunctions() {
 
 /************************************* | **************************************
 *                                                                             *
-* inlines the function called by 'call' at that call site                     *
+* inline all functions with the inline flag                                   *
 *                                                                             *
 ************************************** | *************************************/
 
-static void inlineCall(FnSymbol* fn, CallExpr* call) {
-  INT_ASSERT(call->resolvedFunction() == fn);
+static void inlineFunctionsImpl() {
+  if (fNoInline == false) {
+    std::set<FnSymbol*> inlinedSet;
 
-  SET_LINENO(call);
-
-  Expr* stmt = call->getStmtExpr();
-
-  //
-  // calculate a map from actual symbols to formal symbols
-  //
-  SymbolMap map;
-
-  for_formals_actuals(formal, actual, call) {
-    map.put(formal, toSymExpr(actual)->symbol());
-  }
-
-  //
-  // copy function body, inline it at call site, and update return
-  //
-  BlockStmt* block = fn->body->copy(&map);
-
-  if (!preserveInlinedLineNumbers)
-    reset_ast_loc(block, call);
-
-  CallExpr* returnStmt = toCallExpr(block->body.last());
-
-  if (returnStmt == NULL || !returnStmt->isPrimitive(PRIM_RETURN))
-    INT_FATAL(call, "function is not normalized");
-
-  Expr*    returnValue = returnStmt->get(1);
-  SymExpr* se          = toSymExpr(returnValue);
-
-  // Ensure that the inlined function body does not attempt to return one of
-  // the original function's formals.  This is equivalent to saying that if the
-  // returned value is originally one of the formal argument symbols, that
-  // symbol was replaced by it actual argument in the call to copy(&map) above.
-  for_formals(formal, fn) {
-    INT_ASSERT(formal != toArgSymbol(se->symbol()));
-  }
-
-  returnStmt->remove();
-  returnValue->remove();
-
-  stmt->insertBefore(block);
-
-  if (fn->retType == dtVoid) {
-    stmt->remove();
-  } else {
-    call->replace(returnValue);
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->hasFlag(FLAG_INLINE) == true &&
+          inlinedSet.find(fn)      == inlinedSet.end()) {
+        inlineFunction(fn, inlinedSet);
+      }
+    }
   }
 }
 
@@ -193,7 +155,7 @@ static void simplifyBody(FnSymbol* fn) {
 static void inlineAtCallSites(FnSymbol* fn) {
   forv_Vec(CallExpr, call, *fn->calledBy) {
     if (call->isResolved()) {
-      inlineCall(fn, call);
+      inlineCall(call);
 
       if (report_inlining) {
         printf("chapel compiler: reporting inlining, "
@@ -206,21 +168,75 @@ static void inlineAtCallSites(FnSymbol* fn) {
 
 /************************************* | **************************************
 *                                                                             *
-* inline all functions with the inline flag                                   *
+* inlines the function called by 'call' at that call site                     *
 *                                                                             *
 ************************************** | *************************************/
 
-static void inlineFunctionsImpl() {
-  if (fNoInline == false) {
-    std::set<FnSymbol*> inlinedSet;
+static BlockStmt* copyBody(CallExpr* call);
 
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_INLINE) == true &&
-          inlinedSet.find(fn)      == inlinedSet.end()) {
-        inlineFunction(fn, inlinedSet);
-      }
+static void inlineCall(CallExpr* call) {
+  SET_LINENO(call);
+
+  //
+  // This is the statement that contains the call.  Most of the statements
+  // in the body wiil be inserted immediately before this stmt.
+  //
+  // 1) If the function does not return a value, this stmt will be removed.
+  //
+  // 2) Otherwise the call will be replaced with function's return value.
+  //
+  // Note that if the function does not return a value or if the
+  // call does not consume the return value, then stmt == call
+  //
+  Expr*      stmt  = call->getStmtExpr();
+
+  FnSymbol*  fn    = call->resolvedFunction();
+  BlockStmt* block = copyBody(call);
+
+  // Transfer most of the statements from the body to immediately before
+  // the statement that that contains the call.
+  // The final statement, which be some form of return, is handled specially.
+  for_alist(copy, block->body) {
+    // This is not the final statement
+    if (copy->next != NULL) {
+      stmt->insertBefore(copy->remove());
+
+    // The function does not return a value.  Remove the calling statement.
+    } else if (fn->retType == dtVoid) {
+      stmt->remove();
+
+    // Replace the call with the return value
+    } else {
+      CallExpr* returnStmt  = toCallExpr(copy);
+      Expr*     returnValue = returnStmt->get(1);
+
+      call->replace(returnValue->remove());
     }
   }
+}
+
+//
+// Make a copy of the function's body.  The symbol map is initialized
+// with a map from the function's formals to the actuals for the call
+//
+static BlockStmt* copyBody(CallExpr* call) {
+  SET_LINENO(call);
+
+  SymbolMap  map;
+  FnSymbol*  fn     = call->resolvedFunction();
+  BlockStmt* retval = NULL;
+
+  for_formals_actuals(formal, actual, call) {
+    map.put(formal, toSymExpr(actual)->symbol());
+  }
+
+  retval = fn->body->copy(&map);
+
+  if (preserveInlinedLineNumbers == false) {
+    reset_ast_loc(retval, call);
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
