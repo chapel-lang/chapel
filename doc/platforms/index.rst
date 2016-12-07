@@ -3,13 +3,33 @@
 Platform-Specific Notes
 =======================
 
-Contents:
-
-.. toctree::
-   :hidden:
+Major Platforms
+---------------
 
 .. toctree::
    :maxdepth: 1
-   :glob:
 
-   **
+   macosx
+   cray
+   knl
+   cygwin
+
+Networks
+--------
+
+.. toctree::
+   :maxdepth: 1
+
+   infiniband
+   udp
+
+
+Older Platforms
+---------------
+
+.. toctree::
+   :maxdepth: 1
+
+   ibm
+   marenostrum
+   sgi
