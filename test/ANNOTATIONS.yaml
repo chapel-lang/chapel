@@ -302,9 +302,9 @@ cg-sparse-timecomp:
 
 c-ray:
   10/11/16:
-    - C-ray timeout-related improvements (#4743)
+    - Parallelized C-ray and transposed array (#4743)
   11/09/16:
-    - Additional clean ups (#4830)
+    - Code cleanups in preparation for SC16 (#4830)
 
 dgemm.128:
   09/06/13:
@@ -341,7 +341,14 @@ fannkuch-redux:
 
 fasta:
   10/24/16:
-    - Update fasta to operate in parallel, other clean ups (#4765)
+    - Convert bradc version from fastaredux to fasta (#4765)
+  10/26/16:
+    - Switch release fasta from random floats to ints (#4773)
+    - Switch bradc fasta to use linear search (#4769)
+  10/31/16:
+    - Switch release fasta to use linear search (#4796)
+  11/18/16:
+    - Replace queried domain iterations with range iterations (#)
 
 fastaredux:
   01/14/14:
