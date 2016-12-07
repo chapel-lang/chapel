@@ -157,7 +157,7 @@ int check_page_size(size_t page_size_guess, size_t max_page_size,
   // Call mprotect
   // Note that mprotect with huge pages seems to have extra requirements
   // on linux. In particular, on linux, the len argument needs to also
-  // be a multple of the huge page size. Mac OS X does not seem to have
+  // be a multiple of the huge page size. Mac OS X does not seem to have
   // this requirement.
   rc = mprotect((void*)check_page_size_base, check_page_size_guess, PROT_NONE);
   if (rc!=0) {
@@ -255,7 +255,7 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
       // Otherwise continue the search
       // if small == 1, we know we are wrong
       // if small == -1, mprotect failed, but that might be because
-      // we havn't yet found a page size big enough, so keep trying.
+      // we haven't yet found a page size big enough, so keep trying.
       page_size *= 2;
     }
   }
