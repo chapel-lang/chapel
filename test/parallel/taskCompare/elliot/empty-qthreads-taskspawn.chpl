@@ -4,7 +4,8 @@ config const numTrials = 100;
 config const printTimings = false;
 
 enum TaskingMode {
-  qtChplLikeT, qtChplOptT
+  qtChplLikeT, qtChplOptT,
+  qtSerialChplLikeT, qtSerialChplOptT
 };
 use TaskingMode;
 
@@ -15,8 +16,10 @@ proc main() {
 
   t.start();
   select taskingMode {
-     when qtChplLikeT do qtChplLikeTaskSpawn(numTrials, here.maxTaskPar);
-     when qtChplOptT  do qtChplOptTaskSpawn (numTrials, here.maxTaskPar);
+     when qtChplLikeT       do qtChplLikeTaskSpawn(numTrials, here.maxTaskPar, false);
+     when qtChplOptT        do qtChplOptTaskSpawn (numTrials, here.maxTaskPar, false);
+     when qtSerialChplLikeT do qtChplLikeTaskSpawn(numTrials, here.maxTaskPar, true);
+     when qtSerialChplOptT  do qtChplOptTaskSpawn (numTrials, here.maxTaskPar, true);
   }
   t.stop();
 
@@ -25,5 +28,5 @@ proc main() {
   }
 }
 
-extern proc qtChplLikeTaskSpawn(trials, numTasks);
-extern proc qtChplOptTaskSpawn(trials, numTasks);
+extern proc qtChplLikeTaskSpawn(trials, numTasks, runSerial);
+extern proc qtChplOptTaskSpawn(trials, numTasks, runSerial);
