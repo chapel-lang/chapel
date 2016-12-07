@@ -58,7 +58,7 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
       else if (exprToMove != NULL) {
         //
         // Exposed by AST pattern like this:
-        //            |------- `exprToMove`
+        //          |---|------- `exprToMove`
         // (move T (+ A B))
         // (move A B) -------- `ce`
         // (move B T)
@@ -218,7 +218,13 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
   INT_ASSERT(prim);
   if (prim->isEssential) return false;
   switch(prim->tag) {
-    case PRIM_MOVE:
+    case PRIM_MOVE: {
+      // A PRIM_MOVE is not safe if the LHS is a reference and the RHS is not
+      // a reference, because we could be modifying memory elsewhere.
+      // e.g., this handles the pattern: *(LHS) = RHS;
+      bool isRefStore = ce->get(1)->isRefOrWideRef() && !ce->get(2)->isRefOrWideRef();
+      return !isRefStore;
+    }
     case PRIM_SIZEOF:
     case PRIM_STRING_COPY:
     case PRIM_GET_SERIAL:
