@@ -177,39 +177,40 @@ static BlockStmt* copyBody(CallExpr* call);
 static void inlineCall(CallExpr* call) {
   SET_LINENO(call);
 
+  //
+  // This is the statement that contains the call.  Most of the statements
+  // in the body wiil be inserted immediately before this stmt.
+  //
+  // 1) If the function does not return a value, this stmt will be removed.
+  //
+  // 2) Otherwise the call will be replaced with function's return value.
+  //
+  // Note that if the function does not return a value or if the
+  // call does not consume the return value, then stmt == call
+  //
   Expr*      stmt  = call->getStmtExpr();
+
   FnSymbol*  fn    = call->resolvedFunction();
   BlockStmt* block = copyBody(call);
 
+  // Transfer most of the statements from the body to immediately before
+  // the statement that that contains the call.
+  // The final statement, which be some form of return, is handled specially.
+  for_alist(copy, block->body) {
+    // This is not the final statement
+    if (copy->next != NULL) {
+      stmt->insertBefore(copy->remove());
 
+    // The function does not return a value.  Remove the calling statement.
+    } else if (fn->retType == dtVoid) {
+      stmt->remove();
 
+    } else {
+      CallExpr* returnStmt  = toCallExpr(copy);
+      Expr*     returnValue = returnStmt->get(1);
 
-
-  CallExpr* returnStmt = toCallExpr(block->body.last());
-
-  if (returnStmt == NULL || !returnStmt->isPrimitive(PRIM_RETURN))
-    INT_FATAL(call, "function is not normalized");
-
-  Expr*    returnValue = returnStmt->get(1);
-  SymExpr* se          = toSymExpr(returnValue);
-
-  // Ensure that the inlined function body does not attempt to return one of
-  // the original function's formals.  This is equivalent to saying that if the
-  // returned value is originally one of the formal argument symbols, that
-  // symbol was replaced by it actual argument in the call to copy(&map) above.
-  for_formals(formal, fn) {
-    INT_ASSERT(formal != toArgSymbol(se->symbol()));
-  }
-
-  returnStmt->remove();
-  returnValue->remove();
-
-  stmt->insertBefore(block);
-
-  if (fn->retType == dtVoid) {
-    stmt->remove();
-  } else {
-    call->replace(returnValue);
+      call->replace(returnValue->remove());
+    }
   }
 }
 
