@@ -65,6 +65,8 @@ module Barrier {
   record Barrier {
     pragma "no doc"
     var bar: BarrierBaseType;
+    pragma "no doc"
+    var owned: bool = false;
 
     /* Construct a new barrier object.
 
@@ -95,11 +97,12 @@ module Barrier {
           halt("unknown barrier type");
         }
       }
+      owned = true;
     }
 
     pragma "no doc"
     proc ~Barrier() {
-      if bar != nil {
+      if owned && bar != nil {
         delete bar;
       }
     }
@@ -335,6 +338,25 @@ module Barrier {
     inline proc check(): bool {
       return done.readXX();
     }
+  }
+
+  pragma "no doc"
+  proc =(ref lhs: Barrier, rhs: Barrier) {
+    if lhs.owned {
+      delete lhs.bar;
+    }
+    lhs.bar = rhs.bar;
+    lhs.owned = false;
+  }
+
+  pragma "init copy fn"
+  pragma "no doc"
+  proc chpl__initCopy(b: Barrier) {
+    pragma "no auto destroy"
+    var ret: Barrier;
+    ret.bar = b.bar;
+    ret.owned = false;
+    return ret;
   }
 }
 
