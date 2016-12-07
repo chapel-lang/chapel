@@ -29,11 +29,37 @@
 #include <set>
 #include <vector>
 
-static void  updateRefCalls();
+static void updateRefCalls();
+static void inlineFunctionsImpl();
+static void updateDerefCalls();
+static void inlineCleanup();
 
-//
-// inlines the function called by 'call' at that call site
-//
+
+/************************************* | **************************************
+*                                                                             *
+* inline all functions with the inline flag                                   *
+* remove unnecessary block statements and gotos                               *
+*                                                                             *
+************************************** | *************************************/
+
+void inlineFunctions() {
+  compute_call_sites();
+
+  updateRefCalls();
+
+  inlineFunctionsImpl();
+
+  updateDerefCalls();
+
+  inlineCleanup();
+}
+
+/************************************* | **************************************
+*                                                                             *
+* inlines the function called by 'call' at that call site                     *
+*                                                                             *
+************************************** | *************************************/
+
 static void inlineCall(FnSymbol* fn, CallExpr* call) {
   INT_ASSERT(call->resolvedFunction() == fn);
 
@@ -162,7 +188,6 @@ static void simplifyBody(FnSymbol* fn) {
     deadVariableElimination(fn);
     deadExpressionElimination(fn);
   }
-
 }
 
 static void inlineAtCallSites(FnSymbol* fn) {
@@ -182,26 +207,11 @@ static void inlineAtCallSites(FnSymbol* fn) {
 /************************************* | **************************************
 *                                                                             *
 * inline all functions with the inline flag                                   *
-* remove unnecessary block statements and gotos                               *
 *                                                                             *
 ************************************** | *************************************/
 
-void inlineFunctions() {
-  compute_call_sites();
-
-  // NOAKES 2016/11/17
-  //   This is a transition step for straightening out ref intents.
-  //
-  //   The inner loop of inlining has some "cleanup logic" for handling
-  //   some deficiencies in the current ref-intent logic.
-  //
-  //   This logic is being moved to the top level
-  //     a) So that all calls benefit from the logical consistency
-  //     b) To simplify the business logic for inlining
-  //
-  updateRefCalls();
-
-  if (!fNoInline) {
+static void inlineFunctionsImpl() {
+  if (fNoInline == false) {
     std::set<FnSymbol*> inlinedSet;
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -210,7 +220,17 @@ void inlineFunctions() {
         inlineFunction(fn, inlinedSet);
       }
     }
+  }
+}
 
+/************************************* | **************************************
+*                                                                             *
+* This is transition code to support the ref cleanup work                     *
+*                                                                             *
+************************************** | *************************************/
+
+static void updateDerefCalls() {
+  if (fNoInline == false) {
     forv_Vec(SymExpr, se, gSymExprs) {
       CallExpr* def = toCallExpr(se->parentExpr);
 
@@ -219,16 +239,27 @@ void inlineFunctions() {
 
         INT_ASSERT(isMoveOrAssign(move));
 
-        if (!se->isRef()) {
+        if (se->isRef() == false) {
           SET_LINENO(se);
+
           def->replace(se->copy());
         }
       }
     }
   }
+}
 
+/************************************* | **************************************
+*                                                                             *
+* Either remove the dead inlined calls or do some miscellaneous cleanup.      *
+*                                                                             *
+************************************** | *************************************/
+
+static void inlineCleanup() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fNoInline && fn->hasFlag(FLAG_INLINE) && !fn->hasFlag(FLAG_VIRTUAL)) {
+    if (fNoInline                 == false &&
+        fn->hasFlag(FLAG_INLINE)  ==  true &&
+        fn->hasFlag(FLAG_VIRTUAL) == false) {
       fn->defPoint->remove();
     } else {
       fn->collapseBlocks();
@@ -238,6 +269,8 @@ void inlineFunctions() {
 }
 
 /************************************* | **************************************
+*                                                                             *
+* NOAKES 2016/11/17                                                           *
 *                                                                             *
 * The following is transition logic while ref intents are being cleaned up.   *
 *                                                                             *
