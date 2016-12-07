@@ -28,6 +28,7 @@ CODEGEN_SRCS =                                          \
                alist.cpp                                \
                stmt.cpp                                 \
                symbol.cpp                               \
+               TryStmt.cpp                              \
                type.cpp
 
 
