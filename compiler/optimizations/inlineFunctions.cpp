@@ -205,6 +205,7 @@ static void inlineCall(CallExpr* call) {
     } else if (fn->retType == dtVoid) {
       stmt->remove();
 
+    // Replace the call with the return value
     } else {
       CallExpr* returnStmt  = toCallExpr(copy);
       Expr*     returnValue = returnStmt->get(1);
