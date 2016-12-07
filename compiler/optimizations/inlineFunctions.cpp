@@ -172,28 +172,18 @@ static void inlineAtCallSites(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static BlockStmt* copyBody(CallExpr* call);
+
 static void inlineCall(CallExpr* call) {
   SET_LINENO(call);
 
-  Expr*     stmt = call->getStmtExpr();
-  FnSymbol* fn   = call->resolvedFunction();
+  Expr*      stmt  = call->getStmtExpr();
+  FnSymbol*  fn    = call->resolvedFunction();
+  BlockStmt* block = copyBody(call);
 
-  //
-  // calculate a map from actual symbols to formal symbols
-  //
-  SymbolMap map;
 
-  for_formals_actuals(formal, actual, call) {
-    map.put(formal, toSymExpr(actual)->symbol());
-  }
 
-  //
-  // copy function body, inline it at call site, and update return
-  //
-  BlockStmt* block = fn->body->copy(&map);
 
-  if (!preserveInlinedLineNumbers)
-    reset_ast_loc(block, call);
 
   CallExpr* returnStmt = toCallExpr(block->body.last());
 
@@ -221,6 +211,30 @@ static void inlineCall(CallExpr* call) {
   } else {
     call->replace(returnValue);
   }
+}
+
+//
+// Make a copy of the function's body.  The symbol map is initialized
+// with a map from the function's formals to the actuals for the call
+//
+static BlockStmt* copyBody(CallExpr* call) {
+  SET_LINENO(call);
+
+  SymbolMap  map;
+  FnSymbol*  fn     = call->resolvedFunction();
+  BlockStmt* retval = NULL;
+
+  for_formals_actuals(formal, actual, call) {
+    map.put(formal, toSymExpr(actual)->symbol());
+  }
+
+  retval = fn->body->copy(&map);
+
+  if (preserveInlinedLineNumbers == false) {
+    reset_ast_loc(retval, call);
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
