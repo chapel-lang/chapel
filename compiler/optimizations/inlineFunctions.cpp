@@ -32,7 +32,7 @@
 static void updateRefCalls();
 static void inlineFunctionsImpl();
 static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet);
-static void inlineCall(FnSymbol* fn, CallExpr* call);
+static void inlineCall(CallExpr* call);
 static void updateDerefCalls();
 static void inlineCleanup();
 
@@ -155,7 +155,7 @@ static void simplifyBody(FnSymbol* fn) {
 static void inlineAtCallSites(FnSymbol* fn) {
   forv_Vec(CallExpr, call, *fn->calledBy) {
     if (call->isResolved()) {
-      inlineCall(fn, call);
+      inlineCall(call);
 
       if (report_inlining) {
         printf("chapel compiler: reporting inlining, "
@@ -172,12 +172,11 @@ static void inlineAtCallSites(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void inlineCall(FnSymbol* fn, CallExpr* call) {
-  INT_ASSERT(call->resolvedFunction() == fn);
-
+static void inlineCall(CallExpr* call) {
   SET_LINENO(call);
 
-  Expr* stmt = call->getStmtExpr();
+  Expr*     stmt = call->getStmtExpr();
+  FnSymbol* fn   = call->resolvedFunction();
 
   //
   // calculate a map from actual symbols to formal symbols
