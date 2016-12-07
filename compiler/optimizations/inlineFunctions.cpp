@@ -219,15 +219,38 @@ static void inlineCall(CallExpr* call) {
 // Make a copy of the function's body.  The symbol map is initialized
 // with a map from the function's formals to the actuals for the call
 //
+// It is possible that a) the function being inlined takes the address
+// of one or more of the formals and b) that an actual for this call
+// is an immediate value.  This currently causes a failure during code-gen.
+// There are several solutions to this with differing tradeoffs; we currently
+// choose to always replace an actual immediate with a temp.
+//
+
 static BlockStmt* copyBody(CallExpr* call) {
   SET_LINENO(call);
 
   SymbolMap  map;
+
   FnSymbol*  fn     = call->resolvedFunction();
   BlockStmt* retval = NULL;
 
   for_formals_actuals(formal, actual, call) {
-    map.put(formal, toSymExpr(actual)->symbol());
+    Symbol* sym = toSymExpr(actual)->symbol();
+
+    // Replace an immediate actual with a temp var "just in case"
+    if (sym->isImmediate() == true) {
+      VarSymbol* tmp  = newTemp("inlineImm", sym->type);
+      Expr*      stmt = call->getStmtExpr();
+
+      actual->replace(new SymExpr(tmp));
+
+      stmt->insertBefore(new DefExpr(tmp));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, actual));
+
+      sym = tmp;
+    }
+
+    map.put(formal, sym);
   }
 
   retval = fn->body->copy(&map);
