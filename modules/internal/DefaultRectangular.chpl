@@ -698,7 +698,14 @@ module DefaultRectangular {
         pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, 0);
         pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
         if (chpl__maybeAutoDestroyed(ev)) {
-          for i in 0..dom.dsiNumIndices-1 {
+          var numElts:idxType = 0;
+          // dataAllocRange may be empty or contain a meaningful value
+          if rank == 1 && !stridable then
+            numElts = dataAllocRange.length;
+          if numElts == 0 then
+            numElts = dom.dsiNumIndices;
+
+          for i in 0..numElts-1 {
             pragma "no copy" pragma "no auto destroy" var dr = data;
             pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
             pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, i);
@@ -1114,6 +1121,9 @@ module DefaultRectangular {
           // work for something with no immediate reward.
           if d.numIndices > 0 then
             shiftedData = copy.shiftedData;
+
+        // also set dataAllocRange
+        dataAllocRange = copy.dataAllocRange;
         //numelm = copy.numelm;
         delete copy;
         }
