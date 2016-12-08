@@ -73,6 +73,12 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<SymExpr*>& symExprs);
 
 //
+// collect set of symbols
+//
+void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet);
+
+
+//
 // Checks if a callExpr is one of the op= primitives
 // Note, this does not check if a callExpr is an
 // op= function call (such as before inlining)
@@ -100,10 +106,8 @@ int isDefAndOrUse(SymExpr* se);
 // vectors are built differently depending on the other arguments
 //
 
-// builds the vectors for every variable/argument in 'symSet' and
-// looks for uses and defs only in 'symExprs'
+// builds the vectors for every variable/argument in 'symSet'
 void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Vec<SymExpr*>& symExprs,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
 
@@ -124,13 +128,6 @@ void buildDefUseMaps(BlockStmt* block,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
 
-// builds the vectors for every variable/argument in 'symSet' and
-// looks for uses and defs in the entire program
-inline void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
-}
 
 //
 // add a def to a defMap or a use to a useMap
