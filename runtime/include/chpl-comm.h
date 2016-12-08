@@ -215,6 +215,9 @@ void chpl_comm_rollcall(void);
 // Inform callers as to the communication layer's desired starting address
 // and length for the shared heap, if any.
 //
+// This function may be called multiple times during program
+// initialization.
+//
 void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p);
 
 //
