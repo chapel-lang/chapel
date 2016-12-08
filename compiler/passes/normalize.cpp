@@ -1810,26 +1810,6 @@ static void change_method_into_constructor(FnSymbol* fn) {
     USR_FATAL(fn, "a%s cannot be declared without parentheses", isCtor ? " constructor" : "n initializer");
   }
 
-  if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-    // We hadn't previously seen a constructor or initializer definition.
-    // Update the field on the type appropriately.
-    if (isInit) {
-      ct->initializerStyle = DEFINES_INITIALIZER;
-    } else if (isCtor) {
-      ct->initializerStyle = DEFINES_CONSTRUCTOR;
-    } else {
-      // Should never reach here, but just in case...
-      INT_FATAL(fn, "Function was neither a constructor nor an initializer");
-    }
-  } else if ((ct->initializerStyle == DEFINES_CONSTRUCTOR && !isCtor) ||
-             (ct->initializerStyle == DEFINES_INITIALIZER && !isInit)) {
-    // We've previously seen a constructor but this new method is an initializer
-    // or we've previously seen an initializer but this new method is a
-    // constructor.  We don't allow both to be defined on a type.
-    USR_FATAL_CONT(fn, "Definition of both constructor '%s' and initializer 'init'.  Please choose one.", ct->symbol->name);
-  }
-
-
   if (ct->initializerStyle == DEFINES_INITIALIZER) {
     ArgSymbol* meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL,
                                     new SymExpr(gTypeDefaultToken));

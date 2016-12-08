@@ -104,6 +104,8 @@ static void     addClassToHierarchy(AggregateType* ct);
 
 static void     addRecordDefaultConstruction();
 
+static void     setCreationStyle(TypeSymbol* t, FnSymbol* fn);
+
 static void     resolveGotoLabels();
 static void     resolveUnresolvedSymExprs();
 static void     resolveEnumeratedTypes();
@@ -178,14 +180,6 @@ void scopeResolve() {
   addRecordDefaultConstruction();
 
   //
-  // build constructors (type and value versions)
-  //
-  forv_Vec(AggregateType, ct, gAggregateTypes) {
-    SET_LINENO(ct->symbol);
-    build_constructors(ct);
-  }
-
-  //
   // resolve type of this for methods
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -203,12 +197,23 @@ void scopeResolve() {
 
         fn->_this->type = ts->type;
         fn->_this->type->methods.add(fn);
-
+        setCreationStyle(ts, fn);
       } else if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
         fn->_this->type = sym->symbol()->type;
         fn->_this->type->methods.add(fn);
+        setCreationStyle(sym->symbol()->type->symbol, fn);
       }
+    } else if (fn->_this) {
+      setCreationStyle(fn->_this->type->symbol, fn);
     }
+  }
+
+  //
+  // build constructors (type and value versions)
+  //
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
+    SET_LINENO(ct->symbol);
+    build_constructors(ct);
   }
 
   resolveGotoLabels();
@@ -761,6 +766,45 @@ static void addRecordDefaultConstruction()
   }
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+static void setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
+  bool isCtor = (0 == strcmp(t->name, fn->name));
+  bool isInit = (0 == strcmp(fn->name, "init"));
+
+  if (!isCtor && !isInit)
+    return;
+
+  AggregateType* ct = toAggregateType(t->type);
+  if (!ct)
+    INT_FATAL(fn, "initializer on non-class type");
+
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    USR_FATAL(fn, "a%s cannot be declared without parentheses", isCtor ? " constructor" : "n initializer");
+  }
+
+  if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+    // We hadn't previously seen a constructor or initializer definition.
+    // Update the field on the type appropriately.
+    if (isInit) {
+      ct->initializerStyle = DEFINES_INITIALIZER;
+    } else if (isCtor) {
+      ct->initializerStyle = DEFINES_CONSTRUCTOR;
+    } else {
+      // Should never reach here, but just in case...
+      INT_FATAL(fn, "Function was neither a constructor nor an initializer");
+    }
+  } else if ((ct->initializerStyle == DEFINES_CONSTRUCTOR && !isCtor) ||
+             (ct->initializerStyle == DEFINES_INITIALIZER && !isInit)) {
+    // We've previously seen a constructor but this new method is an initializer
+    // or we've previously seen an initializer but this new method is a
+    // constructor.  We don't allow both to be defined on a type.
+    USR_FATAL_CONT(fn, "Definition of both constructor '%s' and initializer 'init'.  Please choose one.", ct->symbol->name);
+  }
+}
+
 
 /************************************ | *************************************
 *                                                                           *
@@ -994,6 +1038,14 @@ static void build_type_constructor(AggregateType* ct) {
 // which is also called by user-defined constructors to pre-initialize all
 // fields to their declared or type-specific initial values.
 static void build_constructor(AggregateType* ct) {
+  if (ct->initializerStyle == DEFINES_INITIALIZER) {
+    // Don't want to create the default constructor if we have seen initializers
+    // defined.  The work is completely unnecessary, since we won't call the
+    // default constructor, and it mutates information about the fields that
+    // we would rather stayed unmutated.
+    return;
+  }
+
   // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
 
@@ -1183,13 +1235,6 @@ static void build_constructor(AggregateType* ct) {
                                                                       init->copy())));
 
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
-
-        // This is set up for initializers (but we don't know if this type has
-        // one just yet).  This must be done before the initCopies or
-        // _createFieldDefault information is wrapped around the init, because
-        // we likely don't need those for the initializer omitted fields
-        // TODO: verify my claim about the _createFieldDefault call
-        storeFieldInit(ct, field->name, init, NULL);
       }
     } else if (hadType &&
                !field->isType() &&
@@ -1200,8 +1245,6 @@ static void build_constructor(AggregateType* ct) {
 
     if (!field->isType() && !field->hasFlag(FLAG_PARAM)) {
       if (hadType) {
-        if (hadInit)
-          storeFieldInit(ct, field->name, init, NULL);
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
       } else if (init)
         init = new CallExpr("chpl__initCopy", init);
@@ -1220,10 +1263,6 @@ static void build_constructor(AggregateType* ct) {
       else {
         Expr* initVal = new SymExpr(gTypeDefaultToken);
         arg->defaultExpr = new BlockStmt(initVal);
-        if (arg->typeExpr)
-          storeFieldInit(ct, field->name, initVal, arg->typeExpr);
-        else
-          storeFieldInit(ct, field->name, NULL, NULL);
       }
     }
 
