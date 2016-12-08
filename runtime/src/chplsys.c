@@ -262,39 +262,39 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
 }
 
 void chpl_computeHeapPageSize(void) {
-    size_t pageSize = 0;
+  size_t pageSize = 0;
 
 #if defined __linux__
-    char* ev;
-    if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
-      pageSize = chpl_getSysPageSize();
-    else {
+  char* ev;
+  if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
+    pageSize = chpl_getSysPageSize();
+  else {
 
-      size_t tmpPageSize;
-      int  num_scanned;
-      char units;
+    size_t tmpPageSize;
+    int  num_scanned;
+    char units;
 
-      if ((num_scanned = sscanf(ev, "%zi%c", &tmpPageSize, &units)) != 1) {
-        if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
-          switch (units) {
-          case 'k': case 'K': tmpPageSize <<= 10; break;
-          case 'm': case 'M': tmpPageSize <<= 20; break;
-          case 'g': case 'G': tmpPageSize <<= 30; break;
-          }
-        }
-        else {
-          chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+    if ((num_scanned = sscanf(ev, "%zi%c", &tmpPageSize, &units)) != 1) {
+      if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
+        switch (units) {
+        case 'k': case 'K': tmpPageSize <<= 10; break;
+        case 'm': case 'M': tmpPageSize <<= 20; break;
+        case 'g': case 'G': tmpPageSize <<= 30; break;
         }
       }
-
-      pageSize = tmpPageSize;
+      else {
+        chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+      }
     }
+
+    pageSize = tmpPageSize;
+  }
 #else
-    pageSize = chpl_getSysPageSize();
+  pageSize = chpl_getSysPageSize();
 #endif
 
-    // note: sets heapPageSize
-    computeHeapPageSizeByGuessing(pageSize);
+  // note: sets heapPageSize
+  computeHeapPageSizeByGuessing(pageSize);
 }
 
 
