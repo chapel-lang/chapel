@@ -17,10 +17,7 @@ matrix:
 script:
   - ./util/buildRelease/smokeTest
 
-# Set QTHREAD_AFFINITY=no to avoid pinning to processors that we don't actually
-# have access to. This seems to be an artifact caused by the interaction
-# between docker and hwloc on Travis's docker images.
 env:
-  - NIGHTLY_TEST_SETTINGS=true QTHREAD_AFFINITY=no
+  - NIGHTLY_TEST_SETTINGS=true
 
 sudo: false
