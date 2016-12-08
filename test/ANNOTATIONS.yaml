@@ -201,7 +201,7 @@ all:
   11/08/16:
     - text: RVF arrays in records (#4821)
       config: 16 node XC
-  11/27/16:
+  11/26/16:
     - Use hybrid spin/condwait (#4902)
 
 
