@@ -169,26 +169,34 @@ void compute_call_sites() {
       fn->calledBy = new Vec<CallExpr*>();
   }
 
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isEmpty() == true) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    for_SymbolSymExprs(se, fn) {
+      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        if (call->isEmpty() == true) {
+          assert(0); // not possible
 
-    } else if (isAlive(call) == false) {
+        } else if (isAlive(call) == false) {
+          assert(0); // not possible
 
-    } else if (FnSymbol* fn = call->resolvedFunction()) {
-      fn->calledBy->add(call);
+        } else if (fn == call->resolvedFunction()) {
+          fn->calledBy->add(call);
 
-    } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
-      // sjd: do we have to do anything special here?
-      //      should this call be added to some function's calledBy list?
+        } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+          // sjd: do we have to do anything special here?
+          //      should this call be added to some function's calledBy list?
 
-    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      FnSymbol*       fn       = toFnSymbol(toSymExpr(call->get(1))->symbol());
-      Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
+        } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+          FnSymbol*      vFn       = toFnSymbol(toSymExpr(call->get(1))->symbol());
+          if (vFn == fn) {
+            Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
 
-      fn->calledBy->add(call);
+            fn->calledBy->add(call);
 
-      forv_Vec(FnSymbol, child, *children)
-        child->calledBy->add(call);
+            forv_Vec(FnSymbol, child, *children)
+              child->calledBy->add(call);
+          }
+        }
+      }
     }
   }
 }
