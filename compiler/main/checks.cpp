@@ -521,8 +521,8 @@ static void checkAggregateTypes()
 {
   for_alive_in_Vec(AggregateType, at, gAggregateTypes)
   {
-    if (! at->defaultInitializer)
-      INT_FATAL(at, "aggregate type has no initializer");
+    if (! at->defaultInitializer && at->initializerStyle != DEFINES_INITIALIZER)
+      INT_FATAL(at, "aggregate type did not define an initializer and has no default constructor");
     if (! at->defaultTypeConstructor)
       INT_FATAL(at, "aggregate type has no default type constructor");
   }
