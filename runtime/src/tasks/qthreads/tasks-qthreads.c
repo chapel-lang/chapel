@@ -1001,12 +1001,14 @@ void chpl_task_startMovedTask(chpl_fn_int_t       fid,
 chpl_taskID_t chpl_task_getId(void)
 {
     chpl_qthread_tls_t *tls = chpl_qthread_get_tasklocal();
-    chpl_taskID_t *id_ptr = &tls->bundle->id;
+    chpl_taskID_t *id_ptr = NULL;
 
     PROFILE_INCR(profile_task_getId,1);
 
     if (tls == NULL)
         return (chpl_taskID_t) -1;
+
+    id_ptr = &tls->bundle->id;
 
     if (*id_ptr == chpl_nullTaskID)
         *id_ptr = qthread_incr(&next_task_id, 1);
