@@ -41,6 +41,10 @@
        writeln("Task ", tid, " is past the barrier");
      }
 
+   Note: When a barrier instance goes out of scope it is automatically deleted.
+   After it is deleted, any copies of the barrier that remain are invalid.
+   Using a copy of a barrier after it has been deleted is undefined.
+
    Future direction
    ----------------
    In the future, we expect to add more language-level support for a
