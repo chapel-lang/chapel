@@ -132,6 +132,12 @@ int check_page_size(size_t page_size_guess, size_t max_page_size,
 {
   int rc;
   int mprotect_failed = 0;
+  const int debug = 0; // set to 1 for debug prints
+
+  if (debug)
+    printf("check_page_size(%li, %li, %p, %p, %li)\n",
+           (long) page_size_guess, (long) max_page_size,
+           ptr, heap_start, (long) heap_size);
 
   // set signal handler variables
   check_page_size_ptr = ptr + page_size_guess;
@@ -161,8 +167,10 @@ int check_page_size(size_t page_size_guess, size_t max_page_size,
   // this requirement.
   rc = mprotect((void*)check_page_size_base, check_page_size_guess, PROT_NONE);
   if (rc!=0) {
+    if (debug) printf("mprotect failed\n");
     mprotect_failed = 1;
   } else {
+    if (debug) printf("mprotect success\n");
     // This store operation might cause a SEGV that check_page_size_segv_handler
     // wil handle
     *check_page_size_ptr = 99;
@@ -172,6 +180,8 @@ int check_page_size(size_t page_size_guess, size_t max_page_size,
                   PROT_READ | PROT_WRITE);
     if (rc!=0)
       chpl_internal_error("check_page_size failed in final mprotect call");
+
+    if (debug) printf("mprotect restore success\n");
   }
 
   // un-install the signal handler
@@ -179,6 +189,13 @@ int check_page_size(size_t page_size_guess, size_t max_page_size,
   if (rc!=0)
     chpl_internal_error("check_page_size failed in final sigaction call");
 
+  if (debug)
+    printf("check_page_size_fault is %i\n", (int) check_page_size_fault);
+
+  // set the value to 0 for two reasons:
+  // 1: 0 is the normal default for uninitialized memory
+  // 2: if there is any error when writing to it after this
+  //    experiment, we want to know that now
   *check_page_size_ptr = 0;
 
   if (mprotect_failed) return -1;
@@ -262,39 +279,39 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
 }
 
 void chpl_computeHeapPageSize(void) {
-    size_t pageSize = 0;
+  size_t pageSize = 0;
 
 #if defined __linux__
-    char* ev;
-    if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
-      pageSize = chpl_getSysPageSize();
-    else {
+  char* ev;
+  if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
+    pageSize = chpl_getSysPageSize();
+  else {
 
-      size_t tmpPageSize;
-      int  num_scanned;
-      char units;
+    size_t tmpPageSize;
+    int  num_scanned;
+    char units;
 
-      if ((num_scanned = sscanf(ev, "%zi%c", &tmpPageSize, &units)) != 1) {
-        if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
-          switch (units) {
-          case 'k': case 'K': tmpPageSize <<= 10; break;
-          case 'm': case 'M': tmpPageSize <<= 20; break;
-          case 'g': case 'G': tmpPageSize <<= 30; break;
-          }
-        }
-        else {
-          chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+    if ((num_scanned = sscanf(ev, "%zi%c", &tmpPageSize, &units)) != 1) {
+      if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
+        switch (units) {
+        case 'k': case 'K': tmpPageSize <<= 10; break;
+        case 'm': case 'M': tmpPageSize <<= 20; break;
+        case 'g': case 'G': tmpPageSize <<= 30; break;
         }
       }
-
-      pageSize = tmpPageSize;
+      else {
+        chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+      }
     }
+
+    pageSize = tmpPageSize;
+  }
 #else
-    pageSize = chpl_getSysPageSize();
+  pageSize = chpl_getSysPageSize();
 #endif
 
-    // note: sets heapPageSize
-    computeHeapPageSizeByGuessing(pageSize);
+  // note: sets heapPageSize
+  computeHeapPageSizeByGuessing(pageSize);
 }
 
 
