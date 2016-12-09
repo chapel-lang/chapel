@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of jemalloc 4.4.0
+# Test performance of vector coforall
 GITHUB_USER=ronawho
-GITHUB_BRANCH=upgrade-jemalloc-4.4.0
-SHORT_NAME=jemalloc-4.4.0
-START_DATE=12/05/16
+GITHUB_BRANCH=vector-coforall-2
+SHORT_NAME=vectorCoforall
+START_DATE=12/08/16
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
