@@ -126,6 +126,7 @@ config           return processToken(yyscanner, TCONFIG);
 const            return processToken(yyscanner, TCONST);
 continue         return processToken(yyscanner, TCONTINUE);
 delete           return processToken(yyscanner, TDELETE);
+delegate         return processToken(yyscanner, TDELEGATE);
 dmapped          return processToken(yyscanner, TDMAPPED);
 do               return processToken(yyscanner, TDO);
 domain           return processToken(yyscanner, TDOMAIN);

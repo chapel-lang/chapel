@@ -2463,6 +2463,25 @@ void applyPrivateToBlock(BlockStmt* block) {
   }
 }
 
+BlockStmt* buildDelegateStmt(Expr* expr) {
+  // Instead of just storing expr directly, put it into a method
+  // and store a call to that method.
+  // This way, we can work with the rest of the compiler that
+  // assumes that 'this' is an ArgSymbol.
+  static int delegate_counter = 0;
+  const char* name = astr("delegate", istr(++delegate_counter));
+  FnSymbol* fn = new FnSymbol(name);
+
+  fn->addFlag(FLAG_INLINE);
+  fn->addFlag(FLAG_MAYBE_REF);
+
+  fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
+
+  DefExpr* def = new DefExpr(fn);
+
+  return buildChapelStmt(new DelegateStmt(def));
+}
+
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {

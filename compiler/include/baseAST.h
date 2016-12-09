@@ -71,6 +71,7 @@
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
   macro(TryStmt) sep                               \
+  macro(DelegateStmt) sep                          \
   macro(ExternBlockStmt)
 
 #define foreach_ast(macro)                         \
@@ -147,6 +148,7 @@ enum AstTag {
   E_BlockStmt,
   E_CondStmt,
   E_GotoStmt,
+  E_DelegateStmt,
   E_ExternBlockStmt,
 
   E_ModuleSymbol,
@@ -338,6 +340,7 @@ def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
 def_is_ast(TryStmt)
+def_is_ast(DelegateStmt)
 def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
 def_is_ast(VarSymbol)
@@ -380,6 +383,7 @@ def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
 def_to_ast(TryStmt)
+def_to_ast(DelegateStmt)
 def_to_ast(ExternBlockStmt)
 def_to_ast(Expr)
 def_to_ast(ModuleSymbol)
@@ -540,6 +544,9 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_GotoStmt:                                                      \
     AST_CALL_CHILD(_a, GotoStmt, label, call, __VA_ARGS__);             \
     break;                                                              \
+  case E_DelegateStmt:                                                  \
+    AST_CALL_CHILD(_a, DelegateStmt, toFnDef, call, __VA_ARGS__);       \
+    break;                                                              \
   case E_TryStmt:                                                       \
     AST_CALL_CHILD(_a, TryStmt, getBody(), call, __VA_ARGS__);          \
     break;                                                              \
@@ -566,6 +573,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_AggregateType:                                                 \
     AST_CALL_LIST(_a, AggregateType, fields, call, __VA_ARGS__);        \
     AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);      \
+    AST_CALL_LIST(_a, AggregateType, delegates, call, __VA_ARGS__);     \
     break;                                                              \
   default:                                                              \
     break;                                                              \

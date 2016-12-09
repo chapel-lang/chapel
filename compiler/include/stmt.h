@@ -301,6 +301,37 @@ public:
 *                                                                           *
 ************************************* | ************************************/
 
+class DelegateStmt : public Stmt {
+public:
+                      DelegateStmt(DefExpr* toFnDef);
+
+  // Interface to BaseAST
+  virtual GenRet      codegen();
+  virtual void        verify();
+  virtual void        accept(AstVisitor* visitor);
+
+  DECLARE_COPY(DelegateStmt);
+
+  // Interface to Expr
+  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
+
+  virtual Expr*       getFirstChild();
+  virtual Expr*       getFirstExpr();
+
+  // used during parsing
+  DefExpr*            toFnDef;
+  // used before, during resolution
+  const char*         fnReturningDelegate;
+  // used during resolution
+  Type*               type;
+};
+
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 extern Vec<LabelSymbol*>         removedIterResumeLabels;
 extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 

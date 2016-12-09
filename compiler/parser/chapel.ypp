@@ -286,7 +286,8 @@
 //
 %token TALIGN TAS TATOMIC TBEGIN TBREAK TBY
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXCEPT TEXPORT TEXTERN
+%token TDELEGATE TDELETE TDMAPPED TDO TDOMAIN
+%token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT
@@ -375,6 +376,7 @@
 %type <pblockstmt> if_stmt loop_stmt
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
 %type <pblockstmt> private_decl
+%type <pblockstmt> delegate_stmt
 %type <pblockstmt> extern_block_stmt
 %type <pblockstmt> return_stmt
 %type <pblockstmt> try_stmt
@@ -608,11 +610,16 @@ class_level_stmt:
 | enum_decl_stmt
 | type_alias_decl_stmt
 | class_decl_stmt
+| delegate_stmt
 ;
 
 private_decl:
   fn_decl_stmt
 | var_decl_stmt
+;
+
+delegate_stmt:
+  TDELEGATE expr TSEMI  { $$ = buildDelegateStmt($2); }
 ;
 
 extern_block_stmt:

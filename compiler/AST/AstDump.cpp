@@ -522,6 +522,19 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
 }
 
 //
+// DelegateStmt
+//
+bool AstDump::enterDelegateStmt(DelegateStmt* node) {
+  write("delegate (");
+  return true;
+}
+
+void AstDump::exitDelegateStmt(DelegateStmt* node) {
+  write(")");
+}
+
+
+//
 // TryStmt
 //
 bool AstDump::enterTryStmt(TryStmt* node) {

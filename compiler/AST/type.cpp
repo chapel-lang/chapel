@@ -492,6 +492,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   inherits(),
   outer(NULL),
   iteratorInfo(NULL),
+  delegates(),
   doc(NULL)
 {
   if (aggregateTag == AGGREGATE_CLASS) { // set defaultValue to nil to keep it
@@ -501,6 +502,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   methods.clear();
   fields.parent = this;
   inherits.parent = this;
+  delegates.parent = this;
   gAggregateTypes.add(this);
 }
 
@@ -535,6 +537,10 @@ void AggregateType::verify() {
     if (expr->parentSymbol != symbol)
       INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
   }
+  for_alist(expr, delegates) {
+    if (expr->parentSymbol != symbol)
+      INT_FATAL(this, "Bad AggregateType::delegates::parentSymbol");
+  }
 }
 
 
@@ -550,6 +556,10 @@ AggregateType::copyInner(SymbolMap* map) {
     if (FnSymbol* fn = toFnSymbol(field))
       copy_type->methods.add(fn);
   }
+  for_alist(delegate, delegates) {
+    copy_type->delegates.insertAtTail(COPY_INT(delegate));
+  }
+
   return copy_type;
 }
 
@@ -614,6 +624,14 @@ void AggregateType::addDeclarations(Expr* expr, bool tail) {
     for_alist(expr, block->body) {
       addDeclarations(expr, tail);
     }
+  } else if (DelegateStmt* delegate = toDelegateStmt(expr)) {
+    // delegate expr is a def expr for a function that we should handle.
+    DefExpr* def = toDefExpr(delegate->toFnDef);
+    // Handle the function defining what we delegate to
+    addDeclaration(this, def, tail);
+    // Add the DelegateStmt to the AST
+    delegate->toFnDef = NULL;
+    this->delegates.insertAtTail(delegate);
   } else {
     INT_FATAL(expr, "unexpected case");
   }
@@ -633,6 +651,10 @@ void AggregateType::accept(AstVisitor* visitor) {
     }
 
     for_alist(next_ast, inherits) {
+      next_ast->accept(visitor);
+    }
+
+    for_alist(next_ast, delegates) {
       next_ast->accept(visitor);
     }
 

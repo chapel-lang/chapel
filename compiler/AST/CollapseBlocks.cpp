@@ -382,6 +382,16 @@ void CollapseBlocks::exitGotoStmt(GotoStmt* node)
 
 }
 
+bool CollapseBlocks::enterDelegateStmt(DelegateStmt* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitDelegateStmt(DelegateStmt* node)
+{
+
+}
+
 bool CollapseBlocks::enterTryStmt(TryStmt* node)
 {
   return true;

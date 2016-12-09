@@ -297,6 +297,8 @@ class AggregateType : public Type {
 
   IteratorInfo* iteratorInfo; // Attached only to iterator class/records
 
+  AList delegates;
+
   const char *doc;
 
   AggregateType(AggregateTag initTag);

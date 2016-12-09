@@ -1154,3 +1154,64 @@ Expr* ExternBlockStmt::getFirstExpr() {
   INT_FATAL(this, "unexpected ExternBlockStmt in getFirstExpr");
   return NULL;
 }
+
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+DelegateStmt::DelegateStmt(DefExpr* toFnDef) :
+  Stmt(E_DelegateStmt),
+  toFnDef(toFnDef),
+  fnReturningDelegate(NULL),
+  type(NULL)
+{
+  gDelegateStmts.add(this);
+
+  if (toFnDef)
+    if (FnSymbol* fn = toFnSymbol(toFnDef->sym))
+      fnReturningDelegate = fn->name;
+}
+
+void DelegateStmt::verify() {
+  Expr::verify();
+  if (astTag != E_DelegateStmt) {
+    INT_FATAL(this, "Bad DelegateStmt::astTag");
+  }
+  if (!toFnDef && !fnReturningDelegate && !type) {
+    INT_FATAL(this, "DelegateStmt is empty");
+  }
+}
+
+void DelegateStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == toFnDef) {
+    toFnDef = toDefExpr(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in DelegateStmt::replaceChild");
+  }
+}
+
+DelegateStmt* DelegateStmt::copyInner(SymbolMap* map) {
+  DelegateStmt* ret = new DelegateStmt(COPY_INT(toFnDef));
+  ret->fnReturningDelegate = fnReturningDelegate;
+  return ret;
+}
+
+void DelegateStmt::accept(AstVisitor* visitor) {
+  if (visitor->enterDelegateStmt(this) == true) {
+
+    if (toFnDef)
+      toFnDef->accept(visitor);
+
+    visitor->exitDelegateStmt(this);
+  }
+}
+
+Expr* DelegateStmt::getFirstChild() {
+  return toFnDef;
+}
+
+Expr* DelegateStmt::getFirstExpr() {
+  return (toFnDef != NULL) ? toFnDef->getFirstExpr() : this;
+}
