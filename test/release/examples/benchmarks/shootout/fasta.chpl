@@ -6,13 +6,15 @@
             and the GNU C version by Paul Hsieh
 */
 
-config const n = 1000,   // controls the length of the generated strings
-             lineLength = 60;
+config const n = 1000,             // the length of the generated strings
+             lineLength = 60;      // the number of columns in the output
 
-config param IM = 139968, // parameters for the RNG
+config type randType = uint(32);   // type to use for random numbers
+
+config param IM = 139968,          // parameters for the RNG
              IA = 3877,
              IC = 29573,
-             seed = 42;
+             seed: randType = 42;
 
 //
 // Nucleotide definitions
@@ -102,11 +104,11 @@ proc randomMake(desc, nucleotides, n) {
   stdout.writeln(desc);
 
   const numNucls = nucleotides.size;
-  var cumulProb: [1..numNucls] int;
+  var cumulProb: [1..numNucls] randType;
   var p = 0.0;
   for i in 1..numNucls {
     p += nucleotides[i](prob);
-    cumulProb[i] = 1 + (p*IM):int;
+    cumulProb[i] = 1 + (p*IM):randType;
   }
 
   var line_buff: [0..lineLength] int(8);

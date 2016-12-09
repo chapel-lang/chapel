@@ -13,6 +13,13 @@ config const n = 1000,                   // the length of the generated strings
              blockSize = 1024,           // the parallelization granularity
              numTasks = here.maxTaskPar; // the degree of parallelization
 
+config type randType = uint(32);   // type to use for random numbers
+
+config param IM = 139968,          // parameters for the RNG
+             IA = 3877,
+             IC = 29573,
+             seed: randType = 42;
+
 //
 // Nucleotide definitions
 //
@@ -51,8 +58,6 @@ const ALU: [0..286] int(8) = [
 //
 param nucl = 1,
       prob = 2;
-
-param IM = 139968;
 
 //
 // Probability tables for sequences to be randomly generated
@@ -191,12 +196,9 @@ proc randomMake(desc, nuclInfo, n) {
 //
 // Deterministic random number generator
 //
-var lastRand = 42/*:int(32)*/;
+var lastRand = seed;
 
 proc getRands(n, arr) {
-  param IA = 3877,
-        IC = 29573;
-
   //  writef("tid %i got turn\n", tid);
   for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
