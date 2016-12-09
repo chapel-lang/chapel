@@ -267,7 +267,6 @@ module elemental_cholesky_symmetric_index_ranges_block {
 	  }
       }
     }
-    delete bar;
 
     // return success 
 

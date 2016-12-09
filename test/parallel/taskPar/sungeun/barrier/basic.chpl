@@ -30,12 +30,9 @@ localTest(b, numTasks);
 
 b.reset(numRemoteTasks);
 remoteTest(b, numRemoteTasks);
-delete b;
 
 var sb1 = new Barrier(numTasks, BarrierType.Sync);
 localTest(sb1, numTasks);
-delete sb1;
 
 var sb2 = new Barrier(numRemoteTasks, BarrierType.Sync);
 remoteTest(sb2, numRemoteTasks);
-delete sb2;
