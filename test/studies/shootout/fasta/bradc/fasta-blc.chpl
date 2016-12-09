@@ -150,16 +150,14 @@ proc randomMake(desc, nuclInfo, n) {
       var col = 0;
       var off = 0;
       for i in 0..#bytes {
-        //
-        // TODO: reference version doesn't use real, why do I?
-        //
         const r = rands[i];
-        for i in 1..numNucls {
-          if r < cumul_p[i] {
-            line_buff[off] = nuclInfo[i](nucl);
-            break;
-          }
-        }
+        var ncnt = 1;
+        for j in 1..numNucls do
+          if r >= cumul_p[j] then
+            ncnt += 1;
+
+        line_buff[off] = nuclInfo[ncnt](nucl);
+
         off += 1;
         col += 1;
         if (col == lineLength) {
