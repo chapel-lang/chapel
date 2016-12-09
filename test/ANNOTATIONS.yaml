@@ -203,6 +203,10 @@ all:
       config: 16 node XC
   11/26/16:
     - Use hybrid spin/condwait (#4902)
+  12/07/16:
+    - Stack allocate on and task function argument bundles (#4074)
+  12/08/16:
+    - Re-enable denormalization (#4547)
 
 
 AllCompTime:
@@ -388,6 +392,9 @@ hpl:
 hpl_performance:
   12/11/15:
     - Fixed string leak in DimensionalDist2D (#3013)
+  11/30/16:
+    - text: Improvements to inferConstRefs (#4904)
+    - config: 16 node XC
 
 init:
   05/03/16:
@@ -581,9 +588,12 @@ miniMD:
   01/30/15:
     - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
   03/17/15:
-    -  Avoid shallow record copies in miniMD (#1643)
+    - Avoid shallow record copies in miniMD (#1643)
   03/19/16:
-    -  Increase parallelism, decrease comm (#3483)
+    - Increase parallelism, decrease comm (#3483)
+  12/02/16:
+    - RVF reference fields with record-wrapped type (#4925)
+
 
 nbody:
   03/17/14:
@@ -698,6 +708,11 @@ STREAM_performance:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+steam-promoted.xc-perf:
+  12/02/16:
+    - text: RVF reference fields with record-wrapped type (#4925)
+    - config: 16 node XC
 
 STREAM_study:
   10/21/16:
