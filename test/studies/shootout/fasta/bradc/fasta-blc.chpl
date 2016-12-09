@@ -115,9 +115,17 @@ proc randomMake(desc, nuclInfo, n) {
     cumul_p[i] = 1 + (p*IM):int;
   }
 
-  var rngTid$, outTid$: [0..#numTasks] sync int;
-  rngTid$[0] = 1;
-  outTid$[0] = 1;
+  var rngTid$, outTid$: [0..#numTasks] atomic int;
+
+  rngTid$.write(1);
+  outTid$.write(1);
+
+  /*
+  for i in 0..#numTasks {
+    rngTid$[i].write(1);
+    outTid$[i].write(1);
+  }
+*/
 
   coforall tid in 0..#numTasks {
     const chunkSize = lineLength*blockSize;
@@ -136,16 +144,16 @@ proc randomMake(desc, nuclInfo, n) {
       //      writef("tid %i doing %i..#%i\n", tid, i, bytes);
 
       //      writef("tid %i working on bytes %i\n", tid, bytes);      
-      //      writef("tid %i waiting for turn\n", tid);
-      const myTurn = rngTid$[tid];
-      //      writef("tid %i got turn\n", tid);
+      //      stderr.writef("tid %i waiting for turn to say %i\n", tid, i);
+      while (rngTid$[tid].read() != i) do ;
+      //      stderr.writef("tid %i got turn\n", tid);
       getRands(bytes, rands);
       /*
       for (r,i) in zip(getRands(bytes, tid), 0..) do
         rands[i] = r;
       */
-      //      writef("tid %i passing turn to %i\n", tid, (tid+1)%numTasks);
-      rngTid$[nextTask] = myTurn + 1;
+      //      stderr.writef("tid %i passing turn %i to %i\n", tid, i+1, nextTask);
+      rngTid$[nextTask].write(i + chunkSize);
 
       var col = 0;
       var off = 0;
@@ -174,9 +182,9 @@ proc randomMake(desc, nuclInfo, n) {
 
       //      writeln("tid = ", tid, "bytes = ", bytes, " off = ", off);
       {
-        const myTurn = outTid$[tid];
+        while (outTid$[tid].read() != i) do ;
         stdout.write(line_buff[0..#off]);
-        outTid$[nextTask] = myTurn + 1;
+        outTid$[nextTask].write(i+chunkSize);
       }
     }
     
