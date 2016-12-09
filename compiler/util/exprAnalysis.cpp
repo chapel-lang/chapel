@@ -117,7 +117,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
 
   // check if fn have any ref arguments
   for_formals(formal, fnSym) {
-    if(isReferenceType(formal->typeInfo())) {
+    if (formal->isRef()) {
       safeFnCache[fnSym] = false;
       return false;
     }
