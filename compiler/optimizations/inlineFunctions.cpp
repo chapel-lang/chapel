@@ -179,7 +179,7 @@ static void inlineCall(CallExpr* call) {
 
   //
   // This is the statement that contains the call.  Most of the statements
-  // in the body wiil be inserted immediately before this stmt.
+  // in the body will be inserted immediately before this stmt.
   //
   // 1) If the function does not return a value, this stmt will be removed.
   //
