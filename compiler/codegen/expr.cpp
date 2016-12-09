@@ -4380,6 +4380,20 @@ GenRet CallExpr::codegenPrimitive() {
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
 
+      GenRet srcGen = get(2);
+
+      // 2016-12-08
+      // Denormalize might move the reference in an implicit dereference
+      // (move non-ref, ref) into a PRIM_CAST. This would then be a cast from
+      // a reference type to a non-reference type, which doesn't really make
+      // sense in today's compiler. When we see such a case, assume that we
+      // should deref the 'src'.
+      if (src->symbol->hasFlag(FLAG_REF) &&
+          dst->symbol->hasFlag(FLAG_REF) == false) {
+        srcGen = codegenDeref(srcGen);
+        src = src->getValType();
+      }
+
       // C standard promotes small ints to full int when they are involved in
       // arithmetic operations. When we don't denormalize the AST, small integer
       // arithmetic is always assigned to a temporary of the suitable size,
@@ -4391,10 +4405,10 @@ GenRet CallExpr::codegenPrimitive() {
       // target architecture. However, there was no easy way of obtaining that
       // at the time of writing this piece. Engin
       if (dst == src && !(is_int_type(dst) || is_uint_type(dst)) ) {
-        ret = get(2);
+        ret = srcGen;
 
       } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtTaskID) {
-        GenRet v = codegenValue(get(2));
+        GenRet v = codegenValue(srcGen);
 
         // cast like this: (type) (intptr_t) v
         ret = codegenCast(typeInfo(), codegenCast("intptr_t", v));
@@ -4403,7 +4417,7 @@ GenRet CallExpr::codegenPrimitive() {
         INT_FATAL("TODO - don't like type-punning record/union");
 
       } else {
-        GenRet v = codegenValue(get(2));
+        GenRet v = codegenValue(srcGen);
 
         ret = codegenCast(typeInfo(), v);
       }
