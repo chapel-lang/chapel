@@ -10,8 +10,17 @@
 
 config const n = 1000,           // the length of the generated strings
              lineLength = 60,    // the number of columns in the output
-             blockSize = 1024,   // the parallelization granularity
-             numTasks = 3;       // the pipeline has 3 stages, so use 3 tasks
+             blockSize = 1024;   // the parallelization granularity
+
+//
+// the computational pipeline has 3 distinct stages, so ideally, we'd
+// like to use 3 tasks.  However, if the locale can't support that
+// much parallelism, we'll use a number of tasks equal to its maximum
+// degree of task parallelism to avoid starvation (because we rely on
+// busy-waits which could cause deadlocks otherwise).
+//
+config const numTasks = min(3, here.maxTaskPar);
+
 
 //
 // Nucleotide definitions
@@ -115,15 +124,15 @@ proc randomMake(desc, nuclInfo, n) {
     cumul_p[i] = 1 + (p*IM):int;
   }
 
-  var rngTid$, outTid$: [0..#numTasks] atomic int;
+  var randGo, outGo: [0..#numTasks] atomic int;
 
-  rngTid$.write(1);
-  outTid$.write(1);
+  randGo.write(1);
+  outGo.write(1);
 
   /*
   for i in 0..#numTasks {
-    rngTid$[i].write(1);
-    outTid$[i].write(1);
+    randGo[i].write(1);
+    outGo[i].write(1);
   }
 */
 
@@ -145,7 +154,7 @@ proc randomMake(desc, nuclInfo, n) {
 
       //      writef("tid %i working on bytes %i\n", tid, bytes);      
       //      stderr.writef("tid %i waiting for turn to say %i\n", tid, i);
-      while (rngTid$[tid].read() != i) do ;
+      while (randGo[tid].read() != i) do ;
       //      stderr.writef("tid %i got turn\n", tid);
       getRands(bytes, rands);
       /*
@@ -153,7 +162,7 @@ proc randomMake(desc, nuclInfo, n) {
         rands[i] = r;
       */
       //      stderr.writef("tid %i passing turn %i to %i\n", tid, i+1, nextTask);
-      rngTid$[nextTask].write(i + chunkSize);
+      randGo[nextTask].write(i + chunkSize);
 
       var col = 0;
       var off = 0;
@@ -182,9 +191,9 @@ proc randomMake(desc, nuclInfo, n) {
 
       //      writeln("tid = ", tid, "bytes = ", bytes, " off = ", off);
       {
-        while (outTid$[tid].read() != i) do ;
+        while (outGo[tid].read() != i) do ;
         stdout.write(line_buff[0..#off]);
-        outTid$[nextTask].write(i+chunkSize);
+        outGo[nextTask].write(i+chunkSize);
       }
     }
     
