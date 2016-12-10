@@ -457,6 +457,39 @@ static bool inferConstRef(Symbol* sym) {
   return isConstRef;
 }
 
+//
+// ref: The reference symbol we will test to see if it is only used as an
+// actual where the corresponding formal has FLAG_RETARG.
+//
+// defCall: The CallExpr where 'ref' is set from a PRIM_ADDR_OF or
+// PRIM_SET_REFERENCE. This call will be ignored while considering uses of
+// the 'ref' Symbol.
+//
+static bool onlyUsedForRetarg(Symbol* ref, CallExpr* defCall) {
+  bool isRetArgOnly = true;
+
+  INT_ASSERT(ref->isRef());
+  INT_ASSERT(defCall != NULL);
+
+  for_SymbolSymExprs(use, ref) {
+    if (use->parentExpr == defCall) {
+      continue;
+    }
+
+    CallExpr* call = toCallExpr(use->parentExpr);
+    if (call->isResolved()) {
+      ArgSymbol* form = actual_to_formal(use);
+      if (form->hasFlag(FLAG_RETARG) == false) {
+        isRetArgOnly = false;
+      }
+    } else {
+      isRetArgOnly = false;
+    }
+  }
+
+  return isRetArgOnly;
+}
+
 // Note: This function is currently not recursive
 static bool inferConst(Symbol* sym) {
   INT_ASSERT(!sym->isRef());
@@ -490,7 +523,15 @@ static bool inferConst(Symbol* sym) {
 
     if (call->isResolved()) {
       ArgSymbol* form = actual_to_formal(use);
-      if (form->isRef()) {
+
+      //
+      // If 'sym' is constructed through a _retArg, we can consider that to
+      // be a single 'def'.
+      //
+      if (form->hasFlag(FLAG_RETARG)) {
+        numDefs += 1;
+      }
+      else if (form->isRef()) {
         if (!inferConstRef(form)) {
           isConstVal = false;
         }
@@ -502,27 +543,7 @@ static bool inferConst(Symbol* sym) {
         Symbol* LHS = toSymExpr(parent->get(1))->symbol();
         INT_ASSERT(LHS->isRef());
 
-        //
-        // If 'sym' is constructed through a _retArg, we can consider that to
-        // be a single 'def'.
-        //
-        bool isRetArg = true;
-        for_SymbolSymExprs(use, LHS) {
-          if (use->parentExpr == parent) {
-            continue;
-          }
-          CallExpr* lhsCall = toCallExpr(use->parentExpr);
-          if (lhsCall->isResolved()) {
-            ArgSymbol* lhsFormal = actual_to_formal(use);
-            if (lhsFormal->hasFlag(FLAG_RETARG) == false) {
-              isRetArg = false;
-            }
-          } else {
-            isRetArg = false;
-          }
-        }
-
-        if (isRetArg) {
+        if (onlyUsedForRetarg(LHS, parent)) {
           numDefs += 1;
         }
         else if (!inferConstRef(LHS)) {
@@ -533,13 +554,14 @@ static bool inferConst(Symbol* sym) {
     else if (isMoveOrAssign(call)) {
       if (use == call->get(1)) {
         numDefs += 1;
-        if (numDefs > 1) {
-          isConstVal = false;
-        }
       }
     } else {
       // To be safe, exit the loop with 'false' if we're unsure of how to
       // handle a primitive.
+      isConstVal = false;
+    }
+
+    if (numDefs > 1) {
       isConstVal = false;
     }
   }
