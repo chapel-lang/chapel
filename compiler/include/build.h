@@ -138,6 +138,7 @@ FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
 BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              RetTag      optRetTag,
                              Expr*       optRetType,
+                             bool        optThrowsError,
                              Expr*       optWhere,
                              BlockStmt*  optFnBody,
                              const char* docs);

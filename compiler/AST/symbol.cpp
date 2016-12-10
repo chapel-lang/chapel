@@ -1548,6 +1548,10 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 }
 
+void FnSymbol::setThrowsError() {
+  this->throwsError = true;
+}
+
 
 /******************************** | *********************************
 *                                                                   *
@@ -2360,14 +2364,14 @@ static VarSymbol* new_FloatSymbol(const char* n,
   }
   imm.const_kind = kind;
   imm.num_index = size;
-  
+
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s) {
     return s;
   }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), type);
   rootModule->block->insertAtTail(new DefExpr(s));
-  
+
   // Normalize the number for C99
   if (!strchr(n, '.') && !strchr(n, 'e') && !strchr(n, 'E') &&
       !strchr(n, 'p') && !strchr(n, 'P') ) {

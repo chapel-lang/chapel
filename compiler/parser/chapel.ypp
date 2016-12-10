@@ -896,7 +896,7 @@ fn_decl_stmt:
         fn->addFlag(FLAG_ITERATOR_FN);
       }
 
-      $$ = buildFunctionDecl($4, $6, $7, $8, $9, @1.comment);
+      $$ = buildFunctionDecl($4, $6, $7, false, $8, $9, @1.comment);
       context->latestComment = NULL;
     }
 ;
