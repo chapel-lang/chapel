@@ -1,6 +1,6 @@
 config const help = false;
 
-if false then printUsage();
+if help then printUsage();
 
 proc printUsage() {
   writeln("This is my custom usage message!");
