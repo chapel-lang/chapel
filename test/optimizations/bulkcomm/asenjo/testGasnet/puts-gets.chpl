@@ -30,12 +30,18 @@ proc BlockArr.TestGetsPuts(B)
       count[1]=2;
       count[2]=4;
       writeln();
-      var dest = locArr[0].myElems._value.theData; // can this be myLocArr?
-      var srcl = B._value.locArr[lid].myElems._value.theData;
-      var srcr = B._value.locArr[rid].myElems._value.theData;
-      var dststr=dststrides._value.theData;
-      var srcstr=srcstrides._value.theData;
-      var cnt=count._value.theData;
+      assert(locArr[0].myElems._value.oneDData); // fend off multi-ddata
+      var dest = locArr[0].myElems._value.theDataChunk(0); // can this be myLocArr?
+      assert(B._value.locArr[lid].myElems._value.oneDData); // fend off multi-ddata
+      var srcl = B._value.locArr[lid].myElems._value.theDataChunk(0);
+      assert(B._value.locArr[rid].myElems._value.oneDData); // fend off multi-ddata
+      var srcr = B._value.locArr[rid].myElems._value.theDataChunk(0);
+      assert(dststrides._value.oneDData); // fend off multi-ddata
+      var dststr=dststrides._value.theDataChunk(0);
+      assert(srcstrides._value.oneDData); // fend off multi-ddata
+      var srcstr=srcstrides._value.theDataChunk(0);
+      assert(count._value.oneDData); // fend off multi-ddata
+      var cnt=count._value.theDataChunk(0);
 
 // 1.- get some elements from B on locale 1 to A on locale 0      
       __primitive("chpl_comm_get_strd",
@@ -61,9 +67,12 @@ proc BlockArr.TestGetsPuts(B)
       		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
       		  stridelevels);
 
-      var src = locArr[0].myElems._value.theData; // can this be myLocArr?
-      var destl = B._value.locArr[lid].myElems._value.theData;
-      var destr = B._value.locArr[rid].myElems._value.theData;
+      assert(locArr[0].myElems._value.oneDData); // fend off multi-ddata
+      var src = locArr[0].myElems._value.theDataChunk(0); // can this be myLocArr?
+      assert(B._value.locArr[lid].myElems._value.oneDData); // fend off multi-ddata
+      var destl = B._value.locArr[lid].myElems._value.theDataChunk(0);
+      assert(B._value.locArr[rid].myElems._value.oneDData); // fend off multi-ddata
+      var destr = B._value.locArr[rid].myElems._value.theDataChunk(0);
 
 // 3.- put some elements from A on locale 0 to B on locale 1
       __primitive("chpl_comm_put_strd",
