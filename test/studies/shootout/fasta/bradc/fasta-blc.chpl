@@ -8,10 +8,19 @@
      Kyle Brady, and Preston Sahabu.
 */
 
-config const n = 1000,                   // the length of the generated strings
-             lineLength = 60,            // the number of columns in the output
-             blockSize = 1024,           // the parallelization granularity
-             numTasks = here.maxTaskPar; // the degree of parallelization
+config const n = 1000,           // the length of the generated strings
+             lineLength = 60,    // the number of columns in the output
+             blockSize = 1024;   // the parallelization granularity
+
+//
+// the computational pipeline has 3 distinct stages, so ideally, we'd
+// like to use 3 tasks.  However, if the locale can't support that
+// much parallelism, we'll use a number of tasks equal to its maximum
+// degree of task parallelism to avoid starvation (because we rely on
+// busy-waits which could cause deadlocks otherwise).
+//
+config const numTasks = min(3, here.maxTaskPar);
+
 
 //
 // Nucleotide definitions
@@ -115,15 +124,23 @@ proc randomMake(desc, nuclInfo, n) {
     cumul_p[i] = 1 + (p*IM):int;
   }
 
-  var rngTid$, outTid$: [0..#numTasks] sync int;
-  rngTid$[0] = 1;
-  outTid$[0] = 1;
+  var randGo, outGo: [0..#numTasks] atomic int;
+
+  randGo.write(1);
+  outGo.write(1);
+
+  /*
+  for i in 0..#numTasks {
+    randGo[i].write(1);
+    outGo[i].write(1);
+  }
+*/
 
   coforall tid in 0..#numTasks {
     const chunkSize = lineLength*blockSize;
     const nextTask = (tid + 1) % numTasks;
 
-    var line_buff: [0..(lineLength+1)*blockSize+1] int(8);
+    var line_buff: [0..(lineLength+1)*blockSize-1] int(8);
     var rands: [0..chunkSize] int/*(32)*/;
 
     //
@@ -136,16 +153,16 @@ proc randomMake(desc, nuclInfo, n) {
       //      writef("tid %i doing %i..#%i\n", tid, i, bytes);
 
       //      writef("tid %i working on bytes %i\n", tid, bytes);      
-      //      writef("tid %i waiting for turn\n", tid);
-      const myTurn = rngTid$[tid];
-      //      writef("tid %i got turn\n", tid);
+      //      stderr.writef("tid %i waiting for turn to say %i\n", tid, i);
+      while (randGo[tid].read() != i) do ;
+      //      stderr.writef("tid %i got turn\n", tid);
       getRands(bytes, rands);
       /*
       for (r,i) in zip(getRands(bytes, tid), 0..) do
         rands[i] = r;
       */
-      //      writef("tid %i passing turn to %i\n", tid, (tid+1)%numTasks);
-      rngTid$[nextTask] = myTurn + 1;
+      //      stderr.writef("tid %i passing turn %i to %i\n", tid, i+1, nextTask);
+      randGo[nextTask].write(i + chunkSize);
 
       var col = 0;
       var off = 0;
@@ -174,9 +191,9 @@ proc randomMake(desc, nuclInfo, n) {
 
       //      writeln("tid = ", tid, "bytes = ", bytes, " off = ", off);
       {
-        const myTurn = outTid$[tid];
+        while (outGo[tid].read() != i) do ;
         stdout.write(line_buff[0..#off]);
-        outTid$[nextTask] = myTurn + 1;
+        outGo[nextTask].write(i+chunkSize);
       }
     }
     
