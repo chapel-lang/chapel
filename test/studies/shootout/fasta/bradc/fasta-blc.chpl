@@ -8,10 +8,10 @@
      Kyle Brady, and Preston Sahabu.
 */
 
-config const n = 1000,                   // the length of the generated strings
-             lineLength = 60,            // the number of columns in the output
-             blockSize = 1024,           // the parallelization granularity
-             numTasks = here.maxTaskPar; // the degree of parallelization
+config const n = 1000,           // the length of the generated strings
+             lineLength = 60,    // the number of columns in the output
+             blockSize = 1024,   // the parallelization granularity
+             numTasks = 3;       // the pipeline has 3 stages, so use 3 tasks
 
 //
 // Nucleotide definitions
