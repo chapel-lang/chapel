@@ -1552,6 +1552,10 @@ void FnSymbol::setThrowsError() {
   this->throwsError = true;
 }
 
+bool FnSymbol::getThrowsError() {
+  return throwsError;
+}
+
 
 /******************************** | *********************************
 *                                                                   *

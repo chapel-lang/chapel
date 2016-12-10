@@ -478,6 +478,7 @@ class FnSymbol : public Symbol {
   virtual void    printDocs(std::ostream *file, unsigned int tabs);
 
   void            setThrowsError();
+  bool            getThrowsError();
 
 private:
   virtual std::string docsDirective();

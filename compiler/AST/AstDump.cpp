@@ -599,6 +599,10 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
     writeSymbol(":", fn->retType->symbol, false);
   }
 
+  if (fn->getThrowsError()) {
+    write("throws");
+  }
+
   writeFlags(mFP, fn);
 }
 
