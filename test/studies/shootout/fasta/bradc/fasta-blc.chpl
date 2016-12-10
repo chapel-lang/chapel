@@ -140,7 +140,7 @@ proc randomMake(desc, nuclInfo, n) {
     const chunkSize = lineLength*blockSize;
     const nextTask = (tid + 1) % numTasks;
 
-    var line_buff: [0..(lineLength+1)*blockSize+1] int(8);
+    var line_buff: [0..(lineLength+1)*blockSize-1] int(8);
     var rands: [0..chunkSize] int/*(32)*/;
 
     //
