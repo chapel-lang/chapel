@@ -19,9 +19,14 @@ config param numSockets = 2;
 // like to use 3 tasks.  However, if the locale can't support that
 // much parallelism, we'll use a number of tasks equal to its maximum
 // degree of task parallelism to avoid starvation (because we rely on
-// busy-waits which could cause deadlocks otherwise).
+// busy-waits which could cause deadlocks otherwise).  Since we're
+// creating twice as many tasks to stripe them across the NUMA domains
+// and ensure that our 3 main tasks are on NUMA domain 0, we'll compute
+// the number of numa tasks and then divide that by 2 to get the number
+// of actual tasks.
 //
-config const numTasks = min(3, here.maxTaskPar);
+config const numNumaTasks = min(numSockets*3, here.maxTaskPar),
+             numTasks = numNumaTasks / numSockets;
 
 
 //
@@ -138,7 +143,7 @@ proc randomMake(desc, nuclInfo, n) {
   }
 */
 
-  coforall itid in 0..#(numSockets*numTasks) {
+  coforall itid in 0..#numNumaTasks {
     if itid%numSockets == 0 {
       const tid = itid / numSockets;
     const chunkSize = lineLength*blockSize;
@@ -204,14 +209,6 @@ proc randomMake(desc, nuclInfo, n) {
     
     }
   }
-
-  //
-  // create some dummy tasks so that things deal out consistently
-  //
-  /*
-  coforall tid in numSockets*numTasks..here.maxTaskPar-1 do
-    ;
-  */
 }
 
 
