@@ -208,8 +208,10 @@ proc randomMake(desc, nuclInfo, n) {
   //
   // create some dummy tasks so that things deal out consistently
   //
+  /*
   coforall tid in numSockets*numTasks..here.maxTaskPar-1 do
     ;
+  */
 }
 
 
