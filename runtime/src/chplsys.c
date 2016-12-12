@@ -310,10 +310,15 @@ void chpl_computeHeapPageSize(void) {
   pageSize = chpl_getSysPageSize();
 #endif
 
-  // note: sets heapPageSize
   if (pageSize == chpl_getSysPageSize()) {
+    // if the page size is the system page size, check that
+    // the heap isn't on hugepages when nobody told us.
+    //
+    // note: sets heapPageSize
     computeHeapPageSizeByGuessing(pageSize);
   } else {
+    // if the page size was configured by the user to be huge,
+    // just trust it.
     heapPageSize = pageSize;
   }
 }
