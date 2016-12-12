@@ -1554,7 +1554,7 @@ void FnSymbol::throwsErrorInit() {
   _throwsError = true;
 }
 
-bool FnSymbol::throwsError() {
+bool FnSymbol::throwsError() const {
   return _throwsError;
 }
 
