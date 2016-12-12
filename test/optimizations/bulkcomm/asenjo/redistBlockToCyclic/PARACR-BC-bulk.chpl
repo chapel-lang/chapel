@@ -69,13 +69,13 @@ proc BlockArr.copyBtoC(B)
 
       __primitive("chpl_comm_put_strd",
 		  __primitive("array_get",destr,
-			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
-		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini, getChunked=false)),
+		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1, getChunked=false)),
 		  dst,
 		  __primitive("array_get",src,
-			      locArr[lid].myElems._value.getDataIndex(schunkini)),  
-		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
-		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
+			      locArr[lid].myElems._value.getDataIndex(schunkini, getChunked=false)),  
+		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1, getChunked=false)),
+		  __primitive("array_get",cnt, count._value.getDataIndex(1, getChunked=false)),
 		  stridelevels);
 
     } // end for dst
@@ -135,13 +135,13 @@ proc  BlockArr.copyCtoB(B)
 
       __primitive("chpl_comm_get_strd",
 		  __primitive("array_get",src,
-			        locArr[lid].myElems._value.getDataIndex(schunkini)),
-		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+                              locArr[lid].myElems._value.getDataIndex(schunkini, getChunked=false)),
+		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1, getChunked=false)),
 		  dst,
 		  __primitive("array_get",destr,
-			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
-		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
-		  __primitive("array_get",cnt,count._value.getDataIndex(1)),
+			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini, getChunked=false)),
+		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1, getChunked=false)),
+		  __primitive("array_get",cnt,count._value.getDataIndex(1, getChunked=false)),
 		  stridelevels);
     } //end for dst
   }//end for loc
