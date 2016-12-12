@@ -590,7 +590,7 @@ def check_environment_with_args():
 
     auto_gen_spec_tests = os.access(os.path.join(home, "spec"), os.F_OK)
 
-    if args.test_root_dir and re.match(r'/+[^/]', str(args.test_root_dir)):
+    if args.test_root_dir:
         test_dir = str(args.test_root_dir)
     else:
         test_dir = os.path.join(home, "test")
