@@ -311,7 +311,11 @@ void chpl_computeHeapPageSize(void) {
 #endif
 
   // note: sets heapPageSize
-  computeHeapPageSizeByGuessing(pageSize);
+  if (pageSize == chpl_getSysPageSize()) {
+    computeHeapPageSizeByGuessing(pageSize);
+  } else {
+    heapPageSize = pageSize;
+  }
 }
 
 
