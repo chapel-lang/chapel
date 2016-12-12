@@ -516,7 +516,7 @@ BlockStmt* buildUseStmt(CallExpr* args) {
   if (list == NULL) {
     list = buildChapelStmt(new CallExpr(PRIM_NOOP));
   }
-  
+
   return list;
 }
 
@@ -559,7 +559,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
   if (list == NULL) {
     list = buildChapelStmt(new CallExpr(PRIM_NOOP));
   }
-  
+
   return list;
 }
 
@@ -1817,7 +1817,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
       // or with a filtering predicate is not handled.
       return NULL;
   }
-    
+
   if (CallExpr* dataCall = toCallExpr(dataExpr)) {
     if (DefExpr* calleeDef = toDefExpr(dataCall->baseExpr))
       {
@@ -2320,18 +2320,18 @@ FnSymbol* buildLambda(FnSymbol *fn) {
    * where an unsigned integer can represent numbers larger than 10^86, but it
    * is better to guard against this behavior then leaving someone wondering
    * why we didn't.
-   */ 
+   */
   if (snprintf(buffer, 100, "_chpl_lambda_%i", nextId++) >= 100) {
     INT_FATAL("Too many lambdas.");
   }
-  
+
   if (!fn) {
     fn = new FnSymbol(astr(buffer));
   } else {
     fn->name = astr(buffer);
     fn->cname = fn->name;
   }
-  
+
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   return fn;
 }
@@ -2375,11 +2375,12 @@ buildFunctionSymbol(FnSymbol*   fn,
 }
 
 // Called like:
-// buildFunctionDecl($4, $6, $7, $8, $9, @$.comment);
+// buildFunctionDecl($4, $6, $7, $8, $9, $10, @$.comment);
 BlockStmt*
 buildFunctionDecl(FnSymbol*   fn,
                   RetTag      optRetTag,
                   Expr*       optRetType,
+                  bool        optThrowsError,
                   Expr*       optWhere,
                   BlockStmt*  optFnBody,
                   const char* docs)
@@ -2396,6 +2397,14 @@ buildFunctionDecl(FnSymbol*   fn,
     fn->retExprType = new BlockStmt(optRetType, BLOCK_SCOPELESS);
   else if (fn->hasFlag(FLAG_EXTERN))
     fn->retType     = dtVoid;
+
+  if (optThrowsError)
+  {
+    if (fn->hasFlag(FLAG_EXTERN))
+      USR_FATAL_CONT(fn, "Extern functions cannot throw errors.");
+
+    fn->throwsErrorInit();
+  }
 
   if (optWhere)
   {

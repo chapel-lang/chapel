@@ -475,10 +475,14 @@ class FnSymbol : public Symbol {
 
   QualifiedType   getReturnQualType()                          const;
 
-  virtual void printDocs(std::ostream *file, unsigned int tabs);
+  virtual void    printDocs(std::ostream *file, unsigned int tabs);
+
+  void            throwsErrorInit();
+  bool            throwsError();
 
 private:
   virtual std::string docsDirective();
+  bool                _throwsError;
 };
 
 /******************************** | *********************************
