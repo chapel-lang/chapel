@@ -135,9 +135,9 @@ int check_page_size(size_t page_size_guess, size_t max_page_size,
   const int debug = 0; // set to 1 for debug prints
 
   if (debug)
-    printf("check_page_size(%li, %li, %p, %p, %li)\n",
+    printf("check_page_size(%li, %lx, %p, %p-%p)\n",
            (long) page_size_guess, (long) max_page_size,
-           ptr, heap_start, (long) heap_size);
+           ptr, heap_start, ((unsigned char*) heap_start) + heap_size);
 
   // set signal handler variables
   check_page_size_ptr = ptr + page_size_guess;
@@ -167,7 +167,7 @@ int check_page_size(size_t page_size_guess, size_t max_page_size,
   // this requirement.
   rc = mprotect((void*)check_page_size_base, check_page_size_guess, PROT_NONE);
   if (rc!=0) {
-    if (debug) printf("mprotect failed\n");
+    if (debug) printf("mprotect failed with errno=%i\n", errno);
     mprotect_failed = 1;
   } else {
     if (debug) printf("mprotect success\n");
@@ -202,6 +202,25 @@ int check_page_size(size_t page_size_guess, size_t max_page_size,
   else return check_page_size_fault;
 }
 
+
+// Determine if 2 page_size-sized pages fit into the heap.
+// Assumes page_size is a power of 2.
+// Returns 1 if they do fit.
+// Returns 0 otherwise.
+static int fitsInHeap(size_t page_size, void* heap_start, size_t heap_size)
+{
+  uintptr_t start = (uintptr_t) heap_start;
+  uintptr_t end = start + (uintptr_t) heap_size;
+
+  start = round_up_to_mask(start, page_size-1);
+  end   = round_down_to_mask(end, page_size-1);
+  
+  if (2*page_size <= end - start)
+    return 1;
+  else
+    return 0;
+}
+
 // Given a best-guess page size, sets the global variable
 // heapPageSize by doing experiments with mprotect.
 // In the case that mprotect does not work on that memory region,
@@ -223,40 +242,42 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
   if (heap_start != NULL && heap_size != 0) {
 
     size_t page_size = page_size_in;
-    unsigned char* start = heap_start;
-    unsigned char* ptr = start;
-    unsigned char* best_ptr = ptr;
-    size_t max_page_size = page_size;
-    int small;
+    size_t max_heap_page_size = page_size;
+    size_t max_page_size = 1*1024*1024*1024; // Stop at 1GB
 
-    // Compute the most aligned page fully enclosed within
-    // start and size. We compute the "most aligned page"
-    // because we don't know what the actual page size is.
-    // In particular, page_size_in might be smaller than the
-    // real page size. At the same time, the mprotect call
-    // in check_page_size won't work unless the pointer argument
-    // is aligned to the real page size. Which we don't know yet.
-    while(1) {
-      ptr = round_up_to_mask_ptr(ptr, page_size - 1);
-      // make sure underflow has not occurred
-      if (ptr - start < 0)
-        break;
-      // make sure that the new page size fits into
-      // the bounds of the heap, including the 1st byte
-      // of the next page
-      if (ptr - start + 1 + page_size > heap_size)
-        break;
-
-      best_ptr = ptr;
-      max_page_size = page_size;
-
-      page_size = 2*page_size;
+    // Compute a maximum page size based upon the size
+    // of the heap.
+    for (page_size = page_size_in;
+         fitsInHeap(page_size, heap_start, heap_size);
+         page_size *= 2) {
+      max_heap_page_size = page_size;
     }
+
+    if (max_heap_page_size > max_page_size)
+      max_heap_page_size = max_page_size;
+ 
+    // Now do experiments with the last 2 pages in the heap
+    // to find if we have underestimated the page size.
+
+    // Doing this at the end of the heap is important
+    // for performance and to maximize the contiguous region
+    // that can be handled at once.
 
     page_size = page_size_in;
     while(1) {
-      small = check_page_size(page_size, max_page_size,
-                              best_ptr, heap_start, heap_size);
+      unsigned char* start = (unsigned char*) heap_start;
+      unsigned char* end = start + heap_size;
+      unsigned char* last_page = NULL;
+      unsigned char* last_two_pages = NULL;
+      int small;
+
+      start = round_up_to_mask_ptr(start, page_size-1);
+      end   = round_down_to_mask_ptr(end, page_size-1);
+      last_page = end - page_size;
+      last_two_pages = last_page - page_size;
+
+      small = check_page_size(page_size, max_heap_page_size,
+                              last_two_pages, heap_start, heap_size);
 
       // Stop if real page size <= page_size, or if
       // a signal handler could not be installed.
@@ -265,7 +286,7 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
         break;
       }
       // Stop if we have reached the maximum size
-      if (page_size >= max_page_size) {
+      if (page_size >= max_heap_page_size) {
         heapPageSize = page_size_in;
         break;
       }
