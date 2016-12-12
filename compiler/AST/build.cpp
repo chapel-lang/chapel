@@ -2403,7 +2403,7 @@ buildFunctionDecl(FnSymbol*   fn,
     if (fn->hasFlag(FLAG_EXTERN))
       USR_FATAL_CONT(fn, "Extern functions cannot throw errors.");
 
-    fn->setThrowsError();
+    fn->throwsErrorInit();
   }
 
   if (optWhere)

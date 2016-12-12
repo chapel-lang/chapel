@@ -1548,12 +1548,14 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 }
 
-void FnSymbol::setThrowsError() {
-  this->throwsError = true;
+// psahabu: this should eventually be in the constructor for
+// FnSymbol, but it is needed for buildFunctionDecl()
+void FnSymbol::throwsErrorInit() {
+  _throwsError = true;
 }
 
-bool FnSymbol::getThrowsError() {
-  return throwsError;
+bool FnSymbol::throwsError() {
+  return _throwsError;
 }
 
 
