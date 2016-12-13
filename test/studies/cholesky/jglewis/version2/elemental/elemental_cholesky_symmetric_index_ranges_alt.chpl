@@ -253,7 +253,6 @@ module elemental_cholesky_symmetric_index_ranges_alt {
 	  }
       }
     }
-    delete bar;
     // return success 
 
     return true;

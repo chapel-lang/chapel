@@ -264,7 +264,6 @@ module elemental_cholesky_fully_blocked {
 	  }
       }
     }
-    delete bar;
 
     // return success 
 

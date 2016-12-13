@@ -73,7 +73,3 @@ Expr* TryStmt::getFirstExpr() {
 Expr* TryStmt::getNextExpr(Expr* expr) {
   return this;
 }
-
-GenRet TryStmt::codegen() {
-  return GenRet(0);
-}

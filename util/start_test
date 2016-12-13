@@ -39,6 +39,8 @@ def main():
     preprocess_options()
     args = parser.parse_args()
 
+    check_environment_with_args()
+
     invocation_dir = os.getcwd()
     
     run_tests(args.tests)
@@ -582,17 +584,24 @@ def check_environment():
             print("Error: Cannot find {0}.".format(util_dir))
             sys.exit(1)
 
+def check_environment_with_args():
     # find test dir and check for access
     global test_dir, auto_gen_spec_tests
-    test_dir = os.path.join(home, "test")
+
     auto_gen_spec_tests = os.access(os.path.join(home, "spec"), os.F_OK)
-    if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
-        or not os.access(test_dir, os.X_OK)):
-        test_dir = os.path.join(home, "examples")
-        auto_gen_spec_tests = False
+
+    if args.test_root_dir:
+        test_dir = str(args.test_root_dir)
+    else:
+        test_dir = os.path.join(home, "test")
         if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
             or not os.access(test_dir, os.X_OK)):
-            test_dir = os.getcwd()
+            test_dir = os.path.join(home, "examples")
+            auto_gen_spec_tests = False
+            if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
+                or not os.access(test_dir, os.X_OK)):
+                test_dir = os.getcwd()
+
     if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
         or not os.access(test_dir, os.X_OK)):
         print("Cannot write to test directory {0}".format(test_dir))

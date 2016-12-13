@@ -15,14 +15,15 @@ Initializing Modules:
     ChapelTuple
     ChapelRange
     LocaleModel
-     ChapelLocale
-     DefaultRectangular
-      DSIUtil
-      ChapelArray
-       Sort
-     ChapelNumLocales
-     Sys
-      SysBasic
+     LocaleModelHelpSetup
+      ChapelLocale
+      DefaultRectangular
+       DSIUtil
+       ChapelArray
+        Sort
+      ChapelNumLocales
+      Sys
+       SysBasic
     LocalesArray
     ChapelDistribution
      List

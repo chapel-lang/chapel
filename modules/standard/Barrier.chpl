@@ -41,19 +41,14 @@
        writeln("Task ", tid, " is past the barrier");
      }
 
-     delete b;
+   Note: When a barrier instance goes out of scope it is automatically deleted.
+   After it is deleted, any copies of the barrier that remain are invalid.
 
    Future direction
    ----------------
    In the future, we expect to add more language-level support for a
    "task-team" concept.  A task-team will more directly support collective
    operations such as barriers between the tasks within a team.
-
-   The Barrier type is currently implemented as a class, requiring it to be
-   explicitly deleted before it goes out of scope.  It is expected that this
-   type will be changed into a record allowing it to be automatically
-   reclaimed.  When this change happens, code that uses this Barrier will need
-   to have the explicit deletes removed, but should require no other changes.
 
    The current implementation is designed for correctness, but is not expected
    to perform well at scale.  We expect performance at scale to improve as
@@ -70,9 +65,11 @@ module Barrier {
   enum BarrierType {Atomic, Sync}
 
   /* A barrier that will cause `numTasks` to wait before proceeding. */
-  class Barrier {
+  record Barrier {
     pragma "no doc"
     var bar: BarrierBaseType;
+    pragma "no doc"
+    var owned: bool = false;
 
     /* Construct a new barrier object.
 
@@ -103,11 +100,12 @@ module Barrier {
           halt("unknown barrier type");
         }
       }
+      owned = true;
     }
 
     pragma "no doc"
     proc ~Barrier() {
-      if bar != nil {
+      if owned && bar != nil {
         delete bar;
       }
     }
@@ -129,9 +127,13 @@ module Barrier {
     }
 
     /* Wait until `n` tasks have called :proc:`notify`.  If `reusable` is true,
-       reset the barrier to be used again.  Note: if `reusable` is true
-       :proc:`wait` will block until `n` tasks have called it after calling
-       :proc:`notify`.
+       reset the barrier to be used again.
+
+       Note: if `reusable` is true the tasks will wait until all `n` tasks
+       have called both :proc:`notify` and :proc:`wait` at which point the
+       barrier will automatically be reset for the next use.  If `reusable`
+       is false, each task calling :proc:`wait` can return as soon as all
+       `n` tasks have called :proc:`notify`.
      */
     inline proc wait() {
       on this {
@@ -139,16 +141,19 @@ module Barrier {
       }
     }
 
-    /* return `true` if `n` tasks have called :proc:`notify`
+    /* Return `true` if `n` tasks have called :proc:`notify`
      */
     inline proc check(): bool {
       return bar.check();
     }
 
-    pragma "no doc"
-    inline proc reset(_n: int) {
+    /* Reset the barrier, setting it to work with `nTasks` tasks.  If some
+       (but not all) tasks had already called :proc:`barrier` or :proc:`try`
+       when :proc:`reset` is called, the behavior is undefined.
+     */
+    inline proc reset(nTasks: int) {
       on this {
-        bar.reset(_n);
+        bar.reset(nTasks);
       }
     }
   }
@@ -177,7 +182,7 @@ module Barrier {
     }
 
     pragma "no doc"
-    proc reset(_n: int) {
+    proc reset(nTasks: int) {
       halt("reset() not implemented");
     }
   }
@@ -208,9 +213,9 @@ module Barrier {
     }
 
     pragma "no doc"
-    inline proc reset(_n: int) {
+    inline proc reset(nTasks: int) {
       on this {
-        n = _n;
+        n = nTasks;
         count.write(n);
         done.write(false);
       }
@@ -268,7 +273,7 @@ module Barrier {
       }
     }
 
-    /* return `true` if `n` tasks have called :proc:`notify`
+    /* Return `true` if `n` tasks have called :proc:`notify`
      */
     inline proc check(): bool {
       return done.read();
@@ -291,7 +296,8 @@ module Barrier {
     proc sBarrier(n: int) {
       count = n;
     }
-    proc reset(_n: int) {
+
+    proc reset(nTasks: int) {
       halt("cannot reset sync based barrier");
     }
 
@@ -330,11 +336,30 @@ module Barrier {
       done;
     }
 
-    /* return `true` if `n` tasks have called :proc:`notify`
+    /* Return `true` if `n` tasks have called :proc:`notify`
      */
     inline proc check(): bool {
       return done.readXX();
     }
+  }
+
+  pragma "no doc"
+  proc =(ref lhs: Barrier, rhs: Barrier) {
+    if lhs.owned {
+      delete lhs.bar;
+    }
+    lhs.bar = rhs.bar;
+    lhs.owned = false;
+  }
+
+  pragma "init copy fn"
+  pragma "no doc"
+  proc chpl__initCopy(b: Barrier) {
+    pragma "no auto destroy"
+    var ret: Barrier;
+    ret.bar = b.bar;
+    ret.owned = false;
+    return ret;
   }
 }
 

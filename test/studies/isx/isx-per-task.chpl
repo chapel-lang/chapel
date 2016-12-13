@@ -172,8 +172,6 @@ proc main() {
 
   if printTimings then
     printTimingData("locales");
-
-  delete barrier;
 }
 
 

@@ -293,7 +293,7 @@
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
 %token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTRY TTYPE TUNDERSCORE TUNION TUSE TVAR
+%token TSYNC TTHEN TTHROWS TTRY TTYPE TUNDERSCORE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TWITH TYIELD TZIP
 
 //
@@ -344,6 +344,7 @@
 
 %type <flag> opt_config
 %type <b> access_control
+%type <b> opt_throws_error
 
 %type <pt> required_intent_tag opt_intent_tag opt_this_intent_tag
 
@@ -880,7 +881,7 @@ fn_decl_stmt:
 
       $4->userString = astr(captureString);
     }
-  opt_ret_tag opt_type opt_where_part opt_function_body_stmt
+  opt_ret_tag opt_type opt_throws_error opt_where_part opt_function_body_stmt
     {
       FnSymbol* fn = $4;
 
@@ -896,7 +897,7 @@ fn_decl_stmt:
         fn->addFlag(FLAG_ITERATOR_FN);
       }
 
-      $$ = buildFunctionDecl($4, $6, $7, $8, $9, @1.comment);
+      $$ = buildFunctionDecl($4, $6, $7, $8, $9, $10, @1.comment);
       context->latestComment = NULL;
     }
 ;
@@ -1029,6 +1030,10 @@ opt_ret_tag:
 | TPARAM      { $$ = RET_PARAM; }
 | TTYPE       { $$ = RET_TYPE; }
 ;
+
+opt_throws_error:
+          { $$ = false; }
+| TTHROWS { $$ = true;  }
 
 opt_function_body_stmt:
   TSEMI     { $$ = NULL; }

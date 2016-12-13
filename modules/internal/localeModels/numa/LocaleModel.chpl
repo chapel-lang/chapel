@@ -28,16 +28,9 @@
 //
 module LocaleModel {
 
-  param localeModelHasSublocales = true;
-
-  use ChapelLocale;
-  use DefaultRectangular;
-  use ChapelNumLocales;
-  use Sys;
+  use LocaleModelHelpNUMA;
 
   extern proc chpl_task_getRequestedSubloc(): int(32);
-
-  config param debugLocaleModel = false;
 
   // We would really like a class-static storage class.(C++ nomenclature)
   var doneCreatingLocales: bool = false;
@@ -306,18 +299,7 @@ module LocaleModel {
     // parallel) over the locales to set up the LocaleModel object.
     // In addition, the initial 'here' must be set.
     proc setup() {
-      forall locIdx in chpl_initOnLocales() {
-        chpl_task_setSubloc(c_sublocid_any);
-        const node = new LocaleModel(this);
-        myLocales[locIdx] = node;
-        nPUsPhysAcc += node.nPUsPhysAcc;
-        nPUsPhysAll += node.nPUsPhysAll;
-        nPUsLogAcc += node.nPUsLogAcc;
-        nPUsLogAll += node.nPUsLogAll;
-        maxTaskPar += node.maxTaskPar;
-      }
-
-      here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
+      helpSetupRootLocaleNUMA(this);
     }
 
     // Has to be globally unique and not equal to a node ID.

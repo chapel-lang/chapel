@@ -12,22 +12,38 @@ config const n = 1000,           // the length of the generated strings
              lineLength = 60,    // the number of columns in the output
              blockSize = 1024;   // the parallelization granularity
 
+config param numSockets = 2;
+
 //
 // the computational pipeline has 3 distinct stages, so ideally, we'd
 // like to use 3 tasks.  However, if the locale can't support that
 // much parallelism, we'll use a number of tasks equal to its maximum
 // degree of task parallelism to avoid starvation (because we rely on
-// busy-waits which could cause deadlocks otherwise).
+// busy-waits which could cause deadlocks otherwise).  Since we're
+// creating twice as many tasks to stripe them across the NUMA domains
+// and ensure that our 3 main tasks are on NUMA domain 0, we'll compute
+// the number of numa tasks and then divide that by 2 to get the number
+// of actual tasks.
 //
-config const numTasks = min(3, here.maxTaskPar);
+config const maxTaskPar = here.maxTaskPar,
+             idealTasks = numSockets*3,
+             numTasks = if idealTasks > maxTaskPar
+                          then min(3, maxTaskPar)
+                          else idealTasks / numSockets,
+             numNumaTasks = if numTasks*numSockets > maxTaskPar
+                              then numTasks
+                              else numTasks*numSockets,
+             div = if numTasks*numSockets > maxTaskPar then 1 else numSockets;
 
+config const debug = false;
 
-config type randType = uint(32);   // type to use for random numbers
-
-config param IM = 139968,          // parameters for the RNG
-             IA = 3877,
-             IC = 29573,
-             seed: randType = 42;
+if debug {
+  writeln("idealTasks   = ", idealTasks);
+  writeln("numTasks     = ", numTasks);
+  writeln("numNumaTasks = ", numNumaTasks);
+  writeln("div          = ", div);
+  exit(0);
+}
 
 //
 // Nucleotide definitions
@@ -67,6 +83,8 @@ const ALU: [0..286] int(8) = [
 //
 param nucl = 1,
       prob = 2;
+
+param IM = 139968;
 
 //
 // Probability tables for sequences to be randomly generated
@@ -141,7 +159,9 @@ proc randomMake(desc, nuclInfo, n) {
   }
 */
 
-  coforall tid in 0..#numTasks {
+  coforall itid in 0..#numNumaTasks {
+    if itid%div == 0 {
+      const tid = itid / div;
     const chunkSize = lineLength*blockSize;
     const nextTask = (tid + 1) % numTasks;
 
@@ -203,7 +223,7 @@ proc randomMake(desc, nuclInfo, n) {
     }
     
     
-    
+    }
   }
 }
 
@@ -211,9 +231,12 @@ proc randomMake(desc, nuclInfo, n) {
 //
 // Deterministic random number generator
 //
-var lastRand = seed;
+var lastRand = 42/*:int(32)*/;
 
 proc getRands(n, arr) {
+  param IA = 3877,
+        IC = 29573;
+
   //  writef("tid %i got turn\n", tid);
   for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;

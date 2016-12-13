@@ -274,7 +274,6 @@ module elemental_cholesky_symmetric_strided {
 	  }
       }
     }
-    delete bar;
 
     // return success 
 
