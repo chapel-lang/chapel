@@ -19,7 +19,7 @@
 
 // LocaleModelHelpSetup.chpl
 //
-// Provides for declarations common to locale models
+// Provides for declarations common to locale model setup
 // but that do not have to be the same in order to meet the
 // interface.
 
