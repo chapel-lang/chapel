@@ -676,7 +676,11 @@ def set_up_environment():
         args.performance = True
         args.gen_graphs = True
         args.compopts += " --fast"
-        if not tgt_platform == "darwin":
+        # Force static linking unless the target requires dynamic.
+        if (tgt_platform != 'darwin' and
+            not (chpl_compiler.get('target').startswith("cray-prgenv") and
+                 (os.getenv("CRAY_MEMKIND", "") != "" or
+                  chpl_locale_model.get() != 'flat'))):
             args.compopts += " --static"
 
     if args.performance_configs:
