@@ -140,6 +140,8 @@ var lastFilterVal = "";
 
 var filterBox = $("[name='filterBox']")[0];
 
+// If 'val' is true, disable typing into the filterBox and set the background
+// color to grey. If false, allow typing and set background to white.
 function disableFilterBox(val) {
   $(filterBox).prop('disabled', val);
   var color = "#FFFFFF";
@@ -149,20 +151,35 @@ function disableFilterBox(val) {
   filterBox.style.backgroundColor = color;
 }
 
+// Search the lower-case titles of graphs for any substring that matches the
+// current value of the filter box. Hide the HTML and checkbox of any graph
+// whose title does not match.
 function doFilter() {
   lastFilterVal = filterBox.value;
+  searchVal = lastFilterVal.toLowerCase();
   for (var i = 0; i < allGraphs.length; i++) {
-    var checkbox = document.getElementById('graph' + i).parentElement;
+    var checkbox = document.getElementById('graph' + i);
+
+    // Not all graphs have corresponding checkboxes
+    var checkLabel = undefined;
+    if (checkbox) {
+      checkLabel = checkbox.parentElement;
+    }
+
     var idx = indexMap[allGraphs[i].title];
-    if (allGraphs[i].title.toLowerCase().indexOf(lastFilterVal) != -1) {
+    if (allGraphs[i].title.toLowerCase().indexOf(searchVal) != -1) {
       // Found
-      $(checkbox).show();
-      if (idx >= 0 && idx < gs.length-1) {
+      if (checkLabel) {
+        $(checkLabel).show();
+      }
+      if (idx >= 0 && idx < gs.length) {
         showGraph(gs[idx]);
       }
     } else {
       // Not found
-      $(checkbox).hide();
+      if (checkLabel) {
+        $(checkLabel).hide();
+      }
       if (idx >= 0 && idx < gs.length) {
         hideGraph(gs[idx]);
       }
@@ -1153,6 +1170,9 @@ function unselectAllGraphs() {
 function checkAll(val) {
   for (var i = 0; i < allGraphs.length; i++) {
     var elem = document.getElementById('graph' + i);
+    // Only tick the checkboxes that are visible. This allows users to
+    // filter for a string, hit 'select all', and only have that subset
+    // selected.
     if ($(elem.parentElement).is(":visible")) {
       elem.checked = val;
     }
@@ -1182,6 +1202,7 @@ function getSuites() {
 
 
 function selectSuite(suite) {
+  filterBox.value = "";
   for (var i = 0; i < allGraphs.length; i++) {
     var elem = document.getElementById('graph' + i);
     if (allGraphs[i].suites.indexOf(suite) >= 0) {
@@ -1210,6 +1231,7 @@ function displaySelectedGraphs() {
   var jsons = [];
 
 
+  // Disable filtering until the jsons are done
   disableFilterBox(true);
 
   // generate the dygraph(s) for the currently selected graphs
