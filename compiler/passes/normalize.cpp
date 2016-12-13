@@ -77,32 +77,12 @@ void normalize() {
   transformLogicalShortCircuit();
   lowerReduceAssign();
 
-  // tag iterators and replace delete statements with calls to ~chpl_destroy
+  // tag iterators and replace delete statements with calls to chpl__deinit
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
       // violations should have caused USR_FATAL in semanticChecks.cpp
       INT_ASSERT(fn && fn->isIterator());
-    }
-    if (call->isPrimitive(PRIM_DELETE)) {
-      SET_LINENO(call);
-      VarSymbol* tmp = newTemp("delete_tmp");
-      call->insertBefore(new DefExpr(tmp));
-      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
-      call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
-      CallExpr* freeExpr = callChplHereFree(tmp);
-      if (fLocal) {
-        call->insertBefore(freeExpr);
-      } else {
-        //
-        // if compiling for multiple locales, we need to be sure that the
-        // delete is executed on the locale on which the object lives for
-        // correctness sake.
-        //
-        BlockStmt* onStmt = buildOnStmt(new SymExpr(tmp), freeExpr);
-        call->insertBefore(onStmt);
-      }
-      call->remove();
     }
   }
 
@@ -167,7 +147,7 @@ void normalize() {
         if (ct && strcmp(fn->name + 1, ct->symbol->name)) {
           USR_FATAL(fn, "destructor name must match class name");
         } else {
-          fn->name = astr("~chpl_destroy");
+          fn->name = astr("chpl__deinit");
         }
       }
     }

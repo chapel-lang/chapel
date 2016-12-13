@@ -1439,12 +1439,12 @@ static void buildStringCastFunction(EnumType* et) {
 
 
 void buildDefaultDestructor(AggregateType* ct) {
-  if (function_exists("~chpl_destroy", 2, dtMethodToken, ct))
+  if (function_exists("chpl__deinit", 2, dtMethodToken, ct))
     return;
 
   SET_LINENO(ct->symbol);
 
-  FnSymbol* fn = new FnSymbol("~chpl_destroy");
+  FnSymbol* fn = new FnSymbol("chpl__deinit");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_DESTRUCTOR);
   fn->addFlag(FLAG_INLINE);

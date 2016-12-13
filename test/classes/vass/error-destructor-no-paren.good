@@ -1,0 +1,2 @@
+error-destructor-no-paren.chpl:2: error: destructor must have parentheses
+error-destructor-no-paren.chpl:3: error: destructor must have parentheses
