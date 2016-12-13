@@ -811,6 +811,15 @@ module ChapelBase {
     }
   }
 
+  pragma "dont disable remote value forwarding"
+  pragma "no remote memory fence"
+  proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
+    e.i.add(numTasks:int, memory_order_release);
+    if countRunningTasks {
+      here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
+    }
+  }
+
   // This function is called once by each newly initiated task.  No on
   // statement is needed because the call to sub() will do a remote
   // fork (on) if needed.
@@ -841,6 +850,19 @@ module ChapelBase {
     } else {
       // re-add the task that was waiting for others to finish
       here.runningTaskCntAdd(1);
+    }
+  }
+
+  pragma "dont disable remote value forwarding"
+  proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
+    // See if we can help with any of the started tasks
+    chpl_taskListExecute(e.taskList);
+
+    // Wait for all tasks to finish
+    e.i.waitFor(0, memory_order_acquire);
+
+    if countRunningTasks {
+      here.runningTaskCntSub(numTasks:int-1);
     }
   }
 

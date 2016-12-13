@@ -1581,19 +1581,63 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     onBlock->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     return block;
   } else {
-    VarSymbol* coforallCount = newTemp("_coforallCount");
-    BlockStmt* beginBlk = new BlockStmt();
-    beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
-    addByrefVars(beginBlk, byref_vars);
-    beginBlk->insertAtHead(body);
-    beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-    BlockStmt* block = ForLoop::buildForLoop(indices, iterator, beginBlk, true, zippered);
-    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
-    block->insertAtHead(new DefExpr(coforallCount));
-    beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
-    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
-    block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
-    return block;
+
+    BlockStmt* coforallBlk = new BlockStmt();
+
+    BlockStmt* vectorCoforallBlk = new BlockStmt();
+    BlockStmt* nonVectorCoforallBlk = new BlockStmt();
+
+    VarSymbol* tmpIter = newTemp("tmpIter");
+    coforallBlk->insertAtTail(new DefExpr(tmpIter));
+    coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, tmpIter, iterator));
+    {
+      VarSymbol* coforallCount = newTemp("_coforallCount");
+      BlockStmt* beginBlk = new BlockStmt();
+      beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
+      addByrefVars(beginBlk, byref_vars);
+      beginBlk->insertAtHead(body);
+      beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+      BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(tmpIter), beginBlk, true, zippered);
+      block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /*forceLocalTypes=*/gTrue)));
+      block->insertAtHead(new DefExpr(coforallCount));
+      beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
+      block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+      block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
+      nonVectorCoforallBlk->insertAtTail(block);
+    }
+    {
+      VarSymbol* coforallCount = newTemp("_coforallCount");
+      BlockStmt* beginBlk = new BlockStmt();
+      beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
+      addByrefVars(beginBlk, byref_vars);
+      beginBlk->insertAtHead(body->copy());
+      beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+      VarSymbol* numTasks = newTemp("numTasks");
+      vectorCoforallBlk->insertAtTail(new DefExpr(numTasks));
+      vectorCoforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, numTasks, new CallExpr(".", tmpIter,  new_CStringSymbol("size"))));
+      vectorCoforallBlk->insertAtTail(new CallExpr("_upEndCount", coforallCount, /*countRunningTasks=*/gTrue, numTasks));
+      BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(tmpIter), beginBlk, true, zippered);
+      vectorCoforallBlk->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /*forceLocalTypes=*/gTrue)));
+      vectorCoforallBlk->insertAtHead(new DefExpr(coforallCount));
+      block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, /*countRunningTasks=*/gTrue, numTasks));
+      block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
+      vectorCoforallBlk->insertAtTail(block);
+    }
+
+    VarSymbol* isRngDomArr  = newTemp("isRngDomArr");
+    isRngDomArr->addFlag(FLAG_MAYBE_PARAM);
+    coforallBlk->insertAtTail(new DefExpr(isRngDomArr));
+
+    coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isRngDomArr,
+                              new CallExpr("||", new CallExpr("isBoundedRange", tmpIter),
+                              new CallExpr("||", new CallExpr("isDomain", tmpIter), new CallExpr("isArray", tmpIter)))));
+
+
+    coforallBlk->insertAtTail(new CondStmt(new SymExpr(isRngDomArr),
+                                           vectorCoforallBlk->copy(),
+                                           nonVectorCoforallBlk->copy()));
+
+    return coforallBlk;
   }
 }
 
