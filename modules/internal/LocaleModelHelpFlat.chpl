@@ -21,6 +21,6 @@ module LocaleModelHelpFlat {
 
   param localeModelHasSublocales = false;
 
-  use LocaleModelHelp;
+  use LocaleModelHelpSetup;
 
 }

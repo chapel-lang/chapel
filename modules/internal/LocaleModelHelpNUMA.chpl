@@ -21,6 +21,6 @@ module LocaleModelHelpNUMA {
 
   param localeModelHasSublocales = true;
 
-  use LocaleModelHelp;
+  use LocaleModelHelpSetup;
 
 }
