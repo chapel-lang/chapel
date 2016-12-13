@@ -211,9 +211,13 @@ the compiler will run checks in one of two modes, based on a flag.
 
 If a call to a throwing procedure is not enclosed by a ``try`` or ``try!``: 
 
-1. **Default.**: the program will compile with a warning. An error will
-   be propagated by the calling procedure if it ``throws``, and will
-   ``halt()`` if it does not throw.
+1. **Default.**: 
+
+   a. if the call is contained in a procedure labelled with ``throws``, any
+      error encountered will be propagated.
+
+   b. if the call is contained in a procedure not labelled with ``throws``,
+      the program will ``halt()`` if an error is encountered.
 
 2. **Strict.**: the compiler will raise an error.
 
