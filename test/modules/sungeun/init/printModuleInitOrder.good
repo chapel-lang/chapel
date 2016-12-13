@@ -15,7 +15,7 @@ Initializing Modules:
     ChapelTuple
     ChapelRange
     LocaleModel
-     LocaleModelHelp
+     LocaleModelHelpSetup
       ChapelLocale
       DefaultRectangular
        DSIUtil

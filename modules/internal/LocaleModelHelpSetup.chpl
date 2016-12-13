@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-// LocaleModelHelp.chpl
+// LocaleModelHelpSetup.chpl
 //
 // Provides for declarations common to locale models
 // but that do not have to be the same in order to meet the
@@ -26,7 +26,7 @@
 // They are in this file as a practical matter to avoid code
 // duplication. If necessary, a locale model using this file
 // should feel free to reimplement them in some other way.
-module LocaleModelHelp {
+module LocaleModelHelpSetup {
 
   use ChapelLocale;
   use DefaultRectangular;
