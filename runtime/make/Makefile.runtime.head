@@ -42,8 +42,6 @@ include $(RUNTIME_ROOT)/../make/Makefile.base
 
 LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
 LAUNCHER_INCLS = \
-        -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_HOST_COMPILER) \
-        -I$(RUNTIME_ROOT)/include/$(subst -sim,,$(CHPL_MAKE_HOST_PLATFORM)) \
         -I$(RUNTIME_ROOT)/include/comm/$(CHPL_MAKE_COMM) \
         -I$(RUNTIME_ROOT)/include/comm \
         -I$(RUNTIME_ROOT)/include
