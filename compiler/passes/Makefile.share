@@ -28,6 +28,7 @@ PASSES_SRCS = \
         createTaskFunctions.cpp \
         denormalize.cpp \
         docs.cpp \
+        errorHandling.cpp \
         expandExternArrayCalls.cpp \
         externCResolve.cpp \
         filesToAST.cpp \
