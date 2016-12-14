@@ -3,7 +3,7 @@
 
    contributed by Brad Chamberlain
    derived from the GNU C version by Аноним Легионов and Jeremy Zerfas
-     as well as previous Chapel versions by Casey Battaglino, Kyle Brady, 
+     as well as previous Chapel versions by Casey Battaglino, Kyle Brady,
      and Preston Sahabu.
 */
 
@@ -144,7 +144,7 @@ proc randomMake(desc, nuclInfo, n) {
 
         const r = myRands[i];
         var ncnt = 1;
-        for j in 1..numNucls do      
+        for j in 1..numNucls do
           if r >= cumulProb[j] then
             ncnt += 1;
 

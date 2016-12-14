@@ -3,7 +3,7 @@
 
    contributed by Brad Chamberlain
    derived from the GNU C version by Аноним Легионов and Jeremy Zerfas
-     as well as previous Chapel versions by Casey Battaglino, Kyle Brady, 
+     as well as previous Chapel versions by Casey Battaglino, Kyle Brady,
      and Preston Sahabu.
 */
 
