@@ -77,15 +77,6 @@ void normalize() {
   transformLogicalShortCircuit();
   lowerReduceAssign();
 
-  // tag iterators and replace delete statements with calls to chpl__deinit
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_YIELD)) {
-      FnSymbol* fn = toFnSymbol(call->parentSymbol);
-      // violations should have caused USR_FATAL in semanticChecks.cpp
-      INT_ASSERT(fn && fn->isIterator());
-    }
-  }
-
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
     if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&

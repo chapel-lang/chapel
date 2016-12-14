@@ -207,9 +207,6 @@ checkFunction(FnSymbol* fn) {
   if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
-  if (fn->hasFlag(FLAG_DESTRUCTOR) && fn->hasFlag(FLAG_NO_PARENS))
-    USR_FATAL_CONT(fn, "destructor must have parentheses");
-
   if (fn->thisTag != INTENT_BLANK && !fn->hasFlag(FLAG_METHOD)) {
     USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
   }

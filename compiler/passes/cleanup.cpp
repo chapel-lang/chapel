@@ -197,6 +197,15 @@ static void change_cast_in_where(FnSymbol* fn) {
 }
 
 
+static void add_parens_to_deinit_fns(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_DESTRUCTOR))
+    // Make paren-less decls act as paren-ful. Otherwise
+    // "arg.chpl__deinit()" in proc chpl__delete(arg)
+    // would not resolve.
+    fn->removeFlag(FLAG_NO_PARENS);
+}
+
+
 void cleanup(void) {
   std::vector<BaseAST*> asts;
   collect_asts(rootModule, asts);
@@ -220,6 +229,7 @@ void cleanup(void) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         flatten_primary_methods(fn);
         change_cast_in_where(fn);
+        add_parens_to_deinit_fns(fn);
       }
     }
   }
