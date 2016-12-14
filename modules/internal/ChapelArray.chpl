@@ -1214,6 +1214,16 @@ module ChapelArray {
     proc member(i: _value.idxType ...rank) {
       return member(i);
     }
+    pragma "no doc"
+    proc contains(i: rank*_value.idxType) {
+      return member(i);
+    }
+    /* Same as domain.member().
+       Return true if ``i`` is a member of this domain. Otherwise
+       return false. */
+    proc contains(i: _value.idxType ...rank) {
+      return member(i);
+    }
 
     pragma "no doc"
     pragma "reference to const when const this"
