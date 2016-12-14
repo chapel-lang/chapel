@@ -25,6 +25,10 @@
 #include "passes.h"
 #include "primitive.h"
 #include "resolution.h"
+#include "stlUtil.h"
+
+#include <set>
+#include <map>
 
 //
 // Static function declarations.
@@ -418,6 +422,43 @@ void check_makeBinary()
 // Utility functions
 //
 
+static void checkSymbolSymExprs()
+{
+  std::set<Symbol*> symbols;
+  std::map<Symbol*, std::set<SymExpr*> > symbolToSymExprs1;
+  std::map<Symbol*, std::set<SymExpr*> > symbolToSymExprs2;
+
+  // create symbolToSymExprs1, symbols
+  for_alive_in_Vec(SymExpr, se, gSymExprs) {
+    Symbol* sym = se->symbol();
+    symbolToSymExprs1[sym].insert(se);
+    symbols.insert(sym);
+  }
+
+  // create symbolToSymExprs2 from for_SymbolSymExprs
+  for_set(Symbol, sym, symbols) {
+    for_SymbolSymExprs(se, sym) {
+      symbolToSymExprs2[sym].insert(se);
+    }
+  }
+
+  // compare that the two views are the same
+  for_set(Symbol, sym, symbols) {
+    std::set<SymExpr*> & a = symbolToSymExprs1[sym];
+    std::set<SymExpr*> & b = symbolToSymExprs2[sym];
+
+    for_set(SymExpr, se, a) {
+      if (0 == b.count(se))
+        INT_FATAL(se, "SymExpr not in Symbol's list id %i", se->id);
+    }
+    for_set(SymExpr, se, b) {
+      if (0 == a.count(se))
+        INT_FATAL(se, "extra SymExpr in Symbol's list %i", se->id);
+    }
+  }
+}
+
+
 // Extra structural checks on the AST, applicable to all passes.
 void check_afterEveryPass()
 {
@@ -463,6 +504,7 @@ static void check_afterResolution()
     checkFormalActualBaseTypesMatch();
     checkRetTypeMatchesRetVarType();
     checkAutoCopyMap();
+    checkSymbolSymExprs();
   }
 }
 

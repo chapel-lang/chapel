@@ -512,19 +512,6 @@ void SymExpr::verify() {
 
   if (var != NULL && var->defPoint != NULL && var->defPoint->parentSymbol == NULL)
     INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
-
-  // Check that we can find this SymExpr in the Symbol's list
-  bool found = false;
-  for_SymbolSymExprs(se, var) {
-    if (se == this) {
-      found = true;
-      break;
-    }
-  }
-
-  if (!found)
-    INT_FATAL(this, "SymExpr::verify %12d:  SymExpr not in Symbol's list", id);
-
 }
 
 SymExpr* SymExpr::copyInner(SymbolMap* map) {
