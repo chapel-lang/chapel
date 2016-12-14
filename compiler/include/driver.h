@@ -155,7 +155,7 @@ extern bool fLibraryCompile;
 extern bool fUseNoinit;
 extern bool no_codegen;
 extern bool developer;
-extern bool fVerify;
+extern int  fVerify;
 extern int  num_constants_per_variable;
 extern bool printCppLineno;
 

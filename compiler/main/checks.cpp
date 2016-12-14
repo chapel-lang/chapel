@@ -468,6 +468,7 @@ void check_afterEveryPass()
     checkForDuplicateUses();
     checkFlagRelationships();
     checkEmptyPartialCopyFnMap();
+    if (fVerify > 1) checkSymbolSymExprs();
   }
 }
 
