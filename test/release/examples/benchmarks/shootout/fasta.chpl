@@ -85,7 +85,7 @@ const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newline = ascii("\n"): int(8);
 
 //
-// Repeat sequence "alu" for n characters
+// Repeat sequence 'alu' for n characters
 //
 proc repeatMake(desc, alu, n) {
   stdout.writeln(desc);
@@ -125,8 +125,8 @@ proc randomMake(desc, nuclInfo, n) {
     const chunkSize = lineLength*blockSize,
           nextTask = (tid + 1) % numTasks;
 
-    var myBuff: [0..(lineLength+1)*blockSize-1] int(8),
-        myRands: [0..chunkSize] int/*(32)*/;
+    var myBuff: [0..#(lineLength+1)*blockSize] int(8),
+        myRands: [0..chunkSize] randType;
 
     for i in 1..n by chunkSize*numTasks align 1+tid*chunkSize {
       const bytes = min(chunkSize, n-i+1);
