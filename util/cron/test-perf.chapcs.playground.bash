@@ -9,10 +9,10 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of using the non copyargs versions of qthread_fork
+# Test performance of re-enabling rvf on task functions
 GITHUB_USER=ronawho
-GITHUB_BRANCH=qthread-no-copyargs
-SHORT_NAME=noCopyargs
+GITHUB_BRANCH=rvf-task-functions
+SHORT_NAME=rvfTask
 START_DATE=12/13/16
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
