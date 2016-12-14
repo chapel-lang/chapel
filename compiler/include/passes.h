@@ -54,6 +54,7 @@ void insertLineNumbers();
 void insertWideReferences();
 void localizeGlobals();
 void loopInvariantCodeMotion();
+void lowerErrorHandling();
 void lowerIterators();
 void makeBinary();
 void normalize();
