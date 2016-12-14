@@ -2,10 +2,9 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Brad Chamberlain
-
    derived from the GNU C version by Аноним Легионов and Jeremy Zerfas
-     as well as from previous Chapel versions by Casey Battaglino,
-     Kyle Brady, and Preston Sahabu.
+     as well as previous Chapel versions by Casey Battaglino, Kyle Brady,
+     and Preston Sahabu.
 */
 
 config const n = 1000,           // the length of the generated strings
@@ -36,6 +35,13 @@ config const maxTaskPar = here.maxTaskPar,
              div = if numTasks*numSockets > maxTaskPar then 1 else numSockets;
 
 config const debug = false;
+
+config type randType = uint(32);  // type to use for random numbers
+
+config param IM = 139968,         // parameters for random number generation
+             IA = 3877,
+             IC = 29573,
+             seed: randType = 42;
 
 if debug {
   writeln("idealTasks   = ", idealTasks);
@@ -84,21 +90,18 @@ const ALU: [0..286] int(8) = [
 param nucl = 1,
       prob = 2;
 
-param IM = 139968;
-
 //
 // Probability tables for sequences to be randomly generated
 //
-const IUB = [(a, 0.27), (c, 0.12), (g, 0.12),
-                                     (t, 0.27), (B, 0.02), (D, 0.02),
-                                     (H, 0.02), (K, 0.02), (M, 0.02),
-                                     (N, 0.02), (R, 0.02), (S, 0.02),
-                                     (V, 0.02), (W, 0.02), (Y, 0.02)];
+const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
+             (B, 0.02), (D, 0.02), (H, 0.02), (K, 0.02),
+             (M, 0.02), (N, 0.02), (R, 0.02), (S, 0.02),
+             (V, 0.02), (W, 0.02), (Y, 0.02)];
 
 const HomoSapiens = [(a, 0.3029549426680),
-                                            (c, 0.1979883004921),
-                                            (g, 0.1975473066391),
-                                            (t, 0.3015094502008)];
+                     (c, 0.1979883004921),
+                     (g, 0.1975473066391),
+                     (t, 0.3015094502008)];
 
 
 proc main() {
@@ -114,13 +117,13 @@ const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newline = ascii("\n"): int(8);
 
 //
-// Repeat string 'str' for 'n' characters
+// Repeat sequence "alu" for n characters
 //
-proc repeatMake(desc, str, n) {
+proc repeatMake(desc, alu, n) {
   stdout.write(desc);
 
-  const r = str.size,
-        s = [i in 0..(r+lineLength)] str[i % r];
+  const r = alu.size,
+        s = [i in 0..(r+lineLength)] alu[i % r];
 
   for i in 0..n by lineLength {
     const lo = i % r + 1,
@@ -133,18 +136,16 @@ proc repeatMake(desc, str, n) {
 // Output a random sequence of length 'n' using distribution 'a'
 //
 proc randomMake(desc, nuclInfo, n) {
-  const numNucls = nuclInfo.size;
-
   stdout.write(desc);
 
-  var cumul_p: [1..numNucls] int;
-  //
-  // Sum the probabilities of the nucleotide info
-  //
+  const numNucls = nuclInfo.size;
+  var cumulProb: [1..numNucls] randType;
+
+  // compute the cumulative probabilities of the nucleotides
   var p = 0.0;
   for i in 1..numNucls {
     p += nuclInfo[i](prob);
-    cumul_p[i] = 1 + (p*IM):int;
+    cumulProb[i] = 1 + (p*IM):randType;
   }
 
   var randGo, outGo: [0..#numTasks] atomic int;
@@ -168,25 +169,11 @@ proc randomMake(desc, nuclInfo, n) {
     var line_buff: [0..(lineLength+1)*blockSize-1] int(8);
     var rands: [0..chunkSize] int/*(32)*/;
 
-    //
-    // TODO: Use some sort of chunking iterator?
-    //
-    //    writef("tid %i writing %i..%i\n", tid, lo, n);
     for i in 1..n by chunkSize*numTasks align (tid*chunkSize+1) {
-
       const bytes = min(chunkSize, n-i+1);
-      //      writef("tid %i doing %i..#%i\n", tid, i, bytes);
 
-      //      writef("tid %i working on bytes %i\n", tid, bytes);      
-      //      stderr.writef("tid %i waiting for turn to say %i\n", tid, i);
       while (randGo[tid].read() != i) do ;
-      //      stderr.writef("tid %i got turn\n", tid);
       getRands(bytes, rands);
-      /*
-      for (r,i) in zip(getRands(bytes, tid), 0..) do
-        rands[i] = r;
-      */
-      //      stderr.writef("tid %i passing turn %i to %i\n", tid, i+1, nextTask);
       randGo[nextTask].write(i + chunkSize);
 
       var col = 0;
@@ -195,7 +182,7 @@ proc randomMake(desc, nuclInfo, n) {
         const r = rands[i];
         var ncnt = 1;
         for j in 1..numNucls do
-          if r >= cumul_p[j] then
+          if r >= cumulProb[j] then
             ncnt += 1;
 
         line_buff[off] = nuclInfo[ncnt](nucl);
@@ -213,30 +200,20 @@ proc randomMake(desc, nuclInfo, n) {
         off += 1;
       }
 
-
-      //      writeln("tid = ", tid, "bytes = ", bytes, " off = ", off);
-      {
-        while (outGo[tid].read() != i) do ;
-        stdout.write(line_buff[0..#off]);
-        outGo[nextTask].write(i+chunkSize);
-      }
+      while (outGo[tid].read() != i) do ;
+      stdout.write(line_buff[0..#off]);
+      outGo[nextTask].write(i+chunkSize);
     }
-    
-    
     }
   }
 }
 
-
 //
 // Deterministic random number generator
 //
-var lastRand = 42/*:int(32)*/;
+var lastRand = seed;
 
 proc getRands(n, arr) {
-  param IA = 3877,
-        IC = 29573;
-
   //  writef("tid %i got turn\n", tid);
   for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
