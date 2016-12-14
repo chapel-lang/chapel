@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of vector coforall
+# Test performance of using the non copyargs versions of qthread_fork
 GITHUB_USER=ronawho
-GITHUB_BRANCH=vector-coforall-2
-SHORT_NAME=vectorCoforall
-START_DATE=12/08/16
+GITHUB_BRANCH=qthread-no-copyargs
+SHORT_NAME=noCopyargs
+START_DATE=12/13/16
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
