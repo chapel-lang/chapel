@@ -25,6 +25,7 @@
 #include "passes.h"
 #include "primitive.h"
 #include "resolution.h"
+#include "docsDriver.h" // for fDocs
 
 //
 // Static function declarations.
@@ -520,6 +521,9 @@ static void checkIsIterator() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
+      if (!fn && fDocs)
+        // In docs mode some nodes are not in tree, so skip the check.
+        continue;
       // Violations should have caused USR_FATAL_CONT in checkParsed().
       INT_ASSERT(fn && fn->isIterator());
     }
