@@ -271,7 +271,7 @@ FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
 {
   Type *newType = newTypeSymbol->type;
 
-  FnSymbol *dtor = new FnSymbol("~chpl_destroy");
+  FnSymbol *dtor = new FnSymbol("chpl__deinit");
 
   dtor->cname = astr("chpl__auto_destroy_", newType->symbol->cname);
 

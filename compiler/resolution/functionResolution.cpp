@@ -6368,6 +6368,9 @@ preFold(Expr* expr) {
         }
       }
 
+    } else if (call->isPrimitive(PRIM_DELETE)) {
+      result = new CallExpr("chpl__delete", call->get(1)->remove());
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_TYPEOF)) {
       Type* type = call->get(1)->getValType();
       if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
@@ -8283,7 +8286,7 @@ resolveFns(FnSymbol* fn) {
           !ct->symbol->hasFlag(FLAG_REF) &&
           !isTupleContainingOnlyReferences(ct)) {
         VarSymbol* tmp = newTemp(ct);
-        CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
+        CallExpr* call = new CallExpr("chpl__deinit", gMethodToken, tmp);
 
         // In case resolveCall drops other stuff into the tree ahead of the
         // call, we wrap everything in a block for safe removal.

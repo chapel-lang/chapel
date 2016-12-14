@@ -43,6 +43,7 @@ static void check_afterResolveIntents();
 static void check_afterCallDestructors(); // Checks to be performed after every
                                           // pass following callDestructors.
 static void check_afterLowerIterators();
+static void checkIsIterator(); // Ensure each iterator is flagged so.
 static void checkAggregateTypes(); // Checks that class and record types have
                                    // default initializers and default type
                                    // constructors.
@@ -71,7 +72,10 @@ void check_parse()
 
 void check_checkParsed()
 {
-  // The checkParsed pass should not make any changes, so skip checks.
+  // checkIsIterator() will crash if there were certain USR_FATAL_CONT()
+  // e.g. functions/vass/proc-iter/error-yield-in-proc-*
+  exitIfFatalErrorsEncountered();
+  checkIsIterator();
 }
 
 void check_readExternC()
@@ -510,6 +514,16 @@ static void check_afterLowerIterators()
   checkLowerIteratorsRemovedPrims();
   if (fVerify)
     checkArgsAndLocals();
+}
+
+static void checkIsIterator() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_YIELD)) {
+      FnSymbol* fn = toFnSymbol(call->parentSymbol);
+      // Violations should have caused USR_FATAL_CONT in checkParsed().
+      INT_ASSERT(fn && fn->isIterator());
+    }
+  }
 }
 
 

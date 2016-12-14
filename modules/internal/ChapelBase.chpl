@@ -1107,6 +1107,22 @@ module ChapelBase {
     __primitive("call destructor", x);
   }
 
+  // implements 'delete' statement
+  inline proc chpl__delete(arg) {
+    if chpl_isDdata(arg.type) then
+      compilerError("cannot delete data class");
+    // Todo: enable this check. Can't do it now because
+    // isClassType() returns 'false' on extern class types.
+    //if !isClassType(arg.type) then
+    //  compilerError("can delete only class types: ", arg.type:string);
+    if (isRecord(arg)) then
+      compilerError("delete not allowed on records");
+
+    arg.chpl__deinit();
+    on arg do
+      chpl_here_free(__primitive("_wide_get_addr", arg));
+  }
+
   // c_void_ptr operations
   inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
   inline proc ==(a: c_void_ptr, b: c_void_ptr) {
