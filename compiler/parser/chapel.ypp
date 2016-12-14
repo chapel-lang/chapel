@@ -293,7 +293,7 @@
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
 %token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTHROWS TTRY TTYPE TUNDERSCORE TUNION TUSE TVAR
+%token TSYNC TTHEN TTHROWS TTRY TTRYBANG TTYPE TUNDERSCORE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TWITH TYIELD TZIP
 
 //
@@ -699,8 +699,12 @@ if_stmt:
 | TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
 ;
 
+/*
+  psahabu: consider just using stmt to include single line try
+*/
 try_stmt:
-  TTRY block_stmt { $$ = TryStmt::build(false, $2); }
+  TTRY     stmt { $$ = TryStmt::build(false, $2); }
+| TTRYBANG stmt { $$ = TryStmt::build(true,  $2); }
 ;
 
 select_stmt:
