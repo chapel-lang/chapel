@@ -1,5 +1,9 @@
 /*
+<<<<<<< 8cf5ee5b91e8ea7b5bcdaca97a69947939eb39a6
  * Copyright 2004-2017 Cray Inc.
+=======
+ * Copyright 2004-2016 Cray Inc.
+>>>>>>> error handling pass skeleton
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,8 +21,8 @@
  * limitations under the License.
  */
 
-#include "errorHandling.h"
+#include <cstdio>
 
 void lowerErrorHandling() {
-
+  printf("hello world\n");
 }
