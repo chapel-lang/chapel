@@ -137,7 +137,7 @@ clean: FORCE
 	cd modules && $(MAKE) clean
 	cd runtime && $(MAKE) clean
 	cd third-party && $(MAKE) clean
-	cd doc && $(MAKE) clean
+	if [ -a doc/Makefile ]; then cd doc && $(MAKE) clean; fi
 	rm -f util/chplenv/*.pyc
 
 cleanall: FORCE
@@ -145,7 +145,7 @@ cleanall: FORCE
 	cd modules && $(MAKE) cleanall
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
-	cd doc && $(MAKE) cleanall
+	if [ -a doc/Makefile ]; then cd doc && $(MAKE) cleanall; fi
 	rm -f util/chplenv/*.pyc
 	rm -rf build
 
@@ -159,7 +159,7 @@ clobber: FORCE
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
-	cd doc $(MAKE) clobber
+	if [ -a doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin
 	rm -rf lib
 	rm -rf build
