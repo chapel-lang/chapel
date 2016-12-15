@@ -299,6 +299,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_REQUIRE:
   case NUM_KNOWN_PRIMS:
   case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
+  case PRIM_THROW:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
@@ -308,7 +309,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_BLOCK_FOR_LOOP:
   case PRIM_BLOCK_C_FOR_LOOP:
     return FAST_AND_LOCAL;
- 
+
     // These don't block in the Chapel sense, but they may require a system
     // call so we don't consider them fast-eligible.
     // However, they are communication free.

@@ -437,12 +437,12 @@ prim_def(const char* name, QualifiedType (*returnInfo)(CallExpr*),
   prim->isEssential = isEssential;
   prim->passLineno = passLineno;
 }
- 
+
 
 /*
  * The routine below, using the routines just above, define primitives
  * for use by the compiler.  Each primitive definition takes:
- * 
+ *
  * - (optionally) the primitive's enum
  * - its string name
  * - a function pointer indicating the type it returns/evaluates to
@@ -471,6 +471,7 @@ initPrimitive() {
   prim_def(PRIM_TYPE_INIT, "type init", returnInfoFirstDeref);
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
+  prim_def(PRIM_THROW, "throw", returnInfoFirst, true, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
   prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirstDeref);
