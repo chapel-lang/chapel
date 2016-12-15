@@ -199,10 +199,7 @@ SystemOrDie("cd runtime/include && rm -r sunos_old");
 print "Removing third-party directories that are not intended for release...\n";
 SystemOrDie("cd third-party && rm *.devel*");
 SystemOrDie("cd third-party/chpl-venv && rm *.devel*");
-
-print "Removing chplspell/scspell files not intended for release...\n";
-SystemOrDie("cd third-party && rm chplspell-requirements.txt");
-# Or include this as part of "third-party" pruning above?
+SystemOrDie("cd third-party/chpl-venv && rm chplspell-requirements.txt");
 
 print "Removing Git metadata files not intended for release...\n";
 SystemOrDie('find . -type f \( -name .gitignore -o -name .gitattributes \) -exec rm -f {} \; -print');
