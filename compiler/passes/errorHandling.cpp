@@ -21,8 +21,29 @@
  * limitations under the License.
  */
 
+#include "symbol.h"
+#include "view.h"
 #include <cstdio>
 
 void lowerErrorHandling() {
+  // change 'throws' to 'out'
+    // add an Error formal to a function marked 'throws'
+    // for all calls to such functions
+      // pass a variable to receive the Error arg
+      // check the Error arg after the call
+
+  // TODO: how do we find Error temps from a call to a throwing function?
+
   printf("hello world\n");
+
+  // give 'throws' an 'out'
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->throwsError()) {
+      SET_LINENO(fn);
+
+      // TODO: dtObject should be dtError, but we don't have that right now
+      ArgSymbol* outFormal = new ArgSymbol(INTENT_REF, "error", dtObject);
+      fn->insertFormalAtTail(outFormal);
+    }
+  }
 }
