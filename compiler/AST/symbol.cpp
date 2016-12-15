@@ -324,6 +324,10 @@ SymExpr* Symbol::firstSymExpr() const {
   return symExprsHead;
 }
 
+SymExpr* Symbol::lastSymExpr() const {
+  return symExprsTail;
+}
+
 bool Symbol::isImmediate() const {
   return false;
 }
