@@ -840,7 +840,8 @@ FnSymbol::FnSymbol(const char* initName) :
   valueFunction(NULL),
   codegenUniqueNum(1),
   doc(NULL),
-  retSymbol(NULL)
+  retSymbol(NULL),
+  _throwsError(false)
 #ifdef HAVE_LLVM
   ,
   llvmDISubprogram(NULL)

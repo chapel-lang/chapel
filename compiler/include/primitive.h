@@ -40,6 +40,7 @@ enum PrimitiveTag {
                         // generating code.
   PRIM_REF_TO_STRING,
   PRIM_RETURN,
+  PRIM_THROW,
   PRIM_YIELD,
   PRIM_UNARY_MINUS,
   PRIM_UNARY_PLUS,
