@@ -1385,7 +1385,6 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
 
   Vec<Symbol*> refSet;
   Vec<Symbol*> refVec;
-  Vec<SymExpr*> symExprs;
   // Walk the asts in this function, and build lists of reference variables and sym exprs.
   for_vector(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
@@ -1393,8 +1392,6 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
         refVec.add(var);
         refSet.set_add(var);
       }
-    } else if (SymExpr* se = toSymExpr(ast)) {
-      symExprs.add(se);
     }
   }
 
@@ -1402,7 +1399,7 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
   // but restricted to only the ref variables therein.
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(refSet, symExprs, defMap, useMap);
+  buildDefUseMaps(refSet, defMap, useMap);
 
   s_ref_repl_count = 0;
   // Walk the list of reference vars

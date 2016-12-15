@@ -897,7 +897,6 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 
   Vec<Symbol*> symSet;
   std::vector<BaseAST*> asts;
-  Vec<SymExpr*> symExprs;
   collect_asts(rootModule, asts);
   for_vector(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
@@ -906,13 +905,11 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
           symSet.set_add(def->sym);
         }
       }
-    } else if (SymExpr* se = toSymExpr(ast)) {
-      symExprs.add(se);
     }
   }
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(symSet, symExprs, defMap, useMap);
+  buildDefUseMaps(symSet, defMap, useMap);
 
   forv_Vec(Symbol, var, heapAllocatedVars) {
     // find out if a variable that was put on the heap could be passed in as an

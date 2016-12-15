@@ -239,12 +239,11 @@ void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap,
     SafeExprAnalysis& analysisData) {
 
   Vec<Symbol*> symSet;
-  Vec<SymExpr*> symExprs;
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
 
-  collectSymbolSetSymExprVec(fn, symSet, symExprs);
-  buildDefUseMaps(symSet, symExprs, defMap, useMap);
+  collectSymbolSet(fn, symSet);
+  buildDefUseMaps(symSet, defMap, useMap);
 
   findCandidatesInFuncOnlySym(fn, symSet, udcMap, analysisData);
 
