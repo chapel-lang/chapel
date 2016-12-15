@@ -34,6 +34,7 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
+#include "TryStmt.h"
 
 AstDump::AstDump() {
   mName      =     0;
@@ -526,7 +527,11 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
 //
 bool AstDump::enterTryStmt(TryStmt* node) {
   newline();
-  write("Try");
+  if (node->tryBang()) {
+    write("Try!");
+  } else {
+    write("Try");
+  }
   newline();
   write("{");
   ++mIndent;

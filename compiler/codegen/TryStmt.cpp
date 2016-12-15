@@ -22,5 +22,5 @@
 GenRet TryStmt::codegen() {
   codegenStmt(this);
 
-  return body->codegen();
+  return _body->codegen();
 }
