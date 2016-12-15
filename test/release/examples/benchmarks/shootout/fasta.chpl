@@ -85,7 +85,7 @@ const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newline = ascii("\n"): int(8);
 
 //
-// Repeat sequence 'alu' for n characters
+// Repeat 'alu' to generate a sequence of length 'n'
 //
 proc repeatMake(desc, alu, n) {
   stdout.writeln(desc);
@@ -101,7 +101,8 @@ proc repeatMake(desc, alu, n) {
 }
 
 //
-// Output a random sequence of length 'n' using distribution 'a'
+// Use 'nuclInfo's probability distribution to generate a random
+// sequence of length 'n'
 //
 proc randomMake(desc, nuclInfo, n) {
   stdout.writeln(desc);
