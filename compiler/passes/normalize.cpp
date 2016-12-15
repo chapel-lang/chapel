@@ -990,7 +990,7 @@ static void insert_call_temps(CallExpr* call)
       //  * making an array type alias, or
       //  * passing the result into the 2nd argument of buildArrayRuntimeType.
       while (cur != NULL) {
-        if (cur->isNamed("chpl__typeAliasInit") ||
+        if (/* TODO cur->isNamed("chpl__typeAliasInit") || */
             (cur->isNamed("chpl__buildArrayRuntimeType") && cur->get(2) == sub))
           break;
         sub = cur;
