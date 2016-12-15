@@ -175,6 +175,7 @@ sync             return processToken(yyscanner, TSYNC);
 then             return processToken(yyscanner, TTHEN);
 throws           return processToken(yyscanner, TTHROWS);
 try              return processToken(yyscanner, TTRY);
+"try!"           return processToken(yyscanner, TTRYBANG);
 type             return processToken(yyscanner, TTYPE);
 union            return processToken(yyscanner, TUNION);
 use              return processToken(yyscanner, TUSE);

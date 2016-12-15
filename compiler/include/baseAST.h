@@ -541,7 +541,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, GotoStmt, label, call, __VA_ARGS__);             \
     break;                                                              \
   case E_TryStmt:                                                       \
-    AST_CALL_CHILD(_a, TryStmt, getBody(), call, __VA_ARGS__);          \
+    AST_CALL_CHILD(_a, TryStmt, body(), call, __VA_ARGS__);             \
     break;                                                              \
   case E_ModuleSymbol:                                                  \
     AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \
