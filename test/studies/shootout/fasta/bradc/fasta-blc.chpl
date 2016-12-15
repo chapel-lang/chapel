@@ -93,7 +93,7 @@ const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newline = ascii("\n"): int(8);
 
 //
-// Repeat sequence "alu" for n characters
+// Repeat 'alu' to generate a sequence of length 'n'
 //
 proc repeatMake(desc, alu, n) {
   stdout.write(desc);
@@ -109,7 +109,8 @@ proc repeatMake(desc, alu, n) {
 }
 
 //
-// Output a random sequence of length 'n' using distribution 'a'
+// Use 'nuclInfo's probability distribution to generate a random
+// sequence of length 'n'
 //
 proc randomMake(desc, nuclInfo, n) {
   stdout.write(desc);
@@ -124,52 +125,67 @@ proc randomMake(desc, nuclInfo, n) {
     cumulProb[i] = 1 + (p*IM):randType;
   }
 
+  // guard when tasks can access the random numbers or output stream
   var randGo, outGo: [0..#numTasks] atomic int;
 
-  randGo.write(1);
-  outGo.write(1);
+  randGo.write(0);
+  outGo.write(0);
 
   coforall tid in 0..#numTasks {
-    const chunkSize = lineLength*blockSize;
-    const nextTask = (tid + 1) % numTasks;
+    const chunkSize = lineLength*blockSize,
+          nextTask = (tid + 1) % numTasks;
 
-    var line_buff: [0..(lineLength+1)*blockSize-1] int(8);
-    var rands: [0..chunkSize] int/*(32)*/;
+    var myBuff: [0..#(lineLength+1)*blockSize] int(8),
+        myRands: [0..chunkSize] randType;
 
-    for i in 1..n by chunkSize*numTasks align (tid*chunkSize+1) {
-      const bytes = min(chunkSize, n-i+1);
+    for i in tid*chunkSize .. n-1 by numTasks*chunkSize {
+      const bytes = min(chunkSize, n-i);
 
-      while (randGo[tid].read() != i) do ;
-      getRands(bytes, rands);
-      randGo[nextTask].write(i + chunkSize);
+      // Get 'bytes' random numbers in a coordinated manner
+      wait(randGo);
+      getRands(bytes, myRands);
+      signal(randGo);
 
-      var col = 0;
-      var off = 0;
-      for i in 0..#bytes {
-        const r = rands[i];
-        var ncnt = 1;
-        for j in 1..numNucls do
-          if r >= cumulProb[j] then
-            ncnt += 1;
+      // Compute 'bytes' nucleotides and store in 'myBuff'
+      var col = 0,
+          off = 0;
 
-        line_buff[off] = nuclInfo[ncnt](nucl);
+      for j in 0..#bytes {
 
+        const r = myRands[j];
+        var nid = 1;
+        for k in 1..numNucls do
+          if r >= cumulProb[k] then
+            nid += 1;
+
+        myBuff[off] = nuclInfo[nid](nucl);
         off += 1;
         col += 1;
+
         if (col == lineLength) {
           col = 0;
-          line_buff[off] = newline;
+          myBuff[off] = newline;
           off += 1;
         }
       }
       if (col != 0) {
-        line_buff[off] = newline;
+        myBuff[off] = newline;
         off += 1;
       }
 
-      while (outGo[tid].read() != i) do ;
-      stdout.write(line_buff[0..#off]);
-      outGo[nextTask].write(i+chunkSize);
+      // Write the output in a coordinated manner
+      wait(outGo);
+      stdout.write(myBuff[0..#off]);
+      signal(outGo);
+
+      // Helper routines for taking turns with shared resources
+      inline proc wait(guard) {
+        guard[tid].waitFor(i);
+      }
+
+      inline proc signal(guard) {
+        guard[nextTask].write(i+chunkSize);
+      }
     }
   }
 }
@@ -180,7 +196,6 @@ proc randomMake(desc, nuclInfo, n) {
 var lastRand = seed;
 
 proc getRands(n, arr) {
-  //  writef("tid %i got turn\n", tid);
   for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
     arr[i] = lastRand;
