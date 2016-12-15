@@ -173,6 +173,7 @@ sparse           return processToken(yyscanner, TSPARSE);
 subdomain        return processToken(yyscanner, TSUBDOMAIN);
 sync             return processToken(yyscanner, TSYNC);
 then             return processToken(yyscanner, TTHEN);
+throw            return processToken(yyscanner, TTHROW);
 throws           return processToken(yyscanner, TTHROWS);
 try              return processToken(yyscanner, TTRY);
 "try!"           return processToken(yyscanner, TTRYBANG);
