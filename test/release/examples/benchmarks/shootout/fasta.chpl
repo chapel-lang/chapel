@@ -118,8 +118,6 @@ proc randomMake(desc, nuclInfo, n) {
 
   // guard when tasks can access the random numbers or output stream
   var randGo, outGo: [0..#numTasks] atomic int;
-  randGo.write(1);
-  outGo.write(1);
 
   coforall tid in 0..#numTasks {
     const chunkSize = lineLength*blockSize,
@@ -128,8 +126,8 @@ proc randomMake(desc, nuclInfo, n) {
     var myBuff: [0..#(lineLength+1)*blockSize] int(8),
         myRands: [0..chunkSize] randType;
 
-    for i in 1..n by chunkSize*numTasks align 1+tid*chunkSize {
-      const bytes = min(chunkSize, n-i+1);
+    for i in tid*chunkSize .. n-1 by numTasks*chunkSize {
+      const bytes = min(chunkSize, n-i);
 
       // Get 'bytes' random numbers in a coordinated manner
       wait(randGo);
@@ -140,15 +138,15 @@ proc randomMake(desc, nuclInfo, n) {
       var col = 0,
           off = 0;
 
-      for i in 0..#bytes {
+      for j in 0..#bytes {
 
-        const r = myRands[i];
-        var ncnt = 1;
-        for j in 1..numNucls do
-          if r >= cumulProb[j] then
-            ncnt += 1;
+        const r = myRands[j];
+        var nid = 1;
+        for k in 1..numNucls do
+          if r >= cumulProb[k] then
+            nid += 1;
 
-        myBuff[off] = nuclInfo[ncnt](nucl);
+        myBuff[off] = nuclInfo[nid](nucl);
         off += 1;
         col += 1;
 
