@@ -207,6 +207,8 @@ all:
     - Stack allocate on and task function argument bundles (#4074)
   12/08/16:
     - Re-enable denormalization (#4547)
+  12/12/16:
+    - Reduce task creation time for "bounded" coforalls (#5018)
 
 
 AllCompTime:
@@ -353,6 +355,12 @@ fasta:
     - Switch release fasta to use linear search (#4796)
   11/18/16:
     - Replace queried domain iterations with range iterations (#4886)
+  12/09/16:
+    - Change linear search to avoid 'break' (#4994)
+  12/10/16:
+    - Switch from 'sync' to 'atomic'-based coordination (#5004)
+  12/15/16:
+    - Parallelize release version and refactor for CLBG submissions (#5024)
 
 fastaredux:
   01/14/14:
@@ -487,6 +495,8 @@ LCALSMain:
   10/20/16:
     - Clean up to HYDRO_2D kernel (#4757)
     - update to TRAP_INT serial kernel (#4756)
+  12/09/16:
+    - Throw --no-ieee-float for LCALS (#5001)
 
 lulesh:
   03/15/14:
