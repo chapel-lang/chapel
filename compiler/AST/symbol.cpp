@@ -150,11 +150,23 @@ void Symbol::verify() {
     INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
   verifyInTree(type, "Symbol::type");
 
-  if (symExprsHead && symExprsHead->symbolSymExprsPrev != NULL)
-    INT_FATAL(this, "Symbol's SymExpr list is malformed (head)");
+  if (symExprsHead) {
+    if (symExprsHead->symbolSymExprsPrev != NULL)
+      INT_FATAL(this, "Symbol's SymExpr list is malformed (head)");
+    if (symExprsHead->symbol() != this)
+      INT_FATAL(this, "Symbol's SymExpr head has other symbol");
+    if (symExprsHead->inTree() == false)
+      INT_FATAL(this, "Symbol's SymExpr head not in tree");
+  }
 
-  if (symExprsTail && symExprsTail->symbolSymExprsNext != NULL)
-    INT_FATAL(this, "Symbol's SymExpr list is malformed (tail)");
+  if (symExprsTail) {
+    if (symExprsTail->symbolSymExprsNext != NULL)
+      INT_FATAL(this, "Symbol's SymExpr list is malformed (tail)");
+    if (symExprsTail->symbol() != this)
+      INT_FATAL(this, "Symbol's SymExpr tail has other symbol");
+    if (symExprsTail->inTree() == false)
+      INT_FATAL(this, "Symbol's SymExpr tail not in tree");
+  }
 }
 
 
@@ -322,6 +334,10 @@ void Symbol::removeSymExpr(SymExpr* se) {
 
 SymExpr* Symbol::firstSymExpr() const {
   return symExprsHead;
+}
+
+SymExpr* Symbol::lastSymExpr() const {
+  return symExprsTail;
 }
 
 bool Symbol::isImmediate() const {

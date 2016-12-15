@@ -157,6 +157,7 @@ public:
   void               addSymExpr(SymExpr* se);
   void               removeSymExpr(SymExpr* se);
   SymExpr*           firstSymExpr()                            const;
+  SymExpr*           lastSymExpr()                             const;
 
 protected:
                      Symbol(AstTag      astTag,
