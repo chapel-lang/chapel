@@ -513,18 +513,32 @@ void SymExpr::verify() {
   if (var != NULL && var->defPoint != NULL && var->defPoint->parentSymbol == NULL)
     INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
 
-  // Check that we can find this SymExpr in the Symbol's list
-  bool found = false;
-  for_SymbolSymExprs(se, var) {
-    if (se == this) {
-      found = true;
-      break;
-    }
+  /* Check that:
+      - every live SymExpr is in a Symbol's list
+      - every live SymExpr is in it's Symbol's list
+
+     using local operations on the lists.
+   */
+
+  if (this->symbolSymExprsPrev == NULL) {
+    if (var->firstSymExpr() != this)
+      INT_FATAL(this, "SymExpr::verify %12d: no prev but not first", id);
+  } else {
+    if (this->symbolSymExprsPrev->var != var)
+      INT_FATAL(this, "SymExpr::verify %12d: does not match prev SymExpr", id);
+    if (!this->symbolSymExprsPrev->inTree())
+      INT_FATAL(this, "SymExpr::verify %12d: prev SymExpr not in tree", id);
   }
 
-  if (!found)
-    INT_FATAL(this, "SymExpr::verify %12d:  SymExpr not in Symbol's list", id);
-
+  if (this->symbolSymExprsNext == NULL) {
+    if (var->lastSymExpr() != this)
+      INT_FATAL(this, "SymExpr::verify %12d: no next but not last", id);
+  } else {
+    if (this->symbolSymExprsNext->symbol() != this->symbol())
+      INT_FATAL(this, "SymExpr::verify %12d: does not match next SymExpr", id);
+    if (!this->symbolSymExprsNext->inTree())
+      INT_FATAL(this, "SymExpr::verify %12d: next SymExpr not in tree", id);
+  }
 }
 
 SymExpr* SymExpr::copyInner(SymbolMap* map) {
