@@ -7,10 +7,10 @@
      and Preston Sahabu.
 */
 
-config const n = 1000,           // the length of the generated strings
-             lineLength = 60,    // the number of columns in the output
-             blockSize = 1024;   // the parallelization granularity
-
+config const n = 1000,            // the length of the generated strings
+             lineLength = 60,     // the number of columns in the output
+             blockSize = 1024,    // the parallelization granularity
+             numTasks = min(3, here.maxTaskPar);  // how many tasks to use?
 //
 // the computational pipeline has 3 distinct stages, so ideally, we'd
 // like to use 3 tasks.  However, if the locale can't support that
@@ -18,7 +18,6 @@ config const n = 1000,           // the length of the generated strings
 // degree of task parallelism to avoid starvation (because we rely on
 // busy-waits which could cause deadlocks otherwise).
 //
-config const numTasks = min(3, here.maxTaskPar);
 
 config type randType = uint(32);  // type to use for random numbers
 
@@ -180,7 +179,7 @@ proc randomMake(desc, nuclInfo, n) {
 
       // Helper routines for taking turns with shared resources
       inline proc wait(guard) {
-        guard[tid].waitFor(i);
+        while guard[tid].read() != i do ;
       }
 
       inline proc signal(guard) {
