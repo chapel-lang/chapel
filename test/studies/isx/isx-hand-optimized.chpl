@@ -1,4 +1,4 @@
-// isx-per-task.chpl
+// isx-hand-optimized.chpl
 // 
 // This is a port of ISx to Chapel, developed by Ben Harshbarger as a
 // variant on the isx-bucket-spmd.chpl version co-developed by Brad Chamberlain,

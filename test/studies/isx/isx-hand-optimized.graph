@@ -2,4 +2,4 @@ perfkeys: total =, input =, bucket count =, bucket offset =, bucketize =, exchan
 repeat-files: isx-hand-optimized.dat
 graphkeys: total time, input time, bucket count time, bucket offset time, bucketize time, exchange time, count keys time
 ylabel: Time (seconds)
-graphtitle: ISx (Hand optimized)
+graphtitle: ISx (Hand Optimized)
