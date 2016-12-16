@@ -841,11 +841,8 @@ FnSymbol::FnSymbol(const char* initName) :
   codegenUniqueNum(1),
   doc(NULL),
   retSymbol(NULL),
+  llvmDISubprogram(NULL),
   _throwsError(false)
-#ifdef HAVE_LLVM
-  ,
-  llvmDISubprogram(NULL)
-#endif
 {
   substitutions.clear();
   gFnSymbols.add(this);
