@@ -146,11 +146,13 @@ studies/prk/stencil/prk-stencil-time.graph
 studies/prk/transpose/prk-transpose.graph
 # suite: NAS Parallel benchmarks
 npb/cg/cg.graph
+npb/cg/cg-a.graph
 npb/ep/ep.graph
 npb/ep/ep-b.graph
 npb/ft/ft.graph
 npb/ft/ft-a.graph
 users/npadmana/npb-mg/mg.graph
+users/npadmana/npb-mg/mg-b.graph
 # suite: Array/Domain performance
 arrays/diten/arrayPerformance-2d.graph
 arrays/diten/arrayPerformance-1d.graph

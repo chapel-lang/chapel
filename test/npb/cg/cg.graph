@@ -8,11 +8,6 @@ files: cg.W.dat
 graphkeys: runtime - W
 graphtitle: NAS Parallel Benchmarks: CG timings - size W
 
-perfkeys: Execution time =
-files: cg.A.dat
-graphkeys: runtime - A
-graphtitle: NAS Parallel Benchmarks: CG timings - size A
-
 #perfkeys: Execution time =
 #files: cg.B.dat
 #graphkeys: runtime - B
