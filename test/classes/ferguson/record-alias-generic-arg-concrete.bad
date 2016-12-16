@@ -1,2 +1,0 @@
-record-alias-generic-arg-concrete.chpl:5: In function 'doit':
-record-alias-generic-arg-concrete.chpl:7: error: unresolved access of 'A(int(64))' by '(1)'
