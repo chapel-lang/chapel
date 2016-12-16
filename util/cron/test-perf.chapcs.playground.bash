@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of re-enabling rvf on task functions
-GITHUB_USER=ronawho
-GITHUB_BRANCH=rvf-task-functions
-SHORT_NAME=rvfTask
-START_DATE=12/13/16
+# Test performance of multi-ddata 
+GITHUB_USER=gbtitus
+GITHUB_BRANCH=DefRectArr-multi-ddata
+SHORT_NAME=multi-ddata
+START_DATE=12/16/16
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
