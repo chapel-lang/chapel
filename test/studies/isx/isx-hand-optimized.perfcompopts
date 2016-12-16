@@ -1,1 +1,1 @@
---no-warnings -sparallelInitElts=false
+--no-warnings -sparallelInitElts=false -sdisableBlockLazyRAD
