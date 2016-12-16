@@ -1,0 +1,5 @@
+perfkeys: Execution time =
+files: hpl-255.32.dat
+graphkeys: hpl runtime
+graphtitle: HPCC: HPL Release Time (sec) - n=255, nb=32
+ylabel: Time (seconds)

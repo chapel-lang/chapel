@@ -1,0 +1,5 @@
+perfkeys: Execution time =
+files: ptrans-n2000-nb100.dat
+graphkeys: ptrans runtime
+graphtitle: HPCC: PTRANS Time (sec) - n=2,000, nb=100
+ylabel: Time (seconds)

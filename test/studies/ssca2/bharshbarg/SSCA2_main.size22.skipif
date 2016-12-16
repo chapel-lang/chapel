@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+
+# Skip size22 for gasnet+mpi and gasnet+aries performance testing. As of
+# 08/08/15 it takes over 30 minutes to complete. This can be re-evaluated as
+# size 16 gets faster.
+import os
+
+print(os.getenv('CHPL_TEST_PERF') != 'off' or (os.getenv('CHPL_TEST_PERF') == 'on' and
+      os.getenv('CHPL_COMM_SUBSTRATE') in ['mpi', 'aries']))

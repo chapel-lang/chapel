@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+
+# Skip this test for gasnet+mpi performance testing. As of 08/08/15 it takes
+# ~30 minutes to complete
+import os
+
+print(os.getenv('CHPL_TEST_PERF') == 'on' and
+      os.getenv('CHPL_COMM_SUBSTRATE') == 'mpi')
