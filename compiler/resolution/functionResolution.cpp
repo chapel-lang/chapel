@@ -445,23 +445,25 @@ static bool typeHasRefField(Type *type) {
   return false;
 }
 
-//
-// build reference type
-//
+// Temporarily add a call, resolve it, then remove it.
+// Return the function that the call resolve to.
+// Either insideBlock or beforeExpr must be != NULL and
+// indicate where the call should be added.
 static FnSymbol*
-resolveUninsertedCall(Type* type, CallExpr* call) {
+resolveUninsertedCall(BlockStmt* insideBlock,
+                      Expr* beforeExpr,
+                      CallExpr* call) {
 
   // In case resolveCall drops other stuff into the tree ahead of the
   // call, we wrap everything in a block for safe removal.
   BlockStmt* block = new BlockStmt();
 
-  if (type->defaultInitializer) {
-    if (type->defaultInitializer->instantiationPoint)
-      type->defaultInitializer->instantiationPoint->insertAtHead(block);
-    else
-      type->symbol->defPoint->insertBefore(block);
+  if (insideBlock) {
+    insideBlock->insertAtHead(block);
+  } else if(beforeExpr) {
+    beforeExpr->insertBefore(block);
   } else {
-    chpl_gen_main->insertAtHead(block);
+    INT_ASSERT(insideBlock != NULL || beforeExpr != NULL);
   }
 
   INT_ASSERT(block->parentSymbol);
@@ -471,6 +473,25 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
   block->remove();
 
   return call->isResolved();
+}
+
+// Resolve a call to do with a particular type.
+static FnSymbol*
+resolveUninsertedCall(Type* type, CallExpr* call) {
+
+  BlockStmt* insideBlock = NULL;
+  Expr* beforeExpr = NULL;
+
+  if (type->defaultInitializer) {
+    if (type->defaultInitializer->instantiationPoint)
+      insideBlock = type->defaultInitializer->instantiationPoint;
+    else
+      beforeExpr = type->symbol->defPoint;
+  } else {
+    insideBlock = chpl_gen_main->body;
+  }
+
+  return resolveUninsertedCall(insideBlock, beforeExpr, call);
 }
 
 //
