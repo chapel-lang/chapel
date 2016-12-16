@@ -1759,17 +1759,17 @@ static void change_method_into_constructor(FnSymbol* fn) {
   if (fn->getFormal(1)->type != dtMethodToken)
     return;
 
-  // The second argument is 'this'.
-  // For starters, it needs a known type.
-  if (fn->getFormal(2)->type == dtUnknown)
-    INT_FATAL(fn, "'this' argument has unknown type");
-
   // Now check that the function name matches the name of the type
   // attached to 'this' or matches 'init'.
   bool isCtor = (0 == strcmp(fn->getFormal(2)->type->symbol->name, fn->name));
   bool isInit = (0 == strcmp(fn->name, "init"));
   if (!isCtor && !isInit)
     return;
+
+  // The second argument is 'this'.
+  // For starters, it needs a known type.
+  if (fn->getFormal(2)->type == dtUnknown)
+    INT_FATAL(fn, "'this' argument has unknown type");
 
   // The type must be a class type.
   // No constructors for records? <hilde>
