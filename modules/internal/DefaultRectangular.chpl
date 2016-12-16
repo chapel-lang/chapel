@@ -1318,7 +1318,6 @@ module DefaultRectangular {
         // prevents us from calling the pure virtual getChildCount() in
         // ChapelLocale, when we're setting up arrays in the locale model
         // and thus here.getChildCount() isn't available yet.
-
         //
         if (size < defRectArrMultiDDataSizeThreshold
             || here.getChildCount() < 2) {
@@ -1343,11 +1342,17 @@ module DefaultRectangular {
         mdRHi = dom.dsiDim(mdParDim).alignedHigh;
         mdRLen = dom.dsiDim(mdParDim).length;
         dataVec = _ddata_allocate(_ddata(eltType), mdNumChunks);
-        for i in 0..#mdNumChunks {
-          const (lo, hi) = mdChunk2Ind(i);
-          const chunkSize = if mdRLen == 0 then 0
-                            else size / mdRLen * (hi - lo + 1);
-          dataVec(i) = _ddata_allocate(eltType, chunkSize);
+        if mdNumChunks == 1 {
+          // single chunk: get memory from anywhere
+          dataVec(0) = _ddata_allocate(eltType, size);
+        } else {
+          // multiple chunks: get each from the corresponding sublocale
+          for i in 0..#mdNumChunks do local on here.getChild(i) {
+            const (lo, hi) = mdChunk2Ind(i);
+            const chunkLen = (hi - lo) / abs(dom.dsiDim(mdParDim).stride) + 1;
+            const chunkSize = size / mdRLen * chunkLen;
+            dataVec(i) = _ddata_allocate(eltType, chunkSize);
+          }
         }
       }
 
