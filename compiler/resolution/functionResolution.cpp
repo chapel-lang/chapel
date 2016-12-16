@@ -4090,6 +4090,123 @@ resolveDefaultGenericType(CallExpr* call) {
   }
 }
 
+static bool
+populateDelegatedMethods(AggregateType* at, CallInfo& info)
+{
+  bool addedAny = false;
+  // copy methods from the delegates into at
+  for_alist(expr, at->delegates) {
+    DelegateStmt* delegate = toDelegateStmt(expr);
+    INT_ASSERT(delegate);
+
+    const char* fnGetTgt = delegate->fnReturningDelegate;
+
+    if (!delegate->type) {
+      delegate->type = dtUnknown; // avoiding loop from recursion
+
+      // First, figure out the type of the delegate
+      SET_LINENO(at->symbol);
+      Symbol* tmp = newTemp(at);
+      at->symbol->defPoint->insertBefore(new DefExpr(tmp));
+      CallExpr* getTgtCall = new CallExpr(fnGetTgt, gMethodToken, tmp);
+      FnSymbol* fn = resolveUninsertedCall(at, getTgtCall);
+      resolveFns(fn);
+      Type* delegateType = fn->retType->getValType();
+      tmp->defPoint->remove();
+
+      INT_ASSERT(delegateType != dtUnknown);
+      delegate->type = delegateType;
+    }
+
+    // then, go through the methods of the delegate
+    forv_Vec(FnSymbol, method, delegate->type->methods) {
+      // skip initializers and destructors
+      if (method->hasEitherFlag(FLAG_CONSTRUCTOR, FLAG_DESTRUCTOR))
+        continue;
+
+      // TODO - make this loop more efficient?
+      if (method->name != info.name)
+        continue;
+
+      bool alreadyDone = false;
+      // Do we already have a wrapper for this function name?
+      forv_Vec(FnSymbol, existing_method, at->methods) {
+        if (method->name == info.name &&
+            existing_method->hasFlag(FLAG_DELEGATE_FN))
+          alreadyDone = true;
+      }
+
+      if (alreadyDone)
+        continue;
+
+      addedAny = true;
+
+      //printf("making wrapper for %s\n", method->name);
+
+      // Create a "wrapper" method that forwards to the delegate
+      FnSymbol* fn = new FnSymbol(method->name);
+      fn->copyFlags(method);
+      // but we need to resolve the wrapper method again
+      fn->removeFlag(FLAG_RESOLVED);
+
+      fn->addFlag(FLAG_METHOD);
+      fn->addFlag(FLAG_INLINE);
+      fn->addFlag(FLAG_DELEGATE_FN);
+      fn->addFlag(FLAG_COMPILER_GENERATED);
+      fn->retTag = method->retTag;
+
+      ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+      ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", at);
+      _this->addFlag(FLAG_ARG_THIS);
+
+      fn->insertFormalAtTail(mt);
+      fn->insertFormalAtTail(_this);
+      fn->_this = _this;
+
+      // Add a call to the original function
+      VarSymbol* tgt = newTemp("tgt");
+      tgt->addFlag(FLAG_MAYBE_REF);
+      CallExpr* getTgt = new CallExpr(fnGetTgt, gMethodToken, _this);
+      CallExpr* setTgt = new CallExpr(PRIM_MOVE, tgt, getTgt);
+      CallExpr* wrapCall = new CallExpr(method, gMethodToken, tgt);
+
+      // Add the arguments to the wrapper function
+      // Add the arguments to the call
+      int i = 0;
+      for_formals(formal, method) {
+        if (i < 2) continue; // skip method token, target - added above
+        ArgSymbol* arg = formal->copy();
+        fn->insertFormalAtTail(arg);
+        wrapCall->insertAtTail(arg);
+        i++;
+      }
+
+      // at this point, we don't know the return type for
+      // wrapCall, and we don't want to resolve it yet.
+      // to work with other code in resolution that tolerates
+      // "returning" a dtVoid, we take some steps to "normalize"
+      // here. Calling normalize directly would result in a PRIM_DEREF
+      // that interferes with accepting void returns.
+      VarSymbol* retval = newTemp("ret", dtUnknown);
+      retval->addFlag(FLAG_RVV);
+
+      fn->body->insertAtTail(new DefExpr(retval));
+      fn->body->insertAtTail(new DefExpr(tgt));
+      fn->body->insertAtTail(setTgt);
+      fn->body->insertAtTail(new CallExpr(PRIM_MOVE, retval, wrapCall));
+      fn->body->insertAtTail(new CallExpr(PRIM_RETURN, retval));
+      at->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+      resolveFns(fn);
+
+      //nprint_view(fn);
+    }
+  }
+
+  return addedAny;
+}
+
+
 
 static void
 doGatherCandidates(Vec<ResolutionCandidate*>& candidates,
@@ -4176,29 +4293,12 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 }
 
 
-// if checkonly is provided, don't print any errors; just check
-// to see if the particular function could be resolved.
-// returns the result of resolving - or NULL if we couldn't do it.
-// If checkonly is set, NULL can be returned - otherwise that would
-// be a fatal error.
-FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
+static void findVisibleCandidates(CallInfo& info,
+                                  Vec<FnSymbol*>& visibleFns,
+                                  Vec<ResolutionCandidate*>& candidates) {
 
-  if( call->id == breakOnResolveID ) {
-    printf("breaking on resolve call:\n");
-    print_view(call);
-    gdbShouldBreakHere();
-  }
 
-  temporaryInitializerFixup(call);
-
-  resolveDefaultGenericType(call);
-
-  CallInfo info(call, checkonly);
-
-  // Return early if creating the call info would have been an error.
-  if( checkonly && info.badcall ) return NULL;
-
-  Vec<FnSymbol*> visibleFns; // visible functions
+  CallExpr* call = info.call;
 
   //
   // update visible function map as necessary
@@ -4238,8 +4338,66 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     }
   }
 
-  Vec<ResolutionCandidate*> candidates;
   gatherCandidates(candidates, visibleFns, info);
+
+
+}
+
+// if checkonly is provided, don't print any errors; just check
+// to see if the particular function could be resolved.
+// returns the result of resolving - or NULL if we couldn't do it.
+// If checkonly is set, NULL can be returned - otherwise that would
+// be a fatal error.
+FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
+
+  if( call->id == breakOnResolveID ) {
+    printf("breaking on resolve call:\n");
+    print_view(call);
+    gdbShouldBreakHere();
+  }
+
+  temporaryInitializerFixup(call);
+
+  resolveDefaultGenericType(call);
+
+  CallInfo info(call, checkonly);
+
+  // Return early if creating the call info would have been an error.
+  if( checkonly && info.badcall ) return NULL;
+
+  Vec<FnSymbol*> visibleFns; // visible functions
+  Vec<ResolutionCandidate*> candidates;
+
+  // First, try finding candidates without delegation
+  findVisibleCandidates(info, visibleFns, candidates);
+
+  bool retry_find = false;
+
+  // if no candidate was found, try it with delegation
+  if (candidates.n == 0) {
+    // if it's a method, try delegating
+    if (call->numActuals() >= 1 &&
+        call->get(1)->typeInfo() == dtMethodToken) {
+      Type* receiverType = call->get(2)->typeInfo()->getValType();
+      if (AggregateType* receiverAT = toAggregateType(receiverType)) {
+        if (toDelegateStmt(receiverAT->delegates.head)) {
+          retry_find = populateDelegatedMethods(receiverAT, info);
+        }
+      }
+    }
+  }
+
+  if (retry_find) {
+    // clear out visibleFns, candidates
+    visibleFns.clear();
+    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      delete candidate;
+    }
+    candidates.clear();
+
+    // try again to include delegated functions
+    findVisibleCandidates(info, visibleFns, candidates);
+  }
 
   if ((explainCallLine && explainCallMatch(info.call)) ||
       call->id == explainCallID)
