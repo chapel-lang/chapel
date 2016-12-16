@@ -1393,23 +1393,19 @@ module DefaultRectangular {
                              param getChunked = !defRectSimpleDData) {
       param chunkify = !defRectSimpleDData && getChunked;
 
-      // gbt TODO: this str division may occur even when const 1
-      inline proc chunked_dataIndex(sum, str) {
-        if mdNumChunks == 1 {
-          return (0, sum);
-        } else {
-          const mdpd = mdParDim;
-          const mdnc = mdNumChunks;
-          const mdrlo = mdRLo;
-          const mdrhi = mdRHi;
-          const mdrlen = mdRLen;
-          const chunk = mdInd2Chunk(ind(mdpd), mdnc, mdrlo, mdrlen, str);
-          const (lo, _) = mdChunk2Ind(chunk, mdnc, mdrlo, mdrhi, mdrlen);
-          return (chunk, sum - (lo - mdrlo) * blk(mdpd) / str);
-        }
-      }
-
       if stridable {
+        inline proc chunked_dataIndex(sum, str) {
+          if mdNumChunks == 1 {
+            return (0, sum);
+          } else {
+            const chunk = mdInd2Chunk(ind(mdParDim), mdNumChunks, mdRLo,
+                                      mdRLen, str);
+            const (lo, _) = mdChunk2Ind(chunk, mdNumChunks, mdRLo, mdRHi,
+                                        mdRLen);
+            return (chunk, sum - (lo - mdRLo) * blk(mdParDim) / str);
+          }
+        }
+
         var sum = origin;
         for param i in 1..rank do
           sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
@@ -1418,18 +1414,30 @@ module DefaultRectangular {
         else
           return sum;
       } else {
+        inline proc chunked_dataIndex(sum) {
+          if mdNumChunks == 1 {
+            return (0, sum);
+          } else {
+            const chunk = mdInd2Chunk(ind(mdParDim), mdNumChunks, mdRLo,
+                                      mdRLen);
+            const (lo, _) = mdChunk2Ind(chunk, mdNumChunks, mdRLo, mdRHi,
+                                        mdRLen);
+            return (chunk, sum - (lo - mdRLo) * blk(mdParDim));
+          }
+        }
+
         param wantShiftedIndex = getShifted && earlyShiftData;
 
         // optimize common case to get cleaner generated code
         if (rank == 1 && wantShiftedIndex) {
           if __primitive("optimize_array_blk_mult") {
             if chunkify then
-              return chunked_dataIndex(ind(1), str=1:idxType);
+              return chunked_dataIndex(ind(1));
             else
               return ind(1);
           } else {
             if chunkify then
-              return chunked_dataIndex(ind(1) * blk(1), str=1:idxType);
+              return chunked_dataIndex(ind(1) * blk(1));
             else
               return ind(1) * blk(1);
           }
@@ -1451,7 +1459,7 @@ module DefaultRectangular {
           }
           if !wantShiftedIndex then sum -= factoredOffs;
           if chunkify then
-            return chunked_dataIndex(sum, str=1:idxType);
+            return chunked_dataIndex(sum);
           else
             return sum;
         }
