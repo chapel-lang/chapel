@@ -1183,21 +1183,26 @@ proc CyclicArr.doiCanBulkTransferStride() param {
 }
 
 proc CyclicArr.oneDData {
-  // TODO: use locRad oneDData, if available
-  // TODO: with more coding complexity we could get a much quicker
-  //       answer in the 'false' case, but how to avoid penalizing
-  //       the 'true' case at scale?  (eurekas would be nice ...)
-  var allBlocksOneDData: bool;
-  on this {
-    var myAllBlocksOneDData: atomic bool;
-    myAllBlocksOneDData.write(true);
-    forall la in locArr {
-      if !la.myElems._value.oneDData then
-        myAllBlocksOneDData.write(false);
+  if defRectSimpleDData {
+    return true;
+  } else {
+    // TODO: do this when we create the array?  if not, then consider:
+    // TODO: use locRad oneDData, if available
+    // TODO: with more coding complexity we could get a much quicker
+    //       answer in the 'false' case, but how to avoid penalizing
+    //       the 'true' case at scale?
+    var allBlocksOneDData: bool;
+    on this {
+      var myAllBlocksOneDData: atomic bool;
+      myAllBlocksOneDData.write(true);
+      forall la in locArr {
+        if !la.myElems._value.oneDData then
+          myAllBlocksOneDData.write(false);
+      }
+      allBlocksOneDData = myAllBlocksOneDData.read();
     }
-    allBlocksOneDData = myAllBlocksOneDData.read();
+    return allBlocksOneDData;
   }
-  return allBlocksOneDData;
 }
 
 proc CyclicArr.doiUseBulkTransferStride(B) {
