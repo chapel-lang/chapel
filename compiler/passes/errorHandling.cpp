@@ -21,19 +21,23 @@
  * limitations under the License.
  */
 
+#include "stmt.h"
 #include "symbol.h"
 #include "view.h"
 #include <cstdio>
 
 void lowerErrorHandling() {
   // change 'throws' to 'out'
-    // add an Error formal to a function marked 'throws'
+    // add an error_out formal to a function marked 'throws'
     // for all calls to such functions
-      // pass a variable to receive the Error arg
-      // check the Error arg after the call
+      // create and pass a variable error to receive error_out
+      // check error after the call
+  // change 'throw' to set error_out
 
   // TODO: how do we find Error temps from a call to a throwing function?
 
+// TODO: dtObject should be dtError, but we don't have that right now
+void lowerErrorHandling() {
   printf("hello world\n");
 
   // give 'throws' an 'out'
@@ -41,9 +45,58 @@ void lowerErrorHandling() {
     if (fn->throwsError()) {
       SET_LINENO(fn);
 
-      // TODO: dtObject should be dtError, but we don't have that right now
-      ArgSymbol* outFormal = new ArgSymbol(INTENT_REF, "error", dtObject);
+      // add an Error formal to a function marked 'throws'
+      ArgSymbol* outFormal = new ArgSymbol(INTENT_REF, "error_out", dtObject);
       fn->insertFormalAtTail(outFormal);
+
+      for_SymbolSymExprs(se, fn) {
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          if (fn == call->resolvedFunction()) {
+            // create a variable to receive the Error arg
+            VarSymbol* tempError= newTemp("error", dtObject);
+
+            // have the call pass the variable
+            call->insertAtTail(tempError);
+
+
+            // check the Error arg after the call
+            // TODO: do we need this temp?
+            VarSymbol* tempErrorExists = newTemp("errorExists", dtBool);
+            DefExpr* defErrorExists = new DefExpr(tempErrorExists);
+
+            Expr* setErrorExists = new CallExpr(
+              PRIM_MOVE,
+              tempErrorExists,
+              new CallExpr(PRIM_NOTEQUAL, tempError, gNil));
+
+            // TODO: better error message
+            Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
+              new_CStringSymbol("uncaught error"));
+            Expr* checkError = new CondStmt(new SymExpr(tempErrorExists), haltOnError);
+
+            // (works for calls inside calls)
+            call->getStmtExpr()->insertBefore(new DefExpr(tempError));
+            call->getStmtExpr()->insertAfter(defErrorExists);
+            defErrorExists->getStmtExpr()->insertAfter(setErrorExists);
+            setErrorExists->getStmtExpr()->insertAfter(checkError);
+          }
+        }
+      }
+
+      // change 'throw' to set error_out
+      // TODO: need "error" for SET_LINENO
+      for_exprs_postorder(expr, fn->body) {
+        if (CallExpr* call = toCallExpr(expr)) {
+          if (call->isPrimitive(PRIM_THROW)) {
+            SET_LINENO(call);
+
+            Expr* error = call->get(1)->remove();
+            Expr* castError = new CallExpr(PRIM_CAST, dtObject->symbol, error);
+            Expr* setError = new CallExpr(PRIM_MOVE, outFormal, castError);
+            call->replace(setError);
+          }
+        }
+      }
     }
   }
 }
