@@ -2,7 +2,12 @@
 release/examples/benchmarks/ssca2/SSCA2_main.graph
 release/examples/benchmarks/ssca2/edge_generation.graph
 release/examples/benchmarks/ssca2/total_time.graph
-release/examples/benchmarks/lcals/LCALSMain.graph
+release/examples/benchmarks/lcals/LCALS-raw-short.graph
+release/examples/benchmarks/lcals/LCALS-raw-medium.graph
+release/examples/benchmarks/lcals/LCALS-raw-long.graph
+release/examples/benchmarks/lcals/LCALS-parallel-short.graph
+release/examples/benchmarks/lcals/LCALS-parallel-medium.graph
+release/examples/benchmarks/lcals/LCALS-parallel-long.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/hpcc/stream.graph
 release/examples/benchmarks/hpcc/ra.graph
