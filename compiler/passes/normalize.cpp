@@ -621,8 +621,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
                       new CallExpr(PRIM_COERCE, ret_expr,
                         fn->retExprType->body.tail->copy())));
   }
-  // Should this use FLAG_MAYBE_REF instead of FLAG_IF_EXPR_FN?
-  else if (fn->hasFlag(FLAG_IF_EXPR_FN))
+  else if (fn->hasFlag(FLAG_MAYBE_REF))
   {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
   }
