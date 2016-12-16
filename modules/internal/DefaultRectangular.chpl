@@ -933,6 +933,9 @@ module DefaultRectangular {
                ignoreRunning:bool = dataParIgnoreRunningTasks,
                minIndicesPerTask:int = dataParMinGranularity)
       ref where defRectSimpleDData {
+      if debugDefaultDist {
+        chpl_debug_writeln("*** In defRectArr simple-dd fallback iterator");
+      }
       if rank == 1 {
         // This is specialized to avoid overheads of calling dsiAccess()
         if !dom.stridable {
@@ -979,7 +982,7 @@ module DefaultRectangular {
                minIndicesPerTask = dataParMinGranularity)
       ref where tag == iterKind.standalone && defRectSimpleDData {
       if debugDefaultDist {
-        chpl_debug_writeln("*** In array standalone code");
+        chpl_debug_writeln("*** In defRectArr simple-dd standalone iterator");
       }
       for i in dom.these(tag, tasksPerLocale,
                          ignoreRunning, minIndicesPerTask) {
@@ -992,6 +995,9 @@ module DefaultRectangular {
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
       where tag == iterKind.leader && defRectSimpleDData {
+      if debugDefaultDist {
+        chpl_debug_writeln("*** In defRectArr simple-dd leader iterator");
+      }
       for followThis in dom.these(tag,
                                   tasksPerLocale,
                                   ignoreRunning,
@@ -1004,8 +1010,11 @@ module DefaultRectangular {
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
       ref where tag == iterKind.follower && defRectSimpleDData {
-      if debugDefaultDist then
-        chpl_debug_writeln("*** In array follower code:"); // [\n", this, "]");
+      if debugDefaultDist {
+        chpl_debug_writeln("*** In defRectArr simple-dd follower iterator: ",
+                           followThis);
+      }
+
       for i in dom.these(tag=iterKind.follower, followThis,
                          tasksPerLocale,
                          ignoreRunning,
@@ -1020,6 +1029,9 @@ module DefaultRectangular {
                ignoreRunning:bool = dataParIgnoreRunningTasks,
                minIndicesPerTask:int = dataParMinGranularity)
       ref where !defRectSimpleDData {
+      if debugDefaultDist {
+        chpl_debug_writeln("*** In defRectArr multi-dd fallback iterator");
+      }
       if rank == 1 {
         if !dom.stridable {
           const first = getDataIndex(dom.dsiLow, getChunked=false);
@@ -1088,7 +1100,7 @@ module DefaultRectangular {
                minIndicesPerTask = dataParMinGranularity)
       ref where tag == iterKind.standalone && !defRectSimpleDData {
       if debugDefaultDist {
-        chpl_debug_writeln("*** In array standalone code");
+        chpl_debug_writeln("*** In defRectArr multi-dd standalone iterator");
       }
       for i in dom.these(tag, tasksPerLocale,
                          ignoreRunning, minIndicesPerTask) {
@@ -1101,6 +1113,9 @@ module DefaultRectangular {
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
       where tag == iterKind.leader && !defRectSimpleDData {
+      if debugDefaultDist {
+        chpl_debug_writeln("*** In defRectArr multi-dd leader iterator");
+      }
       // This was adapted from the DefaultRectangularDom leader.
       const dptpl = if tasksPerLocale==0 then here.maxTaskPar
                     else tasksPerLocale;
@@ -1172,14 +1187,14 @@ module DefaultRectangular {
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
       ref where tag == iterKind.follower && !defRectSimpleDData {
+      if debugDefaultDist {
+        chpl_debug_writeln("*** In defRectArr multi-dd follower iterator: ",
+                           followThis);
+      }
 
       proc anyStridable(rangeTuple, param i: int = 1) param
         return if i == rangeTuple.size then rangeTuple(i).stridable
                else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
-
-      if debugDefaultDist then
-        chpl_debug_writeln("*** In optimized array follower code: Following",
-                           followThis);
 
       param stridable = this.stridable || anyStridable(followThis);
       if stridable {
