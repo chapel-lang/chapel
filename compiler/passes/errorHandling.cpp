@@ -20,74 +20,63 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "view.h"
-#include <cstdio>
 
-  // change 'throws' to 'out'
-    // add an error_out formal to a function marked 'throws'
-    // for all calls to such functions
-      // create and pass a variable error to receive error_out
-      // check error after the call
-  // change 'throw' to set error_out
-
-  // TODO: how do we find Error temps from a call to a throwing function?
+// for each function that 'throws':
+  // add an error_out formal
+  // for each call to one of these functions:
+    // create and pass a variable to receive error_out
+    // check error after the call
+      // halt() if needed
+  // for each 'throw' in the function:
+    // replace it with setting error_out
 
 // TODO: dtObject should be dtError, but we don't have that right now
-void lowerErrorHandling(void) {
-  printf("hello world\n");
+// TODO: how do we find Error temps from a call to a throwing function?
 
-  // give 'throws' an 'out'
+void lowerErrorHandling(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->throwsError()) {
       SET_LINENO(fn);
 
-      // add an Error formal to a function marked 'throws'
       ArgSymbol* outFormal = new ArgSymbol(INTENT_REF, "error_out", dtObject);
       fn->insertFormalAtTail(outFormal);
 
       for_SymbolSymExprs(se, fn) {
         if (CallExpr* call = toCallExpr(se->parentExpr)) {
           if (fn == call->resolvedFunction()) {
-            // create a variable to receive the Error arg
-            VarSymbol* tempError= newTemp("error", dtObject);
+            VarSymbol* tempError   = newTemp("error", dtObject);
+            CallExpr*  errorExists = new CallExpr(PRIM_NOTEQUAL,
+                                       tempError, gNil);
 
-            // have the call pass the variable
-            call->insertAtTail(tempError);
-
-
-            // check the Error arg after the call
-            // TODO: do we need this temp?
             VarSymbol* tempErrorExists = newTemp("errorExists", dtBool);
-            DefExpr* defErrorExists = new DefExpr(tempErrorExists);
-
-            Expr* setErrorExists = new CallExpr(
-              PRIM_MOVE,
-              tempErrorExists,
-              new CallExpr(PRIM_NOTEQUAL, tempError, gNil));
+            DefExpr*   defErrorExists  = new DefExpr(tempErrorExists);
+            Expr*      setErrorExists  = new CallExpr(PRIM_MOVE,
+                                           tempErrorExists, errorExists);
 
             // TODO: better error message
             Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
-              new_CStringSymbol("uncaught error"));
-            Expr* checkError = new CondStmt(new SymExpr(tempErrorExists), haltOnError);
+                                  new_CStringSymbol("uncaught error"));
+            Expr* checkError  = new CondStmt(new SymExpr(tempErrorExists),
+                                  haltOnError);
 
-            // (works for calls inside calls)
-            call->getStmtExpr()->insertBefore(new DefExpr(tempError));
-            call->getStmtExpr()->insertAfter(defErrorExists);
+            call          ->insertAtTail(tempError);
+            call          ->getStmtExpr()->insertBefore(new DefExpr(tempError));
+            call          ->getStmtExpr()->insertAfter(defErrorExists);
             defErrorExists->getStmtExpr()->insertAfter(setErrorExists);
             setErrorExists->getStmtExpr()->insertAfter(checkError);
           }
         }
       }
 
-      // change 'throw' to set error_out
-      // TODO: need "error" for SET_LINENO
       for_exprs_postorder(expr, fn->body) {
         if (CallExpr* call = toCallExpr(expr)) {
           if (call->isPrimitive(PRIM_THROW)) {
-            SET_LINENO(call);
+            // TODO: need callsite for SET_LINENO
 
-            Expr* error = call->get(1)->remove();
+            Expr* error     = call->get(1)->remove();
             Expr* castError = new CallExpr(PRIM_CAST, dtObject->symbol, error);
-            Expr* setError = new CallExpr(PRIM_MOVE, outFormal, castError);
+            Expr* setError  = new CallExpr(PRIM_MOVE, outFormal, castError);
+
             call->replace(setError);
           }
         }
