@@ -170,10 +170,21 @@ V[2..9] = V2;
 writeln(V);
 
 V = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0];
-proc arrAdd(X: [] real, Y: [] real) {
+proc arrayAdd(X: [] real, Y: [] real) {
   var Z = X + Y;
   return Z;
 }
 
-V[2..9] = arrAdd(V[1..8], V[3..10]) / 2.0;
+V[2..9] = arrayAdd(V[1..8], V[3..10]) / 2.0;
 writeln(V);
+
+// promoting using ranges and domains:
+
+A = 0.0;
+Mask = [true, false, true];
+maybeCopy(A, 1..6 by 2, true);
+writeln(A);
+
+A = 0.0;
+maybeCopy(A, A.domain, true);
+writeln(A);
