@@ -121,7 +121,7 @@ proc randomMake(desc, nuclInfo, n) {
   // create tasks to pipeline the RNG, computation, and output
   coforall tid in 0..#numTasks {
     const chunkSize = lineLength*blockSize,
-          nextTask = (tid + 1) % numTasks;
+          nextTid = (tid + 1) % numTasks;
 
     var myBuff: [0..#(lineLength+1)*blockSize] int(8),
         myRands: [0..chunkSize] randType;
@@ -131,9 +131,9 @@ proc randomMake(desc, nuclInfo, n) {
       const bytes = min(chunkSize, n-i);
 
       // Get 'bytes' random numbers in a coordinated manner
-      wait(randGo);
+      randGo[tid].waitFor(i);
       getRands(bytes, myRands);
-      signal(randGo);
+      randGo[nextTid].write(i+chunkSize);
 
       // Compute 'bytes' nucleotides and store in 'myBuff'
       var col = 0,
@@ -162,18 +162,9 @@ proc randomMake(desc, nuclInfo, n) {
       }
 
       // Write the output in a coordinated manner
-      wait(outGo);
+      outGo[tid].waitFor(i);
       stdout.write(myBuff[0..#off]);
-      signal(outGo);
-
-      // Helper routines for taking turns with shared resources
-      inline proc wait(guard) {
-        while guard[tid].read() != i do ;
-      }
-
-      inline proc signal(guard) {
-        guard[nextTask].write(i+chunkSize);
-      }
+      outGo[nextTid].write(i+chunkSize);
     }
   }
 }
