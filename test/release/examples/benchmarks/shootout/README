@@ -113,6 +113,14 @@ o We should introduce local "static" variables (using some other
 o It seems like a param uint(8) whose value is known to fit in an
   int(8) should be assignable without a cast, but currently it isn't.
 
+o Multiple config types can't currently be declared with a current
+  statement it seems.  If they were, I'd alias int(8) to 'char'
+  but don't care about it enough to have two config type statements
+  (which seems lame).
+
+o Seems like we should have an iterator that does the block-cyclic
+  round robin dealing out of chunks of a given size from a range...
+
 
 knucleotide
 -----------
