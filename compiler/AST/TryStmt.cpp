@@ -31,6 +31,8 @@ BlockStmt* TryStmt::buildChplStmt(Expr* expr) {
 TryStmt::TryStmt(bool tryBang, BlockStmt* body) : Stmt(E_TryStmt) {
   _tryBang = tryBang;
   _body    = body;
+
+  gTryStmts.add(this);
 }
 
 TryStmt::~TryStmt() {
