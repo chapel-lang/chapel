@@ -161,12 +161,6 @@ static void checkPrivateDecls(DefExpr* def) {
 
 static void
 checkParsedVar(VarSymbol* var) {
-  if (var->isParameter() && !var->immediate)
-    if (!var->defPoint->init &&
-        (toFnSymbol(var->defPoint->parentSymbol) ||
-         toModuleSymbol(var->defPoint->parentSymbol)))
-      USR_FATAL_CONT(var, "Top-level params must be initialized.");
-
   if (var->defPoint->init && var->defPoint->init->isNoInitExpr()) {
     if (var->hasFlag(FLAG_CONST))
       USR_FATAL_CONT(var, "const variables specified with noinit must be explicitly initialized.");
