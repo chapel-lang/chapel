@@ -1,0 +1,1 @@
+assignConstError.chpl:2: error: can't re-assign a 'const' after its declaration
