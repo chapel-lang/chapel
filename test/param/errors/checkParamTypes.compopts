@@ -13,6 +13,7 @@
 -st=uint(32)
 -st=uint(64)
 -st=uint
+-st=color
 -st=real(32)      # checkParamTypes-nofloat32.good
 -st=real(64)
 -st=real
