@@ -7309,8 +7309,16 @@ postFold(Expr* expr) {
               }
             }
           }
-          if (!set && lhs->symbol()->isParameter())
-            USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->symbol()->name);
+          if (Symbol* lhsSym = lhs->symbol()) {
+            if (lhsSym->isParameter() && !lhsSym->hasFlag(FLAG_TEMP)) {
+              if (!isLegalParamType(lhsSym->type)) {
+                USR_FATAL(call, "'%s' is not of a supported param type", lhsSym->name);
+              }
+              if (!set) {
+                USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhsSym->name);
+              }
+            }
+          }
         }
         if (!set) {
           if (lhs->symbol()->hasFlag(FLAG_MAYBE_TYPE)) {

@@ -1290,6 +1290,18 @@ bool is_enum_type(Type *t) {
   return toEnumType(t);
 }
 
+
+bool isLegalParamType(Type* t) {
+  return (is_bool_type(t) ||
+          is_int_type(t) ||
+          is_uint_type(t) ||
+          is_real_type(t) ||
+          is_imag_type(t) ||
+          is_enum_type(t) ||
+          isString(t) ||
+          t == dtUnknown);
+}
+
 int get_width(Type *t) {
   if (t == dtBools[BOOL_SIZE_1] ||
       t == dtBools[BOOL_SIZE_SYS]) {
