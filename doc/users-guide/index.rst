@@ -41,6 +41,7 @@ support of parallelism and locality are removed.
    base/vars
    base/basicTypes
    base/basicValues
+   base/constParam
    base/casts
    base/forloops
    base/zip
