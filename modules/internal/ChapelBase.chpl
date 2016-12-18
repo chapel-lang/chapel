@@ -578,6 +578,16 @@ module ChapelBase {
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));
 
+  inline proc min(param x: int(?w), param y: int(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: int(?w), param y: int(w)) param
+    return if x > y then x else y;
+
+  inline proc min(param x: uint(?w), param y: uint(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: uint(?w), param y: uint(w)) param
+    return if x > y then x else y;
+
   inline proc min(x, y) where isAtomic(x) || isAtomic(y) {
     compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
   }
