@@ -1299,6 +1299,7 @@ bool isLegalParamType(Type* t) {
           is_imag_type(t) ||
           is_enum_type(t) ||
           isString(t) ||
+          t == dtStringC ||
           t == dtUnknown);
 }
 
