@@ -7312,10 +7312,10 @@ postFold(Expr* expr) {
           if (Symbol* lhsSym = lhs->symbol()) {
             if (lhsSym->isParameter() && !lhsSym->hasFlag(FLAG_TEMP)) {
               if (!isLegalParamType(lhsSym->type)) {
-                USR_FATAL(call, "'%s' is not of a supported param type", lhsSym->name);
-              }
-              if (!set) {
-                USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhsSym->name);
+                USR_FATAL_CONT(call, "'%s' is not of a supported param type", lhsSym->name);
+              } else if (!set) {
+                USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", lhsSym->name);
+                lhs->symbol()->removeFlag(FLAG_PARAM);
               }
             }
           }
