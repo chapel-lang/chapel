@@ -7222,8 +7222,6 @@ postFold(Expr* expr) {
         } else if (EnumSymbol* es = toEnumSymbol(fn->getReturnSymbol())) {
           result = new SymExpr(es);
           expr->replace(result);
-        } else if (fn->retTag == RET_PARAM) {
-          USR_FATAL(call, "param function does not resolve to a param symbol");
         }
       }
       if (fn->hasFlag(FLAG_MAYBE_TYPE) && fn->getReturnSymbol()->hasFlag(FLAG_TYPE_VARIABLE))
@@ -7310,12 +7308,18 @@ postFold(Expr* expr) {
             }
           }
           if (Symbol* lhsSym = lhs->symbol()) {
-            if (lhsSym->isParameter() && !lhsSym->hasFlag(FLAG_TEMP)) {
-              if (!isLegalParamType(lhsSym->type)) {
-                USR_FATAL_CONT(call, "'%s' is not of a supported param type", lhsSym->name);
-              } else if (!set) {
-                USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", lhsSym->name);
-                lhs->symbol()->removeFlag(FLAG_PARAM);
+            if (lhsSym->isParameter()) {
+              if (!lhsSym->hasFlag(FLAG_TEMP)) {
+                if (!isLegalParamType(lhsSym->type)) {
+                  USR_FATAL_CONT(call, "'%s' is not of a supported param type", lhsSym->name);
+                } else if (!set) {
+                  USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", lhsSym->name);
+                  lhs->symbol()->removeFlag(FLAG_PARAM);
+                }
+              } else /* this is a compiler temp */ {
+                if (lhsSym->hasFlag(FLAG_RVV) && !set) {
+                  USR_FATAL_CONT(call, "'param' functions cannot return non-'param' values");
+                }
               }
             }
           }
