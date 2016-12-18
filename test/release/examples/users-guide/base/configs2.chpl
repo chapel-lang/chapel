@@ -7,6 +7,7 @@ config param verbose = false,
 config type age = uint(8);
 
 type myInt = int(size);
+
 param sizeOfAge = numBits(age);
 
 writeln(verbose);

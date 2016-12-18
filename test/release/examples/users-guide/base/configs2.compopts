@@ -5,4 +5,5 @@
 -sage=uint(16)          # configs2-bigage.good
 -sage=real(32)          # configs2-floatage.good
 -sbitMask='1 << 10' -ssize=numBits(bitMask.type)/2 -sage='if verbose then uint(32) else uint(16)'      # configs2-lots.good
+-sage=int(size)         # configs2-useparam.good
 -sepsilon=1.0/n         # configs2-epsilon.good
