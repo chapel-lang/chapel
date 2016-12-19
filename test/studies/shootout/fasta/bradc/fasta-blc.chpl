@@ -10,13 +10,19 @@
 config const n = 1000,            // the length of the generated strings
              lineLength = 60,     // the number of columns in the output
              blockSize = 1024,    // the parallelization granularity
-             numTasks = min(3, here.maxTaskPar);  // how many tasks to use?
+             numTasks = min(4, here.maxTaskPar);  // how many tasks to use?
 //
 // the computational pipeline has 3 distinct stages, so ideally, we'd
-// like to use 3 tasks.  However, if the locale can't support that
-// much parallelism, we'll use a number of tasks equal to its maximum
-// degree of task parallelism to avoid starvation (because we rely on
-// busy-waits which could cause deadlocks otherwise).
+// like to use 3 tasks.  However, there is one stage which does not
+// require any coordination and it tends to be the slowest stage, so
+// we could have multiple tasks working on it simultaneously.  In
+// practice, though, that phase is not that much slower than the sum
+// of the other two, and using too many tasks can just add overhead
+// that isn't helpful.  So we go with 4 tasks to pick up some slack,
+// and because it seems to work best on all the machine we've tried in
+// practice.  If the locale can't support that much parallelism, we'll
+// use a number of tasks equal to its maximum degree of task
+// parallelism to avoid oversubscription.
 //
 
 config type randType = uint(32);  // type to use for random numbers

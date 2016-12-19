@@ -10,7 +10,7 @@
 config const n = 1000,            // the length of the generated strings
              lineLength = 60,     // the number of columns in the output
              blockSize = 1024,    // the parallelization granularity
-             numTasks = min(3, here.maxTaskPar);  // how many tasks to use?
+             numTasks = min(4, here.maxTaskPar);  // how many tasks to use?
 
 config type randType = uint(32);  // type to use for random numbers
 
