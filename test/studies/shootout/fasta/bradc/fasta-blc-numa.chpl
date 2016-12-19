@@ -29,7 +29,7 @@ config param numSockets = 2;
 config const maxTaskPar = here.maxTaskPar,
              idealTasks = numSockets*3,
              numTasks = if idealTasks > maxTaskPar
-                          then min(3, maxTaskPar)
+                          then min(4, maxTaskPar)
                           else idealTasks / numSockets,
              numNumaTasks = if numTasks*numSockets > maxTaskPar
                               then numTasks
