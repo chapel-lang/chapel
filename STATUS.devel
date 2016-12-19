@@ -527,7 +527,11 @@ Classes, Records, and Unions
 - There's no way to determine which field of a union is "active".
 - Setting union field from constructor doesn't work
   # classes/diten/constructUnion.future
-
+- Type methods do not work correctly with generic types
+  # classes/ferguson/generic-type-method-simple1.future
+  # classes/ferguson/generic-type-method-simple2.future
+  # classes/ferguson/generic-type-method-simple3.future
+  # classes/ferguson/generic-type-method-tuple.future
 
 Domain Maps, Domains and Arrays
 -------------------------------
