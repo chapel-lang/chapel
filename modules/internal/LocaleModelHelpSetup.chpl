@@ -35,7 +35,6 @@ module LocaleModelHelpSetup {
 
   config param debugLocaleModel = false;
 
-  // We would really like a class-static storage class.(C++ nomenclature)
   var doneCreatingLocales: bool = false;
 
   extern var chpl_nodeID: chpl_nodeID_t;

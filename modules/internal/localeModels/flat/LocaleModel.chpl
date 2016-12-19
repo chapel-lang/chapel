@@ -145,7 +145,7 @@ module LocaleModel {
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
     proc chpl_name() return local_name();
-    proc local_name() return "rootLocale":string;
+    proc local_name() return "rootLocale";
 
     proc writeThis(f) {
       f <~> name;
