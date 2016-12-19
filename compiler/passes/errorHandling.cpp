@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "errorHandling.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "view.h"
