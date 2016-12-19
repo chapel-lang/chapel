@@ -2463,7 +2463,8 @@ void applyPrivateToBlock(BlockStmt* block) {
   }
 }
 
-BlockStmt* buildDelegateStmt(Expr* expr) {
+static
+DefExpr* buildDelegateExprFnDef(Expr* expr) {
   // Instead of just storing expr directly, put it into a method
   // and store a call to that method.
   // This way, we can work with the rest of the compiler that
@@ -2479,9 +2480,94 @@ BlockStmt* buildDelegateStmt(Expr* expr) {
 
   DefExpr* def = new DefExpr(fn);
 
-  return buildChapelStmt(new DelegateStmt(def));
+  return def;
 }
 
+
+// handle syntax like
+//    var instance:someType;
+//    delegate instance;
+BlockStmt* buildDelegateStmt(Expr* expr) {
+  return buildChapelStmt(new DelegateStmt(buildDelegateExprFnDef(expr)));
+}
+
+// handle syntax like
+//    var instance:someType;
+//    delegate instance only foo;
+BlockStmt* buildDelegateStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except) {
+  std::set<const char*> namesSet;
+  std::map<const char*, const char*> renameMap;
+
+  // Catch the 'except *' case and turn it into 'only <nothing>'.  This
+  // case will have a single UnresolvedSymExpr named "".
+  if (except && names->size() == 1) {
+    OnlyRename* listElem = (*names)[0];
+    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+      if (name->unresolved[0] == '\0') {
+        except = false;
+      }
+    }
+  }
+
+  // Iterate through the list of names to exclude when using mod
+  for_vector(OnlyRename, listElem, *names) {
+    switch (listElem->tag) {
+      case OnlyRename::SINGLE:
+        if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+          namesSet.insert(name->unresolved);
+        } else {
+          // Currently we expect only unresolved sym exprs
+          useListError(listElem->elem, except);
+        }
+        break;
+      case OnlyRename::DOUBLE:
+        std::pair<Expr*, Expr*>* elem = listElem->renamed;
+        // Need to check that we aren't renaming in an 'except' list
+        if (except) {
+          USR_FATAL(elem->first, "cannot rename in 'except' list");
+        }
+        UnresolvedSymExpr* old_name = toUnresolvedSymExpr(elem->first);
+        UnresolvedSymExpr* new_name = toUnresolvedSymExpr(elem->second);
+        if (old_name != NULL && new_name != NULL) {
+          renameMap[new_name->unresolved] = old_name->unresolved;
+        } else {
+          useListError(elem->first, except);
+        }
+        break;
+    }
+
+  }
+
+  DefExpr* fnDef = buildDelegateExprFnDef(expr);
+  DelegateStmt* ret = new DelegateStmt(fnDef,
+                                       &namesSet,
+                                       except,
+                                       &renameMap);
+  return buildChapelStmt(ret);
+}
+
+
+// handle syntax like
+//    delegate var instance:someType;
+// by translating it into
+//    var instance:someType;
+//    delegate instance;
+BlockStmt* buildDelegateDeclStmt(BlockStmt* stmts) {
+  for_alist(stmt, stmts->body) {
+    if (DefExpr* defExpr = toDefExpr(stmt)) {
+      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+        // Append a DelegateStmt
+        BlockStmt* toAppend = buildDelegateStmt(new UnresolvedSymExpr(var->name));
+        for_alist(tmp, toAppend->body) {
+          stmts->insertAtTail(tmp->remove());
+        }
+      } else {
+        INT_FATAL("case not handled in buildDelegateDeclStmt");
+      }
+    }
+  }
+  return stmts;
+}
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {

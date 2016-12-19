@@ -143,6 +143,8 @@ BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              const char* docs);
 void applyPrivateToBlock(BlockStmt* block);
 BlockStmt* buildDelegateStmt(Expr* expr);
+BlockStmt* buildDelegateStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except);
+BlockStmt* buildDelegateDeclStmt(BlockStmt*);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);

@@ -620,6 +620,9 @@ private_decl:
 
 delegate_stmt:
   TDELEGATE expr TSEMI  { $$ = buildDelegateStmt($2); }
+| TDELEGATE expr TEXCEPT except_ls TSEMI  { $$ = buildDelegateStmt($2, $4, true); }
+| TDELEGATE expr TONLY opt_only_ls TSEMI  { $$ = buildDelegateStmt($2, $4, false); }
+| TDELEGATE var_decl_stmt { $$ = buildDelegateDeclStmt($2); }
 ;
 
 extern_block_stmt:

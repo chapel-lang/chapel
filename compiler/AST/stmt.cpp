@@ -123,7 +123,7 @@ UseStmt::UseStmt(BaseAST*                            source,
 
 UseStmt* UseStmt::copyInner(SymbolMap* map) {
   UseStmt *_this = 0;
-  if (named.size() > 0) {
+  if (named.size() > 0) { // MPF: should this have || renamed.size() > 0?
     _this = new UseStmt(COPY_INT(src), &named, except, &renamed);
   } else {
     _this = new UseStmt(COPY_INT(src));
@@ -1165,7 +1165,10 @@ DelegateStmt::DelegateStmt(DefExpr* toFnDef) :
   Stmt(E_DelegateStmt),
   toFnDef(toFnDef),
   fnReturningDelegate(NULL),
-  type(NULL)
+  type(NULL),
+  named(),
+  renamed(),
+  except(false)
 {
   gDelegateStmts.add(this);
 
@@ -1173,6 +1176,40 @@ DelegateStmt::DelegateStmt(DefExpr* toFnDef) :
     if (FnSymbol* fn = toFnSymbol(toFnDef->sym))
       fnReturningDelegate = fn->name;
 }
+
+DelegateStmt::DelegateStmt(DefExpr* toFnDef, std::set<const char*>* args, bool exclude, std::map<const char*, const char*>* renames) :
+  Stmt(E_DelegateStmt),
+  toFnDef(toFnDef),
+  fnReturningDelegate(NULL),
+  type(NULL),
+  named(),
+  renamed(),
+  except(exclude)
+{
+  gDelegateStmts.add(this);
+
+  if (toFnDef)
+    if (FnSymbol* fn = toFnSymbol(toFnDef->sym))
+      fnReturningDelegate = fn->name;
+
+  if (args->size() > 0) {
+    // Symbols to search when going through this module's scope from an outside
+    // scope
+    for_set(const char, str, *args) {
+      named.insert(str);
+    }
+  }
+
+  if (renames->size() > 0) {
+    // The new names of symbols in the module being used, to avoid conflicts
+    // for instance.
+    for (std::map<const char*, const char*>::iterator it = renames->begin();
+         it != renames->end(); ++it) {
+      renamed[it->first] = it->second;
+    }
+  }
+}
+
 
 void DelegateStmt::verify() {
   Expr::verify();
@@ -1193,8 +1230,15 @@ void DelegateStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 DelegateStmt* DelegateStmt::copyInner(SymbolMap* map) {
-  DelegateStmt* ret = new DelegateStmt(COPY_INT(toFnDef));
+  DelegateStmt* ret = NULL;
+
+  if (named.size() > 0 || renamed.size() > 0) {
+    ret = new DelegateStmt(COPY_INT(toFnDef), &named, except, &renamed);
+  } else {
+    ret = new DelegateStmt(COPY_INT(toFnDef));
+  }
   ret->fnReturningDelegate = fnReturningDelegate;
+
   return ret;
 }
 

@@ -4100,6 +4100,8 @@ populateDelegatedMethods(AggregateType* at, CallInfo& info)
     INT_ASSERT(delegate);
 
     const char* fnGetTgt = delegate->fnReturningDelegate;
+    const char* calledName = info.name;
+    const char* methodName = calledName;
 
     if (!delegate->type) {
       delegate->type = dtUnknown; // avoiding loop from recursion
@@ -4118,6 +4120,33 @@ populateDelegatedMethods(AggregateType* at, CallInfo& info)
       delegate->type = delegateType;
     }
 
+    // Adjust methodName for rename processing.
+    if (delegate->renamed.count(calledName) > 0) {
+      methodName = delegate->renamed[calledName];
+    } else if (delegate->named.count(calledName)) {
+      if (delegate->except) {
+        // don't handle this symbol
+        methodName = NULL;
+      } else {
+        // OK, calledName is in the only list.
+      }
+    } else {
+      // It's not a specifically mentioned symbol.
+      // It's OK if:
+      //  - there was no list at all, or
+      //  - the list was an 'except' list
+      if ((delegate->renamed.size() == 0 && delegate->named.size() == 0) ||
+          delegate->except) {
+        // OK
+      } else {
+        methodName = NULL;
+      }
+    }
+
+    // Stop processing this delegate if we've ruled out this name.
+    if (methodName == NULL)
+      continue;
+
     // then, go through the methods of the delegate
     forv_Vec(FnSymbol, method, delegate->type->methods) {
       // skip initializers and destructors
@@ -4125,13 +4154,13 @@ populateDelegatedMethods(AggregateType* at, CallInfo& info)
         continue;
 
       // TODO - make this loop more efficient?
-      if (method->name != info.name)
+      if (method->name != methodName)
         continue;
 
       bool alreadyDone = false;
       // Do we already have a wrapper for this function name?
       forv_Vec(FnSymbol, existing_method, at->methods) {
-        if (method->name == info.name &&
+        if (method->name == methodName &&
             existing_method->hasFlag(FLAG_DELEGATE_FN))
           alreadyDone = true;
       }
@@ -4144,7 +4173,7 @@ populateDelegatedMethods(AggregateType* at, CallInfo& info)
       //printf("making wrapper for %s\n", method->name);
 
       // Create a "wrapper" method that forwards to the delegate
-      FnSymbol* fn = new FnSymbol(method->name);
+      FnSymbol* fn = new FnSymbol(calledName);
       fn->copyFlags(method);
       // but we need to resolve the wrapper method again
       fn->removeFlag(FLAG_RESOLVED);

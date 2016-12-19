@@ -22,6 +22,7 @@
 
 #include <cstdio>
 #include <map>
+#include <set>
 
 #include "expr.h"
 #include "foralls.h"
@@ -304,6 +305,10 @@ public:
 class DelegateStmt : public Stmt {
 public:
                       DelegateStmt(DefExpr* toFnDef);
+                      DelegateStmt(DefExpr* toFnDef,
+                                   std::set<const char*>* args,
+                                   bool exclude,
+                                   std::map<const char*, const char*>* renames);
 
   // Interface to BaseAST
   virtual GenRet      codegen();
@@ -324,6 +329,11 @@ public:
   const char*         fnReturningDelegate;
   // used during resolution
   Type*               type;
+
+  std::set<const char *> named; // The names of symbols from an 'except' or
+  // 'only' list
+  std::map<const char*, const char*> renamed; // Map of newName: oldName
+  bool except;
 };
 
 
