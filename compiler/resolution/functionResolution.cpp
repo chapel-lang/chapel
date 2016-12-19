@@ -4091,16 +4091,30 @@ resolveDefaultGenericType(CallExpr* call) {
 }
 
 static bool
-populateDelegatedMethods(AggregateType* at, CallInfo& info)
+typeUsesDelegation(Type* t) {
+  if (AggregateType* at = toAggregateType(t)) {
+    if (toDelegateStmt(at->delegates.head)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool
+populateDelegatedMethods(Type* t, const char* calledName)
 {
+  AggregateType* at = toAggregateType(t);
   bool addedAny = false;
+
+  // Currently, only AggregateTypes can delegate
+  if (!at) return false;
+
   // copy methods from the delegates into at
   for_alist(expr, at->delegates) {
     DelegateStmt* delegate = toDelegateStmt(expr);
     INT_ASSERT(delegate);
 
     const char* fnGetTgt = delegate->fnReturningDelegate;
-    const char* calledName = info.name;
     const char* methodName = calledName;
 
     if (!delegate->type) {
@@ -4147,6 +4161,12 @@ populateDelegatedMethods(AggregateType* at, CallInfo& info)
     if (methodName == NULL)
       continue;
 
+    // If the delegate itself has delegates, we need to populate
+    // them now, so that we can find the methods
+    if (typeUsesDelegation(delegate->type)) {
+      populateDelegatedMethods(delegate->type, methodName);
+    }
+
     // then, go through the methods of the delegate
     forv_Vec(FnSymbol, method, delegate->type->methods) {
       // skip initializers and destructors
@@ -4160,7 +4180,7 @@ populateDelegatedMethods(AggregateType* at, CallInfo& info)
       bool alreadyDone = false;
       // Do we already have a wrapper for this function name?
       forv_Vec(FnSymbol, existing_method, at->methods) {
-        if (method->name == methodName &&
+        if (existing_method->name == methodName &&
             existing_method->hasFlag(FLAG_DELEGATE_FN))
           alreadyDone = true;
       }
@@ -4226,9 +4246,8 @@ populateDelegatedMethods(AggregateType* at, CallInfo& info)
       fn->body->insertAtTail(new CallExpr(PRIM_RETURN, retval));
       at->symbol->defPoint->insertBefore(new DefExpr(fn));
 
-      resolveFns(fn);
-
-      //nprint_view(fn);
+      // Add the new function as a method.
+      at->methods.add(fn);
     }
   }
 
@@ -4408,10 +4427,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     if (call->numActuals() >= 1 &&
         call->get(1)->typeInfo() == dtMethodToken) {
       Type* receiverType = call->get(2)->typeInfo()->getValType();
-      if (AggregateType* receiverAT = toAggregateType(receiverType)) {
-        if (toDelegateStmt(receiverAT->delegates.head)) {
-          retry_find = populateDelegatedMethods(receiverAT, info);
-        }
+      if (typeUsesDelegation(receiverType)) {
+        retry_find = populateDelegatedMethods(receiverType, info.name);
       }
     }
   }

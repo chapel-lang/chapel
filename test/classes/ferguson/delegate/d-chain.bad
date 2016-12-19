@@ -1,3 +1,0 @@
-d-chain.chpl:26: error: unresolved call 'WrapperTwo(WrapperOne(C)).bar()'
-d-chain.chpl:5: note: candidates are: C.bar()
-d-chain.chpl:13: note:                 WrapperOne.bar()
