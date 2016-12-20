@@ -10,7 +10,6 @@ record WrapperOne {
   var instance; // e.g. some class
   delegate instance only foo as bar;
   proc foo() { writeln("in WrapperOne.foo()"); }
-  proc bar() { writeln("in WrapperOne.bar()"); }
 }
 
 record WrapperTwo {
