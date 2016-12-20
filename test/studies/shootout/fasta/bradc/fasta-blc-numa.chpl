@@ -26,10 +26,19 @@ config param numSockets = 2;
 // use a number of tasks equal to its maximum degree of task
 // parallelism to avoid oversubscription.
 //
+// 'maxComputeTasks' represents this number of tasks that will be working
+// 'idealTasks' scales it by the number of sockets so that we can create
+//   dummy tasks on sockets other than the first
+// 'numTasks' is the actual number of worker tasks that we'll use,
+//   designed to avoid oversubscribing the node
+// 'numNumaTasks' is the actual number of tasks we'll create, including
+//   the dummies
+//
 config const maxTaskPar = here.maxTaskPar,
-             idealTasks = numSockets*3,
+             maxComputeTasks = 4,
+             idealTasks = numSockets*maxComputeTasks,
              numTasks = if idealTasks > maxTaskPar
-                          then min(4, maxTaskPar)
+                          then min(maxComputeTasks, maxTaskPar)
                           else idealTasks / numSockets,
              numNumaTasks = if numTasks*numSockets > maxTaskPar
                               then numTasks
