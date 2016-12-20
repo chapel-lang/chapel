@@ -144,10 +144,15 @@ static inline void verifyInTree(BaseAST* ast, const char* msg) {
 }
 
 void Symbol::verify() {
-  if (defPoint && !defPoint->parentSymbol && !toModuleSymbol(this))
-    INT_FATAL(this, "Symbol::defPoint is not in AST");
-  if (defPoint && this != defPoint->sym)
-    INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
+  if (defPoint) {
+    if (!defPoint->parentSymbol && this != rootModule)
+      INT_FATAL(this, "Symbol::defPoint is not in AST");
+    if (this != defPoint->sym)
+      INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
+  } else {
+    if (this != rootModule)
+      INT_FATAL(this, "Symbol without a defPoint");
+  }
   verifyInTree(type, "Symbol::type");
 
   if (symExprsHead) {
