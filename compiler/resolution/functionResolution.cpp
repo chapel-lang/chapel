@@ -4101,7 +4101,7 @@ typeUsesDelegation(Type* t) {
 }
 
 static bool
-populateDelegatedMethods(Type* t, const char* calledName)
+populateDelegatedMethods(Type* t, const char* calledName, CallExpr* forCall)
 {
   AggregateType* at = toAggregateType(t);
   bool addedAny = false;
@@ -4161,42 +4161,55 @@ populateDelegatedMethods(Type* t, const char* calledName)
     if (methodName == NULL)
       continue;
 
-    // If the delegate itself has delegates, we need to populate
-    // them now, so that we can find the methods
-    if (typeUsesDelegation(delegate->type)) {
-      populateDelegatedMethods(delegate->type, methodName);
-    }
+    // There are 2 ways that more methods can be added to
+    // delegate->type during resolution:
+    //   1) delegate->type itself use a 'delegate'
+    //   2) delegate->type is a generic instantiation
+    //      and the method in question hasn't been instantiated yet
+    //
+    // The code below attempts to resolve a call to
+    // delegate->type to make sure that both are resolved.
+    // Additionally, it will choose the proper version of
+    // method in the event that overload resolution is necessary.
+    FnSymbol* method = NULL;
+    {
+      BlockStmt* block = new BlockStmt();
+      Type* testType = delegate->type;
+      Symbol* tmp = newTemp(testType);
 
-    // then, go through the methods of the delegate
-    forv_Vec(FnSymbol, method, delegate->type->methods) {
-      // skip initializers and destructors
-      if (method->hasEitherFlag(FLAG_CONSTRUCTOR, FLAG_DESTRUCTOR))
-        continue;
+      CallExpr* test = new CallExpr(new UnresolvedSymExpr(methodName),
+                                    gMethodToken,
+                                    tmp);
 
-      // TODO - make this loop more efficient?
-      if (method->name != methodName)
-        continue;
 
-      bool alreadyDone = false;
-      // Do we already have a wrapper for this function name?
-      forv_Vec(FnSymbol, existing_method, at->methods) {
-        if (existing_method->name == methodName &&
-            existing_method->hasFlag(FLAG_DELEGATE_FN))
-          alreadyDone = true;
+      int i = 0;
+      for_actuals(actual, forCall) {
+        if (i > 1) { // skip method token, object
+          test->insertAtTail(actual->copy());
+        }
+        i++;
       }
 
-      if (alreadyDone)
-        continue;
+      block->insertAtTail(new DefExpr(tmp));
+      block->insertAtTail(test);
 
+      forCall->getStmtExpr()->insertAfter(block);
+      method = tryResolveCall(test);
+      block->remove();
+    }
+
+    // If the delegate type method resolved, add a wrapper method to call it.
+    // This wrapper method will be added to the type at and so will be found
+    // through normal resolution processes if this comes up agin.
+    if (method) {
       addedAny = true;
-
-      //printf("making wrapper for %s\n", method->name);
 
       // Create a "wrapper" method that forwards to the delegate
       FnSymbol* fn = new FnSymbol(calledName);
       fn->copyFlags(method);
       // but we need to resolve the wrapper method again
       fn->removeFlag(FLAG_RESOLVED);
+      fn->removeFlag(FLAG_INVISIBLE_FN);
 
       fn->addFlag(FLAG_METHOD);
       fn->addFlag(FLAG_INLINE);
@@ -4428,7 +4441,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
         call->get(1)->typeInfo() == dtMethodToken) {
       Type* receiverType = call->get(2)->typeInfo()->getValType();
       if (typeUsesDelegation(receiverType)) {
-        retry_find = populateDelegatedMethods(receiverType, info.name);
+        retry_find = populateDelegatedMethods(receiverType, info.name, info.call);
       }
     }
   }
