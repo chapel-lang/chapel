@@ -29,6 +29,7 @@
 module LocaleModel {
 
   use LocaleModelHelpFlat;
+  use LocaleModelHelpMem;
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;

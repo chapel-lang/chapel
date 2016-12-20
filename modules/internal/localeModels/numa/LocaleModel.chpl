@@ -29,6 +29,7 @@
 module LocaleModel {
 
   use LocaleModelHelpNUMA;
+  use LocaleModelHelpMem;
 
   //
   // The NUMA sublocale model
