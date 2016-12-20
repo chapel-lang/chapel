@@ -7,11 +7,13 @@
      and Preston Sahabu.
 */
 
+config param numSockets = 2;      // number of sockets on this numa node
+
 config const n = 1000,            // the length of the generated strings
              lineLength = 60,     // the number of columns in the output
-             blockSize = 1024;    // the parallelization granularity
-
-config param numSockets = 2;
+             blockSize = 1024,    // the parallelization granularity
+             numTasks = min(4, here.maxTaskPar),  // how many tasks to use?
+             numNumaTasks = numSockets*numTasks;  // " including dummies
 
 //
 // the computational pipeline has 3 distinct stages, so ideally, we'd
@@ -26,10 +28,6 @@ config param numSockets = 2;
 // use a number of tasks equal to its maximum degree of task
 // parallelism to avoid oversubscription.
 //
-config const numTasks = min(4, here.maxTaskPar),
-             numNumaTasks = numSockets * numTasks;
-
-config const debug = false;
 
 config type randType = uint(32);  // type to use for random numbers
 
