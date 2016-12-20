@@ -26,15 +26,8 @@ config param numSockets = 2;
 // use a number of tasks equal to its maximum degree of task
 // parallelism to avoid oversubscription.
 //
-config const maxTaskPar = here.maxTaskPar,
-             idealTasks = numSockets*3,
-             numTasks = if idealTasks > maxTaskPar
-                          then min(4, maxTaskPar)
-                          else idealTasks / numSockets,
-             numNumaTasks = if numTasks*numSockets > maxTaskPar
-                              then numTasks
-                              else numTasks*numSockets,
-             div = if numTasks*numSockets > maxTaskPar then 1 else numSockets;
+config const numTasks = min(4, here.maxTaskPar),
+             numNumaTasks = numSockets * numTasks;
 
 config const debug = false;
 
@@ -45,13 +38,6 @@ config param IM = 139968,         // parameters for random number generation
              IC = 29573,
              seed: randType = 42;
 
-if debug {
-  writeln("idealTasks   = ", idealTasks);
-  writeln("numTasks     = ", numTasks);
-  writeln("numNumaTasks = ", numNumaTasks);
-  writeln("div          = ", div);
-  exit(0);
-}
 
 //
 // Nucleotide definitions
@@ -157,8 +143,8 @@ proc randomMake(desc, nuclInfo, n) {
 
   // create tasks to pipeline the RNG, computation, and output
   coforall itid in 0..#numNumaTasks {
-    if itid%div == 0 {
-    const tid = itid / div;
+    if itid%numSockets == 0 {
+    const tid = itid / numSockets;
     const chunkSize = lineLength*blockSize,
           nextTid = (tid + 1) % numTasks;
 
