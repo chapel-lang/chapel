@@ -49,7 +49,7 @@ This directory's contents are as follows:
   Makefile       : Build LCALS
 
   *.notest               :\
-  LCALSMain.graph        : \
+  LCALS-*.graph          : \
   LCALSMain.perfcompopts :  \
   LCALSMain.perfexecopts :   \ Used by the Chapel testing system
   LCALSMain.perfkeys     :   /

@@ -446,7 +446,7 @@ module io_RMAT_graph
 
   //
   // For debugging, we are making these errors non-fatal.
-  // Especially usefil with --checkOnlyOnRead.
+  // Especially useful with --checkOnlyOnRead.
   //
   proc myerror(args...) {
     stderr.writeln("ERROR: ", (...args));

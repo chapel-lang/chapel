@@ -365,7 +365,9 @@ fasta:
   12/10/16:
     - Switch from 'sync' to 'atomic'-based coordination (#5004)
   12/15/16:
-    - Parallelize release version and refactor for CLBG submissions (#5024)
+    - Parallelize release version, make more use of randType and refactor for CLBG submissions (#5024)
+  12/19/16:
+    - Switch max number of tasks from 3 to 4 (#5078)
 
 fastaredux:
   01/14/14:

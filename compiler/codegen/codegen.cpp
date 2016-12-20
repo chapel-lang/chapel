@@ -1538,6 +1538,41 @@ static const char* generateFileName(ChainHashMap<char*, StringHashFns, int>& fil
   return name;
 }
 
+
+static bool
+shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
+  FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+
+  bool shouldPassRef = (arg->intent & INTENT_FLAG_REF) ||
+                       arg->requiresCPtr();
+
+  bool alreadyRef = arg->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+                    arg->isRef() ||
+                    arg->isWideRef();
+
+  // Only change argument types for functions with a ref intent
+  // that don't already have an argument being passed by ref
+  // and that aren't extern functions.
+  return (shouldPassRef &&
+          !alreadyRef &&
+          !fn->hasFlag(FLAG_EXTERN) &&
+          !arg->hasFlag(FLAG_NO_CODEGEN));
+}
+
+static void
+adjustArgSymbolTypesForIntent(void)
+{
+  // Adjust ArgSymbols that have ref/const ref concrete
+  // intent so that their type is ref. This allows the
+  // rest of this code to work as expected.
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (shouldChangeArgumentTypeToRef(arg)) {
+      arg->qual   = QUAL_REF;
+      arg->intent = INTENT_REF;
+    }
+  }
+}
+
 extern bool printCppLineno;
 debug_data *debug_info=NULL;
 
@@ -1597,6 +1632,8 @@ void codegen(void) {
   GenInfo* info     = gGenInfo;
 
   INT_ASSERT(info);
+
+  adjustArgSymbolTypesForIntent();
 
   forv_Vec(VarSymbol, sym, gVarSymbols) {
     QualifiedType q = sym->qualType();
