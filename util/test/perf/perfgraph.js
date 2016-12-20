@@ -1224,7 +1224,7 @@ function displaySelectedGraphs() {
   // clean up all the dygraphs
   while (gs.length > 0) {
     var temp = gs.pop();
-    indexMap[temp.graphInfo.datfname] = -1;
+    indexMap = {};
     temp.destroy();
   }
 
