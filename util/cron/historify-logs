@@ -17,17 +17,13 @@ loghome=/data/sea/chapel
 loghistdir=/data/sea/chapel/NightlyHistory
 logsources="\
 Nightly \
-Nightly/whitebox/cray-xc \
-Nightly/whitebox/cray-xe \
 NightlyDists \
 NightlyMemLeaks \
 NightlyPerformance/bradc-lnx \
 NightlyPerformance/chap01 \
-NightlyPerformance/chap03 \
 NightlyPerformance/chap04 \
 NightlyPerformance/chap08 \
 NightlyPerformance/chap12 \
-NightlyPerformance/tiger \
 "
 
 # logs for "Cray hardware" configurations
