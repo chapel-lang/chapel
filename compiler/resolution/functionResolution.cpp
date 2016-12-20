@@ -4236,10 +4236,11 @@ populateDelegatedMethods(Type* t, const char* calledName, CallExpr* forCall)
       // Add the arguments to the call
       int i = 0;
       for_formals(formal, method) {
-        if (i < 2) continue; // skip method token, target - added above
-        ArgSymbol* arg = formal->copy();
-        fn->insertFormalAtTail(arg);
-        wrapCall->insertAtTail(arg);
+        if (i > 1) { // skip method token, target - added above
+          ArgSymbol* arg = formal->copy();
+          fn->insertFormalAtTail(arg);
+          wrapCall->insertAtTail(new SymExpr(arg));
+        }
         i++;
       }
 
