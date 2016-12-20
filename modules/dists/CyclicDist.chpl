@@ -805,8 +805,7 @@ proc CyclicArr.dsiReindex(d: CyclicDom) {
         if sameDom {
           // If we the reindex domain is the same as that of this array,
           //  the RAD cache will be the same you can just copy the values
-          //  directly into the alias's RAD cache (except: if multi-ddata,
-          //  alias and original mustn't share RAD cache ddata vectors)
+          //  directly into the alias's RAD cache
           if locArr[i].locRAD {
             alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
                                                      d.stridable,
@@ -815,25 +814,6 @@ proc CyclicArr.dsiReindex(d: CyclicDom) {
                                                                  dom.dist.startIdx,
                                                                  dom.dist.targetLocDom);
             alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
-
-            if !defRectSimpleDData {
-              for rad in alias.locArr[i].locRAD.RAD {
-                const dd = rad.dataVec;
-                if dd != nil {
-                  rad.dataVec = _ddata_allocate(_ddata(rad.eltType),
-                                                rad.mdNumChunks);
-                  for i in 0..#rad.mdNumChunks do
-                    rad.dataVec(i) = dd(i);
-                }
-                const sdd = rad.shiftedDataVec;
-                if dd != nil {
-                  rad.shiftedDataVec = _ddata_allocate(_ddata(rad.eltType),
-                                                       rad.mdNumChunks);
-                  for i in 0..#rad.mdNumChunks do
-                    rad.shiftedDataVec(i) = sdd(i);
-                }
-              }
-            }
           }
         }
       }
@@ -946,10 +926,8 @@ inline proc _remoteAccessData.getDataIndex(
     if mdNumChunks == 1 {
       return (0, sum);
     } else {
-      const chunk = mdInd2Chunk(ind(mdParDim), mdNumChunks, mdRLo, mdRLen);
-      const (lo, _) = mdChunk2Ind(chunk, mdNumChunks, mdRLo, mdRHi, mdRLen);
-      sum -= (lo - mdRLo) * blk(mdParDim);
-      return (chunk, sum);
+      const chunk = mdInd2Chunk(ind(mdParDim));
+      return (chunk, sum - mData(chunk).dataOff);
     }
   }
 }
@@ -987,8 +965,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if ((defRectSimpleDData && radata(rlocIdx).data1 != nil)
-          || (!defRectSimpleDData && radata(rlocIdx).dataVec != nil)) {
+      if radata(rlocIdx).dataChunk(0) != nil {
         const startIdx = myLocArr.locCyclicRAD.startIdx;
         const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
         type strType = chpl__signedType(idxType);
@@ -998,7 +975,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           str(i) = whole.dim(i).stride;
         }
         var dataIdx = radata(rlocIdx).getDataIndex(stridable, str, i, startIdx, dimLength);
-        return radata(rlocIdx).data(dataIdx);
+        return radata(rlocIdx).dataElem(dataIdx);
       }
     }
   }

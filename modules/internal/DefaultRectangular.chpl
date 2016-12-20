@@ -617,6 +617,17 @@ module DefaultRectangular {
     }
   }
 
+  record _multiData {
+    type eltType;
+    type idxType;
+    var pdr: range(idxType,BoundedRangeType.bounded,true);
+    var dataOff: idxType;
+    pragma "local field"
+    var data : _ddata(eltType);
+    pragma "local field"
+    var shiftedData : _ddata(eltType);
+  };
+
   // TODO: should this include the ranges that represent the domain?
   record _remoteAccessData {
     type eltType;
@@ -632,50 +643,58 @@ module DefaultRectangular {
 
     inline proc oneDData return defRectSimpleDData || mdNumChunks < 2;
 
-    var mdParDim: int;           // -
-    var mdNumChunks: int;        //  |- only used if !defRectSimpleDData
-    var mdRLo: idxType;          //  |
-    var mdRHi: idxType;          //  |
-    var mdRLen: idxType;         // -
+    var mdParDim: int;
+    var mdNumChunks: int;
+    var mdRLo: idxType;
+    var mdRHi: idxType;
+    var mdRStr: idxType;
+    var mdRLen: idxType;
+    var mdBlk: idxType;
+    var mdAlias: bool;
 
-    var data1: _ddata(eltType);
-    var dataVec : _ddata(_ddata(eltType));  // only used if !defRectSimpleDData
-    var shiftedData1: _ddata(eltType);
-    var shiftedDataVec : _ddata(_ddata(eltType));  // !defRectSimpleDData only
+    var data: _ddata(eltType);
+    var shiftedData: _ddata(eltType);
 
-    inline proc data(i: idxType) ref where defRectSimpleDData
-      return data1(i);
+    var mData : _ddata(_multiData(eltType=eltType,
+                                  idxType=idxType));
 
-    inline proc data(i: (int, idxType)) ref where !defRectSimpleDData
-      return dataVec(i(1))(i(2));
-
-    inline proc shiftedData(i: idxType) ref where defRectSimpleDData
-      return shiftedData1(i);
-
-    inline proc shiftedData(i: (int, idxType)) ref where !defRectSimpleDData
-      return shiftedDataVec(i(1))(i(2));
-
-    // duplicates DefaultRectangularArr.mdInd2Chunk
-    inline proc mdInd2Chunk(ind, mdnc=mdNumChunks,
-                            mdrlo=mdRLo, mdrlen=mdRLen, str=1:idxType)
-      where !defRectSimpleDData {
-      if stridable then
-        return ((((ind - mdrlo) / str) * mdnc:idxType) / mdrlen):int;
-      else
-        return (((ind - mdrlo) * mdnc:idxType) / mdrlen):int;
+    inline proc dataChunk(i) ref {
+      if defRectSimpleDData then
+        return data;
+      else {
+        return mData(i).data;
+      }
     }
 
-    // duplicates DefaultRectangularArr.mdChunk2Ind
-    inline proc mdChunk2Ind(chunk, mdnc=mdNumChunks,
-                            mdrlo=mdRLo, mdrhi=mdRHi, mdrlen=mdRLen,
-                            str=1:idxType)
-      where !defRectSimpleDData {
-      if stridable {
-        const (lo, hi) = _computeBlock(mdrlen, mdnc, chunk, mdrhi - mdrlo, 0, 0);
-        return (lo * str + mdrlo, hi * str + mdrlo);
-      } else {
-        return _computeBlock(mdrlen, mdnc, chunk, mdrhi, mdrlo, mdrlo);
+    inline proc shiftedDataChunk(i) ref {
+      if defRectSimpleDData then
+        return shiftedData;
+      else {
+        return mData(i).shiftedData;
       }
+    }
+
+    inline proc dataElem(i) ref {
+      if defRectSimpleDData then
+        return data(i);
+      else
+        return mData(i(1)).data(i(2));
+    }
+
+    inline proc shiftedDataElem(i) ref where defRectSimpleDData
+      return shiftedData(i);
+
+    inline proc shiftedDataElem(i) ref where !defRectSimpleDData
+      return mData(i(1)).shiftedData(i(2));
+
+    // duplicates DefaultRectangularArr.mdInd2Chunk
+    inline proc mdInd2Chunk(ind)
+      where !defRectSimpleDData {
+      if stridable then
+        return (((ind - mdRLo) / mdRStr * mdBlk * mdNumChunks:idxType)
+                / mdRLen):int;
+      else
+        return (((ind - mdRLo) * mdBlk * mdNumChunks:idxType) / mdRLen):int;
     }
   }
 
@@ -702,10 +721,8 @@ module DefaultRectangular {
     proc ~LocRADCache() {
       if !defRectSimpleDData {
         for rad in RAD {
-          if rad.dataVec != nil then
-            _ddata_free(rad.dataVec);
-          if rad.shiftedDataVec != nil then
-            _ddata_free(rad.shiftedDataVec);
+          if rad.mData != nil then
+            _ddata_free(rad.mData);
         }
       }
     }
@@ -742,19 +759,22 @@ module DefaultRectangular {
                                  // these are only used if !defRectSimpleDData
     var mdParDim: int;           //   array is chunked on this dimension
     var mdNumChunks: int;        //   number of chunks
-    var mdRLo: idxType;          //   original dom.dsiDim(mdPardim).low
-    var mdRHi: idxType;          //   original dom.dsiDim(mdPardim).high
-    var mdRLen: idxType;         //   original dom.dsiDim(mdPardim).length
+    var mdRLo: idxType;          //   chunking dim .low
+    var mdRHi: idxType;          //       "     "  .high
+    var mdRStr: idxType;         //       "     "  .stride
+    var mdRLen: idxType;         //       "     "  .length
+    var mdBlk: idxType;          //       "     "  block factor when sliced
+    var mdAlias: bool;           //   is this an alias of another array?
 
     pragma "local field"
-    var data1 : _ddata(eltType);
-    pragma "local field"
-    var dataVec : _ddata(_ddata(eltType));  // only used if !defRectSimpleDData
+    var data : _ddata(eltType);
 
     pragma "local field"
-    var shiftedData1 : _ddata(eltType);
+    var shiftedData : _ddata(eltType);
+
     pragma "local field"
-    var shiftedDataVec : _ddata(_ddata(eltType));  // !defRectSimpleDData only
+      var mData : _ddata(_multiData(eltType=eltType,
+                                    idxType=idxType));
 
     var noinit_data: bool = false;
 
@@ -769,6 +789,7 @@ module DefaultRectangular {
     // end class definition here, then defined secondary methods below
 
     proc dsiDisplayRepresentation() {
+      // gbt TODO
       if true {
       chpl_debug_writeln("off=", off);
       chpl_debug_writeln("blk=", blk);
@@ -780,7 +801,12 @@ module DefaultRectangular {
         chpl_debug_writeln("mdNumChunks=", mdNumChunks);
         chpl_debug_writeln("mdRLo=", mdRLo);
         chpl_debug_writeln("mdRHi=", mdRHi);
+        chpl_debug_writeln("mdRStr=", mdRStr);
         chpl_debug_writeln("mdRLen=", mdRLen);
+        chpl_debug_writeln("mdBlk=", mdBlk);
+        for i in 0..#mdNumChunks {
+          chpl_debug_writeln("chunk (", mData(i).pdr, ') @', mData(i).dataOff);
+        }
       }
       chpl_debug_writeln("noinit_data=", noinit_data);
       } else {
@@ -794,7 +820,12 @@ module DefaultRectangular {
         writeln("mdNumChunks=", mdNumChunks);
         writeln("mdRLo=", mdRLo);
         writeln("mdRHi=", mdRHi);
+        writeln("mdRStr=", mdRStr);
         writeln("mdRLen=", mdRLen);
+        writeln("mdBlk=", mdBlk);
+        for i in 0..#mdNumChunks {
+          writeln("chunk (", mData(i).pdr, ') @', mData(i).dataOff);
+        }
       }
       writeln("noinit_data=", noinit_data);
       }
@@ -818,10 +849,9 @@ module DefaultRectangular {
       // data in an array alias will be destroyed when the original array
       // is destroyed.
       if isalias {
-        // A multi-ddata alias will have its own shiftedDataVec if it
-        // is indexed differently than its parent.
-        if !defRectSimpleDData && shiftedDataVec != nil {
-          _ddata_free(shiftedDataVec);
+        // A multi-ddata alias nevertheless has its own mData.
+        if !defRectSimpleDData {
+          _ddata_free(mData);
         }
 
         return;
@@ -844,9 +874,8 @@ module DefaultRectangular {
             dsiDestroyDataHelper(dataChunk(0), numElts);
           } else {
             for chunk in 0..#mdNumChunks {
-              const (lo, hi) = mdChunk2Ind(chunk);
               const chunkSize = if mdRLen == 0 then 0
-                                else numElts / mdRLen * (hi - lo + 1);
+                                else numElts / mdRLen * mData(chunk).pdr.length;
               dsiDestroyDataHelper(dataChunk(chunk), chunkSize);
             }
           }
@@ -859,57 +888,29 @@ module DefaultRectangular {
         for chunk in 0..#mdNumChunks {
           _ddata_free(dataChunk(chunk));
         }
-        _ddata_free(dataVec);
-        if shiftedDataVec != nil {
-          _ddata_free(shiftedDataVec);
-        }
+        _ddata_free(mData);
       }
     }
 
-    inline proc data(i: idxType) ref where defRectSimpleDData
-      return data1(i);
-
-    inline proc data(i: 2*idxType) ref where !defRectSimpleDData
-      return dataVec(i(1))(i(2));
-
     inline proc dataChunk(i) ref {
       if defRectSimpleDData then
-        return data1;
+        return data;
       else {
-        //
-        // This sometimes gets called even when the array doesn't
-        // have any data in it.  In this case the multi-ddata vector
-        // is nil, so we can't reference that.  Return the regular
-        // data block instead; caller won't dereference it anyway.
-        //
-        if dataVec == nil then
-          return data1;
-        else
-          return dataVec(i);
+        return mData(i).data;
       }
     }
 
     inline proc theDataChunk(i: idxType) ref {
       if defRectSimpleDData {
         if earlyShiftData && !stridable then
-          return shiftedData1;
+          return shiftedData;
         else
-          return data1;
+          return data;
       } else {
-        if earlyShiftData && !stridable {
-          //
-          // This sometimes gets called even when the array doesn't
-          // have any data in it.  In this case the multi-ddata vector
-          // is nil, so we can't reference that.  Return the regular
-          // data block instead; caller won't dereference it anyway.
-          //
-          if shiftedDataVec == nil then
-            return shiftedData1;
-          else
-            return shiftedDataVec(i);
-        }
+        if earlyShiftData && !stridable then
+          return mData(i).shiftedData;
         else
-          return dataVec(i);
+          return mData(i).data;
       }
     }
 
@@ -1047,40 +1048,18 @@ module DefaultRectangular {
             const (chunkLo, _) = getDataIndex(dom.dsiLow);
             const (chunkHi, _) = getDataIndex(dom.dsiHigh);
 
-            // first chunk
-            {
-              const dd = theDataChunk(chunkLo);
-              const (_, hi) = mdChunk2Ind(chunkLo);
-              const (_, chunkFirst) = getDataIndex(dom.dsiLow);
-              const chunkLast = chunkFirst + (hi - dom.dsiLow) * step;
-              for i in chpl_direct_pos_stride_range_iter(chunkFirst,
-                                                         chunkLast,
-                                                         step) do
-                yield dd(i);
-            }
-
-            // middle chunks
-            for chunk in chunkLo+1..chunkHi-1 {
-              const dd = theDataChunk(chunk);
-              const (lo, hi) = mdChunk2Ind(chunk);
-              const (_, chunkFirst) = getDataIndex(lo);
-              const chunkLast = chunkFirst + (hi - lo) * step;
-              for i in chpl_direct_pos_stride_range_iter(chunkFirst,
-                                                         chunkLast,
-                                                         step) do
-                yield dd(i);
-            }
-
-            // last chunk
-            {
-              const dd = theDataChunk(chunkHi);
-              const (lo, _) = mdChunk2Ind(chunkHi);
-              const (_, chunkFirst) = getDataIndex(lo);
-              const chunkLast = chunkFirst + (dom.dsiHigh - lo) * step;
-              for i in chpl_direct_pos_stride_range_iter(chunkFirst,
-                                                         chunkLast,
-                                                         step) do
-                yield dd(i);
+            for chunk in chunkLo..chunkHi {
+              if mData(chunk).pdr.length > 0 {
+                const dd = theDataChunk(chunk);
+                const lo = mData(chunk).pdr.low;
+                const hi = mData(chunk).pdr.high;
+                const (_, chunkFirst) = getDataIndex(lo);
+                const chunkLast = chunkFirst + (hi - lo) * step;
+                for i in chpl_direct_pos_stride_range_iter(chunkFirst,
+                                                           chunkLast,
+                                                           step) do
+                  yield dd(i);
+              }
             }
           }
         } else {
@@ -1206,19 +1185,24 @@ module DefaultRectangular {
       } else {
         const mdPDLow = dom.dsiDim(mdParDim).low;
         const chunk = mdInd2Chunk(mdPDLow + followThis(mdParDim).low);
-        const chunkLast = mdInd2Chunk(mdPDLow + followThis(mdParDim).high);
-        if chunkLast == chunk {
+        if mdPDLow + followThis(mdParDim).high <= mData(chunk).pdr.high {
+          //
+          // entire followThis is in one multi-data chunk
+          // TODO: is it ever otherwise?
+          //
+
           //
           // shiftedData{Vec} is offset from data{Vec}, forward by
           // origin and backward by dom.dsiLow.  The domain follower
           // offsets forward by dom.dsiLow.  Combining these lets us
           // reference data{Vec} using the 0-based indexes passed in.
           //
-          var dd = shiftedDataVec(chunk);
+          // gbt TODO: change to using .data here
+          //
+          var dd = mData(chunk).shiftedData;
           if chunk != 0 {
-            const (lo, _) = mdChunk2Ind(chunk);
-            dd = _ddata_shift(eltType, dd,
-                              -((lo - mdRLo) * blk(mdParDim)):idxSignedType);
+            const ddShift = mData(chunk).dataOff;
+            dd = _ddata_shift(eltType, dd, -ddShift:idxSignedType);
           }
           for ind in dom.these(tag=iterKind.follower, followThis,
                                tasksPerLocale,
@@ -1284,12 +1268,11 @@ module DefaultRectangular {
                               // Not bothering to check for over/underflow
                               origin:idxSignedType - factoredOffs:idxSignedType;
           if defRectSimpleDData {
-            shiftedData1 = _ddata_shift(eltType, dataChunk(0), shiftDist);
+            shiftedData = _ddata_shift(eltType, dataChunk(0), shiftDist);
           } else {
-            shiftedDataVec = _ddata_allocate(_ddata(eltType), mdNumChunks);
             for i in 0..#mdNumChunks {
-              shiftedDataVec(i) = _ddata_shift(eltType, dataChunk(i),
-                                               shiftDist);
+              mData(i).shiftedData = _ddata_shift(eltType, mData(i).data,
+                                                  shiftDist);
             }
           }
         }
@@ -1311,7 +1294,7 @@ module DefaultRectangular {
       var size = blk(1) * dom.dsiDim(1).length;
 
       if defRectSimpleDData {
-        data1 = _ddata_allocate(eltType, size);
+        data = _ddata_allocate(eltType, size);
       } else {
         //
         // Checking the size first (and having a large-ish size hurdle)
@@ -1326,10 +1309,8 @@ module DefaultRectangular {
         }
         else {
           const (numChunks, parDim) =
-            _computeChunkStuff(here.getChildCount(),
-                               true /* ignoreRunning */,
-                               1 /* minIndicesPerTask */,
-                               dom.ranges);
+            _computeChunkStuff(here.getChildCount(), ignoreRunning=true,
+                               minSize=1, ranges=dom.ranges);
           if numChunks == 0 {
             mdParDim = 1;
             mdNumChunks = 1;
@@ -1340,18 +1321,37 @@ module DefaultRectangular {
         }
         mdRLo = dom.dsiDim(mdParDim).alignedLow;
         mdRHi = dom.dsiDim(mdParDim).alignedHigh;
+        mdRStr = abs(dom.dsiDim(mdParDim).stride):idxType;
         mdRLen = dom.dsiDim(mdParDim).length;
-        dataVec = _ddata_allocate(_ddata(eltType), mdNumChunks);
+        mdBlk = 1;
+        mData = _ddata_allocate(_multiData(eltType=eltType,
+                                           idxType=idxType),
+                                mdNumChunks);
+
+        //
+        // If just a single chunk then get memory from anywhere but if
+        // more then get each chunk's memory from the corresponding
+        // sublocale.
+        //
         if mdNumChunks == 1 {
-          // single chunk: get memory from anywhere
-          dataVec(0) = _ddata_allocate(eltType, size);
+          if stridable then
+            mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high
+                           by dom.dsiDim(mdParDim).stride;
+          else
+            mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high;
+          mData(0).data = _ddata_allocate(eltType, size);
         } else {
-          // multiple chunks: get each from the corresponding sublocale
+          var dataOff: idxType = 0;
           for i in 0..#mdNumChunks do local on here.getChild(i) {
+            mData(i).dataOff  = dataOff;
             const (lo, hi) = mdChunk2Ind(i);
-            const chunkLen = (hi - lo) / abs(dom.dsiDim(mdParDim).stride) + 1;
-            const chunkSize = size / mdRLen * chunkLen;
-            dataVec(i) = _ddata_allocate(eltType, chunkSize);
+            if stridable then
+              mData(i).pdr = lo..hi by dom.dsiDim(mdParDim).stride;
+            else
+              mData(i).pdr = lo..hi;
+            const chunkSize = size / mdRLen * mData(i).pdr.length;
+            mData(i).data = _ddata_allocate(eltType, chunkSize);
+            dataOff += chunkSize;
           }
         }
       }
@@ -1361,24 +1361,25 @@ module DefaultRectangular {
         dataAllocRange = dom.dsiDim(1);
     }
 
-    inline proc mdInd2Chunk(ind, mdnc=mdNumChunks,
-                            mdrlo=mdRLo, mdrlen=mdRLen, str=1:idxType)
+    inline proc mdInd2Chunk(ind)
       where !defRectSimpleDData {
       if stridable then
-        return ((((ind - mdrlo) / str) * mdnc:idxType) / mdrlen):int;
+        return (((ind - mdRLo) / mdRStr * mdBlk * mdNumChunks:idxType)
+                / mdRLen):int;
       else
-        return (((ind - mdrlo) * mdnc:idxType) / mdrlen):int;
+        return (((ind - mdRLo) * mdBlk * mdNumChunks:idxType) / mdRLen):int;
     }
 
-    inline proc mdChunk2Ind(chunk, mdnc=mdNumChunks,
-                            mdrlo=mdRLo, mdrhi=mdRHi, mdrlen=mdRLen,
-                            str=1:idxType)
+    inline proc mdChunk2Ind(chunk)
       where !defRectSimpleDData {
       if stridable {
-        const (lo, hi) = _computeBlock(mdrlen, mdnc, chunk, mdrhi - mdrlo, 0, 0);
-        return (lo * str + mdrlo, hi * str + mdrlo);
+        var (lo, hi) = _computeBlock(mdRLen, mdNumChunks, chunk,
+                                     (mdRHi - mdRLo) / mdRStr, 0, 0);
+        lo = lo * mdRStr + mdRLo;
+        hi = hi * mdRStr + mdRLo;
+        return (lo, hi);
       } else {
-        return _computeBlock(mdrlen, mdnc, chunk, mdrhi, mdrlo, mdrlo);
+        return _computeBlock(mdRLen, mdNumChunks, chunk, mdRHi, mdRLo, mdRLo);
       }
     }
 
@@ -1398,11 +1399,8 @@ module DefaultRectangular {
           if mdNumChunks == 1 {
             return (0, sum);
           } else {
-            const chunk = mdInd2Chunk(ind(mdParDim), mdNumChunks, mdRLo,
-                                      mdRLen, str);
-            const (lo, _) = mdChunk2Ind(chunk, mdNumChunks, mdRLo, mdRHi,
-                                        mdRLen);
-            return (chunk, sum - (lo - mdRLo) * blk(mdParDim) / str);
+            const chunk = mdInd2Chunk(ind(mdParDim));
+            return (chunk, sum - mData(chunk).dataOff);
           }
         }
 
@@ -1418,11 +1416,8 @@ module DefaultRectangular {
           if mdNumChunks == 1 {
             return (0, sum);
           } else {
-            const chunk = mdInd2Chunk(ind(mdParDim), mdNumChunks, mdRLo,
-                                      mdRLen);
-            const (lo, _) = mdChunk2Ind(chunk, mdNumChunks, mdRLo, mdRHi,
-                                        mdRLen);
-            return (chunk, sum - (lo - mdRLo) * blk(mdParDim));
+            const chunk = mdInd2Chunk(ind(mdParDim));
+            return (chunk, sum - mData(chunk).dataOff);
           }
         }
 
@@ -1533,28 +1528,55 @@ module DefaultRectangular {
       alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                            idxType=d.idxType,
                                            stridable=d.stridable,
-                                           dom=d, noinit_data=true,
+                                           dom=d, mdAlias=true,
+                                           noinit_data=true,
                                            str=str,
                                            blk=blk);
-      alias.data1 = data1;
-      if !defRectSimpleDData {
-        alias.dataVec = dataVec;
+      if defRectSimpleDData {
+        alias.data = data;
+      } else {
+        alias.mData = _ddata_allocate(_multiData(eltType=eltType,
+                                                 idxType=idxType),
+                                      mdNumChunks);
+        for i in 0..#mdNumChunks {
+          alias.mData(i).dataOff = mData(i).dataOff;
+          alias.mData(i).data = mData(i).data;
+        }
       }
       //alias.numelm = numelm;
-      //chpl_debug_writeln("DR.dsiReindex blk: ", blk, " stride: ",dom.dsiDim(1).stride," str:",str(1));
       adjustBlkOffStrForNewDomain(d, alias);
       alias.origin = origin:d.idxType;
       if !defRectSimpleDData {
         alias.mdParDim = mdParDim;
         alias.mdNumChunks = mdNumChunks;
-        const lowOff = d.dsiDim(mdParDim).low - dom.dsiDim(mdParDim).low;
-        alias.mdRLo = mdRLo + lowOff;
-        alias.mdRHi = mdRHi + lowOff;
+        const thisStr = abs(dom.dsiDim(mdParDim).stride);
+        const aliasStr = abs(d.dsiDim(mdParDim).stride);
+        alias.mdRLo = d.dsiDim(mdParDim).low
+                      - (dom.dsiDim(mdParDim).low - mdRLo) / thisStr * aliasStr;
+        alias.mdRHi = d.dsiDim(mdParDim).low + (mdRLen - 1) * aliasStr;
+        alias.mdRStr = abs(d.dsiDim(mdParDim).stride):idxType;
         alias.mdRLen = mdRLen;
+        alias.mdBlk = thisStr / mdRStr;
+        const thisLo = dom.dsiDim(mdParDim).low;
+        const aliasLo = d.dsiDim(mdParDim).low;
+        if alias.stridable {
+          for i in 0..#mdNumChunks {
+            alias.mData(i).pdr =
+              ((mData(i).pdr.low - thisLo) / thisStr * aliasStr + aliasLo)
+              ..((mData(i).pdr.high - thisLo) / thisStr * aliasStr + aliasLo)
+              by aliasStr;
+          }
+        } else {
+          for i in 0..#mdNumChunks {
+            alias.mData(i).pdr =
+              ((mData(i).pdr.low - thisLo) / thisStr + aliasLo)
+              ..((mData(i).pdr.high - thisLo) / thisStr + aliasLo);
+          }
+        }
       }
       alias.computeFactoredOffs();
-      alias.initShiftedData();
       }
+      alias.initShiftedData();
       return alias;
     }
 
@@ -1598,10 +1620,18 @@ module DefaultRectangular {
         alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                              idxType=idxType,
                                              stridable=d.stridable,
-                                             dom=d, noinit_data=true);
-        alias.data1 = data1;
-        if !defRectSimpleDData {
-          alias.dataVec = dataVec;
+                                             dom=d, mdAlias=true,
+                                             noinit_data=true);
+        if defRectSimpleDData {
+          alias.data = data;
+        } else {
+          alias.mData = _ddata_allocate(_multiData(eltType=eltType,
+                                                   idxType=idxType),
+                                        mdNumChunks);
+          for i in 0..#mdNumChunks {
+            alias.mData(i).dataOff = mData(i).dataOff;
+            alias.mData(i).data = mData(i).data;
+          }
         }
         //alias.numelm = numelm;
         alias.blk = blk;
@@ -1622,7 +1652,26 @@ module DefaultRectangular {
           alias.mdNumChunks = mdNumChunks;
           alias.mdRLo = mdRLo;
           alias.mdRHi = mdRHi;
+          alias.mdRStr = mdRStr;
           alias.mdRLen = mdRLen;
+          alias.mdBlk = mdBlk;
+          if alias.stridable {
+            for i in 0..#mdNumChunks {
+              alias.mData(i).pdr =
+                strideAlignUp(max(mData(i).pdr.low, d.dsiDim(mdParDim).low),
+                              d.dsiDim(mdParDim))
+                ..strideAlignDown(min(mData(i).pdr.high,
+                                      d.dsiDim(mdParDim).high),
+                                  d.dsiDim(mdParDim))
+                by d.dsiDim(mdParDim).stride;
+            }
+          } else {
+            for i in 0..#mdNumChunks {
+              alias.mData(i).pdr
+                = max(mData(i).pdr.low, d.dsiDim(mdParDim).low)
+                ..min(mData(i).pdr.high, d.dsiDim(mdParDim).high);
+            }
+          }
         }
         alias.computeFactoredOffs();
         alias.initShiftedData();
@@ -1633,6 +1682,12 @@ module DefaultRectangular {
       return alias;
     }
 
+    proc strideAlignUp(lo, r)
+      return r.low + (lo - r.low + abs(r.stride) - 1) / r.stride * r.stride;
+
+    proc strideAlignDown(hi, r)
+      return hi - (hi - r.low) % abs(r.stride);
+
     pragma "modifies array blk"
     proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=newRank,
@@ -1642,14 +1697,23 @@ module DefaultRectangular {
       alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
                                            idxType=idxType,
                                            stridable=newStridable,
-                                           dom=d, noinit_data=true);
-      alias.data1 = data1;
-      if !defRectSimpleDData {
-        alias.dataVec = dataVec;
+                                           dom=d, mdAlias=true,
+                                           noinit_data=true);
+      if defRectSimpleDData {
+        alias.data = data;
+      } else {
+        alias.mData = _ddata_allocate(_multiData(eltType=eltType,
+                                                 idxType=idxType),
+                                      mdNumChunks);
+        for i in 0..#mdNumChunks {
+          alias.mData(i).dataOff = mData(i).dataOff;
+          alias.mData(i).data = mData(i).data;
+        }
       }
       //alias.numelm = numelm;
-      var mdDone = false;   // only used when !defRectSimpleDData
-      var mdScalarParDim = 0:idxType; // only used when !defRectSimpleDData
+      var mdpdIsRange: bool;
+      var mdpdJ: idxType;
+      var mdpdJVal: idxType;
       var i = 1;
       alias.origin = origin;
       for param j in 1..args.size {
@@ -1659,63 +1723,82 @@ module DefaultRectangular {
           alias.blk(i) = blk(j);
           alias.str(i) = str(j);
           if !defRectSimpleDData && j == mdParDim {
+            mdpdIsRange = true;
             alias.mdParDim = i;
-            alias.mdNumChunks = mdNumChunks;
-            const lowOff = d.dsiDim(i).low - dom.dsiDim(mdParDim).low;
-            alias.mdRLo = mdRLo + lowOff;
-            alias.mdRHi = mdRHi + lowOff;
-            alias.mdRLen = mdRLen;
-            mdDone = true;
           }
           i += 1;
         } else {
           alias.origin += blk(j) * (args(j) - off(j)) / str(j);
           if !defRectSimpleDData && j == mdParDim {
-            //
-            // We handle scalarizing the mdParDim'th dimension below,
-            // because we'll need the value of alias.blk(1) but that
-            // may not have been set yet.  However, we'll also need
-            // the value of args(mdParDim), but we cannot actually
-            // say args(mdParDim) either here or there because args()
-            // isn't homogeneous and mdParDim isn't param, so preserve
-            // that value now.
-            //
-            mdScalarParDim = args(j);
+            mdpdIsRange = false;
+            mdpdJ = j;
+            mdpdJVal = args(j);
           }
         }
       }
       alias.computeFactoredOffs();
-      if !defRectSimpleDData && !mdDone {
-        //
-        // Handle the case in which !isRange(args(mdParDim)).
-        //
-        // If the mdParDim'th dimension is removed, for simplicity
-        // we just switch to mdParDim==1 and a single chunk (the one
-        // that holds the args(j)'th elements of the original).  But
-        // we don't have the information we would need in order to
-        // compute the new mdPDOrigin directly.  Instead, we figure
-        // where the first element of the alias was in the chunk in
-        // the original array and where the alias's domain would
-        // place it instead, and compute the alias's mdPDOrigin from
-        // the difference.  We force unshifted data index calculation
-        // because this.stridable may != alias.stridable and we need
-        // the calculation to be done the same way for both.
-        //
-        alias.mdParDim = 1;
-        alias.mdNumChunks = 1;
-        alias.mdRLo = d.dsiDim(1).alignedLow;
-        alias.mdRHi = d.dsiDim(1).alignedHigh;
-        alias.mdRLen = d.dsiDim(1).length;
-        var indLo: rank*dom.idxType;
-        for param j in 1..args.size {
-          if isRange(args(j)) {
-            indLo(j) = dom.dsiDim(j).low;
+
+      if !defRectSimpleDData {
+        if mdpdIsRange {
+          
+          alias.mdNumChunks = mdNumChunks;
+          alias.mdRLo = mdRLo;
+          alias.mdRHi = mdRHi;
+          alias.mdRStr = mdRStr;
+          alias.mdRLen = mdRLen;
+          alias.mdBlk = mdBlk;
+          if alias.stridable {
+            for i in 0..#mdNumChunks {
+              alias.mData(i).pdr =
+                max(mData(i).pdr.low, d.dsiDim(alias.mdParDim).low)
+                ..min(mData(i).pdr.high, d.dsiDim(alias.mdParDim).high)
+                by d.dsiDim(alias.mdParDim).stride;
+            }
           } else {
-            indLo(j) = args(j);
+            for i in 0..#mdNumChunks {
+              alias.mData(i).pdr
+                = max(mData(i).pdr.low, d.dsiDim(alias.mdParDim).low)
+                ..min(mData(i).pdr.high, d.dsiDim(alias.mdParDim).high);
+            }
+          }
+        } else {
+          //
+          // If the mdParDim'th dimension is removed then we switch
+          // to a synthesized mdParDim==1, in a single chunk.
+          //
+          var ind: rank*dom.idxType;
+          for param j in 1..args.size {
+            if isRange(args(j)) {
+              ind(j) = dom.dsiDim(j).low;
+            } else {
+              ind(j) = args(j);
+            }
+          }
+          const (chunk, _) = getDataIndex(ind, getShifted=false);
+          const blkRatio = blk(1) / blk(mdParDim) * blk(mdParDim)
+                           / alias.blk(1);
+          alias.mdParDim = 1;
+          alias.mdNumChunks = mdNumChunks;
+          alias.mdRLen = mdRLen * mdBlk * blkRatio;
+          alias.mdRStr = abs(d.dsiDim(1).stride):idxType;
+          alias.mdRLo = d.dsiDim(1).alignedLow - (mdpdJVal - mdRLo) * blkRatio;
+          alias.mdRHi = alias.mdRLo + (alias.mdRLen - 1) * alias.mdRStr;
+          alias.mdBlk = 1;
+          if alias.stridable {
+            for i in 0..#mdNumChunks {
+              const (lo, hi) = alias.mdChunk2Ind(i);
+              alias.mData(i).pdr = max(lo, d.dsiDim(1).low)
+                                   ..min(hi, d.dsiDim(1).high)
+                                   by d.dsiDim(1).stride;
+            }
+          } else {
+            for i in 0..#mdNumChunks {
+              const (lo, hi) = alias.mdChunk2Ind(i);
+              alias.mData(i).pdr = max(lo, d.dsiDim(1).low)
+                                   ..min(hi, d.dsiDim(1).high);
+            }
           }
         }
-        alias.dataVec = _ddata_allocate(_ddata(eltType), 1);
-        alias.dataVec(0) = dataVec(getDataIndex(indLo)(1));
       }
       alias.initShiftedData();
       }
@@ -1737,16 +1820,17 @@ module DefaultRectangular {
         origin = copy.origin;
         factoredOffs = copy.factoredOffs;
         dsiDestroyArr(false);
-        if !defRectSimpleDData {
+        if defRectSimpleDData {
+          data = copy.data;
+        } else {
           mdParDim = copy.mdParDim;
           mdNumChunks = copy.mdNumChunks;
           mdRLo = copy.mdRLo;
           mdRHi = copy.mdRHi;
+          mdRStr = copy.mdRStr;
           mdRLen = copy.mdRLen;
-        }
-        data1 = copy.data1;
-        if !defRectSimpleDData {
-          dataVec = copy.dataVec;
+          mdBlk = copy.mdBlk;
+          mData = copy.mData;
         }
         // We can't call initShiftedData here because the new domain
         // has not yet been updated (this is called from within the
@@ -1757,10 +1841,11 @@ module DefaultRectangular {
           // from removing this line seemed inconclusive, which may indicate
           // that the check is not necessary, but it seemed like unnecessary
           // work for something with no immediate reward.
-          if d.numIndices > 0 then
-            shiftedData1 = copy.shiftedData1;
-          if !defRectSimpleDData then
-            shiftedDataVec = copy.shiftedDataVec;
+          if d.numIndices > 0 {
+            if defRectSimpleDData {
+              shiftedData = copy.shiftedData;
+            }
+          }
         }
         // also set dataAllocRange
         dataAllocRange = copy.dataAllocRange;
@@ -1784,24 +1869,22 @@ module DefaultRectangular {
       rad.origin = origin;
       rad.factoredOffs = factoredOffs;
       if defRectSimpleDData {
-        rad.data1 = data1;
-        rad.shiftedData1 = shiftedData1;
+        rad.data = data;
+        rad.shiftedData = shiftedData;
       }
       else {
         rad.mdParDim = mdParDim;
         rad.mdNumChunks = mdNumChunks;
         rad.mdRLo = mdRLo;
         rad.mdRHi = mdRHi;
+        rad.mdRStr = mdRStr;
         rad.mdRLen = mdRLen;
-        rad.dataVec = _ddata_allocate(_ddata(eltType), rad.mdNumChunks);
+        rad.mdBlk = mdBlk;
+        rad.mData = _ddata_allocate(_multiData(eltType=eltType,
+                                               idxType=idxType),
+                                    rad.mdNumChunks);
         for i in 0..#mdNumChunks do
-          rad.dataVec(i) = dataVec(i);
-        if shiftedDataVec != nil {
-          rad.shiftedDataVec = _ddata_allocate(_ddata(eltType),
-                                               rad.mdNumChunks);
-          for i in 0..#mdNumChunks do
-            rad.shiftedDataVec(i) = shiftedDataVec(i);
-        }
+          rad.mData(i) = mData(i);
       }
       return rad;
     }
@@ -2024,13 +2107,15 @@ module DefaultRectangular {
         } else {
           var chunkLow = dom.dsiLow;
           for chunk in 0..#mdNumChunks {
-            const src = this.theDataChunk(chunk);
-            const (lo, hi) = mdChunk2Ind(chunk);
-            chunkLow(mdParDim) = lo;
-            const (_, idx) = getDataIndex(chunkLow);
-            const chunkLen = len / dom.dsiDim(mdParDim).length * (hi - lo + 1);
-            const chunkSize = chunkLen:ssize_t * elemSize:ssize_t;
-            f.writeBytes(_ddata_shift(eltType, src, idx), chunkSize);
+            if mData(chunk).pdr.length > 0 {
+              const src = this.theDataChunk(chunk);
+              chunkLow(mdParDim) = mData(chunk).pdr.low;
+              const (_, idx) = getDataIndex(chunkLow);
+              const chunkLen = len / dom.dsiDim(mdParDim).length
+                               * mData(chunk).pdr.length;
+              const chunkSize = chunkLen:ssize_t * elemSize:ssize_t;
+              f.writeBytes(_ddata_shift(eltType, src, idx), chunkSize);
+            }
           }
         }
       }
@@ -2068,13 +2153,15 @@ module DefaultRectangular {
         } else {
           var chunkLow = dom.dsiLow;
           for chunk in 0..#mdNumChunks {
-            const src = this.theDataChunk(chunk);
-            const (lo, hi) = mdChunk2Ind(chunk);
-            chunkLow(mdParDim) = lo;
-            const (_, idx) = getDataIndex(chunkLow);
-            const chunkLen = len / dom.dsiDim(mdParDim).length * (hi - lo + 1);
-            const chunkSize = chunkLen:ssize_t * elemSize:ssize_t;
-            f.readBytes(_ddata_shift(eltType, src, idx), chunkSize);
+            if mData(chunk).pdr.length > 0 {
+              const src = this.theDataChunk(chunk);
+              chunkLow(mdParDim) = mData(chunk).pdr.low;
+              const (_, idx) = getDataIndex(chunkLow);
+              const chunkLen = len / dom.dsiDim(mdParDim).length
+                               * mData(chunk).pdr.length;
+              const chunkSize = chunkLen:ssize_t * elemSize:ssize_t;
+              f.readBytes(_ddata_shift(eltType, src, idx), chunkSize);
+            }
           }
         }
       }
@@ -2191,8 +2278,8 @@ module DefaultRectangular {
       //
       const (chunk0, Aidx) = getDataIndex(Alo);
       const Adata = _ddata_shift(eltType, this.theDataChunk(chunk0), Aidx);
-      const (_, hi0) = mdChunk2Ind(chunk0);
-      var len0 = ((hi0 - Alo(mdParDim) + 1) * blk(mdParDim)).safeCast(size_t);
+      var len0 = ((mData(chunk0).pdr.high - Alo(mdParDim) + 1) * blk(mdParDim))
+                 .safeCast(size_t);
       const (_, Bidx) = getDataIndex(Blo);
       const Bdata = _ddata_shift(eltType, B._value.theDataChunk(chunk0), Bidx);
       doiBulkTransferHelper(B, Adata, Bdata, min(len0, len));
@@ -2203,8 +2290,7 @@ module DefaultRectangular {
         var chunk = chunk0 + 1;
         do {
           lenRemain -= chunkLen;
-          const (chunkLo, chunkHi) = mdChunk2Ind(chunk0);
-          chunkLen = ((chunkHi - chunkLo + 1) * blk(mdParDim)).safeCast(size_t);
+          chunkLen = (mData(chunk).pdr.length * blk(mdParDim)).safeCast(size_t);
           doiBulkTransferHelper(B, dataChunk(chunk), B._value.dataChunk(chunk),
                                 min(chunkLen, lenRemain));
         } while lenRemain > chunkLen;

@@ -1158,10 +1158,9 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if ((defRectSimpleDData && radata(rlocIdx).shiftedData1 != nil)
-          || radata(rlocIdx).shiftedDataVec != nil) {
+      if radata(rlocIdx).shiftedDataChunk(0) != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(myLocArr.stridable, i);
-        return radata(rlocIdx).shiftedData(dataIdx);
+        return radata(rlocIdx).shiftedDataElem(dataIdx);
       }
     }
   }
@@ -1612,30 +1611,12 @@ proc StencilArr.dsiReindex(d: StencilDom) {
         if sameDom {
           // If we the reindex domain is the same as that of this array,
           //  the RAD cache will be the same you can just copy the values
-          //  directly into the alias's RAD cache (except: if multi-ddata,
-          //  alias and original mustn't share RAD cache ddata vectors)
+          //  directly into the alias's RAD cache
           if locArr[i].locRAD {
             alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
                                                      d.stridable,
                                                      dom.dist.targetLocDom);
             alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
-
-            for rad in alias.locArr[i].locRAD.RAD {
-              const dd = rad.dataVec;
-              if dd != nil {
-                rad.dataVec = _ddata_allocate(_ddata(rad.eltType),
-                                              rad.mdNumChunks);
-                for i in 0..#rad.mdNumChunks do
-                  rad.dataVec(i) = dd(i);
-              }
-              const sdd = rad.shiftedDataVec;
-              if dd != nil {
-                rad.shiftedDataVec = _ddata_allocate(_ddata(rad.eltType),
-                                                     rad.mdNumChunks);
-                for i in 0..#rad.mdNumChunks do
-                  rad.shiftedDataVec(i) = sdd(i);
-              }
-            }
           }
         }
       }

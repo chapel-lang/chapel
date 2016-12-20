@@ -1078,12 +1078,8 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
       if mdNumChunks == 1 {
         return (0, sum);
       } else {
-        const mdStr = abs(str(mdParDim)):idxType;
-        const chunk = mdInd2Chunk(ind(mdParDim) / mdStr, mdNumChunks, mdRLo,
-                                  mdRLen);
-        const (lo, _) = mdChunk2Ind(chunk, mdNumChunks, mdRLo, mdRHi, mdRLen);
-        sum -= (lo - mdRLo) * blk(mdParDim) / mdStr;
-        return (chunk, sum);
+        const chunk = mdInd2Chunk(ind(mdParDim));
+        return (chunk, sum - mData(chunk).dataOff);
       }
     }
   } else {
@@ -1098,10 +1094,8 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
       if mdNumChunks == 1 {
         return (0, sum);
       } else {
-        const chunk = mdInd2Chunk(ind(mdParDim), mdNumChunks, mdRLo, mdRLen);
-        const (lo, _) = mdChunk2Ind(chunk, mdNumChunks, mdRLo, mdRHi, mdRLen);
-        sum -= (lo - mdRLo) * blk(mdParDim);
-        return (chunk, sum);
+        const chunk = mdInd2Chunk(ind(mdParDim));
+        return (chunk, sum - mData(chunk).dataOff);
       }
     }
   }
@@ -1159,10 +1153,9 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if ((defRectSimpleDData && radata(rlocIdx).shiftedData1 != nil)
-          || (!defRectSimpleDData && radata(rlocIdx).shiftedDataVec != nil)) {
+      if radata(rlocIdx).shiftedDataChunk(0) != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(myLocArr.stridable, i);
-        return radata(rlocIdx).shiftedData(dataIdx);
+        return radata(rlocIdx).shiftedDataElem(dataIdx);
       }
     }
   }
@@ -1426,32 +1419,12 @@ proc BlockArr.dsiReindex(d: BlockDom) {
         if sameDom {
           // If we the reindex domain is the same as that of this array,
           //  the RAD cache will be the same you can just copy the values
-          //  directly into the alias's RAD cache (except: if multi-ddata,
-          //  alias and original mustn't share RAD cache ddata vectors)
+          //  directly into the alias's RAD cache
           if locArr[i].locRAD {
             alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
                                                      d.stridable,
                                                      dom.dist.targetLocDom);
             alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
-
-            if !defRectSimpleDData {
-              for rad in alias.locArr[i].locRAD.RAD {
-                const dd = rad.dataVec;
-                if dd != nil {
-                  rad.dataVec = _ddata_allocate(_ddata(rad.eltType),
-                                                rad.mdNumChunks);
-                  for i in 0..#rad.mdNumChunks do
-                    rad.dataVec(i) = dd(i);
-                }
-                const sdd = rad.shiftedDataVec;
-                if sdd != nil {
-                  rad.shiftedDataVec = _ddata_allocate(_ddata(rad.eltType),
-                                                       rad.mdNumChunks);
-                  for i in 0..#rad.mdNumChunks do
-                    rad.shiftedDataVec(i) = sdd(i);
-                }
-              }
-            }
           }
         }
       }
