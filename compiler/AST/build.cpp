@@ -2383,11 +2383,13 @@ FnSymbol* buildLambda(FnSymbol *fn) {
 
 // Replaces the dummy function name "_" with the real name, sets the 'this'
 // intent tag. For methods, it also adds a method tag and "this" declaration.
+// receiver is typically an UnresolvedSymExpr("class_name") in order
+// to declare a method outside of a record/class.
 FnSymbol*
 buildFunctionSymbol(FnSymbol*   fn,
                     const char* name,
                     IntentTag   thisTag,
-                    const char* class_name)
+                    Expr*       receiver)
 {
   fn->cname   = fn->name = astr(name);
   fn->thisTag = thisTag;
@@ -2395,12 +2397,12 @@ buildFunctionSymbol(FnSymbol*   fn,
   if (fn->name[0] == '~' && fn->name[1] != '\0')
     fn->addFlag(FLAG_DESTRUCTOR);
 
-  if (class_name)
+  if (receiver)
   {
     ArgSymbol* arg = new ArgSymbol(thisTag,
                                    "this",
                                    dtUnknown,
-                                   new UnresolvedSymExpr(class_name));
+                                   receiver);
     fn->_this = arg;
     if (thisTag == INTENT_TYPE) {
       setupTypeIntentArg(arg);

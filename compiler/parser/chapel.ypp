@@ -415,6 +415,7 @@
 %type <pForallIntents> forall_intent_clause forall_intent_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
+%type <pexpr> fn_decl_receiver_expr
 %type <procIter> proc_or_iter
 %type <pfnsymbol> linkage_spec
 %type <pIntentExpr> intent_expr
@@ -918,15 +919,20 @@ fn_decl_stmt_inner:
       $$ = buildFunctionSymbol($3, $2, $1, NULL);
       $$->addFlag(FLAG_ASSIGNOP);
     }
-| opt_this_intent_tag ident TDOT fn_ident opt_formal_ls
+| opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
     {
       $$ = buildFunctionSymbol($5, $4, $1, $2);
     }
-| opt_this_intent_tag ident TDOT assignop_ident opt_formal_ls
+| opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
     {
       $$ = buildFunctionSymbol($5, $4, $1, $2);
       $$->addFlag(FLAG_ASSIGNOP);
     }
+;
+
+fn_decl_receiver_expr:
+  ident_expr
+| TLP expr TRP        { $$ = $2; }
 ;
 
 fn_ident:

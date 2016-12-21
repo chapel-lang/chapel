@@ -134,7 +134,7 @@ FnSymbol* buildLambda(FnSymbol* fn);
 FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
                               const char* name,
                               IntentTag   thisTag,
-                              const char* class_name);
+                              Expr*       receiver);
 BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              RetTag      optRetTag,
                              Expr*       optRetType,

@@ -8312,6 +8312,28 @@ resolveFns(FnSymbol* fn) {
       fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
     }
   }
+
+  //
+  // make sure methods are in the methods list
+  //
+  if (fn->hasFlag(FLAG_METHOD) && fn->_this != NULL) {
+    Type* thisType = fn->_this->type->getValType();
+    INT_ASSERT(thisType);
+    INT_ASSERT(thisType != dtUnknown);
+    // add it to thisType->methods if it's not already there
+    // TODO: consider making Type::methods into a set
+    bool found = false;
+    forv_Vec(FnSymbol, method, thisType->methods) {
+      if (method == fn) {
+        found = true;
+        break;
+      }
+    }
+    if (!found)
+      thisType->methods.add(fn);
+  }
+
+
 }
 
 
