@@ -26,6 +26,7 @@ Initializing Modules:
        Sys
         SysBasic
       LocaleModelHelpRuntime
+     LocaleModelHelpMem
     LocalesArray
     ChapelDistribution
      List
