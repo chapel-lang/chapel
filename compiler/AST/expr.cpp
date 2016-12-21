@@ -510,8 +510,13 @@ void SymExpr::verify() {
   if (var == NULL)
     INT_FATAL(this, "SymExpr::verify %12d: var is NULL", id);
 
-  if (var != NULL && var->defPoint != NULL && var->defPoint->parentSymbol == NULL)
-    INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
+  if (var->defPoint) {
+    if (var->defPoint->parentSymbol == NULL)
+      INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
+  } else {
+    if (var != rootModule)
+      INT_FATAL(this, "SymExpr::var is a symbol without a defPoint");
+  }
 
   /* Check that:
       - every live SymExpr is in a Symbol's list
