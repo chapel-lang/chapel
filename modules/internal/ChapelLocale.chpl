@@ -158,7 +158,7 @@ module ChapelLocale {
       stack for any task on the current locale, including the
       caller.
     */
-    const callStackSize: size_t;
+    var callStackSize: size_t;
 
     /*
       Get the integer identifier for the top-level locale the
