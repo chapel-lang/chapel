@@ -446,7 +446,7 @@ static bool typeHasRefField(Type *type) {
 }
 
 // Temporarily add a call, resolve it, then remove it.
-// Return the function that the call resolve to.
+// Return the function that the call resolved to, or NULL if it didn't.
 // Either insideBlock or beforeExpr must be != NULL and
 // indicate where the call should be added.
 static FnSymbol*
