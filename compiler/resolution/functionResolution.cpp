@@ -310,7 +310,7 @@ getVisibleFunctions(BlockStmt* block,
 static Expr* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static void resolveDefaultGenericType(CallExpr* call);
-static void resolveDefaultGenericTypeSymExpr(SymExpr* se);
+static Type* resolveDefaultGenericTypeSymExpr(SymExpr* se);
 
 static void
 gatherCandidates(Vec<ResolutionCandidate*>& candidates,
@@ -445,23 +445,25 @@ static bool typeHasRefField(Type *type) {
   return false;
 }
 
-//
-// build reference type
-//
+// Temporarily add a call, resolve it, then remove it.
+// Return the function that the call resolved to, or NULL if it didn't.
+// Either insideBlock or beforeExpr must be != NULL and
+// indicate where the call should be added.
 static FnSymbol*
-resolveUninsertedCall(Type* type, CallExpr* call) {
+resolveUninsertedCall(BlockStmt* insideBlock,
+                      Expr* beforeExpr,
+                      CallExpr* call) {
 
   // In case resolveCall drops other stuff into the tree ahead of the
   // call, we wrap everything in a block for safe removal.
   BlockStmt* block = new BlockStmt();
 
-  if (type->defaultInitializer) {
-    if (type->defaultInitializer->instantiationPoint)
-      type->defaultInitializer->instantiationPoint->insertAtHead(block);
-    else
-      type->symbol->defPoint->insertBefore(block);
+  if (insideBlock) {
+    insideBlock->insertAtHead(block);
+  } else if(beforeExpr) {
+    beforeExpr->insertBefore(block);
   } else {
-    chpl_gen_main->insertAtHead(block);
+    INT_ASSERT(insideBlock != NULL || beforeExpr != NULL);
   }
 
   INT_ASSERT(block->parentSymbol);
@@ -471,6 +473,25 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
   block->remove();
 
   return call->isResolved();
+}
+
+// Resolve a call to do with a particular type.
+static FnSymbol*
+resolveUninsertedCall(Type* type, CallExpr* call) {
+
+  BlockStmt* insideBlock = NULL;
+  Expr* beforeExpr = NULL;
+
+  if (type->defaultInitializer) {
+    if (type->defaultInitializer->instantiationPoint)
+      insideBlock = type->defaultInitializer->instantiationPoint;
+    else
+      beforeExpr = type->symbol->defPoint;
+  } else {
+    insideBlock = chpl_gen_main->body;
+  }
+
+  return resolveUninsertedCall(insideBlock, beforeExpr, call);
 }
 
 //
@@ -1035,10 +1056,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
       SET_LINENO(fn->retExprType->body.tail);
       // Try resolving records/classes with default types
       // e.g. range
-      resolveDefaultGenericTypeSymExpr(se);
-      // re-read the last expr's type since resolveDefaultGenericTypeSymExpr
-      // replaces it.
-      retType = fn->retExprType->body.tail->typeInfo();
+      retType = resolveDefaultGenericTypeSymExpr(se);
     }
   }
   fn->retType = retType;
@@ -4049,33 +4067,61 @@ static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
 
 
 //
-// special case cast of class w/ type variables that is not generic
-//   i.e. type variables are type definitions (have default types)
+// finds the concrete type of a SymExpr when it refers
+// to a generic type. This can happen when the generic type
+// has a default concrete instantiation, e.g.
+//
+//   record R { type t = int; }
+//
+// Assumes that SET_LINENO has been called in the enclosing scope.
+//
+// Returns a concrete type. Replaces a SymExpr referring to
+// a generic type (which could be referring to a TypeSymbol
+// directly or to a VarSymbol with the flag FLAG_TYPE_VARIABLE).
 //
 // also handles some complicated extern vars like
 //   extern var x: c_ptr(c_int)
 // which do not work in the usual order of resolution.
-static void
+static Type*
 resolveDefaultGenericTypeSymExpr(SymExpr* te) {
-  if (TypeSymbol* ts = toTypeSymbol(te->symbol())) {
-    if (AggregateType* ct = toAggregateType(ts->type)) {
-      if (ct->symbol->hasFlag(FLAG_GENERIC)) {
-        CallExpr* cc = new CallExpr(ct->defaultTypeConstructor->name);
-        te->replace(cc);
-        resolveCall(cc);
-        cc->replace(new SymExpr(cc->typeInfo()->symbol));
+
+  // te could refer to a type in two ways:
+  //  1. it could refer to a TypeSymbol directly
+  //  2. it could refer to a VarSymbol with FLAG_TYPE_VARIABLE
+  Type* teRefersToType = NULL;
+
+  if (TypeSymbol* ts = toTypeSymbol(te->symbol()))
+    teRefersToType = ts->type;
+
+  if (VarSymbol* vs = toVarSymbol(te->symbol())) {
+    if (vs->hasFlag(FLAG_TYPE_VARIABLE)) {
+      teRefersToType = vs->typeInfo();
+
+      // Fix for complicated extern vars like
+      // extern var x: c_ptr(c_int);
+      // This really just amounts to an adjustment to the order of resolution.
+      if( vs->hasFlag(FLAG_EXTERN) &&
+          vs->defPoint && vs->defPoint->init &&
+          vs->getValType() == dtUnknown ) {
+        vs->type = resolveTypeAlias(te);
       }
     }
   }
-  if (VarSymbol* vs = toVarSymbol(te->symbol())) {
-    // Fix for complicated extern vars like
-    // extern var x: c_ptr(c_int);
-    if( vs->hasFlag(FLAG_EXTERN) && vs->hasFlag(FLAG_TYPE_VARIABLE) &&
-        vs->defPoint && vs->defPoint->init &&
-        vs->getValType() == dtUnknown ) {
-      vs->type = resolveTypeAlias(te);
+
+  // Now, if te refers to a generic type, replace te with
+  // a concrete type.
+  if (AggregateType* ct = toAggregateType(teRefersToType)) {
+    if (ct->symbol->hasFlag(FLAG_GENERIC)) {
+      CallExpr* cc = new CallExpr(ct->defaultTypeConstructor->name);
+      te->replace(cc);
+      resolveCall(cc);
+      TypeSymbol* retTS = cc->typeInfo()->symbol;
+      cc->replace(new SymExpr(retTS));
+      return retTS->type;
     }
   }
+
+  return te->typeInfo();
 }
 
 static void
@@ -5098,6 +5144,7 @@ resolveCoerce(CallExpr* call) {
 
   INT_ASSERT(fn);
 
+  // Adjust tuple reference-level for return if necessary
   if (toType->symbol->hasFlag(FLAG_TUPLE) &&
       !doNotChangeTupleTypeRefLevel(fn, true)) {
 
@@ -9930,7 +9977,9 @@ static void removeUnusedGlobals()
     // Remove unused global variables
     if (toVarSymbol(def->sym))
       if (toModuleSymbol(def->parentSymbol))
-        if (def->sym->type == dtUnknown)
+        if (def->sym->type == dtUnknown ||
+            (def->sym->type->symbol->hasFlag(FLAG_GENERIC) &&
+             def->sym->hasFlag(FLAG_TYPE_VARIABLE)))
           def->remove();
   }
 }
@@ -10059,9 +10108,12 @@ static void removeRandomPrimitive(CallExpr* call)
     case PRIM_MOVE:
     {
       // Remove types to enable --baseline
-      SymExpr* sym = toSymExpr(call->get(2));
-      if (sym && isTypeSymbol(sym->symbol()))
-        call->remove();
+      SymExpr* se = toSymExpr(call->get(2));
+      if (se && se->symbol()) {
+        Symbol* sym = se->symbol();
+        if (isTypeSymbol(sym) || sym->hasFlag(FLAG_TYPE_VARIABLE))
+          call->remove();
+      }
     }
     break;
 

@@ -985,11 +985,6 @@ module ChapelBase {
   inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
 
-  inline proc chpl__typeAliasInit(type t) type return t;
-  inline proc chpl__typeAliasInit(v) {
-    compilerError("illegal assignment of value to type");
-  }
-
   pragma "dont disable remote value forwarding"
   inline proc _createFieldDefault(type t, init) {
     pragma "no auto destroy" var x: t;

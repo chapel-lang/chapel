@@ -921,6 +921,16 @@ static void applyGetterTransform(CallExpr* call) {
   }
 }
 
+static bool moveMakesTypeAlias(CallExpr* call)
+{
+  if (call->isPrimitive(PRIM_MOVE)) {
+    if (SymExpr* se = toSymExpr(call->get(1)))
+      if (VarSymbol* var = toVarSymbol(se->symbol()))
+        if (var->isType()) return true;
+  }
+  return false;
+}
+
 static void insert_call_temps(CallExpr* call)
 {
   Expr* stmt = call->getStmtExpr();
@@ -990,7 +1000,7 @@ static void insert_call_temps(CallExpr* call)
       //  * making an array type alias, or
       //  * passing the result into the 2nd argument of buildArrayRuntimeType.
       while (cur != NULL) {
-        if (cur->isNamed("chpl__typeAliasInit") ||
+        if (moveMakesTypeAlias(cur) ||
             (cur->isNamed("chpl__buildArrayRuntimeType") && cur->get(2) == sub))
           break;
         sub = cur;
@@ -1132,11 +1142,9 @@ static void fix_def_expr(VarSymbol* var) {
     INT_ASSERT(!type);
     stmt->insertAfter(new CallExpr(PRIM_MOVE,
                                    var,
-                                   new CallExpr("chpl__typeAliasInit",
-                                                init->copy())));
+                                   init->copy()));
     // note: insert_call_temps adjusts auto-destroy in this case
-    // by checking for chpl__typeAliasInit
-
+    // by checking for it with moveMakesTypeAlias
     return;
   }
 
