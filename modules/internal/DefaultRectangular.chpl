@@ -1683,10 +1683,11 @@ module DefaultRectangular {
     }
 
     proc strideAlignUp(lo, r)
-      return r.low + (lo - r.low + abs(r.stride) - 1) / r.stride * r.stride;
+      return r.low + (lo - r.low + abs(r.stride):idxType - 1)
+             / abs(r.stride):idxType * abs(r.stride):idxType;
 
     proc strideAlignDown(hi, r)
-      return hi - (hi - r.low) % abs(r.stride);
+      return hi - (hi - r.low) % abs(r.stride):idxType;
 
     pragma "modifies array blk"
     proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
@@ -1883,8 +1884,10 @@ module DefaultRectangular {
         rad.mData = _ddata_allocate(_multiData(eltType=eltType,
                                                idxType=idxType),
                                     rad.mdNumChunks);
-        for i in 0..#mdNumChunks do
-          rad.mData(i) = mData(i);
+        for i in 0..#mdNumChunks {
+          rad.mData(i).data = mData(i).data;
+          rad.mData(i).shiftedData = mData(i).shiftedData;
+        }
       }
       return rad;
     }
@@ -2078,8 +2081,8 @@ module DefaultRectangular {
   proc DefaultRectangularArr.dsiSerialWrite(f) {
     var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
-    if _isSimpleIoType(this.eltType) && f.binary() &&
-       isNative && this.isDataContiguous() {
+    if _isSimpleIoType(eltType) && f.binary() &&
+       isNative && isDataContiguous() {
       // If we can, we would like to write the array out as a single write op
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the
@@ -2087,86 +2090,76 @@ module DefaultRectangular {
       pragma "no prototype"
       extern proc sizeof(type x): size_t;
       const elemSize = sizeof(eltType);
-      const len = dom.dsiNumIndices;
       if boundsChecking then
-        assert((len:uint*elemSize:uint) <= max(ssize_t):uint,
+        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
                "length of array to write is greater than ssize_t can hold");
       if defRectSimpleDData {
-        const src = this.theDataChunk(0);
-        const idx = getDataIndex(this.dom.dsiLow);
+        const len = dom.dsiNumIndices;
+        const src = theDataChunk(0);
+        const idx = getDataIndex(dom.dsiLow);
         const size = len:ssize_t*elemSize:ssize_t;
         f.writeBytes(_ddata_shift(eltType, src, idx), size);
       } else {
-        if rank == 1 {
-          for chunk in 0..#mdNumChunks {
-            const src = this.theDataChunk(chunk);
-            const idx = getDataIndex(this.dom.dsiLow);
-            const size = len:ssize_t * elemSize:ssize_t;
-            f.writeBytes(_ddata_shift(eltType, src, idx(2)), size);
-          }
-        } else {
-          var chunkLow = dom.dsiLow;
-          for chunk in 0..#mdNumChunks {
-            if mData(chunk).pdr.length > 0 {
-              const src = this.theDataChunk(chunk);
-              chunkLow(mdParDim) = mData(chunk).pdr.low;
-              const (_, idx) = getDataIndex(chunkLow);
-              const chunkLen = len / dom.dsiDim(mdParDim).length
-                               * mData(chunk).pdr.length;
-              const chunkSize = chunkLen:ssize_t * elemSize:ssize_t;
-              f.writeBytes(_ddata_shift(eltType, src, idx), chunkSize);
-            }
+        var indLo = dom.dsiLow;
+        for chunk in 0..#mdNumChunks {
+          const lo = mData(chunk).pdr.low;
+          const hi = mData(chunk).pdr.high;
+          if hi >= lo {
+            const len = hi - lo + 1;
+            const src = theDataChunk(chunk);
+            if isTuple(indLo) then
+              indLo(mdParDim) = lo;
+            else
+              indLo = lo;
+            const (_, idx) = getDataIndex(indLo);
+            const size = len:ssize_t*elemSize:ssize_t;
+            f.writeBytes(_ddata_shift(eltType, src, idx), size);
           }
         }
       }
     } else {
-      this.dsiSerialReadWrite(f);
+      dsiSerialReadWrite(f);
     }
   }
 
   proc DefaultRectangularArr.dsiSerialRead(f) {
     var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
-    if _isSimpleIoType(this.eltType) && f.binary() &&
-       isNative && this.isDataContiguous() {
+    if _isSimpleIoType(eltType) && f.binary() &&
+       isNative && isDataContiguous() {
       // read the data in one op if possible, same comments as above apply
       pragma "no prototype"
       extern proc sizeof(type x): size_t;
       const elemSize = sizeof(eltType);
-      const len = dom.dsiNumIndices;
       if boundsChecking then
-        assert((len:uint*elemSize:uint) <= max(ssize_t):uint,
+        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
                "length of array to read is greater than ssize_t can hold");
       if defRectSimpleDData {
-        const src = this.theDataChunk(0);
-        const idx = getDataIndex(this.dom.dsiLow);
+        const len = dom.dsiNumIndices;
+        const src = theDataChunk(0);
+        const idx = getDataIndex(dom.dsiLow);
         const size = len:ssize_t*elemSize:ssize_t;
         f.readBytes(_ddata_shift(eltType, src, idx), size);
       } else {
-        if rank == 1 {
-          for chunk in 0..#mdNumChunks {
-            const src = this.theDataChunk(chunk);
-            const idx = getDataIndex(this.dom.dsiLow);
-            const size = len:ssize_t * elemSize:ssize_t;
-            f.readBytes(_ddata_shift(eltType, src, idx(2)), size);
-          }
-        } else {
-          var chunkLow = dom.dsiLow;
-          for chunk in 0..#mdNumChunks {
-            if mData(chunk).pdr.length > 0 {
-              const src = this.theDataChunk(chunk);
-              chunkLow(mdParDim) = mData(chunk).pdr.low;
-              const (_, idx) = getDataIndex(chunkLow);
-              const chunkLen = len / dom.dsiDim(mdParDim).length
-                               * mData(chunk).pdr.length;
-              const chunkSize = chunkLen:ssize_t * elemSize:ssize_t;
-              f.readBytes(_ddata_shift(eltType, src, idx), chunkSize);
-            }
+        var indLo = dom.dsiLow;
+        for chunk in 0..#mdNumChunks {
+          const lo = mData(chunk).pdr.low;
+          const hi = mData(chunk).pdr.high;
+          if hi >= lo {
+            const len = hi - lo + 1;
+            const src = theDataChunk(chunk);
+            if isTuple(indLo) then
+              indLo(mdParDim) = lo;
+            else
+              indLo = lo;
+            const (_, idx) = getDataIndex(indLo);
+            const size = len:ssize_t*elemSize:ssize_t;
+            f.readBytes(_ddata_shift(eltType, src, idx), size);
           }
         }
       }
     } else {
-      this.dsiSerialReadWrite(f);
+      dsiSerialReadWrite(f);
     }
   }
 
