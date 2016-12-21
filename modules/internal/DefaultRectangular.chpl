@@ -2102,16 +2102,17 @@ module DefaultRectangular {
       } else {
         var indLo = dom.dsiLow;
         for chunk in 0..#mdNumChunks {
-          const lo = mData(chunk).pdr.low;
-          const hi = mData(chunk).pdr.high;
-          if hi >= lo {
-            const len = hi - lo + 1;
+          if mData(chunk).pdr.length >= 0 {
             const src = theDataChunk(chunk);
             if isTuple(indLo) then
-              indLo(mdParDim) = lo;
+              indLo(mdParDim) = mData(chunk).pdr.low;
             else
-              indLo = lo;
+              indLo = mData(chunk).pdr.low;
             const (_, idx) = getDataIndex(indLo);
+            const blkLen = if mdParDim == rank
+                           then 1
+                           else blk(mdParDim) / blk(mdParDim+1);
+            const len = mData(chunk).pdr.length * blkLen;
             const size = len:ssize_t*elemSize:ssize_t;
             f.writeBytes(_ddata_shift(eltType, src, idx), size);
           }
@@ -2143,16 +2144,17 @@ module DefaultRectangular {
       } else {
         var indLo = dom.dsiLow;
         for chunk in 0..#mdNumChunks {
-          const lo = mData(chunk).pdr.low;
-          const hi = mData(chunk).pdr.high;
-          if hi >= lo {
-            const len = hi - lo + 1;
+          if mData(chunk).pdr.length >= 0 {
             const src = theDataChunk(chunk);
             if isTuple(indLo) then
-              indLo(mdParDim) = lo;
+              indLo(mdParDim) = mData(chunk).pdr.low;
             else
-              indLo = lo;
+              indLo = mData(chunk).pdr.low;
             const (_, idx) = getDataIndex(indLo);
+            const blkLen = if mdParDim == rank
+                           then 1
+                           else blk(mdParDim) / blk(mdParDim+1);
+            const len = mData(chunk).pdr.length * blkLen;
             const size = len:ssize_t*elemSize:ssize_t;
             f.readBytes(_ddata_shift(eltType, src, idx), size);
           }
