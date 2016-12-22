@@ -66,14 +66,14 @@ try {
 }
 */
 
-struct ErrorInfo {
+struct TryInfo {
   VarSymbol*   tempError;
   LabelSymbol* catches;
   TryStmt*     tryStmt;
 };
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
-  std::stack<ErrorInfo> errorStack;
+  std::stack<TryInfo> tryStack;
 
   virtual bool enterTryStmt (TryStmt*  node);
   virtual void exitTryStmt  (TryStmt*  node);
@@ -82,7 +82,7 @@ class ErrorHandlingVisitor : public AstVisitorTraverse {
 
 // TODO: default/strict mode
 // TODO: need callsite for SET_LINENO
-static void haltOrPropagateError(BlockStmt* block, FnSymbol* fn,
+static void haltOrPropagateError(BlockStmt* haltOrProp, FnSymbol* fn,
                                  VarSymbol* tempError, TryStmt* tryStmt) {
   bool halt;
   if (fn->throwsError()) {
@@ -105,20 +105,21 @@ static void haltOrPropagateError(BlockStmt* block, FnSymbol* fn,
   if (halt) {
     Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
                           new_CStringSymbol("uncaught error"));
-    block->insertAfter(haltOnError);
+    haltOrProp->insertAfter(haltOnError);
   } else {
-    LabelSymbol* label    = fn->getOrCreateEpilogueLabel();
+    LabelSymbol* label = fn->getOrCreateEpilogueLabel();
     INT_ASSERT(label); // error handling needs an epilogue label
+
     DefExpr* outErrorExpr = toDefExpr(fn->formals.last());
-    Symbol* outError      = outErrorExpr->sym;
+    Symbol*  outError     = outErrorExpr->sym;
     // TODO: check with flag
 
     Expr* castError  = new CallExpr(PRIM_CAST, dtObject->symbol, tempError);
     Expr* setError   = new CallExpr(PRIM_MOVE, outError, castError);
     Expr* gotoReturn = new GotoStmt(GOTO_RETURN, label);
 
-    block->insertAtTail(setError);
-    block->insertAtTail(gotoReturn);
+    haltOrProp->insertAtTail(setError);
+    haltOrProp->insertAtTail(gotoReturn);
   }
 }
 
@@ -145,8 +146,8 @@ static void ifErrorExists(Expr* insert, VarSymbol* tempError, Stmt* thenStmt) {
   // return true to traverse deeper
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
+  //printf("visiting try\n");
   SET_LINENO(node);
-  printf("visiting try\n");
 
   VarSymbol*   tempError = newTemp("error", dtObject);
   LabelSymbol* catches   = new LabelSymbol("catches");
@@ -155,8 +156,8 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
   tryBody->insertAtHead(new DefExpr(tempError));
   tryBody->insertAtTail(new DefExpr(catches));
 
-  ErrorInfo info = {tempError, catches, node};
-  errorStack.push(info);
+  TryInfo info = {tempError, catches, node};
+  tryStack.push(info);
 
   return true;
 }
@@ -166,27 +167,30 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
     // if there is an error:
       // check each catch conditional, call proper fn
     // if there is no catchall:
-      // haltOrPropagateError()
+      // halt or propagate error
   // pop (error var, try) off the stack
 
 void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
+  //printf("exiting try\n");
   SET_LINENO(node);
-  // TODO: create catches under the label
+
   BlockStmt* tryBody = node->body();
   tryBody->remove();
   node   ->replace(tryBody);
 
-  ErrorInfo info = errorStack.top();
+  TryInfo info = tryStack.top();
 
-  VarSymbol* tempError  = info.tempError;
-  BlockStmt* haltOrProp = new BlockStmt();
-  BlockStmt* errorBlock = new BlockStmt(haltOrProp);
+  VarSymbol* tempError    = info.tempError;
+  BlockStmt* haltOrProp   = new BlockStmt();
 
-  ifErrorExists(tryBody, tempError, errorBlock);
+  // TODO: create catches
+  BlockStmt* catchesBlock = new BlockStmt(haltOrProp);
+
+  ifErrorExists(tryBody, tempError, catchesBlock);
   haltOrPropagateError(haltOrProp, tryBody->getFunction(),
     tempError, info.tryStmt);
 
-  errorStack.pop();
+  tryStack.pop();
 }
 
 // enterCallExpr
@@ -196,63 +200,67 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
       // create conditional after call: if error goto catches
     // otherwise:
       // if Default mode:
-        // haltOrPropagateError()
+        // halt or propagate error
       // otherwise:
         // compilerError()
   // if the call is PRIM_THROW:
     // TODO
 
 bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
+  bool insideTry = !tryStack.empty();
+
   if (FnSymbol* fn = node->resolvedFunction()) {
     if (fn->throwsError()) {
       SET_LINENO(node);
-      if (!errorStack.empty()) {
-        printf("throwing call inside try\n");
-        ErrorInfo info = errorStack.top();
-
+      if (insideTry) {
+        // printf("throwing call inside try\n");
+        TryInfo    info        = tryStack.top();
         VarSymbol* tempError   = info.tempError;
-        GotoStmt*  gotoCatches = new GotoStmt(GOTO_ERROR_HANDLING, info.catches);
+        GotoStmt*  gotoCatches = new GotoStmt(GOTO_ERROR_HANDLING,
+                                   info.catches);
 
-        // add the out arg to the call
         node->insertAtTail(tempError);
+
         ifErrorExists(node, tempError, gotoCatches);
       } else {
-        printf("throwing call outside try\n");
+        // printf("throwing call outside try\n");
         VarSymbol* tempError  = newTemp("error", dtObject);
         BlockStmt* haltOrProp = new BlockStmt();
 
-        node->insertAtTail(tempError);
         node->getStmtExpr()->insertBefore(new DefExpr(tempError));
+        node->insertAtTail(tempError);
 
         ifErrorExists(node, tempError, haltOrProp);
         haltOrPropagateError(haltOrProp, fn, tempError, NULL);
       }
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
-    printf("handling throw\n");
     SET_LINENO(node);
 
     VarSymbol* tempError;
-    TryStmt* tryStmt;
-    BlockStmt* block = new BlockStmt();
-    if (!errorStack.empty()) {
-      ErrorInfo info = errorStack.top();
-      tempError = info.tempError;
-      tryStmt = info.tryStmt;
+    TryStmt*   tryStmt;
+    BlockStmt* throwBlock = new BlockStmt();
+    if (insideTry) {
+      // printf("throw inside try\n");
+      TryInfo info   = tryStack.top();
+      tempError      = info.tempError;
+      tryStmt        = info.tryStmt;
     } else {
+      // printf("throw outside try\n");
       tempError = newTemp("error", dtObject);
-      block->insertAtTail(new DefExpr(tempError));
-      tryStmt = NULL;
+      tryStmt   = NULL;
+
+      throwBlock->insertAtTail(new DefExpr(tempError));
     }
 
-    Expr* thrownExpr = node->get(1)->remove();
-    Expr* castError = new CallExpr(PRIM_CAST, dtObject->symbol, thrownExpr);
-    Expr* setError  = new CallExpr(PRIM_MOVE, tempError, castError);
-    block->insertAtTail(setError);
+    node->replace(throwBlock);
 
-    node->getStmtExpr()->insertAfter(block);
-    haltOrPropagateError(block, node->getFunction(), tempError, tryStmt);
-    node->remove();
+    Expr* thrownError = node->get(1)->remove();
+    Expr* castError   = new CallExpr(PRIM_CAST, dtObject->symbol, thrownError);
+    Expr* setError    = new CallExpr(PRIM_MOVE, tempError, castError);
+
+    throwBlock->insertAtTail(setError);
+    haltOrPropagateError(throwBlock, throwBlock->getFunction(), tempError, tryStmt);
   }
   return true;
 }
@@ -261,9 +269,9 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 void lowerErrorHandling() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->throwsError()) {
+      //printf("out arg to throwing fn\n");
       SET_LINENO(fn);
 
-      printf("adding out arg to throwing fn\n");
       ArgSymbol* outFormal = new ArgSymbol(INTENT_REF, "error_out", dtObject);
       fn->insertFormalAtTail(outFormal);
     }
