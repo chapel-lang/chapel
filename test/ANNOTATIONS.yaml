@@ -214,6 +214,8 @@ all:
     - Reduce task creation time for "bounded" coforalls (#5018)
     - text: Ugni comm layer improvements for forks and the heap (internal #276)
       config: 16 node XC
+  12/22/16:
+    - multi-ddata (#5047)
 
 
 AllCompTime:
