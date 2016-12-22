@@ -217,12 +217,14 @@ module CPtr {
     Note that the existence of this c_ptr has no impact on the lifetime of the
     array. The returned pointer will be invalid if the original array is
     freed or even reallocated. Any domain assignment will probably make
-    this c_ptr invalid.
+    this c_ptr invalid. If the array's data is stored in more than one chunk
+    the procedure will halt the program with an error message.
 
     :arg arr: the array for which we should retrieve a pointer
     :returns: a pointer to the array data
   */
   inline proc c_ptrTo(arr: []) where isRectangularArr(arr) {
+    if !arr._value.oneDData then halt("error: c_ptrTo(multi_ddata array");
     return c_pointer_return(arr[arr.domain.low]);
   }
 
