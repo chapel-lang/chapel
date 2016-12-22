@@ -796,27 +796,6 @@ module DefaultRectangular {
     // end class definition here, then defined secondary methods below
 
     proc dsiDisplayRepresentation() {
-      // gbt TODO
-      if true {
-      chpl_debug_writeln("off=", off);
-      chpl_debug_writeln("blk=", blk);
-      chpl_debug_writeln("str=", str);
-      chpl_debug_writeln("origin=", origin);
-      chpl_debug_writeln("factoredOffs=", factoredOffs);
-      if !defRectSimpleDData then {
-        chpl_debug_writeln("mdParDim=", mdParDim);
-        chpl_debug_writeln("mdNumChunks=", mdNumChunks);
-        chpl_debug_writeln("mdRLo=", mdRLo);
-        chpl_debug_writeln("mdRHi=", mdRHi);
-        chpl_debug_writeln("mdRStr=", mdRStr);
-        chpl_debug_writeln("mdRLen=", mdRLen);
-        chpl_debug_writeln("mdBlk=", mdBlk);
-        for i in 0..#mdNumChunks {
-          chpl_debug_writeln("chunk (", mData(i).pdr, ') @', mData(i).dataOff);
-        }
-      }
-      chpl_debug_writeln("noinit_data=", noinit_data);
-      } else {
       writeln("off=", off);
       writeln("blk=", blk);
       writeln("str=", str);
@@ -835,7 +814,6 @@ module DefaultRectangular {
         }
       }
       writeln("noinit_data=", noinit_data);
-      }
     }
 
     // can the compiler create this automatically?
@@ -1772,19 +1750,9 @@ module DefaultRectangular {
         } else {
           //
           // If the mdParDim'th dimension is removed then we switch
-          // to a synthesized mdParDim==1, in a single chunk.
+          // to a synthesized mdParDim==1.
           //
-          var ind: rank*dom.idxType;
-          for param j in 1..args.size {
-            if isRange(args(j)) {
-              ind(j) = dom.dsiDim(j).low;
-            } else {
-              ind(j) = args(j);
-            }
-          }
-          const (chunk, _) = getDataIndex(ind, getShifted=false);
-          const blkRatio = blk(1) / blk(mdParDim) * blk(mdParDim)
-                           / alias.blk(1);
+          const blkRatio = blk(1) / alias.blk(1);
           alias.mdParDim = 1;
           alias.mdNumChunks = mdNumChunks;
           alias.mdRLen = mdRLen * mdBlk * blkRatio;
