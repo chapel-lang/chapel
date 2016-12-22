@@ -235,6 +235,7 @@ static void walkBlock(FnSymbol* fn, Scope* parent, BlockStmt* block) {
           case GOTO_GETITER_END:
           case GOTO_ITER_RESUME:
           case GOTO_ITER_END:
+          case GOTO_ERROR_HANDLING:
            // MDN 2016/03/18 Need to revisit these cases
            break;
         }

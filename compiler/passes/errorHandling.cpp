@@ -1,9 +1,5 @@
 /*
-<<<<<<< 8cf5ee5b91e8ea7b5bcdaca97a69947939eb39a6
  * Copyright 2004-2017 Cray Inc.
-=======
- * Copyright 2004-2016 Cray Inc.
->>>>>>> error handling pass skeleton
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,70 +17,258 @@
  * limitations under the License.
  */
 
+#include "AstVisitorTraverse.h"
+
 #include "errorHandling.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "view.h"
+
+#include <stack>
 
 // for each function that 'throws':
   // add an error_out formal
-  // for each call to one of these functions:
-    // create and pass a variable to receive error_out
-    // check error after the call
-      // halt() if needed
-  // for each 'throw' in the function:
-    // replace it with setting error_out
+
+/*
+try {
+  a();
+  b(); // doesn't throw
+  c();
+} catch e: SubError {
+  f();
+} catch e: AnotherSubError {
+  g();
+} // propagates
+
+// suppose this is in a throwing fn
+{
+  var _e: Error;
+  a(_e);
+  if _e then
+    goto catches;
+  b();
+  c(_e);
+  if _e then
+    goto catches;
+
+  label catches:
+  if _e {
+    if _e: SubError {
+      f();
+    } else if _e: AnotherSubError {
+      g();
+    } else {
+      _e_out = _e;
+      return (default val);
+    }
+  }
+}
+*/
+
+struct ErrorInfo {
+  VarSymbol*   tempError;
+  LabelSymbol* catches;
+  TryStmt*     tryStmt;
+};
+
+class ErrorHandlingVisitor : public AstVisitorTraverse {
+  std::stack<ErrorInfo> errorStack;
+
+  virtual bool enterTryStmt (TryStmt*  node);
+  virtual void exitTryStmt  (TryStmt*  node);
+  virtual bool enterCallExpr(CallExpr* node);
+};
+
+// TODO: default/strict mode
+// TODO: need callsite for SET_LINENO
+static void haltOrPropagateError(BlockStmt* block, FnSymbol* fn,
+                                 VarSymbol* tempError, TryStmt* tryStmt) {
+  bool halt;
+  if (fn->throwsError()) {
+    if (tryStmt) {
+      halt = tryStmt->tryBang();
+    } else {
+      // TODO: strict mode, throws without try
+      halt = false;
+    }
+  } else {
+    assert(tryStmt != NULL);
+    if (tryStmt->tryBang()) {
+      halt = true;
+    } else {
+      // TODO: strict mode, propagating try without throws
+      halt = true;
+    }
+  }
+
+  if (halt) {
+    Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
+                          new_CStringSymbol("uncaught error"));
+    block->insertAfter(haltOnError);
+  } else {
+    LabelSymbol* label    = fn->getOrCreateEpilogueLabel();
+    INT_ASSERT(label); // error handling needs an epilogue label
+    DefExpr* outErrorExpr = toDefExpr(fn->formals.last());
+    Symbol* outError      = outErrorExpr->sym;
+    // TODO: check with flag
+
+    Expr* castError  = new CallExpr(PRIM_CAST, dtObject->symbol, tempError);
+    Expr* setError   = new CallExpr(PRIM_MOVE, outError, castError);
+    Expr* gotoReturn = new GotoStmt(GOTO_RETURN, label);
+
+    block->insertAtTail(setError);
+    block->insertAtTail(gotoReturn);
+  }
+}
+
+static void ifErrorExists(Expr* insert, VarSymbol* tempError, Stmt* thenStmt) {
+  CallExpr*  errorExists     = new CallExpr(PRIM_NOTEQUAL, tempError, gNil);
+  VarSymbol* tempErrorExists = newTemp("errorExists", dtBool);
+
+  DefExpr* defErrorExists = new DefExpr(tempErrorExists);
+  Expr*    setErrorExists = new CallExpr(PRIM_MOVE,
+                              tempErrorExists, errorExists);
+  Expr*    checkError     = new CondStmt(new SymExpr(tempErrorExists),
+                              thenStmt);
+
+  insert        ->getStmtExpr()->insertAfter(defErrorExists);
+  defErrorExists->getStmtExpr()->insertAfter(setErrorExists);
+  setErrorExists->getStmtExpr()->insertAfter(checkError);
+}
+
+// enterTryStmt
+  // create the error var
+  // create catches label at end of the block
+  // associate error var with present state
+    // push (error var, catches label, try) onto back of stack
+  // return true to traverse deeper
+
+bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
+  SET_LINENO(node);
+  printf("visiting try\n");
+
+  VarSymbol*   tempError = newTemp("error", dtObject);
+  LabelSymbol* catches   = new LabelSymbol("catches");
+  BlockStmt*   tryBody   = node->body();
+
+  tryBody->insertAtHead(new DefExpr(tempError));
+  tryBody->insertAtTail(new DefExpr(catches));
+
+  ErrorInfo info = {tempError, catches, node};
+  errorStack.push(info);
+
+  return true;
+}
+
+// exitTryStmt
+  // create catches under the label:
+    // if there is an error:
+      // check each catch conditional, call proper fn
+    // if there is no catchall:
+      // haltOrPropagateError()
+  // pop (error var, try) off the stack
+
+void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
+  SET_LINENO(node);
+  // TODO: create catches under the label
+  BlockStmt* tryBody = node->body();
+  tryBody->remove();
+  node   ->replace(tryBody);
+
+  ErrorInfo info = errorStack.top();
+
+  VarSymbol* tempError  = info.tempError;
+  BlockStmt* haltOrProp = new BlockStmt();
+  BlockStmt* errorBlock = new BlockStmt(haltOrProp);
+
+  ifErrorExists(tryBody, tempError, errorBlock);
+  haltOrPropagateError(haltOrProp, tryBody->getFunction(),
+    tempError, info.tryStmt);
+
+  errorStack.pop();
+}
+
+// enterCallExpr
+  // if the called fn throws:
+    // if the stack isn't empty:
+      // wire up the call to the error var at the top of the stack
+      // create conditional after call: if error goto catches
+    // otherwise:
+      // if Default mode:
+        // haltOrPropagateError()
+      // otherwise:
+        // compilerError()
+  // if the call is PRIM_THROW:
+    // TODO
+
+bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
+  if (FnSymbol* fn = node->resolvedFunction()) {
+    if (fn->throwsError()) {
+      SET_LINENO(node);
+      if (!errorStack.empty()) {
+        printf("throwing call inside try\n");
+        ErrorInfo info = errorStack.top();
+
+        VarSymbol* tempError   = info.tempError;
+        GotoStmt*  gotoCatches = new GotoStmt(GOTO_ERROR_HANDLING, info.catches);
+
+        // add the out arg to the call
+        node->insertAtTail(tempError);
+        ifErrorExists(node, tempError, gotoCatches);
+      } else {
+        printf("throwing call outside try\n");
+        VarSymbol* tempError  = newTemp("error", dtObject);
+        BlockStmt* haltOrProp = new BlockStmt();
+
+        node->insertAtTail(tempError);
+        node->getStmtExpr()->insertBefore(new DefExpr(tempError));
+
+        ifErrorExists(node, tempError, haltOrProp);
+        haltOrPropagateError(haltOrProp, fn, tempError, NULL);
+      }
+    }
+  } else if (node->isPrimitive(PRIM_THROW)) {
+    printf("handling throw\n");
+    SET_LINENO(node);
+
+    VarSymbol* tempError;
+    TryStmt* tryStmt;
+    BlockStmt* block = new BlockStmt();
+    if (!errorStack.empty()) {
+      ErrorInfo info = errorStack.top();
+      tempError = info.tempError;
+      tryStmt = info.tryStmt;
+    } else {
+      tempError = newTemp("error", dtObject);
+      block->insertAtTail(new DefExpr(tempError));
+      tryStmt = NULL;
+    }
+
+    Expr* thrownExpr = node->get(1)->remove();
+    Expr* castError = new CallExpr(PRIM_CAST, dtObject->symbol, thrownExpr);
+    Expr* setError  = new CallExpr(PRIM_MOVE, tempError, castError);
+    block->insertAtTail(setError);
+
+    node->getStmtExpr()->insertAfter(block);
+    haltOrPropagateError(block, node->getFunction(), tempError, tryStmt);
+    node->remove();
+  }
+  return true;
+}
 
 // TODO: dtObject should be dtError, but we don't have that right now
-// TODO: how do we find Error temps from a call to a throwing function?
 void lowerErrorHandling() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->throwsError()) {
       SET_LINENO(fn);
 
+      printf("adding out arg to throwing fn\n");
       ArgSymbol* outFormal = new ArgSymbol(INTENT_REF, "error_out", dtObject);
       fn->insertFormalAtTail(outFormal);
-
-      for_SymbolSymExprs(se, fn) {
-        if (CallExpr* call = toCallExpr(se->parentExpr)) {
-          if (fn == call->resolvedFunction()) {
-            VarSymbol* tempError   = newTemp("error", dtObject);
-            CallExpr*  errorExists = new CallExpr(PRIM_NOTEQUAL,
-                                       tempError, gNil);
-
-            VarSymbol* tempErrorExists = newTemp("errorExists", dtBool);
-            DefExpr*   defErrorExists  = new DefExpr(tempErrorExists);
-            Expr*      setErrorExists  = new CallExpr(PRIM_MOVE,
-                                           tempErrorExists, errorExists);
-
-            // TODO: better error message
-            Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
-                                  new_CStringSymbol("uncaught error"));
-            Expr* checkError  = new CondStmt(new SymExpr(tempErrorExists),
-                                  haltOnError);
-
-            call          ->insertAtTail(tempError);
-            call          ->getStmtExpr()->insertBefore(new DefExpr(tempError));
-            call          ->getStmtExpr()->insertAfter(defErrorExists);
-            defErrorExists->getStmtExpr()->insertAfter(setErrorExists);
-            setErrorExists->getStmtExpr()->insertAfter(checkError);
-          }
-        }
-      }
-
-      for_exprs_postorder(expr, fn->body) {
-        if (CallExpr* call = toCallExpr(expr)) {
-          if (call->isPrimitive(PRIM_THROW)) {
-            // TODO: need callsite for SET_LINENO
-
-            Expr* error     = call->get(1)->remove();
-            Expr* castError = new CallExpr(PRIM_CAST, dtObject->symbol, error);
-            Expr* setError  = new CallExpr(PRIM_MOVE, outFormal, castError);
-
-            call->replace(setError);
-          }
-        }
-      }
     }
+
+    ErrorHandlingVisitor visitor;
+    fn->accept(&visitor);
   }
 }
