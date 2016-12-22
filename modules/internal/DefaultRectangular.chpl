@@ -622,9 +622,16 @@ module DefaultRectangular {
     type idxType;
     var pdr: range(idxType,BoundedRangeType.bounded,true);
     var dataOff: idxType;
-    pragma "local field"
+    //
+    // I would like to leave these pragmas here, in the belief that they
+    // should do the same good as they do in DefaultRectangularArr.  But
+    // when uncommented they cause this error in quite a few tests:
+    //   error: Attempted to assign to local class field with remote class
+    // Example: arrays/deitz/test_block_array_of_syncs with numa+gasnet
+    //
+    //pragma "local field"
     var data : _ddata(eltType);
-    pragma "local field"
+    //pragma "local field"
     var shiftedData : _ddata(eltType);
   };
 
