@@ -35,53 +35,5 @@
 // TODO: how do we find Error temps from a call to a throwing function?
 
 void lowerErrorHandling(void) {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->throwsError()) {
-      SET_LINENO(fn);
 
-      ArgSymbol* outFormal = new ArgSymbol(INTENT_REF, "error_out", dtObject);
-      fn->insertFormalAtTail(outFormal);
-
-      for_SymbolSymExprs(se, fn) {
-        if (CallExpr* call = toCallExpr(se->parentExpr)) {
-          if (fn == call->resolvedFunction()) {
-            VarSymbol* tempError   = newTemp("error", dtObject);
-            CallExpr*  errorExists = new CallExpr(PRIM_NOTEQUAL,
-                                       tempError, gNil);
-
-            VarSymbol* tempErrorExists = newTemp("errorExists", dtBool);
-            DefExpr*   defErrorExists  = new DefExpr(tempErrorExists);
-            Expr*      setErrorExists  = new CallExpr(PRIM_MOVE,
-                                           tempErrorExists, errorExists);
-
-            // TODO: better error message
-            Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
-                                  new_CStringSymbol("uncaught error"));
-            Expr* checkError  = new CondStmt(new SymExpr(tempErrorExists),
-                                  haltOnError);
-
-            call          ->insertAtTail(tempError);
-            call          ->getStmtExpr()->insertBefore(new DefExpr(tempError));
-            call          ->getStmtExpr()->insertAfter(defErrorExists);
-            defErrorExists->getStmtExpr()->insertAfter(setErrorExists);
-            setErrorExists->getStmtExpr()->insertAfter(checkError);
-          }
-        }
-      }
-
-      for_exprs_postorder(expr, fn->body) {
-        if (CallExpr* call = toCallExpr(expr)) {
-          if (call->isPrimitive(PRIM_THROW)) {
-            // TODO: need callsite for SET_LINENO
-
-            Expr* error     = call->get(1)->remove();
-            Expr* castError = new CallExpr(PRIM_CAST, dtObject->symbol, error);
-            Expr* setError  = new CallExpr(PRIM_MOVE, outFormal, castError);
-
-            call->replace(setError);
-          }
-        }
-      }
-    }
-  }
 }

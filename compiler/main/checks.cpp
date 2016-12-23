@@ -205,7 +205,6 @@ void check_lowerErrorHandling()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterLowerErrorHandling();
-  // Suggestion: Ensure every constructor call has a matching destructor call.
 }
 
 void check_callDestructors()
