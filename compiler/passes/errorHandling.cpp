@@ -18,21 +18,6 @@
  */
 
 #include "errorHandling.h"
-#include "stmt.h"
-#include "symbol.h"
-#include "view.h"
-
-// for each function that 'throws':
-  // add an error_out formal
-  // for each call to one of these functions:
-    // create and pass a variable to receive error_out
-    // check error after the call
-      // halt() if needed
-  // for each 'throw' in the function:
-    // replace it with setting error_out
-
-// TODO: dtObject should be dtError, but we don't have that right now
-// TODO: how do we find Error temps from a call to a throwing function?
 
 void lowerErrorHandling(void) {
 
