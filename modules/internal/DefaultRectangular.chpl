@@ -2189,13 +2189,33 @@ module DefaultRectangular {
     if debugDefaultDistBulkTransfer then chpl_debug_writeln("In DefaultRectangularArr.doiUseBulkTransfer()");
 
     //
-    // With multi-ddata, at least for now if the arrays aren't chunked
-    // exactly the same way we don't do direct bulk transfer.
+    // With multi-ddata, at least for now either the entire transfer has
+    // to involve just one chunk of each array, or the arrays have to be
+    // chunked in exactly the same way and the transfer has to start and
+    // end at the same chunk and offset in both.
     //
-    return (defRectSimpleDData
-            || (mdParDim == B._value.mdParDim
-                && mdNumChunks == B._value.mdNumChunks
-                && mdRLen == B._value.mdRLen));
+    // Note that with a bit more code we could actually do bulk transfer
+    // between any two contiguous arrays, no matter how chunked.
+    //
+    if oneDData && B._value.oneDData then
+      return true;
+    else {
+      const (AChunkLo, AIdxLo) = getDataIndex(dom.dsiLow);
+      const (AChunkHi, AIdxHi) = getDataIndex(dom.dsiHigh);
+      const (BChunkLo, BIdxLo) = B._value.getDataIndex(B._value.dom.dsiLow);
+      const (BChunkHi, BIdxHi) = B._value.getDataIndex(B._value.dom.dsiHigh);
+
+      if AChunkLo == AChunkHi && BChunkLo == BChunkHi then
+        return true;
+
+      return mdParDim == B._value.mdParDim
+             && mdNumChunks == B._value.mdNumChunks
+             && mdRLen == B._value.mdRLen
+             && AChunkLo == BChunkLo
+             && AIdxLo == BIdxLo
+             && AChunkHi == BChunkHi
+             && AIdxHi == BIdxHi;
+    }
   }
 
   proc DefaultRectangularArr.doiUseBulkTransferStride(B) {
@@ -2220,7 +2240,7 @@ module DefaultRectangular {
     for param i in 1..rank do
       Blo(i) = Bdims(i).first;
 
-    const len = dom.dsiNumIndices.safeCast(size_t);
+    var len = dom.dsiNumIndices.safeCast(size_t);
 
     if len == 0 then return;
 
@@ -2235,35 +2255,31 @@ module DefaultRectangular {
 
     if defRectSimpleDData {
       const Aidx = getDataIndex(Alo);
-      const Adata = _ddata_shift(eltType, this.theDataChunk(0), Aidx);
+      const Adata = _ddata_shift(eltType, theDataChunk(0), Aidx);
       const Bidx = B._value.getDataIndex(Blo);
       const Bdata = _ddata_shift(eltType, B._value.theDataChunk(0), Bidx);
       doiBulkTransferHelper(B, Adata, Bdata, len);
-    }
-    else {
+    } else {
       //
       // Some prefix of the transfer is in the first involved chunk.
-      // The multi-ddata chunking must be the same here, so we only
-      // need to compute the starting chunk for A[].
       //
-      const (chunk0, Aidx) = getDataIndex(Alo);
-      const Adata = _ddata_shift(eltType, this.theDataChunk(chunk0), Aidx);
-      var len0 = ((mData(chunk0).pdr.high - Alo(mdParDim) + 1) * blk(mdParDim))
-                 .safeCast(size_t);
-      const (_, Bidx) = getDataIndex(Blo);
-      const Bdata = _ddata_shift(eltType, B._value.theDataChunk(chunk0), Bidx);
-      doiBulkTransferHelper(B, Adata, Bdata, min(len0, len));
+      const (Achunk, Aidx) = getDataIndex(Alo);
+      const Adata = _ddata_shift(eltType, theDataChunk(Achunk), Aidx);
+      var chunkLen = ((mData(Achunk).pdr.high - Alo(mdParDim) + 1)
+                      * blk(mdParDim)).safeCast(size_t);
+      const (Bchunk, Bidx) = B._value.getDataIndex(Blo);
+      const Bdata = _ddata_shift(eltType, B._value.theDataChunk(Bchunk), Bidx);
+      doiBulkTransferHelper(B, Adata, Bdata, min(chunkLen, len));
 
-      if len > len0 {
-        var lenRemain = len;
-        var chunkLen = len0;
-        var chunk = chunk0 + 1;
-        do {
-          lenRemain -= chunkLen;
-          chunkLen = (mData(chunk).pdr.length * blk(mdParDim)).safeCast(size_t);
-          doiBulkTransferHelper(B, dataChunk(chunk), B._value.dataChunk(chunk),
-                                min(chunkLen, lenRemain));
-        } while lenRemain > chunkLen;
+      var chunkOff = 0;
+      while len > chunkLen {
+        len -= chunkLen;
+        chunkOff += 1;
+        chunkLen = (mData(Achunk+chunkOff).pdr.length
+                    * blk(mdParDim)).safeCast(size_t);
+        doiBulkTransferHelper(B, dataChunk(Achunk+chunkOff),
+                              B._value.dataChunk(Bchunk+chunkOff),
+                              min(chunkLen, len));
       }
     }
   }
@@ -2275,7 +2291,7 @@ module DefaultRectangular {
     // compilation does not work right now.  The calls to chpl_comm_get
     // and chpl_comm_put should be changed once that is fixed.
     if Adata.locale.id==here.id {
-      if debugDefaultDistBulkTransfer then //See bug in test/optimizations/bulkcomm/alberto/rafatest2.chpl
+      if debugDefaultDistBulkTransfer then //See bug in test/optimizations/bulkcomm/alberto/*/rafatest2.chpl
         chpl_debug_writeln("\tlocal get() from ", B._value.locale.id);
       __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
     } else if Bdata.locale.id==here.id {
