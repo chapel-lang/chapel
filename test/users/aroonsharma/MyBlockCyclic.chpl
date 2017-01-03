@@ -1,4 +1,4 @@
-// Copyright (c) 2004-2013, Cray Inc.  (See LICENSE file for more details)
+// Copyright (c) 2004-2017, Cray Inc.  (See LICENSE file for more details)
 
 config const debugzipopt = false;
 config const testzipopt = false; //not supported yet
