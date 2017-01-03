@@ -13,6 +13,8 @@ Major Platforms
    cray
    knl
    cygwin
+   aws
+
 
 Networks
 --------
