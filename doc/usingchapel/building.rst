@@ -161,5 +161,5 @@ new build environment by creating ``Makefile.<compiler>`` and/or
 ``Makefile.<platform>`` files and setting your environment variables to
 refer to those files.  If you do develop new build environment support
 that you would like to contribute back to the community, we encourage
-you to send your changes back to us at: chapel_info@cray.com
+you to send your changes back to us at: :disguise:`chapel_info@cray.com`
 
