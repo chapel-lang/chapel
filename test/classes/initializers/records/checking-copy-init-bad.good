@@ -1,0 +1,1 @@
+checking-copy-init-bad.chpl:10: error: copy generated of record 'R' when no copy initializer defined
