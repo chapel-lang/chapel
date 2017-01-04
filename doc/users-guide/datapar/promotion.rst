@@ -104,12 +104,12 @@ the third argument, *b*, is true:
   :lines: 51-54
 
 The following four calls demonstrate that various combinations of
-arguments may be promoted, where *Mask* is an array of ``bool``
-values:
+arguments may be promoted, where *A* and *B* are as above, and *Mask*
+is an array of ``bool`` values:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
-  :lines: 67,76,85,94
+  :lines: 63-67,76,85,94
 
 These calls are equivalent to the following forall-loops:
 
@@ -117,14 +117,8 @@ These calls are equivalent to the following forall-loops:
   :language: chapel
   :lines: 71-72,80-81,89-90,98-99
 
-If *A*, *B*, and *Mask* hold the following values before each of
-these calls:
-
-.. literalinclude:: examples/users-guide/datapar/promotion.chpl
-  :language: chapel
-  :lines: 63-65
-
-Then *A* will store the following values afterward:
+So, after the respective calls above, *A* will store the following
+values:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.good
   :language: text
@@ -222,9 +216,10 @@ as expected:
 Note that Chapel does not support an explicit ``+`` operator for
 arrays of reals.  Rather, Chapel implements this operation by
 promoting the standard ``+`` operator for scalar values of type
-``real``.  For this reason, applying ``*`` to Chapel arrays results in
-an elementwise multiplication of the arrays' elements by default,
-rather than a matrix multiplication operation.
+``real``.  Similarly, applying ``*`` to arrays promotes the scalar
+``*`` operator.  For this reason, applying ``*`` to Chapel arrays
+results in an elementwise multiplication of the arrays' elements by
+default, rather than a matrix multiplication operation.
 
 Even the assignment operations in these statements can be considered
 to be promotions of scalar assignment for ``real`` values.  Thus, the
@@ -238,9 +233,9 @@ statements above can be considered to be equivalent to:
 Promotion vs. Whole-Array Operations
 ------------------------------------
 
-A key distinction should be made between Chapel's use of promotion
-versus whole-array operations as supported in traditional array
-languages.  To see the difference, consider the following statement:
+Chapel's promoted operators result in different behavior than you'd
+get from a typical array languages.  To understand the difference,
+let's look at an example:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel

@@ -53,7 +53,7 @@ proc maybeCopy(ref x: real, y: real, b: bool) {
     x = y;
 }
 
-var r = 0.0, s = 1.2, Mask = [true, false, true];
+var r = 0.0, s = 1.2;
 
 maybeCopy(r, s, false);
 writeln(r);
@@ -62,7 +62,7 @@ writeln(r);
 
 A = 0.0;
 B = [1.2, 3.4, 5.6];
-Mask = [true, false, true];
+var Mask = [true, false, true];
 
 maybeCopy(A, 1.2, true);
 writeln(A);
