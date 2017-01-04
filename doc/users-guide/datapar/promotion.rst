@@ -12,11 +12,10 @@ precisely, when passing:
 
 * an array of type *t*,
 * a range or domain whose index type is *t*, or
-* a forall expression over an array, domain, or range that generates
-  values of type *t*,
+* a forall expression yielding type *t*
 
 to a function argument expecting type *t*, that function will be
-called in a data-parallel manner for all values in the collection.
+called in a data-parallel manner for all values in the expression.
 
 As a simple example, consider the following function, ``negate()``
 which takes a ``real`` value by reference and negates it:
