@@ -372,10 +372,10 @@ Parameter expressions are restricted to the following constructs:
 \index{constants}
 \index{const@\chpl{const}}
 
-Runtime constants, or simply ``constants'',
-do not have the restrictions that are associated with
-parameters.  Constants can be of any type.  They require an initialization
-expression and contain the value of that expression throughout their lifetime.
+Runtime constants, or simply ``constants'', do not have the
+restrictions that are associated with parameters.  Constants can be of
+any type.  Whether initialized explicitly or via its type's default
+value, a constant stores the same value throughout its lifetime.
 
 A variable of a class type that is a constant is a constant reference.
 That is, the variable always
