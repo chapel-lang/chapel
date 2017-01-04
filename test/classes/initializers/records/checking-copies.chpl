@@ -8,15 +8,15 @@ record R {
     x = 10;
     y = true;
   }
-}
 
-proc useIt(): R {
-  var localR: R;
-  localR.x = 15;
-  return localR;
+  proc init(other:R) {
+    this.x = other.x;
+    this.y = other.y;
+  }
 }
 
 proc main() {
-  var r = useIt();
-  writeln(r);
+  var r = new R();
+  var copy = r;
+  writeln(copy);
 }

@@ -10,13 +10,8 @@ record R {
   }
 }
 
-proc useIt(): R {
-  var localR: R;
-  localR.x = 15;
-  return localR;
-}
-
 proc main() {
-  var r = useIt();
-  writeln(r);
+  var r = new R();
+  var copy = r;
+  writeln(copy);
 }

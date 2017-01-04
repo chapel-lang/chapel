@@ -1,0 +1,1 @@
+checking-copies-bad.chpl:15: error: attempted copy of record 'R' when no copy initializer defined
