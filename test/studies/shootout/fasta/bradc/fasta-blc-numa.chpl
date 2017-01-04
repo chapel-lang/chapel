@@ -7,11 +7,13 @@
      and Preston Sahabu.
 */
 
+config param numSockets = 2;      // number of sockets on this numa node
+
 config const n = 1000,            // the length of the generated strings
              lineLength = 60,     // the number of columns in the output
-             blockSize = 1024;    // the parallelization granularity
-
-config param numSockets = 2;
+             blockSize = 1024,    // the parallelization granularity
+             numTasks = min(4, here.maxTaskPar),  // how many tasks to use?
+             numNumaTasks = numSockets*numTasks;  // " including dummies
 
 //
 // the computational pipeline has 3 distinct stages, so ideally, we'd
@@ -26,26 +28,6 @@ config param numSockets = 2;
 // use a number of tasks equal to its maximum degree of task
 // parallelism to avoid oversubscription.
 //
-// 'maxComputeTasks' represents this number of tasks that will be working
-// 'idealTasks' scales it by the number of sockets so that we can create
-//   dummy tasks on sockets other than the first
-// 'numTasks' is the actual number of worker tasks that we'll use,
-//   designed to avoid oversubscribing the node
-// 'numNumaTasks' is the actual number of tasks we'll create, including
-//   the dummies
-//
-config const maxTaskPar = here.maxTaskPar,
-             maxComputeTasks = 4,
-             idealTasks = numSockets*maxComputeTasks,
-             numTasks = if idealTasks > maxTaskPar
-                          then min(maxComputeTasks, maxTaskPar)
-                          else idealTasks / numSockets,
-             numNumaTasks = if numTasks*numSockets > maxTaskPar
-                              then numTasks
-                              else numTasks*numSockets,
-             div = if numTasks*numSockets > maxTaskPar then 1 else numSockets;
-
-config const debug = false;
 
 config type randType = uint(32);  // type to use for random numbers
 
@@ -54,13 +36,6 @@ config param IM = 139968,         // parameters for random number generation
              IC = 29573,
              seed: randType = 42;
 
-if debug {
-  writeln("idealTasks   = ", idealTasks);
-  writeln("numTasks     = ", numTasks);
-  writeln("numNumaTasks = ", numNumaTasks);
-  writeln("div          = ", div);
-  exit(0);
-}
 
 //
 // Nucleotide definitions
@@ -166,8 +141,8 @@ proc randomMake(desc, nuclInfo, n) {
 
   // create tasks to pipeline the RNG, computation, and output
   coforall itid in 0..#numNumaTasks {
-    if itid%div == 0 {
-    const tid = itid / div;
+    if itid%numSockets == 0 {
+    const tid = itid / numSockets;
     const chunkSize = lineLength*blockSize,
           nextTid = (tid + 1) % numTasks;
 
