@@ -8,10 +8,15 @@ Promotion: implicit data parallelism
 In Chapel, *function promotion* (or simply *promotion*) refers to an
 implicit form of data parallelism that is triggered by passing a
 collection of values to an argument that expects a single value.  More
-precisely, when an array of type *t* (or a range or domain whose index
-type is *t*) is passed to a function argument of type *t*, that
-function will be called in a data-parallel manner for all values in
-the collection.
+precisely, when passing:
+
+* an array of type *t*,
+* a range or domain whose index type is *t*, or
+* a forall expression over an array, domain, or range that generates
+  values of type *t*,
+
+to a function argument expecting type *t*, that function will be
+called in a data-parallel manner for all values in the collection.
 
 As a simple example, consider the following function, ``negate()``
 which takes a ``real`` value by reference and negates it:
