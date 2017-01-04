@@ -7356,8 +7356,10 @@ postFold(Expr* expr) {
               }
             }
           }
-          if (!set && lhs->symbol()->isParameter())
-            USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->symbol()->name);
+          if (!set && lhs->symbol()->isParameter()) {
+            USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", lhs->symbol()->name);
+            lhs->symbol()->removeFlag(FLAG_PARAM);
+          }
         }
         if (!set) {
           if (lhs->symbol()->hasFlag(FLAG_MAYBE_TYPE)) {
