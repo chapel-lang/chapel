@@ -432,31 +432,18 @@ static chpl_taskID_t get_next_task_id(void) {
   return __sync_fetch_and_add(&g_chpl_task_id, 1);
 }
 
-typedef struct {
-  chpl_fn_int_t fid;
-  void * arg;
-  chpl_bool is_executeOn;
-  chpl_bool serial_state;
-  int lineno;
-  int32_t filename;
-  chpl_taskID_t id;
-  volatile int copied;
-} myth_chpl_wrap_arg_t;
-
 void chpl_task_setSerial(chpl_bool state);
 
-static void * myth_chpl_wrap(void * _a) {
-  //printf("myth_chpl_wrap got %p\n", _a);
-  myth_chpl_wrap_arg_t * a = (myth_chpl_wrap_arg_t *)_a;
-  chpl_fn_int_t fid = a->fid;
-  void * arg = a->arg;
-  int32_t filename = a->filename;
-  int lineno = a->lineno;
-  chpl_taskID_t id = a->id;
-  chpl_bool is_executeOn = a->is_executeOn;
-  chpl_bool serial_state = a->serial_state;
-  //printf("myth_chpl_wrap has copied args\n");
-  a->copied = 1;
+static void * myth_chpl_wrap(void * a_) {
+  chpl_task_bundle_t * arg = myth_wsapi_get_hint_ptr(0);
+  
+  chpl_fn_int_t fid = arg->requested_fid;
+  int32_t filename = arg->filename;
+  int lineno = arg->lineno;
+  chpl_taskID_t id = arg->id;
+  chpl_bool is_executeOn = arg->is_executeOn;
+  chpl_bool serial_state = arg->serial_state;
+  
   if (serial_state) {
     chpl_task_setSerial(serial_state);
   }
@@ -476,39 +463,47 @@ static void * myth_chpl_wrap(void * _a) {
   return 0;
 }
 
-void myth_chpl_create(chpl_fn_int_t fid, void * arg,
-                      chpl_bool is_executeOn, chpl_bool serial_state,
-                      int lineno, int32_t filename, 
-                      chpl_taskID_t id);
+void myth_chpl_create(chpl_bool serial_state,
+                      chpl_bool is_executeOn, 
+                      int lineno,
+                      int32_t filename,
+                      c_sublocid_t subloc,
+                      chpl_fn_int_t fid,
+                      chpl_taskID_t id,
+                      chpl_task_bundle_t* arg, size_t arg_size);
 
-void myth_chpl_create(chpl_fn_int_t fid, void * arg,
-                      chpl_bool is_executeOn, chpl_bool serial_state,
-                      int lineno, int32_t filename, 
-                      chpl_taskID_t id) {
-  myth_chpl_wrap_arg_t a = {
-    .fid = fid,
-    .arg = arg,
-    .is_executeOn = is_executeOn,
-    .serial_state = serial_state,
-    .lineno = lineno,
-    .filename = filename,
-    .id = id,
-    .copied = 0
-  };
-  //static myth_chpl_wrap_arg_t a;
-  //a = a_;
-
+void myth_chpl_create(chpl_bool serial_state,
+                      chpl_bool is_executeOn, 
+                      int lineno,
+                      int32_t filename,
+                      c_sublocid_t subloc,
+                      chpl_fn_int_t fid,
+                      chpl_taskID_t id,
+                      chpl_task_bundle_t* arg, size_t arg_size) {
+  myth_thread_t th = 0;
+  myth_thread_attr_t attr[1];
   chpl_task_do_callbacks(chpl_task_cb_event_kind_create,
                          fid,
                          filename,
                          lineno,
                          id,
                          is_executeOn);
-  //printf("passing %p to myth_chpl_wrap\n", &a);
-  myth_create((myth_func_t)myth_chpl_wrap, (void *)&a);
-  /* TODO: get rid of the embarrassing spin wait */
-  while (a.copied == 0) { }
-  //printf("release args %p\n", &a);
+  arg->serial_state = serial_state;
+  arg->countRunning = false;
+  arg->is_executeOn = is_executeOn;
+  arg->lineno = lineno;
+  arg->filename = filename;
+  arg->requestedSubloc = subloc;
+  arg->requested_fid = fid;
+  arg->requested_fn = chpl_ftable[fid];
+  arg->id = id;
+  //arg->arg_size = arg_size;
+  assert(arg_size > 0);
+  
+  myth_thread_attr_init(attr);
+  attr->custom_data_size = arg_size;
+  attr->custom_data = arg;
+  myth_create_ex(&th, attr, (myth_func_t)myth_chpl_wrap, 0);
 }
 
 //
@@ -521,7 +516,8 @@ void myth_chpl_create(chpl_fn_int_t fid, void * arg,
 //
 void chpl_task_addToTaskList(
          chpl_fn_int_t fid,      // function to call for task
-         void* arg,              // argument to the function
+         //void* arg,              // argument to the function
+         chpl_task_bundle_t* arg, size_t arg_size,
          c_sublocid_t subloc,       // desired sublocale
          void** p_task_list_void,             // task list
          c_nodeid_t task_list_locale,         // locale (node) where task list resides
@@ -532,10 +528,10 @@ void chpl_task_addToTaskList(
   if (chpl_task_getSerial()) {
     chpl_ftable[fid](arg);
   } else {
-    myth_chpl_create(fid, arg,
+    myth_chpl_create(/* serial_state = */ false,
                      /* is_executeOn = */ false,
-                     /* serial_state = */ false,
-                     lineno, filename, get_next_task_id());
+                     lineno, filename, 
+                     subloc, fid, get_next_task_id(), arg, arg_size);
   }
   return_from_();
 }
@@ -549,33 +545,20 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
 // Call a function in a task.
 //
 void chpl_task_taskCallFTable(chpl_fn_int_t fid,          // function to call
-                              void* arg,              // function arg
-                              size_t arg_size,             // length of arg
+                              //void* arg,              // function arg
+                              chpl_task_bundle_t* arg,// function arg
+                              size_t arg_size,        // length of arg
                               c_sublocid_t subloc,       // desired sublocale
                               int lineno,                // line at which function begins
                               int32_t filename) {           // name of file containing function
   enter_();
-  if (arg != NULL) {
-    void *arg_copy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_TASK_ARG, 0, 0);
-    chpl_memcpy(arg_copy, arg, arg_size);
-    if (chpl_task_getSerial()) {
-      chpl_ftable[fid](arg_copy);
-    } else {
-      myth_chpl_create(fid, arg_copy,
-                       /* is_executeOn = */ true,
-                       /* serial_state = */ false,
-                       lineno, filename, get_next_task_id());
-    }
-    //chpl_mem_free(arg_copy, 0, 0);
+  if (chpl_task_getSerial()) {
+    chpl_ftable[fid](arg);
   } else {
-    if (chpl_task_getSerial()) {
-      chpl_ftable[fid](arg);
-    } else {
-      myth_chpl_create(fid, arg,
-                       /* is_executeOn = */ true,
-                       /* serial_state = */ false,
-                       lineno, filename, get_next_task_id());
-    }
+    myth_chpl_create(/* serial_state = */ false,
+                     /* is_executeOn = */ false,
+                     lineno, filename, 
+                     subloc, fid, get_next_task_id(), arg, arg_size);
   }
   return_from_();
 }
@@ -587,19 +570,20 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,          // function to call
 //
 void chpl_task_startMovedTask(chpl_fn_int_t fid,          // function to call
                               chpl_fn_p fp,
-                              void* arg,              // function arg
+                              //void* arg,              // function arg
+                              chpl_task_bundle_t* arg,// function arg
+                              size_t arg_size, // length of arg in bytes
                               c_sublocid_t subloc,       // desired sublocale
                               chpl_taskID_t id,      // task identifier
                               chpl_bool serial_state) {         // serial state
   enter_();
   if (chpl_task_getSerial()) {
-    assert(fp == chpl_ftable[fid]);
-    fp(arg);
+    chpl_ftable[fid](arg);
   } else {
-    myth_chpl_create(fid, arg,
+    myth_chpl_create(/* serial_state = */ false,
                      /* is_executeOn = */ true,
-                     /* serial_state = */ false,
-                     0, CHPL_FILE_IDX_UNKNOWN, id);
+                     0, CHPL_FILE_IDX_UNKNOWN, 
+                     subloc, fid, id, arg, arg_size);
   }
   return_from_();
 }
@@ -699,12 +683,14 @@ void chpl_task_setSerial(chpl_bool state) {
 
 // Get pointer to task private data.
 #ifndef CHPL_TASK_GET_PRVDATA_IMPL_DECL
+#if 0
 chpl_task_prvData_t* chpl_task_getPrvData(void) {
   static chpl_task_prvData_t prvData[1] = { { .serial_state = false } };
   enter_();
   return_from_();
   return prvData;
 }
+#endif
 #endif
 
 //
