@@ -278,7 +278,7 @@ interior element of *V* with the average of its neighbors:
   :lines: 148-149
 
 Again, in an array language, this computation would typically be
-evaluted by applying each operator in turn:
+evaluated by applying each operator in turn:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
