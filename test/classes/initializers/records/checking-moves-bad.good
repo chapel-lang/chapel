@@ -1,0 +1,1 @@
+checking-copy-init-bad.chpl:20: error: initCopy called on record 'R' when no copy initializer defined
