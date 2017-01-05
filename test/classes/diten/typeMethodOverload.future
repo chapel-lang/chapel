@@ -1,0 +1,5 @@
+bug: using the same type method name in two classes gives ambiguous call error
+
+I would have expected the receiver type to disambiguate which method to call.
+One possible workaround is to add where clauses like the ones that are
+commented out in the test.
