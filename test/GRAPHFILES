@@ -141,6 +141,7 @@ studies/parsec/blackscholes_promote.graph
 # suite: ISx benchmark
 studies/isx/isx.graph
 studies/isx/isx-bucket-spmd.graph
+studies/isx/isx-hand-optimized.graph
 studies/isx/isx-no-return.graph
 studies/isx/isx-per-task.graph
 release/examples/benchmarks/isx/isx-release.graph

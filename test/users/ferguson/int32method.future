@@ -1,6 +1,0 @@
-bug: adding methods to int(32)
-
-int32method.chpl:1: syntax error: near '32'
-
-I expect this to work just as reasonably as int.mymethod() does.
-

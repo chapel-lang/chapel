@@ -10,13 +10,19 @@
 config const n = 1000,            // the length of the generated strings
              lineLength = 60,     // the number of columns in the output
              blockSize = 1024,    // the parallelization granularity
-             numTasks = min(3, here.maxTaskPar);  // how many tasks to use?
+             numTasks = min(4, here.maxTaskPar);  // how many tasks to use?
 //
 // the computational pipeline has 3 distinct stages, so ideally, we'd
-// like to use 3 tasks.  However, if the locale can't support that
-// much parallelism, we'll use a number of tasks equal to its maximum
-// degree of task parallelism to avoid starvation (because we rely on
-// busy-waits which could cause deadlocks otherwise).
+// like to use 3 tasks.  However, there is one stage which does not
+// require any coordination and it tends to be the slowest stage, so
+// we could have multiple tasks working on it simultaneously.  In
+// practice, though, that phase is not that much slower than the sum
+// of the other two, and using too many tasks can just add overhead
+// that isn't helpful.  So we go with 4 tasks to pick up some slack,
+// and because it seems to work best on all the machine we've tried in
+// practice.  If the locale can't support that much parallelism, we'll
+// use a number of tasks equal to its maximum degree of task
+// parallelism to avoid oversubscription.
 //
 
 config type randType = uint(32);  // type to use for random numbers
@@ -131,7 +137,7 @@ proc randomMake(desc, nuclInfo, n) {
   // create tasks to pipeline the RNG, computation, and output
   coforall tid in 0..#numTasks {
     const chunkSize = lineLength*blockSize,
-          nextTask = (tid + 1) % numTasks;
+          nextTid = (tid + 1) % numTasks;
 
     var myBuff: [0..#(lineLength+1)*blockSize] int(8),
         myRands: [0..chunkSize] randType;
@@ -141,9 +147,9 @@ proc randomMake(desc, nuclInfo, n) {
       const bytes = min(chunkSize, n-i);
 
       // Get 'bytes' random numbers in a coordinated manner
-      wait(randGo);
+      randGo[tid].waitFor(i);
       getRands(bytes, myRands);
-      signal(randGo);
+      randGo[nextTid].write(i+chunkSize);
 
       // Compute 'bytes' nucleotides and store in 'myBuff'
       var col = 0,
@@ -172,18 +178,9 @@ proc randomMake(desc, nuclInfo, n) {
       }
 
       // Write the output in a coordinated manner
-      wait(outGo);
+      outGo[tid].waitFor(i);
       stdout.write(myBuff[0..#off]);
-      signal(outGo);
-
-      // Helper routines for taking turns with shared resources
-      inline proc wait(guard) {
-        while guard[tid].read() != i do ;
-      }
-
-      inline proc signal(guard) {
-        guard[nextTask].write(i+chunkSize);
-      }
+      outGo[nextTid].write(i+chunkSize);
     }
   }
 }

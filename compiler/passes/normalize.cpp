@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -921,6 +921,16 @@ static void applyGetterTransform(CallExpr* call) {
   }
 }
 
+static bool moveMakesTypeAlias(CallExpr* call)
+{
+  if (call->isPrimitive(PRIM_MOVE)) {
+    if (SymExpr* se = toSymExpr(call->get(1)))
+      if (VarSymbol* var = toVarSymbol(se->symbol()))
+        if (var->isType()) return true;
+  }
+  return false;
+}
+
 static void insert_call_temps(CallExpr* call)
 {
   Expr* stmt = call->getStmtExpr();
@@ -990,7 +1000,7 @@ static void insert_call_temps(CallExpr* call)
       //  * making an array type alias, or
       //  * passing the result into the 2nd argument of buildArrayRuntimeType.
       while (cur != NULL) {
-        if (cur->isNamed("chpl__typeAliasInit") ||
+        if (moveMakesTypeAlias(cur) ||
             (cur->isNamed("chpl__buildArrayRuntimeType") && cur->get(2) == sub))
           break;
         sub = cur;
@@ -1132,11 +1142,9 @@ static void fix_def_expr(VarSymbol* var) {
     INT_ASSERT(!type);
     stmt->insertAfter(new CallExpr(PRIM_MOVE,
                                    var,
-                                   new CallExpr("chpl__typeAliasInit",
-                                                init->copy())));
+                                   init->copy()));
     // note: insert_call_temps adjusts auto-destroy in this case
-    // by checking for chpl__typeAliasInit
-
+    // by checking for it with moveMakesTypeAlias
     return;
   }
 
@@ -1378,6 +1386,8 @@ static void init_typed_var(VarSymbol* var,
       block = new BlockStmt(NULL, BLOCK_SCOPELESS);
 
     VarSymbol* typeTemp = newTemp("type_tmp");
+    if (var->hasFlag(FLAG_PARAM))
+      typeTemp->addFlag(FLAG_PARAM);
     DefExpr*   typeDefn = new DefExpr(typeTemp);
     CallExpr*  initCall = NULL;
 
@@ -1759,17 +1769,17 @@ static void change_method_into_constructor(FnSymbol* fn) {
   if (fn->getFormal(1)->type != dtMethodToken)
     return;
 
-  // The second argument is 'this'.
-  // For starters, it needs a known type.
-  if (fn->getFormal(2)->type == dtUnknown)
-    INT_FATAL(fn, "'this' argument has unknown type");
-
   // Now check that the function name matches the name of the type
   // attached to 'this' or matches 'init'.
   bool isCtor = (0 == strcmp(fn->getFormal(2)->type->symbol->name, fn->name));
   bool isInit = (0 == strcmp(fn->name, "init"));
   if (!isCtor && !isInit)
     return;
+
+  // The second argument is 'this'.
+  // For starters, it needs a known type.
+  if (fn->getFormal(2)->type == dtUnknown)
+    INT_FATAL(fn, "'this' argument has unknown type");
 
   // The type must be a class type.
   // No constructors for records? <hilde>

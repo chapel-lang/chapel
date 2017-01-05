@@ -8,5 +8,5 @@ for i in D {
 }
 
 writeln(A);
-writeln(A._value.data(0));
-writeln(A._value.data(1));
+writeln(A._value.dataChunk(0)(0));
+writeln(A._value.dataChunk(0)(1));
