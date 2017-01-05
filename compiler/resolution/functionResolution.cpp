@@ -3755,10 +3755,10 @@ static void captureTaskIntentValues(int argNum, ArgSymbol* formal,
     captemp = newTemp(astr(formal->name, "_captemp"), formal->type);
     marker->insertBefore(new DefExpr(captemp));
     // todo: once AMM is in effect, drop chpl__autoCopy - do straight move
-    FnSymbol* autoCopy = getAutoCopy(formal->type);
-    if (autoCopy)
+    if (hasAutoCopyForType(formal->type)) {
+      FnSymbol* autoCopy = getAutoCopy(formal->type);
       marker->insertBefore("'move'(%S,%S(%S))", captemp, autoCopy, varActual);
-    else if (isReferenceType(varActual->type) &&
+    } else if (isReferenceType(varActual->type) &&
              !isReferenceType(captemp->type))
       marker->insertBefore("'move'(%S,'deref'(%S))", captemp, varActual);
     else
