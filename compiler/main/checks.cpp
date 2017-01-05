@@ -646,9 +646,11 @@ checkAutoCopyMap()
   getAutoCopyTypeKeys(keys);
   forv_Vec(Type, key, keys)
   {
-    FnSymbol* fn = getAutoCopyForType(key);
-    Type* baseType = fn->getFormal(1)->getValType();
-    INT_ASSERT(baseType == key);
+    if (hasAutoCopyForType(key)) {
+      FnSymbol* fn = getAutoCopyForType(key);
+      Type* baseType = fn->getFormal(1)->getValType();
+      INT_ASSERT(baseType == key);
+    }
   }
 }
 
