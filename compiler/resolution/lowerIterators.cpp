@@ -2209,7 +2209,8 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
+    if (hasAutoCopyForType(field->type)) {
+      FnSymbol* autoCopy = getAutoCopyForType(field->type);
       Symbol* tmp1 = newTemp(field->name, field->type);
       Symbol* tmp2 = newTemp(autoCopy->retType);
       Symbol* refTmp = NULL;

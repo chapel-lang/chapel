@@ -241,7 +241,9 @@ std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 //#
 static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
+static FnSymbol* tryResolveUninsertedCall(Type* type, CallExpr* call);
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
+                                       bool checkonly=false);
 static bool hasUserAssign(Type* type);
 static void resolveAutoCopyEtc(Type* type);
 static void resolveOther();
@@ -452,7 +454,8 @@ static bool typeHasRefField(Type *type) {
 static FnSymbol*
 resolveUninsertedCall(BlockStmt* insideBlock,
                       Expr* beforeExpr,
-                      CallExpr* call) {
+                      CallExpr* call,
+                      bool checkonly) {
 
   // In case resolveCall drops other stuff into the tree ahead of the
   // call, we wrap everything in a block for safe removal.
@@ -469,7 +472,11 @@ resolveUninsertedCall(BlockStmt* insideBlock,
   INT_ASSERT(block->parentSymbol);
 
   block->insertAtHead(call);
-  resolveCall(call);
+  if (checkonly && !call->primitive) {
+    resolveNormalCall(call, checkonly);
+  } else {
+    resolveCall(call);
+  }
   block->remove();
 
   return call->isResolved();
@@ -477,7 +484,7 @@ resolveUninsertedCall(BlockStmt* insideBlock,
 
 // Resolve a call to do with a particular type.
 static FnSymbol*
-resolveUninsertedCall(Type* type, CallExpr* call) {
+resolveUninsertedCall(Type* type, CallExpr* call, bool checkonly) {
 
   BlockStmt* insideBlock = NULL;
   Expr* beforeExpr = NULL;
@@ -491,7 +498,12 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
     insideBlock = chpl_gen_main->body;
   }
 
-  return resolveUninsertedCall(insideBlock, beforeExpr, call);
+  return resolveUninsertedCall(insideBlock, beforeExpr, call, checkonly);
+}
+
+static
+FnSymbol* tryResolveUninsertedCall(Type* type, CallExpr* call) {
+  return resolveUninsertedCall(type, call, true);
 }
 
 //
@@ -588,20 +600,63 @@ hasUserAssign(Type* type) {
   return !compilerAssign;
 }
 
+bool hasAutoCopyForType(Type* type) {
+  return autoCopyMap.get(type) != NULL;
+}
+
+// This function is intended to protect gets from the autoCopyMap so that
+// we can insert NULL values for a type and avoid segfaults
+FnSymbol* getAutoCopyForType(Type* type) {
+  FnSymbol* ret = autoCopyMap.get(type); // Do not try this at home
+  if (ret == NULL) {
+    USR_FATAL(type, "Trying to obtain autoCopy for type '%s', which defines none", type->symbol->name);
+  }
+  return ret;
+}
+
+void getAutoCopyTypeKeys(Vec<Type*> &keys) {
+  autoCopyMap.get_keys(keys);
+}
 
 static void
 resolveAutoCopyEtc(Type* type) {
 
   // resolve autoCopy
-  if (autoCopyMap.get(type) == NULL) {
+  if (!hasAutoCopyForType(type)) {
     SET_LINENO(type->symbol);
     Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
     CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
-    resolveFns(fn);
-    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
-    autoCopyMap.put(type, fn);
+    FnSymbol* fn = NULL;
+    if (isAggregateType(type) &&
+        toAggregateType(type)->initializerStyle == DEFINES_INITIALIZER) {
+      // If the user has defined an initializer for this type, we won't create
+      // a default constructor/initializer, so it is possible that the body
+      // of an autoCopy or initCopy function won't resolve.  That isn't a
+      // problem if the user never tries to make copies of the type, though,
+      // so let it pass until we know that copies should be inserted.
+      Symbol* memeTmp = newTemp(type);
+      chpl_gen_main->insertAtHead(new DefExpr(memeTmp));
+      CallExpr* call2 = new CallExpr("init", tmp, memeTmp);
+
+      fn = tryResolveUninsertedCall(type, call2);
+
+      memeTmp->defPoint->remove();
+
+      if (fn != NULL) {
+        fn = resolveUninsertedCall(type, call);
+        resolveFns(fn);
+        INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
+        autoCopyMap.put(type, fn);
+      } else {
+        autoCopyMap.put(type, NULL);
+      }
+    } else {
+      fn = resolveUninsertedCall(type, call);
+      resolveFns(fn);
+      INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
+      autoCopyMap.put(type, fn);
+    }
     tmp->defPoint->remove();
   }
 
@@ -641,7 +696,7 @@ resolveAutoCopyEtc(Type* type) {
 
 
 FnSymbol* getAutoCopy(Type *t) {
-  return autoCopyMap.get(t);
+  return getAutoCopyForType(t);
 }
 
 

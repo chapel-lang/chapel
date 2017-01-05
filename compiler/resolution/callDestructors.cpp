@@ -315,7 +315,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
               CallExpr* autoCopy = NULL;
 
               rhs->remove();
-              autoCopy = new CallExpr(autoCopyMap.get(symRhs->type), rhs);
+              autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), rhs);
               move->insertAtTail(autoCopy);
             }
           }
@@ -395,7 +395,7 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
 
               SymExpr*  lhsCopy0 = symLhs->copy();
               SymExpr*  lhsCopy1 = symLhs->copy();
-              FnSymbol* autoCopy = autoCopyMap.get(varLhs->type);
+              FnSymbol* autoCopy = getAutoCopyForType(varLhs->type);
               CallExpr* copyExpr = new CallExpr(autoCopy, lhsCopy0);
               CallExpr* moveExpr = new CallExpr(PRIM_MOVE,lhsCopy1, copyExpr);
 
@@ -449,7 +449,7 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
               CallExpr* autoCopy = NULL;
 
               rhs->remove();
-              autoCopy = new CallExpr(autoCopyMap.get(symRhs->type), rhs);
+              autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), rhs);
               move->insertAtTail(autoCopy);
             }
           }
@@ -1121,7 +1121,7 @@ static void insertAutoCopyTemps() {
       move->insertBefore(new DefExpr(tmp));
       move->insertAfter(new CallExpr(PRIM_MOVE,
                                      sym,
-                                     new CallExpr(autoCopyMap.get(sym->type),
+                                     new CallExpr(getAutoCopyForType(sym->type),
                                                   tmp)));
       move->get(1)->replace(new SymExpr(tmp));
     }
@@ -1171,7 +1171,7 @@ static void insertYieldTemps()
       Symbol* tmp = newTemp("_yield_expr_tmp_", type);
       Expr* stmt = call->getStmtExpr();
       stmt->insertBefore(new DefExpr(tmp));
-      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(autoCopyMap.get(type), yieldExpr->remove())));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(getAutoCopyForType(type), yieldExpr->remove())));
       call->insertAtHead(new SymExpr(tmp)); // New first argument.
     }
   }
