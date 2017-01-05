@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,8 @@ BlockStmt* TryStmt::buildChplStmt(Expr* expr) {
 TryStmt::TryStmt(bool tryBang, BlockStmt* body) : Stmt(E_TryStmt) {
   _tryBang = tryBang;
   _body    = body;
+
+  gTryStmts.add(this);
 }
 
 TryStmt::~TryStmt() {

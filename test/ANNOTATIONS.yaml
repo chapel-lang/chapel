@@ -207,8 +207,15 @@ all:
     - Stack allocate on and task function argument bundles (#4074)
   12/08/16:
     - Re-enable denormalization (#4547)
+  12/13/16:
+    - text: inferConst improvements related to _retArg (#4969)
+      config: 16 node XC
   12/14/16:
     - Reduce task creation time for "bounded" coforalls (#5018)
+    - text: Ugni comm layer improvements for forks and the heap (internal #276)
+      config: 16 node XC
+  12/22/16:
+    - multi-ddata (#5047)
 
 
 AllCompTime:
@@ -360,7 +367,9 @@ fasta:
   12/10/16:
     - Switch from 'sync' to 'atomic'-based coordination (#5004)
   12/15/16:
-    - Parallelize release version and refactor for CLBG submissions (#5024)
+    - Parallelize release version, make more use of randType and refactor for CLBG submissions (#5024)
+  12/19/16:
+    - Switch max number of tasks from 3 to 4 (#5078)
 
 fastaredux:
   01/14/14:

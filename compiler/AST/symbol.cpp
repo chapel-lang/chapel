@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -144,10 +144,15 @@ static inline void verifyInTree(BaseAST* ast, const char* msg) {
 }
 
 void Symbol::verify() {
-  if (defPoint && !defPoint->parentSymbol && !toModuleSymbol(this))
-    INT_FATAL(this, "Symbol::defPoint is not in AST");
-  if (defPoint && this != defPoint->sym)
-    INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
+  if (defPoint) {
+    if (!defPoint->parentSymbol && this != rootModule)
+      INT_FATAL(this, "Symbol::defPoint is not in AST");
+    if (this != defPoint->sym)
+      INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
+  } else {
+    if (this != rootModule)
+      INT_FATAL(this, "Symbol without a defPoint");
+  }
   verifyInTree(type, "Symbol::type");
 
   if (symExprsHead) {
@@ -841,11 +846,8 @@ FnSymbol::FnSymbol(const char* initName) :
   codegenUniqueNum(1),
   doc(NULL),
   retSymbol(NULL),
+  llvmDISubprogram(NULL),
   _throwsError(false)
-#ifdef HAVE_LLVM
-  ,
-  llvmDISubprogram(NULL)
-#endif
 {
   substitutions.clear();
   gFnSymbols.add(this);

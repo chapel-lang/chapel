@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -984,11 +984,6 @@ module ChapelBase {
 
   inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
-
-  inline proc chpl__typeAliasInit(type t) type return t;
-  inline proc chpl__typeAliasInit(v) {
-    compilerError("illegal assignment of value to type");
-  }
 
   pragma "dont disable remote value forwarding"
   inline proc _createFieldDefault(type t, init) {

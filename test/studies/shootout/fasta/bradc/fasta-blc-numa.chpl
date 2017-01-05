@@ -7,34 +7,27 @@
      and Preston Sahabu.
 */
 
-config const n = 1000,           // the length of the generated strings
-             lineLength = 60,    // the number of columns in the output
-             blockSize = 1024;   // the parallelization granularity
+config param numSockets = 2;      // number of sockets on this numa node
 
-config param numSockets = 2;
+config const n = 1000,            // the length of the generated strings
+             lineLength = 60,     // the number of columns in the output
+             blockSize = 1024,    // the parallelization granularity
+             numTasks = min(4, here.maxTaskPar),  // how many tasks to use?
+             numNumaTasks = numSockets*numTasks;  // " including dummies
 
 //
 // the computational pipeline has 3 distinct stages, so ideally, we'd
-// like to use 3 tasks.  However, if the locale can't support that
-// much parallelism, we'll use a number of tasks equal to its maximum
-// degree of task parallelism to avoid starvation (because we rely on
-// busy-waits which could cause deadlocks otherwise).  Since we're
-// creating twice as many tasks to stripe them across the NUMA domains
-// and ensure that our 3 main tasks are on NUMA domain 0, we'll compute
-// the number of numa tasks and then divide that by 2 to get the number
-// of actual tasks.
+// like to use 3 tasks.  However, there is one stage which does not
+// require any coordination and it tends to be the slowest stage, so
+// we could have multiple tasks working on it simultaneously.  In
+// practice, though, that phase is not that much slower than the sum
+// of the other two, and using too many tasks can just add overhead
+// that isn't helpful.  So we go with 4 tasks to pick up some slack,
+// and because it seems to work best on all the machine we've tried in
+// practice.  If the locale can't support that much parallelism, we'll
+// use a number of tasks equal to its maximum degree of task
+// parallelism to avoid oversubscription.
 //
-config const maxTaskPar = here.maxTaskPar,
-             idealTasks = numSockets*3,
-             numTasks = if idealTasks > maxTaskPar
-                          then min(3, maxTaskPar)
-                          else idealTasks / numSockets,
-             numNumaTasks = if numTasks*numSockets > maxTaskPar
-                              then numTasks
-                              else numTasks*numSockets,
-             div = if numTasks*numSockets > maxTaskPar then 1 else numSockets;
-
-config const debug = false;
 
 config type randType = uint(32);  // type to use for random numbers
 
@@ -43,13 +36,6 @@ config param IM = 139968,         // parameters for random number generation
              IC = 29573,
              seed: randType = 42;
 
-if debug {
-  writeln("idealTasks   = ", idealTasks);
-  writeln("numTasks     = ", numTasks);
-  writeln("numNumaTasks = ", numNumaTasks);
-  writeln("div          = ", div);
-  exit(0);
-}
 
 //
 // Nucleotide definitions
@@ -103,7 +89,6 @@ const HomoSapiens = [(a, 0.3029549426680),
                      (g, 0.1975473066391),
                      (t, 0.3015094502008)];
 
-
 proc main() {
   repeatMake(">ONE Homo sapiens alu\n", ALU, 2*n);
   randomMake(">TWO IUB ambiguity codes\n", IUB, 3*n);
@@ -139,11 +124,10 @@ proc repeatMake(desc, alu, n) {
 proc randomMake(desc, nuclInfo, n) {
   stdout.write(desc);
 
-  const numNucls = nuclInfo.size;
-  var cumulProb: [1..numNucls] randType;
-
   // compute the cumulative probabilities of the nucleotides
-  var p = 0.0;
+  const numNucls = nuclInfo.size;
+  var cumulProb: [1..numNucls] randType,
+      p = 0.0;
   for i in 1..numNucls {
     p += nuclInfo[i](prob);
     cumulProb[i] = 1 + (p*IM):randType;
@@ -155,29 +139,30 @@ proc randomMake(desc, nuclInfo, n) {
   randGo.write(0);
   outGo.write(0);
 
+  // create tasks to pipeline the RNG, computation, and output
   coforall itid in 0..#numNumaTasks {
-    if itid%div == 0 {
-    const tid = itid / div;
+    if itid%numSockets == 0 {
+    const tid = itid / numSockets;
     const chunkSize = lineLength*blockSize,
-          nextTask = (tid + 1) % numTasks;
+          nextTid = (tid + 1) % numTasks;
 
     var myBuff: [0..#(lineLength+1)*blockSize] int(8),
         myRands: [0..chunkSize] randType;
 
-    for i in tid*chunkSize .. n-1 by numTasks*chunkSize {
+    // iterate over 0..n-1 in a round-robin fashion across tasks
+    for i in tid*chunkSize..n-1 by numTasks*chunkSize {
       const bytes = min(chunkSize, n-i);
 
       // Get 'bytes' random numbers in a coordinated manner
-      wait(randGo);
+      randGo[tid].waitFor(i);
       getRands(bytes, myRands);
-      signal(randGo);
+      randGo[nextTid].write(i+chunkSize);
 
       // Compute 'bytes' nucleotides and store in 'myBuff'
       var col = 0,
           off = 0;
 
       for j in 0..#bytes {
-
         const r = myRands[j];
         var nid = 1;
         for k in 1..numNucls do
@@ -200,18 +185,9 @@ proc randomMake(desc, nuclInfo, n) {
       }
 
       // Write the output in a coordinated manner
-      wait(outGo);
+      outGo[tid].waitFor(i);
       stdout.write(myBuff[0..#off]);
-      signal(outGo);
-
-      // Helper routines for taking turns with shared resources
-      inline proc wait(guard) {
-        while guard[tid].read() != i do ;
-      }
-
-      inline proc signal(guard) {
-        guard[nextTask].write(i+chunkSize);
-      }
+      outGo[nextTid].write(i+chunkSize);
     }
     }
   }
@@ -219,6 +195,7 @@ proc randomMake(desc, nuclInfo, n) {
 
 //
 // Deterministic random number generator
+// (lastRand really wants to be a local static...)
 //
 var lastRand = seed;
 

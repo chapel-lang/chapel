@@ -399,10 +399,10 @@ module SSCA2_RMAT_graph_generator
 	       "edge end vertices out of high end of range");
 
           if !(w > 0) then halt( 
-	       "edge weightd out of low end of range");
+	       "edge weight out of low end of range");
 
           if !(w <= MAX_EDGE_WEIGHT) then halt(  
-	       "edge weightd out of high end of range");
+	       "edge weight out of high end of range");
         }
         // exit the scope to enable memory deallocation, if any
       }

@@ -1,2 +1,3 @@
 metaprog2.chpl:2: In function 'calPI':
 metaprog2.chpl:7: error: Initializing parameter 'ret' to value not known at compile time
+metaprog2.chpl:9: error: param function does not resolve to a param symbol

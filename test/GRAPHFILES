@@ -2,7 +2,12 @@
 release/examples/benchmarks/ssca2/SSCA2_main.graph
 release/examples/benchmarks/ssca2/edge_generation.graph
 release/examples/benchmarks/ssca2/total_time.graph
-release/examples/benchmarks/lcals/LCALSMain.graph
+release/examples/benchmarks/lcals/LCALS-raw-short.graph
+release/examples/benchmarks/lcals/LCALS-raw-medium.graph
+release/examples/benchmarks/lcals/LCALS-raw-long.graph
+release/examples/benchmarks/lcals/LCALS-parallel-short.graph
+release/examples/benchmarks/lcals/LCALS-parallel-medium.graph
+release/examples/benchmarks/lcals/LCALS-parallel-long.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/hpcc/stream.graph
 release/examples/benchmarks/hpcc/ra.graph
@@ -132,6 +137,7 @@ studies/parsec/blackscholes_promote.graph
 # suite: ISx benchmark
 studies/isx/isx.graph
 studies/isx/isx-bucket-spmd.graph
+studies/isx/isx-hand-optimized.graph
 studies/isx/isx-no-return.graph
 studies/isx/isx-per-task.graph
 release/examples/benchmarks/isx/isx-release.graph
@@ -142,11 +148,13 @@ studies/prk/stencil/prk-stencil-time.graph
 studies/prk/transpose/prk-transpose.graph
 # suite: NAS Parallel benchmarks
 npb/cg/cg.graph
+npb/cg/cg-a.graph
 npb/ep/ep.graph
 npb/ep/ep-b.graph
 npb/ft/ft.graph
 npb/ft/ft-a.graph
 users/npadmana/npb-mg/mg.graph
+users/npadmana/npb-mg/mg-b.graph
 # suite: Array/Domain performance
 arrays/diten/arrayPerformance-2d.graph
 arrays/diten/arrayPerformance-1d.graph

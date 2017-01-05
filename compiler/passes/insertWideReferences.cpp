@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -2638,49 +2638,12 @@ void handleIsWidePointer() {
   }
 }
 
-static bool
-shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
-  FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
-
-  bool shouldPassRef = (arg->intent & INTENT_FLAG_REF) ||
-                       arg->requiresCPtr();
-
-  bool alreadyRef = arg->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-                    arg->qualType().isRef();
-
-  // Only change argument types for functions with a ref intent
-  // that don't already have an argument being passed by ref
-  // and that aren't extern functions.
-  return (shouldPassRef &&
-          !alreadyRef &&
-          !fn->hasFlag(FLAG_EXTERN) &&
-          !arg->hasFlag(FLAG_NO_CODEGEN));
-}
-
-static void
-adjustArgSymbolTypesForIntent(void)
-{
-  // Adjust ArgSymbols that have ref/const ref concrete
-  // intent so that their type is ref. This allows the
-  // rest of this code to work as expected.
-  forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (shouldChangeArgumentTypeToRef(arg)) {
-      arg->qual   = QUAL_REF;
-      arg->intent = INTENT_REF;
-    }
-  }
-}
-
 //
 // Widen variables that may be remote.
 //
 void
 insertWideReferences(void) {
   FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
-
-  // BHARSH TODO: Should this be in some other pass? It would be nice if one
-  // could assume this pass does nothing in --local mode
-  adjustArgSymbolTypesForIntent();
 
   if (!requireWideReferences()) {
     handleIsWidePointer();

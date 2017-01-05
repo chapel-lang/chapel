@@ -343,12 +343,12 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale;
 
   if onlyDim==1 {
-    const l = nnzDom.low, h = nnzDom.high;
-    const numElems = colIdx.size;
+    const l = nnzDom.low, h = nnzDom.low+nnz-1;
+    const numElems = nnz;
 
     coforall t in 0..#numTasks {
       const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
-      for i in myChunk.translate(l) {
+      for i in myChunk[1]+l..myChunk[2]+l {
         if colIdx[i] == otherIdx {
           const (found, loc) = binarySearch(rowStart, i);
           yield if found then loc else loc-1;
@@ -369,12 +369,12 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
           minIndicesPerTask, numElems);
 
     if numChunks == 1 {
-      for i in l..h do yield i;
+      for i in l..h do yield colIdx[i];
     }
     else {
       coforall t in 0..#numTasks {
-        const myChunk = _computeChunk(numElems, numTasks, t, h, l, l);
-        for i in myChunk do yield i;
+        const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
+        for i in myChunk[1]..myChunk[2] do yield colIdx[i];
       }
     }
   }
