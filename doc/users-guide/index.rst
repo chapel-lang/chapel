@@ -41,6 +41,8 @@ support of parallelism and locality are removed.
    base/vars
    base/basicTypes
    base/basicValues
+   base/constParam
+   base/typeAliases
    base/configs
    base/casts
    base/forloops
@@ -82,6 +84,7 @@ abstractly using a rich set of data structures.
    :glob:
 
    datapar/forall
+   datapar/promotion
 
 (more to come...)
 

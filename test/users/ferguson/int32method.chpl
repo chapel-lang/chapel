@@ -1,4 +1,4 @@
-proc int(32).mysquare(): int(32) {
+proc (int(32)).mysquare(): int(32) {
   return this * this;
 }
 

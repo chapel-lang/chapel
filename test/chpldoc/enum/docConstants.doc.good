@@ -1,8 +1,8 @@
 docConstants.doc
- 
+
 Usage:
    use docConstants.doc;
 
-  enum Color { Red, Yellow }
+   enum Color { Red, Yellow }
       enum documentation 
 
