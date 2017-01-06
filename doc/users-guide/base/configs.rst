@@ -1,22 +1,23 @@
 :title: Users Guide: Configuration Declarations
 
-.. _ug-typeAliases:
+.. _ug-configs:
 
 **config** Declarations: command-line overrides
 ===============================================
 
 The four main declaration keywords that have been introduced so far —
-``var``, ``const``, ``param``, and ``type`` — each support a mode in
-which their symbols' initial values as specified in the source code
-can be overridden on the command-line.  This supports the ability to
-specify and override default values, and is achieved by prefixing the
-statement with the keyword ``config``.
+``var``, ``const``, ``param``, and ``type`` — support a mode in which
+their initializing expressions in the source code can be overridden on
+the command-line.  This is achieved by prefixing the declaration with
+the keyword ``config``.  Chapel's ``config`` feature provides a simple
+means of specifying and overriding default values.
+
 
 ``config var`` and ``config const``
 -----------------------------------
 
-Configuration variables are variables whose default values can be
-overridden the executable's command-line.  Here's a simple example:
+*Configuration variables* are variables whose default values can be
+overridden on the executable's command-line.  Here's a simple example:
 
 .. literalinclude:: examples/users-guide/base/configs.chpl
   :caption:
@@ -45,12 +46,11 @@ name and its value, as follows:
 There is no difference between these two forms—it's simply a matter of
 taste.
 
-As with normal variables, a variable declared as a ``config var`` can
-be re-assigned throughout its lifetime.  In contrast, ``config const``
-declarations cannot be changed once they are initialized, whether that
-initial value comes from the source code expression or the
-command-line.  The following statement declares a pair of configurable
-constants:
+As with normal variables, a ``config var`` can be re-assigned
+throughout its lifetime.  In contrast, ``config const`` declarations
+cannot be changed once they are initialized, whether that initial
+value comes from the source code or the command-line.  The following
+statement declares a pair of configurable constants:
 
 .. literalinclude:: examples/users-guide/base/configs.chpl
   :language: chapel
@@ -97,6 +97,12 @@ to ``true``, we could compile as follows:
   :language: text
   :lines: 1
 
+or:
+
+.. literalinclude:: examples/users-guide/base/configs2.compopts-fake
+  :language: text
+  :lines: 9
+          
 As with the generated executable, boolean values can also be set on
 the compiler's command line simply using the name of the flag.  Thus,
 the following would be equivalent to the previous line:
@@ -105,53 +111,60 @@ the following would be equivalent to the previous line:
   :language: text
   :lines: 2
 
-Needless to say, multiple ``config`` declarations can be overridden
-at once.  For example, this command-line overrides the default
+As you'd expect, multiple ``config`` declarations can be overridden at
+once.  For example, this command-line overrides the default
 initializers for *bitMask*, *size*, and *age*:
 
 .. literalinclude:: examples/users-guide/base/configs2.compopts-fake
   :language: text
   :lines: 3
 
-One of the nice things about setting ``config`` declarations in the
-compiler is that the specified value can take the form of reasonably
-arbitrary Chapel code since the compiler is involved in interpreting
-it.  Thus, we can use more interesting expressions when setting
-compile-time ``config`` values.  For example, the following compiler
-lines specify *bitMask*, *size*, and *age* not using simple literals
-and types, but with complex expressions:
+One of the nice things about setting ``config`` declarations on the
+compiler's command-line is that the specified value can be an
+arbitrary Chapel expression, provided that the compiler can evaluate
+it in place of the source-based initialization expression.  Thus, we
+can use more interesting expressions when setting compile-time
+``config`` values.  For example, the following compiler lines specify
+*bitMask*, *size*, and *age* using expressions other than simple
+literals and type names:
 
 .. literalinclude:: examples/users-guide/base/configs2.compopts-fake
   :language: text
   :lines: 5-6
 
-Note the use of quotes in this example to preserve whitespace in the
-initial value.  This relates to having the command shell pass the
-entire expression to Chapel as a single argument rather than being
-a Chapel-specific syntax.
+Note the use of quotes in some of the examples above.  These are not
+required by Chapel itself, but are used to pass nontrivial expressions
+through the command-line shell (e.g., **bash**) such that they reach
+Chapel as a single uninterpreted argument.  For example, parenthesis
+have special meaning for many command-shells, so the use of quotes
+above tells the shell to ignore them.  Other cases use quotes to pass
+expressions containing whitespace to the Chapel compiler as a single
+argument.  Details about which characters have special meaning and how
+they can be preserved depend on the specific shell being used and are
+beyond the scope of this article.
 
 Setting ``config`` defaults on the compiler's command-line also
 supports more radical alterations to the code.  For example, we
 could change *age* from an integral type to a floating point type:
 
-.. literalinclude:: examples/users-guide/base/configs2.compopts-fake
+.. literalinclude:: examples/users-guide/base/configs3.execopts-fake
   :language: text
   :lines: 4
 
-Note that ``config`` declarations are processed in the order that they
-appear in the source code and that any initializing expressions must
-make sense when considered in that original context.  Thus, the
-command-line overrides for a given ``config`` can refer to other
-declarations that precede that declaration in the source code.  For
-instance, we can set *age* in terms of the ``config param`` *size*
-since it appeared earlier in the code:
+Note that ``config`` declarations are processed in the order specified
+by the source code and compiler, not the order that they occur on the
+command-line.  Moreover, the initializing expressions must make sense
+when considered in the source code context.  Thus, the command-line
+override for a given ``config`` can refer to other declarations that
+precede it in a given module.  For instance, we can set *age* in terms
+of the ``config param`` *size* since it appeared earlier in the code:
 
 .. literalinclude:: examples/users-guide/base/configs2.compopts-fake
   :language: text
   :lines: 7
 
-However, the reverse would not be possible since *age* had not been
-established when *size* is declared.
+However, the reverse would not be possible since *age* has not been
+initialized when *size* is declared.
 
 Similarly, subsequent declarations in the source code can themselves
 be based on ``config`` declarations.  For instance, here are some
@@ -205,7 +218,7 @@ then *epsilon* will be computed in terms of it, resulting in the value:
 Note that the compiler's command-line override can still be
 re-overridden on the executable's command-line as usual:
 
-.. literalinclude:: examples/users-guide/base/configs2.compopts-fake
+.. literalinclude:: examples/users-guide/base/configs3.execopts-fake
   :language: text
   :lines: 4
 
