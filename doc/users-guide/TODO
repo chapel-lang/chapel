@@ -21,6 +21,11 @@ compoundStatements
 forloops
 zip
 ...
+enums
+ - config enums -- can name or drop enum type name on executable command line
+records
+classes
+...
 modules? // make sure to mention ambiguous config overrides
 ...
 iterator functions
