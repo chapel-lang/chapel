@@ -189,7 +189,7 @@ a variation on one of our earlier declarations:
   :language: chapel
   :lines: 1-2
 
-The followng compiler command can be used to override the source
+The following compiler command can be used to override the source
 code initializer for *epsilon* so that it will be a function of
 *n* by default:
 
