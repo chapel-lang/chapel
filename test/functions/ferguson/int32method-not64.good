@@ -1,0 +1,2 @@
+int32method-not64.chpl:9: error: unresolved call 'int(64).foo()'
+int32method-not64.chpl:1: note: candidates are: (int(32)).foo()

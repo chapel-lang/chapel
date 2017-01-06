@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1288,6 +1288,19 @@ bool is_complex_type(Type *t) {
 
 bool is_enum_type(Type *t) {
   return toEnumType(t);
+}
+
+
+bool isLegalParamType(Type* t) {
+  return (is_bool_type(t) ||
+          is_int_type(t) ||
+          is_uint_type(t) ||
+          is_real_type(t) ||
+          is_imag_type(t) ||
+          is_enum_type(t) ||
+          isString(t) ||
+          t == dtStringC ||
+          t == dtUnknown);
 }
 
 int get_width(Type *t) {

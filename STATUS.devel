@@ -107,8 +107,6 @@ Types, Params, Variables, and Consts
   # types/enum/nspark/dependentElements.future
 - Compile time integer operations on enum values may result in non-param values
   # users/kreider/bug_enum.future
-- Cannot define a method on sized types.
-  # users/ferguson/int32method.future
 - Declaring enum types in a function body can cause compile time errors
   # types/enum/diten/enumDeclInFn.future
 - The default value for the locale type is incorrect.
@@ -151,6 +149,9 @@ Types, Params, Variables, and Consts
   # visibility/private/privateEnum.future
 - Defining a method on a type alias is not supported.
   # users/ferguson/type-alias-method.future
+- Implicit `this` not working for method on specific instantiation;
+  explicitly writing e.g. `this.field` may be required.
+  # functions/ferguson/spec-insn-method-no-this.future
 
 Conversions
 -----------
@@ -527,7 +528,11 @@ Classes, Records, and Unions
 - There's no way to determine which field of a union is "active".
 - Setting union field from constructor doesn't work
   # classes/diten/constructUnion.future
-
+- Type methods do not work correctly with generic types
+  # classes/ferguson/generic-type-method-simple1.future
+  # classes/ferguson/generic-type-method-simple2.future
+  # classes/ferguson/generic-type-method-simple3.future
+  # classes/ferguson/generic-type-method-tuple.future
 
 Domain Maps, Domains and Arrays
 -------------------------------

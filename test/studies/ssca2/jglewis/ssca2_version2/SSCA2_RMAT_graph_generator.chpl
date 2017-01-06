@@ -236,10 +236,10 @@ module SSCA2_RMAT_graph_generator
 	       "edge end vertices out of high end of range");
 
       assert ( Edge_Weight > 0, 
-	       "edge weightd out of low end of range");
+	       "edge weight out of low end of range");
 
       assert ( Edge_Weight <= MAX_EDGE_WEIGHT,  
-	       "edge weightd out of high end of range");
+	       "edge weight out of high end of range");
 
       writeln (); writeln ("Vertex Set in G:", G.vertices);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -134,7 +134,7 @@ FnSymbol* buildLambda(FnSymbol* fn);
 FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
                               const char* name,
                               IntentTag   thisTag,
-                              const char* class_name);
+                              Expr*       receiver);
 BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              RetTag      optRetTag,
                              Expr*       optRetType,

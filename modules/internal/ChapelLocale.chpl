@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -158,7 +158,7 @@ module ChapelLocale {
       stack for any task on the current locale, including the
       caller.
     */
-    const callStackSize: size_t;
+    var callStackSize: size_t;
 
     /*
       Get the integer identifier for the top-level locale the
@@ -498,11 +498,13 @@ module ChapelLocale {
       // so tell the compiler to not insert them.
       pragma "no copy" pragma "no auto destroy"
       const origLocales => (origRootLocale:RootLocale).getDefaultLocaleArray();
-      var origRL = origLocales._value.theData;
-      var newRL = newRootLocale.getDefaultLocaleArray()._value.theData;
+      assert(origLocales._value.oneDData
+             && newRootLocale.getDefaultLocaleArray()._value.oneDData);
+      var origRL = origLocales._value.theDataChunk(0);
+      var newRL = newRootLocale.getDefaultLocaleArray()._value.theDataChunk(0);
       // We must directly implement a bulk copy here, as the mechanisms
       // for doing so via a whole array assignment are not initialized
-      // yet and copying element-by-element via a for loop is is costly.
+      // yet and copying element-by-element via a for loop is costly.
       __primitive("chpl_comm_array_get",
                   __primitive("array_get", newRL, 0),
                   0 /* locale 0 */,
