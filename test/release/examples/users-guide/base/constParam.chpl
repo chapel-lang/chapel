@@ -15,7 +15,7 @@ writeln(zero);
 const three = 3,
       four = 4,
       Zero, ZERO: int,         // 'Zero' and 'ZERO' are both 'int's default initialized to '0'
-      language = "Chapel",
+      language = "Chapel",     // 'language' is inferred to be a 'string'
       debug, verbose = false;  // 'debug' and 'verbose' are both 'bool's initialized to 'false'
 
 const n = read(int),     // initialize 'n' by reading an 'int' from the console

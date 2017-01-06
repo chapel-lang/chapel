@@ -19,13 +19,19 @@ keyword:
 
 Declaring immutable variables as ``const`` or ``param`` provides
 helpful semantic information, both to human readers of Chapel
-programs, and to the compiler itself.  In practice, ``param`` values
-are most often used in cases where compile-time operations or
-specialization will reduce execution-time computation, resulting in
-better performance.  In other cases, certain language constructs are
-required to be ``param`` values for the sake of static typing or
-performance.  Examples include the index values of a heterogeneous
-tuple or the number of dimensions in a rectangular array.
+programs, and to the compiler itself.
+
+In practice, ``param`` values are most often used in cases where
+compile-time operations or specialization will reduce execution-time
+computation, resulting in better performance.  In other cases, certain
+language constructs are required to be ``param`` values for the sake
+of static typing or performance.  Examples include the indices used
+when indexing heterogeneous tuples or the number of dimensions when
+declaring rectangular arrays.  In situations other than the above,
+``const`` declarations tend to be used since they are less restrictive
+as we will see below.
+
+
 
 
 Declaring *consts*
@@ -105,8 +111,8 @@ Declaring *params*
 ------------------
 
 Declaring a ``param`` value is syntactically identical to declaring a
-``var`` or ``const`` apart from the use of the keyword ``param``.
-However, the initializer of a ``param`` must be able to be computed at
+``var`` or ``const``, but uses the keyword ``param``.
+The initializer of a ``param`` must be able to be computed at
 compile-time, unlike variables and execution-time constants.  Thus,
 most of the ``const`` declarations of the previous section could
 trivially be converted to ``param`` declarations as follows:
@@ -134,7 +140,8 @@ since the value of *n* cannot be known at compile-time:
 
 Despite this restriction, Chapel knows how to perform certain
 compile-time computations on ``param`` values, permitting them to be
-initialized using more complex expressions than simple literal values:
+initialized using expressions other than simple literal values:
+
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl
   :language: chapel
@@ -150,7 +157,7 @@ certain types that the compiler knows how to compute with: booleans,
 signed and unsigned integers, ``real`` and ``imag`` floating point
 values, enumerated types, and strings.  Literal values of these types
 can be considered to be anonymous ``param`` values.  In the future, we
-hope to expand this list to include additional types, such as complex
+expect to expand this list to include additional types, such as complex
 values, ranges, domains, arrays, records, classes, and unions.
 
 
@@ -178,16 +185,16 @@ immutable variable, such as:
 * constants for which compile-time specialization is neither required
   nor beneficial.
 
-The ways in which a ``param`` value can effect code specialization or
+The ways in which a ``param`` value can affect code specialization or
 optimization may seem vague now, but should become clearer as we see
 how ``param`` values are used to create generic types and functions,
 to unroll loops, etc.
 
 While compilers can often determine that a symbol is ``const`` or
 ``param`` by analyzing its uses, Chapel programmers are encouraged to
-convert variables into constants whenever possible in order to
-maximize the amount of semantic information available to the compiler
-and to people reading the code.  Such declarations can also help
-programmers avoid simple mistakes by having the compiler's semantic
-checks help ensure that values which are intended to be constant are
-not re-assigned accidentally.
+declare variables as constants whenever possible in order to maximize
+the amount of semantic information available to the compiler and to
+people reading the code.  Such declarations can also help programmers
+avoid simple mistakes by having the compiler's semantic checks ensure
+that values which are intended to be constant are not accidentally
+re-assigned.
