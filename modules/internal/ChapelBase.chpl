@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -578,6 +578,16 @@ module ChapelBase {
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));
 
+  inline proc min(param x: int(?w), param y: int(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: int(?w), param y: int(w)) param
+    return if x > y then x else y;
+
+  inline proc min(param x: uint(?w), param y: uint(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: uint(?w), param y: uint(w)) param
+    return if x > y then x else y;
+
   inline proc min(x, y) where isAtomic(x) || isAtomic(y) {
     compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
   }
@@ -984,11 +994,6 @@ module ChapelBase {
 
   inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
-
-  inline proc chpl__typeAliasInit(type t) type return t;
-  inline proc chpl__typeAliasInit(v) {
-    compilerError("illegal assignment of value to type");
-  }
 
   pragma "dont disable remote value forwarding"
   inline proc _createFieldDefault(type t, init) {

@@ -1,0 +1,2 @@
+generic-type-method-simple1.chpl:4: In function 'getType':
+generic-type-method-simple1.chpl:4: error: 'myType' undeclared (first use this function)

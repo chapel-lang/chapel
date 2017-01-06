@@ -1,5 +1,8 @@
 outline
--------
+=======
+
+base
+----
 basicTypesValues
 ...
 const/param
@@ -22,29 +25,35 @@ iterator functions
 these iterators
 ...
 
+taskpar
+-------
 begin
 cobegin
 coforall
 task intents
 
-forall
+datapar
+-------
+forall loops
 forall intents
+forall expressions (or swap with the previous?)
 promotion
 
-Use before def:
----------------
 
+TODOs
+=====
+
+Use before def
+--------------
 for: operators (+=)
 loop: simple arrays
 zip: tuples, array literals, unbounded ranges
-promotion: forall intents
-
+promotion: forall intents, forall expressions
 
 forward ref to unwritten section
 --------------------------------
 * param functions referred to in constParam.rst
  
-
 ASAP
 ----
 * fix poorly formatted code in locale type vars section.

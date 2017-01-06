@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -381,13 +381,11 @@ static inline bool isAliveQuick(Symbol* symbol) {
 }
 
 static inline bool isAlive(Symbol* symbol) {
-  if (symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL)) return true;
-  if (! symbol->defPoint) return false;
-  return isAliveQuick(symbol);
+  return symbol->defPoint && isAlive(symbol->defPoint);
 }
 
 static inline bool isAlive(Type* type) {
-  return isAliveQuick(type->symbol);
+  return isAlive(type->symbol->defPoint);
 }
 
 #define isRootModule(ast)  \

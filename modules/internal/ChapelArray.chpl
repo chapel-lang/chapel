@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -3188,6 +3188,7 @@ module ChapelArray {
     // constraints specific to a particular domain map array type
     if !a._value.doiCanBulkTransfer() then return false;
     if !b._value.doiCanBulkTransfer() then return false;
+    if !a._value.doiUseBulkTransfer(b) then return false;
 
     return true;
   }
@@ -3201,6 +3202,7 @@ module ChapelArray {
     // constraints specific to a particular domain map array type
     if !a._value.doiCanBulkTransferStride() then return false;
     if !b._value.doiCanBulkTransferStride() then return false;
+    if !a._value.doiUseBulkTransferStride(b) then return false;
 
     return true;
   }

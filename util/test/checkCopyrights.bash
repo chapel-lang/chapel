@@ -44,9 +44,6 @@ files_wo_copy=$(find $source_dirs \
     grep -v compiler/include/bison-chapel.h  | \
     grep -v compiler/include/flex-chapel.h   | \
     grep -v compiler/parser/bison-chapel.cpp | \
-    grep -v compiler/parser/flex-chapel.cpp  | \
-    grep -v compiler/passes/reservedSymbolNames.h | \
-    grep -v modules/standard/gen/ | \
     xargs grep -i -L "${copyright_pattern}")
 
 # Now check the Make* files in CHPL_HOME.

@@ -17,17 +17,13 @@ loghome=/data/sea/chapel
 loghistdir=/data/sea/chapel/NightlyHistory
 logsources="\
 Nightly \
-Nightly/whitebox/cray-xc \
-Nightly/whitebox/cray-xe \
 NightlyDists \
 NightlyMemLeaks \
 NightlyPerformance/bradc-lnx \
 NightlyPerformance/chap01 \
-NightlyPerformance/chap03 \
 NightlyPerformance/chap04 \
 NightlyPerformance/chap08 \
 NightlyPerformance/chap12 \
-NightlyPerformance/tiger \
 "
 
 # logs for "Cray hardware" configurations
@@ -54,7 +50,7 @@ function do1() {
   # ensures everything is tidy so far
   case "$date" in
     (??????) true;; # good
-    (*) error $logfile "could not determine the date (got $datehdr)"; return 0;;
+    (*) error $logfile "could not determine the date from top 5 lines (got $date)"; head -5 $logfile; return 0;;
   esac
 
   local histdir=$loghistdir/$date
