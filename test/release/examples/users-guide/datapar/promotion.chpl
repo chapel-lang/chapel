@@ -188,3 +188,7 @@ writeln(A);
 A = 0.0;
 maybeCopy(A, A.domain, true);
 writeln(A);
+
+A = 0.0;
+maybeCopy(A, forall i in 1..3 do 2*i + 0.5, true);
+writeln(A);

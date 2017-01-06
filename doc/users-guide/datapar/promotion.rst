@@ -12,7 +12,7 @@ precisely, when passing:
 
 * an array of type *t*,
 * a range or domain whose index type is *t*, or
-* a forall expression yielding type *t*
+* a forall expression yielding type *t*,
 
 to a function argument expecting type *t*, that function will be
 called in a data-parallel manner for all values in the expression.
@@ -107,26 +107,26 @@ the third argument, *b*, is true:
   :language: chapel
   :lines: 51-54
 
-The following four calls demonstrate that various combinations of
-arguments may be promoted, where *A* and *B* are as above, and *Mask*
-is an array of ``bool`` values:
+The following calls demonstrate that various combinations of arguments
+may be promoted, where *A* and *B* are as above, and *Mask* is an
+array of ``bool`` values:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
-  :lines: 63-67,76,85,94
+  :lines: 63-66,85,76
 
 These calls are equivalent to the following forall-loops:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
-  :lines: 71-72,80-81,89-90,98-99
+  :lines: 89-90,80-81
 
 So, after the respective calls above, *A* will store the following
 values:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.good
   :language: text
-  :lines: 23,25,27,29
+  :lines: 27,25
 
 
 Promoted Calls and Forall Intents
@@ -150,45 +150,46 @@ error.  To see the reason, consider the equivalent forall-loop:
   :lines: 108-109
   :dedent: 2
 
-On the way into the loop, a ``const`` shadow copy of *r* is created as
-with any other forall-loop.  But since constants can't be passed by
+On the way into the loop, a ``const`` shadow copy of *r* is created,
+as with any other forall-loop.  But since constants can't be passed by
 ``ref`` argument intent, an error is triggered.  As with forall
 intents on explicit loops, these rules prevent common race conditions.
-For example, if the call had been executed, it would be a race as to
+For example, if the call *had* been executed, it would be a race as to
 which of *B*'s values would be stored into *r*.
 
 Promoted calls do not support a mechanism to override default forall
-intents.  Thus, in order to override the default and enable the race,
-a user would need to write the loop out explicitly and add a ``with``
-clause as follows:
+intents.  Thus, in order to override the default intents, users need
+to write out the equivalent loop explicitly and add a ``with`` clause.
+For example, the following would yield the equivalent of the promoted
+call to ``maybeCopy()`` with the race enabled:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
   :lines: 114-115
 
 
-Promoting Using Ranges and Domains
-----------------------------------
+Promoting Using Ranges, Domains, Forall Expressions
+---------------------------------------------------
 
 As mentioned at the outset, not only can arrays be used to promote
-functions, but ranges and domains can as well.  For example, the
-following two calls promote ``maybeCopy()`` using a range and a
-domain, respectively:
+functions, but ranges, domains, and forall expressions can as well.
+For example, the following calls promote ``maybeCopy()`` using a
+range, a domain, and a forall expression respectively:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
-  :lines: 185,189
+  :lines: 185,189,193
 
 The contents of *A* after these calls is as follows:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.good
   :language: text
-  :lines: 45,46
+  :lines: 45-47
 
 At the time of this writing, Chapel does not support an official way
 for users to create their own collection types that support promotion.
-We expect to support this in the future by having the collection type
-support certain well-defined iterator methods.
+We expect to support this capability in the future by having the
+collection type support certain well-defined iterator methods.
 
 
 Promoted Library Routines and Operators
@@ -218,12 +219,12 @@ as expected:
   :lines: 34
 
 Note that Chapel does not support an explicit ``+`` operator for
-arrays of reals.  Rather, Chapel implements this operation by
-promoting the standard ``+`` operator for scalar values of type
-``real``.  Similarly, applying ``*`` to arrays promotes the scalar
-``*`` operator.  For this reason, applying ``*`` to Chapel arrays
-results in an elementwise multiplication of the arrays' elements by
-default, rather than a matrix multiplication operation.
+arrays.  Rather, it implements this operation by promoting the
+standard ``+`` operator for the array's element type.  Similarly,
+applying ``*`` to arrays promotes the scalar ``*`` operator.  For this
+reason, applying ``*`` to Chapel arrays results in an elementwise
+multiplication of the arrays' elements by default, rather than a
+matrix multiplication operation.
 
 Even the assignment operations in these statements can be considered
 to be promotions of scalar assignment for ``real`` values.  Thus, the
@@ -237,9 +238,9 @@ statements above can be considered to be equivalent to:
 Promotion vs. Whole-Array Operations
 ------------------------------------
 
-Chapel's promoted operators result in different behavior than you'd
-get from a typical array languages.  To understand the difference,
-let's look at an example:
+Chapel's promoted operators result in different behavior than you
+might expect from a typical array language.  To understand the
+difference, let's look at an example:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
@@ -247,27 +248,27 @@ let's look at an example:
 
 As expected, this statement doubles each element of *B*, adds the
 result to its corresponding value in *A*, and then assigns that result
-to the corresponding value in *C*.  However, where most array
-languages would semantically define this statement by evaluating an
-operator at a time, as follows:
+to the corresponding value in *C*.  However, most array languages
+would define the semantics of this statement by evaluating an operator
+at a time, as follows:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
   :lines: 139-140
 
-Chapel defines it using zippered iteration:
+In contrast, Chapel defines it using zippered iteration:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
   :lines: 143-144
 
 In this case, the two approaches compute the same values, but the
-Chapel approach has the benefit of avoiding any need for temporary
+Chapel approach has the benefit of avoiding the need for any temporary
 arrays to store intermediate array results.  This makes memory
-utilization in Chapel programs more explicit to users while also
+requirements of Chapel programs more explicit to users while also
 tending to make better use of memory caches in modern architectures.
 
-For some computations, Chapel's promotion semantics will generate a
+For other computations, Chapel's promotion semantics generate a
 different result than most array languages would.  For example,
 consider the following computation which attempts to replace each
 interior element of *V* with the average of its neighbors:
@@ -301,8 +302,8 @@ original whole-array computation in Chapel.  Specifically, the tasks
 used to execute the forall-loop may try to read and write overlapping
 values of *V* simultaneously.  Thus, where the author likely intended
 for all the original values of *V* to be averaged, in reality one or
-more tasks are likely to end up reading one of the newly-computed
-values as written by their sibling tasks.
+more tasks are likely to end up reading the new values that were
+computed by their sibling tasks.
 
 For this reason, it is important that users of promotion keep the
 underlying zippered interpretation in mind and ensure that they are
