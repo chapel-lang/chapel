@@ -8,7 +8,8 @@ Type Aliases
 In addition to :ref:`declaring variables <ug-vars>` using ``var`` and
 :ref:`constants <ug-constParam>` using ``const`` and ``param``, Chapel
 supports the declaration of *type aliases* using the ``type`` keyword.
-As the term suggests, type aliases create symbolic names for types.
+These type aliases are used to create new names for existing types—in
+particular, they do not create new [sub]types.
 
 As an example of a simple type alias, consider the following
 statement:
@@ -23,7 +24,7 @@ equivalent to the ``uint(8)`` type.  Imagine that we'll use this type
 to store peoples' ages, since they tend not to live more than 256
 years.  We can then use this alias like any other type.  For example,
 the following statements use it to declare some variables and to
-declare the argument type of a procedure:
+declare the formal type of a procedure argument:
 
 .. literalinclude:: examples/users-guide/base/typeAliases.chpl
   :language: chapel
@@ -45,7 +46,7 @@ Type aliases like *age* are useful for:
   represent ages.
 
 * **providing a shorthand for a longer type name:** Typing *age* saves
-  keystrokes as compared to typing **uint(8)**.
+  keystrokes as compared to typing ``uint(8)``.
 
 Like the other declaration forms we've seen so far, the ``type``
 keyword can be used to declare multiple aliases by comma-separating
