@@ -1,5 +1,8 @@
 outline
--------
+=======
+
+base
+----
 basicTypesValues
 ...
 const/param/type
@@ -21,15 +24,25 @@ iterator functions
 these iterators
 ...
 
-Use before def:
----------------
+datapar
+-------
+forall loops
+forall expressions
+promotion
 
+
+
+TODOs
+=====
+
+Use before def
+--------------
 for: operators (+=)
 loop: simple arrays
 zip: tuples, array literals, unbounded ranges
+promotion: forall expressions
 
  
-
 ASAP
 ----
 * fix poorly formatted code in locale type vars section.

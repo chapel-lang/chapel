@@ -81,6 +81,7 @@ abstractly using a rich set of data structures.
    :glob:
 
    datapar/forall
+   datapar/promotion
 
 (more to come...)
 
