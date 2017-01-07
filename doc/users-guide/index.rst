@@ -43,6 +43,7 @@ support of parallelism and locality are removed.
    base/basicValues
    base/constParam
    base/typeAliases
+   base/configs
    base/casts
    base/forloops
    base/zip
