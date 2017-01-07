@@ -1016,6 +1016,15 @@ chpl_taskID_t chpl_task_getId(void)
     return *id_ptr;
 }
 
+chpl_bool chpl_task_idEquals(chpl_taskID_t id1, chpl_taskID_t id2) {
+  return id1 == id2;
+}
+
+char* chpl_task_idTostring(char* buff, size_t size, chpl_taskID_t id) {
+  snprintf(buff, size, "%u", id);
+  return buff;
+}
+
 void chpl_task_sleep(double secs)
 {
     if (qthread_shep() == NO_SHEPHERD) {

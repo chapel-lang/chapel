@@ -646,6 +646,15 @@ chpl_taskID_t chpl_task_getId(void) {
   return tid;
 }
 
+chpl_bool chpl_task_idEquals(chpl_taskID_t id1, chpl_taskID_t id2) {
+  return id1 == id2;
+}
+
+char* chpl_task_idTostring(char* buff, size_t size, chpl_taskID_t id) {
+  snprintf(buff, size, "%"PRIiPTR, id);
+  return buff;
+}
+
 //
 // Yield.
 //
