@@ -238,8 +238,8 @@ chpl_bool chpl_task_idEquals(chpl_taskID_t, chpl_taskID_t);
 //
 char* chpl_task_idTostring(
                            char *,         //buffer on which ID is written
-			   size_t,         //length of the buffer in bytes
-			   chpl_taskID_t); //Task ID
+                           size_t,         //length of the buffer in bytes
+                           chpl_taskID_t); //Task ID
 
 //
 // Yield.
