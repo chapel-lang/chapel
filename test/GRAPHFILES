@@ -111,6 +111,12 @@ release/examples/benchmarks/ssca2/performance.graph
 # suite: DOE proxy apps
 studies/lulesh/bradc/lulesh-dense.graph
 release/examples/benchmarks/miniMD/miniMD.graph
+release/examples/benchmarks/lcals/LCALS-raw-short.graph
+release/examples/benchmarks/lcals/LCALS-raw-medium.graph
+release/examples/benchmarks/lcals/LCALS-raw-long.graph
+release/examples/benchmarks/lcals/LCALS-parallel-short.graph
+release/examples/benchmarks/lcals/LCALS-parallel-medium.graph
+release/examples/benchmarks/lcals/LCALS-parallel-long.graph
 # suite: Shootout benchmarks
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
