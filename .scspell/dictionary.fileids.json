@@ -673,6 +673,9 @@
   "eb249ff0-b850-11e6-9740-843835579daa": [
     "test/release/examples/programs/quicksort.chpl"
   ],
+  "a717e780-d45d-11e6-b38c-acbc32c4f96b": [
+    "test/release/examples/users-guide/base/typeAliases.chpl"
+  ],
   "329ba602-b6bd-11e6-9740-843835579daa": [
     "test/studies/dedup/dedup-distributed-ints.chpl",
     "test/studies/dedup/dedup-distributed-strings.chpl",
