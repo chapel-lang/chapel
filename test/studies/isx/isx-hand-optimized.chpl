@@ -287,8 +287,15 @@ proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
     const dstOffset = recvOffset[dstlocid].fetchAdd(transferSize);
     const srcOffset = sendOffsets[dstlocid];
 
-    allBucketKeys[dstlocid][dstOffset..#transferSize] = 
-             myBucketedKeys[srcOffset..#transferSize];
+    //allBucketKeys[dstlocid][dstOffset..#transferSize] =
+    //         myBucketedKeys[srcOffset..#transferSize];
+    ref LHS = allBucketKeys[dstlocid]._instance;
+    var Lidx = LHS.getDataIndex(dstOffset);
+    var Ldata = _ddata_shift(keyType, LHS.theDataChunk(0), Lidx);
+
+    var Ridx = myBucketedKeys._instance.getDataIndex(srcOffset);
+    var Rdata = _ddata_shift(keyType, myBucketedKeys._instance.theDataChunk(0), Ridx);
+    __primitive("chpl_comm_array_put", Rdata[0], Ldata.locale.id, Ldata[0], transferSize);
   }
 
 }
