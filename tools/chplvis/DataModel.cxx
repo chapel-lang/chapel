@@ -157,6 +157,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
 
   // Set the main task ID
   mainTID = tid;
+  mainTask.taskRec = new E_task (0, 0, 0, tid, 0, 0, -1, -1);
 
   // Debug
   std::list<Event *>::iterator itr;
@@ -953,7 +954,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             while (linedata[len] == '\n' || linedata[len] == ' ')
               linedata[len] = 0;
             const char *tag = strDB.getString(&linedata[nextCh]);
-             if (tagNames.size() <= tagId) {
+            if (tagNames.size() <= (unsigned)tagId) {
               if (tagNames.size() == 0)
                 tagNames.resize(64);
               else
