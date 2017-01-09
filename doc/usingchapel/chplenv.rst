@@ -89,7 +89,8 @@ CHPL_HOST_PLATFORM
    We are interested in making our code framework portable to other platforms --
    if you are using Chapel on a platform other than the ones listed above,
    please refer to :ref:`platform-specific-settings` for ways to set up a
-   Makefile for this platform and/or contact us at: chapel_info@cray.com
+   Makefile for this platform and/or contact us at:
+   :disguise:`chapel_info@cray.com`
 
 PATH
 ~~~~
