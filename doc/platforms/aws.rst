@@ -41,11 +41,7 @@ From the EC2 console, do the following:
 Building Chapel on an EC2 instance
 ----------------------------------
 
-To build Chapel on an EC2 instance, you can either launch an instance with the
-provided AMI, or launch any other AMI and build Chapel yourself.
-
-Starting from an AWS-provided AMI
-+++++++++++++++++++++++++++++++++
+Once connected to the instance via ssh, do the following:
 
 - Install the dependencies as shown on the :ref:`readme-prereqs-installation` page.
 - Download a Chapel release from the `Download`_ page.
@@ -54,66 +50,6 @@ Starting from an AWS-provided AMI
   - Build with ``CHPL_COMM=gasnet`` if you plan to run multilocale programs
 
 .. _Download: http://chapel.cray.com/download.html
-
-Using the Chapel-development AMI
-++++++++++++++++++++++++++++++++
-
-Start an EC2 instance from the provided Chapel-development 64-bit AMIs,
-organized by region:
-
-.. - us-east-1: US East (N. Virginia)
-.. - us-east-2: US East (Ohio)
-.. - us-west-1: US West (N. California)
-
-- `us-west-2`_: US West (Oregon)
-
-.. - ca-central-1 Canada (Central)
-.. - eu-west-1 EU (Ireland)
-.. - eu-central-1 EU (Frankfurt)
-.. - eu-west-2 EU (London)
-.. - ap-northeast-1 Asia Pacific (Tokyo)
-.. - ap-northeast-2 Asia Pacific (Seoul)
-.. - ap-southeast-1 Asia Pacific (Singapore)
-.. - ap-southeast-2 Asia Pacific (Sydney)
-.. - ap-south-1 Asia Pacific (Mumbai)
-.. - sa-east-1 South America (São Paulo)
-
-.. _us-west-2: https://console.aws.amazon.com/ec2/v2/home?region=us-west-2#LaunchInstanceWizard:ami=TODO
-
-The provided Chapel-development AMI comes with the following:
-
-- Prerequisites installed::
-
-    gcc
-    g++
-    make
-    libgmp3-dev
-    python-dev
-    python-setuptools
-    libx11-dev
-
-
-- Chapel 1.14.0 compiler pre-built with configurations::
-
-    CHPL_COMM = {gasnet, none}
-    CHPL_GMP = system
-    CHPL_REGEXP = re2
-    CHPL_UNWIND = {none, libunwind}
-
-- Other pre-built tools:
-
-  - :ref:`readme-chpldoc`
-
-  - :ref:`chplvis`
-
-  - ``start_test`` (test environment)
-
-  - text (rst) documentation built in ``$CHPL_HOME/doc``
-
-  - html documentation built in ``$CHPL_HOME/doc/html``
-
-  - text editor support for vim and emacs
-
 
 
 Running multilocale Chapel programs
