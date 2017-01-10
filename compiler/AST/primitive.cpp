@@ -716,3 +716,23 @@ VarSymbol* newMemDesc(Type* type) {
   memDescsVec.add(type->symbol->name);
   return memDescVar;
 }
+
+bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src)
+{
+  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+    // dest, src
+    *dest = call->get(1);
+    *src = call->get(2);
+    return true;
+  }
+
+  if (call->isPrimitive(PRIM_SET_MEMBER) ||
+      call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+    // base, field/index, value
+    *dest = call->get(1);
+    *src = call->get(3);
+    return true;
+  }
+
+  return false;
+}

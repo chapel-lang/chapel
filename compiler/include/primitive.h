@@ -23,6 +23,7 @@
 #include "chpl.h"
 
 class CallExpr;
+class Expr;
 class Type;
 class VarSymbol;
 class QualifiedType;
@@ -269,5 +270,8 @@ void initPrimitive();
 extern Vec<const char*> memDescsVec;
 VarSymbol* newMemDesc(const char* str);
 VarSymbol* newMemDesc(Type* type);
+
+
+bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src);
 
 #endif

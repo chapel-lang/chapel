@@ -364,15 +364,25 @@ bool isRelationalOperator(CallExpr* call) {
 // as a Def.
 int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
-        call->get(1) == se) {
-      CallExpr* rhsCall = toCallExpr(call->get(2));
+
+    // Extract LHS and RHS of a setting primitive.
+
+    Expr* dest = NULL;
+    Expr* src = NULL;
+    if (getSettingPrimitiveDstSrc(call, &dest, &src) && dest == se) {
+      CallExpr* rhsCall = toCallExpr(src);
       QualifiedType lhsQual = se->symbol()->qualType();
       if ((lhsQual.isRef() || lhsQual.isWideRef()) &&
           !isReferenceType(lhsQual.type()) &&
           !(rhsCall && rhsCall->isPrimitive(PRIM_SET_REFERENCE))) {
         // Assigning to a reference variable counts as a 'use'
         // of the reference and a 'def' of its value
+        return 3;
+      } else if(call->isPrimitive(PRIM_SET_MEMBER) ||
+                call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+        // since setting a field might not change the entire object,
+        // but does change part of it, we consider it both a def
+        // and a use.
         return 3;
       }
       return 1;
