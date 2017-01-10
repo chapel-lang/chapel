@@ -188,7 +188,6 @@ symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
 symbolFlag( FLAG_NOT_POD , ypr, "not plain old data" , "bit copy overridden")
 
 symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )
-symbolFlag( FLAG_OMIT_FROM_CONSTRUCTOR , ypr, "omit from constructor" , ncm )
 
 // FLAG_ON and FLAG_ON_BLOCK mark task functions and their wrappers,
 // respectively, that perform remote operations, i.e. corresponding to
