@@ -214,16 +214,24 @@ this-intent:
 
 type-binding:
   identifier .
+  `(' expr `)' .
+
 \end{syntax}
 Methods defined within the lexical scope of a class, record, or union
 are referred to as \emph{primary methods}.  For such methods,
-the \sntx{type-binding} can be omitted and is taken to be the
+the \sntx{type-binding} is omitted and is taken to be the
 innermost class, record, or union in which the method is defined.
 Methods defined outside of such scopes are known as \emph{secondary
 methods} and must have a \sntx{type-binding} (otherwise, they would
 simply be standalone functions rather than methods).  Note that
 secondary methods can be defined not only for classes, records, and
 unions, but also for any other type (e.g., integers, reals, strings).
+
+Secondary methods can be declared with a type expression instead of a
+type identifier. In particular, if the \sntx{type-binding} includes a
+parenthesized expression, the compiler will evaluate that expression to
+find the receiver type for the method. See also
+\rsec{Declaring_Specific_Instantiations}.
 
 Method calls are described in \rsec{Class_Method_Calls}.
 
