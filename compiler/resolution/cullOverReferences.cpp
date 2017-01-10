@@ -144,7 +144,7 @@ refNecessary(SymExpr*                      se) {
         // Dereferencing would be premature.
         return true;
 
-      } else if (call->isPrimitive(PRIM_DEREF) &&
+      } /*else if (call->isPrimitive(PRIM_DEREF) &&
                  isRecordWrappedType(se->symbol()->type->getValType())) {
         // Heuristic: if we are dereferencing an array reference,
         // that reference may still be needed.
@@ -164,7 +164,7 @@ refNecessary(SymExpr*                      se) {
               return true;
           }
         }
-      }
+      } */
     }
   }
 

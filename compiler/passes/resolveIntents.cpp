@@ -61,8 +61,9 @@ IntentTag blankIntentForType(Type* t) {
   if (isSyncType(t)                                  ||
       isSingleType(t)                                ||
       isAtomicType(t)                                ||
-      t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) ||
-      t->symbol->hasFlag(FLAG_ARRAY)) {
+      t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)
+      /*||
+      t->symbol->hasFlag(FLAG_ARRAY) */) {
     retval = INTENT_REF;
 
   } else if (is_bool_type(t)                         ||

@@ -384,8 +384,11 @@ int isDefAndOrUse(SymExpr* se) {
           arg->intent == INTENT_INOUT ||
           (strcmp(fn->name, "=") == 0   &&
            fn->getFormal(1)      == arg &&
-           isRecord(arg->type)) ||
-          isRecordWrappedType(arg->type)) { // pass by reference
+           isRecord(arg->type))) {
+
+          // special case for record-wrapped types originated in
+          // 02c29c689d55b18551d1771634311d48c2749d1c
+          //isRecordWrappedType(arg->type)) { // pass by reference
         return 3;
         // also use; do not "continue"
       } else if (arg->intent == INTENT_OUT) {
