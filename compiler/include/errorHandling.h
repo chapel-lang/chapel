@@ -20,6 +20,6 @@
 #ifndef _ERROR_HANDLING_H_
 #define _ERROR_HANDLING_H_
 
-void lowerErrorHandling(void);
+void lowerErrorHandling();
 
 #endif

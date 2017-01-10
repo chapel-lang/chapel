@@ -19,6 +19,6 @@
 
 #include "errorHandling.h"
 
-void lowerErrorHandling(void) {
+void lowerErrorHandling() {
 
 }
