@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,24 +18,24 @@
  */
 
 /*
-   
+
    Support for error handling.
 
    This module helps to handle errors. In particular, it enables routines
    to return a syserr - encoding an error state - and then contains routines
    that can be provided a syserr in order to print out a useful error message.
-   
+
    This module defines the type syserr, which can encode an error code or an
    error message. This type can be returned from routines generating an error.
-   
+
    The IO module uses these routines in a way that supports error inspection
    and also rapid prototyping. Most routines in the IO module have two forms.
    In one form, an error (of type syserr) is returned in an out error argument.
    In the second form, no error is returned, and instead the task will halt
    with a fatal error if an error is encountered.
-   
+
  */
-module Error {
+module SysError {
 
 use SysBasic;
 
@@ -128,7 +128,7 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
 }
 
 /* Halt with a useful message. Instead of an error argument, this routine takes
-   in an error string to report. 
+   in an error string to report.
    The error message printed when halting will describe the error passed and
    msg will be appended to it, along with the path and file offset related to
    the error. For example, this routine might indicate a file format error at a
@@ -150,7 +150,7 @@ proc ioerror(errstr:string, msg:string, path:string, offset:int(64))
 
 /* Convert a syserr error code to a human-readable string describing that
    error.
-   
+
    :arg errstr: the error string
    :returns: a string describing the error
  */
