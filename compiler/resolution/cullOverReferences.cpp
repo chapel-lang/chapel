@@ -173,22 +173,10 @@ refNecessary(SymExpr*                      se) {
 
 
 //
-// Michael Noakes: 2016/01/07
-// Currently every function that is declared as return-by-ref
-// is implemented as a pair of functions.
-//
-//   1) A function that returns a ref
-//   2) A function that returns a value
-//
-// Additionally the "by-ref" version includes a pointer to the "by-value"
-// version.
-//
-// This is done independently of whether the setter param is used in the
-// the function body and without careful attention to whether the function
-// actually returns a value or a ref.
-//
-// The early phases of resolution have bound the call-site for every
-// return-by-ref function to the "by-ref" version of the function.
+// This function adjusts calls to functions that have both
+// a ref and non-ref version. These calls are represented with
+// a ContextCallExpr. Whether to use the ref or value/const-ref
+// version is determined based on how the result of the call is used.
 //
 // This pass studies all of these call-sites and determines if the
 // "by-reference" version is "necessary".  If it is not, then the
@@ -200,18 +188,7 @@ refNecessary(SymExpr*                      se) {
 // the AUTO_COPY/AUTO_DESTROY flags as necessary to enable the
 // callDestructors pass to operate correctly.
 //
-// As far as I can tell this switch is, at best, only loosely coupled to
-// the the setter param.   Most functions that return with ref-intent do
-// not inspect the setter param but I think that some portions of the
-// compiler assume that setter = true for the by-ref version and
-// setter = false for the by-value version.  If this is correct then there
-// could be programs in which the function replacement does not track the
-// setter param correctly.
 //
-// Careful separation of "by-ref" behavior and the management of the
-// setter param will require additional effort.
-//
-
 void cullOverReferences() {
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
     // Make sure that the context call only has 2 options.
