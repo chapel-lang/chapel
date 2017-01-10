@@ -1066,11 +1066,13 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
     return (numwholeblocks * blocksize(rank)) + blkOff;
   } else { // RMO
     //TODO: want negative scan: var blkmults = * scan [d in 1..rank] blocksize(d);
-    var blkmults: [1..rank] int;
-    blkmults(rank) = blocksize(rank);
+    var mults : rank*int;
+    mults(rank) = blocksize(rank);
     for d in 1..rank-1 by -1 do
-      blkmults(d) = blkmults(d+1) * blocksize(d);
-    //    writeln("blkmults = ", blkmults);
+      mults(d) = mults(d+1) * blocksize(d);
+
+    var blkmults = mults(1);
+
     var numwholeblocks = 0;
     var blkOff = 0;
     for param d in 1..rank {
@@ -1084,22 +1086,9 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
       }
       numwholeblocks += blkNum;
       blkOff += blkDimOff;
-      if (false && (i == (13,0) || i == (1,32))) {
-          writeln(here.id, ":", "blksize = ", blksize);
-          writeln(here.id, ":", "ind0 = ", ind0);
-          writeln(here.id, ":", "blkNum = ", blkNum);
-          writeln(here.id, ":", "blkDimOff = ", blkDimOff);
-      }
     }
 
-    if (false && (i == (13,0) || i == (1,32))) {
-      writeln(here.id, ":", "numblocks = ", numblocks);
-      writeln(here.id, ":", i, "->");
-      writeln(here.id, ":","numwholeblocks = ", numwholeblocks);
-      writeln(here.id, ":","blkOff = ", blkOff);
-      writeln(here.id, ":","total = ", numwholeblocks * blkmults(1) + blkOff);
-    }
-    return (numwholeblocks * blkmults(1)) + blkOff;
+    return (numwholeblocks * blkmults) + blkOff;
   }
 }
 
