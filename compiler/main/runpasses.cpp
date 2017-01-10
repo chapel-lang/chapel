@@ -56,6 +56,7 @@ struct PassInfo {
 #define LOG_processIteratorYields              'y'
 #define LOG_flattenFunctions                   'e'
 #define LOG_cullOverReferences                 'O'
+#define LOG_lowerErrorHandling                 NUL
 #define LOG_callDestructors                    'd'
 #define LOG_lowerIterators                     'L'
 #define LOG_parallel                           'P'
@@ -122,6 +123,7 @@ static PassInfo sPassList[] = {
   RUN(processIteratorYields),   // adjustments to iterators
   RUN(flattenFunctions),        // denest nested functions
   RUN(cullOverReferences),      // remove excess references
+  RUN(lowerErrorHandling),      // lower error handling constructs
   RUN(callDestructors),
   RUN(lowerIterators),          // lowers iterators into functions/classes
   RUN(parallel),                // parallel transforms
