@@ -27,6 +27,7 @@ replaceArrayAccessesWithRefTemps :
 processIteratorYields :
 flattenFunctions :
 cullOverReferences :
+lowerErrorHandling :
 callDestructors :
 lowerIterators :
 parallel :
