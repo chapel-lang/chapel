@@ -9,3 +9,7 @@ const C = new Future(lambda(x: int) { return 3 * x; }, B.get(),
                      ExecMode.Defer);
 
 writeln(C.get() == (3 * ((2 * X) + 7)));
+
+delete A;
+delete B;
+delete C;
