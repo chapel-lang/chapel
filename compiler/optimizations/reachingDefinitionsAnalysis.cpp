@@ -206,9 +206,9 @@ buildDefUseChains(FnSymbol* fn,
       ++it) {
     SymExpr* se = it->first;
     Vec<SymExpr*>* v = it->second;
-    printf("SymExpr def %s[%d] has uses:\n", se->var->name, se->id);
+    printf("SymExpr def %s[%d] has uses:\n", se->symbol()->name, se->id);
     forv_Vec(SymExpr, otherSe, *v) {
-      printf("  %s[%d]\n", otherSe->var->name, otherSe->id);
+      printf("  %s[%d]\n", otherSe->symbol()->name, otherSe->id);
     }
   }
   printf("UD (use-to-def)\n");
@@ -217,9 +217,9 @@ buildDefUseChains(FnSymbol* fn,
       ++it) {
     SymExpr* se = it->first;
     Vec<SymExpr*>* v = it->second;
-    printf("SymExpr use %s[%d] has defs:\n", se->var->name, se->id);
+    printf("SymExpr use %s[%d] has defs:\n", se->symbol()->name, se->id);
     forv_Vec(SymExpr, otherSe, *v) {
-      printf("  %s[%d]\n", otherSe->var->name, otherSe->id);
+      printf("  %s[%d]\n", otherSe->symbol()->name, otherSe->id);
     }
 
   }
