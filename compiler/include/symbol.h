@@ -464,6 +464,11 @@ public:
   void                       insertFormalAtHead(BaseAST* ast);
   void                       insertFormalAtTail(BaseAST* ast);
 
+  void                       insertBeforeReturn(Expr* ast);
+  void                       insertBeforeReturnAfterLabel(Expr* ast);
+  LabelSymbol*               getEpilogueLabel();
+  LabelSymbol*               getOrCreateEpilogueLabel();
+
   Symbol*                    getReturnSymbol();
   Symbol*                    replaceReturnSymbol(Symbol* newRetSymbol,
                                                  Type*   newRetType);

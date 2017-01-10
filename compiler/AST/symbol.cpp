@@ -1312,16 +1312,14 @@ FnSymbol::replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType)
 
 void
 FnSymbol::insertBeforeReturn(Expr* ast) {
-  CallExpr* ret = toCallExpr(body->body.last());
-  if (!ret || !ret->isPrimitive(PRIM_RETURN))
-    INT_FATAL(this, "function is not normal");
-  Expr* last = ret;
-  if (DefExpr* def = toDefExpr(last->prev))
-    if (toLabelSymbol(def->sym))
-      last = last->prev; // label before return
-  last->insertBefore(ast);
+  LabelSymbol* label = getEpilogueLabel();
+  if (!label) {
+    insertBeforeReturnAfterLabel(ast);
+  } else {
+    DefExpr* def = label->defPoint;
+    def->insertBefore(ast);
+  }
 }
-
 
 void
 FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
@@ -1329,6 +1327,35 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
   if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
   ret->insertBefore(ast);
+}
+
+LabelSymbol*
+FnSymbol::getEpilogueLabel() {
+  CallExpr* ret = toCallExpr(body->body.last());
+  if (!ret || !ret->isPrimitive(PRIM_RETURN))
+    INT_FATAL(this, "function is not normal");
+  for (Expr* last = ret; last; last = last->prev) {
+    if (DefExpr* def = toDefExpr(last->prev)) {
+      if (LabelSymbol* label = toLabelSymbol(def->sym)) {
+        // TODO psahabu: should FnSymbol have an epilogue label field?
+        if (label->hasFlag(FLAG_EPILOGUE_LABEL)) {
+          return label;
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
+LabelSymbol*
+FnSymbol::getOrCreateEpilogueLabel() {
+  LabelSymbol* label = getEpilogueLabel();
+  if (!label) {
+    label = new LabelSymbol(astr("_end", name));
+    label->addFlag(FLAG_EPILOGUE_LABEL);
+    insertBeforeReturnAfterLabel(new DefExpr(label));
+  }
+  return label;
 }
 
 void
