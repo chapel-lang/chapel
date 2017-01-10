@@ -119,7 +119,10 @@ IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
 static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
 
-  if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
+  if (isRecordWrappedType(t))  // domain, array, or distribution
+    // array, domain, distribution wrapper records are immutable
+    return INTENT_CONST_REF;
+  else if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
     return INTENT_REF;
   else
     return INTENT_CONST_IN;

@@ -98,8 +98,9 @@ refNecessary(SymExpr*                      se) {
       if (FnSymbol* fn = call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
 
-        if (formal->defPoint->getFunction()->_this == formal)
-          return true;
+        // added in f2bc2b27
+        //if (formal->defPoint->getFunction()->_this == formal)
+        //  return true;
 
         if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT)
           return true;

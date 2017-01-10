@@ -301,8 +301,12 @@ static void build_accessor(AggregateType* ct, Symbol* field, bool setter) {
   } else {
     if (fieldIsConst || !setter)
       fn->retTag = RET_CONST_REF;
-    else
+    else {
       fn->retTag = RET_REF;
+      if (recordLike) {
+        _this->intent = INTENT_REF;
+      }
+    }
   }
 
   if (isUnion(ct)) {
