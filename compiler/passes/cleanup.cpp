@@ -206,6 +206,20 @@ static void add_parens_to_deinit_fns(FnSymbol* fn) {
 }
 
 
+/* Change the type of the receiver in type methods from "_any" to
+   the type that defined the method.
+*/
+static void set_receiver_type_in_type_methods(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_METHOD) && fn->thisTag == INTENT_TYPE) {
+    if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
+      if (fn->_this->type == dtAny) {
+        fn->_this->type = ts->type;
+      }
+    }
+  }
+}
+
+
 void cleanup(void) {
   std::vector<BaseAST*> asts;
   collect_asts(rootModule, asts);
@@ -227,6 +241,7 @@ void cleanup(void) {
         destructureTupleAssignment(call);
     } else if (DefExpr* def = toDefExpr(ast1)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        set_receiver_type_in_type_methods(fn);
         flatten_primary_methods(fn);
         change_cast_in_where(fn);
         add_parens_to_deinit_fns(fn);

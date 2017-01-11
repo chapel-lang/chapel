@@ -1,6 +1,0 @@
-bug: type method can be called on any type, not just the type it is defined for
-
-A type method is defined for a class "C", but then called on type "int".  This
-should be an unresolved call, but instead it compiles and calls C's type
-method.  A simple workaround is to add a where clause like the one that is
-commented out in the test.
