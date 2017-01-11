@@ -228,10 +228,11 @@ secondary methods can be defined not only for classes, records, and
 unions, but also for any other type (e.g., integers, reals, strings).
 
 Secondary methods can be declared with a type expression instead of a
-type identifier. In particular, if the \sntx{type-binding} includes a
+type identifier. In particular, if the \sntx{type-binding} is a
 parenthesized expression, the compiler will evaluate that expression to
-find the receiver type for the method. See also
-\rsec{Declaring_Specific_Instantiations}.
+find the receiver type for the method. In that case, the method applies
+only to receivers of that type. See also
+\rsec{General_Functions_and_Special_Versions}.
 
 Method calls are described in \rsec{Class_Method_Calls}.
 

@@ -868,20 +868,23 @@ foo.chpl:6: error: foo() called with non-matching types: int != real
 
 \end{chapelexample}
 
-\section{Declaring Specific Instantiations}
-\label{Declaring_Specific_Instantiations}
+\section{General Functions and Special Versions}
+\label{General_Functions_and_Special_Versions}
 \index{specific instantiations}
 \index{generic specialization}
+\index{generic functions and special versions}
 
-The Chapel language facility supports three mechanisms for creating generic
-functions along with concrete functions that work with specific types.
-One can use these mechanisms to create specialized versions of generic
-functions.
+The Chapel language facility supports three mechanisms for using generic
+functions along with concrete functions. These mechanisms allow users to
+create a general generic implementation and also a special implementation
+for specific concrete types.
 
-The first mechanism enables generic functions to be specialized.
+The first mechanism applies to functions.
 According to the function resolution rules described in
 \rsec{Function_Resolution}, functions accepting concrete arguments are
-selected in preference to those with a totally generic argument:
+selected in preference to those with a totally generic argument. So,
+creating a second version of a generic function that declares a concrete
+type will cause the concrete function to be used where possible:
 
 \begin{chapelexample}{specializeGenericFunction.chpl}
 \begin{chapel}
@@ -906,11 +909,12 @@ in specific foo(x:int)
 This program will run the generic foo function if the argument is a real,
 but it runs the specific version for int if the argument is an int.
 
-The second mechanism applies when the generic type to be specialized is a
-method receiver. When declaring a secondary method, the receiver type
-can be a parenthesized expression. In that case, the compiler will
-evaluate the parenthesized expression at compile time in order to find
-the concrete receiver type.
+The second mechanism applies when working with methods on generic types.
+When declaring a secondary method, the receiver type can be a
+parenthesized expression. In that case, the compiler will evaluate the
+parenthesized expression at compile time in order to find the concrete
+receiver type. Then, the resolution rules described above will cause the
+concrete method to be selected when applicable. For example:
 
 \begin{chapelexample}{specializeGenericMethod.chpl}
 \begin{chapel}
@@ -939,9 +943,10 @@ in specific MyNode(int).foo()
 
 The third mechanism is to use a where clause. Where clauses limit a
 generic method to particular cases. Unlike the previous two cases, a
-where clause can be used to declare a version of a function that works
-with generic argument - but where the argument is constrained in some way.
-See also \rsec{Where_Expressions}.
+where clause can be used to declare special implementation of a function
+that works with some set of types - in other words, the special
+implementation can still be a generic function.  See also
+\rsec{Where_Expressions}.
 
 \section{Example: A Generic Stack}
 \label{Example_Generic_Stack}
