@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of stack allocating EndCounts
+# Test performance of limiting tls usage in task spawn
 GITHUB_USER=ronawho
-GITHUB_BRANCH=stack-end-count
-SHORT_NAME=stackEndCount
-START_DATE=01/09/17
+GITHUB_BRANCH=avoid-tls-in-task-spawn
+SHORT_NAME=avoidTLS
+START_DATE=01/10/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
