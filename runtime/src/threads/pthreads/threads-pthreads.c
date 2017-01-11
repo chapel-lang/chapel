@@ -211,6 +211,7 @@ static int do_pthread_create(pthread_t* thread,
   if(!chpl_alloc_stack_in_heap)
     return pthread_create(thread, attr, start_routine, arg);
 
+  memset(&local_attr, 0, sizeof(local_attr)); // avoid cygwin bug: see #5146
   rc = pthread_attr_init(&local_attr);
   if( rc != 0 ) {
     memset(thread, 0, sizeof(pthread_t));
