@@ -12,7 +12,7 @@ writeln(A, "\n");
 
 
 forall a in A do
-  negate(A);
+  negate(a);
 
 writeln(A, "\n");
 
