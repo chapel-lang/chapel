@@ -212,6 +212,9 @@ static void add_parens_to_deinit_fns(FnSymbol* fn) {
 static void set_receiver_type_in_type_methods(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_METHOD) && fn->thisTag == INTENT_TYPE) {
     if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
+      // This only applies to primary methods.  Secondary methods will
+      // not get get changed here, but basically the same change happens
+      // to them in a later pass (normalize).
       if (fn->_this->type == dtAny) {
         fn->_this->type = ts->type;
       }
