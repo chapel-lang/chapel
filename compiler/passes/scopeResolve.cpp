@@ -939,8 +939,7 @@ static void build_type_constructor(AggregateType* ct) {
       Expr* exprType = field->defPoint->exprType;
       Expr* init = field->defPoint->init;
 
-      if (!strcmp(field->name, "_promotionType") ||
-          field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR)) {
+      if (!strcmp(field->name, "_promotionType")) {
 
         fn->insertAtTail(
           new BlockStmt(
@@ -1085,7 +1084,6 @@ static void build_constructor(AggregateType* ct) {
       // "outer" is used internally to supply a pointer to
       // the outer parent of a nested class.
       if (!field->hasFlag(FLAG_SUPER_CLASS) &&
-          !field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR) &&
           strcmp(field->name, "_promotionType") &&
           strcmp(field->name, "outer")) {
         // Create an argument to the default constructor
