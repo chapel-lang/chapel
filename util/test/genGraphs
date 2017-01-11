@@ -1043,6 +1043,9 @@ def main():
                 # suites it belongs to, else add it add it to the graphList
                 graphnames = [x[0] for x in graphList]
                 if graphnames.count(l):
+                    if currSuite in graphList[graphnames.index(l)][1]:
+                        sys.stdout.write('[Warning: duplicate graph "{0}" '
+                            'found in suite "{1}"]\n'.format(l, currSuite))
                     graphList[graphnames.index(l)][1].append(currSuite)
                     # the suites at the top of our list our more often 'meta'
                     # suites that contains graphs from various suites. To keep
