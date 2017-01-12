@@ -925,22 +925,22 @@ fixupDestructors() {
           if (!isClass(fct)) {
             bool useRefType = !isRecordWrappedType(fct);
             VarSymbol* tmp = newTemp("_field_destructor_tmp_", useRefType ? fct->refType : fct);
-            fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-            fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
+            fn->insertIntoEpilogue(new DefExpr(tmp));
+            fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE, tmp,
               new CallExpr(useRefType ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE, fn->_this, field)));
             FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
             if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY))
-              fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
+              fn->insertIntoEpilogue(new CallExpr(autoDestroyFn, tmp));
             else
-              fn->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
+              fn->insertIntoEpilogue(new CallExpr(field->type->destructor, tmp));
           }
         } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
           VarSymbol* tmp = newTemp("_field_destructor_tmp_", field->type);
-          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          fn->insertBeforeReturnAfterLabel(
+          fn->insertIntoEpilogue(new DefExpr(tmp));
+          fn->insertIntoEpilogue(
                 new CallExpr(PRIM_MOVE, tmp,
                   new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-          fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
+          fn->insertIntoEpilogue(new CallExpr(autoDestroyFn, tmp));
         }
       }
 
@@ -955,10 +955,10 @@ fixupDestructors() {
           Type* tmpType = isClass(ct) ?
             ct->dispatchParents.v[0] : ct->dispatchParents.v[0]->refType;
           VarSymbol* tmp = newTemp("_parent_destructor_tmp_", tmpType);
-          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
+          fn->insertIntoEpilogue(new DefExpr(tmp));
+          fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE, tmp,
             new CallExpr(PRIM_CAST, tmpType->symbol, fn->_this)));
-          fn->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
+          fn->insertIntoEpilogue(new CallExpr(parentDestructor, tmp));
         }
       }
     }
@@ -979,7 +979,7 @@ static void insertGlobalAutoDestroyCalls() {
   fn->retType = dtVoid;
 
   chpl_gen_main->defPoint->insertBefore(new DefExpr(fn));
-  chpl_gen_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
+  chpl_gen_main->insertIntoEpilogue(new CallExpr(fn));
 
   forv_Vec(DefExpr, def, gDefExprs) {
     if (isModuleSymbol(def->parentSymbol))
