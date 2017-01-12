@@ -46,6 +46,8 @@ bool isDispatchParent(Type* t, Type* pt);
 bool canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes = NULL);
 bool canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn = NULL, bool* promotes = NULL, bool paramCoerce = false);
 
+bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
+
 const char* toString(Type* type);
 const char* toString(CallInfo* info);
 const char* toString(FnSymbol* fn);

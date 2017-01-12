@@ -1293,6 +1293,31 @@ void fixupNewAlias(void) {
   }
 }
 
+
+// Function resolution adds "dummy" initCopy functions for types
+// that cannot be copied. These "dummy" initCopy functions are marked
+// with the flag FLAG_ERRONEOUS_INITCOPY. This pattern enables
+// the compiler to continue to operate with its current structure
+// even for types that cannot be copied. In particular, this pass
+// has the ability to remove initCopy calls in some cases.
+//
+// This function simply checks that no function marked with that
+// flag is ever called and raises an error if so.
+static
+void checkForErroneousInitCopies() {
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
+      // Error on each call site
+      for_SymbolSymExprs(se, fn) {
+        USR_FATAL_CONT(se, "copy-initialization invoked for a type"
+                           " that does not have a copy initializer");
+      }
+    }
+  }
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 * Entry point                                                                 *
@@ -1316,4 +1341,6 @@ void callDestructors() {
   insertYieldTemps();
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();
+
+  checkForErroneousInitCopies();
 }

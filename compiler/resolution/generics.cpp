@@ -623,7 +623,14 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     newFn->retType = newType;
   }
   
-  fixupTupleFunctions(fn, newFn, call);
+  bool fixedTuple = fixupTupleFunctions(fn, newFn, call);
+  // Fix up chpl__initCopy for user-defined records
+  if (!fixedTuple &&
+      fn->hasFlag(FLAG_INIT_COPY_FN) &&
+      fn->hasFlag(FLAG_COMPILER_GENERATED) ) {
+    // Generate the initCopy function based upon initializer
+    fixupDefaultInitCopy(fn, newFn, call);
+  }
 
   if (newFn->numFormals() > 1 && newFn->getFormal(1)->type == dtMethodToken) {
     newFn->getFormal(2)->type->methods.add(newFn);
