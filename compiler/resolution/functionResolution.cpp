@@ -660,9 +660,13 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
         // Remove other PRIM_MOVEs to the RVV
         for_alist(stmt, newFn->body->body) {
           if (CallExpr* callStmt = toCallExpr(stmt))
-            if (callStmt->isPrimitive(PRIM_MOVE))
-              stmt->remove();
-	}
+            if (callStmt->isPrimitive(PRIM_MOVE)) {
+              SymExpr* se = toSymExpr(callStmt->get(1));
+              INT_ASSERT(se);
+              if (se->symbol() == retSym)
+                stmt->remove();
+            }
+        }
 
         // Set the RVV to the copy
         newFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, retSym, memeTmp));
