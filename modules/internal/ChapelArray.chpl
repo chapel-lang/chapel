@@ -136,6 +136,7 @@ module ChapelArray {
   use ChapelBase; // For opaque type.
   use ChapelTuple;
   use ChapelLocale;
+  use ArrayViewSlice;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -144,6 +145,8 @@ module ChapelArray {
   pragma "no doc"
   param nullPid = -1;
 
+  config param alwaysUseArrayViews = true;
+  
   pragma "no doc"
   config param debugBulkTransfer = false;
   pragma "no doc"
@@ -1999,6 +2002,7 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
 
+    
     // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
@@ -2009,7 +2013,23 @@ module ChapelArray {
       // dsiSlice takes ownership of d._value
       pragma "no auto destroy" var d = _dom((...ranges));
       d._value._free_when_no_arrs = true;
-      var a = _value.dsiSlice(d._value);
+      var a = chpl_arraySliceHelp();
+
+      proc chpl_arraySliceHelp() {
+        //        if (alwaysUseArrayViews ||
+        //            !canResolveMethod(this._value, "dsiSlice", d._value)) {
+          // if we're slicing a slice, short-circuit the slice out
+          const arr = if (_value.isSliceArrayView()) then this._value.arr
+                                                          else this._value;
+          return new ArrayViewSliceArr(eltType=this.eltType,
+                                       dom=d._value,
+                                       arr=arr);
+          //        } else {
+          //          return _value.dsiSlice(d._value);
+          //        }
+      }
+
+      // BLC: Do I want this in both branches? of the above proc ?
       a._arrAlias = _value;
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
@@ -3553,7 +3573,7 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref a: []) {
-    var b : [a._dom] a.eltType;
+    var b : [a._dom] a.eltType;  // if a is an array view, this isn't good
 
     // Try bulk transfer.
     if !chpl__serializeAssignment(b, a) {
@@ -3570,6 +3590,13 @@ module ChapelArray {
     return b;
   }
 
+  pragma "auto copy fn" proc chpl__autoCopy(const ref x: [])
+    where x._value.isSliceArrayView() {
+    return _newArray(new ArrayViewSliceArr(eltType=x.eltType,
+                                           dom=x._value.dom,
+                                           arr=x._value.arr));
+  }
+
   proc chpl_replaceWithDeepCopy(ref a:[]) {
     var b : [a._dom] a.eltType;
 
@@ -3583,7 +3610,11 @@ module ChapelArray {
     a._do_destroy();
 
     a._pid = b._pid;
-    a._instance = b._instance;
+    if a._value.isSliceArrayView() {
+      halt("Trying to replaceWithDeepCopy() on an array slice");
+    } else {
+      a._instance = b._instance;  // array classes don't match if 'a' was a slice
+    }
     a._unowned = false;
 
     b._pid = nullPid;
@@ -3595,7 +3626,7 @@ module ChapelArray {
   // see comment on chpl__unalias for domains
   pragma "unalias fn"
   inline proc chpl__unalias(ref x: []) {
-    const isalias = (x._unowned) | (x._value._arrAlias != nil);
+    const isalias = (x._unowned) || (x._value._arrAlias != nil);
 
     if isalias {
       chpl_replaceWithDeepCopy(x);
