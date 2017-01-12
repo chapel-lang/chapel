@@ -1,5 +1,6 @@
 use Random;
 use BLAS;
+use blas_helpers;
 
 config const errorThresholdDouble = 1.e-10;
 config const errorThresholdSingle = 1.e-5;
