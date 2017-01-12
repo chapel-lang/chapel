@@ -227,7 +227,7 @@ static std::map<FnSymbol*, FnSymbol*> functionCaptureMap; //lookup table/cache f
 static Map<FnSymbol*,const char*> innerCompilerWarningMap;
 static Map<FnSymbol*,const char*> outerCompilerWarningMap;
 
-Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
+std::map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
 Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 Map<Type*,FnSymbol*> unaliasMap; // type to chpl__unalias function
 
@@ -595,13 +595,13 @@ hasUserAssign(Type* type) {
 }
 
 bool hasAutoCopyForType(Type* type) {
-  return autoCopyMap.get(type) != NULL;
+  return autoCopyMap[type] != NULL;
 }
 
 // This function is intended to protect gets from the autoCopyMap so that
 // we can insert NULL values for a type and avoid segfaults
 FnSymbol* getAutoCopyForType(Type* type) {
-  FnSymbol* ret = autoCopyMap.get(type); // Do not try this at home
+  FnSymbol* ret = autoCopyMap[type]; // Do not try this at home
   if (ret == NULL) {
     INT_FATAL(type, "Trying to obtain autoCopy for type '%s',"
                     " which defines none", type->symbol->name);
@@ -610,7 +610,10 @@ FnSymbol* getAutoCopyForType(Type* type) {
 }
 
 void getAutoCopyTypeKeys(Vec<Type*> &keys) {
-  autoCopyMap.get_keys(keys);
+  for (std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.begin();
+       it != autoCopyMap.end(); ++it) {
+    keys.add(it->first);
+  }
 }
 
 // This function is called by generic instantiation
@@ -708,7 +711,7 @@ resolveAutoCopyEtc(Type* type) {
     FnSymbol* fn = resolveUninsertedCall(type, call);
     resolveFns(fn);
     INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
-    autoCopyMap.put(type, fn);
+    autoCopyMap[type] = fn;
 
     tmp->defPoint->remove();
   }
@@ -9423,7 +9426,7 @@ static bool propagateNotPOD(Type* t) {
     }
 
     // Also check for a non-compiler generated autocopy/autodestroy.
-    FnSymbol* autoCopyFn    = autoCopyMap.get(t);
+    FnSymbol* autoCopyFn    = autoCopyMap[t];
     FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
     FnSymbol* destructor    = t->destructor;
 
