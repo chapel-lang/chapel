@@ -636,8 +636,8 @@ void AggregateType::addDeclarations(Expr* expr, bool tail) {
     addDeclaration(this, def, tail);
 
   } else if (BlockStmt* block = toBlockStmt(expr)) {
-    for_alist(expr, block->body) {
-      addDeclarations(expr, tail);
+    for_alist(stmt, block->body) {
+      addDeclarations(stmt, tail);
     }
 
   } else {
