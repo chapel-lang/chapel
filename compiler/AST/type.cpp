@@ -578,7 +578,8 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
       ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", ct);
       fn->_this = arg;
       if (fn->thisTag == INTENT_TYPE) {
-        setupTypeIntentArg(arg);
+        arg->intent = INTENT_BLANK;
+        arg->addFlag(FLAG_TYPE_VARIABLE);
       }
       arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtHead(new DefExpr(fn->_this));
