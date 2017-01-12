@@ -21,11 +21,18 @@
 
 Containers for accessing the results of asynchronous execution.
 
-A :class:`Future` object is a read-only container that can store the result of
-an asynchronous operation, which can be retrieved when the result is ready.
+A :record:`Future` object is a container that can store the result of an
+asynchronous operation, which can be retrieved when the result is ready.
 
-Examples
---------
+Usage
+-----
+
+A :record:`Future` object is not created directly. Instead, a future may be
+created by calling the :proc:`async()` function, which takes as arguments
+the function to be executed and all arguments to that function.
+
+The following example demonstrates a trivial use of futures. Three computations
+are executed asynchronously.
 
 .. code-block:: chapel
 
@@ -33,125 +40,201 @@ Examples
 
    config const X = 42;
 
-   const A = new Future(lambda(x: int) { return 2 * x; }, X);
-   const B = new Future(lambda(x: int) { return x + 7; }, A.get(),
-                        ExecMode.Async);
-   const C = new Future(lambda(x: int) { return 3 * x; }, B.get(),
-                        ExecMode.Defer);
+   const A = async(lambda(x: int) { return 2 * x; }, X);
+   const B = async(lambda(x: int) { return 3 * x; }, X);
+   const C = async(lambda(x: int) { return 4 * x; }, X);
 
-   writeln(C.get() == (3 * ((2 * X) + 7)));
+   writeln(A.get());
+   writeln(B.get());
+   writeln(C.get());
+
+Future Chaining
+---------------
+
+A continuation to a future (itself a future) can be created via the
+:proc:`Future.andThen()` method, which takes as its single argument a function
+to be invoked asynchronously (with respect to other tasks) but strictly ordered
+in execution after the result of the parent future is ready. The continuation
+function takes a single argument, the result of the parent future.
+
+The following examples demonstrate such chaining of futures.
+
+.. code-block:: chapel
+
+   use Futures;
+
+   config const X = 42;
+
+   const F = async(lambda(x: int) { return 2 * x; }, X)
+     .andThen(lambda(x: int) { return x + 7; })
+     .andThen(lambda(x: int) { return 3 * x; });
+
+   writeln(F.get() == (3 * ((2 * X) + 7))); // prints "true"
+
+.. code-block:: chapel
+
+   use Futures;
+
+   config const X = 1234;
+
+   var F = async(lambda(x:int) { return x:string; }, X)
+     .andThen(lambda(x:string) { return(x.length); });
+
+   writeln(F.get()); // prints "4"
 
  */
 
 module Futures {
 
   use Reflection;
+  use RefCount;
 
-  /*
-    The execution mode for a :class:`Future`.
+  pragma "no doc"
+  class FutureClass: RefCountBase {
 
-    * :enum:`ExecMode.Async` specifies that the task associated with this
-      future should be executed asynchronously; i.e., by an implicit `begin`
-      statement.
+    type retType;
 
-    * :enum:`ExecMode.Defer` specifies that the task associated with this
-      future should defer execution until either :proc:`Future.get()` or
-      :proc:`Future.trigger()` is called.
-   */
-  enum ExecMode {
-    Async,
-    Defer
-  };
+    var value: single retType;
 
-  /*
-   */
-  class Future {
-
-    pragma "no doc"
-    var taskFn;
-
-    pragma "no doc"
-    var args;
-
-    pragma "no doc"
-    type retType = taskFn.retType;
-
-    pragma "no doc"
-    const execMode: ExecMode;
-
-    pragma "no doc"
-    var retval: sync retType;
-
-    pragma "no doc"
-    var launched: atomic bool;
-
-    pragma "no doc"
-    proc Future(taskFn, args...) {
-      param mode = ExecMode.Async;
-      if !canResolveMethod(taskFn, "this", (...args)) then
-        compilerError("Type mismatch in function and arguments");
-      execMode = mode;
-      if mode == ExecMode.Defer then
-        launched.write(false);
-      else {
-        launched.write(true);
-        begin retval.writeEF(taskFn((...args)));
-      }
+    proc FutureClass(type retType) {
     }
 
-    /*
-      Create a :class:`Future` object.
+  } // class FutureClass
 
-      :arg taskFn: The function to invoke
-      :arg args...: The arguments to pass to task function `taskFn`
-      :arg mode: An optional execution mode
-      :type mode: :enum:`ExecMode`
+  /*
+    A container that can store the result of an asynchronous operation,
+    which can be retrieved when the result is ready.
+
+    A future is not created directly. Instead, one is created by calling the
+    :proc:`async()` function or the :proc:`Future.andThen()` method on
+    an already-existing future.
+   */
+  record Future {
+
+    /*
+      The return type of the future.
      */
-    proc Future(taskFn, args..., mode: ExecMode = ExecMode.Async) {
-      if !canResolveMethod(taskFn, "this", (...args)) then
-        compilerError("Type mismatch in function and arguments");
-      execMode = mode;
-      if mode == ExecMode.Defer then
-        launched.write(false);
-      else {
-        launched.write(true);
-        begin retval.writeEF(taskFn((...args)));
-      }
+    type retType;
+
+    pragma "no doc"
+    var classRef: FutureClass(retType);
+
+    pragma "no doc"
+    proc Future(type retType) {
+      acquire(new FutureClass(retType));
+    }
+
+    pragma "no doc"
+    proc ~Future() {
+      release();
     }
 
     /*
       Get the result of a future, blocking until it is available.
      */
     proc get(): retType {
-      wait();
-      return retval.readFF();
-    }
-
-    /*
-      Start execution of the asynchronous task associated with this future.
-      (This only has an effect on futures specified with
-      :enum:`ExecMode.Defer`.)
-     */
-    proc trigger() {
-      if execMode == ExecMode.Defer && !launched.testAndSet() then
-        begin retval.writeEF(taskFn((...args)));
-    }
-
-    /*
-      Wait for the result of the future to become available.
-     */
-    proc wait() {
-      if !launched.testAndSet() then
-        retval.writeEF(taskFn((...args)));
+      return classRef.value.readFF();
     }
 
     /*
       Test whether the result of the future is available.
      */
-    proc ready(): bool {
-      return retval.isFull;
+    proc isReady(): bool {
+      return classRef.value.isFull;
     }
 
-  } // class Future
+    /*
+      Asynchronously execute a function as a continuation of the future.
+
+      The function argument `taskFn` must take a single argument of type
+      `retType` (i.e., the return type of the parent future) and will be
+      executed when the parent future's value is available.
+
+      :arg taskFn: The function to invoke as a continuation.
+      :returns: A future of the return type of `taskFn`
+     */
+    proc andThen(taskFn) {
+      /*
+      if !canResolveMethod(taskFn, "this", retType) then
+        compilerError("Mismatch in async task function and arguments");
+      */
+      var f: Future(taskFn.retType);
+      begin f.classRef.value.writeEF(taskFn(this.get()));
+      return f;
+    }
+
+    pragma "no doc"
+    proc acquire(newRef: FutureClass) {
+      classRef = newRef;
+      classRef.incRefCount();
+    }
+
+    pragma "no doc"
+    proc acquire() {
+      classRef.incRefCount();
+    }
+
+    pragma "no doc"
+    proc release() {
+      var rc = classRef.decRefCount();
+      if rc == 1 {
+        delete classRef;
+        classRef = nil;
+      }
+    }
+
+  } // record Future
+
+  pragma "no doc"
+  pragma "init copy fn"
+  proc chpl__initCopy(x: Future) {
+    x.acquire();
+    return x;
+  }
+
+  pragma "no doc"
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: Future) {
+    x.acquire();
+    return x;
+  }
+
+  pragma "no doc"
+  proc =(ref lhs: Future, rhs: Future) {
+  if lhs.classRef != nil then
+      lhs.release();
+    lhs.acquire(rhs.classRef);
+  }
+
+  /*
+    Asynchronously execute a function (taking no arguments) and return a
+    :record:`Future` that will eventually hold the result of the function call.
+
+    :arg taskFn: A function taking no arguments
+    :returns: A future of the return type of `taskFn`
+   */
+  proc async(taskFn) {
+    if !canResolveMethod(taskFn, "this") then
+      compilerError("Async task function (expecting arguments) called without arguments");
+    var f: Future(taskFn.retType);
+    begin f.classRef.value.writeEF(taskFn());
+    return f;
+  }
+
+  /*
+    Asynchronously execute a function (taking arguments) and return a
+    :record:`Future` that will eventually hold the result of the function call.
+
+    :arg taskFn: A function taking arguments with types matching `args...`
+    :arg args...: Arguments to `taskFn`
+    :returns: A future of the return type of `taskFn`
+   */
+  proc async(taskFn, args...) {
+    if !canResolveMethod(taskFn, "this", (...args)) then
+      compilerError("Async task function called with mismatching arguments");
+    var f: Future(taskFn.retType);
+    begin f.classRef.value.writeEF(taskFn((...args)));
+    return f;
+  }
 
 } // module Futures

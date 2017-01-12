@@ -219,6 +219,7 @@ module ZMQ {
   require "zmq.h", "-lzmq";
 
   use Reflection;
+  use RefCount;
 
   private extern var errno: c_int;
 
@@ -406,24 +407,6 @@ module ZMQ {
     zmq_version(c_ptrTo(major), c_ptrTo(minor), c_ptrTo(patch));
     return (major:int, minor:int, patch:int);
   }
-
-  pragma "no doc"
-  class RefCountBase {
-    var refcnt: atomic int;
-
-    proc incRefCount() {
-      refcnt.add(1);
-    }
-
-    proc decRefCount() {
-      return refcnt.fetchSub(1);
-    }
-
-    proc getRefCount() {
-      return refcnt.peek();
-    }
-
-  } // class RefCountBase
 
   pragma "no doc"
   class ContextClass: RefCountBase {
