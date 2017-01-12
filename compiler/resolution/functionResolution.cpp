@@ -500,13 +500,6 @@ resolveUninsertedCall(Type* type, CallExpr* call, bool checkonly) {
   return resolveUninsertedCall(insideBlock, beforeExpr, call, checkonly);
 }
 
-/*
-static
-FnSymbol* tryResolveUninsertedCall(Type* type, CallExpr* call) {
-  return resolveUninsertedCall(type, call, true);
-}
-*/
-
 //
 // Invoke resolveFns(fn), while having 'call' be on the top of 'callStack'.
 //
@@ -653,28 +646,28 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
       FnSymbol* initFn = tryResolveCall(initCall);
 
       if (initFn == NULL) {
-	// No copy-initializer could be found
-	def->remove();
-	initCall->remove();
-	newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+        // No copy-initializer could be found
+        def->remove();
+        initCall->remove();
+        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
       } else {
-	// Replace the other setting of the return-value-variable
-	// with what we have now...
+        // Replace the other setting of the return-value-variable
+        // with what we have now...
 
-	// find the RVV
-	Symbol* retSym = newFn->getReturnSymbol();
+        // find the RVV
+        Symbol* retSym = newFn->getReturnSymbol();
 
-	// Remove other PRIM_MOVEs to the RVV
+        // Remove other PRIM_MOVEs to the RVV
         for_alist(stmt, newFn->body->body) {
           if (CallExpr* callStmt = toCallExpr(stmt))
             if (callStmt->isPrimitive(PRIM_MOVE))
               stmt->remove();
 	}
 
-	// Set the RVV to the copy
-	newFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, retSym, memeTmp));
+        // Set the RVV to the copy
+        newFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, retSym, memeTmp));
 
-gdbShouldBreakHere();
+        gdbShouldBreakHere();
       }
       return true;
     }
