@@ -228,6 +228,20 @@ c_sublocid_t chpl_task_getRequestedSubloc(void);
 chpl_taskID_t chpl_task_getId(void);
 
 //
+// Checks whether two task IDs are the same
+//
+chpl_bool chpl_task_idEquals(chpl_taskID_t, chpl_taskID_t);
+
+//
+// Returns the string representation of task ID
+// The string returned is the same buffer passed as argument
+//
+char* chpl_task_idTostring(
+                           char *,         //buffer on which ID is written
+                           size_t,         //length of the buffer in bytes
+                           chpl_taskID_t); //Task ID
+
+//
 // Yield.
 //
 void chpl_task_yield(void);
