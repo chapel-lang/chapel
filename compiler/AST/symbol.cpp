@@ -1311,23 +1311,26 @@ FnSymbol::replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType)
 
 
 void
-FnSymbol::insertBeforeReturn(Expr* ast) {
+FnSymbol::insertBeforeEpilogue(Expr* ast) {
   LabelSymbol* label = getEpilogueLabel();
-  if (!label) {
-    insertBeforeReturnAfterLabel(ast);
-  } else {
+  if (label) {
     DefExpr* def = label->defPoint;
     def->insertBefore(ast);
+  } else {
+    // if an epilogue is later added, this will be excluded
+    CallExpr* ret = toCallExpr(body->body.last());
+    ret->insertBefore(ast);
   }
 }
 
+
 void
-FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
+FnSymbol::insertIntoEpilogue(Expr* ast) {
+  getOrCreateEpilogueLabel(); // always inserting into an epilogue
   CallExpr* ret = toCallExpr(body->body.last());
-  if (!ret || !ret->isPrimitive(PRIM_RETURN))
-    INT_FATAL(this, "function is not normal");
   ret->insertBefore(ast);
 }
+
 
 LabelSymbol*
 FnSymbol::getEpilogueLabel() {
@@ -1337,7 +1340,6 @@ FnSymbol::getEpilogueLabel() {
   for (Expr* last = ret; last; last = last->prev) {
     if (DefExpr* def = toDefExpr(last->prev)) {
       if (LabelSymbol* label = toLabelSymbol(def->sym)) {
-        // TODO psahabu: should FnSymbol have an epilogue label field?
         if (label->hasFlag(FLAG_EPILOGUE_LABEL)) {
           return label;
         }
@@ -1347,13 +1349,16 @@ FnSymbol::getEpilogueLabel() {
   return NULL;
 }
 
+
 LabelSymbol*
 FnSymbol::getOrCreateEpilogueLabel() {
   LabelSymbol* label = getEpilogueLabel();
   if (!label) {
     label = new LabelSymbol(astr("_end", name));
     label->addFlag(FLAG_EPILOGUE_LABEL);
-    insertBeforeReturnAfterLabel(new DefExpr(label));
+
+    CallExpr* ret = toCallExpr(body->body.last());
+    ret->insertBefore(new DefExpr(label));
   }
   return label;
 }
@@ -2356,11 +2361,11 @@ VarSymbol *new_StringSymbol(const char *str) {
   if (initStringLiterals == NULL)
     createInitStringLiterals();
 
-  initStringLiterals->insertBeforeReturn(new DefExpr(cptrTemp));
-  initStringLiterals->insertBeforeReturn(cptrCall);
-  initStringLiterals->insertBeforeReturn(new DefExpr(castTemp));
-  initStringLiterals->insertBeforeReturn(castCall);
-  initStringLiterals->insertBeforeReturn(ctorCall);
+  initStringLiterals->insertBeforeEpilogue(new DefExpr(cptrTemp));
+  initStringLiterals->insertBeforeEpilogue(cptrCall);
+  initStringLiterals->insertBeforeEpilogue(new DefExpr(castTemp));
+  initStringLiterals->insertBeforeEpilogue(castCall);
+  initStringLiterals->insertBeforeEpilogue(ctorCall);
 
   s->immediate = new Immediate;
   *s->immediate = imm;

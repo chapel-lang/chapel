@@ -464,10 +464,14 @@ public:
   void                       insertFormalAtHead(BaseAST* ast);
   void                       insertFormalAtTail(BaseAST* ast);
 
-  void                       insertBeforeReturn(Expr* ast);
-  void                       insertBeforeReturnAfterLabel(Expr* ast);
+  void                       insertBeforeEpilogue(Expr* ast);
+
+  // insertIntoEpilogue adds an Expr before the final return, but after the epilogue label
+  void                       insertIntoEpilogue(Expr* ast);
+
   LabelSymbol*               getEpilogueLabel();
   LabelSymbol*               getOrCreateEpilogueLabel();
+>>>>>>> create insertBeforeEpilogue, insertIntoEpilogue
 
   Symbol*                    getReturnSymbol();
   Symbol*                    replaceReturnSymbol(Symbol* newRetSymbol,
