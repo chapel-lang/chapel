@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,7 @@
 #include "primitive.h"
 #include "resolution.h"
 #include "docsDriver.h" // for fDocs
+#include "TryStmt.h"
 
 //
 // Static function declarations.
@@ -41,6 +42,7 @@ static void check_afterNormalization(); // Checks to be performed after
 static void check_afterResolution(); // Checks to be performed after every pass
                                      // following resolution.
 static void check_afterResolveIntents();
+static void check_afterLowerErrorHandling();
 static void check_afterCallDestructors(); // Checks to be performed after every
                                           // pass following callDestructors.
 static void check_afterLowerIterators();
@@ -198,6 +200,13 @@ void check_cullOverReferences()
   }
 }
 
+void check_lowerErrorHandling()
+{
+  check_afterEveryPass();
+  check_afterNormalization();
+  check_afterLowerErrorHandling();
+}
+
 void check_callDestructors()
 {
   check_afterEveryPass();
@@ -303,7 +312,7 @@ void check_deadCodeElimination()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
-  check_afterLowerIterators(); 
+  check_afterLowerIterators();
   check_afterResolveIntents();
   // Suggestion: Ensure no dead code.
 }
@@ -422,7 +431,7 @@ void check_makeBinary()
 // Extra structural checks on the AST, applicable to all passes.
 void check_afterEveryPass()
 {
-  if (fVerify) 
+  if (fVerify)
   {
     verify();
     checkForDuplicateUses();
@@ -488,6 +497,28 @@ static void check_afterResolveIntents()
           INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
         }
       }
+    }
+  }
+}
+
+
+static void check_afterLowerErrorHandling()
+{
+  if (fVerify)
+  {
+    // check no more TryStmt
+    forv_Vec(TryStmt, stmt, gTryStmts)
+    {
+      INT_FATAL(stmt, "TryStmt should no longer exist");
+    }
+
+    // TODO: check no more CatchStmt
+
+    // check no more PRIM_THROW
+    forv_Vec(CallExpr, call, gCallExprs)
+    {
+      if (call->isPrimitive(PRIM_THROW))
+        INT_FATAL(call, "PRIM_THROW should no longer exist");
     }
   }
 }
@@ -604,7 +635,7 @@ checkTaskRemovedPrims()
       }
 }
 
-static void 
+static void
 checkLowerIteratorsRemovedPrims()
 {
   for_alive_in_Vec(CallExpr, call, gCallExprs)

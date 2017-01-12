@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -189,7 +189,6 @@ symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
 symbolFlag( FLAG_NOT_POD , ypr, "not plain old data" , "bit copy overridden")
 
 symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )
-symbolFlag( FLAG_OMIT_FROM_CONSTRUCTOR , ypr, "omit from constructor" , ncm )
 
 // FLAG_ON and FLAG_ON_BLOCK mark task functions and their wrappers,
 // respectively, that perform remote operations, i.e. corresponding to

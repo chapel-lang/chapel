@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@ PASSES_SRCS = \
         createTaskFunctions.cpp \
         denormalize.cpp \
         docs.cpp \
+        errorHandling.cpp \
         expandExternArrayCalls.cpp \
         externCResolve.cpp \
         filesToAST.cpp \

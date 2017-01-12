@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -43,12 +43,20 @@ if ! $RIVENV $SCSPELL --help > /dev/null 2> /dev/null; then
     exit 1
 fi
 
-# The "globstar" option below lets these **/ patterns recurse
-NORMALGLOBS=("**/*.chpl" "**/*.cpp" "**/*.c" "**/*.h" \
-	     "**/README*" "**/*.md" "**/*.rst" "**/*.1")
+# Normal files to look for when recursing through directories.
+NORMALGLOBS=("-name" "*.chpl"  "-o"
+             "-name" "*.cpp"   "-o"
+             "-name" "*.c"     "-o"
+             "-name" "*.h"     "-o"
+             "-name" "README*" "-o"
+             "-name" "*.md"    "-o"
+             "-name" "*.rst"   "-o"
+             "-name" "*.1" )
 # *.1 are man pages
 
-LATEXGLOBS=("**/*.tex")
+# Latex files to look for when recursing through directories.
+# These are tracked separately because scspell needs --no-c-escapes for them.
+LATEXGLOBS=("-name" "*.tex")
 
 DEFAULTDIRS=( \
 	     compiler doc man modules runtime spec \
@@ -173,27 +181,31 @@ done
 if [ $JUSTARGS == 0 ]; then
     # If nothing was specified on the command line, use our default lists.
     if [ ${#TARGETDIRS} == 0 -a ${#NORMALFILES} == 0 -a $# == 0 ]; then
-	TARGETDIRS=("${DEFAULTDIRS[@]}")
-	NORMALFILES=("${DEFAULTFILES[@]}")
 	cd $CHPL_HOME
+	# Now that we're in $CHPL_HOME, use [*] to expand the globs in
+	# $DEFAULTFILES.  This is ok since DEFAULTFILES doesn't
+	# contain any filesnames with spaces etc.  DEFAULTDIRS has no
+	# globs.
+	NORMALFILES=(${DEFAULTFILES[*]})
+	TARGETDIRS=("${DEFAULTDIRS[@]}")
     fi
 
-    for d in "${TARGETDIRS[@]}"; do
-	# globstar enables the patterns above (e.g. **/*.chpl) to recurse.
-	# nullglob causes a glob that matches nothing to return an empty
-	# string instead of the literal glob.
-	shopt -s globstar nullglob
+    if [ ${#TARGETDIRS} != 0 ]; then
 	NFILES=() LFILES=()
-	for g in "${NORMALGLOBS[@]}"; do
-	    NFILES+=("$d"/$g)
-	done
-	for g in "${LATEXGLOBS[@]}"; do
-	    LFILES+=("$d"/$g)
-	done
-	shopt -u globstar nullglob
+
+	# Get the results of the find into a shell array.  Use find
+	# -print0 to avoid problems with spaces and special
+	# characters.  The "IFS=" and -d $'\0' allow 'read' to consume
+	# -print0 output.
+	while IFS= read -r -d $'\0' F; do
+	    NFILES+=("$F")
+	done < <(find "${TARGETDIRS[@]}" \( "${NORMALGLOBS[@]}" \) -print0)
+
+	while IFS= read -r -d $'\0' F; do
+	    LFILES+=("$F")
+	done < <(find "${TARGETDIRS[@]}" \( "${LATEXGLOBS[@]}" \) -print0)
 
 	# Filter out files listed in $FILTEROUT
-
 	for file in "${NFILES[@]}"; do
 	    b=$(basename "$file")
 	    KEEP=1
@@ -221,7 +233,7 @@ if [ $JUSTARGS == 0 ]; then
 		LATEXFILES+=("$file")
 	    fi
 	done
-    done
+    fi
 fi
 
 if [ ${#NORMALFILES[@]} != 0 -a  \
@@ -232,28 +244,19 @@ if [ ${#NORMALFILES[@]} != 0 -a  \
     exit 1
 fi
 
-# Sort the lists so that files in the same directory are presented to
-# the user at the same time, even if there's a mix of file types.
-# The LaTeX files are still separate, since they require the --no-c-escapes
-# option.
-
-# Shell array sorting courtesy of
-# http://stackoverflow.com/questions/7442417/how-to-sort-an-array-in-bash
 nrval=0  # normal rval
 if [ $JUSTARGS == 0 -a ${#NORMALFILES[@]} != 0 ]; then
-    IFS=$'\n' FILELIST=($(sort <<<"${NORMALFILES[*]}" | uniq))
     $RIVENV $SCSPELL --use-builtin-base-dict --override-dictionary $CHPL_DICT \
 	     --relative-to $CHPL_HOME \
-	     "${ARGS[@]}" "${FILELIST[@]}" "$@"
+	     "${ARGS[@]}" "${NORMALFILES[@]}" "$@"
     nrval=$?
 fi
 
 lrval=0  # latex rval
 if [ $JUSTARGS == 0 -a ${#LATEXFILES[@]} != 0 ]; then
-    IFS=$'\n' FILELIST=($(sort <<<"${LATEXFILES[*]}" | uniq))
     $RIVENV $SCSPELL --use-builtin-base-dict --override-dictionary $CHPL_DICT \
 	     --relative-to $CHPL_HOME \
-	     "${ARGS[@]}" --no-c-escapes "${FILELIST[@]}" "$@"
+	     "${ARGS[@]}" --no-c-escapes "${LATEXFILES[@]}" "$@"
     lrval=$?
 fi
 

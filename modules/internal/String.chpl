@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -869,15 +869,14 @@ module String {
 
     /*
       :arg chars: A string containing each character to remove.
-                  Defaults to `" \t\r\n"`.
+                  Defaults to `" \\t\\r\\n"`.
       :arg leading: Indicates if leading occurrences should be removed.
                     Defaults to `true`.
       :arg trailing: Indicates if trailing occurrences should be removed.
                      Defaults to `true`.
 
-      :returns: A new string with all occurrences of characters in `chars`
-                removed, including `leading` and `trailing` occurrences as
-                appropriate.
+      :returns: A new string with `leading` and/or `trailing` occurrences of
+                characters in `chars` removed as appropriate.
     */
     proc strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
       if this.isEmptyString() then return "";

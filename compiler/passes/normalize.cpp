@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1386,6 +1386,8 @@ static void init_typed_var(VarSymbol* var,
       block = new BlockStmt(NULL, BLOCK_SCOPELESS);
 
     VarSymbol* typeTemp = newTemp("type_tmp");
+    if (var->hasFlag(FLAG_PARAM))
+      typeTemp->addFlag(FLAG_PARAM);
     DefExpr*   typeDefn = new DefExpr(typeTemp);
     CallExpr*  initCall = NULL;
 

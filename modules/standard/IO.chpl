@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -3808,13 +3808,15 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
      :returns: ch
    */
-  inline proc <~>(ch: channel, x) where ch.writing {
+  inline proc <~>(const ref ch: channel, x) const ref
+  where ch.writing {
     ch.writeIt(x);
     return ch;
   }
   // documented in the writing version.
   pragma "no doc"
-  inline proc <~>(ch: channel, ref x) where !ch.writing {
+  inline proc <~>(const ref ch: channel, ref x) const ref
+  where !ch.writing {
     ch.readIt(x);
     return ch;
   }
@@ -3834,7 +3836,8 @@ inline proc channel.readwrite(ref x) where !this.writing {
      works without requiring an explicit temporary value to store
      the ioLiteral.
    */
-  inline proc <~>(r: channel, lit:ioLiteral) where !r.writing {
+  inline proc <~>(const ref r: channel, lit:ioLiteral) const ref
+  where !r.writing {
     var litCopy = lit;
     r.readwrite(litCopy);
     return r;
@@ -3850,7 +3853,8 @@ inline proc channel.readwrite(ref x) where !this.writing {
      works without requiring an explicit temporary value to store
      the ioNewline.
    */
-  inline proc <~>(r: channel, nl:ioNewline) where !r.writing {
+  inline proc <~>(const ref r: channel, nl:ioNewline) const ref
+  where !r.writing {
     var nlCopy = nl;
     r.readwrite(nlCopy);
     return r;

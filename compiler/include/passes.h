@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -54,6 +54,7 @@ void insertLineNumbers();
 void insertWideReferences();
 void localizeGlobals();
 void loopInvariantCodeMotion();
+void lowerErrorHandling();
 void lowerIterators();
 void makeBinary();
 void normalize();
