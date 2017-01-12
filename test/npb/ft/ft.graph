@@ -2,11 +2,13 @@ perfkeys:  Time in seconds =
 files: ft.S.dat
 graphkeys: runtime - S
 graphtitle: NAS Parallel Benchmarks: FT timings - size S
+ylabel: Time (seconds)
 
 perfkeys:  Time in seconds =
 files: ft.W.dat
 graphkeys: runtime - W
 graphtitle: NAS Parallel Benchmarks: FT timings - size W
+ylabel: Time (seconds)
 
 #perfkeys:  Time in seconds =
 #files: ft.A.dat
