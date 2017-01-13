@@ -693,7 +693,10 @@ resolveAutoCopyEtc(Type* type) {
 
     if (isUserDefinedRecord(type) &&
         !type->symbol->hasFlag(FLAG_TUPLE) &&
-        !isRecordWrappedType(type)) {
+        !isRecordWrappedType(type) &&
+        !isSyncType(type) &
+        !isSingleType(type) &&
+        !type->symbol->hasFlag(FLAG_EXTERN)) {
       // Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
       // for user-defined records. This way, if the type does not
       // support copying, the autoCopyMap will store a function
