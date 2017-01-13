@@ -506,6 +506,11 @@ void myth_chpl_create(chpl_fn_int_t fid, void * arg,
                          is_executeOn);
   //printf("passing %p to myth_chpl_wrap\n", &a);
   myth_create((myth_func_t)myth_chpl_wrap, (void *)&a);
+  // TODO - add arg_size argument
+  //      - store arguments in a custom data pointer
+  //        (set opt.custom_data_size, opt.custom_data for
+  //         myth_create_ex)
+  //      - or, copy arg_size in myth_chpl_wrap
   /* TODO: get rid of the embarrassing spin wait */
   while (a.copied == 0) { }
   //printf("release args %p\n", &a);
@@ -711,6 +716,7 @@ void chpl_task_setSerial(chpl_bool state) {
 
 // Get pointer to task private data.
 #ifndef CHPL_TASK_GET_PRVDATA_IMPL_DECL
+// TODO - chpl_task_prvData_t -> chpl_task_bundle_t
 chpl_task_prvData_t* chpl_task_getPrvData(void) {
   static chpl_task_prvData_t prvData[1] = { { .serial_state = false } };
   enter_();
