@@ -581,7 +581,7 @@ module ChapelDistribution {
     proc isSliceArrayView() param {
       return false;
     }
-    
+
     proc ~BaseArr() {
     }
 

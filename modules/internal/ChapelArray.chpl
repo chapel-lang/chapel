@@ -146,7 +146,7 @@ module ChapelArray {
   param nullPid = -1;
 
   config param alwaysUseArrayViews = true;
-  
+
   pragma "no doc"
   config param debugBulkTransfer = false;
   pragma "no doc"
@@ -2002,7 +2002,7 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
 
-    
+
     // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
@@ -2021,16 +2021,21 @@ module ChapelArray {
           // if we're slicing a slice, short-circuit the slice out
           const arr = if (_value.isSliceArrayView()) then this._value.arr
                                                           else this._value;
+
+          // I don't believe I want to set _arrAlias on this branch because
+          // we're not aliasing the _ddata field of an array directly, only
+          // through its owning array's descriptor...
+
           return new ArrayViewSliceArr(eltType=this.eltType,
                                        dom=d._value,
                                        arr=arr);
           //        } else {
-          //          return _value.dsiSlice(d._value);
+          //          var a = _value.dsiSlice(d._value);
+          //          a._arrAlias = _value;
+          //          return a;
           //        }
       }
 
-      // BLC: Do I want this in both branches? of the above proc ?
-      a._arrAlias = _value;
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
       return _newArray(a);
@@ -2398,7 +2403,7 @@ module ChapelArray {
           if this._value.dataAllocRange.length < this.domain.numIndices {
             /* if dataAllocRange has fewer indices than this.domain it must not
                be set correctly.  Set it to match this.domain to start.
-             */ 
+             */
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
           const oldRng = this._value.dataAllocRange;
@@ -3573,7 +3578,7 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref a: []) {
-    var b : [a._dom] a.eltType;  // if a is an array view, this isn't good
+    var b : [a._dom] a.eltType;
 
     // Try bulk transfer.
     if !chpl__serializeAssignment(b, a) {
@@ -3590,8 +3595,24 @@ module ChapelArray {
     return b;
   }
 
+  pragma "init copy fn"
+    proc chpl__initCopy(const ref a: [])
+    where a._value.isSliceArrayView() {
+    var b : [a._dom] a.eltType;
+
+    // Try bulk transfer.
+    if !chpl__serializeAssignment(b, a) {
+      chpl__bulkTransferArray(b, a);
+      return b;
+    }
+
+    chpl__transferArray(b, a);
+    return b;
+  }
+
   pragma "auto copy fn" proc chpl__autoCopy(const ref x: [])
     where x._value.isSliceArrayView() {
+    writeln("In array slice autocopy");
     return _newArray(new ArrayViewSliceArr(eltType=x.eltType,
                                            dom=x._value.dom,
                                            arr=x._value.arr));

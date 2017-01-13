@@ -2,7 +2,7 @@ class ArrayViewSliceArr: BaseArr {
   type eltType;
   const dom;
   const arr;
-  
+
   //
   // TODO: Could this be replaced with more type-based introspection?
   // I shied away from it since this is a generic class, but there
@@ -16,7 +16,7 @@ class ArrayViewSliceArr: BaseArr {
   inline proc dsiGetBaseDom() {
     return dom;
   }
-  
+
   //
   // standard iterators
   //
@@ -45,6 +45,7 @@ class ArrayViewSliceArr: BaseArr {
   }
 
   proc dsiSerialWrite(f) {
-    chpl_rectArrayReadWriteHelper(f, arr, dom);
+    chpl_serialReadWriteRectangular(f, arr, dom);
   }
 }
+
