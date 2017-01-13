@@ -2,6 +2,10 @@ record R {
   var x: int = 0;
 }
 
+/*
+After PR #5164, user records can't actually
+write their own autoCopy functions.
+
 pragma "donor fn"
 pragma "auto copy fn"
 proc chpl__autoCopy(arg: R) {
@@ -16,6 +20,7 @@ proc chpl__autoCopy(arg: R) {
 
   return ret;
 }
+*/
 
 // I'd like this to be ref, but that breaks
 //    var outerX: R; begin { var x = outerX; }
