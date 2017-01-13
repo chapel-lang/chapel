@@ -25,7 +25,7 @@ class ArrayViewSliceArr: BaseArr {
       yield arr.dsiAccess(i);
   }
 
-  inline iter these(param tag: iterKind) where tag == iterKind.standalone {
+  inline iter these(param tag: iterKind) ref where tag == iterKind.standalone {
     for i in dom.these(tag) do
       yield arr.dsiAccess(i);
   }
@@ -44,8 +44,27 @@ class ArrayViewSliceArr: BaseArr {
       yield arr.dsiAccess[i];
   }
 
+  //
+  // standard I/O stuff
+  //
   proc dsiSerialWrite(f) {
     chpl_serialReadWriteRectangular(f, arr, dom);
+  }
+
+  //
+  // standard accessors
+  //
+  inline proc dsiAccess(i:integral) ref {
+    return dsiAccess((i,));
+  }
+
+  inline proc dsiAccess(i) ref {
+    //    writeln("Slice got: ", i);
+    if boundsChecking then
+      if !dom.dsiMember(i) then
+        halt("array index out of bounds: ", i);
+
+    return arr.dsiAccess(i);
   }
 }
 
