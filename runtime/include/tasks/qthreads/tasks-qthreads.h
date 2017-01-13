@@ -51,6 +51,9 @@ void chpl_task_yield(void);
 //
 typedef unsigned int chpl_taskID_t;
 #define chpl_nullTaskID QTHREAD_NULL_TASK_ID
+#ifndef CHPL_TASK_ID_STRING_MAX_LEN
+#define CHPL_TASK_ID_STRING_MAX_LEN 21
+#endif
 
 //
 // Sync variables
