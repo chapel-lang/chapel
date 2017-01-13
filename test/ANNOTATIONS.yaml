@@ -216,6 +216,8 @@ all:
       config: 16 node XC
   12/22/16:
     - multi-ddata (#5047)
+  01/11/17:
+    - Move the multi-ddata metadata fields, checking cache effects for 'flat'. (#5145)
 
 
 AllCompTime:
@@ -430,6 +432,9 @@ is:
 isx:
   02/26/16:
     - ISx ref to array (#3365)
+  01/10/17:
+    - text: Use comm primitive in ISx study version (#5131)
+      config: 16 node XC
 
 isx-bucket-spmd:
   02/26/16:
@@ -667,6 +672,10 @@ prk-stencil.xc-perf:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
   08/12/16:
     - Improve and enable strided bulk transfer optimization as default (#4318)
+
+ptrans:
+  01/11/17:
+    - Replace temporary array in BlockCycDist with tuple (#5139)
 
 ra:
   05/13/16:

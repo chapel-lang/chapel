@@ -1,2 +1,3 @@
 generic-type-method-tuple.chpl:5: In function 'firstElement':
-generic-type-method-tuple.chpl:5: error: 'myTuple' undeclared (first use this function)
+generic-type-method-tuple.chpl:5: error: unresolved call 'type MyRecord(int(64),2*int(64)).myTuple'
+generic-type-method-tuple.chpl:3: note: candidates are: MyRecord.myTuple

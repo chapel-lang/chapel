@@ -1889,6 +1889,14 @@ module DefaultRectangular {
   proc DefaultRectangularDom.dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
 
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+    chpl_serialReadWriteRectangular(f, this);
+  }
+
+  proc chpl_serialReadWriteRectangular(f, arr, dom=arr.dom) {
+    param rank = arr.rank;
+    type idxType = arr.idxType;
+    type idxSignedType = chpl__signedType(idxType);
+
     proc writeSpaces(dim:int) {
       for i in 1..dim {
         f <~> new ioLiteral(" ");
@@ -1920,7 +1928,7 @@ module DefaultRectangular {
           else if isspace then f <~> new ioLiteral(" ");
           else if isjson || ischpl then f <~> new ioLiteral(", ");
           idx(dim) = j;
-          f <~> dsiAccess(idx);
+          f <~> arr.dsiAccess(idx);
         }
       } else {
         for j in dom.ranges(dim) by makeStridePositive {
@@ -2020,15 +2028,15 @@ module DefaultRectangular {
           // like push_back
           const newDom = {offset..#sz};
 
-          dsiReallocate( newDom );
+          arr.dsiReallocate( newDom );
           // This is different from how push_back does it
           // because push_back might lead to a call to
           // _reprivatize but I don't see how to do that here.
           dom.dsiSetIndices( newDom.getIndices() );
-          dsiPostReallocate();
+          arr.dsiPostReallocate();
         }
 
-        f <~> dsiAccess(offset + i);
+        f <~> arr.dsiAccess(offset + i);
 
         i += 1;
       }
@@ -2042,9 +2050,9 @@ module DefaultRectangular {
       {
         // trim down to actual size read.
         const newDom = {offset..#i};
-        dsiReallocate( newDom );
+        arr.dsiReallocate( newDom );
         dom.dsiSetIndices( newDom.getIndices() );
-        dsiPostReallocate();
+        arr.dsiPostReallocate();
       }
 
     } else {

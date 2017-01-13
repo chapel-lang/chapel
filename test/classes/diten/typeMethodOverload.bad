@@ -1,3 +1,0 @@
-typeMethodOverload.chpl:13: error: ambiguous call 'type C1.typeMethod()'
-typeMethodOverload.chpl:2: note: candidates are: _any.typeMethod()
-typeMethodOverload.chpl:8: note:                 _any.typeMethod()

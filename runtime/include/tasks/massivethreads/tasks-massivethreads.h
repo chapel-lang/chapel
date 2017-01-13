@@ -45,6 +45,9 @@ typedef struct {
 // between C code and Chapel code in the runtime.
 typedef intptr_t chpl_taskID_t;
 #define chpl_nullTaskID 0
+#ifndef CHPL_TASK_ID_STRING_MAX_LEN
+#define CHPL_TASK_ID_STRING_MAX_LEN 21
+#endif
 
 //
 // Task layer private area argument bundle header

@@ -288,7 +288,7 @@ void closeCFile(fileinfo* fi, bool beautifyIt) {
   // beautify without also improving indentation and such which could
   // save some time.
   //
-  if (beautifyIt && (saveCDir[0] || (debugCCode && printCppLineno)))
+  if (beautifyIt && (saveCDir[0] || printCppLineno))
     beautify(fi);
 }
 
