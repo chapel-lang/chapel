@@ -3631,6 +3631,16 @@ module ChapelArray {
     a._do_destroy();
 
     a._pid = b._pid;
+    //
+    // TODO: What would be a cleaner way to deal with this?  The
+    // problem is that the compiler tries to resolve chpl__unalias for
+    // all record types, and so tries to resolve this for array views.
+    // But for an array view, the _instance field of 'a' is not going
+    // to be of the same type as that of 'b' by definition, so the
+    // assignment between instances below fails.  I used this
+    // conditional plus halt as a workaround, though to date, the halt
+    // has not actually been triggered.
+    //
     if a._value.isSliceArrayView() {
       halt("Trying to replaceWithDeepCopy() on an array slice");
     } else {
