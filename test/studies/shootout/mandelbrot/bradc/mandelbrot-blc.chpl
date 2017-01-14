@@ -21,32 +21,35 @@ proc main() {
   const xdim = 0..#divceilpos(n, bitsPerElt),  // the compacted x dimension
         inv = 2.0 / n,                         // precompute 2/n
         xvals: [0..#n] real = [i in 0..#n] inv*i - 1.5,  // precompute coords
-        yvals: [0..#n] imag = [i in 0..#n] (inv*i - 1.0)*1i;
+        yvals: [0..#n] real = [i in 0..#n] (inv*i - 1.0);
 
   var image : [0..#n, xdim] eltType;           // the compacted bitmap image
 
   forall (y, xelt) in dynamic(image.domain, chunkSize) { // for all elements
-    var buff: eltType;                         // a single-element pixel buffer
 
-    for off in 0..#bitsPerElt {                // for each bit in the buffer
-      const x = xelt*bitsPerElt + off;         // compute its logical column
+    // TODO: split x/y dimensions in forall loop and hoist the following?
+    const ci = yvals[y];
+    const xbase = xelt*bitsPerElt;
+    // TODO: express in terms of bitsPerElt?
+    const cr = (xvals[xbase+0], xvals[xbase+1], xvals[xbase+2], xvals[xbase+3],
+                xvals[xbase+4], xvals[xbase+5], xvals[xbase+6], xvals[xbase+7]);
 
-      const C = xvals[x] + yvals[y];           // the (x,y) pixel as a complex
-      var Z, T: complex;                       // 'complex' helper values
+    var Zr, Zi, Tr, Ti: 8*real;
 
-      for 1..maxIter {                         // for the max # of iterations
-        if (T.re + T.im > limit) then          // if we haven't converged
-          break;
+    for 1..maxIter {                       // for the max # of iterations
+      Zi = 2.0*Zr*Zi + ci;           // update Z and T
+      Zr = Tr - Ti + cr;
+      Tr = Zr**2;
+      Ti = Zi**2;
 
-        Z.im = 2.0*Z.re*Z.im + C.im;           // update Z and T
-        Z.re = T.re - T.im + C.re;
-        T.re = Z.re**2;
-        T.im = Z.im**2;
-      }
+      if (Tr + Ti > limit) then          // if we haven't converged
+        break;
+    }
 
-      buff <<= 1;                            // shift the pixel buffer
-      if (T.re + T.im <= limit) then         // if 'C' is within the limit,
-        buff |= 0x1;                         //   turn the low pixel on
+    var buff: eltType;
+    for param i in 1..bitsPerElt {
+      if (Tr(i) + Ti(i) <= limit) then       // if 'C' is within the limit,
+        buff |= 0x1 << (8-i);                //   turn the low pixel on
     }
 
     image[y, xelt] = buff;                   // store the pixel buffer
@@ -61,4 +64,16 @@ proc main() {
   w.writef("P4\n");
   w.writef("%i %i\n", n, n);
   w.write(image);
+}
+
+proc +(cr, ci) {
+  return (cr(1)+ci, cr(2)+ci, cr(3)+ci, cr(4)+ci, 
+          cr(5)+ci, cr(6)+ci, cr(7)+ci, cr(8)+ci);
+}
+
+proc >(x, y) {
+  for param i in 1..bitsPerElt do
+    if x(i) <= y then
+      return false;
+  return true;
 }
