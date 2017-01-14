@@ -1930,6 +1930,8 @@ proc BlockArr.doiBulkTransferToDR(Barg)
           writeln("A[",r1,"] = B[",r2,"]");
       
         const d ={(...r1)};
+        halt("Wanting to call dsiSlice");
+        /*
         const slice = B.dsiSlice(d._value);
         //Necessary to calculate the value of blk variable in DR
         //with the new domain r1
@@ -1938,6 +1940,7 @@ proc BlockArr.doiBulkTransferToDR(Barg)
         slice.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
         
         delete slice;
+        */
       }
     }
 }
@@ -1974,6 +1977,8 @@ proc BlockArr.doiBulkTransferFromDR(Barg)
           writeln("A[",r2,"] = B[",r1,"]");
           
         const d ={(...r1)};
+        halt("Wanting to call dsiSlice");
+        /*
         const slice = B.dsiSlice(d._value);
         //this step it's necessary to calculate the value of blk variable in DR
         //with the new domain r1
@@ -1981,6 +1986,7 @@ proc BlockArr.doiBulkTransferFromDR(Barg)
         
         A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice);
         delete slice;
+        */
       }
     }
 }
