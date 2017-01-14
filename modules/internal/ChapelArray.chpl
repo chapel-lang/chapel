@@ -2011,6 +2011,11 @@ module ChapelArray {
       if boundsChecking then
         checkSlice((... ranges));
       // dsiSlice takes ownership of d._value
+
+      //
+      // TODO: This computes a local domain (?).  Do we want to do
+      // that or compute the global domain?
+      //
       pragma "no auto destroy" var d = _dom((...ranges));
       d._value._free_when_no_arrs = true;
       var a = chpl_arraySliceHelp();
@@ -3596,7 +3601,7 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-    proc chpl__initCopy(const ref a: [])
+  proc chpl__initCopy(const ref a: [])
     where a._value.isSliceArrayView() {
     var b : [a._dom] a.eltType;
 

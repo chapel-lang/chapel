@@ -1,7 +1,15 @@
 class ArrayViewSliceArr: BaseArr {
-  type eltType;
+  type eltType;  // see note on commented-out proc eltType below...
   const dom;
   const arr;
+
+  proc idxType type return dom.idxType;
+  proc rank param return arr.rank;
+
+  // This seems like it ought to work, but it causes an error in the
+  // compiler for non-devel mode...  presumably due to a direct
+  // query of eltType...
+  //  proc eltType type return arr.eltType;
 
   //
   // TODO: Could this be replaced with more type-based introspection?
@@ -65,6 +73,27 @@ class ArrayViewSliceArr: BaseArr {
         halt("array index out of bounds: ", i);
 
     return arr.dsiAccess(i);
+  }
+
+  //
+  // bulk transfer routines -- forward to array
+  //
+  proc doiBulkTransferToDR(B) {
+    arr.doiBulkTransferToDR(B);
+  }
+
+  /*  I don't think these should be needed...
+  proc doiBulkTransferStride(B) {
+    arr.doiBulkTransferStride(B);
+  }
+
+  proc dataChunk(x) ref {
+    return arr.dataChunk(x);
+  }
+*/
+
+  proc dsiReindex() {
+    compilerError("reindexing not supported on array views yet");
   }
 }
 
