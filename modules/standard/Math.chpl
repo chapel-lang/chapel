@@ -624,30 +624,6 @@ module Math {
      `false` otherwise. */
   inline proc isnan(x: real(32)): bool return chpl_macro_float_isnan(x):bool;
 
-  /* Returns `true` if the argument `x` is within an relative tolerance
-  `relTol` or absolute tolerance `absTol` to `y`; `false` otherwise */
-  proc isClose(a, b, relTol=1e-09, absTol=0.0) {
-    // TODO -- check for special cases:
-    // NaN - close to nothing
-    // inf - close to only inf
-    // -inf - close to only -inf
-    // Overload as ~==
-    return abs(a-b) <= max(relTol * max(abs(a), abs(b)), absTol);
-  }
-
-  pragma "no doc"
-  proc isClose(A: [ ], B: [ ], relTol=1e-09, absTol=0.0) {
-    if A.eltType != B.eltType then
-      compilerError('Array types do not match');
-
-    for (a, b) in zip(A, B) {
-      if !isClose(a, b, relTol=relTol, absTol=absTol) then
-        return false;
-    }
-
-    return true;
-  }
-
   /* Multiply by an integer power of 2.
      Returns x * 2**n.
      */
