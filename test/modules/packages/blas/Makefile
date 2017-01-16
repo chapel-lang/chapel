@@ -1,4 +1,9 @@
-#BLASFLAGS=-I/usr/local/include -L/usr/local/lib -lblas
+# For using BLAS stand-alone:
+#BLASFLAGS= -I/usr/local/include -L/usr/local/lib -lblas
+
+# For using BLAS packaged with LAPACK:
+# CFLAGS contains -I/path/to/CBLAS/include -I/path/to/LAPACKE/include
+# LDFLAGS contains -L/path/to/lapack-version
 LAPACKFLAGS = $(CFLAGS) $(LDFLAGS) -llapacke -llapack -lblas -lcblas -lgfortran
 CHPLFLAGS += --ccflags -Wno-enum-conversion
 
