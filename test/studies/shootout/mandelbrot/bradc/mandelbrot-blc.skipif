@@ -2,4 +2,6 @@
 #
 # See JIRA 244 for more info: https://chapel.atlassian.net/browse/CHAPEL-244
 
+# the issue with --fast occurs on chapcs with CHPL_TARGET_ARCH=native
+COMPOPTS <= --fast
 CHPL_TARGET_PLATFORM == linux32
