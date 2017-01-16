@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -79,7 +79,7 @@ liveVariableAnalysis(FnSymbol* fn,
       for_vector(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (useSet.set_in(se)) {
-            int id = localMap.get(se->var);
+            int id = localMap.get(se->symbol());
             if (!def->get(id))
               use->set(id);
           }
@@ -88,7 +88,7 @@ liveVariableAnalysis(FnSymbol* fn,
       for_vector(BaseAST, ast1, asts) {
         if (SymExpr* se = toSymExpr(ast1)) {
           if (defSet.set_in(se)) {
-            int id = localMap.get(se->var);
+            int id = localMap.get(se->symbol());
             if (!use->get(id))
               def->set(id);
           }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,8 +19,16 @@
 
 /* MPI Bindings for Chapel.
 
-These implement the C-API for the MPI 1.1 standard. We currently do not support the following
-routines ::
+
+.. note::
+  This is a prototype of the MPI interface for Chapel. The feature set,
+  configuration support, and documentation are expected to improve over time.
+
+MPI Version
+-----------
+
+This module implements the C-API for the MPI 1.1 standard. It currently does
+not support the following routines ::
 
       MPI_Op_create
       MPI_Op_free
@@ -29,9 +37,10 @@ routines ::
       MPI_Keyval_create
       MPI_Keyval_free
 
-since all of these are built around user-defined handlers, that we do not support.
+since all of these are built around user-defined handlers, that is not supported.
 
-We also include a few functions that are in later MPI standards. These are ::
+This module also includes a few functions that are in later MPI standards.
+These are ::
 
       MPI_Init_thread (and related constants)
       MPI_Ibarrier
@@ -48,19 +57,20 @@ get Chapel to use mpicc and assume that it works like gcc does.
 Note that on Cray systems, this is not necessary, since the default
 compilers include the necessary MPI information.
 
-.. note ::
-  #. Currently, we only support the gnu compilers wrapped by MPI. We expect
-     to broaden this class in the future.
-  #. The current scripts fail to correctly determine the architecture for
-     the mpi-gnu suite, hence ``CHPL_TARGET_ARCH=none``. We expect this to be
-     fixed in the future.
+.. note::
+  Currently, only the gnu compilers wrapped by MPI are supported. This class
+  is expected to broaden in the future.
 
 Interoperability Modes
 ----------------------
 
-We envision two modes in which Chapel and MPI can interoperate with
-one another. The first of these is MPI + single-locale Chapel. This has no
-constraints on the setup of Chapel and MPI, and is conceptually the same
+There are two modes in which Chapel and MPI can interoperate with one another:
+
+SPMD Mode
+~~~~~~~~~
+
+SPMD mode (MPI + single locale Chapel) has no constraints on the setup of
+Chapel and MPI, and is conceptually the same
 as OpenMP+MPI programming. All communication here is handled by
 MPI; Chapel is just used to provide local parallelism. Furthermore,
 in this mode, Chapel locales do not map to MPI ranks at all; the program
@@ -69,59 +79,96 @@ Note that the same caveats that apply to OpenMP+MPI
 programming apply here. For instance, MPI must be initialized with the
 appropriate thread support (see below).
 
-The second mode of operation is where both Chapel and MPI communications
+**Setting up SPMD mode on a Cray:**
+
+The recommended configuration for running multilocale MPI jobs on a Cray is as
+follows:
+
+.. code-block:: sh
+
+ CHPL_TARGET_COMPILER=cray-prgenv-gnu
+ CHPL_TASKS=fifo
+ CHPL_COMM=none
+ MPICH_MAX_THREAD_SAFETY=multiple
+
+These are the configurations in which this module is currently tested.
+
+.. note::
+  Currently, running SPMD jobs on a Cray requires manually launching the jobs,
+  as opposed to utilizing a built in Chapel launcher. Support for launching SPMD jobs with the built-in Chapel launchers will be
+  added in the future.
+
+Multilocale Mode
+~~~~~~~~~~~~~~~~
+
+Multilocale mode is where both Chapel and MPI communications
 may be mixed. This allows the user to use optimized/convenient MPI routines
 when desired, while having access to the Chapel PGAS model. Using this
 model requires
 
-1. The MPI library should (and in many cases must) support the MPI_THREAD_MULTIPLE
-   support level for threads. This is needed if the user plans on making
-   MPI calls from multiple threads. It is necessary when using the mpi-conduit
-   for GASNet, since the GASNet library may make simultaneous MPI calls.
-   We've had good experience with MPICH and MPI_THREAD_MULTIPLE.
-2. ``CHPL_TASKS=fifo`` is currently a requirement that hopefully can be relaxed
+1. The MPI library should (and in many cases must) support the
+   :const:`MPI_THREAD_MULTIPLE` support level for threads. This is needed if
+   the user plans on making MPI calls from multiple threads. It is necessary
+   when using the mpi-conduit for GASNet, since the GASNet library may make
+   simultaneous MPI calls.  We've had good experience with MPICH and
+   :const:`MPI_THREAD_MULTIPLE`.
+
+2. ``CHPL_TASKS=fifo`` is currently a
+   requirement that hopefully can be relaxed
    in the future.
 
-This second mode has been tried on
+**Setting up multilocale mode on a Cray:**
 
-1. Linux, with the mpi-conduit for GASNet
-2. Cray XC, with the aries conduit for GASNet
+The recommended configuration for running multilocale MPI jobs on a Cray is as
+follows:
+
+.. code-block:: sh
+
+  CHPL_TARGET_COMPILER=cray-prgenv-gnu
+  CHPL_TASKS=fifo
+  CHPL_COMM=gasnet
+  CHPL_COMM_SUBSTRATE=mpi           # or aries
+  MPICH_MAX_THREAD_SAFETY=multiple
+  AMMPI_MPI_THREAD=multiple         # if CHPL_COMM_SUBSTRATE=mpi
+
+These are the configurations in which this module is currently tested. Any
+launcher should work fine for this mode. Support is expected to expand in
+future versions.
 
 
-Environment Variables and Module Constants
-------------------------------------------
+Configurations Constants
+------------------------
 
-The package uses two boolean config constants :
-``autoInitMPI`` and ``requireThreadedMPI``. The first automatically initializes
-MPI (if not already initialized by the runtime), and shuts it down as well.
-The second ensures that MPI is running in MPI_THREAD_MULTIPLE mode, and will
-abort if not. This is not necessary if you are running local Chapel+MPI, but is
-likely to be necessary if you run in mixed Chapel-MPI mode. Both of these
-are true by default.
-
-If you are using the MPI conduit on GASNet, you will need to select the threading
-mode for MPI (if you are running in mixed mode). To do so, set AMMPI_MPI_THREAD=MULTIPLE
-in your environment. On Cray systems, you might need to set
-``MPICH_MAX_THREAD_SAFETY`` to ``MULTIPLE``.
+This module uses two boolean config constants:
+:const:`autoInitMPI` and :const:`requireThreadedMPI`.
+Refer to their documentation for more information on when to use them.
 
 Communicators
 -------------
 
 The GASNet runtime, and therefore Chapel, makes no guarantees that the MPI
 ranks will match the GASNet locales. This module creates a new MPI communicator
-``CHPL_COMM_WORLD`` that ensures that this mapping is true.
+:proc:`CHPL_COMM_WORLD` that ensures that this mapping is true.
 Note that this is only set in mixed Chapel-MPI mode. If numLocales is 1, then
-CHPL_COMM_WORLD is set to MPI_COMM_NULL, and will cause an MPI error if used.
+:proc:`CHPL_COMM_WORLD` is set to :const:`MPI_COMM_NULL`, and will cause an MPI
+error if used.
 
 .. note::
-  #. Pointer arguments are written as `ref` arguments, so no casting to a ``c_ptr``
+  #. Pointer arguments are written as ``ref`` arguments, so no casting to a ``c_ptr``
      is necessary.
   #. An exception to the above is if the C prototype names the argument ``array_of_*``,
-     in which case we write it using an array form.
+     in which case it is written using an array form.
   #. Some MPI-1.1 functions were deprecated in MPI-2. These should be updated in the future, but
      are still present in this version.
-  #. We represent MPI_Aint by ptrdiff. If this is not the correct size, there will be an assertion
-     failure in the code.
+  #. :const:`MPI_Aint` is represented by ptrdiff. If this is not the correct
+     size, there will be an assertion failure in the code.
+
+MPI Module Documentation
+------------------------
+
+.. note::
+  For items without documentation, please refer to the MPI documentation.
+
 */
 module MPI {
   use SysCTypes;
@@ -129,27 +176,43 @@ module MPI {
 
   use UtilReplicatedVar;
 
-  /* Configuration constants */
+  /*
+     Automatically initializes MPI (if not already initialized by the runtime), and
+     shuts it down as well.
+   */
   config const autoInitMPI=true;
+
+  /*
+    Ensures that MPI is running in :const:`MPI_THREAD_MULTIPLE` mode, and will
+    abort if not. This is not necessary if you are running SPMD mode, but is
+    likely to be necessary if you run
+    in multilocale mode.
+   */
   config const requireThreadedMPI=true;
+
+  pragma "no doc"
   config const debugMPI=false;
 
+  pragma "no doc"
   var CHPL_COMM_WORLD_REPLICATED : [rcDomain] MPI_Comm;
   rcReplicate(CHPL_COMM_WORLD_REPLICATED, MPI_COMM_NULL);
-  /* Define a new communicator that directly maps to Chapel locales.
-  This is just a reordering of MPI_COMM_WORLD, which you are, of course,
-  free to continue to use. This just guarantees that locale ids and MPI
-  ranks agree.
 
+  /*
+    Define a new communicator that directly maps to Chapel locales.
+    This is just a reordering of ``MPI_COMM_WORLD``, which you are, of course,
+    free to continue to use. This just guarantees that locale ids and MPI
+    ranks agree.
   */
   proc CHPL_COMM_WORLD {
     return CHPL_COMM_WORLD_REPLICATED(1);
   }
 
+  pragma "no doc"
   record _initMPI {
     var doinit : bool = false;
     var freeChplComm : bool = false;
 
+    pragma "no doc"
     proc ~_initMPI() {
       if freeChplComm {
         if numLocales > 1 {
@@ -171,6 +234,7 @@ module MPI {
     }
   }
 
+  pragma "no doc"
   var _mpi : _initMPI;
 
   if autoInitMPI {
@@ -196,12 +260,15 @@ module MPI {
   }
 
 
-  /* Helper routine that also sets worldRank and worldSize */
+  /*
+     Helper routine that also sets process IDs (world rank) and number of
+     processes (world size)
+     */
   proc initialize() {
     coforall loc in Locales do on loc {
       // TODO : Need a gasnet barrier here???
       var provided : c_int;
-      C_MPI.MPI_Init_thread(0,0,MPI_THREAD_MULTIPLE,provided);
+      C_MPI.MPI_Init_thread(nil, nil, MPI_THREAD_MULTIPLE, provided);
       if (provided != MPI_THREAD_MULTIPLE) &&
          requireThreadedMPI
       {
@@ -213,6 +280,7 @@ module MPI {
     setChplComm();
   }
 
+  pragma "no doc"
   proc setChplComm() {
     if numLocales > 1 {
       coforall loc in Locales do on loc {
@@ -230,8 +298,7 @@ module MPI {
     _mpi.freeChplComm = true;
   }
 
-  /* commRank(comm)
-
+  /*
      Wrapper to get the rank of the communicator comm.
      Defaults to MPI_COMM_WORLD, if no communicator is passed in.
      */
@@ -241,8 +308,7 @@ module MPI {
     return rank;
   }
 
-  /* commSize(comm)
-
+  /*
      Wrapper to get the size of the communicator comm.
      Defaults to MPI_COMM_WORLD, if no communicator is passed in.
      */
@@ -253,7 +319,7 @@ module MPI {
   }
 
 
-  /* A wrapper around MPI_Status. Only the defined fields are exposed */
+  /* A wrapper around ``MPI_Status``. Only the defined fields are exposed */
   extern record MPI_Status {
     var MPI_SOURCE : c_int;
     var MPI_TAG : c_int;
@@ -269,13 +335,9 @@ module MPI {
   }
 
 
-  /******************************
-    Defined Constants and Datatypes
-   ******************************/
+  //Defined Constants and Datatypes
 
-  /* MPI types.
-     We define these as opaque types.
-     */
+  // MPI types.  We define these as opaque types.
   extern type MPI_Aint = c_ptrdiff;
   extern type MPI_Group;
   extern type MPI_Comm;
@@ -290,7 +352,7 @@ module MPI {
     assert(sizeof(MPI_Aint) == sizeof(c_ptrdiff));
   }
 
-  /* MPI Thread support */
+  // MPI Thread support
   extern const MPI_THREAD_SINGLE : c_int;
   extern const MPI_THREAD_FUNNELED : c_int;
   extern const MPI_THREAD_SERIALIZED : c_int;
@@ -299,10 +361,7 @@ module MPI {
   // TODO : Not explicitly found in the spec
   extern type MPI_Errhandler = opaque;
 
-  /* Return codes.
-     We define these to be `c_int`.
-     */
-
+  // Return codes.  We define these to be `c_int`.
   extern const MPI_SUCCESS : c_int;
   extern const MPI_ERR_BUFFER : c_int;
   extern const MPI_ERR_COUNT : c_int;
@@ -325,10 +384,8 @@ module MPI {
   extern const MPI_ERR_IN_STATUS : c_int;
   extern const MPI_ERR_LASTCODE : c_int;
 
-  /* Assorted constants.
-  TODO : These are defined as opaque, but probably
-  could be more specific.
-  */
+  // Assorted constants.
+  //  TODO : These are defined as opaque, but probably could be more specific.
   extern const MPI_BOTTOM : opaque;
   extern const MPI_PROC_NULL : opaque;
   extern const MPI_ANY_SOURCE : opaque;
@@ -337,17 +394,16 @@ module MPI {
   extern const MPI_BSEND_OVERHEAD : opaque;
   extern const MPI_KEYVAL_INVALID : opaque;
 
-  /* Error handling specifiers */
+  // Error handling specifiers
   extern const MPI_ERRORS_ARE_FATAL : MPI_Errhandler;
   extern const MPI_ERRORS_RETURN : MPI_Errhandler;
 
-  /* Maximum sizes for strings.
-  TODO: Are these correctly defined?
-  */
+  // Maximum sizes for strings.
+  //    TODO: Are these correctly defined?
   extern const MPI_MAX_PROCESSOR_NAME : c_int;
   extern const MPI_MAX_ERROR_STRING : c_int;
 
-  /* Elementary datatypes */
+  // Elementary datatypes
   extern const MPI_CHAR : MPI_Datatype;
   extern const MPI_SHORT : MPI_Datatype;
   extern const MPI_INT   : MPI_Datatype;
@@ -362,7 +418,7 @@ module MPI {
   extern const MPI_BYTE  : MPI_Datatype;
   extern const MPI_PACKED : MPI_Datatype;
 
-  /* Datatypes for reductions */
+  // Datatypes for reductions
   extern const MPI_FLOAT_INT : MPI_Datatype;
   extern const MPI_DOUBLE_INT : MPI_Datatype;
   extern const MPI_LONG_INT : MPI_Datatype;
@@ -370,33 +426,33 @@ module MPI {
   extern const MPI_SHORT_INT : MPI_Datatype;
   extern const MPI_LONG_DOUBLE_INT : MPI_Datatype;
 
-  /* Optional datatypes */
+  // Optional datatypes
   extern const MPI_LONG_LONG_INT : MPI_Datatype;
 
-  /* Special datatypes for constructing derived datatypes */
+  // Special datatypes for constructing derived datatypes
   extern const MPI_UB : MPI_Datatype;
   extern const MPI_LB : MPI_Datatype;
 
-  /* Reserved communicators */
+  // Reserved communicators
   extern const MPI_COMM_WORLD : MPI_Comm;
   extern const MPI_COMM_SELF : MPI_Comm;
   extern const MPI_COMM_NULL : MPI_Comm;
 
-  /* Communicator/ Group comparisons */
+  // Communicator/ Group comparisons
   // These all appear to be C integers in MPI code
   extern const MPI_IDENT : c_int;
   extern const MPI_CONGRUENT : c_int;
   extern const MPI_SIMILAR : c_int;
   extern const MPI_UNEQUAL : c_int;
 
-  /* Environmental inquiry keys */
+  // Environmental inquiry keys
   // These appear to be C enums or defines....
   extern const MPI_TAG_UB : c_int;
   extern const MPI_IO : c_int;
   extern const MPI_HOST : c_int;
   extern const MPI_WTIME_IS_GLOBAL : c_int;
 
-  /* Collective operations */
+  // Collective operations
   extern const MPI_MAX : MPI_Op;
   extern const MPI_MIN : MPI_Op;
   extern const MPI_SUM : MPI_Op;
@@ -411,26 +467,25 @@ module MPI {
   extern const MPI_LXOR : MPI_Op;
 
   /*
-   C-API
+   Low level MPI bindings in Chapel.
 
-   We wrap all of these into a ``C_MPI`` submodule,
-   since we likely will add in some helper routines
-   above. We don't do this for the constants, since
-   we'll likely end up using these more often.
+   The :mod:`MPI` module wraps this submodule to provide a higher level API.
+   For documentation of the routines in this modules, please refer to your MPI
+   documentation.
 
    */
    module C_MPI {
 
-  /* Special case MPI_Init -- we will send these null pointers
-   and let the compiler do all the munging */
+  // Special case MPI_Init -- we will send these null pointers
+  // and let the compiler do all the munging
   extern proc MPI_Init(argc, argv);
 
-  /* Special cases, for threading support */
+  // Special cases, for threading support
   extern proc MPI_Init_thread(argc, argv, required : c_int, ref provided : c_int) : c_int;
   extern proc MPI_Query_thread(ref provided : c_int) : c_int;
   extern proc MPI_Ibarrier(comm : MPI_Comm, ref request : MPI_Request) : c_int;
 
-  /* Collective commands */
+  // Collective commands
   extern proc MPI_Barrier (comm: MPI_Comm): c_int;
   extern proc MPI_Bcast (ref buffer, count: c_int, datatype: MPI_Datatype, root: c_int, comm: MPI_Comm): c_int;
   extern proc MPI_Gather (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype,
@@ -454,7 +509,7 @@ module MPI {
   extern proc MPI_Reduce_scatter (ref sendbuf, ref recvbuf, ref recvcounts: c_int, datatype: MPI_Datatype, op: MPI_Op, comm: MPI_Comm): c_int;
   extern proc MPI_Scan (ref sendbuf, ref recvbuf, count: c_int, datatype: MPI_Datatype, op: MPI_Op, comm: MPI_Comm): c_int;
 
-  /* Environmental inquiries */
+  // Environmental inquiries
   extern proc MPI_Get_processor_name (ref name: c_char, ref resultlen: c_int): c_int;
   extern proc MPI_Errhandler_set (comm: MPI_Comm, errhandler: MPI_Errhandler): c_int;
   extern proc MPI_Errhandler_get (comm: MPI_Comm, ref errhandler: MPI_Errhandler): c_int;
@@ -497,7 +552,7 @@ module MPI {
   extern proc MPI_Attr_get (comm: MPI_Comm, keyval: c_int, ref attribute_val, ref flag: c_int): c_int;
   extern proc MPI_Attr_delete (comm: MPI_Comm, keyval: c_int): c_int;
 
-  /* Point to Point */
+  // Point to Point
   extern proc MPI_Send (ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, tag: c_int, comm: MPI_Comm): c_int;
   extern proc MPI_Recv (ref buf, count: c_int, datatype: MPI_Datatype, source: c_int, tag: c_int, comm: MPI_Comm, ref status: MPI_Status): c_int;
   extern proc MPI_Get_count (ref status: MPI_Status, datatype: MPI_Datatype, ref count: c_int): c_int;
@@ -558,7 +613,7 @@ module MPI {
   extern proc MPI_Unpack (ref inbuf, insize: c_int, ref position: c_int, ref outbuf, outcount: c_int, datatype: MPI_Datatype, comm: MPI_Comm): c_int;
   extern proc MPI_Pack_size (incount: c_int, datatype: MPI_Datatype, comm: MPI_Comm, ref size: c_int): c_int;
 
-  /* Process topologies */
+  // Process topologies
   extern proc MPI_Cart_create (comm_old: MPI_Comm, ndims: c_int, ref dims: c_int, ref periods: c_int, reorder: c_int, ref comm_cart: MPI_Comm): c_int;
   extern proc MPI_Dims_create (nnodes: c_int, ndims: c_int, ref dims: c_int): c_int;
   extern proc MPI_Graph_create (comm_old: MPI_Comm, nnodes: c_int, ref iindex: c_int, ref edges: c_int, reorder: c_int, ref comm_graph: MPI_Comm): c_int;

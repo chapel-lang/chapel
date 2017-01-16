@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -272,9 +272,6 @@ class DimensionalDist2D : BaseDist {
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
   var dataParIgnoreRunningTasks: bool = getDataParIgnoreRunningTasks();
   var dataParMinGranularity: int      = getDataParMinGranularity();
-
-  // for privatization
-  var pid: int = -1;
 }
 
 // class LocDimensionalDist - no local distribution descriptor - for now
@@ -325,9 +322,6 @@ class DimensionalDom : BaseRectangularDom {
 
   // local domain descriptors
   var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
-
-  // for privatization
-  var pid: int = -1;
 }
 
 class LocDimensionalDom {
@@ -353,7 +347,7 @@ class DimensionalArr : BaseArr {
   const dom; // must be a DimensionalDom
 
   // same as 'dom'; for an alias (e.g. a slice), 'dom' of the original array
-  const allocDom; // must be a DimensionalDom
+  const allocDom: dom.type; // must be a DimensionalDom
 
   proc rank param return dom.rank;
   proc targetIds return localAdescs.domain;
@@ -364,9 +358,6 @@ class DimensionalArr : BaseArr {
   // NOTE: 'dom' must be initialized prior to initializing 'localAdescs'
   var localAdescs: [dom.targetIds]
                       LocDimensionalArr(eltType, allocDom.locDdescType);
-
-  // for privatization
-  var pid: int = -1;
 }
 
 class LocDimensionalArr {
@@ -981,7 +972,7 @@ proc DimensionalArr.isAlias
 
 // create a new array over this domain
 proc DimensionalDom.dsiBuildArray(type eltType)
-  : DimensionalArr(eltType, this.type, this.type)
+  : DimensionalArr(eltType, this.type)
 {
   _traceddd(this, ".dsiBuildArray");
   if rank != 2 then
@@ -1079,6 +1070,9 @@ proc DimensionalArr.dsiSlice(sliceDef: DimensionalDom) {
   const slicee = this;
   if slicee.rank != sliceDef.rank then
     compilerError("slicing with a different rank");
+
+  if sliceDef.type != slicee.allocDom.type then
+    compilerError("slicing a Dimensional array with a domain of a different type than the array's domain is currently not available");
 
   const result = new DimensionalArr(eltType  = slicee.eltType,
                                     dom      = sliceDef,

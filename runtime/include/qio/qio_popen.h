@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -33,6 +33,7 @@ extern "C" {
 #define QIO_FD_CLOSE (-2)
 #define QIO_FD_PIPE (-3)
 #define QIO_FD_TO_STDOUT (-4)
+#define QIO_FD_BUFFERED_PIPE (-5)
 
 // Helper functions to allocate/free memory available
 // to a forked child process
@@ -55,11 +56,8 @@ qioerr qio_waitpid(int64_t pid,
 
 qioerr qio_proc_communicate(
     const int threadsafe,
-    qio_file_t* input_file,
     qio_channel_t* input,
-    qio_file_t* output_file,
     qio_channel_t* output,
-    qio_file_t* error_file,
     qio_channel_t* error);
 
 qioerr qio_send_signal(int64_t pid, int qio_sig);

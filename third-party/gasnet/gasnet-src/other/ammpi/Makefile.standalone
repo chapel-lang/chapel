@@ -5,8 +5,8 @@ srcdir = .
 include $(srcdir)/Makefile.common # leave this line alone
 
 # Uncomment one of the two lines below to get debug or release configuration 
-#ccflags = $(set_debug_ccflags)
 ccflags = $(set_opt_ccflags)
+#ccflags = $(set_debug_ccflags)
 
 # Set host system to the appropriate value to get the right prebaked Makefile
 HOSTSYSTEM=generic
@@ -51,7 +51,7 @@ banner:
            MACHTYPE="$${MACHTYPE:-MACHTYPE}" ; export MACHTYPE ;                                     \
            echo "WARNING: Using Makefile.generic. " ;                                                \
            echo " If this build fails, try selecting one of the platform-specific makefiles, eg: " ; \
-           echo " $(MAKE) HOSTSYSTEM=$$OSTYPE.$$MACHTYPE" ;                                          \
+           echo " $(MAKE) HOSTSYSTEM=$$OSTYPE" ;                                                     \
 	 fi
 
 

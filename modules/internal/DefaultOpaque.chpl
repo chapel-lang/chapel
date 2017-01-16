@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,7 +20,45 @@
 // DefaultOpaque.chpl
 //
 module DefaultOpaque {
-  
+
+  // record _OpaqueIndex is defined in ChapelArray
+
+  pragma "no doc"
+  proc _OpaqueIndexGetNext():uint {
+    var n:uint;
+    local {
+      n = _OpaqueIndexNext.fetchAdd(1, order=memory_order_relaxed);
+    }
+    return n+1;
+  }
+
+  // creating a new opaque index
+  proc _OpaqueIndexCreate() {
+    var idx:_OpaqueIndex;
+    idx.node = here.id;
+    idx.i = _OpaqueIndexGetNext();
+    return idx;
+  }
+  // support for pretending the default value is nil
+  inline proc =(ref a:_OpaqueIndex, b:_nilType) {
+    a.i = 0;
+  }
+  inline proc ==(a:_OpaqueIndex, b:_nilType) {
+    return a.i == 0;
+  }
+  inline proc ==(a:_nilType, b:_OpaqueIndex) {
+    return b.i == 0;
+  }
+  inline proc !=(a:_OpaqueIndex, b:_nilType) {
+    return a.i != 0;
+  }
+  inline proc !=(a:_nilType, b:_OpaqueIndex) {
+    return b.i != 0;
+  }
+  proc _OpaqueIndex.writeThis(writer) {
+    writer <~> "{}";
+  }
+
   class DefaultOpaqueDom: BaseOpaqueDom {
     type idxType = _OpaqueIndex;
     param parSafe: bool;
@@ -36,14 +74,21 @@ module DefaultOpaque {
     }
   
     proc ~DefaultOpaqueDom() {
-      for i in adomain do delete i;
       delete adomain;
     }
   
     proc dsiCreate() {
-      var i = new _OpaqueIndex();
+      var i = _OpaqueIndexCreate();
       adomain.dsiAdd(i);
       return i;
+    }
+
+    proc dsiMyDist() {
+      return dist;
+    }
+
+    proc dsiAdd(i:idxType) {
+      return adomain.dsiAdd(i);
     }
   
     proc dsiGetIndices() return adomain;
@@ -141,8 +186,8 @@ module DefaultOpaque {
     }
   
   
-    iter dsiSorted() {
-      for e in anarray.dsiSorted() do
+    iter dsiSorted(comparator) {
+      for e in anarray.dsiSorted(comparator) do
         yield e;
     }
   }

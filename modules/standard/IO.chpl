@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,11 @@
 
 /*
 
+
 Support for a variety of kinds of input and output.
+
+.. note:: All Chapel programs automatically ``use`` this module by default.
+          An explicit ``use`` statement is not necessary.
 
 Input/output (I/O) facilities in Chapel include the types :record:`file` and
 :record:`channel`; the constants :record:`stdin`, :record:`stdout` and
@@ -1594,10 +1598,10 @@ extern record iostyle { // aka qio_style_t
      is to right-justify the number. */
   var leftjustify:uint(8) = 0;
   /* When printing an integral value using a real format, should a trailing
-     decimal point be included? If so, the value 0 will be writtes as '0.' */
+     decimal point be included? If so, the value 0 will be written as '0.' */
   var showpoint:uint(8) = 0;
   /* When printing an integral value using a real format, should a trailing
-     decimal point and zero be included? If so, the value 0 will be writtes
+     decimal point and zero be included? If so, the value 0 will be written
      as '0.0' */
   var showpointzero:uint(8) = 1;
   /* Specifies the precision for real format conversions. See the description
@@ -3416,7 +3420,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):
     var len:int(64);
     var tx: c_string_copy;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    x = new string(tx, needToCopy=false);
+    x = new string(tx, length=len, needToCopy=false);
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -3543,7 +3547,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     var ret = qio_channel_read_string(false, byteorder,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
-    x = new string(tx, needToCopy=false);
+    x = new string(tx, length=len, needToCopy=false);
     return ret;
   } else if isEnumType(t) {
     var i:enum_mintype(t);
@@ -3804,13 +3808,15 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
      :returns: ch
    */
-  inline proc <~>(ch: channel, x) where ch.writing {
+  inline proc <~>(const ref ch: channel, x) const ref
+  where ch.writing {
     ch.writeIt(x);
     return ch;
   }
   // documented in the writing version.
   pragma "no doc"
-  inline proc <~>(ch: channel, ref x) where !ch.writing {
+  inline proc <~>(const ref ch: channel, ref x) const ref
+  where !ch.writing {
     ch.readIt(x);
     return ch;
   }
@@ -3830,7 +3836,8 @@ inline proc channel.readwrite(ref x) where !this.writing {
      works without requiring an explicit temporary value to store
      the ioLiteral.
    */
-  inline proc <~>(r: channel, lit:ioLiteral) where !r.writing {
+  inline proc <~>(const ref r: channel, lit:ioLiteral) const ref
+  where !r.writing {
     var litCopy = lit;
     r.readwrite(litCopy);
     return r;
@@ -3846,7 +3853,8 @@ inline proc channel.readwrite(ref x) where !this.writing {
      works without requiring an explicit temporary value to store
      the ioNewline.
    */
-  inline proc <~>(r: channel, nl:ioNewline) where !r.writing {
+  inline proc <~>(const ref r: channel, nl:ioNewline) const ref
+  where !r.writing {
     var nlCopy = nl;
     r.readwrite(nlCopy);
     return r;
@@ -4300,7 +4308,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
 
     this.unlock();
 
-    str_out = new string(tx, needToCopy=false);
+    str_out = new string(tx, length=lenread, needToCopy=false);
   }
 
   return !error;
@@ -5150,9 +5158,13 @@ proc _toNumeric(x:?t) where !_isIoPrimitiveType(t)
 }
 
 
-
 private inline
-proc _toString(x:?t) where _isIoPrimitiveType(t)
+proc _toString(x:?t) where t==string
+{
+  return (x, true);
+}
+private inline
+proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=string)
 {
   return (x:string, true);
 }
@@ -6532,7 +6544,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     error =
         qio_channel_read_string(false, iokind.native, stringStyleExactLen(len),
                                 _channel_internal, ts, gotlen, len: ssize_t);
-    s = new string(ts, needToCopy=false);
+    s = new string(ts, length=gotlen, needToCopy=false);
   }
  
   if ! error {

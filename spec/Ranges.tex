@@ -181,7 +181,7 @@ Ranges have the following additional properties.
 
 \index{ranges!iterable}
 \item The range is \emph{iterable}, that is, it is legal to iterate over it,
-  if is has the first index.
+  if it has the first index.
 
 \end{itemize}
 
@@ -475,8 +475,8 @@ Range assignment is legal when:
 \item An implicit conversion is allowed from \chpl{idxType} of the source range
        to \chpl{idxType} of the destination range type,
 \item the two range types have the same \chpl{boundedType}, and
-\item either the destination range is stridable or the source range's
-      stride is 1.
+\item either the destination range is stridable or the source range
+      is not stridable.
 \end{itemize}
 
 \subsection{Range Comparisons}

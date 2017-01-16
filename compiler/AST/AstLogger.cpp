@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -127,6 +127,9 @@ bool AstLogger::enterBlockStmt(BlockStmt* node) {
 void AstLogger::exitBlockStmt(BlockStmt* node) {
 }
 
+void AstLogger::visitForallIntents(ForallIntents* clause) {
+}
+
 bool AstLogger::enterWhileDoStmt(WhileDoStmt* node) {
   return true;
 }
@@ -177,6 +180,13 @@ bool AstLogger::enterGotoStmt(GotoStmt* node) {
 }
 
 void AstLogger::exitGotoStmt(GotoStmt* node) {
+}
+
+bool AstLogger::enterTryStmt(TryStmt* node) {
+  return true;
+}
+
+void AstLogger::exitTryStmt(TryStmt* node) {
 }
 
 bool AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,40 +17,54 @@
  * limitations under the License.
  */
 
-#if defined __CYGWIN__
-#include <windows.h>
-#endif
-#if defined(__APPLE__) || defined(__NetBSD__)
-#include <sys/sysctl.h>
-#endif
-#if defined _AIX
-#include <sys/systemcfg.h>
-#endif
+// This #define needs to be before the other #includes
+// since it affects included files
 #ifdef __linux__
 #define _GNU_SOURCE
 #endif
-#include <sys/utsname.h>
-#include "chplrt.h"
 
-#include "chpl-mem.h"
+#include "chplrt.h"
 #include "chplsys.h"
+
+// Other Chapel Header
+#include "chpl-align.h"
+#include "chpl-comm.h"
+#include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
-#include "chpl-comm.h"
 #include "error.h"
+
+// System headers
+#include <errno.h>
 
 #ifdef __linux__
 #include <pthread.h>
 #include <sched.h>
 #endif
-#include <stdio.h>
+
+#include <signal.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/utsname.h>
+
+#if defined(__APPLE__) || defined(__NetBSD__)
+#include <sys/sysctl.h>
+#endif
+
 #ifdef __linux__
 #include <sys/sysinfo.h>
 #endif
-#include <errno.h>
+
+#if defined _AIX
+#include <sys/systemcfg.h>
+#endif
+
 #include <unistd.h>
+
+#if defined __CYGWIN__
+#include <windows.h>
+#endif
 
 
 size_t chpl_getSysPageSize(void) {
@@ -73,42 +87,252 @@ size_t chpl_getSysPageSize(void) {
   return pageSize;
 }
 
+static size_t heapPageSize = 0;
 
 size_t chpl_getHeapPageSize(void) {
-  static size_t pageSize = 0;
+  return heapPageSize;
+}
 
-  if (pageSize == 0) {
-#if defined __linux__
-    char* ev;
-    if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
-      pageSize = chpl_getSysPageSize();
-    else {
+static volatile unsigned char* check_page_size_ptr;
+static unsigned char* check_page_size_base;
+static size_t check_page_size_guess;
+static unsigned char check_page_size_fault;
+static struct sigaction check_page_size_oldact;
 
-      size_t tmpPageSize;
-      int  num_scanned;
-      char units;
+static
+void check_page_size_segv_handler(int signum, siginfo_t* sig, void* ctx)
+{
+  if (sig->si_addr == (void*) check_page_size_ptr) {
+    check_page_size_fault = true;
+    // Re-enable read+write access so the program continues
+    // if the load/store is restarted
+    mprotect((void*)check_page_size_base,
+             check_page_size_guess,
+             PROT_READ | PROT_WRITE);
+  } else {
+    // Run the old handler
+    if ((check_page_size_oldact.sa_flags & SA_SIGINFO))
+      check_page_size_oldact.sa_sigaction(signum, sig, ctx);
+    else
+      check_page_size_oldact.sa_handler(signum);
+  }
+}
 
-      if ((num_scanned = sscanf(ev, "%zi%c", &tmpPageSize, &units)) != 1) {
-        if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
-          switch (units) {
-          case 'k': case 'K': tmpPageSize <<= 10; break;
-          case 'm': case 'M': tmpPageSize <<= 20; break;
-          case 'g': case 'G': tmpPageSize <<= 30; break;
-          }
-        }
-        else {
-          chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
-        }
-      }
+// Given a guess at a page size, use mprotect and a signal handler
+// to determine if the page size guess is too small.
+//
+// Returns 0 if the real page size is <= page_size_guess
+// Returns 1 if the real page size is > page_size_guess
+// Returns -1 if the call to mprotect failed
+// Returns -2 if the signal handler could not be installed
+static
+int check_page_size(size_t page_size_guess, size_t max_page_size,
+                     unsigned char* ptr,
+                     void* heap_start, size_t heap_size)
+{
+  int rc;
+  int mprotect_failed = 0;
+  const int debug = 0; // set to 1 for debug prints
 
-      pageSize = tmpPageSize;
-    }
-#else
-    pageSize = chpl_getSysPageSize();
-#endif
+  if (debug)
+    printf("check_page_size(%li, %lx, %p, %p-%p)\n",
+           (long) page_size_guess, (long) max_page_size,
+           ptr, heap_start, ((unsigned char*) heap_start) + heap_size);
+
+  // set signal handler variables
+  check_page_size_ptr = ptr + page_size_guess;
+  check_page_size_base = ptr;
+  check_page_size_guess = page_size_guess;
+  check_page_size_fault = 0;
+
+  // install signal handler
+  {
+    struct sigaction act = { .sa_sigaction = check_page_size_segv_handler,
+                             .sa_flags = SA_SIGINFO };
+    // Note: if this code is to work on Mac OS X, we will also need
+    // to install the signal handler for SIGBUS.
+    rc = sigaction(SIGSEGV, &act, &check_page_size_oldact);
+    if (rc!=0)
+      return -2;
   }
 
-  return pageSize;
+  // Store 0 to avoid false positives:
+  // make sure the page exists
+  *check_page_size_ptr = 0;
+
+  // Call mprotect
+  // Note that mprotect with huge pages seems to have extra requirements
+  // on linux. In particular, on linux, the len argument needs to also
+  // be a multiple of the huge page size. Mac OS X does not seem to have
+  // this requirement.
+  rc = mprotect((void*)check_page_size_base, check_page_size_guess, PROT_NONE);
+  if (rc!=0) {
+    if (debug) printf("mprotect failed with errno=%i\n", errno);
+    mprotect_failed = 1;
+  } else {
+    if (debug) printf("mprotect success\n");
+    // This store operation might cause a SEGV that check_page_size_segv_handler
+    // wil handle
+    *check_page_size_ptr = 99;
+
+    // Put the memory protection back
+    rc = mprotect((void*) check_page_size_base, check_page_size_guess,
+                  PROT_READ | PROT_WRITE);
+    if (rc!=0)
+      chpl_internal_error("check_page_size failed in final mprotect call");
+
+    if (debug) printf("mprotect restore success\n");
+  }
+
+  // un-install the signal handler
+  rc = sigaction(SIGSEGV, &check_page_size_oldact, NULL);
+  if (rc!=0)
+    chpl_internal_error("check_page_size failed in final sigaction call");
+
+  if (debug)
+    printf("check_page_size_fault is %i\n", (int) check_page_size_fault);
+
+  // set the value to 0 for two reasons:
+  // 1: 0 is the normal default for uninitialized memory
+  // 2: if there is any error when writing to it after this
+  //    experiment, we want to know that now
+  *check_page_size_ptr = 0;
+
+  if (mprotect_failed) return -1;
+  else return check_page_size_fault;
+}
+
+
+// Determine if 2 page_size-sized pages fit into the heap.
+// Assumes page_size is a power of 2.
+// Returns 1 if they do fit.
+// Returns 0 otherwise.
+static int fitsInHeap(size_t page_size, void* heap_start, size_t heap_size)
+{
+  uintptr_t start = (uintptr_t) heap_start;
+  uintptr_t end = start + (uintptr_t) heap_size;
+
+  start = round_up_to_mask(start, page_size-1);
+  end   = round_down_to_mask(end, page_size-1);
+  
+  if (2*page_size <= end - start)
+    return 1;
+  else
+    return 0;
+}
+
+// Given a best-guess page size, sets the global variable
+// heapPageSize by doing experiments with mprotect.
+// In the case that mprotect does not work on that memory region,
+// page_size_in will be used as the best guess.
+static void computeHeapPageSizeByGuessing(size_t page_size_in)
+{
+  // check desired shared heap page size
+
+  void* heap_start = NULL;
+  size_t heap_size = 0;
+
+  // If nothing else in this function works, at least we should
+  // start with page_size_in as the guess for the size of pages
+  // in the heap.
+  heapPageSize = page_size_in;
+
+  chpl_comm_desired_shared_heap(&heap_start, &heap_size);
+
+  if (heap_start != NULL && heap_size != 0) {
+
+    size_t page_size = page_size_in;
+    size_t max_heap_page_size = page_size;
+    size_t max_page_size = 1*1024*1024*1024; // Stop at 1GB
+
+    // Compute a maximum page size based upon the size
+    // of the heap.
+    for (page_size = page_size_in;
+         fitsInHeap(page_size, heap_start, heap_size);
+         page_size *= 2) {
+      max_heap_page_size = page_size;
+    }
+
+    if (max_heap_page_size > max_page_size)
+      max_heap_page_size = max_page_size;
+ 
+    // Now do experiments with the last 2 pages in the heap
+    // to find if we have underestimated the page size.
+
+    // Doing this at the end of the heap is important
+    // for performance and to maximize the contiguous region
+    // that can be handled at once.
+
+    page_size = page_size_in;
+    while(1) {
+      unsigned char* start = (unsigned char*) heap_start;
+      unsigned char* end = start + heap_size;
+      unsigned char* last_page = NULL;
+      unsigned char* last_two_pages = NULL;
+      int small;
+
+      start = round_up_to_mask_ptr(start, page_size-1);
+      end   = round_down_to_mask_ptr(end, page_size-1);
+      last_page = end - page_size;
+      last_two_pages = last_page - page_size;
+
+      small = check_page_size(page_size, max_heap_page_size,
+                              last_two_pages, heap_start, heap_size);
+
+      // Stop if real page size <= page_size, or if
+      // a signal handler could not be installed.
+      if (small == 0 || small == -2) {
+        heapPageSize = page_size;
+        break;
+      }
+      // Stop if we have reached the maximum size
+      if (page_size >= max_heap_page_size) {
+        heapPageSize = page_size_in;
+        break;
+      }
+      // Otherwise continue the search
+      // if small == 1, we know we are wrong
+      // if small == -1, mprotect failed, but that might be because
+      // we haven't yet found a page size big enough, so keep trying.
+      page_size *= 2;
+    }
+  }
+}
+
+void chpl_computeHeapPageSize(void) {
+  size_t pageSize = 0;
+
+#if defined __linux__
+  char* ev;
+  if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
+    pageSize = chpl_getSysPageSize();
+  else {
+
+    size_t tmpPageSize;
+    int  num_scanned;
+    char units;
+
+    if ((num_scanned = sscanf(ev, "%zi%c", &tmpPageSize, &units)) != 1) {
+      if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
+        switch (units) {
+        case 'k': case 'K': tmpPageSize <<= 10; break;
+        case 'm': case 'M': tmpPageSize <<= 20; break;
+        case 'g': case 'G': tmpPageSize <<= 30; break;
+        }
+      }
+      else {
+        chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+      }
+    }
+
+    pageSize = tmpPageSize;
+  }
+#else
+  pageSize = chpl_getSysPageSize();
+#endif
+
+  // note: sets heapPageSize
+  computeHeapPageSizeByGuessing(pageSize);
 }
 
 

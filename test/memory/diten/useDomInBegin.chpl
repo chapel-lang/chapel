@@ -1,15 +1,18 @@
-proc f() {
-  use Time;
+config const n = 10;
+var s$: [1..n] sync bool;
+
+proc f(i) {
   var D = {1..10};
   begin {
-    sleep(1);
+    s$[i]; // wait until after f() returns
     var A: [D] real;
   }
 }
 
-config const n = 10;
 
 proc main {
-  for i in 1..n do
-    f();
+  for i in 1..n {
+    f(i);
+    s$[i] = true;
+  }
 }

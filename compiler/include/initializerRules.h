@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,8 +28,5 @@ class Expr;
 void temporaryInitializerFixup(CallExpr* call);
 
 void handleInitializerRules(FnSymbol* fn, AggregateType* t);
-
-void storeFieldInit(AggregateType* t, const char* fieldname, Expr* init,
-                    Expr* type);
 
 #endif

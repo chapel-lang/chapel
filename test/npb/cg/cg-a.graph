@@ -1,0 +1,5 @@
+perfkeys: Execution time =
+files: cg.A.dat
+graphkeys: runtime - A
+graphtitle: NAS Parallel Benchmarks: CG timings - size A
+ylabel: Time (seconds)

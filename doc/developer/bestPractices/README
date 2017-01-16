@@ -46,5 +46,8 @@ CHPL_DEVELOPER.txt
 TestSystem.rst
   All about the Chapel testing system.
 
+SpellChecking.rst
+  How to use chplspell to spellcheck the Chapel project.
+
 Potpourri.txt
   Notes not in any of the above categories.

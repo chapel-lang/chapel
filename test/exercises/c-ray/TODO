@@ -1,0 +1,46 @@
+priorities
+----------
+* add case for dynamic iteration
+
+testing improvements
+--------------------
+* test stdout (or files if I do the below)
+* switch back to diffing against 'stdout' to avoid catfiles?
+* test .bmp
+* don't do full cross-product of compopts x execopts?  linearize each axis?
+* add more tests for other command-line arguments / halts / errors
+
+quality
+-------
+* git .ppm diffs matching the reference version
+* .bmp file appears darker than .ppm -- is this my programs, or a bug?
+
+benchmark improvements
+----------------------
+* should be able to use an enum for the RGB and XYZ params, but... it
+  didn't work?
+    e.g., enum colors { red=1, green, blue}
+          use colors;
+          param numColors = colors.size;
+
+* at one point I changed vec3 into an array [1..3] but it didn't seem
+  to work.  Did I mess up or is something broken?
+
+* string library experts: Is there a better way to ignore comments than
+  what I've done?
+
+* sf and aspect really want to be local statics in getSamplePos()
+
+* simplify repeated expressions in raySphere()?
+
+* simplify error margin check in raySphere?
+
+* use a reduction in shade()?
+
+
+Chapel implementation
+---------------------
+* make compilerError, halt, and such optionally squash where the message is
+  coming from.  End-users won't care in many cases.
+* add readlines() iterator to ChapelIO module.
+

@@ -2,16 +2,19 @@
  * Description: AMMPI Implementations of request/reply operations
  * Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
  */
-#include <ammpi_internal.h>
+
+#if _FORTIFY_SOURCE > 0 && __OPTIMIZE__ <= 0 /* silence an annoying MPICH/Linux warning */
+#undef _FORTIFY_SOURCE
+#endif
+
 #include <stdarg.h>
 #include <math.h>
 #include <time.h>
-#ifndef WIN32
-  #include <sys/time.h>
-  #include <unistd.h>
-  #include <fcntl.h>
-#endif
+#include <sys/time.h>
+#include <unistd.h>
+#include <fcntl.h>
 
+#include "ammpi_internal.h" /* must come after any other headers */
 
 /* forward decls */
 static int AMMPI_RequestGeneric(ammpi_category_t category, 
@@ -27,52 +30,14 @@ static int AMMPI_ReplyGeneric(ammpi_category_t category,
 /*------------------------------------------------------------------------------------
  * Private helpers
  *------------------------------------------------------------------------------------ */
-static int intpow(int val, int exp) {
-  int retval = 1;
-  int i;
-  AMMPI_assert(exp >= 0);
-  for (i = 0; i < exp; i++) retval *= val;
-  return retval;
-}
-/* ------------------------------------------------------------------------------------ */
-#ifdef WIN32
-  extern int64_t AMMPI_getMicrosecondTimeStamp(void) {
-    static int status = -1;
-    static double multiplier;
-    if (status == -1) { /*  first time run */
-      LARGE_INTEGER freq;
-      if (!QueryPerformanceFrequency(&freq)) status = 0; /*  don't have high-perf counter */
-      else {
-        multiplier = 1000000 / (double)freq.QuadPart;
-        status = 1;
-      }
-    }
-    if (status) { /*  we have a high-performance counter */
-      LARGE_INTEGER count;
-      QueryPerformanceCounter(&count);
-      return (int64_t)(multiplier * count.QuadPart);
-    } else { /*  no high-performance counter */
-      /*  this is a millisecond-granularity timer that wraps every 50 days */
-      return (GetTickCount() * 1000);
-    }
-  }
-/* #elif PLATFORM_ARCH_X86
- * TODO: it would be nice to take advantage of the Pentium's "rdtsc" instruction,
- * which reads a fast counter incremented on each cycle. Unfortunately, that
- * requires a way to convert cycles to microseconds, and there doesn't appear to 
- * be a way to directly query the cycle speed
- */
-
-#else /* unknown processor - use generic UNIX call */
-  extern int64_t AMMPI_getMicrosecondTimeStamp(void) {
+extern int64_t AMMPI_getMicrosecondTimeStamp(void) {
     int64_t retval;
     struct timeval tv;
     if (gettimeofday(&tv, NULL))
       AMMPI_FatalErr("gettimeofday failed: %s",strerror(errno));
     retval = ((int64_t)tv.tv_sec) * 1000000 + tv.tv_usec;
     return retval;
-  }
-#endif
+}
 /* ------------------------------------------------------------------------------------ */
 /* mpihandle points to the MPI_Request to receive the non-blocking send handle, 
  * or null to use a blocking send
@@ -472,7 +437,7 @@ void AMMPI_processPacket(ammpi_buf_t *buf, int isloopback) {
   #if AMMPI_FLOW_CONTROL || AMMPI_COLLECT_LATENCY_STATS
     if (isrequest && !status->replyIssued &&
         ep->perProcInfo[sourceId].tokens_in > ep->tokens_slack) { 
-      va_list va_dummy; va_list *p_dummy = &va_dummy; /* dummy value */
+      va_list va_dummy; va_list *p_dummy = &va_dummy; p_dummy++; /* dummy value */
       /*  user didn't reply, so issue an auto-reply */
       if_pf (AMMPI_ReplyGeneric(ammpi_Short, buf, 0, 0, 0, 0, 0, va_dummy, 
                                 ammpi_system_autoreply, 0) != AM_OK) /*  should never happen */

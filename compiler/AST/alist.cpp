@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,8 +23,6 @@
 #include "misc.h"
 #include "stmt.h"
 #include "stringutil.h"
-
-#include "codegen.h"
 
 AList::AList() :
   head(NULL),
@@ -140,37 +138,3 @@ void AList::insertAtTail(Expr* new_ast) {
   parent_insert_help(parent, new_ast);
   length++;
 }
-
-
-GenRet AList::codegen(const char* separator) {
-  GenInfo* info = gGenInfo;
-  GenRet ret;
-  if( info->cfile ) {
-    // only for C...
-    for_alist(node, *this) {
-      ret.c += node->codegen().c;
-      if (node->next != tail) {
-        ret.c += separator;
-      }
-    }
-  } else {
-    for_alist(node, *this) {
-      // for LLVM, code generation will place
-      // statements into the function with
-      // the IRBuilder.
-      node->codegen();
-    }
-  }
-  return ret;
-}
-/*
-LLVMRet AList::genLLVM(GenInfo info) {
-  LLVMRet ret = {NULL, NULL, NULL, NULL};
-  
-  for_alist(node, *this) {
-    node->genLLVM(info);
-  }
-  
-  return ret;
-}
-*/

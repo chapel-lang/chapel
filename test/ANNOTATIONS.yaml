@@ -175,6 +175,49 @@ all:
     - Added optimization to remove inner multiply in dsiAccess (#4510)
   09/20/16:
     - Add promoted fast follower support (#4558)
+  10/08/16:
+    - text: upgrade Intel target compiler from 15.0.3.187 to 17.0.0.098
+      config: Single node XC
+  10/11/16:
+    - text: Fix of races in the ugni comm layer (internal #253 and #258)
+      config: 16 node XC
+  10/18/16:
+    - First step to transition to qualified references (#4745)
+  10/27/16:
+    - Improve Array Memory Management (#4762)
+  11/01/16:
+    - text: upgrade Cray target compiler version from 8.4.0 to 8.5.3
+      config: Single node XC
+    - text: upgrade gnu target compiler from 5.3.0 to 6.2.0
+      config: Single node XC, 16 node XC
+  11/02/16:
+    - text: remove usesOuterVars from virtual method call resolution due to bug in application (#4794)
+      config: Single node XC
+  11/04/16:
+    - text: Improve RVF by inferring const-refs (#4814)
+      config: 16 node XC
+    - text: downgrade Cray target compiler from 8.5.3 to 8.4.6
+      config: Single node XC
+  11/08/16:
+    - text: RVF arrays in records (#4821)
+      config: 16 node XC
+  11/26/16:
+    - Use hybrid spin/condwait (#4902)
+  12/07/16:
+    - Stack allocate on and task function argument bundles (#4074)
+  12/08/16:
+    - Re-enable denormalization (#4547)
+  12/13/16:
+    - text: inferConst improvements related to _retArg (#4969)
+      config: 16 node XC
+  12/14/16:
+    - Reduce task creation time for "bounded" coforalls (#5018)
+    - text: Ugni comm layer improvements for forks and the heap (internal #276)
+      config: 16 node XC
+  12/22/16:
+    - multi-ddata (#5047)
+  01/11/17:
+    - Move the multi-ddata metadata fields, checking cache effects for 'flat'. (#5145)
 
 
 AllCompTime:
@@ -191,6 +234,10 @@ arrayPerformance-1d:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
+
+arrayPerformance-2d:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
 
 array-of-strings-read:
   04/14/16:
@@ -227,12 +274,24 @@ binary-trees:
     - switch from type method factory to init()-based implementation (#4598)
   09/22/16:
     - simplify init()-based implementation (#4609)
+  10/10/16:
+    - Brad's fix of off-by-one error in checksum (#4734)
 
 binarytrees-submitted:
   09/21/16:
     - switch from type method factory to init()-based implementation (#4598)
   09/22/16:
     - simplify init()-based implementation (#4609)
+  10/10/16:
+    - Brad's fix of off-by-one error in checksum (#4734)
+
+blackscholes:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+
+blackscholes_promote:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
 
 chameneos-redux:
   07/08/13:
@@ -255,6 +314,12 @@ cg-sparse-timecomp:
     - disable function resolution optimization (#4476)
   09/14/16:
     - re-enable function resolution optimization (#4517)
+
+c-ray:
+  10/11/16:
+    - Parallelized C-ray and transposed array (#4743)
+  11/09/16:
+    - Code cleanups in preparation for SC16 (#4830 and others)
 
 dgemm.128:
   09/06/13:
@@ -290,6 +355,25 @@ fannkuch-redux:
     - replacement with more elegant version (#4089)
 
 fasta:
+  10/24/16:
+    - Convert bradc version from fastaredux to fasta (#4765)
+  10/26/16:
+    - Switch release fasta from random floats to ints (#4773)
+    - Switch bradc fasta to use linear search (#4769)
+  10/31/16:
+    - Switch release fasta to use linear search (#4796)
+  11/18/16:
+    - Replace queried domain iterations with range iterations (#4886)
+  12/09/16:
+    - Change linear search to avoid 'break' (#4994)
+  12/10/16:
+    - Switch from 'sync' to 'atomic'-based coordination (#5004)
+  12/15/16:
+    - Parallelize release version, make more use of randType and refactor for CLBG submissions (#5024)
+  12/19/16:
+    - Switch max number of tasks from 3 to 4 (#5078)
+
+fastaredux:
   01/14/14:
     - enabled unlocked I/O on fasta and fasta-printf
   10/07/14:
@@ -327,6 +411,9 @@ hpl:
 hpl_performance:
   12/11/15:
     - Fixed string leak in DimensionalDist2D (#3013)
+  11/30/16:
+    - text: Improvements to inferConstRefs (#4904)
+      config: 16 node XC
 
 init:
   05/03/16:
@@ -345,6 +432,9 @@ is:
 isx:
   02/26/16:
     - ISx ref to array (#3365)
+  01/10/17:
+    - text: Use comm primitive in ISx study version (#5131)
+      config: 16 node XC
 
 isx-bucket-spmd:
   02/26/16:
@@ -401,13 +491,26 @@ jacobi:
     - Improve and enable strided bulk transfer optimization as default (#4318)
   08/13/16:
     - Fix bulk transfer stride failure, cast to size_t for 32-bit support (#4329)
-
-
+  10/07/16:
+    - Vass's PARTIAL_COPY related flags to hash_table improvement (#4709)
+  11/02/16:
+    - work around visible fns issue (#4804)
+    - Remove usesOuterVars from virtual method call resolution (#4794)
+    - Allow casts between c_void_ptr and object types (#4802)
+  11/10/16:
+    - Make each Symbol keep a list of SymExprs (#4827)
 
 knucleotide:
   10/16/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
+
+LCALSMain:
+  10/20/16:
+    - Clean up to HYDRO_2D kernel (#4757)
+    - update to TRAP_INT serial kernel (#4756)
+  12/10/16:
+    - Throw --no-ieee-float for LCALS (#5001)
 
 lulesh:
   03/15/14:
@@ -497,6 +600,10 @@ meteor:
   08/10/16:
     - Updated meteor's lock to yield less frequently (#4300)
 
+meteor-submitted:
+  10/26/16:
+    - Fix to avoid race condition after array memory management improvements will not be applied to submitted version (#4762)
+
 miniMD:
   12/21/13:
     - clean up of noRefCount related code in modules/internal (22473)
@@ -505,9 +612,12 @@ miniMD:
   01/30/15:
     - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
   03/17/15:
-    -  Avoid shallow record copies in miniMD (#1643)
+    - Avoid shallow record copies in miniMD (#1643)
   03/19/16:
-    -  Increase parallelism, decrease comm (#3483)
+    - Increase parallelism, decrease comm (#3483)
+  12/02/16:
+    - RVF reference fields with record-wrapped type (#4925)
+
 
 nbody:
   03/17/14:
@@ -534,6 +644,14 @@ parOpEquals:
 pidigits:
   05/16/16:
     - switched release version to use ledrug algorithm
+  09/24/16:
+    - rearranged pidigits; release versions now use bigints (#4655-6)
+
+pidigits-submitted:
+  05/16/16:
+    - switched release version to use ledrug algorithm
+  09/24/16:
+    - rearranged pidigits; release versions now use bigints (#4655-6)
 
 prk-stencil:
   02/14/16:
@@ -554,6 +672,10 @@ prk-stencil.xc-perf:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
   08/12/16:
     - Improve and enable strided bulk transfer optimization as default (#4318)
+
+ptrans:
+  01/11/17:
+    - Replace temporary array in BlockCycDist with tuple (#5139)
 
 ra:
   05/13/16:
@@ -591,6 +713,10 @@ spectral-norm-specify-step:
   01/21/15:
     - qthreads updated to yield every ~100 uncontested sync var locks
 
+split-whitespace-perf:
+  11/02/16:
+    - fix bugs when reading null bytes (#4806)
+
 SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
@@ -610,6 +736,19 @@ STREAM_performance:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+steam-promoted.xc-perf:
+  12/02/16:
+    - text: RVF reference fields with record-wrapped type (#4925)
+      config: 16 node XC
+
+STREAM_study:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+
+STREAM_study_promote:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
 
 stencil:
   07/21/14:

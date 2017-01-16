@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -29,12 +29,6 @@
 // When a distribution, domain, or array class instance is created, a
 // corresponding local class instance is created on each locale that is
 // mapped to by the distribution.
-//
-
-//
-// TO DO List
-//
-// 1. refactor pid fields from distribution, domain, and array classes
 //
 
 use DSIUtil;
@@ -69,7 +63,6 @@ class SparseBlockDom: BaseSparseDomImpl {
   const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
-  var pid: int = -1; // privatized object id (this should be factored out)
 
   proc initialize() {
     setup();
@@ -328,7 +321,6 @@ class SparseBlockArr: BaseSparseArr {
       sparseLayoutType);
   var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable,
       sparseLayoutType);
-  var pid: int = -1; // privatized object id (this should be factored out)
 
   proc SparseBlockArr(type eltType, param rank, type idxType, param stridable,
       type sparseLayoutType ,dom) {
@@ -907,14 +899,14 @@ proc SparseBlockArr.doiBulkTransfer(B) {
           // NOTE: This does not work with --heterogeneous, but heterogeneous
           // compilation does not work right now.  This call should be changed
           // once that is fixed.
-          var dest = myLocArr.myElems._value.data;
-          const src = B._value.locArr[rid].myElems._value.data;
+          var dest = myLocArr.myElems._value.theDataChunk(0);
+          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_get",
                       __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo)),
+                                  myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
                       rid,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
           lo+=size;
         }
@@ -930,14 +922,14 @@ proc SparseBlockArr.doiBulkTransfer(B) {
                                         "; lo=", lo,
                                         "; rlo=", rlo
                                         );
-          var dest = myLocArr.myElems._value.data;
-          const src = B._value.locArr[rid].myElems._value.data;
+          var dest = myLocArr.myElems._value.theDataChunk(0);
+          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_get",
                       __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo)),
+                                  myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
                       dom.dist.targetLocales(rid).id,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
             lo(rank)+=size;
           }

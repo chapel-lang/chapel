@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-// Documentation can be found in $CHPL_HOME/doc/release/technotes/IO.hdfs
+// Documentation can be found in $CHPL_HOME/doc/technotes/IO.hdfs
 #define QIOPLUGIN_HDFS_C
 
 #ifndef _DARWIN_C_SOURCE

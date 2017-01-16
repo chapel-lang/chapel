@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -35,7 +35,7 @@
 
 /* The names and arguments for these functions are part
    of Chapel's user-facing interface because they are
-   documented in a README doc/release
+   documented in a doc/developer README
  */
 // start public interface
 static inline void* chpl_calloc(size_t n, size_t size);

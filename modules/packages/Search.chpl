@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -206,71 +206,4 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
   where Dom.rank != 1 {
     compilerError("binarySearch() requires 1-D array");
 }
-
-
-/*
-    Deprecated Functions
-    TODO -- deprecate in 1.15
- */
-
-
-pragma "no doc"
-/*
-   Searches through the pre-sorted array `Data` looking for the value `val` using
-   a sequential linear search.  Returns a tuple indicating (1) whether or not
-   the value was found and (2) the location of the value if it was found, or
-   the location where the value should have been if it was not found.
-
-   :arg Data: The sorted array to search
-   :arg val: The value to find in the array
-
-   :returns: A tuple indicating (1) if the value was found and (2) the location of the value if it was found or the location where the value should have been if it was not found.
-
- */
-proc LinearSearch(Data:[?Dom], val) {
-  compilerWarning("LinearSearch() has been deprecated.  Please use linearSearch() instead");
-  for i in Dom {
-    if (Data(i) == val) {
-      return (true, i);
-    } else if (Data(i) > val) {
-      return (false, i);
-    }
-  }
-  return (false,Dom.high+1);
-}
-
-
-pragma "no doc"
-/*
-   Searches through the pre-sorted array `Data` looking for the value `val`
-   using a sequential binary search.  If provided, only the indices `lo`
-   through `hi` will be considered, otherwise the whole array will be
-   searched. Returns a tuple indicating (1) whether or not the value was
-   found and (2) the location of the value if it was found, or the location
-   where the value should have been if it was not found.
-
-   :arg Data: The sorted array to search
-   :arg val: The value to find in the array
-   :arg lo: The lowest index to consider while searching
-   :type lo: `integral`
-   :arg hi: The highest index to consider while searching
-   :type hi: `integral`
-
-   :returns: A tuple indicating (1) if the value was found and (2) the location of the value if it was found or the location where the value should have been if it was not found.
-
- */
-proc BinarySearch(Data:[?Dom], val, in lo = Dom.low, in hi = Dom.high) {
-  compilerWarning("BinarySearch() has been deprecated.  Please use binarySearch() instead");
-  while (lo <= hi) {
-    const mid = (hi - lo)/2 + lo;
-    if (Data(mid) == val) {
-      return (true, mid);
-    } else if (val > Data(mid)) {
-      lo = mid+1;
-    } else {
-      hi = mid-1;
-    }
-  }
-  return (false, lo);
-}
-}
+} // Search module

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,6 +36,7 @@ module DefaultSparse {
         parentDom: domain) {
 
       this.dist = dist;
+      this.parentDom = parentDom;
     }
 
     proc dsiBuildArray(type eltType)
@@ -286,6 +287,10 @@ module DefaultSparse {
         a.sparseBulkShiftArray(arrShiftMap, oldnnz);
 
       return actualAddCnt;
+    }
+
+    proc dsiMyDist() : BaseDist {
+      return dist;
     }
 
     proc dsiClear() {

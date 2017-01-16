@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
 from compiler_utils import CompVersion, get_compiler_version
-from utils import memoize
+from utils import error, memoize
 
 
 @memoize
@@ -53,7 +53,7 @@ def get(flag='target'):
             if not atomics_val:
                 atomics_val = 'locks'
     else:
-        raise ValueError("Invalid flag: '{0}'".format(flag))
+        error("Invalid flag: '{0}'".format(flag), ValueError)
     return atomics_val
 
 

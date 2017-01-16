@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,8 +28,6 @@ module ChapelBase {
 
   // Is the cache for remote data enabled at compile time?
   config param CHPL_CACHE_REMOTE: bool = false;
-
-  config param noRefCount = false;
 
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
@@ -580,6 +578,16 @@ module ChapelBase {
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));
 
+  inline proc min(param x: int(?w), param y: int(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: int(?w), param y: int(w)) param
+    return if x > y then x else y;
+
+  inline proc min(param x: uint(?w), param y: uint(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: uint(?w), param y: uint(w)) param
+    return if x > y then x else y;
+
   inline proc min(x, y) where isAtomic(x) || isAtomic(y) {
     compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
   }
@@ -813,6 +821,15 @@ module ChapelBase {
     }
   }
 
+  pragma "dont disable remote value forwarding"
+  pragma "no remote memory fence"
+  proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
+    e.i.add(numTasks:int, memory_order_release);
+    if countRunningTasks {
+      here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
+    }
+  }
+
   // This function is called once by each newly initiated task.  No on
   // statement is needed because the call to sub() will do a remote
   // fork (on) if needed.
@@ -843,6 +860,19 @@ module ChapelBase {
     } else {
       // re-add the task that was waiting for others to finish
       here.runningTaskCntAdd(1);
+    }
+  }
+
+  pragma "dont disable remote value forwarding"
+  proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
+    // See if we can help with any of the started tasks
+    chpl_taskListExecute(e.taskList);
+
+    // Wait for all tasks to finish
+    e.i.waitFor(0, memory_order_acquire);
+
+    if countRunningTasks {
+      here.runningTaskCntSub(numTasks:int-1);
     }
   }
 
@@ -965,11 +995,6 @@ module ChapelBase {
   inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
 
-  inline proc chpl__typeAliasInit(type t) type return t;
-  inline proc chpl__typeAliasInit(v) {
-    compilerError("illegal assignment of value to type");
-  }
-
   pragma "dont disable remote value forwarding"
   inline proc _createFieldDefault(type t, init) {
     pragma "no auto destroy" var x: t;
@@ -1006,37 +1031,20 @@ module ChapelBase {
   pragma "init copy fn"
   inline proc chpl__initCopy(x) return x;
 
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn" proc chpl__autoCopy(x: _distribution) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn"  proc chpl__autoCopy(x: domain) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn" proc chpl__autoCopy(x: []) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
-
   pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
     // body inserted during generic instantiation
   }
+
+  pragma "compiler generated"
+  pragma "donor fn"
+  pragma "unref fn"
+  inline proc chpl__unref(x: _tuple) {
+    // body inserted during generic instantiation
+  }
+
 
   pragma "donor fn"
   pragma "auto copy fn"
@@ -1049,6 +1057,15 @@ module ChapelBase {
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
+
+  pragma "compiler generated"
+  pragma "unalias fn"
+  inline proc chpl__unalias(ref x) { }
+
+  pragma "unalias fn"
+  inline proc chpl__unalias(x:_iteratorClass) { }
+  pragma "unalias fn"
+  inline proc chpl__unalias(const ref x:_iteratorRecord) { }
 
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
@@ -1095,8 +1112,30 @@ module ChapelBase {
     __primitive("call destructor", x);
   }
 
-  // = for c_void_ptr
+  // implements 'delete' statement
+  inline proc chpl__delete(arg) {
+    if chpl_isDdata(arg.type) then
+      compilerError("cannot delete data class");
+    // Todo: enable this check. Can't do it now because
+    // isClassType() returns 'false' on extern class types.
+    //if !isClassType(arg.type) then
+    //  compilerError("can delete only class types: ", arg.type:string);
+    if (isRecord(arg)) then
+      compilerError("delete not allowed on records");
+
+    arg.chpl__deinit();
+    on arg do
+      chpl_here_free(__primitive("_wide_get_addr", arg));
+  }
+
+  // c_void_ptr operations
   inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+  inline proc ==(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_eq", a, b);
+  }
+  inline proc !=(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_neq", a, b);
+  }
 
   // Type functions for representing function types
   inline proc func() type { return __primitive("create fn type", void); }

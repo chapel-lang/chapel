@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,13 @@ void returnStarTuplesByRefArgs() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if ((fn->retType->symbol->hasFlag(FLAG_STAR_TUPLE))) {
       SET_LINENO(fn);
+
+      // MPF 2016-10-02: I expect this code is no longer necessary
+      // since star tuples should be returned through a reference
+      // along with other records in callDestructors.
+      //
+      // Even so, this code still seems to run with --baseline.,
+      // so figuring out how to remove it remains a TODO..
 
       //
       // change function interface to take a reference
@@ -96,7 +103,7 @@ void returnStarTuplesByRefArgs() {
         SET_LINENO(call);
         AggregateType* ct = toAggregateType(type);
         SymExpr* se = toSymExpr(call->get(2));
-        int i = atoi(se->var->name+1);
+        int i = atoi(se->symbol()->name+1);
         INT_ASSERT(i >= 1 && i <= ct->fields.length);
         if (call->isPrimitive(PRIM_SET_MEMBER))
           call->primitive = primitives[PRIM_SET_SVEC_MEMBER];

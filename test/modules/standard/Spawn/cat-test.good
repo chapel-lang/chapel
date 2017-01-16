@@ -1,0 +1,2 @@
+Test 1: stdin=BUFFERED_PIPE stdout=PIPE with 1 task
+Test 2: pipe stdin, stdout in 2 tasks

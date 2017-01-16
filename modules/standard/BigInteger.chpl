@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,83 +18,105 @@
  */
 
 /*
-Support for GNU Multiple Precision Integer Arithmetic through the bigint record
+The ``bigint`` record supports arithmetic operations on arbitrary
+precision integers in a manner that is broadly consistent with
+the conventional operations on primitive fixed length integers.
 
-This module implements an interface with the GMP library (the GNU Multiple
-Precision Arithmetic Library). See the `GMP homepage <https://gmplib.org/>`
-for more information on this library.
+The current implementation is based on the low-level types and
+functions defined in the GMP module i.e. it is implemented using the
+GNU Multiple Precision Integer Arithmetic library (GMP). More specifically
+the record :record:`bigint` wraps the GMP type :type:`~GMP.mpz_t`.
 
-See the GMP Chapel module for more information on how to use GMP with Chapel.
+The primary benefits of ``bigint`` over ``mpz_t`` are
 
-Using the bigint record
------------------------
+  1) support for multi-locale programs
 
-The BigInteger Chapel module provides a :record:`bigint` record wrapping GMP
-integers. At the present time, only the functions for ``mpz`` (ie signed
-integer) GMP types are supported with :record:`bigint`; future work will be to
-extend this support to floating-point types.
+  2) the convenience of arithmetic operator overloads
 
-:record:`bigint` methods all wrap GMP functions with obviously similar names.
-The :record:`bigint` methods are locale aware - so Chapel programs can create
-a distributed array of GMP numbers. The method of :record:`bigint` objects are
-setting the receiver, so e.g. myBigint.add(x,y) sets myBigint to ``x + y``.
+  3) automatic memory management of GMP data structures
 
-A code example::
+In addition to the expected set of operations, this record provides
+a number of methods that wrap GMP functions in a natural way::
 
  use BigInteger;
 
- // initialize a GMP value, set it to zero
- var a = new bigint();
+ var   a = new bigint(234958444);
+ const b = new bigint("4847382292989382987395534934347");
+ var   c = new bigint();
 
- a.fac(100);                            // set a to 100!
- writeln(a);                            // output   100!
+ writeln(a * b);
 
- // initialize from a decimal string
- var b = new bigint("48473822929893829847");
+ c.fac(100);
+ writeln(c);
 
- b.add(b, 1);                           // add one to b
+Wrapping an ``mpz_t`` in a ``bigint`` record may introduce a
+measurable overhead in some cases.
+
+The GMP library defines a low-level API that is based on
+side-effecting compound operations.  The documentation recommends that
+one prefer to reuse a small number of existing mpz_t structures rather
+than using many values of short duration.
+
+Matching this style using ``bigint`` records and the compound
+assignment operators is likely to provide comparable performance to an
+implementation based on ``mpz_t``.  So, for example::
+
+  x  = b
+  x *= c;
+  x += a;
+
+is likely to achieve better performance than::
+
+  x = a + b * c;
+
+In the fall of 2016 the Chapel compiler introduces two short lived
+temporaries for the intermediate results of the binary operators.
+
+
+If peak performance is required, perhaps in a critical loop, then it
+is always possible to invoke the GMP functions directly.  For example
+one might express::
+
+  a = a + b * c;
+
+as::
+
+  mpz_addmul(a.mpz, b.mpz, c.mpz);
+
+
+As usual the details are application specific and it is best to
+measure when peak performance is required.
+
+The operators on ``bigint`` include variations that accept Chapel
+integers e.g.::
+
+  var a = new bigint("9738639463465935");
+  var b = 9395739153 * a;
+
+The Chapel int(64) literal is converted to an underlying,
+platform-specific C integer, to invoke the underlying GMP primitive
+function.  This example is likely to work well on popular 64-bit
+platforms but to fail on common 32-bit platforms.  Runtime checks are
+used to ensure the Chapel types can safely be cast to the
+platform-specific types.  Ths program will halt if the Chapel value
+cannot be represented using the GMP scalar type.
+
+The checks are controlled by the compiler options ``--[no-]cast-checks``,
+``--fast``, etc.
+
+See :mod:`GMP` for more information on how to use GMP with Chapel.
+
 */
 
 module BigInteger {
   use GMP;
 
-  /*
-    The bigint record provides arbitrary length integers and a set of
-    operator overloads that allow bigints to be treated consistently
-    with conventional fixed width integers.
-
-    The current implementation relies on the GMP library.  This is a
-    conventional C-based library and hence does not have direct support
-    for multi-locale programs.  The GMP API is centered on the use of
-    side-effecting operations on an "object" of type mpz_t.
-
-    The primary benefits of this module include
-
-      1) Support for multi-locale programs
-
-      2) A set of operator overloads
-
-      3) Automatic memory management of GMP data structures
-
-    Wrapping an mpz_t in a bigint record does not appear to introduce
-    a measurable performance impact.  However in the fall of 2016 the
-    Chapel operator-based API may introduce a measurable overhead compared
-    to the GMP-native API for some applications.  Therefore this module also
-    provides lower-level multi-locale aware wrappers for the GMP functions.
-
-    Methods on bigint are defined for Chapel types e.g int(64) and uint(64)
-    which must be converted to underlying C types for use by GMP.  Runtime
-    checks are used to ensure the Chapel types can safely be cast to the C
-    types (e.g. when casting a Chapel uint it checks that it fits in the C
-    ulong which could be a 32 bit type if running on linux32 platform).
-
-    The checks are controlled by the compiler options ``--[no-]cast-checks``,
-    ``--fast``, etc.
-   */
-
   pragma "ignore noinit"
   record bigint {
+    /* The underlying GMP C structure */
     var mpz      : mpz_t;              // A dynamic-vector of C integers
+
+    pragma "no doc"
     var localeId : chpl_nodeID_t;      // The locale id for the GMP state
 
     proc bigint() {
@@ -163,6 +185,7 @@ module BigInteger {
     // If a bigint is copied to a remote node then it will receive a shallow
     // copy.  The localeId points back the correct locale but the mpz field
     // is meaningless.
+    pragma "no doc"
     proc ~bigint() {
       if _local || this.localeId == chpl_nodeID {
         mpz_clear(this.mpz);
@@ -379,6 +402,7 @@ module BigInteger {
   // Cast operators
   //
 
+  pragma "no doc"
   inline proc _cast(type t, const ref x: bigint) where isIntType(t) {
     var ret: c_long;
 
@@ -399,6 +423,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  pragma "no doc"
   inline proc _cast(type t, const ref x: bigint) where isUintType(t) {
     var ret: c_ulong;
 
@@ -424,6 +449,7 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
+  pragma "no doc"
   inline proc _cast(type t, const ref x: bigint) where isRealType(t) {
     var ret: c_double;
 

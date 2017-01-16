@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -47,44 +47,63 @@ module ChapelTuple {
   // syntactic support for tuples
   //
 
-  // tuple type
+  // tuple type (refs for types with blank intent=ref intent)
   pragma "build tuple"
-  inline proc _build_tuple(type t...) type
-    return t;
+  pragma "build tuple type"
+  inline proc _build_tuple(type t...) type {
+    // body inserted during generic instantiation
+  }
 
-  // tuple value with intents by default
+  // tuple value (refs)
   pragma "build tuple"
   inline proc _build_tuple(x...) {
       return x;
   }
-  
-  // tuple value with ref intents for actuals of ref types
+
+  // tuple type (no refs)
+  pragma "do not allow ref"
+  pragma "build tuple"
+  pragma "build tuple type"
+  inline proc _build_tuple_noref(type t...) type {
+    // body inserted during generic instantiation
+  }
+
+  // tuple value allowing refs (ref actuals)
   pragma "allow ref" 
   pragma "build tuple"
   inline proc _build_tuple_always_allow_ref(x...)
     return x;
-  
-  // homogeneous tuple type
-  proc *(param p: int, type t) type {
-    var oneTuple: _build_tuple(t);
-    proc _fill(param p: int, x: _tuple) {
-      if x.size == p then
-        return x;
-      else if 2*x.size <= p then
-        return _fill(p, ((...x), (...x)));
-      else
-        return _fill(p, ((...x), (..._fill(p-x.size, oneTuple))));
-    }
-    if p <= 0 then
-      compilerError("tuple must have positive size");
-    return _fill(p, oneTuple).type;
+
+  inline proc chpl__unref(type t) type {
+    if isTupleType(t) then
+      return _build_tuple_noref((...t));
+    else
+      return t;
   }
-  
+
+   // homogeneous tuple type
+  pragma "build tuple"
+  pragma "build tuple type"
+  pragma "star tuple"
+  proc *(param p: int, type t) type {
+    // body inserted during generic instantiation
+  }
+
+  pragma "do not allow ref"
+  pragma "build tuple"
+  pragma "build tuple type"
+  pragma "star tuple"
+  proc _build_star_tuple_noref(param p: int, type t) type {
+    // body inserted during generic instantiation
+  }
+
   pragma "compiler generated"
   proc *(type t, param p: int) {
     compilerError("<type>*<param int> not supported.  If you're trying to specify a homogeneous tuple type, use <param int>*<type>.");
   }
 
+  // compiler generated since if this resolves some other way, OK
+  pragma "compiler generated"
   proc *(p: int, type t) type {
     compilerError("tuple size must be static");
   }
@@ -138,6 +157,7 @@ module ChapelTuple {
   //
   pragma "no doc"
   pragma "reference to const when const this"
+  pragma "star tuple accessor"
   proc _tuple.this(i : integral) ref {
     if !isHomogeneousTuple(this) then
       compilerError("invalid access of non-homogeneous tuple by runtime value");
@@ -253,7 +273,7 @@ module ChapelTuple {
       f <~> end;
     }
   }
-  
+
   //
   // tuple casts to complex(64) and complex(128)
   //
@@ -273,6 +293,14 @@ module ChapelTuple {
     c.re = x(1):real(64);
     c.im = x(2):real(64);
     return c;
+  }
+
+  //
+  // General tuple cast function
+  //
+  pragma "tuple cast fn"
+  inline proc _cast(type t, x: _tuple) where t:_tuple {
+    // body filled in during resolution
   }
   
   //

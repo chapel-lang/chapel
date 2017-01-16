@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -288,38 +288,39 @@ static bool shouldRetWide(CallExpr* call);
 //
 // Miscellaneous utility functions to help manage the AST
 //
+static bool isTypeFullyWide(BaseAST* bs) {
+  return bs->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_CLASS, FLAG_WIDE_REF);
+}
+
 
 static bool isFullyWide(BaseAST* bs) {
-  return bs->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_CLASS, FLAG_WIDE_REF);
+  if( Symbol* sym = toSymbol(bs) ) {
+    if (sym->isWideRef())
+      return true;
+  } else if( Expr* e = toExpr(bs) ) {
+    if (e->isWideRef())
+      return true;
+  }
+
+  // Don't return true for a reference to a wide class
+  return isTypeFullyWide(bs) && !bs->isRef();
 }
 
 static bool valIsWideClass(BaseAST* bs) {
   return bs->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS);
 }
 
-static Type* getNarrowType(BaseAST* bs) {
-  //
-  // TODO: This should really return a completely narrow ref, and not
-  // a ref to a wide class.
-  //
-  if (isFullyWide(bs)) {
-    return bs->typeInfo()->getField("addr")->typeInfo();
-  }
-  else {
-    return bs->typeInfo();
-  }
-}
-
 static bool hasSomeWideness(BaseAST* bs) {
   return isFullyWide(bs) || valIsWideClass(bs);
 }
 
-static bool isRef(BaseAST* bs) {
+static bool isRefType(BaseAST* bs)
+{
   return bs->typeInfo()->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF);
 }
 
 static bool isObj(BaseAST* bs) {
-  return (isClass(bs->typeInfo()) && !isRef(bs)) || bs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS);
+  return (isClass(bs->typeInfo()) || bs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) && !bs->isRefOrWideRef();
 }
 
 static bool typeCanBeWide(Symbol *sym) {
@@ -328,12 +329,14 @@ static bool typeCanBeWide(Symbol *sym) {
   // TODO: Special treatment of extern types may be removed in future
   // AMM work.
   bool bad = sym->hasFlag(FLAG_EXTERN) ||
-              ts->hasFlag(FLAG_NO_WIDE_CLASS) ||
-              (!isFullyWide(sym) && isRecord(sym->type));
+              ts->hasFlag(FLAG_NO_WIDE_CLASS);
+
+  if (!isFullyWide(sym) && !sym->isRefOrWideRef() && isRecord(sym->type))
+    bad = true;
 
   return !bad &&
          (isObj(sym) ||
-          isRef(sym) ||
+          sym->isRefOrWideRef() ||
           ts->hasFlag(FLAG_DATA_CLASS));
 }
 
@@ -348,8 +351,62 @@ static Symbol* getTupleField(CallExpr* call) {
   return field;
 }
 
+static QualifiedType getNarrowType(BaseAST* bs) {
+  //
+  // TODO: Should really return a completely narrow ref, and not a ref to a
+  // wide class?
+  //
+
+
+  Type* retType = NULL;
+  Qualifier retQ = QUAL_UNKNOWN;
+
+  if (Type* t = toType(bs)) {
+    if (t->symbol->qualType().isRefOrWideRef()) {
+      retQ = QUAL_REF;
+    } else {
+      retQ = QUAL_VAL;
+    }
+
+    if (isTypeFullyWide(bs)) {
+      t = t->getField("addr")->typeInfo();
+    }
+    retType = t;
+  } else {
+    Symbol* sym = NULL;
+    if (Symbol* s = toSymbol(bs)) {
+      sym = s;
+    } else {
+      SymExpr*se = toSymExpr(bs);
+      INT_ASSERT(se);
+      sym = se->symbol();
+    }
+    INT_ASSERT(sym);
+
+    if (sym->isRefOrWideRef()) {
+      retQ = QUAL_REF;
+
+      if (!isRefType(sym)) {
+        retType = sym->typeInfo();
+      } else {
+        INT_ASSERT(isTypeFullyWide(sym));
+        retType = sym->typeInfo()->getField("addr")->typeInfo();
+      }
+    } else {
+      retQ = sym->qualType().getQual();
+      if (isTypeFullyWide(bs)) {
+        retType = sym->typeInfo()->getField("addr")->typeInfo();
+      } else {
+        retType = sym->typeInfo();
+      }
+    }
+  }
+
+  return QualifiedType(retType, retQ);
+}
+
 static Type* getElementType(BaseAST* bs) {
-  Type* arrType = getNarrowType(bs);
+  Type* arrType = getNarrowType(bs).type();
   INT_ASSERT(arrType->symbol->hasFlag(FLAG_DATA_CLASS));
 
   return getDataClassType(arrType->symbol)->type;
@@ -421,13 +478,27 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
       sym->type = wide;
     }
   }
-  else if (isRef(sym)) {
+  else if (isRefType(sym)) {
     if (mustBeWide) {
-      if (Type* wide = wideRefMap.get(sym->type))
+      if (Type* wide = wideRefMap.get(sym->type)) {
         sym->type = wide;
+        sym->qual = QUAL_WIDE_REF;
+      }
     } else if (wideVal) {
-      if (Type* wide = narrowToWideVal[sym->type])
+      if (Type* wide = narrowToWideVal[sym->type]) {
         sym->type = wide;
+        sym->qual = QUAL_REF;
+      }
+    }
+  }
+  else if(sym->isRefOrWideRef()) {
+    if (mustBeWide) {
+      sym->qual = QUAL_WIDE_REF;
+    } else {
+      sym->qual = QUAL_REF;
+    }
+    if (Type* wide = wideClassMap.get(sym->type->getValType())) {
+      sym->type = wide;
     }
   }
 }
@@ -514,7 +585,7 @@ static void setWide(BaseAST* cause, Symbol* sym) {
   causes[sym].insert(cause);
 }
 static void setWide(BaseAST* cause, SymExpr* se) {
-  setWide(cause, se->var);
+  setWide(cause, se->symbol());
 }
 
 
@@ -533,7 +604,7 @@ static void setValWide(BaseAST* cause, Symbol* sym) {
   causes[sym].insert(cause);
 }
 static void setValWide(BaseAST* cause, SymExpr* se) {
-  setValWide(cause, se->var);
+  setValWide(cause, se->symbol());
 }
 
 
@@ -542,9 +613,9 @@ static void setValWide(BaseAST* cause, SymExpr* se) {
 // Here, the wideness of 'src' will be used to widen 'dest'.
 //
 static void widenRef(BaseAST* src, Symbol* dest) {
-  INT_ASSERT(isRef(src) && isRef(dest));
+  INT_ASSERT(src->isRefOrWideRef() && dest->isRefOrWideRef());
 
-  if (isFullyWide(src)) {
+  if (src->isWideRef()) {
     debug(src, "Ref %s (%d) must be be wide\n", dest->cname, dest->id);
     setWide(src, dest);
   }
@@ -557,8 +628,10 @@ static void widenRef(BaseAST* src, Symbol* dest) {
 // Abstract special casing for refs away if we just want an easy
 // way to say that two variables need to have the same wideness.
 static void matchWide(BaseAST* src, Symbol* dest) {
-  if (isRef(src) && isRef(dest)) {
+  if (src->isRefOrWideRef() && dest->isRefOrWideRef()) {
     widenRef(src, dest);
+  } else if (dest->isRefOrWideRef() && !src->isRefOrWideRef()) {
+    setValWide(src, dest);
   } else {
     setWide(src, dest);
   }
@@ -659,7 +732,7 @@ static bool recurseCausedByArgs(FnSymbol* fn,
     // Only interested in 'base' if it is a LcnSymbol or SymExpr
     Symbol* cause = NULL;
     if (isSymExpr(base)) {
-      cause = toSymExpr(base)->var;
+      cause = toSymExpr(base)->symbol();
     } else if (isLcnSymbol(base)) {
       // Currently the case if it's a _retArg
       cause = toSymbol(base);
@@ -700,7 +773,7 @@ static bool recurseCausedByArgs(FnSymbol* fn,
     bool usedInReturn = causeExpr && toCallExpr(causeExpr->parentExpr)->isPrimitive(PRIM_RETURN);
     if (otherFn &&
         otherFn != sym->defPoint->parentSymbol && // exposed by SSCA2 perfcompopts
-        !isRef(cause) &&
+        !cause->isRefOrWideRef() &&
         cause == otherFn->getReturnSymbol() &&
         !otherFn->hasFlag(FLAG_VIRTUAL) &&
         !isModuleSymbol(sym->defPoint->parentSymbol) &&
@@ -736,7 +809,7 @@ static bool recurseCausedByArgs(FnSymbol* fn,
       //
       for_set(Symbol, arg, otherArgs) {
         SymExpr* act = toSymExpr(formal_to_actual(curCall, arg));
-        if (!recurseCausedByArgs(fn, act->var, visited, sourceArgs)) return false;
+        if (!recurseCausedByArgs(fn, act->symbol(), visited, sourceArgs)) return false;
       }
 
     } else {
@@ -797,7 +870,7 @@ static bool isCausedByArgs(FnSymbol* fn,
 
   // Assert that the only causes for formals are the corresponding actuals
   for_formals(formal, fn) {
-    if (isRef(formal)) {
+    if (formal->isRefOrWideRef()) {
       continue;
     }
 
@@ -875,7 +948,7 @@ static void handleReturns() {
 
         SymExpr* actual = toSymExpr(formal_to_actual(call, retarg));
         // TODO: Find SymExprs to use instead of a Symbol for the cause
-        setValWide(retarg, actual->var);
+        setValWide(retarg, actual->symbol());
       } else {
         CallExpr* move = toCallExpr(call->parentExpr);
         INT_ASSERT(move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN));
@@ -890,7 +963,7 @@ static void handleReturns() {
           INT_ASSERT(isObj(ret));
         }
 
-        if (isRef(LHS)) {
+        if (LHS->isRefOrWideRef()) {
           setValWide(ret, LHS);
         } else  {
           setWide(ret, LHS);
@@ -959,8 +1032,8 @@ static void convertNilToObject()
   // Also, if that var is the lhs of a move, remove the move (since it is no
   // longer used).
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->var->type == dtNil) {
-      se->var = gNil;
+    if (se->symbol()->type == dtNil) {
+      se->setSymbol(gNil);
       if (CallExpr* parent = toCallExpr(se->parentExpr))
         // Assignment to void should already have been flagged as an error.
         if (parent->isPrimitive(PRIM_MOVE) && parent->get(1) == se)
@@ -1075,7 +1148,7 @@ static bool fieldCanBeWide(Symbol* field) {
 
   return !(isFullyWide(ts) ||
            field->hasFlag(FLAG_SUPER_CLASS) ||
-           isRef(ts));
+           ts->isRefOrWideRef());
 }
 
 //
@@ -1109,7 +1182,7 @@ static void addKnownWides() {
       AggregateType* ag = toAggregateType(bundle_class->type);
 
       for_fields(fi, ag) {
-        if (isRecord(fi->type)) {
+        if (isRecord(fi->type) && !fi->isRefOrWideRef()) {
           // Record types won't be widened which means that their fields will
           // lose all locality information inside the on-stmt. This means that
           // such fields need to be wide. This may have to be done recursively
@@ -1123,7 +1196,7 @@ static void addKnownWides() {
     }
   }
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (!typeCanBeWide(var)) continue;
+    //if (!typeCanBeWide(var)) continue;
     Symbol* defParent = var->defPoint->parentSymbol;
 
     //
@@ -1133,13 +1206,20 @@ static void addKnownWides() {
     if (isModuleSymbol(defParent) && !var->hasFlag(FLAG_LOCALE_PRIVATE)) {
       if (FnSymbol* fn = usedInOn(var)) {
         debug(var, "Module scope variable used in on-statement\n");
-        setWide(fn, var);
+        if (typeCanBeWide(var)) {
+          setWide(fn, var);
+        }
+        if (isRecord(var->type)) {
+          widenSubAggregateTypes(fn, var->type);
+        }
       }
     }
   }
 
   // Widen the arguments of virtual methods
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    // Skip args we removed already in this pass.
+    if (!arg->defPoint->parentSymbol) continue;
     if (!typeCanBeWide(arg)) continue;
 
     FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
@@ -1171,13 +1251,13 @@ static void addKnownWides() {
   // to keep narrow.
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-      Symbol* lhs = toSymExpr(call->get(1))->var;
+      Symbol* lhs = toSymExpr(call->get(1))->symbol();
 
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIM_ARRAY_GET) || rhs->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
           SymExpr* cause = toSymExpr(rhs->get(1));
           if (getElementType(cause)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            if (isRef(lhs)) {
+            if (lhs->isRefOrWideRef()) {
               setValWide(cause, lhs);
             } else if (isObj(lhs)) {
               setWide(cause, lhs);
@@ -1191,8 +1271,8 @@ static void addKnownWides() {
              call->isPrimitive(PRIM_CHPL_COMM_GET)) { // TODO: Is this necessary?
       for_actuals(actual, call) {
         if (SymExpr* se = toSymExpr(actual)) {
-          if (typeCanBeWide(se->var)) {
-            setWide(call, se->var);
+          if (typeCanBeWide(se->symbol())) {
+            setWide(call, se->symbol());
           }
         }
       }
@@ -1205,13 +1285,14 @@ static void addKnownWides() {
 // widen other variables.
 //
 static void propagateVar(Symbol* sym) {
+
   INT_ASSERT(hasSomeWideness(sym));
   debug(sym, "Propagating var\n");
 
   // Actuals and formals have to have the same wideness of their _val field.
   // A ref_T can't be passed into a ref_wide_T, or vice versa, even with temps.
   // At least, this isn't possible today as far as I know.
-  if (isArgSymbol(sym) && isRef(sym) && valIsWideClass(sym)) {
+  if (isArgSymbol(sym) && sym->isRefOrWideRef() && valIsWideClass(sym)) {
     FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
     DEBUG_PRINTF("\tFixing types for arg %s (%d) in %s\n", sym->cname, sym->id, fn->cname);
     forv_Vec(CallExpr, call, *fn->calledBy) {
@@ -1225,7 +1306,7 @@ static void propagateVar(Symbol* sym) {
       if (!call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         SymExpr* actual = toSymExpr(formal_to_actual(call, sym));
         DEBUG_PRINTF("\tRef types have to match: %s (%d) in call %d\n", actual->var->cname, actual->var->id, call->id);
-        setValWide(sym, actual->var);
+        setValWide(sym, actual->symbol());
       }
     }
   }
@@ -1236,12 +1317,17 @@ static void propagateVar(Symbol* sym) {
       if (parentCall && call->primitive) {
         if (parentCall->isPrimitive(PRIM_MOVE) ||
             parentCall->isPrimitive(PRIM_ASSIGN)) {
-          Symbol* lhs = toSymExpr(parentCall->get(1))->var;
+          Symbol* lhs = toSymExpr(parentCall->get(1))->symbol();
           if (call->primitive) {
             switch (call->primitive->tag) {
               case PRIM_ADDR_OF:
+              case PRIM_SET_REFERENCE:
                 debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
-                setValWide(use, lhs);
+                if (use->isRefOrWideRef()) {
+                  widenRef(use, lhs);
+                } else {
+                  setValWide(use, lhs);
+                }
                 break;
 
               case PRIM_ARRAY_GET:
@@ -1279,17 +1365,17 @@ static void propagateVar(Symbol* sym) {
                 widenSubAggregateTypes(use, lhs->type);
               } else {
                 SymExpr* field = toSymExpr(call->get(2));
-                if (isRef(field)) {
+                if (field->isRefOrWideRef()) {
                   setValWide(use, field);
                 }
-                fieldsToMakeWide.insert(field->var);
+                fieldsToMakeWide.insert(field->symbol());
               }
             }
             else if (call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                      call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               Symbol* field = getSvecSymbol(call);
               if (field) {
-                if (isRef(field)) {
+                if (field->isRefOrWideRef()) {
                   setValWide(use, field);
                 }
                 fieldsToMakeWide.insert(field);
@@ -1297,7 +1383,7 @@ static void propagateVar(Symbol* sym) {
                 // If we don't know for sure which field is being accessed,
                 // play it safe and widen all of them.
                 for_fields(fi, toAggregateType(call->get(1)->getValType())) {
-                  if (isRef(fi)) {
+                  if (fi->isRefOrWideRef()) {
                     setValWide(use, fi);
                   }
                   fieldsToMakeWide.insert(fi);
@@ -1316,16 +1402,16 @@ static void propagateVar(Symbol* sym) {
         }
       }
       else if ((call->isPrimitive(PRIM_MOVE) ||
-                 call->isPrimitive(PRIM_ASSIGN)) &&
+                call->isPrimitive(PRIM_ASSIGN)) &&
                   use == call->get(2)) {
-        Symbol* lhs = toSymExpr(call->get(1))->var;
-        Symbol* rhs = toSymExpr(call->get(2))->var;
+        Symbol* lhs = toSymExpr(call->get(1))->symbol();
+        Symbol* rhs = toSymExpr(call->get(2))->symbol();
 
         if (isObj(lhs) && isObj(rhs)) {
           debug(sym, "Assigning from wide to narrow %s (%d)\n", lhs->cname, lhs->id);
           setWide(use, lhs);
         }
-        else if (isRef(lhs) && isRef(rhs)) {
+        else if (lhs->isRefOrWideRef() && rhs->isRefOrWideRef()) {
           // Here is a place where PRIM_MOVE and PRIM_ASSIGN diverge.
           // PRIM_MOVE between two references means that one reference is copied
           // into the other; this is a pointer copy.
@@ -1334,10 +1420,21 @@ static void propagateVar(Symbol* sym) {
           // Therefore, this clause applies only to PRIM_MOVE.
           if (call->isPrimitive(PRIM_MOVE))
             widenRef(use, lhs);
+          else {
+            // Assigning contents from one pointer to another. Need to handle
+            // the case where the valType is a wide class
+            if (isObj(use->getValType())) {
+              setValWide(use, lhs);
+            }
+          }
         }
-        else if (isRef(lhs) && isObj(rhs)) {
+        else if (lhs->isRefOrWideRef() && isObj(rhs)) {
           debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
           setValWide(use, lhs);
+        }
+        else if (isObj(lhs) && rhs->isRefOrWideRef()) {
+          // dereference
+          setWide(use, lhs);
         }
         else {
           DEBUG_PRINTF("Unhandled assign: %s = %s\n", lhs->type->symbol->cname, rhs->type->symbol->cname);
@@ -1347,8 +1444,8 @@ static void propagateVar(Symbol* sym) {
         // If the base class or RHS is wide, then the field may be assigned to
         // with a remote value and should be wide.
         SymExpr* field = toSymExpr(call->get(2));
-        debug(sym, "narrow field %s (%d) must be wide\n", field->var->cname, field->var->id);
-        matchWide(use, field->var);
+        debug(sym, "narrow field %s (%d) must be wide\n", field->symbol()->cname, field->symbol()->id);
+        matchWide(use, field->symbol());
       }
       else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
         widenTupleField(call, use);
@@ -1375,14 +1472,14 @@ static void propagateVar(Symbol* sym) {
             INT_ASSERT(parent->isPrimitive(PRIM_MOVE) || parent->isPrimitive(PRIM_ASSIGN));
             SymExpr* lhs = toSymExpr(parent->get(1));
             DEBUG_PRINTF("Returning wide to %s (%d)\n", lhs->var->cname, lhs->var->id);
-            if (isObj(sym) && isRef(lhs)) {
+            if (isObj(sym) && lhs->isRefOrWideRef()) {
               setValWide(use, lhs);
             }
             else if (isObj(lhs) || isObj(sym)) {
               setWide(use, lhs);
             }
-            else if (isRef(sym) && isRef(lhs)) {
-              widenRef(use, lhs->var);
+            else if (sym->isRefOrWideRef() && lhs->isRefOrWideRef()) {
+              widenRef(use, lhs->symbol());
             }
           }
         }
@@ -1390,7 +1487,7 @@ static void propagateVar(Symbol* sym) {
       else if (call->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER)) {
         if (use == call->get(2)) {
           debug(sym, "Setting shift base wide\n");
-          setWide(use, toSymExpr(call->get(1))->var);
+          setWide(use, toSymExpr(call->get(1))->symbol());
         }
       }
       else if (call->primitive) {
@@ -1418,36 +1515,44 @@ static void propagateVar(Symbol* sym) {
       }
       else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
-          if (rhs->isPrimitive(PRIM_ADDR_OF)) {
+          if (rhs->isPrimitive(PRIM_ADDR_OF) ||
+              rhs->isPrimitive(PRIM_SET_REFERENCE)) {
             //
             // The ref on the lhs has been assigned to with wide data, so the
             // expr in the addr_of may also need to be wide.
             //
             SymExpr* se = toSymExpr(rhs->get(1));
-            debug(sym, "ref has a wide _val, src %s (%d) of addr_of must be wide\n", se->var->cname, se->var->id);
-            setWide(def, se);
+            debug(sym, "ref has a wide _val, src %s (%d) of addr_of must be wide\n", se->symbol()->cname, se->symbol()->id);
+            if (se->isRefOrWideRef()) {
+              widenRef(def, se->symbol());
+            } else {
+              setWide(def, se);
+            }
           }
-          else if (isRef(sym)) {
+          else if (sym->isRefOrWideRef()) {
             if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) || 
                 rhs->isPrimitive(PRIM_GET_MEMBER)) {
               SymExpr* field = toSymExpr(rhs->get(2));
-              debug(sym, "widening field ref %s (%d)\n", field->var->cname, field->var->id);
-              matchWide(def, field->var);
+              debug(sym, "widening field ref %s (%d)\n", field->symbol()->cname, field->symbol()->id);
+              matchWide(def, field->symbol());
             }
             else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) || 
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               widenTupleField(rhs, def);
             }
-            else if (rhs->isResolved() && isRef(rhs->isResolved()->getReturnSymbol())) {
+            else if (rhs->isResolved() && rhs->isResolved()->getReturnSymbol()->isRefOrWideRef()) {
               debug(sym, "return symbol must be wide\n");
               matchWide(sym, rhs->isResolved()->getReturnSymbol());
             }
           }
-        } else if (isRef(sym)) {
+        }
+        else if (sym->isRefOrWideRef() && call->isPrimitive(PRIM_MOVE)) {
+          // Catch (move _ref_wide_T _ref_T)
+          // BHARSH TODO: This should use a PRIM_SET_REFERENCE...
           // Exposed by: --baseline --inline
           if (SymExpr* rhs = toSymExpr(call->get(2))) {
-            if (isRef(rhs)) {
-              widenRef(def, rhs->var);
+            if (rhs->isRefOrWideRef()) {
+              widenRef(def, rhs->symbol());
             }
           }
         }
@@ -1467,7 +1572,7 @@ static void propagateField(Symbol* sym) {
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (parentCall->isPrimitive(PRIM_MOVE) ||
             parentCall->isPrimitive(PRIM_ASSIGN)) {
-          Symbol* lhs = toSymExpr(parentCall->get(1))->var;
+          Symbol* lhs = toSymExpr(parentCall->get(1))->symbol();
           if (call->primitive) {
             switch (call->primitive->tag) {
               case PRIM_GET_MEMBER:
@@ -1482,7 +1587,8 @@ static void propagateField(Symbol* sym) {
               case PRIM_GET_SVEC_MEMBER_VALUE:
                 if (fIgnoreLocalClasses || !sym->hasFlag(FLAG_LOCAL_FIELD)) {
                   DEBUG_PRINTF("\t"); debug(lhs, "widened gmv\n");
-                  matchWide(use, lhs);
+                  // this was matchWide(use, lhs); -- Ben, FIXME
+                  matchWide(sym, lhs);
                 }
                 break;
               default:
@@ -1494,7 +1600,7 @@ static void propagateField(Symbol* sym) {
       }
       else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         SymExpr* rhs = toSymExpr(call->get(3));
-        if (isRef(sym)) {
+        if (sym->isRefOrWideRef()) {
           DEBUG_PRINTF("Widening ref rhs of set_member\n");
           setValWide(use, rhs);
         }
@@ -1516,9 +1622,9 @@ static void propagateField(Symbol* sym) {
         // to be able to reference a wide thing.
         //
         Symbol* field = getTupleField(call);
-        Symbol* rhs = toSymExpr(call->get(3))->var;
+        Symbol* rhs = toSymExpr(call->get(3))->symbol();
 
-        if (isRef(rhs) && valIsWideClass(field)) {
+        if (rhs->isRefOrWideRef() && valIsWideClass(field)) {
           debug(field, " set_svec_member widens rhs ref %s (%d)\n", rhs->cname, rhs->id);
           setValWide(def, rhs);
         }
@@ -1537,8 +1643,8 @@ static void insertStringLiteralTemps()
   // be widened.
   //
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->var->type == dtStringC) {
-      if (VarSymbol* var = toVarSymbol(se->var)) {
+    if (se->symbol()->type == dtStringC) {
+      if (VarSymbol* var = toVarSymbol(se->symbol())) {
         if (var->immediate) {
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
             SET_LINENO(se);
@@ -1565,7 +1671,7 @@ static void insertStringLiteralTemps()
               }
               if (call->isPrimitive(PRIM_SET_MEMBER)) {
                 if (SymExpr* wide = toSymExpr(call->get(2))) {
-                  Type* type = wide->var->type;
+                  Type* type = wide->symbol()->type;
                   VarSymbol* tmp = newTemp(type);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                   se->replace(new SymExpr(tmp));
@@ -1584,7 +1690,7 @@ static void insertStringLiteralTemps()
               }
               if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
                 if (SymExpr* wide = toSymExpr(call->get(3))) {
-                  Type* type = wide->var->type;
+                  Type* type = wide->symbol()->type;
                   VarSymbol* tmp = newTemp(wideClassMap.get(type));
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                   se->replace(new SymExpr(tmp));
@@ -1633,6 +1739,7 @@ static void narrowWideClassesThroughCalls()
     // Find calls to functions expecting local arguments.
     if (call->isResolved() && call->isResolved()->hasFlag(FLAG_LOCAL_ARGS)) {
       SET_LINENO(call);
+      Expr* stmt = call->getStmtExpr();
 
       // Examine each argument to the call.
       for_alist(arg, call->argList) {
@@ -1642,37 +1749,46 @@ static void narrowWideClassesThroughCalls()
 
         // Select symbols with wide types.
         if (isFullyWide(sym)) {
-          Type* narrowType = getNarrowType(sym);
+          if (sym->isRef()) {
+            VarSymbol* derefTmp = newTemp(sym->getValType());
+            stmt->insertBefore(new DefExpr(derefTmp));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, sym->copy())));
+            sym = new SymExpr(derefTmp);
+          }
+          QualifiedType narrowType = getNarrowType(sym);
 
           // Copy
           VarSymbol* var = newTemp(narrowType);
           SET_LINENO(call);
-          call->getStmtExpr()->insertBefore(new DefExpr(var));
+          stmt->insertBefore(new DefExpr(var));
 
-          if (narrowType->symbol->hasFlag(FLAG_EXTERN)) {
+          if (narrowType.type()->symbol->hasFlag(FLAG_EXTERN)) {
 
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
             if (!fNoLocalChecks)
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy()));
+              stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy()));
 
             // If we pass an extern class to an extern/export function,
             // we must treat it like a reference (this is by definition)
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           }
-          else if (narrowType->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS)) {
+          else if (narrowType.isRef() || narrowType.type()->symbol->hasFlag(FLAG_DATA_CLASS)) {
             // Also if the narrow type is a ref or data class type,
             // we must treat it like a (narrow) reference.
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           }
           else {
             // Otherwise, narrow the wide class reference, and use that in the call
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));
+            // Appears to intentionally use a 'deref' here, even if 'sym'
+            // is a wide class. This may have the effect of copying the
+            // remote thing to the current locale.
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));
           }
 
           // Move the result back after the call.
-          call->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, sym->copy(), var));
-          sym->replace(new SymExpr(var));
+          stmt->insertAfter(new CallExpr(PRIM_MOVE, sym->copy(), var));
+          toSymExpr(arg)->replace(new SymExpr(var));
         }
       }
     }
@@ -1685,53 +1801,51 @@ static void narrowWideClassesThroughCalls()
 //
 static void insertWideClassTempsForNil()
 {
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->var == gNil) {
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
-        SET_LINENO(se);
-        if (call->isResolved()) {
-          if (Type* type = actual_to_formal(se)->typeInfo()) {
-            if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              VarSymbol* tmp = newTemp(type);
-              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              se->replace(new SymExpr(tmp));
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-            }
-          }
-        } else if (call->isPrimitive(PRIM_MOVE)) {
-          TypeSymbol* ts = call->get(1)->typeInfo()->symbol;
-          if (ts->hasFlag(FLAG_WIDE_REF) && valIsWideClass(ts)) {
-            VarSymbol* tmp = newTemp(call->get(1)->getValType());
+  for_SymbolSymExprs(se, gNil) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      SET_LINENO(se);
+      if (call->isResolved()) {
+        if (Type* type = actual_to_formal(se)->typeInfo()) {
+          if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            VarSymbol* tmp = newTemp(type);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             se->replace(new SymExpr(tmp));
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
           }
-        } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-          if (Type* wctype = call->get(2)->typeInfo()) {
-            if (isFullyWide(wctype)) {
-              VarSymbol* tmp = newTemp(wctype);
-              call->insertBefore(new DefExpr(tmp));
-              se->replace(new SymExpr(tmp));
-              call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-            }
-          }
-        } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-          Type* valueType = call->get(1)->getValType();
-          Type* componentType = valueType->getField("x1")->type;
-          if (isFullyWide(componentType)) {
-            VarSymbol* tmp = newTemp(componentType);
+        }
+      } else if (call->isPrimitive(PRIM_MOVE)) {
+        TypeSymbol* ts = call->get(1)->typeInfo()->symbol;
+        if (ts->hasFlag(FLAG_WIDE_REF) && valIsWideClass(ts)) {
+          VarSymbol* tmp = newTemp(call->get(1)->getValType());
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          se->replace(new SymExpr(tmp));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+        }
+      } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+        if (Type* wctype = call->get(2)->typeInfo()) {
+          if (isFullyWide(wctype)) {
+            VarSymbol* tmp = newTemp(wctype);
             call->insertBefore(new DefExpr(tmp));
             se->replace(new SymExpr(tmp));
             call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
           }
-        } else if (call->isPrimitive(PRIM_RETURN)) {
-          FnSymbol* fn = toFnSymbol(call->parentSymbol);
-          INT_ASSERT(fn);
-          VarSymbol* tmp = newTemp(fn->retType);
-          call->insertBefore(new DefExpr(tmp));
-          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, gNil));
-          se->var = tmp;
         }
+      } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+        Type* valueType = call->get(1)->getValType();
+        Type* componentType = valueType->getField("x1")->type;
+        if (isFullyWide(componentType)) {
+          VarSymbol* tmp = newTemp(componentType);
+          call->insertBefore(new DefExpr(tmp));
+          se->replace(new SymExpr(tmp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+        }
+      } else if (call->isPrimitive(PRIM_RETURN)) {
+        FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(fn);
+        VarSymbol* tmp = newTemp(fn->retType);
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, gNil));
+        se->setSymbol(tmp);
       }
     }
   }
@@ -1775,7 +1889,7 @@ static void derefWideRefsToWideClasses()
         call->isPrimitive(PRIM_WIDE_GET_NODE)    ||
         call->isPrimitive(PRIM_WIDE_GET_ADDR)    ||
         call->isPrimitive(PRIM_SET_MEMBER)) {
-      if (isRef(call->get(1)) &&
+      if (call->get(1)->isRefOrWideRef() &&
           valIsWideClass(call->get(1))) {
         SET_LINENO(call);
         VarSymbol* tmp = newTemp(call->get(1)->getValType());
@@ -1799,7 +1913,7 @@ static void insertLocalTemp(Expr* expr) {
   Expr* stmt = expr->getStmtExpr();
   INT_ASSERT(se && stmt);
   SET_LINENO(se);
-  VarSymbol* var = newTemp(astr("local_", se->var->name), getNarrowType(se));
+  VarSymbol* var = newTemp(astr("local_", se->symbol()->name), getNarrowType(se));
   if (!fNoLocalChecks) {
     stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, se->copy()));
   }
@@ -1841,7 +1955,7 @@ static void localizeCall(CallExpr* call) {
           if (isFullyWide(rhs->get(1))) {
             SymExpr* sym = toSymExpr(rhs->get(2));
             INT_ASSERT(sym);
-            if (!sym->var->hasFlag(FLAG_SUPER_CLASS)) {
+            if (!sym->symbol()->hasFlag(FLAG_SUPER_CLASS)) {
               insertLocalTemp(rhs->get(1));
             }
           }
@@ -1858,11 +1972,11 @@ static void localizeCall(CallExpr* call) {
             insertLocalTemp(rhs->get(1));
             VarSymbol* localVar = NULL;
             if (rhs->isPrimitive(PRIM_ARRAY_GET))
-              localVar = newTemp(astr("local_", lhs->var->name),
+              localVar = newTemp(astr("local_", lhs->symbol()->name),
                                  getNarrowType(lhs));
             else
-              localVar = newTemp(astr("local_", lhs->var->name),
-                                 lhs->var->type);
+              localVar = newTemp(astr("local_", lhs->symbol()->name),
+                                 lhs->symbol()->type);
             stmt->insertBefore(new DefExpr(localVar));
             lhs->replace(new SymExpr(localVar));
             stmt->insertAfter(new CallExpr(PRIM_MOVE, lhs,
@@ -1888,7 +2002,7 @@ static void localizeCall(CallExpr* call) {
         break;
       }
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
-          !isRef(call->get(2))) {
+          !call->get(2)->isRefOrWideRef()) {
         insertLocalTemp(call->get(1));
       }
       break;
@@ -1896,8 +2010,10 @@ static void localizeCall(CallExpr* call) {
       if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         insertLocalTemp(call->get(2));
         if (isFullyWide(call->get(1))) {
-          Symbol* se = toSymExpr(call->get(1))->var;
-          se->type = getNarrowType(call->get(1));
+          Symbol* se = toSymExpr(call->get(1))->symbol();
+          QualifiedType qt = getNarrowType(call->get(1));
+          se->type = qt.type();
+          se->qual = qt.getQual();
         }
       }
       break;
@@ -2057,7 +2173,7 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   block->insertAtTail(dummy);
   forv_Vec(Symbol, sym, heapVars) {
     insertChplHereAlloc(dummy, false /*insertAfter*/, sym,
-                        getNarrowType(sym),
+                        getNarrowType(sym).type(),
                         newMemDesc("global heap-converted data"));
   }
   dummy->remove();
@@ -2071,27 +2187,70 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   numGlobalsOnHeap = i;
 }
 
-
 static void insertWideTemp(Type* type, SymExpr* src) {
+  Type* srcType = src->symbol()->type;
+
+  bool needsAddrOf = false;
+  bool needsDeref = false;
+
+  if (type->isRefOrWideRef() &&
+      !src->isRefOrWideRef())
+    needsAddrOf = true;
+
+  if (src->isRefOrWideRef() &&
+      !type->isRefOrWideRef())
+    needsDeref = true;
+
   SET_LINENO(src);
   Expr* stmt = src->getStmtExpr();
 
   VarSymbol* tmp = newTemp(type);
+  Expr* rhs = src->copy();
+  if (needsAddrOf)
+    rhs = new CallExpr(PRIM_ADDR_OF, rhs);
+  if (needsDeref) {
+    // Need to handle case of passing a _ref_T to a wide_T
+    // Easiest way seems to be having codegen handle the 'wide = narrow'
+    // temp creation, and to just create that narrow temp here.
+    VarSymbol* derefTmp = newTemp(srcType->getValType());
+    stmt->insertBefore(new DefExpr(derefTmp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, rhs)));
+    rhs = new SymExpr(derefTmp);
+  }
+
   DEBUG_PRINTF("Created wide temp %d\n", tmp->id);
   stmt->insertBefore(new DefExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, src->copy()));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
   src->replace(new SymExpr(tmp));
 }
 
-
 static void makeMatch(Symbol* dst, SymExpr* src) {
+  bool mismatch = true;
+  if (dst->isRef() && src->isRef() && dst->getValType() == src->getValType()) {
+    mismatch = false;
+  } else if (dst->isWideRef() && src->isWideRef() && dst->getValType() == src->getValType()) {
+    mismatch = false;
+  } else if (!dst->isRefOrWideRef() && !src->isRefOrWideRef() && dst->typeInfo() == src->typeInfo()) {
+    mismatch = false;
+  }
+
+  // BHARSH TODO: Have insertWideTemp take a QualifiedType
+  Type* dstType = dst->type;
+  if (!dstType->symbol->hasFlag(FLAG_REF) && dst->isRef()) {
+    dstType = dstType->refType;
+  } else if (dst->isWideRef() && !dstType->symbol->hasFlag(FLAG_WIDE_REF)) {
+    if (!dstType->symbol->hasFlag(FLAG_REF)) {
+      dstType = dstType->refType;
+    }
+    dstType = wideRefMap.get(dstType);
+  }
   if (hasSomeWideness(dst) &&
-       dst->type != src->var->type) {
-    insertWideTemp(dst->type, src);
+       mismatch) {
+    insertWideTemp(dstType, src);
   }
 }
 static void makeMatch(Expr* left, Expr* right) {
-  makeMatch(toSymExpr(left)->var, toSymExpr(right));
+  makeMatch(toSymExpr(left)->symbol(), toSymExpr(right));
 }
 
 //
@@ -2124,11 +2283,11 @@ static void fixAST() {
           // Only looking for a mismatch where the formal is a _ref_wide_T
           // and the actual is a _ref_T
           if (formal->typeInfo() != actual->typeInfo() && hasSomeWideness(formal) &&
-              !(formal->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) || actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))) {
+              !(formal->isWideRef() || actual->isWideRef())) {
             SET_LINENO(call);
 
             SymExpr* act = toSymExpr(actual);
-            Vec<SymExpr*>* defs = defMap.get(act->var);
+            Vec<SymExpr*>* defs = defMap.get(act->symbol());
 
             // def/use maps were not built for local fns
             if (!defs) {
@@ -2143,7 +2302,7 @@ static void fixAST() {
                   buildDefUseMaps(locfn, defMap, useMap);
                 }
               }
-              defs = defMap.get(act->var);
+              defs = defMap.get(act->symbol());
               INT_ASSERT(defs);
             }
 
@@ -2182,7 +2341,7 @@ static void fixAST() {
 
             call->insertAfter(new CallExpr(PRIM_MOVE, dest->copy(), new SymExpr(destTemp)));
             parent->remove();
-            act->var->defPoint->remove();
+            act->symbol()->defPoint->remove();
           } else {
             SymExpr* act = toSymExpr(actual);
             INT_ASSERT(act);
@@ -2203,11 +2362,39 @@ static void fixAST() {
         }
         else if (Type* wide = wideRefMap.get(act->typeInfo())) {
           insertWideTemp(wide, act);
+        } else if (act->isRef()) {
+          Type* ty = act->typeInfo();
+          if (!ty->symbol->hasFlag(FLAG_REF))
+            ty = ty->refType;
+
+          Type* wide = wideRefMap.get(ty);
+          INT_ASSERT(wide);
+
+          insertWideTemp(wide, act);
+        } else if (argMustUseCPtr(act->symbol()->type)) {
+          // passing a non-ref thing, e.g. a record, to an arg expecting to be
+          // given something by ref. This arg actually has the 'ref' kind,
+          // which was automatically widened in this pass.
+          //
+          // We need to create a wide ref tmp to get things working.
+          //
+
+          Expr* stmt = call->getStmtExpr();
+          SET_LINENO(stmt);
+          VarSymbol* narrowRef = newTemp(act->symbol()->type->refType);
+          stmt->insertBefore(new DefExpr(narrowRef));
+          stmt->insertBefore(new CallExpr(PRIM_MOVE, narrowRef, new CallExpr(PRIM_ADDR_OF, act->copy())));
+          SymExpr* se = new SymExpr(narrowRef);
+          act->replace(se);
+
+          Type* wide = wideRefMap.get(se->typeInfo());
+          INT_ASSERT(wide);
+          insertWideTemp(wide, se);
         }
       }
     } else {
       if (call->isPrimitive(PRIM_LOCAL_CHECK)) {
-        if (Symbol* se = toSymExpr(call->get(1))->var) {
+        if (Symbol* se = toSymExpr(call->get(1))->symbol()) {
           if (!hasSomeWideness(se)) {
             call->remove();
           }
@@ -2218,12 +2405,12 @@ static void fixAST() {
         if (eltype->symbol->hasFlag(FLAG_WIDE_CLASS)) insertWideTemp(eltype, toSymExpr(call->get(3)));
       }
       else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-        Symbol* base = toSymExpr(call->get(1))->var;
+        Symbol* base = toSymExpr(call->get(1))->symbol();
         SymExpr* field = toSymExpr(call->get(2));
         SymExpr* rhs = toSymExpr(call->get(3));
-        makeMatch(field->var, rhs);
+        makeMatch(field->symbol(), rhs);
 
-        if (field->var->hasFlag(FLAG_LOCAL_FIELD) && !fNoLocalChecks) {
+        if (field->symbol()->hasFlag(FLAG_LOCAL_FIELD) && !fNoLocalChecks) {
           rhs = toSymExpr(call->get(3));
 
           Expr* stmt = call->getStmtExpr();
@@ -2246,24 +2433,42 @@ static void fixAST() {
         // TODO: Local checks for references from GET_MEMBER_VALUE
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (rhs->isPrimitive(PRIM_ADDR_OF)) {
-            Type* val = toSymExpr(call->get(1))->getValType();
+            SymExpr* LHS = toSymExpr(call->get(1));
             SymExpr* src = toSymExpr(rhs->get(1));
-            if (val != src->var->type) {
-              insertWideTemp(val, src);
+            bool same = LHS->getValType() == src->getValType() &&
+                 ((LHS->isRef() && src->isRef()) ||
+                  (LHS->isWideRef() && src->isWideRef()) ||
+                  (LHS->isRefOrWideRef() && !src->isRefOrWideRef()));
+            if (!same) {
+              insertWideTemp(LHS->getValType(), src);
+            }
+          }
+          else if (rhs->isPrimitive(PRIM_DEREF)) {
+            // removeWrapRecords can change the intent to something non-ref,
+            // so the actual in the PRIM_DEREF may not be a ref anymore. We'll
+            // catch this here to avoid a failure during codegen.
+            //
+            // Originally exposed by taking out a PRIM_DEREF in
+            // remoteValueForwarding during the updateTaskArg step.
+            SymExpr* ref = toSymExpr(rhs->get(1));
+            if (!ref->isRefOrWideRef()) {
+              rhs->replace(ref->remove());
             }
           }
           else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
             SymExpr* field = toSymExpr(rhs->get(2));
             SymExpr* lhs = toSymExpr(call->get(1));
-            if (!isFullyWide(lhs) && lhs->var->type != field->var->type) {
+            bool same = lhs->getValType() == field->getValType() &&
+                        ((lhs->isRef() && rhs->isRef()) || (lhs->isWideRef() && rhs->isWideRef()));
+            if (!isFullyWide(lhs) && !same) {
               SET_LINENO(lhs);
-              VarSymbol* tmp = newTemp(field->var->type);
+              VarSymbol* tmp = newTemp(field->symbol()->type);
               DEBUG_PRINTF("Temp %d for get_member_value\n", tmp->id);
 
               call->insertBefore(new DefExpr(tmp));
               call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
 
-              if (field->var->hasFlag(FLAG_LOCAL_FIELD) && !fNoLocalChecks) {
+              if (field->symbol()->hasFlag(FLAG_LOCAL_FIELD) && !fNoLocalChecks) {
                 call->insertAfter(new CallExpr(PRIM_LOCAL_CHECK, tmp));
               }
 
@@ -2272,7 +2477,7 @@ static void fixAST() {
           }
           else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
             SymExpr* lhs = toSymExpr(call->get(1));
-            if (!isFullyWide(lhs)) {
+            if (!isFullyWide(lhs) && (hasSomeWideness(rhs->typeInfo()) || rhs->isWideRef())) {
               SET_LINENO(lhs);
 
               VarSymbol* tmp = newTemp(getTupleField(rhs)->type);
@@ -2292,7 +2497,7 @@ static void fixAST() {
               VarSymbol* wideTemp = newTemp(fn->retType);
               call->insertBefore(new DefExpr(wideTemp));
 
-              if (isRef(LHS)) {
+              if (LHS->isRefOrWideRef()) {
                 //
                 // This:
                 //
@@ -2349,9 +2554,9 @@ static void moveAddressSourcesToTemp()
 {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-      if (isRef(call->get(1)) &&
+      if (call->get(1)->isRefOrWideRef() &&
           valIsWideClass(call->get(1)) &&
-          call->get(2)->typeInfo() == getNarrowType(call->get(1)->getValType())) {
+          call->get(2)->typeInfo() == getNarrowType(call->get(1)->getValType()).type()) {
         //
         // widen rhs class
         //

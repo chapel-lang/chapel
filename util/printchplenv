@@ -209,7 +209,7 @@ def print_var(env_var, value, mode, short_name='', filters=None):
     elif mode == 'compiler' or mode == 'runtime' or mode == 'launcher':
         if not filters or mode in filters:
             if not print_var.first_time:
-                stdout.write(".")
+                stdout.write("/")
             else:
                 print_var.first_time = False
 

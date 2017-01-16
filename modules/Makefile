@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -37,7 +37,7 @@ SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
-DOC_SPHINX=${CHPL_MAKE_HOME}/doc/sphinx
+DOC=${CHPL_MAKE_HOME}/doc
 
 default: all
 
@@ -68,6 +68,7 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \
 	standard/Barrier.chpl \
+	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
@@ -100,7 +101,9 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
+	packages/MPI.chpl \
 	packages/Norm.chpl \
+	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/Search.chpl \
 	packages/Sort.chpl \
@@ -142,12 +145,14 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Running post-processing scripts"
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
-	@echo "Copying generated module documentation to "'$$CHPL_HOME'"/doc/sphinx/modules"
-	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC_SPHINX}/source/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
+	@echo "Copying generated module documentation to ${DOC}"
+	mkdir -p ${DOC}/modules
+	mkdir -p ${DOC}/builtins
+	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC}/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC}/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC}/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC}/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/internal/ ${DOC}/builtins/
 	@echo "Removing generated files and directories"
 	rm -rf ./docs
 	rm -rf ${MODULE_SPHINX}

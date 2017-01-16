@@ -6,7 +6,7 @@
 **************************************************************************/
 
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +51,9 @@ void chpl_task_yield(void);
 //
 typedef unsigned int chpl_taskID_t;
 #define chpl_nullTaskID QTHREAD_NULL_TASK_ID
+#ifndef CHPL_TASK_ID_STRING_MAX_LEN
+#define CHPL_TASK_ID_STRING_MAX_LEN 21
+#endif
 
 //
 // Sync variables
@@ -64,51 +67,6 @@ typedef struct {
     syncvar_t signal_empty;
 } chpl_sync_aux_t;
 
-#define chpl_sync_reset(x) qthread_syncvar_empty(&(x)->sync_aux.signal_full)
-
-#define chpl_read_FE(x) ({                                                           \
-                             uint64_t y;                                             \
-                             qthread_syncvar_readFE(&y, &(x)->sync_aux.signal_full); \
-                             y; })
-
-#define chpl_read_FF(x) ({                                                           \
-                             uint64_t y;                                             \
-                             qthread_syncvar_readFF(&y, &(x)->sync_aux.signal_full); \
-                             y; })
-
-#define chpl_read_XX(x) ((x)->sync_aux.signal_full.u.s.data)
-
-#define chpl_write_EF(x, y) do {                                 \
-        uint64_t z = (uint64_t)(y);                              \
-        qthread_syncvar_writeEF(&(x)->sync_aux.signal_full, &z); \
-} while(0)
-
-#define chpl_write_FF(x, y) do {                                    \
-        uint64_t z, dummy;                                          \
-        z = (uint64_t)(y);                                          \
-        qthread_syncvar_readFE(&dummy, &(x)->sync_aux.signal_full); \
-        qthread_syncvar_writeF(&(x)->sync_aux.signal_full, &z);     \
-} while(0)
-
-#define chpl_write_XF(x, y) do {                                \
-        uint64_t z = (uint64_t)(y);                             \
-        qthread_syncvar_writeF(&(x)->sync_aux.signal_full, &z); \
-} while(0)
-
-#define chpl_single_reset(x) qthread_syncvar_empty(&(x)->single_aux.signal_full)
-
-#define chpl_single_read_FF(x) ({                                                             \
-                                    uint64_t y;                                               \
-                                    qthread_syncvar_readFF(&y, &(x)->single_aux.signal_full); \
-                                    y; })
-
-#define chpl_single_write_EF(x, y) do {                            \
-        uint64_t z = (uint64_t)(y);                                \
-        qthread_syncvar_writeEF(&(x)->single_aux.signal_full, &z); \
-} while(0)
-
-#define chpl_single_read_XX(x) ((x)->single_aux.signal_full.u.s.data)
-
 //
 // Task private data
 //
@@ -120,33 +78,31 @@ extern
 
 volatile int chpl_qthread_done_initializing;
 
+//
+// Task layer private area argument bundle header
+//
 typedef struct {
-    int32_t task_filename;
-    int task_lineno;
-    chpl_taskID_t id;
-    chpl_fn_int_t fid;
-    chpl_bool is_executeOn;
-    c_sublocid_t requestedSubloc;  // requested sublocal for task
-    chpl_task_prvData_t prvdata;
-} chpl_task_prvDataImpl_t;
-
-// Define PRV_DATA_IMPL_VAL to set up a chpl_task_prvData_t.
-#define PRV_DATA_IMPL_VAL(_fn, _ln, _id, _fid, _is_execOn, _subloc, _serial) \
-        { .task_filename = _fn, \
-          .task_lineno = _ln, \
-          .id = _id, \
-          .fid = _fid, \
-          .is_executeOn = _is_execOn, \
-          .requestedSubloc = _subloc, \
-          .prvdata = { .serial_state = _serial } }
+  chpl_bool serial_state;
+  chpl_bool countRunning;
+  chpl_bool is_executeOn;
+  int lineno;
+  int filename;
+  c_sublocid_t requestedSubloc;
+  chpl_fn_int_t requested_fid;
+  chpl_fn_p requested_fn;
+  chpl_taskID_t id;
+} chpl_task_bundle_t;
 
 // Structure of task-local storage
 typedef struct chpl_qthread_tls_s {
-    /* Task private data: serial state, etc. */
-    chpl_task_prvDataImpl_t chpl_data;
-    /* Reports */
-    int32_t    lock_filename;
-    size_t      lock_lineno;
+  chpl_task_bundle_t *bundle;
+  // The below fields could move to chpl_task_bundleData_t
+  // That would reduce the size of the task local storage,
+  // but increase the size of executeOn bundles.
+  chpl_task_prvData_t prvdata;
+  /* Reports */
+  int     lock_filename;
+  int     lock_lineno;
 } chpl_qthread_tls_t;
 
 extern pthread_t chpl_qthread_process_pthread;
@@ -159,13 +115,13 @@ extern chpl_qthread_tls_t chpl_qthread_comm_task_tls;
 void chpl_task_stdModulesInitialized(void);
 
 // Wrap qthread_get_tasklocal() and assert that it is always available.
-static inline chpl_qthread_tls_t * chpl_qthread_get_tasklocal(void)
+static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
 {
     chpl_qthread_tls_t* tls;
 
     if (chpl_qthread_done_initializing) {
-        tls = (chpl_qthread_tls_t *)
-              qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
+        tls = (chpl_qthread_tls_t*)
+               qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
         if (tls == NULL) {
             pthread_t me = pthread_self();
             if (pthread_equal(me, chpl_qthread_comm_pthread))
@@ -190,7 +146,7 @@ static inline chpl_task_prvData_t* chpl_task_getPrvData(void)
 {
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
     if (data) {
-        return &data->chpl_data.prvdata;
+        return &data->prvdata;
     }
     assert(data);
     return NULL;
@@ -236,7 +192,7 @@ void chpl_task_setSubloc(c_sublocid_t subloc)
     if ((curr_shep = qthread_shep()) != NO_SHEPHERD) {
         chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
         if (data) {
-            data->chpl_data.requestedSubloc = subloc;
+            data->bundle->requestedSubloc = subloc;
         }
 
         if (subloc != c_sublocid_any &&
@@ -256,7 +212,7 @@ c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
     if (data) {
-        return data->chpl_data.requestedSubloc;
+        return data->bundle->requestedSubloc;
     }
     return c_sublocid_any;
 }

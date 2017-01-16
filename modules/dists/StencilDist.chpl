@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -245,7 +245,6 @@ class Stencil : BaseDist {
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
-  var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
   var periodic: bool = false;
 }
@@ -280,7 +279,6 @@ class StencilDom: BaseRectangularDom {
   const dist: Stencil(rank, idxType);
   var locDoms: [dist.targetLocDom] LocStencilDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
   var periodic: bool = false;
   var wholeFluff : domain(rank=rank, idxType=idxType, stridable=stridable);
@@ -324,7 +322,6 @@ class StencilArr: BaseArr {
   var dom: StencilDom(rank, idxType, stridable);
   var locArr: [dom.dist.targetLocDom] LocStencilArr(eltType, rank, idxType, stridable);
   var myLocArr: LocStencilArr(eltType, rank, idxType, stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
 
@@ -344,12 +341,12 @@ class LocStencilArr {
   type idxType;
   param stridable: bool;
   const locDom: LocStencilDom(rank, idxType, stridable);
-  var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
+  var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
-  // These function will always be called on this.locale, and so we do
+  // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
   // the repeated on's from calling testAndSet()).
   inline proc lockLocRAD() {
@@ -455,7 +452,7 @@ proc Stencil.dsiClone() {
                    dataParMinGranularity, fluff=fluff, periodic=periodic);
 }
 
-proc Stencil.dsiDestroyDistClass() {
+proc Stencil.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
@@ -998,6 +995,13 @@ proc StencilDom.setup() {
   }
 }
 
+proc StencilDom.dsiDestroyDom() {
+  coforall localeIdx in dist.targetLocDom {
+    on locDoms(localeIdx) do
+      delete locDoms(localeIdx);
+  }
+}
+
 proc StencilDom.dsiMember(i) {
   return whole.member(i);
 }
@@ -1042,7 +1046,7 @@ proc StencilArr.dsiDisplayRepresentation() {
 proc StencilArr.dsiGetBaseDom() return dom;
 
 //
-// NOTE: Each locale's myElems array be initialized prior to setting up
+// NOTE: Each locale's myElems array must be initialized prior to setting up
 // the RAD cache.
 //
 proc StencilArr.setupRADOpt() {
@@ -1054,7 +1058,7 @@ proc StencilArr.setupRADOpt() {
         myLocArr.locRAD = nil;
       }
       if disableStencilLazyRAD {
-        myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+        myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
         for l in dom.dist.targetLocDom {
           if l != localeIdx {
             myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
@@ -1081,6 +1085,14 @@ proc StencilArr.setup() {
   if doRADOpt && disableStencilLazyRAD then setupRADOpt();
 }
 
+proc StencilArr.dsiDestroyArr(isslice : bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
+}
+
 // Re-use _remoteAccessData.getDataIndex from BlockDist
 
 
@@ -1093,8 +1105,12 @@ inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
+// BHARSH TODO: Like BlockDist, 'idx' should probably have a 'const in' or 'in'
+// intent
+//
 inline
-proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
+proc StencilArr.do_dsiAccess(param setter, idx: rank*idxType) ref {
+  var i = idx;
   local {
     if myLocArr != nil {
       if setter {
@@ -1125,27 +1141,26 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
         if myLocArr.locRAD == nil {
           myLocArr.lockLocRAD();
           if myLocArr.locRAD == nil {
-            var tempLocRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+            var tempLocRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr.locRAD = tempLocRAD;
           }
           myLocArr.unlockLocRAD();
         }
-        // NOTE: This is a known, benign race.  Multiple tasks may be
-        // initializing the RAD cache entries at once, but our belief is
-        // that this is infrequent enough that the potential extra gets
-        // are worth *not* having to synchronize.  If this turns out to be
-        // an incorrect assumption, we can add an atomic variable and use
-        // a fetchAdd to decide which task does the update.
         if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr.locRAD.RAD(rlocIdx) = locArr(rlocIdx).myElems._value.dsiGetRAD();
+          myLocArr.locRAD.lockRAD(rlocIdx);
+          if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
+            myLocArr.locRAD.RAD(rlocIdx) =
+              locArr(rlocIdx).myElems._value.dsiGetRAD();
+          }
+          myLocArr.locRAD.unlockRAD(rlocIdx);
         }
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if radata(rlocIdx).shiftedData != nil {
+      if radata(rlocIdx).shiftedDataChunk(0) != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(myLocArr.stridable, i);
-        return radata(rlocIdx).shiftedData(dataIdx);
+        return radata(rlocIdx).shiftedDataElem(dataIdx);
       }
     }
   }
@@ -1519,7 +1534,6 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
   a._arrAlias = _value;
-  if !noRefCount then a._arrAlias.incRefCount();
   return _newArray(a);
 }
 
@@ -1527,10 +1541,9 @@ proc StencilArr.dsiNoFluffView() {
   var tempDist = new Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity);
-  var newDist = _newDistribution(tempDist);
-  var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
+  pragma "no auto destroy" var newDist = _newDistribution(tempDist);
+  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
   newDist._value.add_dom(tempDom._value);
-  if !noRefCount then newDist._value.incRefCount();
   tempDom.setIndices(dom.whole);
 
   var newDom = tempDom._value;
@@ -1548,7 +1561,8 @@ proc StencilArr.dsiNoFluffView() {
     }
   }
   if doRADOpt then alias.setupRADOpt();
-  if !noRefCount then tempDom._value.incRefCount();
+  // this doesn't need to lock since we just created the domain newDom
+  newDom.add_arr(alias, locking=false);
   return alias;
 }
 
@@ -1600,6 +1614,7 @@ proc StencilArr.dsiReindex(d: StencilDom) {
           //  directly into the alias's RAD cache
           if locArr[i].locRAD {
             alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
+                                                     d.stridable,
                                                      dom.dist.targetLocDom);
             alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
           }
@@ -1764,6 +1779,65 @@ proc StencilArr.doiCanBulkTransferStride() param {
   return useBulkTransferDist;
 }
 
+proc StencilArr.oneDData {
+  if defRectSimpleDData {
+    return true;
+  } else {
+    // TODO: do this when we create the array?  if not, then consider:
+    // TODO: use locRad oneDData, if available
+    // TODO: with more coding complexity we could get a much quicker
+    //       answer in the 'false' case, but how to avoid penalizing
+    //       the 'true' case at scale?
+    var allBlocksOneDData: bool;
+    on this {
+      var myAllBlocksOneDData: atomic bool;
+      myAllBlocksOneDData.write(true);
+      forall la in locArr {
+        if !la.myElems._value.oneDData then
+          myAllBlocksOneDData.write(false);
+      }
+      allBlocksOneDData = myAllBlocksOneDData.read();
+    }
+    return allBlocksOneDData;
+  }
+}
+
+proc StencilArr.doiUseBulkTransfer(B) {
+  if debugStencilDistBulkTransfer then
+    writeln("In StencilArr.doiUseBulkTransfer()");
+
+  //
+  // Absent multi-ddata, for the array as a whole, say bulk transfer
+  // is possible.  We'll make a final determination for each block in
+  // doiBulkTransfer(), based on the characteristics of the blocks
+  // themselves.
+  //
+  // If multi-ddata is possible then we can only do bulk transfer when
+  // either the domains are identical (so we can defer the decision as
+  // above) or all the blocks of both arrays have but a single ddata
+  // chunk.
+  //
+  return defRectSimpleDData
+         || dom == B._value.dom
+         || (oneDData && B._value.oneDData);
+}
+
+proc StencilArr.doiUseBulkTransferStride(B) {
+  if debugStencilDistBulkTransfer then
+    writeln("In StencilArr.doiUseBulkTransferStride()");
+
+  //
+  // Absent multi-ddata, for the array as a whole, say bulk transfer
+  // is possible even though as things are currently coded we'll always
+  // do regular bulk transfer and never even ask about strided.
+  //
+  // If multi-ddata is possible then we can only do strided bulk
+  // transfer when all the blocks have but a single ddata chunk.
+  //
+  return defRectSimpleDData
+         || (oneDData && B._value.oneDData);
+}
+
 proc StencilArr.doiBulkTransfer(B) {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransfer");
@@ -1807,14 +1881,14 @@ proc StencilArr.doiBulkTransfer(B) {
           // NOTE: This does not work with --heterogeneous, but heterogeneous
           // compilation does not work right now.  This call should be changed
           // once that is fixed.
-          var dest = myLocArr.myElems._value.theData;
-          const src = B._value.locArr[rid].myElems._value.theData;
+          var dest = myLocArr.myElems._value.theDataChunk(0);
+          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo)),
+                                  myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
                       rid,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
           lo+=size;
         }
@@ -1830,14 +1904,14 @@ proc StencilArr.doiBulkTransfer(B) {
                                         "; lo=", lo,
                                         "; rlo=", rlo
                                         );
-          var dest = myLocArr.myElems._value.theData;
-          const src = B._value.locArr[rid].myElems._value.theData;
+          var dest = myLocArr.myElems._value.theDataChunk(0);
+          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo)),
+                                  myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
                       dom.dist.targetLocales(rid).id,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
             lo(rank)+=size;
           }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -18,11 +18,11 @@
  */
 
 //
-// Block Distribution
+// BlockCyclic Distribution
 // 
-//      Block       BlockDom     BlockArr
+//      BlockCyclic    BlockCyclicDom     BlockCyclicArr
 //
-//   LocBlock    LocBlockDom  LocBlockArr
+//   LocBlockCyclic    LocBlockCyclicDom  LocBlockCyclicArr
 //
 
 use DSIUtil;
@@ -269,6 +269,13 @@ class BlockCyclic : BaseDist {
     return new BlockCyclic(lowIdx, blocksize, targetLocales, tasksPerLocale);
   }
 
+  proc dsiDestroyDist() {
+    coforall ld in locDist do {
+      on ld do
+        delete ld;
+    }
+  }
+
   proc dsiEqualDMaps(that: BlockCyclic(?)) {
     //
     // TODO: In retrospect, I think that this equality check
@@ -478,8 +485,6 @@ class BlockCyclicDom: BaseRectangularDom {
   //
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   //  const startLoc: index(dist.targetLocDom);
-
-  var pid: int = -1; // privatized object id
 }
 
 proc BlockCyclicDom.dsiDims() return whole.dims();
@@ -624,6 +629,12 @@ proc BlockCyclicDom.setup() {
       }
   if debugBlockCyclicDist then
     enumerateBlocks();
+}
+
+proc BlockCyclicDom.dsiDestroyDom() {
+  coforall localeIdx in dist.targetLocDom do
+    on dist.targetLocales(localeIdx) do
+      delete locDoms(localeIdx);
 }
 
 proc BlockCyclicDom.enumerateBlocks() {
@@ -780,8 +791,6 @@ class BlockCyclicArr: BaseArr {
   // optimized reference to a local LocBlockCyclicArr instance (or nil)
   //
   var myLocArr: LocBlockCyclicArr(eltType, rank, idxType, stridable);
-
-  var pid: int = -1; // privatized object id
 }
 
 proc BlockCyclicArr.dsiGetBaseDom() return dom;
@@ -792,6 +801,14 @@ proc BlockCyclicArr.setup() {
       locArr(localeIdx) = new LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx), dom.locDoms(localeIdx));
       if this.locale == here then
         myLocArr = locArr(localeIdx);
+    }
+  }
+}
+
+proc BlockCyclicArr.dsiDestroyArr(isslice:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocales(localeIdx) {
+      delete locArr(localeIdx);
     }
   }
 }
@@ -921,7 +938,8 @@ proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
   var alias = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d);
   for i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
-      alias.locArr[i] = new LocBlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, allocDom=locArr[i].allocDom, indexDom=d.locDoms[i], myElems=>locArr[i].myElems);
+      var locAlias => locArr[i].myElems;
+      alias.locArr[i] = new LocBlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, allocDom=locArr[i].allocDom, indexDom=d.locDoms[i], myElems=>locAlias);
     }
   }
 
@@ -1048,11 +1066,13 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
     return (numwholeblocks * blocksize(rank)) + blkOff;
   } else { // RMO
     //TODO: want negative scan: var blkmults = * scan [d in 1..rank] blocksize(d);
-    var blkmults: [1..rank] int;
-    blkmults(rank) = blocksize(rank);
+    var mults : rank*int;
+    mults(rank) = blocksize(rank);
     for d in 1..rank-1 by -1 do
-      blkmults(d) = blkmults(d+1) * blocksize(d);
-    //    writeln("blkmults = ", blkmults);
+      mults(d) = mults(d+1) * blocksize(d);
+
+    var blkmults = mults(1);
+
     var numwholeblocks = 0;
     var blkOff = 0;
     for param d in 1..rank {
@@ -1066,22 +1086,9 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
       }
       numwholeblocks += blkNum;
       blkOff += blkDimOff;
-      if (false && (i == (13,0) || i == (1,32))) {
-          writeln(here.id, ":", "blksize = ", blksize);
-          writeln(here.id, ":", "ind0 = ", ind0);
-          writeln(here.id, ":", "blkNum = ", blkNum);
-          writeln(here.id, ":", "blkDimOff = ", blkDimOff);
-      }
     }
 
-    if (false && (i == (13,0) || i == (1,32))) {
-      writeln(here.id, ":", "numblocks = ", numblocks);
-      writeln(here.id, ":", i, "->");
-      writeln(here.id, ":","numwholeblocks = ", numwholeblocks);
-      writeln(here.id, ":","blkOff = ", blkOff);
-      writeln(here.id, ":","total = ", numwholeblocks * blkmults(1) + blkOff);
-    }
-    return (numwholeblocks * blkmults(1)) + blkOff;
+    return (numwholeblocks * blkmults) + blkOff;
   }
 }
 

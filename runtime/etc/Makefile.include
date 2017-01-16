@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -30,10 +30,17 @@ MAKE_COMP_GEN_CFLAGS += $(SQUASH_WARN_GEN_CFLAGS)
 ifeq ($(COMP_GEN_DEBUG), 1)
   MAKE_COMP_GEN_CFLAGS += $(DEBUG_CFLAGS)
   DEBUG = 1
+else
+  # no need for a NO_DEBUG_CFLAGS yet
+  # MAKE_COMP_GEN_CFLAGS += $(NO_DEBUG_CFLAGS)
+  DEBUG = 0
 endif
 ifeq ($(COMP_GEN_OPT), 1)
   MAKE_COMP_GEN_CFLAGS += $(OPT_CFLAGS)
   OPTIMIZE = 1
+else
+  MAKE_COMP_GEN_CFLAGS += $(NO_OPT_CFLAGS)
+  OPTIMIZE = 0
 endif
 ifeq ($(COMP_GEN_SPECIALIZE), 1)
   MAKE_COMP_GEN_CFLAGS += $(SPECIALIZE_CFLAGS)
@@ -111,6 +118,11 @@ printmaino:
 printllvminstall:
 	@echo $(LLVM_INSTALL_DIR)
 
+printclangcc:
+	@echo $(CLANG_CC)
+
+printclangcxx:
+	@echo $(CLANG_CXX)
 
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)

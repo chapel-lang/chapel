@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,7 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
+#include "TryStmt.h"
 
 AstDump::AstDump() {
   mName      =     0;
@@ -198,7 +199,8 @@ bool AstDump::enterDefExpr(DefExpr* node) {
         write("single");
       }
 
-      writeSymbol("var", sym, true);
+      write(true, sym->qualType().qualStr(), false);
+      writeSymbol("", sym, true);
       writeFlags(mFP, sym);
 
     } else if (isLabelSymbol(sym)) {
@@ -236,7 +238,7 @@ void AstDump::exitNamedExpr(NamedExpr* node) {
 // SymExpr
 //
 void AstDump::visitSymExpr(SymExpr* node) {
-  Symbol*    sym = node->var;
+  Symbol*    sym = node->symbol();
   VarSymbol* var = toVarSymbol(sym);
 
   if (isBlockStmt(node->parentExpr) == true) {
@@ -328,6 +330,18 @@ void AstDump::exitBlockStmt(BlockStmt* node) {
   newline();
   write(false, "}", true);
   printBlockID(node);
+}
+
+void AstDump::visitForallIntents(ForallIntents* clause) {
+  newline();
+  write("with (");
+  for (int i = 0; i < clause->numVars(); i++) {
+    if (i > 0) write(false, ",", true);
+    if (clause->isReduce(i)) clause->riSpecs[i]->accept(this);
+    write(tfiTagDescrString(clause->fIntents[i]));
+    clause->fiVars[i]->accept(this);
+  }
+  write(false, ")", true);
 }
 
 
@@ -500,12 +514,34 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
   }
 
   if (SymExpr* label = toSymExpr(node->label)) {
-    if (label->var != gNil) {
-      writeSymbol(label->var, true);
+    if (label->symbol() != gNil) {
+      writeSymbol(label->symbol(), true);
     }
   }
 
   return true;
+}
+
+//
+// TryStmt
+//
+bool AstDump::enterTryStmt(TryStmt* node) {
+  newline();
+  if (node->tryBang()) {
+    write("Try!");
+  } else {
+    write("Try");
+  }
+  newline();
+  write("{");
+  ++mIndent;
+  return true;
+}
+
+void AstDump::exitTryStmt(TryStmt* node) {
+  --mIndent;
+  newline();
+  write("}");
 }
 
 //
@@ -566,6 +602,10 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
 
   if (fn->retType && fn->retType->symbol) {
     writeSymbol(":", fn->retType->symbol, false);
+  }
+
+  if (fn->throwsError()) {
+    write("throws");
   }
 
   writeFlags(mFP, fn);

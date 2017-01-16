@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
+#include "stlUtil.h"
 
 void
 removeEmptyRecords() {
@@ -31,7 +32,7 @@ removeEmptyRecords() {
 
   Vec<Type*> emptyRecordTypeSet;
   int numEmptyRecordTypes = 0;
-  Vec<Symbol*> emptyRecordSymbolSet;
+  std::vector<Symbol*> emptyRecordSymbols;
 
   //
   // Iteratively identify all empty record types (knowing that a
@@ -76,14 +77,14 @@ removeEmptyRecords() {
       forv_Vec(CallExpr, call, *arg->getFunction()->calledBy) {
         formal_to_actual(call, arg)->remove();
       }
-      emptyRecordSymbolSet.set_add(arg);
+      emptyRecordSymbols.push_back(arg);
       arg->defPoint->remove();
     }
   }
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (emptyRecordTypeSet.set_in(var->type)) {
-      emptyRecordSymbolSet.set_add(var);
+      emptyRecordSymbols.push_back(var);
       var->defPoint->remove();
     }
   }
@@ -105,19 +106,21 @@ removeEmptyRecords() {
       fn->_this = NULL;
   }
 
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->parentSymbol && emptyRecordSymbolSet.set_in(se->var)) {
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
-        if (call->primitive) {
-          //call->isPrimitive(PRIM_SET_MEMBER) ||
-          //            call->isPrimitive(PRIM_ADDR_OF) ||
-          //            call->isPrimitive(PRIM_DEREF) ||
-          //            call->isPrimitive(PRIM_MOVE)) {
-          call->getStmtExpr()->remove();
-          continue;
+  for_vector(Symbol, sym, emptyRecordSymbols) {
+    for_SymbolSymExprs(se, sym) {
+      if (se->parentSymbol) {
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          if (call->primitive) {
+            //call->isPrimitive(PRIM_SET_MEMBER) ||
+            //            call->isPrimitive(PRIM_ADDR_OF) ||
+            //            call->isPrimitive(PRIM_DEREF) ||
+            //            call->isPrimitive(PRIM_MOVE)) {
+            call->getStmtExpr()->remove();
+            continue;
+          }
         }
+        INT_FATAL(se, "unhandled case in remove empty records");
       }
-      INT_FATAL(se, "unhandled case in remove empty records");
     }
   }
 }

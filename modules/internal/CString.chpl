@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -165,6 +165,12 @@ module CString {
   // casts from c_string to c_void_ptr
   //
   inline proc _cast(type t, x: c_string) where t == c_void_ptr {
+    return __primitive("cast", t, x);
+  }
+  //
+  // casts from c_void_ptr to c_string
+  //
+  inline proc _cast(type t, x: c_void_ptr) where t == c_string {
     return __primitive("cast", t, x);
   }
 

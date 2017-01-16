@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -25,9 +25,11 @@
 
 ifeq ($(CHPL_MAKE_COMPILER), clang-included)
 # handle using the included clang compiler
-CLANG_SYSROOT_ARGS=$(shell cat $(LLVM_CLANG_ARGUMENTS_FILE))
-CXX = $(LLVM_BIN_DIR)/clang++ $(CLANG_SYSROOT_ARGS)
-CC = $(LLVM_BIN_DIR)/clang $(CLANG_SYSROOT_ARGS)
+ifndef CLANG_SYSROOT_ARGS
+  export CLANG_SYSROOT_ARGS=$(shell cat $(LLVM_CLANG_ARGUMENTS_FILE))
+endif
+CXX = $(CLANG_CXX) $(CLANG_SYSROOT_ARGS)
+CC = $(CLANG_CC) $(CLANG_SYSROOT_ARGS)
 else
 CXX = clang++
 CC = clang

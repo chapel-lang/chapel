@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,6 +35,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "type.h"
 #include "WhileStmt.h"
 
@@ -75,8 +76,8 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt;
+  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt + nTryStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kTryStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
     nContextCallExpr + nForallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
@@ -332,6 +333,18 @@ Type* BaseAST::typeInfo() {
   return qt.type();
 }
 
+bool BaseAST::isRef() {
+  return this->qualType().isRef();
+}
+
+bool BaseAST::isWideRef() {
+  return this->qualType().isWideRef();
+}
+
+bool BaseAST::isRefOrWideRef() {
+  return this->qualType().isRefOrWideRef();
+}
+
 FnSymbol* BaseAST::getFunction() {
   if (ModuleSymbol* x = toModuleSymbol(this))
     return x->initFn;
@@ -444,6 +457,10 @@ const char* BaseAST::astTagAsString() const {
       retval = "ExternBlockStmt";
       break;
 
+    case E_TryStmt:
+      retval = "TryStmt";
+      break;
+
     case E_ModuleSymbol:
       retval = "ModuleSymbol";
       break;
@@ -552,7 +569,10 @@ void registerModule(ModuleSymbol* mod) {
 
 void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
-    SUB_SYMBOL(sym_expr->var);
+    if (sym_expr->symbol())
+      if (Symbol* y = map->get(sym_expr->symbol()))
+        sym_expr->setSymbol(y);
+
 
   } else if (DefExpr* defExpr = toDefExpr(ast)) {
     SUB_TYPE(defExpr->sym->type);
@@ -592,7 +612,8 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
 GenRet baseASTCodegen(BaseAST* ast)
 {
   GenRet ret = ast->codegen();
-  ret.chplType = ast->typeInfo();
+  if (!ret.chplType)
+    ret.chplType = ast->typeInfo();
   ret.isUnsigned = ! is_signed(ret.chplType);
   return ret;
 }

@@ -1,0 +1,13 @@
+Calling serial iterator
+1
+2
+3
+Calling parallel iterator (which is actually serial)
+1
+2
+3
+Trying to promote foo():
+Calling parallel iterator (which is actually serial)
+1
+2
+3

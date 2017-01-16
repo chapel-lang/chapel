@@ -412,9 +412,11 @@ EOF])
     ])
 
     AC_CHECK_HEADERS([sys/lgrp_user.h], [
-      AC_CHECK_LIB([lgrp], [lgrp_latency_cookie],
+      AC_CHECK_LIB([lgrp], [lgrp_init],
                    [HWLOC_LIBS="-llgrp $HWLOC_LIBS"
-                    AC_DEFINE([HAVE_LIBLGRP], 1, [Define to 1 if we have -llgrp])])
+                    AC_DEFINE([HAVE_LIBLGRP], 1, [Define to 1 if we have -llgrp])
+                    AC_CHECK_DECLS([lgrp_latency_cookie],,,[[#include <sys/lgrp_user.h>]])
+      ])
     ])
     AC_CHECK_HEADERS([kstat.h], [
       AC_CHECK_LIB([kstat], [main],
@@ -663,7 +665,8 @@ EOF])
       AC_DEFINE([HWLOC_HAVE_CLZL], [1], [Define to 1 if you have the `clzl' function.])
     ])
 
-    AC_CHECK_FUNCS([openat], [hwloc_have_openat=yes])
+    AS_IF([test "$hwloc_c_vendor" != "android"], [AC_CHECK_FUNCS([openat], [hwloc_have_openat=yes])])
+
 
     AC_CHECK_HEADERS([malloc.h])
     AC_CHECK_FUNCS([getpagesize memalign posix_memalign])
@@ -762,6 +765,10 @@ EOF])
       hwloc_pci_happy=yes
       HWLOC_PKG_CHECK_MODULES([PCIACCESS], [pciaccess], [pci_slot_match_iterator_create], [pciaccess.h], [:], [hwloc_pci_happy=no])
 
+      # Only add the REQUIRES if we got pciaccess through pkg-config.
+      # Otherwise we don't know if pciaccess.pc is installed
+      AS_IF([test "$hwloc_pci_happy" = "yes"], [HWLOC_PCIACCESS_REQUIRES=pciaccess])
+
       # Just for giggles, if we didn't find a pciaccess pkg-config,
       # just try looking for its header file and library.
       AS_IF([test "$hwloc_pci_happy" != "yes"],
@@ -773,8 +780,7 @@ EOF])
          ])
 
       AS_IF([test "$hwloc_pci_happy" = "yes"],
-         [HWLOC_PCIACCESS_REQUIRES=pciaccess
-          hwloc_pci_lib=pciaccess
+         [hwloc_pci_lib=pciaccess
           hwloc_components="$hwloc_components pci"
           hwloc_pci_component_maybeplugin=1])
     fi
@@ -948,6 +954,8 @@ EOF])
             AC_DEFINE([HWLOC_HAVE_GL], [1], [Define to 1 if you have the GL module components.])
 	    HWLOC_GL_LIBS="-lXNVCtrl -lXext -lX11"
 	    AC_SUBST(HWLOC_GL_LIBS)
+	    # FIXME we actually don't know if xext.pc and x11.pc are installed
+	    # since we didn't look for Xext and X11 using pkg-config
 	    HWLOC_GL_REQUIRES="xext x11"
             hwloc_have_gl=yes
 	    hwloc_components="$hwloc_components gl"

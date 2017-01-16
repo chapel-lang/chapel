@@ -1,0 +1,31 @@
+include $(THIRD_PARTY_DIR)/llvm/Makefile.share
+
+PREFERRED_LLVM_VERS=3.7
+
+ifndef LLVM_CONFIG
+  export LLVM_CONFIG=$(shell $(THIRD_PARTY_DIR)/llvm/find-llvm-config.sh $(PREFERRED_LLVM_VERS))
+endif
+
+ifndef LLVM_CONFIG_INCLUDE_DIR
+  export LLVM_CONFIG_INCLUDE_DIR=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --includedir)
+endif
+
+ifndef LLVM_CONFIG_LIB_DIR
+  export LLVM_CONFIG_LIB_DIR=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --libdir)
+endif
+
+# LLVM preprocessor flags (ie -Dbla and -Ibla) 
+ifndef LLVM_CONFIG_CXXFLAGS
+  export LLVM_CONFIG_CXXFLAGS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cxxflags | sed 's/ -O[0-4s] / /' | sed 's/ -DNDEBUG / /')
+endif
+
+ifndef LLVM_CONFIG_CFLAGS
+  export LLVM_CONFIG_CFLAGS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cflags | sed 's/ -O[0-4s] / /' | sed 's/ -DNDEBUG / /')
+endif
+
+# Figure out which clang we are using
+# if LLVM_CONFIG is e.g. llvm-config-3.7, we should use clang-3.7
+LLVM_CONFIG_NAME=$(notdir $(LLVM_CONFIG))
+CLANG_CC=$(subst llvm-config,clang,$(LLVM_CONFIG_NAME))
+CLANG_CXX=$(subst llvm-config,clang++,$(LLVM_CONFIG_NAME))
+

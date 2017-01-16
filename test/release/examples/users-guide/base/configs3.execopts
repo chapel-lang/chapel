@@ -1,0 +1,4 @@
+                               # configs3.good
+--n=1000                       # configs3-n1000.good
+--epsilon=0.000000001          # configs3-seteps.good
+--n=1000 --epsilon=0.000000001 # configs3-setboth.good

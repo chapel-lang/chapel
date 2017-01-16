@@ -2,59 +2,79 @@ Default Dist
 ============
 Copy of domain map:
 	0 bytes leaked
+	0 private objects leaked
 Return domain map:
 	0 bytes leaked
+	0 private objects leaked
 Create domain:
 	0 bytes leaked
+	0 private objects leaked
 Create domain and array:
 	0 bytes leaked
+	0 private objects leaked
 total:
 	0 bytes leaked
 Block Dist
 ==========
 Copy of domain map:
 	0 bytes leaked
+	0 private objects leaked
 Return domain map:
 	0 bytes leaked
+	0 private objects leaked
 Create domain:
-	192 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 Create domain and array:
-	968 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 total:
-	1160 bytes leaked
+	0 bytes leaked
 Cyclic Dist
 ===========
 Copy of domain map:
 	0 bytes leaked
+	0 private objects leaked
 Return domain map:
-	96 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 Create domain:
-	192 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 Create domain and array:
-	972 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 total:
-	1356 bytes leaked
+	0 bytes leaked
 Block-Cyclic Dist
 =================
 Copy of domain map:
-	48 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 Return domain map:
-	96 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 Create domain:
-	384 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 Create domain and array:
-	1904 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 total:
-	2528 bytes leaked
+	0 bytes leaked
 Replicated Dist
 ===============
 Copy of domain map:
-	0 bytes leaked
+	200 bytes leaked
+	0 private objects leaked
 Return domain map:
-	144 bytes leaked
+	200 bytes leaked
+	0 private objects leaked
 Create domain:
-	192 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 Create domain and array:
-	964 bytes leaked
+	0 bytes leaked
+	0 private objects leaked
 total:
-	1588 bytes leaked
+	600 bytes leaked

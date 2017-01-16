@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +25,7 @@
 static int64_t chpl_capPrivateObjects = 0;
 static chpl_sync_aux_t privatizationSync;
 
-void** chpl_privateObjects = NULL;
+static void** chpl_privateObjects = NULL;
 
 void chpl_privatization_init(void) {
     chpl_sync_initAux(&privatizationSync);
@@ -46,7 +46,7 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
   if (chpl_privateObjects == NULL) {
     chpl_capPrivateObjects = 2*max(pid, 4);
     chpl_privateObjects =
-        chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void *),
+        chpl_mem_allocManyZero(chpl_capPrivateObjects, sizeof(void *),
                            CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
   } else {
     // if we're out of space, double (or more) the array size
@@ -57,8 +57,8 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
       oldCap = chpl_capPrivateObjects;
       chpl_capPrivateObjects = 2*max(pid, oldCap);
 
-      tmp = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void *),
-                               CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
+      tmp = chpl_mem_allocManyZero(chpl_capPrivateObjects, sizeof(void *),
+                                   CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
       chpl_memcpy((void*)tmp, (void*)chpl_privateObjects, (oldCap)*sizeof(void*));
       chpl_privateObjects = tmp;
       // purposely leak old copies of chpl_privateObject to avoid the need to
@@ -71,8 +71,26 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
 }
 
 
-extern void* chpl_getPrivatizedClass(int64_t i) {
+void* chpl_getPrivatizedClass(int64_t i) {
   return chpl_privateObjects[i];
 }
 
+
+void chpl_clearPrivatizedClass(int64_t i) {
+  chpl_sync_lock(&privatizationSync);
+  chpl_privateObjects[i] = NULL;
+  chpl_sync_unlock(&privatizationSync);
+}
+
+// Used to check for leaks of privatized classes
+int64_t chpl_numPrivatizedClasses(void) {
+  int64_t ret = 0;
+  chpl_sync_lock(&privatizationSync);
+  for (int64_t i = 0; i < chpl_capPrivateObjects; i++) {
+    if (chpl_privateObjects[i])
+      ret++;
+  }
+  chpl_sync_unlock(&privatizationSync);
+  return ret;
+}
 

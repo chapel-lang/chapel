@@ -1,13 +1,23 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Preston Sahabu
-   derived from the Chapel fastaredux version by Casey Battaglino et al.
-            and the GNU C version by Paul Hsieh
+   contributed by Brad Chamberlain
+   derived from the GNU C version by Аноним Легионов and Jeremy Zerfas
+     as well as previous Chapel versions by Casey Battaglino, Kyle Brady,
+     and Preston Sahabu.
 */
 
-config const n = 1000,   // controls the length of the generated strings
-             lineLength = 60;
+config const n = 1000,            // the length of the generated strings
+             lineLength = 60,     // the number of columns in the output
+             blockSize = 1024,    // the parallelization granularity
+             numTasks = min(4, here.maxTaskPar);  // how many tasks to use?
+
+config type randType = uint(32);  // type to use for random numbers
+
+config param IM = 139968,         // parameters for random number generation
+             IA = 3877,
+             IC = 29573,
+             seed: randType = 42;
 
 //
 // Nucleotide definitions
@@ -61,37 +71,23 @@ const HomoSapiens = [(a, 0.3029549426680),
                      (g, 0.1975473066391),
                      (t, 0.3015094502008)];
 
-
 proc main() {
-  sumProbs(IUB);
-  sumProbs(HomoSapiens);
-  repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
-  randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
-  randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
-}
-
-//
-// Scan the alphabets' probabilities to compute cut-offs
-//
-proc sumProbs(alphabet: []) {
-  var p = 0.0;
-  for letter in alphabet {
-    p += letter(prob);
-    letter(prob) = p;
-  }
+  repeatMake(">ONE Homo sapiens alu", ALU, 2*n);
+  randomMake(">TWO IUB ambiguity codes", IUB, 3*n);
+  randomMake(">THREE Homo sapiens frequency", HomoSapiens, 5*n);
 }
 
 //
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = ascii("\n");
+param newline = ascii("\n"): int(8);
 
 //
-// Repeat sequence "alu" for n characters
+// Repeat 'alu' to generate a sequence of length 'n'
 //
 proc repeatMake(desc, alu, n) {
-  stdout.write(desc);
+  stdout.writeln(desc);
 
   const r = alu.size,
         s = [i in 0..(r+lineLength)] alu[i % r];
@@ -104,54 +100,83 @@ proc repeatMake(desc, alu, n) {
 }
 
 //
-// Output a random sequence of length 'n' using distribution a
+// Use 'nuclInfo's probability distribution to generate a random
+// sequence of length 'n'
 //
-proc randomMake(desc, a, n) {
-  var line_buff: [0..lineLength] int(8);
-    
-  stdout.write(desc);
-  for i in 1..n by lineLength do
-    addLine(min(lineLength, n-i+1));
+proc randomMake(desc, nuclInfo, n) {
+  stdout.writeln(desc);
 
-  //
-  // Add a line of random sequence
-  //
-  proc addLine(bytes) {
-    for (r, i) in zip(getRands(bytes), 0..) {
-      if r < a[1](prob) {
-        line_buff[i] = a[1](nucl);
-      } else {
-        var lo = a.domain.low,
-            hi = a.domain.high;
-        while (hi > lo+1) {
-          var ai = (hi + lo) / 2;
-          if (r < a[ai](prob)) then
-            hi = ai;
-          else
-            lo = ai;
+  // compute the cumulative probabilities of the nucleotides
+  const numNucls = nuclInfo.size;
+  var cumulProb: [1..numNucls] randType,
+      p = 0.0;
+  for i in 1..numNucls {
+    p += nuclInfo[i](prob);
+    cumulProb[i] = 1 + (p*IM):randType;
+  }
+
+  // guard when tasks can access the random numbers or output stream
+  var randGo, outGo: [0..#numTasks] atomic int;
+
+  // create tasks to pipeline the RNG, computation, and output
+  coforall tid in 0..#numTasks {
+    const chunkSize = lineLength*blockSize,
+          nextTid = (tid + 1) % numTasks;
+
+    var myBuff: [0..#(lineLength+1)*blockSize] int(8),
+        myRands: [0..chunkSize] randType;
+
+    // iterate over 0..n-1 in a round-robin fashion across tasks
+    for i in tid*chunkSize..n-1 by numTasks*chunkSize {
+      const bytes = min(chunkSize, n-i);
+
+      // Get 'bytes' random numbers in a coordinated manner
+      randGo[tid].waitFor(i);
+      getRands(bytes, myRands);
+      randGo[nextTid].write(i+chunkSize);
+
+      // Compute 'bytes' nucleotides and store in 'myBuff'
+      var col = 0,
+          off = 0;
+
+      for j in 0..#bytes {
+        const r = myRands[j];
+        var nid = 1;
+        for k in 1..numNucls do
+          if r >= cumulProb[k] then
+            nid += 1;
+
+        myBuff[off] = nuclInfo[nid](nucl);
+        off += 1;
+        col += 1;
+
+        if (col == lineLength) {
+          col = 0;
+          myBuff[off] = newline;
+          off += 1;
         }
-        line_buff[i] = a[hi](nucl);
       }
-    }
-    line_buff[bytes] = newline:int(8);
+      if (col != 0) {
+        myBuff[off] = newline;
+        off += 1;
+      }
 
-    stdout.write(line_buff[0..bytes]);
+      // Write the output in a coordinated manner
+      outGo[tid].waitFor(i);
+      stdout.write(myBuff[0..#off]);
+      outGo[nextTid].write(i+chunkSize);
+    }
   }
 }
-
 
 //
 // Deterministic random number generator
 //
-var lastRand = 42;
+var lastRand = seed;
 
-iter getRands(n) {
-  param IA = 3877,
-        IC = 29573,
-        IM = 139968;
-
-  for 0..#n {
+proc getRands(n, arr) {
+  for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
-    yield lastRand: real / IM;
+    arr[i] = lastRand;
   }
 }

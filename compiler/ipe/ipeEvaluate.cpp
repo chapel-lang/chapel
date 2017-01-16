@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -132,7 +132,7 @@ IpeValue evaluateExpr(Expr* expr, IpeEnv* env)
 
   else if (SymExpr*     sel = toSymExpr(expr))
   {
-    LcnSymbol* sym = toLcnSymbol(sel->var);
+    LcnSymbol* sym = toLcnSymbol(sel->symbol());
 
     INT_ASSERT(sym);
 
@@ -197,7 +197,7 @@ static bool isImmediate(Expr* expr)
 
   if (SymExpr* symExpr = toSymExpr(expr))
   {
-    if (VarSymbol* var = toVarSymbol(symExpr->var))
+    if (VarSymbol* var = toVarSymbol(symExpr->symbol()))
       retval = var->isImmediate();
   }
 
@@ -215,7 +215,7 @@ static IpeValue evaluateImmediate(Expr* expr)
 
   if (SymExpr* symExpr = toSymExpr(expr))
   {
-    if (VarSymbol* var = toVarSymbol(symExpr->var))
+    if (VarSymbol* var = toVarSymbol(symExpr->symbol()))
       retval = immediateValue(var);
   }
 
@@ -413,7 +413,7 @@ static IpeValue evaluateCall(IpeCallExpr* callExpr, IpeEnv* env)
 
   INT_ASSERT(symExpr);
 
-  if (VarSymbol* var = toVarSymbol(symExpr->var))
+  if (VarSymbol* var = toVarSymbol(symExpr->symbol()))
   {
     INT_ASSERT(var->type == gIpeTypeProcedure);
 
@@ -471,7 +471,7 @@ static IpeValue evaluatePrim(IpeCallExpr* callExpr, IpeEnv* env)
   {
     SymExpr* sym = toSymExpr(callExpr->get(1));
 
-    retval = env->addrOf(toVarSymbol(sym->var));
+    retval = env->addrOf(toVarSymbol(sym->symbol()));
   }
 
   else if (callExpr->isPrimitive(PRIM_ASSIGN) == true)
@@ -482,12 +482,12 @@ static IpeValue evaluatePrim(IpeCallExpr* callExpr, IpeEnv* env)
     Expr*    srcExpr  = callExpr->get(2);
     IpeValue srcValue = evaluateExpr(srcExpr, env);
 
-    if      (ArgSymbol* dstSym = toArgSymbol(dstExpr->var))
+    if      (ArgSymbol* dstSym = toArgSymbol(dstExpr->symbol()))
     {
       value = env->fetch(dstSym);
     }
 
-    else if (VarSymbol* dstSym = toVarSymbol(dstExpr->var))
+    else if (VarSymbol* dstSym = toVarSymbol(dstExpr->symbol()))
     {
       value = env->fetch(dstSym);
     }

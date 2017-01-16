@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -165,9 +165,10 @@ module String {
       the user to ensure that the underlying buffer is not freed if the
       `c_string` is not copied in.
      */
-    proc string(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
+    proc string(cs: c_string, length: int = cs.length,
+                owned: bool = true, needToCopy:  bool = true) {
       this.owned = owned;
-      const cs_len = cs.length;
+      const cs_len = length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
     }
 
@@ -868,15 +869,14 @@ module String {
 
     /*
       :arg chars: A string containing each character to remove.
-                  Defaults to `" \t\r\n"`.
+                  Defaults to `" \\t\\r\\n"`.
       :arg leading: Indicates if leading occurrences should be removed.
                     Defaults to `true`.
       :arg trailing: Indicates if trailing occurrences should be removed.
                      Defaults to `true`.
 
-      :returns: A new string with all occurrences of characters in `chars`
-                removed, including `leading` and `trailing` occurrences as
-                appropriate.
+      :returns: A new string with `leading` and/or `trailing` occurrences of
+                characters in `chars` removed as appropriate.
     */
     proc strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
       if this.isEmptyString() then return "";
@@ -1758,6 +1758,20 @@ module String {
     ret.owned = true;
 
     return ret;
+  }
+
+  //
+  // hashing support
+  //
+
+  pragma "no doc"
+  inline proc chpl__defaultHash(x : string): uint {
+    // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
+    var hash: int(64) = 5381;
+    for c in 0..#(x.length) {
+      hash = ((hash << 5) + hash) ^ x.buff[c];
+    }
+    return hash;
   }
 
   //

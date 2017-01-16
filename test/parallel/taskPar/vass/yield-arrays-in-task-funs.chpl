@@ -2,6 +2,8 @@
 
 const P = {1..1};
 
+var global: [P]int;
+
 iter normlIter(param tag: iterKind) {
   var p: [P]int;
   p[1] = 111;
@@ -22,15 +24,14 @@ iter rtValIter(param tag: iterKind) : [P]int where tag == iterKind.leader {
 }
 
 iter rtRefIter(param tag: iterKind) ref : [P]int where tag == iterKind.leader {
-  var p: [P]int;
-  p[1] = 111;
+  global[1] = 111;
   cobegin {
-    yield p;
-    yield p;
+    yield global;
+    yield global;
   }
   on Locales[numLocales-1] {
-    yield p;
-    yield p;
+    yield global;
+    yield global;
   }
 }
 
@@ -48,15 +49,14 @@ iter ntValIter(param tag: iterKind) where tag == iterKind.leader {
 }
 
 iter ntRefIter(param tag: iterKind) ref where tag == iterKind.leader {
-  var p: [P]int;
-  p[1] = 111;
+  global[1] = 111;
   cobegin {
-    yield p;
-    yield p;
+    yield global;
+    yield global;
   }
   on Locales[numLocales-1] {
-    yield p;
-    yield p;
+    yield global;
+    yield global;
   }
 }
 

@@ -159,10 +159,12 @@ module dataflow_block_cholesky {
           in symmetric_reduced_matrix_2_by_2_block_partition (trailing_cols) 
 	  do {
 
-	    begin {
+	    begin with (in leading_cols,
+                        in leading_offdiag_rows,
+                        in trailing_offdiag_rows) {
 	      compute_subdiagonal_block_launch_Schur_complement
-		( A (leading_cols, leading_cols), 
-		  A (leading_offdiag_rows, leading_cols),
+		( leading_cols, leading_cols,
+		  leading_offdiag_rows, leading_cols,
 		  A, trailing_offdiag_rows );
 	    }
 	  }
@@ -193,17 +195,17 @@ module dataflow_block_cholesky {
 
 
     proc compute_subdiagonal_block_launch_Schur_complement 
-      ( L_diag : [], L_offdiag : [], A : [], trailing_rows ) {
+      ( L_diag_rows, L_diag_cols, L_offdiag_rows, L_offdiag_cols, A : [], trailing_rows ) {
 
       // block indices for offdiagonal block 
 
-      const I = L_offdiag.domain.dim(1).low,
-            J = L_offdiag.domain.dim(2).low;
+      const I = L_offdiag_rows.low,
+            J = L_offdiag_cols.low;
 
-      const diag_cols     = L_diag.domain.dim (2);
+      const diag_cols     = L_diag_cols;
 
-      assert ( diag_cols == L_diag.domain.dim (1) && 
-               diag_cols == L_offdiag.domain.dim (2) );
+      assert ( diag_cols == L_diag_rows &&
+               diag_cols == L_offdiag_cols );
 
       // wait for all Schur complement modifications 
       // to be made to this subdiagonal block
@@ -212,7 +214,7 @@ module dataflow_block_cholesky {
  
       // apply the inverse of the diagonal block to the subdiagonal block
 
-      transposed_block_triangular_solve ( L_diag, L_offdiag );
+      transposed_block_triangular_solve ( A(L_diag_rows, L_diag_cols), A( L_offdiag_rows, L_offdiag_cols) );
 
       // this block of the factorization is complete
 
@@ -220,17 +222,21 @@ module dataflow_block_cholesky {
 
       // modify the related diagonal block of the Schur complement
 
-      begin { modify_Schur_complement_diagonal_block ( L_offdiag, A ); }
+      begin with (in L_offdiag_rows, in L_offdiag_cols) {
+        modify_Schur_complement_diagonal_block ( L_offdiag_rows,
+                                                 L_offdiag_cols,
+                                                 A );
+      }
 
       // spawn rest of the Schur complement tasks 
       // for the symmetric reduced matrix
-
       for
 	lower_block_rows in vector_block_partition (trailing_rows) do {
 
-	begin {
+	begin with (in lower_block_rows, in diag_cols,
+                    in L_offdiag_rows, in L_offdiag_cols) {
 	  modify_Schur_complement_off_diagonal_block 
-	      ( A (lower_block_rows, diag_cols ), L_offdiag, A );
+	      ( lower_block_rows, diag_cols, L_offdiag_rows, L_offdiag_cols, A );
 	}
       }
     }
@@ -242,13 +248,11 @@ module dataflow_block_cholesky {
     // to a diagonal subblock.
     // ====================================================
    
-    proc modify_Schur_complement_diagonal_block ( L : [], A : [] ) {
+    proc modify_Schur_complement_diagonal_block ( L_rows, L_cols, A : [] ) {
 
       // block indices for offdiagonal block 
 
-      const L_rows = L.domain.dim (1),
-            L_cols = L.domain.dim (2),
-            I      = L_rows.low;
+      const I      = L_rows.low;
 
       // acquire lock for target block
 
@@ -264,7 +268,7 @@ module dataflow_block_cholesky {
 
       for i in L_rows do
         for j in L_rows (..i) do {
-          A (i,j) -= + reduce [k in L_cols] L (i,k) * L (j,k);
+          A (i,j) -= + reduce [k in L_cols] A (i,k) * A (j,k);
         }
 
       // check if this is the final modification to this block
@@ -292,19 +296,15 @@ module dataflow_block_cholesky {
     // ====================================================
 
     proc modify_Schur_complement_off_diagonal_block 
-                                             ( L1 : [], L2 : [], A : [] ) {
+                                             ( L1_rows, L1_cols, L2_rows, L2_cols, A : [] ) {
 
       // block indices for pair of offdiagonal blocks 
-
-      const L1_rows = L1.domain.dim(1),
-            L1_cols = L1.domain.dim(2),
-            L2_rows = L2.domain.dim(1);
 
       const I = L1_rows.low,
             K = L1_cols.low,
             J = L2_rows.low;
 
-      assert ( K == L2.domain.dim(2).low );
+      assert ( K == L2_cols.low );
  
       // wait for the second off-diagonal block to become ready
 
@@ -320,7 +320,7 @@ module dataflow_block_cholesky {
 
       for i in L1_rows do
         for j in L2_rows do {
-          A (i,j) -= + reduce [k in L1_cols] L1 (i,k) * L2 (j,k);
+          A (i,j) -= + reduce [k in L1_cols] A (i,k) * A (j,k);
         }
 
       // check if this is the final modification to this block

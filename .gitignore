@@ -21,12 +21,14 @@ tags
 /SVNLOG
 /.SVNLOG-revnum
 /bin
+/build
 /lib
 /tar
 
 # Compiler ignores.
 /compiler/BROWSE
 /compiler/chpl
+/compiler/codegen/reservedSymbolNames.h
 /compiler/ifa/prim_data.cpp
 /compiler/ifa/prim_data.h
 /compiler/ifa/make_prims/make_prims
@@ -35,13 +37,12 @@ tags
 /compiler/main/COPYRIGHT
 /compiler/main/LICENSE
 /compiler/parser/bison-chapel.output
-/compiler/passes/reservedSymbolNames.h
 
 # Doc ignores.
 /doc/**/*.aux
 /doc/**/*.log
-/doc/chips/html
-/doc/chips/tmp
+/doc/developer/chips/html
+/doc/developer/chips/tmp
 /doc/developer/compilerOverview/compiler.pdf
 /doc/developer/compilerOverview/compiler.dvi
 /doc/developer/compilerOverview/compiler.toc
@@ -55,21 +56,6 @@ tags
 /doc/tutorial/workbooks/*.bbl
 /doc/tutorial/workbooks/*.blg
 /doc/sphinx/build
-/doc/sphinx/source/*.rst
-/doc/sphinx/source/platforms/*.rst
-/doc/sphinx/source/technotes/*.rst
-/doc/sphinx/source/usingchapel/*.rst
-/doc/sphinx/source/modules/standard
-/doc/sphinx/source/modules/dists
-/doc/sphinx/source/modules/layouts
-/doc/sphinx/source/modules/internal
-/doc/sphinx/source/modules/packages
-/doc/sphinx/source/language/*.pdf
-/doc/sphinx/source/tools/chpldoc/man.rst
-!/doc/sphinx/source/index.rst
-!/doc/sphinx/source/technotes/index.rst
-!/doc/sphinx/source/platforms/index.rst
-!/doc/sphinx/source/usingchapel/index.rst
 
 
 # Make ignores.

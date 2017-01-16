@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -177,8 +177,6 @@ class Cyclic: BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
 
-  var pid: int = -1;
-
   proc Cyclic(startIdx,
              targetLocales: [] locale = Locales,
              dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -240,16 +238,6 @@ class Cyclic: BaseDist {
       for loc in locDist do writeln(loc);
   }
 
-  proc Cyclic(param rank, type idxType, other: Cyclic(rank, idxType)) {
-    targetLocDom = other.targetLocDom;
-    targetLocs = other.targetLocs;
-    startIdx = other.startIdx;
-    locDist = other.locDist;
-    dataParTasksPerLocale = other.dataParTasksPerLocale;
-    dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
-    dataParMinGranularity = other.dataParMinGranularity;
-  }
-
   proc dsiAssign(other: this.type) {
     coforall locid in targetLocDom do
       on targetLocs(locid) do
@@ -274,7 +262,20 @@ class Cyclic: BaseDist {
     return false;
   }
 
-  proc dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
+  proc dsiClone() {
+    return new Cyclic(startIdx, targetLocs,
+                      dataParTasksPerLocale,
+                      dataParIgnoreRunningTasks,
+                      dataParMinGranularity);
+  }
+
+  proc dsiDestroyDist() {
+    coforall ld in locDist do {
+      on ld do
+        delete ld;
+    }
+  }
+
 }
 
 
@@ -316,7 +317,10 @@ proc Cyclic.dsiSupportsPrivatization() param return true;
 proc Cyclic.dsiGetPrivatizeData() return 0;
 
 proc Cyclic.dsiPrivatize(privatizeData) {
-  return new Cyclic(rank=rank, idxType=idxType, other=this);
+  return new Cyclic(startIdx, targetLocs,
+                    dataParTasksPerLocale,
+                    dataParIgnoreRunningTasks,
+                    dataParMinGranularity);
 }
 
 proc Cyclic.dsiGetReprivatizeData() return 0;
@@ -491,8 +495,6 @@ class CyclicDom : BaseRectangularDom {
   var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
 
   var whole: domain(rank, idxType, stridable);
-
-  var pid: int = -1;
 }
 
 
@@ -510,6 +512,13 @@ proc CyclicDom.setup() {
       }
     }
   }
+}
+
+proc CyclicDom.dsiDestroyDom() {
+    coforall localeIdx in dist.targetLocDom {
+      on dist.targetLocs(localeIdx) do
+        delete locDoms(localeIdx);
+    }
 }
 
 proc CyclicDom.dsiBuildArray(type eltType) {
@@ -713,7 +722,6 @@ class CyclicArr: BaseArr {
 
   var locArr: [dom.dist.targetLocDom] LocCyclicArr(eltType, rank, idxType, stridable);
   var myLocArr: LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1;
   const SENTINEL = max(rank*idxType);
 }
 
@@ -800,6 +808,7 @@ proc CyclicArr.dsiReindex(d: CyclicDom) {
           //  directly into the alias's RAD cache
           if locArr[i].locRAD {
             alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
+                                                     d.stridable,
                                                      dom.dist.targetLocDom);
             alias.locArr[i].locCyclicRAD = new LocCyclicRADCache(rank, idxType,
                                                                  dom.dist.startIdx,
@@ -849,7 +858,7 @@ proc CyclicArr.setupRADOpt() {
           myLocArr.locRAD = nil;
         }
         if disableCyclicLazyRAD {
-          myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+          myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
           myLocArr.locCyclicRAD = new LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
           for l in dom.dist.targetLocDom {
             if l != localeIdx {
@@ -871,6 +880,14 @@ proc CyclicArr.setup() {
     }
   }
   if doRADOpt && disableCyclicLazyRAD then setupRADOpt();
+}
+
+proc CyclicArr.dsiDestroyArr(isslice:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
 }
 
 proc CyclicArr.dsiSupportsPrivatization() param return true;
@@ -903,7 +920,16 @@ inline proc _remoteAccessData.getDataIndex(
       sum += (((ind(i) - off(i)) * blk(i))-startIdx(i))/dimLen(i);
     }
   }
-  return sum;
+  if defRectSimpleDData {
+    return sum;
+  } else {
+    if mdNumChunks == 1 {
+      return (0, sum);
+    } else {
+      const chunk = mdInd2Chunk(ind(mdParDim));
+      return (chunk, sum - mData(chunk).dataOff);
+    }
+  }
 }
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
@@ -921,26 +947,25 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
         if myLocArr.locRAD == nil {
           myLocArr.lockLocRAD();
           if myLocArr.locRAD == nil {
-            var tempLocRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+            var tempLocRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
             myLocArr.locCyclicRAD = new LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr.locRAD = tempLocRAD;
           }
           myLocArr.unlockLocRAD();
         }
-        // NOTE: This is a known, benign race.  Multiple tasks may be
-        // initializing the RAD cache entries at once, but our belief is
-        // that this is infrequent enough that the potential extra gets
-        // are worth *not* having to synchronize.  If this turns out to be
-        // an incorrect assumption, we can add an atomic variable and use
-        // a fetchAdd to decide which task does the update.
         if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr.locRAD.RAD(rlocIdx) = locArr(rlocIdx).myElems._value.dsiGetRAD();
-        }  
+          myLocArr.locRAD.lockRAD(rlocIdx);
+          if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
+            myLocArr.locRAD.RAD(rlocIdx) =
+              locArr(rlocIdx).myElems._value.dsiGetRAD();
+          }
+          myLocArr.locRAD.unlockRAD(rlocIdx);
+        }
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if radata(rlocIdx).data != nil {
+      if radata(rlocIdx).dataChunk(0) != nil {
         const startIdx = myLocArr.locCyclicRAD.startIdx;
         const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
         type strType = chpl__signedType(idxType);
@@ -950,7 +975,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           str(i) = whole.dim(i).stride;
         }
         var dataIdx = radata(rlocIdx).getDataIndex(stridable, str, i, startIdx, dimLength);
-        return radata(rlocIdx).data(dataIdx);
+        return radata(rlocIdx).dataElem(dataIdx);
       }
     }
   }
@@ -1081,13 +1106,13 @@ class LocCyclicArr {
 
   const locDom: LocCyclicDom(rank, idxType, stridable);
 
-  var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
+  var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   var locCyclicRAD: LocCyclicRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: atomicbool; // This will only be accessed locally, so
                               // force the use of processor atomics
 
-  // These function will always be called on this.locale, and so we do
+  // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
   // the repeated on's from calling testAndSet()).
   inline proc lockLocRAD() {
@@ -1132,6 +1157,44 @@ proc CyclicArr.doiCanBulkTransferStride() param {
     writeln("In CyclicArr.doiCanBulkTransferStride");
 
   return useBulkTransferDist;
+}
+
+proc CyclicArr.oneDData {
+  if defRectSimpleDData {
+    return true;
+  } else {
+    // TODO: do this when we create the array?  if not, then consider:
+    // TODO: use locRad oneDData, if available
+    // TODO: with more coding complexity we could get a much quicker
+    //       answer in the 'false' case, but how to avoid penalizing
+    //       the 'true' case at scale?
+    var allBlocksOneDData: bool;
+    on this {
+      var myAllBlocksOneDData: atomic bool;
+      myAllBlocksOneDData.write(true);
+      forall la in locArr {
+        if !la.myElems._value.oneDData then
+          myAllBlocksOneDData.write(false);
+      }
+      allBlocksOneDData = myAllBlocksOneDData.read();
+    }
+    return allBlocksOneDData;
+  }
+}
+
+proc CyclicArr.doiUseBulkTransferStride(B) {
+  if debugCyclicDistBulkTransfer then
+    writeln("In CyclicArr.doiUseBulkTransferStride()");
+
+  //
+  // Absent multi-ddata, for the array as a whole, say bulk transfer
+  // is possible.
+  //
+  // If multi-ddata is possible then we can only do strided bulk
+  // transfer when all the blocks have but a single ddata chunk.
+  //
+  return defRectSimpleDData
+         || (oneDData && B._value.oneDData);
 }
 
 //For assignments of the form: "any = Cyclic"

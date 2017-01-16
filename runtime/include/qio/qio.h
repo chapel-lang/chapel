@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -1048,6 +1048,12 @@ static inline
 void qio_channel_unlock(qio_channel_t* ch)
 {
   qio_unlock(&ch->lock);
+}
+
+static inline
+qio_file_t* qio_channel_get_file(qio_channel_t* ch)
+{
+  return ch->file;
 }
 
 // You should lock/ get ptr/ unlock

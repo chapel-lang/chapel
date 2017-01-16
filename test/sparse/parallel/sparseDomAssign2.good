@@ -1,4 +1,3 @@
-sparseDomAssign2.chpl:25: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 S1 is:
 {
  (1, 1)

@@ -85,12 +85,22 @@ $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_VIRTUALENV_DIR)
 	-U --force-reinstall -r chpldoc-requirements.txt && \
 	$(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR)
 
+$(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
+	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
+	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
+	-U --force-reinstall -r chplspell-requirements.txt && \
+	$(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
+	touch $(CHPL_VENV_CHPLSPELL_REQS)
+
 test-venv: $(CHPL_VENV_TEST_REQS)
 
 chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
 
+chplspell-venv: $(CHPL_VENV_CHPLSPELL_REQS)
+
 # Phony convenience target for install python packages.
-install-requirements: rm-test-reqs rm-sphinx-build $(CHPL_VENV_TEST_REQS) $(CHPL_VENV_SPHINX_BUILD)
+install-requirements: rm-test-reqs rm-sphinx-build $(CHPL_VENV_TEST_REQS) $(CHPL_VENV_SPHINX_BUILD) $(CHPL_VENV_CHPLSPELL_REQS)
 
 # Remove chpl-test-reqs, forcing install-requirements to be rebuilt.
 rm-test-reqs: FORCE
@@ -99,6 +109,10 @@ rm-test-reqs: FORCE
 # Remove sphinx-build, forcing install-requirements to be rebuilt.
 rm-sphinx-build: FORCE
 	@rm -f $(CHPL_VENV_SPHINX_BUILD)
+
+# Remove chplspell-reqs, forcing install-requirements to be rebuilt.
+rm-chplspell-reqs: FORCE
+	@rm -f $(CHPL_VENV_CHPLSPELL_REQS)
 
 # Fix up the chpl-venv installation in a Cray Chapel module that was built using a non-standard
 # Python installation (ie, the Python used was not installed under "/usr/...").

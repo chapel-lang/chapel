@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -65,14 +65,12 @@ RUNTIME_INCLS += \
         -I$(RUNTIME_INCLUDE_ROOT)/comm \
         -I$(RUNTIME_INCLUDE_ROOT)/tasks/$(CHPL_MAKE_TASKS) \
         -I$(RUNTIME_INCLUDE_ROOT)/threads/$(CHPL_MAKE_THREADS) \
-        -I$(RUNTIME_INCLUDE_ROOT)/comp-$(CHPL_MAKE_COMPILER) \
-        -I$(RUNTIME_INCLUDE_ROOT)/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
         -I$(RUNTIME_INCLUDE_ROOT) \
         -I$(RUNTIME_INCLUDE_ROOT)/qio \
         -I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
         -I$(RUNTIME_INCLUDE_ROOT)/mem/$(CHPL_MAKE_MEM) \
         -I$(THIRD_PARTY_DIR)/utf8-decoder \
-        -I$(CHPL_MAKE_HOME)/runtime/src/$(RUNTIME_OBJDIR) \
+        -I$(RUNTIME_BUILD)/include \
 
 RUNTIME_CYGWIN=0
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cygwin32)

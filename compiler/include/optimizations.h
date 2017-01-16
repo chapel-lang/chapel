@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -69,6 +69,8 @@ void freeDefUseChains(std::map<SymExpr*, Vec<SymExpr*>*>& DU,
                       std::map<SymExpr*, Vec<SymExpr*>*>& UD);
 
 void remoteValueForwarding();
+
+void inferConstRefs();
 
 
 #endif

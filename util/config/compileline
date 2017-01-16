@@ -83,6 +83,8 @@ for my $arg (@ARGV) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printmaino");
   } elsif( $arg eq "--llvm-install-dir" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall");
+  } elsif( $arg eq "--clang" ) {
+    mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printclangcc printclangcxx");
   } elsif( $arg eq "--clang-sysroot-arguments" ) {
     $llvminstall=`$make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall`;
     chomp $llvminstall;
@@ -113,6 +115,7 @@ for my $arg (@ARGV) {
     print " --libraries print out any -L and -l options to\n";
     print "             link with the Chapel runtime\n";
     print " --main.o print out the path to the main.o file\n";
+    print " --clang print out the path to clang and clang++\n";
     print " --clang-sysroot-arguments print out any saved clang arguments\n";
     print "                           that specify the system root\n";
   }

@@ -234,8 +234,17 @@ of module level procedures to outside modules.  By default, procedures are
 publicly visible.  More details on visibility can be found in
 ~\rsec{Visibility_Of_Symbols}.
 
-The linkage specifier \chpl{inline} indicates that the function body must be inlined at
-every call site.
+The linkage specifier \chpl{inline} indicates that the function body must
+be inlined at every call site.
+
+\begin{rationale}
+A Chapel compiler is permitted to inline any function if it determines
+there is likely to be a performance benefit to do so.  Hence an error
+must be reported if the compiler is unable to inline a procedure with
+this specifier.  One example of a preventable inlining error is to
+define a sequence of inlined calls that includes a cycle back to an
+inlined procedure.
+\end{rationale}
 
 See the chapter on interoperability (\rsec{Interoperability})
 for details on exported and imported functions.

@@ -43,6 +43,7 @@ $summary_len = 2;
 $sleep_time = 1;                       # polling time (sec) to distribute work
 $futures_mode = 0;
 $filedist = 0;
+$dirs = "";
 $node_para = 1;				                 # the number of tasks to run on each node
 $valgrind = 0;
 $memleaks = "/dev/null";
@@ -494,9 +495,10 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-compopts s] [-dirfile d] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
+    print "    -dirs     d: d is a space separated list of directories to recursively search for directories to test\n";
     print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
     print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
     print "    -futures   : include .future tests (default is none).\n";
@@ -549,6 +551,14 @@ sub main {
                 $dirfile = $ARGV[0];
             } else {
                 print "missing -dirfile arg\n";
+                exit (8);
+            }
+        } elsif (/^-dirs/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $dirs = trim("$dirs $ARGV[0]");
+            } else {
+                print "missing -dirs arg\n";
                 exit (8);
             }
          # "undocumented" option, only meant to be used by other scripts
@@ -690,6 +700,20 @@ sub main {
                 push @testdir_list, find_files( $_, 0, !$futures_mode, 0);
             } else {
                 push @testdir_list, $_;
+            }
+        }
+    } elsif ($dirs ne "") {
+        print "[Collecting test directories in '$dirs']\n";
+        my @dirs_list = split ' ', $dirs;
+        for my $dir (@dirs_list) {
+            if (! -d $dir) {
+                print "Error: '$dir' is not a directory\n";
+                exit (2);
+            }
+            if ($filedist) {
+                push @testdir_list, find_files ("$dir", 0, !$futures_mode, 1);
+            } else {
+                push @testdir_list, find_subdirs ("$dir", 0);
             }
         }
     } else { # else, current working dir

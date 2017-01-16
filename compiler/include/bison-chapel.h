@@ -84,8 +84,9 @@
   };
 
   struct IntentExpr {
-    Expr*  first;
-    Expr*  second;
+    Expr*     iVar;
+    IntentTag tfIntent; // undefined for a reduce intent
+    Expr*     riExp;    // non-NULL for a reduce intent
   };
 
   struct OnlyRename {
@@ -117,6 +118,7 @@
     ProcIter          procIter;
     FlagSet*          flagSet;
     IntentExpr        pIntentExpr;
+    ForallIntents*    pForallIntents;
     std::vector<OnlyRename*>* ponlylist;
   };
 
@@ -124,7 +126,7 @@
 
 
 /* Line 2068 of yacc.c  */
-#line 132 "chapel.ypp"
+#line 134 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -144,7 +146,7 @@
 
 
 /* Line 2068 of yacc.c  */
-#line 154 "chapel.ypp"
+#line 156 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -175,7 +177,7 @@
 
 
 /* Line 2068 of yacc.c  */
-#line 179 "../include/bison-chapel.h"
+#line 181 "../include/bison-chapel.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -252,73 +254,77 @@
      TSUBDOMAIN = 324,
      TSYNC = 325,
      TTHEN = 326,
-     TTYPE = 327,
-     TUNDERSCORE = 328,
-     TUNION = 329,
-     TUSE = 330,
-     TVAR = 331,
-     TWHEN = 332,
-     TWHERE = 333,
-     TWHILE = 334,
-     TWITH = 335,
-     TYIELD = 336,
-     TZIP = 337,
-     TALIAS = 338,
-     TAND = 339,
-     TASSIGN = 340,
-     TASSIGNBAND = 341,
-     TASSIGNBOR = 342,
-     TASSIGNBXOR = 343,
-     TASSIGNDIVIDE = 344,
-     TASSIGNEXP = 345,
-     TASSIGNLAND = 346,
-     TASSIGNLOR = 347,
-     TASSIGNMINUS = 348,
-     TASSIGNMOD = 349,
-     TASSIGNMULTIPLY = 350,
-     TASSIGNPLUS = 351,
-     TASSIGNSL = 352,
-     TASSIGNSR = 353,
-     TBAND = 354,
-     TBNOT = 355,
-     TBOR = 356,
-     TBXOR = 357,
-     TCOLON = 358,
-     TCOMMA = 359,
-     TDIVIDE = 360,
-     TDOT = 361,
-     TDOTDOT = 362,
-     TDOTDOTDOT = 363,
-     TEQUAL = 364,
-     TEXP = 365,
-     TGREATER = 366,
-     TGREATEREQUAL = 367,
-     THASH = 368,
-     TLESS = 369,
-     TLESSEQUAL = 370,
-     TMINUS = 371,
-     TMOD = 372,
-     TNOT = 373,
-     TNOTEQUAL = 374,
-     TOR = 375,
-     TPLUS = 376,
-     TQUESTION = 377,
-     TSEMI = 378,
-     TSHIFTLEFT = 379,
-     TSHIFTRIGHT = 380,
-     TSTAR = 381,
-     TSWAP = 382,
-     TASSIGNREDUCE = 383,
-     TIO = 384,
-     TLCBR = 385,
-     TRCBR = 386,
-     TLP = 387,
-     TRP = 388,
-     TLSBR = 389,
-     TRSBR = 390,
-     TNOELSE = 391,
-     TUMINUS = 392,
-     TUPLUS = 393
+     TTHROW = 327,
+     TTHROWS = 328,
+     TTRY = 329,
+     TTRYBANG = 330,
+     TTYPE = 331,
+     TUNDERSCORE = 332,
+     TUNION = 333,
+     TUSE = 334,
+     TVAR = 335,
+     TWHEN = 336,
+     TWHERE = 337,
+     TWHILE = 338,
+     TWITH = 339,
+     TYIELD = 340,
+     TZIP = 341,
+     TALIAS = 342,
+     TAND = 343,
+     TASSIGN = 344,
+     TASSIGNBAND = 345,
+     TASSIGNBOR = 346,
+     TASSIGNBXOR = 347,
+     TASSIGNDIVIDE = 348,
+     TASSIGNEXP = 349,
+     TASSIGNLAND = 350,
+     TASSIGNLOR = 351,
+     TASSIGNMINUS = 352,
+     TASSIGNMOD = 353,
+     TASSIGNMULTIPLY = 354,
+     TASSIGNPLUS = 355,
+     TASSIGNSL = 356,
+     TASSIGNSR = 357,
+     TBAND = 358,
+     TBNOT = 359,
+     TBOR = 360,
+     TBXOR = 361,
+     TCOLON = 362,
+     TCOMMA = 363,
+     TDIVIDE = 364,
+     TDOT = 365,
+     TDOTDOT = 366,
+     TDOTDOTDOT = 367,
+     TEQUAL = 368,
+     TEXP = 369,
+     TGREATER = 370,
+     TGREATEREQUAL = 371,
+     THASH = 372,
+     TLESS = 373,
+     TLESSEQUAL = 374,
+     TMINUS = 375,
+     TMOD = 376,
+     TNOT = 377,
+     TNOTEQUAL = 378,
+     TOR = 379,
+     TPLUS = 380,
+     TQUESTION = 381,
+     TSEMI = 382,
+     TSHIFTLEFT = 383,
+     TSHIFTRIGHT = 384,
+     TSTAR = 385,
+     TSWAP = 386,
+     TASSIGNREDUCE = 387,
+     TIO = 388,
+     TLCBR = 389,
+     TRCBR = 390,
+     TLP = 391,
+     TRP = 392,
+     TLSBR = 393,
+     TRSBR = 394,
+     TNOELSE = 395,
+     TUMINUS = 396,
+     TUPLUS = 397
    };
 #endif
 
@@ -373,7 +379,7 @@ void yypstate_delete ();
 /* "%code provides" blocks.  */
 
 /* Line 2068 of yacc.c  */
-#line 185 "chapel.ypp"
+#line 187 "chapel.ypp"
 
   extern int yydebug;
 
@@ -384,4 +390,4 @@ void yypstate_delete ();
 
 
 /* Line 2068 of yacc.c  */
-#line 388 "../include/bison-chapel.h"
+#line 394 "../include/bison-chapel.h"

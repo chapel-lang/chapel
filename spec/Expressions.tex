@@ -52,8 +52,8 @@ and additionally as follows:
 \index{literal expressions}
 \index{expressions!literal}
 
-A literal value for any of the predefined
-types~(\rsec{Primitive_Type_Literals}) is a literal expression.
+A literal value for any of the predefined types is a literal expression.
+
 Literal expressions are given by the following syntax:
 \begin{syntax}
 literal-expression:
@@ -66,6 +66,16 @@ literal-expression:
   domain-literal
   array-literal
 \end{syntax}
+
+Literal values for primitive types are described in
+\rsec{Primitive_Type_Literals}.
+Literal range values are described in \rsec{Range_Literals}.
+Literal tuple values are described in \rsec{Tuple_Values}.
+Literal values for domains are described in \rsec{Rectangular_Domain_Values}
+and \rsec{Associative_Domain_Values}.
+Literal values for arrays are described in  \rsec{Rectangular_Array_Literals}
+and \rsec{Associative_Array_Literals}.
+
 
 \section{Variable Expressions}
 \label{Variable_Expressions}
@@ -501,6 +511,7 @@ forms listed, those listed earlier in the list being given
 preference.  If no compatible implicit conversions exist, then a
 compile-time error occurs.  In these cases, an explicit cast is required.
 
+\pagebreak
 \subsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
 \index{+ (unary)@\chpl{+} (unary)}
@@ -562,6 +573,7 @@ It is an error to try to negate a value of type \chpl{uint(64)}.  Note
 that negating a value of type \chpl{uint(32)} first converts the type
 to \chpl{int(64)} using an implicit conversion.
 
+\pagebreak
 \subsection{Addition Operators}
 \label{Addition_Operators}
 \index{operators!addition}
@@ -615,6 +627,7 @@ produces a value of complex type.  Addition of values of complex type
 and either real or imaginary types also produces a value of complex
 type.
 
+\pagebreak
 \subsection{Subtraction Operators}
 \label{Subtraction_Operators}
 \index{operators!subtraction}
@@ -669,6 +682,7 @@ and vice versa, produces a value of complex type.  Subtraction of
 values of complex type from either real or imaginary types, and vice
 versa, also produces a value of complex type.
 
+\pagebreak
 \subsection{Multiplication Operators}
 \label{Multiplication_Operators}
 \index{operators!multiplication}
@@ -723,6 +737,7 @@ imaginary type produces a value of imaginary type.  Multiplication of
 values of complex type and either real or imaginary types produces a
 value of complex type.
 
+\pagebreak
 \subsection{Division Operators}
 \label{Division_Operators}
 \index{operators!division}
@@ -782,6 +797,7 @@ does not divide \chpl{a} exactly, then there are two candidate quotients $q1$ an
 such that $b * q1$ and $b * q2$ are the two multiples of \chpl{b} closest to \chpl{a}.
 The integer result $q$ is the candidate quotient which lies closest to zero.
 
+\pagebreak
 \subsection{Modulus Operators}
 \label{Modulus_Operators}
 \index{operators!modulus}
@@ -976,6 +992,7 @@ conversions are performed.
 The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 \end{rationale}
 
+\pagebreak
 \section{Shift Operators}
 \label{Shift_Operators}
 \index{operators!shift}
@@ -1108,6 +1125,7 @@ in~\rsec{Logical_And_Operators}.  Overloading the logical or operator
 over other types is accomplished by overloading the \chpl{isTrue}
 function over other types.
 
+\pagebreak
 \section{Relational Operators}
 \label{Relational_Operators}
 \index{operators!relational}

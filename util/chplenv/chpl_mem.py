@@ -7,7 +7,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_platform, overrides
-from utils import memoize
+from utils import error, memoize
 
 
 @memoize
@@ -25,7 +25,7 @@ def get(flag='host'):
             else:
                 mem_val = 'jemalloc'
     else:
-        raise ValueError("Invalid flag: '{0}'".format(flag))
+        error("Invalid flag: '{0}'".format(flag), ValueError)
     return mem_val
 
 

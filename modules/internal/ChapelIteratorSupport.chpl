@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,9 +21,9 @@
 // vectorizeOnly iterators found at the bottom of this file.
 /*
   Data parallel constructs (such as ``forall`` loops) are implicitly
-  vectorizable. If the ``--vectorize`` compiler flag is thrown (implied by
-  ``--fast``), the Chapel compiler will emit vectorization hints to the backend
-  compiler, though the effects will vary based on the target compiler.
+  vectorizable. If the ``--vectorize`` compiler flag is thrown the Chapel
+  compiler will emit vectorization hints to the backend compiler, though the
+  effects will vary based on the target compiler.
 
   In order to allow users to explicitly request vectorization, this prototype
   vectorizing iterator is being provided. Loops that invoke this iterator will
@@ -40,13 +40,14 @@ module ChapelIteratorSupport {
   // module support for iterators
   //
   pragma "no doc"
+  pragma "allow ref" // needs to to return tuples with refs
   proc iteratorIndex(ic: _iteratorClass) {
     ic.advance();
     return ic.getValue();
   }
 
   pragma "no doc"
-  pragma "expand tuples with values"
+  pragma "expand tuples with values"  // needs to return tuples with refs
   proc iteratorIndex(t: _tuple) {
     pragma "expand tuples with values"
     proc iteratorIndexHelp(t: _tuple, param dim: int) {
@@ -98,7 +99,7 @@ module ChapelIteratorSupport {
     return ic;
 
   proc _getIterator(type t) {
-    return _getIterator(_checkIterator(t));
+    return _getIterator(t.these());
   }
 
   inline proc _getIteratorZip(x) {
@@ -135,19 +136,6 @@ module ChapelIteratorSupport {
       return _getIterator(t(1));
     else
       return _getIteratorZipInternal(t, 1);
-  }
-
-  inline proc _checkIterator(type t) {
-    use Reflection;
-
-    if (canResolveTypeMethod(t, "these")) then
-      return t.these();
-    else
-      compilerError("unable to iterate over type '", t:string, "'");
-  }
-
-  inline proc _checkIterator(x) {
-    return x;
   }
 
   inline proc _freeIterator(ic: _iteratorClass) {

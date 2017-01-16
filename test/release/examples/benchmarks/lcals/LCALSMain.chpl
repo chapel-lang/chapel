@@ -12,6 +12,7 @@ module main {
   use RunBRawLoops;
   use RunCRawLoops;
   use RunParallelRawLoops;
+  use RunSPMDRawLoops;
   use RunVectorizeOnlyRawLoops;
 
   proc allocateLoopData() {
@@ -106,6 +107,15 @@ module main {
       run_variants[LoopVariantID.RAW] = true;
     if run_variantRawOmp then
       run_variants[LoopVariantID.RAW_OMP] = true;
+    if run_variantRawSPMD {
+      if run_mediumLoops || run_shortLoops {
+        // Exit early so the benchmark doesn't run for a long time before
+        // reaching this same halt in runSPMDRawLoops
+        halt("SHORT and MEDIUM loop lengths are currently disabled " +
+             "for this variant because they take too long to execute");
+      }
+      run_variants[LoopVariantID.RAW_SPMD] = true;
+    }
     if run_variantRawVectorizeOnly then
       run_variants[LoopVariantID.RAW_VECTOR_ONLY] = true;
 
@@ -115,8 +125,6 @@ module main {
     /*
     if run_variantForallLambda then
       run_variants[LoopVariantID.FORALL_LAMBDA] = true;
-    if run_variantRawOmp then
-      run_variants[LoopVariantID.RAW_OMP] = true;
     if run_variantForallLambdaOmp then
       run_variants[LoopVariantID.FORALL_LAMBDA_OMP] = true;
     */
@@ -144,9 +152,8 @@ module main {
         const loop_variant_name = getVariantName(variant);
         writeln("\t run loop variant ---> ", loop_variant_name);
         for ilen in LoopLengthDom {
-          var rilen = ilen: LoopLength;
           if run_loop_length[ilen] {
-            runLoopVariant(variant, run_loop, rilen);
+            runLoopVariant(variant, run_loop, ilen);
           }
         }
       }
@@ -422,7 +429,7 @@ module main {
     //
 
     for iloop in suite_run_info.loop_kernel_dom {
-      var ref_variant_stat = suite_run_info.getLoopStats(1:LoopVariantID)[iloop];
+      var ref_variant_stat = suite_run_info.getLoopStats(LoopVariantID.RAW)[iloop];
 
       var ref_mean = ref_variant_stat.mean;
 
@@ -541,7 +548,7 @@ module main {
 
 
     for iloop in suite_run_info.loop_kernel_dom {
-      var ref_variant_stat = suite_run_info.getLoopStats(1:LoopVariantID)[iloop];
+      var ref_variant_stat = suite_run_info.getLoopStats(LoopVariantID.RAW)[iloop];
       var ref_chksum = ref_variant_stat.loop_chksum;
       if loop_names[iloop].length != 0 && ref_variant_stat.loop_is_run {
         if iloop > 1 then
@@ -598,6 +605,9 @@ module main {
       }
       when LoopVariantID.RAW_OMP {
         runParallelRawLoops(loop_stats, run_loop, ilength);
+      }
+      when LoopVariantID.RAW_SPMD {
+        runSPMDRawLoops(loop_stats, run_loop, ilength);
       }
       when LoopVariantID.RAW_VECTOR_ONLY {
         runVectorizeOnlyRawLoops(loop_stats, run_loop, ilength);

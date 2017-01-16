@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -197,29 +197,46 @@ static void change_cast_in_where(FnSymbol* fn) {
 }
 
 
-void cleanup(void) {
+static void add_parens_to_deinit_fns(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_DESTRUCTOR))
+    // Make paren-less decls act as paren-ful. Otherwise
+    // "arg.chpl__deinit()" in proc chpl__delete(arg)
+    // would not resolve.
+    fn->removeFlag(FLAG_NO_PARENS);
+}
+
+
+void cleanup() {
   std::vector<BaseAST*> asts;
+
   collect_asts(rootModule, asts);
 
   for_vector(BaseAST, ast, asts) {
-    SET_LINENO(ast);
     if (DefExpr* def = toDefExpr(ast)) {
+      SET_LINENO(ast);
+
       normalize_nested_function_expressions(def);
     }
   }
 
   for_vector(BaseAST, ast1, asts) {
     SET_LINENO(ast1);
+
     if (BlockStmt* block = toBlockStmt(ast1)) {
-      if (block->blockTag == BLOCK_SCOPELESS && block->list)
+      if (block->blockTag == BLOCK_SCOPELESS && block->list) {
         flatten_scopeless_block(block);
+      }
+
     } else if (CallExpr* call = toCallExpr(ast1)) {
-      if (call->isNamed("_build_tuple"))
+      if (call->isNamed("_build_tuple")) {
         destructureTupleAssignment(call);
+      }
+
     } else if (DefExpr* def = toDefExpr(ast1)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         flatten_primary_methods(fn);
         change_cast_in_where(fn);
+        add_parens_to_deinit_fns(fn);
       }
     }
   }

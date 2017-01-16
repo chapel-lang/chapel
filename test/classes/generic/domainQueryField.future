@@ -1,0 +1,9 @@
+bug: domain query fields cause internal errors
+
+When using the domain query syntax in an array field, the compiler
+currently generates an internal error.  I don't believe that we ever
+intended to support domain queries in the field context, so this
+future is intended to change the internal error into a user-facing
+error (where the message in the .good file is negotiable).  A sibling
+future (domainQueryField-feature.chpl) asks the question whether we
+ought to support the syntax in this context.

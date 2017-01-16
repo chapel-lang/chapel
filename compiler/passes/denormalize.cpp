@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -156,7 +156,7 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     Type* castTo = defCastPair.second;
 
     if(def->parentExpr == NULL) {
-      deferredSyms.add(use->var);
+      deferredSyms.add(use->symbol());
       continue;
     }
     denormalize(def, use, castTo);
@@ -239,12 +239,11 @@ void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap,
     SafeExprAnalysis& analysisData) {
 
   Vec<Symbol*> symSet;
-  Vec<SymExpr*> symExprs;
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
 
-  collectSymbolSetSymExprVec(fn, symSet, symExprs);
-  buildDefUseMaps(symSet, symExprs, defMap, useMap);
+  collectSymbolSet(fn, symSet);
+  buildDefUseMaps(symSet, defMap, useMap);
 
   findCandidatesInFuncOnlySym(fn, symSet, udcMap, analysisData);
 
@@ -322,10 +321,19 @@ bool isDenormalizable(Symbol* sym,
           usePar = se->parentExpr;
           if(CallExpr* ce = toCallExpr(usePar)) {
             if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
+                  // TODO: PRIM_SET_REFERENCE?
+                  //
+                  // TODO: BHARSH: I added PRIM_RETURN here after seeing a case
+                  // where we did something like this:
+                  //   (return (get_member_value this myField))
+                  // FnSymbol expects to return one symbol, so it's easier to
+                  // just not denormalize the returned symbol.
+                  //
                   ce->isPrimitive(PRIM_ARRAY_GET) ||
                   ce->isPrimitive(PRIM_GET_MEMBER) ||
                   ce->isPrimitive(PRIM_DEREF) ||
                   ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                  ce->isPrimitive(PRIM_RETURN) ||
                   (ce->isPrimitive(PRIM_MOVE) && 
                    ce->get(1)->typeInfo() !=
                    ce->get(2)->typeInfo()))) {
@@ -393,7 +401,7 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
   Expr* defPar = def->parentExpr;
 
   //remove variable declaration
-  use->var->defPoint->remove();
+  use->symbol()->defPoint->remove();
 
   //remove def
   Expr* replExpr = def->remove();
@@ -455,9 +463,9 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
   Type* lhsType = lhs->typeInfo();
   Type* rhsType = rhs->typeInfo();
 
-  if(lhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
+  if(lhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) || lhs->isWideRef())
     return true; // direct put
-  if(rhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
+  if(rhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) || rhs->isWideRef())
     return true; // direct get
 
   //now it is still possible that rhs primitive has a nonwide symbol yet
@@ -472,7 +480,7 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
         case PRIM_GET_SVEC_MEMBER:
         case PRIM_GET_SVEC_MEMBER_VALUE:
           if(rhsCe->get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, 
-                FLAG_WIDE_CLASS)) {
+                FLAG_WIDE_CLASS) || rhsCe->get(1)->isWideRef()) {
             return true;
           }
           break;

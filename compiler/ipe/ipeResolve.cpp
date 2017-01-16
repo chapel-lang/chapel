@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -784,7 +784,8 @@ static IpeCallExpr* resolveCallExpr(CallExpr* callExpr, IpeEnv* env)
     {
       if (procSymExpr->typeInfo() == gIpeTypeProcedure)
       {
-        IpeValue           procValue = env->fetch(toLcnSymbol(procSymExpr->var));
+        IpeValue           procValue =
+          env->fetch(toLcnSymbol(procSymExpr->symbol()));
         IpeProcedure*      procPtr   = procValue.procedureGet();
         std::vector<Expr*> resolvedActuals;
 

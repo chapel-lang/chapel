@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -141,6 +141,8 @@ module ChapelArray {
   // likely be on locale 0
   pragma "no doc"
   var numPrivateObjects: atomic_int64;
+  pragma "no doc"
+  param nullPid = -1;
 
   pragma "no doc"
   config param debugBulkTransfer = false;
@@ -169,8 +171,25 @@ module ChapelArray {
   pragma "privatized class"
   proc _isPrivatized(value) param
     return !_local && ((_privatization && value.dsiSupportsPrivatization()) || value.dsiRequiresPrivatization());
+    // Note - _local=true means --local / single locale
+    // _privatization is controlled by --[no-]privatization
+    // privatization required, not optional, for PrivateDist
 
-  proc _newPrivatizedClass(value) {
+  // MPF 2016-10-02: This simple implementation of privatization has some
+  // drawbacks:
+  // 1) Creating a new privatized object necessarily does something on all
+  //    locales; this would be surprising if the user explicitly requested a
+  //    Block array on 2 locales for example.
+  // 2) Privatized object ids are managed by Locale 0 in a way that, while
+  //    relatively low overhead, adds work to Locale 0 that is not present on
+  //    the other locales, and again would be surprising if a Block array were
+  //    created over other locales only (say, Locales[2] and Locales[3]).
+
+  // Given a dsi Dist/Dom/Array, create an pid integer identifying the
+  // privatized version on all locales; and populate each locale
+  // with a privatized value that can be retrieved by the pid
+  // without communication.
+  proc _newPrivatizedClass(value) : int {
 
     const n = numPrivateObjects.fetchAdd(1);
 
@@ -200,6 +219,36 @@ module ChapelArray {
     }
 
     return n;
+  }
+
+  // original is the value this method shouldn't free, because it's the
+  // canonical version. The rest are copies on other locales.
+  proc _freePrivatizedClass(pid:int, original:object):void
+  {
+    // Do nothing for null pids.
+    if pid == nullPid then return;
+
+    on Locales[0] {
+      _freePrivatizedClassHelp(pid, original);
+    }
+
+    proc _freePrivatizedClassHelp(pid, original) {
+      var prv = chpl_getPrivatizedCopy(object, pid);
+      if prv != original then
+        delete prv;
+
+      extern proc chpl_clearPrivatizedClass(pid:int);
+      chpl_clearPrivatizedClass(pid);
+
+      cobegin {
+        if chpl_localeTree.left then
+          on chpl_localeTree.left do
+            _freePrivatizedClassHelp(pid, original);
+        if chpl_localeTree.right then
+          on chpl_localeTree.right do
+            _freePrivatizedClassHelp(pid, original);
+      }
+    }
   }
 
   proc _reprivatize(value) {
@@ -256,35 +305,42 @@ module ChapelArray {
     if _isPrivatized(value) then
       return new _array(_newPrivatizedClass(value), value);
     else
-      return new _array(value, value);
+      return new _array(nullPid, value);
+  }
+
+  proc _getArray(value) {
+    if _isPrivatized(value) then
+      return new _array(_newPrivatizedClass(value), value, _unowned=true);
+    else
+      return new _array(nullPid, value, _unowned=true);
   }
 
   proc _newDomain(value) {
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
     else
-      return new _domain(value, value);
+      return new _domain(nullPid, value);
   }
 
   proc _getDomain(value) {
     if _isPrivatized(value) then
-      return new _domain(value.pid, value);
+      return new _domain(value.pid, value, _unowned=true);
     else
-      return new _domain(value, value);
+      return new _domain(nullPid, value, _unowned=true);
   }
 
   proc _newDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(_newPrivatizedClass(value), value);
     else
-      return new _distribution(value, value);
+      return new _distribution(nullPid, value);
   }
 
   proc _getDistribution(value) {
     if _isPrivatized(value) then
-      return new _distribution(value.pid, value);
+      return new _distribution(value.pid, value, _unowned=true);
     else
-      return new _distribution(value, value);
+      return new _distribution(nullPid, value, _unowned=true);
   }
 
   // Run-time type support
@@ -293,6 +349,8 @@ module ChapelArray {
   // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
   // by the compiler to just create a record storing the arguments. The body
   // is moved by the compiler to convertRuntimeTypeToValue.
+  // The return type of chpl__build...RuntimeType is what tells the
+  // compiler which runtime type it is creating.
 
   //
   // Support for domain types
@@ -440,19 +498,6 @@ module ChapelArray {
   proc chpl__convertValueToRuntimeType(arr: []) type
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
-  proc chpl__getDomainFromArrayType(type arrayType) {
-    var A: arrayType;
-    pragma "no copy" var D = A.domain;
-    pragma "dont disable remote value forwarding"
-    proc help() {
-      D._value.incRefCount();
-    }
-    if !noRefCount then
-      help();
-    return D;
-  }
-
-
   //
   // These routines increment and decrement the reference count
   // for a domain that is part of an array's element type.
@@ -473,36 +518,21 @@ module ChapelArray {
   // D, we ensure that is kept alive.  See
   // test/users/bugzilla/bug794133/ for more details and examples.
   //
-  proc chpl_incRefCountsForDomainsInArrayEltTypes(type eltType) {
-    compilerAssert(!noRefCount);
+  proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
     if (isArrayType(eltType)) {
       var ev: eltType;
-      ev.domain._value.incRefCount();
-      //
-      // In addition to incrementing the domain's reference, count, we also
-      // have to increment the distribution's.  The primary motivation for
-      // this at present is:
-      //
-      //   test/arrays/deitz/part4/test_array_of_associative_arrays.chpl
-      //
-      // and we suspect that once the reference counting code is cleaned up,
-      // this can be too.  See this comment's commit message for more
-      // details.
-      //
-      ev.domain.dist._value.incRefCount();
-      chpl_incRefCountsForDomainsInArrayEltTypes(ev.eltType);
+      ev.domain._value.add_containing_arr(arr);
+      chpl_incRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
     }
   }
 
-  proc chpl_decRefCountsForDomainsInArrayEltTypes(type eltType) {
-    compilerAssert(!noRefCount);
+  proc chpl_decRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
     if (isArrayType(eltType)) {
       var ev: eltType;
-      const refcount = ev.domain._value.destroyDom();
-      if !noRefCount then
-        if refcount == 0 then
-          delete ev.domain._value;
-      chpl_decRefCountsForDomainsInArrayEltTypes(ev.eltType);
+      const refcount = ev.domain._value.remove_containing_arr(arr);
+      if refcount == 0 then
+        _delete_dom(ev.domain._value, _isPrivatized(ev.domain._value));
+      chpl_decRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
     }
   }
 
@@ -555,7 +585,7 @@ module ChapelArray {
   //
   // Support for domain expressions within array types, e.g. [1..n], [D]
   //
-  proc chpl__ensureDomainExpr(x: domain) {
+  proc chpl__ensureDomainExpr(const ref x: domain) const ref {
     return x;
   }
 
@@ -727,36 +757,37 @@ module ChapelArray {
   pragma "ignore noinit"
   pragma "no doc"
   record _distribution {
-    var _value;
-    var _valueType;
-
-    // Never, ever create a distribution directly.
-    // Always call _newDistribution() to obtain  one.
-    proc _distribution(_value, _valueType) { }
+    var _pid:int;  // only used when privatized
+    var _instance; // generic, but an instance of a subclass of BaseDist
+    var _unowned:bool; // 'true' for the result of 'getDistribution',
+                       // in which case, the record destructor should
+                       // not attempt to delete the _instance.
 
     inline proc _value {
-      if _isPrivatized(_valueType) {
-        return chpl_getPrivatizedCopy(_valueType.type, _value);
+      if _isPrivatized(_instance) {
+        return chpl_getPrivatizedCopy(_instance.type, _pid);
       } else {
-        return _value;
+        return _instance;
       }
     }
 
-    // Destruction of a distribution causes its ref count to be decremented by 1.
-    // If the count reaches zero, then the contained implementation (_value) is
-    // destroyed.
-    proc ~_distribution() {
-     if !noRefCount {
-      if !_isPrivatized(_valueType) {
-        on _value {
-          var cnt = _value.destroyDist();
-          if cnt == 0 {
-            _value.dsiDestroyDistClass();
-            delete _value;
+    inline proc _do_destroy() {
+      if ! _unowned && ! _instance.singleton() {
+        on _instance {
+          // Count the number of domains that refer to this distribution.
+          // and mark the distribution to be freed when that number reaches 0.
+          // If the number is 0, .remove() returns the distribution
+          // that should be freed.
+          var distToFree = _instance.remove();
+          if distToFree != nil {
+            _delete_dist(distToFree, _isPrivatized(_instance));
           }
         }
       }
-     }
+    }
+
+    proc ~_distribution() {
+      _do_destroy();
     }
 
     proc clone() {
@@ -767,8 +798,6 @@ module ChapelArray {
       var x = _value.dsiNewRectangularDom(rank, idxType, stridable);
       if x.linksDistribution() {
         _value.add_dom(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       return x;
     }
@@ -777,8 +806,6 @@ module ChapelArray {
       var x = _value.dsiNewAssociativeDom(idxType, parSafe);
       if x.linksDistribution() {
         _value.add_dom(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       return x;
     }
@@ -788,8 +815,6 @@ module ChapelArray {
       var x = _value.dsiNewAssociativeDom(idxType, parSafe);
       if x.linksDistribution() {
         _value.add_dom(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       const enumTuple = chpl_enum_enumerate(idxType);
       for param i in 1..enumTuple.size do
@@ -801,8 +826,6 @@ module ChapelArray {
       var x = _value.dsiNewOpaqueDom(idxType, parSafe);
       if x.linksDistribution() {
         _value.add_dom(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       return x;
     }
@@ -811,8 +834,6 @@ module ChapelArray {
       var x = _value.dsiNewSparseDom(rank, idxType, dom);
       if x.linksDistribution() {
         _value.add_dom(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       return x;
     }
@@ -857,6 +878,14 @@ module ChapelArray {
   }
   */ /* */
 
+  // This alternative declaration of Sort.defaultComparator
+  // prevents transitive use of module Sort.
+  proc chpl_defaultComparator() {
+    use Sort;
+    return defaultComparator;
+  }
+
+
   //
   // Domain wrapper record.
   //
@@ -864,29 +893,42 @@ module ChapelArray {
   pragma "has runtime type"
   pragma "ignore noinit"
   record _domain {
-    var _value;     // stores domain class, may be privatized
-    var _valueType; // stores type of privatized domains
+    var _pid:int; // only used when privatized
+    var _instance; // generic, but an instance of a subclass of BaseDom
+    var _unowned:bool; // 'true' for the result of 'getDomain'
+                       // in which case, the record destructor should
+                       // not attempt to delete the _instance.
     var _promotionType: index(rank, _value.idxType);
 
     inline proc _value {
-      if _isPrivatized(_valueType) {
-        return chpl_getPrivatizedCopy(_valueType.type, _value);
+      if _isPrivatized(_instance) {
+        return chpl_getPrivatizedCopy(_instance.type, _pid);
       } else {
-        return _value;
+        return _instance;
       }
     }
 
-    pragma "no doc"
-    proc ~_domain () {
-     if !noRefCount {
-      if !_isPrivatized(_valueType) {
-        on _value {
-          var cnt = _value.destroyDom();
-          if cnt == 0 then
-            delete _value;
+    proc _do_destroy () {
+      if ! _unowned {
+        on _instance {
+          // Count the number of arrays that refer to this domain,
+          // and mark the domain to be freed when that number reaches 0.
+          // Additionally, if the number is 0, remove the domain from
+          // the distribution and possibly get the distribution to free.
+          var (domToFree, distToRemove) = _instance.remove();
+          var distToFree:BaseDist = nil;
+          if distToRemove != nil {
+            distToFree = distToRemove.remove();
+          }
+          if domToFree != nil then
+            _delete_dom(domToFree, _isPrivatized(_instance));
+          if distToFree != nil then
+            _delete_dist(distToFree, _isPrivatized(_instance.dist));
         }
       }
-     }
+    }
+    proc ~_domain () {
+      _do_destroy();
     }
 
     /* Return the domain map that implements this domain */
@@ -960,9 +1002,10 @@ module ChapelArray {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType, stridable, r);
-      if !noRefCount then
-        if d.linksDistribution() then
-          d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
     }
 
@@ -973,7 +1016,16 @@ module ChapelArray {
       param newRank = ranges.size, stridable = chpl__anyStridable(ranges);
       var newRanges: newRank*range(idxType=_value.idxType, stridable=stridable);
       var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
-      var newDist = _getNewDist(newDistVal);
+      var sameDist = (newDistVal == _value.dist);
+      var newDist = if sameDist then
+                       _getDistribution(newDistVal)
+                    else
+                       _newDistribution(newDistVal);
+      if ! sameDist && ! _value.dist.trackDomains() {
+        // Otherwise, we don't have a way for the var d below
+        // to extend the lifetime of the distribution...
+        halt("Distribution must use trackDomains or be singleton");
+      }
       var j = 1;
       var makeEmpty = false;
 
@@ -1006,10 +1058,16 @@ module ChapelArray {
         compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
     }
 
-    pragma "no doc"
+    /*
+       Returns a tuple of ranges describing the bounds of a rectangular domain.
+       For a sparse domain, returns the bounds of the parent domain.
+     */
     proc dims() return _value.dsiDims();
 
-    pragma "no doc"
+    /*
+       Returns a range representing the boundary of this
+       domain in a particular dimension.
+     */
     proc dim(d : int) return _value.dsiDim(d);
 
     pragma "no doc"
@@ -1026,10 +1084,11 @@ module ChapelArray {
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
       return _newArray(x);
     }
     /* Remove all indices from this domain, leaving it empty */
@@ -1044,11 +1103,14 @@ module ChapelArray {
       return _value.dsiCreate();
     }
 
-    /* Add index ``i`` to this domain */
+    /* Add index ``i`` to this domain. This method is also available
+       as the ``+=`` operator.
+     */
     proc add(i) {
       return _value.dsiAdd(i);
     }
 
+    pragma "no doc"
     proc bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
 
@@ -1057,6 +1119,38 @@ module ChapelArray {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
     }
 
+    /*
+       Adds indices in ``inds`` to this domain in bulk.
+
+       For sparse domains, an operation equivalent to this method is available
+       with the ``+=`` operator, where the right-hand-side is an array. However,
+       in that case, default values will be used for the flags ``dataSorted``,
+       ``isUnique``, and ``preserveInds``. This method is available because in
+       some cases, expensive operations can be avoided by setting those flags.
+       To do so, ``bulkAdd`` must be called explicitly (instead of ``+=``).
+
+       .. note::
+
+         Right now, this method and the corresponding ``+=`` operator are
+         only available for sparse domains. In the future, we expect that
+         these methods will be available for all irregular domains.
+
+       :arg inds: Indices to be added. ``inds`` can be an array of
+                  ``rank*idxType`` or an array of ``idxType`` for
+                  1-D domains.
+
+       :arg dataSorted: ``true`` if data in ``inds`` is sorted.
+       :type dataSorted: bool
+
+       :arg isUnique: ``true`` if data in ``inds`` has no duplicates.
+       :type isUnique: bool
+
+       :arg preserveInds: ``true`` if data in ``inds`` needs to be preserved.
+       :type preserveInds: bool
+
+       :returns: Number of indices added to the domain
+       :rtype: int
+    */
     proc bulkAdd(inds: [] _value.rank*_value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
 
@@ -1123,9 +1217,12 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "new alias fn"
     proc newAlias() {
       var x = _value;
-      return _newDomain(x);
+      pragma "no copy"
+      var ret = _getDomain(x);
+      return ret;
     }
 
     /* Returns true if this domain is a subset of ``super``. Otherwise
@@ -1208,9 +1305,11 @@ module ChapelArray {
 
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
+
       return _newDomain(d);
     }
 
@@ -1223,9 +1322,10 @@ module ChapelArray {
         ranges(i) = dim(i).expand(off);
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
     }
 
@@ -1255,9 +1355,10 @@ module ChapelArray {
         ranges(i) = dim(i).exterior(off(i));
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
     }
 
@@ -1304,9 +1405,10 @@ module ChapelArray {
       }
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
     }
 
@@ -1354,9 +1456,10 @@ module ChapelArray {
         ranges(i) = _value.dsiDim(i).translate(off(i));
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
      }
 
@@ -1379,16 +1482,17 @@ module ChapelArray {
         ranges(i) = dim(i).chpl__unTranslate(off(i));
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
     }
 
     pragma "no doc"
     proc setIndices(x) {
       _value.dsiSetIndices(x);
-      if _isPrivatized(_valueType) {
+      if _isPrivatized(_instance) {
         _reprivatize(_value);
       }
     }
@@ -1427,8 +1531,8 @@ module ChapelArray {
 
     // associative array interface
     /* Yield the domain indices in sorted order */
-    iter sorted() {
-      for i in _value.dsiSorted() {
+    iter sorted(comparator:?t = chpl_defaultComparator()) {
+      for i in _value.dsiSorted(comparator) {
         yield i;
       }
     }
@@ -1569,11 +1673,6 @@ module ChapelArray {
     if (counts.size != arr.rank) then
       compilerError("the domain and array arguments of # must have the same rank");
     return arr[arr.domain#counts];
-  }
-
-
-  proc _getNewDist(value) {
-    return new dmap(value);
   }
 
   proc +(d: domain, i: index(d)) {
@@ -1723,44 +1822,52 @@ module ChapelArray {
   pragma "array"
   pragma "has runtime type"
   pragma "ignore noinit"
+  pragma "default intent is ref"
   record _array {
-    var _value;     // stores array class, may be privatized
-    var _valueType; // stores type of privatized arrays
+    var _pid:int;  // only used when privatized
+    var _instance; // generic, but an instance of a subclass of BaseArr
+    var _unowned:bool;
     var _promotionType: _value.eltType;
 
-    pragma "no doc"
-    proc initialize() {
-     if !noRefCount then
-      chpl_incRefCountsForDomainsInArrayEltTypes(_value.eltType);
-    }
-
     inline proc _value {
-      if _isPrivatized(_valueType) {
-        return chpl_getPrivatizedCopy(_valueType.type, _value);
+      if _isPrivatized(_instance) {
+        return chpl_getPrivatizedCopy(_instance.type, _pid);
       } else {
-        return _value;
+        return _instance;
       }
     }
 
-    //
-    // Note that the destructor may be called multiple times for
-    // a given array, corresponding to cases in which it's
-    // autodestroyed multiple times; only the case that brings
-    // the reference count to zero is the one that should
-    // actually free the array.
-    //
-    proc ~_array() {
-     if !noRefCount {
-      if !_isPrivatized(_valueType) {
-        on _value {
-          var cnt = _value.destroyArr();
-          if cnt == 0 then {
-            chpl_decRefCountsForDomainsInArrayEltTypes(_value.eltType);
-            delete _value;
+    inline proc _do_destroy() {
+      if ! _unowned {
+        on _instance {
+          var (arrToFree, domToRemove) = _instance.remove();
+          var domToFree:BaseDom = nil;
+          var distToRemove:BaseDist = nil;
+          var distToFree:BaseDist = nil;
+          // The dead code to access the fields of _instance are left in the
+          // generated code with --baseline on. This means that these
+          // statements cannot come after the _delete_arr call.
+          param domIsPrivatized  = _isPrivatized(_instance.dom);
+          param distIsPrivatized = _isPrivatized(_instance.dom.dist);
+          if domToRemove != nil {
+            // remove that domain
+            (domToFree, distToRemove) = domToRemove.remove();
           }
+          if distToRemove != nil {
+            distToFree = distToRemove.remove();
+          }
+          if arrToFree != nil then
+            _delete_arr(_instance, _isPrivatized(_instance));
+          if domToFree != nil then
+            _delete_dom(domToFree, domIsPrivatized);
+          if distToFree != nil then
+            _delete_dist(distToFree, distIsPrivatized);
         }
       }
-     }
+    }
+
+    proc ~_array() {
+      _do_destroy();
     }
 
     /* The type of elements contained in the array */
@@ -1877,6 +1984,7 @@ module ChapelArray {
     //
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc this(d: domain) {
       if d.rank == rank then
         return this((...d.getIndices()));
@@ -1894,37 +2002,35 @@ module ChapelArray {
     // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc this(ranges: range(?) ...rank) {
       if boundsChecking then
         checkSlice((... ranges));
-      var d = _dom((...ranges));
+      // dsiSlice takes ownership of d._value
+      pragma "no auto destroy" var d = _dom((...ranges));
+      d._value._free_when_no_arrs = true;
       var a = _value.dsiSlice(d._value);
       a._arrAlias = _value;
-      pragma "dont disable remote value forwarding"
-      proc help() {
-        d._value.incRefCount();
-        a._arrAlias.incRefCount();
-      }
-      if !noRefCount then
-        help();
+      // this doesn't need to lock since we just created the domain d
+      d._value.add_arr(a, locking=false);
       return _newArray(a);
     }
 
     // array rank change
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
       if boundsChecking then
         checkRankChange(args);
       var ranges = _getRankChangeRanges(args);
       param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-      var d = _dom((...args));
-      if !noRefCount then
-        d._value.incRefCount();
+      pragma "no auto destroy" var d = _dom((...args));
+      d._value._free_when_no_arrs = true;
       var a = _value.dsiRankChange(d._value, rank, stridable, args);
       a._arrAlias = _value;
-      if !noRefCount then
-        a._arrAlias.incRefCount();
+      // this doesn't need to lock since we just created the domain d
+      d._value.add_arr(a, locking=false);
       return _newArray(a);
     }
 
@@ -1939,6 +2045,7 @@ module ChapelArray {
     // we can't take an alias of the ddata class within that class
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...r));
@@ -1948,6 +2055,7 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc localSlice(d: domain) where _value.type: DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...d.getIndices()));
@@ -1963,6 +2071,7 @@ module ChapelArray {
     }
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc localSlice(r: range(?)... rank) {
       if boundsChecking then
         checkSlice((...r));
@@ -1971,6 +2080,7 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }
@@ -1988,9 +2098,13 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "new alias fn"
+    pragma "fn returns aliasing array"
     proc newAlias() {
       var x = _value;
-      return _newArray(x);
+      pragma "no copy"
+      var ret = _getArray(x);
+      return ret;
     }
 
     //
@@ -2053,6 +2167,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
+    pragma "fn returns aliasing array"
     proc reindex(d: domain)
       where isRectangularDom(this.domain) && isRectangularDom(d)
     {
@@ -2073,24 +2188,23 @@ module ChapelArray {
         if d.dim(i).length != _value.dom.dsiDim(i).length then
           halt("extent in dimension ", i, " does not match actual");
 
-      var newDist = new dmap(_value.dom.dist.dsiCreateReindexDist(d.dims(),
+      // dsiReindex takes ownership of newDist._value.
+      pragma "no auto destroy" var newDist = new dmap(_value.dom.dist.dsiCreateReindexDist(d.dims(),
                                                                   _value.dom.dsiDims()));
-      var newDom = {(...d.dims())} dmapped newDist;
+      // dsiReindex takes ownership of newDom._value.
+      pragma "no auto destroy" var newDom = {(...d.dims())} dmapped newDist;
+      newDom._value._free_when_no_arrs = true;
       var x = _value.dsiReindex(newDom._value);
       x._arrAlias = _value;
-      pragma "dont disable remote value forwarding"
-      proc help() {
-        newDom._value.incRefCount();
-        x._arrAlias.incRefCount();
-      }
-      if !noRefCount then
-        help();
+      // this doesn't need to lock since we just created the domain d
+      newDom._value.add_arr(x, locking=false);
       return _newArray(x);
     }
 
     // reindex for all non-rectangular domain types.
     // See above for the rectangular version.
     pragma "no doc"
+    pragma "fn returns aliasing array"
     proc reindex(d:domain) {
       if this.domain != d then
         halt("Reindexing of non-rectangular arrays is undefined.");
@@ -2115,9 +2229,20 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
-    iter sorted() {
-      for i in _value.dsiSorted() {
-        yield i;
+    iter sorted(comparator:?t = chpl_defaultComparator()) {
+      use Reflection;
+      if canResolveMethod(_value, "dsiSorted", comparator) {
+        for i in _value.dsiSorted(comparator) {
+          yield i;
+        }
+      } else if canResolveMethod(_value, "dsiSorted") {
+        compilerError(_value.type:string + " does not support dsiSorted(comparator)");
+      } else {
+        use Sort;
+        var copy = this;
+        sort(copy, comparator=comparator);
+        for ind in copy do
+          yield ind;
       }
     }
 
@@ -2257,12 +2382,13 @@ module ChapelArray {
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
           const oldRng = this._value.dataAllocRange;
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
+          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
           if debugArrayAsVec then
             writeln("push_back reallocate: ",
-                    oldRng, " => ", this._value.dataAllocRange,
+                    oldRng, " => ", nextAllocRange,
                     " (", newRange, ")");
-          this._value.dsiReallocate({this._value.dataAllocRange});
+          this._value.dsiReallocate({nextAllocRange});
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2291,12 +2417,13 @@ module ChapelArray {
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const oldRng = this._value.dataAllocRange;
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           if debugArrayAsVec then
             writeln("pop_back reallocate: ",
-                    oldRng, " => ", this._value.dataAllocRange,
+                    oldRng, " => ", nextAllocRange,
                     " (", newRange, ")");
-          this._value.dsiReallocate({this._value.dataAllocRange});
+          this._value.dsiReallocate({nextAllocRange});
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2320,12 +2447,13 @@ module ChapelArray {
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
           const oldRng = this._value.dataAllocRange;
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1);
+          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1);
           if debugArrayAsVec then
             writeln("push_front reallocate: ",
-                    oldRng, " => ", this._value.dataAllocRange,
+                    oldRng, " => ", nextAllocRange,
                     " (", newRange, ")");
-          this._value.dsiReallocate({this._value.dataAllocRange});
+          this._value.dsiReallocate({nextAllocRange});
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2354,12 +2482,13 @@ module ChapelArray {
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const oldRng = this._value.dataAllocRange;
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1, grow=-1);
+          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1, grow=-1);
           if debugArrayAsVec then
             writeln("pop_front reallocate: ",
-                    oldRng, " => ", this._value.dataAllocRange,
+                    oldRng, " => ", nextAllocRange,
                     " (", newRange, ")");
-          this._value.dsiReallocate({this._value.dataAllocRange});
+          this._value.dsiReallocate({nextAllocRange});
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2387,8 +2516,9 @@ module ChapelArray {
           if this._value.dataAllocRange.length < this.domain.numIndices {
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
-          this._value.dsiReallocate({this._value.dataAllocRange});
+          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
+          this._value.dsiReallocate({nextAllocRange});
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2421,8 +2551,9 @@ module ChapelArray {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
-          this._value.dsiReallocate({this._value.dataAllocRange});
+          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          this._value.dsiReallocate({nextAllocRange});
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2453,8 +2584,9 @@ module ChapelArray {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
-          this._value.dsiReallocate({this._value.dataAllocRange});
+          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          this._value.dsiReallocate({nextAllocRange});
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
@@ -2621,44 +2753,47 @@ module ChapelArray {
   }
 
   proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    var newDom : a.domain.type;
+    var newDom = a.domain | b.domain;
     var ret : [newDom] a.eltType;
     serial !newDom._value.parSafe {
       forall (k,v) in zip(a.domain, a) do ret[k] = v;
-      ret |= b;
+      forall (k,v) in zip(b.domain, b) do ret[k] = v;
     }
     return ret;
   }
 
   proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     a.chpl__assertSingleArrayDomain("|=");
-    serial !a.domain._value.parSafe do forall (k,v) in zip(b.domain, b) do a[k] = v;
+    serial !a.domain._value.parSafe {
+      forall i in b.domain do a.domain.add(i);
+      forall (k,v) in zip(b.domain, b) do a[k] = v;
+    }
   }
 
   proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    var newDom : a.domain.type;
+    var newDom = a.domain & b.domain;
     var ret : [newDom] a.eltType;
 
     serial !newDom._value.parSafe do
-      forall k in a.domain do
-        if b.domain.member(k) then ret[k] = a[k];
+      forall k in newDom do ret[k] = a[k];
     return ret;
   }
 
   proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     a.chpl__assertSingleArrayDomain("&=");
-    serial !a.domain._value.parSafe do
-      forall k in a.domain do
+    serial !a.domain._value.parSafe {
+      forall k in a.domain {
         if !b.domain.member(k) then a.domain.remove(k);
+      }
+    }
   }
 
   proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    var newDom : a.domain.type;
+    var newDom = a.domain - b.domain;
     var ret : [newDom] a.eltType;
 
     serial !newDom._value.parSafe do
-      forall k in a.domain do
-        if !b.domain.member(k) then ret[k] = a[k];
+      forall k in newDom do ret[k] = a[k];
 
     return ret;
   }
@@ -2672,7 +2807,7 @@ module ChapelArray {
 
 
   proc ^(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    var newDom : a.domain.type;
+    var newDom = a.domain ^ b.domain;
     var ret : [newDom] a.eltType;
 
     serial !newDom._value.parSafe {
@@ -2687,10 +2822,15 @@ module ChapelArray {
 
   proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     a.chpl__assertSingleArrayDomain("^=");
-    serial !a.domain._value.parSafe do
-      forall k in b.domain do
+    serial !a.domain._value.parSafe {
+      forall k in b.domain {
         if a.domain.member(k) then a.domain.remove(k);
-        else a[k] = b[k];
+        else a.domain.add(k);
+      }
+      forall k in b.domain {
+        if a.domain.member(k) then a[k] = b[k];
+      }
+    }
   }
 
   proc -(a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
@@ -2869,16 +3009,11 @@ module ChapelArray {
     } else if a._value._doms.length == 0 {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
-      // TODO: This is needed as part of the assign_to_ref implementation to
-      // keep _distCnt from going below zero.  It's probably not the "correct"
-      // solution, but it resolves the immediate problem in
-      // test_distribution_syntax2.chpl (compiled with CHPL_COMM=none).
       if a._value == b._value {
-        if !noRefCount then
-          a._value.incRefCount();
+        // do nothing
       } else
         a._value.dsiAssign(b._value);
-      if _isPrivatized(a._valueType) then
+      if _isPrivatized(a._instance) then
         _reprivatize(a._value);
     } else {
       halt("assignment to distributions with declared domains is not yet supported");
@@ -2919,7 +3054,10 @@ module ChapelArray {
       // intelligent will likely be needed before it is worth it to
       // parallelize whole-domain assignment for associative arrays.
       //
-      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+
+//      disabled for testing for the same reason
+//      as the array version: it can be called from autoCopy/initCopy.
+//      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
       for i in a._value.dsiIndsIterSafeForRemoving() {
         if !b.member(i) {
           a.remove(i);
@@ -3050,6 +3188,7 @@ module ChapelArray {
     // constraints specific to a particular domain map array type
     if !a._value.doiCanBulkTransfer() then return false;
     if !b._value.doiCanBulkTransfer() then return false;
+    if !a._value.doiUseBulkTransfer(b) then return false;
 
     return true;
   }
@@ -3063,6 +3202,7 @@ module ChapelArray {
     // constraints specific to a particular domain map array type
     if !a._value.doiCanBulkTransferStride() then return false;
     if !b._value.doiCanBulkTransferStride() then return false;
+    if !a._value.doiUseBulkTransferStride(b) then return false;
 
     return true;
   }
@@ -3138,7 +3278,7 @@ module ChapelArray {
       chpl__transferArray(a, b);
   }
 
-  inline proc chpl__bulkTransferArray(a: [], b) {
+  inline proc chpl__bulkTransferArray(ref a: [], const ref b) {
     if (useBulkTransfer &&
         chpl__compatibleForBulkTransfer(a, b) &&
         chpl__useBulkTransfer(a, b))
@@ -3159,13 +3299,16 @@ module ChapelArray {
     }
   }
 
-  inline proc chpl__transferArray(a: [], b) {
+  inline proc chpl__transferArray(ref a: [], const ref b) {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
       forall aa in a do
         aa = b;
     } else if chpl__serializeAssignment(a, b) {
-      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+// commenting this out to remove testing noise.
+// this is always printed out if it's on, because chpl__transferArray
+// is now called from array auto-copy.
+//      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
       for (aa,bb) in zip(a,b) do
         aa = bb;
     } else if chpl__tryToken { // try to parallelize using leader and follower iterators
@@ -3261,9 +3404,8 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
     var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
-    if !noRefCount then
-      if (d.linksDistribution()) then
-        d.dist.incRefCount();
+    if d.linksDistribution() then
+      d.dist.add_dom(d);
     return _newDomain(d);
   }
 
@@ -3282,9 +3424,8 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) align t(i);
     var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, a.stridable, r);
-    if !noRefCount then
-      if (d.linksDistribution()) then
-        d.dist.incRefCount();
+    if d.linksDistribution() then
+      d.dist.add_dom(d);
     return _newDomain(d);
   }
 
@@ -3292,7 +3433,13 @@ module ChapelArray {
   // index for all opaque domains
   //
   pragma "no doc"
-  class _OpaqueIndex { }
+  record _OpaqueIndex {
+    var node:int = 0;
+    var i:uint = 0;
+  }
+  pragma "no doc"
+  pragma "locale private"
+  var _OpaqueIndexNext: atomic uint;
 
   //
   // Swap operator for arrays
@@ -3302,11 +3449,11 @@ module ChapelArray {
       a <=> b;
   }
 
-  /* Returns a copy of the array containing the same values but
-     in the shape of the new domain. The number of indices in the
+  /* Returns a copy of the array ``A`` containing the same values but
+     in the shape of the domain ``D``. The number of indices in the
      domain must equal the number of elements in the array. The
-     elements of the array are copied into the new array using the
-     default iteration orders over both arrays.  */
+     elements of ``A`` are copied into the new array using the
+     default iteration orders over ``D`` and ``A``.  */
   proc reshape(A: [], D: domain) {
     if !isRectangularDom(D) then
       compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
@@ -3326,13 +3473,34 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(a: _distribution) {
-    pragma "no copy" var b = chpl__autoCopy(a.clone());
+    pragma "no copy" var b = a.clone();
     return b;
+    // You'd think we could just write
+    //   return a.clone();
+    // but that makes an infinite loop.
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(a: domain) {
+  proc chpl__initCopy(const ref a: domain) {
     var b: a.type;
+    if isRectangularDom(a) && isRectangularDom(b) {
+      b.setIndices(a.getIndices());
+    } else {
+      // TODO : update to use forall loop
+      for i in a do
+        b.add(i);
+    }
+    return b;
+  }
+
+  pragma "auto copy fn" proc chpl__autoCopy(const ref x: domain) {
+    pragma "no copy" var b = chpl__initCopy(x);
+    return b;
+  }
+
+  proc chpl_replaceWithDeepCopy(ref a:domain) {
+    var b : a.type;
+
     if isRectangularDom(a) && isRectangularDom(b) {
       b.setIndices(a.getIndices());
     } else {
@@ -3341,15 +3509,50 @@ module ChapelArray {
       //
       // NOTE: See above note regarding associative domains
       //
-      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+      //compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
       for i in a do
         b.add(i);
     }
-    return b;
+
+    if ! a._unowned {
+      // destroy the old domain now that we are replacing it
+      a._do_destroy();
+    }
+
+    a._pid = b._pid;
+    a._instance = b._instance;
+    a._unowned = false;
+
+    b._pid = nullPid;
+    b._instance = nil;
+    b._unowned = true;
+  }
+
+  // This implementation of arrays and domains can create aliases
+  // of domains and arrays. Additionally, array aliases are possible
+  // in the language with the => operator.
+  //
+  // A call to the chpl__unalias function is added by the compiler when a user
+  // variable is initialized from an expression that would normally not require
+  // a copy.
+  //
+  // For example, if we have
+  //   var A:[1..10] int;
+  //   var B = A[1..3];
+  // then B is initialized with a slice of A. But since B is a new
+  // variable, it needs to be a new 3-element array with distinct storage.
+  // Since the slice is implemented as a function call, without chpl__unalias,
+  // B would just be initialized to the result of the function call -
+  // meaning that B would not refer to distinct array elements.
+  pragma "unalias fn"
+  inline proc chpl__unalias(ref x: domain) {
+    if x._unowned {
+      chpl_replaceWithDeepCopy(x);
+    }
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(a: []) {
+  proc chpl__initCopy(const ref a: []) {
     var b : [a._dom] a.eltType;
 
     // Try bulk transfer.
@@ -3361,6 +3564,44 @@ module ChapelArray {
     chpl__transferArray(b, a);
     return b;
   }
+
+  pragma "auto copy fn" proc chpl__autoCopy(const ref x: []) {
+    pragma "no copy" var b = chpl__initCopy(x);
+    return b;
+  }
+
+  proc chpl_replaceWithDeepCopy(ref a:[]) {
+    var b : [a._dom] a.eltType;
+
+    // Try bulk transfer.
+    if !chpl__serializeAssignment(b, a) {
+      chpl__bulkTransferArray(b, a);
+    } else {
+      chpl__transferArray(b, a);
+    }
+
+    a._do_destroy();
+
+    a._pid = b._pid;
+    a._instance = b._instance;
+    a._unowned = false;
+
+    b._pid = nullPid;
+    b._instance = nil;
+    b._unowned = true;
+  }
+
+
+  // see comment on chpl__unalias for domains
+  pragma "unalias fn"
+  inline proc chpl__unalias(ref x: []) {
+    const isalias = (x._unowned) | (x._value._arrAlias != nil);
+
+    if isalias {
+      chpl_replaceWithDeepCopy(x);
+    }
+  }
+
 
   //
   // Noakes 2015/11/05

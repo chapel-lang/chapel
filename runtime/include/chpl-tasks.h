@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +30,10 @@
 #ifdef CHPL_TASKS_MODEL_H
 #include CHPL_TASKS_MODEL_H
 #endif
+
+// CHPL_TASKS_MODEL_H must define the task bundle header type,
+// chpl_task_bundle_t.
+typedef chpl_task_bundle_t* chpl_task_bundle_p;
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,6 +112,9 @@ void chpl_task_exit(void);        // called by the main task
 // thread) in order to be responsive and not be held up by other
 // user-level tasks. returns 0 on success, nonzero on failure.
 //
+// The caller of this function is responsible for ensuring that
+// *arg remains available to the task as long as it is needed.
+//
 int chpl_task_createCommTask(chpl_fn_p fn, void* arg);
 
 //
@@ -141,9 +148,12 @@ typedef struct chpl_task_list* chpl_task_list_p;
 // makes sure all the tasks have at least started.  freeTaskList()
 // just reclaims space associated with the list.
 //
+// Note that the tasking layer must generally copy the arguments
+// as it cannot assume anything about the lifetime of that memory.
 void chpl_task_addToTaskList(
          chpl_fn_int_t,      // function to call for task
-         void*,              // argument to the function
+         chpl_task_bundle_t*,// argument to the function
+         size_t,             // length of the argument
          c_sublocid_t,       // desired sublocale
          void**,             // task list
          c_nodeid_t,         // locale (node) where task list resides
@@ -158,8 +168,11 @@ void chpl_task_executeTasksInList(void**);
 // This is a convenience function for use by the module code, in which
 // we have function table indices rather than function pointers.
 //
+// Note that the tasking layer must generally copy the arguments
+// as it cannot assume anything about the lifetime of that memory.
+//
 void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
-                              void* arg,              // function arg
+                              chpl_task_bundle_t* arg,// function arg
                               size_t arg_size,        // length of arg
                               c_sublocid_t subloc,    // desired sublocale
                               int lineno,             // source line
@@ -174,9 +187,17 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
 // but on a different locale.  This is used to invoke the body of an
 // "on" statement.
 //
-void chpl_task_startMovedTask(chpl_fn_int_t fid,  // ftable[] entry 
+// Note that the tasking layer must generally copy the arguments
+// as it cannot assume anything about the lifetime of that memory.
+//
+// The chpl_fn_int_t and chpl_fn_p arguments are stored into the
+// task bundle as requested_fid and requested_fn respectively. If both
+// are provided, the function pointer will be used. In this way,
+// the comms layer can use task-wrapper functions.
+void chpl_task_startMovedTask(chpl_fn_int_t,      // ftable[] entry 
                               chpl_fn_p,          // function to call
-                              void*,              // function arg
+                              chpl_task_bundle_t*,// function arg
+                              size_t,             // length of arg in bytes
                               c_sublocid_t,       // desired sublocale
                               chpl_taskID_t,      // task identifier
                               chpl_bool);         // serial state
@@ -205,6 +226,21 @@ c_sublocid_t chpl_task_getRequestedSubloc(void);
 // Get ID.
 //
 chpl_taskID_t chpl_task_getId(void);
+
+//
+// Checks whether two task IDs are the same
+//
+chpl_bool chpl_task_idEquals(chpl_taskID_t, chpl_taskID_t);
+
+//
+// Returns the string representation of task ID
+// The string returned is the same buffer passed as argument
+// In case of an error NULL is returned
+//
+char* chpl_task_idTostring(
+               char *,         //buffer on which ID is written
+               size_t,         //length of the buffer in bytes
+               chpl_taskID_t); //Task ID
 
 //
 // Yield.

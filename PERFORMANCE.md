@@ -37,35 +37,6 @@ To characterize Chapel performance, generally speaking...
   assignments are used to move chunks of data between locales.
 
 
-Experimental flags for improving performance
---------------------------------------------
-Our current implementation supports the following config param-based
-flags, which are intended to provide a preview of performance
-improvements that we are working on delivering automatically in
-upcoming releases.  Both are available for use "at your own risk" in
-that they are not guaranteed to maintain program correctness (detailed
-after the flag's description).
-
-* chpl -snoRefCount ...
-
-  At present, Chapel reference counts arrays, domains, and domain maps
-  in a manner that is far too conservative.  This can add unnecessary
-  overhead, particularly when passing such variables between functions.  
-
-  This flag turns off such reference counting, but also results in
-  leaking all arrays, domains, and domain maps.  For programs that
-  only use global arrays, domains, and domain maps, this is unlikely
-  to be an issue, but for programs with local arrays, domains, and
-  domain maps, the resulting memory leaks may prevent the program from
-  running correctly.
-
-  We are currently evaluating changes to the implementation and
-  language definition that would reduce (or eliminate) the amount of
-  reference counting required by Chapel programs without introducing
-  these memory leaks.  Once these changes are complete, this flag will
-  be retired.
-
-
 Tracking Chapel Performance
 ---------------------------
 We are currently working to improve Chapel performance with each

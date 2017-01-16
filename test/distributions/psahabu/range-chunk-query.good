@@ -10,3 +10,6 @@ reverse:
 100..80 by -1
 59..40 by -1
 19..0 by -1
+out of bounds
+1..0
+1..0

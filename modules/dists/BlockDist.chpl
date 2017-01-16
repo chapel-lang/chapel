@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -213,7 +213,8 @@ The ``Block`` class constructor is defined as follows:
       dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
       dataParMinGranularity     = // value of  dataParMinGranularity      config const,
       param rank                = boundingBox.rank,
-      type  idxType             = boundingBox.idxType)
+      type  idxType             = boundingBox.idxType,
+      type  sparseLayoutType    = DefaultDist)
 
 The arguments ``boundingBox`` (a domain) and ``targetLocales`` (an array)
 define the mapping of any index of ``idxType`` type to a locale
@@ -238,6 +239,9 @@ domains "dmapped" using that Block instance. If the ``boundingBox`` argument is
 a stridable domain, the stride information will be ignored and the
 ``boundingBox`` will only use the lo..hi bounds.
 
+When a ``sparse subdomain`` is created for a ``Block`` distributed domain, the
+``sparseLayoutType`` will be the layout of these sparse domains. The default is
+currently coordinate, but :class:`LayoutCSR.CSR` is an interesting alternative.
 
 **Data-Parallel Iteration**
 
@@ -250,6 +254,52 @@ Parallelism within each locale is guided by the values of
 ``dataParMinGranularity`` of the respective Block instance.
 Updates to these values, if any, take effect only on the locale
 where the updates are made.
+
+**Sparse Subdomains**
+
+When a ``sparse subdomain`` is declared as a subdomain to a Block-distributed
+domain, the resulting sparse domain will also be Block-distributed. The
+sparse layout used in this sparse subdomain can be controlled with the
+``sparseLayoutType`` constructor argument to Block.
+
+This example demonstrates a Block-distributed sparse domain and array:
+
+  .. code-block:: chapel
+
+   use BlockDist;
+
+    const Space = {1..8, 1..8};
+
+    // Declare a dense, Block-distributed domain.
+    const DenseDom: domain(2) dmapped Block(boundingBox=Space) = Space;
+
+    // Declare a sparse subdomain.
+    // Since DenseDom is Block-distributed, SparseDom will be as well.
+    var SparseDom: sparse subdomain(DenseDom);
+
+    // Add some elements to the sparse subdomain.
+    // SparseDom.bulkAdd is another way to do this that allows more control.
+    SparseDom += [ (1,2), (3,6), (5,4), (7,8) ];
+
+    // Declare a sparse array.
+    // This array is also Block-distributed.
+    var A: [SparseDom] int;
+
+    A = 1;
+
+    writeln( "A[(1, 1)] = ", A[1,1]);
+    for (ij,x) in zip(SparseDom, A) {
+      writeln( "A[", ij, "] = ", x, " on locale ", x.locale);
+    }
+
+   // Results in this output when run on 4 locales:
+   // A[(1, 1)] = 0
+   // A[(1, 2)] = 1 on locale LOCALE0
+   // A[(3, 6)] = 1 on locale LOCALE1
+   // A[(5, 4)] = 1 on locale LOCALE2
+   // A[(7, 8)] = 1 on locale LOCALE3
+
+
 */
 class Block : BaseDist {
   param rank: int;
@@ -262,7 +312,6 @@ class Block : BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
   type sparseLayoutType = DefaultDist;
-  var pid: int = -1; // privatized object id (this should be factored out)
 }
 
 //
@@ -296,7 +345,6 @@ class BlockDom: BaseRectangularDom {
   const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
 }
 
 //
@@ -335,7 +383,6 @@ class BlockArr: BaseArr {
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
 
@@ -355,12 +402,12 @@ class LocBlockArr {
   type idxType;
   param stridable: bool;
   const locDom: LocBlockDom(rank, idxType, stridable);
-  var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
+  var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
-  // These function will always be called on this.locale, and so we do
+  // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
   // the repeated on's from calling testAndSet()).
   inline proc lockLocRAD() {
@@ -460,7 +507,7 @@ proc Block.dsiClone() {
                    sparseLayoutType);
 }
 
-proc Block.dsiDestroyDistClass() {
+proc Block.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
@@ -923,6 +970,13 @@ proc BlockDom.setup() {
   }
 }
 
+proc BlockDom.dsiDestroyDom() {
+  coforall localeIdx in dist.targetLocDom do {
+    on locDoms(localeIdx) do
+      delete locDoms(localeIdx);
+  }
+}
+
 proc BlockDom.dsiMember(i) {
   return whole.member(i);
 }
@@ -967,8 +1021,8 @@ proc BlockArr.dsiDisplayRepresentation() {
 proc BlockArr.dsiGetBaseDom() return dom;
 
 //
-// NOTE: Each locale's myElems array be initialized prior to setting up
-// the RAD cache.
+// NOTE: Each locale's myElems array must be initialized prior to
+// setting up the RAD cache.
 //
 proc BlockArr.setupRADOpt() {
   for localeIdx in dom.dist.targetLocDom {
@@ -979,7 +1033,7 @@ proc BlockArr.setupRADOpt() {
         myLocArr.locRAD = nil;
       }
       if disableBlockLazyRAD {
-        myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+        myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
         for l in dom.dist.targetLocDom {
           if l != localeIdx {
             myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
@@ -1004,22 +1058,48 @@ proc BlockArr.setup() {
   if doRADOpt && disableBlockLazyRAD then setupRADOpt();
 }
 
+proc BlockArr.dsiDestroyArr(isslice:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
+}
+
 inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
   // modified from DefaultRectangularArr.getDataIndex
   if stridable {
     var sum = origin;
     for param i in 1..rank do
       sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
-    return sum;
+    if defRectSimpleDData then {
+      return sum;
+    } else {
+      if mdNumChunks == 1 {
+        return (0, sum);
+      } else {
+        const chunk = mdInd2Chunk(ind(mdParDim));
+        return (chunk, sum - mData(chunk).dataOff);
+      }
+    }
   } else {
     var sum = if earlyShiftData then 0:idxType else origin;
     for param i in 1..rank do
       sum += ind(i) * blk(i);
     if !earlyShiftData then sum -= factoredOffs;
-    return sum;
+    if defRectSimpleDData {
+      return sum;
+    }
+    else {
+      if mdNumChunks == 1 {
+        return (0, sum);
+      } else {
+        const chunk = mdInd2Chunk(ind(mdParDim));
+        return (chunk, sum - mData(chunk).dataOff);
+      }
+    }
   }
 }
-
 
 inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
   return myLocArr.this(i);
@@ -1033,7 +1113,11 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 // By splitting the non-local case into its own function, we can inline the
 // fast/local path and get better performance.
 //
-inline proc BlockArr.dsiAccess(i: rank*idxType) ref {
+// BHARSH TODO: Should this argument have the 'const in' intent? If it is
+// remote, the commented-out local block will fail.
+//
+inline proc BlockArr.dsiAccess(idx: rank*idxType) ref {
+  var i = idx;
   local {
     if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);
@@ -1052,27 +1136,26 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
         if myLocArr.locRAD == nil {
           myLocArr.lockLocRAD();
           if myLocArr.locRAD == nil {
-            var tempLocRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+            var tempLocRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr.locRAD = tempLocRAD;
           }
           myLocArr.unlockLocRAD();
         }
-        // NOTE: This is a known, benign race.  Multiple tasks may be
-        // initializing the RAD cache entries at once, but our belief is
-        // that this is infrequent enough that the potential extra gets
-        // are worth *not* having to synchronize.  If this turns out to be
-        // an incorrect assumption, we can add an atomic variable and use
-        // a fetchAdd to decide which task does the update.
         if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr.locRAD.RAD(rlocIdx) = locArr(rlocIdx).myElems._value.dsiGetRAD();
+          myLocArr.locRAD.lockRAD(rlocIdx);
+          if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
+            myLocArr.locRAD.RAD(rlocIdx) =
+              locArr(rlocIdx).myElems._value.dsiGetRAD();
+          }
+          myLocArr.locRAD.unlockRAD(rlocIdx);
         }
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if radata(rlocIdx).shiftedData != nil {
+      if radata(rlocIdx).shiftedDataChunk(0) != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(myLocArr.stridable, i);
-        return radata(rlocIdx).shiftedData(dataIdx);
+        return radata(rlocIdx).shiftedDataElem(dataIdx);
       }
     }
   }
@@ -1339,6 +1422,7 @@ proc BlockArr.dsiReindex(d: BlockDom) {
           //  directly into the alias's RAD cache
           if locArr[i].locRAD {
             alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
+                                                     d.stridable,
                                                      dom.dist.targetLocDom);
             alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
           }
@@ -1502,6 +1586,65 @@ proc BlockArr.doiCanBulkTransferStride() param {
   return useBulkTransferDist;
 }
 
+proc BlockArr.oneDData {
+  if defRectSimpleDData {
+    return true;
+  } else {
+    // TODO: do this when we create the array?  if not, then consider:
+    // TODO: use locRad oneDData, if available
+    // TODO: with more coding complexity we could get a much quicker
+    //       answer in the 'false' case, but how to avoid penalizing
+    //       the 'true' case at scale?
+    var allBlocksOneDData: bool;
+    on this {
+      var myAllBlocksOneDData: atomic bool;
+      myAllBlocksOneDData.write(true);
+      forall la in locArr {
+        if !la.myElems._value.oneDData then
+          myAllBlocksOneDData.write(false);
+      }
+      allBlocksOneDData = myAllBlocksOneDData.read();
+    }
+    return allBlocksOneDData;
+  }
+}
+
+proc BlockArr.doiUseBulkTransfer(B) {
+  if debugBlockDistBulkTransfer then
+    writeln("In BlockArr.doiUseBulkTransfer()");
+
+  //
+  // Absent multi-ddata, for the array as a whole, say bulk transfer
+  // is possible.  We'll make a final determination for each block in
+  // doiBulkTransfer(), based on the characteristics of the blocks
+  // themselves.
+  //
+  // If multi-ddata is possible then we can only do bulk transfer when
+  // either the domains are identical (so we can defer the decision as
+  // above) or all the blocks of both arrays have but a single ddata
+  // chunk.
+  //
+  return defRectSimpleDData
+         || dom == B._value.dom
+         || (oneDData && B._value.oneDData);
+}
+
+proc BlockArr.doiUseBulkTransferStride(B) {
+  if debugBlockDistBulkTransfer then
+    writeln("In BlockArr.doiUseBulkTransferStride()");
+
+  //
+  // Absent multi-ddata, for the array as a whole, say bulk transfer
+  // is possible even though as things are currently coded we'll always
+  // do regular bulk transfer and never even ask about strided.
+  //
+  // If multi-ddata is possible then we can only do strided bulk
+  // transfer when all the blocks have but a single ddata chunk.
+  //
+  return defRectSimpleDData
+         || (oneDData && B._value.oneDData);
+}
+
 proc BlockArr.doiBulkTransfer(B) {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransfer");
@@ -1545,14 +1688,14 @@ proc BlockArr.doiBulkTransfer(B) {
           // NOTE: This does not work with --heterogeneous, but heterogeneous
           // compilation does not work right now.  This call should be changed
           // once that is fixed.
-          var dest = myLocArr.myElems._value.theData;
-          const src = B._value.locArr[rid].myElems._value.theData;
+          var dest = myLocArr.myElems._value.theDataChunk(0);
+          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo)),
+                                  myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
                       rid,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
           lo+=size;
         }
@@ -1568,14 +1711,14 @@ proc BlockArr.doiBulkTransfer(B) {
                                         "; lo=", lo,
                                         "; rlo=", rlo
                                         );
-          var dest = myLocArr.myElems._value.theData;
-          const src = B._value.locArr[rid].myElems._value.theData;
+          var dest = myLocArr.myElems._value.theDataChunk(0);
+          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo)),
+                                  myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
                       dom.dist.targetLocales(rid).id,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
             lo(rank)+=size;
           }

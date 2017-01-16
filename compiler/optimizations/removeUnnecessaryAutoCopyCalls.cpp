@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -109,8 +109,8 @@ void AutoTrack::move(CallExpr* call) {
   SymExpr* rhs = toSymExpr(call->get(2));
   INT_ASSERT(lhs);
   INT_ASSERT(rhs);
-  Root* r = getRoot(rhs->var);
-  rootMap.put(lhs->var, r);
+  Root* r = getRoot(rhs->symbol());
+  rootMap.put(lhs->symbol(), r);
 }
 
 void AutoTrack::autoCopy(CallExpr* call) {
@@ -120,8 +120,8 @@ void AutoTrack::autoCopy(CallExpr* call) {
   INT_ASSERT(rhs);
   SymExpr* se = toSymExpr(rhs->get(1));
   INT_ASSERT(se);
-  Root* r = getRoot(se->var);
-  rootMap.put(lhs->var, r);
+  Root* r = getRoot(se->symbol());
+  rootMap.put(lhs->symbol(), r);
   insertLink(&r->copyHead, call);
   if (r->refCnt >= 0)
     r->refCnt++;
@@ -130,7 +130,7 @@ void AutoTrack::autoCopy(CallExpr* call) {
 void AutoTrack::autoDestroy(CallExpr* call) {
   SymExpr* se = toSymExpr(call->get(1));
   INT_ASSERT(se);
-  Root* r = getRoot(se->var);
+  Root* r = getRoot(se->symbol());
   insertLink(&r->destHead, call);
   if (r->refCnt >= 0)
     r->refCnt--;
@@ -163,7 +163,16 @@ bool AutoTrack::update() {
 void AutoTrack::updateAutoCopy(CallExpr* call) {
 //fprintf(stderr, "@@@ updateAutoCopy %d\n", call->id);
   CallExpr* rhs = toCallExpr(call->get(2));
-  rhs->replace(rhs->get(1)->remove());
+  Type* lhsType = call->get(1)->typeInfo();
+  Type* rhsType = rhs->get(1)->typeInfo();
+  SET_LINENO(call);
+  if (lhsType->getValType() == rhsType) {
+    rhs->replace(rhs->get(1)->remove());
+  } else if (lhsType->getRefType() == rhsType) {
+    rhs->replace(new CallExpr(PRIM_DEREF, rhs->get(1)->remove()));
+  } else {
+    INT_ASSERT("Type mismatch in updateAutoCopy");
+  }
 }
 
 void AutoTrack::updateAutoDestroy(CallExpr* call) {
@@ -214,7 +223,7 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
         // If it is a call expression, then we want to see if it is either an
         // autocopy call or a straight copy of one variable to another.  Both of
         // these have a 'move' primitive as the outer call.
-        if (call->isPrimitive(PRIM_MOVE)) {
+        if (isMoveOrAssign(call)) {
 
           // If the RHS is a SymExpr, then this is a straight move. Record the alias.
           if (toSymExpr(call->get(2)))
@@ -228,7 +237,7 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
                 INT_ASSERT(rhs->argList.head);
                 SymExpr* se = toSymExpr(call->get(1));
                 // Do not remove necessary autoCopies!
-                if (!se->var->hasFlag(FLAG_NECESSARY_AUTO_COPY))
+                if (!se->symbol()->hasFlag(FLAG_NECESSARY_AUTO_COPY))
                   track.autoCopy(call);
               }
             }
@@ -242,7 +251,7 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
             SymExpr* se = toSymExpr(call->get(1));
             // Global/module-level symbols have lifetimes larger than function
             // scope, so we ignore them here.
-            if (se->var->defPoint->parentSymbol == fn)
+            if (se->symbol()->defPoint->parentSymbol == fn)
               track.autoDestroy(call);
           }
         }
@@ -283,7 +292,7 @@ static void removePODinitDestroy()
     {
       // We expect both initCopy and autoCopy functions to have one argument
       // whose type is the same as the return type.
-      INT_ASSERT(fn->numFormals() == 1);
+      INT_ASSERT(fn->numFormals() >= 1);
 
       if (fn->getFormal(1)->type != fn->retType)
         // In some cases, the autoCopy function has a different return type than
@@ -305,7 +314,21 @@ static void removePODinitDestroy()
             INT_FATAL(arg, "Expected autoCopy argument to be a SymExpr.");
 
           // Bridge out the autoCopy call.
-          call->replace(actual->remove());
+
+          Type* lhsType = NULL;
+          Type* rhsType = actual->typeInfo();
+
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(isMoveOrAssign(move));
+          lhsType = move->get(1)->typeInfo();
+
+          SET_LINENO(call);
+
+          if (lhsType->getValType() != rhsType->getValType()) {
+            INT_FATAL(actual, "Type mismatch in updateAutoCopy");
+          } else {
+            call->replace(actual->remove());
+          }
         }
       }
     }
@@ -322,6 +345,8 @@ void removeUnnecessaryAutoCopyCalls() {
   // primitive types
   //
   removePODinitDestroy();
+
+  return; // TODO -- delete more in removeUnnecessaryAutoCopyCalls.
 
   //
   // remove matched pairs of autoCopy and autoDestroy calls marked with the

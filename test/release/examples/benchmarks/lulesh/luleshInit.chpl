@@ -286,7 +286,7 @@ inline proc elemIdxTo3D(ind) {
 }
 
 /* Turn a 2D node index into a 3D index by inserting the value
-   'newval' in diemnsion 'newdim' */
+   'newval' in dimension 'newdim' */
 
 inline proc node2DToIdx(param rank, ij, newdim, newval) {
   var ijk: 3*int;

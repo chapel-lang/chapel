@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -323,8 +323,13 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
     f->addFlag(FLAG_EXTERN);
     f->addFlag(FLAG_LOCAL_ARGS);
     Expr* chpl_type = convertToChplType(module, resultType.getTypePtr(), results);
-    BlockStmt* result = buildFunctionDecl(
-       f, RET_VALUE, chpl_type, NULL, NULL, NULL);
+    BlockStmt* result = buildFunctionDecl( f, // fn
+                                           RET_VALUE, // retTag
+                                           chpl_type, // ret type
+                                           false,  // throws
+                                           NULL, // where
+                                           NULL, // body
+                                           NULL); // docs
 
     //convert args
     for (clang::FunctionDecl::param_iterator it=fd->param_begin(); it < fd->param_end(); ++it) {

@@ -13,6 +13,7 @@ TARGETS = \
 	meteor-fast \
 	nbody \
 	pidigits \
+	pidigits-fast \
 	regexdna \
 	revcomp \
 	spectralnorm \
@@ -32,37 +33,37 @@ clean: FORCE
 
 
 binarytrees: binarytrees.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 chameneosredux: chameneosredux.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 fasta: fasta.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 fastaredux: fastaredux.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 fannkuchredux: fannkuchredux.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 knucleotide: knucleotide.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
 
 mandelbrot: mandelbrot.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 meteor: meteor.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 meteor-fast: meteor-fast.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 nbody: nbody.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
 
 pidigits: pidigits.chpl
-	@if [ "$(CHPL_MAKE_GMP)" != "none" ]; then \
+	@+if [ "$(CHPL_MAKE_GMP)" != "none" ]; then \
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
 	else \
 	echo "";\
@@ -71,9 +72,18 @@ pidigits: pidigits.chpl
 	echo ""; \
 	fi
 
+pidigits-fast: pidigits-fast.chpl
+	@+if [ "$(CHPL_MAKE_GMP)" != "none" ]; then \
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
+	else \
+	echo "";\
+	echo "Can't build pidigits-fast without CHPL_GMP being enabled. See for details:"; \
+	echo "http://chapel.cray.com/docs/latest/usingchapel/chplenv.html#chpl-gmp"; \
+	echo ""; \
+	fi
 
 regexdna: regexdna.chpl
-	@if [ "$(CHPL_REGEXP)" != "none" ]; then \
+	@+if [ "$(CHPL_REGEXP)" != "none" ]; then \
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
 	else \
 	echo "";\
@@ -83,12 +93,12 @@ regexdna: regexdna.chpl
 	fi
 
 revcomp: revcomp.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 spectralnorm: spectralnorm.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 threadring: threadring.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 FORCE:

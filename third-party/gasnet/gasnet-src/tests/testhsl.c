@@ -89,9 +89,9 @@ int main(int argc, char **argv) {
   if (argc < 2) test_usage();
   {
     int errtest = atoi(argv[1]);
-    GASNETI_UNUSED_UNLESS_THREADS
+    GASNETT_UNUSED
     gasnet_hsl_t lock1 = GASNET_HSL_INITIALIZER;
-    GASNETI_UNUSED_UNLESS_THREADS
+    GASNETT_UNUSED
     gasnet_hsl_t lock2;
     gasnet_hsl_init(&lock2);
 

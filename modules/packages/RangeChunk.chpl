@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,35 @@
  * limitations under the License.
  */
 
+/*
+   The ``RangeChunk`` module assists with dividing a bounded ``range`` of any ``idxType``
+   and stride into ``numChunks``. Chunks are 0-based, with the ``0`` index chunk including
+   ``range.low`` and the ``numChunks - 1`` index chunk including ``range.high``.
+   
+   Chunks are accessible in several ways:
+
+     * as a range, through an iterator
+     * as a range, through a query
+     * as a tuple of 0-based orders into the range, through an iterator
+     * as a tuple of 0-based orders into the range, through a query
+   
+   Given that it will be uncommon for the length of a given ``range`` to be divisible by
+   ``numChunks``, there are three different remainder policies available, expressed
+   by the enum ``RemElems``.
+*/  
 module RangeChunk {
+
+  /*
+     ``RemElems`` specifies the distribution of remainder elements:
+       
+       - **Thru**: default policy; remainder elements will be distributed throughout
+         ``numChunks`` chunks
+       - **Pack**: chunks at the front will receive ``ceil(range.length / numChunks)``
+         elements, then one chunk will receive what is left over; the actual number of chunks
+         may be less than ``numChunks``
+       - **Mod**: in ``numChunks`` chunks, every chunk that has an index less than
+         ``range.length % numChunks`` will receive a remainder element
+  */
   enum RemElems {
     Thru,
     Pack,
@@ -26,16 +54,13 @@ module RangeChunk {
   use RemElems;
   use BoundedRangeType;
 
+  
   /*
-   * Range-based interface, iterator and query.
-   * idx in query is zero based.
-   */
-
-  iter chunks(
-    r: range(?RT, bounded, ?S),
-    numChunks: integral,
-    remPol: RemElems = Thru): range(RT, bounded, S)
-  {
+     Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
+     as a range. The remainders will be distributed according to ``remPol``.
+  */
+  iter chunks(r: range(?RT, bounded, ?S), numChunks: integral,
+              remPol: RemElems = Thru): range(RT, bounded, S) {
     for (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
       const start = r.orderToIndex(startOrder);
       const end = r.orderToIndex(endOrder);
@@ -45,12 +70,12 @@ module RangeChunk {
     }
   }
 
-  proc chunk(
-    r: range(?RT, bounded, ?S),
-    numChunks: integral,
-    idx: integral,
-    remPol: RemElems = Thru): range(RT, bounded, S)
-  {
+  /*
+     Returns the ``idx`` chunk of range ``r`` as a range. The remainders will be
+     distributed according to ``remPol``.
+  */
+  proc chunk(r: range(?RT, bounded, ?S), numChunks: integral, idx: integral,
+             remPol: RemElems = Thru): range(RT, bounded, S) {
     const (startOrder, endOrder) = chunkOrder(r, numChunks, idx, remPol);
     const start = r.orderToIndex(startOrder);
     const end = r.orderToIndex(endOrder);
@@ -60,161 +85,114 @@ module RangeChunk {
   }
 
   /*
-   * Order-based interface, iterator and query.
-   * Orders are zero-based "indices" into a range. 
-   * idx in query is zero-based.
-   */
-
-  iter chunksOrder(
-    r: range(?RT, bounded, ?),
-    numChunks: integral,
-    remPol: RemElems = Thru): 2*RT
-  {
+     Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
+     as a 0-based order tuple. The remainders will be distributed according to ``remPol``.
+  */
+  iter chunksOrder(r: range(?RT, bounded, ?), numChunks: integral,
+                   remPol: RemElems = Thru): 2*RT {
     if r.length == 0 || numChunks <= 0 then
       return;
     const nElems = r.length;
-    const nChunks = numChunks: RT;
+    var nChunks = min(numChunks, nElems): RT;
 
     var chunkSize, rem: RT;
-    if remPol == Pack {
-      chunkSize = nElems / nChunks;
-      if chunkSize * nChunks != nElems then
-        chunkSize += 1;
-    } else { // Mod
-      chunkSize = nElems / nChunks;
-      rem = nElems - chunkSize * nChunks;
+    select (remPol) {
+      when Pack {
+        chunkSize = nElems / nChunks;
+        if chunkSize * nChunks != nElems {
+          chunkSize += 1;
+          nChunks = divceil(nElems, chunkSize);
+        }
+      }
+      when Mod {
+        chunkSize = nElems / nChunks;
+        rem = nElems - chunkSize * nChunks;
+      }
     }
 
     for i in 0..#nChunks {
       var chunk: 2*RT;
-      if remPol == Thru {
-        chunk = chunkOrderThru(nElems, nChunks, i);
-      } else if remPol == Pack {
-         chunk = chunkOrderPack(chunkSize, nElems, i);
-      } else { // Mod
-        chunk = chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
+      select (remPol) {
+        when Thru do chunk = chunkOrderThru(nElems, nChunks, i);
+        when Pack do chunk = chunkOrderPack(chunkSize, nElems, i);
+        when Mod  do chunk = chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
+        otherwise halt("RangeChunk: unknown RemElems in chunksOrder");
       }
       yield chunk;
     }
   }
 
-  proc chunkOrder(
-    r: range(?RT, bounded, ?),
-    numChunks: integral,
-    idx: integral,
-    remPol: RemElems = Thru): 2*RT
-  {
-    if r.length == 0 || numChunks <= 0 || idx >= numChunks then
+  /*
+     Returns the ``idx`` chunk of range ``r`` as a 0-based order tuple. The remainders
+     will be distributed according to ``remPol``.
+  */
+  proc chunkOrder(r: range(?RT, bounded, ?), numChunks: integral, idx: integral,
+                  remPol: RemElems = Thru): 2*RT {
+    if r.length == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
       return (1: RT, 0: RT);
 
     const nElems = r.length;
-    const nChunks = numChunks: RT;
+    const nChunks = min(numChunks, nElems): RT;
     const i = idx: RT;
 
-    if remPol == Thru {
-      return chunkOrderThru(nElems, nChunks, i);
-    } else if remPol == Pack {
-      var chunkSize = nElems / nChunks;
-      if chunkSize * nChunks != nElems then
-        chunkSize += 1;
-      return chunkOrderPack(chunkSize, nElems, i);
-    } else { // Mod
-      const chunkSize = nElems / nChunks;
-      const rem = nElems - chunkSize * nChunks;
-      return chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
-    }
-  }
-
-  /*
-   * Query the chunk index of a value in the range.
-   * Returned value is zero-based.
-   */
-
-  proc whichChunk(
-    r: range(?RT, bounded, ?),
-    numChunks: integral,
-    val: integral,
-    remPol: RemElems = Thru): RT
-  {
-    assert(r.length != 0 && numChunks > 0);
-
-    const nElems = r.length;
-    const nChunks = numChunks: RT;
-    const i = r.indexOrder(val);
-
-    assert(i: int != -1);
-
-    if remPol == Thru {
-      return i * nChunks / nElems; 
-    } else if remPol == Pack {
-      var chunkSize = nElems / nChunks;
-      if chunkSize * nChunks != nElems then
-        chunkSize += 1;
-      return i / chunkSize;
-    } else { // Mod
-      const chunkSize = nElems / nChunks;
-      const chunkSizePlus = chunkSize + 1;
-      const rem = nElems - chunkSize * nChunks;
-      const splitPoint = rem * chunkSizePlus;
-      return if i < splitPoint
-        then i / chunkSizePlus 
-        else rem + (i - splitPoint) / chunkSize; 
+    select (remPol) {
+      when Thru {
+        return chunkOrderThru(nElems, nChunks, i);
+      }
+      when Pack { 
+        var chunkSize = nElems / nChunks;
+        if chunkSize * nChunks != nElems then
+          chunkSize += 1;
+        return chunkOrderPack(chunkSize, nElems, i);
+      }
+      when Mod {
+        const chunkSize = nElems / nChunks;
+        const rem = nElems - chunkSize * nChunks;
+        return chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
+      }
+      otherwise {
+        halt("RangeChunk: unknown RemElems in chunkOrder");
+      }
     }
   }
 
 
-  /*
-   * Private helpers for order pairs and thereby ranges.
-   * Each corresponds with a remainder policy.
-   * i is a zero-based index.
-   */
-
-  // remainder elems distributed throughout 
-  private proc chunkOrderThru(
-    nElems: ?I,
-    nChunks: I,
-    i: I): (I, I)
-  {
+  //
+  // Private helpers for order pairs and thereby ranges.
+  // Each corresponds with a remainder policy.
+  //
+  pragma "no doc"
+  private proc chunkOrderThru(nElems: ?I, nChunks: I, i: I): (I, I) {
     const m = nElems * i;
     const start = if i == 0
       then 0: I
-      else ceilXDivByY(m, nChunks);
+      else divceil(m, nChunks);
     const end = if i == nChunks - 1
       then nElems - 1
-      else ceilXDivByY(m + nElems, nChunks) - 1;
+      else divceil(m + nElems, nChunks) - 1;
     return (start, end);
   }
 
-  private proc ceilXDivByY(x, y) return 1 + (x - 1)/y;
-
-  // remainder elems packed into all chunks with small tail
-  private proc chunkOrderPack(
-    chunkSize: ?I,
-    nElems: I,
-    i: I): (I, I)
-  {
+  pragma "no doc"
+  private proc chunkOrderPack(chunkSize: ?I, nElems: I, i: I): (I, I) {
     const start = chunkSize * i;
+    if start >= nElems then
+      return (1: I, 0: I);
+
     var end = start + chunkSize - 1;
-    if end > nElems then
-      end = nElems;
+    if end >= nElems then
+      end = nElems - 1;
     return (start, end); 
   }
 
-  // remainder elems distributed over chunks before rem
-  private proc chunkOrderMod(
-    chunkSize: ?I,
-    rem: I,
-    nElems: I,
-    nChunks: I,
-    i: I): (I, I)
-  {
+  pragma "no doc"
+  private proc chunkOrderMod(chunkSize: ?I, rem: I, nElems: I, nChunks: I,
+                             i: I): (I, I) {
     var start, end: I;
     if i < rem {
-      // (chunkSize+1) elements per chunk
       start = i * (chunkSize + 1);
       end = start + chunkSize;
     } else {
-      // (chunkSize) elements per chunk
       start = nElems - (nChunks - i) * chunkSize;
       end = start + chunkSize - 1;
     }

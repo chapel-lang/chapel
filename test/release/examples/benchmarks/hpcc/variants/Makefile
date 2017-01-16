@@ -17,9 +17,9 @@ clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
 stream-promoted: stream-promoted.chpl ../HPCCProblemSize.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 ra-cleanloop: ra-cleanloop.chpl ../HPCCProblemSize.chpl ../RARandomStream.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 FORCE:

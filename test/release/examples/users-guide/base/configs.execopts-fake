@@ -1,0 +1,4 @@
+./a.out --n 1000
+./a.out --n=1000
+./a.out --epsilon=0.000001 --debug=true
+./a.out --epsilon=0.000001 --debug
