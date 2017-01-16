@@ -61,7 +61,8 @@ typedef struct {
   c_sublocid_t requestedSubloc;
   chpl_fn_int_t requested_fid;
   chpl_fn_p requested_fn;
-  chpl_task_prvData_t prv;
+  chpl_taskID_t id;
+  //chpl_task_prvData_t prv;
 } chpl_task_bundle_t;
 
 #endif
