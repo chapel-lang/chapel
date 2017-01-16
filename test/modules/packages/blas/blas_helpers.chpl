@@ -3,6 +3,10 @@
 config const errorThresholdDouble = 1.e-10;
 config const errorThresholdSingle = 1.e-5;
 
+proc printErrors(name: string, type t, passed, failed, tests) {
+  writef("%s%s : %i PASSED, %i FAILED \n".format(blasPrefix(t), name, passed, failed));
+}
+
 proc trackErrors(name, err, errorThreshold, ref passed, ref failed, ref tests) {
   if err > errorThreshold {
     failed += 1;

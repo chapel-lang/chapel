@@ -5,10 +5,10 @@ CHPLFLAGS += --ccflags -Wno-enum-conversion
 all: blas1 blas2 blas3
 
 blas1:
-	chpl test_blas1.chpl ${BLASFLAGS}
+	chpl test_blas1.chpl ${LAPACKFLAGS} ${CHPLFLAGS} -o test_blas1
 
 blas2:
 
 blas3:
-	chpl test_blas3.chpl ${LAPACKFLAGS} ${CHPLFLAGS}
+	chpl test_blas3.chpl ${LAPACKFLAGS} ${CHPLFLAGS} -o test_blas3
 
