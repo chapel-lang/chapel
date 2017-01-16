@@ -1,0 +1,51 @@
+ssrotg : 4 PASSED, 0 FAILED 
+ddrotg : 4 PASSED, 0 FAILED 
+ssrotmg : 2 PASSED, 0 FAILED 
+ddrotmg : 2 PASSED, 0 FAILED 
+ssrot : 4 PASSED, 0 FAILED 
+ddrot : 4 PASSED, 0 FAILED 
+ssrotm : 4 PASSED, 0 FAILED 
+ddrotm : 4 PASSED, 0 FAILED 
+ssswap : 6 PASSED, 0 FAILED 
+ddswap : 6 PASSED, 0 FAILED 
+ccswap : 6 PASSED, 0 FAILED 
+zzswap : 6 PASSED, 0 FAILED 
+ssscal : 3 PASSED, 0 FAILED 
+ddscal : 3 PASSED, 0 FAILED 
+ccscal : 3 PASSED, 0 FAILED 
+zzscal : 3 PASSED, 0 FAILED 
+sscopy : 3 PASSED, 0 FAILED 
+ddcopy : 3 PASSED, 0 FAILED 
+cccopy : 3 PASSED, 0 FAILED 
+zzcopy : 3 PASSED, 0 FAILED 
+ssaxpy : 3 PASSED, 0 FAILED 
+ddaxpy : 3 PASSED, 0 FAILED 
+ccaxpy : 3 PASSED, 0 FAILED 
+zzaxpy : 3 PASSED, 0 FAILED 
+ssdot : 1 PASSED, 0 FAILED 
+dddot : 1 PASSED, 0 FAILED 
+ccdotu : 1 PASSED, 0 FAILED 
+zzdotu : 1 PASSED, 0 FAILED 
+ccdotc : 1 PASSED, 0 FAILED 
+zzdotc : 1 PASSED, 0 FAILED 
+ssdsdot : 1 PASSED, 0 FAILED 
+ssnrm2 : 1 PASSED, 0 FAILED 
+ddnrm2 : 1 PASSED, 0 FAILED 
+ccnrm2 : 1 PASSED, 0 FAILED 
+zznrm2 : 1 PASSED, 0 FAILED 
+ssasum : 1 PASSED, 0 FAILED 
+ddasum : 1 PASSED, 0 FAILED 
+ccasum : 1 PASSED, 0 FAILED 
+zzasum : 1 PASSED, 0 FAILED 
+2
+3
+ssamax : 2 PASSED, 0 FAILED 
+2
+3
+ddamax : 2 PASSED, 0 FAILED 
+2
+3
+ccamax : 2 PASSED, 0 FAILED 
+2
+3
+zzamax : 2 PASSED, 0 FAILED 
