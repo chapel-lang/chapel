@@ -1,1 +1,1 @@
---no-warnings -sarrayInitMethod=ArrayInit.serialInit --no-bounds-checks
+--no-warnings -sdefaultArrayInitMethod=ArrayInit.serialInit --no-bounds-checks

@@ -1,1 +1,1 @@
---no-warnings -sarrayInitMethod=ArrayInit.serialInit -sdisableBlockLazyRAD
+--no-warnings -sdefaultArrayInitMethod=ArrayInit.serialInit -sdisableBlockLazyRAD

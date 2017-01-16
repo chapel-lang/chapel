@@ -603,8 +603,9 @@ module ChapelBase {
     __primitive("chpl_exit_any", status);
   }
 
-  enum ArrayInit {defaultInit, noInit, serialInit, parallelInit};
-  config var arrayInitMethod = ArrayInit.defaultInit;
+  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
+  config param defaultArrayInitMethod = ArrayInit.heuristicInit;
+  var arrayInitMethod = defaultArrayInitMethod;
 
   proc init_elts(x, s, type t) : void {
     var initMethod = arrayInitMethod;
@@ -612,7 +613,7 @@ module ChapelBase {
     // for uints, check that s > 0, so the `s-1` below doesn't overflow
     if isUint(s) && s == 0 {
       initMethod = ArrayInit.noInit;
-    } else if initMethod == ArrayInit.defaultInit {
+    } else if initMethod == ArrayInit.heuristicInit {
       // Heuristically determine if we should do parallel initialization. The
       // current heuristic really just checks that we have a numeric array that's
       // at least 2MB. This value was chosen experimentally: Any smaller and the
@@ -681,7 +682,7 @@ module ChapelBase {
         }
       }
       otherwise {
-        halt("ArrayInit.defaultInit should have been made concrete");
+        halt("ArrayInit.heuristicInit should have been made concrete");
       }
     }
   }
