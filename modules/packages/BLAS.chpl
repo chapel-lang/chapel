@@ -700,10 +700,10 @@ module BLAS {
 /*
     Wrapper for the `ROTG routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga2f65d66137ddaeb7ae93fcc4902de3fc.html#ga2f65d66137ddaeb7ae93fcc4902de3fc>`_
 
-    Given the Cartesian coordinates ``(a, b) of a point p, these routines return
-    the parameters a, b, c, and s associated with the
+    Given the Cartesian coordinates ``(a, b)`` of a point ``p``, these routines
+    return the parameters ``a``, ``b``, ``c``, and ``s`` associated with the
     `Givens rotation <https://en.wikipedia.org/wiki/Givens_rotation>`_ that
-    zeros the y-coordinate of the point.
+    zeros the y-coordinate of the point::
 
       | c  s |   |a|   |r|
       |      | . | | = | |
@@ -714,10 +714,10 @@ module BLAS {
     Output Parameters:
 
     - ``r`` stored in ``a`` parameter: length vector of ``(a, b)``
-    - ``z`` stored in ``b`` parameter:
-       (stored in a parameter), z (stored in b parameter), c, s.
+    - ``z`` stored in ``b`` parameter: (stored in ``a`` parameter), z (stored in b
+      parameter), c, s.
 
-    The output paraMTEr z is determined by::
+    The output parameter z is determined by::
 
       if |a| > |b| then z = s;
       else if c != 0 then z = 1/c;
@@ -908,7 +908,7 @@ proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX:
 proc swap(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
  where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
 
   select eltType {
     when real(32) do{
@@ -944,10 +944,10 @@ proc swap(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
    X: Vector updated by the equation: ``X[i] = alpha*X[i]``
 
 */
-proc scal(X: [?D]?eltType, alpha:eltType, incX: c_int = 1)
+proc scal(X: [?D]?eltType, ref alpha:eltType, incX: c_int = 1)
 where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
 
   select eltType {
     when real(32) do{
@@ -988,7 +988,7 @@ where D.rank == 1 {
 proc copy(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
   where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
 
   select eltType {
     when real(32) do{
@@ -1028,22 +1028,22 @@ proc copy(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
 
 */
 
-proc axpy(X: [?D]?eltType, Y: [D]eltType, alpha:eltType, incY: c_int = 1, incX: c_int = 1)
+proc axpy(X: [?D]?eltType, Y: [D]eltType, ref alpha:eltType, incY: c_int = 1, incX: c_int = 1)
  where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
   select eltType {
     when real(32) do{
-      cblas_saxpy (N, alpha,X, incX, Y, incY);
+      cblas_saxpy (N, alpha, X, incX, Y, incY);
     }
     when real(64) do{
-      cblas_saxpy (N, alpha,X, incX, Y, incY);
+      cblas_daxpy (N, alpha, X, incX, Y, incY);
     }
     when complex(64) do{
-      cblas_saxpy (N, alpha,X, incX, Y, incY);
+      cblas_caxpy (N, alpha, X, incX, Y, incY);
     }
     when complex(128) do{
-      cblas_saxpy (N, alpha,X, incX, Y, incY);
+      cblas_zaxpy (N, alpha, X, incX, Y, incY);
     }
     otherwise {
         compilerError("Unknown type in axpy");
@@ -1068,10 +1068,10 @@ proc axpy(X: [?D]?eltType, Y: [D]eltType, alpha:eltType, incY: c_int = 1, incX: 
 
     Scalar value of dot product.
 */
-proc dot( X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1):eltType
+proc dot(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1):eltType
 where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
 
   select eltType {
     when real(32) do{
@@ -1094,36 +1094,40 @@ where D.rank == 1 {
 
      dotu = X*Y
 
-    Input:
+  Input:
 
-    Y,X:Vectors with N elements.
-    incX: defines the increment for the vector X.
-    incY: defines the increment for the vector Y.
+  Y,X:Vectors with N elements.
+  incX: defines the increment for the vector X.
+  incY: defines the increment for the vector Y.
 
-    Output:
+  Return:
 
-    dotu:  Has the result of complex dot product.
+  dotu:  Has the result of complex dot product.
 
 
 */
-proc dotu_sub( X: [?D]?eltType,  Y: [D]eltType, ref dotu, incY: c_int = 1, incX: c_int = 1)
+proc dotu(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
 where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
+
+  var res: eltType;
 
   select eltType {
     when complex(64) do{
-      cblas_cdotu_sub (N, X, incX, Y, incY, dotu);
+      cblas_cdotu_sub (N, X, incX, Y, incY, res);
     }
     when complex(128) do{
-      cblas_zdotu_sub (N, X, incX, Y, incY, dotu);
+      cblas_zdotu_sub (N, X, incX, Y, incY, res);
     }
     otherwise {
         compilerError("Unknown type in dotu_sub");
     }
   }
-}
 
+  return res;
+
+}
 
 
 /*
@@ -1140,35 +1144,37 @@ where D.rank == 1 {
     incX: defines the increment for the vector X.
     incY: defines the increment for the vector Y.
 
-    Output:
+    Return:
 
     dotc:  Has the result of complex dot product.
 
 
 */
-
-proc dotc_sub(X: [?D]?eltType, Y: [D]eltType, ref dotc, incY: c_int = 1, incX: c_int = 1)
+proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
  where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
+
+  var res: eltType;
 
   select eltType {
     when complex(64) do{
-      cblas_cdotc_sub (N, X, incX, Y, incY, dotc);
+      cblas_cdotc_sub (N, X, incX, Y, incY, res);
     }
     when complex(128) do{
-      cblas_zdotc_sub (N, X, incX, Y, incY, dotc);
+      cblas_zdotc_sub (N, X, incX, Y, incY, res);
     }
     otherwise {
         compilerError("Unknown type in dotc_sub");
     }
   }
+  return res;
 }
 
 /*
     Wrapper for `SDSDOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>`_
 
-    Returns  the dot product of two vectors::
+    Returns  the dot product of two vectors, using double precision internally::
 
        d = X*Y
 
@@ -1184,10 +1190,11 @@ proc dotc_sub(X: [?D]?eltType, Y: [D]eltType, ref dotc, incY: c_int = 1, incX: c
 
 
 */
-proc sdsdot(X: [?D]?eltType, Y: [D]eltType, alpha: eltType, incY: c_int = 1,incX: c_int = 1): eltType
+proc dsdot(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1,incX: c_int = 1): eltType
  where D.rank == 1 {
 
-  const N = D.size;
+  var alpha = 0: eltType;
+  const N = D.size: c_int;
 
   select eltType {
    when real(32) do{
@@ -1213,13 +1220,13 @@ proc sdsdot(X: [?D]?eltType, Y: [D]eltType, alpha: eltType, incY: c_int = 1,incX
 
     Return:
 
-    The norm of X vector.
+    The 2-norm of X vector.
 
 */
 proc nrm2(X: [?D]?eltType, incX: c_int = 1)
 where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
 
   select eltType {
    when real(32) do{
@@ -1253,13 +1260,14 @@ where D.rank == 1 {
     incX: The increment of vector X.
 
     Return:
-    The sum of the magnitude of each X vector element.
+
+    The 1-norm of X vector.
 
 */
 proc asum(X: [?D]?eltType, incX: c_int = 1)
 where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
 
   select eltType {
    when real(32) do{
@@ -1295,22 +1303,24 @@ where D.rank == 1 {
 
 */
 proc amax(X: [?D]?eltType, incX: c_int = 1)
-where D.rank == 1 {
+where D.rank == 1: D.idxType {
 
-  const N = D.size;
+  const N = D.size: c_int;
+
+  const r = D.dim(1);
 
   select eltType {
    when real(32) do{
-      return cblas_isamax(N, X, incX);
+      return r.orderToIndex(cblas_isamax(N, X, incX));
     }
    when real(64) do{
-      return cblas_idamax(N, X, incX);
+      return r.orderToIndex(cblas_idamax(N, X, incX));
     }
    when complex(64) do{
-      return cblas_icamax(N, X, incX);
+      return r.orderToIndex(cblas_icamax(N, X, incX));
     }
     when complex(128) do{
-      return cblas_izamax(N, X, incX);
+      return r.orderToIndex(cblas_izamax(N, X, incX));
     }
     otherwise {
         compilerError("Unknown type in amax");
@@ -1337,7 +1347,7 @@ where D.rank == 1 {
 
   */
   module C_BLAS {
-    extern type CBLAS_INDEX;
+    extern type CBLAS_INDEX = c_int;
 
     // Define the external types
     // These are C enums, so we define these as c_ints;
