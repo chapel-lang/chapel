@@ -781,7 +781,7 @@ proc rotg(ref a : ?eltType, ref b : eltType, ref c : eltType, ref s : eltType){
 
 
 */
-proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType){
+proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType) {
   select eltType {
     when real(32) do{
       cblas_srotmg(d1,d2,b1,b2,P);
@@ -818,7 +818,7 @@ proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: [
 proc rot(X: [?D] ?eltType, Y: [D] eltType, c: eltType, s: eltType,  incY: c_int = 1, incX: c_int = 1)
 where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
 
   select eltType {
     when real(32) do{
@@ -871,10 +871,10 @@ where D.rank == 1 {
 
 
 */
-proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1)
  where D.rank == 1 {
 
-  const N = D.size;
+  const N = D.size: c_int;
 
   select eltType {
     when real(32) do{
