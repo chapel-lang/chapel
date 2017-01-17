@@ -165,6 +165,11 @@ public:
   {
   }
 
+  QualifiedType(Qualifier qual, Type* type)
+    : _type(type), _qual(qual)
+  {
+  }
+
   QualifiedType(Type* type, Qualifier qual)
     : _type(type), _qual(qual)
   {
@@ -192,6 +197,13 @@ public:
   bool isRefType() const;
   bool isWideRefType() const;
 
+  QualifiedType toRef() {
+    return QualifiedType(QUAL_REF, _type->getValType());
+  }
+
+  QualifiedType toVal() {
+    return QualifiedType(QUAL_VAL, _type->getValType());
+  }
 
   Type* type() const {
     return _type;

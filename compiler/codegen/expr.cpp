@@ -1257,8 +1257,7 @@ GenRet codegenValue(GenRet r)
   return ret;
 }
 
-// Create a temporary
-// value holding r and return a pointer to it.
+// Create a temporary value holding r and return a pointer to it.
 // If r is already a pointer, do nothing.
 // Does not handle homogeneous tuples.
 // Does not handle wide pointers.
@@ -3163,7 +3162,7 @@ GenRet CallExpr::codegen() {
       if (fn->hasFlag(FLAG_EXTERN)) {
         if (actual->isWideRef() == true ||
             arg.isLVPtr         == GEN_WIDE_PTR) {
-          arg = codegenRaddr(codegenValue(arg));
+          arg = codegenValue(arg);
 
         } else if (isRefExternStarTuple(formal, actual) == true) {
           // In C, a fixed-size-array lvalue is already a pointer,
@@ -3173,8 +3172,11 @@ GenRet CallExpr::codegen() {
             arg = codegenDeref(arg);
         }
       }
+
+      // TODO: What if the actual is a wide-ref and the formal is a narrow ref?
+      // Should that be handled back in IWR?
       if (arg.chplType->symbol->isRefOrWideRef() && !formal->isRefOrWideRef()) {
-        arg = codegenDeref(arg);
+        arg = codegenValue(codegenDeref(arg));
       }
 
       args[i] = arg;

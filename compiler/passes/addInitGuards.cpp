@@ -216,9 +216,7 @@ static void addPrintModInitOrder(FnSymbol* fn)
 
   // += and -+ take ref args, so we must first get a reference to the
   // indent level variable
-  Type* refIndentLevelType = gModuleInitIndentLevel->typeInfo()->refType;
-  INT_ASSERT(refIndentLevelType);
-  VarSymbol* refIndentLevel = newTemp("refIndentLevel",refIndentLevelType);
+  VarSymbol* refIndentLevel = newTemp("refIndentLevel",gModuleInitIndentLevel->qualType().toRef());
   CallExpr *getAddr = new CallExpr(PRIM_MOVE,
                                    new SymExpr(refIndentLevel),
                                    new CallExpr(PRIM_ADDR_OF,

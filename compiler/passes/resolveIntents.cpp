@@ -97,7 +97,11 @@ IntentTag blankIntentForType(Type* t) {
 
 IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
   if (existingIntent == INTENT_BLANK) {
-    return blankIntentForType(t);
+    if (t->symbol->hasFlag(FLAG_REF)) {
+      return INTENT_REF;
+    } else {
+      return blankIntentForType(t);
+    }
   } else if (existingIntent == INTENT_CONST) {
     return constIntentForType(t);
   } else {
@@ -108,7 +112,7 @@ IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
 static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
 
-  if (isRecord(t) || isUnion(t))
+  if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
     return INTENT_REF;
   else
     return INTENT_CONST_IN;

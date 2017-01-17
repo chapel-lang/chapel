@@ -1034,14 +1034,25 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
       Vec<SymExpr*>* defs = defMap.get(sym);
 
-      if (defs == NULL || defs->n != 1) {
-        INT_FATAL(sym, "Expected sym to have exactly one definition");
+      CallExpr* move = NULL;
+      if (defs == NULL) {
+        INT_FATAL(sym, "Expected sym to have at least one definition");
       }
 
-      // Do we need to consider PRIM_ASSIGN as well?
-      CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
+      // Ignores reference actuals passed to reference formals
+      for_defs(def, defMap, sym) {
+        CallExpr* parent = toCallExpr(def->parentExpr);
+        INT_ASSERT(parent);
+        if (parent->isPrimitive(PRIM_MOVE)) {
+          if (move == NULL) {
+            move = parent;
+          } else {
+            INT_FATAL(sym, "Expected sym to have exactly one move-definition");
+          }
+        }
+      }
 
-      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
 
       if (SymExpr* se = toSymExpr(move->get(2)))
       {
