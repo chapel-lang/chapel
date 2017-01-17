@@ -33,7 +33,14 @@ From the EC2 console, do the following:
 
 5. Create or select a private key.
 
+   - If creating the key, you will need to download the ``.pem`` identity file.
+     This will be used in the next step to access the instance.
+
 6. `Access the launched instance`_ via ssh using the private key chosen before.
+
+   - Summarizing the AWS documentation linked above, you can ssh into the
+     instance using the ``.pem`` identity file downloaded in the previous step
+     with the following command: ``ssh -i /path/to/key.pem username@hostname``
 
 .. _Access the launched instance: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstances.html?icmpid=docs_ec2_console
 
