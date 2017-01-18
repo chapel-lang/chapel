@@ -39,8 +39,8 @@ proc main() {
     for 1..maxIter {                       // for the max # of iterations
       Zi = 2.0*Zr*Zi + ci;           // update Z and T
       Zr = Tr - Ti + cr;
-      Tr = Zr**2;
-      Ti = Zi**2;
+      Tr = Zr*Zr;
+      Ti = Zi*Zi;
 
       if (Tr + Ti > limit) then          // if we haven't converged
         break;
@@ -66,12 +66,12 @@ proc main() {
   w.write(image);
 }
 
-proc +(cr, ci) {
+inline proc +(cr, ci) {
   return (cr(1)+ci, cr(2)+ci, cr(3)+ci, cr(4)+ci, 
           cr(5)+ci, cr(6)+ci, cr(7)+ci, cr(8)+ci);
 }
 
-proc >(x, y) {
+inline proc >(x, y) {
   for param i in 1..bitsPerElt do
     if x(i) <= y then
       return false;
