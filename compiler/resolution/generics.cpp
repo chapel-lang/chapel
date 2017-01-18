@@ -629,7 +629,7 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     newFn->getFormal(2)->type->methods.add(newFn);
   }
 
-  newFn->tag_generic();
+  newFn->tagIfGeneric();
 
   if (!newFn->hasFlag(FLAG_GENERIC) && !evaluateWhereClause(newFn)) {
     //

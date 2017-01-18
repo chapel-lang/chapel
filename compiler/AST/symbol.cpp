@@ -1398,27 +1398,35 @@ hasGenericArgs(FnSymbol* fn) {
 }
 
 
-// Tag the given function as generic.
-// Returns true if there was a change, false otherwise.
-bool FnSymbol::tag_generic() {
-  if (hasFlag(FLAG_GENERIC))
-    return false;  // Already generic, no change.
+//
+// If the function is not currently marked as generic
+//    then if it is generic
+//      1) Update some flags
+//      2) Return true to indicate the status has been modified
+//
+bool FnSymbol::tagIfGeneric() {
+  bool retval = false;
 
-  if (int result = hasGenericArgs(this)) {
-    // This function has generic arguments, so mark it as generic.
-    addFlag(FLAG_GENERIC);
+  if (hasFlag(FLAG_GENERIC) == false) {
+    int result = hasGenericArgs(this);
 
-    // If the return type is not completely unknown (which is generic enough)
-    // and this function is a type constructor function,
-    // then mark its return type as generic.
-    if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-      retType->symbol->addFlag(FLAG_GENERIC);
-      if (result == 2)
-        retType->hasGenericDefaults = true;
+    // If this function has at least 1 generic formal
+    if (result > 0) {
+      addFlag(FLAG_GENERIC);
+
+      if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+        retType->symbol->addFlag(FLAG_GENERIC);
+
+        if (result == 2) {
+          retType->hasGenericDefaults = true;
+        }
+      }
+
+      retval = true;
     }
-    return true;
   }
-  return false;
+
+  return retval;
 }
 
 bool FnSymbol::isResolved() const {

@@ -8867,7 +8867,7 @@ resolve() {
   while (changed) {
     changed = false;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      changed = fn->tag_generic() || changed;
+      changed = fn->tagIfGeneric() || changed;
     }
   }
 

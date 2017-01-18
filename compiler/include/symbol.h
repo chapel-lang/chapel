@@ -466,7 +466,8 @@ class FnSymbol : public Symbol {
 
   void            collapseBlocks();
 
-  bool            tag_generic();
+  bool            tagIfGeneric();
+
   bool            isResolved()                                 const;
   bool            isMethod()                                   const;
   bool            isPrimaryMethod()                            const;
