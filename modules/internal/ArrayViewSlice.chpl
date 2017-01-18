@@ -92,7 +92,7 @@ class ArrayViewSliceArr: BaseArr {
   }
 */
 
-  proc dsiReindex() {
+  proc dsiReindex(newdom) {
     compilerError("reindexing not supported on array views yet");
   }
 }
