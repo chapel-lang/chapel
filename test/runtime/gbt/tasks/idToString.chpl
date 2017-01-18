@@ -1,6 +1,6 @@
 type buf_t = c_char;
 
-extern proc chpl_task_idToString(buf: c_ptr(buf_t),
+extern proc chpl_task_idToString(buf: c_void_ptr,
                                  size: size_t,
                                  id: chpl_taskID_t): c_string;
 extern proc chpl_task_getId(): chpl_taskID_t;
