@@ -32,7 +32,7 @@
 
 
 # RunInVENV
-RIVENV=$CHPL_HOME/doc/util/run-in-venv.bash
+RIVENV=$CHPL_HOME/util/run-in-venv.bash
 SCSPELL=scspell
 CHPL_DICT=$CHPL_HOME/.scspell/dictionary
 
