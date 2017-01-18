@@ -1170,8 +1170,8 @@ module DefaultRectangular {
       } else {
         const mdPDLow = dom.dsiDim(mdParDim).low;
         const chunk = mdInd2Chunk(mdPDLow + followThis(mdParDim).low);
-        if debugDataParMultiDData {
-          // this code assumes followThis spans but a single chunk
+        if boundsChecking {
+          // the code here assumes followThis spans but a single chunk
           assert(mdPDLow + followThis(mdParDim).high <= mData(chunk).pdr.high);
         }
 
