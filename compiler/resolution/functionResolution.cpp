@@ -8852,8 +8852,9 @@ computeStandardModuleSet() {
 }
 
 
-void
-resolve() {
+void resolve() {
+  bool changed = true;
+
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
 
   computeStandardModuleSet(); // Lydia NOTE 09/12/16: is not linked to our
@@ -8863,11 +8864,15 @@ resolve() {
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
 
-  bool changed = true;
-  while (changed) {
+  // Iterate until all generic functions have been tagged with FLAG_GENERIC
+  while (changed == true) {
     changed = false;
+
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      changed = fn->tagIfGeneric() || changed;
+      // Returns true if status of fn is changed
+      if (fn->tagIfGeneric() == true) {
+        changed = true;
+      }
     }
   }
 
