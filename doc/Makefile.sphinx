@@ -73,7 +73,7 @@ html-release: check-sphinxbuild source clean-build
 	@chmod -R ugo+rX $(BUILDDIR)
 	mv $(BUILDDIR)/html .
 	@echo
-	@echo "Build finished. The HTML pages are in ./html."
+	@echo "Build finished. The HTML pages are in "'$$CHPL_HOME'"/doc/html."
 
 html-dev:
 	@echo
