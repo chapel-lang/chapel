@@ -81,7 +81,8 @@ html-dev:
 	@echo "Warnings not treated as errors"
 	$(SPHINXBUILD) -b html -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SOURCEDIR) $(BUILDDIR)/html
 	@chmod -R ugo+rX $(BUILDDIR)
-	mv $(BUILDDIR)/html .
+	rm -rf html
+	cp -r $(BUILDDIR)/html .
 	@echo
 	@echo "Build finished. The HTML pages are in ./html."
 
