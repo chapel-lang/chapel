@@ -5,5 +5,5 @@
 # size 16 gets faster.
 import os
 
-print(os.getenv('CHPL_TEST_PERF') != 'off' or (os.getenv('CHPL_TEST_PERF') == 'on' and
+print(os.getenv('CHPL_TEST_PERF') != 'on' or (os.getenv('CHPL_TEST_PERF') == 'on' and
       os.getenv('CHPL_COMM_SUBSTRATE') in ['mpi', 'aries']))
