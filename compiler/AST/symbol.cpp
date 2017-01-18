@@ -820,37 +820,37 @@ void TypeSymbol::accept(AstVisitor* visitor) {
   }
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-FnSymbol::FnSymbol(const char* initName) :
-  Symbol(E_FnSymbol, initName),
-  formals(),
-  retType(dtUnknown),
-  where(NULL),
-  retExprType(NULL),
-  body(new BlockStmt()),
-  thisTag(INTENT_BLANK),
-  retTag(RET_VALUE),
-  iteratorInfo(NULL),
-  _this(NULL),
-  _outer(NULL),
-  instantiatedFrom(NULL),
-  instantiationPoint(NULL),
-  basicBlocks(NULL),
-  calledBy(NULL),
-  userString(NULL),
-  valueFunction(NULL),
-  codegenUniqueNum(1),
-  doc(NULL),
-  retSymbol(NULL),
-  llvmDISubprogram(NULL),
-  _throwsError(false)
-{
+FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
+  retType            = dtUnknown;
+  where              = NULL;
+  retExprType        = NULL;
+  body               = new BlockStmt();
+  thisTag            = INTENT_BLANK;
+  retTag             = RET_VALUE;
+  iteratorInfo       = NULL;
+  _this              = NULL;
+  _outer             = NULL;
+  instantiatedFrom   = NULL;
+  instantiationPoint = NULL;
+  basicBlocks        = NULL;
+  calledBy           = NULL;
+  userString         = NULL;
+  valueFunction      = NULL;
+  codegenUniqueNum   = 1;
+  doc                = NULL;
+  retSymbol          = NULL;
+  llvmDISubprogram   = NULL;
+  _throwsError       = false;
+
   substitutions.clear();
+
   gFnSymbols.add(this);
+
   formals.parent = this;
 }
 
@@ -858,16 +858,24 @@ FnSymbol::FnSymbol(const char* initName) :
 FnSymbol::~FnSymbol() {
   if (iteratorInfo) {
     // Also set iterator class and iterator record iteratorInfo = NULL.
-    if (iteratorInfo->iclass)
+    if (iteratorInfo->iclass) {
       iteratorInfo->iclass->iteratorInfo = NULL;
-    if (iteratorInfo->irecord)
+    }
+
+    if (iteratorInfo->irecord) {
       iteratorInfo->irecord->iteratorInfo = NULL;
+    }
+
     delete iteratorInfo;
   }
+
   BasicBlock::clear(this);
-  delete basicBlocks; basicBlocks = 0;
-  if (calledBy)
+
+  delete basicBlocks;
+
+  if (calledBy) {
     delete calledBy;
+  }
 }
 
 
@@ -1369,57 +1377,119 @@ FnSymbol::collapseBlocks() {
   body->accept(&visitor);
 }
 
+
+
+
+
 //
-// returns 1 if generic
-// returns 2 if they all have defaults
+// If the function is not currently marked as generic
+//    then if it is generic
+//      1) Update some flags
+//      2) Return true to indicate the status has been modified
 //
-static int
-hasGenericArgs(FnSymbol* fn) {
-  bool isGeneric = false;
-  bool hasGenericDefaults = true;
-  for_formals(formal, fn) {
-    if ((formal->type->symbol->hasFlag(FLAG_GENERIC) &&
-         (!formal->type->hasGenericDefaults ||
-          formal->hasFlag(FLAG_MARKED_GENERIC) ||
-          formal == fn->_this ||
-          formal->hasFlag(FLAG_IS_MEME))) ||
-        formal->intent == INTENT_PARAM) {
+bool FnSymbol::tagIfGeneric() {
+  bool retval = false;
+
+  if (hasFlag(FLAG_GENERIC) == false) {
+    int result = hasGenericFormals();
+
+    // If this function has at least 1 generic formal
+    if (result > 0) {
+      addFlag(FLAG_GENERIC);
+
+      if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+        retType->symbol->addFlag(FLAG_GENERIC);
+
+        if (result == 2) {
+          retType->hasGenericDefaults = true;
+        }
+      }
+
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+
+
+//
+// Scan the formals and return:
+//   2 is there is at least 1 generic formal and every generic
+//     formal has a default value
+//
+//   1 if there is at least 1 generic formal
+//
+//   0 if there are no generic formals
+//
+int FnSymbol::hasGenericFormals() const {
+  bool hasGenericFormal   = false;
+  bool hasGenericDefaults =  true;
+  int  retval             =     0;
+
+  for_formals(formal, this) {
+    bool isGeneric = false;
+
+    if (formal->intent == INTENT_PARAM) {
       isGeneric = true;
-      if (!formal->defaultExpr)
+
+    } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+      if (formal->type->hasGenericDefaults     == false ||
+          formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
+          formal                               == _this ||
+          formal->hasFlag(FLAG_IS_MEME)        == true) {
+        isGeneric = true;
+      }
+    }
+
+    if (isGeneric == true) {
+      hasGenericFormal = true;
+
+      if (formal->defaultExpr == false) {
         hasGenericDefaults = false;
+      }
     }
   }
-  if (isGeneric && !hasGenericDefaults)
-    return 1;
-  else if (isGeneric && hasGenericDefaults)
-    return 2;
-  else
-    return 0;
+
+  if (hasGenericFormal == false) {
+    retval = 0;
+
+  } else if (hasGenericDefaults == false) {
+    retval = 1;
+
+  } else if (hasGenericDefaults ==  true) {
+    retval = 2;
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
 }
 
 
-// Tag the given function as generic.
-// Returns true if there was a change, false otherwise.
-bool FnSymbol::tag_generic() {
-  if (hasFlag(FLAG_GENERIC))
-    return false;  // Already generic, no change.
 
-  if (int result = hasGenericArgs(this)) {
-    // This function has generic arguments, so mark it as generic.
-    addFlag(FLAG_GENERIC);
 
-    // If the return type is not completely unknown (which is generic enough)
-    // and this function is a type constructor function,
-    // then mark its return type as generic.
-    if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-      retType->symbol->addFlag(FLAG_GENERIC);
-      if (result == 2)
-        retType->hasGenericDefaults = true;
-    }
-    return true;
-  }
-  return false;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 bool FnSymbol::isResolved() const {
   return hasFlag(FLAG_RESOLVED);
