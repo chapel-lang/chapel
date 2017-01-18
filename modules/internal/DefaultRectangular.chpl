@@ -1726,7 +1726,7 @@ module DefaultRectangular {
 
       if !defRectSimpleDData {
         if mdpdIsRange {
-          
+
           alias.mdNumChunks = mdNumChunks;
           alias.mdRLo = mdRLo;
           alias.mdRHi = mdRHi;
@@ -1892,7 +1892,17 @@ module DefaultRectangular {
     chpl_serialReadWriteRectangular(f, this);
   }
 
-  proc chpl_serialReadWriteRectangular(f, arr, dom=arr.dom) {
+  // Why can the following two functions not be collapsed into one
+  // where 'dom = arr.dom'?  Because this puts a type constraint on
+  // what 'dom' can be passed that is too strict in some callchains
+  // (e.g., if arr.dom is non-stridable but the 'dom' passed in is
+  // stridable).
+  //
+  proc chpl_serialReadWriteRectangular(f, arr) {
+    chpl_serialReadWriteRectangular(f, arr, arr.dom);
+  }
+
+  proc chpl_serialReadWriteRectangular(f, arr, dom) {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(idxType);
