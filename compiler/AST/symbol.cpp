@@ -820,37 +820,37 @@ void TypeSymbol::accept(AstVisitor* visitor) {
   }
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-FnSymbol::FnSymbol(const char* initName) :
-  Symbol(E_FnSymbol, initName),
-  formals(),
-  retType(dtUnknown),
-  where(NULL),
-  retExprType(NULL),
-  body(new BlockStmt()),
-  thisTag(INTENT_BLANK),
-  retTag(RET_VALUE),
-  iteratorInfo(NULL),
-  _this(NULL),
-  _outer(NULL),
-  instantiatedFrom(NULL),
-  instantiationPoint(NULL),
-  basicBlocks(NULL),
-  calledBy(NULL),
-  userString(NULL),
-  valueFunction(NULL),
-  codegenUniqueNum(1),
-  doc(NULL),
-  retSymbol(NULL),
-  llvmDISubprogram(NULL),
-  _throwsError(false)
-{
+FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
+  retType            = dtUnknown;
+  where              = NULL;
+  retExprType        = NULL;
+  body               = new BlockStmt();
+  thisTag            = INTENT_BLANK;
+  retTag             = RET_VALUE;
+  iteratorInfo       = NULL;
+  _this              = NULL;
+  _outer             = NULL;
+  instantiatedFrom   = NULL;
+  instantiationPoint = NULL;
+  basicBlocks        = NULL;
+  calledBy           = NULL;
+  userString         = NULL;
+  valueFunction      = NULL;
+  codegenUniqueNum   = 1;
+  doc                = NULL;
+  retSymbol          = NULL;
+  llvmDISubprogram   = NULL;
+  _throwsError       = false;
+
   substitutions.clear();
+
   gFnSymbols.add(this);
+
   formals.parent = this;
 }
 
@@ -858,16 +858,24 @@ FnSymbol::FnSymbol(const char* initName) :
 FnSymbol::~FnSymbol() {
   if (iteratorInfo) {
     // Also set iterator class and iterator record iteratorInfo = NULL.
-    if (iteratorInfo->iclass)
+    if (iteratorInfo->iclass) {
       iteratorInfo->iclass->iteratorInfo = NULL;
-    if (iteratorInfo->irecord)
+    }
+
+    if (iteratorInfo->irecord) {
       iteratorInfo->irecord->iteratorInfo = NULL;
+    }
+
     delete iteratorInfo;
   }
+
   BasicBlock::clear(this);
-  delete basicBlocks; basicBlocks = 0;
-  if (calledBy)
+
+  delete basicBlocks;
+
+  if (calledBy) {
     delete calledBy;
+  }
 }
 
 
