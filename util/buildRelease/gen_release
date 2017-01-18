@@ -157,11 +157,9 @@ print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
 print "Building the html docs...\n";
 SystemOrDie("make -j docs");
-SystemOrDie("mv build/doc/html doc/");
 
 # TODO - make this more elegant / maintainable
 print "Pruning the docs directory...\n";
-SystemOrDie("cd doc && make clobber");
 SystemOrDie("cd doc && rm -f Makefile*");
 SystemOrDie("cd doc && rm -f conf.py");
 SystemOrDie("cd doc && rm -f index.rst");
