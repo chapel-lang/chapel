@@ -1369,33 +1369,8 @@ FnSymbol::collapseBlocks() {
   body->accept(&visitor);
 }
 
-//
-// returns 1 if generic
-// returns 2 if they all have defaults
-//
-static int
-hasGenericArgs(FnSymbol* fn) {
-  bool isGeneric = false;
-  bool hasGenericDefaults = true;
-  for_formals(formal, fn) {
-    if ((formal->type->symbol->hasFlag(FLAG_GENERIC) &&
-         (!formal->type->hasGenericDefaults ||
-          formal->hasFlag(FLAG_MARKED_GENERIC) ||
-          formal == fn->_this ||
-          formal->hasFlag(FLAG_IS_MEME))) ||
-        formal->intent == INTENT_PARAM) {
-      isGeneric = true;
-      if (!formal->defaultExpr)
-        hasGenericDefaults = false;
-    }
-  }
-  if (isGeneric && !hasGenericDefaults)
-    return 1;
-  else if (isGeneric && hasGenericDefaults)
-    return 2;
-  else
-    return 0;
-}
+
+
 
 
 //
@@ -1408,7 +1383,7 @@ bool FnSymbol::tagIfGeneric() {
   bool retval = false;
 
   if (hasFlag(FLAG_GENERIC) == false) {
-    int result = hasGenericArgs(this);
+    int result = hasGenericFormals();
 
     // If this function has at least 1 generic formal
     if (result > 0) {
@@ -1428,6 +1403,85 @@ bool FnSymbol::tagIfGeneric() {
 
   return retval;
 }
+
+
+
+//
+// Scan the formals and return:
+//   2 is there is at least 1 generic formal and every generic
+//     formal has a default value
+//
+//   1 if there is at least 1 generic formal
+//
+//   0 if there are no generic formals
+//
+int FnSymbol::hasGenericFormals() const {
+  bool hasGenericFormal   = false;
+  bool hasGenericDefaults =  true;
+  int  retval             =     0;
+
+  for_formals(formal, this) {
+    bool isGeneric = false;
+
+    if (formal->intent == INTENT_PARAM) {
+      isGeneric = true;
+
+    } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+      if (formal->type->hasGenericDefaults     == false ||
+          formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
+          formal                               == _this ||
+          formal->hasFlag(FLAG_IS_MEME)        == true) {
+        isGeneric = true;
+      }
+    }
+
+    if (isGeneric == true) {
+      hasGenericFormal = true;
+
+      if (formal->defaultExpr == false) {
+        hasGenericDefaults = false;
+      }
+    }
+  }
+
+  if (hasGenericFormal == false) {
+    retval = 0;
+
+  } else if (hasGenericDefaults == false) {
+    retval = 1;
+
+  } else if (hasGenericDefaults ==  true) {
+    retval = 2;
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 bool FnSymbol::isResolved() const {
   return hasFlag(FLAG_RESOLVED);

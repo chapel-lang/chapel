@@ -484,6 +484,9 @@ class FnSymbol : public Symbol {
 
 private:
   virtual std::string docsDirective();
+
+  int                 hasGenericFormals()                      const;
+
   bool                _throwsError;
 };
 
