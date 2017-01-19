@@ -1363,34 +1363,6 @@ FnSymbol::getOrCreateEpilogueLabel() {
   return label;
 }
 
-LabelSymbol*
-FnSymbol::getEpilogueLabel() {
-  CallExpr* ret = toCallExpr(body->body.last());
-  if (!ret || !ret->isPrimitive(PRIM_RETURN))
-    INT_FATAL(this, "function is not normal");
-  for (Expr* last = ret; last; last = last->prev) {
-    if (DefExpr* def = toDefExpr(last->prev)) {
-      if (LabelSymbol* label = toLabelSymbol(def->sym)) {
-        // TODO psahabu: should FnSymbol have an epilogue label field?
-        if (label->hasFlag(FLAG_EPILOGUE_LABEL)) {
-          return label;
-        }
-      }
-    }
-  }
-  return NULL;
-}
-
-LabelSymbol*
-FnSymbol::getOrCreateEpilogueLabel() {
-  LabelSymbol* label = getEpilogueLabel();
-  if (!label) {
-    label = new LabelSymbol(astr("_end_", name));
-    label->addFlag(FLAG_EPILOGUE_LABEL);
-    insertBeforeReturnAfterLabel(new DefExpr(label));
-  }
-  return label;
-}
 
 void
 FnSymbol::insertFormalAtHead(BaseAST* ast) {
