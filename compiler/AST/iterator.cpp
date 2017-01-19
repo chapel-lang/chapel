@@ -1257,10 +1257,10 @@ rebuildGetIterator(IteratorInfo* ii) {
 
   // Set the iterator class (state object) so that it
   // initially signals that more elements available.
-  getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER,
-                                               ret,
-                                               ii->iclass->getField("more"),
-                                               new_IntSymbol(1)));
+  getIterator->insertBeforeEpilogue(new CallExpr(PRIM_SET_MEMBER,
+                                                 ret,
+                                                 ii->iclass->getField("more"),
+                                                 new_IntSymbol(1)));
 
   // Enumerate the fields in the iterator record (argument).
   for_fields(field, ii->irecord) {
@@ -1269,13 +1269,13 @@ rebuildGetIterator(IteratorInfo* ii) {
     VarSymbol* fieldReadTmp  = newTemp(field->type);
     CallExpr*  fieldRead     = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
 
-    getIterator->insertBeforeReturn(new DefExpr(fieldReadTmp));
+    getIterator->insertBeforeEpilogue(new DefExpr(fieldReadTmp));
 
-    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE,
+    getIterator->insertBeforeEpilogue(new CallExpr(PRIM_MOVE,
                                                  fieldReadTmp,
                                                  fieldRead));
 
-    getIterator->insertBeforeReturn(
+    getIterator->insertBeforeEpilogue(
                              new CallExpr(PRIM_SET_MEMBER,
                                           ret,
                                           ii->iclass->getField(field->name),

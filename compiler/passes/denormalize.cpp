@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,6 +28,7 @@
 #include "CForLoop.h"
 #include "WhileStmt.h"
 #include "exprAnalysis.h"
+#include "optimizations.h"
 
 //helper datastructures/types
 typedef std::pair<Expr*, Type*> DefCastPair;
@@ -43,7 +44,7 @@ bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*>& defMap,
     Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr** useOut, Expr** defOut,
     Type** castTo, SafeExprAnalysis& analysisData);
-void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& candidates, 
+void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& candidates,
     SafeExprAnalysis& analysisData);
 void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
     UseDefCastMap& udcMap, SafeExprAnalysis& analysisData);
@@ -77,6 +78,9 @@ void denormalize(void) {
 
   if(fDenormalize) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
+      // remove unused epilogue labels
+      removeUnnecessaryGotos(fn, true);
+
       bool isFirstRound = true;
       do {
         candidates.clear();
@@ -235,7 +239,7 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
   }
 }
 
-void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap, 
+void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap,
     SafeExprAnalysis& analysisData) {
 
   Vec<Symbol*> symSet;
@@ -252,7 +256,7 @@ void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap,
 
 bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*> & defMap,
-    Map<Symbol*,Vec<SymExpr*>*> & useMap, 
+    Map<Symbol*,Vec<SymExpr*>*> & useMap,
     SymExpr** useOut, Expr** defOut, Type** castTo,
     SafeExprAnalysis& analysisData) {
 
@@ -334,7 +338,7 @@ bool isDenormalizable(Symbol* sym,
                   ce->isPrimitive(PRIM_DEREF) ||
                   ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   ce->isPrimitive(PRIM_RETURN) ||
-                  (ce->isPrimitive(PRIM_MOVE) && 
+                  (ce->isPrimitive(PRIM_MOVE) &&
                    ce->get(1)->typeInfo() !=
                    ce->get(2)->typeInfo()))) {
               use = se;
@@ -380,8 +384,8 @@ bool isDenormalizable(Symbol* sym,
                   return false;
                 }
               }
-              else if(enclLoop->isWhileStmt() || 
-                  enclLoop->isDoWhileStmt() || 
+              else if(enclLoop->isWhileStmt() ||
+                  enclLoop->isDoWhileStmt() ||
                   enclLoop->isWhileDoStmt()) {
                 if(toWhileStmt(enclLoop)->condExprGet()->contains(ce)) {
                   return false;
@@ -479,7 +483,7 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
         case PRIM_SET_SVEC_MEMBER:
         case PRIM_GET_SVEC_MEMBER:
         case PRIM_GET_SVEC_MEMBER_VALUE:
-          if(rhsCe->get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, 
+          if(rhsCe->get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,
                 FLAG_WIDE_CLASS) || rhsCe->get(1)->isWideRef()) {
             return true;
           }
@@ -504,7 +508,7 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
     if(! analysisData.exprHasNoSideEffects(e, exprToMove)) {
       return true;
     }
-    
+
     // implementation of this function is suboptimal as it's
     // asymptotically O(N**2). This if is a stopgap measure to prevent
     // it running for too long.  So, currently we give up when there is

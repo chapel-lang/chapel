@@ -465,10 +465,10 @@ checkUseBeforeDefs() {
                 (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
                 call->get(1) == sym)
               continue; // We already handled this case above.
-            if ((!call || 
-                 (call->baseExpr != sym && 
+            if ((!call ||
+                 (call->baseExpr != sym &&
                   !call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) &&
-                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) && 
+                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) &&
                 sym->unresolved) {
               if (!undeclared.set_in(sym->unresolved)) {
                 if (!toFnSymbol(fn->defPoint->parentSymbol)) {
@@ -686,6 +686,7 @@ static void normalize_returns(FnSymbol* fn) {
   LabelSymbol* label  = new LabelSymbol(astr("_end_", fn->name));
   VarSymbol*   retval = NULL;
 
+  label->addFlag(FLAG_EPILOGUE_LABEL);
   fn->insertAtTail(new DefExpr(label));
 
   // If a proc has a void return, do not return any values ever.

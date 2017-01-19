@@ -522,7 +522,7 @@ createArgBundleFreeFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   // The last field contains the index used to select the recursive iterator argument bundle.
   Symbol* lastField = NULL; // assume function pointer for function argument bundle
   for_fields(field, ct) {
-    // If the bundle contains a pointer to another bundle, 
+    // If the bundle contains a pointer to another bundle,
     // its clause must call this free function recursively.
     if (field->type->symbol->hasFlag(FLAG_REF) &&
         field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
@@ -609,7 +609,7 @@ createArgBundleCopyFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   //{
   //  args = (ct*)malloc(sizeof(ct));
   //  fnArgsTmp = (ct*)_loopBodyFnArgs;
-  //  <field_type> tmp = fnArgsTmp->field;  // for each field 
+  //  <field_type> tmp = fnArgsTmp->field;  // for each field
   //  int fnTmp = *lastTmp;                 // for each loop body arg field only
   //  <field_val_tmp> argsTmp = *tmp;       // for each loop body arg field only
   //  tmp = (<field_val_type>)
@@ -659,21 +659,21 @@ createArgBundleCopyFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   Symbol* ret = argBundleCopyFn->getReturnSymbol();
   block->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, argBundle)));
 
-  // The body is placed in a conditional, so only the body corresponding to the current 
+  // The body is placed in a conditional, so only the body corresponding to the current
   // fnArg is actually executed when the copy function is called:
   //  if (fnArg == ftable[loopBodyFnWrapper])
   //  { <body_as_defined_above> }
   Symbol* cond = newTemp(dtBool);
-  argBundleCopyFn->insertBeforeReturn(new DefExpr(cond));
-  argBundleCopyFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap[loopBodyFnWrapper]))));
-  argBundleCopyFn->insertBeforeReturn(new CondStmt(new SymExpr(cond), block));
+  argBundleCopyFn->insertBeforeEpilogue(new DefExpr(cond));
+  argBundleCopyFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap[loopBodyFnWrapper]))));
+  argBundleCopyFn->insertBeforeEpilogue(new CondStmt(new SymExpr(cond), block));
 }
 
 
 // This creates the class type carrying the arguments to a (possibly recursive)
 // iterator function call and fills a temp with the passed-in values.
 //
-static AggregateType* 
+static AggregateType*
 bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
                                       CallExpr* loopBodyFnCall,
                                       FnSymbol* loopBodyFnWrapper) {
@@ -955,7 +955,7 @@ static void convertYieldsAndReturns(std::vector<BaseAST*>& asts, Symbol* index,
         call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
         Expr* loopBodyFnCall = new CallExpr(PRIM_FTABLE_CALL, loopBodyFnIDArg, yieldedIndex, loopBodyFnArgArgs);
 
-        // The inserted loop body function call is surrounded by a number of 
+        // The inserted loop body function call is surrounded by a number of
         // unlocal blocks equal to the number of local blocks surrounding the original call.
         int count = countEnclosingLocalBlocks(call);
         Expr* callOrBlk = loopBodyFnCall;
@@ -1700,7 +1700,7 @@ expandForLoop(ForLoop* forLoop) {
          (iterator->type->dispatchChildren.n == 1 &&
           iterator->type->dispatchChildren.v[0] == dtObject))) {
       converted = expandIteratorInline(forLoop);
-    } 
+    }
     // Conversion fails above if there is a recursive iterator call in a
     // recursive iterator, or if there is a task function call in a recursive
     // iterator.  In either case, it seems like a bad idea to try to perform
@@ -2158,7 +2158,7 @@ static void handlePolymorphicIterators()
         // for each possible subtype.
         SET_LINENO(getIterator);
         LabelSymbol* label = new LabelSymbol("end");
-        getIterator->insertBeforeReturn(new DefExpr(label));
+        getIterator->insertBeforeEpilogue(new DefExpr(label));
         Symbol* ret = getIterator->getReturnSymbol();
         forv_Vec(Type, type, irecord->dispatchChildren) {
           AggregateType* subTypeAgg = toAggregateType(type);
