@@ -471,7 +471,6 @@ public:
 
   LabelSymbol*               getEpilogueLabel();
   LabelSymbol*               getOrCreateEpilogueLabel();
->>>>>>> create insertBeforeEpilogue, insertIntoEpilogue
 
   Symbol*                    getReturnSymbol();
   Symbol*                    replaceReturnSymbol(Symbol* newRetSymbol,
