@@ -24,6 +24,7 @@
 
 class CallExpr;
 class Type;
+class Symbol;
 class VarSymbol;
 class QualifiedType;
 
@@ -266,9 +267,8 @@ extern PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 void printPrimitiveCounts(const char* passName);
 void initPrimitive();
 
-extern Map<const char*, VarSymbol*> memDescsMap;
 extern Vec<const char*> memDescsVec;
-
 VarSymbol* newMemDesc(const char* str);
+VarSymbol* newMemDesc(Symbol* sym);
 
 #endif
