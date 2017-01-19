@@ -131,6 +131,10 @@ module DefaultRectangular {
       ranges = x;
     }
 
+    proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+      assignDomainWithGetSetIndices(this, rhs);
+    }
+
     iter these_help(param d: int) {
       if d == rank {
         for i in ranges(d) do
@@ -1788,6 +1792,8 @@ module DefaultRectangular {
                                             idxType=idxType,
                                             stridable=d._value.stridable,
                                             dom=d._value);
+
+        // MPF: could this be parallel?
         for i in d((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);
         off = copy.off;

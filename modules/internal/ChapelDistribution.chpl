@@ -281,6 +281,7 @@ module ChapelDistribution {
     }
   
     // used for associative domains/arrays
+    // MPF:  why do these need to be in BaseDom at all?
     proc _backupArrays() {
       for arr in _arrs do
         arr._backupArray();
@@ -308,6 +309,31 @@ module ChapelDistribution {
 
     // Overload to to customize domain destruction
     proc dsiDestroyDom() { }
+
+    // proc dsiAssignDomain is a required overload to implement domain
+    // assignment. It is not declared here because we do not wish
+    // to use virtual dispatch to versions for all domain arguments.
+    //
+    // It should be declared like so:
+    //     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool)
+    //
+    // if lhsPrivate=true, the receiver is a private variable
+    // that:
+    //  hasn't yet been shared with other tasks
+    //  doesn't yet have any arrays declared over it
+    //
+    // Note that assigning to a domain typically causes arrays
+    // declared over that domain to be reallocated.
+    //
+    // Rectangular domains can implement this function with:
+    //   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    //     assignDomainWithGetSetIndices(this, rhs);
+    //   }
+    //
+    // Irregular domains can implement this function with:
+    //   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    //     assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    //   }
 
     proc dsiDisplayRepresentation() { }
   }
@@ -616,7 +642,7 @@ module ChapelDistribution {
   
     proc dsiPostReallocate() {
     }
-  
+
     // This method is unsatisfactory -- see bradc's commit entries of
     // 01/02/08 around 14:30 for details
     proc _purge( ind: int) {
@@ -649,6 +675,7 @@ module ChapelDistribution {
     }
   
     // methods for associative arrays
+    // MPF:  why do these need to be in BaseDom at all?
     proc clearEntry(idx, haveLock:bool = false) {
       halt("clearEntry() not supported for non-associative arrays");
     }
@@ -815,5 +842,49 @@ module ChapelDistribution {
 
     // runs the array destructor
     delete arr;
+  }
+
+  // domain assigment helpers
+
+  // Implement simple reallocate/set indices/post reallocate
+  // for compatability.
+  // Domain implementations may supply their own dsiAssignDomain
+  // that does something else.
+  // lhs is a subclass of BaseRectangularDom
+  proc assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
+    where t:BaseRectangularDom
+  {
+    for e in lhs._arrs do {
+      on e do e.dsiReallocate(rhs);
+    }
+    lhs.dsiSetIndices(rhs.getIndices());
+    for e in lhs._arrs do {
+      on e do e.dsiPostReallocate();
+    }
+  }
+
+
+  proc assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
+    where t:BaseSparseDom || t:BaseAssociativeDom || t:BaseOpaqueDom
+  {
+    //
+    // BLC: It's tempting to do a clear + add here, but because
+    // we need to preserve array values that are in the intersection
+    // between the old and new index sets, we use the following
+    // instead.
+    //
+    // A domain implementation is free to write their own
+    // dsiAssignDomain instead of using this method.
+
+    for i in lhs.dsiIndsIterSafeForRemoving() {
+      if !rhs.member(i) {
+	lhs.dsiRemove(i);
+      }
+    }
+    for i in rhs {
+      if !lhs.dsiMember(i) {
+	lhs.dsiAdd(i);
+      }
+    }
   }
 }

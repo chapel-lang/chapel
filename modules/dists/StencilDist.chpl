@@ -899,6 +899,10 @@ proc StencilDom.dsiSetIndices(x) {
   }
 }
 
+proc StencilDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  assignDomainWithGetSetIndices(this, rhs);
+}
+
 proc StencilDom.dsiGetIndices() {
   return whole.getIndices();
 }

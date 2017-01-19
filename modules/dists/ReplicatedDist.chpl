@@ -414,6 +414,10 @@ proc ReplicatedDom.dsiSetIndices(domArg: domain(rank, idxType, stridable)): void
       locDom.domLocalRep = domArg;
 }
 
+proc ReplicatedDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  assignDomainWithGetSetIndices(this, rhs);
+}
+
 proc ReplicatedDom.dsiGetIndices(): rank * range(idxType,
                                                  BoundedRangeType.bounded,
                                                  stridable) {

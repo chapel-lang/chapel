@@ -1767,6 +1767,7 @@ module ChapelArray {
                                                          isAssociativeDom(d2)) {
     if d1._value == d2._value then return true;
     if d1.numIndices != d2.numIndices then return false;
+    // TODO -- should this be a forall?
     for idx in d1 do
       if !d2.member(idx) then return false;
     return true;
@@ -1776,6 +1777,7 @@ module ChapelArray {
                                                          isAssociativeDom(d2)) {
     if d1._value == d2._value then return false;
     if d1.numIndices != d2.numIndices then return true;
+    // TODO -- should this be a forall?
     for idx in d1 do
       if !d2.member(idx) then return true;
     return false;
@@ -1786,6 +1788,7 @@ module ChapelArray {
     if d1._value == d2._value then return true;
     if d1.numIndices != d2.numIndices then return false;
     if d1._value.parentDom != d2._value.parentDom then return false;
+    // TODO -- should this be a forall?
     for idx in d1 do
       if !d2.member(idx) then return false;
     return true;
@@ -1796,6 +1799,7 @@ module ChapelArray {
     if d1._value == d2._value then return false;
     if d1.numIndices != d2.numIndices then return true;
     if d1._value.parentDom != d2._value.parentDom then return true;
+    // TODO -- should this be a forall?
     for idx in d1 do
       if !d2.member(idx) then return true;
     return false;
@@ -3029,45 +3033,10 @@ module ChapelArray {
       if !a.stridable && b.stridable then
         compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
 
-    if !isIrregularDom(a) && !isIrregularDom(b) {
-      for e in a._value._arrs do {
-        on e do e.dsiReallocate(b);
-      }
-      a.setIndices(b.getIndices());
-      for e in a._value._arrs do {
-        on e do e.dsiPostReallocate();
-      }
-    } else {
-      //
-      // BLC: It's tempting to do a clear + add here, but because
-      // we need to preserve array values that are in the intersection
-      // between the old and new index sets, we use the following
-      // instead.
-      //
-      // TODO: These should eventually become forall loops, hence the
-      // warning
-      //
-      // NOTE: For the current implementation of associative domains,
-      // the domain iteration is parallelized, but modification
-      // of the underlying data structures (in particular, the _resize()
-      // operation on the table) is not thread-safe.  Something more
-      // intelligent will likely be needed before it is worth it to
-      // parallelize whole-domain assignment for associative arrays.
-      //
+    a._value.dsiAssignDomain(b, lhsPrivate=false);
 
-//      disabled for testing for the same reason
-//      as the array version: it can be called from autoCopy/initCopy.
-//      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-      for i in a._value.dsiIndsIterSafeForRemoving() {
-        if !b.member(i) {
-          a.remove(i);
-        }
-      }
-      for i in b {
-        if !a.member(i) {
-          a.add(i);
-        }
-      }
+    if _isPrivatized(a._instance) {
+      _reprivatize(a._value);
     }
   }
 
@@ -3483,13 +3452,11 @@ module ChapelArray {
   pragma "init copy fn"
   proc chpl__initCopy(const ref a: domain) {
     var b: a.type;
-    if isRectangularDom(a) && isRectangularDom(b) {
-      b.setIndices(a.getIndices());
-    } else {
-      // TODO : update to use forall loop
-      for i in a do
-        b.add(i);
-    }
+
+    // No need to lock b since it's not exposed anywhere yet
+    // No need to handle arrays over b either for the same reason.
+    b._value.dsiAssignDomain(a, lhsPrivate=true);
+
     return b;
   }
 
@@ -3501,18 +3468,9 @@ module ChapelArray {
   proc chpl_replaceWithDeepCopy(ref a:domain) {
     var b : a.type;
 
-    if isRectangularDom(a) && isRectangularDom(b) {
-      b.setIndices(a.getIndices());
-    } else {
-      // TODO: These should eventually become forall loops, hence the
-      // warning
-      //
-      // NOTE: See above note regarding associative domains
-      //
-      //compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-      for i in a do
-        b.add(i);
-    }
+    // No need to lock b since it's not exposed anywhere yet
+    // No need to handle arrays over b either for the same reason.
+    b._value.dsiAssignDomain(a, lhsPrivate=true);
 
     if ! a._unowned {
       // destroy the old domain now that we are replacing it

@@ -611,6 +611,10 @@ proc BlockCyclicDom.dsiSetIndices(x) {
   setup();
 }
 
+proc BlockCyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  assignDomainWithGetSetIndices(this, rhs);
+}
+
 proc BlockCyclicDom.dsiGetIndices() {
   return whole.getIndices();
 }

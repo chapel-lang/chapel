@@ -296,6 +296,10 @@ class LocSparseBlockDom {
   proc dsiNumIndices {
     return mySparseBlock.numIndices;
   }
+
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    assignDomainWithIndsIterSafeForRemoving(this, rhs);
+  }
 }
 
 //

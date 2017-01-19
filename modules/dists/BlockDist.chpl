@@ -950,6 +950,10 @@ proc BlockDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
+proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  assignDomainWithGetSetIndices(this, rhs);
+}
+
 // dsiLocalSlice
 proc BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));

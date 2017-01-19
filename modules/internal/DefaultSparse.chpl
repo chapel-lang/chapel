@@ -306,6 +306,10 @@ module DefaultSparse {
       halt("dimIter() not yet implemented for sparse domains");
       yield indices(1);
     }
+
+    proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+      assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    }
   }
 
 

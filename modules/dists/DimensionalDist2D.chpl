@@ -807,6 +807,10 @@ proc DimensionalDom.dsiSetIndices(newRanges: rank * rangeT): void {
   _dsiSetIndicesHelper(newRanges);
 }
 
+proc DimensionalDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  assignDomainWithGetSetIndices(this, rhs);
+}
+
 // not part of DSI
 proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   _traceddd(this, ".dsiSetIndices", newRanges);

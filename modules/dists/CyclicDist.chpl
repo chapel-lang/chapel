@@ -568,6 +568,10 @@ proc CyclicDom.dsiSetIndices(x) {
   setup();
 }
 
+proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  assignDomainWithGetSetIndices(this, rhs);
+}
+
 proc CyclicDom.dsiSerialWrite(x) {
   if verboseCyclicDistWriters {
     x.writeln(this.type:string);

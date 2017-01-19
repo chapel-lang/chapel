@@ -93,6 +93,10 @@ class CSRDom: BaseSparseDomImpl {
   proc dsiGetIndices() return 0;
   proc dsiSetIndices(x) { }
 
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    assignDomainWithIndsIterSafeForRemoving(this, rhs);
+  }
+
   proc dsiBuildArray(type eltType)
     return new CSRArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
 
