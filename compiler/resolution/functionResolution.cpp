@@ -628,13 +628,13 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
       // If the user has defined any initializer,
       // initCopy function should call the copy-initializer.
       //
-      // If no copy-initializer exists, we should generate a call
-      // to a dummy init-copy function that generates an error
-      // if it remains in the AST after callDestructors
-      // (since callDestructors can remove some initCopy calls,
-      //  we'd like types that cannot be copied to survive
-      //  compilation until callDestructors has a chance to
-      //  remove those calls)).
+      // If no copy-initializer exists, we should make initCopy
+      // be a dummy function that generates an error
+      // if it remains in the AST after callDestructors. We do
+      // that since callDestructors can remove some initCopy calls
+      // and we'd like types that cannot be copied to survive
+      // compilation until callDestructors has a chance to
+      // remove those calls.
 
       // Go ahead and instantiate the body now so we can fix
       // it up completely...
@@ -673,8 +673,6 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
 
         // Set the RVV to the copy
         newFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, retSym, memeTmp));
-
-        gdbShouldBreakHere();
       }
       return true;
     }
