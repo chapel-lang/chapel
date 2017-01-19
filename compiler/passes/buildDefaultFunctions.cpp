@@ -1051,6 +1051,12 @@ static void build_record_copy_function(AggregateType* ct) {
     if (function_exists(copyInitName, 2, ct, ct /*meme*/ ))
       foundUserDefinedCopy = true;
 
+  // Don't try to use the compiler-generated default init fn
+  // if there isn't one. A compiler-generated default init fn is
+  // only created if there are no user initializer defined.
+  if (ct->initializerStyle == DEFINES_INITIALIZER && !foundUserDefinedCopy)
+    return;
+
   // if no copy-init function existed...
   FnSymbol* fn = new FnSymbol("chpl__initCopy");
   fn->addFlag(FLAG_INIT_COPY_FN);

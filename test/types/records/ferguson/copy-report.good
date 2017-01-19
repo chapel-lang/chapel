@@ -11,7 +11,7 @@ VARIABLE INITIALIZATION -- VALUE CALL
     initCopy
  field initialization / value call
    default constructor
-    autoCopy
+    initCopy
 
 VARIABLE INITIALIZATION -- LOCAL VAR
  variable initialization / local var
@@ -21,7 +21,7 @@ VARIABLE INITIALIZATION -- LOCAL VAR
     assign
  field initialization / local var
    default constructor
-    autoCopy
+    initCopy
 
 VARIABLE INITIALIZATION -- GLOBAL / REF
  variable initialization / global var
@@ -69,30 +69,30 @@ VARIABLE INITIALIZATION -- GLOBAL / REF
     assign
  field initialization / global var
    default constructor
-    autoCopy
+    initCopy
  field initialization / global ref
    default constructor
-    autoCopy
+    initCopy
  field initialization / local ref
    default constructor
-    autoCopy
+    initCopy
  field initialization / blank-intent arg
    default constructor
-    autoCopy
+    initCopy
  field initialization / const-ref arg
    default constructor
-    autoCopy
+    initCopy
  field initialization / ref arg
    default constructor
-    autoCopy
+    initCopy
     initCopy
  field initialization / in arg
    default constructor
-    autoCopy
+    initCopy
     initCopy
  field initialization / inout arg
    default constructor
-    autoCopy
+    initCopy
     assign
 
 VALUE RETURN -- VALUE CALL
@@ -104,17 +104,17 @@ VALUE RETURN -- LOCAL VAR
 
 VALUE RETURN -- GLOBAL/REF
  return / global variable
-    autoCopy
+    initCopy
  return / ref global variable
-    autoCopy
+    initCopy
  return / blank intent arg
-    autoCopy
+    initCopy
  return / ref intent arg
  return / const ref intent arg
  return / call returning ref
-    autoCopy
+    initCopy
  return / call returning const ref
-    autoCopy
+    initCopy
 
 REF USE -- REF VALUE
  return ref / global variable

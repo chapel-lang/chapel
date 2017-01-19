@@ -227,7 +227,7 @@ static std::map<FnSymbol*, FnSymbol*> functionCaptureMap; //lookup table/cache f
 static Map<FnSymbol*,const char*> innerCompilerWarningMap;
 static Map<FnSymbol*,const char*> outerCompilerWarningMap;
 
-Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
+std::map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
 Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 Map<Type*,FnSymbol*> unaliasMap; // type to chpl__unalias function
 
@@ -241,7 +241,8 @@ std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 //#
 static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
+                                       bool checkonly=false);
 static bool hasUserAssign(Type* type);
 static void resolveAutoCopyEtc(Type* type);
 static void resolveOther();
@@ -452,7 +453,8 @@ static bool typeHasRefField(Type *type) {
 static FnSymbol*
 resolveUninsertedCall(BlockStmt* insideBlock,
                       Expr* beforeExpr,
-                      CallExpr* call) {
+                      CallExpr* call,
+                      bool checkonly) {
 
   // In case resolveCall drops other stuff into the tree ahead of the
   // call, we wrap everything in a block for safe removal.
@@ -469,7 +471,16 @@ resolveUninsertedCall(BlockStmt* insideBlock,
   INT_ASSERT(block->parentSymbol);
 
   block->insertAtHead(call);
-  resolveCall(call);
+  if (checkonly && !call->primitive) {
+    resolveNormalCall(call, checkonly);
+  } else {
+    if (checkonly) {
+      INT_FATAL(call, "checkonly is being discarded because the call is a "
+                "primitive.\nIf that is not intended, please extend "
+                "resolveCall");
+    }
+    resolveCall(call);
+  }
   block->remove();
 
   return call->isResolved();
@@ -477,7 +488,7 @@ resolveUninsertedCall(BlockStmt* insideBlock,
 
 // Resolve a call to do with a particular type.
 static FnSymbol*
-resolveUninsertedCall(Type* type, CallExpr* call) {
+resolveUninsertedCall(Type* type, CallExpr* call, bool checkonly) {
 
   BlockStmt* insideBlock = NULL;
   Expr* beforeExpr = NULL;
@@ -491,7 +502,7 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
     insideBlock = chpl_gen_main->body;
   }
 
-  return resolveUninsertedCall(insideBlock, beforeExpr, call);
+  return resolveUninsertedCall(insideBlock, beforeExpr, call, checkonly);
 }
 
 //
@@ -588,20 +599,126 @@ hasUserAssign(Type* type) {
   return !compilerAssign;
 }
 
+bool hasAutoCopyForType(Type* type) {
+  return autoCopyMap[type] != NULL;
+}
+
+// This function is intended to protect gets from the autoCopyMap so that
+// we can insert NULL values for a type and avoid segfaults
+FnSymbol* getAutoCopyForType(Type* type) {
+  FnSymbol* ret = autoCopyMap[type]; // Do not try this at home
+  if (ret == NULL) {
+    INT_FATAL(type, "Trying to obtain autoCopy for type '%s',"
+                    " which defines none", type->symbol->name);
+  }
+  return ret;
+}
+
+void getAutoCopyTypeKeys(Vec<Type*> &keys) {
+  for (std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.begin();
+       it != autoCopyMap.end(); ++it) {
+    keys.add(it->first);
+  }
+}
+
+// This function is called by generic instantiation
+// for the default initCopy function in ChapelBase.chpl.
+bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
+{
+  ArgSymbol* arg = newFn->getFormal(1);
+
+  if (AggregateType* ct = toAggregateType(arg->type)) {
+    if (isUserDefinedRecord(ct) &&
+        ct->initializerStyle == DEFINES_INITIALIZER) {
+      // If the user has defined any initializer,
+      // initCopy function should call the copy-initializer.
+      //
+      // If no copy-initializer exists, we should make initCopy
+      // be a dummy function that generates an error
+      // if it remains in the AST after callDestructors. We do
+      // that since callDestructors can remove some initCopy calls
+      // and we'd like types that cannot be copied to survive
+      // compilation until callDestructors has a chance to
+      // remove those calls.
+
+      // Go ahead and instantiate the body now so we can fix
+      // it up completely...
+      instantiateBody(newFn);
+
+      Symbol* memeTmp = newTemp(ct);
+      DefExpr* def = new DefExpr(memeTmp);
+      newFn->insertBeforeEpilogue(def);
+      CallExpr* initCall = new CallExpr("init", arg, memeTmp);
+      def->insertAfter(initCall);
+
+      FnSymbol* initFn = tryResolveCall(initCall);
+
+      if (initFn == NULL) {
+        // No copy-initializer could be found
+        def->remove();
+        initCall->remove();
+        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+      } else {
+        // Replace the other setting of the return-value-variable
+        // with what we have now...
+
+        // find the RVV
+        Symbol* retSym = newFn->getReturnSymbol();
+
+        // Remove other PRIM_MOVEs to the RVV
+        for_alist(stmt, newFn->body->body) {
+          if (CallExpr* callStmt = toCallExpr(stmt))
+            if (callStmt->isPrimitive(PRIM_MOVE)) {
+              SymExpr* se = toSymExpr(callStmt->get(1));
+              INT_ASSERT(se);
+              if (se->symbol() == retSym)
+                stmt->remove();
+            }
+        }
+
+        // Set the RVV to the copy
+        newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, memeTmp));
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 
 static void
 resolveAutoCopyEtc(Type* type) {
 
   // resolve autoCopy
-  if (autoCopyMap.get(type) == NULL) {
+  if (!hasAutoCopyForType(type)) {
+
+    const char* copyFnToCall = "chpl__autoCopy";
+
+    if (isUserDefinedRecord(type) &&
+        !type->symbol->hasFlag(FLAG_TUPLE) &&
+        !isRecordWrappedType(type) &&
+        !isSyncType(type) &
+        !isSingleType(type) &&
+        !type->symbol->hasFlag(FLAG_EXTERN)) {
+      // Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
+      // for user-defined records. This way, if the type does not
+      // support copying, the autoCopyMap will store a function
+      // marked with FLAG_ERRONEOUS_INITCOPY. Additionally, user-defined
+      // records shouldn't be defining chpl__initCopy or chpl__autoCopy
+      // and certainly shouldn't rely on the differences between the two.
+
+      copyFnToCall = "chpl__initCopy";
+    }
+
     SET_LINENO(type->symbol);
     Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
+    CallExpr* call = new CallExpr(copyFnToCall, tmp);
     FnSymbol* fn = resolveUninsertedCall(type, call);
     resolveFns(fn);
     INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
-    autoCopyMap.put(type, fn);
+    autoCopyMap[type] = fn;
+
     tmp->defPoint->remove();
   }
 
@@ -641,7 +758,7 @@ resolveAutoCopyEtc(Type* type) {
 
 
 FnSymbol* getAutoCopy(Type *t) {
-  return autoCopyMap.get(t);
+  return getAutoCopyForType(t);
 }
 
 
@@ -3700,10 +3817,10 @@ static void captureTaskIntentValues(int argNum, ArgSymbol* formal,
     captemp = newTemp(astr(formal->name, "_captemp"), formal->type);
     marker->insertBefore(new DefExpr(captemp));
     // todo: once AMM is in effect, drop chpl__autoCopy - do straight move
-    FnSymbol* autoCopy = getAutoCopy(formal->type);
-    if (autoCopy)
+    if (hasAutoCopyForType(formal->type)) {
+      FnSymbol* autoCopy = getAutoCopy(formal->type);
       marker->insertBefore("'move'(%S,%S(%S))", captemp, autoCopy, varActual);
-    else if (isReferenceType(varActual->type) &&
+    } else if (isReferenceType(varActual->type) &&
              !isReferenceType(captemp->type))
       marker->insertBefore("'move'(%S,'deref'(%S))", captemp, varActual);
     else
@@ -7406,7 +7523,7 @@ postFold(Expr* expr) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
               if (requiresImplicitDestroy(rhsCall)) {
                 // this still semes to be necessary even if
-                // isUserRecord(lhs->symbol()->type) == true
+                // isUserDefinedRecord(lhs->symbol()->type) == true
                 // see call-expr-tmp.chpl for example
                 lhs->symbol()->addFlag(FLAG_INSERT_AUTO_COPY);
                 lhs->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -9320,7 +9437,7 @@ static bool propagateNotPOD(Type* t) {
     }
 
     // Also check for a non-compiler generated autocopy/autodestroy.
-    FnSymbol* autoCopyFn    = autoCopyMap.get(t);
+    FnSymbol* autoCopyFn    = autoCopyMap[t];
     FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
     FnSymbol* destructor    = t->destructor;
 

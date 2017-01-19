@@ -13,11 +13,11 @@ record NotPod1 {
 
 record NotPod2 {
   var x:int;
-}
-
-pragma "auto copy fn" proc chpl__autoCopy(x:NotPod2) {
-  writeln("custom auto copy");
-  return x;
+  proc init() { x = 0; }
+  proc init(from:NotPod2) {
+    writeln("custom auto copy");
+    x = from.x;
+  }
 }
 
 record NotPod3 {
