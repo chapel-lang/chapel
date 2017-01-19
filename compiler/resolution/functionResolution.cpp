@@ -474,6 +474,11 @@ resolveUninsertedCall(BlockStmt* insideBlock,
   if (checkonly && !call->primitive) {
     resolveNormalCall(call, checkonly);
   } else {
+    if (checkonly) {
+      INT_FATAL(call, "checkonly is being discarded because the call is a "
+                "primitive.\nIf that is not intended, please extend "
+                "resolveCall");
+    }
     resolveCall(call);
   }
   block->remove();
