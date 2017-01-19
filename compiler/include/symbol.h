@@ -458,9 +458,6 @@ public:
   void                       insertAtTail(Expr* ast);
   void                       insertAtTail(const char* format, ...);
 
-  void                       insertBeforeReturn(Expr* ast);
-  void                       insertBeforeReturnAfterLabel(Expr* ast);
-
   void                       insertFormalAtHead(BaseAST* ast);
   void                       insertFormalAtTail(BaseAST* ast);
 
