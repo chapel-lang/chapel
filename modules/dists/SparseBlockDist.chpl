@@ -246,6 +246,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   proc dsiClear() {
+    nnz = 0;
     coforall locDom in locDoms do
       on locDom do
         locDom.dsiClear();

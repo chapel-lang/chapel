@@ -32,7 +32,7 @@ Initializing Modules:
      List
     ChapelIO
      IO
-      Error
+      SysError
       Regexp
     LocaleTree
     DefaultAssociative

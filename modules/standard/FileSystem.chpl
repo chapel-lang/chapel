@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -85,7 +85,7 @@
  */
 module FileSystem {
 
-use Error, Path;
+use SysError, Path;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -575,11 +575,11 @@ proc exists(name: string): bool {
    similar to simple invocations of the command-line `find` utility.
    May be invoked in serial or non-zippered parallel contexts.
 
-   :arg startdir: The root directory from which to start the search 
+   :arg startdir: The root directory from which to start the search
                   (defaults to ``"."``)
    :type startdir: `string`
 
-   :arg recursive: Indicates whether or not to descend recursively into 
+   :arg recursive: Indicates whether or not to descend recursively into
                    subdirectories (defaults to `false`)
    :type recursive: `bool`
 
@@ -589,7 +589,7 @@ proc exists(name: string): bool {
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
-iter findfiles(startdir: string = ".", recursive: bool = false, 
+iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
     for subdir in walkdirs(startdir, hidden=hidden) do
@@ -601,8 +601,8 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 }
 
 pragma "no doc"
-iter findfiles(startdir: string = ".", recursive: bool = false, 
-               hidden: bool = false, param tag: iterKind): string 
+iter findfiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
   if (recursive) then
     forall subdir in walkdirs(startdir, hidden=hidden) do
@@ -735,7 +735,7 @@ private module chpl_glob_c_interface {
 
   extern const GLOB_NOMATCH: c_int;
 
-  extern proc chpl_glob(pattern:c_string, flags: c_int, 
+  extern proc chpl_glob(pattern:c_string, flags: c_int,
                         ref ret_glob:glob_t):c_int;
   extern proc chpl_glob_num(x:glob_t): size_t;
   extern proc chpl_glob_index(x:glob_t, idx:size_t): c_string;
@@ -820,7 +820,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
 }
 
 pragma "no doc"
-iter glob(pattern: string = "*", followThis, param tag: iterKind): string 
+iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
   use chpl_glob_c_interface;
   var glb : glob_t;
@@ -978,28 +978,28 @@ proc isMount(name: string): bool {
 /* Lists the contents of a directory.  May be invoked in serial
    contexts only.
 
-   :arg path: The directory whose contents should be listed 
+   :arg path: The directory whose contents should be listed
               (defaults to ``"."``)
    :type path: `string`
 
-   :arg hidden: Indicates whether hidden files/directory should be listed 
+   :arg hidden: Indicates whether hidden files/directory should be listed
                 (defaults to `false`)
    :type hidden: `bool`
 
-   :arg dirs: Indicates whether directories should be listed 
+   :arg dirs: Indicates whether directories should be listed
               (defaults to `true`)
    :type dirs: `bool`
 
    :arg files: Indicates whether files should be listed (defaults to `true`)
    :type files: `bool`
 
-   :arg listlinks: Indicates whether symbolic links should be listed 
+   :arg listlinks: Indicates whether symbolic links should be listed
                    (defaults to `true`)
    :type listlinks: `bool`
 
    :yield: The names of the specified directory's contents, as strings
 */
-iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true, 
+iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;
   extern type direntptr;
@@ -1397,9 +1397,9 @@ proc locale.umask(mask: int): int {
 
 
 /* Recursively walk a directory structure, yielding directory names.
-   May be invoked in serial or non-zippered parallel contexts.  
+   May be invoked in serial or non-zippered parallel contexts.
 
-   .. note:: 
+   .. note::
             The current parallel version is not very adaptive/dynamic
             in its application of parallelism to the list of
             subdirectories at any given level of the traversal, and
@@ -1426,7 +1426,7 @@ proc locale.umask(mask: int): int {
    :yield: The directory names encountered, relative to `path`, as strings
 */
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
-              hidden: bool = false, followlinks: bool = false, 
+              hidden: bool = false, followlinks: bool = false,
               sort: bool = false): string {
 
   if (topdown) then
@@ -1441,7 +1441,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
 
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
-      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
+      for subdir in walkdirs(fullpath, topdown, depth-1, hidden,
                              followlinks, sort) do
         yield subdir;
     }
@@ -1456,9 +1456,9 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
 // Here's a parallel version
 //
 pragma "no doc"
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int), 
-              hidden: bool = false, followlinks: bool = false, 
-              sort: bool = false, param tag: iterKind): string 
+iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
+              hidden: bool = false, followlinks: bool = false,
+              sort: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
 
   if (sort) then
