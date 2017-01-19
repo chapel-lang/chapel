@@ -3187,6 +3187,7 @@ printResolutionErrorUnresolved(
                      CallInfo* info) {
   if( ! info ) INT_FATAL("CallInfo is NULL");
   if( ! info->call ) INT_FATAL("call is NULL");
+  bool needToReport = false;
   CallExpr* call = userCall(info->call);
 
   if (!strcmp("_cast", info->name)) {
@@ -3201,6 +3202,8 @@ printResolutionErrorUnresolved(
     if (info->actuals.n > 0 &&
         isRecord(info->actuals.v[2]->type))
       USR_FATAL_CONT(call, "delete not allowed on records");
+    else
+      needToReport = true;
   } else if (!strcmp("these", info->name)) {
     if (info->actuals.n == 2 &&
         info->actuals.v[0]->type == dtMethodToken) {
@@ -3211,6 +3214,8 @@ printResolutionErrorUnresolved(
         USR_FATAL_CONT(call, "cannot iterate over values of type %s",
                        toString(info->actuals.v[1]->type));
       }
+    } else {
+      needToReport = true;
     }
   } else if (!strcmp("_type_construct__tuple", info->name)) {
     if (info->call->argList.length == 0)
@@ -3248,6 +3253,11 @@ printResolutionErrorUnresolved(
                      toString(info));
     }
   } else {
+    needToReport = true;
+  }
+  // It would be eaiser to just check exit_eventually to catch all needToReport cases.
+  // Alas exit_eventually is static to misc.cpp.
+  if (needToReport) {
     const char* entity = "call";
     if (!strncmp("_type_construct_", info->name, 16))
       entity = "type specifier";
@@ -3291,7 +3301,7 @@ printResolutionErrorUnresolved(
   }
   if( developer ) {
     // Should this be controlled another way?
-    USR_FATAL_CONT(call, "unresolved call had id %i", call->id);
+    USR_PRINT(call, "unresolved call had id %i", call->id);
   }
   USR_STOP();
 }
