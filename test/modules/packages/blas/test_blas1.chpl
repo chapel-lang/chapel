@@ -17,7 +17,7 @@ proc main() {
   test_dot();
   test_dotu_sub();
   test_dotc_sub();
-  test_sdsdot();
+  test_dsdot();
   test_nrm2();
   test_asum();
   test_amax();
@@ -86,8 +86,8 @@ proc test_dotc_sub() {
   test_dotc_helper(complex(128));
 }
 
-proc test_sdsdot() {
-  test_sdsdot_helper(real(32));
+proc test_dsdot() {
+  test_dsdot_helper(real(32));
 }
 
 proc test_nrm2() {
@@ -498,12 +498,12 @@ proc test_dotc_helper(type t) {
   printErrors(name, t, passed, failed, tests);
 }
 
-proc test_sdsdot_helper(type t) {
+proc test_dsdot_helper(type t) {
   var passed = 0,
       failed = 0,
       tests = 0;
   const errorThreshold = blasError(t);
-  var name = "%sdsdot".format(blasPrefix(t));
+  var name = "%dsdot".format(blasPrefix(t));
 
   // Simple test
   {

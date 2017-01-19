@@ -28,7 +28,7 @@ ccdotu : 1 PASSED, 0 FAILED
 zzdotu : 1 PASSED, 0 FAILED
 ccdotc : 1 PASSED, 0 FAILED
 zzdotc : 1 PASSED, 0 FAILED
-ssdsdot : 1 PASSED, 0 FAILED
+ssdot : 1 PASSED, 0 FAILED
 ssnrm2 : 1 PASSED, 0 FAILED
 ddnrm2 : 1 PASSED, 0 FAILED
 ccnrm2 : 1 PASSED, 0 FAILED

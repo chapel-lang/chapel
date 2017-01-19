@@ -1201,7 +1201,7 @@ proc dsdot(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1,incX: c_int = 1): elt
       return cblas_sdsdot (N, alpha, X, incX, Y, incY);
     }
     otherwise {
-        compilerError("Unknown type in sdsdot");
+        compilerError("Unknown type in dsdot");
     }
   }
 }
