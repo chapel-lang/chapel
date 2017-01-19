@@ -98,6 +98,7 @@ symbolFlag( FLAG_DONOR_FN, ypr, "donor fn" , "function donates ownership of the 
 symbolFlag( FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING , ypr, "dont disable remote value forwarding" , ncm )
 symbolFlag( FLAG_END_COUNT , ypr, "end count" , ncm )
 symbolFlag( FLAG_ERRONEOUS_INITCOPY, npr, "erroneous initcopy", ncm)
+symbolFlag( FLAG_EPILOGUE_LABEL , npr, "epilogue label" , "distinguishes the epilogue label from other labels" )
 symbolFlag( FLAG_EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 symbolFlag( FLAG_EXPAND_TUPLES_WITH_VALUES , ypr, "expand tuples with values" , ncm )
 symbolFlag( FLAG_EXPORT , npr, "export" , ncm )

@@ -647,7 +647,7 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
 
       Symbol* memeTmp = newTemp(ct);
       DefExpr* def = new DefExpr(memeTmp);
-      newFn->insertBeforeReturn(def);
+      newFn->insertBeforeEpilogue(def);
       CallExpr* initCall = new CallExpr("init", arg, memeTmp);
       def->insertAfter(initCall);
 
@@ -677,7 +677,7 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
         }
 
         // Set the RVV to the copy
-        newFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, retSym, memeTmp));
+        newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, memeTmp));
       }
       return true;
     }
@@ -2284,9 +2284,9 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
 
             CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
 
-            workingFn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-            workingFn->insertBeforeReturnAfterLabel(move);
-            workingFn->insertBeforeReturnAfterLabel(assign);
+            workingFn->insertIntoEpilogue(new DefExpr(tmp));
+            workingFn->insertIntoEpilogue(move);
+            workingFn->insertIntoEpilogue(assign);
           }
 
           i++;
@@ -5531,7 +5531,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
     // For inout or out intent, this assigns the modified value back to the
     // formal at the end of the function body.
     if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
-      fn->insertBeforeReturnAfterLabel(new CallExpr("=", formal, tmp));
+      fn->insertIntoEpilogue(new CallExpr("=", formal, tmp));
     }
   }
 }
@@ -8213,7 +8213,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
         }
       }
     }
-    fn->insertBeforeReturn(call);
+    fn->insertBeforeEpilogue(call);
     resolveCall(call);
     fn->retType->defaultInitializer = call->isResolved();
     INT_ASSERT(fn->retType->defaultInitializer);
@@ -9338,9 +9338,9 @@ static void insertRuntimeTypeTemps() {
         !ts->hasFlag(FLAG_GENERIC)) {
       SET_LINENO(ts);
       VarSymbol* tmp = newTemp("_runtime_type_tmp_", ts->type);
-      ts->type->defaultInitializer->insertBeforeReturn(new DefExpr(tmp));
+      ts->type->defaultInitializer->insertBeforeEpilogue(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
-      ts->type->defaultInitializer->insertBeforeReturn(call);
+      ts->type->defaultInitializer->insertBeforeEpilogue(call);
       resolveCallAndCallee(call);
       valueToRuntimeTypeMap.put(ts->type, call->isResolved());
       call->remove();
