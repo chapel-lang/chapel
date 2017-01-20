@@ -24,7 +24,6 @@
 
 class CallExpr;
 class Type;
-class Symbol;
 class VarSymbol;
 class QualifiedType;
 
@@ -269,6 +268,6 @@ void initPrimitive();
 
 extern Vec<const char*> memDescsVec;
 VarSymbol* newMemDesc(const char* str);
-VarSymbol* newMemDesc(Symbol* sym);
+VarSymbol* newMemDesc(Type* type);
 
 #endif
