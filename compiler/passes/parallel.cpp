@@ -810,9 +810,19 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
         int result = isDefAndOrUse(se);
         if (result & 1) {
           // first use/def of the variable is a def (normal case)
-          INT_ASSERT(useFirst==NULL);
-          found = true;
-          break;
+
+          // 'useFirst' may not be NULL if the 'result & 2' branch below is
+          // taken. Consider the following scenario:
+          //   (move refA (addr-of origSym))
+          // The second branch will set 'currDefSym = refA', and we will begin
+          // to iterate over its defs/uses. Finding the same expression should
+          // not count as 'finding' the right statement.
+          bool isOldStmt = useFirst == se->getStmtExpr() && currDefSym->isRef();
+
+          if (useFirst == NULL || !isOldStmt) {
+            found = true;
+            break;
+          }
         } else if (result & 2) {
           if (useFirst == NULL) {
             // This statement captures a reference to the variable

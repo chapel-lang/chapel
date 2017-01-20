@@ -625,8 +625,22 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
         case INTENT_OUT:       write("out arg");       break;
         case INTENT_CONST:     write("const arg");     break;
         case INTENT_CONST_IN:  write("const in arg");  break;
-        case INTENT_CONST_REF: write("const ref arg"); break;
-        case INTENT_REF:       write("ref arg");       break;
+        case INTENT_CONST_REF: {
+          if (arg->isWideRef()) {
+            write("const wide-ref arg");
+          } else {
+            write("const ref arg");
+          }
+          break;
+        }
+        case INTENT_REF: {
+          if (arg->isWideRef()) {
+            write("wide-ref arg");
+          } else {
+            write("ref arg");
+          }
+          break;
+        }
         case INTENT_PARAM:     write("param arg");     break;
         case INTENT_TYPE:      write("type arg");      break;
         case INTENT_BLANK:     write("arg");           break;

@@ -173,26 +173,13 @@ returnInfoCast(CallExpr* call) {
 static QualifiedType
 returnInfoVal(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
-  if (ct) {
-    if (call->get(1)->isRef()) {
-      if(ct->symbol->hasFlag(FLAG_REF)) {
-        return QualifiedType(ct->getField(1)->type, QUAL_VAL);
-      } else {
-        return QualifiedType(ct, QUAL_VAL);
-      }
-    } else if (call->get(1)->isWideRef()) {
-      if(ct->symbol->hasFlag(FLAG_WIDE_REF)) {
-        return QualifiedType(ct->getField(2)->type, QUAL_VAL);
-      } else {
-        return QualifiedType(ct, QUAL_VAL);
-      }
-    } else if (ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      // insertWideReferences will sometimes insert a PRIM_DEREF to a
-      // wide class. There should probably be a better way of expressing the
-      // desired pattern...
-      return QualifiedType(ct, QUAL_VAL);
-    }
+
+  if (call->get(1)->isRefOrWideRef()) {
+    return QualifiedType(call->get(1)->getValType(), QUAL_VAL);
+  } else if (ct && ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+    return QualifiedType(ct, QUAL_VAL);
   }
+
   INT_FATAL(call, "attempt to get value type of non-reference type");
   return QualifiedType(NULL);
 }
