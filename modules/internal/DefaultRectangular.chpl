@@ -1023,29 +1023,19 @@ module DefaultRectangular {
           const first = getDataIndex(dom.dsiLow, getChunked=false);
           const second = getDataIndex(dom.dsiLow+1, getChunked=false);
           const step = (second-first);
-          if mdNumChunks == 1 {
-            const last = first + (dom.dsiNumIndices-1) * step;
-            const dd = theDataChunk(0);
-            for i in chpl_direct_pos_stride_range_iter(first, last, step) {
-              yield dd(i);
+          const lo = dom.dsiDim(mdParDim).low;
+          const hi = dom.dsiDim(mdParDim).high;
+          var (chunk, idx) = getDataIndex(dom.dsiLow);
+          var dd = theDataChunk(chunk);
+          var lastChunkInd = mData(chunk).pdr.high;
+          for ind in chpl_direct_pos_stride_range_iter(lo, hi, 1:idxType) {
+            if ind > lastChunkInd { // traverse to next chunk
+              (chunk, idx) = getDataIndex(ind);
+              dd = theDataChunk(chunk);
+              lastChunkInd = mData(chunk).pdr.high;
             }
-          } else if dom.dsiNumIndices > 0 {
-            const (chunkLo, _) = getDataIndex(dom.dsiLow);
-            const (chunkHi, _) = getDataIndex(dom.dsiHigh);
-
-            for chunk in chunkLo..chunkHi {
-              if mData(chunk).pdr.length > 0 {
-                const dd = theDataChunk(chunk);
-                const lo = mData(chunk).pdr.low;
-                const hi = mData(chunk).pdr.high;
-                const (_, chunkFirst) = getDataIndex(lo);
-                const chunkLast = chunkFirst + (hi - lo) * step;
-                for i in chpl_direct_pos_stride_range_iter(chunkFirst,
-                                                           chunkLast,
-                                                           step) do
-                  yield dd(i);
-              }
-            }
+            yield dd(idx);
+            idx += step;
           }
         } else {
           for i in dom do
