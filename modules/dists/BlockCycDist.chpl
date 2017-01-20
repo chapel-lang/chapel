@@ -1009,8 +1009,8 @@ class LocBlockCyclicArr {
 
   // TODO: need to be able to access these, but is this the right place?
   const blocksize: [1..rank] int = [d in 1..rank] allocDom.globDom.dist.blocksize(d);
-  const low = allocDom.globDom.dsiLow;
-  const locsize: [1..rank] int = [d in 1..rank] allocDom.globDom.dist.targetLocDom.dim(d).length;
+  const low                      = allocDom.globDom.dsiLow;
+  const locsize:   [1..rank] int = [d in 1..rank] allocDom.globDom.dist.targetLocDom.dim(d).length;
   const numblocks: [1..rank] int = [d in 1..rank] (allocDom.myStarts.dim(d).length);
 
 }
@@ -1049,30 +1049,58 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
     }
     return (numwholeblocks * blocksize(rank)) + blkOff;
   } else { // RMO
-    //TODO: want negative scan: var blkmults = * scan [d in 1..rank] blocksize(d);
-    var mults : rank*int;
-    mults(rank) = blocksize(rank);
-    for d in 1..rank-1 by -1 do
-      mults(d) = mults(d+1) * blocksize(d);
 
-    var blkmults = mults(1);
+    //
+    // For dimension ``d`` in 1 <= d <= rank, sizes(d+1) represents the
+    // distance in the flat array between elements in dimension ``d``. Similar
+    // to ``blk`` in DefaultRectangular.
+    //
+    var sizes : (rank+1)*int;
+    sizes(rank+1) = 1;
+    for d in 1..rank by -1 do
+      sizes(d) = sizes(d+1) * (blocksize(d) * numblocks(d));
 
-    var numwholeblocks = 0;
-    var blkOff = 0;
+    var idx = 0;
+
+    //
+    // This loop generates the index in the local flat array corresponding to
+    // the logical index ``i``.
+    //
+    // I, benharsh, feel this is more easily understood by treating the set of
+    // indices owned by this locale as a contiguous chunk, as opposed to
+    // disjoint indices. By then translating ``i`` to an index into this chunk,
+    // we can easily transform the rank-dimensional index into a flat array
+    // index.
+    //
     for param d in 1..rank {
-      const blksize = blocksize(d);
-      const ind0 = (i(d) - low(d)): int;
-      const blkNum = ind0 / (blksize * locsize(d));
-      const blkDimOff = ind0 % blksize;
-      if (d != 1) {
-        numwholeblocks *= numblocks(rank-d+2);
-        blkOff *= blksize;
-      }
-      numwholeblocks += blkNum;
-      blkOff += blkDimOff;
+      // STEP 1: translate ``i`` into a ones-based index into a lowered space
+      // equivalent in size to the global space. Makes the math easier.
+      const base = i(d) - low(d) + 1;
+
+      // Find the total number of indices (including ones owned by this Locale)
+      // that came before ``base``.
+      const numBlocksBefore = (base - 1) / blocksize(d);
+      const numIndsBefore   = numBlocksBefore * blocksize(d);
+
+      // Determine how many of those blocks are owned by the current Locale.
+      const numBlocksBeforeLocal = ((numBlocksBefore) / locsize(d));
+      const numIndsBeforeLocal = numBlocksBeforeLocal * blocksize(d);
+
+      // ``others`` is the number of indices before ``base`` not owned by the
+      // current Locale.
+      const others = numIndsBefore - numIndsBeforeLocal;
+
+      // ``loc`` is now an index into a contiguous chunk of indices owned by
+      // this Locale.
+      const loc = base - others;
+
+      // The flat array is zero-based, so subtract ``1`` from ``loc``.
+      // Multiply by ``sizes(d+1)`` to get the offset into the flat array,
+      // similar to DefaultRectangular's ``blk``.
+      idx += (loc-1) * sizes(d+1);
     }
 
-    return (numwholeblocks * blkmults) + blkOff;
+    return idx;
   }
 }
 
@@ -1081,7 +1109,7 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
 //
 proc LocBlockCyclicArr.this(i) ref {
   const flatInd = mdInd2FlatInd(i);
-  //    writeln(i, "->", flatInd);
+  //writeln(i, " --> ", flatInd);
   return myElems(flatInd);
 }
 
