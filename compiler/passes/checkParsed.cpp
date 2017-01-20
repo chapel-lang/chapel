@@ -72,7 +72,7 @@ checkParsed() {
     // This test checks to see if query domains (e.g., '[?D]') are
     // used in places other than formal argument type specifiers.
     //
-    if (!toFnSymbol(def->parentSymbol)) {
+    if (!isFnSymbol(def->parentSymbol)) {
       if (CallExpr* type = toCallExpr(def->exprType)) {
         if (type->isNamed("chpl__buildArrayRuntimeType")) {
           if (CallExpr* domainExpr = toCallExpr(type->get(1))) {
