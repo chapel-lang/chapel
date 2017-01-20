@@ -294,6 +294,14 @@ class BlockCyclic : BaseDist {
   }
 }
 
+proc BlockCyclic._locsize {
+  var ret : rank*int;
+  for param i in 1..rank {
+    ret(i) = targetLocDom.dim(i).length;
+  }
+  return ret;
+}
+
 //
 // create a new rectangular domain over this distribution
 //
@@ -758,6 +766,27 @@ proc LocBlockCyclicDom.high {
   return myStarts.high;
 }
 
+proc LocBlockCyclicDom._lens {
+  var ret : rank*int;
+  for param i in 1..rank {
+    ret(i) = myStarts.dim(i).length;
+  }
+  return ret;
+}
+
+proc LocBlockCyclicDom._sizes {
+    //
+    // For dimension ``i`` in 1 <= d <= rank, sizes(d+1) represents the
+    // distance in the flat array between elements in dimension ``i``. Similar
+    // to ``blk`` in DefaultRectangular.
+    //
+    var sizes : (rank+1)*int;
+    sizes(rank+1) = 1;
+    for i in 1..rank by -1 do
+      sizes(i) = sizes(i+1) * (globDom.dist.blocksize(i) * myStarts.dim(i).length);
+    return sizes;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
@@ -1008,11 +1037,12 @@ class LocBlockCyclicArr {
   var myElems: [allocDom.myFlatInds] eltType;
 
   // TODO: need to be able to access these, but is this the right place?
-  const blocksize: [1..rank] int = [d in 1..rank] allocDom.globDom.dist.blocksize(d);
-  const low                      = allocDom.globDom.dsiLow;
-  const locsize:   [1..rank] int = [d in 1..rank] allocDom.globDom.dist.targetLocDom.dim(d).length;
-  const numblocks: [1..rank] int = [d in 1..rank] (allocDom.myStarts.dim(d).length);
+  const blocksize : rank*int = allocDom.globDom.dist.blocksize;
+  const low                  = allocDom.globDom.dsiLow;
+  const locsize   : rank*int = allocDom.globDom.dist._locsize;
+  const numblocks : rank*int = allocDom._lens;
 
+  const sizes : (rank+1)*int = allocDom._sizes;
 }
 
 
@@ -1050,16 +1080,6 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
     return (numwholeblocks * blocksize(rank)) + blkOff;
   } else { // RMO
 
-    //
-    // For dimension ``d`` in 1 <= d <= rank, sizes(d+1) represents the
-    // distance in the flat array between elements in dimension ``d``. Similar
-    // to ``blk`` in DefaultRectangular.
-    //
-    var sizes : (rank+1)*int;
-    sizes(rank+1) = 1;
-    for d in 1..rank by -1 do
-      sizes(d) = sizes(d+1) * (blocksize(d) * numblocks(d));
-
     var idx = 0;
 
     //
@@ -1073,22 +1093,21 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
     // index.
     //
     for param d in 1..rank {
+      const bs = blocksize(d); // cache for performance
       // STEP 1: translate ``i`` into a ones-based index into a lowered space
       // equivalent in size to the global space. Makes the math easier.
       const base = i(d) - low(d) + 1;
 
-      // Find the total number of indices (including ones owned by this Locale)
+      // Find the total number of blocks (including ones owned by this Locale)
       // that came before ``base``.
-      const numBlocksBefore = (base - 1) / blocksize(d);
-      const numIndsBefore   = numBlocksBefore * blocksize(d);
+      const numBlocksBefore = (base - 1) / bs;
 
       // Determine how many of those blocks are owned by the current Locale.
       const numBlocksBeforeLocal = ((numBlocksBefore) / locsize(d));
-      const numIndsBeforeLocal = numBlocksBeforeLocal * blocksize(d);
 
       // ``others`` is the number of indices before ``base`` not owned by the
       // current Locale.
-      const others = numIndsBefore - numIndsBeforeLocal;
+      const others = (numBlocksBefore - numBlocksBeforeLocal) * bs;
 
       // ``loc`` is now an index into a contiguous chunk of indices owned by
       // this Locale.
