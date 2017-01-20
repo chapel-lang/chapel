@@ -95,12 +95,12 @@ bool qio_allow_default_mmap = true;
 #ifdef _chplrt_H_
 qioerr qio_lock(qio_lock_t* x) {
   // recursive mutex based on glibc pthreads implementation
-  int64_t id = chpl_task_getId();
+  chpl_taskID_t id = chpl_task_getId();
 
   assert( id != NULL_OWNER );
 
   // check whether we already hold the mutex.
-  if( x->owner == id ) {
+  if( chpl_task_idEquals(x->owner, id) ) {
     // just bump the counter.
     ++x->count;
     return 0;
@@ -116,10 +116,10 @@ qioerr qio_lock(qio_lock_t* x) {
   return 0;
 }
 void qio_unlock(qio_lock_t* x) {
-  int64_t id = chpl_task_getId();
+  chpl_taskID_t id = chpl_task_getId();
 
   // recursive mutex based on glibc pthreads implementation
-  if( x->owner != id ) {
+  if( ! chpl_task_idEquals(x->owner, id) ) {
     abort();
   }
 
