@@ -339,6 +339,15 @@ module ChapelDistribution {
   }
   
   class BaseRectangularDom : BaseDom {
+    param rank : int;
+    type idxType;
+    param stridable: bool;
+
+    proc getBaseArrType() type {
+      var tmp = new BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
+      return tmp.type;
+    }
+
     proc ~BaseRectangularDom() {
       // this is a bug workaround
     }
@@ -636,13 +645,6 @@ module ChapelDistribution {
   
     proc dsiDestroyArr(isalias:bool) { }
   
-    proc dsiReallocate(d: domain) {
-      halt("reallocating not supported for this array type");
-    }
-  
-    proc dsiPostReallocate() {
-    }
-
     // This method is unsatisfactory -- see bradc's commit entries of
     // 01/02/08 around 14:30 for details
     proc _purge( ind: int) {
@@ -708,11 +710,54 @@ module ChapelDistribution {
     proc dsiSupportsBulkTransferInterface() param return false;
     proc doiCanBulkTransferStride() param return false;
   }
+ 
+  /* BaseArrOverRectangularDom has this signature so that dsiReallocate
+     can be overriden with the right tuple size.
+
+     Note that eltType is not included here. eltType could be included
+     in a base class, but here we're looking for a way to narrow
+     overloaded functions to only those working with a particular
+     kind of bounding box. So if eltType is included, we should make
+     another base class.
+   */
+  pragma "base array"
+  class BaseArrOverRectangularDom: BaseArr {
+    param rank : int;
+    type idxType;
+    param stridable: bool;
+
+    // the dsiReallocate to overload only uses the argument with
+    // the matching tuple of ranges. 
+
+    // Q. Should this pass in a BaseRectangularDom or ranges?
+    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+      halt("reallocating not supported for this array type");
+    }
+
+    proc dsiPostReallocate() {
+    }
+    
+    proc ~BaseArrOverRectangularDom() {
+      // this is a bug workaround
+    }
+
+
+  }
+
+  pragma "base array"
+  class BaseRectangularArr: BaseArrOverRectangularDom {
+    type eltType;
+
+    proc ~BaseRectangularArr() {
+      // this is a bug workaround
+    }
+  }
 
   /*
    * BaseSparseArr is very basic/generic so that we have some flexibility in
    * implementing sparse array classes.
    */
+  pragma "base array"
   class BaseSparseArr: BaseArr {
     type eltType;
     param rank : int;
@@ -735,6 +780,7 @@ module ChapelDistribution {
    * All the common helpers/methods in implementations of internal sparse arrays
    * go here.
    */
+  pragma "base array"
   class BaseSparseArrImpl: BaseSparseArr {
 
     proc ~BaseSparseArrImpl() {
@@ -854,12 +900,14 @@ module ChapelDistribution {
   proc assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
     where t:BaseRectangularDom
   {
+    type arrType = lhs.getBaseArrType();
+
     for e in lhs._arrs do {
-      on e do e.dsiReallocate(rhs);
+      on e do (e:arrType).dsiReallocate(rhs.getIndices());
     }
     lhs.dsiSetIndices(rhs.getIndices());
     for e in lhs._arrs do {
-      on e do e.dsiPostReallocate();
+      on e do (e:arrType).dsiPostReallocate();
     }
   }
 

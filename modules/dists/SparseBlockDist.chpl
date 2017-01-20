@@ -252,6 +252,14 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   proc dsiMyDist() return dist;
+
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    if !lhsPrivate then
+      halt("SparseBlock domain assignment not yet supported");
+    for i in rhs do
+      dsiAdd(i);
+  }
+
 }
 
 //
@@ -295,10 +303,6 @@ class LocSparseBlockDom {
 
   proc dsiNumIndices {
     return mySparseBlock.numIndices;
-  }
-
-  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    assignDomainWithIndsIterSafeForRemoving(this, rhs);
   }
 }
 

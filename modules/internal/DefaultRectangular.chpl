@@ -97,9 +97,6 @@ module DefaultRectangular {
   }
 
   class DefaultRectangularDom: BaseRectangularDom {
-    param rank : int;
-    type idxType;
-    param stridable: bool;
     var dist: DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
@@ -749,11 +746,11 @@ module DefaultRectangular {
     }
   }
 
-  class DefaultRectangularArr: BaseArr {
-    type eltType;
+  class DefaultRectangularArr: BaseRectangularArr {
+    /*type eltType;
     param rank : int;
     type idxType;
-    param stridable: bool;
+    param stridable: bool;*/
 
     type idxSignedType = chpl__signedType(idxType);
 
@@ -1785,8 +1782,9 @@ module DefaultRectangular {
       return alias;
     }
 
-    proc dsiReallocate(d: domain) {
-      if (d._value.type == dom.type) {
+    // TODO
+    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+      //if (d._value.type == dom.type) {
         on this {
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
@@ -1834,9 +1832,9 @@ module DefaultRectangular {
         //numelm = copy.numelm;
         delete copy;
         }
-      } else {
-        halt("illegal reallocation");
-      }
+      //} else {
+      //  halt("illegal reallocation");
+      //}
     }
 
     proc dsiLocalSlice(ranges) {

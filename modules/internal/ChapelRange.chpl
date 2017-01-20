@@ -2092,7 +2092,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //
   // source: Knuth Volume 2 --- Section 4.5.2
   //
-  proc chpl__extendedEuclidHelper(u, v)
+  proc chpl__extendedEuclid(u, v)
+    where isIntType(u.type) && u.type == v.type
   {
     var zero: u.type = 0;
     var one: u.type = 1;
@@ -2112,11 +2113,4 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   
     return (U(3), U(1));
   }
-
-  inline proc chpl__extendedEuclid(u:int(32), v:int(32))
-  { return chpl__extendedEuclidHelper(u,v); }
-
-  inline proc chpl__extendedEuclid(u:int(64), v:int(64))
-  { return chpl__extendedEuclidHelper(u,v); }
-  
 }
