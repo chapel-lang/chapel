@@ -1123,7 +1123,7 @@ module ChapelBase {
     if (isRecord(arg)) then
       compilerError("delete not allowed on records");
 
-    arg.chpl__deinit();
+    arg.deinit();
     on arg do
       chpl_here_free(__primitive("_wide_get_addr", arg));
   }
