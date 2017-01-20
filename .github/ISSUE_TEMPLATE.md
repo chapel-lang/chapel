@@ -30,6 +30,9 @@ What behavior did you expect to observe?
 **Execution command:**
 <!-- e.g. `./foo 42`. If an input file is required, include it as well. -->
 
+**Associated Future Test(s):**
+<!-- Are there any tests in Chapel's test system that demonstrate this issue?
+     e.g. test/path/to/foo.future #1234 -->
 
 ### Configuration Information
 
