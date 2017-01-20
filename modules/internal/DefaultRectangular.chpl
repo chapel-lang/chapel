@@ -1921,7 +1921,7 @@ module DefaultRectangular {
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
       type strType = idxSignedType;
-      var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:strType else (-1):strType;
+      var makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
       if isjson || ischpl {
         if dim != rank {
