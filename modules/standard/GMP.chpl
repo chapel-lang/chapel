@@ -142,7 +142,7 @@ A code example::
 */
 module GMP {
   use SysBasic;
-  use Error;
+  use SysError;
   use BigInteger;
 
   /* The GMP ``mp_bitcnt_t`` type */

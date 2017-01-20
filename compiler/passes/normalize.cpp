@@ -69,27 +69,46 @@ static void add_to_where_clause(ArgSymbol* formal,
                                 Expr*      expr,
                                 CallExpr*  query);
 static void fixup_query_formals(FnSymbol* fn);
-static void change_method_into_constructor(FnSymbol* fn);
+
+static bool isConstructor(FnSymbol* fn);
+static bool isInitMethod (FnSymbol* fn);
+
+static void updateConstructor(FnSymbol* fn);
+static void updateInitMethod (FnSymbol* fn);
+
 static void find_printModuleInit_stuff();
 
 void normalize() {
   insertModuleInit();
+
   transformLogicalShortCircuit();
+
   lowerReduceAssign();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
-    if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
-        !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == false &&
+        fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false) {
       fixup_array_formals(fn);
+    }
+
     fixup_query_formals(fn);
-    change_method_into_constructor(fn);
+
+    if (isConstructor(fn) == true) {
+      updateConstructor(fn);
+    } else if (isInitMethod(fn) == true) {
+      updateInitMethod(fn);
+    }
   }
 
   normalize(theProgram);
   normalized = true;
+
   checkUseBeforeDefs();
+
   moveGlobalDeclarationsToModuleScope();
+
   insertUseForExplicitModuleCalls();
 
   if (!fMinimalModules) {
@@ -446,10 +465,10 @@ checkUseBeforeDefs() {
                 (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
                 call->get(1) == sym)
               continue; // We already handled this case above.
-            if ((!call || 
-                 (call->baseExpr != sym && 
+            if ((!call ||
+                 (call->baseExpr != sym &&
                   !call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) &&
-                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) && 
+                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) &&
                 sym->unresolved) {
               if (!undeclared.set_in(sym->unresolved)) {
                 if (!toFnSymbol(fn->defPoint->parentSymbol)) {
@@ -667,6 +686,7 @@ static void normalize_returns(FnSymbol* fn) {
   LabelSymbol* label  = new LabelSymbol(astr("_end_", fn->name));
   VarSymbol*   retval = NULL;
 
+  label->addFlag(FLAG_EPILOGUE_LABEL);
   fn->insertAtTail(new DefExpr(label));
 
   // If a proc has a void return, do not return any values ever.
@@ -1742,8 +1762,160 @@ fixup_query_formals(FnSymbol* fn) {
   }
 }
 
-static void
-find_printModuleInit_stuff() {
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isConstructor(FnSymbol* fn) {
+  bool retval = false;
+
+  if (fn->numFormals()       >= 2 &&
+      fn->getFormal(1)->type == dtMethodToken) {
+
+    retval = strcmp(fn->name, fn->getFormal(2)->type->symbol->name) == 0;
+  }
+
+  return retval;
+}
+
+static bool isInitMethod(FnSymbol* fn) {
+  bool retval = false;
+
+  if (fn->numFormals()       >= 2 &&
+      fn->getFormal(1)->type == dtMethodToken) {
+
+    retval = strcmp(fn->name, "init") == 0;
+  }
+
+  return retval;
+}
+
+static void updateConstructor(FnSymbol* fn) {
+  SymbolMap      map;
+  Type*          type = fn->getFormal(2)->type;
+  AggregateType* ct   = toAggregateType(type);
+
+  if (ct == NULL) {
+    if (type == dtUnknown) {
+      INT_FATAL(fn, "'this' argument has unknown type");
+    } else {
+      INT_FATAL(fn, "initializer on non-class type");
+    }
+  }
+
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    USR_FATAL(fn, "a constructor cannot be declared without parentheses");
+  }
+
+  // Call the constructor, passing in just the generic arguments.
+  // This call ensures that the object is default-initialized before the
+  // user's constructor body is called.
+  // NOTE: This operation is not necessary for initializers, as Phase 1 of
+  // the initializer body is intended to perform this operation on its own.
+  CallExpr* call = new CallExpr(ct->defaultInitializer);
+
+  for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
+    ArgSymbol* arg = NULL;
+
+    for_formals(methodArg, fn) {
+      if (defaultTypeConstructorArg->name == methodArg->name) {
+        arg = methodArg;
+      }
+    }
+
+    if (arg == NULL) {
+      if (defaultTypeConstructorArg->defaultExpr == NULL) {
+        USR_FATAL_CONT(fn,
+                       "constructor for class '%s' requires a generic "
+                       "argument called '%s'",
+                       ct->symbol->name,
+                       defaultTypeConstructorArg->name);
+      }
+    } else {
+      call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));
+    }
+  }
+
+  fn->_this = new VarSymbol("this");
+  fn->_this->addFlag(FLAG_ARG_THIS);
+
+  fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
+
+  fn->insertAtHead(new DefExpr(fn->_this));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
+
+  map.put(fn->getFormal(2), fn->_this);
+
+  fn->formals.get(2)->remove();
+  fn->formals.get(1)->remove();
+
+  update_symbols(fn, &map);
+
+  // The constructor's name is the name of the type.
+  // Replace it with _construct_typename
+  fn->name = ct->defaultInitializer->name;
+
+  fn->addFlag(FLAG_CONSTRUCTOR);
+}
+
+static void updateInitMethod(FnSymbol* fn) {
+  Type* thisType = fn->getFormal(2)->type;
+
+  if (thisType == dtUnknown) {
+    INT_FATAL(fn, "'this' argument has unknown type");
+
+  } else if (AggregateType* ct = toAggregateType(thisType)) {
+    SymbolMap  map;
+
+    ArgSymbol* meme = new ArgSymbol(INTENT_BLANK,
+                                    "meme",
+                                    ct,
+                                    NULL,
+                                    new SymExpr(gTypeDefaultToken));
+
+    if (fn->hasFlag(FLAG_NO_PARENS)) {
+      USR_FATAL(fn,
+                "an initializer cannot be declared without parentheses");
+    }
+
+    meme->addFlag(FLAG_IS_MEME);
+
+    fn->insertFormalAtTail(meme);
+
+    handleInitializerRules(fn, ct);
+
+    fn->_this = new VarSymbol("this");
+
+    fn->_this->addFlag(FLAG_ARG_THIS);
+
+    fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, new SymExpr(meme)));
+    fn->insertAtHead(new DefExpr(fn->_this));
+
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
+
+    map.put(fn->getFormal(2), fn->_this);
+
+    fn->formals.get(2)->remove();
+    fn->formals.get(1)->remove();
+
+    update_symbols(fn, &map);
+
+    fn->addFlag(FLAG_CONSTRUCTOR);
+
+  } else {
+    INT_FATAL(fn, "initializer on non-class type");
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void find_printModuleInit_stuff() {
   std::vector<Symbol*> symbols;
 
   collectSymbols(printModuleInitModule, symbols);
@@ -1761,100 +1933,20 @@ find_printModuleInit_stuff() {
 }
 
 
-static void change_method_into_constructor(FnSymbol* fn) {
-  if (fn->numFormals() <= 1)
-    return;
-
-  // This function must be a method.
-  if (fn->getFormal(1)->type != dtMethodToken)
-    return;
-
-  // Now check that the function name matches the name of the type
-  // attached to 'this' or matches 'init'.
-  bool isCtor = (0 == strcmp(fn->getFormal(2)->type->symbol->name, fn->name));
-  bool isInit = (0 == strcmp(fn->name, "init"));
-  if (!isCtor && !isInit)
-    return;
-
-  // The second argument is 'this'.
-  // For starters, it needs a known type.
-  if (fn->getFormal(2)->type == dtUnknown)
-    INT_FATAL(fn, "'this' argument has unknown type");
-
-  // The type must be a class type.
-  // No constructors for records? <hilde>
-  AggregateType* ct = toAggregateType(fn->getFormal(2)->type);
-  if (!ct)
-    INT_FATAL(fn, "initializer on non-class type");
-
-  if (fn->hasFlag(FLAG_NO_PARENS)) {
-    USR_FATAL(fn, "a%s cannot be declared without parentheses", isCtor ? " constructor" : "n initializer");
-  }
-
-  if (ct->initializerStyle == DEFINES_INITIALIZER) {
-    ArgSymbol* meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL,
-                                    new SymExpr(gTypeDefaultToken));
-    meme->addFlag(FLAG_IS_MEME);
-    fn->insertFormalAtTail(meme);
-
-    handleInitializerRules(fn, ct);
-    fn->_this = new VarSymbol("this");
-    fn->_this->addFlag(FLAG_ARG_THIS);
-    fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, new SymExpr(meme)));
-  } else {
-    // Call the constructor, passing in just the generic arguments.
-    // This call ensures that the object is default-initialized before the
-    // user's constructor body is called.
-    // NOTE: This operation is not necessary for initializers, as Phase 1 of
-    // the initializer body is intended to perform this operation on its own.
-    CallExpr* call = new CallExpr(ct->defaultInitializer);
-    for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
-      ArgSymbol* arg = NULL;
-      for_formals(methodArg, fn) {
-        if (defaultTypeConstructorArg->name == methodArg->name) {
-          arg = methodArg;
-        }
-      }
-      if (!arg) {
-        if (!defaultTypeConstructorArg->defaultExpr)
-          USR_FATAL_CONT(fn, "constructor for class '%s' requires a generic argument called '%s'", ct->symbol->name, defaultTypeConstructorArg->name);
-      } else {
-        call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));
-      }
-    }
-
-    fn->_this = new VarSymbol("this");
-    fn->_this->addFlag(FLAG_ARG_THIS);
-    fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
-  }
-  fn->insertAtHead(new DefExpr(fn->_this));
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
-
-  SymbolMap map;
-  map.put(fn->getFormal(2), fn->_this);
-  fn->formals.get(2)->remove();
-  fn->formals.get(1)->remove();
-  update_symbols(fn, &map);
-
-  if (isCtor) {
-    // The constructor's name is the name of the type.  Replace it with
-    // _construct_typename
-    fn->name = ct->defaultInitializer->name;
-  }
-  fn->addFlag(FLAG_CONSTRUCTOR);
-}
-
 // Note 1: Since param variables can only be of primitive or enumerated type,
-// their destructors are trivial.  Allowing this case to proceed could result in
-// a regularization (reduction in # of conditionals == reduction in code
+// their destructors are trivial.  Allowing this case to proceed could result
+// in a regularization (reduction in # of conditionals == reduction in code
 // complexity).
-// Note 2: "this" should be passed by reference.  Then, no constructor call is
-// made, and therefore no autodestroy call is needed.
-// Note 3: If a record arg to an init copy function is passed by value, infinite
-// recursion would ensue.  This is an unreachable case (assuming that magic
-// conversions from R -> ref R are removed and all existing implementations of
-// chpl__initCopy are rewritten using "ref" or "const ref" intent on the record
-// argument).
+
+// Note 2: "this" should be passed by reference.  Then, no constructor call
+// is made, and therefore no autodestroy call is needed.
+
+// Note 3: If a record arg to an init copy function is passed by value,
+// infinite recursion would ensue.  This is an unreachable case (assuming that
+// magic conversions from R -> ref R are removed and all existing
+// implementations of chpl__initCopy are rewritten using "ref" or "const ref"
+// intent on the record argument).
+
 // Note 4: These two cases should be regularized.  Either the copy constructor
 // should *always* be called (and the corresponding destructor always called),
 // or we should ensure that the destructor is called only if a constructor is

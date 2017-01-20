@@ -1,60 +1,79 @@
+/* The Computer Language Benchmarks Game
+   http://benchmarksgame.alioth.debian.org/
+
+   contributed by Jacob Nelson, Lydia Duncan, Brad Chamberlain,
+   and Ben Harshbarger
+   derived from the GNU C version by Greg Buchholz
+*/
+
 use DynamicIters;
 
-config const n = 200,              // the problem size
-             maxIter = 50,         // the maximum # of iterations
-             limit = 4.0,          // the limit before quitting
-             chunkSize = 1;        // the chunk size of the dynamic iterator
+config const n = 200,              // image size in pixels (n x n)
+             maxIter = 50,         // max # of iterations per pixel
+             limit = 4.0,          // per-pixel convergence limit
+             chunkSize = 1;        // dynamic iterator's chunk size
 
-param bitsPerElt = 8;              // the # of bits to store per element
-type eltType = uint(bitsPerElt);   // the element type to store
+param bitsPerElt = 8;              // # of bits to store per array element
+type eltType = uint(bitsPerElt);   // element type used to store the image
 
 
 proc main() {
-  const ydim = 0..#n,                          // the y dimension
-        xdim = 0..#divceilpos(n, bitsPerElt),  // the compacted x dimension
-        bitRange = 0..#bitsPerElt,             // the degree of compactness
-        iters = 1..maxIter;                    // the max # of iterations
+  const xdim = 0..#divceilpos(n, bitsPerElt),  // the compacted x dimension
+        inv = 2.0 / n,                         // precompute 2/n
+        xvals: [0..#n] real = [i in 0..#n] inv*i - 1.5,  // precompute coords
+        yvals: [0..#n] real = [i in 0..#n] (inv*i - 1.0);
 
-  var image : [ydim, xdim] eltType;            // the bitmap image
+  var image : [0..#n, xdim] eltType;           // the compacted bitmap image
 
-  forall y in dynamic(ydim, chunkSize) {       // forall rows...
-    for xelt in xdim {                         //   forall column elements
+  forall (y, xelt) in dynamic(image.domain, chunkSize) { // for all elements
 
-      var mask = 0: eltType;                   // zero out the mask
+    // TODO: split x/y dimensions in forall loop and hoist the following?
+    const ci = yvals[y];
+    const xbase = xelt*bitsPerElt;
+    // TODO: express in terms of bitsPerElt?
+    const cr = (xvals[xbase+0], xvals[xbase+1], xvals[xbase+2], xvals[xbase+3],
+                xvals[xbase+4], xvals[xbase+5], xvals[xbase+6], xvals[xbase+7]);
 
-      for off in bitRange {                    // for each bit in the element
-        const x = xelt*bitsPerElt + off;       // compute its logical location
+    var Zr, Zi, Tr, Ti: 8*real;
 
-        const Cr = 2.0*x/n - 1.5;              // floating point values
-        const Ci = 2.0*y/n - 1.0;              //   to compute with
-        var Zr, Zi, Tr, Ti = 0.0;
+    for 1..maxIter {                       // for the max # of iterations
+      Zi = 2.0*Zr*Zi + ci;           // update Z and T
+      Zr = Tr - Ti + cr;
+      Tr = Zr*Zr;
+      Ti = Zi*Zi;
 
-        for i in iters {                       // for the max # of iterations
-          if (Tr + Ti > limit) {               // if we haven't converged
-            break;
-          }
-          
-          Zi = 2.0*Zr*Zi + Ci;                 // update floating point values
-          Zr = Tr - Ti + Cr;
-          Tr = Zr**2;
-          Ti = Zi**2;
-        }
-
-        mask <<= 1;                            // shift the mask
-        if (Tr + Ti <= limit) {                // if below the limit,
-          mask |= 0x1;                         // set the low bit to 1
-        }
-      }
-
-      image[y, xelt] = mask;                   // store the computed element
+      if (Tr + Ti > limit) then          // if we haven't converged
+        break;
     }
+
+    var buff: eltType;
+    for param i in 1..bitsPerElt {
+      if (Tr(i) + Ti(i) <= limit) then       // if 'C' is within the limit,
+        buff |= 0x1 << (8-i);                //   turn the low pixel on
+    }
+
+    image[y, xelt] = buff;                   // store the pixel buffer
   }
 
-  var f = openfd(1);                           // open a stdout file descriptor
-  var w = f.writer(iokind.native, locking=false);  // get a lock-free writer
+  //
+  // Get a lock-free writer channel on 'stdout', write the file header,
+  // and the image array.
+  //
+  var w = openfd(1).writer(iokind.native, locking=false);
 
-  w.writef("P4\n");                            // write the file header
+  w.writef("P4\n");
   w.writef("%i %i\n", n, n);
+  w.write(image);
+}
 
-  w.write(image);                              // write out the image
+inline proc +(cr, ci) {
+  return (cr(1)+ci, cr(2)+ci, cr(3)+ci, cr(4)+ci, 
+          cr(5)+ci, cr(6)+ci, cr(7)+ci, cr(8)+ci);
+}
+
+inline proc >(x, y) {
+  for param i in 1..bitsPerElt do
+    if x(i) <= y then
+      return false;
+  return true;
 }

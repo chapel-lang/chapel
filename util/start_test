@@ -560,6 +560,9 @@ def check_environment():
     if "CHPL_DEVELOPER" in os.environ: # unset CHPL_DEVELOPER
         del os.environ["CHPL_DEVELOPER"]
 
+    if "CHPL_UNWIND" in os.environ:    # unset CHPL_UNWIND
+        del os.environ["CHPL_UNWIND"]
+
     # Check for $CHPL_HOME
     global home
     if "CHPL_HOME" in os.environ:

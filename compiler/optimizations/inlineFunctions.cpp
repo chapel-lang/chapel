@@ -199,6 +199,14 @@ static void inlineCall(CallExpr* call) {
   for_alist(copy, block->body) {
     // This is not the final statement
     if (copy->next != NULL) {
+
+      // avoid inlining another epilogue label
+      if (DefExpr* def = toDefExpr(copy)) {
+        if (LabelSymbol* label = toLabelSymbol(def->sym)) {
+          label->removeFlag(FLAG_EPILOGUE_LABEL);
+        }
+      }
+
       stmt->insertBefore(copy->remove());
 
     // The function does not return a value.  Remove the calling statement.

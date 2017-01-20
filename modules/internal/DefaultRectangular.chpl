@@ -920,7 +920,7 @@ module DefaultRectangular {
                minIndicesPerTask:int = dataParMinGranularity)
       ref where defRectSimpleDData {
       if debugDefaultDist {
-        chpl_debug_writeln("*** In defRectArr simple-dd fallback iterator");
+        chpl_debug_writeln("*** In defRectArr simple-dd serial iterator");
       }
       if rank == 1 {
         // This is specialized to avoid overheads of calling dsiAccess()
@@ -1016,36 +1016,26 @@ module DefaultRectangular {
                minIndicesPerTask:int = dataParMinGranularity)
       ref where !defRectSimpleDData {
       if debugDefaultDist {
-        chpl_debug_writeln("*** In defRectArr multi-dd fallback iterator");
+        chpl_debug_writeln("*** In defRectArr multi-dd serial iterator");
       }
       if rank == 1 {
         if !dom.stridable {
           const first = getDataIndex(dom.dsiLow, getChunked=false);
           const second = getDataIndex(dom.dsiLow+1, getChunked=false);
           const step = (second-first);
-          if mdNumChunks == 1 {
-            const last = first + (dom.dsiNumIndices-1) * step;
-            const dd = theDataChunk(0);
-            for i in chpl_direct_pos_stride_range_iter(first, last, step) {
-              yield dd(i);
+          const lo = dom.dsiDim(mdParDim).low;
+          const hi = dom.dsiDim(mdParDim).high;
+          var (chunk, idx) = getDataIndex(dom.dsiLow);
+          var dd = theDataChunk(chunk);
+          var lastChunkInd = mData(chunk).pdr.high;
+          for ind in chpl_direct_pos_stride_range_iter(lo, hi, 1:idxType) {
+            if ind > lastChunkInd { // traverse to next chunk
+              (chunk, idx) = getDataIndex(ind);
+              dd = theDataChunk(chunk);
+              lastChunkInd = mData(chunk).pdr.high;
             }
-          } else if dom.dsiNumIndices > 0 {
-            const (chunkLo, _) = getDataIndex(dom.dsiLow);
-            const (chunkHi, _) = getDataIndex(dom.dsiHigh);
-
-            for chunk in chunkLo..chunkHi {
-              if mData(chunk).pdr.length > 0 {
-                const dd = theDataChunk(chunk);
-                const lo = mData(chunk).pdr.low;
-                const hi = mData(chunk).pdr.high;
-                const (_, chunkFirst) = getDataIndex(lo);
-                const chunkLast = chunkFirst + (hi - lo) * step;
-                for i in chpl_direct_pos_stride_range_iter(chunkFirst,
-                                                           chunkLast,
-                                                           step) do
-                  yield dd(i);
-              }
-            }
+            yield dd(idx);
+            idx += step;
           }
         } else {
           for i in dom do
@@ -1170,64 +1160,53 @@ module DefaultRectangular {
       } else {
         const mdPDLow = dom.dsiDim(mdParDim).low;
         const chunk = mdInd2Chunk(mdPDLow + followThis(mdParDim).low);
-        if mdPDLow + followThis(mdParDim).high <= mData(chunk).pdr.high {
-          //
-          // entire followThis is in one multi-data chunk
-          // TODO: is it ever otherwise?
-          //
+        if boundsChecking {
+          // the code here assumes followThis spans but a single chunk
+          assert(mdPDLow + followThis(mdParDim).high <= mData(chunk).pdr.high);
+        }
 
-          //
-          // shiftedData{Vec} is offset from data{Vec}, forward by
-          // origin and backward by dom.dsiLow.  The domain follower
-          // offsets forward by dom.dsiLow.  Combining these lets us
-          // reference data{Vec} using the 0-based indexes passed in.
-          //
-          // gbt TODO: change to using .data here
-          //
-          var dd = mData(chunk).shiftedData;
-          if chunk != 0 {
-            const ddShift = mData(chunk).dataOff;
-            dd = _ddata_shift(eltType, dd, -ddShift:idxSignedType);
-          }
-          for ind in dom.these(tag=iterKind.follower, followThis,
-                               tasksPerLocale,
-                               ignoreRunning,
-                               minIndicesPerTask) {
-            var dataInd: idxType;
-            // If we detect that blk is never changed then then blk(rank) == 1.
-            // Knowing this, we need not multiply the final ind(...) by anything.
-            // This relies on us marking every function that modifies blk
-            if __primitive("optimize_array_blk_mult") {
-              if rank == 1 {
-                dataInd = ind;
-              } else {
-                dataInd = 0;
-                for param i in 1..rank-1 {
-                  dataInd += ind(i) * blk(i);
-                }
-                dataInd += ind(rank);
-              }
-            } else {
-              if rank == 1 {
-                dataInd = ind * blk(1);
-              } else {
-                dataInd = 0;
-                for param i in 1..rank {
-                  dataInd += ind(i) * blk(i);
-                }
-              }
-            }
-            yield dd(dataInd);
-          }
-        } else {
-          //
-          // followThis spans multi-ddata chunks.
-          //
-          for i in dom.these(tag=iterKind.follower, followThis,
+        //
+        // shiftedData{Vec} is offset from data{Vec}, forward by
+        // origin and backward by dom.dsiLow.  The domain follower
+        // offsets forward by dom.dsiLow.  Combining these lets us
+        // reference data{Vec} using the 0-based indexes passed in.
+        //
+        // gbt TODO: change to using .data here
+        //
+        var dd = mData(chunk).shiftedData;
+        if chunk != 0 {
+          const ddShift = mData(chunk).dataOff;
+          dd = _ddata_shift(eltType, dd, -ddShift:idxSignedType);
+        }
+        for ind in dom.these(tag=iterKind.follower, followThis,
                              tasksPerLocale,
                              ignoreRunning,
-                             minIndicesPerTask) do
-            yield dsiAccess(i);
+                             minIndicesPerTask) {
+          var dataInd: idxType;
+          // If we detect that blk is never changed then then blk(rank) == 1.
+          // Knowing this, we need not multiply the final ind(...) by anything.
+          // This relies on us marking every function that modifies blk
+          if __primitive("optimize_array_blk_mult") {
+            if rank == 1 {
+              dataInd = ind;
+            } else {
+              dataInd = 0;
+              for param i in 1..rank-1 {
+                dataInd += ind(i) * blk(i);
+              }
+              dataInd += ind(rank);
+            }
+          } else {
+            if rank == 1 {
+              dataInd = ind * blk(1);
+            } else {
+              dataInd = 0;
+              for param i in 1..rank {
+                dataInd += ind(i) * blk(i);
+              }
+            }
+          }
+          yield dd(dataInd);
         }
       }
     }

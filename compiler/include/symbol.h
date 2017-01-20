@@ -373,117 +373,134 @@ class TypeSymbol : public Symbol {
   const char* doc;
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class FnSymbol : public Symbol {
- public:
-  AList formals; // each formal is an ArgSymbol, but the
-                 // elements of this list are DefExprs
-  Type* retType; // The return type of the function.  This field is not
-                 // fully established until resolution, and could be NULL
-                 // before then.  Up to that point, return type information is
-                 // stored in the retExprType field.
-  BlockStmt* where;
-  BlockStmt* retExprType;
-  BlockStmt* body;
-  IntentTag thisTag;
-  RetTag retTag;
-  IteratorInfo* iteratorInfo; // Attached only to iterators, specifically to
-                              // original (user) iterators before lowering.
-  Symbol* _this;
-  Symbol* _outer;
-  FnSymbol *instantiatedFrom;
-  SymbolMap substitutions;
-  BlockStmt* instantiationPoint; // point of instantiation
-  std::vector<BasicBlock*>* basicBlocks;
-  Vec<CallExpr*>* calledBy;
-  const char* userString;
-  FnSymbol* valueFunction; // pointer to value function (created in
-                           // resolve and used in cullOverReferences)
-  int codegenUniqueNum;
-  const char *doc;
+public:
+  // each formal is an ArgSymbol, but the elements are DefExprs
+  AList                      formals;
+
+  // The return type of the function. This field is not fully established
+  // until function resolution, and could be NULL before then.  Up to that
+  // point, return type information is stored in the retExprType field.
+  Type*                      retType;
+
+  BlockStmt*                 where;
+  BlockStmt*                 retExprType;
+  BlockStmt*                 body;
+  IntentTag                  thisTag;
+  RetTag                     retTag;
+
+  // Attached original (user) iterators before lowering.
+  IteratorInfo*              iteratorInfo;
+
+  Symbol*                    _this;
+  Symbol*                    _outer;
+  FnSymbol*                  instantiatedFrom;
+  SymbolMap                  substitutions;
+  BlockStmt*                 instantiationPoint;
+  std::vector<BasicBlock*>*  basicBlocks;
+  Vec<CallExpr*>*            calledBy;
+  const char*                userString;
+
+  // pointer to value function (created in function resolution
+  // and used in cullOverReferences)
+  FnSymbol*                  valueFunction;
+
+  int                        codegenUniqueNum;
+  const char*                doc;
 
   // Used to store the return symbol during partial copying.
-  // Move to PartialCopyData?
-  Symbol* retSymbol;
+  Symbol*                    retSymbol;
 
   // Number of formals before tuple type constructor formals are added.
-  int numPreTupleFormals;
+  int                        numPreTupleFormals;
 
 #ifdef HAVE_LLVM
-  llvm::MDNode* llvmDISubprogram;
+  llvm::MDNode*              llvmDISubprogram;
 #else
-  void* llvmDISubprogram;
+  void*                      llvmDISubprogram;
 #endif
 
 
-                  FnSymbol(const char* initName);
-                 ~FnSymbol();
+                             FnSymbol(const char* initName);
+                            ~FnSymbol();
 
-  void            verify();
-  virtual void    accept(AstVisitor* visitor);
+  void                       verify();
+  virtual void               accept(AstVisitor* visitor);
 
   DECLARE_SYMBOL_COPY(FnSymbol);
 
-  FnSymbol*       copyInnerCore(SymbolMap* map);
-  FnSymbol*       getFnSymbol(void);
-  void            replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  FnSymbol*                  copyInnerCore(SymbolMap* map);
+  FnSymbol*                  getFnSymbol();
+  void                       replaceChild(BaseAST* oldAst, BaseAST* newAst);
 
-  FnSymbol*       partialCopy(SymbolMap* map);
-  void            finalizeCopy();
+  FnSymbol*                  partialCopy(SymbolMap* map);
+  void                       finalizeCopy();
 
   // Returns an LLVM type or a C-cast expression
-  GenRet          codegenFunctionType(bool forHeader);
-  GenRet          codegenCast(GenRet fnPtr);
+  GenRet                     codegenFunctionType(bool forHeader);
+  GenRet                     codegenCast(GenRet fnPtr);
 
-  GenRet          codegen();
-  void            codegenHeaderC();
-  void            codegenPrototype();
-  void            codegenDef();
+  GenRet                     codegen();
+  void                       codegenHeaderC();
+  void                       codegenPrototype();
+  void                       codegenDef();
 
-  void            printDef(FILE* outfile);
+  void                       printDef(FILE* outfile);
 
-  void            insertAtHead(Expr* ast);
-  void            insertAtHead(const char* format, ...);
+  void                       insertAtHead(Expr* ast);
+  void                       insertAtHead(const char* format, ...);
 
-  void            insertAtTail(Expr* ast);
-  void            insertAtTail(const char* format, ...);
+  void                       insertAtTail(Expr* ast);
+  void                       insertAtTail(const char* format, ...);
 
-  void            insertBeforeReturn(Expr* ast);
-  void            insertBeforeReturnAfterLabel(Expr* ast);
+  void                       insertFormalAtHead(BaseAST* ast);
+  void                       insertFormalAtTail(BaseAST* ast);
 
-  void            insertFormalAtHead(BaseAST* ast);
-  void            insertFormalAtTail(BaseAST* ast);
+  void                       insertBeforeEpilogue(Expr* ast);
 
-  Symbol*         getReturnSymbol();
-  Symbol*         replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType);
+  // insertIntoEpilogue adds an Expr before the final return, but after the epilogue label
+  void                       insertIntoEpilogue(Expr* ast);
 
-  int             numFormals()                                 const;
-  ArgSymbol*      getFormal(int i); // return ith formal
+  LabelSymbol*               getEpilogueLabel();
+  LabelSymbol*               getOrCreateEpilogueLabel();
 
-  void            collapseBlocks();
+  Symbol*                    getReturnSymbol();
+  Symbol*                    replaceReturnSymbol(Symbol* newRetSymbol,
+                                                 Type*   newRetType);
 
-  bool            tag_generic();
-  bool            isResolved()                                 const;
-  bool            isMethod()                                   const;
-  bool            isPrimaryMethod()                            const;
-  bool            isSecondaryMethod()                          const;
-  bool            isIterator()                                 const;
-  bool            returnsRefOrConstRef()                       const;
+  int                        numFormals()                                const;
+  ArgSymbol*                 getFormal(int i);
 
-  QualifiedType   getReturnQualType()                          const;
+  void                       collapseBlocks();
 
-  virtual void    printDocs(std::ostream *file, unsigned int tabs);
+  bool                       tagIfGeneric();
 
-  void            throwsErrorInit();
-  bool            throwsError()                                const;
+  bool                       isResolved()                                const;
+  bool                       isMethod()                                  const;
+  bool                       isPrimaryMethod()                           const;
+  bool                       isSecondaryMethod()                         const;
+  bool                       isIterator()                                const;
+  bool                       returnsRefOrConstRef()                      const;
+
+  QualifiedType              getReturnQualType()                         const;
+
+  virtual void               printDocs(std::ostream* file,
+                                       unsigned int  tabs);
+
+  void                       throwsErrorInit();
+  bool                       throwsError()                               const;
 
 private:
-  virtual std::string docsDirective();
-  bool                _throwsError;
+  virtual std::string        docsDirective();
+
+  int                        hasGenericFormals()                         const;
+
+  bool                       _throwsError;
 };
 
 /******************************** | *********************************

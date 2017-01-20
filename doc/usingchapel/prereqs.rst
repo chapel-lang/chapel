@@ -32,6 +32,8 @@ about your environment for using Chapel:
   * If you wish to use Chapel's test system, python-setuptools and
     python-devel (or equivalent packages for your platform) are required.
 
+.. _readme-prereqs-installation:
+
 Installation
 ------------
 

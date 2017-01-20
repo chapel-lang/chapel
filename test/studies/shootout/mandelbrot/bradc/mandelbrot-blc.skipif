@@ -1,0 +1,6 @@
+# Floating point precision variations in some configs cause binary mismatch
+#
+# See JIRA 244 for more info: https://chapel.atlassian.net/browse/CHAPEL-244
+
+# the issue with --fast occurs on chapcs with CHPL_TARGET_ARCH=native
+CHPL_TARGET_PLATFORM == linux32

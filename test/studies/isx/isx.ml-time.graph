@@ -1,0 +1,5 @@
+perfkeys: total =, total =
+files: isx-hand-optimized.dat, isx-release.dat
+graphkeys: Hand Optimized, Release
+ylabel: Time (seconds)
+graphtitle: ISx variations
