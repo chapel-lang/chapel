@@ -3030,11 +3030,11 @@ module ChapelArray {
         compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
 
     if !isIrregularDom(a) && !isIrregularDom(b) {
-      for e in a._value._arrs do {
+      for e in a._instance._arrs do {
         on e do e.dsiReallocate(b);
       }
       a.setIndices(b.getIndices());
-      for e in a._value._arrs do {
+      for e in a._instance._arrs do {
         on e do e.dsiPostReallocate();
       }
     } else {
