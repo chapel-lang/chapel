@@ -18,6 +18,8 @@ proc main() {
   test_dotu_sub();
   test_dotc_sub();
   test_dsdot();
+  // Not tested due to compatibility issue with CrayBLAS
+  //test_sdsdot();
   test_nrm2();
   test_asum();
   test_amax();
@@ -86,8 +88,14 @@ proc test_dotc_sub() {
   test_dotc_helper(complex(128));
 }
 
+/* Name breaks convention, since only real(64) accepted */
 proc test_dsdot() {
-  test_dsdot_helper(real(32));
+  test_dsdot_helper();
+}
+
+/* Name breaks convention, since only real(32) accepted*/
+proc test_sdsdot() {
+  test_sdsdot_helper();
 }
 
 proc test_nrm2() {
@@ -165,7 +173,7 @@ proc test_rotg_helper(type t) {
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 proc test_rotmg_helper(type t) {
@@ -223,7 +231,7 @@ proc test_rotmg_helper(type t) {
     err = abs(h21*X1 + h22*Y1);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 
@@ -260,7 +268,7 @@ proc test_rot_helper(type t) {
     }
 
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 
@@ -318,7 +326,7 @@ proc test_rotm_helper(type t) {
       trackErrors(name, err, errorThreshold, passed, failed, tests);
     }
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 proc test_swap_helper(type t) {
@@ -346,7 +354,7 @@ proc test_swap_helper(type t) {
       trackErrors(name, err, errorThreshold, passed, failed, tests);
     }
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 
@@ -373,7 +381,7 @@ proc test_scal_helper(type t) {
       trackErrors(name, err, errorThreshold, passed, failed, tests);
     }
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 proc test_copy_helper(type t) {
@@ -396,7 +404,7 @@ proc test_copy_helper(type t) {
       trackErrors(name, err, errorThreshold, passed, failed, tests);
     }
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 proc test_axpy_helper(type t) {
@@ -423,7 +431,7 @@ proc test_axpy_helper(type t) {
       trackErrors(name, err, errorThreshold, passed, failed, tests);
     }
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 proc test_dot_helper(type t) {
@@ -447,7 +455,7 @@ proc test_dot_helper(type t) {
     var err = abs(red - res);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 proc test_dotu_helper(type t) {
@@ -471,7 +479,7 @@ proc test_dotu_helper(type t) {
     var err = abs(red - res);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 proc test_dotc_helper(type t) {
@@ -495,15 +503,41 @@ proc test_dotc_helper(type t) {
     var err = abs(red - res);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
-proc test_dsdot_helper(type t) {
+proc test_dsdot_helper() {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(real(64));
+  var name = "dsdot";
+
+  type t = real(32);
+  // Simple test
+  {
+    const D = {0..2};
+    var X: [D] t = [1: t, 2: t, 3: t],
+        Y: [D] t = [3: t, 2: t, 1: t];
+
+    var prod = X*Y;
+    var red = (+ reduce prod): real(64);
+
+    var res = dsdot(X, Y);
+
+    var err = abs(red - res);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_sdsdot_helper(type t) {
   var passed = 0,
       failed = 0,
       tests = 0;
   const errorThreshold = blasError(t);
-  var name = "%dsdot".format(blasPrefix(t));
+  var name = "sdsdot";
 
   // Simple test
   {
@@ -514,13 +548,13 @@ proc test_dsdot_helper(type t) {
     var prod = X*Y;
     var red = + reduce prod;
 
-    var res = dsdot(X, Y);
+    var res = sdsdot(X, Y);
 
     var err = abs(red - res);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 proc test_nrm2_helper(type t) {
@@ -543,7 +577,7 @@ proc test_nrm2_helper(type t) {
     var err = norm - res;
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 proc test_asum_helper(type t) {
@@ -575,7 +609,7 @@ proc test_asum_helper(type t) {
     var err = norm - res;
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }
 
 proc test_amax_helper(type t) {
@@ -608,5 +642,5 @@ proc test_amax_helper(type t) {
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
   }
-  printErrors(name, t, passed, failed, tests);
+  printErrors(name, passed, failed, tests);
 }

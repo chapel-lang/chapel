@@ -1172,9 +1172,10 @@ proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
 }
 
 /*
-    Wrapper for `SDSDOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>`_
+    Wrapper for `DSDOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>`_
 
-    Returns  the dot product of two vectors, using double precision internally::
+    Returns the dot product of two real(32) vectors as a real(64), using
+    real(64) precision internally::
 
        d = X*Y
 
@@ -1190,20 +1191,41 @@ proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
 
 
 */
-proc dsdot(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1,incX: c_int = 1): eltType
+proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(64)
  where D.rank == 1 {
 
-  var alpha = 0: eltType;
+  const N = D.size: c_int;
+  return cblas_dsdot (N, X, incX, Y, incY);
+}
+
+
+/*
+    Wrapper for `SDSDOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>`_
+
+    Returns the dot product of two real(32) vectors as a real(32), using
+    real(64) precision internally::
+
+       d = X*Y
+
+    Input:
+
+    Y,X:Vector with N elements.
+    incX: defines the increment for the vector X.
+    incY: defines the increment for the vector Y.
+
+    Return:
+
+    Scalar value of dot product.
+
+
+*/
+proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(32)
+ where D.rank == 1 {
+
+  var alpha = 0: real(32);
   const N = D.size: c_int;
 
-  select eltType {
-   when real(32) do{
-      return cblas_sdsdot (N, alpha, X, incX, Y, incY);
-    }
-    otherwise {
-        compilerError("Unknown type in dsdot");
-    }
-  }
+  return cblas_sdsdot (N, alpha, X, incX, Y, incY);
 }
 
 /*
