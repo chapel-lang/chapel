@@ -1082,41 +1082,16 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
 
     var idx = 0;
 
-    //
-    // This loop generates the index in the local flat array corresponding to
-    // the logical index ``i``.
-    //
-    // I, benharsh, feel this is more easily understood by treating the set of
-    // indices owned by this locale as a contiguous chunk, as opposed to
-    // disjoint indices. By then translating ``i`` to an index into this chunk,
-    // we can easily transform the rank-dimensional index into a flat array
-    // index.
-    //
     for param d in 1..rank {
-      const bs = blocksize(d); // cache for performance
-      // STEP 1: translate ``i`` into a ones-based index into a lowered space
-      // equivalent in size to the global space. Makes the math easier.
-      const base = i(d) - low(d) + 1;
+      const bs              = blocksize(d);  // cache for performance
+      const base            = i(d) - low(d); // zero-based index
+      const localBlockNum   = base / (bs * locsize(d));
+      const localBlockStart = localBlockNum * bs;
+      const remainder       = base % bs;
 
-      // Find the total number of blocks (including ones owned by this Locale)
-      // that came before ``base``.
-      const numBlocksBefore = (base - 1) / bs;
+      const locIdx = localBlockStart + remainder;
 
-      // Determine how many of those blocks are owned by the current Locale.
-      const numBlocksBeforeLocal = ((numBlocksBefore) / locsize(d));
-
-      // ``others`` is the number of indices before ``base`` not owned by the
-      // current Locale.
-      const others = (numBlocksBefore - numBlocksBeforeLocal) * bs;
-
-      // ``loc`` is now an index into a contiguous chunk of indices owned by
-      // this Locale.
-      const loc = base - others;
-
-      // The flat array is zero-based, so subtract ``1`` from ``loc``.
-      // Multiply by ``sizes(d+1)`` to get the offset into the flat array,
-      // similar to DefaultRectangular's ``blk``.
-      idx += (loc-1) * sizes(d+1);
+      idx += locIdx * sizes(d+1);
     }
 
     return idx;
