@@ -4966,8 +4966,9 @@ static void resolveMove(CallExpr* call) {
 
   FnSymbol* fn = toFnSymbol(call->parentSymbol);
   bool isReturn = fn ? lhs == fn->getReturnSymbol() : false;
+  bool rhsIsTypeExpr = isTypeExpr(rhs);
 
-  if (lhs->hasFlag(FLAG_TYPE_VARIABLE) && !isTypeExpr(rhs)) {
+  if (lhs->hasFlag(FLAG_TYPE_VARIABLE) && !rhsIsTypeExpr) {
     if (isReturn) {
       if (!call->parentSymbol->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN))
         USR_FATAL(call, "illegal return of value where type is expected");
@@ -4976,7 +4977,7 @@ static void resolveMove(CallExpr* call) {
     }
   }
 
-  if (!lhs->hasFlag(FLAG_TYPE_VARIABLE) && !lhs->hasFlag(FLAG_MAYBE_TYPE) && isTypeExpr(rhs)) {
+  if (!lhs->hasFlag(FLAG_TYPE_VARIABLE) && !lhs->hasFlag(FLAG_MAYBE_TYPE) && rhsIsTypeExpr) {
     if (isReturn) {
       USR_FATAL(call, "illegal return of type where value is expected");
     } else {
@@ -4999,6 +5000,13 @@ static void resolveMove(CallExpr* call) {
   }
 
   Type* rhsType = rhs->typeInfo();
+
+  // This is a workaround for order-of-resolution problems with
+  // extern type aliases
+  if (rhsIsTypeExpr && rhs->typeInfo() == dtUnknown && isSymExpr(rhs)) {
+    // Try resolving type aliases now.
+    rhsType = resolveTypeAlias(toSymExpr(rhs));
+  }
 
   if (rhsType == dtVoid) {
     if (isReturn && (lhs->type == dtVoid || lhs->type == dtUnknown))
