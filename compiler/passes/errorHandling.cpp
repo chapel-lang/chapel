@@ -82,10 +82,10 @@ class ErrorHandlingVisitor : public AstVisitorTraverse {
 
 // TODO: default/strict mode
 // TODO: need callsite for SET_LINENO
-static void haltOrPropagateError(BlockStmt* haltOrProp, FnSymbol* fn,
+static void haltOrPropagateError(BlockStmt* haltOrProp, FnSymbol* parentFn,
                                  VarSymbol* tempError, TryStmt* tryStmt) {
   bool halt;
-  if (fn->throwsError()) {
+  if (parentFn->throwsError()) {
     if (tryStmt) {
       halt = tryStmt->tryBang();
     } else {
@@ -93,24 +93,19 @@ static void haltOrPropagateError(BlockStmt* haltOrProp, FnSymbol* fn,
       halt = false;
     }
   } else {
-    assert(tryStmt != NULL);
-    if (tryStmt->tryBang()) {
-      halt = true;
-    } else {
-      // TODO: strict mode, propagating try without throws
-      halt = true;
-    }
+    // TODO: strict mode, propagating try without throws
+    halt = true;
   }
 
   if (halt) {
     Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
                           new_CStringSymbol("uncaught error"));
-    haltOrProp->insertAfter(haltOnError);
+    haltOrProp->insertAtTail(haltOnError);
   } else {
-    LabelSymbol* label = fn->getOrCreateEpilogueLabel();
+    LabelSymbol* label = parentFn->getOrCreateEpilogueLabel();
     INT_ASSERT(label); // error handling needs an epilogue label
 
-    DefExpr* outErrorExpr = toDefExpr(fn->formals.last());
+    DefExpr* outErrorExpr = toDefExpr(parentFn->formals.last());
     Symbol*  outError     = outErrorExpr->sym;
     // TODO: check with flag
 
@@ -211,6 +206,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
   if (FnSymbol* fn = node->resolvedFunction()) {
     if (fn->throwsError()) {
+      gdbShouldBreakHere();
+
       SET_LINENO(node);
       if (insideTry) {
         // printf("throwing call inside try\n");
@@ -231,7 +228,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         node->insertAtTail(tempError);
 
         ifErrorExists(node, tempError, haltOrProp);
-        haltOrPropagateError(haltOrProp, fn, tempError, NULL);
+        haltOrPropagateError(haltOrProp, node->getFunction(), tempError, NULL);
       }
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
