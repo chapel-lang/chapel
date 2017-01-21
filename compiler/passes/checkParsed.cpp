@@ -55,7 +55,7 @@ checkParsed() {
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (toVarSymbol(def->sym))
+    if (toVarSymbol(def->sym)) {
       // The test for FLAG_TEMP allows compiler-generated (temporary) variables
       // to be declared without an explicit type or initializer expression.
       if ((!def->init || def->init->isNoInitExpr())
@@ -66,6 +66,25 @@ checkParsed() {
               USR_FATAL_CONT(def->sym,
                              "Variable '%s' is not initialized or has no type",
                              def->sym->name);
+    }
+
+    //
+    // This test checks to see if query domains (e.g., '[?D]') are
+    // used in places other than formal argument type specifiers.
+    //
+    if (!isFnSymbol(def->parentSymbol)) {
+      if (CallExpr* type = toCallExpr(def->exprType)) {
+        if (type->isNamed("chpl__buildArrayRuntimeType")) {
+          if (CallExpr* domainExpr = toCallExpr(type->get(1))) {
+            DefExpr* queryDomain = toDefExpr(domainExpr->get(1));
+            if (queryDomain) {
+              USR_FATAL_CONT(queryDomain,
+                             "Domain query expressions may currently only be used in formal argument types");
+            }
+          }
+        }
+      }
+    }
 
     checkPrivateDecls(def);
   }
