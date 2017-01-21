@@ -95,5 +95,26 @@ class ArrayViewSliceArr: BaseArr {
   proc dsiReindex(newdom) {
     compilerError("reindexing not supported on array views yet");
   }
+
+  proc dsiRankChange() {
+    compilerError("rank change not supported on array views yet");
+  }
+
+  proc dsiNoFluffView() {
+    compilerError("no fluff view not supported on array views yet");
+  }
+
+  //
+  // Local subdomain interface
+  //
+  proc dsiHasSingleLocalSubdomain() param
+    return dom.dsiHasSingleLocalSubdomain();
+
+  //
+  // TODO: Is this correct in distributed memory?
+  //
+  proc dsiLocalSubdomain() {
+    return dom.dsiLocalSubdomain();
+  }
 }
 
