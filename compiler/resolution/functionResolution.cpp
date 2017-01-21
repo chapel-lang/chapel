@@ -900,7 +900,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
   VarSymbol* ret = newTemp("_ic_", ii->iclass);
   ii->getIterator->insertAtTail(new DefExpr(ret));
-  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo()->symbol);
+  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo());
   ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
@@ -5088,7 +5088,7 @@ resolveNew(CallExpr* call)
       if (!isRecord(typeToNew) && !isUnion(typeToNew)) {
         BlockStmt* allocCallBlock = new BlockStmt();
 
-        CallExpr* innerCall = callChplHereAlloc(typeToNew->symbol);
+        CallExpr* innerCall = callChplHereAlloc(typeToNew);
         CallExpr* allocCall = new CallExpr(PRIM_MOVE, new_temp,
                                            innerCall);
         insertBeforeMe->insertBefore(allocCallBlock);
