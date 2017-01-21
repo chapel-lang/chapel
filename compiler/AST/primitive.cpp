@@ -689,16 +689,26 @@ initPrimitive() {
   prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 }
 
-Map<const char*, VarSymbol*> memDescsMap;
+static Map<const char*, VarSymbol*> memDescsMap;
+static Map<int, VarSymbol*> memDescsNodeMap;  // key is the Type node's ID
 Vec<const char*> memDescsVec;
+static int64_t memDescInt = 0;
 
 VarSymbol* newMemDesc(const char* str) {
-  static int64_t memDescInt = 0;
   const char* s = astr(str);
   if (VarSymbol* v = memDescsMap.get(s))
     return v;
   VarSymbol* memDescVar = new_IntSymbol(memDescInt++, INT_SIZE_16);
   memDescsMap.put(s, memDescVar);
   memDescsVec.add(s);
+  return memDescVar;
+}
+
+VarSymbol* newMemDesc(Type* type) {
+  if (VarSymbol* v = memDescsNodeMap.get(type->id))
+    return v;
+  VarSymbol* memDescVar = new_IntSymbol(memDescInt++, INT_SIZE_16);
+  memDescsNodeMap.put(type->id, memDescVar);
+  memDescsVec.add(type->symbol->name);
   return memDescVar;
 }

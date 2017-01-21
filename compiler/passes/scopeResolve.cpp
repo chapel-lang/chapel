@@ -212,7 +212,6 @@ void scopeResolve() {
   // build constructors (type and value versions)
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
-    SET_LINENO(ct->symbol);
     build_constructors(ct);
   }
 
@@ -1102,7 +1101,7 @@ static void build_constructor(AggregateType* ct) {
 
   if (ct->symbol->hasFlag(FLAG_REF)) {
     // For ref, sync and single classes, just allocate space.
-    allocCall = callChplHereAlloc(fn->_this);
+    allocCall = callChplHereAlloc(fn->_this->type);
 
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
 

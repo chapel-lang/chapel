@@ -192,7 +192,7 @@ buildDefaultWrapper(FnSymbol* fn,
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
                                            wrapper->_this,
-                                           callChplHereAlloc((wrapper->_this->typeInfo())->symbol)));
+                                           callChplHereAlloc(wrapper->_this->typeInfo())));
 
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
