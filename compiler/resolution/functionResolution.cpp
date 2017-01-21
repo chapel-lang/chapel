@@ -3372,7 +3372,7 @@ printResolutionErrorUnresolved(
   } else {
     needToReport = true;
   }
-  // It would be eaiser to just check exit_eventually to catch all needToReport cases.
+  // It would be easier to just check exit_eventually to catch all needToReport cases.
   // Alas exit_eventually is static to misc.cpp.
   if (needToReport) {
     const char* entity = "call";
