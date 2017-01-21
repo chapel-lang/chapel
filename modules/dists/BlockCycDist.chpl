@@ -90,9 +90,6 @@ It has not been tuned for performance.
 
 The only ``idxType`` currently supported is `int` or `int(64)`.
 
-A `forall` loop over a Cyclic-distributed domain or array
-currently executes at most a single task on each locale.
-
 
 **Example**
 
@@ -177,8 +174,8 @@ They must match the rank and index type of the domains
 
 A `forall` loop over a Cyclic-distributed domain or array
 executes each iteration on the locale where that iteration's index
-is mapped to. Currently all iterations on a given locale
-execute within a single task.
+is mapped to.
+
 */
 class BlockCyclic : BaseDist {
   param rank: int;
