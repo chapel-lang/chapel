@@ -604,11 +604,11 @@ module ChapelBase {
   }
 
   enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
-  config param defaultArrayInitMethod = ArrayInit.heuristicInit;
-  var arrayInitMethod = defaultArrayInitMethod;
+  config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
+  var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
 
   proc init_elts(x, s, type t) : void {
-    var initMethod = arrayInitMethod;
+    var initMethod = chpl_arrayInitMethod;
 
     // for uints, check that s > 0, so the `s-1` below doesn't overflow
     if isUint(s) && s == 0 {
