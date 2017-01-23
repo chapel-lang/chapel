@@ -148,7 +148,7 @@ The essential configurations, with examples, are as follows:
 
 .. code-block:: sh
 
-    # Space-delimied list of server names
+    # Space-delimited list of server names
     GASNET_SSH_SERVERS='ec2-11-222-33-444.us-west-2.compute.amazonaws.com ec2-11-222-33-445.us-west-2.compute.amazonaws.com'
     # Job spawn mechanism, where 'S' means ssh/rsh-based spawn
     GASNET_SPAWNFN='S'
