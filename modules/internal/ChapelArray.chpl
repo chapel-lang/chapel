@@ -1096,7 +1096,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc shape where isOpaqueDom(this) || isAssociativeDom(this) { 
+    proc shape where isAssociativeDom(this) || isOpaqueDom(this) {
       // Opaque domains assumed 1D
       var shape: (int,);
       shape[1] = size;
@@ -1106,7 +1106,7 @@ module ChapelArray {
     pragma "no doc"
     /* Unsupported case */
     proc shape {
-      compilerError("this domain type does not support .shape");
+      compilerError(".shape not supported on this domain");
     }
 
     pragma "no doc"
@@ -2409,7 +2409,7 @@ module ChapelArray {
           if this._value.dataAllocRange.length < this.domain.numIndices {
             /* if dataAllocRange has fewer indices than this.domain it must not
                be set correctly.  Set it to match this.domain to start.
-             */ 
+             */
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
           const oldRng = this._value.dataAllocRange;
@@ -2684,6 +2684,13 @@ module ChapelArray {
       for i in this do if i == val then total += 1;
       return total;
     }
+
+   /* Returns a tuple of integers describing the size of each dimension.
+      For a sparse array, returns the shape of the parent domain.*/
+    proc shape {
+      return this.domain.shape;
+    }
+
   }  // record _array
 
   //
