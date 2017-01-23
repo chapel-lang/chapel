@@ -506,7 +506,8 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
         const dim    = whole.dim(j);
         const dimLow = dim.low;
 
-        var temp = max(lo, dimLow)..
+        var temp : range(idxType, stridable=stridable);
+        temp = max(lo, dimLow)..
                    min(lo + dist.blocksize(j)-1, dim.high);
         temp     = dim[temp];
         temp     = temp.chpl__unTranslate(dimLow);
