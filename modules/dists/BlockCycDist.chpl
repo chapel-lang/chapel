@@ -498,24 +498,30 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
   const ignoreRunning = getDataParIgnoreRunningTasks();
   const minSize       = getDataParMinGranularity();
   coforall locDom in locDoms do on locDom {
-    forall i in locDom.myStarts._value.these(maxTasks,
-                                             ignoreRunning, minSize) {
-      var retblock: rank*range(idxType);
-      for param j in 1..rank {
-        const lo     = if rank == 1 then i else i(j);
-        const dim    = whole.dim(j);
-        const dimLow = dim.low;
+    // TODO: There's a compiler bug when using a simple ``forall`` over ``myStarts``
+    // that impacts reductions over BlockCyclic arrays. It appears that the
+    // result of the reduction is always 0 (for an array of ints). Looking at
+    // the generated code, it seems like the reduction object is not being
+    // passed through nested loops correctly (or at all).
+    for follow in locDom.myStarts._value.these(iterKind.leader, maxTasks, ignoreRunning, minSize) {
+      for i in locDom.myStarts._value.these(iterKind.follower, follow, maxTasks, ignoreRunning, minSize) {
+        var retblock: rank*range(idxType);
+        for param j in 1..rank {
+          const lo     = if rank == 1 then i else i(j);
+          const dim    = whole.dim(j);
+          const dimLow = dim.low;
 
-        var temp : range(idxType, stridable=stridable);
-        temp = max(lo, dimLow)..
-                   min(lo + dist.blocksize(j)-1, dim.high);
-        temp     = dim[temp];
-        temp     = temp.chpl__unTranslate(dimLow);
+          var temp : range(idxType, stridable=stridable);
+          temp = max(lo, dimLow)..
+                     min(lo + dist.blocksize(j)-1, dim.high);
+          temp     = dim[temp];
+          temp     = temp.chpl__unTranslate(dimLow);
 
-        retblock(j) = (temp.low / dim.stride:idxType)..
-                      #temp.length;
+          retblock(j) = (temp.low / dim.stride:idxType)..
+                        #temp.length;
+        }
+        yield retblock;
       }
-      yield retblock;
     }
   }
 }
