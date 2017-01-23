@@ -20,10 +20,6 @@
 #include "chplrt.h"
 #include "chpl-env-gen.h"
 
-#include "rdma/fabric.h"
-#include "rdma/fi_domain.h"
-#include "rdma/fi_errno.h"
-
 #include "chpl-comm.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
@@ -46,16 +42,7 @@
 
 #include "comm-ofi-internal.h"
 
-/* libfabric stuff */
-typedef struct libfabric_stuff_t {
-  int32_t numLocales;
-  struct fid_fabric* fabric;
-  struct fid_domain* domain;
-  /* For async puts/gets */
-  struct fid_cq* cq; /* FI_CQ_FORMAT_CONTEXT?, FI_WAIT_UNSPEC, signaling_vector? */
-  struct fid_ep* endpoint;
-} libfabric_stuff_t;
-static libfabric_stuff_t lf;
+static struct ofi_stuff ofi;
 
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
@@ -71,12 +58,10 @@ int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
-static void libfabric_init(void);
 static void oob_init(void);
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   oob_init();
-  libfabric_init();
   chpl_resetCommDiagnosticsHere();
 }
 
@@ -131,13 +116,71 @@ static void oob_init() {
 #endif /* CHPL_TARGET_PLATFORM_CRAY_XC */
 }
 
+void chpl_comm_post_mem_init(void) { }
+
+//
+// No support for gdb for now
+//
+int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
+  return 0;
+}
+
+static int get_comm_concurrency(void);
+static void libfabric_init(void);
+
+void chpl_comm_post_task_init(void) {
+  if (chpl_numNodes == 1) {
+    // return;
+  }
+
+  libfabric_init();
+
+  // Start polling task
+}
+
+static int get_comm_concurrency() {
+  const char* s;
+  int val;
+  uint32_t lcpus;
+
+  if ((s = getenv("CHPL_RT_COMM_CONCURRENCY")) != NULL
+      && sscanf(s, "%d", &val) == 1) {
+    if (val > 0) {
+      return val;
+    } else if (val == 0) {
+      return 1;
+    } else {
+      chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
+    }
+  }
+
+  if ((s = getenv("CHPL_RT_NUM_HARDWARE_THREADS")) != NULL
+      && sscanf(s, "%d", &val) == 1) {
+    if (val > 0) {
+      return val;
+    } else {
+      chpl_warning("CHPL_RT_NUM_HARDWARE_THREADS <= 0, ignored", 0, 0);
+    }
+  }
+
+  if ((lcpus = chpl_getNumLogicalCpus(true)) > 0) {
+    return lcpus;
+  }
+
+  chpl_warning("Could not determine comm concurrency, using 1", 0, 0);
+  return 1;
+}
+
 static void libfabric_init() {
+  int i;
   struct fi_info *info = NULL;
   struct fi_info *hints = fi_allocinfo();
-
-  /***
-      - What do we need for AM?
-   ***/
+  struct fi_av_attr av_attr = {0};
+  struct fi_cq_attr cq_attr = {0};
+  int max_tx_ctx, max_rx_ctx;
+  int comm_concurrency;
+  int rx_ctx_cnt;
+  int rx_ctx_bits = 0;
 
   hints->mode = ~0;
 
@@ -148,7 +191,10 @@ static void libfabric_init() {
              | FI_WRITE
              | FI_REMOTE_READ
              | FI_REMOTE_WRITE
+             | FI_MULTI_RECV
              | FI_FENCE;
+
+  hints->addr_format = FI_FORMAT_UNSPEC;
 
   // memory layer hasn't been initialized, need to use the system allocator
 #include "chpl-mem-no-warning-macros.h"
@@ -192,27 +238,106 @@ static void libfabric_init() {
 #endif
   }
 
-  OFICHKERR(fi_fabric(info->fabric_attr, &lf.fabric, NULL));
-  OFICHKERR(fi_domain(lf.fabric, info, &lf.domain, NULL));
+  ofi.num_am_ctx = 1; // Would we ever want more?
 
-  lf.numLocales = chpl_numNodes;
+  max_tx_ctx = info->domain_attr->max_ep_tx_ctx;
+  max_rx_ctx = info->domain_attr->max_ep_rx_ctx;
+  comm_concurrency = get_comm_concurrency();
 
-  fi_freeinfo(hints); /* No error returned */
+  ofi.num_tx_ctx = comm_concurrency+ofi.num_am_ctx > max_tx_ctx ?
+    max_tx_ctx-ofi.num_am_ctx : comm_concurrency;
+  ofi.num_rx_ctx = comm_concurrency+ofi.num_am_ctx > max_rx_ctx ?
+    max_rx_ctx-ofi.num_am_ctx : comm_concurrency;
+
+  info->ep_attr->tx_ctx_cnt = ofi.num_tx_ctx + ofi.num_am_ctx;
+  info->ep_attr->rx_ctx_cnt = ofi.num_rx_ctx + ofi.num_am_ctx;
+
+  OFICHKERR(fi_fabric(info->fabric_attr, &ofi.fabric, NULL));
+  OFICHKERR(fi_domain(ofi.fabric, info, &ofi.domain, NULL));
+
+  ofi.av = (struct fid_av **) chpl_mem_allocMany(chpl_numNodes,
+						sizeof(&ofi.av[0]),
+						CHPL_RT_MD_COMM_PER_LOC_INFO,
+						0, 0);
+
+  rx_ctx_cnt = ofi.num_rx_ctx + ofi.num_am_ctx;
+  while (rx_ctx_cnt >> ++rx_ctx_bits);
+  av_attr.rx_ctx_bits = rx_ctx_bits;
+  av_attr.type = FI_AV_TABLE;
+  av_attr.count = chpl_numNodes;
+  OFICHKERR(fi_av_open(ofi.domain, &av_attr, &ofi.av[chpl_nodeID], NULL));
+
+  OFICHKERR(fi_scalable_ep(ofi.domain, info, &ofi.ep, NULL));
+  OFICHKERR(fi_scalable_ep_bind(ofi.ep, &ofi.av[chpl_nodeID]->fid, 0));
+
+  /* set up tx and rx contexts */
+  cq_attr.format = FI_CQ_FORMAT_CONTEXT;
+  cq_attr.size = 1024; /* ??? */
+  cq_attr.wait_obj = FI_WAIT_NONE;
+  ofi.tx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_tx_ctx,
+						   sizeof(&ofi.tx_ep[0]),
+						   CHPL_RT_MD_COMM_PER_LOC_INFO,
+						   0, 0);
+  ofi.tx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_tx_ctx,
+						   sizeof(&ofi.tx_cq[0]),
+						   CHPL_RT_MD_COMM_PER_LOC_INFO,
+						   0, 0);
+  for (i = 0; i < ofi.num_tx_ctx; i++) {
+    OFICHKERR(fi_tx_context(ofi.ep, i, NULL, &ofi.tx_ep[i], NULL));
+    OFICHKERR(fi_cq_open(ofi.domain, &cq_attr, &ofi.tx_cq[i], NULL));
+    OFICHKERR(fi_ep_bind(ofi.tx_ep[i], &ofi.tx_cq[i]->fid, FI_TRANSMIT));
+    OFICHKERR(fi_enable(ofi.tx_ep[i]));
+  }
+
+  ofi.rx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_rx_ctx,
+						   sizeof(&ofi.rx_ep[0]),
+						   CHPL_RT_MD_COMM_PER_LOC_INFO,
+						   0, 0);
+  ofi.rx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_rx_ctx,
+						   sizeof(&ofi.rx_cq[0]),
+						   CHPL_RT_MD_COMM_PER_LOC_INFO,
+						   0, 0);
+  for (i = 0; i < ofi.num_rx_ctx; i++) {
+    OFICHKERR(fi_rx_context(ofi.ep, i, NULL, &ofi.rx_ep[i], NULL));
+    OFICHKERR(fi_cq_open(ofi.domain, &cq_attr, &ofi.rx_cq[i], NULL));
+    OFICHKERR(fi_ep_bind(ofi.rx_ep[i], &ofi.rx_cq[i]->fid, FI_RECV));
+    OFICHKERR(fi_enable(ofi.rx_ep[i]));
+  }
+
+  ofi.am_tx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_am_ctx,
+						       sizeof(&ofi.am_tx_ep[0]),
+						       CHPL_RT_MD_COMM_PER_LOC_INFO,
+						       0, 0);
+  ofi.am_tx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_am_ctx,
+						      sizeof(&ofi.am_tx_cq[0]),
+						      CHPL_RT_MD_COMM_PER_LOC_INFO,
+						      0, 0);
+
+  /* set up AM contexts */
+  for (i = 0; i < ofi.num_am_ctx; i++) {
+    OFICHKERR(fi_tx_context(ofi.ep, i+ofi.num_tx_ctx, NULL, &ofi.am_tx_ep[i], NULL));
+    OFICHKERR(fi_cq_open(ofi.domain, &cq_attr, &ofi.am_tx_cq[i], NULL));
+    OFICHKERR(fi_ep_bind(ofi.am_tx_ep[i], &ofi.am_tx_cq[i]->fid, FI_TRANSMIT));
+    OFICHKERR(fi_enable(ofi.am_tx_ep[i]));
+  }
+
+  ofi.am_rx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_am_ctx,
+						       sizeof(&ofi.am_rx_ep[0]),
+						       CHPL_RT_MD_COMM_PER_LOC_INFO,
+						       0, 0);
+  ofi.am_rx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_am_ctx,
+						      sizeof(&ofi.am_rx_cq[0]),
+						      CHPL_RT_MD_COMM_PER_LOC_INFO,
+						      0, 0);
+  for (i = 0; i < ofi.num_am_ctx; i++) {
+    OFICHKERR(fi_rx_context(ofi.ep, i+ofi.num_rx_ctx, NULL, &ofi.am_rx_ep[i], NULL));
+    OFICHKERR(fi_cq_open(ofi.domain, &cq_attr, &ofi.am_rx_cq[i], NULL));
+    OFICHKERR(fi_ep_bind(ofi.am_rx_ep[i], &ofi.am_rx_cq[i]->fid, FI_RECV));
+    OFICHKERR(fi_enable(ofi.am_rx_ep[i]));
+  }
+
   fi_freeinfo(info);  /* No error returned */
-
-}
-
-void chpl_comm_post_mem_init(void) { }
-
-//
-// No support for gdb for now
-//
-int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  return 0;
-}
-
-void chpl_comm_post_task_init(void) {
-  // Start polling task
+  fi_freeinfo(hints); /* No error returned */
 }
 
 void chpl_comm_rollcall(void) {
@@ -286,6 +411,40 @@ void chpl_comm_exit(int all, int status) {
 }
 
 static void exit_all(int status) {
+  int i;
+
+  for (i = 0; i < ofi.num_tx_ctx; i++) {
+    OFICHKERR(fi_close(&ofi.tx_ep[i]->fid));
+    OFICHKERR(fi_close(&ofi.tx_cq[i]->fid));
+  }
+
+  for (i = 0; i < ofi.num_rx_ctx; i++) {
+    OFICHKERR(fi_close(&ofi.rx_ep[i]->fid));
+    OFICHKERR(fi_close(&ofi.rx_cq[i]->fid));
+  }
+
+  for (i = 0; i < ofi.num_am_ctx; i++) {
+    OFICHKERR(fi_close(&ofi.am_tx_ep[i]->fid));
+    OFICHKERR(fi_close(&ofi.am_tx_cq[i]->fid));
+    OFICHKERR(fi_close(&ofi.am_rx_ep[i]->fid));
+    OFICHKERR(fi_close(&ofi.am_rx_cq[i]->fid));
+  }
+
+  OFICHKERR(fi_close(&ofi.ep->fid));
+  OFICHKERR(fi_close(&ofi.av[chpl_nodeID]->fid));
+  OFICHKERR(fi_close(&ofi.domain->fid));
+  OFICHKERR(fi_close(&ofi.fabric->fid));
+
+  chpl_mem_free(ofi.av, 0, 0);
+  chpl_mem_free(ofi.tx_ep, 0, 0);
+  chpl_mem_free(ofi.tx_cq, 0, 0);
+  chpl_mem_free(ofi.rx_ep, 0, 0);
+  chpl_mem_free(ofi.rx_cq, 0, 0);
+  chpl_mem_free(ofi.am_tx_ep, 0, 0);
+  chpl_mem_free(ofi.am_tx_cq, 0, 0);
+  chpl_mem_free(ofi.am_rx_ep, 0, 0);
+  chpl_mem_free(ofi.am_rx_cq, 0, 0);
+
 #ifdef CHPL_TARGET_PLATFORM_CRAY_XC
 
 #ifdef USE_PMI2
@@ -307,11 +466,8 @@ static void exit_all(int status) {
 #endif
 
 #else /* CHPL_TARGET_PLATFORM_CRAY_XC */
-#error "Global initialization not supported"
+#error "Global teardown not supported"
 #endif /* CHPL_TARGET_PLATFORM_CRAY_XC */
-
-  OFICHKERR(fi_close(&lf.domain->fid));
-  OFICHKERR(fi_close(&lf.fabric->fid));
 
 }
 

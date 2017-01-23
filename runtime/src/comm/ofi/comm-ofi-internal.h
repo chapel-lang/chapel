@@ -20,6 +20,38 @@
 #ifndef _comm_ofi_internal_h_
 #define _comm_ofi_internal_h_
 
+#include "rdma/fabric.h"
+#include "rdma/fi_domain.h"
+#include "rdma/fi_endpoint.h"
+#include "rdma/fi_errno.h"
+
+/* libfabric stuff */
+struct ofi_stuff {
+  struct fid_fabric* fabric;
+  struct fid_domain* domain;
+  struct fid_av** av;
+
+  struct fid_ep* ep; /* scalable endpoint */
+  int rx_ctx_bits;
+
+  /* For async puts/gets */
+  int num_tx_ctx;
+  struct fid_ep** tx_ep;
+  struct fid_cq** tx_cq;
+  /* FI_CQ_FORMAT_CONTEXT?, FI_WAIT_UNSPEC, signaling_vector? */
+  int num_rx_ctx;
+  struct fid_ep** rx_ep;
+  struct fid_cq** rx_cq;
+
+  /* For active messages */
+  int num_am_ctx;
+  struct fid_ep** am_tx_ep;
+  struct fid_cq** am_tx_cq;
+  struct fid_ep** am_rx_ep;
+  struct fid_cq** am_rx_cq;
+
+};
+
 /* Comm diagnostics stuff */
 /* Dupe of the version in chpl-comm.h except with atomics */
 struct commDiagnostics_atomic {
@@ -44,7 +76,7 @@ void chpl_commDiagnosticsInc(atomic_uint_least64_t *val);
 #define OFICHKERR(fncall) do {                   \
     int retval;                                  \
     if ((retval = fncall) != FI_SUCCESS) {       \
-      chpl_internal_error(fi_strerror(retval));  \
+      chpl_internal_error(fi_strerror(-retval));  \
     }                                            \
   } while (0)
 
