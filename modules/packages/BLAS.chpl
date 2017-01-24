@@ -998,8 +998,8 @@ where D.rank == 1 {
 
     - ``X``: Input vector
     - ``Y``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``.
-    - ``incY``: Defines the increment for the vector ``Y``.
+    - ``incX``: Defines the increment for the vector ``X``
+    - ``incY``: Defines the increment for the vector ``Y``
 
     **Output:**
 
@@ -1193,8 +1193,8 @@ proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
 /*
     Wrapper for `DSDOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>`_
 
-    Returns the dot product of two real(32) vectors as a real(64), using
-    real(64) precision internally::
+    Returns the dot product of two ``real(32)`` vectors as a ``real(64)``,
+    using ``real(64)`` precision internally::
 
        X*Y
 
@@ -1220,8 +1220,8 @@ proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): 
 /*
     Wrapper for `SDSDOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>`_
 
-    Returns the dot product of two real(32) vectors as a real(32), using
-    real(64) precision internally::
+    Returns the dot product of two ``real(32)`` vectors as a ``real(32)``, using
+    ``real(64)`` precision internally::
 
        X*Y
 
@@ -1248,14 +1248,14 @@ proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1):
 /*
     Wrapper for `NRM2 routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga35c2ec0e9bfdaa545320c2a134fcc471.html#ga35c2ec0e9bfdaa545320c2a134fcc471>`_
 
-    Returns the  Euclidean norm of vector X::
+    Returns the  Euclidean norm of vector ``X``::
 
       ||X||
 
     **Input:**
 
     - ``X``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``.
+    - ``incX``: Defines the increment for the vector ``X``
 
     :returns: The 2-norm of ``X`` vector
 
