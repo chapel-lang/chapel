@@ -160,6 +160,7 @@ SystemOrDie("make -j docs");
 
 # TODO - make this more elegant / maintainable
 print "Pruning the docs directory...\n";
+SystemOrDie("cd doc && make clean-symlinks");
 SystemOrDie("cd doc && rm -f Makefile*");
 SystemOrDie("cd doc && rm -f conf.py");
 SystemOrDie("cd doc && rm -f index.rst");
