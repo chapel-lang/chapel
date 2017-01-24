@@ -257,6 +257,8 @@ proc test_rot_helper(type t) {
           Yin = Y;
 
     rot(X, Y, c, s);
+    var Y2: [0..2] t = [1:t, 3:t, 5:t];
+    rot(X, Y2, c, s);
 
     for i in X.domain {
 
