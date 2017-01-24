@@ -28,7 +28,6 @@ At present, this directory contains the following codes:
     threadring.chpl     : Passes a token between a large number of threads
     fasta.chpl          : Generates DNA with different nucleotide distributions
                           and a random number generator
-    fastaredux.chpl     : fasta with an optimized distribution lookup  
 
 Over time, we plan to create versions of all the benchmarks and to
 enter Chapel into the competition.  Draft versions of other benchmarks
@@ -104,8 +103,8 @@ o should globals be allowed to be declared below main()?  If so, move
   fact[] to the bottom of the file?
 
 
-fasta / fastaredux
-------------------
+fasta
+-----
 o We should introduce local "static" variables (using some other
   keyword) and use it to define some of the variables that are
   currently at global or outer scopes unnecessarily
