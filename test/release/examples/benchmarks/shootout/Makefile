@@ -41,9 +41,6 @@ chameneosredux: chameneosredux.chpl
 fasta: fasta.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
-fastaredux: fastaredux.chpl
-	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
-
 fannkuchredux: fannkuchredux.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 

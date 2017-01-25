@@ -32,6 +32,11 @@ help-sphinx:
 	@echo "Sphinx Help:"
 	@echo "Please use \`make <target>' where <target> is one of the following:"
 	@echo ""
+	@echo "Special targets:"
+	@echo "  html-release   html target moved with result moved into ./html"
+	@echo "  html-dev       html-release target with no pre-reqs built"
+	@echo "  check          check for broken links and cross-references"
+	@echo ""
 	@echo "Supported targets:"
 	@echo "  html       to make standalone HTML files"
 	@echo "  dirhtml    to make HTML files named index.html in directories"
@@ -61,13 +66,14 @@ check-sphinxbuild:
 	@echo "Confirming that sphinx-build is available..."
 	@if [ $(SPHINXTEST) -eq 1 ]; then echo $(SPHINXERROR); fi
 
-html: check-sphinxbuild source clean-build
+html-release: check-sphinxbuild source clean-build
 	@echo
 	@echo "Building HTML documentation"
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@chmod -R ugo+rX $(BUILDDIR)
+	mv $(BUILDDIR)/html .
 	@echo
-	@echo "Build finished. The HTML pages are in "'$(BUILDPATH)'"/html."
+	@echo "Build finished. The HTML pages are in "'$$CHPL_HOME'"/doc/html."
 
 html-dev:
 	@echo
@@ -75,9 +81,18 @@ html-dev:
 	@echo "Warnings not treated as errors"
 	$(SPHINXBUILD) -b html -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SOURCEDIR) $(BUILDDIR)/html
 	@chmod -R ugo+rX $(BUILDDIR)
+	rm -rf html
+	cp -r $(BUILDDIR)/html .
+	@echo
+	@echo "Build finished. The HTML pages are in ./html."
+
+html: check-sphinxbuild source clean-build
+	@echo
+	@echo "Building HTML documentation"
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	@chmod -R ugo+rX $(BUILDDIR)
 	@echo
 	@echo "Build finished. The HTML pages are in "'$(BUILDPATH)'"/html."
-
 
 %.html: FORCE
 	$(SPHINXBUILD) . build/html/$* && chmod -R ugo+rX build
@@ -204,3 +219,4 @@ clean-build:
 	@echo
 	@echo "Cleaning all build files"
 	rm -rf $(BUILDDIR)
+	rm -rf html
