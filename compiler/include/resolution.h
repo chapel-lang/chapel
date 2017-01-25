@@ -95,6 +95,6 @@ void fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 AggregateType* computeNonRefTuple(Type* t);
 AggregateType* computeTupleWithIntent(IntentTag intent, Type* t);
 
-bool evaluateWhereClause(FnSymbol* fn);
+bool evaluateWhereClause(FnSymbol* fn, bool quiet=false);
 
 #endif

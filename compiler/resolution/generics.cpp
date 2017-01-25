@@ -141,8 +141,10 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
 }
 
 
+extern Vec<FnSymbol*> resolvedFormals;
+
 bool
-evaluateWhereClause(FnSymbol* fn) {
+evaluateWhereClause(FnSymbol* fn, bool quiet) {
   if (fn->where) {
     whereStack.add(fn);
     resolveFormals(fn);
@@ -164,13 +166,23 @@ evaluateWhereClause(FnSymbol* fn) {
     // clause, perhaps this should return to an error in the late case
     // (and perhaps to true in the early?)
     //
-    if (!se)
+    if (!se) {
+      //      printf("didn't get a SymExpr back\n");
+      if (quiet) {
+        //        printf("returning true since we're in quiet mode\n");
+        return true;
+      } else {
+        USR_FATAL(fn->where, "invalid where clause");
+      }
+    }
+    if (se->symbol() == gFalse) {
+      //      printf("got false back\n");
       return false;
-    if (se->symbol() == gFalse)
-      return false;
+    }
     if (se->symbol() != gTrue)
       USR_FATAL(fn->where, "invalid where clause: not true or false");
   }
+  //  printf("got true back\n");
   return true;
 }
 
@@ -650,7 +662,7 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   //
   // TODO: Can we remove this evaluate where clause altogether?
   //
-  if (!newFn->hasFlag(FLAG_GENERIC) && !evaluateWhereClause(newFn)) {
+  if (!newFn->hasFlag(FLAG_GENERIC) && !evaluateWhereClause(newFn, true)) {
     //
     // where clause evaluates to false so cache gVoid as a function
     //

@@ -203,7 +203,7 @@ static int explainCallLine;
 static ModuleSymbol* explainCallModule;
 
 static Vec<CallExpr*> inits;
-static Vec<FnSymbol*> resolvedFormals;
+Vec<FnSymbol*> resolvedFormals;
 Vec<CallExpr*> callStack;
 
 static Vec<CondStmt*> tryStack;
