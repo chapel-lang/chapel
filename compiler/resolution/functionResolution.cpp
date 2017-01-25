@@ -2517,7 +2517,7 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
                         CallInfo& info) {
 
   if (strcmp(currCandidate->fn->name, "foo") == 0) {
-    printf("Doing foo as concrete\n");
+    //    printf("Doing foo as concrete\n");
   }
 
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);

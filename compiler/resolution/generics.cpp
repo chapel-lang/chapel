@@ -159,6 +159,11 @@ evaluateWhereClause(FnSymbol* fn) {
     printf("last:\n");
     list_view(fn->where->body.last());
     */
+    //
+    // TODO: if we can't get rid of the early call to evaluate where
+    // clause, perhaps this should return to an error in the late case
+    // (and perhaps to true in the early?)
+    //
     if (!se)
       return false;
     if (se->symbol() == gFalse)
@@ -642,6 +647,9 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
 
   newFn->tag_generic();
 
+  //
+  // TODO: Can we remove this evaluate where clause altogether?
+  //
   if (!newFn->hasFlag(FLAG_GENERIC) && !evaluateWhereClause(newFn)) {
     //
     // where clause evaluates to false so cache gVoid as a function
