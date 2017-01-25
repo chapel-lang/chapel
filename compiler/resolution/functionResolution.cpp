@@ -1231,6 +1231,93 @@ resolveFormals(FnSymbol* fn) {
   }
 }
 
+void resolveFormal(FnSymbol* fn, ArgSymbol* formal) {
+  if (formal->type == NULL) {
+    printf("NULL formal type coming in\n");
+  }
+      if (formal->type == dtUnknown) {
+        if (!formal->typeExpr) {
+          printf("Assigning formal->type dtObject\n");
+          formal->type = dtObject;
+        } else {
+          printf("Assigning formal->type resolution of blockstmt\n");
+          resolveBlockStmt(formal->typeExpr);
+          formal->type = formal->typeExpr->body.tail->getValType();
+        }
+      }
+
+      //
+      // Fix up value types that need to be ref types.
+      //
+      if (formal->type->symbol->hasFlag(FLAG_REF))
+        // Already a ref type, so done.
+        return;
+
+      // Don't pass dtString params in by reference
+      if(formal->type == dtString && formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+        return;
+
+      if (formal->type->symbol->hasFlag(FLAG_RANGE) &&
+          (formal->intent == INTENT_BLANK || formal->intent == INTENT_IN) &&
+          fn->hasFlag(FLAG_BEGIN)) {
+        // For begin functions, copy ranges in if passed by blank intent.
+        // This is a temporary workaround.
+        // * arguably blank intent for ranges should be 'const ref',
+        //   but the current compiler uses a mix of 'const in' and 'const ref'.
+        // * resolveIntents is changing INTENT_IN to INTENT_REF
+        //   which interferes with the logic in parallel.cpp
+        //   (another approach to that problem might be to separately
+        //    store the 'requested intent' and the 'concrete intent').
+        formal->intent = INTENT_CONST_IN;
+      }
+
+      if (formal->intent == INTENT_INOUT ||
+          formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_REF ||
+          formal->intent == INTENT_CONST_REF ||
+          convertAtomicFormalTypeToRef(formal, fn) ||
+          formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
+          (formal == fn->_this &&
+           (isUnion(formal->type) ||
+            isRecord(formal->type)))) {
+        makeRefType(formal->type);
+        printf("Assigning formal type to refType\n");
+        if (formal->type->refType != NULL) {
+          formal->type = formal->type->refType;
+        }
+        // The type of the formal is its own ref type!
+      }
+
+      if (isRecordWrappedType(formal->type) &&
+          fn->hasFlag(FLAG_ITERATOR_FN)) {
+        // Pass domains, arrays into iterators by ref.
+        // This is a temporary workaround for issues with
+        // iterator lowering.
+        // It is temporary because we expect more of the
+        // compiler to handle 'refness' of an ArgSymbol
+        // in the future.
+        makeRefType(formal->type);
+        formal->type = formal->type->refType;
+      }
+
+      // Adjust tuples for intent.
+      // This should not apply to 'ref' , 'out', or 'inout' formals,
+      // but these are currently turned into reference types above.
+      // It probably should not apply to 'const ref' either but
+      // that is more debatable.
+      if (formal->type->symbol->hasFlag(FLAG_TUPLE) &&
+          !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+          !(formal == fn->_this) &&
+          !doNotChangeTupleTypeRefLevel(fn, false)) {
+
+        // Let 'in' intent work similarly to the blank intent.
+        IntentTag intent = formal->intent;
+        if (intent == INTENT_IN) intent = INTENT_BLANK;
+        Type* newType = computeTupleWithIntent(intent, formal->type);
+        formal->type = newType;
+      }
+}
+
 static bool fits_in_int_helper(int width, int64_t val) {
   switch (width) {
     default: INT_FATAL("bad width in fits_in_int_helper");
@@ -1827,6 +1914,9 @@ static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
                    Vec<Symbol*>& formalIdxToActual) {
+  if (!strcmp(fn->name, "foo")) {
+    //    printf("computing generic subs for foo()\n");
+  }
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
@@ -2426,6 +2516,10 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
                         ResolutionCandidate* currCandidate,
                         CallInfo& info) {
 
+  if (strcmp(currCandidate->fn->name, "foo") == 0) {
+    printf("Doing foo as concrete\n");
+  }
+
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
 
   if (!currCandidate->fn) return;
@@ -2477,6 +2571,10 @@ static void
 filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
                        ResolutionCandidate* currCandidate,
                        CallInfo& info) {
+
+  if (strcmp(currCandidate->fn->name, "foo") == 0) {
+    //    printf("Doing foo\n");
+  }
 
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
 
@@ -7624,10 +7722,18 @@ postFold(Expr* expr) {
       }
 
       if (sym->symbol()->type != dtUnknown && sym->symbol()->type != val->type) {
-        CallExpr* cast = new CallExpr("_cast", sym->symbol(), val);
+        CallExpr* cast = new CallExpr("_can_param_cast", sym->symbol(), val);
         sym->replace(cast);
         // preFold is probably going to replace the _cast call
+        Expr* prevResult = result;
         result = preFold(cast);
+        if (result == cast) {
+          //          printf("result is same as input so put the original back\n");
+          cast->replace(sym);
+          //          cast->replace(new SymExpr(gFalse));
+          result = prevResult;
+          sym->setSymbol(val);
+        }
       } else {
         sym->setSymbol(val);
       }
