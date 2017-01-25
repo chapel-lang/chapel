@@ -1247,12 +1247,15 @@ static void buildDefaultOfFunction(AggregateType* ct) {
       fn->insertAtTail(new CallExpr(PRIM_RETURN, arg));
 
     } else if (ct->initializerStyle == DEFINES_INITIALIZER) {
-      VarSymbol* meme = newTemp("meme_tmp", ct);
-      CallExpr*  call = new CallExpr("init");
+      VarSymbol* _mt   = newTemp("_mt",   dtMethodToken);
+      VarSymbol* _this = newTemp("_this", ct);
+      CallExpr*  call  = new CallExpr("init");
 
-      fn->insertAtHead(new DefExpr(meme));
+      fn->insertAtHead(new DefExpr(_mt));
+      fn->insertAtHead(new DefExpr(_this));
 
-      call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
+      call->insertAtTail(new SymExpr(_mt));
+      call->insertAtTail(new SymExpr(_this));
 
       fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
 
