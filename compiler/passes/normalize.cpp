@@ -908,36 +908,38 @@ static void applyGetterTransform(CallExpr* call) {
   //   call(call or )( indicates partial
   if (call->isNamed(".")) {
     SET_LINENO(call);
+
     SymExpr* symExpr = toSymExpr(call->get(2));
-    INT_ASSERT(symExpr);
+
     symExpr->remove();
+
     if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
-        call->baseExpr->replace(new UnresolvedSymExpr(var->immediate->v_string));
-        if (!strcmp(var->immediate->v_string, "init")) {
-          // Transform:
-          //   call(call(. x "init") args)
-          // into:
-          //   call(call(init meme=x) args)
-          // because initializers are handled differently from other methods
-          Expr* firstArg = call->get(1)->remove();
-          call->insertAtHead(new NamedExpr("meme", firstArg));
-        } else {
-          call->insertAtHead(gMethodToken);
-        }
+        const char* str = var->immediate->v_string;
+
+        call->baseExpr->replace(new UnresolvedSymExpr(str));
+
+        call->insertAtHead(gMethodToken);
+
       } else {
         INT_FATAL(call, "unexpected case");
       }
+
     } else if (TypeSymbol* type = toTypeSymbol(symExpr->symbol())) {
       call->baseExpr->replace(new SymExpr(type));
       call->insertAtHead(gMethodToken);
+
     } else {
       INT_FATAL(call, "unexpected case");
     }
+
     call->methodTag = true;
-    if (CallExpr* parent = toCallExpr(call->parentExpr))
-      if (parent->baseExpr == call)
+
+    if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+      if (parent->baseExpr == call) {
         call->partialTag = true;
+      }
+    }
   }
 }
 
