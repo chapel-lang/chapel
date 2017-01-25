@@ -1,0 +1,6 @@
+bug: where clauses should only be evaluated if function would work
+
+Where clauses should be a filter in selecting functions only if the
+actuals would work for the formals.  In cases like this where the
+function call isn't valid without the where clause, we should never
+evalute the where clause.

@@ -1,0 +1,2 @@
+whereClauseParamArgMismatch2.chpl:1: In function 'foo':
+whereClauseParamArgMismatch2.chpl:1: error: Should never get here

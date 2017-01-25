@@ -1,0 +1,7 @@
+bug: internal error on non-foldable where clauses
+
+In this function, we attempt to replace 'x' with '1.2:uint(8)' which
+can't be folded, so then we hit an internal error because downstream
+code assumes that this will be a symbol or something like that?  Yet
+we should never even consider this function as a candidate due to its
+actual argument list.

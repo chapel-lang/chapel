@@ -1,0 +1,4 @@
+bug: Where clause not evaluated
+
+For non-generic functions, where clauses are ignored, which seems like
+a mistake.  Here, the where clause refers to a nonexistent function.
