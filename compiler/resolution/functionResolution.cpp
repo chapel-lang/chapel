@@ -2557,6 +2557,10 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
     }
   }
 
+  if (!evaluateWhereClause(currCandidate->fn)) {
+    return;
+  }
+
   candidates.add(currCandidate);
 }
 

@@ -141,7 +141,7 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
 }
 
 
-static bool
+bool
 evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
     whereStack.add(fn);
