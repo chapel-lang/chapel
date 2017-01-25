@@ -4013,7 +4013,9 @@ static void findNonTaskFnParent(CallExpr* call,
 }
 
 static bool isConstructorLikeFunction(FnSymbol* fn) {
-  return fn->hasFlag(FLAG_CONSTRUCTOR) || !strcmp(fn->name, "initialize");
+  return fn->hasFlag(FLAG_CONSTRUCTOR)  == true  ||
+         strcmp(fn->name, "init")       ==    0  ||
+         strcmp(fn->name, "initialize") ==    0;
 }
 
 // Is 'call' in a constructor or in initialize()?
@@ -5175,6 +5177,7 @@ static void resolveNew(CallExpr* call) {
         toReplace = se;
       }
     }
+
   } else if (SymExpr* se = toSymExpr(call->get(1))) {
     // Handle e.g. 'new' C arg
     toReplace = se;
@@ -5217,6 +5220,8 @@ static void resolveNew(CallExpr* call) {
       Type*      typeToNew = toReplace->symbol()->typeInfo();
       VarSymbol* newTmp    = newTemp("new_temp", typeToNew);
 
+      VarSymbol* newMT     = newTemp("_mt",      dtMethodToken);
+
       if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
         USR_FATAL(call,
                   "Sorry, new style initializers don't work with "
@@ -5251,7 +5256,8 @@ static void resolveNew(CallExpr* call) {
         resolveBlockStmt(allocBlock);
       }
 
-      call->insertAtTail(new NamedExpr("meme", new SymExpr(newTmp)));
+      call->insertAtHead(new SymExpr(newTmp));
+      call->insertAtHead(new SymExpr(newMT));
     }
 
     resolveExpr(call);
@@ -5259,9 +5265,9 @@ static void resolveNew(CallExpr* call) {
 
   // Do some error checking
   if (FnSymbol* fn = call->isResolved()) {
-    // If the function is a constructor, OK
     if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
-      return;
+
+    } else if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "init") == 0) {
 
     } else {
       USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
@@ -8417,14 +8423,14 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
-  if (fn->hasFlag(FLAG_CONSTRUCTOR) && !strcmp(fn->name, "init")) {
+  if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "init") == 0) {
     // Lydia NOTE: Quick fix to allow our new initializers to recursively call
     // themselves.  We know their return type already, pretending we don't just
     // leads to errors.  Ideally, we'll remove this code when we fix our
     // compiler's handling of recursive calls when the function doesn't declare
     // its return type.
     for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_IS_MEME)) {
+      if (formal->hasFlag(FLAG_ARG_THIS)) {
         fn->retType = formal->type;
       }
     }
