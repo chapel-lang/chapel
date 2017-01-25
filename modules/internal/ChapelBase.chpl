@@ -605,10 +605,30 @@ module ChapelBase {
 
   enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
-  var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
+
+  config param chpl_arrayInitMethodRuntimeSelectable = false;
+  private var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
+
+  inline proc chpl_setArrayInitMethod(initMethod: ArrayInit) {
+    if chpl_arrayInitMethodRuntimeSelectable == false {
+      compilerWarning("must set 'chpl_arrayInitMethodRuntimeSelectable' for ",
+                      "'chpl_setArrayInitMethod' to have any effect");
+    }
+    const oldInit = chpl_arrayInitMethod;
+    chpl_arrayInitMethod = initMethod;
+    return oldInit;
+  }
+
+  inline proc chpl_getArrayInitMethod() {
+    if chpl_arrayInitMethodRuntimeSelectable == false {
+      return chpl_defaultArrayInitMethod;
+    } else {
+      return chpl_arrayInitMethod;
+    }
+  }
 
   proc init_elts(x, s, type t) : void {
-    var initMethod = chpl_arrayInitMethod;
+    var initMethod = chpl_getArrayInitMethod();
 
     // for uints, check that s > 0, so the `s-1` below doesn't overflow
     if isUint(s) && s == 0 {
