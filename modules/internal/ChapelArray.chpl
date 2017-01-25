@@ -3646,8 +3646,8 @@ module ChapelArray {
     // conditional plus halt as a workaround, though to date, the halt
     // has not actually been triggered.
     //
-    if a._value.isSliceArrayView() {
-      halt("Trying to replaceWithDeepCopy() on an array slice");
+    if a._instance.type != b._instance.type {
+      halt("Mismatching types in chpl_replaceWithDeepCopy");
     } else {
       a._instance = b._instance;  // array classes don't match if 'a' was a slice
     }
