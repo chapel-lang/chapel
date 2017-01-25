@@ -1863,49 +1863,19 @@ static void updateConstructor(FnSymbol* fn) {
 }
 
 static void updateInitMethod(FnSymbol* fn) {
-  Type* thisType = fn->getFormal(2)->type;
+  Symbol* _this = fn->getFormal(2);
 
-  if (thisType == dtUnknown) {
-    INT_FATAL(fn, "'this' argument has unknown type");
-
-  } else if (AggregateType* ct = toAggregateType(thisType)) {
-    SymbolMap  map;
-
-    ArgSymbol* meme = new ArgSymbol(INTENT_BLANK,
-                                    "meme",
-                                    ct,
-                                    NULL,
-                                    new SymExpr(gTypeDefaultToken));
-
+  if (AggregateType* ct = toAggregateType(_this->type)) {
     if (fn->hasFlag(FLAG_NO_PARENS)) {
-      USR_FATAL(fn,
-                "an initializer cannot be declared without parentheses");
+      USR_FATAL(fn, "an initializer cannot be declared without parentheses");
     }
-
-    meme->addFlag(FLAG_IS_MEME);
-
-    fn->insertFormalAtTail(meme);
 
     handleInitializerRules(fn, ct);
 
-    fn->_this = new VarSymbol("this");
-
-    fn->_this->addFlag(FLAG_ARG_THIS);
-
-    fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, new SymExpr(meme)));
-    fn->insertAtHead(new DefExpr(fn->_this));
-
     fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
 
-    map.put(fn->getFormal(2), fn->_this);
-
-    fn->formals.get(2)->remove();
-    fn->formals.get(1)->remove();
-
-    update_symbols(fn, &map);
-
-    fn->addFlag(FLAG_CONSTRUCTOR);
-
+  } else if (_this->type == dtUnknown) {
+    INT_FATAL(fn, "'this' argument has unknown type");
   } else {
     INT_FATAL(fn, "initializer on non-class type");
   }
