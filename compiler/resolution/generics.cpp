@@ -30,6 +30,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+//#include "view.h"
 
 #include "resolveIntents.h"
 
@@ -145,15 +146,25 @@ evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
     whereStack.add(fn);
     resolveFormals(fn);
+    /*
+        printf("Before:\n");
+        list_view(fn->where);
+    */
     resolveBlockStmt(fn->where);
     whereStack.pop();
     SymExpr* se = toSymExpr(fn->where->body.last());
+    /*
+    printf("After:\n");
+    list_view(fn->where);
+    printf("last:\n");
+    list_view(fn->where->body.last());
+    */
     if (!se)
-      USR_FATAL(fn->where, "invalid where clause");
+      return false;
     if (se->symbol() == gFalse)
       return false;
     if (se->symbol() != gTrue)
-      USR_FATAL(fn->where, "invalid where clause");
+      USR_FATAL(fn->where, "invalid where clause: not true or false");
   }
   return true;
 }
