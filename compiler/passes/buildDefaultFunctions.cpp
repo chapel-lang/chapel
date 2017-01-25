@@ -17,15 +17,16 @@
  * limitations under the License.
  */
 
-#include "astutil.h"
-#include "stlUtil.h"
-#include "build.h"
-#include "expr.h"
 #include "passes.h"
+
+#include "astutil.h"
+#include "build.h"
+#include "config.h"
+#include "expr.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "config.h"
 
 static bool mainReturnsInt;
 
@@ -1038,36 +1039,43 @@ static void build_union_assignment_function(AggregateType* ct) {
 
 
 static void build_record_copy_function(AggregateType* ct) {
-  if (function_exists("chpl__initCopy", 1, ct))
+  if (function_exists("chpl__initCopy", 1, ct) != NULL) {
     return;
+  }
 
   // if there is a copy-initializer for this record type, use that.
-  const char* copyCtorName = astr("_construct_", ct->symbol->name);
-  const char* copyInitName = "init";
-  bool foundUserDefinedCopy = false;
+  const char* copyCtorName         = astr("_construct_", ct->symbol->name);
+  bool        foundUserDefinedCopy = false;
+
   // as an optimization, the below conditionals use ct->initializerStyle
-  if (ct->initializerStyle == DEFINES_CONSTRUCTOR)
-    if (FnSymbol* ctor = function_exists(copyCtorName, 1, ct))
+  if (ct->initializerStyle == DEFINES_CONSTRUCTOR) {
+    if (FnSymbol* ctor = function_exists(copyCtorName, 1, ct)) {
       // note: default ctor has 1 arg, meme
-      if (!ctor->getFormal(1)->hasFlag(FLAG_IS_MEME))
+      if (!ctor->getFormal(1)->hasFlag(FLAG_IS_MEME)) {
         foundUserDefinedCopy = true;
+      }
+    }
 
-  if (ct->initializerStyle == DEFINES_INITIALIZER)
-    if (function_exists(copyInitName, 2, ct, ct /*meme*/ ))
+  } else if (ct->initializerStyle == DEFINES_INITIALIZER) {
+    if (function_exists("init", 3, dtMethodToken, ct, ct) != NULL) {
       foundUserDefinedCopy = true;
-
-  // Don't try to use the compiler-generated default init fn
-  // if there isn't one. A compiler-generated default init fn is
-  // only created if there are no user initializer defined.
-  if (ct->initializerStyle == DEFINES_INITIALIZER && !foundUserDefinedCopy)
-    return;
+    } else {
+      // Don't try to use the compiler-generated default init fn if
+      // there isn't one. A compiler-generated default init fn is only
+      // created if there are no user initializer defined.
+      return;
+    }
+  }
 
   // if no copy-init function existed...
-  FnSymbol* fn = new FnSymbol("chpl__initCopy");
+  FnSymbol*  fn  = new FnSymbol("chpl__initCopy");
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+
   fn->addFlag(FLAG_INIT_COPY_FN);
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+
   arg->addFlag(FLAG_MARKED_GENERIC);
+
   fn->insertFormalAtTail(arg);
 
   CallExpr* call = NULL;
@@ -1090,50 +1098,68 @@ static void build_record_copy_function(AggregateType* ct) {
     } else {
       call = new CallExpr(ct->defaultInitializer);
     }
-    for_fields(tmp, ct)
-    {
+
+    for_fields(tmp, ct) {
       // Weed out implicit alias and promotion type fields.
-      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
         continue;
-      // TODO: This needs to be done uniformly, using an ignore_field flag or...
-      if (!strcmp("_promotionType", tmp->name))
+      }
+
+      // TODO: This needs to be done uniformly, using an ignore_field
+      // flag or...
+      if (strcmp("_promotionType", tmp->name) == 0) {
         continue;
+      }
 
       CallExpr* init = new CallExpr(".", arg, new_CStringSymbol(tmp->name));
+
       call->insertAtTail(new NamedExpr(tmp->name, init));
 
       // Special handling for nested record types:
       // We need to convert the constructor call into a method call.
-      if (!strcmp(tmp->name, "outer"))
+      if (strcmp(tmp->name, "outer") == 0) {
         call->insertAtHead(gMethodToken);
+      }
     }
+
     if (ct->symbol->hasFlag(FLAG_EXTERN)) {
       int actualsNeeded = ct->defaultInitializer->formals.length;
-      int actualsGiven = call->argList.length;
+      int actualsGiven  = call->argList.length;
+
       // This code assumes that in the case where an extern has not been fully
-      // specified in Chapel code, its default constructor will require one more
-      // actual than the fields specified: another object of that extern type
-      // whose contents can be used.
+      // specified in Chapel code, its default constructor will require one
+      // more actual than the fields specified: another object of that extern
+      // type whose contents can be used.
       if (actualsNeeded == actualsGiven + 1) {
         call->insertAtTail(arg);
       } else if (actualsNeeded != actualsGiven) {
         // The user didn't partially specify the type in Chapel code, but the
-        // number of actuals provided didn't match the expected number.  This is
-        // an internal error.
-        INT_FATAL(arg, "Extern type's constructor call didn't create expected # of actuals");
+        // number of actuals provided didn't match the expected number.
+        // This is an internal error.
+        INT_FATAL(arg,
+                  "Extern type's constructor call didn't create "
+                  "expected # of actuals");
       }
     }
+
     if (ct->initializerStyle == DEFINES_INITIALIZER) {
       // We want the initializer to take in the memory it will initialize
       VarSymbol* meme = newTemp("meme_tmp", ct);
+
       fn->insertAtHead(new DefExpr(meme));
+
       call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
     }
   }
+
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
   DefExpr* def = new DefExpr(fn);
+
   ct->symbol->defPoint->insertBefore(def);
+
   reset_ast_loc(def, ct->symbol);
+
   normalize(fn);
 }
 
