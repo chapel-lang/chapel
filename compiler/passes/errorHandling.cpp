@@ -135,8 +135,6 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
   if (FnSymbol* fn = node->resolvedFunction()) {
     if (fn->throwsError()) {
-      gdbShouldBreakHere();
-
       SET_LINENO(node);
       if (insideTry) {
         TryInfo    info        = tryStack.top();
