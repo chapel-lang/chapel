@@ -64,8 +64,7 @@ static void cb_comm_executeOn_fast(const chpl_comm_cb_info_t *info);
 int chpl_vdebug_fd = -1;
 int chpl_vdebug = 0;
 
-static char buff_tid[CHPL_TASK_ID_STRING_MAX_LEN];
-#define TID_STRING(tid) (chpl_task_idToString(buff_tid, CHPL_TASK_ID_STRING_MAX_LEN, tid))
+#define TID_STRING(buff, tid) (chpl_task_idToString(buff, CHPL_TASK_ID_STRING_MAX_LEN, tid))
 
 int chpl_dprintf (int fd, const char * format, ...) {
   char buffer[2048]; 
@@ -127,6 +126,7 @@ void chpl_vdebug_start (const char *fileroot, double now) {
   struct rusage ru;
   struct timeval tv;
   chpl_taskID_t startTask = chpl_task_getId();
+  char buff[CHPL_TASK_ID_STRING_MAX_LEN];
   (void) gettimeofday (&tv, NULL);
 
   install_callbacks();
@@ -155,7 +155,7 @@ void chpl_vdebug_start (const char *fileroot, double now) {
   }
   chpl_dprintf (chpl_vdebug_fd,
                 "ChplVdebug: ver 1.2 nodes %d nid %d tid %s seq %.3lf %lld.%06ld %ld.%06ld %ld.%06ld \n",
-                chpl_numNodes, chpl_nodeID, TID_STRING(startTask), now,
+                chpl_numNodes, chpl_nodeID, TID_STRING(buff, startTask), now,
                 (long long) tv.tv_sec, (long) tv.tv_usec,
                 (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
                 (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec  );
@@ -199,6 +199,7 @@ void chpl_vdebug_stop (void) {
   struct rusage ru;  
   struct timeval tv;
   chpl_taskID_t stopTask = chpl_task_getId();
+  char buff[CHPL_TASK_ID_STRING_MAX_LEN];
 
   // First, shutdown VisualDebug
   chpl_vdebug = 0;
@@ -218,7 +219,7 @@ void chpl_vdebug_stop (void) {
                   (long long) tv.tv_sec, (long) tv.tv_usec,
                   (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
                   (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec,
-                  chpl_nodeID, TID_STRING(stopTask));
+                  chpl_nodeID, TID_STRING(buff, stopTask));
     close (chpl_vdebug_fd);
   }
 }
@@ -232,9 +233,10 @@ void chpl_vdebug_stop (void) {
 void chpl_vdebug_mark (void) {
   struct timeval tv;
   chpl_taskID_t tagTask = chpl_task_getId();
+  char buff[CHPL_TASK_ID_STRING_MAX_LEN];
   (void) gettimeofday (&tv, NULL);
   chpl_dprintf (chpl_vdebug_fd, "VdbMark: %lld.%06ld %d %s\n",
-                (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, TID_STRING(tagTask) );
+                (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, TID_STRING(buff, tagTask) );
 }
 
 // Record>  tname: tag# tagname
@@ -250,6 +252,7 @@ void chpl_vdebug_tag (int tagno) {
   struct timeval tv;
   
   chpl_taskID_t tagTask = chpl_task_getId();
+  char buff[CHPL_TASK_ID_STRING_MAX_LEN];
 
   (void) gettimeofday (&tv, NULL);
   if ( getrusage (RUSAGE_SELF, &ru) < 0) {
@@ -262,7 +265,7 @@ void chpl_vdebug_tag (int tagno) {
                 (long long) tv.tv_sec, (long) tv.tv_usec,
                 (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
                 (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec,
-                chpl_nodeID, TID_STRING(tagTask), tagno);
+                chpl_nodeID, TID_STRING(buff, tagTask), tagno);
   chpl_vdebug = 1;
 }
 
@@ -272,6 +275,7 @@ void chpl_vdebug_pause (int tagno) {
   struct rusage ru;
   struct timeval tv;
   chpl_taskID_t pauseTask = chpl_task_getId();
+  char buff[CHPL_TASK_ID_STRING_MAX_LEN];
 
   if (chpl_vdebug_fd >=0 && chpl_vdebug == 1) {
     (void) gettimeofday (&tv, NULL);
@@ -285,7 +289,7 @@ void chpl_vdebug_pause (int tagno) {
                   (long long) tv.tv_sec, (long) tv.tv_usec,
                   (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
                   (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec,
-                  chpl_nodeID, TID_STRING(pauseTask), tagno);
+                  chpl_nodeID, TID_STRING(buff, pauseTask), tagno);
     chpl_vdebug = 0;
   }
 }
@@ -305,11 +309,12 @@ void cb_comm_put_nb (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm *cm = &info->iu.comm;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd, 
                   "nb_put: %lld.%06ld %d %d %s %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
-                  info->remoteNodeID, TID_STRING(commTask), (unsigned long) cm->addr,
+                  info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
@@ -325,11 +330,12 @@ void cb_comm_get_nb (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm *cm = &info->iu.comm;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
                   "nb_get: %lld.%06ld %d %d %s %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
-                  info->remoteNodeID, TID_STRING(commTask), (unsigned long) cm->addr,
+                  info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
@@ -344,11 +350,12 @@ void cb_comm_put (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm *cm = &info->iu.comm;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
                   "put: %lld.%06ld %d %d %s %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
-                  info->remoteNodeID, TID_STRING(commTask), (unsigned long) cm->addr,
+                  info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
@@ -364,11 +371,12 @@ void cb_comm_get (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm *cm = &info->iu.comm;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
                   "get: %lld.%06ld %d %d %s %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
-                  info->remoteNodeID, TID_STRING(commTask), (unsigned long) cm->addr,
+                  info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
@@ -382,11 +390,12 @@ void cb_comm_put_strd (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm_strd *cm = &info->iu.comm_strd;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
                   "st_put: %lld.%06ld %d %ld %s %#lx %#lx 1 %zd %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID, 
-                  (long) info->remoteNodeID, TID_STRING(commTask),
+                  (long) info->remoteNodeID, TID_STRING(buff, commTask),
                   (unsigned long) cm->srcaddr, (unsigned long) cm->dstaddr, cm->elemSize,
                   cm->typeIndex, cm->lineno, cm->filename);
     // printout srcstrides and dststrides and stridelevels and count?
@@ -404,11 +413,12 @@ void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm_strd *cm = &info->iu.comm_strd;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
                   "st_get: %lld.%06ld %d %ld %s %#lx %#lx 1 %zd %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
-                  (long) info->remoteNodeID, TID_STRING(commTask), 
+                  (long) info->remoteNodeID, TID_STRING(buff, commTask),
                   (unsigned long) cm->dstaddr, (unsigned long) cm->srcaddr, cm->elemSize,
                   cm->typeIndex, cm->lineno, cm->filename);
     // print out the srcstrides and dststrides and stridelevels and count?
@@ -423,13 +433,14 @@ void cb_comm_executeOn (const chpl_comm_cb_info_t *info) {
   if (chpl_vdebug) {
     const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
     chpl_taskID_t executeOnTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
                   "fork: %lld.%06ld %d %d %d %d %#lx %zd %s \n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, cm->subloc, cm->fid, (unsigned long) cm->arg,
-                  cm->arg_size, TID_STRING(executeOnTask));
+                  cm->arg_size, TID_STRING(buff, executeOnTask));
   }
 }
 
@@ -440,12 +451,13 @@ void  cb_comm_executeOn_nb (const chpl_comm_cb_info_t *info) {
   if (chpl_vdebug) {
     const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
     chpl_taskID_t executeOnTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d %#lx %zd %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, cm->subloc, cm->fid, (unsigned long) cm->arg, 
-                  cm->arg_size, TID_STRING(executeOnTask));
+                  cm->arg_size, TID_STRING(buff, executeOnTask));
   }
 }
 
@@ -455,13 +467,14 @@ void cb_comm_executeOn_fast (const chpl_comm_cb_info_t *info) {
   if (chpl_vdebug) {
     const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
     chpl_taskID_t executeOnTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
                   "f_executeOn: %lld.%06ld %d %d %d %d %#lx %zd %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, cm->subloc, cm->fid, (unsigned long)cm->arg, 
-                  cm->arg_size, TID_STRING(executeOnTask));
+                  cm->arg_size, TID_STRING(buff, executeOnTask));
   }
 }
 
@@ -568,6 +581,7 @@ void cb_task_create (const chpl_task_cb_info_t *info) {
   if (!chpl_vdebug) return;
   if (chpl_vdebug_fd >= 0) {
     chpl_taskID_t taskId = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     //printf ("taskCB: event: %d, node %d proc %s task id: %llu, new task id: %llu\n",
     //         (int)info->event_kind, (int)info->nodeID,
     //        (info->iu.full.is_executeOn ? "O" : "L"), taskId, info->iu.full.id);
@@ -575,7 +589,7 @@ void cb_task_create (const chpl_task_cb_info_t *info) {
     chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06ld %lld %ld %s %s %ld %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,
                   (long long) info->nodeID, (long int) info->iu.full.id,
-                  TID_STRING(taskId),
+                  TID_STRING(buff, taskId),
                   (info->iu.full.is_executeOn ? "O" : "L"),
                   (long int) info->iu.full.lineno,
                   info->iu.full.filename,
