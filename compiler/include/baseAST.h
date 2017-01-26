@@ -70,6 +70,7 @@
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
+  macro(ForallStmt) sep                            \
   macro(TryStmt) sep                               \
   macro(ExternBlockStmt)
 
@@ -147,6 +148,7 @@ enum AstTag {
   E_BlockStmt,
   E_CondStmt,
   E_GotoStmt,
+  E_ForallStmt,
   E_ExternBlockStmt,
 
   E_ModuleSymbol,
@@ -337,6 +339,7 @@ def_is_ast(UseStmt)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
+def_is_ast(ForallStmt)
 def_is_ast(TryStmt)
 def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
@@ -379,6 +382,7 @@ def_to_ast(UseStmt)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
+def_to_ast(ForallStmt)
 def_to_ast(TryStmt)
 def_to_ast(ExternBlockStmt)
 def_to_ast(Expr)
@@ -543,6 +547,15 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_TryStmt:                                                       \
     AST_CALL_CHILD(_a, TryStmt, body(), call, __VA_ARGS__);             \
     break;                                                              \
+  case E_ForallStmt:                                                           \
+    AST_CALL_LIST (_a,  ForallStmt, fIter,             call, __VA_ARGS__);     \
+    AST_CALL_STDVEC(((ForallStmt*)_a)->fWith->fiVars, Expr, call, __VA_ARGS__);\
+    AST_CALL_STDVEC(((ForallStmt*)_a)->fWith->riSpecs,Expr, call, __VA_ARGS__);\
+    AST_CALL_CHILD(_a,  ForallStmt, fWith->iterRec,    call, __VA_ARGS__);     \
+    AST_CALL_CHILD(_a,  ForallStmt, fWith->leadIdx,    call, __VA_ARGS__);     \
+    AST_CALL_CHILD(_a,  ForallStmt, fWith->leadIdxCopy,call, __VA_ARGS__);     \
+    AST_CALL_CHILD(_a,  ForallStmt, fVar,              call, __VA_ARGS__);     \
+    break;                                                                     \
   case E_ModuleSymbol:                                                  \
     AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \
     break;                                                              \

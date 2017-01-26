@@ -40,6 +40,8 @@ public:
   virtual bool    isStmt()                                           const;
   virtual QualifiedType qualType();
   virtual void    verify();
+          void    verify(AstTag expectedTag);
+          void    verifyParent(const Expr* child, const char* field);
 
   // New interface
   virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;

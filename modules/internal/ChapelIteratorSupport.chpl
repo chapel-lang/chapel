@@ -36,6 +36,33 @@
   make it available.
  */
 module ChapelIteratorSupport {
+
+// start vass
+
+  // cf these() for _array and _domain
+
+  pragma "no doc"
+  inline proc _domain.these(param tag)
+    where tag == iterKind.follower
+      return _value.these(tag);
+
+  pragma "no doc"
+  inline proc _domain.these(param tag, followThis)
+    where tag == iterKind.follower
+      return _value.these(tag, followThis);
+
+  pragma "no doc"
+  inline proc _array.these(param tag)
+    where tag == iterKind.follower
+      return _value.these(tag);
+
+  pragma "no doc"
+  inline proc _array.these(param tag, followThis)
+    where tag == iterKind.follower
+      return _value.these(tag, followThis);
+
+// end vass
+
   //
   // module support for iterators
   //

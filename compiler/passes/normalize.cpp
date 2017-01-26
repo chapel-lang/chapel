@@ -45,7 +45,7 @@ bool normalized = false;
 //
 static void insertModuleInit();
 static void transformLogicalShortCircuit();
-static void lowerReduceAssign();
+static void handleReduceAssign();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
 static void insertUseForExplicitModuleCalls(void);
@@ -83,7 +83,7 @@ void normalize() {
 
   transformLogicalShortCircuit();
 
-  lowerReduceAssign();
+  handleReduceAssign();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
@@ -271,65 +271,27 @@ static void transformLogicalShortCircuit()
   }
 }
 
-
-static Symbol* reduceIntentOp(ForallIntents* fi, Symbol* reVar) {
-  int nv = fi->numVars();
-  for (int i = 0; i < nv; i++)
-    if (fi->isReduce(i))
-      if (SymExpr* varSE = toSymExpr(fi->fiVars[i]))
-        if (varSE->symbol() == reVar) {
-          SymExpr* ri = toSymExpr(fi->riSpecs[i]);
-          INT_ASSERT(ri);
-          return ri->symbol();
-        }
-
-  // Did not see 'reVar' with a reduce intent.
-  return NULL;
-}
-
 //
-// lowerReduceAssign(): lower the reduce= calls, verifying their correct use.
+// handleReduceAssign(): check+process the reduce= calls
 //
-// Parser represents "x reduce= y" in source code as PRIM_REDUCE_ASSIGN(x,y).
-// lowerReduceAssign() converts it into globalOp.accumulateOntoState(x,y)
-// where globalOp comes from the reduce intent for x.
-// This includes checking that there is, indeed, a reduce intent for x:
-// without it, there is no globalOp.
-//
-static void lowerReduceAssign() {
+static void handleReduceAssign() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
+      SET_LINENO(call);
+      INT_ASSERT(call->numActuals() == 2); // comes from the parser
+      int rOpIdx;
 
       // l.h.s. must be a single variable
       if (SymExpr* lhsSE = toSymExpr(call->get(1))) {
         Symbol* lhsVar = lhsSE->symbol();
         // ... which is mentioned in a with clause with a reduce intent
-        Expr* curr = call->parentExpr;
-        ForallIntents* enclosingFI = NULL;
-        while (curr) {
-          if (BlockStmt* block = toBlockStmt(curr))
-            if (ForallIntents* fi = block->forallIntents) {
-              enclosingFI = fi;
-              break;
-            }
-          curr = curr->parentExpr;
-        }
+        ForallStmt* enclosingFS = enclosingForallStmt(call);
 
-        // I'd love these to be USR_FATAL_CONT, however currently
-        // the forall loop body is replicated 3 times, so we would
-        // report the same error 3 times. We could have a hashset of
-        // astlocs to avoid that with USR_FATAL_CONT, if we wanted.
-        if (!enclosingFI)
+        if (!enclosingFS)
           USR_FATAL_CONT(call, "The reduce= operator must occur within a forall loop.");
-        else if (Symbol* globalOp = reduceIntentOp(enclosingFI, lhsVar))
-          {
-            SET_LINENO(call);
-            Expr* rhs = call->get(2)->remove(); // do it before lhsSE->remove()
-            Expr* repl = new_Expr(".(%S, 'accumulateOntoState')(%E,%E)",
-                           globalOp, lhsSE->remove(), rhs);
-            call->replace(repl);
-          }
-        else
+        else if ((rOpIdx = reduceIntentIdx(enclosingFS, lhsVar)) >= 0) {
+          call->insertAtHead(new_IntSymbol(rOpIdx, INT_SIZE_64));
+        } else
           USR_FATAL(lhsSE, "The l.h.s. of a reduce= operator, '%s', must be passed by a reduce intent into the nearest enclosing forall loop", lhsVar->name);
 
       } else {
@@ -816,6 +778,38 @@ static TypeSymbol* resolveTypeAlias(SymExpr* se)
   return NULL;
 }
 
+// These RiSpec helpers implement reduce intents of the form
+// type(someArg), see e.g. test/parallel/forall/vass/3types-*.
+// We want to keep these reduce intents in their original form
+// until reduce-intent handling later, presently in resolution.
+//
+static SymExpr* callUsedInRiSpec(Expr* call, CallExpr* parent) {
+  if (parent && parent->isPrimitive(PRIM_MOVE)) {
+    SymExpr* destSE = toSymExpr(parent->get(1));
+    Symbol* dest = destSE->symbol();
+    SymExpr* riSpecMaybe = dest->firstSymExpr();
+    if (ForallStmt* fs = toForallStmt(riSpecMaybe->parentExpr)) {
+      for_vector(Expr, riSpec, fs->fWith->riSpecs)
+        if (riSpecMaybe == riSpec)
+          return riSpecMaybe;
+    }
+  }
+  return NULL;
+}
+static void restoreRiSpecCall(SymExpr* riSpec, CallExpr* call) {
+  Symbol* temp = riSpec->symbol();
+  // Verify the pattern that occurs if callUsedInRiSpec() returns true.
+  // If any of these fail, either the pattern changed or callUsedInRiSpec()
+  // returns true when it shouldn't.
+  INT_ASSERT(temp->firstSymExpr() == riSpec); // see callUsedInRiSpec
+  INT_ASSERT(temp->lastSymExpr()->next == call); // 'move'
+  INT_ASSERT(riSpec->symbolSymExprsNext == temp->lastSymExpr()); // temp has only 2 SymExprs
+  // Remove 'temp'.
+  temp->defPoint->remove();
+  call->parentExpr->remove();
+  // Put 'call' back into riSpec.
+  riSpec->replace(call->remove());
+}
 
 /*
    Normalize constructor/type constructor calls.
@@ -860,6 +854,8 @@ static void call_constructor_for_class(CallExpr* call) {
       if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
         // Call chpl__buildDistType for syntactic distributions.
         se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
+      else if (SymExpr* riSpec = callUsedInRiSpec(call, parent))
+        restoreRiSpecCall(riSpec, call);
       else
         // Transform C ( ... ) into _type_construct_C ( ... ) .
         se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
@@ -972,6 +968,11 @@ static void insert_call_temps(CallExpr* call)
   if (call->isPrimitive(PRIM_TUPLE_EXPAND) ||
       call->isPrimitive(PRIM_GET_MEMBER_VALUE))
     return;
+
+  // Do not normalize the iterator expressions of forall loops.
+  if (ForallStmt* fs = toForallStmt(call->parentExpr))
+    if (isForallStmtIterator(fs, call))
+      return;
 
   // TODO: Check if we need a call temp for PRIM_ASSIGN.
   CallExpr* parentCall = toCallExpr(call->parentExpr);

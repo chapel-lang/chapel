@@ -161,6 +161,7 @@ public:
   virtual bool        deadBlockCleanup();
 
   void                appendChapelStmt(BlockStmt* stmt);
+  void                flattenAndRemove();
 
   void                insertAtHead(Expr* ast);
   void                insertAtTail(Expr* ast);
@@ -269,6 +270,43 @@ class GotoStmt : public Stmt {
   LabelSymbol*        gotoTarget()                                     const;
 };
 
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+//
+// ForallStmt: a forall loop statement:
+//   'forall' fVar 'in' fIter 'with' fWith 'do' fBody
+//
+class ForallStmt : public Stmt
+{
+public:
+  // these fields are always non-null
+  BlockStmt*  fVar;       // DefExpr(s) for index variable(s)
+  AList       fIter;      // may want to replace with a "clause" AST node
+  bool        fZippered;
+  ForallIntents* fWith;   // todo: replace with AList of per-variable "clauses"
+  BlockStmt*  fBody;      // fBody == fVar->body.tail
+
+  ForallStmt(BlockStmt* var, Expr* iter, bool zippered,
+             ForallIntents* intents, BlockStmt* body);
+  ~ForallStmt();
+
+  DECLARE_COPY(ForallStmt);
+
+  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
+  virtual void        verify();
+  virtual void        accept(AstVisitor* visitor);
+  virtual GenRet      codegen();
+
+  virtual Expr*       getFirstChild();
+  virtual Expr*       getFirstExpr();
+  virtual Expr*       getNextExpr(Expr* expr);
+};
+
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -309,7 +347,15 @@ extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 // statement-level expression.
 void         codegenStmt(Expr* stmt);
 
+
+// Serving ForallStmt and forall intents.
 bool isDirectlyUnderBlockStmt(const Expr* expr);
+bool isForallStmtIterator(ForallStmt* fs, Expr* expr);
+ForallStmt* enclosingForallStmt(Expr* expr);
+int reduceIntentIdx(ForallStmt* fs, Symbol* reVar);
+VarSymbol* forallIndexVar(ForallStmt* fs);
+VarSymbol* forallIdxCopyVar(ForallStmt* fs, VarSymbol* idxVar);
+
 
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,
 // if possible; NULL otherwise.

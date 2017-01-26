@@ -278,6 +278,16 @@ void Expr::verify() {
   }
 }
 
+void Expr::verify(AstTag expectedTag) {
+  if (astTag != expectedTag)
+    INT_FATAL(this, "verify(id=%d): Bad astTag", id);
+  Expr::verify();
+}
+
+void Expr::verifyParent(const Expr* child, const char* field) {
+  if (child && child->parentExpr != this)
+    INT_FATAL(this, "bad parent of %s", field);
+}
 
 bool Expr::inTree() {
   if (parentSymbol)

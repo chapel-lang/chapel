@@ -59,9 +59,12 @@ FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
 
 // forall intents
+extern bool beforeLoweringForallStmts;
+Expr* resolveParallelIteratorAndForallIntents(Expr* origExpr, bool inTry);
 void implementForallIntents1(DefExpr* defChplIter);
 void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
 void implementForallIntents2wrapper(CallExpr* call, CallExpr* origToLeaderCall);
+void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall);
 void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignore_isResolved);
 
 // reduce intents

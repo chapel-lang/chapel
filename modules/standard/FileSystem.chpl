@@ -777,15 +777,15 @@ iter glob(pattern: string = "*", param tag: iterKind): string
   use chpl_glob_c_interface;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern:c_string, 0, glb);
+  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
   // TODO: Handle error cases better
   if (err != 0 && err != GLOB_NOMATCH) then
     __primitive("chpl_error", c"unhandled error in glob()");
   const num = chpl_glob_num(glb).safeCast(int);
+  globfree(glb);
+
   forall i in 0..num-1 do
     yield chpl_glob_index(glb, i.safeCast(size_t)): string;
-
-  globfree(glb);
 }
 
 //
@@ -832,6 +832,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
   if (err != 0 && err != GLOB_NOMATCH) then
     __primitive("chpl_error", c"unhandled error in glob()");
   const num = chpl_glob_num(glb);
+  globfree(glb);
   if (r.high >= num.safeCast(int)) then
     halt("glob() is being zipped with something too big; it only has ", num, " matches");
   for i in r do
@@ -839,8 +840,6 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
     // safe cast is used here to turn an int into a size_t
     //
     yield chpl_glob_index(glb, i.safeCast(size_t)): string;
-
-  globfree(glb);
 }
 
 

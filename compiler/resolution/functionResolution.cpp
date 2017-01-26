@@ -32,7 +32,6 @@
 #include "callInfo.h"
 #include "CForLoop.h"
 #include "driver.h"
-#include "expr.h"
 #include "ForLoop.h"
 #include "initializerRules.h"
 #include "iterator.h"
@@ -195,6 +194,7 @@ public:
 bool resolved = false;
 bool inDynamicDispatchResolution = false;
 SymbolMap paramMap;
+bool beforeLoweringForallStmts = true;
 
 //#
 //# Static Variables
@@ -7179,6 +7179,23 @@ preFold(Expr* expr) {
           }
         }
       }
+    } else if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
+      // see lowerReduceAssign()
+      INT_ASSERT(call->numActuals() == 3);
+      SymExpr* rOpIdxSE = toSymExpr(call->get(1));
+      int rOpIdx = (int)(toVarSymbol(rOpIdxSE->symbol())->immediate->int_value());
+      Expr* rhs = call->get(3)->remove();
+      Expr* lhs = call->get(2)->remove();
+      ForallIntents* fi = enclosingForallStmt(call)->fWith;
+      INT_ASSERT(rOpIdx >= 0 && rOpIdx < fi->numVars());
+      INT_ASSERT(!strcmp(toSymExpr(lhs)->symbol()->name,
+                         toSymExpr(fi->fiVars[rOpIdx])->symbol()->name));
+      INT_ASSERT(fi->isReduce(rOpIdx));
+      Symbol* globalOp = toSymExpr(fi->riSpecs[rOpIdx])->symbol();
+      INT_ASSERT(isReduceOp(globalOp->type));
+      result = new_Expr("accumulateOntoState(%S,%S,%E,%E)",
+                        gMethodToken, globalOp, lhs, rhs);
+      call->replace(result);
     }
   }
   //
@@ -7836,6 +7853,7 @@ static Expr*
 resolveExpr(Expr* expr) {
   Expr* const origExpr = expr;
   FnSymbol*   fn       = toFnSymbol(expr->parentSymbol);
+  bool gotTryFailure   = false;
 
   SET_LINENO(expr);
 
@@ -7843,6 +7861,8 @@ resolveExpr(Expr* expr) {
     // context call expressions are always already resolved
     // since they are created in resolveNormalFunction to represent
     // alternative resolutions.
+    //
+    expr = resolveParallelIteratorAndForallIntents(expr, false);
     return expr;
   }
 
@@ -7926,7 +7946,19 @@ resolveExpr(Expr* expr) {
       }
     }
 
-    if (tryFailure) {
+    if (tryFailure)
+      gotTryFailure = true;
+    else
+      callStack.pop();
+  }
+
+  if (!gotTryFailure) {
+    expr = resolveParallelIteratorAndForallIntents(expr, tryStack.n > 0);
+    if (!expr)
+      gotTryFailure = true;
+  }
+
+  if (gotTryFailure) {
       if (tryStack.n > 0 && tryStack.tail()->parentSymbol == fn) {
         // The code in the 'true' branch of a tryToken conditional has failed
         // to resolve fully. Roll the callStack back to the function where
@@ -7954,10 +7986,6 @@ resolveExpr(Expr* expr) {
       } else {
         return NULL;
       }
-
-    }
-
-    callStack.pop();
   }
 
   if (SymExpr* sym = toSymExpr(expr)) {
@@ -9039,6 +9067,9 @@ void resolve() {
   // resolveDynamicDispatches and resolveAutoCopies should be called
   // in a loop).
   resolveAutoCopies();
+
+  beforeLoweringForallStmts = false;
+  lowerForallStmts();
 
   insertDynamicDispatchCalls();
   insertReturnTemps();

@@ -472,6 +472,17 @@ BlockStmt::canFlattenChapelStmt(const BlockStmt* stmt) const {
   return retval;
 }
 
+//
+// "Remove the curly braces":
+// move all contents out of this BlockStmt and remove it.
+//
+void BlockStmt::flattenAndRemove() {
+  for_alist(stmt, this->body)
+    this->insertBefore(stmt->remove());
+  INT_ASSERT(this->body.length == 0);
+  this->remove();
+}
+
 Expr*
 BlockStmt::getFirstChild() {
   Expr* retval = NULL;

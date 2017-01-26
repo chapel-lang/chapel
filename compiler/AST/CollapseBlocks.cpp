@@ -140,6 +140,10 @@ void CollapseBlocks::visitForallIntents(ForallIntents* clause) {
   INT_ASSERT(false);
 }
 
+bool CollapseBlocks::enterForallStmt(ForallStmt* node) {
+  return enterBlockStmt(node->fVar);
+}
+
 
 // The c for loop primitive is of the form:
 //   __primitive("C for loop", {inits}, {test}, {incrs})
@@ -333,6 +337,11 @@ void CollapseBlocks::visitUseStmt(UseStmt* node)
 }
 
 void CollapseBlocks::exitBlockStmt(BlockStmt* node)
+{
+
+}
+
+void CollapseBlocks::exitForallStmt(ForallStmt* node)
 {
 
 }

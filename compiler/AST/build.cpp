@@ -1356,7 +1356,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
  *   }
  */
 BlockStmt*
-buildForallLoopStmt(Expr*      indices,
+buildForallLoopStmtOld(Expr*   indices,
                     Expr*      iterExpr,
                     ForallIntents* forall_intents,
                     BlockStmt* loopBody,
@@ -1513,6 +1513,53 @@ void addTaskIntent(CallExpr* ti, Expr* var, IntentTag intent, Expr* ri) {
     ti->insertAtTail(var);
   }
 }
+
+static void adjustReduceOpNames(ForallIntents* fi) {
+  for_riSpecs_vector(ri, fi) {
+    if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ri)) {
+      if (!strcmp(sym->unresolved, "max"))
+        sym->unresolved = astr("MaxReduceScanOp");
+      else if (!strcmp(sym->unresolved, "min"))
+        sym->unresolved = astr("MinReduceScanOp");
+    }
+  }
+}
+
+BlockStmt* buildForallLoopStmt(Expr* indices,
+                               Expr* iterator,
+                               ForallIntents* forall_intents,
+                               BlockStmt* body,
+                               bool zippered)
+{
+  if (!indices)
+    indices = new UnresolvedSymExpr("chpl__elidedIdx");
+  checkIndices(indices);
+
+  BlockStmt* indexBlock = new BlockStmt();
+
+  // From the original buildForallLoopStmt().
+  VarSymbol* leadIdx         = newTemp("chpl__leadIdx");
+  VarSymbol* leadIdxCopy     = newTemp("chpl__leadIdxCopy");
+
+  leadIdxCopy->addFlag(FLAG_INDEX_VAR);
+  leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+  indexBlock->insertAtTail(new DefExpr(leadIdx));
+  indexBlock->insertAtTail(new DefExpr(leadIdxCopy));
+
+  destructureIndices(body, indices, new SymExpr(leadIdxCopy), false);
+  // For the rest of the original buildForallLoopStmt, see lowerForallStmts.
+
+  if (!forall_intents)
+    forall_intents = new ForallIntents();
+
+  adjustReduceOpNames(forall_intents);
+  body->blockTag = BLOCK_NORMAL; // do not flatten it in cleanup(), please
+
+  return buildChapelStmt(
+    new ForallStmt(indexBlock, iterator, zippered, forall_intents, body));
+}
+
 
 static void
 addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
@@ -1953,7 +2000,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   // differs from eltType, e.g. + reduce over booleans
   // as in test/trivial/deitz/monte.chpl
 
-  BlockStmt* forall = buildForallLoopStmt(
+  BlockStmt* forall = buildForallLoopStmtOld(
     index->copy(),      // indices
     new SymExpr(data),  // iterExpr
     fi,       // forall_intents

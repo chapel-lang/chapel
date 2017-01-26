@@ -36,19 +36,6 @@
 
 
 //
-// Move the statements in a block out of the block
-//
-static void
-flatten_scopeless_block(BlockStmt* block) {
-  for_alist(stmt, block->body) {
-    stmt->remove();
-    block->insertBefore(stmt);
-  }
-  block->remove();
-}
-
-
-//
 // Moves expressions that are parsed as nested function definitions
 // into their own statement; during parsing, these are embedded in
 // call expressions
@@ -224,7 +211,7 @@ void cleanup() {
 
     if (BlockStmt* block = toBlockStmt(ast1)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list) {
-        flatten_scopeless_block(block);
+        block->flattenAndRemove();
       }
 
     } else if (CallExpr* call = toCallExpr(ast1)) {

@@ -992,7 +992,7 @@ buildPromotionWrapper(FnSymbol* fn,
 
   if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
       (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
-      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, /*byref_vars=*/ NULL, new BlockStmt(actualCall), zippered)));
+      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmtOld(indices, iterator, /*byref_vars=*/ NULL, new BlockStmt(actualCall), zippered)));
   } else {
     wrapper->addFlag(FLAG_ITERATOR_FN);
     wrapper->removeFlag(FLAG_INLINE);

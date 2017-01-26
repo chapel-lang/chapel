@@ -54,18 +54,19 @@ public:
   ForallIntents();    // constructor
   ~ForallIntents() {} // destructor: just deallocate the vectors
 
-  int   numVars() { return fiVars.size(); }
-  bool  isReduce(int idx) { return fIntents[idx] == TFI_REDUCE; }
+  int   numVars()         const { return fiVars.size(); }
+  bool  isReduce(int idx) const { return fIntents[idx] == TFI_REDUCE; }
 
   // Support standard AST operations on the enclosing BlockStmt.
   ForallIntents* copy(SymbolMap* map, bool internal);
   bool replaceChildFI(Expr* oldAst, Expr* newAst);
   void removeFI(Expr* parentB);
-  void verifyFI(BlockStmt* parentB);
+  void verifyFI(Expr* parentE) const;
   void acceptFI(AstVisitor* visitor);
 };
 
 bool astUnderFI(const Expr* ast, ForallIntents* fi);
+void lowerForallStmts();
 
 #define for_riSpecs_vector(VAL, FI) \
   for_vector_allowing_0s(Expr, VAL, (FI)->riSpecs)
