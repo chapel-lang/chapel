@@ -1,0 +1,7 @@
+bug: type method with default argument causes compiler error
+
+A type method with a default argument causes an "illegal assignment of type
+to value" error. The error is coming from a wrapper for the method, where it
+assigns "this" to a temp.  Since it is a type method, "this" is a type.
+
+Calling the method with an argument avoids the wrapper and succeeds.
