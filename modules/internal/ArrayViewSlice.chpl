@@ -59,19 +59,43 @@ class ArrayViewSliceArr: BaseArr {
     chpl_serialReadWriteRectangular(f, arr, dom);
   }
 
-  //
-  // standard accessors
-  //
-  inline proc dsiAccess(i:integral) ref {
-    return dsiAccess((i,));
-  }
-
-  inline proc dsiAccess(i) ref {
-    //    writeln("Slice got: ", i);
+  inline proc checkBounds(i) {
     if boundsChecking then
       if !dom.dsiMember(i) then
         halt("array index out of bounds: ", i);
+  }
 
+  //
+  // standard accessors
+  //
+  inline proc dsiAccess(i: idxType ...rank) ref {
+    return dsiAccess(i);
+  }
+
+  inline proc dsiAccess(i: idxType ...rank)
+  where !shouldReturnRvalueByConstRef(eltType) {
+    return dsiAccess(i);
+  }
+
+  inline proc dsiAccess(i: idxType ...rank) const ref
+  where shouldReturnRvalueByConstRef(eltType) {
+    return dsiAccess(i);
+  }
+
+  inline proc dsiAccess(i) ref {
+    checkBounds(i);
+    return arr.dsiAccess(i);
+  }
+
+  inline proc dsiAccess(i)
+  where !shouldReturnRvalueByConstRef(eltType) {
+    checkBounds(i);
+    return arr.dsiAccess(i);
+  }
+
+  inline proc dsiAccess(i) const ref
+  where shouldReturnRvalueByConstRef(eltType) {
+    checkBounds(i);
     return arr.dsiAccess(i);
   }
 
@@ -101,7 +125,11 @@ class ArrayViewSliceArr: BaseArr {
   }
 
   proc dsiNoFluffView() {
-    compilerError("no fluff view not supported on array views yet");
+    if canResolveMethod(arr, "dsiNoFluffView") {
+      return arr.dsiNoFluffView();
+    } else {
+      compilerError("noFluffView is not supported on this array type.");
+    }
   }
 
   //
