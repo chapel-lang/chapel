@@ -908,36 +908,38 @@ static void applyGetterTransform(CallExpr* call) {
   //   call(call or )( indicates partial
   if (call->isNamed(".")) {
     SET_LINENO(call);
+
     SymExpr* symExpr = toSymExpr(call->get(2));
-    INT_ASSERT(symExpr);
+
     symExpr->remove();
+
     if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
-        call->baseExpr->replace(new UnresolvedSymExpr(var->immediate->v_string));
-        if (!strcmp(var->immediate->v_string, "init")) {
-          // Transform:
-          //   call(call(. x "init") args)
-          // into:
-          //   call(call(init meme=x) args)
-          // because initializers are handled differently from other methods
-          Expr* firstArg = call->get(1)->remove();
-          call->insertAtHead(new NamedExpr("meme", firstArg));
-        } else {
-          call->insertAtHead(gMethodToken);
-        }
+        const char* str = var->immediate->v_string;
+
+        call->baseExpr->replace(new UnresolvedSymExpr(str));
+
+        call->insertAtHead(gMethodToken);
+
       } else {
         INT_FATAL(call, "unexpected case");
       }
+
     } else if (TypeSymbol* type = toTypeSymbol(symExpr->symbol())) {
       call->baseExpr->replace(new SymExpr(type));
       call->insertAtHead(gMethodToken);
+
     } else {
       INT_FATAL(call, "unexpected case");
     }
+
     call->methodTag = true;
-    if (CallExpr* parent = toCallExpr(call->parentExpr))
-      if (parent->baseExpr == call)
+
+    if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+      if (parent->baseExpr == call) {
         call->partialTag = true;
+      }
+    }
   }
 }
 
@@ -1861,49 +1863,19 @@ static void updateConstructor(FnSymbol* fn) {
 }
 
 static void updateInitMethod(FnSymbol* fn) {
-  Type* thisType = fn->getFormal(2)->type;
+  Symbol* _this = fn->getFormal(2);
 
-  if (thisType == dtUnknown) {
-    INT_FATAL(fn, "'this' argument has unknown type");
-
-  } else if (AggregateType* ct = toAggregateType(thisType)) {
-    SymbolMap  map;
-
-    ArgSymbol* meme = new ArgSymbol(INTENT_BLANK,
-                                    "meme",
-                                    ct,
-                                    NULL,
-                                    new SymExpr(gTypeDefaultToken));
-
+  if (AggregateType* ct = toAggregateType(_this->type)) {
     if (fn->hasFlag(FLAG_NO_PARENS)) {
-      USR_FATAL(fn,
-                "an initializer cannot be declared without parentheses");
+      USR_FATAL(fn, "an initializer cannot be declared without parentheses");
     }
-
-    meme->addFlag(FLAG_IS_MEME);
-
-    fn->insertFormalAtTail(meme);
 
     handleInitializerRules(fn, ct);
 
-    fn->_this = new VarSymbol("this");
-
-    fn->_this->addFlag(FLAG_ARG_THIS);
-
-    fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, new SymExpr(meme)));
-    fn->insertAtHead(new DefExpr(fn->_this));
-
     fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
 
-    map.put(fn->getFormal(2), fn->_this);
-
-    fn->formals.get(2)->remove();
-    fn->formals.get(1)->remove();
-
-    update_symbols(fn, &map);
-
-    fn->addFlag(FLAG_CONSTRUCTOR);
-
+  } else if (_this->type == dtUnknown) {
+    INT_FATAL(fn, "'this' argument has unknown type");
   } else {
     INT_FATAL(fn, "initializer on non-class type");
   }

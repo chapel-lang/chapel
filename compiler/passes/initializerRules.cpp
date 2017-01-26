@@ -36,8 +36,9 @@ enum InitBody {
   FOUND_BOTH
 };
 
-// Helper file for verifying the rules placed on initializers, and providing
-// the extra functionality associated with them.
+static InitBody getInitCall(FnSymbol* fn);
+static void     phase1Analysis(BlockStmt* body, AggregateType* t);
+
 
 void temporaryInitializerFixup(CallExpr* call) {
   if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
@@ -45,40 +46,27 @@ void temporaryInitializerFixup(CallExpr* call) {
     // define either an initializer or a constructor.  Also ignores errors from
     // improperly inserted .init() calls (so be sure to check here if something
     // is behaving oddly - Lydia, 08/19/16)
-    if (!strcmp(usym->unresolved, "init")) {
-      for_actuals(actual, call) {
-        if (NamedExpr* named = toNamedExpr(actual)) {
-          if (!strcmp(named->name, "meme")) {
-            if (SymExpr* sym = toSymExpr(named->actual)) {
-              if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
-                if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-                  // This code should be removed when the compiler generates
-                  // initializers as the default method of construction and
-                  // initialization for a type (Lydia note, 08/19/16)
-                  usym->unresolved = astr("_construct_", ct->symbol->name);
-                } else if (ct->initializerStyle == DEFINES_CONSTRUCTOR) {
-                  // This code should be removed when initializers are fully
-                  // supported and old style constructors are deprecated
-                  // (Lydia note, 08/19/16)
-                  USR_FATAL(call, "can't make init call on type with old constructor style");
-                }
-              }
-            }
-          }
+    if (strcmp(usym->unresolved, "init") == 0 &&
+        call->numActuals()               >= 2) {
+      SymExpr* _mt = toSymExpr(call->get(1));
+      SymExpr* sym = toSymExpr(call->get(2));
+
+      INT_ASSERT(sym != NULL);
+
+      if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
+        if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+
+          // This code should be removed when the compiler generates
+          // initializers as the default method of construction and
+          // initialization for a type (Lydia note, 08/19/16)
+          usym->unresolved = astr("_construct_", ct->symbol->name);
+
+          _mt->remove();
         }
       }
     }
   }
 }
-
-static
-InitBody getInitCall(FnSymbol* fn);
-
-static
-void phase1Analysis(BlockStmt* body, AggregateType* t);
-
-
-
 
 void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
   InitBody bodyStyle = getInitCall(fn);
