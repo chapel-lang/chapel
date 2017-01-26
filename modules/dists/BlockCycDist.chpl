@@ -294,6 +294,14 @@ class BlockCyclic : BaseDist {
   }
 }
 
+proc BlockCyclic._locsize {
+  var ret : rank*int;
+  for param i in 1..rank {
+    ret(i) = targetLocDom.dim(i).length;
+  }
+  return ret;
+}
+
 //
 // create a new rectangular domain over this distribution
 //
@@ -758,6 +766,27 @@ proc LocBlockCyclicDom.high {
   return myStarts.high;
 }
 
+proc LocBlockCyclicDom._lens {
+  var ret : rank*int;
+  for param i in 1..rank {
+    ret(i) = myStarts.dim(i).length;
+  }
+  return ret;
+}
+
+proc LocBlockCyclicDom._sizes {
+    //
+    // For dimension ``i`` in 1 <= d <= rank, sizes(d+1) represents the
+    // distance in the flat array between elements in dimension ``i``. Similar
+    // to ``blk`` in DefaultRectangular.
+    //
+    var sizes : (rank+1)*int;
+    sizes(rank+1) = 1;
+    for i in 1..rank by -1 do
+      sizes(i) = sizes(i+1) * (globDom.dist.blocksize(i) * myStarts.dim(i).length);
+    return sizes;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
@@ -1008,11 +1037,12 @@ class LocBlockCyclicArr {
   var myElems: [allocDom.myFlatInds] eltType;
 
   // TODO: need to be able to access these, but is this the right place?
-  const blocksize: [1..rank] int = [d in 1..rank] allocDom.globDom.dist.blocksize(d);
-  const low = allocDom.globDom.dsiLow;
-  const locsize: [1..rank] int = [d in 1..rank] allocDom.globDom.dist.targetLocDom.dim(d).length;
-  const numblocks: [1..rank] int = [d in 1..rank] (allocDom.myStarts.dim(d).length);
+  const blocksize : rank*int = allocDom.globDom.dist.blocksize;
+  const low                  = allocDom.globDom.dsiLow;
+  const locsize   : rank*int = allocDom.globDom.dist._locsize;
+  const numblocks : rank*int = allocDom._lens;
 
+  const sizes : (rank+1)*int = allocDom._sizes;
 }
 
 
@@ -1049,30 +1079,22 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
     }
     return (numwholeblocks * blocksize(rank)) + blkOff;
   } else { // RMO
-    //TODO: want negative scan: var blkmults = * scan [d in 1..rank] blocksize(d);
-    var mults : rank*int;
-    mults(rank) = blocksize(rank);
-    for d in 1..rank-1 by -1 do
-      mults(d) = mults(d+1) * blocksize(d);
 
-    var blkmults = mults(1);
+    var idx = 0;
 
-    var numwholeblocks = 0;
-    var blkOff = 0;
     for param d in 1..rank {
-      const blksize = blocksize(d);
-      const ind0 = (i(d) - low(d)): int;
-      const blkNum = ind0 / (blksize * locsize(d));
-      const blkDimOff = ind0 % blksize;
-      if (d != 1) {
-        numwholeblocks *= numblocks(rank-d+2);
-        blkOff *= blksize;
-      }
-      numwholeblocks += blkNum;
-      blkOff += blkDimOff;
+      const bs              = blocksize(d);  // cache for performance
+      const base            = i(d) - low(d); // zero-based index
+      const localBlockNum   = base / (bs * locsize(d));
+      const localBlockStart = localBlockNum * bs;
+      const remainder       = base % bs;
+
+      const locIdx = localBlockStart + remainder;
+
+      idx += locIdx * sizes(d+1);
     }
 
-    return (numwholeblocks * blkmults) + blkOff;
+    return idx;
   }
 }
 
@@ -1081,7 +1103,7 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
 //
 proc LocBlockCyclicArr.this(i) ref {
   const flatInd = mdInd2FlatInd(i);
-  //    writeln(i, "->", flatInd);
+  //writeln(i, " --> ", flatInd);
   return myElems(flatInd);
 }
 
