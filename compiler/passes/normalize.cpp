@@ -147,17 +147,19 @@ void normalize() {
       if (fn->formals.length < 2
           || fn->getFormal(1)->typeInfo() != gMethodToken->typeInfo()) {
         USR_FATAL(fn, "destructors must be methods");
-      } else if (fn->formals.length > 2) {
+      } else if (fn->formals.length > 2 && fn->name[0] == '~') {
+        // TODO When we retire destructors, this test can go away
         USR_FATAL(fn, "destructors must not have arguments");
       } else {
         DefExpr* thisDef = toDefExpr(fn->formals.get(2));
-        INT_ASSERT(fn->name[0] == '~' && thisDef);
+        INT_ASSERT(thisDef);
         AggregateType* ct = toAggregateType(thisDef->sym->type);
         // make sure the name of the destructor matches the name of the class
-        if (ct && strcmp(fn->name + 1, ct->symbol->name)) {
-          USR_FATAL(fn, "destructor name must match class name");
+        if (ct && (strcmp(fn->name + 1, ct->symbol->name) &&
+                   strcmp(fn->name, "deinit"))) {
+          USR_FATAL(fn, "destructor name must match class name or deinit()");
         } else {
-          fn->name = astr("chpl__deinit");
+          fn->name = astr("deinit");
         }
       }
     }

@@ -1,0 +1,9 @@
+class C {
+  proc deinit() {
+    writeln("In my deinitializer!");
+  }
+}
+
+var myC = new C();
+myC.deinit();
+delete myC;
