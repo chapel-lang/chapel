@@ -50,28 +50,28 @@ class ArrayViewSliceArr: BaseArr {
   //
   // standard iterators
   //
-  inline iter these() ref {
+  iter these() ref {
     for i in privDom do
       yield arr.dsiAccess(i);
   }
 
-  inline iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+  iter these(param tag: iterKind) ref where tag == iterKind.standalone {
     for i in privDom.these(tag) do
       yield arr.dsiAccess(i);
   }
 
-  inline iter these(param tag: iterKind) where tag == iterKind.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     //    writeln("In sliceview leader");
     for followThis in privDom.these(tag) do {
-      //      writeln("yielding ", followThis);
       yield followThis;
     }
   }
 
-  inline iter these(param tag: iterKind, followThis) ref
+  iter these(param tag: iterKind, followThis) ref
     where tag == iterKind.follower {
-    for i in privDom.these(tag, followThis) do
+    for i in privDom.these(tag, followThis) {
       yield arr.dsiAccess[i];
+    }
   }
 
   //
@@ -180,6 +180,22 @@ class ArrayViewSliceArr: BaseArr {
                                  dom=privatizeData(2),
                                  _ArrPid=privatizeData(3),
                                  _ArrInstance=privatizeData(4));
+  }
+
+  proc dsiSupportsBulkTransfer() param {
+    return arr.dsiSupportsBulkTransfer();
+  }
+
+  proc doiUseBulkTransfer(B) {
+    return arr.doiUseBulkTransfer(B);
+  }
+
+  proc doiCanBulkTransfer(viewDom) {
+    return arr.doiCanBulkTransfer(viewDom);
+  }
+
+  proc doiBulkTransfer(B, viewDom) {
+    arr.doiBulkTransfer(B, viewDom);
   }
 }
 

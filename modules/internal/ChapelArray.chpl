@@ -3218,8 +3218,8 @@ module ChapelArray {
     //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
 
     // constraints specific to a particular domain map array type
-    if !a._value.doiCanBulkTransfer() then return false;
-    if !b._value.doiCanBulkTransfer() then return false;
+    if !a._value.doiCanBulkTransfer(a._dom._value) then return false;
+    if !b._value.doiCanBulkTransfer(b._dom._value) then return false;
     if !a._value.doiUseBulkTransfer(b) then return false;
 
     return true;
@@ -3315,7 +3315,7 @@ module ChapelArray {
         chpl__compatibleForBulkTransfer(a, b) &&
         chpl__useBulkTransfer(a, b))
     {
-      a._value.doiBulkTransfer(b);
+      a._value.doiBulkTransfer(b, a._dom._value);
     }
     else if (useBulkTransferStride &&
         chpl__compatibleForBulkTransferStride(a, b) &&
