@@ -5192,7 +5192,10 @@ static void resolveNew(CallExpr* call) {
     if (Type* ty = resolveTypeAlias(toReplace)) {
       if (AggregateType* ct = toAggregateType(ty)) {
         if (ct->initializerStyle == DEFINES_INITIALIZER) {
-          toReplace->replace(new UnresolvedSymExpr("init"));
+          const char* name = (isClass(ct) == true) ? "_new" : "init";
+
+          toReplace->replace(new UnresolvedSymExpr(name));
+
           initCall = true;
 
         } else {
@@ -5242,22 +5245,15 @@ static void resolveNew(CallExpr* call) {
 
       resolveExpr(def);
 
-      if (!isRecord(typeToNew) && !isUnion(typeToNew)) {
-        BlockStmt* allocBlock = new BlockStmt();
-        CallExpr*  allocCall  = callChplHereAlloc(typeToNew);
+      if (isClass(typeToNew) == true) {
+        // Invoking a type  method
+        call->insertAtHead(new SymExpr(typeToNew->symbol));
 
-        insertBeforeMe->insertBefore(allocBlock);
-
-        allocBlock->insertAtTail(new CallExpr(PRIM_MOVE,   newTmp, allocCall));
-        allocBlock->insertAtTail(new CallExpr(PRIM_SETCID, newTmp));
-
-        normalize(allocBlock);
-
-        resolveBlockStmt(allocBlock);
+      } else {
+        // Invoking an instance method
+        call->insertAtHead(new SymExpr(newTmp));
+        call->insertAtHead(new SymExpr(newMT));
       }
-
-      call->insertAtHead(new SymExpr(newTmp));
-      call->insertAtHead(new SymExpr(newMT));
     }
 
     resolveExpr(call);
@@ -5268,6 +5264,8 @@ static void resolveNew(CallExpr* call) {
     if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
 
     } else if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "init") == 0) {
+
+    } else if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "_new") == 0) {
 
     } else {
       USR_FATAL(call, "invalid use of 'new' on %s", fn->name);

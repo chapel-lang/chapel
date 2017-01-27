@@ -36,9 +36,16 @@ enum InitBody {
   FOUND_BOTH
 };
 
+
+static void     buildClassAllocator(FnSymbol* fn, AggregateType* ct);
 static InitBody getInitCall(FnSymbol* fn);
 static void     phase1Analysis(BlockStmt* body, AggregateType* t);
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 void temporaryInitializerFixup(CallExpr* call) {
   if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
@@ -68,43 +75,75 @@ void temporaryInitializerFixup(CallExpr* call) {
   }
 }
 
-void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
-  InitBody bodyStyle = getInitCall(fn);
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-  if (bodyStyle != DID_NOT_FIND_INIT) {
-    phase1Analysis(fn->body, t);
-
-    // Insert analysis of initCall here
-    if (bodyStyle == FOUND_SUPER_INIT && isRecord(t)) {
-      // Need to find and remove any and all super.init() statements if the
-      // type is a record, as they will not resolve (inheritance and records
-      // is still being ironed out).
-
-    }
+void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    USR_FATAL(fn, "an initializer cannot be declared without parentheses");
   } else {
-    // Adds default initialization of all fields and an argumentless
-    // super.init() call at the beginning of the body for Phase-2-only
-    // initializers.
-    SET_LINENO(fn->body);
-    // LYDIA NOTE (11/30/16): This would be a really good spot for a re-entrant
-    // compiler call on what I'd like to create, which is a much simpler
-    // CallExpr, instead of what I have to do today, which is insert a fragile
-    // copy of the super.init() calls I check for, entirely dependent on how
-    // such a user call gets transformed by the preceding passes.
-    CallExpr* superPortion = new CallExpr(".", new SymExpr(fn->_this), new_StringSymbol("super"));
-    SymExpr* initPortion = new SymExpr(new_StringSymbol("init"));
-    CallExpr* base = new CallExpr(".", superPortion, initPortion);
-    CallExpr* superCall = new CallExpr(base);
-    fn->body->insertAtHead(superCall);
-    phase1Analysis(fn->body, t);
-    if (isRecord(t)) {
-      // We haven't finalized what inheritance means for records yet.  Until we
-      // do, this call (while necessary for the divide between the phases),
-      // won't resolve.
-      superCall->remove();
+    InitBody bodyStyle = getInitCall(fn);
+
+    if (isClass(ct) == true) {
+      buildClassAllocator(fn, ct);
+      fn->addFlag(FLAG_INLINE);
+    }
+
+    if (bodyStyle != DID_NOT_FIND_INIT) {
+      phase1Analysis(fn->body, ct);
+
+      // Insert analysis of initCall here
+      if (bodyStyle == FOUND_SUPER_INIT && isRecord(ct)) {
+        // Need to find and remove any and all super.init() statements
+        // if the type is a record, as they will not resolve (inheritance
+        // and records is still being ironed out).
+
+      }
+
+    } else {
+      // Adds default initialization of all fields and an argumentless
+      // super.init() call at the beginning of the body for Phase-2-only
+      // initializers.
+      SET_LINENO(fn->body);
+
+      // LYDIA NOTE (11/30/16): This would be a really good spot for a
+      // re-entrant compiler call on what I'd like to create, which is
+      // a much simpler CallExpr, instead of what I have to do today,
+      // which is insert a fragile copy of the super.init() calls I
+      // check for, entirely dependent on how such a user call gets
+      // transformed by the preceding passes.
+      CallExpr* superPortion = new CallExpr(".",
+                                            new SymExpr(fn->_this),
+                                            new_StringSymbol("super"));
+      SymExpr*  initPortion  = new SymExpr(new_StringSymbol("init"));
+      CallExpr* base         = new CallExpr(".", superPortion, initPortion);
+      CallExpr* superCall    = new CallExpr(base);
+
+      fn->body->insertAtHead(superCall);
+
+      phase1Analysis(fn->body, ct);
+
+      if (isRecord(ct)) {
+        // We haven't finalized what inheritance means for records yet.
+        // Until we do, this call (while necessary for the divide between
+        // the phases), won't resolve.
+        superCall->remove();
+      }
+    }
+
+    // Insert phase 2 analysis here
+
+    if (isClass(ct) == false) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
+    } else {
+      Symbol* voidType = dtVoid->symbol;
+
+      fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
     }
   }
-  // Insert phase 2 analysis here
 }
 
 // Returns true only if what was provided was a SymExpr whose symbol is "this"
@@ -545,4 +584,77 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
   // encountered
 
   return false;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Consider                                                                    *
+*                                                                             *
+*   var x = new MyClass(10, 20, 30);                                          *
+*                                                                             *
+* and assume MyClass defines an initializer that accepts 3 integers.          *
+*                                                                             *
+* The goal is to allocate an instance of MyClass on the heap and then invoke  *
+* the appropriate init method on this instance.                               *
+*                                                                             *
+* This is implemented by defining an internal "type method" on MyClass that   *
+* performs the allocation and then invokes the init method on the resulting   *
+* instance.  Note that there is a distinct _new method for every init         *
+* method.                                                                     *
+*                                                                             *
+************************************** | *************************************/
+
+static void buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
+  SET_LINENO(ct);
+
+  FnSymbol*  fn          = new FnSymbol("_new");
+  BlockStmt* body        = fn->body;
+  ArgSymbol* type        = new ArgSymbol(INTENT_BLANK, "t", ct);
+  VarSymbol* newInstance = newTemp("instance", ct);
+  CallExpr*  allocCall   = callChplHereAlloc(ct);
+  CallExpr*  initCall    = new CallExpr("init", gMethodToken, newInstance);
+
+  type->addFlag(FLAG_TYPE_VARIABLE);
+
+  fn->addFlag(FLAG_METHOD);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+
+  fn->retExprType = new BlockStmt(new SymExpr(ct->symbol), BLOCK_SCOPELESS);
+
+  // Add the formal that provides the type for the type method
+  fn->insertFormalAtTail(type);
+
+  //
+  // Walk the formals to the init method
+  // Ignore _mt and _this
+  //   1) add a corresponding formal to the new type method
+  //   2) add that formal to the call to "init"
+  //
+  int count = 1;
+
+  for_formals(formal, initMethod) {
+    // Ignore _mt and this
+    if (count >= 3) {
+      ArgSymbol* arg = formal->copy();
+
+      fn->insertFormalAtTail(arg);
+      initCall->insertAtTail(new SymExpr(arg));
+    }
+
+    count = count + 1;
+  }
+
+  // Construct the body
+  body->insertAtTail(new DefExpr(newInstance));
+
+  body->insertAtTail(new CallExpr(PRIM_MOVE,   newInstance, allocCall));
+  body->insertAtTail(new CallExpr(PRIM_SETCID, newInstance));
+
+  body->insertAtTail(initCall);
+
+  body->insertAtTail(new CallExpr(PRIM_RETURN, newInstance));
+
+
+  // Insert the definition in to the tree
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 }

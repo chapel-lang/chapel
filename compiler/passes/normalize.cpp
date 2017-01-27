@@ -1866,16 +1866,11 @@ static void updateInitMethod(FnSymbol* fn) {
   Symbol* _this = fn->getFormal(2);
 
   if (AggregateType* ct = toAggregateType(_this->type)) {
-    if (fn->hasFlag(FLAG_NO_PARENS)) {
-      USR_FATAL(fn, "an initializer cannot be declared without parentheses");
-    }
-
     handleInitializerRules(fn, ct);
-
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
 
   } else if (_this->type == dtUnknown) {
     INT_FATAL(fn, "'this' argument has unknown type");
+
   } else {
     INT_FATAL(fn, "initializer on non-class type");
   }
