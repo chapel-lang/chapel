@@ -167,7 +167,9 @@ class ArrayViewSliceArr: BaseArr {
     return privDom.dsiLocalSubdomain();
   }
 
-  proc dsiSupportsPrivatization() param return true;
+  // Don't want to privatize a DefaultRectangular, so pass the query on to
+  // the wrapped array
+  proc dsiSupportsPrivatization() param return _ArrInstance.dsiSupportsPrivatization();
 
   proc dsiGetPrivatizeData() {
     return (_DomPid, dom, _ArrPid, _ArrInstance);
