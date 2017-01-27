@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-#include "AstVisitorTraverse.h"
-
 #include "errorHandling.h"
+
+#include "AstVisitorTraverse.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
@@ -27,83 +27,49 @@
 
 #include <stack>
 
-struct TryInfo {
-  VarSymbol*   tempError;
-  LabelSymbol* catches;
-  TryStmt*     tryStmt;
-};
-
 class ErrorHandlingVisitor : public AstVisitorTraverse {
+  struct TryInfo {
+    VarSymbol*   tempError;
+    LabelSymbol* catches;
+    TryStmt*     tryStmt;
+  };
+
+  struct ErrorCond {
+    DefExpr*  defErrorExists;
+    CallExpr* setErrorExists;
+    CondStmt* checkError;
+  };
+
+  VarSymbol*          tempError;
   std::stack<TryInfo> tryStack;
 
   virtual bool enterTryStmt (TryStmt*  node);
   virtual void exitTryStmt  (TryStmt*  node);
   virtual bool enterCallExpr(CallExpr* node);
+
+private:
+  static ErrorCond ifErrorThen(VarSymbol* tempError, Stmt* thenStmt);
+  static void insertErrorCond(CallExpr* node, ErrorCond errorCond);
+  static void haltOrPropagateError(BlockStmt* haltOrProp, FnSymbol* parentFn,
+                                   VarSymbol* tempError, TryStmt* tryStmt);
 };
-
-// TODO: need callsite for SET_LINENO
-static void haltOrPropagateError(BlockStmt* haltOrProp, FnSymbol* parentFn,
-                                 VarSymbol* tempError, TryStmt* tryStmt) {
-  bool halt;
-  if (parentFn->throwsError()) {
-    if (tryStmt) {
-      halt = tryStmt->tryBang();
-    } else {
-      // TODO: strict mode, throws without try
-      halt = false;
-    }
-  } else {
-    // TODO: strict mode, propagating try without throws
-    halt = true;
-  }
-
-  if (halt) {
-    Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
-                          new_CStringSymbol("uncaught error"));
-    haltOrProp->insertAtTail(haltOnError);
-  } else {
-    LabelSymbol* label = parentFn->getOrCreateEpilogueLabel();
-    INT_ASSERT(label); // error handling needs an epilogue label
-
-    DefExpr* outErrorExpr = toDefExpr(parentFn->formals.last());
-    Symbol*  outError     = outErrorExpr->sym;
-
-    Expr* castError  = new CallExpr(PRIM_CAST, dtObject->symbol, tempError);
-    Expr* setError   = new CallExpr(PRIM_MOVE, outError, castError);
-    Expr* gotoReturn = new GotoStmt(GOTO_RETURN, label);
-
-    haltOrProp->insertAtTail(setError);
-    haltOrProp->insertAtTail(gotoReturn);
-  }
-}
-
-static void ifErrorExists(Expr* insert, VarSymbol* tempError, Stmt* thenStmt) {
-  CallExpr*  errorExists     = new CallExpr(PRIM_NOTEQUAL, tempError, gNil);
-  VarSymbol* tempErrorExists = newTemp("errorExists", dtBool);
-
-  DefExpr* defErrorExists = new DefExpr(tempErrorExists);
-  Expr*    setErrorExists = new CallExpr(PRIM_MOVE,
-                              tempErrorExists, errorExists);
-  Expr*    checkError     = new CondStmt(new SymExpr(tempErrorExists),
-                              thenStmt);
-
-  insert        ->getStmtExpr()->insertAfter(defErrorExists);
-  defErrorExists->getStmtExpr()->insertAfter(setErrorExists);
-  setErrorExists->getStmtExpr()->insertAfter(checkError);
-}
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
   SET_LINENO(node);
+  VarSymbol* tempError;
+  if (tryStack.empty()) {
+    tempError = newTemp("error", dtObject);
+  } else {
+    tempError = tryStack.top().
 
-  VarSymbol*   tempError = newTemp("error", dtObject);
-  LabelSymbol* catches   = new LabelSymbol("catches");
-  BlockStmt*   tryBody   = node->body();
+  LabelSymbol* catches   = new LabelSymbol("catches" + tryStack.size());
+  TryInfo      info      = {tempError, catches, node};
 
+  tryStack.push(info);
+
+  BlockStmt* tryBody = node->body();
   tryBody->insertAtHead(new DefExpr(tempError));
   tryBody->insertAtTail(new DefExpr(catches));
-
-  TryInfo info = {tempError, catches, node};
-  tryStack.push(info);
 
   return true;
 }
@@ -123,7 +89,11 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
   // TODO: create catches
   BlockStmt* catchesBlock = new BlockStmt(haltOrProp);
 
-  ifErrorExists(tryBody, tempError, catchesBlock);
+  ErrorCond errorCond = ifErrorThen(tempError, catchesBlock);
+  tryBody->insertAtTail(errorCond.defErrorExists);
+  tryBody->insertAtTail(errorCond.setErrorExists);
+  tryBody->insertAtTail(errorCond.checkError);
+
   haltOrPropagateError(haltOrProp, tryBody->getFunction(),
     tempError, info.tryStmt);
 
@@ -144,7 +114,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
         node->insertAtTail(tempError);
 
-        ifErrorExists(node, tempError, gotoCatches);
+        insertErrorCond(node, ifErrorThen(tempError, gotoCatches));
       } else {
         VarSymbol* tempError  = newTemp("error", dtObject);
         BlockStmt* haltOrProp = new BlockStmt();
@@ -152,7 +122,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         node->getStmtExpr()->insertBefore(new DefExpr(tempError));
         node->insertAtTail(tempError);
 
-        ifErrorExists(node, tempError, haltOrProp);
+        insertErrorCond(node, ifErrorThen(tempError, haltOrProp));
+
         haltOrPropagateError(haltOrProp, node->getFunction(), tempError, NULL);
       }
     }
@@ -185,6 +156,131 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
+ErrorHandlingVisitor::ErrorCond ErrorHandlingVisitor::ifErrorThen(
+    VarSymbol* tempError, Stmt* thenStmt) {
+
+  CallExpr*  errorExists     = new CallExpr(PRIM_NOTEQUAL, tempError, gNil);
+  VarSymbol* tempErrorExists = newTemp("errorExists", dtBool);
+
+  DefExpr*  defErrorExists = new DefExpr(tempErrorExists);
+  CallExpr* setErrorExists = new CallExpr(PRIM_MOVE,
+                               tempErrorExists, errorExists);
+  CondStmt* checkError     = new CondStmt(new SymExpr(tempErrorExists),
+                               thenStmt);
+
+  ErrorCond ret = {defErrorExists, setErrorExists, checkError};
+  return ret;
+}
+
+void ErrorHandlingVisitor::insertErrorCond(CallExpr* node, ErrorCond errorCond) {
+  // insert in reverse order
+  node->getStmtExpr()->insertAfter(errorCond.checkError);
+  node->getStmtExpr()->insertAfter(errorCond.defErrorExists);
+  node->getStmtExpr()->insertAfter(errorCond.setErrorExists);
+}
+
+// TODO: need callsite for SET_LINENO
+void ErrorHandlingVisitor::UnhandledErrorInsideTry(BlockStmt* haltOrProp,
+    FnSymbol* parentFn, TryInfo info) {
+
+  VarSymbol* tempError = info.tempError;
+  TryStmt* tryStmt = info.tryStmt;
+
+  bool tryBang = tryStmt->tryBang();
+  if (!tryBang && !parentFn->throwsError())
+    compilerError("no catch-all for try in function that does not throw");
+
+  if (parentFn->throwsError()) {
+    halt = tryStmt->tryBang();
+  } else {
+    // TODO: strict mode, propagating try without throws
+    halt = true;
+  }
+
+  if (halt) {
+    Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
+                          new_CStringSymbol("uncaught error"));
+    haltOrProp->insertAtTail(haltOnError);
+  } else {
+    LabelSymbol* label = parentFn->getOrCreateEpilogueLabel();
+    INT_ASSERT(label); // error handling needs an epilogue label
+
+    DefExpr* outErrorExpr = toDefExpr(parentFn->formals.last());
+    Symbol*  outError     = outErrorExpr->sym;
+
+    Expr* castError  = new CallExpr(PRIM_CAST, dtObject->symbol, tempError);
+    Expr* setError   = new CallExpr(PRIM_MOVE, outError, castError);
+    Expr* gotoReturn = new GotoStmt(GOTO_RETURN, label);
+
+    haltOrProp->insertAtTail(setError);
+    haltOrProp->insertAtTail(gotoReturn);
+  }
+}
+
+// TODO: need callsite for SET_LINENO
+void ErrorHandlingVisitor::UnhandledErrorOutsideTry(BlockStmt* haltOrProp,
+    FnSymbol* parentFn, VarSymbol* tempError) {
+
+  bool halt;
+  if (parentFn->throwsError()) {
+    // TODO: strict mode, throws without try
+    halt = false;
+  } else {
+    // TODO: strict mode, propagating try without throws
+    halt = true;
+  }
+
+  if (halt) {
+    Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
+                          new_CStringSymbol("uncaught error"));
+    haltOrProp->insertAtTail(haltOnError);
+  } else {
+    LabelSymbol* label = parentFn->getOrCreateEpilogueLabel();
+    INT_ASSERT(label); // error handling needs an epilogue label
+
+    DefExpr* outErrorExpr = toDefExpr(parentFn->formals.last());
+    Symbol*  outError     = outErrorExpr->sym;
+
+    Expr* castError  = new CallExpr(PRIM_CAST, dtObject->symbol, tempError);
+    Expr* setError   = new CallExpr(PRIM_MOVE, outError, castError);
+    Expr* gotoReturn = new GotoStmt(GOTO_RETURN, label);
+
+    haltOrProp->insertAtTail(setError);
+    haltOrProp->insertAtTail(gotoReturn);
+  }
+}
+
+// SOURCE
+void ErrorHandlingVisitor::haltOrPropagateError(BlockStmt* haltOrProp,
+    FnSymbol* parentFn, VarSymbol* tempError, TryStmt* tryStmt) {
+
+  bool halt;
+  if (parentFn->throwsError()) {
+    halt = tryStmt->tryBang();
+  } else {
+    // TODO: strict mode, propagating try without throws
+    halt = true;
+  }
+
+  if (halt) {
+    Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
+                          new_CStringSymbol("uncaught error"));
+    haltOrProp->insertAtTail(haltOnError);
+  } else {
+    LabelSymbol* label = parentFn->getOrCreateEpilogueLabel();
+    INT_ASSERT(label); // error handling needs an epilogue label
+
+    DefExpr* outErrorExpr = toDefExpr(parentFn->formals.last());
+    Symbol*  outError     = outErrorExpr->sym;
+
+    Expr* castError  = new CallExpr(PRIM_CAST, dtObject->symbol, tempError);
+    Expr* setError   = new CallExpr(PRIM_MOVE, outError, castError);
+    Expr* gotoReturn = new GotoStmt(GOTO_RETURN, label);
+
+    haltOrProp->insertAtTail(setError);
+    haltOrProp->insertAtTail(gotoReturn);
+  }
+}
 // TODO: dtObject should be dtError, but we don't have that right now
 void lowerErrorHandling() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
