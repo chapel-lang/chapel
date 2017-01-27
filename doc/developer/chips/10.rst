@@ -22,6 +22,7 @@ Outline
  * `Rationale`_: The Problems Associated With Constructors
  * `Compiler Generated Initializers`_
  * `Initializer Naming`_
+ * `How are Initializers Invoked`_
  * `Defining the Initializer Body`_
 
    - `Phase 1 of Initialization`_
@@ -34,6 +35,7 @@ Outline
  * `Implementation Strategy, Misc.`_
  * `Noinit`_
  * `Copy Initializers`_
+ * `Deinitialization`_
  * `Summary`_
 
 
@@ -95,6 +97,22 @@ name of an initializer method to ``init`` for all types – this name is succinc
 and does not vary, meaning that modifications to the type name will be less
 painful to perform.  Similarly and for consistency, the destructor name will be
 updated to ``deinit``.
+
+
+How are Initializers Invoked?
++++++++++++++++++++++++++++++
+
+A `proc init` is an initializer that is called by using the `new` syntax.
+It is an compilation error to call an `init` directly.
+
+In certain cases, the compiler adds calls to initializers. In particular,
+a statement such as `var a:MyRecord;`, where `MyRecord` is a record type,
+will invoke the zero-arguments initializer for `MyRecord` in the process
+of creating the variable `a`.
+
+The compiler can add calls to copy-initializers in certain cases, such as
+when initializing a variable with another variable (e.g. `var a = b`) or
+when using the `in` argument intent. See also `Copy Initializers`_.
 
 Defining the Initializer Body
 +++++++++++++++++++++++++++++
@@ -508,6 +526,56 @@ For more details on when the copy initializer would be called, please refer to
 
 .. _CHIP 13 - When Do Records and Array Copies Occur:
    https://github.com/chapel-lang/chapel/blob/master/doc/developer/chips/13.rst
+
+
+Deinitialization
+++++++++++++++++
+
+Records and classes can specify actions to take when a variable of that type is
+deinitialized. Record variables are deinitialized when they go out of scope and
+class variables are deinitialized when `delete` is called on them.
+
+To specify additional actions that occur upon deinitialization, specify a `proc
+deinit()` method. This method must have zero arguments and cannot be called
+directly. If a type does not specify a `proc deinit()` method, the compiler
+will generate one.
+
+No matter whether the `deinit` method is compiler generated or user-defined,
+the compiler will ensure that in the process of deinitialization, all fields of
+record type are deinitialized. Additionally, the compiler will ensure that
+parent `deinit` methods are called in the case of inherited classes.
+
+The expected use-case for the `deinit` method is to call `delete` on
+fields of class type, when appropriate. It is the responsibility of the
+class designer to `delete` fields when appropriate. The compiler will not
+automatically add `delete` calls for fields of class type.
+
+Limitations
+***********
+
+It is an error for a `deinit` method to make a virtual method call, including
+by passing `this` to another function or method that in turn makes a virtual
+method call.
+
+However, when a class inherits from another class, its `deinit` method can
+refer to any field in that class or its parent classes.
+
+The exact details of this limitation are a work in progress.
+
+Order of deinitialization
+*************************
+
+Suppose a class ("Child") inherits from another class ("Parent").  When a
+variable of type Child is deinitialized, the compiler will arrange to call the
+`deinit` method for both Child and Parent. It will call the `deinit` method for
+Child first. Since fields can be used in the `deinit` methods, the fields of a
+given class will only be deinitialized after the `deinit` method for that class
+is run.
+
+This proposal does not define the de-initialization order of fields within a
+class. However note that when one field uses another - such as when an array is
+declared over a domain in another field - the field declared later (the array)
+would need to be de-initialized first.
 
 Summary
 +++++++
