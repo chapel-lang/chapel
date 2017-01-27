@@ -25,8 +25,8 @@
 #endif
 
 #include "resolution.h"
+
 #include "astutil.h"
-#include "stlUtil.h"
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
@@ -40,19 +40,21 @@
 #include "passes.h"
 #include "resolveIntents.h"
 #include "scopeResolve.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "TryStmt.h"
-#include "WhileStmt.h"
-#include "../ifa/prim_data.h"
 #include "view.h"
+#include "WhileStmt.h"
+
+#include "../ifa/prim_data.h"
 
 #include <inttypes.h>
 #include <map>
 #include <sstream>
-#include <vector>
 #include <string>
+#include <vector>
 
 // Allow disambiguation tracing to be controlled by the command-line option
 // --explain-verbose.
@@ -1304,6 +1306,7 @@ resolveFormals(FnSymbol* fn) {
           convertAtomicFormalTypeToRef(formal, fn) ||
           formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
           (formal == fn->_this &&
+           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
            (isUnion(formal->type) ||
             isRecord(formal->type)))) {
         makeRefType(formal->type);
@@ -4113,7 +4116,9 @@ static void findNonTaskFnParent(CallExpr* call,
 }
 
 static bool isConstructorLikeFunction(FnSymbol* fn) {
-  return fn->hasFlag(FLAG_CONSTRUCTOR) || !strcmp(fn->name, "initialize");
+  return fn->hasFlag(FLAG_CONSTRUCTOR)  == true  ||
+         strcmp(fn->name, "init")       ==    0  ||
+         strcmp(fn->name, "initialize") ==    0;
 }
 
 // Is 'call' in a constructor or in initialize()?
@@ -5244,13 +5249,16 @@ static void resolveMove(CallExpr* call) {
 }
 
 
-// Some new expressions are converted in normalize().  For example, a call to a
-// type function is resolved at this point.
-// The syntax supports calling the result of a type function as a constructor,
-// but this is not fully implemented.
-static void
-resolveNew(CallExpr* call)
-{
+/************************************* | **************************************
+*                                                                             *
+* Some new expressions are converted in normalize().  For example, a call to  *
+* a type function is resolved at this point.                                  *
+* The syntax supports calling the result of a type function as a constructor, *
+* but this is not fully implemented.                                          *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveNew(CallExpr* call) {
   // This is a 'new' primitive
   // we expect the 1st argument to be a type
   //   or a partial call to get the type
@@ -5267,9 +5275,12 @@ resolveNew(CallExpr* call)
   if (CallExpr* subCall = toCallExpr(call->get(1))) {
     // Handle e.g. 'new' (call (partial) R2 _mt this) call_tmp
     // which comes up with nested classes (e.g. R2 is a nested class type)
-    if (SymExpr* se = toSymExpr(subCall->baseExpr))
-      if (subCall->partialTag)
+    if (SymExpr* se = toSymExpr(subCall->baseExpr)) {
+      if (subCall->partialTag) {
         toReplace = se;
+      }
+    }
+
   } else if (SymExpr* se = toSymExpr(call->get(1))) {
     // Handle e.g. 'new' C arg
     toReplace = se;
@@ -5284,10 +5295,16 @@ resolveNew(CallExpr* call)
     if (Type* ty = resolveTypeAlias(toReplace)) {
       if (AggregateType* ct = toAggregateType(ty)) {
         if (ct->initializerStyle == DEFINES_INITIALIZER) {
-          toReplace->replace(new UnresolvedSymExpr("init"));
+          const char* name = (isClass(ct) == true) ? "_new" : "init";
+
+          toReplace->replace(new UnresolvedSymExpr(name));
+
           initCall = true;
+
         } else {
-          toReplace->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
+          FnSymbol* ctInit = ct->defaultInitializer;
+
+          toReplace->replace(new UnresolvedSymExpr(ctInit->name));
         }
       }
     }
@@ -5295,72 +5312,84 @@ resolveNew(CallExpr* call)
     // 2: move the 1st argument into the baseExpr
     // 3: make it a normal call and not a PRIM_NEW
     Expr* arg = call->get(1);
+
     arg->remove();
+
     call->primitive = NULL;
-    call->baseExpr = arg;
+    call->baseExpr  = arg;
+
     parent_insert_help(call, call->baseExpr);
 
     if (initCall) {
       // 4: insert the allocation for the instance and pass that in as an
       // argument if we're making a call to an initializer
-      Type* typeToNew = toReplace->symbol()->typeInfo();
-      VarSymbol* new_temp = newTemp("new_temp", typeToNew);
+      Type*      typeToNew = toReplace->symbol()->typeInfo();
+      VarSymbol* newTmp    = newTemp("new_temp", typeToNew);
+
+      VarSymbol* newMT     = newTemp("_mt",      dtMethodToken);
+
       if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
-        USR_FATAL(call, "Sorry, new style initializers don't work with generics yet.  Stay tuned!");
+        USR_FATAL(call,
+                  "Sorry, new style initializers don't work with "
+                  "generics yet.  Stay tuned!");
       }
-      DefExpr* def = new DefExpr(new_temp);
-      Expr* insertBeforeMe = ((!isBlockStmt(call->parentExpr)) ?
-                              call->parentExpr : call);
+
+      DefExpr* def            = new DefExpr(newTmp);
+      Expr*    insertBeforeMe = NULL;
+
+      if (isBlockStmt(call->parentExpr) == true) {
+        insertBeforeMe = call;
+
+      } else {
+        insertBeforeMe = call->parentExpr;
+      }
+
       insertBeforeMe->insertBefore(def);
+
       resolveExpr(def);
 
-      if (!isRecord(typeToNew) && !isUnion(typeToNew)) {
-        BlockStmt* allocCallBlock = new BlockStmt();
+      if (isClass(typeToNew) == true) {
+        // Invoking a type  method
+        call->insertAtHead(new SymExpr(typeToNew->symbol));
 
-        CallExpr* innerCall = callChplHereAlloc(typeToNew);
-        CallExpr* allocCall = new CallExpr(PRIM_MOVE, new_temp,
-                                           innerCall);
-        insertBeforeMe->insertBefore(allocCallBlock);
-        allocCallBlock->insertAtTail(allocCall);
-
-        CallExpr* setIdCall = new CallExpr(PRIM_SETCID, new_temp);
-        allocCallBlock->insertAtTail(setIdCall);
-        normalize(allocCallBlock);
-        resolveBlockStmt(allocCallBlock);
+      } else {
+        // Invoking an instance method
+        call->insertAtHead(new SymExpr(newTmp));
+        call->insertAtHead(new SymExpr(newMT));
       }
-      call->insertAtTail(new NamedExpr("meme", new SymExpr(new_temp)));
     }
 
-    // Now finish resolving it, since we are after all in
-    // resolveNew.
     resolveExpr(call);
   }
 
   // Do some error checking
-  if (FnSymbol* fn = call->isResolved())
-  {
-    // If the function is a constructor, OK
-    if (fn->hasFlag(FLAG_CONSTRUCTOR))
-      return;
-    else // otherwise, issue an error
+  if (FnSymbol* fn = call->isResolved()) {
+    if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
+
+    } else if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "init") == 0) {
+
+    } else if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "_new") == 0) {
+
+    } else {
       USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
-  }
+    }
 
-  if (call->get(1)) {
-    Expr* arg = call->get(1);
-
-    if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
-      USR_FATAL(call, "invalid use of 'new' on %s", urse->unresolved);
-      return;
-    } else if (CallExpr* subCall = toCallExpr(arg)) {
-      if (FnSymbol* fn = subCall->isResolved()) {
-        USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
+  } else {
+    if (Expr* arg = call->get(1)) {
+      if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
+        USR_FATAL(call, "invalid use of 'new' on %s", urse->unresolved);
         return;
+
+      } else if (CallExpr* subCall = toCallExpr(arg)) {
+        if (FnSymbol* fn = subCall->isResolved()) {
+          USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
+          return;
+        }
       }
     }
-  }
 
-  USR_FATAL(call, "invalid use of 'new'");
+    USR_FATAL(call, "invalid use of 'new'");
+  }
 }
 
 static void
@@ -8475,8 +8504,11 @@ resolveFns(FnSymbol* fn) {
   // actually execute the body of the loop that invoked the iterator. Note that
   // for nested loops with a single yield, only the inner most loop is marked.
   //
-  if (isFollowerIterator(fn) || isStandaloneIterator(fn) || isVecIterator(fn)) {
+  if (isFollowerIterator(fn)   ||
+      isStandaloneIterator(fn) ||
+      isVecIterator(fn)) {
     std::vector<CallExpr*> callExprs;
+
     collectCallExprs(fn->body, callExprs);
 
     for_vector(CallExpr, call, callExprs) {
@@ -8501,14 +8533,14 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
-  if (fn->hasFlag(FLAG_CONSTRUCTOR) && !strcmp(fn->name, "init")) {
+  if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "init") == 0) {
     // Lydia NOTE: Quick fix to allow our new initializers to recursively call
     // themselves.  We know their return type already, pretending we don't just
     // leads to errors.  Ideally, we'll remove this code when we fix our
     // compiler's handling of recursive calls when the function doesn't declare
     // its return type.
     for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_IS_MEME)) {
+      if (formal->hasFlag(FLAG_ARG_THIS)) {
         fn->retType = formal->type;
       }
     }
@@ -8523,9 +8555,13 @@ resolveFns(FnSymbol* fn) {
 
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     AggregateType* ct = toAggregateType(fn->retType);
-    if (!ct)
+
+    if (!ct) {
       INT_FATAL(fn, "Constructor has no class type");
+    }
+
     setScalarPromotionType(ct);
+
     if (!developer) {
       fixTypeNames(ct);
     }
@@ -8538,7 +8574,9 @@ resolveFns(FnSymbol* fn) {
   //
   if (fn->retTag != RET_PARAM) {
     Vec<CallExpr*> casts;
+
     insertCasts(fn->body, fn, casts);
+
     forv_Vec(CallExpr, cast, casts) {
       resolveCallAndCallee(cast, true);
     }
@@ -8551,8 +8589,12 @@ resolveFns(FnSymbol* fn) {
   // Resolve base class type constructors as well.
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
-      if (toAggregateType(parent) && parent != dtValue && parent != dtObject && parent->defaultTypeConstructor) {
+      if (isAggregateType(parent)        == true     &&
+          parent                         != dtValue  &&
+          parent                         != dtObject &&
+          parent->defaultTypeConstructor != NULL) {
         resolveFormals(parent->defaultTypeConstructor);
+
         if (resolvedFormals.set_in(parent->defaultTypeConstructor)) {
           resolveFns(parent->defaultTypeConstructor);
         }
@@ -8564,6 +8606,7 @@ resolveFns(FnSymbol* fn) {
         if (AggregateType* fct = toAggregateType(field->type)) {
           if (fct->defaultTypeConstructor) {
             resolveFormals(fct->defaultTypeConstructor);
+
             if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
               resolveFns(fct->defaultTypeConstructor);
             }
@@ -8572,7 +8615,8 @@ resolveFns(FnSymbol* fn) {
       }
     }
 
-    // This instantiates the default constructor for the corresponding type constructor.
+    // This instantiates the default constructor
+    // for  the corresponding type constructor.
     instantiate_default_constructor(fn);
 
     //
@@ -8582,20 +8626,24 @@ resolveFns(FnSymbol* fn) {
       if (!ct->destructor &&
           !ct->symbol->hasFlag(FLAG_REF) &&
           !isTupleContainingOnlyReferences(ct)) {
-        VarSymbol* tmp = newTemp(ct);
-        CallExpr* call = new CallExpr("chpl__deinit", gMethodToken, tmp);
+        BlockStmt* block = new BlockStmt();
+        VarSymbol* tmp   = newTemp(ct);
+        CallExpr*  call  = new CallExpr("chpl__deinit", gMethodToken, tmp);
 
         // In case resolveCall drops other stuff into the tree ahead of the
         // call, we wrap everything in a block for safe removal.
-        BlockStmt* block = new BlockStmt();
+
         block->insertAtHead(call);
 
         fn->insertAtHead(block);
         fn->insertAtHead(new DefExpr(tmp));
+
         resolveCallAndCallee(call);
+
         ct->destructor = call->isResolved();
 
         block->remove();
+
         tmp->defPoint->remove();
       }
     }
@@ -8615,22 +8663,22 @@ resolveFns(FnSymbol* fn) {
   //
   if (fn->hasFlag(FLAG_METHOD) && fn->_this != NULL) {
     Type* thisType = fn->_this->type->getValType();
+    bool  found    = false;
+
     INT_ASSERT(thisType);
     INT_ASSERT(thisType != dtUnknown);
-    // add it to thisType->methods if it's not already there
-    // TODO: consider making Type::methods into a set
-    bool found = false;
+
     forv_Vec(FnSymbol, method, thisType->methods) {
       if (method == fn) {
         found = true;
         break;
       }
     }
-    if (!found)
+
+    if (found == false) {
       thisType->methods.add(fn);
+    }
   }
-
-
 }
 
 

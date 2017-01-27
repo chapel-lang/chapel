@@ -2352,7 +2352,7 @@ module ChapelArray {
           if newRange.low > r2.low {
             // not able to take enough spaces off the low end.  Take them
             // off the high end instead.
-            const spaceNeeded = r2.low - newRange.low;
+            const spaceNeeded = newRange.low - r2.low;
             newRange = r2.low..(newRange.high-spaceNeeded);
           }
           return newRange;
