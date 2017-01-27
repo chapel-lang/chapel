@@ -2142,9 +2142,6 @@ module DefaultRectangular {
     if debugDefaultDistBulkTransfer then
       chpl_debug_writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
 
-    for param dim in 1..rank do
-      if off(dim)!= viewDom.dsiDim(dim).first then return false;
-
     if blk(rank) != 1 then return false;
 
     for param dim in 1..(rank-1) by -1 do
