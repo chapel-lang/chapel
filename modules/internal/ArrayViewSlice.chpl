@@ -1,7 +1,29 @@
 class ArrayViewSliceArr: BaseArr {
   type eltType;  // see note on commented-out proc eltType below...
-  const dom;
-  const arr;
+
+  // TODO: Can we privatize upon creation of the array-view slice and cache
+  // the results?
+  const _DomPid;
+  const dom; // Seems like the compiler requires a field called 'dom'...
+
+  const _ArrPid;
+  const _ArrInstance;
+
+  inline proc privDom {
+    if _isPrivatized(dom) {
+      return chpl_getPrivatizedCopy(dom.type, _DomPid);
+    } else {
+      return dom;
+    }
+  }
+
+  inline proc arr {
+    if _isPrivatized(_ArrInstance) {
+      return chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid);
+    } else {
+      return _ArrInstance;
+    }
+  }
 
   proc idxType type return dom.idxType;
   proc rank param return arr.rank;
@@ -29,18 +51,18 @@ class ArrayViewSliceArr: BaseArr {
   // standard iterators
   //
   inline iter these() ref {
-    for i in dom do
+    for i in privDom do
       yield arr.dsiAccess(i);
   }
 
   inline iter these(param tag: iterKind) ref where tag == iterKind.standalone {
-    for i in dom.these(tag) do
+    for i in privDom.these(tag) do
       yield arr.dsiAccess(i);
   }
 
   inline iter these(param tag: iterKind) where tag == iterKind.leader {
     //    writeln("In sliceview leader");
-    for followThis in dom.these(tag) do {
+    for followThis in privDom.these(tag) do {
       //      writeln("yielding ", followThis);
       yield followThis;
     }
@@ -48,7 +70,7 @@ class ArrayViewSliceArr: BaseArr {
 
   inline iter these(param tag: iterKind, followThis) ref
     where tag == iterKind.follower {
-    for i in dom.these(tag, followThis) do
+    for i in privDom.these(tag, followThis) do
       yield arr.dsiAccess[i];
   }
 
@@ -56,12 +78,12 @@ class ArrayViewSliceArr: BaseArr {
   // standard I/O stuff
   //
   proc dsiSerialWrite(f) {
-    chpl_serialReadWriteRectangular(f, arr, dom);
+    chpl_serialReadWriteRectangular(f, arr, privDom);
   }
 
   inline proc checkBounds(i) {
     if boundsChecking then
-      if !dom.dsiMember(i) then
+      if !privDom.dsiMember(i) then
         halt("array index out of bounds: ", i);
   }
 
@@ -136,13 +158,26 @@ class ArrayViewSliceArr: BaseArr {
   // Local subdomain interface
   //
   proc dsiHasSingleLocalSubdomain() param
-    return dom.dsiHasSingleLocalSubdomain();
+    return privDom.dsiHasSingleLocalSubdomain();
 
   //
   // TODO: Is this correct in distributed memory?
   //
   proc dsiLocalSubdomain() {
-    return dom.dsiLocalSubdomain();
+    return privDom.dsiLocalSubdomain();
+  }
+
+  proc dsiSupportsPrivatization() param return true;
+
+  proc dsiGetPrivatizeData() {
+    return (_DomPid, dom, _ArrPid, _ArrInstance);
+  }
+
+  proc dsiPrivatize(privatizeData) {
+    return new ArrayViewSliceArr(eltType=this.eltType, _DomPid=privatizeData(1),
+                                 dom=privatizeData(2),
+                                 _ArrPid=privatizeData(3),
+                                 _ArrInstance=privatizeData(4));
   }
 }
 
