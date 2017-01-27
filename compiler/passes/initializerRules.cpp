@@ -89,6 +89,7 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
 
     if (isClass(ct) == true) {
       buildClassAllocator(fn, ct);
+      fn->addFlag(FLAG_INLINE);
     }
 
     if (bodyStyle != DID_NOT_FIND_INIT) {
