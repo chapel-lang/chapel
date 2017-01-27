@@ -30,7 +30,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-//#include "view.h"
 
 #include "resolveIntents.h"
 
@@ -40,8 +39,6 @@
 static int             explainInstantiationLine   = -2;
 static ModuleSymbol*   explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
-
-static bool evaluateWhereClause(FnSymbol* fn);
 
 static void
 explainInstantiation(FnSymbol* fn) {
@@ -686,20 +683,15 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 bool evaluateWhereClause(FnSymbol* fn, bool quiet) {
   if (fn->where) {
     whereStack.add(fn);
+
     resolveFormals(fn);
-    /*
-        printf("Before:\n");
-        list_view(fn->where);
-    */
+
     resolveBlockStmt(fn->where);
+
     whereStack.pop();
+
     SymExpr* se = toSymExpr(fn->where->body.last());
-    /*
-    printf("After:\n");
-    list_view(fn->where);
-    printf("last:\n");
-    list_view(fn->where->body.last());
-    */
+
     //
     // TODO: if we can't get rid of the early call to evaluate where
     // clause, perhaps this should return to an error in the late case
@@ -718,45 +710,13 @@ bool evaluateWhereClause(FnSymbol* fn, bool quiet) {
       //      printf("got false back\n");
       return false;
     }
-    if (se->symbol() != gTrue)
+    if (se->symbol() != gTrue) {
       USR_FATAL(fn->where, "invalid where clause: not true or false");
+    }
   }
   //  printf("got true back\n");
   return true;
 }
-
-/*
-static bool evaluateWhereClause(FnSymbol* fn) {
-  if (fn->where) {
-    whereStack.add(fn);
-
-    resolveFormals(fn);
-
-    resolveBlockStmt(fn->where);
-
-    whereStack.pop();
-
-    SymExpr* se = toSymExpr(fn->where->body.last());
-
-    if (se == NULL) {
-      USR_FATAL(fn->where, "invalid where clause");
-    }
-
-    if (se->symbol() == gFalse) {
-      return false;
-    }
-
-    if (se->symbol() != gTrue) {
-      USR_FATAL(fn->where, "invalid where clause");
-    }
-  }
-
-  return true;
-}
-*/
-
-
-
 
 
 
