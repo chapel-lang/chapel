@@ -1306,6 +1306,7 @@ resolveFormals(FnSymbol* fn) {
           convertAtomicFormalTypeToRef(formal, fn) ||
           formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
           (formal == fn->_this &&
+           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
            (isUnion(formal->type) ||
             isRecord(formal->type)))) {
         makeRefType(formal->type);
