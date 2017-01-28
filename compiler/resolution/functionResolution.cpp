@@ -2583,8 +2583,17 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
     }
   }
 
+  //
+  // If the candidate is an instantiation of a generic function,
+  // re-evaluate the where clause here in order to make sure it
+  // evaluates to true and to catch errors in it.  Ultimately, we'd
+  // like to do this for all concrete functions (instantiated or not),
+  // but at present, enabling it for them causes problems, perhaps
+  // because we're generating bogus where clauses on concrete
+  // functions today and getting away with it since they're ignored.
+  //
   if (currCandidate->fn->instantiatedFrom != NULL) {
-    if (!evaluateWhereClause(currCandidate->fn)) {
+    if (!evaluateWhereClause(currCandidate->fn, /*generic=*/false)) {
       return;
     }
   }
