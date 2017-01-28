@@ -7227,6 +7227,17 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
   type2 = toEnumType(e2->type);
   INT_ASSERT(type1 && type2);
 
+  // If our two enum types are different and we're doing == or !=, the
+  // answer should always be false, not based on the two enums'
+  // integer values.
+  if (type1 != type2 &&
+      (op == P_prim_equal || op == P_prim_notequal)) {
+    imm->const_kind = NUM_KIND_BOOL;
+    imm->num_index = BOOL_SIZE_SYS;
+    imm->v_bool = false;
+    return;
+  }
+
   // Loop over the enum values to find the int value of e1
   for_enums(constant, type1) {
     if (!get_int(constant->init, &count)) {
