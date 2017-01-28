@@ -28,11 +28,18 @@
 #include <stack>
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
+  virtual bool enterTryStmt (TryStmt*  node);
+  virtual void exitTryStmt  (TryStmt*  node);
+  virtual bool enterCallExpr(CallExpr* node);
+
+private:
   struct TryInfo {
     VarSymbol*   tempError;
     LabelSymbol* catches;
     TryStmt*     tryStmt;
   };
+
+  std::stack<TryInfo> tryStack;
 
   struct ErrorCond {
     DefExpr*  defErrorExists;
@@ -40,31 +47,25 @@ class ErrorHandlingVisitor : public AstVisitorTraverse {
     CondStmt* checkError;
   };
 
-  std::stack<TryInfo> tryStack;
+  struct Fallback {
+    bool       halt;
+    FnSymbol*  parentFn;
+    VarSymbol* tempError;
+  };
 
-  virtual bool enterTryStmt (TryStmt*  node);
-  virtual void exitTryStmt  (TryStmt*  node);
-  virtual bool enterCallExpr(CallExpr* node);
+  static ErrorCond ifErrorThen     (VarSymbol* tempError,
+                                    Stmt*      thenStmt);
 
-private:
-  static ErrorCond ifErrorThen        (VarSymbol* tempError,
-                                       Stmt*      thenStmt);
+  static void      insertErrorCond (CallExpr*  insert,
+                                    ErrorCond  errorCond);
 
-  static void      insertErrorCond    (CallExpr*  node,
-                                       ErrorCond  errorCond);
+  static Fallback  fallbackTry     (TryInfo    info);
 
-  static void      insertFallbackTry  (BlockStmt* insert,
-                                       TryInfo    info);
+  static Fallback  fallbackBare    (FnSymbol*  parentFn,
+                                    VarSymbol* tempError);
 
-  static void      insertFallbackBare (BlockStmt* insert,
-                                       FnSymbol*  parentFn,
-                                       VarSymbol* tempError);
-
-  static void      insertHalt         (BlockStmt* insert);
-
-  static void      insertSetAndReturn (BlockStmt* insert,
-                                       FnSymbol*  parentFn,
-                                       VarSymbol* tempError);
+  static void      insertFallback  (BlockStmt* insert,
+                                    Fallback   fallback);
 };
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
@@ -98,7 +99,8 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
 
   BlockStmt* fallbackBlock = new BlockStmt();
   catchesBlock->insertAtTail(fallbackBlock);
-  insertFallbackTry(fallbackBlock, info);
+
+  insertFallback(fallbackBlock, fallbackTry(info));
 
   tryBlock->remove();
   node    ->replace(tryBlock);
@@ -116,9 +118,9 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         TryInfo    info        = tryStack.top();
         VarSymbol* tempError   = info.tempError;
         GotoStmt*  gotoCatches = new GotoStmt(GOTO_ERROR_HANDLING,
-                                   info.catches);
+                                              info.catches);
 
-        node->getStmtExpr()->insertAfter(tempError);
+        node->insertAtTail(tempError);
 
         insertErrorCond(node, ifErrorThen(tempError, gotoCatches));
       } else {
@@ -126,10 +128,11 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         BlockStmt* fallbackBlock = new BlockStmt();
 
         node->getStmtExpr()->insertBefore(new DefExpr(tempError));
-        node->getStmtExpr()->insertAfter(tempError);
+        node->insertAtTail(tempError);
 
         insertErrorCond(node, ifErrorThen(tempError, fallbackBlock));
-        insertFallbackBare(fallbackBlock, node->getFunction(), tempError);
+        insertFallback(fallbackBlock,
+                       fallbackBare(node->getFunction(), tempError));
       }
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
@@ -147,7 +150,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       Expr* setError = new CallExpr(PRIM_MOVE, info.tempError, castError);
       throwBlock->insertAtTail(setError);
 
-      insertFallbackTry(throwBlock, info);
+      insertFallback(throwBlock, fallbackTry(info));
     } else {
       VarSymbol* tempError = newTemp("error", dtObject);
       Expr*      setError  = new CallExpr(PRIM_MOVE, tempError, castError);
@@ -155,7 +158,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       throwBlock->insertAtTail(new DefExpr(tempError));
       throwBlock->insertAtTail(setError);
 
-      insertFallbackBare(throwBlock, throwBlock->getFunction(), tempError);
+      insertFallback(throwBlock,
+                     fallbackBare(throwBlock->getFunction(), tempError));
     }
   }
   return true;
@@ -167,13 +171,18 @@ ErrorHandlingVisitor::ErrorCond ErrorHandlingVisitor::ifErrorThen(
   CallExpr*  errorExists     = new CallExpr(PRIM_NOTEQUAL, tempError, gNil);
   VarSymbol* tempErrorExists = newTemp("errorExists", dtBool);
 
-  DefExpr*  defErrorExists = new DefExpr(tempErrorExists);
-  CallExpr* setErrorExists = new CallExpr(PRIM_MOVE,
-                               tempErrorExists, errorExists);
-  CondStmt* checkError     = new CondStmt(new SymExpr(tempErrorExists),
-                               thenStmt);
+  DefExpr*   defErrorExists  = new DefExpr(tempErrorExists);
+  CallExpr*  setErrorExists  = new CallExpr(PRIM_MOVE, tempErrorExists,
+                                            errorExists);
+  CondStmt*  checkError      = new CondStmt(new SymExpr(tempErrorExists),
+                                            thenStmt);
 
-  ErrorCond ret = {defErrorExists, setErrorExists, checkError};
+  ErrorCond ret = {
+    .defErrorExists = defErrorExists,
+    .setErrorExists = setErrorExists,
+    .checkError     = checkError
+  };
+
   return ret;
 }
 
@@ -181,68 +190,74 @@ void ErrorHandlingVisitor::insertErrorCond(
     CallExpr* node, ErrorCond errorCond) {
 
   // insert in reverse order
-  node->getStmtExpr()->insertAfter(errorCond.checkError);
-  node->getStmtExpr()->insertAfter(errorCond.defErrorExists);
-  node->getStmtExpr()->insertAfter(errorCond.setErrorExists);
+  Expr* insert = node->getStmtExpr();
+  insert->insertAfter(errorCond.checkError);
+  insert->insertAfter(errorCond.defErrorExists);
+  insert->insertAfter(errorCond.setErrorExists);
 }
 
-void ErrorHandlingVisitor::insertFallbackTry(BlockStmt* insert, TryInfo info) {
+ErrorHandlingVisitor::Fallback ErrorHandlingVisitor::fallbackTry(TryInfo info) {
   // TODO: need callsite for SET_LINENO
-
-  TryStmt* tryStmt = info.tryStmt;
-  if (tryStmt->tryBang()) {
-    insertHalt(insert);
+  Fallback ret;
+  if (info.tryStmt->tryBang()) {
+    ret.halt      = true;
+    ret.parentFn  = NULL;
+    ret.tempError = NULL;
   } else {
-    FnSymbol* parentFn = tryStmt->getFunction();
-    insertSetAndReturn(insert, parentFn, info.tempError);
+    ret.halt      = false;
+    ret.parentFn  = info.tryStmt->getFunction();
+    ret.tempError = info.tempError;
   }
+
   // TODO: propagation of nested trys
   // set enclosing error and jump
+
+  return ret;
 }
 
-void ErrorHandlingVisitor::insertFallbackBare(BlockStmt* insert,
+ErrorHandlingVisitor::Fallback ErrorHandlingVisitor::fallbackBare(
     FnSymbol* parentFn, VarSymbol* tempError) {
-  // TODO: need callsite for SET_LINENO
 
-  bool halt;
+  // TODO: need callsite for SET_LINENO
+  Fallback ret;
   if (parentFn->throwsError()) {
     // TODO: strict mode, missing try
     // default mode, auto-propagate
-    halt = false;
+    ret.halt      = false;
+    ret.parentFn  = parentFn;
+    ret.tempError = tempError;
   } else {
     // TODO: strict mode, missing try!
     // default mode, auto-halt
-    halt = true;
+    ret.halt      = true;
+    ret.parentFn  = NULL;
+    ret.tempError = NULL;
   }
+  return ret;
+}
 
-  if (halt) {
-    insertHalt(insert);
+void ErrorHandlingVisitor::insertFallback(
+    BlockStmt* insert, Fallback fallback) {
+
+  if (fallback.halt) {
+    Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
+                                     new_CStringSymbol("uncaught error"));
+    insert->insertAtTail(haltOnError);
   } else {
-    insertSetAndReturn(insert, parentFn, tempError);
+    LabelSymbol* label = fallback.parentFn->getOrCreateEpilogueLabel();
+    INT_ASSERT(label); // error handling needs to jump to the epilogue label
+
+    DefExpr* outErrorExpr = toDefExpr(fallback.parentFn->formals.last());
+    Symbol*  outError     = outErrorExpr->sym;
+
+    Expr* castError  = new CallExpr(PRIM_CAST, dtObject->symbol,
+                                    fallback.tempError);
+    Expr* setError   = new CallExpr(PRIM_MOVE, outError, castError);
+    Expr* gotoReturn = new GotoStmt(GOTO_RETURN, label);
+
+    insert->insertAtTail(setError);
+    insert->insertAtTail(gotoReturn);
   }
-}
-
-void ErrorHandlingVisitor::insertHalt(BlockStmt* insert) {
-  Expr* haltOnError = new CallExpr(PRIM_RT_ERROR,
-                        new_CStringSymbol("uncaught error"));
-  insert->insertAtTail(haltOnError);
-}
-
-void ErrorHandlingVisitor::insertSetAndReturn(BlockStmt* insert,
-    FnSymbol* parentFn, VarSymbol* tempError) {
-
-  LabelSymbol* label = parentFn->getOrCreateEpilogueLabel();
-  INT_ASSERT(label); // error handling needs to jump to the epilogue label
-
-  DefExpr* outErrorExpr = toDefExpr(parentFn->formals.last());
-  Symbol*  outError     = outErrorExpr->sym;
-
-  Expr* castError  = new CallExpr(PRIM_CAST, dtObject->symbol, tempError);
-  Expr* setError   = new CallExpr(PRIM_MOVE, outError, castError);
-  Expr* gotoReturn = new GotoStmt(GOTO_RETURN, label);
-
-  insert->insertAtTail(setError);
-  insert->insertAtTail(gotoReturn);
 }
 
 // TODO: dtObject should be dtError, but we don't have that right now
