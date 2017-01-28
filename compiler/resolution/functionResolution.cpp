@@ -2583,8 +2583,10 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
     }
   }
 
-  if (!evaluateWhereClause(currCandidate->fn)) {
-    return;
+  if (currCandidate->fn->instantiatedFrom != NULL) {
+    if (!evaluateWhereClause(currCandidate->fn)) {
+      return;
+    }
   }
 
   candidates.add(currCandidate);
