@@ -1,0 +1,5 @@
+semantic: Should comparing different enum types compare values or symbols?
+
+At present, comparing different enum types seems to compare the int
+values of the enums, such that == might return true between two
+distinct enums.  This seems... surprising.
