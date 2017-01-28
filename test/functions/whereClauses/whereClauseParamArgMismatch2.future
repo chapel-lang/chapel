@@ -1,4 +1,4 @@
-bug: where clauses should only be evaluated if function would work
+bug: where clauses on generic functions are evaluated too early
 
 Where clauses should be a filter in selecting functions only if the
 actuals would work for the formals.  In cases like this where the
