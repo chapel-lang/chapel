@@ -692,31 +692,31 @@ bool evaluateWhereClause(FnSymbol* fn, bool quiet) {
 
     SymExpr* se = toSymExpr(fn->where->body.last());
 
-    //
-    // TODO: if we can't get rid of the early call to evaluate where
-    // clause, perhaps this should return to an error in the late case
-    // (and perhaps to true in the early?)
-    //
-    if (!se) {
-      //      printf("didn't get a SymExpr back\n");
+    if (se == NULL) {
       if (quiet) {
-        //        printf("returning true since we're in quiet mode\n");
         return true;
       } else {
         USR_FATAL(fn->where, "invalid where clause");
       }
     }
+
     if (se->symbol() == gFalse) {
-      //      printf("got false back\n");
       return false;
     }
+
     if (se->symbol() != gTrue) {
-      USR_FATAL(fn->where, "invalid where clause: not true or false");
+      // TODO: put this wording back as it was
+      USR_FATAL(fn->where, "invalid where clause: neither true nor false");
     }
   }
-  //  printf("got true back\n");
+
   return true;
 }
+
+
+
+
+
 
 
 

@@ -7786,15 +7786,15 @@ postFold(Expr* expr) {
       if (sym->symbol()->type != dtUnknown && sym->symbol()->type != val->type) {
         CallExpr* cast = new CallExpr("_cast", sym->symbol(), val);
         sym->replace(cast);
-        // our hope is that preFold will fold the _cast call
+
+        // see whether preFold will fold this _cast call
         Expr* prevResult = result;
         result = preFold(cast);
-        // but if it doesn't, we should put things back as they were:
         if (result == cast) {
-          // printf("result is same as input so put the original back\n");
+          // if it doesn't, put things back as they were:
           cast->replace(sym);
-          // cast->replace(new SymExpr(gFalse));
           result = prevResult;
+          // and then do what we would've done if we hadn't used the cast
           sym->setSymbol(val);
         }
       } else {
