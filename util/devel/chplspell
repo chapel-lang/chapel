@@ -120,7 +120,7 @@ while true; do
 	--help)
 	    $RIVENV $SCSPELL --help
 	    echo;
-	    echo "chplspell sets --override-dictionary to $CHPLDICT"
+	    echo "chplspell sets --override-dictionary to $CHPL_DICT"
 	    echo "and --relative-to to $CHPL_HOME"
 	    echo "and passes the file contents of named directories to scspell"
 	    echo "Use -- to have chplspell pass the remainder of its args"
