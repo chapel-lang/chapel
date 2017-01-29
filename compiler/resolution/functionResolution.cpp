@@ -2583,6 +2583,21 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
     }
   }
 
+  //
+  // If the candidate is an instantiation of a generic function,
+  // re-evaluate the where clause here in order to make sure it
+  // evaluates to true and to catch errors in it.  Ultimately, we'd
+  // like to do this for all concrete functions (instantiated or not),
+  // but at present, enabling it for them causes problems, perhaps
+  // because we're generating bogus where clauses on concrete
+  // functions today and getting away with it since they're ignored.
+  //
+  if (currCandidate->fn->instantiatedFrom != NULL) {
+    if (!evaluateWhereClause(currCandidate->fn, /*generic=*/false)) {
+      return;
+    }
+  }
+
   candidates.add(currCandidate);
 }
 
@@ -7782,8 +7797,17 @@ postFold(Expr* expr) {
       if (sym->symbol()->type != dtUnknown && sym->symbol()->type != val->type) {
         CallExpr* cast = new CallExpr("_cast", sym->symbol(), val);
         sym->replace(cast);
-        // preFold is probably going to replace the _cast call
+
+        // see whether preFold will fold this _cast call
+        Expr* prevResult = result;
         result = preFold(cast);
+        if (result == cast) {
+          // if it doesn't, put things back as they were:
+          cast->replace(sym);
+          result = prevResult;
+          // and then do what we would've done if we hadn't used the cast
+          sym->setSymbol(val);
+        }
       } else {
         sym->setSymbol(val);
       }
