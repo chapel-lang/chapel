@@ -695,12 +695,121 @@ module BLAS {
     return _ldA;
   }
 
+
+  /* Level 2 BLAS */
+
+  /*
+    Wrapper for the GBMV routines::
+
+      y := alpha*op(A)*x + beta*y,
+
+    where ``A`` is an ``m``x``n`` band matrix, with ``kl`` sub-diagonals and
+    ``ku`` super-diagonals.
+
+   */
+  proc gbmv(A : [?Adom] ?eltType,
+    X : [?Xdom] eltType, Y : [?Ydom] eltType,
+    alpha, beta,
+    kl : int = 0, ku : int = 0,
+    trans : Op =  Op.N,
+    order : Order = Order.Row,
+    ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+    where (Adom.rank == 2) && (Xdom.rank==1) && (Ydom.rank == 1)
+  {
+    // Determine sizes
+    var m = Xdom.dim(1).size : c_int,
+        n = Ydom.dim(1).size : c_int;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    var _kl = kl : c_int,
+        _ku = ku : c_int;
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_sgbmv (order, trans, m, n, _kl, _ku, alpha,
+            A, _ldA, X, incx , beta, Y, incy);
+      }
+      when real(64) {
+        C_BLAS.cblas_dgbmv (order, trans, m, n, _kl, _ku, alpha,
+            A, _ldA, X, incx , beta, Y, incy);
+      }
+      when complex(64) {
+        var alpha1 = alpha: complex(64),
+            beta1 = beta: complex(64);
+        C_BLAS.cblas_cgbmv (order, trans, m, n, _kl, _ku, alpha1,
+            A, _ldA, X, incx , beta1, Y, incy);
+      }
+      when complex(128) {
+        var alpha1 = alpha: complex(128),
+            beta1 = beta: complex(128);
+        C_BLAS.cblas_zgbmv (order, trans, m, n, _kl, _ku, alpha1,
+            A, _ldA, X, incx , beta1, Y, incy);
+      }
+      otherwise {
+        compilerError("Unknown type in gbmv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+    Wrapper for the GEMV routines::
+
+      y := alpha*op(A)*x + beta*y,
+
+    where ``A`` is an ``m``x``n`` matrix.
+  */
+  proc gemv(A : [?Adom] ?eltType, x : [?xdom] eltType, y : [?ydom] eltType,
+            alpha, beta,
+            opA : Op = Op.N,
+            order : Order = Order.Row,
+            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (xdom.rank == 1) && (ydom.rank == 1)
+  {
+    // Types
+    type eltType = A.eltType;
+
+    // Determine sizes
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_sgemv(order, opA, m, n, alpha, A,
+          _ldA, x, incx, beta, y, incy);
+      }
+      when real(64) {
+        C_BLAS.cblas_dgemv(order, opA, m, n, alpha, A,
+          _ldA, x, incx, beta, y, incy);
+      }
+      when complex(64) {
+        var alpha1 = alpha: complex(64),
+            beta1 = beta: complex(64);
+        C_BLAS.cblas_cgemv(order, opA, m, n, alpha1, A,
+          _ldA, x, incx, beta1, y, incy);
+      }
+      when complex(128) {
+        var alpha1 = alpha: complex(128),
+            beta1 = beta: complex(128);
+        C_BLAS.cblas_zgemv(order, opA, m, n, alpha1, A,
+          _ldA, x, incx, beta1, y, incy);
+      }
+      otherwise {
+        compilerError("Unknown type in gemv: ", eltType:string);
+      }
+    }
+
+  }
   /* Level 1 BLAS */
 
 /*
     Wrapper for the `ROTG routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga2f65d66137ddaeb7ae93fcc4902de3fc.html#ga2f65d66137ddaeb7ae93fcc4902de3fc>`_
 
-    Construct `Givens plane rotation <https://en.wikipedia.org/wiki/Givens_rotation>`_ 
+    Construct `Givens plane rotation <https://en.wikipedia.org/wiki/Givens_rotation>`_
     of point ``p`` defined by Cartesian coordinates ``(a, b)``::
 
       | c  s |   |a|   |r|
