@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -294,8 +294,8 @@
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
 %token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTRY TTYPE TUNDERSCORE TUNION TUSE TVAR
-%token TWHEN TWHERE TWHILE TWITH TYIELD TZIP
+%token TSYNC TTHEN TTHROW TTHROWS TTRY TTRYBANG TTYPE TUNDERSCORE
+%token TUNION TUSE TVAR TWHEN TWHERE TWHILE TWITH TYIELD TZIP
 
 //
 // operators and punctuation (alphabetical)
@@ -345,6 +345,7 @@
 
 %type <flag> opt_config
 %type <b> access_control
+%type <b> opt_throws_error
 
 %type <pt> required_intent_tag opt_intent_tag opt_this_intent_tag
 
@@ -380,6 +381,7 @@
 %type <pblockstmt> extern_block_stmt
 %type <pblockstmt> return_stmt
 %type <pblockstmt> try_stmt
+%type <pblockstmt> throw_stmt
 
 %type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt
 %type <pblockstmt> enum_decl_stmt
@@ -415,6 +417,7 @@
 %type <pForallIntents> forall_intent_clause forall_intent_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
+%type <pexpr> fn_decl_receiver_expr
 %type <procIter> proc_or_iter
 %type <pfnsymbol> linkage_spec
 %type <pIntentExpr> intent_expr
@@ -457,6 +460,7 @@ stmt:
 | loop_stmt
 | select_stmt
 | try_stmt
+| throw_stmt
 | return_stmt
 | stmt_level_expr TSEMI                { $$ = buildChapelStmt($1); }
 | TATOMIC stmt                         { $$ = buildAtomicStmt($2); }
@@ -709,8 +713,12 @@ if_stmt:
 ;
 
 try_stmt:
-  TTRY block_stmt { $$ = TryStmt::build(false, $2); }
+  TTRY     stmt { $$ = TryStmt::build(false, $2); }
+| TTRYBANG stmt { $$ = TryStmt::build(true,  $2); }
 ;
+
+throw_stmt:
+  TTHROW expr TSEMI { $$ = buildPrimitiveStmt(PRIM_THROW, $2); }
 
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
@@ -890,7 +898,7 @@ fn_decl_stmt:
 
       $4->userString = astr(captureString);
     }
-  opt_ret_tag opt_type opt_where_part opt_function_body_stmt
+  opt_ret_tag opt_type opt_throws_error opt_where_part opt_function_body_stmt
     {
       FnSymbol* fn = $4;
 
@@ -906,7 +914,7 @@ fn_decl_stmt:
         fn->addFlag(FLAG_ITERATOR_FN);
       }
 
-      $$ = buildFunctionDecl($4, $6, $7, $8, $9, @1.comment);
+      $$ = buildFunctionDecl($4, $6, $7, $8, $9, $10, @1.comment);
       context->latestComment = NULL;
     }
 ;
@@ -921,15 +929,20 @@ fn_decl_stmt_inner:
       $$ = buildFunctionSymbol($3, $2, $1, NULL);
       $$->addFlag(FLAG_ASSIGNOP);
     }
-| opt_this_intent_tag ident TDOT fn_ident opt_formal_ls
+| opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
     {
       $$ = buildFunctionSymbol($5, $4, $1, $2);
     }
-| opt_this_intent_tag ident TDOT assignop_ident opt_formal_ls
+| opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
     {
       $$ = buildFunctionSymbol($5, $4, $1, $2);
       $$->addFlag(FLAG_ASSIGNOP);
     }
+;
+
+fn_decl_receiver_expr:
+  ident_expr
+| TLP expr TRP        { $$ = $2; }
 ;
 
 fn_ident:
@@ -1039,6 +1052,10 @@ opt_ret_tag:
 | TPARAM      { $$ = RET_PARAM; }
 | TTYPE       { $$ = RET_TYPE; }
 ;
+
+opt_throws_error:
+          { $$ = false; }
+| TTHROWS { $$ = true;  }
 
 opt_function_body_stmt:
   TSEMI     { $$ = NULL; }

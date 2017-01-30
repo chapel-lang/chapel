@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -226,6 +226,21 @@ c_sublocid_t chpl_task_getRequestedSubloc(void);
 // Get ID.
 //
 chpl_taskID_t chpl_task_getId(void);
+
+//
+// Checks whether two task IDs are the same
+//
+chpl_bool chpl_task_idEquals(chpl_taskID_t, chpl_taskID_t);
+
+//
+// Returns the string representation of task ID
+// The string returned is the same buffer passed as argument
+// In case of an error NULL is returned
+//
+char* chpl_task_idToString(
+               char *,         //buffer on which ID is written
+               size_t,         //length of the buffer in bytes
+               chpl_taskID_t); //Task ID
 
 //
 // Yield.

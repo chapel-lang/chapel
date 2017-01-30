@@ -7,7 +7,7 @@ set -e
 # Only run this script when doing a perf run
 if [ -n "$CHPL_TEST_PERF" ] && [ ! -f $CHPL_TEST_TMP_DIR/fasta.big ]; then
   # '$3' is the compiler given to us by sub_test
-  $3 $CHPL_HOME/test/studies/shootout/fasta/kbrady/fasta-printf.chpl --fast -o tmpFasta
+  $3 ${CHPL_TEST_ROOT_DIR:-$CHPL_HOME/test}/studies/shootout/fasta/kbrady/fasta-printf.chpl --fast -o tmpFasta
   
   # needed by k-nucleotide and reverse-complement
   ./tmpFasta --n=25000000 -nl 1 > $CHPL_TEST_TMP_DIR/fasta.big

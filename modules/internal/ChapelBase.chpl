@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -578,6 +578,16 @@ module ChapelBase {
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));
 
+  inline proc min(param x: int(?w), param y: int(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: int(?w), param y: int(w)) param
+    return if x > y then x else y;
+
+  inline proc min(param x: uint(?w), param y: uint(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: uint(?w), param y: uint(w)) param
+    return if x > y then x else y;
+
   inline proc min(x, y) where isAtomic(x) || isAtomic(y) {
     compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
   }
@@ -593,9 +603,81 @@ module ChapelBase {
     __primitive("chpl_exit_any", status);
   }
 
-  config param parallelInitElts=true;
+  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
+  config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
+
+  config param chpl_arrayInitMethodRuntimeSelectable = false;
+  private var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
+
+  inline proc chpl_setArrayInitMethod(initMethod: ArrayInit) {
+    if chpl_arrayInitMethodRuntimeSelectable == false {
+      compilerWarning("must set 'chpl_arrayInitMethodRuntimeSelectable' for ",
+                      "'chpl_setArrayInitMethod' to have any effect");
+    }
+    const oldInit = chpl_arrayInitMethod;
+    chpl_arrayInitMethod = initMethod;
+    return oldInit;
+  }
+
+  inline proc chpl_getArrayInitMethod() {
+    if chpl_arrayInitMethodRuntimeSelectable == false {
+      return chpl_defaultArrayInitMethod;
+    } else {
+      return chpl_arrayInitMethod;
+    }
+  }
+
   proc init_elts(x, s, type t) : void {
-    //
+    var initMethod = chpl_getArrayInitMethod();
+
+    // for uints, check that s > 0, so the `s-1` below doesn't overflow
+    if isUint(s) && s == 0 {
+      initMethod = ArrayInit.noInit;
+    } else if initMethod == ArrayInit.heuristicInit {
+      // Heuristically determine if we should do parallel initialization. The
+      // current heuristic really just checks that we have a numeric array that's
+      // at least 2MB. This value was chosen experimentally: Any smaller and the
+      // cost of a forall (mostly the task creation) outweighs the benefit of
+      // using multiple tasks. This was tested on a 2 core laptop, 8 core
+      // workstation, and 24 core XC40.
+      //
+      // Ideally we want to be able to do parallel initialization for all types,
+      // but we're currently blocked by an issue with arrays of arrays and thus
+      // arrays of aggregate types where at one field is an array. The issue is
+      // basically that an array's domain stores a linked list of all its arrays
+      // and removal becomes expensive when addition and removal occur in
+      // different orders. We don't currently have a good way to check if an
+      // aggregate type contains arrays, so we limit parallel init to numeric
+      // types.
+      //
+      // Long term we probably want to store the domain's arrays as an
+      // associative domain or some data structure with < log(n) find/add/remove
+      // times. Currently we can't do that because the domain's arrays are part
+      // of the base domain, so we have a circular reference. As a stepping
+      // stone, we could do parallel init for plain old data (POD) types.
+      if !isNumericType(t) {
+        initMethod = ArrayInit.serialInit;
+      } else {
+        param elemsizeInBytes = numBytes(t);
+        const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
+        param heuristicThresh = 2 * 1024 * 1024;
+        const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
+
+        if heuristicWantsPar {
+          initMethod = ArrayInit.parallelInit;
+        } else {
+          initMethod = ArrayInit.serialInit;
+        }
+      }
+    }
+
+    // need a real `here` since it's used in the range parallel iters
+    if initMethod == ArrayInit.parallelInit {
+      if here == dummyLocale {
+        initMethod = ArrayInit.serialInit;
+      }
+    }
+
     // Q: why is the declaration of 'y' in the following loops?
     //
     // A: so that if the element type is something like an array,
@@ -603,64 +685,28 @@ module ChapelBase {
     // One effect of having it in the loop is that the reference
     // count for an array element's domain gets bumped once per
     // element.  Is this good, bad, necessary?  Unclear.
-    //
-
-    //
-    // Heuristically determine if we should do parallel initialization. The
-    // current heuristic really just checks that we have a numeric array that's
-    // at least 2MB. This value was chosen experimentally: Any smaller and the
-    // cost of a forall (mostly the task creation) outweighs the benefit of
-    // using multiple tasks. This was tested on a 2 core laptop, 8 core
-    // workstation, and 24 core XC40.
-    //
-    // Ideally we want to be able to do parallel initialization for all types,
-    // but we're currently blocked by an issue with arrays of arrays and thus
-    // arrays of aggregate types where at one field is an array. The issue is
-    // basically that an array's domain stores a linked list of all its arrays
-    // and removal becomes expensive when addition and removal occur in
-    // different orders. We don't currently have a good way to check if an
-    // aggregate type contains arrays, so we limit parallel init to numeric
-    // types.
-    //
-    // Long term we probably want to store the domain's arrays as an
-    // associative domain or some data structure with < log(n) find/add/remove
-    // times. Currently we can't do that because the domain's arrays are part
-    // of the base domain, so we have a circular reference. As a stepping
-    // stone, we could do parallel init for plain old data (POD) types.
-    //
-
-    // for uints we need to check that s > 0, so the `s-1` in the following
-    // loops doesn't overflow.
-    if isUint(s) && s == 0 {
-      return;
-    }
-
-    if parallelInitElts && isNumericType(t) {
-
-      param elemsizeInBytes = numBytes(t);
-      const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
-      param heuristicThresh = 2 * 1024 * 1024;
-      const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
-
-      if heuristicWantsPar && here != dummyLocale {
-        forall i in 0..s-1 {
-          pragma "no auto destroy" var y: t;
-          __primitive("array_set_first", x, i, y);
-        }
-
-      } else {
+    select initMethod {
+      when ArrayInit.noInit {
+        return;
+      }
+      when ArrayInit.serialInit {
         for i in 0..s-1 {
           pragma "no auto destroy" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }
-    } else {
-      for i in 0..s-1 {
-        pragma "no auto destroy" var y: t;
-        __primitive("array_set_first", x, i, y);
+      when ArrayInit.parallelInit {
+        forall i in 0..s-1 {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i, y);
+        }
+      }
+      otherwise {
+        halt("ArrayInit.heuristicInit should have been made concrete");
       }
     }
   }
+
 
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
@@ -811,6 +857,15 @@ module ChapelBase {
     }
   }
 
+  pragma "dont disable remote value forwarding"
+  pragma "no remote memory fence"
+  proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
+    e.i.add(numTasks:int, memory_order_release);
+    if countRunningTasks {
+      here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
+    }
+  }
+
   // This function is called once by each newly initiated task.  No on
   // statement is needed because the call to sub() will do a remote
   // fork (on) if needed.
@@ -841,6 +896,19 @@ module ChapelBase {
     } else {
       // re-add the task that was waiting for others to finish
       here.runningTaskCntAdd(1);
+    }
+  }
+
+  pragma "dont disable remote value forwarding"
+  proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
+    // See if we can help with any of the started tasks
+    chpl_taskListExecute(e.taskList);
+
+    // Wait for all tasks to finish
+    e.i.waitFor(0, memory_order_acquire);
+
+    if countRunningTasks {
+      here.runningTaskCntSub(numTasks:int-1);
     }
   }
 
@@ -963,11 +1031,6 @@ module ChapelBase {
   inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
 
-  inline proc chpl__typeAliasInit(type t) type return t;
-  inline proc chpl__typeAliasInit(v) {
-    compilerError("illegal assignment of value to type");
-  }
-
   pragma "dont disable remote value forwarding"
   inline proc _createFieldDefault(type t, init) {
     pragma "no auto destroy" var x: t;
@@ -1002,7 +1065,10 @@ module ChapelBase {
   // Catch-all initCopy implementation:
   pragma "compiler generated"
   pragma "init copy fn"
-  inline proc chpl__initCopy(x) return x;
+  inline proc chpl__initCopy(x) {
+    // body adjusted during generic instantiation
+    return x;
+  }
 
   pragma "compiler generated"
   pragma "donor fn"
@@ -1083,6 +1149,22 @@ module ChapelBase {
   pragma "auto destroy fn"
   proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
+  }
+
+  // implements 'delete' statement
+  inline proc chpl__delete(arg) {
+    if chpl_isDdata(arg.type) then
+      compilerError("cannot delete data class");
+    // Todo: enable this check. Can't do it now because
+    // isClassType() returns 'false' on extern class types.
+    //if !isClassType(arg.type) then
+    //  compilerError("can delete only class types: ", arg.type:string);
+    if (isRecord(arg)) then
+      compilerError("delete not allowed on records");
+
+    arg.chpl__deinit();
+    on arg do
+      chpl_here_free(__primitive("_wide_get_addr", arg));
   }
 
   // c_void_ptr operations

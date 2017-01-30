@@ -6,7 +6,7 @@
 **************************************************************************/
 
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +51,9 @@ void chpl_task_yield(void);
 //
 typedef unsigned int chpl_taskID_t;
 #define chpl_nullTaskID QTHREAD_NULL_TASK_ID
+#ifndef CHPL_TASK_ID_STRING_MAX_LEN
+#define CHPL_TASK_ID_STRING_MAX_LEN 21
+#endif
 
 //
 // Sync variables
@@ -63,51 +66,6 @@ typedef struct {
     syncvar_t signal_full;
     syncvar_t signal_empty;
 } chpl_sync_aux_t;
-
-#define chpl_sync_reset(x) qthread_syncvar_empty(&(x)->sync_aux.signal_full)
-
-#define chpl_read_FE(x) ({                                                           \
-                             uint64_t y;                                             \
-                             qthread_syncvar_readFE(&y, &(x)->sync_aux.signal_full); \
-                             y; })
-
-#define chpl_read_FF(x) ({                                                           \
-                             uint64_t y;                                             \
-                             qthread_syncvar_readFF(&y, &(x)->sync_aux.signal_full); \
-                             y; })
-
-#define chpl_read_XX(x) ((x)->sync_aux.signal_full.u.s.data)
-
-#define chpl_write_EF(x, y) do {                                 \
-        uint64_t z = (uint64_t)(y);                              \
-        qthread_syncvar_writeEF(&(x)->sync_aux.signal_full, &z); \
-} while(0)
-
-#define chpl_write_FF(x, y) do {                                    \
-        uint64_t z, dummy;                                          \
-        z = (uint64_t)(y);                                          \
-        qthread_syncvar_readFE(&dummy, &(x)->sync_aux.signal_full); \
-        qthread_syncvar_writeF(&(x)->sync_aux.signal_full, &z);     \
-} while(0)
-
-#define chpl_write_XF(x, y) do {                                \
-        uint64_t z = (uint64_t)(y);                             \
-        qthread_syncvar_writeF(&(x)->sync_aux.signal_full, &z); \
-} while(0)
-
-#define chpl_single_reset(x) qthread_syncvar_empty(&(x)->single_aux.signal_full)
-
-#define chpl_single_read_FF(x) ({                                                             \
-                                    uint64_t y;                                               \
-                                    qthread_syncvar_readFF(&y, &(x)->single_aux.signal_full); \
-                                    y; })
-
-#define chpl_single_write_EF(x, y) do {                            \
-        uint64_t z = (uint64_t)(y);                                \
-        qthread_syncvar_writeEF(&(x)->single_aux.signal_full, &z); \
-} while(0)
-
-#define chpl_single_read_XX(x) ((x)->single_aux.signal_full.u.s.data)
 
 //
 // Task private data

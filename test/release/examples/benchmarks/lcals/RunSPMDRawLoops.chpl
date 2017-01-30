@@ -63,11 +63,11 @@ module RunSPMDRawLoops {
                   if ( vnewc[i] >= eosvmax ) then p_new[i] = 0.0;
                   if ( p_new[i]  <  pmin ) then p_new[i] = pmin;
                 }
+                bar.barrier(); // wait for all tasks before updating isamp
                 if tid == 0 then isamp += 1;
                 bar.barrier(); // The final barrier is still required
               }
             }
-            delete bar;
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
@@ -166,11 +166,11 @@ module RunSPMDRawLoops {
                     if abs(q_new[i]) < q_cut then q_new[i] = 0.0;
                   }
                 }
+                bar.barrier(); // wait for all tasks before updating isamp
                 if tid == 0 then isamp += 1;
                 bar.barrier(); // The final barrier is still required
               }
             }
-            delete bar;
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
@@ -277,11 +277,11 @@ module RunSPMDRawLoops {
 
                   vol[i] *= vnormq ;
                 }
+                bar.barrier(); // wait for all tasks before updating isamp
                 if tid == 0 then isamp += 1;
                 bar.barrier();
               }
             }
-            delete bar;
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
@@ -351,11 +351,11 @@ module RunSPMDRawLoops {
 
                   div[i] = dfxdx + dfydy + affine;
                 }
+                bar.barrier(); // wait for all tasks before updating isamp
                 if tid == 0 then isamp += 1;
                 bar.barrier();
               }
             }
-            delete bar;
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
@@ -430,11 +430,11 @@ module RunSPMDRawLoops {
                     }
                   }
                 }
+                bar.barrier(); // wait for all tasks before updating isamp
                 if tid == 0 then isamp += 1;
                 bar.barrier();
               }
             }
-            delete bar;
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
@@ -464,12 +464,12 @@ module RunSPMDRawLoops {
                   }
                   output[i] = sum;
                 }
+                bar.barrier(); // wait for all tasks before updating val/isamp
                 if tid == 0 then val = isamp;
                 if tid == 0 then isamp += 1;
                 bar.barrier();
               }
             }
-            delete bar;
             ltimer.stop();
             loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
@@ -495,11 +495,11 @@ module RunSPMDRawLoops {
                   out2[i] = res;
                   out1[i] = res;
                 }
+                bar.barrier(); // wait for all tasks before updating isamp
                 if tid == 0 then isamp += 1;
                 bar.barrier();
               }
             }
-            delete bar;
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
@@ -523,11 +523,11 @@ module RunSPMDRawLoops {
                   out2[i] = in1[i] + in2[i];
                   out3[i] = in1[i] - in2[i];
                 }
+                bar.barrier(); // wait for all tasks before updating isamp
                 if tid == 0 then isamp += 1;
                 bar.barrier();
               }
             }
-            delete bar;
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
@@ -557,11 +557,11 @@ module RunSPMDRawLoops {
                     x1[i] = 0.0;
                   }
                 }
+                bar.barrier(); // wait for all tasks before updating isamp
                 if tid == 0 then isamp += 1;
                 bar.barrier();
               }
             }
-            delete bar;
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
@@ -593,12 +593,12 @@ module RunSPMDRawLoops {
                   sumx += trap_int_func(x, y, xp, yp);
                 }
                 sumx += initSumx;
+                bar.barrier(); // wait for all tasks before updating val/isamp
                 if tid == 0 then val = sumx * h;
                 if tid == 0 then isamp += 1;
                 bar.barrier();
               }
             }
-            delete bar;
             ltimer.stop();
             loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
@@ -663,11 +663,11 @@ module RunSPMDRawLoops {
                   /* #pragma omp atomic */
                   atomicH[j2,i2].add(1.0);
                 }
+                bar.barrier(); // wait for all tasks before updating isamp
                 if tid == 0 then isamp += 1;
                 bar.barrier();
               }
             }
-            delete bar;
 
             // copy the computed values out of the atomic array and
             // back into the 'h' array

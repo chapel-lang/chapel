@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -881,7 +881,7 @@ void stashPristineCopyOfLeaderIter(FnSymbol* origLeader,
 // aka 'origIter', all it does is invoke _toLeader on its argument.
 // If so, do not do extendLeader() on it. Simply thread the extra args
 // from origToLeaderCall into that _toLeader call.
-//    
+//
 // BTW _iterator_for_loopexprNN is created in buildLeaderIteratorFn()
 // invoked from buildForallLoopExpr().
 //
@@ -1010,7 +1010,7 @@ void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2)
     // Be cute - add new stuff past the defs of 'ret' and 'origRet'.
     fn->body->body.head->next->insertAfter(redRef1);
   }
-  fn->insertBeforeReturn(redRef2);
+  fn->insertBeforeEpilogue(redRef2);
   if (nested) {
     // move redRef2 one up so it is just before _downEndCount()
     CallExpr* dc = toCallExpr(redRef2->prev);
@@ -1116,7 +1116,7 @@ static CallExpr* findCallToParallelIterator(ForLoop* forLoop) {
 
   // We have:
   //   move( call_tmp call( ITERATOR args... ) )
-  //   move( _iterator call( _getIterator call_tmp ) ) 
+  //   move( _iterator call( _getIterator call_tmp ) )
   // We need to see if args... contain a leader or standalone tag.
   // 'asgnToIter' is the second of the above moves. Find the first one.
   CallExpr* rhs1 = toCallExpr(asgnToIter->get(2));
@@ -1259,7 +1259,7 @@ static void propagateThroughYield(CallExpr* rcall,
         //
 
         // Detuple the value yielded by eflopi's parallel iterator
-        // 
+        //
         if (eflopiIdx == 1) {
           // do only once for this yield
           redirectToNewIOI(eflopiLoop);
@@ -1378,7 +1378,7 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
           strcmp(eActual->name, "_tuple_expand_tmp_") ?
             astrArg(ix, eActual->name) // uniquify arg name
             : astrArg(ix, "tet");
-  
+
     ArgSymbol*  eFormal = new ArgSymbol(INTENT_BLANK, eName, eActual->type);
     extraFormals[ix] = eFormal;
     call->insertAtTail(new NamedExpr(eName, new SymExpr(eActual)));
@@ -1439,7 +1439,7 @@ static void propagateRecursively(FnSymbol* parentFn,
                                  bool nested,
                                  Expr*& redRef1,
                                  Expr*& redRef2)
-{                                 
+{
   std::vector<CallExpr*> rCalls;
   collectMyCallExprs(currentFn, rCalls, currentFn);
 
@@ -1658,7 +1658,7 @@ void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
           goahead = true;
         continue;
       }
-      
+
       ArgSymbol* wFormal = formal->copy();
       // If these fail, figure out the intent. See also copyFormalForWrapper().
       INT_ASSERT(isClass(formal->type));

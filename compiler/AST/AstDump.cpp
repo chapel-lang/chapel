@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,7 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
+#include "TryStmt.h"
 
 AstDump::AstDump() {
   mName      =     0;
@@ -539,7 +540,11 @@ void AstDump::exitDelegateStmt(DelegateStmt* node) {
 //
 bool AstDump::enterTryStmt(TryStmt* node) {
   newline();
-  write("Try");
+  if (node->tryBang()) {
+    write("Try!");
+  } else {
+    write("Try");
+  }
   newline();
   write("{");
   ++mIndent;
@@ -612,6 +617,10 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
     writeSymbol(":", fn->retType->symbol, false);
   }
 
+  if (fn->throwsError()) {
+    write("throws");
+  }
+
   writeFlags(mFP, fn);
 }
 
@@ -629,8 +638,22 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
         case INTENT_OUT:       write("out arg");       break;
         case INTENT_CONST:     write("const arg");     break;
         case INTENT_CONST_IN:  write("const in arg");  break;
-        case INTENT_CONST_REF: write("const ref arg"); break;
-        case INTENT_REF:       write("ref arg");       break;
+        case INTENT_CONST_REF: {
+          if (arg->isWideRef()) {
+            write("const wide-ref arg");
+          } else {
+            write("const ref arg");
+          }
+          break;
+        }
+        case INTENT_REF: {
+          if (arg->isWideRef()) {
+            write("wide-ref arg");
+          } else {
+            write("ref arg");
+          }
+          break;
+        }
         case INTENT_PARAM:     write("param arg");     break;
         case INTENT_TYPE:      write("type arg");      break;
         case INTENT_BLANK:     write("arg");           break;

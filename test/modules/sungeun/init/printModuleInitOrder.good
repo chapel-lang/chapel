@@ -15,20 +15,24 @@ Initializing Modules:
     ChapelTuple
     ChapelRange
     LocaleModel
-     ChapelLocale
-     DefaultRectangular
-      DSIUtil
-      ChapelArray
-       Sort
-     ChapelNumLocales
-     Sys
-      SysBasic
+     LocaleModelHelpFlat
+      LocaleModelHelpSetup
+       ChapelLocale
+       DefaultRectangular
+        DSIUtil
+        ChapelArray
+         Sort
+       ChapelNumLocales
+       Sys
+        SysBasic
+      LocaleModelHelpRuntime
+     LocaleModelHelpMem
     LocalesArray
     ChapelDistribution
      List
     ChapelIO
      IO
-      Error
+      SysError
       Regexp
     LocaleTree
     DefaultAssociative

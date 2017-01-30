@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,7 +38,7 @@
  */
 module Buffers {
   use SysBasic;
-  use Error;
+  use SysError;
 
   pragma "no doc"
   extern type qbytes_ptr_t;
@@ -105,7 +105,7 @@ module Buffers {
   /* This type represents a contiguous sequence of bytes.
      This sequence of bytes is represented with a C pointer and length and is
      currently reference counted.  Note that this record contains private
-     fields in addition to the home field. 
+     fields in addition to the home field.
 
    */
   pragma "ignore noinit"
@@ -135,7 +135,7 @@ module Buffers {
   }*/
 
   /* Construct a bytes object by allocating zero-filled memory.
-   
+
      :arg len: the number of bytes to allocate
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
@@ -165,7 +165,7 @@ module Buffers {
   }
   pragma "no doc"
   private proc create_iobuf():bytes {
-    var err:syserr = ENOERR; 
+    var err:syserr = ENOERR;
     var ret = create_iobuf(err);
     if err then ioerror(err, "in create_iobuf");
     return ret;
@@ -183,7 +183,7 @@ module Buffers {
       var ret:bytes;
       ret.home = here;
       // The initial ref count is 1, so no need to call qbytes_retain here.
-      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal); 
+      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal);
       return ret;
     }
   }
@@ -207,8 +207,8 @@ module Buffers {
         qbytes_release(ret._bytes_internal);
       }
       ret.home = here;
-      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal); 
-      // On return from bulk_get_bytes, the ref count in ret._bytes_internal 
+      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal);
+      // On return from bulk_get_bytes, the ref count in ret._bytes_internal
       // should be 1.
       // Note that the error case is not handled (bulk_get_bytes must succeed).
     }
@@ -247,7 +247,7 @@ module Buffers {
   /* This type represents a particular location with a buffer.
      Use buffer methods like :proc:`buffer.start` and :proc:`buffer.advance` to
      create and manipulate :record:`buffer_iterator` s.  Note that this record
-     contains private fields in addition to the home field. 
+     contains private fields in addition to the home field.
 
    */
   pragma "ignore noinit"
@@ -257,7 +257,7 @@ module Buffers {
     pragma "no doc"
     var _bufit_internal:qbuffer_iter_t = qbuffer_iter_null();
   }
-  
+
   /* Create a :record:`buffer_iterator` that points nowhere */
   pragma "no doc"
   proc buffer_iterator.buffer_iterator() {
@@ -287,7 +287,7 @@ module Buffers {
 
   /* A buffer which can contain multiple memory regions
      (that is, multiple regions of :record:`bytes` objects).  Note that this
-     record contains private fields in addition to the home field. 
+     record contains private fields in addition to the home field.
 
    */
   pragma "ignore noinit"
@@ -381,7 +381,7 @@ module Buffers {
       var ret:buffer;
       var start_offset:int(64);
       var end_offset:int(64);
-     
+
       on x.home {
         start_offset = qbuffer_start_offset(x._buf_internal);
         end_offset = qbuffer_end_offset(x._buf_internal);
@@ -432,7 +432,7 @@ module Buffers {
 
       var start_offset:int(64);
       var end_offset:int(64);
-     
+
       on x.home {
         start_offset = qbuffer_start_offset(x._buf_internal);
         end_offset = qbuffer_end_offset(x._buf_internal);
@@ -632,7 +632,7 @@ module Buffers {
      so it reads a binary value in native endianness. For strings, this method
      reads a string encoded as the string length (as :type:`int`) followed by
      that number of bytes (as :type:`uint(8)`).
-     
+
      :arg it: a :record:`buffer_iterator` where reading will start
      :arg value: a basic type or :type:`string`
      :arg error: (optional) capture an error that was encountered instead of

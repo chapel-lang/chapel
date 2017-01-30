@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1034,14 +1034,25 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
       Vec<SymExpr*>* defs = defMap.get(sym);
 
-      if (defs == NULL || defs->n != 1) {
-        INT_FATAL(sym, "Expected sym to have exactly one definition");
+      CallExpr* move = NULL;
+      if (defs == NULL) {
+        INT_FATAL(sym, "Expected sym to have at least one definition");
       }
 
-      // Do we need to consider PRIM_ASSIGN as well?
-      CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
+      // Ignores reference actuals passed to reference formals
+      for_defs(def, defMap, sym) {
+        CallExpr* parent = toCallExpr(def->parentExpr);
+        INT_ASSERT(parent);
+        if (parent->isPrimitive(PRIM_MOVE)) {
+          if (move == NULL) {
+            move = parent;
+          } else {
+            INT_FATAL(sym, "Expected sym to have exactly one move-definition");
+          }
+        }
+      }
 
-      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
 
       if (SymExpr* se = toSymExpr(move->get(2)))
       {
@@ -1257,10 +1268,10 @@ rebuildGetIterator(IteratorInfo* ii) {
 
   // Set the iterator class (state object) so that it
   // initially signals that more elements available.
-  getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER,
-                                               ret,
-                                               ii->iclass->getField("more"),
-                                               new_IntSymbol(1)));
+  getIterator->insertBeforeEpilogue(new CallExpr(PRIM_SET_MEMBER,
+                                                 ret,
+                                                 ii->iclass->getField("more"),
+                                                 new_IntSymbol(1)));
 
   // Enumerate the fields in the iterator record (argument).
   for_fields(field, ii->irecord) {
@@ -1269,13 +1280,13 @@ rebuildGetIterator(IteratorInfo* ii) {
     VarSymbol* fieldReadTmp  = newTemp(field->type);
     CallExpr*  fieldRead     = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
 
-    getIterator->insertBeforeReturn(new DefExpr(fieldReadTmp));
+    getIterator->insertBeforeEpilogue(new DefExpr(fieldReadTmp));
 
-    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE,
+    getIterator->insertBeforeEpilogue(new CallExpr(PRIM_MOVE,
                                                  fieldReadTmp,
                                                  fieldRead));
 
-    getIterator->insertBeforeReturn(
+    getIterator->insertBeforeEpilogue(
                              new CallExpr(PRIM_SET_MEMBER,
                                           ret,
                                           ii->iclass->getField(field->name),

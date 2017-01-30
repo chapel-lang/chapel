@@ -1,0 +1,2 @@
+class-alias-generic-arg.chpl:12: error: unresolved type specifier 'A()'
+class-alias-generic-arg.chpl:1: note: candidates are: A(type x)

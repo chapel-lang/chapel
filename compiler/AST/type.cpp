@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -547,6 +547,7 @@ void AggregateType::verify() {
 AggregateType*
 AggregateType::copyInner(SymbolMap* map) {
   AggregateType* copy_type = new AggregateType(aggregateTag);
+  copy_type->initializerStyle = initializerStyle;
   copy_type->outer = outer;
   for_alist(expr, fields)
     copy_type->fields.insertAtTail(COPY_INT(expr));
@@ -564,36 +565,58 @@ AggregateType::copyInner(SymbolMap* map) {
 }
 
 
-static void
-addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
+static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
   if (def->sym->hasFlag(FLAG_REF_VAR)) {
-      USR_FATAL_CONT(def, "References cannot be members of classes or records yet.");
+      USR_FATAL_CONT(def,
+                     "References cannot be members of classes "
+                     "or records yet.");
   }
+
   if (FnSymbol* fn = toFnSymbol(def->sym)) {
     ct->methods.add(fn);
+
     if (fn->_this) {
       // get the name used in the type binding clause
       // this is the way it comes from the parser (see fn_decl_stmt_inner)
-      ArgSymbol* thisArg = toArgSymbol(fn->_this);  INT_ASSERT(thisArg);
+      ArgSymbol* thisArg = toArgSymbol(fn->_this);
+
+      INT_ASSERT(thisArg);
       INT_ASSERT(thisArg->type == dtUnknown);
-      BlockStmt* bs = thisArg->typeExpr;  INT_ASSERT(bs && bs->length() == 1);
-      Expr* firstexpr = bs->body.first();  INT_ASSERT(firstexpr);
-      UnresolvedSymExpr* sym = toUnresolvedSymExpr(firstexpr); INT_ASSERT(sym);
+
+      BlockStmt* bs = thisArg->typeExpr;
+      INT_ASSERT(bs && bs->length() == 1);
+
+      Expr* firstexpr = bs->body.first();
+      INT_ASSERT(firstexpr);
+
+      UnresolvedSymExpr* sym = toUnresolvedSymExpr(firstexpr);
+      INT_ASSERT(sym);
+
       const char* name = sym->unresolved;
+
       // ... then report it to the user
       USR_FATAL_CONT(fn->_this,
-         "Type binding clauses ('%s.' in this case) are not supported in "
-         "declarations within a class, record or union", name);
+                     "Type binding clauses ('%s.' in this case) are not "
+                     "supported in declarations within a class, record "
+                     "or union",
+                     name);
     } else {
       ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", ct);
+
       fn->_this = arg;
+
       if (fn->thisTag == INTENT_TYPE) {
-        setupTypeIntentArg(arg);
+        arg->intent = INTENT_BLANK;
+        arg->addFlag(FLAG_TYPE_VARIABLE);
       }
+
       arg->addFlag(FLAG_ARG_THIS);
+
       fn->insertFormalAtHead(new DefExpr(fn->_this));
-      fn->insertFormalAtHead(
-          new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+      fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK,
+                                                       "_mt",
+                                                       dtMethodToken)));
+
       fn->addFlag(FLAG_METHOD);
       fn->addFlag(FLAG_METHOD_PRIMARY);
     }
@@ -604,25 +627,28 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
     var->makeField();
   }
 
-  if (def->parentSymbol || def->list)
+  if (def->parentSymbol || def->list) {
     def->remove();
+  }
 
   // Lydia note (Sept 2, 2016): Based on control flow, this adds even the
   // function symbols we just handled into the fields alist for the type.
   // Shouldn't placing them in ct->methods be sufficient?
-  if (tail)
+  if (tail) {
     ct->fields.insertAtTail(def);
-  else
+  } else {
     ct->fields.insertAtHead(def);
+  }
 }
 
 
 void AggregateType::addDeclarations(Expr* expr, bool tail) {
   if (DefExpr* def = toDefExpr(expr)) {
     addDeclaration(this, def, tail);
+
   } else if (BlockStmt* block = toBlockStmt(expr)) {
-    for_alist(expr, block->body) {
-      addDeclarations(expr, tail);
+    for_alist(stmt, block->body) {
+      addDeclarations(stmt, tail);
     }
   } else if (DelegateStmt* delegate = toDelegateStmt(expr)) {
     // delegate expr is a def expr for a function that we should handle.
@@ -1310,6 +1336,19 @@ bool is_complex_type(Type *t) {
 
 bool is_enum_type(Type *t) {
   return toEnumType(t);
+}
+
+
+bool isLegalParamType(Type* t) {
+  return (is_bool_type(t) ||
+          is_int_type(t) ||
+          is_uint_type(t) ||
+          is_real_type(t) ||
+          is_imag_type(t) ||
+          is_enum_type(t) ||
+          isString(t) ||
+          t == dtStringC ||
+          t == dtUnknown);
 }
 
 int get_width(Type *t) {

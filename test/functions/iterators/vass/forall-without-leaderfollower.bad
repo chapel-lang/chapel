@@ -1,7 +1,1 @@
-internal error:
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see http://chapel.cray.com/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
+forall-without-leaderfollower.chpl:11: error: unresolved call 'TEST.these(tag=iterKind)'

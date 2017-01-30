@@ -207,6 +207,17 @@ all:
     - Stack allocate on and task function argument bundles (#4074)
   12/08/16:
     - Re-enable denormalization (#4547)
+  12/13/16:
+    - text: inferConst improvements related to _retArg (#4969)
+      config: 16 node XC
+  12/14/16:
+    - Reduce task creation time for "bounded" coforalls (#5018)
+    - text: Ugni comm layer improvements for forks and the heap (internal #276)
+      config: 16 node XC
+  12/22/16:
+    - multi-ddata (#5047)
+  01/11/17:
+    - Move the multi-ddata metadata fields, checking cache effects for 'flat'. (#5145)
 
 
 AllCompTime:
@@ -353,6 +364,14 @@ fasta:
     - Switch release fasta to use linear search (#4796)
   11/18/16:
     - Replace queried domain iterations with range iterations (#4886)
+  12/09/16:
+    - Change linear search to avoid 'break' (#4994)
+  12/10/16:
+    - Switch from 'sync' to 'atomic'-based coordination (#5004)
+  12/15/16:
+    - Parallelize release version, make more use of randType and refactor for CLBG submissions (#5024)
+  12/19/16:
+    - Switch max number of tasks from 3 to 4 (#5078)
 
 fastaredux:
   01/14/14:
@@ -394,7 +413,7 @@ hpl_performance:
     - Fixed string leak in DimensionalDist2D (#3013)
   11/30/16:
     - text: Improvements to inferConstRefs (#4904)
-    - config: 16 node XC
+      config: 16 node XC
 
 init:
   05/03/16:
@@ -413,6 +432,9 @@ is:
 isx:
   02/26/16:
     - ISx ref to array (#3365)
+  01/10/17:
+    - text: Use comm primitive in ISx study version (#5131)
+      config: 16 node XC
 
 isx-bucket-spmd:
   02/26/16:
@@ -477,6 +499,10 @@ jacobi:
     - Allow casts between c_void_ptr and object types (#4802)
   11/10/16:
     - Make each Symbol keep a list of SymExprs (#4827)
+  01/07/17:
+    - add param versions of min/max for ints (#5073)
+  01/13/17:
+    - refactoring of rectangular IO (#5157)
 
 knucleotide:
   10/16/15:
@@ -487,6 +513,8 @@ LCALSMain:
   10/20/16:
     - Clean up to HYDRO_2D kernel (#4757)
     - update to TRAP_INT serial kernel (#4756)
+  12/10/16:
+    - Throw --no-ieee-float for LCALS (#5001)
 
 lulesh:
   03/15/14:
@@ -513,6 +541,10 @@ mandelbrot:
     - Start using C99 functions for operations such as abs() on complex numbers (#4098)
   07/08/16:
     - Added compiler option --no-ieee-float to mandelbrot-complex (#4134)
+  01/15/17:
+    - Implement a Swift-like version of mandelbrot (#5168)
+  01/19/17:
+    - Mandelbrot tweaks (#5188)
 
 mandelbrot-extras:
   01/03/14:
@@ -553,6 +585,12 @@ memleaks:
     - Sync as record (#4309)
   08/17/16:
     - Single as record (#4350)
+  01/05/17:
+    - Maybe "adding support for params without initializers"(#5075)?
+  01/07/17:
+    - new test verifying the user's guide type aliases section (#5075)
+  01/17/17:
+    - new test of Sparse domain block clear functionality (#5173)
 
 memleaksfull:
   07/08/14:
@@ -649,6 +687,10 @@ prk-stencil.xc-perf:
   08/12/16:
     - Improve and enable strided bulk transfer optimization as default (#4318)
 
+ptrans:
+  01/11/17:
+    - Replace temporary array in BlockCycDist with tuple (#5139)
+
 ra:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
@@ -712,7 +754,7 @@ STREAM_performance:
 steam-promoted.xc-perf:
   12/02/16:
     - text: RVF reference fields with record-wrapped type (#4925)
-    - config: 16 node XC
+      config: 16 node XC
 
 STREAM_study:
   10/21/16:
@@ -736,6 +778,10 @@ stream:
 taskSpawn:
   07/24/16:
     - Stopped performing remote value forwarding on task functions (#4240)
+
+temporary-copies:
+  01/14/17:
+    - Likely cache effects
 
 testSerialReductions:
   08/16/14:

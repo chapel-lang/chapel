@@ -168,7 +168,7 @@ module SSCA2_kernels
   // For task-private temporary variables
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
-  // Would be nice to use PriavteDist, but aliasing is not supported (yet)
+  // Would be nice to use PrivateDist, but aliasing is not supported (yet)
   const PrivateSpace = LocaleSpace dmapped Block(boundingBox=LocaleSpace);
 
   // ==================================================================
@@ -466,7 +466,7 @@ module SSCA2_kernels
 
         TPVM.releaseTPV(tid);
 
-      }; // closure of outer embarassingly parallel forall
+      }; // closure of outer embarrassingly parallel forall
 
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();

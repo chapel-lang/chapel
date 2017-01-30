@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -45,6 +45,9 @@ typedef struct {
 // between C code and Chapel code in the runtime.
 typedef intptr_t chpl_taskID_t;
 #define chpl_nullTaskID 0
+#ifndef CHPL_TASK_ID_STRING_MAX_LEN
+#define CHPL_TASK_ID_STRING_MAX_LEN 21
+#endif
 
 //
 // Task layer private area argument bundle header
@@ -58,7 +61,8 @@ typedef struct {
   c_sublocid_t requestedSubloc;
   chpl_fn_int_t requested_fid;
   chpl_fn_p requested_fn;
-  chpl_task_prvData_t prv;
+  chpl_taskID_t id;
+  //chpl_task_prvData_t prv;
 } chpl_task_bundle_t;
 
 #endif

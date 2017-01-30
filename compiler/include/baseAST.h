@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -548,7 +548,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, DelegateStmt, toFnDef, call, __VA_ARGS__);       \
     break;                                                              \
   case E_TryStmt:                                                       \
-    AST_CALL_CHILD(_a, TryStmt, getBody(), call, __VA_ARGS__);          \
+    AST_CALL_CHILD(_a, TryStmt, body(), call, __VA_ARGS__);             \
     break;                                                              \
   case E_ModuleSymbol:                                                  \
     AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \

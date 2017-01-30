@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,7 @@ enum PrimitiveTag {
                         // generating code.
   PRIM_REF_TO_STRING,
   PRIM_RETURN,
+  PRIM_THROW,
   PRIM_YIELD,
   PRIM_UNARY_MINUS,
   PRIM_UNARY_PLUS,
@@ -265,9 +266,8 @@ extern PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 void printPrimitiveCounts(const char* passName);
 void initPrimitive();
 
-extern Map<const char*, VarSymbol*> memDescsMap;
 extern Vec<const char*> memDescsVec;
-
 VarSymbol* newMemDesc(const char* str);
+VarSymbol* newMemDesc(Type* type);
 
 #endif

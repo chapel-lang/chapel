@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -192,7 +192,7 @@ buildDefaultWrapper(FnSymbol* fn,
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
                                            wrapper->_this,
-                                           callChplHereAlloc((wrapper->_this->typeInfo())->symbol)));
+                                           callChplHereAlloc(wrapper->_this->typeInfo())));
 
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }

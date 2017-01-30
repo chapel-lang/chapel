@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -55,7 +55,7 @@ checkParsed() {
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (toVarSymbol(def->sym))
+    if (toVarSymbol(def->sym)) {
       // The test for FLAG_TEMP allows compiler-generated (temporary) variables
       // to be declared without an explicit type or initializer expression.
       if ((!def->init || def->init->isNoInitExpr())
@@ -66,6 +66,25 @@ checkParsed() {
               USR_FATAL_CONT(def->sym,
                              "Variable '%s' is not initialized or has no type",
                              def->sym->name);
+    }
+
+    //
+    // This test checks to see if query domains (e.g., '[?D]') are
+    // used in places other than formal argument type specifiers.
+    //
+    if (!isFnSymbol(def->parentSymbol)) {
+      if (CallExpr* type = toCallExpr(def->exprType)) {
+        if (type->isNamed("chpl__buildArrayRuntimeType")) {
+          if (CallExpr* domainExpr = toCallExpr(type->get(1))) {
+            DefExpr* queryDomain = toDefExpr(domainExpr->get(1));
+            if (queryDomain) {
+              USR_FATAL_CONT(queryDomain,
+                             "Domain query expressions may currently only be used in formal argument types");
+            }
+          }
+        }
+      }
+    }
 
     checkPrivateDecls(def);
   }
@@ -161,12 +180,6 @@ static void checkPrivateDecls(DefExpr* def) {
 
 static void
 checkParsedVar(VarSymbol* var) {
-  if (var->isParameter() && !var->immediate)
-    if (!var->defPoint->init &&
-        (toFnSymbol(var->defPoint->parentSymbol) ||
-         toModuleSymbol(var->defPoint->parentSymbol)))
-      USR_FATAL_CONT(var, "Top-level params must be initialized.");
-
   if (var->defPoint->init && var->defPoint->init->isNoInitExpr()) {
     if (var->hasFlag(FLAG_CONST))
       USR_FATAL_CONT(var, "const variables specified with noinit must be explicitly initialized.");

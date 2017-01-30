@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,7 +30,8 @@ public:
 
                       TryStmt(bool tryBang, BlockStmt* body);
                       ~TryStmt();
-  BlockStmt*          getBody() const;
+  BlockStmt*          body() const;
+  bool                tryBang() const;
 
   void                accept(AstVisitor* visitor);
   Expr*               copy(SymbolMap* map = NULL, bool internal = false);
@@ -42,8 +43,8 @@ public:
   GenRet              codegen();
 
 private:
-  bool                tryBang;
-  BlockStmt*          body;
+  bool                _tryBang;
+  BlockStmt*          _body;
 
   static BlockStmt*   buildChplStmt(Expr* expr);
                       TryStmt();

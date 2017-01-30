@@ -1,0 +1,1 @@
+theseShouldPromote2.chpl:26: error: unresolved call 'C.these(tag=iterKind)'

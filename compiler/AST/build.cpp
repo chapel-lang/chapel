@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -516,7 +516,7 @@ BlockStmt* buildUseStmt(CallExpr* args) {
   if (list == NULL) {
     list = buildChapelStmt(new CallExpr(PRIM_NOOP));
   }
-  
+
   return list;
 }
 
@@ -559,7 +559,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
   if (list == NULL) {
     list = buildChapelStmt(new CallExpr(PRIM_NOOP));
   }
-  
+
   return list;
 }
 
@@ -1581,19 +1581,63 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     onBlock->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     return block;
   } else {
-    VarSymbol* coforallCount = newTemp("_coforallCount");
-    BlockStmt* beginBlk = new BlockStmt();
-    beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
-    addByrefVars(beginBlk, byref_vars);
-    beginBlk->insertAtHead(body);
-    beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-    BlockStmt* block = ForLoop::buildForLoop(indices, iterator, beginBlk, true, zippered);
-    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
-    block->insertAtHead(new DefExpr(coforallCount));
-    beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
-    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
-    block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
-    return block;
+
+    BlockStmt* coforallBlk = new BlockStmt();
+
+    BlockStmt* vectorCoforallBlk = new BlockStmt();
+    BlockStmt* nonVectorCoforallBlk = new BlockStmt();
+
+    VarSymbol* tmpIter = newTemp("tmpIter");
+    coforallBlk->insertAtTail(new DefExpr(tmpIter));
+    coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, tmpIter, iterator));
+    {
+      VarSymbol* coforallCount = newTemp("_coforallCount");
+      BlockStmt* beginBlk = new BlockStmt();
+      beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
+      addByrefVars(beginBlk, byref_vars);
+      beginBlk->insertAtHead(body);
+      beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+      BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(tmpIter), beginBlk, true, zippered);
+      block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /*forceLocalTypes=*/gTrue)));
+      block->insertAtHead(new DefExpr(coforallCount));
+      beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
+      block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+      block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
+      nonVectorCoforallBlk->insertAtTail(block);
+    }
+    {
+      VarSymbol* coforallCount = newTemp("_coforallCount");
+      BlockStmt* beginBlk = new BlockStmt();
+      beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
+      addByrefVars(beginBlk, byref_vars);
+      beginBlk->insertAtHead(body->copy());
+      beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+      VarSymbol* numTasks = newTemp("numTasks");
+      vectorCoforallBlk->insertAtTail(new DefExpr(numTasks));
+      vectorCoforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, numTasks, new CallExpr(".", tmpIter,  new_CStringSymbol("size"))));
+      vectorCoforallBlk->insertAtTail(new CallExpr("_upEndCount", coforallCount, /*countRunningTasks=*/gTrue, numTasks));
+      BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(tmpIter), beginBlk, true, zippered);
+      vectorCoforallBlk->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /*forceLocalTypes=*/gTrue)));
+      vectorCoforallBlk->insertAtHead(new DefExpr(coforallCount));
+      block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, /*countRunningTasks=*/gTrue, numTasks));
+      block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
+      vectorCoforallBlk->insertAtTail(block);
+    }
+
+    VarSymbol* isRngDomArr  = newTemp("isRngDomArr");
+    isRngDomArr->addFlag(FLAG_MAYBE_PARAM);
+    coforallBlk->insertAtTail(new DefExpr(isRngDomArr));
+
+    coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isRngDomArr,
+                              new CallExpr("||", new CallExpr("isBoundedRange", tmpIter),
+                              new CallExpr("||", new CallExpr("isDomain", tmpIter), new CallExpr("isArray", tmpIter)))));
+
+
+    coforallBlk->insertAtTail(new CondStmt(new SymExpr(isRngDomArr),
+                                           vectorCoforallBlk->copy(),
+                                           nonVectorCoforallBlk->copy()));
+
+    return coforallBlk;
   }
 }
 
@@ -1817,7 +1861,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
       // or with a filtering predicate is not handled.
       return NULL;
   }
-    
+
   if (CallExpr* dataCall = toCallExpr(dataExpr)) {
     if (DefExpr* calleeDef = toDefExpr(dataCall->baseExpr))
       {
@@ -2320,18 +2364,18 @@ FnSymbol* buildLambda(FnSymbol *fn) {
    * where an unsigned integer can represent numbers larger than 10^86, but it
    * is better to guard against this behavior then leaving someone wondering
    * why we didn't.
-   */ 
+   */
   if (snprintf(buffer, 100, "_chpl_lambda_%i", nextId++) >= 100) {
     INT_FATAL("Too many lambdas.");
   }
-  
+
   if (!fn) {
     fn = new FnSymbol(astr(buffer));
   } else {
     fn->name = astr(buffer);
     fn->cname = fn->name;
   }
-  
+
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   return fn;
 }
@@ -2339,11 +2383,13 @@ FnSymbol* buildLambda(FnSymbol *fn) {
 
 // Replaces the dummy function name "_" with the real name, sets the 'this'
 // intent tag. For methods, it also adds a method tag and "this" declaration.
+// receiver is typically an UnresolvedSymExpr("class_name") in order
+// to declare a method outside of a record/class.
 FnSymbol*
 buildFunctionSymbol(FnSymbol*   fn,
                     const char* name,
                     IntentTag   thisTag,
-                    const char* class_name)
+                    Expr*       receiver)
 {
   fn->cname   = fn->name = astr(name);
   fn->thisTag = thisTag;
@@ -2351,12 +2397,12 @@ buildFunctionSymbol(FnSymbol*   fn,
   if (fn->name[0] == '~' && fn->name[1] != '\0')
     fn->addFlag(FLAG_DESTRUCTOR);
 
-  if (class_name)
+  if (receiver)
   {
     ArgSymbol* arg = new ArgSymbol(thisTag,
                                    "this",
                                    dtUnknown,
-                                   new UnresolvedSymExpr(class_name));
+                                   receiver);
     fn->_this = arg;
     if (thisTag == INTENT_TYPE) {
       setupTypeIntentArg(arg);
@@ -2375,11 +2421,12 @@ buildFunctionSymbol(FnSymbol*   fn,
 }
 
 // Called like:
-// buildFunctionDecl($4, $6, $7, $8, $9, @$.comment);
+// buildFunctionDecl($4, $6, $7, $8, $9, $10, @$.comment);
 BlockStmt*
 buildFunctionDecl(FnSymbol*   fn,
                   RetTag      optRetTag,
                   Expr*       optRetType,
+                  bool        optThrowsError,
                   Expr*       optWhere,
                   BlockStmt*  optFnBody,
                   const char* docs)
@@ -2396,6 +2443,14 @@ buildFunctionDecl(FnSymbol*   fn,
     fn->retExprType = new BlockStmt(optRetType, BLOCK_SCOPELESS);
   else if (fn->hasFlag(FLAG_EXTERN))
     fn->retType     = dtVoid;
+
+  if (optThrowsError)
+  {
+    if (fn->hasFlag(FLAG_EXTERN))
+      USR_FATAL_CONT(fn, "Extern functions cannot throw errors.");
+
+    fn->throwsErrorInit();
+  }
 
   if (optWhere)
   {

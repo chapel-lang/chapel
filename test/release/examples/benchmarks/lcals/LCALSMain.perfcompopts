@@ -1,1 +1,1 @@
--sperfTesting=true
+-sperfTesting=true --no-ieee-float

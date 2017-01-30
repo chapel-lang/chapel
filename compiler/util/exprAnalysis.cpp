@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -117,7 +117,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
 
   // check if fn have any ref arguments
   for_formals(formal, fnSym) {
-    if(isReferenceType(formal->typeInfo())) {
+    if (formal->isRef()) {
       safeFnCache[fnSym] = false;
       return false;
     }

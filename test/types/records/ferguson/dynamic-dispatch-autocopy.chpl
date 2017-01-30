@@ -18,6 +18,8 @@ record R {
   var obj:Parent = nil;
 }
 
+/* user record's can't write their own
+   autoCopy after PR #5164
 pragma "donor fn"
 pragma "auto copy fn"
 proc chpl__autoCopy(arg: R) {
@@ -32,6 +34,7 @@ proc chpl__autoCopy(arg: R) {
 
   return ret;
 }
+*/
 
 // I'd like this to be ref, but that breaks
 //    var outerX: R; begin { var x = outerX; }

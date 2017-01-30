@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,9 @@ class CallInfo;
 
 extern SymbolMap paramMap;
 extern Vec<CallExpr*> callStack;
-extern Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
+bool hasAutoCopyForType(Type* type);
+FnSymbol* getAutoCopyForType(Type* type);
+void getAutoCopyTypeKeys(Vec<Type*> &keys); // type to chpl__autoCopy function
 extern Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
 extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
@@ -43,6 +45,8 @@ bool isDispatchParent(Type* t, Type* pt);
 
 bool canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes = NULL);
 bool canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn = NULL, bool* promotes = NULL, bool paramCoerce = false);
+
+bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 
 const char* toString(Type* type);
 const char* toString(CallInfo* info);
@@ -91,7 +95,8 @@ bool isPOD(Type* t);
 
 // tuples
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
-void fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
+// returns true if the function was handled
+bool fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 AggregateType* computeNonRefTuple(Type* t);
 AggregateType* computeTupleWithIntent(IntentTag intent, Type* t);
 

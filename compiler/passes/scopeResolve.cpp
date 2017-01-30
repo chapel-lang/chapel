@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -212,7 +212,6 @@ void scopeResolve() {
   // build constructors (type and value versions)
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
-    SET_LINENO(ct->symbol);
     build_constructors(ct);
   }
 
@@ -939,8 +938,7 @@ static void build_type_constructor(AggregateType* ct) {
       Expr* exprType = field->defPoint->exprType;
       Expr* init = field->defPoint->init;
 
-      if (!strcmp(field->name, "_promotionType") ||
-          field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR)) {
+      if (!strcmp(field->name, "_promotionType")) {
 
         fn->insertAtTail(
           new BlockStmt(
@@ -1085,7 +1083,6 @@ static void build_constructor(AggregateType* ct) {
       // "outer" is used internally to supply a pointer to
       // the outer parent of a nested class.
       if (!field->hasFlag(FLAG_SUPER_CLASS) &&
-          !field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR) &&
           strcmp(field->name, "_promotionType") &&
           strcmp(field->name, "outer")) {
         // Create an argument to the default constructor
@@ -1104,7 +1101,7 @@ static void build_constructor(AggregateType* ct) {
 
   if (ct->symbol->hasFlag(FLAG_REF)) {
     // For ref, sync and single classes, just allocate space.
-    allocCall = callChplHereAlloc(fn->_this);
+    allocCall = callChplHereAlloc(fn->_this->type);
 
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
 

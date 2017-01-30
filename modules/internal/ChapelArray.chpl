@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -2352,7 +2352,7 @@ module ChapelArray {
           if newRange.low > r2.low {
             // not able to take enough spaces off the low end.  Take them
             // off the high end instead.
-            const spaceNeeded = r2.low - newRange.low;
+            const spaceNeeded = newRange.low - r2.low;
             newRange = r2.low..(newRange.high-spaceNeeded);
           }
           return newRange;
@@ -3030,11 +3030,11 @@ module ChapelArray {
         compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
 
     if !isIrregularDom(a) && !isIrregularDom(b) {
-      for e in a._value._arrs do {
+      for e in a._instance._arrs do {
         on e do e.dsiReallocate(b);
       }
       a.setIndices(b.getIndices());
-      for e in a._value._arrs do {
+      for e in a._instance._arrs do {
         on e do e.dsiPostReallocate();
       }
     } else {
@@ -3188,6 +3188,7 @@ module ChapelArray {
     // constraints specific to a particular domain map array type
     if !a._value.doiCanBulkTransfer() then return false;
     if !b._value.doiCanBulkTransfer() then return false;
+    if !a._value.doiUseBulkTransfer(b) then return false;
 
     return true;
   }
@@ -3201,6 +3202,7 @@ module ChapelArray {
     // constraints specific to a particular domain map array type
     if !a._value.doiCanBulkTransferStride() then return false;
     if !b._value.doiCanBulkTransferStride() then return false;
+    if !a._value.doiUseBulkTransferStride(b) then return false;
 
     return true;
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -142,7 +142,7 @@ A code example::
 */
 module GMP {
   use SysBasic;
-  use Error;
+  use SysError;
   use BigInteger;
 
   /* The GMP ``mp_bitcnt_t`` type */

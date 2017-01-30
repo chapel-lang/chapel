@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -510,21 +510,40 @@ void SymExpr::verify() {
   if (var == NULL)
     INT_FATAL(this, "SymExpr::verify %12d: var is NULL", id);
 
-  if (var != NULL && var->defPoint != NULL && var->defPoint->parentSymbol == NULL)
-    INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
-
-  // Check that we can find this SymExpr in the Symbol's list
-  bool found = false;
-  for_SymbolSymExprs(se, var) {
-    if (se == this) {
-      found = true;
-      break;
-    }
+  if (var->defPoint) {
+    if (var->defPoint->parentSymbol == NULL)
+      INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
+  } else {
+    if (var != rootModule)
+      INT_FATAL(this, "SymExpr::var is a symbol without a defPoint");
   }
 
-  if (!found)
-    INT_FATAL(this, "SymExpr::verify %12d:  SymExpr not in Symbol's list", id);
+  /* Check that:
+      - every live SymExpr is in a Symbol's list
+      - every live SymExpr is in it's Symbol's list
 
+     using local operations on the lists.
+   */
+
+  if (this->symbolSymExprsPrev == NULL) {
+    if (var->firstSymExpr() != this)
+      INT_FATAL(this, "SymExpr::verify %12d: no prev but not first", id);
+  } else {
+    if (this->symbolSymExprsPrev->var != var)
+      INT_FATAL(this, "SymExpr::verify %12d: does not match prev SymExpr", id);
+    if (!this->symbolSymExprsPrev->inTree())
+      INT_FATAL(this, "SymExpr::verify %12d: prev SymExpr not in tree", id);
+  }
+
+  if (this->symbolSymExprsNext == NULL) {
+    if (var->lastSymExpr() != this)
+      INT_FATAL(this, "SymExpr::verify %12d: no next but not last", id);
+  } else {
+    if (this->symbolSymExprsNext->symbol() != this->symbol())
+      INT_FATAL(this, "SymExpr::verify %12d: does not match next SymExpr", id);
+    if (!this->symbolSymExprsNext->inTree())
+      INT_FATAL(this, "SymExpr::verify %12d: next SymExpr not in tree", id);
+  }
 }
 
 SymExpr* SymExpr::copyInner(SymbolMap* map) {
@@ -1597,15 +1616,13 @@ get_string(Expr* e) {
 // given type.
 //
 // This function should be used *before* resolution
-CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md) {
-  CallExpr* sizeExpr;
-  VarSymbol* mdExpr;
+CallExpr* callChplHereAlloc(Type *type, VarSymbol* md) {
   INT_ASSERT(!resolved);
   // Since the type is not necessarily known, resolution will fix up
   // this sizeof() call to take the resolved type of s as an argument
-  sizeExpr = new CallExpr(PRIM_SIZEOF, new SymExpr(s));
-  mdExpr = (md != NULL) ? md : newMemDesc(s->name);
-  CallExpr* allocExpr = new CallExpr("chpl_here_alloc", sizeExpr, mdExpr);
+  CallExpr*  sizeExpr  = new CallExpr(PRIM_SIZEOF, new SymExpr(type->symbol));
+  VarSymbol* mdExpr    = (md != NULL) ? md : newMemDesc(type);
+  CallExpr*  allocExpr = new CallExpr("chpl_here_alloc", sizeExpr, mdExpr);
   // Again, as we don't know the type yet, we leave it to resolution
   // to put in the cast to the proper type
   return allocExpr;
@@ -1624,7 +1641,7 @@ void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
                                     new CallExpr(PRIM_SIZEOF,
                                                  (ct != NULL) ?
                                                  ct->symbol : t->symbol));
-  VarSymbol* mdExpr = (md != NULL) ? md : newMemDesc(t->symbol->name);
+  VarSymbol* mdExpr = (md != NULL) ? md : newMemDesc(t);
   Symbol *allocTmp = newTemp("chpl_here_alloc_tmp", dtCVoidPtr);
   CallExpr* allocExpr = new CallExpr(PRIM_MOVE, allocTmp,
                                      new CallExpr(gChplHereAlloc,

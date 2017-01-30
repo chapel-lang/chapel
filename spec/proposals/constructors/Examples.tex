@@ -527,13 +527,11 @@ look like:
 The current implementation uses the special pragma ``ignore noinit'', which is no longer
 needed because the noinit flag is simply ignored.
 
-When constructors are implemented to the point of supporting \sntx{initializer-clause}s,
-the pragma ``omit from constructor'' will also be unnecessary because the all-fields
-constructor would not always be called from an explicit constructor as it is today.
-Instead, field-initialization would be covered by the semantics of the
-\sntx{initializer-clause}.  The all-fields constructor would be called only if invoked
-explicitly from user code (impossible if any user-defined constructor is present), or to
-implement the semantics of \chpl{_defaultOf()}.
+When constructors are implemented to the point of supporting
+\sntx{initializer-clause}s, field-initialization would be covered by its
+semantics.  The all-fields constructor would be called only if invoked
+explicitly from user code (impossible if any user-defined constructor is
+present), or to implement the semantics of \chpl{_defaultOf()}.
 
 The implementation for single variable would, of course, parallel the implementation for
 sync vars.  When the \chpl{_defaultOf()} and the constructor calls are inlined, the above as would

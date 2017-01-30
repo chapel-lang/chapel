@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -281,14 +281,17 @@ void closeCFile(fileinfo* fi, bool beautifyIt) {
   fclose(fi->fptr);
   //
   // We should beautify if (1) we were asked to and (2) either (a) we
-  // were asked to save the C code or (b) we're debugging and were
-  // asked to codegen cpp #line information.
+  // were asked to save the C code or (b) we were asked to codegen cpp
+  // #line information (note that this can affect the output in the
+  // event of a failed C compilation whether or not the --savec option
+  // is used because a C codegen error will report the Chapel line #,
+  // which can be helpful.
   //
   // TODO: With some refactoring, we could simply do the #line part of
   // beautify without also improving indentation and such which could
   // save some time.
   //
-  if (beautifyIt && (saveCDir[0] || (debugCCode && printCppLineno)))
+  if (beautifyIt && (saveCDir[0] || printCppLineno))
     beautify(fi);
 }
 

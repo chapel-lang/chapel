@@ -8,7 +8,7 @@
 //
 
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1014,6 +1014,18 @@ chpl_taskID_t chpl_task_getId(void)
         *id_ptr = qthread_incr(&next_task_id, 1);
 
     return *id_ptr;
+}
+
+chpl_bool chpl_task_idEquals(chpl_taskID_t id1, chpl_taskID_t id2) {
+  return id1 == id2;
+}
+
+char* chpl_task_idToString(char* buff, size_t size, chpl_taskID_t id) {
+  int ret = snprintf(buff, size, "%u", id);
+  if(ret>0 && ret<size)
+    return buff;
+  else
+    return NULL;
 }
 
 void chpl_task_sleep(double secs)

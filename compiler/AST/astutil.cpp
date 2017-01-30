@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -169,26 +169,34 @@ void compute_call_sites() {
       fn->calledBy = new Vec<CallExpr*>();
   }
 
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isEmpty() == true) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    for_SymbolSymExprs(se, fn) {
+      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        if (call->isEmpty() == true) {
+          assert(0); // not possible
 
-    } else if (isAlive(call) == false) {
+        } else if (isAlive(call) == false) {
+          assert(0); // not possible
 
-    } else if (FnSymbol* fn = call->resolvedFunction()) {
-      fn->calledBy->add(call);
+        } else if (fn == call->resolvedFunction()) {
+          fn->calledBy->add(call);
 
-    } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
-      // sjd: do we have to do anything special here?
-      //      should this call be added to some function's calledBy list?
+        } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+          // sjd: do we have to do anything special here?
+          //      should this call be added to some function's calledBy list?
 
-    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      FnSymbol*       fn       = toFnSymbol(toSymExpr(call->get(1))->symbol());
-      Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
+        } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+          FnSymbol*      vFn       = toFnSymbol(toSymExpr(call->get(1))->symbol());
+          if (vFn == fn) {
+            Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
 
-      fn->calledBy->add(call);
+            fn->calledBy->add(call);
 
-      forv_Vec(FnSymbol, child, *children)
-        child->calledBy->add(call);
+            forv_Vec(FnSymbol, child, *children)
+              child->calledBy->add(call);
+          }
+        }
+      }
     }
   }
 }
@@ -209,7 +217,7 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
   }
 
   // The set of uses is the set of all SymExprs.
-  buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
+  buildDefUseMaps(symSet, defMap, useMap);
 }
 
 
@@ -229,16 +237,25 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
   AST_CHILDREN_CALL(ast, collectSymbolSetSymExprVec, symSet, symExprs);
 }
 
+void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet) {
+  if (DefExpr* def = toDefExpr(ast)) {
+    if (isLcnSymbol(def->sym)) {
+      symSet.set_add(def->sym);
+    }
+  }
+  AST_CHILDREN_CALL(ast, collectSymbolSet, symSet);
+}
+
+
 // builds the vectors for every variable/argument in 'fn' and looks
 // for uses and defs only in 'fn'
 void buildDefUseMaps(FnSymbol* fn,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   Vec<Symbol*> symSet;
-  Vec<SymExpr*> symExprs;
-  // Collect symbols and sym expressions on within the given function
-  collectSymbolSetSymExprVec(fn, symSet, symExprs);
-  buildDefUseMaps(symSet, symExprs, defMap, useMap);
+  // Collect symbols within the given function
+  collectSymbolSet(fn, symSet);
+  buildDefUseMaps(symSet, defMap, useMap);
 }
 
 // builds the vectors for every variable declaration in the given block
@@ -247,10 +264,9 @@ void buildDefUseMaps(BlockStmt* block,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   Vec<Symbol*> symSet;
-  Vec<SymExpr*> symExprs;
   // Collect symbols and sym expressions only within the given block.
-  collectSymbolSetSymExprVec(block, symSet, symExprs);
-  buildDefUseMaps(symSet, symExprs, defMap, useMap);
+  collectSymbolSet(block, symSet);
+  buildDefUseMaps(symSet, defMap, useMap);
 }
 
 static void addUseOrDef(Map<Symbol*,Vec<SymExpr*>*>& ses, SymExpr* se) {
@@ -379,18 +395,21 @@ int isDefAndOrUse(SymExpr* se) {
 
 
 void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Vec<SymExpr*>& symExprs,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  forv_Vec(SymExpr, se, symExprs) {
-    if (se->parentSymbol && symSet.set_in(se->symbol())) {
-      int result = isDefAndOrUse(se);
+  forv_Vec(Symbol, sym, symSet) {
+    if (sym == NULL) continue;
 
-      if (result & 1)
-        addDef(defMap, se);
+    for_SymbolSymExprs(se, sym) {
+      if (se->parentSymbol && sym == se->symbol()) {
+        int result = isDefAndOrUse(se);
 
-      if (result & 2)
-        addUse(useMap, se);
+        if (result & 1)
+          addDef(defMap, se);
+
+        if (result & 2)
+          addUse(useMap, se);
+      }
     }
   }
 }

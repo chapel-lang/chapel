@@ -23,5 +23,3 @@ coforall i in 1..nTasks {
   }
   b.wait();
 }
-
-delete b;

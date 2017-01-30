@@ -26,7 +26,6 @@ Parsing module files:
   $CHPL_HOME/modules/standard/Math.chpl
   $CHPL_HOME/modules/standard/CommDiagnostics.chpl
   $CHPL_HOME/modules/standard/gen/.../SysCTypes.chpl
-  $CHPL_HOME/modules/standard/Sys.chpl
   $CHPL_HOME/modules/dists/DSIUtil.chpl
   $CHPL_HOME/modules/packages/Sort.chpl
   $CHPL_HOME/modules/standard/Reflection.chpl
@@ -35,7 +34,8 @@ Parsing module files:
   $CHPL_HOME/modules/standard/IO.chpl
   $CHPL_HOME/modules/packages/RangeChunk.chpl
   $CHPL_HOME/modules/packages/Search.chpl
-  $CHPL_HOME/modules/standard/Error.chpl
+  $CHPL_HOME/modules/standard/Sys.chpl
+  $CHPL_HOME/modules/standard/SysError.chpl
   $CHPL_HOME/modules/standard/Regexp.chpl
 In bar
 In baz

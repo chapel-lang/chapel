@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -117,7 +117,7 @@ HDFS Support Types and Functions
  */
 module HDFS {
 
-use IO, SysBasic, Error, UtilReplicatedVar;
+use IO, SysBasic, SysError, UtilReplicatedVar;
 
 pragma "no doc"
 extern type qio_locale_map_ptr_t;     // array of locale to byte range mappings

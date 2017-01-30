@@ -175,6 +175,7 @@ Syntax
 ::
 
   proc canThrowErrors() throws { … }
+  proc canAlsoThrowErrors(): A throws where ... { … }
   proc cannotThrowErrors() { … }
 
 * Errors can be handled with ``catch`` statements.
@@ -208,14 +209,19 @@ Default vs strict mode
 To address the desire for both fast prototyping and enforced error handling,
 the compiler will run checks in one of two modes, based on a flag.
 
-1. **Default.** If a call to a throwing procedure is not enclosed by a ``try``
-   or ``try!``, the program will compile with a warning and the call will
-   ``halt()`` on an error.
+If a call to a throwing procedure is not enclosed by a ``try`` or ``try!``: 
 
-2. **Strict.** If a call to a throwing procedure is not enclosed by a ``try``
-   or ``try!``, the compiler will raise an error.
+1. **Default.**: 
 
-A more fine-grained approach should be included in the future, with the
+   a. if the call is contained in a procedure labelled with ``throws``, any
+      error encountered will be propagated.
+
+   b. if the call is contained in a procedure not labelled with ``throws``,
+      the program will ``halt()`` if an error is encountered.
+
+2. **Strict.**: the compiler will raise an error.
+
+A more fine-grained approach will be included in the future, with the
 default/strict policy set per-module or per-function.
 
 Errors

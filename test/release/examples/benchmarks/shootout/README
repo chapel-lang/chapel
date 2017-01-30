@@ -28,7 +28,6 @@ At present, this directory contains the following codes:
     threadring.chpl     : Passes a token between a large number of threads
     fasta.chpl          : Generates DNA with different nucleotide distributions
                           and a random number generator
-    fastaredux.chpl     : fasta with an optimized distribution lookup  
 
 Over time, we plan to create versions of all the benchmarks and to
 enter Chapel into the competition.  Draft versions of other benchmarks
@@ -104,14 +103,22 @@ o should globals be allowed to be declared below main()?  If so, move
   fact[] to the bottom of the file?
 
 
-fasta / fastaredux
-------------------
+fasta
+-----
 o We should introduce local "static" variables (using some other
   keyword) and use it to define some of the variables that are
   currently at global or outer scopes unnecessarily
 
 o It seems like a param uint(8) whose value is known to fit in an
   int(8) should be assignable without a cast, but currently it isn't.
+
+o Multiple config types can't currently be declared with a current
+  statement it seems.  If they were, I'd alias int(8) to 'char'
+  but don't care about it enough to have two config type statements
+  (which seems lame).
+
+o Seems like we should have an iterator that does the block-cyclic
+  round robin dealing out of chunks of a given size from a range...
 
 
 knucleotide

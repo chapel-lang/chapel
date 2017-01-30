@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -83,12 +83,11 @@ static bool isDeadVariable(Symbol* var,
 
 void deadVariableElimination(FnSymbol* fn) {
   Vec<Symbol*> symSet;
-  Vec<SymExpr*> symExprs;
-  collectSymbolSetSymExprVec(fn, symSet, symExprs);
+  collectSymbolSet(fn, symSet);
 
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(symSet, symExprs, defMap, useMap);
+  buildDefUseMaps(symSet, defMap, useMap);
 
   forv_Vec(Symbol, sym, symSet)
   {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,23 +28,29 @@ BlockStmt* TryStmt::buildChplStmt(Expr* expr) {
   return new BlockStmt(expr, BLOCK_SCOPELESS);
 }
 
-TryStmt::TryStmt(bool _tryBang, BlockStmt* _body) : Stmt(E_TryStmt) {
-  tryBang = _tryBang;
-  body    = _body;
+TryStmt::TryStmt(bool tryBang, BlockStmt* body) : Stmt(E_TryStmt) {
+  _tryBang = tryBang;
+  _body    = body;
+
+  gTryStmts.add(this);
 }
 
 TryStmt::~TryStmt() {
 
 }
 
-BlockStmt* TryStmt::getBody() const {
-  return body;
+BlockStmt* TryStmt::body() const {
+  return _body;
+}
+
+bool TryStmt::tryBang() const {
+  return _tryBang;
 }
 
 void TryStmt::accept(AstVisitor* visitor) {
   if (visitor->enterTryStmt(this)) {
-    if (body) {
-      body->accept(visitor);
+    if (_body) {
+      _body->accept(visitor);
     }
     visitor->exitTryStmt(this);
   }
@@ -63,17 +69,13 @@ void TryStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 Expr* TryStmt::getFirstChild() {
-  return body;
+  return _body;
 }
 
 Expr* TryStmt::getFirstExpr() {
-  return body->getFirstExpr();
+  return _body->getFirstExpr();
 }
 
 Expr* TryStmt::getNextExpr(Expr* expr) {
   return this;
-}
-
-GenRet TryStmt::codegen() {
-  return GenRet(0);
 }

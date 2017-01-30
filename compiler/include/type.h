@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -165,6 +165,11 @@ public:
   {
   }
 
+  QualifiedType(Qualifier qual, Type* type)
+    : _type(type), _qual(qual)
+  {
+  }
+
   QualifiedType(Type* type, Qualifier qual)
     : _type(type), _qual(qual)
   {
@@ -192,6 +197,13 @@ public:
   bool isRefType() const;
   bool isWideRefType() const;
 
+  QualifiedType toRef() {
+    return QualifiedType(QUAL_REF, _type->getValType());
+  }
+
+  QualifiedType toVal() {
+    return QualifiedType(QUAL_VAL, _type->getValType());
+  }
 
   Type* type() const {
     return _type;
@@ -432,6 +444,7 @@ bool is_imag_type(Type*);
 bool is_complex_type(Type*);
 bool is_enum_type(Type*);
 #define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_real_type(t) || is_imag_type(t) || is_complex_type(t))
+bool isLegalParamType(Type*);
 int  get_width(Type*);
 bool isClass(Type* t);
 bool isRecord(Type* t);

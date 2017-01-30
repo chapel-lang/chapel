@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -546,7 +546,7 @@ void createTaskFunctions(void) {
             SET_LINENO(fnSymbol);
             fnSymbol->insertAtHead(
                 new CallExpr("chpl_rmem_consist_maybe_release", order));
-            fnSymbol->insertBeforeReturn(
+            fnSymbol->insertBeforeEpilogue(
                 new CallExpr("chpl_rmem_consist_maybe_acquire", order));
           }
         }
@@ -602,7 +602,7 @@ void createTaskFunctions(void) {
             CallExpr* neq = new CallExpr(PRIM_NOTEQUAL, curNodeID, targetNodeID);
 
             // Build error
-            CallExpr* err = new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Local-on is not local")); 
+            CallExpr* err = new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Local-on is not local"));
 
             CondStmt* cond = new CondStmt(neq, err);
             block->insertBefore(cond);
