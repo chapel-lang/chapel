@@ -22,7 +22,7 @@ Outline
  * `Rationale`_: The Problems Associated With Constructors
  * `Compiler Generated Initializers`_
  * `Initializer Naming`_
- * `How are Initializers Invoked`_
+ * `How are Initializers Invoked?`_
  * `Defining the Initializer Body`_
 
    - `Phase 1 of Initialization`_
@@ -571,6 +571,9 @@ variable of type Child is deinitialized, the compiler will arrange to call the
 Child first. Since fields can be used in the `deinit` methods, the fields of a
 given class will only be deinitialized after the `deinit` method for that class
 is run.
+
+Within a class or a record, record fields are deinitialized in reverse
+declaration order.
 
 This proposal does not define the de-initialization order of fields within a
 class. However note that when one field uses another - such as when an array is
