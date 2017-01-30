@@ -359,6 +359,9 @@ bool isRelationalOperator(CallExpr* call) {
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
+// Note that a DefExpr is where we hang the variable declaration, but after
+// normalize, a DefExpr itself does not set a variable, and so it does not count
+// as a Def.
 int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
