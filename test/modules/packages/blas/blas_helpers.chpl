@@ -83,3 +83,39 @@ inline proc conjg(x : real(32)) {
 inline proc conjg(x : real(64)) {
   return x;
 }
+
+
+/* Convert array to band-storage, assumes 0-based index */
+proc bandArray(A: [?Dom] ?eltType, l, u) where A.rank == 2 {
+
+  const m = Dom.dim(1).size,
+        n = Dom.dim(2).size;
+
+  const k = min(m, n),
+        rows = 1+l+u;
+
+  var a: [{0..#rows, 0..#k}] eltType;
+
+  for j in 1..k {
+    for i in max(1, j-u)..min(n, j+l) {
+      const idx = u+i-j;
+      a[idx, j-1] = A[i-1, j-1];
+    }
+  }
+
+  return a;
+}
+
+
+/* Naive transpose */
+proc transpose(A: [?D] ?t) where A.rank == 2 {
+
+  const m = D.dim(1).size,
+        n = D.dim(2).size;
+
+  var B: [{0..#n, 0..#m}] t;
+  for (i, j) in D {
+    B[j, i] = A[i, j];
+  }
+  return B;
+}
