@@ -1,4 +1,4 @@
-/* Test domain.shape method */
+/* Test domain.shape method (called from array.shape) */
 
 use BlockDist;
 
@@ -8,19 +8,11 @@ use BlockDist;
 
 // RectangularDom
 var rectDom = {1..10, 1..10};
-writeln(rectDom.shape);
+assertEqual(rectDom.shape, (10, 10), msg='rectDom:');
 
 // RectangularArray
 var rectArray: [rectDom] int;
-writeln(rectArray.shape);
-
-//
-// Distributed Domains & Arrays
-//
-
-// Block-distributed
-var blockDom = rectDom dmapped Block(boundingBox=rectDom);
-writeln(blockDom.shape);
+assertEqual(rectArray.shape, (10, 10), msg='rectArray:');
 
 //
 // Irregular Domains & Arrays
@@ -28,37 +20,51 @@ writeln(blockDom.shape);
 
 // SparseDom
 var sparseDom: sparse subdomain(rectDom);
-writeln(sparseDom.shape);
+assertEqual(sparseDom.shape, (10, 10), msg='sparseDom:');
 
 // RectangularArray
 var sparseArray: [sparseDom] int;
-writeln(sparseArray.shape);
+assertEqual(sparseArray.shape, (10, 10), msg='sparseArray:');
 
 // OpaqueDom
 var opaqueDom: domain(opaque);
-opaqueDom.create();
-opaqueDom.create();
-writeln(opaqueDom.shape);
+for 1..10 do opaqueDom.create();
+assertEqual(opaqueDom.shape, (10,), msg='opaqueDom:');
 
 var opaqueArray: [opaqueDom] int;
-writeln(opaqueArray.shape);
+assertEqual(opaqueArray.shape, (10,), msg='opaqueArray:');
 
 // AssociativeDom
 var associativeDom: domain(int);
-associativeDom += 1;
-associativeDom += 2;
-writeln(associativeDom.shape);
+for i in 1..10 do associativeDom += i;
+assertEqual(associativeDom.shape, (10,), msg='associateDom:');
 
 var associativeArray: [associativeDom] int;
-writeln(associativeArray.shape);
+assertEqual(associativeArray.shape, (10,), msg='associateArray:');
 
 // EnumDom (a flavor of AssociateDom)
-enum compass {N, E, S, W};
-var enumDom: domain(compass);
-writeln(enumDom.shape);
+enum digits {zero, one, two, three, four, five, six, seven, eight, nine};
+var enumDom: domain(digits);
+assertEqual(enumDom.shape, (10,), msg='enumDom:');
 
 var enumArray: [enumDom] int;
-writeln(enumArray.shape);
+assertEqual(enumArray.shape, (10,), msg='enumArray:');
+
+//
+// Distributed Domains & Arrays
+//
+
+// Block-distributed
+var blockDom = rectDom dmapped Block(boundingBox=rectDom);
+assertEqual(blockDom.shape, (10, 10), msg='blockDom');
+
+var blockArray: [blockDom] int;
+assertEqual(blockArray.shape, (10, 10), msg='blockArray:');
 
 
-
+proc assertEqual(a, b, msg) {
+  if a != b {
+    writeln(msg);
+    writeln('AssertionError: %t != %t'.format(a, b));
+  }
+}
