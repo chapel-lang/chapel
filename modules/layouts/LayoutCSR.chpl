@@ -286,6 +286,52 @@ class CSRDom: BaseSparseDomImpl {
   proc bulkAdd_help(inds: [?indsDom] rank*idxType, dataSorted=false,
       isUnique=false){
 
+    if nnz == 0 {
+
+      use Sort;
+      if !dataSorted then sort(inds);
+
+      var dupCount = 0;
+
+      if !isUnique { // assumes sorted
+        var prevIdx = parentDom.low - (1,1);
+        for i in inds {
+          if i == prevIdx then
+            dupCount += 1;
+          else
+            prevIdx = i;
+        }
+      }
+
+      nnz += inds.size-dupCount;
+      _bulkGrow(nnz);
+
+      var colIdxIdx = 1;
+      var currentRow = parentDom.dim(1).low;
+      var prevIdx = parentDom.low - (1,1);
+
+      for (i,j) in inds {
+        if !isUnique && (i,j) == prevIdx then continue;
+
+        while i != currentRow {
+          currentRow += 1;
+          rowStart[currentRow+1] = rowStart[currentRow];
+        }
+        rowStart[i+1] += 1;
+        colIdx[colIdxIdx] = j;
+        colIdxIdx += 1;
+      }
+
+      // make sure rowStart[i]>rowStart[j] for i>j for possibly
+      // untouched part of rowStart
+      const rowStartHigh = rowStart[currentRow+1];
+      for r in currentRow+2..rowStart.domain.high {
+        rowStart[r] = rowStartHigh;
+      }
+
+      return colIdxIdx-1;
+    }
+
     const (actualInsertPts, actualAddCnt) =
       __getActualInsertPts(this, inds, dataSorted, isUnique);
 
