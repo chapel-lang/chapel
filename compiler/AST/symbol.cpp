@@ -345,6 +345,53 @@ SymExpr* Symbol::lastSymExpr() const {
   return symExprsTail;
 }
 
+int Symbol::countDefs(int max) const {
+  int ret = 0;
+  for_SymbolDefs(def, this) {
+    ret += 1;
+    if (ret >= max) break;
+  }
+  return ret;
+}
+
+int Symbol::countUses(int max) const {
+  int ret = 0;
+  for_SymbolUses(use, this) {
+    ret += 1;
+    if (ret >= max) break;
+  }
+  return ret;
+}
+
+bool Symbol::isUsed() const {
+  return (this->countUses(1) >= 1);
+}
+
+bool Symbol::isDefined() const {
+  return (this->countDefs(1) >= 1);
+}
+
+SymExpr* Symbol::getSingleUse() const {
+  SymExpr* ret = NULL;
+  for_SymbolUses(use, this) {
+    if (ret != NULL) return NULL;
+    ret = use;
+  }
+  return ret;
+}
+
+SymExpr* Symbol::getSingleDef() const {
+  SymExpr* ret = NULL;
+  for_SymbolDefs(def, this) {
+    if (ret != NULL) return NULL;
+    ret = def;
+  }
+  return ret;
+}
+
+
+
+
 bool Symbol::isImmediate() const {
   return false;
 }
