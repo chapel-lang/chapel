@@ -40,24 +40,41 @@
 
 bool normalized = false;
 
-//
-// Static functions: forward declaration
-//
 static void insertModuleInit();
 static void transformLogicalShortCircuit();
 static void lowerReduceAssign();
+
+static void fixup_array_formals(FnSymbol* fn);
+static void fixup_query_formals(FnSymbol* fn);
+
+
+static bool isConstructor(FnSymbol* fn);
+static bool isInitMethod (FnSymbol* fn);
+
+static void updateConstructor(FnSymbol* fn);
+static void updateInitMethod (FnSymbol* fn);
+
+static void normalizeTheProgram();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
 static void insertUseForExplicitModuleCalls(void);
+
+static void hack_resolve_types(ArgSymbol* arg);
+
+static void find_printModuleInit_stuff();
+
+
+
+
+
 static void processSyntacticDistributions(CallExpr* call);
 static bool is_void_return(CallExpr* call);
+static void normalize(BaseAST* base);
 static void normalize_returns(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
-static void hack_resolve_types(ArgSymbol* arg);
-static void fixup_array_formals(FnSymbol* fn);
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                                       DefExpr* def,
                                                       int width);
@@ -68,15 +85,12 @@ static void replace_query_uses(ArgSymbol* formal,
 static void add_to_where_clause(ArgSymbol* formal,
                                 Expr*      expr,
                                 CallExpr*  query);
-static void fixup_query_formals(FnSymbol* fn);
 
-static bool isConstructor(FnSymbol* fn);
-static bool isInitMethod (FnSymbol* fn);
-
-static void updateConstructor(FnSymbol* fn);
-static void updateInitMethod (FnSymbol* fn);
-
-static void find_printModuleInit_stuff();
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 void normalize() {
   insertModuleInit();
@@ -102,7 +116,8 @@ void normalize() {
     }
   }
 
-  normalize(theProgram);
+  normalizeTheProgram();
+
   normalized = true;
 
   checkUseBeforeDefs();
@@ -119,16 +134,18 @@ void normalize() {
       if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
         if (se == se->getStmtExpr() &&
             // avoid exprs under ForallIntents
-            (isDirectlyUnderBlockStmt(se) || !isBlockStmt(se->parentExpr)))
-        {
+            (isDirectlyUnderBlockStmt(se) || !isBlockStmt(se->parentExpr))) {
           // Don't add these calls for the return type, since
           // _statementLevelSymbol would do nothing in that case
           // anyway, and it contributes to order-of-resolution issues for
           // extern functions with declared return type.
           if (parentFn->retExprType != se->parentExpr) {
             SET_LINENO(se);
+
             CallExpr* call = new CallExpr("_statementLevelSymbol");
+
             se->insertBefore(call);
+
             call->insertAtTail(se->remove());
           }
         }
@@ -137,39 +154,54 @@ void normalize() {
   }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (arg->defPoint->parentSymbol)
+    if (arg->defPoint->parentSymbol) {
       hack_resolve_types(arg);
+    }
   }
 
   // perform some checks on destructors
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
-      if (fn->formals.length < 2
-          || fn->getFormal(1)->typeInfo() != gMethodToken->typeInfo()) {
+      if (fn->formals.length           <  2 ||
+          fn->getFormal(1)->typeInfo() != gMethodToken->typeInfo()) {
         USR_FATAL(fn, "destructors must be methods");
+
       } else if (fn->formals.length > 2) {
         USR_FATAL(fn, "destructors must not have arguments");
+
       } else {
-        DefExpr* thisDef = toDefExpr(fn->formals.get(2));
+        DefExpr*       thisDef = toDefExpr(fn->formals.get(2));
+        AggregateType* ct      = toAggregateType(thisDef->sym->type);
+
         INT_ASSERT(fn->name[0] == '~' && thisDef);
-        AggregateType* ct = toAggregateType(thisDef->sym->type);
+
         // make sure the name of the destructor matches the name of the class
-        if (ct && strcmp(fn->name + 1, ct->symbol->name)) {
+        if (ct && strcmp(fn->name + 1, ct->symbol->name) != 0) {
           USR_FATAL(fn, "destructor name must match class name");
         } else {
           fn->name = astr("chpl__deinit");
         }
       }
-    }
     // make sure methods don't attempt to overload operators
-    else if (!isalpha(*fn->name) && *fn->name != '_'
-             && fn->formals.length > 1
-             && fn->getFormal(1)->typeInfo() == gMethodToken->typeInfo()) {
+    } else if (isalpha(fn->name[0])         == 0   &&
+               fn->name[0]                  != '_' &&
+               fn->formals.length           >  1   &&
+               fn->getFormal(1)->typeInfo() == gMethodToken->typeInfo()) {
       USR_FATAL(fn, "invalid method name");
     }
   }
 
   find_printModuleInit_stuff();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+void normalize(FnSymbol* fn) {
+  normalize((BaseAST*) fn);
 }
 
 /************************************* | **************************************
@@ -345,9 +377,13 @@ static void lowerReduceAssign() {
 *                                                                             *
 ************************************** | *************************************/
 
+static void normalizeTheProgram() {
+  normalize(theProgram);
+}
+
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
-void normalize(BaseAST* base) {
+static void normalize(BaseAST* base) {
   std::vector<CallExpr*> calls;
   collectCallExprs(base, calls);
   for_vector(CallExpr, call, calls) {
