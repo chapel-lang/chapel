@@ -1,0 +1,2 @@
+whereClauseArgMismatch.chpl:9: error: unresolved call 'foo(1.2)'
+whereClauseArgMismatch.chpl:1: note: candidates are: foo(x: uint)
