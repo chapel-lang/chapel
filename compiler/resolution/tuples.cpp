@@ -27,16 +27,16 @@
 #include "caches.h"
 #include "chpl.h"
 #include "expr.h"
+#include "passes.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 
-#include "resolveIntents.h"
-
 #include <cstdlib>
 #include <inttypes.h>
-#include <vector>
 #include <map>
+#include <vector>
 
 struct TupleInfo {
   TypeSymbol* typeSymbol;

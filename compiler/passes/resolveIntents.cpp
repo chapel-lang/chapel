@@ -140,12 +140,13 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
 void resolveArgIntent(ArgSymbol* arg) {
   if (!resolved) {
     if (arg->type == dtMethodToken ||
-      arg->type == dtTypeDefaultToken ||
-      arg->type == dtVoid ||
-      arg->type == dtUnknown ||
-      arg->hasFlag(FLAG_TYPE_VARIABLE) ||
-      arg->hasFlag(FLAG_PARAM))
+        arg->type == dtTypeDefaultToken ||
+        arg->type == dtVoid ||
+        arg->type == dtUnknown ||
+        arg->hasFlag(FLAG_TYPE_VARIABLE) ||
+        arg->hasFlag(FLAG_PARAM)) {
       return; // Leave these alone during resolution.
+    }
   }
 
   IntentTag intent = concreteIntentForArg(arg);

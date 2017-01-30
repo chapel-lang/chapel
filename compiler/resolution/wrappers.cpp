@@ -44,25 +44,30 @@
 #include "chpl.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "passes.h"
+#include "resolveIntents.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "resolveIntents.h"
-#include "stlUtil.h"
 
 //########################################################################
 //# Static Function Forward Declarations
 //########################################################################
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn, CallInfo* info);
+
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
+
 static void
 insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call);
+
 static FnSymbol*
 buildDefaultWrapper(FnSymbol* fn,
                     Vec<Symbol*>* defaults,
                     SymbolMap* paramMap,
                     CallInfo* info);
+
 static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,

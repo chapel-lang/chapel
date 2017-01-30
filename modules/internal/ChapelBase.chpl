@@ -298,7 +298,7 @@ module ChapelBase {
   //
 
   inline proc _intExpHelp(a: integral, b) where a.type == b.type {
-    if b < 0 then
+    if isIntType(b.type) && b < 0 then
       if a == 0 then
         halt("cannot compute ", a, " ** ", b);
       else if a == 1 then
