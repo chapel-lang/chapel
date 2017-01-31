@@ -238,6 +238,45 @@ module DefaultSparse {
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), dataSorted=false,
         isUnique=false){
 
+      if nnz == 0 {
+
+        use Sort;
+        if !dataSorted then sort(inds);
+
+        var dupCount = 0;
+
+        if !isUnique { // assumes sorted
+          var prevIdx = parentDom.low - 1;
+          for i in inds {
+            if i == prevIdx then
+              dupCount += 1;
+            else
+              prevIdx = i;
+          }
+        }
+
+        nnz += inds.size-dupCount;
+        _bulkGrow(nnz);
+
+        var indIdx = indices.domain.low;
+        var prevIdx = parentDom.low - 1;
+
+        if isUnique {
+          indices[indices.domain.low..#inds.size]=inds;
+          return inds.size;
+        }
+        else {
+          for i in inds {
+            if i == prevIdx then continue;
+            else prevIdx = i;
+
+            indices[indIdx] = i;
+            indIdx += 1;
+          }
+          return indIdx-1;
+        }
+      }
+
       const (actualInsertPts, actualAddCnt) =
         __getActualInsertPts(this, inds, dataSorted, isUnique);
 
