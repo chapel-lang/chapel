@@ -759,8 +759,6 @@ static void normalize_returns(FnSymbol* fn) {
                              "an iterator's return type cannot be 'void'; "
                              "if specified, it must be the type of the "
                              "expressions the iterator yields");
-
-      fn->addFlag(FLAG_SPECIFIED_RETURN_TYPE);
     }
 
     fn->insertAtHead(new DefExpr(retval));
