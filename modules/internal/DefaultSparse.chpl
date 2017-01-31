@@ -238,10 +238,9 @@ module DefaultSparse {
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), dataSorted=false,
         isUnique=false){
 
-      if nnz == 0 {
+      bulkAdd_prepareInds(inds, dataSorted, isUnique);
 
-        use Sort;
-        if !dataSorted then sort(inds);
+      if nnz == 0 {
 
         const dupCount = if isUnique then 0 else _countDuplicates(inds);
 
@@ -268,7 +267,7 @@ module DefaultSparse {
       }
 
       const (actualInsertPts, actualAddCnt) =
-        __getActualInsertPts(this, inds, dataSorted, isUnique);
+        __getActualInsertPts(this, inds, isUnique);
 
       const oldnnz = nnz;
       nnz += actualAddCnt;
