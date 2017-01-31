@@ -291,17 +291,7 @@ class CSRDom: BaseSparseDomImpl {
       use Sort;
       if !dataSorted then sort(inds);
 
-      var dupCount = 0;
-
-      if !isUnique { // assumes sorted
-        var prevIdx = parentDom.low - (1,1);
-        for i in inds {
-          if i == prevIdx then
-            dupCount += 1;
-          else
-            prevIdx = i;
-        }
-      }
+      const dupCount = if isUnique then 0 else _countDuplicates(inds);
 
       nnz += inds.size-dupCount;
       _bulkGrow(nnz);

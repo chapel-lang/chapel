@@ -375,6 +375,18 @@ module ChapelDistribution {
       }
     }
 
+    inline proc _countDuplicates(arr) where isArray(arr) {
+      var dupCount = -1;
+      var prev = arr[arr.domain.low];
+      for a in arr {
+        if a == prev then
+          dupCount += 1;
+        else
+          prev = a;;
+      }
+      return dupCount;
+    }
+
     // this is a helper function for bulkAdd functions in sparse subdomains.
     // NOTE:it assumes that nnz array of the sparse domain has non-negative 
     // indices. If, for some reason it changes, this function and bulkAdds have to
