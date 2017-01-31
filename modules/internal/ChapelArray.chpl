@@ -2024,16 +2024,18 @@ module ChapelArray {
         //        if (alwaysUseArrayViews ||
         //            !canResolveMethod(this._value, "dsiSlice", d._value)) {
           // if we're slicing a slice, short-circuit the slice out
-          const arr = if (_value.isSliceArrayView()) then this._value.arr
-                                                          else this._value;
+          const (arr, arrpid)  = if (_value.isSliceArrayView()) then (this._value.arr, this._value._ArrPid)
+                                 else (this._value, this._pid);
 
           // I don't believe I want to set _arrAlias on this branch because
           // we're not aliasing the _ddata field of an array directly, only
           // through its owning array's descriptor...
 
           return new ArrayViewSliceArr(eltType=this.eltType,
-                                       dom=d._value,
-                                       arr=arr);
+                                       _DomPid=d._pid,
+                                       dom=d._instance,
+                                       _ArrPid=arrpid,
+                                       _ArrInstance=arr);
           //        } else {
           //          var a = _value.dsiSlice(d._value);
           //          a._arrAlias = _value;
@@ -3619,8 +3621,10 @@ module ChapelArray {
     where x._value.isSliceArrayView() {
     writeln("In array slice autocopy");
     return _newArray(new ArrayViewSliceArr(eltType=x.eltType,
+                                           _DomPid=x._value._DomPid,
                                            dom=x._value.dom,
-                                           arr=x._value.arr));
+                                           _ArrPid=x._value._ArrPid,
+                                           _ArrInstance=x._value._ArrInstance));
   }
 
   proc chpl_replaceWithDeepCopy(ref a:[]) {
