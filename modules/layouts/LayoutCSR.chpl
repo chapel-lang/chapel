@@ -312,6 +312,7 @@ class CSRDom: BaseSparseDomImpl {
 
       for (i,j) in inds {
         if !isUnique && (i,j) == prevIdx then continue;
+        else prevIdx = (i,j);
 
         while i != currentRow {
           currentRow += 1;
