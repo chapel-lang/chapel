@@ -38,11 +38,10 @@ static inline void* chpl_malloc(size_t size) {
 }
 
 static inline void* chpl_memalign(size_t boundary, size_t size) {
-  void* ret = NULL;
-  int rc;
-  rc = je_posix_memalign(&ret, boundary, size);
-  if( rc == 0 ) return ret;
-  else return NULL;
+  if (boundary == 0) {
+    return je_malloc(size);
+  }
+  return je_aligned_alloc(boundary, size);
 }
 
 static inline void* chpl_realloc(void* ptr, size_t size) {
