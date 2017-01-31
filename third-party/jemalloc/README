@@ -2,7 +2,7 @@
 jemalloc README for Chapel
 ==========================
 
-This copy of jemalloc 4.3.1 is being released with Chapel for
+This copy of jemalloc 4.4.0 is being released with Chapel for
 convenience and was obtained from:
 
   https://github.com/jemalloc/jemalloc
@@ -18,9 +18,9 @@ The directory $CHPL_HOME/third-party/jemalloc/jemalloc-src contains the
 un-tarballed jemalloc package contents. Version updates should be done as
 follows, assuming the CWD is $CHPL_HOME/third-party/jemalloc/:
 
-1. download and untar the latest jemalloc version: e.g. jemalloc-4.3.1
+1. download and untar the latest jemalloc version: e.g. jemalloc-4.4.0
 2. `rm -rf jemalloc-src`
-3. `mv jemalloc-4.3.1 jemalloc-src`
+3. `mv jemalloc-4.4.0 jemalloc-src`
 4. `git add --force jemalloc-src` (--force to ignore our .gitignore)
 5. update the version number mentioned above
 6. verify the references to jemalloc's man page in the runtime shim are
