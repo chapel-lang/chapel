@@ -934,18 +934,6 @@ proc BlockCyclicArr.dsiSerialWrite(f) {
   }
 }
 
-proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
-  var alias = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d);
-  for i in dom.dist.targetLocDom {
-    on dom.dist.targetLocales(i) {
-      var locAlias => locArr[i].myElems;
-      alias.locArr[i] = new LocBlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, allocDom=locArr[i].allocDom, indexDom=d.locDoms[i], myElems=>locAlias);
-    }
-  }
-
-  return alias;
-}
-
 proc BlockCyclicArr.dsiReindex(dom) {
   compilerError("reindexing not yet implemented for Block-Cyclic");
 }

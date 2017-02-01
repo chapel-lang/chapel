@@ -1320,23 +1320,6 @@ proc StencilArr.dsiSerialWrite(f) {
   }
 }
 
-proc StencilArr.dsiSlice(d: StencilDom) {
-  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, ignoreFluff=this.ignoreFluff);
-  var thisid = this.locale.id;
-  coforall i in d.dist.targetLocDom {
-    on d.dist.targetLocales(i) {
-      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank,
-                                          idxType=idxType, stridable=d.stridable,
-                                          locDom=d.locDoms[i],
-                                          myElems=>locArr[i].myElems[d.locDoms[i].myFluff]);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-    }
-  }
-  if doRADOpt then alias.setupRADOpt();
-  return alias;
-}
-
 proc StencilArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {

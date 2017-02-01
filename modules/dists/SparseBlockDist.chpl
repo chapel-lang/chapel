@@ -622,19 +622,6 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
   return sum;
 }
 
-proc SparseBlockArr.dsiSlice(d: SparseBlockDom) {
-  var alias = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
-  var thisid = this.locale.id;
-  coforall i in d.dist.targetLocDom {
-    on d.dist.targetLocales(i) {
-      alias.locArr[i] = new LocSparseBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].mySparseBlock]);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-    }
-  }
-  return alias;
-}
-
 proc SparseBlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {

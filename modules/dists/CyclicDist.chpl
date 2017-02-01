@@ -725,24 +725,6 @@ class CyclicArr: BaseArr {
   const SENTINEL = max(rank*idxType);
 }
 
-proc CyclicArr.dsiSlice(d: CyclicDom) {
-  var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType,
-                            stridable=d.stridable, dom=d);
-  var thisid = this.locale.id;
-  for i in dom.dist.targetLocDom {
-    on dom.dist.targetLocs(i) {
-      alias.locArr[i] =
-        new LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType,
-                         stridable=d.stridable, locDom=d.locDoms[i],
-                         myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-    }
-  }
-  if doRADOpt then alias.setupRADOpt();
-  return alias;
-}
-
 proc CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   var alias = new CyclicArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom = d);
   var thisid = this.locale.id;
