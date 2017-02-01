@@ -8676,10 +8676,8 @@ addAllToVirtualMaps(FnSymbol* fn, AggregateType* pct) {
          ct->defaultTypeConstructor->isResolved()))
       addToVirtualMaps(fn, ct);
 
-    // if sub-class is not a generic instantiation
-    if (!ct->instantiatedFrom)
-      // add to maps transitively
-      addAllToVirtualMaps(fn, ct);
+    // add overrides of method fn by children of ct to virtual maps
+    addAllToVirtualMaps(fn, ct);
   }
 }
 
