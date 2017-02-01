@@ -552,6 +552,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   Symbol*   useLhs   = toSymExpr(lhs)->symbol();
   Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
 
+  FnSymbol* unaliasFn = getUnalias(useLhs->type);
+
   // Make sure that we created a temp with a type
   INT_ASSERT(useLhs->type->refType);
 
@@ -581,9 +583,11 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
             Type*      formalType = formalArg->type;
             Type*      actualType = rhsCall->get(1)->getValType();
             Type*      returnType = rhsFn->retType->getValType();
-            // Cannot reduce initCopy/autoCopy when types differ
+            // Cannot reduce initCopy/autoCopy when types differ (unless there
+            //   is an unaliasFn available)
             // Cannot reduce initCopy/autoCopy for sync variables
-            if (actualType == returnType &&
+            bool typesOK = (unaliasFn != NULL) || (actualType == returnType);
+            if (typesOK &&
                 isSyncType(formalType) == false &&
                 isSingleType(formalType) == false)
             {
@@ -614,9 +618,20 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
     // But... if we're replacing an init copy, we got to a user
     // variable, so add an unalias call if there is one
     if (rhsFn->hasFlag(FLAG_INIT_COPY_FN)) {
-      FnSymbol* unaliasFn = getUnalias(useLhs->type);
       if (unaliasFn) {
-        callExpr->insertAfter(new CallExpr(unaliasFn, refVar));
+        VarSymbol* unaliasTemp = newTemp("unaliasTemp", unaliasFn->retType);
+        callExpr->insertBefore(new DefExpr(unaliasTemp));
+        callExpr->insertAfter(new CallExpr(PRIM_MOVE, unaliasTemp, new CallExpr(unaliasFn, refVar)));
+
+        // Replace all uses of 'useLhs' with 'unaliasTemp', except for the
+        // addr-of case we just created.
+        for_SymbolSymExprs(se, useLhs) {
+          if (CallExpr* call = toCallExpr(se->parentExpr)) {
+            if (call->isPrimitive(PRIM_ADDR_OF) == false) {
+              se->replace(new SymExpr(unaliasTemp));
+            }
+          }
+        }
       }
     }
   }
