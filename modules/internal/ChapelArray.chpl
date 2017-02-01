@@ -3579,6 +3579,8 @@ module ChapelArray {
   pragma "unalias fn"
   inline proc chpl__unalias(x: domain) {
     if x._unowned {
+      // We could add an autoDestroy here, but it wouldn't do anything for
+      // an unowned domain.
       pragma "no auto destroy" var ret = x;
       return ret;
     } else {
@@ -3689,7 +3691,12 @@ module ChapelArray {
   where x._value.isSliceArrayView() {
     // Intended to call chpl__initCopy
     pragma "no auto destroy" var ret = x;
+
+    // Since chpl__unalias replaces a initCopy(auto/initCopy()) the inner value
+    // needs to be auto-destroyed.
+    // TODO: Should this be inserted by the compiler?
     chpl__autoDestroy(x);
+
     return ret;
   }
 
