@@ -676,7 +676,7 @@ module ChapelDistribution {
   
     proc dsiSupportsBulkTransfer() param return false;
     proc doiCanBulkTransfer() param return false;
-    proc doiBulkTransfer(B){ 
+    proc doiBulkTransfer(B, viewDom) {
       halt("This array type does not support bulk transfer.");
     }
   
