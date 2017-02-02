@@ -2024,15 +2024,24 @@ module ChapelArray {
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
       if boundsChecking then
         checkRankChange(args);
-      var ranges = _getRankChangeRanges(args);
+      var newD = _dom((...args));
+      var ranges = _getRankChangeRanges(newD.dims());
       //      param rank = ranges.size, stridable = chpl__anyStridable(ranges);
       pragma "no auto destroy" var d = _dom((...args));
       d._value._free_when_no_arrs = true;
 
       var collapsedDim: rank*bool;
       //      compilerWarning("rank = " + rank + " " + collapsedDim.type:string);
+
       var idx: rank*idxType;
       var fullD: rank*ranges(1).type;
+
+      /*
+      compilerWarning(args.type:string);
+      compilerWarning(fullD.type:string);
+      compilerWarning(ranges.type:string);
+      */
+      
       for param i in 1..rank {
         if (isRange(args(i))) {
           collapsedDim(i) = false;
