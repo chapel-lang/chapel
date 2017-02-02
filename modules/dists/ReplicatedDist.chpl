@@ -171,14 +171,16 @@ when the constructor encounters an error.
 * The array ``A`` is "consistent" if
   for each ``ix`` in ``A.domain``, this holds: ``A[ix].id == ix``.
 
-* Tip: if the domain of your ``targetLocales`` cannot be described
-  as a rectangular domain (whether strided, multi-dimensional,
-  and/or sparse), make the domain associative over the `int` type.
-
 */
 class ReplicatedDist : BaseDist {
   // the desired locales (an array of locales)
+  //
+  // Note, it might be possible to use an associative array of ints if
+  // the domain of your ``targetLocales`` cannot be described
+  // as a rectangular domain (whether strided, multi-dimensional,
+  // and/or sparse). However, that has not been tested.
   const targetLocales;
+
   // "IDs" are indices into targetLocales
   proc targetIds return targetLocales.domain;
 }
