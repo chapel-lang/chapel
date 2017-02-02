@@ -486,10 +486,6 @@ class LocCyclic {
 
 
 class CyclicDom : BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
-
   const dist: Cyclic(rank, idxType);
 
   var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
@@ -716,11 +712,7 @@ class LocCyclicDom {
 proc LocCyclicDom.member(i) return myBlock.member(i);
 
 
-class CyclicArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class CyclicArr: BaseRectangularArr {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: CyclicDom(rank, idxType, stridable);
 
@@ -1087,7 +1079,7 @@ proc CyclicArr.dsiSerialWrite(f) {
   }
 }
 
-proc CyclicArr.dsiReallocate(d: domain) {
+proc CyclicArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
   // The reallocation happens when the LocCyclicDom.myBlock field is changed
   // in CyclicDom.setup(). Nothing more needs to happen here.
 }

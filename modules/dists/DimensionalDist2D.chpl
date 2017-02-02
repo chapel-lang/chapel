@@ -278,9 +278,6 @@ class DimensionalDist2D : BaseDist {
 
 class DimensionalDom : BaseRectangularDom {
   // required
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   const dist; // not reprivatized
 
   // convenience
@@ -341,9 +338,8 @@ class LocDimensionalDom {
   var doml1, doml2;
 }
 
-class DimensionalArr : BaseArr {
+class DimensionalArr : BaseRectangularArr {
   // required
-  type eltType;
   const dom; // must be a DimensionalDom
 
   // same as 'dom'; for an alias (e.g. a slice), 'dom' of the original array
@@ -944,7 +940,10 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
     else chpl_getPrivatizedCopy(objectType = this.allocDom.type,
                                 objectPid  = idAllocDom);
 
-  const result = new DimensionalArr(eltType  = this.eltType,
+  const result = new DimensionalArr(rank     = this.rank,
+                                    idxType  = this.idxType,
+                                    stridable= this.stridable,
+                                    eltType  = this.eltType,
                                     dom      = privDom,
                                     allocDom = privAllocDom);
 
@@ -976,14 +975,16 @@ proc DimensionalArr.isAlias
 
 // create a new array over this domain
 proc DimensionalDom.dsiBuildArray(type eltType)
-  : DimensionalArr(eltType, this.type)
 {
   _traceddd(this, ".dsiBuildArray");
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
 
-  const result = new DimensionalArr(eltType  = eltType,
+  const result = new DimensionalArr(rank = rank,
+                                    idxType = idxType,
+                                    stridable = stridable,
+                                    eltType  = eltType,
                                     dom      = this,
                                     allocDom = this);
   coforall (loc, locDdesc, locAdesc)

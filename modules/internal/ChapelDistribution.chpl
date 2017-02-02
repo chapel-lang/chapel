@@ -746,6 +746,7 @@ module ChapelDistribution {
 
   pragma "base array"
   class BaseRectangularArr: BaseArrOverRectangularDom {
+    /* rank, idxType, stidable are from BaseArrOverRectangularDom */
     type eltType;
 
     proc ~BaseRectangularArr() {
@@ -901,13 +902,24 @@ module ChapelDistribution {
     where t:BaseRectangularDom
   {
     type arrType = lhs.getBaseArrType();
+    param rank = lhs.rank;
+    type idxType = lhs.idxType;
+    param stridable = lhs.stridable;
 
     for e in lhs._arrs do {
-      on e do (e:arrType).dsiReallocate(rhs.getIndices());
+      on e {
+        var eCast = e:arrType;
+        if eCast == nil then
+          halt("internal error: ", t.type:string,
+               " contains an bad array type ", arrType:string);
+        var tmp: rank * range(idxType,BoundedRangeType.bounded,stridable);
+        eCast.dsiReallocate(rhs.getIndices());
+      }
     }
     lhs.dsiSetIndices(rhs.getIndices());
     for e in lhs._arrs do {
-      on e do (e:arrType).dsiPostReallocate();
+      var eCast = e:arrType;
+      on e do eCast.dsiPostReallocate();
     }
   }
 

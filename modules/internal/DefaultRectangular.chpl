@@ -1785,7 +1785,9 @@ module DefaultRectangular {
     // TODO
     proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
       //if (d._value.type == dom.type) {
-        on this {
+
+      on this {
+        var d = {(...bounds)};
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
@@ -1831,10 +1833,13 @@ module DefaultRectangular {
         dataAllocRange = copy.dataAllocRange;
         //numelm = copy.numelm;
         delete copy;
-        }
+      }
       //} else {
       //  halt("illegal reallocation");
       //}
+    }
+    proc dsiPostReallocate() {
+      // No action necessary here
     }
 
     proc dsiLocalSlice(ranges) {

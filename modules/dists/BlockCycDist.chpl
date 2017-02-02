@@ -301,7 +301,7 @@ class BlockCyclic : BaseDist {
 // create a new rectangular domain over this distribution
 //
 proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
-                           param stridable: bool) {
+                                      param stridable: bool) {
   if idxType != this.idxType then
     compilerError("BlockCyclic domain index type does not match distribution's");
   if rank != this.rank then
@@ -466,9 +466,6 @@ proc LocBlockCyclic.writeThis(x) {
 // BlockCyclic Domain Class
 //
 class BlockCyclicDom: BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   //
   // LEFT LINK: a pointer to the parent distribution
   //
@@ -775,11 +772,7 @@ proc LocBlockCyclicDom.high {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
-class BlockCyclicArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class BlockCyclicArr: BaseRectangularArr {
 
   //
   // LEFT LINK: the global domain descriptor for this array
