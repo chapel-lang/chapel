@@ -36,11 +36,11 @@
 #include <cstdlib>
 #include <inttypes.h>
 
-static int             explainInstantiationLine   = -2;
-static ModuleSymbol*   explainInstantiationModule = NULL;
+int                    explainInstantiationLine   = -2;
+ModuleSymbol*          explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
 
-static void
+void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) &&
       (strncmp(fn->name, "_construct_", 11) ||
@@ -97,7 +97,7 @@ explainInstantiation(FnSymbol* fn) {
 }
 
 
-static void
+void
 copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbol* value) {
   if (!strcmp("_type_construct__tuple", root->name) && key->name[0] == 'x') {
     subs.put(new_IntSymbol(atoi(key->name+1)), value);
@@ -114,7 +114,7 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
   }
 }
 
-static TypeSymbol*
+TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
   if (fn->hasEitherFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
     return actualTS;
@@ -138,7 +138,7 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
 }
 
 
-static void
+void
 checkInfiniteWhereInstantiation(FnSymbol* fn) {
   if (fn->where) {
     forv_Vec(FnSymbol, where, whereStack) {
@@ -171,7 +171,7 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
 // because folding is done via instantiation; therefore, be careful
 // developing in the base module
 //
-static void
+void
 checkInstantiationLimit(FnSymbol* fn) {
   static Map<FnSymbol*,int> instantiationLimitMap;
 
@@ -197,7 +197,7 @@ checkInstantiationLimit(FnSymbol* fn) {
 }
 
 
-static void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
+void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
 {
   const size_t bufSize = 128;
   char immediate[bufSize];

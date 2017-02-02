@@ -23,7 +23,6 @@
 #include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"
-#include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
 
@@ -37,43 +36,8 @@ enum InitBody {
 };
 
 
-static void     buildClassAllocator(FnSymbol* fn, AggregateType* ct);
 static InitBody getInitCall(FnSymbol* fn);
 static void     phase1Analysis(BlockStmt* body, AggregateType* t);
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void temporaryInitializerFixup(CallExpr* call) {
-  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
-    // Support super.init() calls (for instance) when the super type does not
-    // define either an initializer or a constructor.  Also ignores errors from
-    // improperly inserted .init() calls (so be sure to check here if something
-    // is behaving oddly - Lydia, 08/19/16)
-    if (strcmp(usym->unresolved, "init") == 0 &&
-        call->numActuals()               >= 2) {
-      SymExpr* _mt = toSymExpr(call->get(1));
-      SymExpr* sym = toSymExpr(call->get(2));
-
-      INT_ASSERT(sym != NULL);
-
-      if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
-        if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-
-          // This code should be removed when the compiler generates
-          // initializers as the default method of construction and
-          // initialization for a type (Lydia note, 08/19/16)
-          usym->unresolved = astr("_construct_", ct->symbol->name);
-
-          _mt->remove();
-        }
-      }
-    }
-  }
-}
 
 /************************************* | **************************************
 *                                                                             *
@@ -604,7 +568,7 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
 *                                                                             *
 ************************************** | *************************************/
 
-static void buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
+FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
   SET_LINENO(ct);
 
   FnSymbol*  fn          = new FnSymbol("_new");
@@ -657,4 +621,6 @@ static void buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
 
   // Insert the definition in to the tree
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+  return fn;
 }
