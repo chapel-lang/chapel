@@ -31,7 +31,7 @@
 class ErrorHandlingVisitor : public AstVisitorTraverse {
 
 public:
-  ErrorHandlingVisitor      (FnSymbol* _callingFn, ArgSymbol* _outFormal);
+  ErrorHandlingVisitor      (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
 
   virtual bool enterTryStmt (TryStmt*   node);
   virtual void exitTryStmt  (TryStmt*   node);
@@ -45,8 +45,8 @@ private:
   };
 
   std::stack<TryInfo> tryStack;
-  FnSymbol*           callingFn;
   ArgSymbol*          outError;
+  LabelSymbol*        epilogue;
 
          std::vector<Expr*> handler          (TryInfo            info);
          std::vector<Expr*> setOutGotoReturn (VarSymbol*         error);
@@ -66,10 +66,10 @@ private:
 };
 
 ErrorHandlingVisitor::ErrorHandlingVisitor(
-    FnSymbol* _callingFn, ArgSymbol* _outError) {
+    ArgSymbol* _outError, LabelSymbol* _epilogue) {
 
-  callingFn = _callingFn;
-  outError  = _outError;
+  outError = _outError;
+  epilogue = _epilogue;
 }
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
@@ -120,7 +120,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         node->getStmtExpr()->insertBefore(new DefExpr(errorVar));
 
         // TODO: strict mode, missing try
-        if (callingFn->throwsError()) {
+        if (outError) {
           insertIntoBlock(errorPolicy, setOutGotoReturn(errorVar));
 
         // TODO: strict mode, missing try!
@@ -149,7 +149,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
                                             castError));
       throwBlock->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
                                             info.handlerLabel));
-    } else if (callingFn->throwsError()) {
+    } else if (outError) {
       insertIntoBlock(throwBlock, setOutGotoReturn(thrownError));
     } else {
       // TODO: compiler error, cannot throw unless callingFn throws
@@ -166,21 +166,21 @@ std::vector<Expr*> ErrorHandlingVisitor::handler(TryInfo info) {
 
   if (info.tryStmt->tryBang()) {
     handler->insertAtTail(haltExpr());
-  } else {
+  } else if (outError) {
     insertIntoBlock(handler, setOutGotoReturn(info.errorVar));
+  } else {
+    // TODO: inexhaustive try in non-throwing fn
   }
 
   return errorCheck(info.errorVar, handler);
 }
 
 std::vector<Expr*> ErrorHandlingVisitor::setOutGotoReturn(VarSymbol* error) {
-  LabelSymbol* label     = callingFn->getOrCreateEpilogueLabel();
-  INT_ASSERT(label);
-  CallExpr*    castError = new CallExpr(PRIM_CAST, dtObject->symbol, error);
+  CallExpr* castError = new CallExpr(PRIM_CAST, dtObject->symbol, error);
 
   std::vector<Expr*> ret;
   ret.push_back(new CallExpr(PRIM_MOVE, outError, castError));
-  ret.push_back(new GotoStmt(GOTO_RETURN, label));
+  ret.push_back(new GotoStmt(GOTO_RETURN, epilogue));
 
   return ret;
 }
@@ -228,16 +228,20 @@ void ErrorHandlingVisitor::insertAfterCall(CallExpr* node,
 // TODO: dtObject should be dtError, but we don't have that right now
 void lowerErrorHandling() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    ArgSymbol* outError = NULL;
+    ArgSymbol*   outError = NULL;
+    LabelSymbol* epilogue = NULL;
 
     if (fn->throwsError()) {
       SET_LINENO(fn);
 
       outError = new ArgSymbol(INTENT_REF, "error_out", dtObject);
       fn->insertFormalAtTail(outError);
+
+      epilogue = fn->getOrCreateEpilogueLabel();
+      INT_ASSERT(epilogue); // throws requires an epilogue
     }
 
-    ErrorHandlingVisitor visitor = ErrorHandlingVisitor(fn, outError);
+    ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue);
     fn->accept(&visitor);
   }
 }
