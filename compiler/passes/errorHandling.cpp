@@ -48,12 +48,12 @@ private:
   ArgSymbol*          outError;
   LabelSymbol*        epilogue;
 
-         std::vector<Expr*> handler          (TryInfo            info);
+         std::vector<Expr*> tryHandler       (TryInfo            info);
          std::vector<Expr*> setOutGotoReturn (VarSymbol*         error);
 
   static CallExpr*          haltExpr         ();
 
-  static std::vector<Expr*> errorCheck       (VarSymbol*         errorVar,
+  static std::vector<Expr*> errorCond        (VarSymbol*         errorVar,
                                               BlockStmt*         thenBlock);
 
   static void               insertIntoBlock  (BlockStmt*         insert,
@@ -91,7 +91,7 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
 
   tryBlock->insertAtHead(new DefExpr(info.errorVar));
   tryBlock->insertAtTail(new DefExpr(info.handlerLabel));
-  insertIntoBlock(tryBlock, handler(info));
+  insertIntoBlock(tryBlock, tryHandler(info));
 
   tryBlock->remove();
   node    ->replace(tryBlock);
@@ -130,7 +130,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       }
 
       node->insertAtTail(errorVar);
-      insertAfterCall(node, errorCheck(errorVar, errorPolicy));
+      insertAfterCall(node, errorCond(errorVar, errorPolicy));
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     SET_LINENO(node);
@@ -158,7 +158,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
-std::vector<Expr*> ErrorHandlingVisitor::handler(TryInfo info) {
+std::vector<Expr*> ErrorHandlingVisitor::tryHandler(TryInfo info) {
   BlockStmt* handler = new BlockStmt();
 
   // TODO: create catches
@@ -172,7 +172,7 @@ std::vector<Expr*> ErrorHandlingVisitor::handler(TryInfo info) {
     // TODO: inexhaustive try in non-throwing fn
   }
 
-  return errorCheck(info.errorVar, handler);
+  return errorCond(info.errorVar, handler);
 }
 
 std::vector<Expr*> ErrorHandlingVisitor::setOutGotoReturn(VarSymbol* error) {
@@ -190,7 +190,7 @@ CallExpr* ErrorHandlingVisitor::haltExpr() {
   return new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("uncaught error"));
 }
 
-std::vector<Expr*> ErrorHandlingVisitor::errorCheck(
+std::vector<Expr*> ErrorHandlingVisitor::errorCond(
     VarSymbol* errorVar, BlockStmt* thenBlock) {
 
   VarSymbol* errorExistsVar = newTemp("errorExists", dtBool);
