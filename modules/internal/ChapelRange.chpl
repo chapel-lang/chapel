@@ -2093,13 +2093,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // source: Knuth Volume 2 --- Section 4.5.2
   //
   proc chpl__extendedEuclid(u, v)
-    where isIntType(u.type) && u.type == v.type
+    where isIntType(u.type) && isIntType(v.type)
   {
-    var zero: u.type = 0;
-    var one: u.type = 1;
+    // figure out the bigger type (in case u is int(64) v is int(32) e.g.)
+    var zero = 0:u.type + 0:v.type;
+    var one = 1:zero.type;
   
-    var U = (one, zero, u);
-    var V = (zero, one, v);
+    var U = (one, zero, u:zero.type);
+    var V = (zero, one, v:zero.type);
   
     while V(3) != 0 {
       // This is a workaround for a bug.
