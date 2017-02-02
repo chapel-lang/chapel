@@ -136,8 +136,8 @@ class ArrayViewRankChangeArr: BaseArr {
         ind(d) = i;
         j += 1;
       }
-      assert(j == 1);
     }
+    assert (j == 2);
     return ind;
   }
 
