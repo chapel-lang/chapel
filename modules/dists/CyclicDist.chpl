@@ -743,50 +743,6 @@ proc CyclicArr.dsiSlice(d: CyclicDom) {
   return alias;
 }
 
-proc CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
-  var alias = new CyclicArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom = d);
-  var thisid = this.locale.id;
-  coforall ind in d.dist.targetLocDom {
-    on d.dist.targetLocs(ind) {
-      const locDom = d.getLocDom(ind);
-      var collapsedDims: rank*idxType;
-      var locSlice: _cyclic_matchArgsShape(range(idxType=idxType, stridable=true), idxType, args);
-      var locArrInd: rank*int;
-      var j = 1;
-      for param i in 1..args.size {
-        if isCollapsedDimension(args(i)) {
-          locSlice(i) = args(i);
-          collapsedDims(i) = args(i);
-        } else {
-          locSlice(i) = locDom.myBlock.dim(j)(args(i));
-          j += 1;
-        }
-      }
-      locArrInd = dom.dist.targetLocsIdx(collapsedDims);
-      j = 1;
-      // Now that the locArrInd values are known for the collapsed dimensions
-      // Pull the rest of the dimensions values from ind
-      for param i in 1..args.size {
-        if !isCollapsedDimension(args(i)) {
-          if newRank > 1 then
-            locArrInd(i) = ind(j);
-          else
-            locArrInd(i) = ind;
-          j += 1;
-        }
-      }
-      alias.locArr[ind] =
-        new LocCyclicArr(eltType=eltType, rank=newRank, idxType=d.idxType,
-                         stridable=d.stridable, locDom=locDom,
-                         myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
-      if here.id == thisid then
-        alias.myLocArr = alias.locArr[ind];
-    }
-  }
-  if doRADOpt then alias.setupRADOpt();
-  return alias;
-}
-
 proc CyclicArr.dsiReindex(d: CyclicDom) {
   var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=d.idxType,
                             stridable=d.stridable, dom=d);

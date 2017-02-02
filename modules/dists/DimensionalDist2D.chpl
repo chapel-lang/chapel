@@ -1129,14 +1129,6 @@ proc DimensionalDist2D.dsiCreateRankChangeDist(param newRank: int, args) {
   return genericDsiCreateRankChangeDist(this, newRank, args);
 }
 
-proc DimensionalArr.dsiRankChange(sliceDefDom: WrapperRectDom,
-                                  param newRank: int,
-                                  param newStridable: bool,
-                                  sliceDefIndsRanges) {
-  return genericDsiRankChange(this, sliceDefDom, newRank, newStridable,
-                              sliceDefIndsRanges);
-}
-
 */
 /* do not use the above comment for chpldoc */
 
