@@ -51,7 +51,7 @@ private:
          std::vector<Expr*> handler          (TryInfo            info);
          std::vector<Expr*> setOutGotoReturn (VarSymbol*         error);
 
-  static CallExpr*          halt             ();
+  static CallExpr*          haltExpr         ();
 
   static std::vector<Expr*> errorCheck       (VarSymbol*         errorVar,
                                               BlockStmt*         thenBlock);
@@ -67,6 +67,7 @@ private:
 
 ErrorHandlingVisitor::ErrorHandlingVisitor(
     FnSymbol* _callingFn, ArgSymbol* _outError) {
+
   callingFn = _callingFn;
   outError  = _outError;
 }
@@ -114,7 +115,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         errorPolicy->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
                                                info.handlerLabel));
       } else {
-        // need to create an error variable
+        // without try, need an error variable
         errorVar = newTemp("error", dtObject);
         node->getStmtExpr()->insertBefore(new DefExpr(errorVar));
 
@@ -124,7 +125,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
         // TODO: strict mode, missing try!
         } else {
-          errorPolicy->insertAtTail(halt());
+          errorPolicy->insertAtTail(haltExpr());
         }
       }
 
@@ -141,8 +142,9 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
     if (insideTry) {
-      TryInfo info    = tryStack.top();
-      Expr* castError = new CallExpr(PRIM_CAST, dtObject->symbol, thrownError);
+      TryInfo   info      = tryStack.top();
+      CallExpr* castError = new CallExpr(PRIM_CAST, dtObject->symbol,
+                                         thrownError);
       throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, info.errorVar,
                                             castError));
       throwBlock->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
@@ -160,9 +162,10 @@ std::vector<Expr*> ErrorHandlingVisitor::handler(TryInfo info) {
   BlockStmt* handler = new BlockStmt();
 
   // TODO: create catches
+  // TODO: nested try
 
   if (info.tryStmt->tryBang()) {
-    handler->insertAtTail(halt());
+    handler->insertAtTail(haltExpr());
   } else {
     insertIntoBlock(handler, setOutGotoReturn(info.errorVar));
   }
@@ -183,7 +186,7 @@ std::vector<Expr*> ErrorHandlingVisitor::setOutGotoReturn(VarSymbol* error) {
 }
 
 // TODO: take in a halt message from the error
-CallExpr* ErrorHandlingVisitor::halt() {
+CallExpr* ErrorHandlingVisitor::haltExpr() {
   return new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("uncaught error"));
 }
 
