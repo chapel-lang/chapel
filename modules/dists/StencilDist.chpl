@@ -273,9 +273,6 @@ class LocStencil {
 // whole:     a non-distributed domain that defines the domain's indices
 //
 class StencilDom: BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   const dist: Stencil(rank, idxType);
   var locDoms: [dist.targetLocDom] LocStencilDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
@@ -313,11 +310,7 @@ class LocStencilDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class StencilArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class StencilArr: BaseRectangularArr {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: StencilDom(rank, idxType, stridable);
   var locArr: [dom.dist.targetLocDom] LocStencilArr(eltType, rank, idxType, stridable);
@@ -1633,7 +1626,8 @@ proc StencilArr.dsiReindex(d: StencilDom) {
   return alias;
 }
 
-proc StencilArr.dsiReallocate(d: domain) {
+proc StencilArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+{
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default

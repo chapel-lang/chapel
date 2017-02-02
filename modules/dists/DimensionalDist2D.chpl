@@ -1079,9 +1079,12 @@ proc DimensionalArr.dsiSlice(sliceDef: DimensionalDom) {
   if sliceDef.type != slicee.allocDom.type then
     compilerError("slicing a Dimensional array with a domain of a different type than the array's domain is currently not available");
 
-  const result = new DimensionalArr(eltType  = slicee.eltType,
-                                    dom      = sliceDef,
-                                    allocDom = slicee.allocDom);
+  const result = new DimensionalArr(rank      = this.rank,
+                                    idxType   = this.idxType,
+                                    stridable = this.stridable,
+                                    eltType   = this.eltType,
+                                    dom       = sliceDef,
+                                    allocDom  = slicee.allocDom);
 
   // reuse the original array's local descriptors,
   // ensuring sliceDef and slicee are over the same set of locales/targetIds

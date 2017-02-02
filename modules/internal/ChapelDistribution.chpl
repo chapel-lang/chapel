@@ -912,8 +912,18 @@ module ChapelDistribution {
         if eCast == nil then
           halt("internal error: ", t.type:string,
                " contains an bad array type ", arrType:string);
-        var tmp: rank * range(idxType,BoundedRangeType.bounded,stridable);
-        eCast.dsiReallocate(rhs.getIndices());
+
+        var inds = rhs.getIndices();
+        var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
+
+        // set tmp = inds with some error checking
+        for param i in 1..rank {
+          var from = inds(i);
+          tmp(i) =
+            from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));
+        }
+
+        eCast.dsiReallocate(tmp);
       }
     }
     lhs.dsiSetIndices(rhs.getIndices());

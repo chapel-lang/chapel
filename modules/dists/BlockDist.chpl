@@ -1435,7 +1435,7 @@ proc BlockArr.dsiReindex(d: BlockDom) {
 }
 
 proc BlockArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
-  {
+{
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default
