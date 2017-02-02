@@ -2287,6 +2287,7 @@ static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 FnSymbol* initStringLiterals = NULL;
+LabelSymbol* initStringLiteralsEpilogue = NULL;
 
 void createInitStringLiterals() {
   SET_LINENO(stringLiteralModule);
@@ -2358,14 +2359,18 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
 
-  if (initStringLiterals == NULL)
+  if (initStringLiterals == NULL) {
     createInitStringLiterals();
+    initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
+  }
 
-  initStringLiterals->insertBeforeEpilogue(new DefExpr(cptrTemp));
-  initStringLiterals->insertBeforeEpilogue(cptrCall);
-  initStringLiterals->insertBeforeEpilogue(new DefExpr(castTemp));
-  initStringLiterals->insertBeforeEpilogue(castCall);
-  initStringLiterals->insertBeforeEpilogue(ctorCall);
+  Expr* insertPt = initStringLiteralsEpilogue->defPoint;
+
+  insertPt->insertBefore(new DefExpr(cptrTemp));
+  insertPt->insertBefore(cptrCall);
+  insertPt->insertBefore(new DefExpr(castTemp));
+  insertPt->insertBefore(castCall);
+  insertPt->insertBefore(ctorCall);
 
   s->immediate = new Immediate;
   *s->immediate = imm;
