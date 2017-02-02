@@ -159,7 +159,7 @@ class ArrayViewRankChangeArr: BaseArr {
     // records and classes here
     //
     var dom = {(...arr.dom.dsiDims())};
-    writeln("*** dom was: ", dom);
+    //    writeln("*** dom was: ", dom);
     var j = 1;
     for param d in 1..arr.rank {
       if !collapsedDim(d) {
@@ -169,7 +169,7 @@ class ArrayViewRankChangeArr: BaseArr {
         dom._value.ranges(d) = idx(j)..idx(j);
       }
     }
-    writeln("*** now dom is: ", dom);
+    //    writeln("*** now dom is: ", dom);
     return dom._value;
   }
 
