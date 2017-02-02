@@ -3577,9 +3577,15 @@ module ChapelArray {
   // B would just be initialized to the result of the function call -
   // meaning that B would not refer to distinct array elements.
   pragma "unalias fn"
-  inline proc chpl__unalias(ref x: domain) {
+  inline proc chpl__unalias(x: domain) {
     if x._unowned {
-      chpl_replaceWithDeepCopy(x);
+      // We could add an autoDestroy here, but it wouldn't do anything for
+      // an unowned domain.
+      pragma "no auto destroy" var ret = x;
+      return ret;
+    } else {
+      pragma "no copy" var ret = x;
+      return ret;
     }
   }
 
@@ -3665,12 +3671,33 @@ module ChapelArray {
 
   // see comment on chpl__unalias for domains
   pragma "unalias fn"
-  inline proc chpl__unalias(ref x: []) {
+  inline proc chpl__unalias(x: []) {
     const isalias = (x._unowned) || (x._value._arrAlias != nil);
 
     if isalias {
-      chpl_replaceWithDeepCopy(x);
+      // Intended to call chpl__initCopy
+      pragma "no auto destroy" var ret = x;
+      chpl__autoDestroy(x);
+      return ret;
+    } else {
+      // Just return a bit-copy/shallow-copy of 'x'
+      pragma "no copy" var ret = x;
+      return ret;
     }
+  }
+
+  pragma "unalias fn"
+  inline proc chpl__unalias(x: [])
+  where x._value.isSliceArrayView() {
+    // Intended to call chpl__initCopy
+    pragma "no auto destroy" var ret = x;
+
+    // Since chpl__unalias replaces a initCopy(auto/initCopy()) the inner value
+    // needs to be auto-destroyed.
+    // TODO: Should this be inserted by the compiler?
+    chpl__autoDestroy(x);
+
+    return ret;
   }
 
 
