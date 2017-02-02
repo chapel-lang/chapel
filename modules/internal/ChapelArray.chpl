@@ -136,6 +136,7 @@ module ChapelArray {
   use ChapelBase; // For opaque type.
   use ChapelTuple;
   use ChapelLocale;
+  use ArrayViewRankChange;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -2024,11 +2025,39 @@ module ChapelArray {
       if boundsChecking then
         checkRankChange(args);
       var ranges = _getRankChangeRanges(args);
-      param rank = ranges.size, stridable = chpl__anyStridable(ranges);
+      //      param rank = ranges.size, stridable = chpl__anyStridable(ranges);
       pragma "no auto destroy" var d = _dom((...args));
       d._value._free_when_no_arrs = true;
-      var a = _value.dsiRankChange(d._value, rank, stridable, args);
-      a._arrAlias = _value;
+
+      var collapsedDim: rank*bool;
+      //      compilerWarning("rank = " + rank + " " + collapsedDim.type:string);
+      var idx: rank*idxType;
+      var fullD: rank*ranges(1).type;
+      for param i in 1..rank {
+        if (isRange(args(i))) {
+          collapsedDim(i) = false;
+          fullD(i) = _dom.dim(i)[args(i)];
+        } else {
+          collapsedDim(i) = true;
+          idx(i) = args(i);
+          fullD(i) = args(i)..args(i);
+        }
+      }
+
+      const (arr, arrpid)  = /*if (_value.isSliceArrayView())
+                               then (this._value.arr, this._value._ArrPid)
+                               else*/ (this._value, this._pid);
+
+      var a = new ArrayViewRankChangeArr(eltType=this.eltType,
+                                         _DomPid = d._pid,
+                                         dom = d._instance,
+                                         _ArrPid=arrpid,
+                                         _ArrInstance=arr,
+                                         collapsedDim=collapsedDim,
+                                         idx=idx);
+
+      //      var a = _value.dsiRankChange(d._value, rank, stridable, args);
+      //      a._arrAlias = _value;
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
       return _newArray(a);
@@ -2378,7 +2407,7 @@ module ChapelArray {
           if this._value.dataAllocRange.length < this.domain.numIndices {
             /* if dataAllocRange has fewer indices than this.domain it must not
                be set correctly.  Set it to match this.domain to start.
-             */ 
+             */
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
           const oldRng = this._value.dataAllocRange;
@@ -3570,6 +3599,18 @@ module ChapelArray {
     return b;
   }
 
+  pragma "auto copy fn" proc chpl__autoCopy(const ref x: [])
+    where x._value.isRankChangeArrayView() {
+    writeln("In array slice autocopy");
+    return _newArray(new ArrayViewRankChangeArr(eltType=x.eltType,
+                                                _DomPid=x._value._DomPid,
+                                                dom=x._value.dom,
+                                                _ArrPid=x._value._ArrPid,
+                                                _ArrInstance=x._value._ArrInstance,
+                                                collapsedDim=x._value.collapsedDim,
+                                                idx=x._value.idx));
+  }
+
   proc chpl_replaceWithDeepCopy(ref a:[]) {
     var b : [a._dom] a.eltType;
 
@@ -3583,7 +3624,21 @@ module ChapelArray {
     a._do_destroy();
 
     a._pid = b._pid;
-    a._instance = b._instance;
+    //
+    // TODO: What would be a cleaner way to deal with this?  The
+    // problem is that the compiler tries to resolve chpl__unalias for
+    // all record types, and so tries to resolve this for array views.
+    // But for an array view, the _instance field of 'a' is not going
+    // to be of the same type as that of 'b' by definition, so the
+    // assignment between instances below fails.  I used this
+    // conditional plus halt as a workaround, though to date, the halt
+    // has not actually been triggered.
+    //
+    if a._instance.type != b._instance.type {
+      halt("Mismatching types in chpl_replaceWithDeepCopy");
+    } else {
+      a._instance = b._instance;  // array classes don't match if 'a' was a slice
+    }
     a._unowned = false;
 
     b._pid = nullPid;
