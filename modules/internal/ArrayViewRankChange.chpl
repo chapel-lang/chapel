@@ -29,7 +29,7 @@ class ArrayViewRankChangeArr: BaseArr {
   }
 
   proc idxType type return dom.idxType;
-  proc rank param return arr.rank;
+  proc rank param return dom.rank;
 
   // This seems like it ought to work, but it causes an error in the
   // compiler for non-devel mode...  presumably due to a direct
@@ -81,7 +81,7 @@ class ArrayViewRankChangeArr: BaseArr {
   // standard I/O stuff
   //
   proc dsiSerialWrite(f) {
-    chpl_serialReadWriteRectangular(f, arr, chpl_rankChangeConvertDom(privDom));
+    chpl_serialReadWriteRectangular(f, this, privDom);
   }
 
   inline proc checkBounds(i) {

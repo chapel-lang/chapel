@@ -2027,7 +2027,7 @@ module ChapelArray {
       var newD = _dom((...args));
       var ranges = _getRankChangeRanges(newD.dims());
       //      param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-      pragma "no auto destroy" var d = _dom((...args));
+      pragma "no auto destroy" var d = {(...ranges)};
       d._value._free_when_no_arrs = true;
 
       var collapsedDim: rank*bool;
