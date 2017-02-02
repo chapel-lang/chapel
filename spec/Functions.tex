@@ -1041,6 +1041,38 @@ is allowed between every other type and that type, and that type becomes the
 inferred return type.
 If the above requirements are not satisfied, it is an error.
 
+\section{Where Expressions}
+\label{Where_Expressions}
+\index{where@\chpl{where}}
+\index{expressions!where@\chpl{where}}
+\index{functions!where@\chpl{where}}
+
+The instantiation of a generic function can be constrained by {\em
+where clauses}.  A where clause is specified in the definition of a
+function~(\rsec{Function_Definitions}).  When a function is
+instantiated, the expression in the where clause must be a parameter
+expression and must evaluate to either \chpl{true} or \chpl{false}.
+If it evaluates to \chpl{false}, the instantiation is rejected and the
+function is not a possible candidate for function resolution.
+Otherwise, the function is instantiated.
+\begin{chapelexample}{whereClause.chpl}
+Given two overloaded function definitions
+\begin{chapel}
+proc foo(x) where x.type == int { writeln("int"); }
+proc foo(x) where x.type == real { writeln("real"); }
+\end{chapel}
+\begin{chapelpost}
+foo(3);
+foo(3.14);
+\end{chapelpost}
+\begin{chapeloutput}
+int
+real
+\end{chapeloutput}
+the call foo(3) resolves to the first definition because when the
+second function is instantiated the where clause evaluates to false.
+\end{chapelexample}
+
 \section{Nested Functions}
 \label{Nested_Functions}
 \index{functions!nested}
