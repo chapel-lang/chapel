@@ -691,7 +691,7 @@ module ChapelDistribution {
     proc dsiDisplayRepresentation() { }
     proc isDefaultRectangular() param return false;
     proc dsiSupportsBulkTransferInterface() param return false;
-    proc doiCanBulkTransferStride() param return false;
+    proc doiCanBulkTransferStride(viewDom) param return false;
   }
 
   /*

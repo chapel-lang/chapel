@@ -43,11 +43,9 @@ proc stridedAssign(A : [], sa, B : [], sb, debug=false) {
 
     if debug then writeln(ldom, " = ", right.domain);
 
-    left._value.adjustBlkOffStrForNewDomain(left._value.dom, left._value);
-    right._value.adjustBlkOffStrForNewDomain(right._value.dom, right._value);
-    assert(left._value.oneDData); // fend off multi-ddata
-    assert(right._value.oneDData); // fend off multi-ddata
-    left._value.doiBulkTransferStride(right._value);
+    assert(left._value.arr.oneDData);  // fend off multi-ddata
+    assert(right._value.arr.oneDData); // fend off multi-ddata
+    left._value.doiBulkTransferStride(right._value, left._dom._value);
 
     var failOut = false,
         failIn  = false;

@@ -2066,7 +2066,7 @@ module DefaultRectangular {
     return true;
   }
 
-  proc DefaultRectangularArr.doiCanBulkTransferStride() param {
+  proc DefaultRectangularArr.doiCanBulkTransferStride(viewDom) param {
     if debugDefaultDistBulkTransfer then chpl_debug_writeln("In DefaultRectangularArr.doiCanBulkTransferStride()");
     // A DefaultRectangular array is always regular, so bulk should be possible.
     return true;
@@ -2079,6 +2079,7 @@ module DefaultRectangular {
     // With multi-ddata, at least for now if the arrays aren't chunked
     // exactly the same way we don't do direct bulk transfer.
     //
+    if this.rank != B.rank then return false;
     return (defRectSimpleDData
             || (mdParDim == B._value.mdParDim
                 && mdNumChunks == B._value.mdNumChunks
@@ -2093,7 +2094,8 @@ module DefaultRectangular {
     // arrays.
     // gbt TODO
     //
-    return oneDData && B._value.oneDData;
+    var actual = if B._value.isSliceArrayView() then B._value.arr else B._value;
+    return oneDData && actual.oneDData;
   }
 
   proc DefaultRectangularArr.doiBulkTransfer(B, viewDom) {
@@ -2187,7 +2189,11 @@ module DefaultRectangular {
     Supporting Extensions to GASNet, Version 2.0. Author: Dan Bonachea'
 
   A.doiBulkTransferStride(B) copies B-->A, where 'B' is another
-  DefaultRectangular array
+  DefaultRectangular _array record (or array-view to default-rectangular array)
+
+  `viewDom` is a DefaultRectangularDom class representing a view into the array
+  data for 'A'. If 'B' is an ArrayView, its own view-domain will be computed
+  within this function.
 
   Assumes row-major ordering.
 
@@ -2198,35 +2204,99 @@ module DefaultRectangular {
 
   TODO: Pull simple runtime implementation up into module code
   */
-  proc DefaultRectangularArr.doiBulkTransferStride(Barg) {
+  proc DefaultRectangularArr.doiBulkTransferStride(B, viewDom) {
+    var actual = if B.isSliceArrayView() then B.arr else B;
     if (this.dataChunk(0).locale.id != here.id
-        && Barg.dataChunk(0).locale.id != here.id) {
+        && actual.dataChunk(0).locale.id != here.id) {
       if debugDefaultDistBulkTransfer {
         chpl_debug_writeln("BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE", this.dataChunk(0).locale.id);
       }
-      on this.dataChunk(0) do stridedTransferFrom(Barg);
+      on this.dataChunk(0) do stridedTransferFrom(viewDom, actual, B.dom);
     } else {
-      stridedTransferFrom(Barg);
+      stridedTransferFrom(viewDom, actual, B.dom);
     }
   }
 
-  proc DefaultRectangularArr.stridedTransferFrom(Barg) {
-    const A = this, B = Barg;
+  proc DefaultRectangularArr.stridedTransferFrom(LViewDom, RHS, RViewDom) {
+    if debugDefaultDistBulkTransfer {
+      writeln("Transferring views :", {(...LViewDom.dsiDims())}, " <-- ", {(...RViewDom.dsiDims())});
+      writeln("Original domains   :", {(...this.dom.dsiDims())}, " <-- ", {(...RHS.dom.dsiDims())});
+    }
+    const LHS = this;
+    param maxRank = max(LHS.rank, RHS.rank);
 
     // Using the 'first' values is necessary for correctness when the slice is
     // align'd.
-    const Adims = A.dom.dsiDims();
-    var AFirst : rank*idxType;
-    for i in 1..rank do AFirst(i) = if Adims(i).stride < 0 then Adims(i).last else Adims(i).first;
+    const LOrigDims = LViewDom.dsiDims();
+    var LDims  : maxRank*range(idxType, stridable=true);
 
-    const Bdims = B.dom.dsiDims();
-    var BFirst : rank*idxType;
-    for i in 1..rank do BFirst(i) = if Bdims(i).stride < 0 then Bdims(i).last else Bdims(i).first;
+    const ROrigDims  = RViewDom.dsiDims();
+    var RDims  : maxRank*range(idxType, stridable=true);
+
+    var LBlk   : maxRank*idxType;
+    var RBlk   : maxRank*idxType;
+
+    var LFirst : LHS.rank*idxType;
+    var RFirst : RHS.rank*idxType;
+
+    //
+    // Here the general idea is to build up LDims and RDims in such a way that
+    // preserves the information of each domain, but keeps the shapes matching.
+    // We start off by walking backward from the last dimension. If the size of the
+    // dimension matches, copy that information over to the slot in LDim and
+    // RDim. If there's a mismatch, then we must be dealing with a rank-change
+    // situation. That means that a dimension in the LHS or RHS must be of
+    // size one. The side with the dim of size one will copy its information
+    // normally, while the other side will create a 'dummy' range of size one
+    // to 'fill the gap'.
+    //
+    // BHARSH TODO: Simplify code, document better.
+
+    var li = LViewDom.rank, ri = RViewDom.rank;
+    for i in 1..maxRank by -1 {
+      assert(li >= 1 && ri >= 1);
+      if LOrigDims(li).size != ROrigDims(ri).size {
+        if (LOrigDims(li).size == 1) {
+          // LHS has a rank change
+          LDims(i) = LOrigDims(li);
+          LBlk(i)  = LHS.blk(li) * (LDims(i).stride / LHS.dom.dsiDim(li).stride);
+          LFirst(li) = if LDims(i).stride < 0 then LDims(i).last else LDims(i).first;
+          li = max(1, li-1);
+
+          RDims(i) = ROrigDims(1)#1;
+          RBlk(i)  = if i < maxRank then RBlk(i+1) else 1;
+        } else {
+          // RHS has a rank change
+          assert(ROrigDims(ri).size == 1, "doiBulkTransferStride called with invalid view domains.");
+          RDims(i) = ROrigDims(ri);
+          RBlk(i)  = RHS.blk(ri) * (RDims(i).stride / RHS.dom.dsiDim(ri).stride);
+          RFirst(ri) = if RDims(i).stride < 0 then RDims(i).last else RDims(i).first;
+          ri = max(1, ri-1);
+
+          LDims(i) = LOrigDims(1)#1;
+          LBlk(i)  = if i < maxRank then LBlk(i+1) else 1;
+        }
+      } else {
+        // Non-rank-changing case
+        LDims(i) = LOrigDims(li);
+        LBlk(i)  = LHS.blk(li) * (LDims(i).stride / LHS.dom.dsiDim(li).stride);
+        LFirst(li) = if LDims(i).stride < 0 then LDims(i).last else LDims(i).first;
+
+        RDims(i) = ROrigDims(ri);
+        RBlk(i)  = RHS.blk(ri) * (RDims(i).stride / RHS.dom.dsiDim(ri).stride);
+        RFirst(ri) = if RDims(i).stride < 0 then RDims(i).last else RDims(i).first;
+
+        li = max(1, li-1);
+        ri = max(1, ri-1);
+      }
+    }
 
     if debugDefaultDistBulkTransfer {
       chpl_debug_writeln("In DefaultRectangularArr.doiBulkTransferStride\n" +
-                         "Dest = " + stringify(Adims) + "\n" +
-                         "Src  = " + stringify(Bdims));
+                         "Dest = " + stringify(LDims) + "\n" +
+                         "Src  = " + stringify(RDims) + "\n" +
+                         "LBlk = " + stringify(LBlk)  + "\n" +
+                         "RBlk = " + stringify(RBlk));
     }
 
     // The number of values needed to express the strided region.
@@ -2237,7 +2307,7 @@ module DefaultRectangular {
     // number after that represents the number of times we need to stride at
     // each level. It will ultimately be an array of size `stridelevels+1`.
     //
-    var countDom = {1..rank+1};
+    var countDom = {1..maxRank+1};
     var count : [countDom] size_t;
     for c in count do c = 1; // serial to avoid task creation overhead
 
@@ -2246,7 +2316,7 @@ module DefaultRectangular {
     // from the values in the 'blk' tuple, though we may skip a dimension if
     // it can be aggregated. Will ultimately be of size `stridelevels`.
     //
-    var strideDom = {1..rank};
+    var strideDom = {1..maxRank};
     var dstStride, srcStride : [strideDom] size_t;
 
     //
@@ -2258,11 +2328,11 @@ module DefaultRectangular {
     // original domain may have also been strided, like so:
     //   var A : [1..10 by 2, 1..20 by 4] int;
     //
-    if A.blk(rank) > 1 || B.blk(rank) > 1 {
+    if LBlk(maxRank) > 1 || RBlk(maxRank) > 1 {
       stridelevels += 1;
       count[stridelevels] = 1;
-      dstStride[stridelevels] = A.blk(rank).safeCast(size_t);
-      srcStride[stridelevels] = B.blk(rank).safeCast(size_t);
+      dstStride[stridelevels] = LBlk(maxRank).safeCast(size_t);
+      srcStride[stridelevels] = RBlk(maxRank).safeCast(size_t);
     }
 
     //
@@ -2271,29 +2341,29 @@ module DefaultRectangular {
     // the next chunk of elements. If either array is unable to re-use its
     // stride, then we need a new stride value.
     //
-    for i in 2..rank by -1 {
+    for i in 2..maxRank by -1 {
       // Each corresponding dimension in A and B should have the same length,
       // so it doesn't matter which we use here.
-      count[stridelevels+1] *= Adims(i).length.safeCast(size_t);
+      count[stridelevels+1] *= LDims(i).length.safeCast(size_t);
 
-      const bothReuse = A.canReuseStride(i, stridelevels, count, dstStride)
-                     && B.canReuseStride(i, stridelevels, count, srcStride);
+      const bothReuse = canReuseStride(LBlk, i, stridelevels, count, dstStride)
+                     && canReuseStride(RBlk, i, stridelevels, count, srcStride);
 
       if !bothReuse {
         stridelevels += 1;
-        dstStride[stridelevels] = A.blk(i-1).safeCast(size_t);
-        srcStride[stridelevels] = B.blk(i-1).safeCast(size_t);
+        dstStride[stridelevels] = LBlk(i-1).safeCast(size_t);
+        srcStride[stridelevels] = RBlk(i-1).safeCast(size_t);
       }
     }
-    count[stridelevels+1] *= Adims(1).length.safeCast(size_t);
+    count[stridelevels+1] *= LDims(1).length.safeCast(size_t);
 
     assert(stridelevels <= rank, "BulkTransferStride: stride levels greater than rank.");
-    if stridelevels == 0 then assert(count[1] == A.dom.dsiNumIndices, "BulkTransferStride: bulk-count incorrect for stride level of 0.");
+    if stridelevels == 0 then assert(count[1] == LViewDom.dsiNumIndices, "BulkTransferStride: bulk-count incorrect for stride level of 0.");
 
     countDom = {1..stridelevels+1};
     strideDom = {1..stridelevels};
 
-    doiBulkTransferStrideComm(Barg, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst);
+    doiBulkTransferStrideComm(RHS, stridelevels:int(32), dstStride, srcStride, count, LFirst, RFirst);
   }
 
   //
@@ -2404,15 +2474,9 @@ module DefaultRectangular {
   size. However, it's still convenient to try and re-use the stride if
   possible.
   */
-  proc DefaultRectangularArr.canReuseStride(curDim: int, levels, count, stride)
+  proc canReuseStride(blk, curDim: int, levels, count, stride)
   {
-    // For a multi-ddata array, if the next dimension up is the one
-    // we've chunked on then we need a new stride, because the storage
-    // is discontiguous there.  Note that we could be less conservative
-    // here when traversing from element to element within multi-ddata
-    // chunks, but for now this is left as work for the future.
-    if !defRectSimpleDData && curDim-1 == mdParDim then
-      return false;
+    // TODO: implement for multi-ddata
 
     // TODO: Do we need to return false if the previous dimension has only one
     // element? What if it only has one element in the original domain?
