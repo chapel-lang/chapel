@@ -8430,7 +8430,7 @@ resolveFns(FnSymbol* fn) {
           !isTupleContainingOnlyReferences(ct)) {
         BlockStmt* block = new BlockStmt();
         VarSymbol* tmp   = newTemp(ct);
-        CallExpr*  call  = new CallExpr("chpl__deinit", gMethodToken, tmp);
+        CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
 
         // In case resolveCall drops other stuff into the tree ahead of the
         // call, we wrap everything in a block for safe removal.

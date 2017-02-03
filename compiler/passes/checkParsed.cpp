@@ -24,16 +24,19 @@
 #include "stmt.h"
 #include "expr.h"
 #include "astutil.h"
+#include "stringutil.h"
 #include "stlUtil.h"
 #include "docsDriver.h"
 
 
 static void checkNamedArguments(CallExpr* call);
+static void checkExplicitDeinitCalls(CallExpr* call);
 static void checkPrivateDecls(DefExpr* def);
 static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
 static void checkModule(ModuleSymbol* mod);
+static void setupForCheckExplicitDeinitCalls();
 
 void
 checkParsed() {
@@ -50,8 +53,11 @@ checkParsed() {
     return;
   }
 
+  setupForCheckExplicitDeinitCalls();
+
   forv_Vec(CallExpr, call, gCallExprs) {
     checkNamedArguments(call);
+    checkExplicitDeinitCalls(call);
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
@@ -122,6 +128,25 @@ checkNamedArguments(CallExpr* call) {
       names.add(named->name);
     }
   }
+}
+
+static const char* dotAstr;
+static VarSymbol* deinitStrLiteral;
+
+static void setupForCheckExplicitDeinitCalls() {
+  dotAstr = astr(".");
+  deinitStrLiteral = new_CStringSymbol("deinit");
+}
+
+static void checkExplicitDeinitCalls(CallExpr* call) {
+  if (call->id == breakOnResolveID) gdbShouldBreakHere(); //vass
+  if (UnresolvedSymExpr* target = toUnresolvedSymExpr(call->baseExpr))
+    if (target->unresolved == dotAstr)
+      if (SymExpr* arg2 = toSymExpr(call->get(2)))
+        if (arg2->symbol() == deinitStrLiteral)
+          // OK to invoke explicitly from internal modules
+          if (strcmp(call->parentSymbol->name, "chpl__delete"))
+            USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
 }
 
 

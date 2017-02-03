@@ -1,0 +1,2 @@
+deinitExplicitCall.chpl:6: error: direct calls to deinit() are not allowed
+deinitExplicitCall.chpl:10: error: direct calls to deinit() are not allowed

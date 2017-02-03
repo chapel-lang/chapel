@@ -173,13 +173,14 @@ void normalize() {
         DefExpr*       thisDef = toDefExpr(fn->formals.get(2));
         AggregateType* ct      = toAggregateType(thisDef->sym->type);
 
-        INT_ASSERT(fn->name[0] == '~' && thisDef);
+        INT_ASSERT(thisDef);
 
-        // make sure the name of the destructor matches the name of the class
-        if (ct && strcmp(fn->name + 1, ct->symbol->name) != 0) {
-          USR_FATAL(fn, "destructor name must match class name");
+        // verify the name of the destructor
+        if (ct && (strcmp(fn->name + 1, ct->symbol->name) &&
+                   strcmp(fn->name, "deinit"))) {
+          USR_FATAL(fn, "destructor name must match class name or deinit()");
         } else {
-          fn->name = astr("chpl__deinit");
+          fn->name = astr("deinit");
         }
       }
     // make sure methods don't attempt to overload operators

@@ -1,3 +1,3 @@
-multipledestructor.chpl:7: error: ambiguous call 'C.chpl__deinit()'
-multipledestructor.chpl:2: note: candidates are: C.~C()
-multipledestructor.chpl:4: note:                 C.~C()
+multipledestructor.chpl:7: error: ambiguous call 'C.deinit()'
+multipledestructor.chpl:2: note: candidates are: C.deinit()
+multipledestructor.chpl:4: note:                 C.deinit()
