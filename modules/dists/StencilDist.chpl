@@ -1754,7 +1754,7 @@ proc StencilArr.doiCanBulkTransfer() {
   return true;
 }
 
-proc StencilArr.doiCanBulkTransferStride() param {
+proc StencilArr.doiCanBulkTransferStride(viewDom) param {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiCanBulkTransferStride");
 

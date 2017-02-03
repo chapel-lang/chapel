@@ -1090,7 +1090,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
 
 proc CyclicArr.dsiSupportsBulkTransferInterface() param return true;
 
-proc CyclicArr.doiCanBulkTransferStride() param {
+proc CyclicArr.doiCanBulkTransferStride(viewDom) param {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiCanBulkTransferStride");
 

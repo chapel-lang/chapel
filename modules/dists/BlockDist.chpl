@@ -1507,7 +1507,7 @@ proc BlockArr.doiCanBulkTransfer(viewDom) {
   return true;
 }
 
-proc BlockArr.doiCanBulkTransferStride() param {
+proc BlockArr.doiCanBulkTransferStride(viewDom) param {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiCanBulkTransferStride");
 

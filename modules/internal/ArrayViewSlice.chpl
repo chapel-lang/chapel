@@ -128,11 +128,11 @@ class ArrayViewSliceArr: BaseArr {
     arr.doiBulkTransferToDR(B);
   }
 
-  /*  I don't think these should be needed...
-  proc doiBulkTransferStride(B) {
-    arr.doiBulkTransferStride(B);
+  proc doiBulkTransferStride(B, viewDom) {
+    arr.doiBulkTransferStride(B, privDom);
   }
 
+  /*  I don't think these should be needed...
   proc dataChunk(x) ref {
     return arr.dataChunk(x);
   }
@@ -185,17 +185,28 @@ class ArrayViewSliceArr: BaseArr {
   proc dsiSupportsBulkTransfer() param {
     return arr.dsiSupportsBulkTransfer();
   }
+  proc dsiSupportsBulkTransferInterface() param return true;
 
   proc doiUseBulkTransfer(B) {
     return arr.doiUseBulkTransfer(B);
   }
 
+  proc doiUseBulkTransferStride(B) {
+    return arr.doiUseBulkTransferStride(B);
+  }
+
   proc doiCanBulkTransfer(viewDom) {
-    return arr.doiCanBulkTransfer(viewDom);
+    return arr.doiCanBulkTransfer(privDom);
+  }
+
+  proc doiCanBulkTransferStride(viewDom) {
+    return arr.doiCanBulkTransferStride(privDom);
   }
 
   proc doiBulkTransfer(B, viewDom) {
-    arr.doiBulkTransfer(B, viewDom);
+    arr.doiBulkTransfer(B, privDom);
   }
+
+  proc isDefaultRectangular() param return arr.isDefaultRectangular();
 }
 
