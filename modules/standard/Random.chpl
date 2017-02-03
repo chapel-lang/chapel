@@ -185,6 +185,9 @@ module Random {
       The :mod:`NPBRandom` RNG will halt if provided an even seed.
       :mod:`PCGRandom` has no restrictions on the provided seed value.
 
+    :arg eltType: The element type to be generated.
+    :type eltType: `type`
+
     :arg seed: The seed to use for the PRNG.  Defaults to `oddCurrentTime` from
      :type:`RandomSupport.SeedGenerator`.
     :type seed: `int(64)`
@@ -192,15 +195,12 @@ module Random {
     :arg parSafe: The parallel safety setting.  Defaults to `true`.
     :type parSafe: `bool`
 
-    :arg eltType: The element type to be generated.  Defaults to `real(64)`.
-    :type eltType: `type`
-
     :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
     :type algorithm: :type:`RNG`
   */
-  proc makeRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
+  proc makeRandomStream(type eltType,
+                        seed: int(64) = SeedGenerator.oddCurrentTime,
                         param parSafe: bool = true,
-                        type eltType = real(64),
                         param algorithm = defaultRNG) {
     if algorithm == RNG.PCG then
       return new RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
@@ -208,6 +208,17 @@ module Random {
       return new NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
     else
       compilerError("Unknown random number generator");
+  }
+
+  // remove this deprecation version when appropriate
+  pragma "no doc"
+  pragma "compiler generated"
+  proc makeRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
+                        param parSafe: bool = true,
+                        type eltType = real(64),
+                        param algorithm = defaultRNG) {
+    compilerWarning("makeRandomStream now requires eltType as first argument");
+    return makeRandomStream(eltType, seed, parSafe, algorithm);
   }
 
 
@@ -560,6 +571,9 @@ module Random {
         Constructs a new stream of random numbers using the specified seed
         and parallel safety.
 
+        :arg eltType: The element type to be generated.
+        :type eltType: `type`
+
         :arg seed: The seed to use for the PRNG.  Defaults to
           `currentTime` from :type:`RandomSupport.SeedGenerator`.
           Can be any int(64) value.
@@ -568,12 +582,10 @@ module Random {
         :arg parSafe: The parallel safety setting.  Defaults to `true`.
         :type parSafe: `bool`
 
-        :arg eltType: The element type to be generated.  Defaults to `real(64)`.
-        :type eltType: `type`
       */
-      proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
-                        param parSafe: bool = true,
-                        type eltType = real(64) ) {
+      proc RandomStream(type eltType,
+                        seed: int(64) = SeedGenerator.currentTime,
+                        param parSafe: bool = true) {
         this.seed = seed;
         for param i in 1..numGenerators(eltType) {
           param inc = pcg_getvalid_inc(i);
@@ -581,6 +593,22 @@ module Random {
         }
         PCGRandomStreamPrivate_count = 1;
       }
+
+      // remove this deprecation version when appropriate
+      pragma "no doc"
+      pragma "compiler generated"
+      proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
+                        param parSafe: bool = true,
+                        type eltType = real(64)) {
+        compilerWarning("RandomStream constructor requires eltType as first argument");
+        this.seed = seed;
+        for param i in 1..numGenerators(eltType) {
+          param inc = pcg_getvalid_inc(i);
+          PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
+        }
+        PCGRandomStreamPrivate_count = 1;
+      }
+
 
       pragma "no doc"
       proc PCGRandomStreamPrivate_getNext_noLock(type resultType=eltType) {
@@ -2029,6 +2057,9 @@ module Random {
           an NPBRandomStream with an even seed value will cause a call to
           halt(). Only the lower 46 bits of the seed will be used.
 
+        :arg eltType: The element type to be generated.
+        :type eltType: `type`
+
         :arg seed: The seed to use for the PRNG.  Defaults to
           `oddCurrentTime` from :type:`~RandomSupport.SeedGenerator`.
         :type seed: `int(64)`
@@ -2036,12 +2067,44 @@ module Random {
         :arg parSafe: The parallel safety setting.  Defaults to `true`.
         :type parSafe: `bool`
 
-        :arg eltType: The element type to be generated.  Defaults to `real(64)`.
-        :type eltType: `type`
       */
+      proc NPBRandomStream(type eltType,
+                           seed: int(64) = SeedGenerator.oddCurrentTime,
+                           param parSafe: bool = true) {
+
+        // The mod operation is written in these steps in order
+        // to work around an apparent PGI compiler bug.
+        // See test/portability/bigmod.test.c
+        var one:uint(64) = 1;
+        var two_46:uint(64) = one << 46;
+        var two_46_mask:uint(64) = two_46 - 1;
+        var useed = seed:uint(64);
+        var mod:uint(64);
+        if useed % 2 == 0 then
+          halt("NPBRandomStream seed must be an odd integer");
+        // Adjust seed to be between 0 and 2**46.
+        mod = useed & two_46_mask;
+        this.seed = mod:int(64);
+
+        if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
+          halt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
+
+        NPBRandomStreamPrivate_cursor = seed;
+        NPBRandomStreamPrivate_count = 1;
+        if eltType == real || eltType == imag || eltType == complex {
+          // OK, supported element type
+        } else {
+          compilerError("NPBRandomStream only supports eltType=real(64), imag(64), or complex(128)");
+        }
+      }
+
+      pragma "no doc"
+      pragma "compiler generated"
       proc NPBRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
-                        param parSafe: bool = true,
-                        type eltType = real(64)) {
+                           param parSafe: bool = true,
+                           type eltType = real(64)) {
+
+        compilerWarning("NPBRandomStream constructor requires eltType as first argument");
 
         // The mod operation is written in these steps in order
         // to work around an apparent PGI compiler bug.
