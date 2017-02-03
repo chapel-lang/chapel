@@ -459,39 +459,52 @@ bool isParentField(AggregateType* t, const char *name) {
   }
 }
 
-static
-void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
+static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
+  SET_LINENO(next);
+
   const char* nextField = field->sym->name;
 
-  SET_LINENO(next);
   // Do something appropriate with "super"
   if (field->sym->hasFlag(FLAG_SUPER_CLASS)) {
-    return;
-  }
 
   // For all other fields, insert an assignment into that field with the given
   // initialization, if we have one.
-  if (!field->init && !field->exprType) {
-    USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
-    return;
-  }
+  } else if (!field->init && !field->exprType) {
+    USR_FATAL_CONT(next,
+                   "can't omit initialization of field \"%s\", "
+                   "no type or default value provided",
+                   nextField);
 
-  Symbol* _this = toFnSymbol(next->parentSymbol)->_this;
-  CallExpr* thisAccess = new CallExpr(".", _this,
-                                      new_CStringSymbol(nextField));
-  CallExpr* newInit = NULL;
-  if (field->init) {
-    newInit = new CallExpr("=", thisAccess, field->init->copy());
   } else {
-    INT_ASSERT(field->exprType);
-    VarSymbol* tmp = newTemp("call_tmp");
-    next->insertBefore(new DefExpr(tmp));
-    next->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(tmp),
-                                    new CallExpr(PRIM_INIT,
-                                                 field->exprType->copy())));
-    newInit = new CallExpr("=", thisAccess, new SymExpr(tmp));
+    Symbol*   _this      = toFnSymbol(next->parentSymbol)->_this;
+
+    CallExpr* thisAccess = new CallExpr(".",
+                                        _this,
+                                        new_CStringSymbol(nextField));
+
+    if (field->init) {
+      CallExpr* newInit = new CallExpr("=", thisAccess, field->init->copy());
+
+      next->insertBefore(newInit);
+    } else {
+      INT_ASSERT(field->exprType);
+
+      VarSymbol* tmp     = newTemp("call_tmp");
+      VarSymbol* refTmp  = newTemp("ref_tmp");
+
+      next->insertBefore(new DefExpr(tmp));
+
+      next->insertBefore(new CallExpr(PRIM_MOVE,
+                                      new SymExpr(tmp),
+                                      new CallExpr(PRIM_INIT,
+                                                   field->exprType->copy())));
+
+
+      next->insertBefore(new DefExpr(refTmp));
+      next->insertBefore(new CallExpr(PRIM_MOVE, refTmp, thisAccess));
+      next->insertBefore(new CallExpr(PRIM_MOVE, refTmp, new SymExpr(tmp)));
+    }
   }
-  next->insertBefore(newInit);
 }
 
 // Takes in the current expr (which must be a loop), the current field
