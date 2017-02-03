@@ -1106,7 +1106,6 @@ void CallExpr::insertAtTail(BaseAST* ast) {
   parent_insert_help(this, toInsert);
 }
 
-
 // MDN 2016/01/29: This will become a predicate
 FnSymbol* CallExpr::isResolved() const {
   return resolvedFunction();

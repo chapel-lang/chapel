@@ -1363,7 +1363,6 @@ FnSymbol::getOrCreateEpilogueLabel() {
   return label;
 }
 
-
 void
 FnSymbol::insertFormalAtHead(BaseAST* ast) {
   Expr* toInsert = NULL;
