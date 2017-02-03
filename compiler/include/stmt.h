@@ -166,6 +166,9 @@ public:
   void                insertAtTail(Expr* ast);
   void                insertAtTailBeforeFlow(Expr* ast);
 
+  void                insertAtHead(AList exprs);
+  void                insertAtTail(AList exprs);
+
   void                insertAtHead(const char* format, ...);
   void                insertAtTail(const char* format, ...);
 
