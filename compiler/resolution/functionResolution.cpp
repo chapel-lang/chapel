@@ -542,10 +542,10 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
       // it up completely...
       instantiateBody(newFn);
 
-      Symbol* memeTmp = newTemp(ct);
-      DefExpr* def = new DefExpr(memeTmp);
+      Symbol* thisTmp = newTemp(ct);
+      DefExpr* def = new DefExpr(thisTmp);
       newFn->insertBeforeEpilogue(def);
-      CallExpr* initCall = new CallExpr("init", arg, memeTmp);
+      CallExpr* initCall = new CallExpr("init", gMethodToken, thisTmp, arg);
       def->insertAfter(initCall);
 
       FnSymbol* initFn = tryResolveCall(initCall);
@@ -574,7 +574,7 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
         }
 
         // Set the RVV to the copy
-        newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, memeTmp));
+        newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, thisTmp));
       }
       return true;
     }
