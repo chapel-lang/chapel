@@ -41,26 +41,16 @@ private:
   struct TryInfo {
     VarSymbol*   errorVar;
     LabelSymbol* handlerLabel;
-    TryStmt*     tryStmt;
   };
 
   std::stack<TryInfo> tryStack;
   ArgSymbol*          outError;
   LabelSymbol*        epilogue;
 
-         std::vector<Expr*> tryHandler       (TryInfo            info);
-         std::vector<Expr*> setOutGotoReturn (VarSymbol*         error);
-
-  static CallExpr*          haltExpr         ();
-
-  static std::vector<Expr*> errorCond        (VarSymbol*         errorVar,
-                                              BlockStmt*         thenBlock);
-
-  static void               insertIntoBlock  (BlockStmt*         insert,
-                                              std::vector<Expr*> exprs);
-
-  static void               insertAfterCall  (CallExpr*          node,
-                                              std::vector<Expr*> exprs);
+  AList     tryHandler         (TryStmt*   tryStmt,  VarSymbol* errorVar);
+  AList     setOutGotoEpilogue (VarSymbol* error);
+  AList     errorCond          (VarSymbol* errorVar, BlockStmt* thenBlock);
+  CallExpr* haltExpr           ();
 
   ErrorHandlingVisitor();
 };
@@ -77,7 +67,7 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
 
   VarSymbol*   errorVar     = newTemp("error", dtObject);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
-  TryInfo      info         = {errorVar, handlerLabel, node};
+  TryInfo      info         = {errorVar, handlerLabel};
   tryStack.push(info);
 
   return true;
@@ -90,12 +80,29 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
   BlockStmt* tryBlock = node->body();
 
   tryBlock->insertAtHead(new DefExpr(info.errorVar));
+
   tryBlock->insertAtTail(new DefExpr(info.handlerLabel));
-  insertIntoBlock(tryBlock, tryHandler(info));
+  tryBlock->insertAtTail(tryHandler(node, info.errorVar));
 
   tryBlock->remove();
   node    ->replace(tryBlock);
   tryStack.pop();
+}
+
+AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
+  BlockStmt* handler = new BlockStmt();
+  // TODO: create catches
+  // TODO: nested try
+
+  if (tryStmt->tryBang()) {
+    handler->insertAtTail(haltExpr());
+  } else if (outError) {
+    handler->insertAtTail(setOutGotoEpilogue(errorVar));
+  } else {
+    // TODO: inexhaustive try in non-throwing fn
+  }
+
+  return errorCond(errorVar, handler);
 }
 
 bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
@@ -121,7 +128,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
         // TODO: strict mode, missing try
         if (outError) {
-          insertIntoBlock(errorPolicy, setOutGotoReturn(errorVar));
+          errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
 
         // TODO: strict mode, missing try!
         } else {
@@ -130,7 +137,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       }
 
       node->insertAtTail(errorVar);
-      insertAfterCall(node, errorCond(errorVar, errorPolicy));
+      node->insertAfter(errorCond(errorVar, errorPolicy));
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     SET_LINENO(node);
@@ -150,7 +157,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       throwBlock->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
                                             info.handlerLabel));
     } else if (outError) {
-      insertIntoBlock(throwBlock, setOutGotoReturn(thrownError));
+      throwBlock->insertAtTail(setOutGotoEpilogue(thrownError));
     } else {
       // TODO: compiler error, cannot throw unless callingFn throws
     }
@@ -158,29 +165,26 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
-std::vector<Expr*> ErrorHandlingVisitor::tryHandler(TryInfo info) {
-  BlockStmt* handler = new BlockStmt();
-
-  // TODO: create catches
-  // TODO: nested try
-
-  if (info.tryStmt->tryBang()) {
-    handler->insertAtTail(haltExpr());
-  } else if (outError) {
-    insertIntoBlock(handler, setOutGotoReturn(info.errorVar));
-  } else {
-    // TODO: inexhaustive try in non-throwing fn
-  }
-
-  return errorCond(info.errorVar, handler);
-}
-
-std::vector<Expr*> ErrorHandlingVisitor::setOutGotoReturn(VarSymbol* error) {
+// Sets the fn out variable with the given error, then goes to the fn epilogue.
+AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
   CallExpr* castError = new CallExpr(PRIM_CAST, dtObject->symbol, error);
 
-  std::vector<Expr*> ret;
-  ret.push_back(new CallExpr(PRIM_MOVE, outError, castError));
-  ret.push_back(new GotoStmt(GOTO_RETURN, epilogue));
+  AList ret;
+  ret.insertAtTail(new CallExpr(PRIM_MOVE, outError, castError));
+  ret.insertAtTail(new GotoStmt(GOTO_RETURN, epilogue));
+
+  return ret;
+}
+
+AList ErrorHandlingVisitor::errorCond(VarSymbol* errorVar,
+                                      BlockStmt* thenBlock) {
+  VarSymbol* errorExistsVar = newTemp("errorExists", dtBool);
+  CallExpr*  errorExists    = new CallExpr(PRIM_NOTEQUAL, errorVar, gNil);
+
+  AList ret;
+  ret.insertAtTail(new DefExpr(errorExistsVar));
+  ret.insertAtTail(new CallExpr(PRIM_MOVE, errorExistsVar, errorExists));
+  ret.insertAtTail(new CondStmt(new SymExpr(errorExistsVar), thenBlock));
 
   return ret;
 }
@@ -188,41 +192,6 @@ std::vector<Expr*> ErrorHandlingVisitor::setOutGotoReturn(VarSymbol* error) {
 // TODO: take in a halt message from the error
 CallExpr* ErrorHandlingVisitor::haltExpr() {
   return new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("uncaught error"));
-}
-
-std::vector<Expr*> ErrorHandlingVisitor::errorCond(
-    VarSymbol* errorVar, BlockStmt* thenBlock) {
-
-  VarSymbol* errorExistsVar = newTemp("errorExists", dtBool);
-  CallExpr*  errorExists    = new CallExpr(PRIM_NOTEQUAL, errorVar, gNil);
-
-  std::vector<Expr*> ret;
-  ret.push_back(new DefExpr(errorExistsVar));
-  ret.push_back(new CallExpr(PRIM_MOVE, errorExistsVar, errorExists));
-  ret.push_back(new CondStmt(new SymExpr(errorExistsVar), thenBlock));
-
-  return ret;
-}
-
-void ErrorHandlingVisitor::insertIntoBlock(BlockStmt* insert,
-    std::vector<Expr*> exprs) {
-  for (std::vector<Expr*>::iterator it = exprs.begin();
-       it != exprs.end(); ++it) {
-    insert->insertAtTail(*it);
-  }
-}
-
-void ErrorHandlingVisitor::insertAfterCall(CallExpr* node,
-    std::vector<Expr*> exprs) {
-
-  Expr* prev = node;
-  for (std::vector<Expr*>::iterator it = exprs.begin();
-       it != exprs.end(); ++it) {
-
-    Expr* curr = *it;
-    prev->getStmtExpr()->insertAfter(curr);
-    prev = curr;
-  }
 }
 
 // TODO: dtObject should be dtError, but we don't have that right now
