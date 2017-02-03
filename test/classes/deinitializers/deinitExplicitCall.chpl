@@ -8,3 +8,12 @@ delete cc;
 
 var rr: RR;
 rr.deinit();
+
+deinit();
+deinit(cc);
+
+proc RR.something() {
+  deinit();
+  deinit(cc);
+}
+rr.something();

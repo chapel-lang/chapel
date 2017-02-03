@@ -131,22 +131,36 @@ checkNamedArguments(CallExpr* call) {
 }
 
 static const char* dotAstr;
-static VarSymbol* deinitStrLiteral;
+static const char* deinitAstr;
+static VarSymbol*  deinitStrLiteral;
 
 static void setupForCheckExplicitDeinitCalls() {
   dotAstr = astr(".");
+  deinitAstr = astr("deinit");
   deinitStrLiteral = new_CStringSymbol("deinit");
 }
 
+//
+// Report error for the following cases:
+//
+// * non-method call e.g. deinit(args...)
+//     ==> CallExpr(UnresolvedSymExpr("deinit"), args...)
+//
+// * method call e.g. cc.deinit(args...)
+//     ==> CallExpr(UnresolvedSymExpr("."), CString("deinit"), args...)
+//
 static void checkExplicitDeinitCalls(CallExpr* call) {
-  if (call->id == breakOnResolveID) gdbShouldBreakHere(); //vass
-  if (UnresolvedSymExpr* target = toUnresolvedSymExpr(call->baseExpr))
-    if (target->unresolved == dotAstr)
+  if (UnresolvedSymExpr* target = toUnresolvedSymExpr(call->baseExpr)) {
+    if (target->unresolved == deinitAstr)
+      USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
+    else if (target->unresolved == dotAstr)
       if (SymExpr* arg2 = toSymExpr(call->get(2)))
         if (arg2->symbol() == deinitStrLiteral)
-          // OK to invoke explicitly from internal modules
+          // OK to invoke explicitly from chpl__delete()
+          // which is our internal implementation of 'delete' statements.
           if (strcmp(call->parentSymbol->name, "chpl__delete"))
             USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
+  }
 }
 
 

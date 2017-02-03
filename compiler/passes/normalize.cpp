@@ -176,9 +176,13 @@ void normalize() {
         INT_ASSERT(thisDef);
 
         // verify the name of the destructor
-        if (ct && (strcmp(fn->name + 1, ct->symbol->name) &&
-                   strcmp(fn->name, "deinit"))) {
-          USR_FATAL(fn, "destructor name must match class name or deinit()");
+        bool notTildaName = (fn->name[0] != '~') ||
+                             strcmp(fn->name + 1, ct->symbol->name);
+        bool notDeinit = strcmp(fn->name, "deinit");
+
+        if (ct && notDeinit && notTildaName) {
+          USR_FATAL(fn,
+            "destructor name must match class/record name or deinit()");
         } else {
           fn->name = astr("deinit");
         }
