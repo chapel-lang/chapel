@@ -5,7 +5,7 @@ use Random;
 use Sort;
 use Search;
 
-var rng = new RandomStream(314159265);
+var rng = new RandomStream(real, 314159265);
 
 var found: bool;
 var foundIdx: int;

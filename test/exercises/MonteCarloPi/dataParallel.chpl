@@ -7,7 +7,7 @@ writeln("Number of points      = ", n);
 writeln("Random number seed    = ", seed);
 writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
 
-var rs = new NPBRandomStream(seed, parSafe=false);
+var rs = new NPBRandomStream(real, seed, parSafe=false);
 
 //
 // Create a domain over the number of random points to generate.

@@ -313,7 +313,7 @@ proc test_permuteMatrix(rprt = true) : bool {
     // little too meta here?)
 
     param n = 10;
-    var rand = new RandomStream();
+    var rand = new RandomStream(real);
 
     // this n by n array is filled so each element is assigned to its
     // row number. This test will permute these elements, keeping a pivot
