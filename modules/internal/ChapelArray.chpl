@@ -137,6 +137,7 @@ module ChapelArray {
   use ChapelTuple;
   use ChapelLocale;
   use ArrayViewSlice;
+  use ArrayViewRankChange;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -2055,12 +2056,49 @@ module ChapelArray {
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
       if boundsChecking then
         checkRankChange(args);
-      var ranges = _getRankChangeRanges(args);
-      param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-      pragma "no auto destroy" var d = _dom((...args));
+      var newD = _dom((...args));
+      var ranges = _getRankChangeRanges(newD.dims());
+      //      param rank = ranges.size, stridable = chpl__anyStridable(ranges);
+      pragma "no auto destroy" var d = {(...ranges)};
       d._value._free_when_no_arrs = true;
-      var a = _value.dsiRankChange(d._value, rank, stridable, args);
-      a._arrAlias = _value;
+
+      var collapsedDim: rank*bool;
+      //      compilerWarning("rank = " + rank + " " + collapsedDim.type:string);
+
+      var idx: rank*idxType;
+      var fullD: rank*ranges(1).type;
+
+      /*
+      compilerWarning(args.type:string);
+      compilerWarning(fullD.type:string);
+      compilerWarning(ranges.type:string);
+      */
+      
+      for param i in 1..rank {
+        if (isRange(args(i))) {
+          collapsedDim(i) = false;
+          fullD(i) = _dom.dim(i)[args(i)];
+        } else {
+          collapsedDim(i) = true;
+          idx(i) = args(i);
+          fullD(i) = args(i)..args(i);
+        }
+      }
+
+      const (arr, arrpid)  = /*if (_value.isSliceArrayView())
+                               then (this._value.arr, this._value._ArrPid)
+                               else*/ (this._value, this._pid);
+
+      var a = new ArrayViewRankChangeArr(eltType=this.eltType,
+                                         _DomPid = d._pid,
+                                         dom = d._instance,
+                                         _ArrPid=arrpid,
+                                         _ArrInstance=arr,
+                                         collapsedDim=collapsedDim,
+                                         idx=idx);
+
+      //      var a = _value.dsiRankChange(d._value, rank, stridable, args);
+      //      a._arrAlias = _value;
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
       return _newArray(a);
@@ -2384,7 +2422,7 @@ module ChapelArray {
           if newRange.low > r2.low {
             // not able to take enough spaces off the low end.  Take them
             // off the high end instead.
-            const spaceNeeded = r2.low - newRange.low;
+            const spaceNeeded = newRange.low - r2.low;
             newRange = r2.low..(newRange.high-spaceNeeded);
           }
           return newRange;
@@ -3631,6 +3669,18 @@ module ChapelArray {
                                            dom=x._value.dom,
                                            _ArrPid=x._value._ArrPid,
                                            _ArrInstance=x._value._ArrInstance));
+  }
+  
+  pragma "auto copy fn" proc chpl__autoCopy(const ref x: [])
+    where x._value.isRankChangeArrayView() {
+    writeln("In array slice autocopy");
+    return _newArray(new ArrayViewRankChangeArr(eltType=x.eltType,
+                                                _DomPid=x._value._DomPid,
+                                                dom=x._value.dom,
+                                                _ArrPid=x._value._ArrPid,
+                                                _ArrInstance=x._value._ArrInstance,
+                                                collapsedDim=x._value.collapsedDim,
+                                                idx=x._value.idx));
   }
 
   proc chpl_replaceWithDeepCopy(ref a:[]) {

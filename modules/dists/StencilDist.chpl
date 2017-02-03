@@ -1360,6 +1360,7 @@ proc _extendTuple(type t, idx, args) {
 }
 
 
+<<<<<<< HEAD
 proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   var alias = new StencilArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d, ignoreFluff=this.ignoreFluff);
   var thisid = this.locale.id;
@@ -1415,6 +1416,8 @@ proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args
   return alias;
 }
 
+=======
+>>>>>>> arrayViewRankChangeOnly
 private inline proc zeroTuple(t) {
   if isTuple(t) {
     for param i in 1..t.size do

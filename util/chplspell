@@ -32,7 +32,7 @@
 
 
 # RunInVENV
-RIVENV=$CHPL_HOME/doc/util/run-in-venv.bash
+RIVENV=$CHPL_HOME/util/run-in-venv.bash
 SCSPELL=scspell
 CHPL_DICT=$CHPL_HOME/.scspell/dictionary
 
@@ -138,10 +138,20 @@ while true; do
 
 	# Pass-through args with two parameters.  Pass via $ARGS to preserve
 	# ordering and not attempt directory expansion
-	--merge-file-ids|--rename-file)
+	--copy-file|--merge-file-ids|--rename-file)
 	    ARGS+=("$1" "$2" "$3")
 	    shift 3
 	    JUSTARGS=1
+	    ;;
+	--add-to-dict)
+	    # --add-to-dict takes 2 or 3 args
+	    ARGS+=("$1" "$2" "$3")
+	    shift 3
+	    JUSTARGS=1
+	    if [ -n "$1" ]; then
+		ARGS+=("$1")
+		shift
+	    fi
 	    ;;
 	--delete-files)
 	    DELETE_INVOKED=1

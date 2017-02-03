@@ -287,6 +287,9 @@
     "doc/modules/standard/SysBasic.rst",
     "modules/standard/SysBasic.chpl"
   ],
+  "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
+    "doc/platforms/aws.rst"
+  ],
   "8c00fe52-31db-11e6-a3a6-10ddb1d4c3d5": [
     "doc/primers/primers/LAPACKlib.rst",
     "test/release/examples/primers/LAPACKlib.chpl"
@@ -693,6 +696,9 @@
   ],
   "a70ca160-4400-11e6-907f-843835579daa": [
     "test/studies/shootout/fasta/kbrady/fasta-enum.chpl"
+  ],
+  "617a3c5c-dfc3-11e6-93be-10ddb1d4c3d5": [
+    "test/studies/shootout/mandelbrot/bradc/mandelbrot-blc.chpl"
   ],
   "dfd55fc8-4400-11e6-907f-843835579daa": [
     "test/studies/shootout/mandelbrot/jacobnelson/mandelbrot-fancy.chpl"

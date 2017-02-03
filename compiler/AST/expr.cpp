@@ -1616,15 +1616,13 @@ get_string(Expr* e) {
 // given type.
 //
 // This function should be used *before* resolution
-CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md) {
-  CallExpr* sizeExpr;
-  VarSymbol* mdExpr;
+CallExpr* callChplHereAlloc(Type *type, VarSymbol* md) {
   INT_ASSERT(!resolved);
   // Since the type is not necessarily known, resolution will fix up
   // this sizeof() call to take the resolved type of s as an argument
-  sizeExpr = new CallExpr(PRIM_SIZEOF, new SymExpr(s));
-  mdExpr = (md != NULL) ? md : newMemDesc(s->name);
-  CallExpr* allocExpr = new CallExpr("chpl_here_alloc", sizeExpr, mdExpr);
+  CallExpr*  sizeExpr  = new CallExpr(PRIM_SIZEOF, new SymExpr(type->symbol));
+  VarSymbol* mdExpr    = (md != NULL) ? md : newMemDesc(type);
+  CallExpr*  allocExpr = new CallExpr("chpl_here_alloc", sizeExpr, mdExpr);
   // Again, as we don't know the type yet, we leave it to resolution
   // to put in the cast to the proper type
   return allocExpr;
@@ -1643,7 +1641,7 @@ void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
                                     new CallExpr(PRIM_SIZEOF,
                                                  (ct != NULL) ?
                                                  ct->symbol : t->symbol));
-  VarSymbol* mdExpr = (md != NULL) ? md : newMemDesc(t->symbol->name);
+  VarSymbol* mdExpr = (md != NULL) ? md : newMemDesc(t);
   Symbol *allocTmp = newTemp("chpl_here_alloc_tmp", dtCVoidPtr);
   CallExpr* allocExpr = new CallExpr(PRIM_MOVE, allocTmp,
                                      new CallExpr(gChplHereAlloc,

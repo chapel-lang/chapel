@@ -1,11 +1,5 @@
-perfkeys: real, real
-graphkeys: release, submitted
-files: fastaredux-release.dat, fastaredux-submitted.dat
-graphtitle: Submitted Fasta Redux Shootout Benchmark
-ylabel: Time (seconds)
-
-perfkeys: real, real
-graphkeys: release, submitted
-files: fasta-release.dat, fasta-submitted.dat
+perfkeys: real, real, real
+graphkeys: release, submitted, submitted (2)
+files: fasta-release.dat, fasta-submitted.dat, fasta2.dat
 graphtitle: Submitted Fasta Shootout Benchmark
 ylabel: Time (seconds)

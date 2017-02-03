@@ -298,7 +298,7 @@ module ChapelBase {
   //
 
   inline proc _intExpHelp(a: integral, b) where a.type == b.type {
-    if b < 0 then
+    if isIntType(b.type) && b < 0 then
       if a == 0 then
         halt("cannot compute ", a, " ** ", b);
       else if a == 1 then
@@ -603,9 +603,81 @@ module ChapelBase {
     __primitive("chpl_exit_any", status);
   }
 
-  config param parallelInitElts=true;
+  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
+  config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
+
+  config param chpl_arrayInitMethodRuntimeSelectable = false;
+  private var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
+
+  inline proc chpl_setArrayInitMethod(initMethod: ArrayInit) {
+    if chpl_arrayInitMethodRuntimeSelectable == false {
+      compilerWarning("must set 'chpl_arrayInitMethodRuntimeSelectable' for ",
+                      "'chpl_setArrayInitMethod' to have any effect");
+    }
+    const oldInit = chpl_arrayInitMethod;
+    chpl_arrayInitMethod = initMethod;
+    return oldInit;
+  }
+
+  inline proc chpl_getArrayInitMethod() {
+    if chpl_arrayInitMethodRuntimeSelectable == false {
+      return chpl_defaultArrayInitMethod;
+    } else {
+      return chpl_arrayInitMethod;
+    }
+  }
+
   proc init_elts(x, s, type t) : void {
-    //
+    var initMethod = chpl_getArrayInitMethod();
+
+    // for uints, check that s > 0, so the `s-1` below doesn't overflow
+    if isUint(s) && s == 0 {
+      initMethod = ArrayInit.noInit;
+    } else if initMethod == ArrayInit.heuristicInit {
+      // Heuristically determine if we should do parallel initialization. The
+      // current heuristic really just checks that we have a numeric array that's
+      // at least 2MB. This value was chosen experimentally: Any smaller and the
+      // cost of a forall (mostly the task creation) outweighs the benefit of
+      // using multiple tasks. This was tested on a 2 core laptop, 8 core
+      // workstation, and 24 core XC40.
+      //
+      // Ideally we want to be able to do parallel initialization for all types,
+      // but we're currently blocked by an issue with arrays of arrays and thus
+      // arrays of aggregate types where at one field is an array. The issue is
+      // basically that an array's domain stores a linked list of all its arrays
+      // and removal becomes expensive when addition and removal occur in
+      // different orders. We don't currently have a good way to check if an
+      // aggregate type contains arrays, so we limit parallel init to numeric
+      // types.
+      //
+      // Long term we probably want to store the domain's arrays as an
+      // associative domain or some data structure with < log(n) find/add/remove
+      // times. Currently we can't do that because the domain's arrays are part
+      // of the base domain, so we have a circular reference. As a stepping
+      // stone, we could do parallel init for plain old data (POD) types.
+      if !isNumericType(t) {
+        initMethod = ArrayInit.serialInit;
+      } else {
+        param elemsizeInBytes = numBytes(t);
+        const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
+        param heuristicThresh = 2 * 1024 * 1024;
+        const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
+
+        if heuristicWantsPar {
+          initMethod = ArrayInit.parallelInit;
+        } else {
+          initMethod = ArrayInit.serialInit;
+        }
+      }
+    }
+
+    // need a real `here` since it's used in the range parallel iters
+    if initMethod == ArrayInit.parallelInit {
+      if here == dummyLocale {
+        initMethod = ArrayInit.serialInit;
+      }
+    }
+
     // Q: why is the declaration of 'y' in the following loops?
     //
     // A: so that if the element type is something like an array,
@@ -613,64 +685,28 @@ module ChapelBase {
     // One effect of having it in the loop is that the reference
     // count for an array element's domain gets bumped once per
     // element.  Is this good, bad, necessary?  Unclear.
-    //
-
-    //
-    // Heuristically determine if we should do parallel initialization. The
-    // current heuristic really just checks that we have a numeric array that's
-    // at least 2MB. This value was chosen experimentally: Any smaller and the
-    // cost of a forall (mostly the task creation) outweighs the benefit of
-    // using multiple tasks. This was tested on a 2 core laptop, 8 core
-    // workstation, and 24 core XC40.
-    //
-    // Ideally we want to be able to do parallel initialization for all types,
-    // but we're currently blocked by an issue with arrays of arrays and thus
-    // arrays of aggregate types where at one field is an array. The issue is
-    // basically that an array's domain stores a linked list of all its arrays
-    // and removal becomes expensive when addition and removal occur in
-    // different orders. We don't currently have a good way to check if an
-    // aggregate type contains arrays, so we limit parallel init to numeric
-    // types.
-    //
-    // Long term we probably want to store the domain's arrays as an
-    // associative domain or some data structure with < log(n) find/add/remove
-    // times. Currently we can't do that because the domain's arrays are part
-    // of the base domain, so we have a circular reference. As a stepping
-    // stone, we could do parallel init for plain old data (POD) types.
-    //
-
-    // for uints we need to check that s > 0, so the `s-1` in the following
-    // loops doesn't overflow.
-    if isUint(s) && s == 0 {
-      return;
-    }
-
-    if parallelInitElts && isNumericType(t) {
-
-      param elemsizeInBytes = numBytes(t);
-      const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
-      param heuristicThresh = 2 * 1024 * 1024;
-      const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
-
-      if heuristicWantsPar && here != dummyLocale {
-        forall i in 0..s-1 {
-          pragma "no auto destroy" var y: t;
-          __primitive("array_set_first", x, i, y);
-        }
-
-      } else {
+    select initMethod {
+      when ArrayInit.noInit {
+        return;
+      }
+      when ArrayInit.serialInit {
         for i in 0..s-1 {
           pragma "no auto destroy" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }
-    } else {
-      for i in 0..s-1 {
-        pragma "no auto destroy" var y: t;
-        __primitive("array_set_first", x, i, y);
+      when ArrayInit.parallelInit {
+        forall i in 0..s-1 {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i, y);
+        }
+      }
+      otherwise {
+        halt("ArrayInit.heuristicInit should have been made concrete");
       }
     }
   }
+
 
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,

@@ -32,9 +32,9 @@ describes BLAS as the following::
    widely available, they are commonly used in the development of high quality
    linear algebra software, LAPACK for example.
 
-This module wraps the functionality of level 3 matrix-matrix BLAS routines,
+This module wraps the functionality of BLAS routines,
 supporting the array element types, ``real(32)`` (single), ``real`` (double),
-``complex(32)`` (complex), and ``complex`` (complex double) under a single
+``complex`` (complex), and ``complex(128)`` (complex double) under a single
 interface.
 
 
@@ -87,20 +87,20 @@ BLAS Implementations:
 
 Cray Systems:
   No compiler flags should be necessary when compiling BLAS programs on
-  Crays. The **PBLAS** implementation is made available through Cray's libsci,
+  Crays. The **CrayBLAS** implementation is made available through Cray's libsci,
   which comes installed on all Cray systems. This is typically loaded by
   default, but can be manually loaded with ``module load cray-libsci`` as well.
   Chapel programs compiled on Crays utilize the ``cc`` wrapper as the backend
   compiler, which implicitly links against the libsci library. Therefore, no
   additional steps are required of the user.
 
-Chapel Level 3 BLAS API
------------------------
+BLAS API
+--------
 
-For convenience, this module provides wrappers around the Level 3
-(matrix-matrix) BLAS functions. These determine the appropriate functions to
-call, based on the array element types, as well as the array dimensions. The
-other functionality is identical to the corresponding BLAS functions.
+For convenience, this module provides wrappers around the BLAS functions. These
+determine the appropriate functions to call, based on the array element types,
+as well as the array dimensions. The other functionality is identical to the
+corresponding BLAS functions.
 
 The names of these routines are identical to the corresponding BLAS functions,
 except that the type prefix is dropped. For instance, ``gemm`` is the
@@ -197,7 +197,7 @@ module BLAS {
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
-        halt("Unknown type in gemm");
+        compilerError("Unknown type in gemm: ", eltType:string);
       }
     }
 
@@ -261,7 +261,7 @@ module BLAS {
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
-        halt("Unknown type in symm");
+        compilerError("Unknown type in symm: ", eltType:string);
       }
     }
 
@@ -315,7 +315,7 @@ module BLAS {
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
-        halt("Unknown type in hemm");
+        compilerError("Unknown type in hemm: ", eltType:string);
       }
     }
 
@@ -381,7 +381,7 @@ module BLAS {
           alpha1, A, _ldA, beta1, C,_ldC);
       }
       otherwise {
-        halt("Unknown type in syrk");
+        compilerError("Unknown type in syrk: ", eltType:string);
       }
     }
 
@@ -437,7 +437,7 @@ module BLAS {
           alpha1, A, _ldA, beta1, C,_ldC);
       }
       otherwise {
-        halt("Unknown type in syrk");
+        compilerError("Unknown type in syrk: ", eltType:string);
       }
     }
 
@@ -505,7 +505,7 @@ module BLAS {
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
-        halt("Unknown type in syr2k");
+        compilerError("Unknown type in syr2k: ", eltType:string);
       }
     }
 
@@ -560,7 +560,7 @@ module BLAS {
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
-        halt("Unknown type in her2k");
+        compilerError("Unknown type in her2k: ", eltType:string);
       }
     }
 
@@ -618,7 +618,7 @@ module BLAS {
           m, n, alpha1, A, _ldA, B, _ldB);
       }
       otherwise {
-        halt("Unknown type in trmm");
+        compilerError("Unknown type in trmm: ", eltType:string);
       }
     }
 
@@ -676,7 +676,7 @@ module BLAS {
           m, n, alpha1, A, _ldA, B, _ldB);
       }
       otherwise {
-        halt("Unknown type in trsm");
+        compilerError("Unknown type in trsm: ", eltType:string);
       }
     }
 
@@ -695,8 +695,674 @@ module BLAS {
     return _ldA;
   }
 
+  /* Level 1 BLAS */
 
-  /*
+/*
+    Wrapper for the `ROTG routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga2f65d66137ddaeb7ae93fcc4902de3fc.html#ga2f65d66137ddaeb7ae93fcc4902de3fc>`_
+
+    Construct `Givens plane rotation <https://en.wikipedia.org/wiki/Givens_rotation>`_ 
+    of point ``p`` defined by Cartesian coordinates ``(a, b)``::
+
+      | c  s |   |a|   |r|
+      |      | . | | = | |
+      |-s  c |   |b|   |0|
+
+    **Input:**
+
+    - ``a``: x-coordinate of point ``p``
+    - ``b``: y-coordinate of point ``p``
+
+    **Output:**
+
+    - ``a``: stores length vector (``r``) of inputs ``(a, b)``
+    - ``b``: stores ``z`` parameter that is defined below
+    - ``c``: stores value of ``c`` element defined above
+    - ``s``: stores value of ``s`` element defined above
+
+    The ``z`` parameter (stored in ``b``) is defined such that::
+
+      if |a| > |b| then z = s;
+      else if c != 0 then z = 1/c;
+      else z = 1
+
+*/
+proc rotg(ref a : ?eltType, ref b : eltType, ref c : eltType, ref s : eltType){
+  select eltType {
+    when real(32) do{
+      cblas_srotg (a, b, c, s);
+    }
+    when real(64) do{
+      cblas_drotg (a, b, c, s);
+    }
+    otherwise {
+        compilerError("Unknown type in rotg: ", eltType:string);
+    }
+  }
+}
+
+/*
+    Wrapper for the `ROTMG routines  <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga97ce4e31b77723a3b60fb3f479f61316.html#ga97ce4e31b77723a3b60fb3f479f61316>`_
+
+    Generate Givens rotation of points::
+
+       |b1|     |b1*sqrt(d1)|
+       |  | = H.|           |
+       |0 |     |b2*sqrt(d2)|
+
+    **Input:**
+
+    - ``d1``: Scaling factor for ``b1`` (x-axis)
+    - ``d2``: Scaling factor for ``b2`` (y-axis)
+    - ``b1``: x-coordinate of input vector
+    - ``b2``: y-coordinate of input vector
+
+    **Output:**
+
+    - ``d1``: Provides the first element the diagonal matrix
+    - ``d2``: Provides the second element the diagonal matrix
+    - ``b1``: Provides the ``b1`` rotated (rotated x coordination) of the vector
+    - ``P``: Parameter array of 5 elements, detailed below::
+
+
+                               |P[1] P[3]|
+       if P[0] == -1 then  H = |         |
+                               |P[2] P[4]|
+
+                               |1.0  P[3]|
+       if P[0] ==  0 then  H = |         |
+                               |P[2]  1.0|
+
+                               |P[1]  1.0|
+       if P[0] == 1 then   H = |         |
+                               |-1.0 P[4]|
+
+                               |1   0|
+       if P[0] == -2 then  H = |     |
+                               |0   1|
+
+
+
+*/
+proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType) {
+
+  if P.size != 5 then
+    halt("P parameter must consist of 5 elements");
+
+  select eltType {
+    when real(32) do{
+      cblas_srotmg(d1,d2,b1,b2,P);
+    }
+    when real(64) do{
+      cblas_drotmg(d1,d2,b1,b2,P);
+    }
+    otherwise {
+        compilerError("Unknown type in rotmg: ", eltType:string);
+    }
+  }
+}
+
+/*
+    Wrapper for the `ROT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga0ce1ab4726eb7ad925cbd89f100d5ce0.html#ga0ce1ab4726eb7ad925cbd89f100d5ce0>`_
+
+    Replaces the value elements of two vectors ``X`` and ``Y`` using the equation::
+
+      X[i] = c*X[i] + s*X[i]
+      Y[i] = c*Y[i] - s*X[i]
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``Y``: Input vector
+    - ``c``: Scalar parameter
+    - ``s``: Scalar parameter
+    - ``incY``: Defines the increment for the vector ``Y``
+    - ``incX``: Defines the increment for the vector ``X``
+
+    **Output:**
+
+    - ``X``: Vector with updated elements
+    - ``Y``: Vector with updated elements
+
+
+*/
+proc rot(X: [?D] ?eltType, Y: [D] eltType, c: eltType, s: eltType,  incY: c_int = 1, incX: c_int = 1)
+where D.rank == 1 {
+
+  const N = D.size: c_int;
+
+  select eltType {
+    when real(32) do{
+      cblas_srot(N, X, incX, Y, incY, c, s);
+    }
+    when real(64) do{
+      cblas_drot(N, X, incX, Y, incY, c, s);
+    }
+    otherwise {
+        compilerError("Unknown type in rot: ", eltType:string);
+    }
+  }
+}
+/*
+    Wrapper for the `ROTM routines  <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga5633344a5729b4f0167aa441dcf95a9c.html#ga5633344a5729b4f0167aa441dcf95a9c>`_
+
+    Executes the modified `Givens rotations <https://en.wikipedia.org/wiki/Givens_rotation>`_ with element wise  substitution::
+
+       |X[i]|     |X[i]|
+       |    | = H.|    |
+       |Y[i]|     |Y[i]|
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``Y``: Input vector
+    - ``incY``: Defines the increment for the vector ``Y``
+    - ``incX``: Defines the increment for the vector ``X``
+    - ``P``: Parameter array of 5 elements, detailed below::
+
+
+                               |P[1] P[3]|
+       if P[0] == -1 then  H = |         |
+                               |P[2] P[4]|
+
+                               |1.0  P[3]|
+       if P[0] ==  0 then  H = |         |
+                               |P[2]  1.0|
+
+                               |P[1]  1.0|
+       if P[0] == 1 then   H = |         |
+                               |-1.0 P[4]|
+
+                               |1   0|
+       if P[0] == -2 then  H = |     |
+                               |0   1|
+
+    **Output:**
+
+    - ``X``: Vector with updated elements
+    - ``Y``: Vector with updated elements
+
+*/
+proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1)
+ where D.rank == 1 {
+
+  if P.size != 5 then
+    halt("P parameter must consist of 5 elements");
+
+  const N = D.size: c_int;
+
+  select eltType {
+    when real(32) do{
+      cblas_srotm(N, X, incX, Y, incY,  P);
+    }
+    when real(64) do{
+      cblas_drotm(N, X, incX, Y, incY, P);
+    }
+    otherwise {
+        compilerError("Unknown type in rotm: ", eltType:string);
+    }
+  }
+}
+
+
+/*
+    Wrapper for the `SWAP routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga0a2eaca94b4941dbc351157126cbb0f6.html#ga0a2eaca94b4941dbc351157126cbb0f6>`_
+
+    Exchanges elements of two vectors.
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``Y``: Input vector
+    - ``incY``: Defines the increment for the vector ``Y``
+    - ``incX``: Defines the increment for the vector ``X``
+
+    **Output:**
+
+    - ``X``: Contains input ``Y`` elements
+    - ``Y``: Contains input ``X`` elements
+
+*/
+proc swap(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+ where D.rank == 1 {
+
+  const N = D.size: c_int;
+
+  select eltType {
+    when real(32) do{
+      cblas_sswap (N, X, incX, Y, incY);
+    }
+    when real(64) do{
+      cblas_dswap (N, X, incX, Y, incY);
+    }
+    when complex(64) do{
+      cblas_cswap (N, X, incX, Y, incY);
+    }
+    when complex(128) do{
+      cblas_zswap (N, X, incX, Y, incY);
+    }
+    otherwise {
+        compilerError("Unknown type in swap: ", eltType:string);
+    }
+  }
+}
+
+/*
+    Wrapper for the `SCAL routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga3252f1f70b29d59941e9bc65a6aefc0a.html#ga3252f1f70b29d59941e9bc65a6aefc0a>`_
+
+    Calculates the product of a vector ``X`` with scalar alpha::
+
+      X' = alpha*X
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``alpha``: Scalar parameter
+
+    **Output:**
+
+    - ``X``: Vector updated by the equation: ``X[i] = alpha*X[i]``
+
+*/
+proc scal(X: [?D]?eltType, ref alpha:eltType, incX: c_int = 1)
+where D.rank == 1 {
+
+  const N = D.size: c_int;
+
+  select eltType {
+    when real(32) do{
+      cblas_sscal (N, alpha, X, incX);
+    }
+    when real(64) do{
+      cblas_dscal (N, alpha, X, incX);
+    }
+    when complex(64) do{
+      cblas_cscal (N, alpha, X, incX);
+    }
+    when complex(128) do{
+      cblas_zscal (N, alpha, X, incX);
+    }
+    otherwise {
+        compilerError("Unknown type in scal: ", eltType:string);
+    }
+  }
+}
+
+/*
+    Wrapper for the `COPY routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga24785e467bd921df5a2b7300da57c469.html#ga24785e467bd921df5a2b7300da57c469>`_
+
+    Copies one vector (``X`` the source) to another (``Y`` the destination)::
+
+      Y = X
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``Y``: Input vector
+    - ``incX``: Defines the increment for the vector ``X``
+    - ``incY``: Defines the increment for the vector ``Y``
+
+    **Output:**
+
+    ``Y``: Contains the values copied from ``X`` vector
+
+ */
+proc copy(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+  where D.rank == 1 {
+
+  const N = D.size: c_int;
+
+  select eltType {
+    when real(32) do{
+      cblas_scopy (N, X, incX, Y, incY);
+    }
+    when real(64) do{
+      cblas_dcopy (N, X, incX, Y, incY);
+    }
+    when complex(64) do{
+      cblas_ccopy (N, X, incX, Y, incY);
+    }
+    when complex(128) do{
+      cblas_zcopy (N, X, incX, Y, incY);
+    }
+    otherwise {
+        compilerError("Unknown type in copy: ", eltType:string);
+    }
+  }
+}
+
+/*
+    Wrapper for the `AXPY routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gad2a52de0e32a6fc111931ece9b39726c.html#gad2a52de0e32a6fc111931ece9b39726c>`_
+
+    Computes the vector-scalar product of apha and ``X`` and adds the result to
+    ``Y``::
+
+      Y = alpha*X + Y
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``alpha``: Scalar parameter
+    - ``incX``: Defines the increment for the vector ``X``
+    - ``incY``: Defines the increment for the vector ``Y``
+
+    **Output:**
+
+    - ``Y``: Vector updated by the equation: ``Y[i] = alpha*X[i]+Y[i]``
+
+*/
+
+proc axpy(X: [?D]?eltType, Y: [D]eltType, ref alpha:eltType, incY: c_int = 1, incX: c_int = 1)
+ where D.rank == 1 {
+
+  const N = D.size: c_int;
+  select eltType {
+    when real(32) do{
+      cblas_saxpy (N, alpha, X, incX, Y, incY);
+    }
+    when real(64) do{
+      cblas_daxpy (N, alpha, X, incX, Y, incY);
+    }
+    when complex(64) do{
+      cblas_caxpy (N, alpha, X, incX, Y, incY);
+    }
+    when complex(128) do{
+      cblas_zaxpy (N, alpha, X, incX, Y, incY);
+    }
+    otherwise {
+        compilerError("Unknown type in axpy: ", eltType:string);
+    }
+  }
+}
+
+/*
+    Wrapper for `DOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga37a14d8598319955b711af0d64a6f56e.html#ga37a14d8598319955b711af0d64a6f56e>`_
+
+    Returns  the dot product of two vectors::
+
+       X*Y
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``Y``: Input vector
+    - ``incX``: Defines the increment for the vector ``X``
+    - ``incY``: Defines the increment for the vector ``Y``
+
+    :returns: Scalar value of dot product
+*/
+proc dot(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1):eltType
+where D.rank == 1 {
+
+  const N = D.size: c_int;
+
+  select eltType {
+    when real(32) do{
+      return cblas_sdot (N, X, incX, Y, incY);
+    }
+    when real(64) do{
+     return cblas_ddot (N,X, incX, Y, incY);
+    }
+    otherwise {
+        compilerError("Unknown type in dot: ", eltType:string);
+    }
+  }
+
+}
+
+/*
+    Wrapper for  `DOTU_SUB routines <http://www.netlib.org/lapack/explore-html/d2/df9/group__complex16__blas__level1_ga25e3992c589a478c5affcc975c6c7b08.html#ga25e3992c589a478c5affcc975c6c7b08>`_
+
+    Obtains the dot product of two complex vectors::
+
+       X*Y
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``Y``: Input vector
+    - ``incX``: Defines the increment for the vector ``X``
+    - ``incY``: Defines the increment for the vector ``Y``
+
+  :returns: The complex dot product
+
+
+*/
+proc dotu(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+where D.rank == 1 {
+
+  const N = D.size: c_int;
+
+  var res: eltType;
+
+  select eltType {
+    when complex(64) do{
+      cblas_cdotu_sub (N, X, incX, Y, incY, res);
+    }
+    when complex(128) do{
+      cblas_zdotu_sub (N, X, incX, Y, incY, res);
+    }
+    otherwise {
+        compilerError("Unknown type in dotu_sub: ", eltType:string);
+    }
+  }
+
+  return res;
+
+}
+
+
+/*
+    Wrapper for `DOTC_SUB routines <http://www.netlib.org/lapack/explore-html/da/df6/group__complex__blas__level1_gadd72f1b633553acc77250e32bc704a78.html#gadd72f1b633553acc77250e32bc704a78>`_
+
+    Obtains the dot product of conjugated X vector with Y vector::
+
+       conj(X)*Y
+
+    **Input:**
+
+    - ``X``: Conjugated input vector
+    - ``Y``: Input vector
+    - ``incX``: Defines the increment for the vector ``X``
+    - ``incY``: Defines the increment for the vector ``Y``
+
+    :returns: The complex dot product
+
+
+*/
+proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+ where D.rank == 1 {
+
+  const N = D.size: c_int;
+
+  var res: eltType;
+
+  select eltType {
+    when complex(64) do{
+      cblas_cdotc_sub (N, X, incX, Y, incY, res);
+    }
+    when complex(128) do{
+      cblas_zdotc_sub (N, X, incX, Y, incY, res);
+    }
+    otherwise {
+        compilerError("Unknown type in dotc_sub: ", eltType:string);
+    }
+  }
+  return res;
+}
+
+/*
+    Wrapper for `DSDOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>`_
+
+    Returns the dot product of two ``real(32)`` vectors as a ``real(64)``,
+    using ``real(64)`` precision internally::
+
+       X*Y
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``Y``: Input vector
+    - ``incX``: Defines the increment for the vector ``X``
+    - ``incY``: Defines the increment for the vector ``Y``
+
+    :returns: Scalar value of dot product
+
+
+*/
+proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(64)
+ where D.rank == 1 {
+
+  const N = D.size: c_int;
+  return cblas_dsdot (N, X, incX, Y, incY);
+}
+
+
+/*
+    Wrapper for `SDSDOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>`_
+
+    Returns the dot product of two ``real(32)`` vectors as a ``real(32)``, using
+    ``real(64)`` precision internally::
+
+       X*Y
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``Y``: Input vector
+    - ``incX``: Defines the increment for the vector ``X``
+    - ``incY``: Defines the increment for the vector ``Y``
+
+    :returns: Scalar value of dot product
+
+
+*/
+proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(32)
+ where D.rank == 1 {
+
+  var alpha = 0: real(32);
+  const N = D.size: c_int;
+
+  return cblas_sdsdot (N, alpha, X, incX, Y, incY);
+}
+
+/*
+    Wrapper for `NRM2 routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga35c2ec0e9bfdaa545320c2a134fcc471.html#ga35c2ec0e9bfdaa545320c2a134fcc471>`_
+
+    Returns the  Euclidean norm of vector ``X``::
+
+      ||X||
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``incX``: Defines the increment for the vector ``X``
+
+    :returns: The 2-norm of ``X`` vector
+
+*/
+proc nrm2(X: [?D]?eltType, incX: c_int = 1)
+where D.rank == 1 {
+
+  const N = D.size: c_int;
+
+  select eltType {
+   when real(32) do{
+      return cblas_snrm2 (N,  X, incX);
+    }
+    when real(64) do{
+      return cblas_dnrm2 (N, X, incX);
+    }
+    when complex(64) do{
+      return cblas_scnrm2 (N, X, incX);
+    }
+    when complex(128) do{
+      return cblas_dznrm2 (N, X, incX);
+    }
+    otherwise {
+        compilerError("Unknown type in nrm2: ", eltType:string);
+    }
+  }
+}
+
+/*
+    Wrapper for the `ASUM routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gafc5e1e8d9f26907c0a7cf878107f08cf.html#gafc5e1e8d9f26907c0a7cf878107f08cf>`_
+
+    Returns the sum of the magnitude values of X elements::
+
+      |Re X[1]| + |Im X[1]| + |Re  X[2]| + |Im  X[2]|+ ... + |Re  X[N]| + |Im X[N]|.
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``incX``: Defines the increment for the vector ``X``
+
+    :returns: The 1-norm of ``X`` vector
+
+*/
+proc asum(X: [?D]?eltType, incX: c_int = 1)
+where D.rank == 1 {
+
+  const N = D.size: c_int;
+
+  select eltType {
+   when real(32) do{
+      return cblas_sasum(N, X, incX);
+    }
+   when real(64) do{
+      return cblas_dasum(N, X, incX);
+    }
+   when complex(64) do{
+      return cblas_scasum(N, X, incX);
+    }
+    when complex(128) do{
+      return cblas_dzasum(N, X, incX);
+    }
+    otherwise {
+        compilerError("Unknown type in asum: ", eltType:string);
+    }
+  }
+}
+
+/*
+    Wrapper for `AMAX routines <http://www.netlib.org/lapack/explore-html/dc/dfc/cblas__isamax_8c_a7ecf33f60f99f563254ffb4f79e3fb80.html#a7ecf33f60f99f563254ffb4f79e3fb80>`_
+
+    Returns the index of element in the vector with maximum absolute value.
+
+    **Input:**
+
+    - ``X``: Input vector
+    - ``incX``: Defines the increment for the vector ``X``
+
+    :returns: The index of maximum absolute value
+
+*/
+proc amax(X: [?D]?eltType, incX: c_int = 1)
+where D.rank == 1: D.idxType {
+
+  const N = D.size: c_int;
+
+  const r = D.dim(1);
+
+  select eltType {
+   when real(32) do{
+      return r.orderToIndex(cblas_isamax(N, X, incX));
+    }
+   when real(64) do{
+      return r.orderToIndex(cblas_idamax(N, X, incX));
+    }
+   when complex(64) do{
+      return r.orderToIndex(cblas_icamax(N, X, incX));
+    }
+    when complex(128) do{
+      return r.orderToIndex(cblas_izamax(N, X, incX));
+    }
+    otherwise {
+        compilerError("Unknown type in amax: ", eltType:string);
+    }
+  }
+}
+
+/*
 
     Support for low-level native CBLAS bindings.
 
@@ -715,7 +1381,7 @@ module BLAS {
 
   */
   module C_BLAS {
-    extern type CBLAS_INDEX;
+    extern type CBLAS_INDEX = c_int;
 
     // Define the external types
     // These are C enums, so we define these as c_ints;

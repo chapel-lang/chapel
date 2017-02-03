@@ -111,6 +111,9 @@ void flattenNestedFunction(FnSymbol* nestedFunction);
 // callDestructors.cpp
 void insertReferenceTemps(CallExpr* call);
 
+// normalize.cpp
+void normalize(FnSymbol* fn);
+
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);

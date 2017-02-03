@@ -2867,6 +2867,7 @@ neednl
 parenthesesless
 
 FILEID: 610c0354-1f11-11e6-a3a6-10ddb1d4c3d5
+mults
 unum
 wayhi
 waylo
@@ -2885,8 +2886,12 @@ ttwang
 
 FILEID: c3b7f950-1f15-11e6-a3a6-10ddb1d4c3d5
 aarr
+aidx
+bidx
 bonachea
+chunkify
 escholarship
+mdpd
 rafatest
 sbac
 
@@ -4147,6 +4152,16 @@ bptr
 FILEID: a717e780-d45d-11e6-b38c-acbc32c4f96b
 bigvec
 
+FILEID: 3916e364-dfc3-11e6-93be-10ddb1d4c3d5
+amazonaws
+awsec
+icmpid
+
+FILEID: 617a3c5c-dfc3-11e6-93be-10ddb1d4c3d5
+xbase
+xvals
+yvals
+
 NATURAL:
 abcd
 abcdefg
@@ -4553,6 +4568,7 @@ directcall
 dirlistonly
 disambiguates
 discernable
+discontiguous
 discoverability
 distribs
 dists
@@ -4819,6 +4835,7 @@ frobenius
 frontend
 fseek
 fsfns
+fstab
 fstatfs
 fstream
 fsync
@@ -4850,6 +4867,7 @@ getchunk
 getcontext
 getcwd
 getdtablesize
+gethostname
 getlimbn
 getnameinfo
 getnext
@@ -4984,6 +5002,7 @@ infile
 infilesize
 infiniband
 infinitum
+initcopy
 initialise
 initializer
 initializers
@@ -5332,6 +5351,7 @@ mitre
 mjolnir
 mkdir
 mkerror
+mkswap
 mmap
 mmread
 mmreadsp
@@ -6016,6 +6036,9 @@ svec
 sverbose
 svid
 svnrev
+swapfile
+swapoff
+swapon
 swenson
 syloti
 symboltable
