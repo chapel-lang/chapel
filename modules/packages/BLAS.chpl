@@ -42,7 +42,7 @@ Compiling with BLAS
 -------------------
 
 In order to compile a Chapel program that uses this module, the
-BLAS and CBLAS (C wrappers to BLAS) libraries must be installed on the system.
+BLAS and C_BLAS (C wrappers to BLAS) libraries must be installed on the system.
 The paths to both the ``cblas.h`` header file and BLAS library
 must be passed to the ``-I`` and ``-L`` compiler arguments. The library name,
 typically ``blas``, must be passed to the ``-l`` argument as well.
@@ -58,7 +58,7 @@ BLAS Implementations:
   There is a wide range of
   `BLAS implementations <https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms#Implementations>`_
   available.
-  This module was built and tested with `netlib's CBLAS
+  This module was built and tested with `netlib's C_BLAS
   <http://www.netlib.org/blas/#_cblas>`_, but many other implementations are
   compatible as well.
   Using a version of BLAS optimized for the user's system will yield the best
@@ -72,7 +72,7 @@ BLAS Implementations:
 
   * **MKL**
 
-    * The BLAS module assumes that the CBLAS functions are defined in the
+    * The BLAS module assumes that the C_BLAS functions are defined in the
       header named ``cblas.h``.
       MKL defines these in ``mkl_cblas.h``. This can be worked around by
       creating a symbolic link to the correct header file name:
@@ -81,7 +81,7 @@ BLAS Implementations:
   * **OpenBLAS**
 
     * The header files that are included with OpenBLAS differ from the reference
-      CBLAS prototypes for complex arguments by using ``float*`` and ``double*``
+      C_BLAS prototypes for complex arguments by using ``float*`` and ``double*``
       pointers, instead of ``void*`` pointers.  Using this will likely result in
       warnings about incompatible pointer types. These may be ignored.
 
@@ -698,6 +698,7 @@ module BLAS {
 
   /* Level 2 BLAS */
 
+  //TODO -- currently not working as expected.. needs fixing
   /*
     Wrapper for the GBMV routines::
 
@@ -705,16 +706,15 @@ module BLAS {
 
     where ``A`` is an ``m``x``n`` band matrix, with ``kl`` sub-diagonals and
     ``ku`` super-diagonals.
-
    */
   proc gbmv(A : [?Adom] ?eltType,
-    X : [?Xdom] eltType, Y : [?Ydom] eltType,
-    alpha, beta,
-    kl : int = 0, ku : int = 0,
-    trans : Op =  Op.N,
-    order : Order = Order.Row,
-    ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
-    where (Adom.rank == 2) && (Xdom.rank==1) && (Ydom.rank == 1)
+            X : [?Xdom] eltType, Y : [?Ydom] eltType,
+            alpha, beta,
+            kl : int = 0, ku : int = 0,
+            trans : Op =  Op.N,
+            order : Order = Order.Row,
+            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (Xdom.rank==1) && (Ydom.rank == 1)
   {
     // Determine sizes
     var m = Xdom.dim(1).size : c_int,
@@ -767,9 +767,6 @@ module BLAS {
             ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (xdom.rank == 1) && (ydom.rank == 1)
   {
-    // Types
-    type eltType = A.eltType;
-
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
@@ -804,6 +801,815 @@ module BLAS {
     }
 
   }
+
+  /*
+    Wrapper for GER routines::
+
+      A := alpha*x*y'+ A
+
+  */
+  proc ger(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType, alpha,
+           order : Order = Order.Row,
+           ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+           where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+
+    // Determine sizes
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_sger(order, m, n, alpha, X, incx, Y, incy, A, _ldA);
+      }
+      when real(64) {
+        C_BLAS.cblas_dger(order, m, n, alpha, X, incx, Y, incy, A, _ldA);
+      }
+      otherwise {
+        compilerError("Unknown type in ger: ", eltType:string);
+      }
+    }
+
+  }
+
+  /*
+    Wrapper for GERC routines::
+
+      A := alpha*x*conjg(y') + A
+
+  */
+  proc gerc(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            ref alpha: eltType,
+            order : Order = Order.Row,
+            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when complex(64) {
+        C_BLAS.cblas_cgerc(order, m, n, alpha, X, incx, Y, incy, A, _ldA);
+      }
+      when complex(128) {
+        C_BLAS.cblas_zgerc(order, m, n, alpha, X, incx, Y, incy, A, _ldA);
+      }
+      otherwise {
+        compilerError("Unknown type in gerc: ", eltType:string);
+      }
+    }
+
+  }
+
+   // TODO - convert ' -> trans()
+  /*
+    Wrapper for the GERU routines::
+
+      A := alpha*x*y' + A
+
+  */
+  proc geru(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            ref alpha: eltType,
+            order : Order = Order.Row,
+            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when complex(64) {
+        C_BLAS.cblas_cgeru(order, m, n, alpha, X, incx, Y, incy, A, _ldA);
+      }
+      when complex(128) {
+        C_BLAS.cblas_zgeru(order, m, n, alpha, X, incx, Y, incy, A, _ldA);
+      }
+      otherwise {
+        compilerError("Unknown type in geru: ", eltType:string);
+      }
+    }
+
+  }
+
+
+  /*
+    Wrapper for the HBMV routines::
+
+      y := alpha*A*x + beta*y,
+
+  */
+  proc hbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            ref alpha: eltType, ref beta: eltType,
+            k: int = 0,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- check if m == n
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    var _k = k : c_int;
+
+    select eltType {
+      when complex(64) {
+        C_BLAS.cblas_chbmv(order, uplo, n, _k, alpha, A, _ldA, X, incx, beta, Y, incy);
+      }
+      when complex(128) {
+        C_BLAS.cblas_zhbmv(order, uplo, n, _k, alpha, A, _ldA, X, incx, beta, Y, incy);
+      }
+      otherwise {
+        compilerError("Unknown type in hbmv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+    Wrapper for the HEMV routines::
+
+      y := alpha*A*x + beta*y
+
+  */
+  proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            ref alpha: eltType, ref beta: eltType,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+    {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when complex(64) {
+        C_BLAS.cblas_chemv(order, uplo, n, alpha, A, _ldA, X, incx, beta, Y, incy);
+      }
+      when complex(128) {
+        C_BLAS.cblas_zhemv(order, uplo, n, alpha, A, _ldA, X, incx, beta, Y, incy);
+      }
+      otherwise {
+        compilerError("Unknown type in hemv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+    Wrapper for the HER routines::
+
+      A := alpha*x*conjg(x') + A
+  */
+  proc her(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            ldA : int = 0, incx : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when complex(64) {
+        var alpha1 = alpha: complex(64);
+        C_BLAS.cblas_cher(order, uplo, n, alpha1, X, incx, A, _ldA);
+      }
+      when complex(128) {
+        var alpha1 = alpha: complex(128);
+        C_BLAS.cblas_zher(order, uplo, n, alpha1, X, incx, A, _ldA);
+      }
+      otherwise {
+        compilerError("Unknown type in her: ", eltType:string);
+      }
+    }
+  }
+  /*
+    Wrapper for HER2 routines::
+
+      A := alpha *x*conjg(y') + conjg(alpha)*y *conjg(x') + A
+
+
+  */
+  proc her2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            ref alpha: eltType,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+    {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when complex(64) {
+        C_BLAS.cblas_cher2 (order, uplo, n, alpha, X, incx, Y, incy, A, _ldA);
+      }
+      when complex(128) {
+        C_BLAS.cblas_zher2 (order, uplo, n, alpha, X, incx, Y, incy, A, _ldA);
+      }
+      otherwise {
+        compilerError("Unknown type in her2: ", eltType:string);
+      }
+    }
+  }
+
+
+  /*
+    Wrapper for the HPMV routines::
+
+      y := alpha*A*x + beta*y
+
+  */
+  proc hpmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            ref alpha: eltType, ref beta: eltType,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    select eltType {
+      when complex(64) {
+        C_BLAS.cblas_chpmv(order, uplo, n, alpha, A, X, incx, beta, Y, incy);
+      }
+      when complex(128) {
+        C_BLAS.cblas_zhpmv(order, uplo, n, alpha, A, X, incx, beta, Y, incy);
+      }
+      otherwise {
+        compilerError("Unknown type in hpmv: ", eltType:string);
+      }
+    }
+  }
+
+
+  /*
+    Wrapper for the HPR routines::
+
+      A := alpha*x*conjg(x') + A
+
+
+  */
+  proc hpr(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            incx : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+
+    select eltType {
+      when complex(64) {
+        var alpha1 = alpha: complex(64);
+        C_BLAS.cblas_chpr(order, uplo, n, alpha1, X, incx, A);
+      }
+      when complex(128) {
+        var alpha1 = alpha: complex(128);
+        C_BLAS.cblas_zhpr(order, uplo, n, alpha1, X, incx, A);
+      }
+      otherwise {
+        compilerError("Unknown type in hpr: ", eltType:string);
+      }
+    }
+  }
+
+
+  /*
+    Wrapper for the HPR2 routines::
+
+      A := alpha*x*conjg(y') + conjg(alpha)*y*conjg(x') + A
+
+  */
+  proc hpr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            ref alpha: eltType,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+    {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    select eltType {
+      when complex(64) {
+        C_BLAS.cblas_chpr2(order, uplo, n, alpha, X, incx, Y, incy, A);
+      }
+      when complex(128) {
+        C_BLAS.cblas_zhpr2(order, uplo, n, alpha, X, incx, Y, incy, A);
+      }
+      otherwise {
+        compilerError("Unknown type in hpr2: ", eltType:string);
+      }
+    }
+  }
+
+
+  /*
+    Wrapper for the SBMV routines::
+
+      y := alpha*A*x + beta*y
+
+  */
+  proc sbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            alpha, beta,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            k : int = 0,
+            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    var _k = k: c_int;
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_ssbmv(order, uplo, n, _k, alpha, A, _ldA, X, incx, beta, incy);
+      }
+      when real(64) {
+        C_BLAS.cblas_dsbmv(order, uplo, n, _k, alpha, A, _ldA, X, incx, beta, incy);
+      }
+      otherwise {
+        compilerError("Unknown type in sbmv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+
+  */
+  proc spmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            alpha, beta,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_sspmv(order, uplo, n, alpha, A, X, incx, beta, Y, incy);
+      }
+      when real(64) {
+        C_BLAS.cblas_dspmv(order, uplo, n, alpha, A, X, incx, beta, Y, incy);
+      }
+      otherwise {
+        compilerError("Unknown type in spmv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+
+  */
+  proc spr(A: [?Adom] ?eltType, X: [?vDom] eltType,
+           alpha,
+           order : Order = Order.Row,
+           uplo : Uplo = Uplo.Upper,
+           incx : c_int = 1)
+           where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_sspr(order, uplo, n, alpha, X, incx, A);
+      }
+      when real(64) {
+        C_BLAS.cblas_dspr(order, uplo, n, alpha, X, incx, A);
+      }
+      otherwise {
+        compilerError("Unknown type in spr: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+
+  */
+  proc spr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            alpha,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_dspr2(order, uplo, n, alpha, X, incx, Y, incy, A);
+      }
+      when real(64) {
+        C_BLAS.cblas_sspr2(order, uplo, n, alpha, X, incx, Y, incy, A);
+      }
+      otherwise {
+        compilerError("Unknown type in spr2: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+
+  */
+  proc symv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            alpha, beta,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_ssymv(order, uplo, n, alpha, A, _ldA, X, incx, beta, Y, incy);
+      }
+      when real(64) {
+        C_BLAS.cblas_dsymv(order, uplo, n, alpha, A, _ldA, X, incx, beta, Y, incy);
+      }
+      otherwise {
+        compilerError("Unknown type in symv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+
+  */
+  proc syr(A: [?Adom] ?eltType, X: [?vDom] eltType,
+           alpha,
+           order : Order = Order.Row,
+           uplo : Uplo = Uplo.Upper,
+           ldA : int = 0, incx : c_int = 1)
+           where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_ssyr(order, uplo, n, alpha, X, incx, A, _ldA);
+      }
+      when real(64) {
+        C_BLAS.cblas_dsyr(order, uplo, n, alpha, X, incx, A, _ldA);
+      }
+      otherwise {
+        compilerError("Unknown type in syr: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+
+  */
+  proc syr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            alpha,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+
+    // TODO -- assert m == n
+
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_ssyr2(order, uplo, n, alpha, X, incx, Y, incy, A, _ldA);
+      }
+      when real(64) {
+        C_BLAS.cblas_dsyr2(order, uplo, n, alpha, X, incx, Y, incy, A, _ldA);
+      }
+      otherwise {
+        compilerError("Unknown type in syr2: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+    Wrapper for the TMBV routines::
+
+      x := A*x,         when trans = Op.N
+      x := A'*x,        when trans = Op.T
+      x := conjg(A')*x, when trans = Op.H
+
+
+  */
+  proc tbmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+            trans : Op = Op.N,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            diag : Diag = Diag.NonUnit,
+            ldA : int = 0, incx : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+
+
+    // Determine sizes
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int,
+        k : c_int;
+    // TODO -- check if m == n
+
+    if trans > Op.N then k = Adom.dim(2).size : c_int;
+                    else k = Adom.dim(1).size : c_int;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_stbmv(order, uplo, trans, diag, n, k, A, _ldA, X, incx);
+      }
+      when real(64) {
+        C_BLAS.cblas_dtbmv(order, uplo, trans, diag, n, k, A, _ldA, X, incx);
+      }
+      when complex(64) {
+        C_BLAS.cblas_ctbmv(order, uplo, trans, Diag, n, k, A, _ldA, X, incx);
+      }
+      when complex(128) {
+        C_BLAS.cblas_ztbmv(order, uplo, trans, Diag, n, k, A, _ldA, X, incx);
+      }
+      otherwise {
+        compilerError("Unknown type in tbmv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+   Wrapper for the TBSV routines::
+
+    A*x = b,         when trans = Op.N
+    A'*x = b,        when trans = Op.T
+    conjg(A')*x = b, when trans = Op.H
+
+
+  */
+  proc tbsv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+            trans : Op = Op.N,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            diag : Diag = Diag.NonUnit,
+            ldA : int = 0, incx : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+
+    // Determine sizes
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int,
+        k : c_int;
+    // TODO -- check if m == n
+
+    if trans > Op.N then k = Adom.dim(2).size : c_int;
+                    else k = Adom.dim(1).size : c_int;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_stbsv(order, uplo, trans, diag, n, k, A, _ldA, X, incx);
+      }
+      when real(64) {
+        C_BLAS.cblas_dtbsv(order, uplo, trans, diag, n, k, A, _ldA, X, incx);
+      }
+      when complex(64) {
+        C_BLAS.cblas_ctbsv(order, uplo, trans, diag, n, k, A, _ldA, X, incx);
+      }
+      when complex(128) {
+        C_BLAS.cblas_ztbsv(order, uplo, trans, diag, n, k, A, _ldA, X, incx);
+      }
+      otherwise {
+        compilerError("Unknown type in tbsv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+   Wrapper for TPMV routines::
+
+    x := A*x,         when trans = Op.N
+    x := A'*x,        when trans = Op.T
+    x := conjg(A')*x, when trans = Op.H
+
+  */
+  proc tpmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+            trans : Op = Op.N,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            diag : Diag = Diag.NonUnit,
+            incx : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+
+    // Determine sizes
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+    // TODO -- check if m == n
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_stpmv(order, uplo, trans, diag, n, A, X, incx);
+      }
+      when real(64) {
+        C_BLAS.cblas_dtpmv(order, uplo, trans, diag, n, A, X, incx);
+      }
+      when complex(64) {
+        C_BLAS.cblas_ctpmv(order, uplo, trans, diag, n, A, X, incx);
+      }
+      when complex(128) {
+        C_BLAS.cblas_ztpmv(order, uplo, trans, diag, n, A, X, incx);
+      }
+      otherwise {
+        compilerError("Unknown type in tpmv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+
+  */
+  proc tpsv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+            trans : Op = Op.N,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            diag : Diag = Diag.NonUnit,
+            incx : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+
+    // Determine sizes
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+    // TODO -- check if m == n
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_stpsv(order, uplo, trans, diag, n, A, X, incx);
+      }
+      when real(64) {
+        C_BLAS.cblas_dtpsv(order, uplo, trans, diag, n, A, X, incx);
+      }
+      when complex(64) {
+        C_BLAS.cblas_ctpsv(order, uplo, trans, diag, n, A, X, incx);
+      }
+      when complex(128) {
+        C_BLAS.cblas_ztpsv(order, uplo, trans, diag, n, A, X, incx);
+      }
+      otherwise {
+        compilerError("Unknown type in tpsv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+
+  */
+  proc trmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+            trans : Op = Op.N,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            diag : Diag = Diag.NonUnit,
+            ldA : int = 0, incx : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+
+    // Determine sizes
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+    // TODO -- check if m == n
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_strmv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+      }
+      when real(64) {
+        C_BLAS.cblas_dtrmv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+      }
+      when complex(64) {
+        C_BLAS.cblas_ctrmv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+      }
+      when complex(128) {
+        C_BLAS.cblas_ztrmv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+      }
+      otherwise {
+        compilerError("Unknown type in trmv: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+
+  */
+  proc trsv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+            trans : Op = Op.N,
+            order : Order = Order.Row,
+            uplo : Uplo = Uplo.Upper,
+            diag : Diag = Diag.NonUnit,
+            ldA: int = 0, incx : c_int = 1)
+            where (Adom.rank == 2) && (vDom.rank == 1)
+  {
+
+    // Determine sizes
+    var m = Adom.dim(1).size : c_int,
+        n = Adom.dim(2).size : c_int;
+    // TODO -- check if m == n
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, order, ldA);
+
+    select eltType {
+      when real(32) {
+        C_BLAS.cblas_strsv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+      }
+      when real(64) {
+        C_BLAS.cblas_dtrsv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+      }
+      when complex(64) {
+        C_BLAS.cblas_ctrsv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+      }
+      when complex(128) {
+        C_BLAS.cblas_ztrsv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+      }
+      otherwise {
+        compilerError("Unknown type in trsv: ", eltType:string);
+      }
+    }
+  }
+
+
+
   /* Level 1 BLAS */
 
 /*
@@ -1473,10 +2279,10 @@ where D.rank == 1: D.idxType {
 
 /*
 
-    Support for low-level native CBLAS bindings.
+    Support for low-level native C_BLAS bindings.
 
-    This submodule wraps the netlib CBLAS implementation, providing access to
-    all of CBLAS calls.
+    This submodule wraps the netlib C_BLAS implementation, providing access to
+    all of C_BLAS calls.
 
     Arrays are passed in directly, while pointers to scalar
     quantities (including complex numbers) are passed by reference (removing
@@ -1485,7 +2291,7 @@ where D.rank == 1: D.idxType {
     different array element types require using different functions.
 
     Refer to the
-    `CBLAS documentation <http://www.netlib.org/lapack/explore-html/dir_f88bc7ad48bfd56d75bf9d4836a2bb00.html>`_
+    `C_BLAS documentation <http://www.netlib.org/lapack/explore-html/dir_f88bc7ad48bfd56d75bf9d4836a2bb00.html>`_
     of the reference version for the usage of this module.
 
   */
