@@ -1,5 +1,38 @@
 module DateTime {
 
+  param MINYEAR = 1;
+  param MAXYEAR = 9999;
+
+  const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const DAYS_BEFORE_MONTH = init_days_before_month();
+
+  const unixEpoch = new datetime(1970, 1, 1);
+
+  const DI400Y = daysBeforeYear(401);
+  const DI100Y = daysBeforeYear(101);
+  const DI4Y   = daysBeforeYear(5);
+
+  enum DayOfWeek {
+    Monday =    0,
+    Tuesday =   1,
+    Wednesday = 2,
+    Thursday =  3,
+    Friday =    4,
+    Saturday =  5,
+    Sunday =    6
+  }
+
+  enum ISODayOfWeek {
+    Monday =    1,
+    Tuesday =   2,
+    Wednesday = 3,
+    Thursday =  4,
+    Friday =    5,
+    Saturday =  6,
+    Sunday =    7
+  }
+
+
   private proc getTimeOfDay() {
     extern "struct timeval" record timeval {
       var tv_sec: int;
@@ -38,37 +71,6 @@ module DateTime {
     return breakDownTime;
   }
 
-  // This is a pretty direct port of the Python date interface
-
-  enum DayOfWeek {
-    Monday =    0,
-    Tuesday =   1,
-    Wednesday = 2,
-    Thursday =  3,
-    Friday =    4,
-    Saturday =  5,
-    Sunday =    6
-  }
-
-  enum ISODayOfWeek {
-    Monday =    1,
-    Tuesday =   2,
-    Wednesday = 3,
-    Thursday =  4,
-    Friday =    5,
-    Saturday =  6,
-    Sunday =    7
-  }
-
-
-  param MINYEAR = 1;
-  param MAXYEAR = 9999;
-
-  const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  const DAYS_BEFORE_MONTH = init_days_before_month();
-
-  const unixEpoch = new datetime(1970, 1, 1);
-
   private proc init_days_before_month() {
     var DBM: [1..12] int;
     for i in 2..12 {
@@ -77,35 +79,18 @@ module DateTime {
     return DBM;
   }
 
-  proc isLeapYear(year: int) {
-    return (year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0));
-  }
-
-  proc daysInYear(year: int) {
-    return 365 + if isLeapYear(year) then 1 else 0;
-  }
-
-  proc daysBeforeYear(year: int) {
+  private proc daysBeforeYear(year: int) {
     const y = year - 1;
     return y*365 + y/4 - y/100 + y/400;
   }
 
-  proc daysInMonth(year: int, month: int) {
-    if month < 1 || month > 12 then
-      halt("month must be between 1 and 12");
-    if month == 2 && isLeapYear(year) then
-      return 29;
-    else
-      return DAYS_IN_MONTH(month);
-  }
-
-  proc daysBeforeMonth(year: int, month: int) {
+  private proc daysBeforeMonth(year: int, month: int) {
     if month < 1 || month > 12 then
       halt("month must be between 1 and 12");
     return DAYS_BEFORE_MONTH(month) + if (month > 2 && isLeapYear(year)) then 1 else 0;
   }
 
-  proc ymdToOrd(year: int, month: int, day: int) {
+  private proc ymdToOrd(year: int, month: int, day: int) {
     const dim = daysInMonth(year, month);
     if month < 1 || month > 12 then
       halt("month must be between 1 and 12");
@@ -114,11 +99,7 @@ module DateTime {
     return daysBeforeYear(year) + daysBeforeMonth(year, month) + day;
   }
 
-  const DI400Y = daysBeforeYear(401);
-  const DI100Y = daysBeforeYear(101);
-  const DI4Y   = daysBeforeYear(5);
-
-  proc ordToYmd(in n: int) {
+  private proc ordToYmd(in n: int) {
     n -= 1;
     const n400 = n / DI400Y;
     n = n % DI400Y;
@@ -153,6 +134,23 @@ module DateTime {
     assert(0 <= n && n < daysInMonth(year, month));
     return (year, month, n+1);
   }
+
+  /* Return true if `year` is a leap year */
+  proc isLeapYear(year: int) {
+    return (year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0));
+  }
+
+  /* Return the number of days in month `month` during the year `year`.
+     The number for a month can change from year to year due to leap years. */
+  proc daysInMonth(year: int, month: int) {
+    if month < 1 || month > 12 then
+      halt("month must be between 1 and 12");
+    if month == 2 && isLeapYear(year) then
+      return 29;
+    else
+      return DAYS_IN_MONTH(month);
+  }
+
 
   record date {
     var chpl_year, chpl_month, chpl_day: int;
