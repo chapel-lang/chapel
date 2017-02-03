@@ -17,24 +17,37 @@
  * limitations under the License.
  */
 
-module RefCount {
+module ExplicitRefCount {
 
   pragma "no doc"
   class RefCountBase {
+
     var refcnt: atomic int;
 
+    /*
+      Increment the reference count and return the reference count value before
+      the increment operation.
+     */
     proc incRefCount() {
       refcnt.add(1);
     }
 
+    /*
+      Decrement the reference count and the return reference count value before
+      the decrement operation. A return value of 1 indicates that there are no
+      more references.
+     */
     proc decRefCount() {
       return refcnt.fetchSub(1);
     }
 
+    /*
+      Return the current reference count.
+     */
     proc getRefCount() {
       return refcnt.peek();
     }
 
   } // class RefCountBase
 
-} // module RefCount
+} // module ExplicitRefCount
