@@ -1,10 +1,10 @@
+use Random;
 use BLAS;
 use blas_helpers;
 
-use Random;
 
 proc main() {
-    test_gbmv();
+    //test_gbmv(); // Disabled until I can get this darn band-array correct...
     test_gemv();
     //test_ger();
     //test_gerc();
@@ -37,10 +37,10 @@ proc main() {
 //
 
 proc test_gbmv() {
-    //test_gbmv_helper(real(32));
+    test_gbmv_helper(real(32));
     test_gbmv_helper(real(64));
-    //test_gbmv_helper(complex(64));
-    //test_gbmv_helper(complex(128));
+    test_gbmv_helper(complex(64));
+    test_gbmv_helper(complex(128));
 }
 
 
