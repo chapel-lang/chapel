@@ -196,7 +196,7 @@ class ArrayViewRankChangeArr: BaseArr {
     compilerError("slicing not supported on array views yet");
   }
 
-  proc dsiReindx() {
+  proc dsiReindex(newdom) {
     compilerError("reindexing not supported on array views yet");
   }
 
@@ -226,14 +226,17 @@ class ArrayViewRankChangeArr: BaseArr {
   proc dsiSupportsPrivatization() param return _ArrInstance.dsiSupportsPrivatization();
 
   proc dsiGetPrivatizeData() {
-    return (_DomPid, dom, _ArrPid, _ArrInstance);
+    return (_DomPid, dom, _ArrPid, _ArrInstance, collapsedDim, idx);
   }
 
   proc dsiPrivatize(privatizeData) {
-    return new ArrayViewSliceArr(eltType=this.eltType, _DomPid=privatizeData(1),
-                                 dom=privatizeData(2),
-                                 _ArrPid=privatizeData(3),
-                                 _ArrInstance=privatizeData(4));
+    return new ArrayViewRankChangeArr(eltType=this.eltType,
+                                      _DomPid=privatizeData(1),
+                                      dom=privatizeData(2),
+                                      _ArrPid=privatizeData(3),
+                                      _ArrInstance=privatizeData(4),
+                                      collapsedDim=privatizeData(5),
+                                      idx=privatizeData(6));
   }
 
   proc dsiSupportsBulkTransfer() param {
