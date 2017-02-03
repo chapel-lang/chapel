@@ -3738,7 +3738,7 @@ module ChapelArray {
 
   pragma "unalias fn"
   inline proc chpl__unalias(x: [])
-  where x._value.isSliceArrayView() {
+  where x._value.isSliceArrayView() || x._value.isRankChangeArrayView() {
     // Intended to call chpl__initCopy
     pragma "no auto destroy" var ret = x;
 
