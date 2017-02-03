@@ -26,7 +26,7 @@
 #
 # 1. It has a built-in list of directories and files to spell check.
 # 2. It passes scspell the right options to use the project's
-#    $CHAPEL_HOME/.scspell/dictionary.
+#    $CHAPEL_HOME/util/devel/chplspell-dictionary.
 # 3. It recurses through directories given on the command line.
 # 4. It invokes the scspell that's installed in the Chapel virtualenv.
 
@@ -34,7 +34,7 @@
 # RunInVENV
 RIVENV=$CHPL_HOME/util/run-in-venv.bash
 SCSPELL=scspell
-CHPL_DICT=$CHPL_HOME/.scspell/dictionary
+CHPL_DICT=$CHPL_HOME/util/devel/chplspell-dictionary
 
 # Check that scspell exists in the venv
 if ! $RIVENV $SCSPELL --help > /dev/null 2> /dev/null; then
@@ -120,7 +120,7 @@ while true; do
 	--help)
 	    $RIVENV $SCSPELL --help
 	    echo;
-	    echo "chplspell sets --override-dictionary to $CHPLDICT"
+	    echo "chplspell sets --override-dictionary to $CHPL_DICT"
 	    echo "and --relative-to to $CHPL_HOME"
 	    echo "and passes the file contents of named directories to scspell"
 	    echo "Use -- to have chplspell pass the remainder of its args"
