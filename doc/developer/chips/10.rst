@@ -533,102 +533,99 @@ Deinitialization
 
 Deinitialization is performed in these cases:
 
- * Record variables are deinitialized when they go out of scope.
- * Class variables are deinitialized when `delete` is called on them.
+ * For a ``var`` or ``const`` variable - when it does out of scope.
+ * For a ``[const] in`` formal - before its parent function returns;
+   after the return value has been computed.
+   There may be exceptions when a record or an array is returned.
+ * For a ``[const] ref`` formal - never directly.
+   Deinitialization is performed on the corresponding actual
+   as required by these rules.
+ * For a component of an aggregate - when the enclosing aggregate
+   is deinitialized. This includes:
+    + fields of a record or class,
+    + elements of an array,
+    + components of a tuple.
+ * For a class instance - when ``delete`` is invoked on a variable
+   that references that class instance.
 
-To specify actions that occur upon deinitialization, user can specify a `proc
+Deinitialization consists of the following actions,
+depending on the type of the variable being deinitialized:
+
+ * Primitive, enumerated, range, class, synchronization types -
+   nothing happens. Implementation-level actions,
+   ex. deallocation of a string or a sync variable,
+   can be performed without affecting the observable behavior directly.
+ * A record variable; a class instance (upon ``delete``) - see below.
+ * Unions - t.b.d.
+ * Arrays, domains, distributions - defined by their domain map
+   in a way t.b.d.
+ * Arrays, tuples - their elements/components are deinitialized.
+ * For an array, its elements are deinitialized before
+   its domain map-defined actions are performed.
+ * Alias types - at present, the action is determined by the aliasee type.
+
+Note that we distinguish between:
+
+ * deinitialization of a class variable, which is a no-op, and
+ * deinitialization of a class instance, which happens upon ``delete``
+   on a class variable and is defined below.
+
+The remainder of this section is concerned with deinitialization of
+record variables, or "records", and class instances, or "classes".
+ 
+To specify actions that occur upon deinitialization, specify a `proc
 deinit()` method. This method must have zero arguments and cannot be called
 directly. If a type does not specify a `proc deinit()` method, the compiler
 will generate one.
-It will be equivalent to a user-written `deinit` with an empty body.
+It will be equivalent to a user-written ``deinit`` with an empty body.
 
-In addition to the actions specified by the `deinit` method, whether
+In addition to the actions specified by the ``deinit`` method, whether
 compiler-generated or user-defined, in the process of deinitialization:
 
- * parent `deinit` methods are called in the case of inherited classes, and
+ * parent ``deinit`` methods are called in the case of inherited classes, and
  * all fields of record type are deinitialized.
 
 The expected use-case for the `deinit` method is to call `delete` on
 fields of class type, when appropriate. It is the responsibility of the
 class designer to `delete` fields when appropriate. The compiler will not
 automatically add `delete` calls for fields of class type.
-Conversely, the compiler adds `deinit` calls on fields of record type.
+Conversely, the compiler adds ``deinit`` calls on fields of record type.
 These calls cannot be added by the user.
-
-Ensuring type safety
-********************
-
-We would like to ensure that a field cannot be accessed after it has been
-deinitialized. In the deinitialization process, the field `F` of a record
-or class `RC` could potentially be accessed in the following cases:
-
- (a) From `RC.deinit()` or functions it invokes.
-
- (b) From `deinit()` in a child of `RC` (if `RC` is a class),
-     via direct reference or a function call not involving
-     dynamic dispatch on `this`.
-
- (c) From `deinit` in a parent of `RC` by invoking a method on `this`
-     that dynamically dispatches to `RC` or RC's child.
-
- (d) In the case of dependencies between fields within `RC`, when
-     deinitializing a field that depends on `F`.
-     Recall that field initialization order prevents fields of
-     a child class to depend on fields of a parent class.
-
-As a simple example of field dependency in (d), in the following code
-the field `A` depends on the field `D`:
-
-.. code-block:: chapel
-
-    record R {
-      const n = 10;
-      const D = {1..n};
-      var A: [D] real;
-      ...
-    }
-
-Our current proposal handles these cases as follows:
-
- (a) `RC.deinit()` is executed before `F` is deinitialized.
-
- (b) `deinit()` in children of `RC`, if any, are invoked
-     before `RC.deinit()` and therefore before `F` is deinitialized.
-
- (c) Dynamic dispatch on `this` is disallowed in `deinit` methods.
-
- (d) Dependent fields within `RC` are deinitialized
-     in reverse declaration order.
-
-This approach is detailed below. It is a work in progress.
 
 Limitations
 ***********
 
-It is an error for a `deinit` method to make a virtual method call, including
-by passing `this` to another function or method that in turn makes a virtual
-method call.
+It is an error for a ``deinit`` method to invoke a method
+on ``this`` or to pass ``this`` as an argument to a function.
 
-However, when a class inherits from another class, its `deinit` method can
-refer to any field in that class or its parent classes.
+However, the ``deinit`` method can refer to any field in its class or
+record. The ``deinit`` in a class can also refer to any field in its
+parent class(es), if any.
 
 Order of deinitialization
 *************************
 
-Suppose a class `Child` inherits from another class `Parent`.  When a
-variable of type `Child` is deinitialized, the compiler will arrange to call the
-`deinit` methods - first for `Child`, then for Parent.
+Suppose a class ``Child`` inherits from another class ``Parent``.
+When an instance of ``Child`` is deinitialized, the ``deinit`` method
+for ``Child`` is invoked before the ``deinit`` method for ``Parent``.
 
 The fields of a given class or record will be deinitialized after the
-`deinit` method for that class or record has completed.
+``deinit`` method for that class or record has completed.
 
-Within a class or a record, record fields are deinitialized in reverse
-declaration order.
+Within a class or a record, fields are deinitialized
+in reverse declaration order.
 
-This proposal does not define the de-initialization order of fields within a
-class. However note that when one field uses another - such as when an array is
-declared over a domain in another field - the field declared later (the array)
-would need to be de-initialized first.
+Rationale
+*********
+
+The goal of the above specifications is support type safety, specifically
+to prevent accesses to fields after they have been deinitialized.
+This includes preventing access to an array after its domain
+has been deinitialized.
+
+The above specifications one way to achieve this goal.
+They are a work in progress.
+
 
 Summary
 +++++++
