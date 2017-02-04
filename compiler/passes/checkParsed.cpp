@@ -135,6 +135,7 @@ static const char* deinitAstr;
 static VarSymbol*  deinitStrLiteral;
 
 static void setupForCheckExplicitDeinitCalls() {
+  SET_LINENO(rootModule); // for --minimal-modules
   dotAstr = astr(".");
   deinitAstr = astr("deinit");
   deinitStrLiteral = new_CStringSymbol("deinit");
