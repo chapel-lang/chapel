@@ -55,8 +55,8 @@ private:
   ErrorHandlingVisitor();
 };
 
-ErrorHandlingVisitor::ErrorHandlingVisitor(
-    ArgSymbol* _outError, LabelSymbol* _epilogue) {
+ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
+                                           LabelSymbol* _epilogue) {
 
   outError = _outError;
   epilogue = _epilogue;
@@ -116,8 +116,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       BlockStmt* errorPolicy = new BlockStmt();
 
       if (insideTry) {
-        TryInfo info     = tryStack.top();
-                errorVar = info.errorVar;
+        TryInfo info = tryStack.top();
+        errorVar = info.errorVar;
 
         errorPolicy->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
                                                info.handlerLabel));
