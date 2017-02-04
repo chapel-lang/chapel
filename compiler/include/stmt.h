@@ -166,6 +166,9 @@ public:
   void                insertAtTail(Expr* ast);
   void                insertAtTailBeforeFlow(Expr* ast);
 
+  void                insertAtHead(AList exprs);
+  void                insertAtTail(AList exprs);
+
   void                insertAtHead(const char* format, ...);
   void                insertAtTail(const char* format, ...);
 
@@ -239,7 +242,8 @@ enum GotoTag {
   GOTO_RETURN,
   GOTO_GETITER_END,
   GOTO_ITER_RESUME,
-  GOTO_ITER_END
+  GOTO_ITER_END,
+  GOTO_ERROR_HANDLING
 };
 
 

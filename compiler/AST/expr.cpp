@@ -414,7 +414,6 @@ void Expr::insertBefore(Expr* new_ast) {
   list->length++;
 }
 
-
 void Expr::insertAfter(Expr* new_ast) {
   if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::insertAfter");
@@ -433,6 +432,26 @@ void Expr::insertAfter(Expr* new_ast) {
   if (parentSymbol)
     sibling_insert_help(this, new_ast);
   list->length++;
+}
+
+
+void Expr::insertBefore(AList exprs) {
+  Expr* curr = this;
+  for_alist_backward(prev, exprs) {
+    prev->remove();
+    curr->insertBefore(prev);
+    curr = prev;
+  }
+}
+
+
+void Expr::insertAfter(AList exprs) {
+  Expr* prev = this;
+  for_alist(curr, exprs) {
+    curr->remove();
+    prev->insertAfter(curr);
+    prev = curr;
+  }
 }
 
 
