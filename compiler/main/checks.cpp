@@ -506,10 +506,11 @@ static void check_afterLowerErrorHandling()
 {
   if (fVerify)
   {
-    // check no more TryStmt
+    // check that TryStmt is not in the tree
     forv_Vec(TryStmt, stmt, gTryStmts)
     {
-      INT_FATAL(stmt, "TryStmt should no longer exist");
+      if (stmt->inTree())
+        INT_FATAL(stmt, "TryStmt should no longer be in the tree");
     }
 
     // TODO: check no more CatchStmt
@@ -517,7 +518,7 @@ static void check_afterLowerErrorHandling()
     // check no more PRIM_THROW
     forv_Vec(CallExpr, call, gCallExprs)
     {
-      if (call->isPrimitive(PRIM_THROW))
+      if (call->isPrimitive(PRIM_THROW) && call->inTree())
         INT_FATAL(call, "PRIM_THROW should no longer exist");
     }
   }
