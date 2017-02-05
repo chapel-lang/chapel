@@ -1,9 +1,6 @@
-# Skip test chplvis3 when running multinode multilocale tests on chapcs cluster
+# Skip test "chplvis3" when running multinode multilocale on chapcs cluster
 
-# When chplvis3 tries to run multinode multilocale on the chapcs cluster
-# during the nightly builds, Slurm will block almost everything else while
-# it waits for 8 nodes to become available.
-
-# (chplvis3 wants 8 nodes, but chapcs cluster only has 11 "compute" nodes)
+# The test wants 8 compute nodes, but Chapel's nightly build schedule as of 02/2017
+# only leaves 4 nodes available on the chapcs cluster
 
 CHPL_NIGHTLY_TEST_CONFIG_NAME <= ^slurm-gasnet-ibv
