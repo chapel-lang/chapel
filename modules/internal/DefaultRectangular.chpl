@@ -2259,7 +2259,7 @@ module DefaultRectangular {
         if (LOrigDims(li).size == 1) {
           // LHS has a rank change
           LDims(i) = LOrigDims(li);
-          LBlk(i)  = LHS.blk(li) * (LDims(i).stride / LHS.dom.dsiDim(li).stride);
+          LBlk(i)  = LHS.blk(li) * (LDims(i).stride / LHS.dom.dsiDim(li).stride):idxType;
           LFirst(li) = if LDims(i).stride < 0 then LDims(i).last else LDims(i).first;
           li = max(1, li-1);
 
@@ -2269,7 +2269,7 @@ module DefaultRectangular {
           // RHS has a rank change
           assert(ROrigDims(ri).size == 1, "doiBulkTransferStride called with invalid view domains.");
           RDims(i) = ROrigDims(ri);
-          RBlk(i)  = RHS.blk(ri) * (RDims(i).stride / RHS.dom.dsiDim(ri).stride);
+          RBlk(i)  = RHS.blk(ri) * (RDims(i).stride / RHS.dom.dsiDim(ri).stride):idxType;
           RFirst(ri) = if RDims(i).stride < 0 then RDims(i).last else RDims(i).first;
           ri = max(1, ri-1);
 
@@ -2279,11 +2279,11 @@ module DefaultRectangular {
       } else {
         // Non-rank-changing case
         LDims(i) = LOrigDims(li);
-        LBlk(i)  = LHS.blk(li) * (LDims(i).stride / LHS.dom.dsiDim(li).stride);
+        LBlk(i)  = LHS.blk(li) * (LDims(i).stride / LHS.dom.dsiDim(li).stride):idxType;
         LFirst(li) = if LDims(i).stride < 0 then LDims(i).last else LDims(i).first;
 
         RDims(i) = ROrigDims(ri);
-        RBlk(i)  = RHS.blk(ri) * (RDims(i).stride / RHS.dom.dsiDim(ri).stride);
+        RBlk(i)  = RHS.blk(ri) * (RDims(i).stride / RHS.dom.dsiDim(ri).stride):idxType;
         RFirst(ri) = if RDims(i).stride < 0 then RDims(i).last else RDims(i).first;
 
         li = max(1, li-1);
