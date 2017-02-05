@@ -219,7 +219,7 @@ module ZMQ {
   require "zmq.h", "-lzmq";
 
   use Reflection;
-  use RefCount;
+  use ExplicitRefCount;
 
   private extern var errno: c_int;
 
@@ -851,6 +851,7 @@ module ZMQ {
 
   pragma "no doc"
   proc =(ref lhs: Socket, rhs: Socket) {
+    if lhs.classRef == rhs.classRef then return;
     if lhs.classRef != nil then
       lhs.release();
     lhs.acquire(rhs.classRef);

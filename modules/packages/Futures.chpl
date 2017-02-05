@@ -19,6 +19,8 @@
 
 /*
 
+.. |---| unicode:: U+2014
+
 Containers for accessing the results of asynchronous execution.
 
 A :record:`Future` object is a container that can store the result of an
@@ -27,26 +29,46 @@ asynchronous operation, which can be retrieved when the result is ready.
 Usage
 -----
 
-A :record:`Future` object is not created directly. Instead, a future may be
-created by calling the :proc:`async()` function, which takes as arguments
+A valid :record:`Future` object is not created directly. Instead, a future may
+be created by calling the :proc:`async()` function, which takes as arguments
 the function to be executed and all arguments to that function.
 
 The following example demonstrates a trivial use of futures. Three computations
 are executed asynchronously.
 
-.. code-block:: chapel
+.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-validity.chpl
+   :language: chapel
 
-   use Futures;
+.. _valid-futures:
 
-   config const X = 42;
+Validity of Futures
+-------------------
 
-   const A = async(lambda(x: int) { return 2 * x; }, X);
-   const B = async(lambda(x: int) { return 3 * x; }, X);
-   const C = async(lambda(x: int) { return 4 * x; }, X);
+A future that is initialized by a call to :proc:`async()` or
+:proc:`Future.andThen()` is created in a valid state.  Otherwise |---| for
+example, when a future is declared but not initialized |---| the future is in
+an invalid state and method calls other than :proc:`Future.isValid()` on an
+invalid future will :proc:`halt()`.  If such a future object is subsequently
+assigned to by a call to :proc:`async()` or :proc:`Future.andThen()`, then
+the future will become valid.
 
-   writeln(A.get());
-   writeln(B.get());
-   writeln(C.get());
+.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-validity.chpl
+   :language: chapel
+
+Task Arguments
+--------------
+
+The task argument in a call to :proc:`async()` or :proc:`Future.andThen()`
+may be a :ref:`first-class function <readme-firstClassFns>`, a
+:ref:`lambda function <readme-lambdaFns>`, or a specially-constructed
+class or record.  Such a record must have both a `proc this()` method for the
+desired computation and a `proc retType type` method that returns the return
+type of the `this()` method.  (The requirement for the `retType` method is
+a currently limitation that is intended to be resolved in the future.)
+For example:
+
+.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-taskfn.chpl
+   :language: chapel
 
 Future Chaining
 ---------------
@@ -59,35 +81,18 @@ function takes a single argument, the result of the parent future.
 
 The following examples demonstrate such chaining of futures.
 
-.. code-block:: chapel
+.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-chaining1.chpl
+   :language: chapel
 
-   use Futures;
-
-   config const X = 42;
-
-   const F = async(lambda(x: int) { return 2 * x; }, X)
-     .andThen(lambda(x: int) { return x + 7; })
-     .andThen(lambda(x: int) { return 3 * x; });
-
-   writeln(F.get() == (3 * ((2 * X) + 7))); // prints "true"
-
-.. code-block:: chapel
-
-   use Futures;
-
-   config const X = 1234;
-
-   var F = async(lambda(x:int) { return x:string; }, X)
-     .andThen(lambda(x:string) { return(x.length); });
-
-   writeln(F.get()); // prints "4"
+.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-chaining2.chpl
+   :language: chapel
 
  */
 
 module Futures {
 
   use Reflection;
-  use RefCount;
+  use ExplicitRefCount;
 
   pragma "no doc"
   class FutureClass: RefCountBase {
@@ -95,8 +100,10 @@ module Futures {
     type retType;
 
     var value: single retType;
+    var valid: bool = false;
 
     proc FutureClass(type retType) {
+      refcnt.write(0);
     }
 
   } // class FutureClass
@@ -131,16 +138,30 @@ module Futures {
 
     /*
       Get the result of a future, blocking until it is available.
+
+      If the future is not valid, this call will :proc:`halt()`.
      */
     proc get(): retType {
+      if !isValid() then halt("get() called on invalid future");
       return classRef.value.readFF();
     }
 
     /*
       Test whether the result of the future is available.
+
+      If the future is not valid, this call will :proc:`halt()`.
      */
     proc isReady(): bool {
+      if !isValid() then halt("get() called on invalid future");
       return classRef.value.isFull;
+    }
+
+    /*
+      Test whether the future is valid. For more,
+      :ref:`see above <valid-futures>`.
+     */
+    inline proc isValid(): bool {
+      return ((classRef == nil) || classRef.valid);
     }
 
     /*
@@ -150,16 +171,22 @@ module Futures {
       `retType` (i.e., the return type of the parent future) and will be
       executed when the parent future's value is available.
 
+      If the parent future is not valid, this call will :proc:`halt()`.
+
       :arg taskFn: The function to invoke as a continuation.
       :returns: A future of the return type of `taskFn`
      */
     proc andThen(taskFn) {
       /*
       if !canResolveMethod(taskFn, "this", retType) then
-        compilerError("Mismatch in async task function and arguments");
+        compilerError("andThen() task function arguments are incompatible with parent future return type");
       */
+      if !isValid() then halt("get() called on invalid future");
+      if !canResolveMethod(taskFn, "retType") then
+        compilerError("cannot determine return type of andThen() task function");
       var f: Future(taskFn.retType);
       begin f.classRef.value.writeEF(taskFn(this.get()));
+      f.classRef.valid = true;
       return f;
     }
 
@@ -201,7 +228,8 @@ module Futures {
 
   pragma "no doc"
   proc =(ref lhs: Future, rhs: Future) {
-  if lhs.classRef != nil then
+    if lhs.classRef == rhs.classRef then return;
+    if lhs.classRef != nil then
       lhs.release();
     lhs.acquire(rhs.classRef);
   }
@@ -215,9 +243,12 @@ module Futures {
    */
   proc async(taskFn) {
     if !canResolveMethod(taskFn, "this") then
-      compilerError("Async task function (expecting arguments) called without arguments");
+      compilerError("async() task function (expecting arguments) provided without arguments");
+    if !canResolveMethod(taskFn, "retType") then
+      compilerError("cannot determine return type of andThen() task function");
     var f: Future(taskFn.retType);
     begin f.classRef.value.writeEF(taskFn());
+    f.classRef.valid = true;
     return f;
   }
 
@@ -231,9 +262,12 @@ module Futures {
    */
   proc async(taskFn, args...) {
     if !canResolveMethod(taskFn, "this", (...args)) then
-      compilerError("Async task function called with mismatching arguments");
+      compilerError("async() task function provided with mismatching arguments");
+    if !canResolveMethod(taskFn, "retType") then
+      compilerError("cannot determine return type of async() task function");
     var f: Future(taskFn.retType);
     begin f.classRef.value.writeEF(taskFn((...args)));
+    f.classRef.valid = true;
     return f;
   }
 
