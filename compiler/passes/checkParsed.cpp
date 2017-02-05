@@ -24,16 +24,19 @@
 #include "stmt.h"
 #include "expr.h"
 #include "astutil.h"
+#include "stringutil.h"
 #include "stlUtil.h"
 #include "docsDriver.h"
 
 
 static void checkNamedArguments(CallExpr* call);
+static void checkExplicitDeinitCalls(CallExpr* call);
 static void checkPrivateDecls(DefExpr* def);
 static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
 static void checkModule(ModuleSymbol* mod);
+static void setupForCheckExplicitDeinitCalls();
 
 void
 checkParsed() {
@@ -50,8 +53,11 @@ checkParsed() {
     return;
   }
 
+  setupForCheckExplicitDeinitCalls();
+
   forv_Vec(CallExpr, call, gCallExprs) {
     checkNamedArguments(call);
+    checkExplicitDeinitCalls(call);
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
@@ -121,6 +127,40 @@ checkNamedArguments(CallExpr* call) {
 
       names.add(named->name);
     }
+  }
+}
+
+static const char* dotAstr;
+static const char* deinitAstr;
+static VarSymbol*  deinitStrLiteral;
+
+static void setupForCheckExplicitDeinitCalls() {
+  SET_LINENO(rootModule); // for --minimal-modules
+  dotAstr = astr(".");
+  deinitAstr = astr("deinit");
+  deinitStrLiteral = new_CStringSymbol("deinit");
+}
+
+//
+// Report error for the following cases:
+//
+// * non-method call e.g. deinit(args...)
+//     ==> CallExpr(UnresolvedSymExpr("deinit"), args...)
+//
+// * method call e.g. cc.deinit(args...)
+//     ==> CallExpr(UnresolvedSymExpr("."), CString("deinit"), args...)
+//
+static void checkExplicitDeinitCalls(CallExpr* call) {
+  if (UnresolvedSymExpr* target = toUnresolvedSymExpr(call->baseExpr)) {
+    if (target->unresolved == deinitAstr)
+      USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
+    else if (target->unresolved == dotAstr)
+      if (SymExpr* arg2 = toSymExpr(call->get(2)))
+        if (arg2->symbol() == deinitStrLiteral)
+          // OK to invoke explicitly from chpl__delete()
+          // which is our internal implementation of 'delete' statements.
+          if (strcmp(call->parentSymbol->name, "chpl__delete"))
+            USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
   }
 }
 

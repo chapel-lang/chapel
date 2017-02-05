@@ -12,5 +12,5 @@ class C: C1, C2 {
   proc ~C () {writeln("Inside ~C");}
 }
 
-var c: new C();
+var c = new C();
 delete c;

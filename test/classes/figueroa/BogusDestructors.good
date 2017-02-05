@@ -1,1 +1,3 @@
-Replace this file once these bugs are fixed!
+BogusDestructors.chpl:9: error: ambiguous call 'C.deinit()'
+BogusDestructors.chpl:4: note: candidates are: C.~C()
+BogusDestructors.chpl:7: note:                 C.~C()
