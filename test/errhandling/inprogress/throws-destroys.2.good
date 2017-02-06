@@ -1,0 +1,3 @@
+in conditionalThrow, r=(x = 2)
+destroying R(x=2)
+throws-destroys.chpl:11: error: uncaught error
