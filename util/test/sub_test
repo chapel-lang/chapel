@@ -1197,7 +1197,7 @@ for testname in testsrc:
     else:
         if maxLocalesAvailable is not None:
             if numlocales > maxLocalesAvailable:
-                sys.stdout.write('[Warning: skipping {0} because it requires '
+                sys.stdout.write('[Skipping test {0} because it requires '
                                  '{1} locales but only {2} are available]\n'
                                  .format(os.path.join(localdir, test_filename),
                                          numlocales, maxLocalesAvailable))
