@@ -344,10 +344,6 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
 
   collectCallExprs(fn, callExprs);
 
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(fn, defMap, useMap);
-
   for (size_t i = 0; i < callExprs.size(); i++)
   {
     CallExpr* move = callExprs[i];
@@ -378,7 +374,7 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
             // initCopy, which means that we should not insert an autocopy
             // for that same variable.
             bool initCopied = false;
-            for_uses(use, useMap, varLhs) {
+            for_SymbolUses(use, varLhs) {
               if (CallExpr* call = toCallExpr(use->parentExpr)) {
                 if (FnSymbol* parentFn = call->isResolved()) {
                   if (parentFn->hasFlag(FLAG_INIT_COPY_FN)) {
@@ -850,9 +846,7 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
 
 static void
 changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
-                       CallExpr* call, FnSymbol* fn,
-                       Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                       Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+                       CallExpr* call, FnSymbol* fn) {
   // Here are some relations between the arguments that can be relied upon.
   INT_ASSERT(call->parentExpr == move);
   INT_ASSERT(call->isResolved() == fn);
@@ -860,8 +854,8 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
   // In the suffix of the containing function, look for uses of the lhs of the
   // move containing the call to fn.
   Vec<SymExpr*> use;
-  if (useMap.get(lhs) && useMap.get(lhs)->n == 1) {
-    use = *useMap.get(lhs);
+  if (SymExpr* singleUse = lhs->getSingleUse()) {
+    use.add(singleUse);
   } else {
     for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
       std::vector<SymExpr*> symExprs;
@@ -885,10 +879,6 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
 
 static void
 returnRecordsByReferenceArguments() {
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
-
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
       if (FnSymbol* fn = requiresImplicitDestroy(call)) {
@@ -899,11 +889,10 @@ returnRecordsByReferenceArguments() {
                    move->isPrimitive(PRIM_ASSIGN));
         SymExpr* lhs = toSymExpr(move->get(1));
         INT_ASSERT(!lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE));
-        changeRetToArgAndClone(move, lhs->symbol(), call, fn, defMap, useMap);
+        changeRetToArgAndClone(move, lhs->symbol(), call, fn);
       }
     }
   }
-  freeDefUseMaps(defMap, useMap);
 }
 
 static void
@@ -1064,14 +1053,10 @@ static void insertDestructorCalls() {
 
  */
 static void insertAutoCopyTemps() {
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
-
   forv_Vec(VarSymbol, sym, gVarSymbols) {
     if (sym->hasFlag(FLAG_INSERT_AUTO_COPY)) {
       CallExpr* move = NULL;
-      for_defs(def, defMap, sym) {
+      for_SymbolDefs(def, sym) {
         CallExpr* defCall = toCallExpr(def->parentExpr);
         if (defCall->isPrimitive(PRIM_MOVE)) {
           CallExpr* rhs = toCallExpr(defCall->get(2));
@@ -1125,8 +1110,6 @@ static void insertAutoCopyTemps() {
       move->get(1)->replace(new SymExpr(tmp));
     }
   }
-
-  freeDefUseMaps(defMap, useMap);
 }
 
 
