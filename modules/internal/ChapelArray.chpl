@@ -925,7 +925,7 @@ module ChapelArray {
             distToFree = distToRemove.remove();
           }
           if domToFree != nil then
-            _delete_dom(domToFree, _isPrivatized(_instance));
+            _delete_dom(_instance, _isPrivatized(_instance));
           if distToFree != nil then
             _delete_dist(distToFree, _isPrivatized(_instance.dist));
         }
@@ -1863,7 +1863,7 @@ module ChapelArray {
           if arrToFree != nil then
             _delete_arr(_instance, _isPrivatized(_instance));
           if domToFree != nil then
-            _delete_dom(domToFree, domIsPrivatized);
+            _delete_dom(_instance.dom, domIsPrivatized);
           if distToFree != nil then
             _delete_dist(distToFree, distIsPrivatized);
         }
