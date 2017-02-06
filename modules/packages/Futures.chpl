@@ -36,7 +36,7 @@ the function to be executed and all arguments to that function.
 The following example demonstrates a trivial use of futures. Three computations
 are executed asynchronously.
 
-.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-validity.chpl
+.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-simple.chpl
    :language: chapel
 
 .. _valid-futures:
