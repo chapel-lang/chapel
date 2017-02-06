@@ -1,0 +1,6 @@
+# Skip test "distributions" when running multinode multilocale on chapcs cluster
+
+# The test wants 6 compute nodes, but Chapel's nightly build schedule as of 02/2017
+# only leaves 4 nodes available on the chapcs cluster
+
+CHPL_NIGHTLY_TEST_CONFIG_NAME <= ^slurm-gasnet-ibv
