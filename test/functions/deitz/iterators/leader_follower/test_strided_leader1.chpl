@@ -40,7 +40,7 @@ use Random;
 {
   var B: [1..n] real;
 
-  var rs = new NPBRandomStream(seed=315);
+  var rs = new NPBRandomStream(real, seed=315);
 
   forall (f, r) in zip(foo(n), rs.iterate({1..n})) do
     B(f) = r;
