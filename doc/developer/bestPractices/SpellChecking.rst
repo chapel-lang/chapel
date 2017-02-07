@@ -5,9 +5,9 @@ chplspell
 Overview
 ========
 
-``util/chplspell`` is a script to assist in spell-checking the Chapel
-documentation and source code.  It is a wrapper around the `scspell`_
-source-code spell-checker.
+``util/devel/chplspell`` is a script to assist in spell-checking the
+Chapel documentation and source code.  It is a wrapper around the
+`scspell`_ source-code spell-checker.
 
 .. _`scspell`: https://pypi.python.org/pypi/scspell3k
 
@@ -17,7 +17,7 @@ source-code spell-checker.
 1. It has built-in knowledge of which files and directories in the
    Chapel repository benefit from being spell-checked.
 2. It directs ``scspell`` to use the project dictionary file
-   ``$CHPL_HOME/.scspell/dictionary``.
+   ``$CHPL_HOME/util/devel/chplspell-dictionary``.
 3. It recurses through directories given on the command line.
 4. It invokes the ``scspell`` that's installed in the Chapel virtualenv.
 
@@ -43,8 +43,8 @@ of using each mode: spell-checking the whole project or only specific
 files or directories.
 
 ``chplspell`` maintains a project dictionary for Chapel in
-``$CHPL_HOME/.scspell/dictionary``.  This dictionary file contains
-several types of word lists, as supported by ``scspell``:
+``$CHPL_HOME/util/devel/chplspell-dictionary``.  This dictionary file
+contains several types of word lists, as supported by ``scspell``:
 
 :Natural language dictionary:
   Words that may be found in any file.
@@ -67,7 +67,7 @@ __ scspell_
 ``chplspell`` adjusts the command line in several ways:
 
 1. ``chplspell`` passes options to ``scspell`` directing it at
-   ``$CHPL_HOME/.scspell/.dictionary``.
+   ``$CHPL_HOME/util/devel/chplspell-dictionary``.
 2. If no files or directories are given on the command line, ``chplspell``
    invokes ``scspell`` on a default set of files and directories that make
    sense for the Chapel repository.
@@ -131,7 +131,7 @@ through ``chplspell``.
 See `the scspell page on python.org`__ for details.
 
 ``chplspell``'s invocation of ``scspell`` makes any requested
-dictionary changes to ``$CHPL_HOME/.scspell/dictionary``
+dictionary changes to ``$CHPL_HOME/util/devel/chplspell-dictionary``
 
 __ scspell_
 
@@ -175,9 +175,10 @@ represented to ``scspell``:
 1. The file contains the string "scspell-id: " followed by a file id;
    e.g., in a comment.
 2. There is an entry in the "file id mapping file",
-   ``$CHPL_HOME/.scspell/dictionary.fileids.json``, associating
-   the file name to the file id.  For example, the following file id
-   is associated with three files in the Chapel repository:
+   ``$CHPL_HOME/util/devel/chplspell-dictionary.fileids.json``,
+   associating the file name to the file id.  For example, the
+   following file id is associated with three files in the Chapel
+   repository:
 
 .. code-block:: text
 

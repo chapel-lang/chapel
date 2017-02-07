@@ -1020,11 +1020,6 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
                                 FnSymbol*     fn,
                                 Vec<Symbol*>& yldSymSet)
 {
-  Map<Symbol*, Vec<SymExpr*>*> defMap;
-  Map<Symbol*, Vec<SymExpr*>*> useMap;
-
-  buildDefUseMaps(fn, defMap, useMap);
-
   // Walk the variables in this (iterator) function
   // which are not the return symbol nor argument, and are ref symbols.
   forv_Vec(Symbol, sym, syms) {
@@ -1032,15 +1027,13 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
       continue;
 
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
-      Vec<SymExpr*>* defs = defMap.get(sym);
-
       CallExpr* move = NULL;
-      if (defs == NULL) {
+      if (!sym->isDefined()) {
         INT_FATAL(sym, "Expected sym to have at least one definition");
       }
 
       // Ignores reference actuals passed to reference formals
-      for_defs(def, defMap, sym) {
+      for_SymbolDefs(def, sym) {
         CallExpr* parent = toCallExpr(def->parentExpr);
         INT_ASSERT(parent);
         if (parent->isPrimitive(PRIM_MOVE)) {
@@ -1102,8 +1095,6 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
       }
     }
   }
-
-  freeDefUseMaps(defMap, useMap);
 }
 
 

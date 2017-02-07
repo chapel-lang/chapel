@@ -1078,14 +1078,20 @@ static void build_record_copy_function(AggregateType* ct) {
 
   fn->insertFormalAtTail(arg);
 
-  CallExpr* call = NULL;
+  Expr* toReturn = NULL;
 
   if (foundUserDefinedCopy) {
-    call = new CallExpr(PRIM_NEW, ct->symbol, new SymExpr(arg));
+    toReturn = new CallExpr(PRIM_NEW, ct->symbol, new SymExpr(arg));
     // If it has a user-defined copy initializer, it's not POD
     ct->symbol->addFlag(FLAG_NOT_POD);
+  } else if (ct->symbol->hasFlag(FLAG_EXTERN)) {
+    // Extern records/classes should only get trivial initCopy fns
+    // (at least if no other init method was defined).
+    toReturn = new SymExpr(arg);
   } else {
+    CallExpr* call = NULL;
     // generate the default copy initializer in chpl__initCopy for now
+    // which is currently implemented to call the compiler-generated initializer
 
     // MPF 2016-11-03: It would be better to move all of the logic below
     // into the construction of a compiler-generated initializer. However,
@@ -1150,9 +1156,10 @@ static void build_record_copy_function(AggregateType* ct) {
 
       call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
     }
+    toReturn = call;
   }
 
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, toReturn));
 
   DefExpr* def = new DefExpr(fn);
 
@@ -1485,12 +1492,12 @@ static void buildStringCastFunction(EnumType* et) {
 
 
 void buildDefaultDestructor(AggregateType* ct) {
-  if (function_exists("chpl__deinit", 2, dtMethodToken, ct))
+  if (function_exists("deinit", 2, dtMethodToken, ct))
     return;
 
   SET_LINENO(ct->symbol);
 
-  FnSymbol* fn = new FnSymbol("chpl__deinit");
+  FnSymbol* fn = new FnSymbol("deinit");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_DESTRUCTOR);
   fn->addFlag(FLAG_INLINE);

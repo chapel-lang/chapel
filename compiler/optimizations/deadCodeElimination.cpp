@@ -68,26 +68,19 @@ static unsigned int deadModuleCount;
 // Removes local variables that are only targets for moves, but are
 // never used anywhere.
 //
-static bool isDeadVariable(Symbol* var,
-                           Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                           Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+static bool isDeadVariable(Symbol* var) {
   if (var->isRef()) {
-    Vec<SymExpr*>* uses = useMap.get(var);
-    Vec<SymExpr*>* defs = defMap.get(var);
-    return (!uses || uses->n == 0) && (!defs || defs->n <= 1);
+    // is it defined more than once?
+    int ndefs = var->countDefs(/*max*/ 2);
+    return (!var->isUsed()) && (ndefs <= 1);
   } else {
-    Vec<SymExpr*>* uses = useMap.get(var);
-    return !uses || uses->n == 0;
+    return !var->isUsed();
   }
 }
 
 void deadVariableElimination(FnSymbol* fn) {
   Vec<Symbol*> symSet;
   collectSymbolSet(fn, symSet);
-
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(symSet, defMap, useMap);
 
   forv_Vec(Symbol, sym, symSet)
   {
@@ -99,8 +92,8 @@ void deadVariableElimination(FnSymbol* fn) {
     if (sym == fn->_this)
       continue;
 
-    if (isDeadVariable(sym, defMap, useMap)) {
-      for_defs(se, defMap, sym) {
+    if (isDeadVariable(sym)) {
+      for_SymbolDefs(se, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
         INT_ASSERT(call &&
                    (call->isPrimitive(PRIM_MOVE) ||
@@ -114,8 +107,6 @@ void deadVariableElimination(FnSymbol* fn) {
       sym->defPoint->remove();
     }
   }
-
-  freeDefUseMaps(defMap, useMap);
 }
 
 //
@@ -312,36 +303,35 @@ void deadCodeElimination(FnSymbol* fn) {
 // (EJR 01/12/15)
 static void deadStringLiteralElimination() {
 
-  // build up global defUse maps
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
-
   // find all the symExprs in the string literal module
   std::vector<SymExpr*> symExprs;
   collectSymExprs(stringLiteralModule, symExprs);
 
   for_vector(SymExpr, stringUse, symExprs) {
+    Symbol* stringSym = stringUse->symbol();
     // if we're looking at a Chapel string created from a string literal
-    if (stringUse->symbol()->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+    if (stringSym->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
       // and there's only a single use of it
-      Vec<SymExpr*>* stringUses = useMap.get(stringUse->symbol());
-      if (stringUses && stringUses->n == 1) {
+      int nuses = stringSym->countUses(/*max*/ 2);
+      if (nuses == 1) {
         // then that use is the RHS of `ret_to_arg_ref_tmp = &str_literal_id`,
         // which is only used in the string constructor so the string is dead. 
-        assert(stringUses->v[0] == stringUse);
+        for_SymbolUses(use, stringSym) {
+          // this loop should only run once
+          assert(use == stringUse);
+        }
 
         // gather the AST used to create a Chapel string from the literal,
         // using variable names that mimic the current generated code
         CallExpr*      ret_to_arg_assign = toCallExpr(stringUse->getStmtExpr());
         SymExpr*       ret_to_arg        = toSymExpr(ret_to_arg_assign->get(1));
-        Vec<SymExpr*>* ret_to_arg_uses   = useMap.get(ret_to_arg->symbol());
-        INT_ASSERT(ret_to_arg_uses && ret_to_arg_uses->n == 1);
-        CallExpr*      stringCtor        = toCallExpr(ret_to_arg_uses->v[0]->parentExpr);
+        SymExpr*       ret_to_arg_use    = ret_to_arg->symbol()->getSingleUse();
+        INT_ASSERT(ret_to_arg_use != NULL);
+        CallExpr*      stringCtor        = toCallExpr(ret_to_arg_use->parentExpr);
         SymExpr*       call_tmp          = toSymExpr(stringCtor->get(1));
-        Vec<SymExpr*>* call_tmp_defs     = defMap.get(call_tmp->symbol());
-        INT_ASSERT(call_tmp_defs && call_tmp_defs->n == 1);
-        CallExpr*      call_tmp_assign   = toCallExpr(call_tmp_defs->v[0]->parentExpr);
+        SymExpr*       call_tmp_def      = call_tmp->symbol()->getSingleDef();
+        INT_ASSERT(call_tmp_def != NULL);
+        CallExpr*      call_tmp_assign   = toCallExpr(call_tmp_def->parentExpr);
 
         // remove all the AST, in the order listed in the function comment
         stringUse->symbol()->defPoint->remove();
@@ -353,7 +343,6 @@ static void deadStringLiteralElimination() {
       }
     }
   }
-  freeDefUseMaps(defMap, useMap);
 }
 
 

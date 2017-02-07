@@ -504,13 +504,14 @@ void AstDump::visitEblockStmt(ExternBlockStmt* node) {
 bool AstDump::enterGotoStmt(GotoStmt* node) {
   newline();
   switch (node->gotoTag) {
-    case GOTO_NORMAL:      write("goto");           break;
-    case GOTO_BREAK:       write("break");          break;
-    case GOTO_CONTINUE:    write("continue");       break;
-    case GOTO_RETURN:      write("gotoReturn");     break;
-    case GOTO_GETITER_END: write("gotoGetiterEnd"); break;
-    case GOTO_ITER_RESUME: write("gotoIterResume"); break;
-    case GOTO_ITER_END:    write("gotoIterEnd");    break;
+    case GOTO_NORMAL:         write("goto");              break;
+    case GOTO_BREAK:          write("break");             break;
+    case GOTO_CONTINUE:       write("continue");          break;
+    case GOTO_RETURN:         write("gotoReturn");        break;
+    case GOTO_GETITER_END:    write("gotoGetiterEnd");    break;
+    case GOTO_ITER_RESUME:    write("gotoIterResume");    break;
+    case GOTO_ITER_END:       write("gotoIterEnd");       break;
+    case GOTO_ERROR_HANDLING: write("gotoErrorHandling"); break;
   }
 
   if (SymExpr* label = toSymExpr(node->label)) {

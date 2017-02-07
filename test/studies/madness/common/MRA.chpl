@@ -172,8 +172,8 @@ class Function {
     proc refine(curNode: 2*int) {
         // project f(x) at next level
         var sc : [0..2*k-1] real;
-        var s0 : [0..k-1] => sc[0..k-1];
-        var s1 : [0..k-1] => sc[k..2*k-1];
+        ref s0 = sc[0..k-1];
+        ref s1 = sc[k..2*k-1];
 
         const child = sumC.get_children(curNode);
         s0 = project(child(1));

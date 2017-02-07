@@ -23,7 +23,6 @@
 #include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"
-#include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
 
@@ -37,43 +36,8 @@ enum InitBody {
 };
 
 
-static void     buildClassAllocator(FnSymbol* fn, AggregateType* ct);
 static InitBody getInitCall(FnSymbol* fn);
 static void     phase1Analysis(BlockStmt* body, AggregateType* t);
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void temporaryInitializerFixup(CallExpr* call) {
-  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
-    // Support super.init() calls (for instance) when the super type does not
-    // define either an initializer or a constructor.  Also ignores errors from
-    // improperly inserted .init() calls (so be sure to check here if something
-    // is behaving oddly - Lydia, 08/19/16)
-    if (strcmp(usym->unresolved, "init") == 0 &&
-        call->numActuals()               >= 2) {
-      SymExpr* _mt = toSymExpr(call->get(1));
-      SymExpr* sym = toSymExpr(call->get(2));
-
-      INT_ASSERT(sym != NULL);
-
-      if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
-        if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-
-          // This code should be removed when the compiler generates
-          // initializers as the default method of construction and
-          // initialization for a type (Lydia note, 08/19/16)
-          usym->unresolved = astr("_construct_", ct->symbol->name);
-
-          _mt->remove();
-        }
-      }
-    }
-  }
-}
 
 /************************************* | **************************************
 *                                                                             *
@@ -495,39 +459,52 @@ bool isParentField(AggregateType* t, const char *name) {
   }
 }
 
-static
-void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
+static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
+  SET_LINENO(next);
+
   const char* nextField = field->sym->name;
 
-  SET_LINENO(next);
   // Do something appropriate with "super"
   if (field->sym->hasFlag(FLAG_SUPER_CLASS)) {
-    return;
-  }
 
   // For all other fields, insert an assignment into that field with the given
   // initialization, if we have one.
-  if (!field->init && !field->exprType) {
-    USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
-    return;
-  }
+  } else if (!field->init && !field->exprType) {
+    USR_FATAL_CONT(next,
+                   "can't omit initialization of field \"%s\", "
+                   "no type or default value provided",
+                   nextField);
 
-  Symbol* _this = toFnSymbol(next->parentSymbol)->_this;
-  CallExpr* thisAccess = new CallExpr(".", _this,
-                                      new_CStringSymbol(nextField));
-  CallExpr* newInit = NULL;
-  if (field->init) {
-    newInit = new CallExpr("=", thisAccess, field->init->copy());
   } else {
-    INT_ASSERT(field->exprType);
-    VarSymbol* tmp = newTemp("call_tmp");
-    next->insertBefore(new DefExpr(tmp));
-    next->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(tmp),
-                                    new CallExpr(PRIM_INIT,
-                                                 field->exprType->copy())));
-    newInit = new CallExpr("=", thisAccess, new SymExpr(tmp));
+    Symbol*   _this      = toFnSymbol(next->parentSymbol)->_this;
+
+    CallExpr* thisAccess = new CallExpr(".",
+                                        _this,
+                                        new_CStringSymbol(nextField));
+
+    if (field->init) {
+      CallExpr* newInit = new CallExpr("=", thisAccess, field->init->copy());
+
+      next->insertBefore(newInit);
+    } else {
+      INT_ASSERT(field->exprType);
+
+      VarSymbol* tmp     = newTemp("call_tmp");
+      VarSymbol* refTmp  = newTemp("ref_tmp");
+
+      next->insertBefore(new DefExpr(tmp));
+
+      next->insertBefore(new CallExpr(PRIM_MOVE,
+                                      new SymExpr(tmp),
+                                      new CallExpr(PRIM_INIT,
+                                                   field->exprType->copy())));
+
+
+      next->insertBefore(new DefExpr(refTmp));
+      next->insertBefore(new CallExpr(PRIM_MOVE, refTmp, thisAccess));
+      next->insertBefore(new CallExpr(PRIM_MOVE, refTmp, new SymExpr(tmp)));
+    }
   }
-  next->insertBefore(newInit);
 }
 
 // Takes in the current expr (which must be a loop), the current field
@@ -604,7 +581,7 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
 *                                                                             *
 ************************************** | *************************************/
 
-static void buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
+FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
   SET_LINENO(ct);
 
   FnSymbol*  fn          = new FnSymbol("_new");
@@ -657,4 +634,6 @@ static void buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
 
   // Insert the definition in to the tree
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+  return fn;
 }
