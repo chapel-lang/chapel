@@ -560,6 +560,9 @@ def check_environment():
     if "CHPL_DEVELOPER" in os.environ: # unset CHPL_DEVELOPER
         del os.environ["CHPL_DEVELOPER"]
 
+    if "CHPL_UNWIND" in os.environ:    # squash CHPL_UNWIND output
+        os.environ["CHPL_RT_UNWIND"] = "0"
+
     # Check for $CHPL_HOME
     global home
     if "CHPL_HOME" in os.environ:
@@ -742,15 +745,6 @@ def set_up_general():
 
     logger.write("[Starting Chapel regression tests - {0}]"
             .format(time.strftime("%y%m%d.%H%M%S")))
-
-    # warn (and optionally exit) if CHPL_UNWIND is set
-    if "CHPL_UNWIND" in os.environ:    # unset CHPL_UNWIND
-        if os.environ["CHPL_UNWIND"] != "none":
-            logger.write("[Warning: CHPL_UNWIND is enabled, which may cause output differences]")
-            if "CHPL_TEST_HALT_IF_UNWIND_ENABLED" in os.environ:
-                logger.write("[Exiting due to CHPL_TEST_HALT_IF_UNWIND_ENABLED]")
-                sys.exit(1)
-
 
     # check to see if we are in subdir of CHPL_HOME
     if args.chpl_home_warn:
