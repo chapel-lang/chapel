@@ -18,4 +18,5 @@ See the first CHIP for an overview.
 * [14 Chapel stack traces](14.rst)
 * [15 Chapel Incremental Compilation](15.rst)
 * [16 Optimizing Record and Array Copies in Chapel](16.rst)
+* [17 GPU Programming Features](17.rst)
 
