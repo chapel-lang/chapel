@@ -3064,8 +3064,7 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
  */
 ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                    DisambiguationContext DC,
-                    disambiguate_kind_t kind) {
+                    DisambiguationContext DC) {
 
   // If index i is set then we can skip testing function F_i because we already
   // know it can not be the best match.
@@ -3079,10 +3078,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
     ResolutionCandidate* candidate1 = candidates.v[i];
     bool best = true; // is fn1 the best candidate?
-
-    // Only consider ref return fns in ref return part
-    if (kind == FIND_REF && (candidate1->fn->retTag != RET_REF)) continue;
-    if (kind == FIND_NOT_REF && (candidate1->fn->retTag == RET_REF)) continue;
 
     TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
 
@@ -3098,10 +3093,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
       TRACE_DISAMBIGUATE_BY_MATCH("-----------------------\n");
 
       ResolutionCandidate* candidate2 = candidates.v[j];
-
-      // Only consider ref return fns in ref return part
-      if (kind == FIND_REF && (candidate2->fn->retTag != RET_REF)) continue;
-      if (kind == FIND_NOT_REF && (candidate2->fn->retTag == RET_REF)) continue;
 
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
 
@@ -3167,9 +3158,9 @@ void
 printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info) {
   CallExpr* call = userCall(info->call);
   if (!strcmp("this", info->name)) {
-    USR_FATAL(call, "ambiguous access of '%s' by '%s'",
-              toString(info->actuals.v[1]->type),
-              toString(info));
+    USR_FATAL_CONT(call, "ambiguous access of '%s' by '%s'",
+                   toString(info->actuals.v[1]->type),
+                   toString(info));
   } else {
     const char* entity = "call";
     if (!strncmp("_type_construct_", info->name, 16))
@@ -3181,25 +3172,26 @@ printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info) {
       str = astr(mod->name, ".", str);
     }
     USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
-    if (developer) {
-      for (int i = callStack.n-1; i>=0; i--) {
-        CallExpr* cs = callStack.v[i];
-        FnSymbol* f = cs->getFunction();
-        if (f->instantiatedFrom)
-          USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-        else
-          break;
-      }
-    }
-    bool printed_one = false;
-    forv_Vec(FnSymbol, fn, candidates) {
-      USR_PRINT(fn, "%s %s",
-                printed_one ? "               " : "candidates are:",
-                toString(fn));
-      printed_one = true;
-    }
-    USR_STOP();
   }
+
+  if (developer) {
+    for (int i = callStack.n-1; i>=0; i--) {
+      CallExpr* cs = callStack.v[i];
+      FnSymbol* f = cs->getFunction();
+      if (f->instantiatedFrom)
+        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+      else
+        break;
+    }
+  }
+  bool printed_one = false;
+  forv_Vec(FnSymbol, fn, candidates) {
+    USR_PRINT(fn, "%s %s",
+              printed_one ? "               " : "candidates are:",
+              toString(fn));
+    printed_one = true;
+  }
+  USR_STOP();
 }
 
 void
@@ -4161,7 +4153,6 @@ resolveDefaultGenericType(CallExpr* call) {
   }
 }
 
-
 static void
 doGatherCandidates(Vec<ResolutionCandidate*>& candidates,
                  Vec<FnSymbol*>& visibleFns,
@@ -4215,6 +4206,27 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
   }
 }
 
+static void
+splitCandidates(Vec<ResolutionCandidate*>& refCandidates,
+                Vec<ResolutionCandidate*>& valueCandidates) {
+  // Move value candidates to valueCanditates
+  for( int i = 0; i < refCandidates.n; i++ ) {
+    if (refCandidates.v[i]->fn->retTag != RET_REF ) {
+      // Move it to valueCandidates
+      valueCandidates.add(refCandidates.v[i]);
+      refCandidates.v[i] = NULL;
+    }
+  }
+  // Compact refCandidates
+  int j = 0;
+  for( int i = 0; i < refCandidates.n; i++ ) {
+    if (refCandidates.v[i]) {
+      if (i != j) refCandidates.v[j] = refCandidates.v[i];
+      j++;
+    }
+  }
+  refCandidates.n = j;
+}
 
 void
 resolveCall(CallExpr* call)
@@ -4309,18 +4321,30 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     }
   }
 
-  Vec<ResolutionCandidate*> candidates;
-  gatherCandidates(candidates, visibleFns, info);
+  Vec<ResolutionCandidate*> refCandidates;
+  Vec<ResolutionCandidate*> valueCandidates;
+
+  gatherCandidates(refCandidates, visibleFns, info);
+  // Split candidates into ref and non-ref candidates
+  // note that here and in other places in this function,
+  // "value" means blank return intent or const ref return intent.
+  splitCandidates(refCandidates, valueCandidates);
 
   if ((explainCallLine && explainCallMatch(info.call)) ||
       call->id == explainCallID)
   {
-    if (candidates.n == 0) {
+    if (refCandidates.n + valueCandidates.n == 0) {
       USR_PRINT(info.call, "no candidates found");
 
     } else {
       bool first = true;
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      forv_Vec(ResolutionCandidate*, candidate, refCandidates) {
+        USR_PRINT(candidate->fn, "%s %s",
+                  first ? "candidates are:" : "               ",
+                  toString(candidate->fn));
+        first = false;
+      }
+      forv_Vec(ResolutionCandidate*, candidate, valueCandidates) {
         USR_PRINT(candidate->fn, "%s %s",
                   first ? "candidates are:" : "               ",
                   toString(candidate->fn));
@@ -4335,8 +4359,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, FIND_REF);
-  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, FIND_NOT_REF);
+  ResolutionCandidate* bestRef = disambiguateByMatch(refCandidates, DC);
+  ResolutionCandidate* bestValue = disambiguateByMatch(valueCandidates, DC);
 
   // If one requires more promotion than the other, this is not a ref-pair.
   if (bestRef && bestValue && isBetterMatch(bestRef, bestValue, DC, true)) {
@@ -4344,6 +4368,17 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   }
   if (bestRef && bestValue && isBetterMatch(bestValue, bestRef, DC, true)) {
     bestRef = NULL; // Don't consider the ref function.
+  }
+  // If the ref version or the value version was ambigous, we
+  // set both to be NULL in order to trigger an ambigous resolution
+  // error.
+  bool ambiguousRef = false;
+  bool ambiguousValue = false;
+  if (refCandidates.n > 1 && !bestRef) ambiguousRef = true;
+  if (valueCandidates.n > 1 && !bestValue) ambiguousValue = true;
+  if (ambiguousRef || ambiguousValue) {
+    bestValue = NULL;
+    bestRef = NULL;
   }
 
   ResolutionCandidate* best = bestRef;
@@ -4400,14 +4435,23 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     } else {
       // if we're just checking, don't print errors
       if( ! checkonly ) {
-
-        if (candidates.n > 0) {
+        if (ambiguousRef || ambiguousValue) {
           Vec<FnSymbol*> candidateFns;
-          forv_Vec(ResolutionCandidate*, candidate, candidates) {
-            candidateFns.add(candidate->fn);
+          // Print ambiguity error for ref version.
+          if (ambiguousRef) {
+            forv_Vec(ResolutionCandidate*, candidate, refCandidates) {
+              candidateFns.add(candidate->fn);
+            }
+            printResolutionErrorAmbiguous(candidateFns, &info);
           }
-
-          printResolutionErrorAmbiguous(candidateFns, &info);
+          candidateFns.clear();
+          // Print ambiguity error for value version.
+          if (ambiguousValue) {
+            forv_Vec(ResolutionCandidate*, candidate, valueCandidates) {
+              candidateFns.add(candidate->fn);
+            }
+            printResolutionErrorAmbiguous(candidateFns, &info);
+          }
         } else {
           printResolutionErrorUnresolved(visibleFns, &info);
         }
@@ -4436,9 +4480,13 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
   FnSymbol* resolvedValueFn = bestValue != NULL ? bestValue->fn : NULL;
 
-  forv_Vec(ResolutionCandidate*, candidate, candidates) {
+  forv_Vec(ResolutionCandidate*, candidate, refCandidates) {
     delete candidate;
   }
+  forv_Vec(ResolutionCandidate*, candidate, valueCandidates) {
+    delete candidate;
+  }
+
 
   if (call->partialTag) {
     if (!resolvedFn) {
