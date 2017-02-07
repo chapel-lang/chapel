@@ -1403,19 +1403,11 @@ module DefaultRectangular {
         } else {
           var sum = if wantShiftedIndex then 0:idxType else origin;
 
-          // If we detect that blk is never changed then then blk(rank) == 1.
-          // Knowing this, we need not multiply the final ind(...) by anything.
-          // This relies on us marking every function that modifies blk
-          if __primitive("optimize_array_blk_mult") {
-            for param i in 1..rank-1 {
-              sum += ind(i) * blk(i);
-            }
-            sum += ind(rank);
-          } else {
-            for param i in 1..rank {
-              sum += ind(i) * blk(i);
-            }
+          for param i in 1..rank-1 {
+            sum += ind(i) * blk(i);
           }
+          sum += ind(rank);
+
           if !wantShiftedIndex then sum -= factoredOffs;
           if chunkify then
             return chunked_dataIndex(sum);
