@@ -91,7 +91,7 @@ proc computeStreamResults() {
 
 
 proc checkSTREAMresults() {
-  var randlist = new NPBRandomStream(seed);
+  var randlist = new NPBRandomStream(real, seed);
 
   var Aref, Bref, Cref, error : [VecDomain] elemType;
 

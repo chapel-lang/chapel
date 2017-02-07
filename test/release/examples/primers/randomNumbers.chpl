@@ -110,8 +110,8 @@ for i in randStreamSeeded.iterate({5..10}, real) {
 // class creation.  As a result, two parallel accesses or updates to the
 // position from which reading is intended may conflict.
 //
-var parallelUnsafe       = new RandomStream(parSafe=false);
-var parallelSeededUnsafe = new RandomStream(seed, false);
+var parallelUnsafe       = new RandomStream(real, parSafe=false);
+var parallelSeededUnsafe = new RandomStream(real, seed, false);
 
 // Now :class:`RandomStream` functions, such as ``parallelUnsafe.getNext()``
 // and ``parallelSeededUnsafe.getNext()`` can be called.

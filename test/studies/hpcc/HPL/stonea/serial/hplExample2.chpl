@@ -349,7 +349,7 @@ proc test_permuteMatrix(rprt = true) : bool {
 }
 
 proc test_panelSolve(rprt = true) : bool {
-    var rand = new RandomStream();
+    var rand = new RandomStream(real);
 
     var piv : [1..8] int = [i in 1..8] i;
     var A : [1..8, 1..9] real =
@@ -391,7 +391,7 @@ proc test_panelSolve(rprt = true) : bool {
 }
 
 proc test_updateBlockRow(rprt = true) : bool {
-    var rand = new RandomStream();
+    var rand = new RandomStream(real);
 
     // construct a matrix A = [X | Y], where X is an already LU-factorized
     // submatrix and Y is the block row we wish to update and test
@@ -471,7 +471,7 @@ proc test_LUFactorizeNorms(
 
 proc test_LUFactorize(rprt = true, seed = -1) : bool {
     // construct a matrix of random size with random values 
-    var rand = new RandomStream(seed);
+    var rand = new RandomStream(real, seed);
 
     var randomN : int = (rand.getNext() * 10):int + 1;
     var A : [1..randomN, 1..randomN+1] real;
