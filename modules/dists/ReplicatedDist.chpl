@@ -21,10 +21,10 @@
 // THE REPLICATED DISTRIBUTION IMPLEMENTATION
 //
 // Classes defined:
-//  ReplicatedDist -- Global distribution descriptor
-//  ReplicatedDom -- Global domain descriptor
-//  LocReplicatedDom -- Local domain descriptor
-//  ReplicatedArray -- Global array descriptor
+//  ReplicatedDist     -- Global distribution descriptor
+//  ReplicatedDom      -- Global domain descriptor
+//  LocReplicatedDom   -- Local domain descriptor
+//  ReplicatedArray    -- Global array descriptor
 //  LocReplicatedArray -- Local array descriptor
 //
 // Potential extensions:
@@ -177,10 +177,10 @@ when the constructor encounters an error.
 
 */
 class ReplicatedDist : BaseDist {
+  var targetLocDom : domain(Locales.idxType);
+
   // the desired locales (an array of locales)
-  const targetLocales;
-  // "IDs" are indices into targetLocales
-  proc targetIds return targetLocales.domain;
+  const targetLocales : [targetLocDom] locale;
 }
 
 
@@ -191,6 +191,12 @@ proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
 {
   if targetLocales.rank != 1 then
     compilerError("ReplicatedDist only accepts a 1D targetLocales array");
+
+  for (idx, loc) in zip(targetLocales.domain, targetLocales) {
+    this.targetLocDom.add(idx);
+    this.targetLocales[idx] = loc;
+  }
+
   if traceReplicatedDist then
     writeln("ReplicatedDist constructor over ", targetLocales);
   _localesCheckHelper(purposeMessage);
@@ -200,7 +206,7 @@ proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
 // TODO: going over all the locales - is there a scalability issue?
 proc ReplicatedDist._localesCheckHelper(purposeMessage: string): void {
   // ideally would like to make this a "eureka"
-  forall (ix, loc) in zip(targetIds, targetLocales) do
+  forall (ix, loc) in zip(targetLocDom, targetLocales) do
     if loc.id != ix {
       halt("The array of locales ", purposeMessage, " must be \"consistent\".",
            " See ReplicatedDist documentation for details.");
@@ -237,13 +243,12 @@ proc ReplicatedDist.dsiPrivatize(privatizeData: this.targetLocales.type)
 {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiPrivatize on ", here);
 
-  const pdTargetLocales = privatizeData;
+  const otherTargetLocales = privatizeData;
+
   // make private copy of targetLocales and its domain
-  const privTargetIds: domain(pdTargetLocales.domain.rank,
-                              pdTargetLocales.domain.idxType,
-                              pdTargetLocales.domain.stridable
-                              ) = pdTargetLocales.domain;
-  const privTargetLocales: [privTargetIds] locale = pdTargetLocales;
+  const privDom = otherTargetLocales.domain;
+  const privTargetLocales: [privDom] locale = otherTargetLocales;
+
   return new ReplicatedDist(privTargetLocales, "used during privatization");
 }
 
@@ -262,7 +267,7 @@ class ReplicatedDom : BaseRectangularDom {
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
-  const dist; // must be a ReplicatedDist
+  const dist : ReplicatedDist; // must be a ReplicatedDist
 
   // this is our index set; we store it here so we can get to it easily
   var domRep: domain(rank, idxType, stridable);
@@ -271,7 +276,7 @@ class ReplicatedDom : BaseRectangularDom {
   // NOTE: 'dist' must be initialized prior to 'localDoms'
   // => currently have to use the default constructor
   // NOTE: if they ever change after the constructor - Reprivatize them
-  var localDoms: [dist.targetIds] LocReplicatedDom(rank, idxType, stridable);
+  var localDoms: [dist.targetLocDom] LocReplicatedDom(rank, idxType, stridable);
 
   proc numReplicands return localDoms.numElements;
 }
@@ -351,7 +356,6 @@ proc ReplicatedDist.dsiClone(): this.type {
 proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
                                          type idxType,
                                          param stridable: bool)
-  : ReplicatedDom(rank, idxType, stridable, this.type)
 {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiNewRectangularDom ",
                                       (rank, idxType:string, stridable));
@@ -495,7 +499,7 @@ proc ReplicatedDom.dsiIndexOrder(indexx)
   return redirectee().dsiIndexOrder(indexx);
 
 proc ReplicatedDom.dsiDestroyDom() {
-  coforall localeIdx in dist.targetIds {
+  coforall localeIdx in dist.targetLocDom {
     on dist.targetLocales(localeIdx) do
       delete localDoms(localeIdx);
   }
@@ -515,7 +519,7 @@ class ReplicatedArr : BaseArr {
 
   // the replicated arrays
   // NOTE: 'dom' must be initialized prior to initializing 'localArrs'
-  var localArrs: [dom.dist.targetIds]
+  var localArrs: [dom.dist.targetLocDom]
               LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
 }
 
@@ -602,7 +606,7 @@ proc ReplicatedArr.dsiSerialWrite(f): void {
 }
 
 proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
-  coforall localeIdx in dom.dist.targetIds {
+  coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) do
       delete localArrs(localeIdx);
   }
@@ -653,7 +657,7 @@ proc ReplicatedArr.dsiReindex(sliceDef: ReplicatedDom) {
   var result = new ReplicatedArr(eltType, sliceDef);
   var slicee = this;
 
-  // ensure 'dom' and 'slicee' are over the same set of locales/targetIds
+  // ensure 'dom' and 'slicee' are over the same set of locales/targetLocDom
   assert(sliceDef.localDoms.domain == slicee.localArrs.domain);
 
   coforall (loc, sliceDefLocDom, sliceeLocArr, resultLocArr)
@@ -671,6 +675,7 @@ proc ReplicatedArr.dsiReindex(sliceDef: ReplicatedDom) {
   return result;
 }
 
+// Note: returns an associative array
 proc ReplicatedArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
