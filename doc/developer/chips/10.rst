@@ -533,7 +533,7 @@ Deinitialization
 
 Deinitialization is performed in these cases:
 
- * For a ``var`` or ``const`` variable - when it does out of scope.
+ * For a ``var`` or ``const`` variable - when it goes out of scope.
  * For a ``[const] in`` formal - before its parent function returns;
    after the return value has been computed.
    There may be exceptions when a record or an array is returned.
@@ -551,17 +551,16 @@ Deinitialization is performed in these cases:
 Deinitialization consists of the following actions,
 depending on the type of the variable being deinitialized:
 
- * Primitive, enumerated, range, class, synchronization types -
+ * Primitive, enumerated, range, class, synchronization type -
    nothing happens. Implementation-level actions,
    ex. deallocation of a string or a sync variable,
    can be performed without affecting the observable behavior directly.
+ * Tuple - its components are deinitialized.
  * A record variable; a class instance (upon ``delete``) - see below.
- * Unions - t.b.d.
- * Arrays, domains, distributions - defined by their domain map
-   in a way t.b.d.
- * Arrays, tuples - their elements/components are deinitialized.
- * For an array, its elements are deinitialized before
-   its domain map-defined actions are performed.
+ * Union - t.b.d.
+ * Array - its elements are deinitialized. Then, additional actions
+   are performed as defined by its domain map, if any.
+ * Domain, distribution - defined by their domain map in a way t.b.d.
  * Alias types - at present, the action is determined by the aliasee type.
 
 Note that we distinguish between:
@@ -573,9 +572,9 @@ Note that we distinguish between:
 The remainder of this section is concerned with deinitialization of
 record variables, or "records", and class instances, or "classes".
  
-To specify actions that occur upon deinitialization, specify a `proc
-deinit()` method. This method must have zero arguments and cannot be called
-directly. If a type does not specify a `proc deinit()` method, the compiler
+To specify actions that occur upon deinitialization, specify a ``proc
+deinit()`` method. This method must have zero arguments and cannot be called
+directly. If a type does not specify a ``proc deinit()`` method, the compiler
 will generate one.
 It will be equivalent to a user-written ``deinit`` with an empty body.
 
@@ -585,10 +584,10 @@ compiler-generated or user-defined, in the process of deinitialization:
  * parent ``deinit`` methods are called in the case of inherited classes, and
  * all fields of record type are deinitialized.
 
-The expected use-case for the `deinit` method is to call `delete` on
+The expected use-case for the ``deinit`` method is to call ``delete`` on
 fields of class type, when appropriate. It is the responsibility of the
-class designer to `delete` fields when appropriate. The compiler will not
-automatically add `delete` calls for fields of class type.
+class designer to ``delete`` fields when appropriate. The compiler will not
+automatically add ``delete`` calls for fields of class type.
 Conversely, the compiler adds ``deinit`` calls on fields of record type.
 These calls cannot be added by the user.
 
@@ -618,13 +617,16 @@ in reverse declaration order.
 Rationale
 *********
 
-The goal of the above specifications is support type safety, specifically
+Our goal is to support type safety, specifically
 to prevent accesses to fields after they have been deinitialized.
 This includes preventing access to an array after its domain
 has been deinitialized.
-
-The above specifications one way to achieve this goal.
+The above rules specify one way to achieve this goal.
 They are a work in progress.
+
+For example, disallowing the use of ``this`` as a whole within ``deinit``
+is intended merely as the minimum functionality currently required,
+so that we can refine it in the future without breaking code.
 
 
 Summary
