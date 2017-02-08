@@ -1,3 +1,3 @@
 randctor.chpl:3: warning: RandomStream constructor requires eltType as first argument
 randctor.chpl:7: warning: NPBRandomStream constructor requires eltType as first argument
-randctor.chpl:11: warning: makeRandomStream now requires eltType as first argument
+randctor.chpl:11: warning: makeRandomStream requires eltType as first argument

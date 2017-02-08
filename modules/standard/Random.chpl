@@ -217,7 +217,7 @@ module Random {
                         param parSafe: bool = true,
                         type eltType = real(64),
                         param algorithm = defaultRNG) {
-    compilerWarning("makeRandomStream now requires eltType as first argument");
+    compilerWarning("makeRandomStream requires eltType as first argument");
     return makeRandomStream(eltType, seed, parSafe, algorithm);
   }
 
