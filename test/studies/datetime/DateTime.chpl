@@ -12,6 +12,9 @@ module DateTime {
   const DI100Y = daysBeforeYear(101);
   const DI4Y   = daysBeforeYear(5);
 
+  // This is here to work around issue #5267
+  const chpl_today = datetime.today();
+
   enum DayOfWeek {
     Monday =    0,
     Tuesday =   1,
@@ -216,7 +219,7 @@ module DateTime {
     const sec = timestamp: int;
     const us = ((timestamp-sec) * 1000000 + 0.5):int;
     const td = new timedelta(seconds=sec, microseconds=us);
-    return unixEpoch.getDate() + td;
+    return unixEpoch.getdate() + td;
   }
 
   proc type date.fromordinal(ord) {
@@ -238,13 +241,18 @@ module DateTime {
 
   proc date.timetuple() {
     var timeStruct: tm;
-    
-    timeStruct.tm_mday = day;
-    timeStruct.tm_mon = month;
-    timeStruct.tm_year = year;
-    timeStruct.tm_wday = weekday():int;
-    timeStruct.tm_yday = toordinal - (new date(year, 1, 1)).toordinal() + 1;
-    timeStruct.tm_isdst = -1;
+
+    // no 0 init for extern records?
+    timeStruct.tm_hour = 0;
+    timeStruct.tm_min = 0;
+    timeStruct.tm_sec = 0;
+
+    timeStruct.tm_mday = day:int(32);
+    timeStruct.tm_mon = month:int(32);
+    timeStruct.tm_year = year:int(32);
+    timeStruct.tm_wday = weekday():int(32);
+    timeStruct.tm_yday = (toordinal() - (new date(year, 1, 1)).toordinal() + 1):int(32);
+    timeStruct.tm_isdst = -1:int(32);
     return timeStruct; 
   }
 
@@ -342,6 +350,10 @@ module DateTime {
 
   proc +(d: date, t: timedelta): date {
     return date.fromordinal(d.toordinal() + t.days);
+  }
+
+  proc +(t: timedelta, d: date): date {
+    return d + t;
   }
 
   proc -(d: date, t: timedelta): date {
@@ -713,19 +725,13 @@ module DateTime {
                           day=lt.tm_mday,       hour=lt.tm_hour,
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=t(2));
-/*
-      const sec = timestamp: int;
-      const us = ((timestamp-sec) * 1000000 + 0.5):int;
-      const td = new timedelta(seconds=sec, microseconds=us);
-      return unixEpoch + td;
-*/
     } else {
       return (utcfromtimestamp(timestamp) + tz.utcoffset()).replace(tzinfo=tz);
     }
   }
 
   proc type datetime.utcfromtimestamp(timestamp) {
-    return unixEpoch + new timedelta(timestamp);
+    return unixEpoch + new timedelta(seconds=timestamp);
   }
 
   proc type datetime.fromordinal(ordinal) {
@@ -799,14 +805,14 @@ module DateTime {
 
   proc datetime.timetuple() {
     var timeStruct: tm;
-    timeStruct.tm_sec = second;
-    timeStruct.tm_min = minute;
-    timeStruct.tm_hour = hour;
-    timeStruct.tm_mday = day;
-    timeStruct.tm_mon = month;
-    timeStruct.tm_year = year;
-    timeStruct.tm_wday = weekday(): int;
-    timeStruct.tm_yday = toordinal() - (new date(year, 1, 1)).toordinal() + 1;
+    timeStruct.tm_sec = second: int(32);
+    timeStruct.tm_min = minute: int(32);
+    timeStruct.tm_hour = hour: int(32);
+    timeStruct.tm_mday = day: int(32);
+    timeStruct.tm_mon = month: int(32);
+    timeStruct.tm_year = year: int(32);
+    timeStruct.tm_wday = weekday(): int(32);
+    timeStruct.tm_yday = (toordinal() - (new date(year, 1, 1)).toordinal() + 1): int(32);
 
     if tzinfo == nil {
       timeStruct.tm_isdst = -1;
@@ -849,7 +855,14 @@ module DateTime {
   }
 
   proc datetime.isoformat(sep="T") {
-    var micro = if microsecond > 0 then ".%f" else "";
+    proc zeroPad(nDigits: int, i: int) {
+      var numStr = i:string;
+      for i in 1..nDigits-numStr.length {
+        numStr = "0" + numStr;
+      }
+      return numStr;
+    }
+    var micro = if microsecond > 0 then "." + zeroPad(6, microsecond) else "";
     var offset: string;
     if tzinfo != nil {
       offset = strftime("%z");
@@ -1125,8 +1138,8 @@ module DateTime {
      default to 0. Since only days, seconds and microseconds are
      stored, the other arguments are converted to days, seconds
      and microseconds. */
-  proc timedelta.timedelta(weeks=0, days=0, hours=0, minutes=0,
-                 seconds=0, milliseconds=0, microseconds=0) {
+  proc timedelta.timedelta(days=0, seconds=0, microseconds=0,
+                           milliseconds=0, minutes=0, hours=0, weeks=0) {
     param usps = 1000000,  // microseconds per second
           uspms = 1000,    // microseconds per millisecond
           spd = 24*60*60; // seconds per day
