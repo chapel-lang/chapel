@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+mv $2 $1.orig.tmp
+echo -n '' > $2
