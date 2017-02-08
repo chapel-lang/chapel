@@ -247,10 +247,6 @@ Because the GPU locale may have multiple kernels running concurrently, it might 
 
 In this case it may not be optimal in terms of performance for both of these *forall* regions to have the same NDRange and workgroup shapes. Instead we can still use a *kernel* object, and iterate through the NDRange instead of the redundant range: ::
 
-    var kernel = new GPUKernel(); //constructor could have other versions
-    kernel.griddim(2); //set number of dimensions to 2
-    kernel.grid(4096, 4096);
-    kernel.group(16,16);
     on (Locales[0]:LocaleModel).GPU { 
 
         var kernel1 = new GPUKernel(); //first kernel
@@ -269,7 +265,7 @@ In this case it may not be optimal in terms of performance for both of these *fo
 **2.) Workgroup synchronization implementation**
 
 GPU programming languages provide barrier and memory fence primitives for workgroup scope synchronization. Barriers require that every workitem in a workgroup reach the same synchronization call before the program can continue, while fences ensure proper ordering of memory operations, either to global DRAM memory, or local workgroup shared memory.
-Barriers can also implicitly, or explicitly introduce memory fences. From the OpenCL specification for example.: ::
+Barriers can also implicitly, or explicitly introduce memory fences. From the OpenCL specification for example[1].: ::
 
     CLK_LOCAL_MEM_FENCE - The barrier function will either flush any variables
     stored in local memory or queue a memory fence to ensure correct ordering 
@@ -321,12 +317,12 @@ Example of independent object with primitives using locale GPU interface: ::
 		var lidx = kernel.localID(0);
 	}
 	
-Example of independent object with primitives, but this time using forall loop construct: ::
+Example, but this time using *forall* loop construct instead of GPU(): ::
 
     var kernel = new GPUKernel(); //default
     on (Locales[0]:LocaleModel).GPU {
         // once inside the GPU code region
-		forall i in kernel {
+        forall i in kernel {
             var lidx = kernel.localID(0);
             ...
             //do gpu work here
