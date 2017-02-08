@@ -4,7 +4,7 @@ use driver_real_arrays;
 use Random;
 use Sort;
 
-var rng = new RandomStream(314159265);
+var rng = new RandomStream(real, 314159265);
 
 enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP };
 

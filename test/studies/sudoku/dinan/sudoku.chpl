@@ -8,7 +8,7 @@ config const MAX_ITER  = 1000000;
 var givenBoard: [1..9, 1..9] int;  // The given board
 var initBoard:  [1..9, 1..9] int;  // The initialized board
 
-var myRand = new NPBRandomStream(seed=314159265);
+var myRand = new NPBRandomStream(real, seed=314159265);
 
 
 // Return a random number on the range [1, n]

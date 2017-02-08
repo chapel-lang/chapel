@@ -124,7 +124,7 @@ class BoundedBuffer {
       head$: sync int = 0,                  // the head's cursor position
       tail$: sync int = 0;                  // the tail's cursor position
 
-  var rng = new RandomStream();
+  var rng = new RandomStream(real);
 
   //
   // Place an item at the head position of the buffer, assuming
