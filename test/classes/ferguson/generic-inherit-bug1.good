@@ -1,0 +1,7 @@
+{gp_field = 0, x = 0.0}
+foo
+in Child(1) foo (100..100) 0
+bar
+in Child(1) bar 0
+baz
+in Child(1) baz 0
