@@ -585,7 +585,7 @@ module DateTime {
     return false;
   }
 
-  proc >(t1: time, t2: time) {
+  proc >(t1: time, t2: time): bool {
     if (t1.tzinfo != nil && t2.tzinfo == nil) ||
         (t1.tzinfo == nil && t2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -607,7 +607,7 @@ module DateTime {
     return false;
   }
 
-  proc >=(t1: time, t2: time) {
+  proc >=(t1: time, t2: time): bool {
     if (t1.tzinfo != nil && t2.tzinfo == nil) ||
         (t1.tzinfo == nil && t2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
