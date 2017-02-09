@@ -101,6 +101,7 @@ module ArrayViewReindex {
     // standard I/O stuff
     //
     proc dsiSerialWrite(f) {
+      //      writeln("privDom is: ", privDom);
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
 
@@ -128,18 +129,24 @@ module ArrayViewReindex {
     }
 
     inline proc dsiAccess(i) ref {
+      //      writeln("Got an access of ", i);
+      //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
       checkBounds(i);
       return arr.dsiAccess(chpl_reindexConvertIdx(i));
     }
 
     inline proc dsiAccess(i)
       where !shouldReturnRvalueByConstRef(eltType) {
+      //      writeln("Got an access of ", i);
+      //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
       checkBounds(i);
       return arr.dsiAccess(chpl_reindexConvertIdx(i));
     }
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType) {
+      //      writeln("Got an access of ", i);
+      //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
       checkBounds(i);
       return arr.dsiAccess(chpl_reindexConvertIdx(i));
     }
@@ -150,12 +157,15 @@ module ArrayViewReindex {
     //
     inline proc chpl_reindexConvertIdx(i: integral) {
       assert(arr.rank == 1);
+      //      writeln("dom.dsiDim(1).indexOrder(", i, ") = ", dom.dsiDim(1).indexOrder(i));
       return arr.dom.dsiDim(1).orderToIndex(dom.dsiDim(1).indexOrder(i));
     }
 
     inline proc chpl_reindexConvertIdx(i) {
       var ind: arr.rank*arr.idxType;
+      //      writeln("*** inside conversion routine: ", arr.dom.dsiDims());
       for param d in 1..arr.rank {
+        //        writeln("dom.dsiDim(", d, ").indexOrder(", i(d), ") = ", dom.dsiDim(d).indexOrder(i(d)));
         ind(d) = arr.dom.dsiDim(d).orderToIndex(dom.dsiDim(d).indexOrder(i(d)));
       }
       return ind;

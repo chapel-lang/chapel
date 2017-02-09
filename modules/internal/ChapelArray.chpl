@@ -922,7 +922,7 @@ module ChapelArray {
             distToFree = distToRemove.remove();
           }
           if domToFree != nil then
-            _delete_dom(domToFree, _isPrivatized(_instance));
+            _delete_dom(_instance, _isPrivatized(_instance));
           if distToFree != nil then
             _delete_dist(distToFree, _isPrivatized(_instance.dist));
         }
@@ -1883,7 +1883,7 @@ module ChapelArray {
           if arrToFree != nil then
             _delete_arr(_instance, _isPrivatized(_instance));
           if domToFree != nil then
-            _delete_dom(domToFree, domIsPrivatized);
+            _delete_dom(_instance.dom, domIsPrivatized);
           if distToFree != nil then
             _delete_dist(distToFree, distIsPrivatized);
         }
@@ -2215,14 +2215,17 @@ module ChapelArray {
           halt("extent in dimension ", i, " does not match actual");
 
       // dsiReindex takes ownership of newDom._value.
-      pragma "no auto destroy" var newDom = _dom((...d.dims()));
+      //      writeln("d is: ", d);
+      //      writeln("_dom is: ", _dom);
+      pragma "no auto destroy" var newDom = {(...d.dims())};
       newDom._value._free_when_no_arrs = true;
       const (arr, arrpid)  = //if (_value.isSliceArrayView()) then (this._value.arr, this._value._ArrPid)
         //        else
         (this._value, this._pid);
+      //      writeln("newDom is: ", newDom);
       var a = new ArrayViewReindexArr(eltType=this.eltType,
                                       _DomPid = newDom._pid,
-                                      dom = d._instance,
+                                      dom = newDom._instance,
                                       _ArrPid=arrpid,
                                       _ArrInstance=arr);
       //      x._arrAlias = _value;

@@ -795,7 +795,7 @@ module ChapelDistribution {
     delete dist;
   }
 
-  proc _delete_dom(dom:BaseDom, param privatized:bool) {
+  proc _delete_dom(dom, param privatized:bool) {
     use Reflection;
     if canResolveMethod(dom, "dsiDestroyDom") {
       dom.dsiDestroyDom();
@@ -811,7 +811,7 @@ module ChapelDistribution {
   // that arr.eltType is meaningful.
   proc _delete_arr(arr, param privatized:bool) {
     // decide whether or not the array is an alias
-    var isalias = (arr._arrAlias != nil);
+    var isalias = (arr._arrAlias != nil) || arr.isReindexArrayView();
 
     // array implementation can destroy data or other members
     arr.dsiDestroyArr(isalias);
