@@ -470,3 +470,35 @@ proc setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
     targetLocArr = specifiedLocArr;
   }
 }
+
+//
+// bulkCommConvertCoordinate() converts
+//   point 'ind' within 'bView'
+// to
+//   a point within 'aView'
+// that has the same indexOrder in each dimension.
+//
+// This function was contributed by Juan Lopez and later improved by Alberto.
+// In the SBAC'12 paper it is called m(). Later modified by Ben Harshbarger
+// in support of ArrayViews.
+//
+// TODO: assert that bView and aView are rectangular?
+// TODO: If we wanted to be more general, the domain args could turn into
+//       tuples of ranges
+//
+proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
+{
+  assert(bView.rank == aView.rank);
+  const b = chpl__tuplify(ind);
+  param rank = aView.rank;
+  type idxType = aView.idxType;
+  const AD = aView.dims();
+  const BD = bView.dims();
+  var result: rank * idxType;
+  for param i in 1..rank {
+    const ar = AD(i), br = BD(i);
+    if boundsChecking then assert(br.member(b(i)));
+    result(i) = ar.orderToIndex(br.indexOrder(b(i)));
+  }
+  return result;
+}
