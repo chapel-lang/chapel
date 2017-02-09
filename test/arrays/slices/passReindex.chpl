@@ -12,21 +12,25 @@ printArray5(A.reindex({0..1, 0..1}));
 
 proc printArray(X) {
   writeln(X);
+  writeln(X.domain);
   writeln();
 }
 
 proc printArray2(X: []) {
   writeln(X);
+  writeln(X.domain);
   writeln();
 }
 
 proc printArray3(X: [] real) {
   writeln(X);
+  writeln(X.domain);
   writeln();
 }
 
-proc printArray4(X: [5..6, 7..8] real) {
+proc printArray4(X: [0..1, 0..1] real) {
   writeln(X);
+  writeln(X.domain);
   writeln();
 }
 

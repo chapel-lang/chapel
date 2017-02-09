@@ -307,7 +307,13 @@ module ChapelDistribution {
     proc dsiLinksDistribution() return true;
 
     // Overload to to customize domain destruction
-    proc dsiDestroyDom() { }
+    //
+    // BHARSH 2017-02-05: Making dsiDestroyDom a virtual method 'tricks' the
+    // compiler into thinking there's recursion for dsiDestroyDom when there is
+    // none. This can result in incorrect generated code if recursive iterators
+    // are inlined. See GitHub issue #5311 for more.
+    //
+    //proc dsiDestroyDom() { }
 
     proc dsiDisplayRepresentation() { }
   }
@@ -790,7 +796,10 @@ module ChapelDistribution {
   }
 
   proc _delete_dom(dom:BaseDom, param privatized:bool) {
-    dom.dsiDestroyDom();
+    use Reflection;
+    if canResolveMethod(dom, "dsiDestroyDom") {
+      dom.dsiDestroyDom();
+    }
 
     if privatized {
       _freePrivatizedClass(dom.pid, dom);
