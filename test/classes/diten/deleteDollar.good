@@ -1,3 +1,2 @@
-deleteDollar.chpl:5: warning: "~classname" naming of deinitializers is deprecated
 Hi from $
 Destroy dollar
