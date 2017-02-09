@@ -385,23 +385,6 @@ proc WrapperDist.dsiCreateReindexDist(newSpace, oldSpace) {
   return genericDsiCreateReindexDist(this, this.rank, newSpace, oldSpace);
 }
 
-proc WrapperArr.dsiReindex(reindexDef: WrapperRectDom) {
-  const reindexee = this;
-
-  // The following can give a different return type than genericDsiReindex(),
-  // so alas have to disable it.
-  //if reindexee.dom == reindexDef then
-  //  return reindexee;
-
-  if reindexDef.isReindexing() then
-    return genericDsiReindex(reindexee, reindexDef);
-  else {
-    // For now, the only way to get here is from newAlias().
-    assert(reindexee.dom == reindexDef);
-    return reindexee;
-  }
-}
-
 proc WrapperDist.dsiCreateRankChangeDist(param newRank: int, args) {
   return genericDsiCreateRankChangeDist(this, newRank, args);
 }
