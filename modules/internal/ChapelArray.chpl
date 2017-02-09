@@ -614,6 +614,31 @@ module ChapelArray {
     return chpl__distributed(d, chpl__buildDomainExpr((...ranges)));
   }
 
+  //
+  // Array-view utility functions
+  //
+  proc chpl__isArrayView(arr) param {
+    use Reflection;
+    param isSlice = if canResolveMethod(arr, "isSliceArrayView") then arr.isSliceArrayView() else false;
+    param isRankChange = if canResolveMethod(arr, "isRankChangeArrayView") then arr.isRankChangeArrayView() else false;
+
+    return isSlice || isRankChange;
+  }
+
+  proc chpl__getViewDom(arr: []) {
+    if chpl__isArrayView(arr._value) then return arr._value._getViewDom();
+    else return arr.domain;
+  }
+
+  proc chpl__getActualArray(arr) {
+    var value = if isArray(arr) then arr._value else arr;
+    var ret = if chpl__isArrayView(value) then value._getActualArray() else value;
+    return ret;
+  }
+  //
+  // End of array-view utility functions
+  //
+
   proc chpl__isRectangularDomType(type domainType) param {
     var dom: domainType;
     return isDomainType(domainType) && isRectangularDom(dom);
@@ -2777,9 +2802,11 @@ module ChapelArray {
     //
     // check that size/shape are the same to permit legal zippering
     //
-    for d in 1..this.rank do
-      if this.domain.dim(d).size != that.domain.dim(d).size then
-        return false;
+    if isRectangularDom(this.domain) && isRectangularDom(that.domain) {
+      for d in 1..this.rank do
+        if this.domain.dim(d).size != that.domain.dim(d).size then
+          return false;
+    }
     //
     // if all the above tests match, see if zippered equality is
     // true everywhere
@@ -3286,8 +3313,8 @@ module ChapelArray {
     //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
 
     // constraints specific to a particular domain map array type
-    if !a._value.doiCanBulkTransfer(a._dom._value) then return false;
-    if !b._value.doiCanBulkTransfer(b._dom._value) then return false;
+    if !a._value.doiCanBulkTransfer(chpl__getViewDom(a)) then return false;
+    if !b._value.doiCanBulkTransfer(chpl__getViewDom(b)) then return false;
     if !a._value.doiUseBulkTransfer(b) then return false;
 
     return true;
@@ -3300,8 +3327,8 @@ module ChapelArray {
     //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
 
     // constraints specific to a particular domain map array type
-    if !a._value.doiCanBulkTransferStride(a._dom._value) then return false;
-    if !b._value.doiCanBulkTransferStride(b._dom._value) then return false;
+    if !a._value.doiCanBulkTransferStride(chpl__getViewDom(a)) then return false;
+    if !b._value.doiCanBulkTransferStride(chpl__getViewDom(b)) then return false;
     if !a._value.doiUseBulkTransferStride(b) then return false;
 
     return true;
@@ -3311,19 +3338,19 @@ module ChapelArray {
     if a._value.isDefaultRectangular() {
       if b._value.isDefaultRectangular() {
         // implemented in DefaultRectangular
-        a._value.doiBulkTransferStride(b._value, a._dom._value);
+        a._value.doiBulkTransferStride(b, chpl__getViewDom(a));
       }
       else
         // b's domain map must implement this
-        b._value.doiBulkTransferToDR(a);
+        b._value.doiBulkTransferToDR(a, chpl__getViewDom(b));
     } else {
       if b._value.isDefaultRectangular() then
         // a's domain map must implement this
-        a._value.doiBulkTransferFromDR(b);
+        a._value.doiBulkTransferFromDR(b, chpl__getViewDom(a));
       else
         // a's domain map must implement this,
         // possibly using b._value.doiBulkTransferToDR()
-        a._value.doiBulkTransferFrom(b);
+        a._value.doiBulkTransferFrom(b, chpl__getViewDom(a));
     }
  }
 
@@ -3381,7 +3408,7 @@ module ChapelArray {
         chpl__compatibleForBulkTransfer(a, b) &&
         chpl__useBulkTransfer(a, b))
     {
-      a._value.doiBulkTransfer(b, a._dom._value);
+      a._value.doiBulkTransfer(b, chpl__getViewDom(a));
     }
     else if (useBulkTransferStride &&
         chpl__compatibleForBulkTransferStride(a, b) &&

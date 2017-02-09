@@ -176,40 +176,31 @@ class ArrayViewRankChangeArr: BaseArr {
     return ind;
   }
 
-  inline proc chpl_rankChangeConvertDom(lowDom) {
+  inline proc chpl_rankChangeConvertDom(dims) {
+    if dom.rank != dims.size {
+      compilerError("Called chpl_rankChangeConvertDom with incorrect rank. Got ", dims.size:string, ", expecting", dom.rank:string);
+    }
     //
     // TODO: I worry that I'm being too fast and loose with domain
     // records and classes here
     //
-    var dom = {(...arr.dom.dsiDims())};
+    var ranges : arr.rank*dims(1).type;
     //    writeln("*** dom was: ", dom);
     var j = 1;
     for param d in 1..arr.rank {
       if !collapsedDim(d) {
-        dom._value.ranges(d) = lowDom.dsiDim(j);
+        ranges(d) = dims(j);
         j += 1;
       } else {
-        dom._value.ranges(d) = idx(j)..idx(j);
+        ranges(d) = idx(d)..idx(d);
       }
     }
-    //    writeln("*** now dom is: ", dom);
-    return dom._value;
+    return {(...ranges)};
   }
 
   // TODO: Haven't looked below here yet...
   
-  //
-  // bulk transfer routines -- forward to array
-  //
-  proc doiBulkTransferToDR(B) {
-    arr.doiBulkTransferToDR(B);
-  }
-
-  /*  I don't think these should be needed...
-  proc doiBulkTransferStride(B) {
-    arr.doiBulkTransferStride(B);
-  }
-
+/*  I don't think these should be needed...
   proc dataChunk(x) ref {
     return arr.dataChunk(x);
   }
@@ -266,6 +257,30 @@ class ArrayViewRankChangeArr: BaseArr {
     return arr.dsiSupportsBulkTransfer();
   }
 
+  proc dsiSupportsBulkTransferInterface() param return arr.dsiSupportsBulkTransferInterface();
+
+  // Recursively builds up the view-domain given an initial tuple of
+  // dimensions. Handles nested rank-changes.
+  proc _viewHelper(dims) {
+    // If 'dims.size != arr.rank', assume that we still need to do the
+    // conversion for the current rank-change.
+    var goodDims = if dims.size != arr.rank then chpl_rankChangeConvertDom(dims).dims() else dims;
+    if goodDims.size != arr.rank {
+      compilerError("Error while composing view domain for rank-change view.");
+    }
+    if _containsRankChange() {
+      var nextChange = arr._getRankChangeView();
+      return nextChange._viewHelper(goodDims);
+    } else {
+      return {(...goodDims)};
+    }
+  }
+
+  proc _getViewDom() {
+    return _viewHelper(dom.dsiDims());
+  }
+
+  // contiguous transfer support
   proc doiUseBulkTransfer(B) {
     return arr.doiUseBulkTransfer(B);
   }
@@ -276,6 +291,54 @@ class ArrayViewRankChangeArr: BaseArr {
 
   proc doiBulkTransfer(B, viewDom) {
     arr.doiBulkTransfer(B, viewDom);
+  }
+
+  // strided transfer support
+  proc doiUseBulkTransferStride(B) {
+    return arr.doiUseBulkTransferStride(B);
+  }
+
+  proc doiCanBulkTransferStride(viewDom) {
+    return arr.doiCanBulkTransferStride(viewDom);
+  }
+
+  proc doiBulkTransferStride(B, viewDom) {
+    arr.doiBulkTransferStride(B, viewDom);
+  }
+
+  // distributed transfer support
+  proc doiBulkTransferToDR(B, viewDom) {
+    arr.doiBulkTransferToDR(B, viewDom);
+  }
+
+  proc doiBulkTransferFromDR(B, viewDom) {
+    arr.doiBulkTransferFromDR(B, viewDom);
+  }
+
+  proc doiBulkTransferFrom(B, viewDom) {
+    arr.doiBulkTransferFrom(B, viewDom);
+  }
+
+  proc isDefaultRectangular() param return arr.isDefaultRectangular();
+
+  proc _getActualArray() {
+    if chpl__isArrayView(arr) {
+      return arr._getActualArray();
+    } else {
+      return arr;
+    }
+  }
+
+  proc _containsRankChange() param {
+    if chpl__isArrayView(arr) {
+      return arr.isRankChangeArrayView() || arr._containsRankChange();
+    } else {
+      return false;
+    }
+  }
+
+  proc _getRankChangeView() {
+    return this;
   }
 }
 
