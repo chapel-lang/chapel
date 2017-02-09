@@ -422,7 +422,7 @@ module ZMQ {
       }
     }
 
-    proc ~ContextClass() {
+    proc deinit() {
       on this.home {
         var ret = zmq_ctx_term(this.ctx):int;
         if ret == -1 {
@@ -450,7 +450,7 @@ module ZMQ {
     }
 
     pragma "no doc"
-    proc ~Context() {
+    proc deinit() {
       release();
     }
 
@@ -523,7 +523,7 @@ module ZMQ {
       }
     }
 
-    proc ~SocketClass() {
+    proc deinit() {
       on this.home {
         var ret = zmq_close(socket):int;
         if ret == -1 {
@@ -559,7 +559,7 @@ module ZMQ {
     }
 
     pragma "no doc"
-    proc ~Socket() {
+    proc deinit() {
       release();
     }
 

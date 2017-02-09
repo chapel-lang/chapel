@@ -137,7 +137,7 @@ class Grid {
   //| >    destructor    | >
   //|/...................|/
 
-  proc ~Grid () { delete ghost_domains; }
+  proc deinit () { delete ghost_domains; }
   
   // /|'''''''''''''''''''/|
   //< |    destructor    < |

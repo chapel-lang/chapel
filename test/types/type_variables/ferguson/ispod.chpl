@@ -8,7 +8,7 @@ class MyClass {
 
 record NotPod1 {
   var x:int;
-  proc ~NotPod1() { writeln("custom destructor"); }
+  proc deinit() { writeln("custom destructor"); }
 }
 
 record NotPod2 {

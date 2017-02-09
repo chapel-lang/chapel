@@ -87,7 +87,7 @@ class Function {
     }
 
 
-    proc ~Function() {
+    proc deinit() {
         delete sumC;
         delete diffC;
     }

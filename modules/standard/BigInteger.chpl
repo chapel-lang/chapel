@@ -186,7 +186,7 @@ module BigInteger {
     // copy.  The localeId points back the correct locale but the mpz field
     // is meaningless.
     pragma "no doc"
-    proc ~bigint() {
+    proc deinit() {
       if _local || this.localeId == chpl_nodeID {
         mpz_clear(this.mpz);
       }

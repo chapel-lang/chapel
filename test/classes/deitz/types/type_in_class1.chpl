@@ -7,7 +7,7 @@ class foo {
   var b : bar = new bar();
   var z : int;
 
-  proc ~foo() {
+  proc deinit() {
     delete b;
   }
 }

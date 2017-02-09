@@ -189,7 +189,7 @@ class FTree {
             on loc do tree[loc.id] = new LocTree(coeffDom);
     }
 
-    proc ~FTree() {
+    proc deinit() {
         coforall loc in Locales do
             on loc do delete tree[loc.id];
     }

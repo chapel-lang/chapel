@@ -22,7 +22,7 @@ module Deque {
     proc deque(type eltType) {
       deque_init(sizeof(eltType), d, 0);
     }
-    proc ~deque() {
+    proc deinit() {
       deque_destroy(d);
     }
     proc pushFront(x: eltType) {

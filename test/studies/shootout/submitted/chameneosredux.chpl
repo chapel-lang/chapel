@@ -110,7 +110,7 @@ record Population {
   //
   // Delete the chameneos objects.
   //
-  proc ~Population {
+  proc deinit {
     for c in chameneos do
       delete c;
   }

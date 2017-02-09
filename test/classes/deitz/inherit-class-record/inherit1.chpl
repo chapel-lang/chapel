@@ -4,7 +4,7 @@ module M1 {
   class C {
     var s: list(int);
 
-    proc ~C() {
+    proc deinit() {
       s.destroy();
     }
   }
