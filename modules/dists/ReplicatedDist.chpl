@@ -667,31 +667,6 @@ proc ReplicatedArr.dsiSlice(sliceDef: ReplicatedDom) {
   return result;
 }
 
-// array reindexing
-// very similar to array slicing
-proc ReplicatedArr.dsiReindex(sliceDef: ReplicatedDom) {
-  if traceReplicatedDist then writeln("ReplicatedArr.dsiReindex on ", sliceDef);
-  var result = new ReplicatedArr(eltType, sliceDef);
-  var slicee = this;
-
-  // ensure 'dom' and 'slicee' are over the same set of locales/targetIds
-  assert(sliceDef.localDoms.domain == slicee.localArrs.domain);
-
-  coforall (loc, sliceDefLocDom, sliceeLocArr, resultLocArr)
-   in zip(sliceDef.dist.targetLocales, sliceDef.localDoms,
-       slicee.localArrs, result.localArrs) do
-    on loc do
-     {
-      var locAlias: [sliceDefLocDom.domLocalRep] => sliceeLocArr.arrLocalRep;
-      resultLocArr = new LocReplicatedArr(eltType,
-        sliceDef.rank, sliceDef.idxType, sliceDef.stridable,
-        myDom = sliceDefLocDom,
-        arrLocalRep => locAlias);
-     }
-
-  return result;
-}
-
 // rank-change slicing
 // very similar to slicing
 proc ReplicatedArr.dsiRankChange(sliceDef: ReplicatedDom,

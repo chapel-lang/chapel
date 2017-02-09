@@ -1396,47 +1396,6 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
   return alias;
 }
 
-proc BlockArr.dsiReindex(d: BlockDom) {
-  // in constructor we have to pass sparseLayoutType as it has no default value
-  var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
-                           stridable=d.stridable, dom=d,
-                           sparseLayoutType=DefaultDist);
-  const sameDom = d==dom;
-
-  var thisid = this.locale.id;
-  coforall i in d.dist.targetLocDom {
-    on d.dist.targetLocales(i) {
-      const locDom = d.getLocDom(i);
-      var locAlias: [locDom.myBlock] => locArr[i].myElems;
-      alias.locArr[i] = new LocBlockArr(eltType=eltType,
-                                        rank=rank, idxType=d.idxType,
-                                        stridable=d.stridable,
-                                        locDom=locDom,
-                                        myElems=>locAlias);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-      if doRADOpt {
-        if sameDom {
-          // If we the reindex domain is the same as that of this array,
-          //  the RAD cache will be the same you can just copy the values
-          //  directly into the alias's RAD cache
-          if locArr[i].locRAD {
-            alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
-                                                     d.stridable,
-                                                     dom.dist.targetLocDom);
-            alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
-          }
-        }
-      }
-    }
-  }
-
-  if doRADOpt then
-    if !sameDom then alias.setupRADOpt();
-
-  return alias;
-}
-
 proc BlockArr.dsiReallocate(d: domain) {
   //
   // For the default rectangular array, this function changes the data

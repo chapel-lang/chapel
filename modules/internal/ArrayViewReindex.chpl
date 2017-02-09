@@ -205,7 +205,7 @@ module ArrayViewReindex {
       compilerError("slicing not supported on array views yet");
     }
 
-    proc dsiReindex(newdom) {
+    proc dsiRankChange(a, b, c, d) {
       compilerError("reindexing not supported on array views yet");
     }
 
