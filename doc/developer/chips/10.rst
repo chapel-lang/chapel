@@ -531,59 +531,6 @@ For more details on when the copy initializer would be called, please refer to
 Deinitialization
 ++++++++++++++++
 
-Deinitialization is performed in these cases:
-
- * For a ``var`` or ``const`` variable - when it goes out of scope.
- * For a ``[const] in`` formal - before its parent function returns;
-   after the return value has been computed.
-   There may be exceptions when a record or an array is returned.
- * For a ``[const] ref`` formal or a ``[const] ref`` variable - never directly.
-   (The corresponding actual or aliasee is subject to these rules
-   independently.)
- * For a component of an aggregate - when the enclosing aggregate
-   is deinitialized. This includes:
-
-    + fields of a record or class,
-    + elements of an array,
-    + components of a tuple.
-
- * For a class instance - when ``delete`` is invoked on a variable
-   that references that class instance.
-
-.. We may want to mention what happens for the other kinds of formals,
-   for 'param' constants and 'type' aliases. We do not feel like this
-   CHIP needs to go into that.
-
-.. For example, an 'inout' or 'out' formal is currently converted
-   to a 'ref' formal plus assignments to/from a local copy of the value.
-   There is deinitialization to be done to that local copy.
-
-.. For the spec, we should also specify an optional "move" optimization.
-
-Deinitialization consists of the following actions,
-depending on the type of the variable being deinitialized:
-
- * Primitive, enumerated, range, class, synchronization type -
-   nothing happens. Implementation-level actions,
-   ex. deallocation of a string or a sync variable,
-   can be performed without affecting the observable behavior directly.
- * Tuple - its components are deinitialized.
- * A record variable; a class instance (upon ``delete``) - see below.
- * Union - t.b.d.
- * Array - its elements are deinitialized. Then, additional actions
-   are performed as defined by its domain map, if any.
- * Domain, distribution - defined by their domain map in a way t.b.d.
- * Alias types - at present, the action is determined by the aliasee type.
-
-Note that we distinguish between:
-
- * deinitialization of a class variable, which is a no-op, and
- * deinitialization of a class instance, which happens upon ``delete``
-   on a class variable and is defined below.
-
-The remainder of this section is concerned with deinitialization of
-record variables, or "records", and class instances, or "classes".
- 
 To specify actions that occur upon deinitialization, specify a ``proc
 deinit()`` method. This method must have zero arguments and cannot be called
 directly. If a type does not specify a ``proc deinit()`` method, the compiler
