@@ -537,16 +537,28 @@ Deinitialization is performed in these cases:
  * For a ``[const] in`` formal - before its parent function returns;
    after the return value has been computed.
    There may be exceptions when a record or an array is returned.
- * For a ``[const] ref`` formal - never directly.
-   Deinitialization is performed on the corresponding actual
-   as required by these rules.
+ * For a ``[const] ref`` formal or a ``[const] ref`` variable - never directly.
+   (The corresponding actual or aliasee is subject to these rules
+   independently.)
  * For a component of an aggregate - when the enclosing aggregate
    is deinitialized. This includes:
+
     + fields of a record or class,
     + elements of an array,
     + components of a tuple.
+
  * For a class instance - when ``delete`` is invoked on a variable
    that references that class instance.
+
+.. We may want to mention what happens for the other kinds of formals,
+   for 'param' constants and 'type' aliases. We do not feel like this
+   CHIP needs to go into that.
+
+.. For example, an 'inout' or 'out' formal is currently converted
+   to a 'ref' formal plus assignments to/from a local copy of the value.
+   There is deinitialization to be done to that local copy.
+
+.. For the spec, we should also specify an optional "move" optimization.
 
 Deinitialization consists of the following actions,
 depending on the type of the variable being deinitialized:
@@ -614,8 +626,8 @@ The fields of a given class or record will be deinitialized after the
 Within a class or a record, fields are deinitialized
 in reverse declaration order.
 
-Rationale
-*********
+Rationale for deinit Rules
+**************************
 
 Our goal is to support type safety, specifically
 to prevent accesses to fields after they have been deinitialized.
