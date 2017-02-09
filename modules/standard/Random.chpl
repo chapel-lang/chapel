@@ -217,7 +217,7 @@ module Random {
                         param parSafe: bool = true,
                         type eltType = real(64),
                         param algorithm = defaultRNG) {
-    compilerWarning("makeRandomStream requires eltType as first argument");
+    compilerWarning("Deprecated call to makeRandomStream function. Please fix by passing eltType as the first argument.");
     return makeRandomStream(eltType, seed, parSafe, algorithm);
   }
 
@@ -600,7 +600,7 @@ module Random {
       proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
                         param parSafe: bool = true,
                         type eltType = real(64)) {
-        compilerWarning("RandomStream constructor requires eltType as first argument");
+        compilerWarning("Deprecated call to RandomStream constructor. Please fix by passing eltType as the first argument.");
         this.seed = seed;
         for param i in 1..numGenerators(eltType) {
           param inc = pcg_getvalid_inc(i);
@@ -2104,7 +2104,7 @@ module Random {
                            param parSafe: bool = true,
                            type eltType = real(64)) {
 
-        compilerWarning("NPBRandomStream constructor requires eltType as first argument");
+        compilerWarning("Deprecated call to NPBRandomStream constructor. Please fix by passing eltType as the first argument.");
 
         // The mod operation is written in these steps in order
         // to work around an apparent PGI compiler bug.

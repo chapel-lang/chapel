@@ -68,7 +68,7 @@ class MultiDomain
   }
 
 
-  proc ~MultiDomain () { root.clearChildren();  delete root; }
+  proc deinit () { root.clearChildren();  delete root; }
 
 
   proc copy ()
@@ -227,7 +227,7 @@ class MDNode
 
 
 
-  proc ~MDNode () {}  // Can't clear children here or node merging breaks
+  proc deinit () {}  // Can't clear children here or node merging breaks
   
 
   proc clearChildren ()

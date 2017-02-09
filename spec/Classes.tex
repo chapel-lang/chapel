@@ -1081,7 +1081,7 @@ These conversions do not change the value.
 
 %TODO: Move memory management explanation up, closer to class constructors.
 % Perhaps make the memory management part of the introduction, and then let the
-% description of destructors appear naturally at the same indentation level as
+% description of deinitializers appear naturally at the same indentation level as
 % constructors.
 \section{Dynamic Memory Management}
 \label{Dynamic_Memory_Management}
@@ -1154,23 +1154,23 @@ features become supported.
 \end{openissue}
 
 
-\subsection{Class Destructor}
-\label{Class_Destructor}
-\index{classes!destructor}
-\index{destructor!classes}
+\subsection{Class Deinitializer}
+\label{Class_Deinitializer}
+\index{classes!deinitializer}
+\index{deinitializer!classes}
 
 A class author may specify additional actions to be performed before a class object is
-reclaimed, by defining a class destructor.  A class destructor is a method that has the
-same name as the class prefixed by a tilde.  A class destructor takes no arguments (aside from
-the implicit \chpl{this} argument).  If defined, the destructor is called each time
+reclaimed, by defining a class deinitializer.  A class deinitializer is a method
+named \chpl{deinit}.  A class deinitializer takes no arguments (aside from
+the implicit \chpl{this} argument).  If defined, the deinitializer is called each time
 a \chpl{delete} statement is invoked with a valid instance of that class type.  The
-destructor is not called if the argument of \chpl{delete} evaluates to \chpl{nil}.
+deinitializer is not called if the argument of \chpl{delete} evaluates to \chpl{nil}.
 
-\begin{chapelexample}{classDestructor.chpl}
+\begin{chapelexample}{classDeinitializer.chpl}
 \begin{chapel}
 class C {
   var i,j,k: int;
-  proc ~C() { writeln("Bye, bye."); }
+  proc deinit() { writeln("Bye, bye."); }
 }
 
 var c : C = nil;

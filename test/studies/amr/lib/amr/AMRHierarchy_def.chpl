@@ -582,7 +582,7 @@ class PhysicalBoundary
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~PhysicalBoundary () 
+  proc deinit () 
   {
     for multidomain in multidomains do delete multidomain;
   }

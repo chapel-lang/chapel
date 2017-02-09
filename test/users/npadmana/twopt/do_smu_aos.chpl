@@ -148,7 +148,7 @@ class KDNode {
     return (left==nil) && (right==nil);
   }
 
-  proc ~KDNode() {
+  proc deinit() {
     if left then delete left;
     if right then delete right;
   }

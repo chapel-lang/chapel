@@ -25,7 +25,7 @@ proc ref R.increment() {
 }
 
 
-proc R.~R() {
+proc R.deinit() {
   if debug then writeln("In record destructor");
   assert(this.home == this.locale);
 }
