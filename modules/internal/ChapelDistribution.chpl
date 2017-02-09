@@ -581,7 +581,11 @@ module ChapelDistribution {
     // atomics are available
     var _arrAlias: BaseArr;    // reference to base array if an alias
     var pid:int = nullPid; // privatized ID, if privatization is supported
-  
+
+    proc isRankChangeArrayView() param {
+      return false;
+    }
+
     proc ~BaseArr() {
     }
 

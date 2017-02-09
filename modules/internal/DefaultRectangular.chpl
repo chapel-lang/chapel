@@ -1653,113 +1653,6 @@ module DefaultRectangular {
     proc strideAlignDown(hi, r)
       return hi - (hi - r.low) % abs(r.stride):idxType;
 
-    pragma "modifies array blk"
-    proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
-      var alias : DefaultRectangularArr(eltType=eltType, rank=newRank,
-                                        idxType=idxType,
-                                        stridable=newStridable);
-      on this {
-      alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
-                                           idxType=idxType,
-                                           stridable=newStridable,
-                                           dom=d, mdAlias=true,
-                                           noinit_data=true);
-      if defRectSimpleDData {
-        alias.data = data;
-      } else {
-        alias.mData = _ddata_allocate(_multiData(eltType=eltType,
-                                                 idxType=idxType),
-                                      mdNumChunks);
-        for i in 0..#mdNumChunks {
-          alias.mData(i).dataOff = mData(i).dataOff;
-          alias.mData(i).data = mData(i).data;
-        }
-      }
-      //alias.numelm = numelm;
-      var mdpdIsRange: bool;
-      var mdpdJ: idxType;
-      var mdpdJVal: idxType;
-      var i = 1;
-      alias.origin = origin;
-      for param j in 1..args.size {
-        if isRange(args(j)) {
-          alias.off(i) = d.dsiDim(i).low;
-          alias.origin += blk(j) * (d.dsiDim(i).low - off(j)) / str(j);
-          alias.blk(i) = blk(j);
-          alias.str(i) = str(j);
-          if !defRectSimpleDData && j == mdParDim {
-            mdpdIsRange = true;
-            alias.mdParDim = i;
-          }
-          i += 1;
-        } else {
-          alias.origin += blk(j) * (args(j) - off(j)) / str(j);
-          if !defRectSimpleDData && j == mdParDim {
-            mdpdIsRange = false;
-            mdpdJ = j;
-            mdpdJVal = args(j);
-          }
-        }
-      }
-      alias.computeFactoredOffs();
-
-      if !defRectSimpleDData {
-        if mdpdIsRange {
-          
-          alias.mdNumChunks = mdNumChunks;
-          alias.mdRLo = mdRLo;
-          alias.mdRHi = mdRHi;
-          alias.mdRStr = mdRStr;
-          alias.mdRLen = mdRLen;
-          alias.mdBlk = mdBlk;
-          if alias.stridable {
-            for i in 0..#mdNumChunks {
-              alias.mData(i).pdr =
-                max(mData(i).pdr.low, d.dsiDim(alias.mdParDim).low)
-                ..min(mData(i).pdr.high, d.dsiDim(alias.mdParDim).high)
-                by d.dsiDim(alias.mdParDim).stride;
-            }
-          } else {
-            for i in 0..#mdNumChunks {
-              alias.mData(i).pdr
-                = max(mData(i).pdr.low, d.dsiDim(alias.mdParDim).low)
-                ..min(mData(i).pdr.high, d.dsiDim(alias.mdParDim).high);
-            }
-          }
-        } else {
-          //
-          // If the mdParDim'th dimension is removed then we switch
-          // to a synthesized mdParDim==1.
-          //
-          const blkRatio = blk(1) / alias.blk(1);
-          alias.mdParDim = 1;
-          alias.mdNumChunks = mdNumChunks;
-          alias.mdRLen = mdRLen * mdBlk * blkRatio;
-          alias.mdRStr = abs(d.dsiDim(1).stride):idxType;
-          alias.mdRLo = d.dsiDim(1).alignedLow - (mdpdJVal - mdRLo) * blkRatio;
-          alias.mdRHi = alias.mdRLo + (alias.mdRLen - 1) * alias.mdRStr;
-          alias.mdBlk = 1;
-          if alias.stridable {
-            for i in 0..#mdNumChunks {
-              const (lo, hi) = alias.mdChunk2Ind(i);
-              alias.mData(i).pdr = max(lo, d.dsiDim(1).low)
-                                   ..min(hi, d.dsiDim(1).high)
-                                   by d.dsiDim(1).stride;
-            }
-          } else {
-            for i in 0..#mdNumChunks {
-              const (lo, hi) = alias.mdChunk2Ind(i);
-              alias.mData(i).pdr = max(lo, d.dsiDim(1).low)
-                                   ..min(hi, d.dsiDim(1).high);
-            }
-          }
-        }
-      }
-      alias.initShiftedData();
-      }
-      return alias;
-    }
-
     proc dsiReallocate(d: domain) {
       if (d._value.type == dom.type) {
         on this {
@@ -1871,7 +1764,11 @@ module DefaultRectangular {
     chpl_serialReadWriteRectangular(f, this);
   }
 
-  proc chpl_serialReadWriteRectangular(f, arr, dom=arr.dom) {
+  proc chpl_serialReadWriteRectangular(f, arr) {
+    chpl_serialReadWriteRectangular(f, arr, arr.dom);
+  }
+
+  proc chpl_serialReadWriteRectangular(f, arr, dom) {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(idxType);
@@ -1890,7 +1787,7 @@ module DefaultRectangular {
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
       type strType = idxSignedType;
-      var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:strType else (-1):strType;
+      var makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
       if isjson || ischpl {
         if dim != rank {
@@ -1901,8 +1798,9 @@ module DefaultRectangular {
 
       if dim == rank {
         var first = true;
-        if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
-        for j in dom.ranges(dim) by makeStridePositive {
+        // dom.dsiDim -> dom.dsiDim(dim)
+        if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
+        for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then f <~> new ioLiteral(" ");
           else if isjson || ischpl then f <~> new ioLiteral(", ");
@@ -1910,12 +1808,12 @@ module DefaultRectangular {
           f <~> arr.dsiAccess(idx);
         }
       } else {
-        for j in dom.ranges(dim) by makeStridePositive {
-          var lastIdx =  dom.ranges(dim).last;
+        for j in dom.dsiDim(dim) by makeStridePositive {
+          var lastIdx =  dom.dsiDim(dim).last;
           idx(dim) = j;
 
           recursiveArrayWriter(idx, dim=dim+1,
-                               last=(last || dim == 1) && (j == dom.ranges(dim).alignedHigh));
+                               last=(last || dim == 1) && (j == dom.dsiDim(dim).alignedHigh));
 
           if isjson || ischpl {
             if j != lastIdx {
@@ -1942,7 +1840,7 @@ module DefaultRectangular {
     }
 
     if false && !f.writing && !f.binary() &&
-       rank == 1 && dom.ranges(1).stride == 1 &&
+       rank == 1 && dom.dsiDim(1).stride == 1 &&
        dom._arrs.length == 1 {
 
       // resize-on-read implementation, disabled right now
@@ -1966,7 +1864,7 @@ module DefaultRectangular {
 
       var first = true;
 
-      var offset = dom.ranges(1).low;
+      var offset = dom.dsiDim(1).low;
       var i = 0;
 
       var read_end = false;
@@ -1998,9 +1896,9 @@ module DefaultRectangular {
           }
         }
 
-        if i >= dom.ranges(1).size {
+        if i >= dom.dsiDim(1).size {
           // Create more space.
-          var sz = dom.ranges(1).size;
+          var sz = dom.dsiDim(1).size;
           if sz < 4 then sz = 4;
           sz = 2 * sz;
 
