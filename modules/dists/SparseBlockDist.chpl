@@ -858,7 +858,7 @@ proc SparseBlockArr.doiCanBulkTransfer() {
 
 // TODO This function needs to be fixed. For now, explicitly returning false
 // from dsiSupportsBulkTransfer, so this function should never be compiled
-proc SparseBlockArr.doiBulkTransfer(B) {
+proc SparseBlockArr.doiBulkTransfer(B, viewDom) {
   halt("SparseBlockArr.doiBulkTransfer not yet implemented");
 /*
   if debugSparseBlockDistBulkTransfer then resetCommDiagnostics();

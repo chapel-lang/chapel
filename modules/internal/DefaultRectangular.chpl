@@ -1705,7 +1705,7 @@ module DefaultRectangular {
 
       if !defRectSimpleDData {
         if mdpdIsRange {
-          
+
           alias.mdNumChunks = mdNumChunks;
           alias.mdRLo = mdRLo;
           alias.mdRHi = mdRHi;
@@ -1871,7 +1871,17 @@ module DefaultRectangular {
     chpl_serialReadWriteRectangular(f, this);
   }
 
-  proc chpl_serialReadWriteRectangular(f, arr, dom=arr.dom) {
+  // Why can the following two functions not be collapsed into one
+  // where 'dom = arr.dom'?  Because this puts a type constraint on
+  // what 'dom' can be passed that is too strict in some callchains
+  // (e.g., if arr.dom is non-stridable but the 'dom' passed in is
+  // stridable).
+  //
+  proc chpl_serialReadWriteRectangular(f, arr) {
+    chpl_serialReadWriteRectangular(f, arr, arr.dom);
+  }
+
+  proc chpl_serialReadWriteRectangular(f, arr, dom) {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(idxType);
@@ -1890,7 +1900,7 @@ module DefaultRectangular {
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
       type strType = idxSignedType;
-      var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:strType else (-1):strType;
+      var makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
       if isjson || ischpl {
         if dim != rank {
@@ -1902,7 +1912,7 @@ module DefaultRectangular {
       if dim == rank {
         var first = true;
         if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
-        for j in dom.ranges(dim) by makeStridePositive {
+        for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then f <~> new ioLiteral(" ");
           else if isjson || ischpl then f <~> new ioLiteral(", ");
@@ -1910,12 +1920,12 @@ module DefaultRectangular {
           f <~> arr.dsiAccess(idx);
         }
       } else {
-        for j in dom.ranges(dim) by makeStridePositive {
-          var lastIdx =  dom.ranges(dim).last;
+        for j in dom.dsiDim(dim) by makeStridePositive {
+          var lastIdx =  dom.dsiDim(dim).last;
           idx(dim) = j;
 
           recursiveArrayWriter(idx, dim=dim+1,
-                               last=(last || dim == 1) && (j == dom.ranges(dim).alignedHigh));
+                               last=(last || dim == 1) && (j == dom.dsiDim(dim).alignedHigh));
 
           if isjson || ischpl {
             if j != lastIdx {
@@ -1942,7 +1952,7 @@ module DefaultRectangular {
     }
 
     if false && !f.writing && !f.binary() &&
-       rank == 1 && dom.ranges(1).stride == 1 &&
+       rank == 1 && dom.dsiDim(1).stride == 1 &&
        dom._arrs.length == 1 {
 
       // resize-on-read implementation, disabled right now
@@ -1966,7 +1976,7 @@ module DefaultRectangular {
 
       var first = true;
 
-      var offset = dom.ranges(1).low;
+      var offset = dom.dsiDim(1).low;
       var i = 0;
 
       var read_end = false;
@@ -1998,9 +2008,9 @@ module DefaultRectangular {
           }
         }
 
-        if i >= dom.ranges(1).size {
+        if i >= dom.dsiDim(1).size {
           // Create more space.
-          var sz = dom.ranges(1).size;
+          var sz = dom.dsiDim(1).size;
           if sz < 4 then sz = 4;
           sz = 2 * sz;
 
@@ -2044,7 +2054,7 @@ module DefaultRectangular {
     var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     if _isSimpleIoType(eltType) && f.binary() &&
-       isNative && isDataContiguous() {
+       isNative && isDataContiguous(this.dom) {
       // If we can, we would like to write the array out as a single write op
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the
@@ -2089,7 +2099,7 @@ module DefaultRectangular {
     var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     if _isSimpleIoType(eltType) && f.binary() &&
-       isNative && isDataContiguous() {
+       isNative && isDataContiguous(this.dom) {
       // read the data in one op if possible, same comments as above apply
       pragma "no prototype"
       extern proc sizeof(type x): size_t;
@@ -2128,17 +2138,14 @@ module DefaultRectangular {
   }
 
   // This is very conservative.
-  proc DefaultRectangularArr.isDataContiguous() {
+  proc DefaultRectangularArr.isDataContiguous(viewDom) {
     if debugDefaultDistBulkTransfer then
       chpl_debug_writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
-
-    for param dim in 1..rank do
-      if off(dim)!= dom.dsiDim(dim).first then return false;
 
     if blk(rank) != 1 then return false;
 
     for param dim in 1..(rank-1) by -1 do
-      if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length then return false;
+      if blk(dim) != blk(dim+1)*viewDom.dsiDim(dim+1).length then return false;
 
     // Strictly speaking a multi-ddata array isn't contiguous, but
     // nevertheless we do support bulk transfer on such arrays, so
@@ -2153,12 +2160,12 @@ module DefaultRectangular {
   proc DefaultRectangularArr.dsiSupportsBulkTransfer() param return true;
   proc DefaultRectangularArr.dsiSupportsBulkTransferInterface() param return true;
 
-  proc DefaultRectangularArr.doiCanBulkTransfer() {
+  proc DefaultRectangularArr.doiCanBulkTransfer(viewDom) {
     if debugDefaultDistBulkTransfer then chpl_debug_writeln("In DefaultRectangularArr.doiCanBulkTransfer()");
-    if dom.stridable then
+    if viewDom.stridable then
       for param i in 1..rank do
-        if dom.ranges(i).stride != 1 then return false;
-    if !isDataContiguous(){
+        if viewDom.ranges(i).stride != 1 then return false;
+    if !isDataContiguous(viewDom) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("isDataContiguous return False");
       return false;
@@ -2196,25 +2203,30 @@ module DefaultRectangular {
     return oneDData && B._value.oneDData;
   }
 
-  proc DefaultRectangularArr.doiBulkTransfer(B) {
-    const Adims = dom.dsiDims();
-    var Alo: rank*dom.idxType;
+  proc DefaultRectangularArr.doiBulkTransfer(B, viewDom) {
+    var actual = if B._value.isSliceArrayView() then B._value.arr else B._value;
+    bulkTransferFrom(viewDom, actual, B.domain._value);
+  }
+
+  proc DefaultRectangularArr.bulkTransferFrom(viewDom, B, Bdom) {
+    const Adims = viewDom.dsiDims();
+    var Alo: rank*viewDom.idxType;
     for param i in 1..rank do
       Alo(i) = Adims(i).first;
 
-    const Bdims = B.domain.dims();
-    var Blo: rank*dom.idxType;
+    const Bdims = Bdom.dsiDims();
+    var Blo: rank*idxType;
     for param i in 1..rank do
       Blo(i) = Bdims(i).first;
 
-    const len = dom.dsiNumIndices.safeCast(size_t);
+    const len = viewDom.dsiNumIndices.safeCast(size_t);
 
     if len == 0 then return;
 
     if debugBulkTransfer {
       pragma "no prototype"
       extern proc sizeof(type x): int;
-      const elemSize =sizeof(B._value.eltType);
+      const elemSize =sizeof(B.eltType);
       chpl_debug_writeln("In DefaultRectangularArr.doiBulkTransfer():",
               " Alo=", Alo, ", Blo=", Blo,
               ", len=", len, ", elemSize=", elemSize);
@@ -2223,8 +2235,8 @@ module DefaultRectangular {
     if defRectSimpleDData {
       const Aidx = getDataIndex(Alo);
       const Adata = _ddata_shift(eltType, this.theDataChunk(0), Aidx);
-      const Bidx = B._value.getDataIndex(Blo);
-      const Bdata = _ddata_shift(eltType, B._value.theDataChunk(0), Bidx);
+      const Bidx = B.getDataIndex(Blo);
+      const Bdata = _ddata_shift(eltType, B.theDataChunk(0), Bidx);
       doiBulkTransferHelper(B, Adata, Bdata, len);
     }
     else {
@@ -2238,7 +2250,7 @@ module DefaultRectangular {
       var len0 = ((mData(chunk0).pdr.high - Alo(mdParDim) + 1) * blk(mdParDim))
                  .safeCast(size_t);
       const (_, Bidx) = getDataIndex(Blo);
-      const Bdata = _ddata_shift(eltType, B._value.theDataChunk(chunk0), Bidx);
+      const Bdata = _ddata_shift(eltType, B.theDataChunk(chunk0), Bidx);
       doiBulkTransferHelper(B, Adata, Bdata, min(len0, len));
 
       if len > len0 {
@@ -2248,7 +2260,7 @@ module DefaultRectangular {
         do {
           lenRemain -= chunkLen;
           chunkLen = (mData(chunk).pdr.length * blk(mdParDim)).safeCast(size_t);
-          doiBulkTransferHelper(B, dataChunk(chunk), B._value.dataChunk(chunk),
+          doiBulkTransferHelper(B, dataChunk(chunk), B.dataChunk(chunk),
                                 min(chunkLen, lenRemain));
         } while lenRemain > chunkLen;
       }
@@ -2263,7 +2275,7 @@ module DefaultRectangular {
     // and chpl_comm_put should be changed once that is fixed.
     if Adata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then //See bug in test/optimizations/bulkcomm/alberto/rafatest2.chpl
-        chpl_debug_writeln("\tlocal get() from ", B._value.locale.id);
+        chpl_debug_writeln("\tlocal get() from ", B.locale.id);
       __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
     } else if Bdata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then

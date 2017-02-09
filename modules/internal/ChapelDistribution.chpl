@@ -581,7 +581,11 @@ module ChapelDistribution {
     // atomics are available
     var _arrAlias: BaseArr;    // reference to base array if an alias
     var pid:int = nullPid; // privatized ID, if privatization is supported
-  
+
+    proc isSliceArrayView() param {
+      return false;
+    }
+
     proc ~BaseArr() {
     }
 
@@ -676,7 +680,7 @@ module ChapelDistribution {
   
     proc dsiSupportsBulkTransfer() param return false;
     proc doiCanBulkTransfer() param return false;
-    proc doiBulkTransfer(B){ 
+    proc doiBulkTransfer(B, viewDom) {
       halt("This array type does not support bulk transfer.");
     }
   
@@ -798,7 +802,7 @@ module ChapelDistribution {
   // that arr.eltType is meaningful.
   proc _delete_arr(arr, param privatized:bool) {
     // decide whether or not the array is an alias
-    var isalias = (arr._arrAlias != nil);
+    var isalias = (arr._arrAlias != nil) || arr.isSliceArrayView();
 
     // array implementation can destroy data or other members
     arr.dsiDestroyArr(isalias);

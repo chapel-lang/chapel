@@ -238,6 +238,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 class Stencil : BaseDist {
   param rank: int;
   type idxType = int;
+  param ignoreFluff: bool;
   var boundingBox: domain(rank, idxType);
   var targetLocDom: domain(rank);
   var targetLocales: [targetLocDom] locale;
@@ -276,7 +277,8 @@ class StencilDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  const dist: Stencil(rank, idxType);
+  param ignoreFluff : bool;
+  const dist: Stencil(rank, idxType, ignoreFluff);
   var locDoms: [dist.targetLocDom] LocStencilDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var fluff: rank*idxType;
@@ -318,8 +320,9 @@ class StencilArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
+  param ignoreFluff: bool;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: StencilDom(rank, idxType, stridable);
+  var dom: StencilDom(rank, idxType, stridable, ignoreFluff);
   var locArr: [dom.dist.targetLocDom] LocStencilArr(eltType, rank, idxType, stridable);
   var myLocArr: LocStencilArr(eltType, rank, idxType, stridable);
   const SENTINEL = max(rank*idxType);
@@ -373,7 +376,8 @@ proc Stencil.Stencil(boundingBox: domain,
                 param rank = boundingBox.rank,
                 type idxType = boundingBox.idxType,
                 fluff: rank*idxType = makeZero(rank), 
-                periodic: bool = false) {
+                periodic: bool = false,
+                param ignoreFluff = false) {
   if rank != boundingBox.rank then
     compilerError("specified Stencil rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
@@ -449,7 +453,7 @@ proc Stencil.dsiEqualDMaps(that) param {
 proc Stencil.dsiClone() {
   return new Stencil(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity, fluff=fluff, periodic=periodic);
+                   dataParMinGranularity, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
 }
 
 proc Stencil.dsiDestroyDist() {
@@ -477,7 +481,7 @@ proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("Stencil domain rank does not match distribution's");
 
-  var dom = new StencilDom(rank=rank, idxType=idxType, dist=this, stridable=stridable, fluff=fluff, periodic=periodic);
+  var dom = new StencilDom(rank=rank, idxType=idxType, dist=this, stridable=stridable, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
   dom.setup();
   if debugStencilDist {
     writeln("Creating new Stencil domain:");
@@ -638,7 +642,7 @@ proc Stencil.dsiCreateReindexDist(newSpace, oldSpace) {
   var d = {(...myNewBbox)};
   var newDist = new Stencil(d, targetLocales, 
                           dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                          dataParMinGranularity, fluff=fluff, periodic=periodic);
+                          dataParMinGranularity, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
   return newDist;
 }
 
@@ -751,7 +755,7 @@ proc Stencil.dsiCreateRankChangeDist(param newRank: int, args) {
   const newTargetLocales = targetLocales((...collapsedLocs));
   return new Stencil(newBbox, newTargetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity, fluff=newFluff, periodic=periodic);
+                   dataParMinGranularity, fluff=newFluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
 }
 
 iter StencilDom.these() {
@@ -842,7 +846,7 @@ proc StencilDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc StencilDom.dsiBuildArray(type eltType) {
-  var arr = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  var arr = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this, ignoreFluff=this.ignoreFluff);
   arr.setup();
   return arr;
 }
@@ -1003,7 +1007,7 @@ proc StencilDom.dsiDestroyDom() {
 }
 
 proc StencilDom.dsiMember(i) {
-  return whole.member(i);
+  return wholeFluff.member(i);
 }
 
 proc StencilDom.dsiIndexOrder(i) {
@@ -1025,7 +1029,7 @@ proc StencilDom.dsiBuildRectangularDom(param rank: int, type idxType,
 
   var dom = new StencilDom(rank=rank, idxType=idxType,
                          dist=dist, stridable=stridable, fluff=fluff,
-                         periodic=periodic);
+                         periodic=periodic, ignoreFluff=this.ignoreFluff);
   dom.dsiSetIndices(ranges);
   return dom;
 }
@@ -1088,7 +1092,8 @@ proc StencilArr.setup() {
 proc StencilArr.dsiDestroyArr(isslice : bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
-      delete locArr(localeIdx);
+      if !ignoreFluff then
+        delete locArr(localeIdx);
     }
   }
 }
@@ -1113,7 +1118,7 @@ proc StencilArr.do_dsiAccess(param setter, idx: rank*idxType) ref {
   var i = idx;
   local {
     if myLocArr != nil {
-      if setter {
+      if setter || this.ignoreFluff {
         // A write: return from actual data and not fluff
         if myLocArr.locDom.member(i) then return myLocArr.this(i);
       } else {
@@ -1316,7 +1321,7 @@ proc StencilArr.dsiSerialWrite(f) {
 }
 
 proc StencilArr.dsiSlice(d: StencilDom) {
-  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d);
+  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, ignoreFluff=this.ignoreFluff);
   var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocales(i) {
@@ -1373,7 +1378,7 @@ proc _extendTuple(type t, idx, args) {
 
 
 proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
-  var alias = new StencilArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
+  var alias = new StencilArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d, ignoreFluff=this.ignoreFluff);
   var thisid = this.locale.id;
   coforall ind in d.dist.targetLocDom {
     on d.dist.targetLocales(ind) {
@@ -1540,7 +1545,7 @@ proc _array.noFluffView() {
 proc StencilArr.dsiNoFluffView() {
   var tempDist = new Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
-                             dom.dist.dataParMinGranularity);
+                             dom.dist.dataParMinGranularity, ignoreFluff=true);
   pragma "no auto destroy" var newDist = _newDistribution(tempDist);
   pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
   newDist._value.add_dom(tempDom._value);
@@ -1548,20 +1553,10 @@ proc StencilArr.dsiNoFluffView() {
 
   var newDom = tempDom._value;
 
-  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=newDom.stridable, dom=newDom);
-  var thisid = this.locale.id;
-  coforall i in newDom.dist.targetLocDom {
-    on newDom.dist.targetLocales(i) {
-      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank,
-                                          idxType=idxType, stridable=newDom.stridable,
-                                          locDom=newDom.locDoms[i],
-                                          myElems=>locArr[i].myElems[newDom.locDoms[i].myFluff]);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-    }
-  }
-  if doRADOpt then alias.setupRADOpt();
-  // this doesn't need to lock since we just created the domain newDom
+  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=newDom.stridable, dom=newDom, ignoreFluff=true);
+  alias.locArr = this.locArr;
+  alias.myLocArr = this.myLocArr;
+
   newDom.add_arr(alias, locking=false);
   return alias;
 }
@@ -1592,7 +1587,7 @@ proc StencilArr.dsiUpdateFluff() {
 
 proc StencilArr.dsiReindex(d: StencilDom) {
   var alias = new StencilArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
-                           stridable=d.stridable, dom=d);
+                           stridable=d.stridable, dom=d, ignoreFluff=this.ignoreFluff);
   const sameDom = d==dom;
 
   var thisid = this.locale.id;
@@ -1665,7 +1660,8 @@ proc LocStencilArr.this(i) ref {
 //
 proc Stencil.Stencil(other: Stencil, privateData,
                 param rank = other.rank,
-                type idxType = other.idxType) {
+                type idxType = other.idxType,
+                param ignoreFluff = other.ignoreFluff) {
   boundingBox = {(...privateData(1))};
   targetLocDom = {(...privateData(2))};
   dataParTasksPerLocale = privateData(3);
@@ -1710,7 +1706,7 @@ proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc StencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new StencilDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic);
+  var c = new StencilDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
@@ -1745,7 +1741,7 @@ proc StencilArr.dsiGetPrivatizeData() return dom.pid;
 
 proc StencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
-  var c = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  var c = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom, ignoreFluff=this.ignoreFluff);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale.id == here.id then
@@ -1838,40 +1834,42 @@ proc StencilArr.doiUseBulkTransferStride(B) {
          || (oneDData && B._value.oneDData);
 }
 
-proc StencilArr.doiBulkTransfer(B) {
+proc StencilArr.doiBulkTransfer(B, viewDom) {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransfer");
+  const actual = if B._value.isSliceArrayView() then B._value.arr else B._value;
+  const actDom = B.domain._value;
 
   if debugStencilDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;
   // We need to do the following on the locale where 'this' was allocated,
   //  but hopefully, most of the time we are initiating the transfer
   //  from the same locale (local on clauses are optimized out).
-  on this do sameDomain = dom==B._value.dom;
+  on this do sameDomain = viewDom==actDom;
   // Use zippered iteration to piggyback data movement with the remote
   //  fork.  This avoids remote gets for each access to locArr[i] and
-  //  B._value.locArr[i]
-  coforall (i, myLocArr, BmyLocArr) in zip(dom.dist.targetLocDom,
+  //  actual.locArr[i]
+  coforall (i, myLocArr, BmyLocArr) in zip(viewDom.dist.targetLocDom,
                                         locArr,
-                                        B._value.locArr) do
-    on dom.dist.targetLocales(i) {
+                                        actual.locArr) do
+    on viewDom.dist.targetLocales(i) {
 
     if sameDomain &&
       chpl__useBulkTransfer(myLocArr.myElems, BmyLocArr.myElems) {
       // Take advantage of DefaultRectangular bulk transfer
       if debugStencilDistBulkTransfer then startCommDiagnosticsHere();
       local {
-        myLocArr.myElems._value.doiBulkTransfer(BmyLocArr.myElems);
+        myLocArr.myElems = BmyLocArr.myElems;
       }
       if debugStencilDistBulkTransfer then stopCommDiagnosticsHere();
     } else {
       if debugStencilDistBulkTransfer then startCommDiagnosticsHere();
       if (rank==1) {
-        var lo=dom.locDoms[i].myBlock.low;
+        var lo=viewDom.locDoms[i].myBlock.low;
         const start=lo;
         //use divCeilPos(i,j) to know the limits
         //but i and j have to be positive.
-        for (rid, rlo, size) in ConsecutiveChunks(dom,B._value.dom,i,start) {
+        for (rid, rlo, size) in ConsecutiveChunks(viewDom,actDom,i,start) {
           if debugStencilDistBulkTransfer then writeln("Local Locale id=",i,
                                             "; Remote locale id=", rid,
                                             "; size=", size,
@@ -1882,22 +1880,22 @@ proc StencilArr.doiBulkTransfer(B) {
           // compilation does not work right now.  This call should be changed
           // once that is fixed.
           var dest = myLocArr.myElems._value.theDataChunk(0);
-          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
+          const src = actual.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
                       rid,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
+                                  actual.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
           lo+=size;
         }
       } else {
-        var orig=dom.locDoms[i].myBlock.low(dom.rank);
-        for coord in dropDims(dom.locDoms[i].myBlock, dom.locDoms[i].myBlock.rank) {
+        var orig=viewDom.locDoms[i].myBlock.low(viewDom.rank);
+        for coord in dropDims(viewDom.locDoms[i].myBlock, viewDom.locDoms[i].myBlock.rank) {
           var lo=if rank==2 then (coord,orig) else ((...coord), orig);
           const start=lo;
-          for (rid, rlo, size) in ConsecutiveChunksD(dom,B._value.dom,i,start) {
+          for (rid, rlo, size) in ConsecutiveChunksD(viewDom,actDom,i,start) {
             if debugStencilDistBulkTransfer then writeln("Local Locale id=",i,
                                         "; Remote locale id=", rid,
                                         "; size=", size,
@@ -1905,13 +1903,13 @@ proc StencilArr.doiBulkTransfer(B) {
                                         "; rlo=", rlo
                                         );
           var dest = myLocArr.myElems._value.theDataChunk(0);
-          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
+          const src = actual.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
-                      dom.dist.targetLocales(rid).id,
+                      viewDom.dist.targetLocales(rid).id,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
+                                  actual.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
             lo(rank)+=size;
           }
@@ -2075,15 +2073,7 @@ proc StencilArr.doiBulkTransferToDR(Barg)
         if debugStencilDistBulkTransfer then
           writeln("A[",r1,"] = B[",r2,"]");
       
-        const d ={(...r1)};
-        const slice = B.dsiSlice(d._value);
-        //Necessary to calculate the value of blk variable in DR
-        //with the new domain r1
-        slice.adjustBlkOffStrForNewDomain(d._value, slice);
-        
-        slice.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
-        
-        delete slice;
+        Barg[(...r1)] = A.locArr[j].myElems[(...r2)];
       }
     }
 }
@@ -2118,15 +2108,8 @@ proc StencilArr.doiBulkTransferFromDR(Barg)
         
         if debugStencilDistBulkTransfer then
           writeln("A[",r2,"] = B[",r1,"]");
-          
-        const d ={(...r1)};
-        const slice = B.dsiSlice(d._value);
-        //this step it's necessary to calculate the value of blk variable in DR
-        //with the new domain r1
-        slice.adjustBlkOffStrForNewDomain(d._value, slice);
-        
-        A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice);
-        delete slice;
+
+        A.locArr[j].myElems[(...r2)] = Barg[(...r1)];
       }
     }
 }

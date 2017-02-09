@@ -1564,13 +1564,13 @@ proc BlockArr.dsiSupportsBulkTransferInterface() param {
     return true;
 }
 
-proc BlockArr.doiCanBulkTransfer() {
+proc BlockArr.doiCanBulkTransfer(viewDom) {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiCanBulkTransfer");
 
-  if dom.stridable then
+  if viewDom.stridable then
     for param i in 1..rank do
-      if dom.whole.dim(i).stride != 1 then return false;
+      if viewDom.whole.dim(i).stride != 1 then return false;
 
   // See above note regarding aliased arrays
   if disableAliasedBulkTransfer then
@@ -1645,40 +1645,42 @@ proc BlockArr.doiUseBulkTransferStride(B) {
          || (oneDData && B._value.oneDData);
 }
 
-proc BlockArr.doiBulkTransfer(B) {
+proc BlockArr.doiBulkTransfer(B, viewDom) {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransfer");
+  const actual = if B._value.isSliceArrayView() then B._value.arr else B._value;
+  const actDom = B.domain._value;
 
   if debugBlockDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;
   // We need to do the following on the locale where 'this' was allocated,
   //  but hopefully, most of the time we are initiating the transfer
   //  from the same locale (local on clauses are optimized out).
-  on this do sameDomain = dom==B._value.dom;
+  on this do sameDomain = viewDom==actDom;
   // Use zippered iteration to piggyback data movement with the remote
   //  fork.  This avoids remote gets for each access to locArr[i] and
-  //  B._value.locArr[i]
-  coforall (i, myLocArr, BmyLocArr) in zip(dom.dist.targetLocDom,
+  //  actual.locArr[i]
+  coforall (i, myLocArr, BmyLocArr) in zip(viewDom.dist.targetLocDom,
                                         locArr,
-                                        B._value.locArr) do
-    on dom.dist.targetLocales(i) {
+                                        actual.locArr) do
+    on viewDom.dist.targetLocales(i) {
 
     if sameDomain &&
       chpl__useBulkTransfer(myLocArr.myElems, BmyLocArr.myElems) {
       // Take advantage of DefaultRectangular bulk transfer
       if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
       local {
-        myLocArr.myElems._value.doiBulkTransfer(BmyLocArr.myElems);
+        myLocArr.myElems = BmyLocArr.myElems;
       }
       if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
     } else {
       if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
       if (rank==1) {
-        var lo=dom.locDoms[i].myBlock.low;
+        var lo=viewDom.locDoms[i].myBlock.low;
         const start=lo;
         //use divCeilPos(i,j) to know the limits
         //but i and j have to be positive.
-        for (rid, rlo, size) in ConsecutiveChunks(dom,B._value.dom,i,start) {
+        for (rid, rlo, size) in ConsecutiveChunks(viewDom,actDom,i,start) {
           if debugBlockDistBulkTransfer then writeln("Local Locale id=",i,
                                             "; Remote locale id=", rid,
                                             "; size=", size,
@@ -1689,22 +1691,22 @@ proc BlockArr.doiBulkTransfer(B) {
           // compilation does not work right now.  This call should be changed
           // once that is fixed.
           var dest = myLocArr.myElems._value.theDataChunk(0);
-          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
+          const src = actual.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
                       rid,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
+                                  actual.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
           lo+=size;
         }
       } else {
-        var orig=dom.locDoms[i].myBlock.low(dom.rank);
-        for coord in dropDims(dom.locDoms[i].myBlock, dom.locDoms[i].myBlock.rank) {
+        var orig=viewDom.locDoms[i].myBlock.low(viewDom.rank);
+        for coord in dropDims(viewDom.locDoms[i].myBlock, viewDom.locDoms[i].myBlock.rank) {
           var lo=if rank==2 then (coord,orig) else ((...coord), orig);
           const start=lo;
-          for (rid, rlo, size) in ConsecutiveChunksD(dom,B._value.dom,i,start) {
+          for (rid, rlo, size) in ConsecutiveChunksD(viewDom,actDom,i,start) {
             if debugBlockDistBulkTransfer then writeln("Local Locale id=",i,
                                         "; Remote locale id=", rid,
                                         "; size=", size,
@@ -1712,13 +1714,13 @@ proc BlockArr.doiBulkTransfer(B) {
                                         "; rlo=", rlo
                                         );
           var dest = myLocArr.myElems._value.theDataChunk(0);
-          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
+          const src = actual.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
-                      dom.dist.targetLocales(rid).id,
+                      viewDom.dist.targetLocales(rid).id,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
+                                  actual.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
             lo(rank)+=size;
           }
@@ -1930,14 +1932,7 @@ proc BlockArr.doiBulkTransferToDR(Barg)
           writeln("A[",r1,"] = B[",r2,"]");
       
         const d ={(...r1)};
-        const slice = B.dsiSlice(d._value);
-        //Necessary to calculate the value of blk variable in DR
-        //with the new domain r1
-        slice.adjustBlkOffStrForNewDomain(d._value, slice);
-        
-        slice.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
-        
-        delete slice;
+        Barg[(...r1)] = A.locArr[j].myElems[(...r2)];
       }
     }
 }
@@ -1973,14 +1968,7 @@ proc BlockArr.doiBulkTransferFromDR(Barg)
         if debugBlockDistBulkTransfer then
           writeln("A[",r2,"] = B[",r1,"]");
           
-        const d ={(...r1)};
-        const slice = B.dsiSlice(d._value);
-        //this step it's necessary to calculate the value of blk variable in DR
-        //with the new domain r1
-        slice.adjustBlkOffStrForNewDomain(d._value, slice);
-        
-        A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice);
-        delete slice;
+        A.locArr[j].myElems[(...r2)] = Barg[(...r1)];
       }
     }
 }

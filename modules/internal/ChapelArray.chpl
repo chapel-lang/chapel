@@ -136,6 +136,7 @@ module ChapelArray {
   use ChapelBase; // For opaque type.
   use ChapelTuple;
   use ChapelLocale;
+  use ArrayViewSlice;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -143,6 +144,8 @@ module ChapelArray {
   var numPrivateObjects: atomic_int64;
   pragma "no doc"
   param nullPid = -1;
+
+  config param alwaysUseArrayViews = true;
 
   pragma "no doc"
   config param debugBulkTransfer = false;
@@ -2022,6 +2025,7 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
 
+
     // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
@@ -2030,10 +2034,38 @@ module ChapelArray {
       if boundsChecking then
         checkSlice((... ranges));
       // dsiSlice takes ownership of d._value
+
+      //
+      // TODO: This computes a local domain (?).  Do we want to do
+      // that or compute the global domain?
+      //
       pragma "no auto destroy" var d = _dom((...ranges));
       d._value._free_when_no_arrs = true;
-      var a = _value.dsiSlice(d._value);
-      a._arrAlias = _value;
+      var a = chpl_arraySliceHelp();
+
+      proc chpl_arraySliceHelp() {
+        //        if (alwaysUseArrayViews ||
+        //            !canResolveMethod(this._value, "dsiSlice", d._value)) {
+          // if we're slicing a slice, short-circuit the slice out
+          const (arr, arrpid)  = if (_value.isSliceArrayView()) then (this._value.arr, this._value._ArrPid)
+                                 else (this._value, this._pid);
+
+          // I don't believe I want to set _arrAlias on this branch because
+          // we're not aliasing the _ddata field of an array directly, only
+          // through its owning array's descriptor...
+
+          return new ArrayViewSliceArr(eltType=this.eltType,
+                                       _DomPid=d._pid,
+                                       dom=d._instance,
+                                       _ArrPid=arrpid,
+                                       _ArrInstance=arr);
+          //        } else {
+          //          var a = _value.dsiSlice(d._value);
+          //          a._arrAlias = _value;
+          //          return a;
+          //        }
+      }
+
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
       return _newArray(a);
@@ -3216,8 +3248,8 @@ module ChapelArray {
     //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
 
     // constraints specific to a particular domain map array type
-    if !a._value.doiCanBulkTransfer() then return false;
-    if !b._value.doiCanBulkTransfer() then return false;
+    if !a._value.doiCanBulkTransfer(a._dom._value) then return false;
+    if !b._value.doiCanBulkTransfer(b._dom._value) then return false;
     if !a._value.doiUseBulkTransfer(b) then return false;
 
     return true;
@@ -3313,7 +3345,7 @@ module ChapelArray {
         chpl__compatibleForBulkTransfer(a, b) &&
         chpl__useBulkTransfer(a, b))
     {
-      a._value.doiBulkTransfer(b);
+      a._value.doiBulkTransfer(b, a._dom._value);
     }
     else if (useBulkTransferStride &&
         chpl__compatibleForBulkTransferStride(a, b) &&
@@ -3575,9 +3607,15 @@ module ChapelArray {
   // B would just be initialized to the result of the function call -
   // meaning that B would not refer to distinct array elements.
   pragma "unalias fn"
-  inline proc chpl__unalias(ref x: domain) {
+  inline proc chpl__unalias(x: domain) {
     if x._unowned {
-      chpl_replaceWithDeepCopy(x);
+      // We could add an autoDestroy here, but it wouldn't do anything for
+      // an unowned domain.
+      pragma "no auto destroy" var ret = x;
+      return ret;
+    } else {
+      pragma "no copy" var ret = x;
+      return ret;
     }
   }
 
@@ -3600,6 +3638,31 @@ module ChapelArray {
     return b;
   }
 
+  pragma "init copy fn"
+  proc chpl__initCopy(const ref a: [])
+    where a._value.isSliceArrayView() {
+    var b : [a._dom] a.eltType;
+
+    // Try bulk transfer.
+    if !chpl__serializeAssignment(b, a) {
+      chpl__bulkTransferArray(b, a);
+      return b;
+    }
+
+    chpl__transferArray(b, a);
+    return b;
+  }
+
+  pragma "auto copy fn" proc chpl__autoCopy(const ref x: [])
+    where x._value.isSliceArrayView() {
+    writeln("In array slice autocopy");
+    return _newArray(new ArrayViewSliceArr(eltType=x.eltType,
+                                           _DomPid=x._value._DomPid,
+                                           dom=x._value.dom,
+                                           _ArrPid=x._value._ArrPid,
+                                           _ArrInstance=x._value._ArrInstance));
+  }
+
   proc chpl_replaceWithDeepCopy(ref a:[]) {
     var b : [a._dom] a.eltType;
 
@@ -3613,7 +3676,21 @@ module ChapelArray {
     a._do_destroy();
 
     a._pid = b._pid;
-    a._instance = b._instance;
+    //
+    // TODO: What would be a cleaner way to deal with this?  The
+    // problem is that the compiler tries to resolve chpl__unalias for
+    // all record types, and so tries to resolve this for array views.
+    // But for an array view, the _instance field of 'a' is not going
+    // to be of the same type as that of 'b' by definition, so the
+    // assignment between instances below fails.  I used this
+    // conditional plus halt as a workaround, though to date, the halt
+    // has not actually been triggered.
+    //
+    if a._instance.type != b._instance.type {
+      halt("Mismatching types in chpl_replaceWithDeepCopy");
+    } else {
+      a._instance = b._instance;  // array classes don't match if 'a' was a slice
+    }
     a._unowned = false;
 
     b._pid = nullPid;
@@ -3624,12 +3701,33 @@ module ChapelArray {
 
   // see comment on chpl__unalias for domains
   pragma "unalias fn"
-  inline proc chpl__unalias(ref x: []) {
-    const isalias = (x._unowned) | (x._value._arrAlias != nil);
+  inline proc chpl__unalias(x: []) {
+    const isalias = (x._unowned) || (x._value._arrAlias != nil);
 
     if isalias {
-      chpl_replaceWithDeepCopy(x);
+      // Intended to call chpl__initCopy
+      pragma "no auto destroy" var ret = x;
+      chpl__autoDestroy(x);
+      return ret;
+    } else {
+      // Just return a bit-copy/shallow-copy of 'x'
+      pragma "no copy" var ret = x;
+      return ret;
     }
+  }
+
+  pragma "unalias fn"
+  inline proc chpl__unalias(x: [])
+  where x._value.isSliceArrayView() {
+    // Intended to call chpl__initCopy
+    pragma "no auto destroy" var ret = x;
+
+    // Since chpl__unalias replaces a initCopy(auto/initCopy()) the inner value
+    // needs to be auto-destroyed.
+    // TODO: Should this be inserted by the compiler?
+    chpl__autoDestroy(x);
+
+    return ret;
   }
 
 
