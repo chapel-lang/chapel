@@ -582,6 +582,10 @@ module ChapelDistribution {
     var _arrAlias: BaseArr;    // reference to base array if an alias
     var pid:int = nullPid; // privatized ID, if privatization is supported
   
+    proc isReindexArrayView() param {
+      return false;
+    }
+
     proc ~BaseArr() {
     }
 
