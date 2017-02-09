@@ -206,7 +206,7 @@ module ArrayViewReindex {
     }
 
     proc dsiRankChange(a, b, c, d) {
-      compilerError("reindexing not supported on array views yet");
+      compilerError("rank change not supported on array views yet");
     }
 
     proc dsiNoFluffView() {
