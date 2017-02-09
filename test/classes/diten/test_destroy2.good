@@ -1,1 +1,2 @@
+test_destroy2.chpl:3: warning: "~classname" naming of deinitializers is deprecated
 In destructor

@@ -58,7 +58,7 @@ class Function {
     var   r0    : [dcDom] real;
     var   rp    : [dcDom] real;
 
-    proc ~Function() {
+    proc deinit() {
         delete s;
         delete d;
     }

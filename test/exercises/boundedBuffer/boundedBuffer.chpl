@@ -239,7 +239,7 @@ class BoundedBuffer {
   //
   // Clean up after ourselves
   //
-  proc ~BoundedBuffer() {
+  proc deinit() {
     delete rng;
   }
 }

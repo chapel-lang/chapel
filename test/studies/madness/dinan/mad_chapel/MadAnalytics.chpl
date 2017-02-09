@@ -28,7 +28,7 @@ class Fn_dTest1: AFcn {
 class Fn_Test2: AFcn {
     var g = new Fn_Test1();
 
-    proc ~Fn_Test2() {
+    proc deinit() {
       delete g;
     }
 
@@ -42,7 +42,7 @@ class Fn_Test2: AFcn {
 class Fn_dTest2: AFcn {
     var g = new Fn_dTest1();
 
-    proc ~Fn_dTest2() {
+    proc deinit() {
       delete g;
     }
 

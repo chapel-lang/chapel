@@ -1,3 +1,4 @@
+deinitAndDestruct.chpl:2: warning: "~classname" naming of deinitializers is deprecated
 deinitAndDestruct.chpl:11: error: ambiguous call 'C.deinit()'
 deinitAndDestruct.chpl:2: note: candidates are: C.~C()
 deinitAndDestruct.chpl:6: note:                 C.deinit()

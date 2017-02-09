@@ -1160,8 +1160,8 @@ features become supported.
 \index{destructor!classes}
 
 A class author may specify additional actions to be performed before a class object is
-reclaimed, by defining a class destructor.  A class destructor is a method that has the
-same name as the class prefixed by a tilde.  A class destructor takes no arguments (aside from
+reclaimed, by defining a class destructor.  A class destructor is a method named
+\chpl{deinit}.  A class destructor takes no arguments (aside from
 the implicit \chpl{this} argument).  If defined, the destructor is called each time
 a \chpl{delete} statement is invoked with a valid instance of that class type.  The
 destructor is not called if the argument of \chpl{delete} evaluates to \chpl{nil}.
@@ -1170,7 +1170,7 @@ destructor is not called if the argument of \chpl{delete} evaluates to \chpl{nil
 \begin{chapel}
 class C {
   var i,j,k: int;
-  proc ~C() { writeln("Bye, bye."); }
+  proc deinit() { writeln("Bye, bye."); }
 }
 
 var c : C = nil;

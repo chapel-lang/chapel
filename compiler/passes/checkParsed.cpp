@@ -264,6 +264,10 @@ checkFunction(FnSymbol* fn) {
     USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
   }
 
+  if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
+    USR_WARN(fn, "\"~classname\" naming of deinitializers is deprecated");
+  }
+
   std::vector<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
   bool isIterator = fn->isIterator();

@@ -341,8 +341,8 @@ supplied, the default initializer cannot be called directly.
 \index{destructor!records}
 
 A record author may specify additional actions to be performed before record storage is
-reclaimed by defining a record destructor.  A record destructor is a method that has the
-same name as the record prefixed by a tilde.  A record destructor takes no arguments
+reclaimed by defining a record destructor.  A record destructor is a method named
+\chpl{deinit}.  A record destructor takes no arguments
 (aside from the implicit \chpl{this} argument).  If defined, the destructor is called
 on a record object after it goes out of scope and before its memory is reclaimed.
 
@@ -372,7 +372,7 @@ class C { var x: int; } // A class with nonzero size.
 record R {
   var c: C;
   proc R() { c = new C(0); }
-  proc ~R() { delete c; c = nil; }
+  proc deinit() { delete c; c = nil; }
 }
 
 proc foo()

@@ -213,7 +213,7 @@ module MPI {
     var freeChplComm : bool = false;
 
     pragma "no doc"
-    proc ~_initMPI() {
+    proc deinit() {
       if freeChplComm {
         if numLocales > 1 {
           coforall loc in Locales do on loc {

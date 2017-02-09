@@ -1,2 +1,2 @@
 class C{}
-proc C.~C():void {}
+proc C.deinit():void {}

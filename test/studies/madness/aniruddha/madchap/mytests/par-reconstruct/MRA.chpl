@@ -63,7 +63,7 @@ class Function {
     var   rp    : [dcDom] real;
 
 
-    proc ~Function() {
+    proc deinit() {
         delete sumC;
         delete diffC;
     }

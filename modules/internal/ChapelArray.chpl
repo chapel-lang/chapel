@@ -786,7 +786,7 @@ module ChapelArray {
       }
     }
 
-    proc ~_distribution() {
+    proc deinit() {
       _do_destroy();
     }
 
@@ -927,7 +927,7 @@ module ChapelArray {
         }
       }
     }
-    proc ~_domain () {
+    proc deinit () {
       _do_destroy();
     }
 
@@ -1889,7 +1889,7 @@ module ChapelArray {
       }
     }
 
-    proc ~_array() {
+    proc deinit() {
       _do_destroy();
     }
 

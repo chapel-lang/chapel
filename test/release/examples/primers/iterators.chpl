@@ -124,7 +124,7 @@ class Tree {
   var data: string;
   var left, right: Tree;
 
-  proc ~Tree() {
+  proc deinit() {
     if left  then delete left;
     if right then delete right;
   }

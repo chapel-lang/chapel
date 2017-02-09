@@ -25,7 +25,7 @@ proc run() {
 
 record R {
   var x:int;
-  proc ~R() {
+  proc deinit() {
     writeln("destroying R(x=", x, ")");
   }
 }

@@ -215,7 +215,7 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc bytes.~bytes() {
+  proc bytes.deinit() {
     on this.home {
       qbytes_release(this._bytes_internal);
       this._bytes_internal = QBYTES_PTR_NULL;
@@ -462,7 +462,7 @@ module Buffers {
 
 
   pragma "no doc"
-  proc buffer.~buffer() {
+  proc buffer.deinit() {
     on this.home {
       qbuffer_release(this._buf_internal);
       this._buf_internal = QBUFFER_PTR_NULL;
