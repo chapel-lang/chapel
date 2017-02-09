@@ -4,4 +4,4 @@
 # reason. noakes and psahabu are strongly suspicious of the PGI compiler
 # itself, so suppressing the output makes sense for now.
 
-CHPL_HOST_COMPILER<=pgi
+CHPL_HOST_COMPILER==pgi
