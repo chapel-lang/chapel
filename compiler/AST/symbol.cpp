@@ -198,6 +198,9 @@ static Qualifier qualifierForArgIntent(IntentTag intent)
     case INTENT_PARAM:     return QUAL_PARAM; // TODO
     case INTENT_TYPE:      return QUAL_UNKNOWN; // TODO
     case INTENT_BLANK:     return QUAL_UNKNOWN;
+    case INTENT_REF_MAYBE_CONST:
+           return QUAL_REF; // a white lie until cullOverReferences
+
     // no default to get compiler warning if other intents are added
   }
   return QUAL_UNKNOWN;
@@ -769,6 +772,7 @@ const char* ArgSymbol::intentDescrString(void) {
     case INTENT_CONST: return "'const'";
     case INTENT_CONST_IN: return "'const in'";
     case INTENT_CONST_REF: return "'const ref'";
+    case INTENT_REF_MAYBE_CONST: return "'const? ref'";
     case INTENT_REF: return "'ref'";
     case INTENT_PARAM: return "'param'";
     case INTENT_TYPE: return "'type'";
@@ -788,6 +792,7 @@ const char* intentDescrString(IntentTag intent) {
     case INTENT_CONST:     return "'const' intent";
     case INTENT_CONST_IN:  return "'const in' intent";
     case INTENT_CONST_REF: return "'const ref' intent";
+    case INTENT_REF_MAYBE_CONST: return "'const? ref' intent";
     case INTENT_REF:       return "'ref' intent";
     case INTENT_PARAM:     return "'param' intent";
     case INTENT_TYPE:      return "'type' intent";

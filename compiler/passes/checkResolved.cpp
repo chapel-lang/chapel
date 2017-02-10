@@ -222,7 +222,8 @@ returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
       IntentTag intent = formal->intent;
       if (fn->retTag == RET_CONST_REF && (intent & INTENT_FLAG_REF))
         return true;
-      else if(fn->retTag == RET_REF && intent == INTENT_REF)
+      else if(fn->retTag == RET_REF &&
+              (intent == INTENT_REF || intent == INTENT_REF_MAYBE_CONST))
         return true;
     }
   }

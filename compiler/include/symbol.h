@@ -67,6 +67,7 @@ const int INTENT_FLAG_REF   = 0x08;
 const int INTENT_FLAG_PARAM = 0x10;
 const int INTENT_FLAG_TYPE  = 0x20;
 const int INTENT_FLAG_BLANK = 0x40;
+const int INTENT_FLAG_MAYBE_CONST = 0x80;
 
 // If this enum is modified, ArgSymbol::intentDescrString()
 // and intentDescrString(IntentTag) should also be updated to match
@@ -78,6 +79,7 @@ enum IntentTag {
   INTENT_CONST_IN  = INTENT_FLAG_CONST | INTENT_FLAG_IN,
   INTENT_REF       = INTENT_FLAG_REF,
   INTENT_CONST_REF = INTENT_FLAG_CONST | INTENT_FLAG_REF,
+  INTENT_REF_MAYBE_CONST = INTENT_FLAG_MAYBE_CONST | INTENT_FLAG_REF,
   INTENT_PARAM     = INTENT_FLAG_PARAM,
   INTENT_TYPE      = INTENT_FLAG_TYPE,
   INTENT_BLANK     = INTENT_FLAG_BLANK

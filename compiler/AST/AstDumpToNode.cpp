@@ -1756,6 +1756,11 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
           newline();
           break;
 
+        case INTENT_REF_MAYBE_CONST:
+          fprintf(mFP, "intent:       const? ref");
+          newline();
+          break;
+
         case INTENT_PARAM:
           fprintf(mFP, "intent:       param");
           newline();

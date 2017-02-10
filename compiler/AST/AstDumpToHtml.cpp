@@ -270,6 +270,7 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
       case INTENT_CONST:     fprintf(mFP, "<B>const</B> ");     break;
       case INTENT_CONST_IN:  fprintf(mFP, "<B>const in</B> ");  break;
       case INTENT_CONST_REF: fprintf(mFP, "<B>const ref</B> "); break;
+      case INTENT_REF_MAYBE_CONST: fprintf(mFP, "<B>const? ref</B> "); break;
       case INTENT_REF:       fprintf(mFP, "<B>ref</B> ");       break;
       case INTENT_PARAM:     fprintf(mFP, "<B>param</B> ");     break;
       case INTENT_TYPE:      fprintf(mFP, "<B>type</B> ");      break;
