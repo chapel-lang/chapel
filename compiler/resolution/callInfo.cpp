@@ -60,18 +60,24 @@ CallInfo::CallInfo(CallExpr* icall, bool checkonly, bool initOkay) :
     INT_ASSERT(se);
     Type* t = se->symbol()->type;
     if (t == dtUnknown && ! se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) ) {
-      if (checkonly) badcall = true;
-      else USR_FATAL(call, "use of '%s' before encountering its definition, "
-                           "type unknown", se->symbol()->name);
+      if (checkonly) {
+        badcall = true;
+      } else {
+        USR_FATAL(call, "use of '%s' before encountering its definition, "
+                  "type unknown", se->symbol()->name);
+      }
     }
     if (t->symbol->hasFlag(FLAG_GENERIC)) {
       if (initOkay && isThis) {
         // initOkay is only used when resolving an initializer call, so we
         // allow the this argument to be generic, as we will perform the work
         // necessary to instantiate it.
-      } else if (checkonly) badcall = true;
-      else INT_FATAL(call, "the type of the actual argument '%s' is generic",
-                            se->symbol()->name);
+      } else if (checkonly) {
+        badcall = true;
+      } else {
+        INT_FATAL(call, "the type of the actual argument '%s' is generic",
+                  se->symbol()->name);
+      }
     }
     actuals.add(se->symbol());
   }
