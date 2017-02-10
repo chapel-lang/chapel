@@ -651,23 +651,6 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
   newFn->tagIfGeneric();
 
-  //
-  // TODO: What would it take to remove this evaluation of the where
-  // clause along this generic path and only resolve it on the
-  // concrete path once we have eliminated candidates based on
-  // actual-formal matches?  Simply removing it doesn't work at
-  // present.
-  //
-  if (newFn->hasFlag(FLAG_GENERIC) == false &&
-      evaluateWhereClause(newFn)   == false) {
-    //
-    // where clause evaluates to false so cache gVoid as a function
-    //
-    replaceCache(genericsCache, root, (FnSymbol*)gVoid, &all_subs);
-
-    return NULL;
-  }
-
   if (explainInstantiationLine == -2) {
     parseExplainFlag(fExplainInstantiation,
                      &explainInstantiationLine,
