@@ -1026,6 +1026,8 @@ opt_this_intent_tag:
          { $$ = INTENT_BLANK; }
 | TPARAM { $$ = INTENT_PARAM; }
 | TREF   { $$ = INTENT_REF;   }
+| TCONST TREF   { $$ = INTENT_CONST_REF;   }
+| TCONST { $$ = INTENT_CONST;   }
 | TTYPE  { $$ = INTENT_TYPE;  }
 ;
 
