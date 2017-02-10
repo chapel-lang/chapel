@@ -471,12 +471,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   //
   // determine root function in the case of partial instantiation
   //
-  FnSymbol* root = fn;
-
-  while (root->instantiatedFrom != NULL &&
-         root->numFormals()     == root->instantiatedFrom->numFormals()) {
-    root = root->instantiatedFrom;
-  }
+  FnSymbol* root = determineRootFunc(fn);
 
   //
   // determine all substitutions (past substitutions in a partial
@@ -484,16 +479,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   // substitutions to refer to the root function's formal arguments
   //
   SymbolMap all_subs;
-
-  if (fn->instantiatedFrom) {
-    form_Map(SymbolMapElem, e, fn->substitutions) {
-      all_subs.put(e->key, e->value);
-    }
-  }
-
-  form_Map(SymbolMapElem, e, subs) {
-    copyGenericSub(all_subs, root, fn, e->key, e->value);
-  }
+  determineAllSubs(fn, root, subs, all_subs);
 
   //
   // use cached instantiation if possible
@@ -522,13 +508,103 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   //
   // instantiate function
   //
-
   SymbolMap map;
 
   if (newType) {
     map.put(fn->retType->symbol, newType->symbol);
   }
 
+  FnSymbol* newFn = instantiateFunction(fn, root, all_subs, call, subs, map);
+
+  if (newType) {
+    newType->defaultTypeConstructor = newFn;
+    newFn->retType                  = newType;
+  }
+  
+  bool fixedTuple = fixupTupleFunctions(fn, newFn, call);
+  // Fix up chpl__initCopy for user-defined records
+  if (!fixedTuple &&
+      fn->hasFlag(FLAG_INIT_COPY_FN) &&
+      fn->hasFlag(FLAG_COMPILER_GENERATED) ) {
+    // Generate the initCopy function based upon initializer
+    fixupDefaultInitCopy(fn, newFn, call);
+  }
+
+  if (newFn->numFormals()       >  1 &&
+      newFn->getFormal(1)->type == dtMethodToken) {
+    newFn->getFormal(2)->type->methods.add(newFn);
+  }
+
+  newFn->tagIfGeneric();
+
+  //
+  // TODO: What would it take to remove this evaluation of the where
+  // clause along this generic path and only resolve it on the
+  // concrete path once we have eliminated candidates based on
+  // actual-formal matches?  Simply removing it doesn't work at
+  // present.
+  //
+  if (newFn->hasFlag(FLAG_GENERIC) == false &&
+      evaluateWhereClause(newFn)   == false) {
+    //
+    // where clause evaluates to false so cache gVoid as a function
+    //
+    replaceCache(genericsCache, root, (FnSymbol*)gVoid, &all_subs);
+
+    return NULL;
+  }
+
+  if (explainInstantiationLine == -2) {
+    parseExplainFlag(fExplainInstantiation,
+                     &explainInstantiationLine,
+                     &explainInstantiationModule);
+  }
+
+  if (!newFn->hasFlag(FLAG_GENERIC) && explainInstantiationLine) {
+    explainInstantiation(newFn);
+  }
+
+  checkInstantiationLimit(fn);
+
+  return newFn;
+}
+
+//
+// determine root function in the case of partial instantiation
+//
+FnSymbol* determineRootFunc(FnSymbol* fn) {
+  FnSymbol* root = fn;
+
+  while (root->instantiatedFrom != NULL &&
+         root->numFormals()     == root->instantiatedFrom->numFormals()) {
+    root = root->instantiatedFrom;
+  }
+  return root;
+}
+
+  //
+  // determine all substitutions (past substitutions in a partial
+  // instantiation plus the current substitutions) and change the
+  // substitutions to refer to the root function's formal arguments
+  //
+void determineAllSubs(FnSymbol* fn, FnSymbol* root, SymbolMap& subs,
+                      SymbolMap& all_subs) {
+  if (fn->instantiatedFrom) {
+    form_Map(SymbolMapElem, e, fn->substitutions) {
+      all_subs.put(e->key, e->value);
+    }
+  }
+
+  form_Map(SymbolMapElem, e, subs) {
+    copyGenericSub(all_subs, root, fn, e->key, e->value);
+  }
+}
+
+//
+// instantiate function
+//
+FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
+                              CallExpr* call, SymbolMap& subs, SymbolMap& map) {
   FnSymbol* newFn = fn->partialCopy(&map);
 
   addCache(genericsCache, root, newFn, &all_subs);
@@ -629,60 +705,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       }
     }
   }
-
-  if (newType) {
-    newType->defaultTypeConstructor = newFn;
-    newFn->retType                  = newType;
-  }
-  
-  bool fixedTuple = fixupTupleFunctions(fn, newFn, call);
-  // Fix up chpl__initCopy for user-defined records
-  if (!fixedTuple &&
-      fn->hasFlag(FLAG_INIT_COPY_FN) &&
-      fn->hasFlag(FLAG_COMPILER_GENERATED) ) {
-    // Generate the initCopy function based upon initializer
-    fixupDefaultInitCopy(fn, newFn, call);
-  }
-
-  if (newFn->numFormals()       >  1 &&
-      newFn->getFormal(1)->type == dtMethodToken) {
-    newFn->getFormal(2)->type->methods.add(newFn);
-  }
-
-  newFn->tagIfGeneric();
-
-  //
-  // TODO: What would it take to remove this evaluation of the where
-  // clause along this generic path and only resolve it on the
-  // concrete path once we have eliminated candidates based on
-  // actual-formal matches?  Simply removing it doesn't work at
-  // present.
-  //
-  if (newFn->hasFlag(FLAG_GENERIC) == false &&
-      evaluateWhereClause(newFn)   == false) {
-    //
-    // where clause evaluates to false so cache gVoid as a function
-    //
-    replaceCache(genericsCache, root, (FnSymbol*)gVoid, &all_subs);
-
-    return NULL;
-  }
-
-  if (explainInstantiationLine == -2) {
-    parseExplainFlag(fExplainInstantiation,
-                     &explainInstantiationLine,
-                     &explainInstantiationModule);
-  }
-
-  if (!newFn->hasFlag(FLAG_GENERIC) && explainInstantiationLine) {
-    explainInstantiation(newFn);
-  }
-
-  checkInstantiationLimit(fn);
-
   return newFn;
 }
-
 
 bool evaluateWhereClause(FnSymbol* fn, bool generic) {
   if (fn->where) {
