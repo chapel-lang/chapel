@@ -194,6 +194,15 @@ public:
   bool isRefOrWideRef() const {
     return isRef() || isWideRef();
   }
+  bool isConst() const {
+    return (_qual == QUAL_CONST ||
+            _qual == QUAL_CONST_REF ||
+            _qual == QUAL_CONST_VAL ||
+            _qual == QUAL_CONST_NARROW_REF ||
+            _qual == QUAL_CONST_WIDE_REF);
+  }
+  // TODO: isImmutable
+
   bool isRefType() const;
   bool isWideRefType() const;
 
