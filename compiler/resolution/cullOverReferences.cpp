@@ -101,11 +101,26 @@ symExprIsSetByUse(SymExpr* use) {
         }
 
       } else if (call->isPrimitive(PRIM_MOVE)) {
+
+        // TODO: remove this branch (handled already)
+
         // If it's move lhs rhs, and se is rhs
         // ref is necessary for rhs if ref is necessary for lhs
         // Does this only come up for compiler-introduced moves?
         if (symbolIsSetLocal(toSymExpr(call->get(1))->symbol()))
           return true;
+
+      } else if (call->isPrimitive(PRIM_ADDR_OF) ||
+                 call->isPrimitive(PRIM_SET_REFERENCE)) {
+        // TODO: remove this branch (handled already)
+
+        // Handles inner functions
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+          if (parentCall->isPrimitive(PRIM_MOVE)) {
+            if (symbolIsSetLocal(toSymExpr(parentCall->get(1))->symbol()))
+              return true;
+          }
+        }
 
       } else if (call->isPrimitive(PRIM_GET_MEMBER) ||
                  call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
@@ -374,7 +389,10 @@ void cullOverReferences() {
   //     This could be due to recursion with INTENT_REF_MAYBE_CONST ArgSymbols
   //     or due to nested calls with ContextCallExpr.
 
-  for_vector(Symbol, sym, collectedSymbols) {
+  // Note: code in this loop can append to collectedSymbols.
+  for(size_t i = 0; i < collectedSymbols.size(); i++) {
+
+    Symbol* sym = collectedSymbols[i];
 
     if (sym->id == breakOnId1 || sym->id == breakOnId2)
       gdbShouldBreakHere();
@@ -383,9 +401,11 @@ void cullOverReferences() {
     bool revisit = false;
 
     for_SymbolSymExprs(se, sym) {
-      // check for the case that sym is passed a ContextCall
-      // and the determination depends on which branch is chosen.
+      // Check several cases that might require other other
+      // information to resolve. These can be added to the revisitGraph.
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        // check for the case that sym is passed a ContextCall
+        // and the determination depends on which branch is chosen.
         if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
           if (contextCallItDepends(sym, cc/*, ignoredDefs*/)) {
             revisit = true;
@@ -398,12 +418,10 @@ void cullOverReferences() {
             continue; // move on to the next iteration
           }
         }
-      }
 
-      // Check for the case that sym is passed to an
-      // array formal with blank intent. In that case,
-      // it depends on the determination of the called function.
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        // Check for the case that sym is passed to an
+        // array formal with blank intent. In that case,
+        // it depends on the determination of the called function.
         if (call->isResolved()) {
           ArgSymbol* formal = actual_to_formal(se);
           if (formal->intent == INTENT_REF_MAYBE_CONST) {
@@ -412,6 +430,22 @@ void cullOverReferences() {
             // is used (const or not?) will allow us to resolve
             // this Symbol's const-ness.
             revisitGraph[formal].push_back(sym);
+            continue; // move on to the next iteration
+          }
+        }
+
+        // Check for the case that sym is moved to a compiler-introduced
+        // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
+        if (call->isPrimitive(PRIM_ADDR_OF) ||
+            call->isPrimitive(PRIM_SET_REFERENCE))
+            call = toCallExpr(call->parentExpr);
+
+        if (call->isPrimitive(PRIM_MOVE)) {
+          Symbol* lhsSymbol = toSymExpr(call->get(1))->symbol();
+          if (lhsSymbol->isRef() && lhsSymbol != sym) {
+            collectedSymbols.push_back(lhsSymbol);
+            revisit = true;
+            revisitGraph[lhsSymbol].push_back(sym);
             continue; // move on to the next iteration
           }
         }
