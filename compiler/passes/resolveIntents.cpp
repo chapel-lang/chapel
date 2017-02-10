@@ -58,13 +58,16 @@ static IntentTag constIntentForType(Type* t) {
 IntentTag blankIntentForType(Type* t) {
   IntentTag retval = INTENT_BLANK;
 
-  if (isSyncType(t)                                  ||
+  if (/*isSyncType(t)                                  ||
       isSingleType(t)                                ||
+        these should have FLAG_DEFAULT_INTENT_IS_REF) */
       isAtomicType(t)                                ||
-      t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)
-      /*||
-      t->symbol->hasFlag(FLAG_ARRAY) */) {
+      t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)) {
     retval = INTENT_REF;
+
+  } else if(t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
+            /* || t->symbol->hasFlag(FLAG_ARRAY) */) {
+    retval = INTENT_REF_MAYBE_CONST;
 
   } else if (is_bool_type(t)                         ||
              is_int_type(t)                          ||
@@ -116,27 +119,39 @@ IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
   }
 }
 
-static IntentTag blankIntentForThisArg(Type* t) {
-  // todo: be honest when 't' is an array or domain
-
-  if (isRecordWrappedType(t))  // domain, array, or distribution
-    // array, domain, distribution wrapper records are immutable
+static IntentTag constIntentForThisArg(Type* t) {
+  if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
     return INTENT_CONST_REF;
-  else if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
-    return INTENT_REF;
   else
     return INTENT_CONST_IN;
 }
+
+static IntentTag blankIntentForThisArg(Type* t) {
+  // todo: be honest when 't' is an array or domain
+
+  if (t->symbol->hasFlag(FLAG_ARRAY))
+    return INTENT_REF_MAYBE_CONST;
+
+  if (isRecordWrappedType(t))  // domain / distribution
+    // array, domain, distribution wrapper records are immutable
+    return INTENT_CONST_REF;
+  else if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
+    return INTENT_REF; // TODO -- default to ref for user records?
+  else
+    return INTENT_CONST_IN;
+}
+
 
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
   if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
     return blankIntentForThisArg(arg->type);
+  else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
+    return constIntentForThisArg(arg->type);
   else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN) &&
            arg->intent == INTENT_BLANK) {
     return INTENT_CONST_IN;
-  }
-  else
+  } else
     return concreteIntent(arg->intent, arg->type);
 
 }
