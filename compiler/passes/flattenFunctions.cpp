@@ -199,6 +199,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       //
       if (passByRef(sym)) {
         IntentTag temp = INTENT_REF;
+        if (sym->type->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
+          temp = INTENT_REF_MAYBE_CONST;
         if (sym->hasFlag(FLAG_CONST)) {
           temp = INTENT_CONST_REF;
         }
