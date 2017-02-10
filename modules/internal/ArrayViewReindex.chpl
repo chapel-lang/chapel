@@ -211,14 +211,6 @@ module ArrayViewReindex {
   }
     */
 
-    proc dsiSlice(newdom) {
-      compilerError("slicing not supported on array views yet");
-    }
-
-    proc dsiRankChange(a, b, c, d) {
-      compilerError("rank change not supported on array views yet");
-    }
-
     proc dsiNoFluffView() {
       if canResolveMethod(arr, "dsiNoFluffView") {
         return arr.dsiNoFluffView();

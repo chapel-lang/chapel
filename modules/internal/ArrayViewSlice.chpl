@@ -150,14 +150,6 @@ class ArrayViewSliceArr: BaseArr {
   }
 */
 
-  proc dsiReindex(newdom) {
-    compilerError("reindexing not supported on array views yet");
-  }
-
-  proc dsiRankChange() {
-    compilerError("rank change not supported on array views yet");
-  }
-
   proc dsiNoFluffView() {
     if canResolveMethod(arr, "dsiNoFluffView") {
       return arr.dsiNoFluffView();
