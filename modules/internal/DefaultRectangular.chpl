@@ -1476,66 +1476,6 @@ module DefaultRectangular {
     where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
 
-    proc dsiReindex(d: DefaultRectangularDom) {
-      var alias : DefaultRectangularArr(eltType=eltType, rank=d.rank,
-                                        idxType=d.idxType,
-                                        stridable=d.stridable);
-      on this {
-      alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
-                                           idxType=d.idxType,
-                                           stridable=d.stridable,
-                                           dom=d, mdAlias=true,
-                                           noinit_data=true,
-                                           str=str,
-                                           blk=blk);
-      if defRectSimpleDData {
-        alias.data = data;
-      } else {
-        alias.mData = _ddata_allocate(_multiData(eltType=eltType,
-                                                 idxType=idxType),
-                                      mdNumChunks);
-        for i in 0..#mdNumChunks {
-          alias.mData(i).dataOff = mData(i).dataOff;
-          alias.mData(i).data = mData(i).data;
-        }
-      }
-      //alias.numelm = numelm;
-      adjustBlkOffStrForNewDomain(d, alias);
-      alias.origin = origin:d.idxType;
-      if !defRectSimpleDData {
-        alias.mdParDim = mdParDim;
-        alias.mdNumChunks = mdNumChunks;
-        const thisStr = abs(dom.dsiDim(mdParDim).stride);
-        const aliasStr = abs(d.dsiDim(mdParDim).stride);
-        alias.mdRLo = d.dsiDim(mdParDim).low
-                      - (dom.dsiDim(mdParDim).low - mdRLo) / thisStr * aliasStr;
-        alias.mdRHi = d.dsiDim(mdParDim).low + (mdRLen - 1) * aliasStr;
-        alias.mdRStr = abs(d.dsiDim(mdParDim).stride):idxType;
-        alias.mdRLen = mdRLen;
-        alias.mdBlk = thisStr / mdRStr;
-        const thisLo = dom.dsiDim(mdParDim).low;
-        const aliasLo = d.dsiDim(mdParDim).low;
-        if alias.stridable {
-          for i in 0..#mdNumChunks {
-            alias.mData(i).pdr =
-              ((mData(i).pdr.low - thisLo) / thisStr * aliasStr + aliasLo)
-              ..((mData(i).pdr.high - thisLo) / thisStr * aliasStr + aliasLo)
-              by aliasStr;
-          }
-        } else {
-          for i in 0..#mdNumChunks {
-            alias.mData(i).pdr =
-              ((mData(i).pdr.low - thisLo) / thisStr + aliasLo)
-              ..((mData(i).pdr.high - thisLo) / thisStr + aliasLo);
-          }
-        }
-      }
-      alias.computeFactoredOffs();
-      }
-      alias.initShiftedData();
-      return alias;
-    }
-
     pragma "modifies array blk"
     proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
                                      alias: DefaultRectangularArr)

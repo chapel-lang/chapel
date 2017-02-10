@@ -595,6 +595,10 @@ module ChapelDistribution {
     proc isRankChangeArrayView() param {
       return false;
     }
+  
+    proc isReindexArrayView() param {
+      return false;
+    }
 
     proc deinit() {
     }
@@ -815,7 +819,10 @@ module ChapelDistribution {
   // that arr.eltType is meaningful.
   proc _delete_arr(arr, param privatized:bool) {
     // decide whether or not the array is an alias
-    var isalias = (arr._arrAlias != nil) || arr.isSliceArrayView();
+    var isalias = ((arr._arrAlias != nil) || 
+                   arr.isSliceArrayView() || 
+                   arr.isRankChangeArrayView() ||
+                   arr.isReindexArrayView());
 
     // array implementation can destroy data or other members
     arr.dsiDestroyArr(isalias);

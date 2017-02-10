@@ -947,10 +947,6 @@ proc BlockCyclicArr.dsiSerialWrite(f) {
   }
 }
 
-proc BlockCyclicArr.dsiReindex(dom) {
-  compilerError("reindexing not yet implemented for Block-Cyclic");
-}
-
 proc BlockCyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }

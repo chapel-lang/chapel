@@ -661,31 +661,6 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-
-proc SparseBlockArr.dsiReindex(d: SparseBlockDom) {
-  var alias = new SparseBlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
-                           stridable=d.stridable, dom=d);
-  const sameDom = d==dom;
-
-  var thisid = this.locale.id;
-  coforall i in d.dist.targetLocDom {
-    on d.dist.targetLocales(i) {
-      const locDom = d.getLocDom(i);
-      var locAlias: [locDom.mySparseBlock] => locArr[i].myElems;
-      alias.locArr[i] = new LocSparseBlockArr(eltType=eltType,
-                                        rank=rank, idxType=d.idxType,
-                                        stridable=d.stridable,
-                                        locDom=locDom,
-                                        myElems=>locAlias);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-      }
-    }
-  }
-
-  return alias;
-}
-
 proc SparseBlockArr.dsiReallocate(d: domain) {
   //
   // For the default rectangular array, this function changes the data

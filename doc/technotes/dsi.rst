@@ -636,31 +636,6 @@ as an indication of what procedure(s) need to be defined.
   That class must satisfy the requirements on ``GlobalDomain`` defined in this
   document.]
 
-.. method:: proc GlobalArray.dsiReindex(reindexDef: GlobalDomain)
-
-  Similar to ``dsiSlice``, except: The array alias represented by the
-  returned object is a reindexing, rather than a slice, of the array
-  represented by `this`. The argument ``reindexDef`` represents the
-  reindexing expression. The callers of dsiReindex must ensure that
-  the domain of this array and ``reindexDef`` have the same number of
-  dimensions and the same number of indices along each dimension.
-.. [TODO: is it required that the ``dom`` field of the returned
-   ``GlobalArray`` refer to ``reindexDef``?]
-
-.. method:: proc GlobalArray.dsiRankChange(reindexDef: GlobalDomain, param newRank: int, param newStridable: bool, args)
-
-  Similar to ``dsiReindex``, except reindexing changes the rank.
-
-  .. [TODO: explain the arguments.]
-
-.. [TODO: the following seem to support dsiReindex and dsiRankChange:]
-   .. method:: proc GlobalDistribution.dsiCreateReindexDist(newSpace, oldSpace)
-   .. method:: proc GlobalDistribution.dsiCreateRankChangeDist(param newRank: int, args)
-.. [TODO: the following seems correct. The returned object can be an instance
-  of a different class than the receiver, at the implementor's discretion.
-  That class must satisfy the requirements on "GlobalDistribution"
-  defined in this document.]
-
 .. method:: proc GlobalDomain.linksDistribution() param
 
 .. method:: proc GlobalDomain.dsiLinksDistribution()

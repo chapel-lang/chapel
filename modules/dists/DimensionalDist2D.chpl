@@ -1086,19 +1086,6 @@ proc DimensionalDist2D.dsiCreateReindexDist(newSpace, oldSpace) {
   return genericDsiCreateReindexDist(this, this.rank, newSpace, oldSpace);
 }
 
-proc DimensionalArr.dsiReindex(reindexDef: DimensionalDom) {
-  const reindexee = this;
-  if reindexee.dom == reindexDef then
-    return reindexee;
-
-  halt("DimensionalArr.dsiReindex: unexpected invocation on ",
-       this.type:string, "  and  ", reindexDef.type:string);
-}
-
-proc DimensionalArr.dsiReindex(reindexDef: WrapperRectDom) {
-  return genericDsiReindex(this, reindexDef);
-}
-
 proc DimensionalDist2D.dsiCreateRankChangeDist(param newRank: int, args) {
   return genericDsiCreateRankChangeDist(this, newRank, args);
 }
