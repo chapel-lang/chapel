@@ -21,7 +21,7 @@
 #include "callInfo.h"
 #include "expr.h"
 
-CallInfo::CallInfo(CallExpr* icall, bool checkonly) :
+CallInfo::CallInfo(CallExpr* icall, bool checkonly, bool initOkay) :
   call(icall),
   scope(NULL),
   name(NULL),
@@ -47,8 +47,11 @@ CallInfo::CallInfo(CallExpr* icall, bool checkonly) :
     }
   }
   for_actuals(actual, call) {
+    bool isThis = false;
     if (NamedExpr* named = toNamedExpr(actual)) {
       actualNames.add(named->name);
+      if (initOkay && !strcmp(named->name, "this"))
+        isThis = true;
       actual = named->actual;
     } else {
       actualNames.add(NULL);
@@ -62,7 +65,11 @@ CallInfo::CallInfo(CallExpr* icall, bool checkonly) :
                            "type unknown", se->symbol()->name);
     }
     if (t->symbol->hasFlag(FLAG_GENERIC)) {
-      if (checkonly) badcall = true;
+      if (initOkay && isThis) {
+        // initOkay is only used when resolving an initializer call, so we
+        // allow the this argument to be generic, as we will perform the work
+        // necessary to instantiate it.
+      } else if (checkonly) badcall = true;
       else INT_FATAL(call, "the type of the actual argument '%s' is generic",
                             se->symbol()->name);
     }
