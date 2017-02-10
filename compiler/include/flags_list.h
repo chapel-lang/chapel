@@ -89,6 +89,9 @@ symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )
 
 // Enable override for default-intent for types defined in terms of record/class
 symbolFlag( FLAG_DEFAULT_INTENT_IS_REF, ypr, "default intent is ref", "The default intent for this type is ref")
+// Default intent should be determined by function body
+// (ie. it is a ref if it is modified in the function body)
+symbolFlag( FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr, "default intent is ref if modified", "The default intent for this type is ref if modified const ref otherwise")
 
 symbolFlag( FLAG_DEFAULT_CONSTRUCTOR , npr, "default constructor" , ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
