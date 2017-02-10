@@ -2480,7 +2480,7 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
   //
   // Evaluate where clauses
   //
-  if (!evaluateWhereClause(currCandidate->fn, /*generic=*/false)) {
+  if (!evaluateWhereClause(currCandidate->fn)) {
     return;
   }
 

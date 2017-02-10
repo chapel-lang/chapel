@@ -667,7 +667,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 }
 
 
-bool evaluateWhereClause(FnSymbol* fn, bool generic) {
+bool evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
     whereStack.add(fn);
 
@@ -680,20 +680,7 @@ bool evaluateWhereClause(FnSymbol* fn, bool generic) {
     SymExpr* se = toSymExpr(fn->where->body.last());
 
     if (se == NULL) {
-      //
-      // if we're evaluating the where clause of a generic function,
-      // it's too soon to throw errors because we haven't yet
-      // determined whether the call is even a candidate based on
-      // actual-formal matching.  For that reason, conservatively
-      // return 'true' in error cases.  We'll then re-evaluate the
-      // where clause on the concrete instantiation of the generic
-      // function and issue the error (if appropriate) there.
-      //
-      if (generic) {
-        return true;
-      } else {
-        USR_FATAL(fn->where, "invalid where clause");
-      }
+      USR_FATAL(fn->where, "invalid where clause");
     }
 
     if (se->symbol() == gFalse) {
