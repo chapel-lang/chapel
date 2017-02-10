@@ -1661,6 +1661,7 @@ static void insertStringLiteralTemps()
             }
             else // isResolved() is false for primitives.
             {
+              // BHARSH TODO: Is any of this actually useful?
               if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
                 if (Type* type = actual_to_formal(se)->typeInfo()) {
                   VarSymbol* tmp = newTemp(type);
@@ -1683,15 +1684,6 @@ static void insertStringLiteralTemps()
                 Type* componentType = valueType->getField("x1")->type;
                 if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                   VarSymbol* tmp = newTemp(componentType);
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  se->replace(new SymExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-                }
-              }
-              if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
-                if (SymExpr* wide = toSymExpr(call->get(3))) {
-                  Type* type = wide->symbol()->type;
-                  VarSymbol* tmp = newTemp(wideClassMap.get(type));
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                   se->replace(new SymExpr(tmp));
                   call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
