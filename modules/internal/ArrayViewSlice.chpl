@@ -144,17 +144,6 @@ class ArrayViewSliceArr: BaseArr {
     return arr.dsiAccess(i);
   }
 
-  //
-  // bulk transfer routines -- forward to array
-  //
-  proc doiBulkTransferToDR(B) {
-    arr.doiBulkTransferToDR(B);
-  }
-
-  proc doiBulkTransferStride(B, viewDom) {
-    arr.doiBulkTransferStride(B, privDom);
-  }
-
   /*  I don't think these should be needed...
   proc dataChunk(x) ref {
     return arr.dataChunk(x);
@@ -208,29 +197,81 @@ class ArrayViewSliceArr: BaseArr {
   proc dsiSupportsBulkTransfer() param {
     return arr.dsiSupportsBulkTransfer();
   }
-  proc dsiSupportsBulkTransferInterface() param return true;
+  proc dsiSupportsBulkTransferInterface() param return arr.dsiSupportsBulkTransferInterface();
 
+  proc _getViewDom() {
+    if _containsRankChange() {
+      // RankChangeView knows how to deal with nested rank changes, so tell it
+      // our dimensions and let it do the rest.
+      var rc = _getRankChangeView();
+      return rc._viewHelper(dom.dsiDims());
+    } else {
+      return {(...dom.dsiDims())};
+    }
+  }
+
+  // contiguous transfer support
   proc doiUseBulkTransfer(B) {
     return arr.doiUseBulkTransfer(B);
   }
 
+  proc doiCanBulkTransfer(viewDom) {
+    return arr.doiCanBulkTransfer(viewDom);
+  }
+
+  proc doiBulkTransfer(B, viewDom) {
+    arr.doiBulkTransfer(B, viewDom);
+  }
+
+  // strided transfer support
   proc doiUseBulkTransferStride(B) {
     return arr.doiUseBulkTransferStride(B);
   }
 
-  proc doiCanBulkTransfer(viewDom) {
-    return arr.doiCanBulkTransfer(privDom);
-  }
-
   proc doiCanBulkTransferStride(viewDom) {
-    return arr.doiCanBulkTransferStride(privDom);
+    return arr.doiCanBulkTransferStride(viewDom);
   }
 
-  proc doiBulkTransfer(B, viewDom) {
-    arr.doiBulkTransfer(B, privDom);
+  proc doiBulkTransferStride(B, viewDom) {
+    arr.doiBulkTransferStride(B, viewDom);
+  }
+
+  // distributed transfer support
+  proc doiBulkTransferToDR(B, viewDom) {
+    arr.doiBulkTransferToDR(B, viewDom);
+  }
+
+  proc doiBulkTransferFromDR(B, viewDom) {
+    arr.doiBulkTransferFromDR(B, viewDom);
+  }
+
+  proc doiBulkTransferFrom(B, viewDom) {
+    arr.doiBulkTransferFrom(B, viewDom);
   }
 
   proc isDefaultRectangular() param return arr.isDefaultRectangular();
+
+  proc _getActualArray() {
+    if chpl__isArrayView(arr) {
+      return arr._getActualArray();
+    } else {
+      return arr;
+    }
+  }
+
+  proc _containsRankChange() param {
+    if chpl__isArrayView(arr) {
+      return arr.isRankChangeArrayView() || arr._containsRankChange();
+    } else {
+      return false;
+    }
+  }
+
+  // Returns the topmost rank-change view in this view-stack
+  proc _getRankChangeView() {
+    compilerAssert(this._containsRankChange());
+    return arr._getRankChangeView();
+  }
 }
 
 }
