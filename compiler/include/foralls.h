@@ -22,6 +22,8 @@
 
 //// foralls.h, foralls.cpp - support for forall loops ////
 
+#include "expr.h"
+
 //
 // TFITag: a task or forall intent
 //

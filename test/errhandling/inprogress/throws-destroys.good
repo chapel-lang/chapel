@@ -1,0 +1,2 @@
+This file will only be compared against when the compilation of throws-destroys
+itself fails. The failure will be suppressed when PGI is the host compiler. 

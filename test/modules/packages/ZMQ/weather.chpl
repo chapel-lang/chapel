@@ -43,8 +43,6 @@ iter zipcodes(num: int) {
 }
 
 proc Launcher(exec: string) {
-  writeln("Launcher: ", exec);
-
   var master = spawn(["master", "--mode=Master",
                       "--memLeaks=" + memLeaks:string],
                      env=env, executable=exec);

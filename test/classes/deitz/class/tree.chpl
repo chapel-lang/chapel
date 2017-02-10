@@ -4,7 +4,7 @@ class BinaryTree {
   var left: BinaryTree(eltType);
   var right: BinaryTree(eltType);
 
-  proc ~BinaryTree() {
+  proc deinit() {
     if left  != nil then delete left;
     if right != nil then delete right;
   }

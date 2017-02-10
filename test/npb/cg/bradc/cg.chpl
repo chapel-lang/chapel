@@ -101,7 +101,7 @@ proc makea() {
   var size = 1.0;
   const ratio = rcond ** (1.0 / n);
 
-  var randStr = new NPBRandomStream(314159265);
+  var randStr = new NPBRandomStream(real, 314159265);
 
   for iouter in 1..n {
     var nzv = nonzer;

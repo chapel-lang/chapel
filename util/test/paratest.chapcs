@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+#
+# Simple slurm-aware paratest wrapper for testing on the chapcs cluster. This
+# script aims to run parallel testing as quickly as possible without
+# interfering with nightly testing or other exclusive reservations (e.g.
+# developers running performance experiments.) It also tries to interfere as
+# little as possible with other paratests in order to avoid timeouts.
+#
+
+# Get the number of nodes reserved exclusively on the chapel partition
+get_num_exclusive_nodes() {
+  local delim=","
+  # Grab the "SHARED,NODES" info for all jobs. For each exclusive (SHARED=no)
+  # job add up the number of nodes it's using
+  local squeue_output=$(squeue --partition=chapel --noheader --format="%h${delim}%D")
+  local num_exclusive_nodes=0
+  for job_info in ${squeue_output}; do
+    IFS=${delim} read -r -a split_job_info <<< "${job_info}"
+    local shared=${split_job_info[0]}
+    local num_nodes=${split_job_info[1]}
+    if [ "${shared}" == "no" ]; then
+      num_exclusive_nodes=$((${num_exclusive_nodes} + ${num_nodes}))
+    fi
+  done
+  echo ${num_exclusive_nodes}
+}
+
+# Get the number of nodes available for testing on the chapel partition (total - exclusive)
+get_num_non_exclusive_nodes() {
+  local num_online_nodes=$(sinfo --partition=chapel --noheader --responding --format="%D")
+  local num_exclusive_nodes=$(get_num_exclusive_nodes)
+  local num_non_exclusive_nodes=$((${num_online_nodes} - ${num_exclusive_nodes}))
+  echo ${num_non_exclusive_nodes}
+}
+
+# Get the number of shared jobs running on the chapel partition
+get_num_shared_jobs_running() {
+  local num_jobs=$(squeue --partition=chapel --noheader --format="%h" | grep "yes" | wc -l)
+  echo ${num_jobs}
+}
+
+# Get a "good" nodepara value: use up to 3 for comm=none testing, but limit to
+# 1 for comm!=none since that's already oversubscribed. 
+#
+# TODO: Consider increasing nodepara if no other shared jobs are running. Note
+# that we should wait to do this until everybody is using slurm on chapcs.
+get_good_nodepara() {
+  local nodepara=3
+  if [[ -n ${CHPL_COMM} && "${CHPL_COMM}" != "none" ]]; then
+    nodepara=1
+  fi
+  #if [[ $(get_num_shared_jobs_running) -eq 0 ]]; then
+  #  nodepara=$((${nodepara} + 1))
+  #fi
+  echo ${nodepara}
+}
+
+# Run paratest inside an salloc using all nodes that are not reserved
+# exclusively on the chapel partition. Throw `--share --nice` and turn off
+# affinity and limit how many executables can run at once so we play nice with
+# other testing going on.
+run_paratest() {
+  local nodepara=$(get_good_nodepara)
+  local num_free_nodes=$(get_num_non_exclusive_nodes)
+  local para_env="-env CHPL_TEST_LIMIT_RUNNING_EXECUTABLES=yes"
+  para_env="${para_env} -env QT_AFFINITY=no"
+  para_env="${para_env} -env QT_SPINCOUNT=300"
+
+  local salloc_cmd="salloc --nodes=${num_free_nodes} --immediate --partition=chapel --share --nice"
+  local paratest_cmd="${CHPL_HOME}/util/test/paratest.server ${para_env} -nodepara ${nodepara} ${@}"
+  local test_cmd="${salloc_cmd} ${paratest_cmd}"
+  echo "running: '${test_cmd}'"
+
+  local start_time=${SECONDS}
+  ${test_cmd}
+  local duration=$((${SECONDS} - ${start_time}))
+  echo "paratest took $((${duration} / 60)) minutes and $((${duration} % 60)) seconds"
+}
+
+run_paratest "${@}"

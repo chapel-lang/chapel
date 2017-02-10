@@ -725,7 +725,7 @@ module DefaultRectangular {
       targetLocDom=newTargetLocDom;
     }
 
-    proc ~LocRADCache() {
+    proc deinit() {
       if !defRectSimpleDData {
         for rad in RAD {
           if rad.mData != nil then

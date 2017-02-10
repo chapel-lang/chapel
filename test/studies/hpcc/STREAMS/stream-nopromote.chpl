@@ -50,7 +50,7 @@ proc printConfiguration() {
 
 
 proc initVectors(B, C) {
-  var randlist = new NPBRandomStream(seed);
+  var randlist = new NPBRandomStream(real, seed);
 
   randlist.fillRandom(B);
   randlist.fillRandom(C);

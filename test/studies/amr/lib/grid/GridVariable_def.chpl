@@ -49,7 +49,7 @@ class GridVariable {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~GridVariable () {}
+  proc deinit () {}
   
   // /|'''''''''''''''''''/|
   //< |    destructor    < |

@@ -72,7 +72,7 @@ class MultiArray
   proc initialize () { array_wrappers = new List(ArrayWrapper); }
 
 
-  proc ~MultiArray ()
+  proc deinit ()
   {
     for wrapper in array_wrappers do delete wrapper;
     delete array_wrappers;

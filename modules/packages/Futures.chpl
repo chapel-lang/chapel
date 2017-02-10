@@ -132,7 +132,7 @@ module Futures {
     }
 
     pragma "no doc"
-    proc ~Future() {
+    proc deinit() {
       release();
     }
 

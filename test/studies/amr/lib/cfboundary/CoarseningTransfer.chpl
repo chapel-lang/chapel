@@ -77,7 +77,7 @@ class GridInvalidRegion {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~GridInvalidRegion () {}
+  proc deinit () {}
 
   // /|'''''''''''''''''''/|
   //< |    destructor    < |
@@ -140,7 +140,7 @@ class LevelInvalidRegion {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~LevelInvalidRegion ()
+  proc deinit ()
   {
     for region in grid_invalid_regions do delete region;
   }

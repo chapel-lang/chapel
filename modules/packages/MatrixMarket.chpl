@@ -156,7 +156,7 @@ module MatrixMarket {
       }
 
       proc close() { fout.close(); fd.close(); }
-      proc ~MMWriter() { this.close(); }
+      proc deinit() { this.close(); }
    }
 
 proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
@@ -385,7 +385,7 @@ class MMReader {
       fd.close(); 
    }
 
-   proc ~MMReader() { this.close(); }
+   proc deinit() { this.close(); }
 }
 
 /* Read a dense Matrix Market file

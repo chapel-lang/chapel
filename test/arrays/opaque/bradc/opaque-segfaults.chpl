@@ -46,7 +46,7 @@ proc createRandomGraph() {
 
   // set up random number stream
   use Random;
-  var myRandNums = new RandomStream(seed=314159265);
+  var myRandNums = new RandomStream(real, seed=314159265);
 
   // allocate vertices
   for i in 1..numVertices {

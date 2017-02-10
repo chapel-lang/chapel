@@ -26,7 +26,7 @@ writeln("Random number seed  = ", seed);
 // accesses to this object, set parSafe to false to avoid locking
 // overhead.
 //
-var rs = new NPBRandomStream(seed, parSafe=false);
+var rs = new NPBRandomStream(real, seed, parSafe=false);
 
 //
 // Run the Monte Carlo simulation.
