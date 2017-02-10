@@ -1049,11 +1049,11 @@ If the above requirements are not satisfied, it is an error.
 
 The list of function candidates can be constrained by {\em where clauses}.  A
 where clause is specified in the definition of a
-function~(\rsec{Function_Definitions}).  When a function is resolved, the
-expression in the where clause must be a parameter expression and must
-evaluate to either \chpl{true} or \chpl{false}.  If it evaluates to
-\chpl{false}, the function is rejected and thus is not a possible candidate
-for function resolution.
+function~(\rsec{Function_Definitions}).  The expression in the where clause
+must be a boolean parameter expression that evaluates to either \chpl{true} or
+\chpl{false}. If it evaluates to \chpl{false}, the function is rejected and
+thus is not a possible candidate for function resolution.
+
 \begin{chapelexample}{whereClause.chpl}
 Given two overloaded function definitions
 \begin{chapel}
