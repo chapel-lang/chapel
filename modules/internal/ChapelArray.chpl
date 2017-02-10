@@ -1845,6 +1845,7 @@ module ChapelArray {
   pragma "array"
   pragma "has runtime type"
   pragma "ignore noinit"
+  pragma "default intent is ref if modified"
   record _array {
     var _pid:int;  // only used when privatized
     var _instance; // generic, but an instance of a subclass of BaseArr
