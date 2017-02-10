@@ -51,12 +51,13 @@
    the value/const-ref-return version).
  */
 
-static bool refNecessary(SymExpr* se);
+static bool symbolIsSetLocal(Symbol* sym);
+static bool symExprIsSet(SymExpr* sym);
 static void lowerContextCall(ContextCallExpr* cc, bool useSetter);
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
 
 static bool
-refNecessaryForDef(SymExpr* def) {
+symExprIsSetByDef(SymExpr* def) {
     // We're only looking for things that set the value.
     // We don't care about PRIM_MOVEs b/c they only set the reference.
     // We do care about PRIM_ASSIGN or if the argument is passed
@@ -77,7 +78,7 @@ refNecessaryForDef(SymExpr* def) {
 }
 
 static bool
-refNecessaryForUse(SymExpr* use) {
+symExprIsSetByUse(SymExpr* use) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if (FnSymbol* fn = call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
@@ -103,7 +104,7 @@ refNecessaryForUse(SymExpr* use) {
         // If it's move lhs rhs, and se is rhs
         // ref is necessary for rhs if ref is necessary for lhs
         // Does this only come up for compiler-introduced moves?
-        if (refNecessary(toSymExpr(call->get(1))))
+        if (symbolIsSetLocal(toSymExpr(call->get(1))->symbol()))
           return true;
 
       } else if (call->isPrimitive(PRIM_GET_MEMBER) ||
@@ -115,7 +116,7 @@ refNecessaryForUse(SymExpr* use) {
         INT_ASSERT(move);
         INT_ASSERT(move->isPrimitive(PRIM_MOVE));
 
-        if (refNecessary(toSymExpr(move->get(1))))
+        if (symbolIsSetLocal(toSymExpr(move->get(1))->symbol()))
           return true;
 
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
@@ -153,7 +154,7 @@ refNecessaryForUse(SymExpr* use) {
 }
 
 static
-bool refNecessary(SymExpr* se)
+bool symExprIsSet(SymExpr* se)
 {
   // The ref is necessary if it is for an explicit ref var
   if (se->symbol()->hasFlag(FLAG_REF_VAR)) {
@@ -173,25 +174,38 @@ bool refNecessary(SymExpr* se)
   bool ret = false;
   int defOrUse = isDefAndOrUse(se);
   if (defOrUse & 1) { // def
-    ret |= refNecessaryForDef(se);
+    ret |= symExprIsSetByDef(se);
   }
   if (defOrUse & 2) { // use
-    ret |= refNecessaryForUse(se);
+    ret |= symExprIsSetByUse(se);
   }
 
   return ret;
 }
 
+// Figure out if a symbol is set based upon its defs and uses.
+// Does not properly handle certain cases, such as
+// context calls. Used to handle extra temporaries
+// sometimes added by the compiler.
 static
-bool refNecessaryForSymbolInCall(Symbol* sym, CallExpr* call, std::vector<SymExpr*> & collectSettingSymExprs)
+bool symbolIsSetLocal(Symbol* sym)
+{
+  for_SymbolSymExprs(se, sym) {
+    if (symExprIsSet(se))
+      return true;
+  }
+  return false;
+}
+
+static
+bool callSetsSymbol(Symbol* sym, CallExpr* call)
 {
   bool ret = false;
   for_alist(expr, call->argList) {
     if (SymExpr* se = toSymExpr(expr)) {
       if (se->symbol() == sym) {
-        if (refNecessary(se)) {
+        if (symExprIsSet(se)) {
           ret = true;
-          collectSettingSymExprs.push_back(se);
         }
       }
     }
@@ -206,10 +220,7 @@ bool contextCallItDepends(Symbol* sym, ContextCallExpr* cc) {
   CallExpr* refCall = cc->getRefCall();
   CallExpr* valueCall = cc->getRValueCall();
 
-  std::vector<SymExpr*> settingSymExprs;
-
-  if (refNecessaryForSymbolInCall(sym, refCall, settingSymExprs) !=
-      refNecessaryForSymbolInCall(sym, valueCall, settingSymExprs) ) {
+  if (callSetsSymbol(sym, refCall) != callSetsSymbol(sym, valueCall) ) {
     return true;
   }
 
@@ -391,7 +402,7 @@ void cullOverReferences() {
 
       // Check for the case that sym is passed to an
       // array formal with blank intent. In that case,
-      // it depends on the determination of the called funciton.
+      // it depends on the determination of the called function.
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
         if (call->isResolved()) {
           ArgSymbol* formal = actual_to_formal(se);
@@ -407,7 +418,7 @@ void cullOverReferences() {
       }
 
       // Determine if se represents a "setting" or a "getting" mention of sym
-      setter |= refNecessary(se);
+      setter |= symExprIsSet(se);
     }
 
     if (revisit) {
@@ -545,13 +556,22 @@ void cullOverReferences() {
 
   // Now, lower ContextCalls and remove INTENT_REF_MAYBE_CONST.
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
-    CallExpr* move = toCallExpr(cc->parentExpr);
-    SymExpr* lhs = toSymExpr(move->get(1));
-    Qualifier qual = lhs->symbol()->qualType().getQual();
-    // Expecting only REF or CONST_REF at this point.
-    INT_ASSERT(qual == QUAL_REF || qual == QUAL_CONST_REF);
-    bool useSetter = (qual == QUAL_REF);
-    lowerContextCall(cc, useSetter);
+    // Some ContextCallExprs have already been removed above
+    if (cc->parentExpr != NULL) {
+      CallExpr* move = toCallExpr(cc->parentExpr);
+
+      bool useSetter = false;
+
+      if (move) {
+        SymExpr* lhs = toSymExpr(move->get(1));
+        Qualifier qual = lhs->symbol()->qualType().getQual();
+        // Expecting only REF or CONST_REF at this point.
+        INT_ASSERT(qual == QUAL_REF || qual == QUAL_CONST_REF);
+        useSetter = (qual == QUAL_REF);
+      }
+
+      lowerContextCall(cc, useSetter);
+    }
   }
 
   // Now, lower ArgSymbol argument intent.
@@ -698,7 +718,7 @@ void lowerContextCall(ContextCallExpr* cc, bool useSetter)
                 if (SymExpr* useCallLHS = toSymExpr(useCall->get(1)))
                   if (useCallLHS->symbol() == retSymbol) {
                     USR_FATAL_CONT(move, "illegal expression to return by ref");
-                    USR_PRINT(refCall, "called function returns a value not a reference");
+                    USR_PRINT(valueCall->isResolved(), "called function returns a value not a reference");
                   }
           }
 
