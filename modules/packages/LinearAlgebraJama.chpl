@@ -2245,7 +2245,7 @@ class Matrix {
 
    proc random (m, n:int) {
       var A = new Matrix(m,n);
-      var randlist = new RandomStream(seed);
+      var randlist = new RandomStream(real, seed);
       randlist.fillRandom(A.A);
       return A;
    }
@@ -2262,7 +2262,7 @@ class Matrix {
 
 proc random (m, n:int) {
    var A = new Matrix(m,n);
-   var randlist = new RandomStream(seed);
+   var randlist = new RandomStream(real, seed);
    randlist.fillRandom(A.A);
    return A;
 }

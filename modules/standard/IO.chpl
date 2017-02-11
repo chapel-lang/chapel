@@ -2070,7 +2070,7 @@ proc file.check() {
 }
 
 pragma "no doc"
-proc ref file.~file() {
+proc ref file.deinit() {
   on this.home {
     qio_file_release(_file_internal);
     this._file_internal = QIO_FILE_PTR_NULL;
@@ -2720,7 +2720,7 @@ proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, 
 }
 
 pragma "no doc"
-proc ref channel.~channel() {
+proc ref channel.deinit() {
   on this.home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
@@ -5287,7 +5287,7 @@ class _channel_regexp_info {
     capArr = _ddata_allocate(string, ncaptures);
     capturei = 0;
   }
-  proc ~_channel_regexp_info() {
+  proc deinit() {
     clear();
   }
 }

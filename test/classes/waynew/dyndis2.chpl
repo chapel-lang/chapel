@@ -32,7 +32,7 @@ class bclass: base {
 class contain {
   var objs: list(base);
 
-  proc ~contain() {
+  proc deinit() {
     objs.destroy();
   }
 

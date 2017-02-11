@@ -32,7 +32,7 @@ proc main {
 
 proc initialize(B) {
   use Random;
-  var rnd = new RandomStream(randSeed);
+  var rnd = new RandomStream(real, randSeed);
   rnd.fillRandom(B);
   delete rnd;
 }

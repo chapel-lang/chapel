@@ -50,7 +50,7 @@ module LCALSDataTypes {
       return loop_test_stats[loop_variant];
     }
 
-    proc ~LoopSuiteRunInfo() {
+    proc deinit() {
       if ref_loop_stat != nil then delete ref_loop_stat;
 
       for idx in loop_variant_dom {
@@ -84,7 +84,7 @@ module LCALSDataTypes {
         loop_run_time[i] = new vector(real);
     }
 
-    proc ~LoopStat() {
+    proc deinit() {
       for lrt in loop_run_time do
         if lrt != nil then delete lrt;
     }
@@ -267,7 +267,7 @@ module LCALSDataTypes {
     var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays] LCALS_Overlapping_Array_3D(real) = [i in 0..s_num_3D_2xNx4_Real_arrays] new LCALS_Overlapping_Array_3D(real, 2*4*aligned_chunksize); // 2 X loop_length X 4 array size
 
     var RealArray_scalars: [0..#s_num_Real_scalars] real;
-    proc ~LoopData() {
+    proc deinit() {
       for arr in RealArray_3D_2xNx4 do delete arr;
     }
   }

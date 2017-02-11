@@ -111,7 +111,7 @@ proc main(){
   var timer: Timer;
 
   // initialize space with values
-  var generator = new RandomStream( globalSeed, parSafe = false );
+  var generator = new RandomStream( real, globalSeed, parSafe = false );
 
   forall i in computationSpaceRange do{
     space[0, i] = 0;
@@ -161,7 +161,7 @@ proc verifyResult(space: [] Cell, lowerBound: int, upperBound: int,
   for x in computationSpaceRange do
     spaceEndState[ x ] = space[ T & 1, x ];
 
-  var generator = new RandomStream( globalSeed, parSafe = false );
+  var generator = new RandomStream( real, globalSeed, parSafe = false );
 
   for i in computationSpaceRange do
     space[0, i] = generator.getNext();

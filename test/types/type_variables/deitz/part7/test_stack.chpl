@@ -9,7 +9,7 @@ record stack {
 
   var  top : stack_elt(eltType);
 
-  proc ~stack() {
+  proc deinit() {
     while top != nil {
       var t = top;
 

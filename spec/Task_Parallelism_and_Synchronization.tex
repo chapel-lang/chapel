@@ -214,7 +214,7 @@ var tree: Tree = new Tree(false, new Tree(false, new Tree(true, nil, nil, 1),
                                  new Tree(false, new Tree(true, nil, nil, 1),
                                                  new Tree(true, nil, nil, 1), 1), 1);
 writeln(tree.sum());
-proc Tree.~Tree() {
+proc Tree.deinit() {
   if isLeaf then return;
   delete left;
   delete right;

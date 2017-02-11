@@ -42,7 +42,7 @@ proc two ref {
 record OnExit {
 }
 
-proc OnExit.~OnExit() {
+proc OnExit.deinit() {
   delete g;
 }
 

@@ -4,7 +4,7 @@ class RefCount {
     writeln("Initializing a RefCount");
     count = 1;
   }
-  proc ~RefCount() {
+  proc deinit() {
     writeln("Destroying a RefCount");
   }
 }
@@ -21,7 +21,7 @@ record R {
       refcnt = nil;
     }
   }
-  proc ~R() {
+  proc deinit() {
     writeln("In ~R() ", refcnt.count);
     this.release();
   }

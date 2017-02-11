@@ -1,6 +1,6 @@
-bug: multiple inheritance
+feature request: multiple inheritance
 
-Was:
+Do we want to provide multiple inheritance?
 
-bug: destructors of classes that inherit from multiple classes not allowed
-specifically in the case where more than one class from which it inherits have data.
+Currently the test fails when invoking parent initializer
+from child initializer.

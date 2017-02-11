@@ -13,7 +13,7 @@ class C {
         dArray(locid) = new D(elemType);
   }
 
-  proc ~C() {
+  proc deinit() {
     for locid in LocaleSpace do
       on Locales(locid) do
         delete dArray(locid);

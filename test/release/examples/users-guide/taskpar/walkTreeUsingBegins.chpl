@@ -30,7 +30,7 @@ proc walkTree(node) {
     begin walkTree(node.right);
 }
 
-proc Node.~Node() {
+proc Node.deinit() {
   if this.left != nil then
     delete this.left;
   if this.right != nil then

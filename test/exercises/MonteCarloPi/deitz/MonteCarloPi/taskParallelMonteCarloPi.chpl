@@ -34,7 +34,7 @@ writeln("Number of tasks     = ", tasks);
 //
 var counts: [1..tasks] int;
 coforall task in 1..tasks {
-  var rs = new NPBRandomStream(seed + task*2, parSafe=false);
+  var rs = new NPBRandomStream(real, seed + task*2, parSafe=false);
   var count = 0;
   for i in (task-1)*n/tasks+1..task*n/tasks do
     count += rs.getNext()**2 + rs.getNext()**2 <= 1.0;

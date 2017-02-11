@@ -22,6 +22,7 @@ Outline
  * `Rationale`_: The Problems Associated With Constructors
  * `Compiler Generated Initializers`_
  * `Initializer Naming`_
+ * `How are Initializers Invoked?`_
  * `Defining the Initializer Body`_
 
    - `Phase 1 of Initialization`_
@@ -34,6 +35,7 @@ Outline
  * `Implementation Strategy, Misc.`_
  * `Noinit`_
  * `Copy Initializers`_
+ * `Deinitialization`_
  * `Summary`_
 
 
@@ -95,6 +97,22 @@ name of an initializer method to ``init`` for all types – this name is succinc
 and does not vary, meaning that modifications to the type name will be less
 painful to perform.  Similarly and for consistency, the destructor name will be
 updated to ``deinit``.
+
+
+How are Initializers Invoked?
++++++++++++++++++++++++++++++
+
+A `proc init` is an initializer that is called by using the `new` syntax.
+It is an compilation error to call an `init` directly.
+
+In certain cases, the compiler adds calls to initializers. In particular,
+a statement such as `var a:MyRecord;`, where `MyRecord` is a record type,
+will invoke the zero-arguments initializer for `MyRecord` in the process
+of creating the variable `a`.
+
+The compiler can add calls to copy-initializers in certain cases, such as
+when initializing a variable with another variable (e.g. `var a = b`) or
+when using the `in` argument intent. See also `Copy Initializers`_.
 
 Defining the Initializer Body
 +++++++++++++++++++++++++++++
@@ -508,6 +526,67 @@ For more details on when the copy initializer would be called, please refer to
 
 .. _CHIP 13 - When Do Records and Array Copies Occur:
    https://github.com/chapel-lang/chapel/blob/master/doc/developer/chips/13.rst
+
+
+Deinitialization
+++++++++++++++++
+
+To specify actions that occur upon deinitialization, specify a ``proc
+deinit()`` method. This method must have zero arguments and cannot be called
+directly. If a type does not specify a ``proc deinit()`` method, the compiler
+will generate one.
+It will be equivalent to a user-written ``deinit`` with an empty body.
+
+In addition to the actions specified by the ``deinit`` method, whether
+compiler-generated or user-defined, in the process of deinitialization:
+
+ * parent ``deinit`` methods are called in the case of inherited classes, and
+ * all fields of record type are deinitialized.
+
+The expected use-case for the ``deinit`` method is to call ``delete`` on
+fields of class type, when appropriate. It is the responsibility of the
+class designer to ``delete`` fields when appropriate. The compiler will not
+automatically add ``delete`` calls for fields of class type.
+Conversely, the compiler adds ``deinit`` calls on fields of record type.
+These calls cannot be added by the user.
+
+Limitations
+***********
+
+It is an error for a ``deinit`` method to invoke a method
+on ``this`` or to pass ``this`` as an argument to a function.
+
+However, the ``deinit`` method can refer to any field in its class or
+record. The ``deinit`` in a class can also refer to any field in its
+parent class(es), if any.
+
+Order of deinitialization
+*************************
+
+Suppose a class ``Child`` inherits from another class ``Parent``.
+When an instance of ``Child`` is deinitialized, the ``deinit`` method
+for ``Child`` is invoked before the ``deinit`` method for ``Parent``.
+
+The fields of a given class or record will be deinitialized after the
+``deinit`` method for that class or record has completed.
+
+Within a class or a record, fields are deinitialized
+in reverse declaration order.
+
+Rationale for deinit Rules
+**************************
+
+Our goal is to support type safety, specifically
+to prevent accesses to fields after they have been deinitialized.
+This includes preventing access to an array after its domain
+has been deinitialized.
+The above rules specify one way to achieve this goal.
+They are a work in progress.
+
+For example, disallowing the use of ``this`` as a whole within ``deinit``
+is intended merely as the minimum functionality currently required,
+so that we can refine it in the future without breaking code.
+
 
 Summary
 +++++++

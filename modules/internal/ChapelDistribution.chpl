@@ -37,7 +37,7 @@ module ChapelDistribution {
                                   // has been destroyed
     var pid:int = nullPid; // privatized ID, if privatization is supported
   
-    proc ~BaseDist() {
+    proc deinit() {
     }
 
     // Returns a distribution that should be freed or nil.
@@ -167,7 +167,7 @@ module ChapelDistribution {
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
   
-    proc ~BaseDom() {
+    proc deinit() {
     }
 
     proc dsiMyDist(): BaseDist {
@@ -313,7 +313,7 @@ module ChapelDistribution {
   }
   
   class BaseRectangularDom : BaseDom {
-    proc ~BaseRectangularDom() {
+    proc deinit() {
       // this is a bug workaround
     }
 
@@ -336,7 +336,7 @@ module ChapelDistribution {
 
     var nnzDom = {1..nnz};
 
-    proc ~BaseSparseDomImpl() {
+    proc deinit() {
       // this is a bug workaround
     }
 
@@ -367,7 +367,11 @@ module ChapelDistribution {
       }
     }
 
-    inline proc _bulkGrow(size: int) {
+    // This method assumes nnz is updated according to the size
+    // requested. So, a bulk addition into a sparse domain should: (1)
+    // calculate new nnz and update it, (2) call this method, (3) add
+    // indices
+    inline proc _bulkGrow() {
       if (nnz > nnzDom.size) {
         const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
 
@@ -461,7 +465,7 @@ module ChapelDistribution {
 
     var nnz = 0; //: int;
 
-    proc ~BaseSparseDom() {
+    proc deinit() {
       // this is a bug workaround
     }
 
@@ -541,7 +545,7 @@ module ChapelDistribution {
   // end BaseSparseDom operators
   
   class BaseAssociativeDom : BaseDom {
-    proc ~BaseAssociativeDom() {
+    proc deinit() {
       // this is a bug workaround
     }
 
@@ -557,7 +561,7 @@ module ChapelDistribution {
   }
   
   class BaseOpaqueDom : BaseDom {
-    proc ~BaseOpaqueDom() {
+    proc deinit() {
       // this is a bug workaround
     }
 
@@ -578,7 +582,7 @@ module ChapelDistribution {
     var _arrAlias: BaseArr;    // reference to base array if an alias
     var pid:int = nullPid; // privatized ID, if privatization is supported
   
-    proc ~BaseArr() {
+    proc deinit() {
     }
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
@@ -699,7 +703,7 @@ module ChapelDistribution {
 
     proc dsiGetBaseDom() return dom;
 
-    proc ~BaseSparseArr() {
+    proc deinit() {
       // this is a bug workaround
     }
   }
@@ -710,7 +714,7 @@ module ChapelDistribution {
    */
   class BaseSparseArrImpl: BaseSparseArr {
 
-    proc ~BaseSparseArrImpl() {
+    proc deinit() {
       // this is a bug workaround
     }
 

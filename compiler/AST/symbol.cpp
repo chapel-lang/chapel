@@ -345,6 +345,53 @@ SymExpr* Symbol::lastSymExpr() const {
   return symExprsTail;
 }
 
+int Symbol::countDefs(int max) const {
+  int ret = 0;
+  for_SymbolDefs(def, this) {
+    ret += 1;
+    if (ret >= max) break;
+  }
+  return ret;
+}
+
+int Symbol::countUses(int max) const {
+  int ret = 0;
+  for_SymbolUses(use, this) {
+    ret += 1;
+    if (ret >= max) break;
+  }
+  return ret;
+}
+
+bool Symbol::isUsed() const {
+  return (this->countUses(1) >= 1);
+}
+
+bool Symbol::isDefined() const {
+  return (this->countDefs(1) >= 1);
+}
+
+SymExpr* Symbol::getSingleUse() const {
+  SymExpr* ret = NULL;
+  for_SymbolUses(use, this) {
+    if (ret != NULL) return NULL;
+    ret = use;
+  }
+  return ret;
+}
+
+SymExpr* Symbol::getSingleDef() const {
+  SymExpr* ret = NULL;
+  for_SymbolDefs(def, this) {
+    if (ret != NULL) return NULL;
+    ret = def;
+  }
+  return ret;
+}
+
+
+
+
 bool Symbol::isImmediate() const {
   return false;
 }
@@ -1478,7 +1525,7 @@ int FnSymbol::hasGenericFormals() const {
     if (isGeneric == true) {
       hasGenericFormal = true;
 
-      if (formal->defaultExpr == false) {
+      if (formal->defaultExpr == NULL) {
         hasGenericDefaults = false;
       }
     }
@@ -2287,6 +2334,7 @@ static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 FnSymbol* initStringLiterals = NULL;
+LabelSymbol* initStringLiteralsEpilogue = NULL;
 
 void createInitStringLiterals() {
   SET_LINENO(stringLiteralModule);
@@ -2358,14 +2406,18 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
 
-  if (initStringLiterals == NULL)
+  if (initStringLiterals == NULL) {
     createInitStringLiterals();
+    initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
+  }
 
-  initStringLiterals->insertBeforeEpilogue(new DefExpr(cptrTemp));
-  initStringLiterals->insertBeforeEpilogue(cptrCall);
-  initStringLiterals->insertBeforeEpilogue(new DefExpr(castTemp));
-  initStringLiterals->insertBeforeEpilogue(castCall);
-  initStringLiterals->insertBeforeEpilogue(ctorCall);
+  Expr* insertPt = initStringLiteralsEpilogue->defPoint;
+
+  insertPt->insertBefore(new DefExpr(cptrTemp));
+  insertPt->insertBefore(cptrCall);
+  insertPt->insertBefore(new DefExpr(castTemp));
+  insertPt->insertBefore(castCall);
+  insertPt->insertBefore(ctorCall);
 
   s->immediate = new Immediate;
   *s->immediate = imm;

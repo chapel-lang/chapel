@@ -95,11 +95,7 @@ void addAutoDestroyCalls() {
 
 static void cullForDefaultConstructor(FnSymbol* fn) {
   if (isVarSymbol(fn->getReturnSymbol()) == true) {
-    Map<Symbol*, Vec<SymExpr*>*> defMap;
-    Map<Symbol*, Vec<SymExpr*>*> useMap;
     std::vector<DefExpr*>        defs;
-
-    buildDefUseMaps(fn, defMap, useMap);
 
     collectDefExprs(fn, defs);
 
@@ -110,7 +106,7 @@ static void cullForDefaultConstructor(FnSymbol* fn) {
           // type, and remove the flag. (We don't actually check that var is
           // of record type, because chpl__autoDestroy() is a NO-OP when
           // applied to all other types.
-          for_uses(se, useMap, var) {
+          for_SymbolUses(se, var) {
             CallExpr* call = toCallExpr(se->parentExpr);
 
             if (call->isPrimitive(PRIM_SET_MEMBER) == true &&
@@ -121,8 +117,6 @@ static void cullForDefaultConstructor(FnSymbol* fn) {
         }
       }
     }
-
-    freeDefUseMaps(defMap, useMap);
   }
 }
 
@@ -235,6 +229,7 @@ static void walkBlock(FnSymbol* fn, Scope* parent, BlockStmt* block) {
           case GOTO_GETITER_END:
           case GOTO_ITER_RESUME:
           case GOTO_ITER_END:
+          case GOTO_ERROR_HANDLING:
            // MDN 2016/03/18 Need to revisit these cases
            break;
         }

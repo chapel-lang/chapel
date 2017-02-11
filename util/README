@@ -24,7 +24,6 @@ The following are for use by developers or other Chapel scripts:
 
    build_configs.py : a helper script to build Chapel configurations
    chplenv/         : helper scripts for inferring CHPL_* variables if unset
-   chplspell        : helper script for spell checking the Chapel repo
    config/          : helper scripts for configuring the Chapel build
    docs/            : helper scripts for chpldocs mode
    test/            : helper scripts for the testing system

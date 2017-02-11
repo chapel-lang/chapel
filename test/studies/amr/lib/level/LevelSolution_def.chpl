@@ -34,7 +34,7 @@ class LevelSolution {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~LevelSolution
+  proc deinit
   {
     delete old_data;
     delete current_data;

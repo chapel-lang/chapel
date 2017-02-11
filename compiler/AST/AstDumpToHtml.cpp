@@ -600,13 +600,30 @@ bool AstDumpToHtml::enterGotoStmt(GotoStmt* node) {
   fprintf(mFP, "%s\n", HTML_DL_open_tag);
 
   switch (node->gotoTag) {
-    case GOTO_NORMAL:      fprintf(mFP, "<B>goto</B> ");           break;
-    case GOTO_BREAK:       fprintf(mFP, "<B>break</B> ");          break;
-    case GOTO_CONTINUE:    fprintf(mFP, "<B>continue</B> ");       break;
-    case GOTO_RETURN:      fprintf(mFP, "<B>gotoReturn</B> ");     break;
-    case GOTO_GETITER_END: fprintf(mFP, "<B>gotoGetiterEnd</B> "); break;
-    case GOTO_ITER_RESUME: fprintf(mFP, "<B>gotoIterResume</B> "); break;
-    case GOTO_ITER_END:    fprintf(mFP, "<B>gotoIterEnd</B> ");    break;
+    case GOTO_NORMAL:
+      fprintf(mFP, "<B>goto</B> ");
+      break;
+    case GOTO_BREAK:
+      fprintf(mFP, "<B>break</B> ");
+      break;
+    case GOTO_CONTINUE:
+      fprintf(mFP, "<B>continue</B> ");
+      break;
+    case GOTO_RETURN:
+      fprintf(mFP, "<B>gotoReturn</B> ");
+      break;
+    case GOTO_GETITER_END:
+      fprintf(mFP, "<B>gotoGetiterEnd</B> ");
+      break;
+    case GOTO_ITER_RESUME:
+      fprintf(mFP, "<B>gotoIterResume</B> ");
+      break;
+    case GOTO_ITER_END:
+      fprintf(mFP, "<B>gotoIterEnd</B> ");
+      break;
+    case GOTO_ERROR_HANDLING:
+      fprintf(mFP, "<B>gotoErrorHandling</B> ");
+      break;
   }
 
   if (SymExpr* label = toSymExpr(node->label))

@@ -1,0 +1,1 @@
+bug: array of c_string causes internal error for --no-local

@@ -328,7 +328,7 @@ module cholesky_scalar_algorithms {
 
   proc main {
 
-    var Rand = new RandomStream ( seed = 314159) ;
+    var Rand = new RandomStream ( real, seed = 314159) ;
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 

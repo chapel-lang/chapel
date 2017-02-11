@@ -29,30 +29,24 @@
 #define DEBUG_RAAWRT 0
 
 static bool anyAssignmentsToArray(std::vector<ContextCallExpr*> allContextCalls,
-                                  SymExpr* matchArray,
-                                  Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                                  Map<Symbol*, Vec<SymExpr*>*>& useMap);
-static bool isWrite(SymExpr* lhs,
-                    Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                    Map<Symbol*, Vec<SymExpr*>*>& useMap);
+                                  SymExpr* matchArray);
+static bool isWrite(SymExpr* lhs);
 
 // Return true if lhs is a write or any aliases of lhs are writes
-static bool isWrite(SymExpr* lhs,
-                    Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                    Map<Symbol*, Vec<SymExpr*>*>& useMap) {
-  for_defs(def, defMap, lhs->symbol()) {
+static bool isWrite(SymExpr* lhs) {
+  for_SymbolDefs(def, lhs->symbol()) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
       if (!call->isPrimitive(PRIM_MOVE)) {
         return true;
       }
     }
   }
-  for_uses(use, useMap, lhs->symbol()) {
+  for_SymbolUses(use, lhs->symbol()) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE)) {
         if (use == call->get(2)) {
           SymExpr* lhs = toSymExpr(call->get(1));
-          if (isWrite(lhs, defMap, useMap)) {
+          if (isWrite(lhs)) {
             return true;
           }
         }
@@ -65,9 +59,7 @@ static bool isWrite(SymExpr* lhs,
 // Return true if any of the context calls in the allContextCalls vector
 // are used to write to the array 'matchArray'.
 static bool anyAssignmentsToArray(std::vector<ContextCallExpr*> allContextCalls,
-                                  SymExpr* matchArray,
-                                  Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                                  Map<Symbol*, Vec<SymExpr*>*>& useMap) {
+                                  SymExpr* matchArray) {
   for_vector(ContextCallExpr, contextCall, allContextCalls) {
     CallExpr* call = toCallExpr(contextCall);
     SymExpr* callArray = toSymExpr(call->get(1));
@@ -76,7 +68,7 @@ static bool anyAssignmentsToArray(std::vector<ContextCallExpr*> allContextCalls,
       if (CallExpr* parentCall = toCallExpr(contextCall->parentExpr)) {
         if (parentCall->isPrimitive(PRIM_MOVE)) {
           SymExpr* lhs = toSymExpr(parentCall->get(1));
-          if (isWrite(lhs, defMap, useMap)) {
+          if (isWrite(lhs)) {
             return true;
           }
         }
@@ -211,16 +203,13 @@ void replaceArrayAccessesWithRefTemps() {
                    idx->symbol()->name, firstCall->id, vecSize);
           }
         } else /*if (vecSize > 2) */ { // TODO: tune this threshold
-          Map<Symbol*, Vec<SymExpr*>*> defMap;
-          Map<Symbol*, Vec<SymExpr*>*> useMap;
-          buildDefUseMaps(forLoop, defMap, useMap);
           SET_LINENO(indexMove);
           CallExpr* accessCall = toCallExpr(firstCall);
           SymExpr* array = toSymExpr(accessCall->get(1));
           // assign an array indexing context call in the vector to a 'ref'
           // variable at the top of the loop
           VarSymbol* ref = newTemp("arrayAccessTmp", firstCall->typeInfo());
-          if (anyAssignmentsToArray(allContextCalls, array, defMap, useMap)) {
+          if (anyAssignmentsToArray(allContextCalls, array)) {
             // If any assignment to the array happens in the loop, mark the
             // temp as a user-level reference var.  This will prevent it
             // from being changed to by-value during cullOverReferences.
@@ -249,7 +238,6 @@ void replaceArrayAccessesWithRefTemps() {
             }
             call->replace(new SymExpr(ref));
           }
-          freeDefUseMaps(defMap, useMap);
         }
       }
     }

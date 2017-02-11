@@ -124,7 +124,7 @@ class BoundedBuffer {
       head: atomic int,                    // the head's cursor position
       tail: atomic int;                    // the tail's cursor position
 
-  var rng = new RandomStream();
+  var rng = new RandomStream(real);
 
 
   //
@@ -186,7 +186,7 @@ class BoundedBuffer {
   //
   // Clean up after ourselves
   //
-  proc ~BoundedBuffer() {
+  proc deinit() {
     delete rng;
   }
 }

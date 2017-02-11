@@ -36,11 +36,11 @@
 #include <cstdlib>
 #include <inttypes.h>
 
-static int             explainInstantiationLine   = -2;
-static ModuleSymbol*   explainInstantiationModule = NULL;
+int                    explainInstantiationLine   = -2;
+ModuleSymbol*          explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
 
-static void
+void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) &&
       (strncmp(fn->name, "_construct_", 11) ||
@@ -97,7 +97,7 @@ explainInstantiation(FnSymbol* fn) {
 }
 
 
-static void
+void
 copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbol* value) {
   if (!strcmp("_type_construct__tuple", root->name) && key->name[0] == 'x') {
     subs.put(new_IntSymbol(atoi(key->name+1)), value);
@@ -114,7 +114,7 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
   }
 }
 
-static TypeSymbol*
+TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
   if (fn->hasEitherFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
     return actualTS;
@@ -138,7 +138,7 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
 }
 
 
-static void
+void
 checkInfiniteWhereInstantiation(FnSymbol* fn) {
   if (fn->where) {
     forv_Vec(FnSymbol, where, whereStack) {
@@ -171,7 +171,7 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
 // because folding is done via instantiation; therefore, be careful
 // developing in the base module
 //
-static void
+void
 checkInstantiationLimit(FnSymbol* fn) {
   static Map<FnSymbol*,int> instantiationLimitMap;
 
@@ -197,7 +197,7 @@ checkInstantiationLimit(FnSymbol* fn) {
 }
 
 
-static void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
+void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
 {
   const size_t bufSize = 128;
   char immediate[bufSize];
@@ -651,23 +651,6 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
   newFn->tagIfGeneric();
 
-  //
-  // TODO: What would it take to remove this evaluation of the where
-  // clause along this generic path and only resolve it on the
-  // concrete path once we have eliminated candidates based on
-  // actual-formal matches?  Simply removing it doesn't work at
-  // present.
-  //
-  if (newFn->hasFlag(FLAG_GENERIC) == false &&
-      evaluateWhereClause(newFn)   == false) {
-    //
-    // where clause evaluates to false so cache gVoid as a function
-    //
-    replaceCache(genericsCache, root, (FnSymbol*)gVoid, &all_subs);
-
-    return NULL;
-  }
-
   if (explainInstantiationLine == -2) {
     parseExplainFlag(fExplainInstantiation,
                      &explainInstantiationLine,
@@ -684,7 +667,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 }
 
 
-bool evaluateWhereClause(FnSymbol* fn, bool generic) {
+bool evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
     whereStack.add(fn);
 
@@ -697,20 +680,7 @@ bool evaluateWhereClause(FnSymbol* fn, bool generic) {
     SymExpr* se = toSymExpr(fn->where->body.last());
 
     if (se == NULL) {
-      //
-      // if we're evaluating the where clause of a generic function,
-      // it's too soon to throw errors because we haven't yet
-      // determined whether the call is even a candidate based on
-      // actual-formal matching.  For that reason, conservatively
-      // return 'true' in error cases.  We'll then re-evaluate the
-      // where clause on the concrete instantiation of the generic
-      // function and issue the error (if appropriate) there.
-      //
-      if (generic) {
-        return true;
-      } else {
-        USR_FATAL(fn->where, "invalid where clause");
-      }
+      USR_FATAL(fn->where, "invalid where clause");
     }
 
     if (se->symbol() == gFalse) {
