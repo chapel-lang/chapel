@@ -2067,7 +2067,8 @@ module DefaultRectangular {
   */
   proc DefaultRectangularArr.doiBulkTransferStride(B, viewDom) {
     if debugDefaultDistBulkTransfer {
-      writeln("In DefaultRectangularArr.doiUseBulkTransferStride");
+      writeln();
+      writeln("In DefaultRectangularArr.doiBulkTransferStride");
     }
     var actual = chpl__getActualArray(B);
     if (this.dataChunk(0).locale.id != here.id

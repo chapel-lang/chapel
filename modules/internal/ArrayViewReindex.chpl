@@ -156,7 +156,7 @@ module ArrayViewReindex {
     // high-D index
     //
     inline proc chpl_reindexConvertIdx(i: integral) {
-      assert(arr.rank == 1);
+      compilerAssert(arr.rank == 1, arr.rank:string);
       //      writeln("dom.dsiDim(1).indexOrder(", i, ") = ", dom.dsiDim(1).indexOrder(i));
       return arr.dom.dsiDim(1).orderToIndex(dom.dsiDim(1).indexOrder(i));
     }
@@ -171,41 +171,29 @@ module ArrayViewReindex {
       return ind;
     }
 
-    /*
-    inline proc chpl_reindexConvertDom(lowDom) {
-      //
-      // TODO: I worry that I'm being too fast and loose with domain
-      // records and classes here
-      //
-      var dom = {(...arr.dom.dsiDims())};
-      //    writeln("*** dom was: ", dom);
-      var j = 1;
-      for param d in 1..arr.rank {
-        if !collapsedDim(d) {
-          dom._value.ranges(d) = lowDom.dsiDim(j);
-          j += 1;
-        } else {
-          dom._value.ranges(d) = idx(j)..idx(j);
-        }
+    inline proc chpl_reindexConvertDom(dims) {
+      if dom.rank != dims.size {
+        compilerError("Called chpl_reindexConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", dom.rank:string);
       }
-      //    writeln("*** now dom is: ", dom);
-      return dom._value;
+
+      var ranges : arr.dom.dsiDims().type;
+      var low , high : arr.rank*arr.idxType;
+      for param d in 1..dims.size do low(d) = dims(d).first;
+      for param d in 1..dims.size do high(d) = dims(d).last;
+
+      var actualLow = chpl_reindexConvertIdx(low);
+      var actualHigh = chpl_reindexConvertIdx(high);
+      for param d in 1..arr.rank {
+        var lowered = actualLow(d)..actualHigh(d);
+        // TODO: does it matter which range slices the other?
+        ranges(d) = arr.dom.dsiDim(d)[lowered];
+      }
+      return {(...ranges)};
     }
-    */
 
     // TODO: Haven't looked below here yet...
 
-    //
-    // bulk transfer routines -- forward to array
-    //
-    proc doiBulkTransferToDR(B) {
-      arr.doiBulkTransferToDR(B);
-    }
-
     /*  I don't think these should be needed...
-  proc doiBulkTransferStride(B) {
-    arr.doiBulkTransferStride(B);
-  }
   proc dataChunk(x) ref {
     return arr.dataChunk(x);
   }
@@ -241,7 +229,7 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new ArrayViewRankChangeArr(eltType=this.eltType,
+      return new ArrayViewReindexArr(eltType=this.eltType,
                                         _DomPid=privatizeData(1),
                                         dom=privatizeData(2),
                                         _ArrPid=privatizeData(3),
@@ -250,6 +238,25 @@ module ArrayViewReindex {
 
     proc dsiSupportsBulkTransfer() param {
       return arr.dsiSupportsBulkTransfer();
+    }
+    proc dsiSupportsBulkTransferInterface() param return arr.dsiSupportsBulkTransferInterface();
+
+    proc _viewHelper(dims) {
+      if dims.size != dom.rank {
+        compilerError("Error while composing view domain for reindex view.");
+      }
+      const goodDims = chpl_reindexConvertDom(dims).dims();
+      if _containsRCRE() {
+        var nextView = arr._getRCREView();
+        return nextView._viewHelper(goodDims);
+      } else {
+        return {(...goodDims)};
+      }
+    }
+
+    proc _getViewDom() {
+      // BHARSH TODO
+      return _viewHelper(dom.dsiDims());
     }
 
     proc doiUseBulkTransfer(B) {
@@ -263,6 +270,61 @@ module ArrayViewReindex {
     proc doiBulkTransfer(B, viewDom) {
       arr.doiBulkTransfer(B, viewDom);
     }
+
+    // strided transfer support
+    proc doiUseBulkTransferStride(B) {
+      return arr.doiUseBulkTransferStride(B);
+    }
+
+    proc doiCanBulkTransferStride(viewDom) {
+      return arr.doiCanBulkTransferStride(viewDom);
+    }
+
+    proc doiBulkTransferStride(B, viewDom) {
+      arr.doiBulkTransferStride(B, viewDom);
+    }
+
+
+    // distributed transfer support
+    proc doiBulkTransferToDR(B, viewDom) {
+      arr.doiBulkTransferToDR(B, viewDom);
+    }
+
+    proc doiBulkTransferFromDR(B, viewDom) {
+      arr.doiBulkTransferFromDR(B, viewDom);
+    }
+
+    proc doiBulkTransferFrom(B, viewDom) {
+      arr.doiBulkTransferFrom(B, viewDom);
+    }
+
+    proc isDefaultRectangular() param return arr.isDefaultRectangular();
+
+    proc _getActualArray() {
+      if chpl__isArrayView(arr) {
+        return arr._getActualArray();
+      } else {
+        return arr;
+      }
+    }
+
+    // Returns true if 'arr' is a rank-change, a reindex, or if itself
+    // contains a rank-change or reindex.
+    proc _containsRCRE() param {
+      if chpl__isArrayView(arr) {
+        return arr.isRankChangeArrayView() ||
+               arr.isReindexArrayView() ||
+               arr._containsRCRE();
+      } else {
+        return false;
+      }
+    }
+
+    // Returns the topmost rank-change view in this view-stack
+    proc _getRCREView() {
+      return this;
+    }
   }
+
 
 }

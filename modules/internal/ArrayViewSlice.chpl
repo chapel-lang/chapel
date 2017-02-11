@@ -191,12 +191,16 @@ class ArrayViewSliceArr: BaseArr {
   }
   proc dsiSupportsBulkTransferInterface() param return arr.dsiSupportsBulkTransferInterface();
 
+  proc _viewHelper(dims) {
+    compilerError("viewHelper not supported on ArrayViewSlice.");
+  }
+
   proc _getViewDom() {
-    if _containsRankChange() {
-      // RankChangeView knows how to deal with nested rank changes, so tell it
-      // our dimensions and let it do the rest.
-      var rc = _getRankChangeView();
-      return rc._viewHelper(dom.dsiDims());
+    if _containsRCRE() {
+      // Rank-changes and reindexes know how to deal with nested rank-changes
+      // and reindexes, so hand off our indices and let them handle the rest.
+      var nextView = _getRCREView();
+      return nextView._viewHelper(dom.dsiDims());
     } else {
       return {(...dom.dsiDims())};
     }
@@ -251,18 +255,21 @@ class ArrayViewSliceArr: BaseArr {
     }
   }
 
-  proc _containsRankChange() param {
+  proc _containsRCRE() param {
     if chpl__isArrayView(arr) {
-      return arr.isRankChangeArrayView() || arr._containsRankChange();
+      return arr.isRankChangeArrayView() ||
+             arr.isReindexArrayView() ||
+             arr._containsRCRE();
     } else {
       return false;
     }
   }
 
-  // Returns the topmost rank-change view in this view-stack
-  proc _getRankChangeView() {
-    compilerAssert(this._containsRankChange());
-    return arr._getRankChangeView();
+  // Returns the topmost rank-change or reindex in the stack, skipping over
+  // slices
+  proc _getRCREView() {
+    compilerAssert(this._containsRCRE());
+    return arr._getRCREView();
   }
 }
 
