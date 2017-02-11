@@ -3,6 +3,7 @@
 //
 proc testit(type t) {
   var x: t = 2;
+  param zero: t = 0;
 
   if (x < 0) then
     compilerError("This should always be false");
@@ -14,6 +15,18 @@ proc testit(type t) {
     compilerError("As should this");
 
   if (!(0 <= x)) then
+    compilerError("And also this");
+
+  if (x < zero) then
+    compilerError("This should always be false");
+
+  if (!(x >= zero)) then
+    compilerError("This should always be false too");
+
+  if (zero > x) then
+    compilerError("As should this");
+
+  if (!(zero <= x)) then
     compilerError("And also this");
 }
 
