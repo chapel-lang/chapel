@@ -2478,10 +2478,9 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
   }
 
   //
-  // Evaluate non-generic where clauses (also re-evaluates where-clauses for
-  // instantiated generic functions.)
+  // Evaluate where clauses
   //
-  if (!evaluateWhereClause(currCandidate->fn, /*generic=*/false)) {
+  if (!evaluateWhereClause(currCandidate->fn)) {
     return;
   }
 
@@ -8657,7 +8656,7 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
         }
         if (fn) {
           resolveFormals(fn);
-          if (signature_match(pfn, fn)) {
+          if (signature_match(pfn, fn) && evaluateWhereClause(fn)) {
             resolveFns(fn);
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
