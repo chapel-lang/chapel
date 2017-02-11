@@ -595,12 +595,12 @@ proc ReplicatedArr.dsiAccess(indexx) ref {
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
   var neednl = false;
-  for locArr in localArrs {
+  for idx in dom.dist.targetLocDom.sorted() {
 //  on locArr {  // may cause deadlock
       if neednl then f.write("\n"); neednl = true;
       if printReplicatedLocales then
-        f.write(locArr.locale, ":\n");
-      locArr.arrLocalRep._value.dsiSerialWrite(f);
+        f.write(localArrs[idx].locale, ":\n");
+      localArrs[idx].arrLocalRep._value.dsiSerialWrite(f);
 //  }
   }
 }

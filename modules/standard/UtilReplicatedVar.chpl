@@ -148,8 +148,8 @@ proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
   var targetLocales = _rcTargetLocalesHelper(replicatedVar);
   assert(replicatedVar.domain == rcDomainBase);
   for idx in collected.domain do assert(targetLocales.domain.member(idx));
-  coforall (loc, col) in zip(targetLocales, collected) do
-    on loc do
+  coforall (idx, col) in zip(targetLocales.domain.sorted(), collected) do
+    on targetLocales[idx] do
       col = replicatedVar[rcDomainIx];
 }
 
