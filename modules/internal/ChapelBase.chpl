@@ -1492,12 +1492,9 @@ module ChapelBase {
     return !(a < 0) && (a: uint(64) > b);
   }
 
-  // non-param/param and param/non-param
+  // param/non-param where we know the answer
   inline proc >(param a: uint(?w), b: uint(w)) param where a == 0 {
     return false;
-  }
-  inline proc >(param a: uint(64), b: uint(64)) {
-    return __primitive(">", a, b);
   }
 
   // non-param/non-param
@@ -1508,12 +1505,9 @@ module ChapelBase {
     return (a < 0) || (a:uint(64) < b);
   }
 
-  // non-param/param and param/non-param
+  // non-param/param where we know the answer
   inline proc <(a: uint(?w), param b: uint(w)) param where b == 0 {
     return false;
-  }
-  inline proc <(param a: uint(64), b: uint(64)) {
-    return __primitive("<", a, b);
   }
 
 
@@ -1525,12 +1519,9 @@ module ChapelBase {
     return !(a < 0) && (a: uint(64) >= b);
   }
 
-  // non-param/param and param/non-param
+  // non-param/param where we know the answer
   inline proc >=(a: uint(?w), param b: uint(w)) param where b == 0 {
     return true;
-  }
-  inline proc >=(a: uint(64), b: uint(64)) {
-    return __primitive(">=", a, b);
   }
 
 
@@ -1542,12 +1533,9 @@ module ChapelBase {
     return (a < 0) || (a:uint(64) <= b);
   }
 
-  // non-param/param and param/non-param
+  // non-param/param where we know the answer
   inline proc <=(param a: uint(?w), b: uint(w)) param where a == 0 {
     return true;
-  }
-  inline proc <=(param a: uint(64), b: uint(64)) {
-    return __primitive("<=", a, b);
   }
 
   proc isClassType(type t) param where t:object return true;
