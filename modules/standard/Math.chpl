@@ -784,7 +784,7 @@ module Math {
       if isNonnegative(n) then
         if isUintType(m.type)
         then temp
-        else ( if temp >= 0 then temp else temp + n )
+          else ( if temp >= 0:temp.type then temp else temp + n )
       else
         // n < 0
         ( if temp <= 0 then temp else temp + n );
