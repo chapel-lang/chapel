@@ -2809,6 +2809,10 @@ module ChapelArray {
     //
     if this.rank != that.rank then
       return false;
+
+    if this.numElements != that.numElements then
+      return false;
+
     //
     // check that size/shape are the same to permit legal zippering
     //
