@@ -537,18 +537,6 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
   newFn->tagIfGeneric();
 
-  if (explainInstantiationLine == -2) {
-    parseExplainFlag(fExplainInstantiation,
-                     &explainInstantiationLine,
-                     &explainInstantiationModule);
-  }
-
-  if (!newFn->hasFlag(FLAG_GENERIC) && explainInstantiationLine) {
-    explainInstantiation(newFn);
-  }
-
-  checkInstantiationLimit(fn);
-
   return newFn;
 }
 
@@ -689,6 +677,20 @@ FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
     }
   }
   return newFn;
+}
+
+void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn) {
+  if (explainInstantiationLine == -2) {
+    parseExplainFlag(fExplainInstantiation,
+                     &explainInstantiationLine,
+                     &explainInstantiationModule);
+  }
+
+  if (!newFn->hasFlag(FLAG_GENERIC) && explainInstantiationLine) {
+    explainInstantiation(newFn);
+  }
+
+  checkInstantiationLimit(fn);
 }
 
 bool evaluateWhereClause(FnSymbol* fn) {

@@ -94,6 +94,7 @@ void determineAllSubs(FnSymbol* fn, FnSymbol* root, SymbolMap& subs,
                       SymbolMap& all_subs);
 FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
                               CallExpr* call, SymbolMap& subs, SymbolMap& map);
+void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
 // visible functions
 class VisibleFunctionBlock {
