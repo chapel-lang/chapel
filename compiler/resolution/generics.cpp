@@ -36,11 +36,11 @@
 #include <cstdlib>
 #include <inttypes.h>
 
-int                    explainInstantiationLine   = -2;
-ModuleSymbol*          explainInstantiationModule = NULL;
+static int             explainInstantiationLine   = -2;
+static ModuleSymbol*   explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
 
-void
+static void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) &&
       (strncmp(fn->name, "_construct_", 11) ||
@@ -97,7 +97,7 @@ explainInstantiation(FnSymbol* fn) {
 }
 
 
-void
+static void
 copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbol* value) {
   if (!strcmp("_type_construct__tuple", root->name) && key->name[0] == 'x') {
     subs.put(new_IntSymbol(atoi(key->name+1)), value);
@@ -171,7 +171,7 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
 // because folding is done via instantiation; therefore, be careful
 // developing in the base module
 //
-void
+static void
 checkInstantiationLimit(FnSymbol* fn) {
   static Map<FnSymbol*,int> instantiationLimitMap;
 
