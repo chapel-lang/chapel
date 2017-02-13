@@ -537,6 +537,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
   newFn->tagIfGeneric();
 
+  explainAndCheckInstantiation(newFn, fn);
+
   return newFn;
 }
 
