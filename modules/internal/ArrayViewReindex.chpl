@@ -241,11 +241,11 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new ArrayViewRankChangeArr(eltType=this.eltType,
-                                        _DomPid=privatizeData(1),
-                                        dom=privatizeData(2),
-                                        _ArrPid=privatizeData(3),
-                                        _ArrInstance=privatizeData(4));
+      return new ArrayViewReindexArr(eltType=this.eltType,
+                                     _DomPid=privatizeData(1),
+                                     dom=privatizeData(2),
+                                     _ArrPid=privatizeData(3),
+                                     _ArrInstance=privatizeData(4));
     }
 
     proc dsiSupportsBulkTransfer() param {
