@@ -2516,39 +2516,9 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
     return;
   }
 
-  /*
-   * Early rejection of generic functions.
-   */
-  int coindex = 0;
-  for_formals(formal, currCandidate->fn) {
-    if (formal->type != dtUnknown) {
-      if (Symbol* actual = currCandidate->formalIdxToActual.v[coindex]) {
-        if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-          return;
-        }
+  if (checkGenericFormals(currCandidate) == false)
+    return;
 
-        if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-          Type* vt = actual->getValType();
-          Type* st = actual->type->scalarPromotionType;
-          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
-          if (!canInstantiate(actual->type, formal->type) &&
-              (!vt  || !canInstantiate(vt, formal->type)) &&
-              (!st  || !canInstantiate(st, formal->type)) &&
-              (!svt || !canInstantiate(svt, formal->type))) {
-
-            return;
-
-          }
-        } else {
-          bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) || formal->intent == INTENT_PARAM;
-          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formalIsParam)) {
-            return;
-          }
-        }
-      }
-    }
-    ++coindex;
-  }
 
   // Compute the param/type substitutions for generic arguments.
   currCandidate->computeSubstitutions();
@@ -2568,6 +2538,44 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
       filterCandidate(candidates, currCandidate, info);
     }
   }
+}
+
+// Verify that the generic formals are matched correctly
+bool checkGenericFormals(ResolutionCandidate* currCandidate) {
+  /*
+   * Early rejection of generic functions.
+   */
+  int coindex = 0;
+  for_formals(formal, currCandidate->fn) {
+    if (formal->type != dtUnknown) {
+      if (Symbol* actual = currCandidate->formalIdxToActual.v[coindex]) {
+        if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+          return false;
+        }
+
+        if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+          Type* vt = actual->getValType();
+          Type* st = actual->type->scalarPromotionType;
+          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+          if (!canInstantiate(actual->type, formal->type) &&
+              (!vt  || !canInstantiate(vt, formal->type)) &&
+              (!st  || !canInstantiate(st, formal->type)) &&
+              (!svt || !canInstantiate(svt, formal->type))) {
+
+            return false;
+
+          }
+        } else {
+          bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) || formal->intent == INTENT_PARAM;
+          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formalIsParam)) {
+            return false;
+          }
+        }
+      }
+    }
+    ++coindex;
+  }
+  return true;
 }
 
 
