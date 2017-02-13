@@ -149,6 +149,8 @@ public:
   void computeSubstitutions();
 };
 
+bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
+
 typedef enum {
   FIND_EITHER = 0,
   FIND_REF,

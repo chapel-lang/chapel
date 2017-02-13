@@ -2457,6 +2457,16 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
     resolve_type_constructor(currCandidate->fn, info);
   }
 
+  // We should reject this candidate if any of the situations handled by this
+  // function are violated.
+  if (checkResolveFormalsWhereClauses(currCandidate) == false)
+    return;
+
+  candidates.add(currCandidate);
+}
+
+// Verifies the usage of this candidate function
+bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate) {
   /*
    * A derived generic type will use the type of its parent, and expects this to
    * be instantiated before it is.
@@ -2467,12 +2477,12 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
   for_formals(formal, currCandidate->fn) {
     if (Symbol* actual = currCandidate->formalIdxToActual.v[++coindex]) {
       if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-        return;
+        return false;
       }
 
       bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) || formal->intent == INTENT_PARAM;
       if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formalIsParam)) {
-        return;
+        return false;
       }
     }
   }
@@ -2481,10 +2491,9 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
   // Evaluate where clauses
   //
   if (!evaluateWhereClause(currCandidate->fn)) {
-    return;
+    return false;
   }
-
-  candidates.add(currCandidate);
+  return true;
 }
 
 
