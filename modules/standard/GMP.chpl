@@ -1223,7 +1223,7 @@ module GMP {
     }
 
     // destructor
-    proc ~BigInt() {
+    proc deinit() {
       on this do mpz_clear(this.mpz);
     }
 
@@ -2603,7 +2603,7 @@ module GMP {
       }
     }
 
-    proc ~GMPRandom() {
+    proc deinit() {
       on this {
         gmp_randclear(this.state);
       }

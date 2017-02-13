@@ -537,23 +537,6 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
   newFn->tagIfGeneric();
 
-  //
-  // TODO: What would it take to remove this evaluation of the where
-  // clause along this generic path and only resolve it on the
-  // concrete path once we have eliminated candidates based on
-  // actual-formal matches?  Simply removing it doesn't work at
-  // present.
-  //
-  if (newFn->hasFlag(FLAG_GENERIC) == false &&
-      evaluateWhereClause(newFn)   == false) {
-    //
-    // where clause evaluates to false so cache gVoid as a function
-    //
-    replaceCache(genericsCache, root, (FnSymbol*)gVoid, &all_subs);
-
-    return NULL;
-  }
-
   if (explainInstantiationLine == -2) {
     parseExplainFlag(fExplainInstantiation,
                      &explainInstantiationLine,
@@ -708,7 +691,7 @@ FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
   return newFn;
 }
 
-bool evaluateWhereClause(FnSymbol* fn, bool generic) {
+bool evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
     whereStack.add(fn);
 
@@ -721,20 +704,7 @@ bool evaluateWhereClause(FnSymbol* fn, bool generic) {
     SymExpr* se = toSymExpr(fn->where->body.last());
 
     if (se == NULL) {
-      //
-      // if we're evaluating the where clause of a generic function,
-      // it's too soon to throw errors because we haven't yet
-      // determined whether the call is even a candidate based on
-      // actual-formal matching.  For that reason, conservatively
-      // return 'true' in error cases.  We'll then re-evaluate the
-      // where clause on the concrete instantiation of the generic
-      // function and issue the error (if appropriate) there.
-      //
-      if (generic) {
-        return true;
-      } else {
-        USR_FATAL(fn->where, "invalid where clause");
-      }
+      USR_FATAL(fn->where, "invalid where clause");
     }
 
     if (se->symbol() == gFalse) {

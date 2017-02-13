@@ -19,7 +19,6 @@
 
 // foralls.h, foralls.cpp - support for forall loops
 
-#include "expr.h"
 #include "foralls.h"
 #include "astutil.h"
 #include "stlUtil.h"

@@ -8,7 +8,7 @@ class SomeData {
     writeln("Initializing a SomeData - copying");
     value = x.value;
   }
-  proc ~SomeData() {
+  proc deinit() {
     writeln("Destroying a SomeData");
   }
 }
@@ -16,7 +16,7 @@ class SomeData {
 record R {
   var data = new SomeData();
 
-  proc ~R() {
+  proc deinit() {
     writeln("In ~R() ", data.value);
     delete data;
   }

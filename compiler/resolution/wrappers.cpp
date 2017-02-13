@@ -1034,6 +1034,7 @@ buildPromotionWrapper(FnSymbol* fn,
     theProgram->block->insertAtTail(new DefExpr(lifn));
     toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
     normalize(lifn);
+    lifn->addFlag(FLAG_GENERIC);
     lifn->instantiationPoint = getVisibilityBlock(info->call);
 
 

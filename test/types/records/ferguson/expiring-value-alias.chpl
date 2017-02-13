@@ -326,7 +326,7 @@ test6ref();
 test6in();
 
 
-proc R.~R() {
+proc R.deinit() {
   if debug then writeln("  delete ", getNum(c));
 }
 

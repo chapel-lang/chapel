@@ -2,7 +2,7 @@ class C {
   var a, b, c: int;
 }
 
-proc C.~C() { writeln("In destructor"); }
+proc C.deinit() { writeln("In destructor"); }
 
 
 proc main {

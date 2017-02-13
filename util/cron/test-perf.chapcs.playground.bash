@@ -11,7 +11,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
 # Test performance of array-views branch
 GITHUB_USER=bradcray
-GITHUB_BRANCH=arrayViewSliceRankChange
+GITHUB_BRANCH=arrayViewAllThree
 SHORT_NAME=arrView
 START_DATE=02/06/17
 

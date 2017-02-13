@@ -59,7 +59,7 @@ class Table {
     }
   }
 
-  proc ~Table() {
+  proc deinit() {
     for n in table do {
       var cur = n;
       while cur != nil {

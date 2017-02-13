@@ -59,7 +59,7 @@ proc ref R.increment() {
 }
 
 
-proc R.~R() {
+proc R.deinit() {
   extern proc printf(fmt:c_string, arg:C);
   if debug {
     printf("in destructor for c=%p ", c);

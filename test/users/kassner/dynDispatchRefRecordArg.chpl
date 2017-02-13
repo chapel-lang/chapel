@@ -24,7 +24,7 @@ class MyClass
 {
   var myList = new list(int);
 
-  proc ~MyClass()
+  proc deinit()
   {
     myList.destroy();
   }

@@ -93,7 +93,7 @@ class GridCFGhostRegion {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~GridCFGhostRegion ()
+  proc deinit ()
   {       
     for multidomain in transfer_regions do delete multidomain;
   }
@@ -181,7 +181,7 @@ class LevelCFGhostRegion {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~LevelCFGhostRegion ()
+  proc deinit ()
   {
     for region in grid_cf_ghost_regions do delete region;
   }
@@ -307,7 +307,7 @@ class GridCFGhostSolution {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~GridCFGhostSolution () {
+  proc deinit () {
     
     for multiarray in old_data do delete multiarray;
     
@@ -452,7 +452,7 @@ class LevelCFGhostSolution {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~LevelCFGhostSolution () 
+  proc deinit () 
   {  
     for solution in grid_cf_ghost_solutions do delete solution;
   }

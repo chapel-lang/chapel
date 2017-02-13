@@ -749,13 +749,19 @@ class MyClass {
   var memberInt : int;
   var memberBool : bool = true;
 
+// Explicitly defined initializer.
+// We also get the compiler-generated initializer, with one argument per field.
+// Note that soon there will be no compiler-generated initializer when we
+// define any initializer(s) explicitly.
   proc MyClass( val : real ){
     this.memberInt = ceil( val ): int;
   }
 
-// Explicitly defined constructor. (There are default constructors.)
-  proc ~MyClass( ){
-    writeln( "MyClass Destructor called ", (this.memberInt, this.memberBool) );
+// Explicitly defined deinitializer.
+// If we did not write one, we would get the compiler-generated deinitializer,
+// which has an empty body.
+  proc deinit( ){
+    writeln( "MyClass deinitializer called ", (this.memberInt, this.memberBool) );
   }
 
 // Class methods.
@@ -776,18 +782,18 @@ class MyClass {
   }
 } // end MyClass
 
-// Default constructor, using default values.
+// Call compiler-generated initializer, using default value for memberBool.
 var myObject = new MyClass( 10 );
     myObject = new MyClass( memberInt = 10 ); // Equivalent
 writeln( myObject.getMemberInt( ) );
 
-// Same, but using our values.
+// Same, but provide a memberBool value explicitly.
 var myDiffObject = new MyClass( -1, true );
     myDiffObject = new MyClass( memberInt = -1,
                                 memberBool = true ); // Equivalent
 writeln( myDiffObject );
 
-// Using the written constructor.
+// Call the initializer we wrote.
 var myOtherObject = new MyClass( 1.95 );
     myOtherObject = new MyClass( val = 1.95 ); // Equivalent
 writeln( myOtherObject.getMemberInt( ) );

@@ -6,7 +6,7 @@ class myC {
 record myR {
   var c: myC;
   proc myR() { c = new myC(); }
-  proc ~myR() { delete c; }
+  proc deinit() { delete c; }
 }
 
 inline proc chpl__autoDestroy(x: myR) { }

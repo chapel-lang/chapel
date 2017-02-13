@@ -2,7 +2,7 @@ class Tree {
   var data: int;
   var left, right: Tree;
 
-  proc ~Tree() {
+  proc deinit() {
     if left  != nil then delete left;
     if right != nil then delete right;
   }

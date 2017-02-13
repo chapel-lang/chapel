@@ -2478,18 +2478,10 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
   }
 
   //
-  // If the candidate is an instantiation of a generic function,
-  // re-evaluate the where clause here in order to make sure it
-  // evaluates to true and to catch errors in it.  Ultimately, we'd
-  // like to do this for all concrete functions (instantiated or not),
-  // but at present, enabling it for them causes problems, perhaps
-  // because we're generating bogus where clauses on concrete
-  // functions today and getting away with it since they're ignored.
+  // Evaluate where clauses
   //
-  if (currCandidate->fn->instantiatedFrom != NULL) {
-    if (!evaluateWhereClause(currCandidate->fn, /*generic=*/false)) {
-      return;
-    }
+  if (!evaluateWhereClause(currCandidate->fn)) {
+    return;
   }
 
   candidates.add(currCandidate);
@@ -8664,7 +8656,7 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
         }
         if (fn) {
           resolveFormals(fn);
-          if (signature_match(pfn, fn)) {
+          if (signature_match(pfn, fn) && evaluateWhereClause(fn)) {
             resolveFns(fn);
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
