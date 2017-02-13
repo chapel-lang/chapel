@@ -81,14 +81,14 @@ void      instantiateBody(FnSymbol* fn);
 
 // generics support
 TypeSymbol* getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS);
-void
-copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbol* value);
 void checkInfiniteWhereInstantiation(FnSymbol* fn);
-extern int explainInstantiationLine;
-extern ModuleSymbol* explainInstantiationModule;
-void explainInstantiation(FnSymbol* fn);
-void checkInstantiationLimit(FnSymbol* fn);
 void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var);
+FnSymbol* determineRootFunc(FnSymbol* fn);
+void determineAllSubs(FnSymbol* fn, FnSymbol* root, SymbolMap& subs,
+                      SymbolMap& all_subs);
+FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
+                              CallExpr* call, SymbolMap& subs, SymbolMap& map);
+void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
 // visible functions
 class VisibleFunctionBlock {

@@ -36,11 +36,11 @@
 #include <cstdlib>
 #include <inttypes.h>
 
-int                    explainInstantiationLine   = -2;
-ModuleSymbol*          explainInstantiationModule = NULL;
+static int             explainInstantiationLine   = -2;
+static ModuleSymbol*   explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
 
-void
+static void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) &&
       (strncmp(fn->name, "_construct_", 11) ||
@@ -97,7 +97,7 @@ explainInstantiation(FnSymbol* fn) {
 }
 
 
-void
+static void
 copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbol* value) {
   if (!strcmp("_type_construct__tuple", root->name) && key->name[0] == 'x') {
     subs.put(new_IntSymbol(atoi(key->name+1)), value);
@@ -171,7 +171,7 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
 // because folding is done via instantiation; therefore, be careful
 // developing in the base module
 //
-void
+static void
 checkInstantiationLimit(FnSymbol* fn) {
   static Map<FnSymbol*,int> instantiationLimitMap;
 
@@ -471,12 +471,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   //
   // determine root function in the case of partial instantiation
   //
-  FnSymbol* root = fn;
-
-  while (root->instantiatedFrom != NULL &&
-         root->numFormals()     == root->instantiatedFrom->numFormals()) {
-    root = root->instantiatedFrom;
-  }
+  FnSymbol* root = determineRootFunc(fn);
 
   //
   // determine all substitutions (past substitutions in a partial
@@ -484,16 +479,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   // substitutions to refer to the root function's formal arguments
   //
   SymbolMap all_subs;
-
-  if (fn->instantiatedFrom) {
-    form_Map(SymbolMapElem, e, fn->substitutions) {
-      all_subs.put(e->key, e->value);
-    }
-  }
-
-  form_Map(SymbolMapElem, e, subs) {
-    copyGenericSub(all_subs, root, fn, e->key, e->value);
-  }
+  determineAllSubs(fn, root, subs, all_subs);
 
   //
   // use cached instantiation if possible
@@ -522,13 +508,76 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   //
   // instantiate function
   //
-
   SymbolMap map;
 
   if (newType) {
     map.put(fn->retType->symbol, newType->symbol);
   }
 
+  FnSymbol* newFn = instantiateFunction(fn, root, all_subs, call, subs, map);
+
+  if (newType) {
+    newType->defaultTypeConstructor = newFn;
+    newFn->retType                  = newType;
+  }
+  
+  bool fixedTuple = fixupTupleFunctions(fn, newFn, call);
+  // Fix up chpl__initCopy for user-defined records
+  if (!fixedTuple &&
+      fn->hasFlag(FLAG_INIT_COPY_FN) &&
+      fn->hasFlag(FLAG_COMPILER_GENERATED) ) {
+    // Generate the initCopy function based upon initializer
+    fixupDefaultInitCopy(fn, newFn, call);
+  }
+
+  if (newFn->numFormals()       >  1 &&
+      newFn->getFormal(1)->type == dtMethodToken) {
+    newFn->getFormal(2)->type->methods.add(newFn);
+  }
+
+  newFn->tagIfGeneric();
+
+  explainAndCheckInstantiation(newFn, fn);
+
+  return newFn;
+}
+
+//
+// determine root function in the case of partial instantiation
+//
+FnSymbol* determineRootFunc(FnSymbol* fn) {
+  FnSymbol* root = fn;
+
+  while (root->instantiatedFrom != NULL &&
+         root->numFormals()     == root->instantiatedFrom->numFormals()) {
+    root = root->instantiatedFrom;
+  }
+  return root;
+}
+
+  //
+  // determine all substitutions (past substitutions in a partial
+  // instantiation plus the current substitutions) and change the
+  // substitutions to refer to the root function's formal arguments
+  //
+void determineAllSubs(FnSymbol* fn, FnSymbol* root, SymbolMap& subs,
+                      SymbolMap& all_subs) {
+  if (fn->instantiatedFrom) {
+    form_Map(SymbolMapElem, e, fn->substitutions) {
+      all_subs.put(e->key, e->value);
+    }
+  }
+
+  form_Map(SymbolMapElem, e, subs) {
+    copyGenericSub(all_subs, root, fn, e->key, e->value);
+  }
+}
+
+//
+// instantiate function
+//
+FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
+                              CallExpr* call, SymbolMap& subs, SymbolMap& map) {
   FnSymbol* newFn = fn->partialCopy(&map);
 
   addCache(genericsCache, root, newFn, &all_subs);
@@ -629,28 +678,10 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       }
     }
   }
+  return newFn;
+}
 
-  if (newType) {
-    newType->defaultTypeConstructor = newFn;
-    newFn->retType                  = newType;
-  }
-  
-  bool fixedTuple = fixupTupleFunctions(fn, newFn, call);
-  // Fix up chpl__initCopy for user-defined records
-  if (!fixedTuple &&
-      fn->hasFlag(FLAG_INIT_COPY_FN) &&
-      fn->hasFlag(FLAG_COMPILER_GENERATED) ) {
-    // Generate the initCopy function based upon initializer
-    fixupDefaultInitCopy(fn, newFn, call);
-  }
-
-  if (newFn->numFormals()       >  1 &&
-      newFn->getFormal(1)->type == dtMethodToken) {
-    newFn->getFormal(2)->type->methods.add(newFn);
-  }
-
-  newFn->tagIfGeneric();
-
+void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn) {
   if (explainInstantiationLine == -2) {
     parseExplainFlag(fExplainInstantiation,
                      &explainInstantiationLine,
@@ -662,10 +693,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   }
 
   checkInstantiationLimit(fn);
-
-  return newFn;
 }
-
 
 bool evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
