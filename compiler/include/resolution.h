@@ -107,6 +107,9 @@ getVisibleFunctions(BlockStmt* block,
                     Vec<BlockStmt*>& visited,
                     CallExpr* callOrigin);
 
+void fillVisibleFuncVec(CallExpr* call, CallInfo info,
+                        Vec<FnSymbol*> &visibleFns);
+
 // disambiguation
 /** A wrapper for candidates for function call resolution.
  *
