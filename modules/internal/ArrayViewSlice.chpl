@@ -144,6 +144,9 @@ class ArrayViewSliceArr: BaseArr {
     return arr.dsiAccess(i);
   }
 
+  proc dsiTargetLocales() {
+    return arr.dsiTargetLocales();
+  }
   /*  I don't think these should be needed...
   proc dataChunk(x) ref {
     return arr.dataChunk(x);

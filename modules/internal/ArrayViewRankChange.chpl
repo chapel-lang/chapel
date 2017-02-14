@@ -147,9 +147,19 @@ class ArrayViewRankChangeArr: BaseArr {
     return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
   }
 
+  proc dsiTargetLocales() {
+    //
+    // BLC: To tighten this up, we'd need to query the distribution to
+    // see what subset of target locales the rank-change slice hit vs.
+    // not.
+    //
+    compilerWarning("Calls to .targetLocales() on rank-change slices may currently return a superset of the locales targeted.");
+    return arr.dsiTargetLocales();
+  }
+
   //
-  // This helper routine converts an incoming low-D index into a
-  // high-D index
+  // These helper routines convert incoming low-D indices/domains into
+  // their higher-D equivalents.
   //
   inline proc chpl_rankChangeConvertIdx(i: integral) {
     var ind = idx;

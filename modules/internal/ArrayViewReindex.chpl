@@ -151,9 +151,13 @@ module ArrayViewReindex {
       return arr.dsiAccess(chpl_reindexConvertIdx(i));
     }
 
+    proc dsiTargetLocales() {
+      return arr.dsiTargetLocales();
+    }
+
     //
-    // This helper routine converts an incoming low-D index into a
-    // high-D index
+    // These helper routines convert incoming new-domain
+    // indices/domains into their old-domain equivalents.
     //
     inline proc chpl_reindexConvertIdx(i: integral) {
       compilerAssert(arr.rank == 1, arr.rank:string);

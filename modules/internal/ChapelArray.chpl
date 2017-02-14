@@ -2381,6 +2381,12 @@ module ChapelArray {
     /*
        Returns an array of locales over which this array has been distributed.
     */
+    //
+    // TODO: Is it really appropriate that the array should provide
+    // this dsi routine rather than having this call forward to the
+    // domain[.dist] here?  Do any of the array implementations do
+    // anything other than that with it?
+    //
     proc targetLocales() {
       return _value.dsiTargetLocales();
     }
