@@ -178,7 +178,7 @@ class ArrayViewRankChangeArr: BaseArr {
 
   inline proc chpl_rankChangeConvertDom(dims) {
     if dom.rank != dims.size {
-      compilerError("Called chpl_rankChangeConvertDom with incorrect rank. Got ", dims.size:string, ", expecting", dom.rank:string);
+      compilerError("Called chpl_rankChangeConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", dom.rank:string);
     }
     //
     // TODO: I worry that I'm being too fast and loose with domain
@@ -260,9 +260,9 @@ class ArrayViewRankChangeArr: BaseArr {
     if goodDims.size != arr.rank {
       compilerError("Error while composing view domain for rank-change view.");
     }
-    if _containsRankChange() {
-      var nextChange = arr._getRankChangeView();
-      return nextChange._viewHelper(goodDims);
+    if _containsRCRE() {
+      var nextView = arr._getRCREView();
+      return nextView._viewHelper(goodDims);
     } else {
       return {(...goodDims)};
     }
@@ -321,15 +321,17 @@ class ArrayViewRankChangeArr: BaseArr {
     }
   }
 
-  proc _containsRankChange() param {
+  proc _containsRCRE() param {
     if chpl__isArrayView(arr) {
-      return arr.isRankChangeArrayView() || arr._containsRankChange();
+      return arr.isRankChangeArrayView() ||
+             arr.isReindexArrayView() ||
+             arr._containsRCRE();
     } else {
       return false;
     }
   }
 
-  proc _getRankChangeView() {
+  proc _getRCREView() {
     return this;
   }
 }

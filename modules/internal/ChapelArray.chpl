@@ -622,8 +622,9 @@ module ChapelArray {
     use Reflection;
     param isSlice = if canResolveMethod(arr, "isSliceArrayView") then arr.isSliceArrayView() else false;
     param isRankChange = if canResolveMethod(arr, "isRankChangeArrayView") then arr.isRankChangeArrayView() else false;
+    param isReindex = if canResolveMethod(arr, "isReindexArrayView") then arr.isReindexArrayView() else false;
 
-    return isSlice || isRankChange;
+    return isSlice || isRankChange || isReindex;
   }
 
   proc chpl__getViewDom(arr: []) {
@@ -1043,7 +1044,7 @@ module ChapelArray {
     pragma "no doc"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
       var ranges = _getRankChangeRanges(args);
-      param newRank = ranges.size, stridable = chpl__anyStridable(ranges);
+      param newRank = ranges.size, stridable = chpl__anyStridable(ranges) || chpl__anyStridable(dims());
       var newRanges: newRank*range(idxType=_value.idxType, stridable=stridable);
       var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
       var sameDist = (newDistVal == _value.dist);

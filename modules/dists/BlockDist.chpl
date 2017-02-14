@@ -1540,28 +1540,52 @@ proc BlockArr.doiBulkTransfer(B, viewDom) {
   const actDom = chpl__getViewDom(B);
 
   if debugBlockDistBulkTransfer then resetCommDiagnostics();
-  var sameDomain: bool;
-  // We need to do the following on the locale where 'this' was allocated,
-  //  but hopefully, most of the time we are initiating the transfer
-  //  from the same locale (local on clauses are optimized out).
-  on this do sameDomain = viewDom==actDom;
+
   // Use zippered iteration to piggyback data movement with the remote
   //  fork.  This avoids remote gets for each access to locArr[i] and
   //  actual.locArr[i]
   coforall (i, myLocArr, BmyLocArr) in zip(dom.dist.targetLocDom,
                                         locArr,
-                                        actual.locArr) do
+                                        actual.locArr) {
     on dom.dist.targetLocales(i) {
+      if this.rank == B.rank {
+        if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
 
-    if this.rank == B.rank {
-      // Take advantage of DefaultRectangular bulk transfer
-      if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
-      const lview = myLocArr.locDom.myBlock[viewDom];
-      const rview = BmyLocArr.locDom.myBlock(actDom);
-      myLocArr.myElems[lview] = BmyLocArr.myElems[rview];
-      if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
-    } else {
-      halt("Bulk-transfer called with Block of differing rank!");
+        const viewBlock = this.dom.locDoms[i].myBlock[viewDom];
+        if this.rank == 1 {
+          var start = viewBlock.low;
+
+          for (rid, rlo, size) in ConsecutiveChunks(viewDom, actual.dom, actDom, viewBlock.size, start) {
+            myLocArr.myElems[start..#size] = actual.locArr[rid].myElems[rlo..#size];
+            start += size;
+          }
+        } else {
+          const orig = viewBlock.low(rank);
+
+          for coord in dropDims(viewBlock, viewBlock.rank) {
+            var lo = if rank == 2 then (coord, orig) else ((...coord), orig);
+
+            for (rid, rlo, size) in ConsecutiveChunksD(viewDom, actual.dom, actDom, viewBlock.dim(rank).length, lo) {
+              var LSlice, RSlice : rank*range(idxType = this.dom.idxType);
+
+              for param i in 1..rank-1 {
+                LSlice(i) = if rank == 2 then coord..coord else coord(i)..coord(i);
+                RSlice(i) = rlo(i)..rlo(i);
+              }
+              LSlice(rank) = lo(rank)..#size;
+              RSlice(rank) = rlo(rank)..#size;
+
+              myLocArr.myElems[(...LSlice)] = actual.locArr[rid].myElems[(...RSlice)];
+
+              lo(rank) += size;
+            }
+          }
+        }
+
+        if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
+      } else {
+        halt("Bulk-transfer called with Block of differing rank!");
+      }
     }
   }
   if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
@@ -1600,47 +1624,48 @@ proc BlockDom.dsiLocalSubdomain() {
   return myLocDom.myBlock;
 }
 
-iter ConsecutiveChunks(d1,d2,lid,lo) {
-  var elemsToGet = d1.locDoms[lid].myBlock.numIndices;
-  const offset   = d2.whole.low - d1.whole.low;
-  var rlo=lo+offset;
-  var rid  = d2.dist.targetLocsIdx(rlo);
-  while (elemsToGet>0) {
-    const size = min(d2.numRemoteElems(rlo,rid),elemsToGet);
-    yield (rid,rlo,size);
-    rid +=1;
+iter ConsecutiveChunks(LView, RDomClass, RView, len, in start) {
+  var elemsToGet = len;
+  const offset   = RView.low - LView.low;
+  var rlo        = start + offset;
+  var rid        = RDomClass.dist.targetLocsIdx(rlo);
+  while elemsToGet > 0 {
+    const size = min(RDomClass.numRemoteElems(RView, rlo, rid), elemsToGet);
+    yield (rid, rlo, size);
+    rid += 1;
     rlo += size;
     elemsToGet -= size;
   }
 }
 
-iter ConsecutiveChunksD(d1,d2,i,lo) {
-  const rank=d1.rank;
-  var elemsToGet = d1.locDoms[i].myBlock.dim(rank).length;
-  const offset   = d2.whole.low - d1.whole.low;
-  var rlo = lo+offset;
-  var rid = d2.dist.targetLocsIdx(rlo);
-  while (elemsToGet>0) {
-    const size = min(d2.numRemoteElems(rlo(rank):int,rid(rank):int),elemsToGet);
-    yield (rid,rlo,size);
+iter ConsecutiveChunksD(LView, RDomClass, RView, len, in start) {
+  param rank     = LView.rank;
+  var elemsToGet = len;
+  const offset   = RView.low - LView.low;
+  var rlo        = start + offset;
+  var rid        = RDomClass.dist.targetLocsIdx(rlo);
+  while elemsToGet > 0 {
+    const size = min(RDomClass.numRemoteElems(RView, rlo(rank):int, rid(rank):int), elemsToGet);
+    yield (rid, rlo, size);
     rid(rank) +=1;
     rlo(rank) += size;
     elemsToGet -= size;
   }
 }
 
-proc BlockDom.numRemoteElems(rlo,rid){
+proc BlockDom.numRemoteElems(viewDom, rlo, rid) {
   // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
   //  below can fit into idxType
-  var blo,bhi:dist.idxType;
+  var blo, bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank).length - 1) then
-    bhi=whole.dim(rank).high;
-  else
-      bhi=dist.boundingBox.dim(rank).low +
+    bhi=viewDom.dim(rank).high;
+  else {
+      bhi = dist.boundingBox.dim(rank).low +
         intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1):idxType,
                        dist.targetLocDom.dim(rank).length:idxType) - 1:idxType;
+  }
 
-  return(bhi - (rlo - 1):idxType);
+  return (bhi - (rlo - 1):idxType);
 }
 
 //Brad's utility function. It drops from Domain D the dimensions
