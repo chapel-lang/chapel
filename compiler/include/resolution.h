@@ -150,6 +150,7 @@ public:
 };
 
 bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
+bool checkGenericFormals(ResolutionCandidate* currCandidate);
 
 typedef enum {
   FIND_EITHER = 0,
