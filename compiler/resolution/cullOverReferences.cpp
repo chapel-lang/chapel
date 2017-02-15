@@ -51,7 +51,7 @@
    the value/const-ref-return version).
  */
 
-static bool symbolIsSetLocal(Symbol* sym);
+//static bool symbolIsSetLocal(Symbol* sym);
 static bool symExprIsSet(SymExpr* sym);
 static void lowerContextCall(ContextCallExpr* cc, bool useSetter);
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
@@ -100,6 +100,7 @@ symExprIsSetByUse(SymExpr* use) {
           return true;
         }
 
+        /*
       } else if (call->isPrimitive(PRIM_MOVE)) {
 
         // TODO: remove this branch (handled already)
@@ -134,6 +135,7 @@ symExprIsSetByUse(SymExpr* use) {
         if (symbolIsSetLocal(toSymExpr(move->get(1))->symbol()))
           return true;
 
+         */
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         // PRIM_SET_MEMBER to set the pointer inside of a reference
         // counts as "setter"
@@ -198,6 +200,8 @@ bool symExprIsSet(SymExpr* se)
   return ret;
 }
 
+/*
+
 // Figure out if a symbol is set based upon its defs and uses.
 // Does not properly handle certain cases, such as
 // context calls. Used to handle extra temporaries
@@ -211,6 +215,7 @@ bool symbolIsSetLocal(Symbol* sym)
   }
   return false;
 }
+*/
 
 static
 bool callSetsSymbol(Symbol* sym, CallExpr* call)
@@ -437,7 +442,9 @@ void cullOverReferences() {
         // Check for the case that sym is moved to a compiler-introduced
         // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
         if (call->isPrimitive(PRIM_ADDR_OF) ||
-            call->isPrimitive(PRIM_SET_REFERENCE))
+            call->isPrimitive(PRIM_SET_REFERENCE) ||
+            call->isPrimitive(PRIM_GET_MEMBER) ||
+            call->isPrimitive(PRIM_GET_SVEC_MEMBER))
             call = toCallExpr(call->parentExpr);
 
         if (call->isPrimitive(PRIM_MOVE)) {
