@@ -952,12 +952,12 @@ module ChapelDistribution {
 
     for i in lhs.dsiIndsIterSafeForRemoving() {
       if !rhs.member(i) {
-	lhs.dsiRemove(i);
+        lhs.dsiRemove(i);
       }
     }
     for i in rhs {
       if !lhs.dsiMember(i) {
-	lhs.dsiAdd(i);
+        lhs.dsiAdd(i);
       }
     }
   }
