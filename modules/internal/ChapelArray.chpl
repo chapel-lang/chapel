@@ -3485,7 +3485,7 @@ module ChapelArray {
 
     // No need to lock b since it's not exposed anywhere yet
     // No need to handle arrays over b either for the same reason.
-    b._value.dsiAssignDomain(a, lhsPrivate=true);
+    b._instance.dsiAssignDomain(a, lhsPrivate=true);
 
     return b;
   }
@@ -3500,7 +3500,7 @@ module ChapelArray {
 
     // No need to lock b since it's not exposed anywhere yet
     // No need to handle arrays over b either for the same reason.
-    b._value.dsiAssignDomain(a, lhsPrivate=true);
+    b._instance.dsiAssignDomain(a, lhsPrivate=true);
 
     if ! a._unowned {
       // destroy the old domain now that we are replacing it
