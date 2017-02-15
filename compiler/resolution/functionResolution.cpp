@@ -3822,7 +3822,10 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
           formal->type = varActual->type;
         }
         if (varActual->isConstant()) {
-          formal->intent = (IntentTag)(formal->intent | INTENT_FLAG_CONST);
+          int newIntent = formal->intent | INTENT_FLAG_CONST;
+          // and clear INTENT_FLAG_MAYBE_CONST flag
+          newIntent &= ~ INTENT_FLAG_MAYBE_CONST;
+          formal->intent = (IntentTag)(newIntent);
         }
       }
     }
@@ -4573,6 +4576,7 @@ void lvalueCheck(CallExpr* call)
      case INTENT_CONST_IN:
      case INTENT_PARAM:
      case INTENT_TYPE:
+     case INTENT_REF_MAYBE_CONST:
       // not checking them here
       break;
 
