@@ -1767,7 +1767,7 @@ module ChapelArray {
                                                          isAssociativeDom(d2)) {
     if d1._value == d2._value then return true;
     if d1.numIndices != d2.numIndices then return false;
-    // TODO -- should this be a forall?
+    // Should eventually be a forall+reduction
     for idx in d1 do
       if !d2.member(idx) then return false;
     return true;
@@ -1777,7 +1777,7 @@ module ChapelArray {
                                                          isAssociativeDom(d2)) {
     if d1._value == d2._value then return false;
     if d1.numIndices != d2.numIndices then return true;
-    // TODO -- should this be a forall?
+    // Should eventually be a forall+reduction
     for idx in d1 do
       if !d2.member(idx) then return true;
     return false;
@@ -1788,7 +1788,7 @@ module ChapelArray {
     if d1._value == d2._value then return true;
     if d1.numIndices != d2.numIndices then return false;
     if d1._value.parentDom != d2._value.parentDom then return false;
-    // TODO -- should this be a forall?
+    // Should eventually be a forall+reduction
     for idx in d1 do
       if !d2.member(idx) then return false;
     return true;
@@ -1799,7 +1799,7 @@ module ChapelArray {
     if d1._value == d2._value then return false;
     if d1.numIndices != d2.numIndices then return true;
     if d1._value.parentDom != d2._value.parentDom then return true;
-    // TODO -- should this be a forall?
+    // Should eventually be a forall+reduction
     for idx in d1 do
       if !d2.member(idx) then return true;
     return false;
