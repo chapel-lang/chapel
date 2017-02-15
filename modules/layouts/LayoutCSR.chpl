@@ -297,7 +297,7 @@ class CSRDom: BaseSparseDomImpl {
     nnz += actualAddCnt;
 
     //grow nnzDom if necessary
-    _bulkGrow(nnz);
+    _bulkGrow();
 
     //linearly fill the new colIdx from backwards
     var newIndIdx = indsDom.high; //index into new indices

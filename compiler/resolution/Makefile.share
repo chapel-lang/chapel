@@ -24,6 +24,7 @@ RESOLUTION_SRCS =                                    \
 	implementForallIntents.cpp                   \
 	generics.cpp                                 \
 	functionResolution.cpp                       \
+	initializerResolution.cpp                    \
 	lowerIterators.cpp                           \
 	tuples.cpp                                   \
 	wrappers.cpp

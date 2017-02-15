@@ -44,7 +44,7 @@ class LevelVariable {
   //| >    destructor    | >
   //|/...................|/
 
-  proc ~LevelVariable ()
+  proc deinit ()
   {
     for grid_var in grid_variables do delete grid_var;
   }

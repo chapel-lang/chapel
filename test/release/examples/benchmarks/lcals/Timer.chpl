@@ -83,7 +83,7 @@ module Timer {
         halt("Unknown timer type");
       }
     }
-    proc ~LoopTimer() {
+    proc deinit() {
       if t != nil then delete t;
     }
 

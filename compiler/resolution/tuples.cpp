@@ -27,16 +27,16 @@
 #include "caches.h"
 #include "chpl.h"
 #include "expr.h"
+#include "passes.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 
-#include "resolveIntents.h"
-
 #include <cstdlib>
 #include <inttypes.h>
-#include <vector>
 #include <map>
+#include <vector>
 
 struct TupleInfo {
   TypeSymbol* typeSymbol;
@@ -271,7 +271,7 @@ FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
 {
   Type *newType = newTypeSymbol->type;
 
-  FnSymbol *dtor = new FnSymbol("chpl__deinit");
+  FnSymbol *dtor = new FnSymbol("deinit");
 
   dtor->cname = astr("chpl__auto_destroy_", newType->symbol->cname);
 
@@ -827,38 +827,46 @@ AggregateType* computeNonRefTuple(Type* t)
 }
 
 
-void
+bool
 fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall)
 {
   // Note: scopeResolve sets FLAG_TUPLE for the type constructor
   // and the constructor for the tuple record.
 
   if (!strcmp(fn->name, "_defaultOf") &&
-      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
+      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_init(newFn);
+    return true;
+  }
 
   if (!strcmp(fn->name, "chpl__defaultHash") && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_hash(newFn);
+    return true;
   }
 
   if (fn->hasFlag(FLAG_TUPLE_CAST_FN) &&
       newFn->getFormal(1)->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
       fn->getFormal(2)->getValType()->symbol->hasFlag(FLAG_TUPLE) ) {
     instantiate_tuple_cast(newFn);
+    return true;
   }
 
   if (fn->hasFlag(FLAG_INIT_COPY_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_initCopy(newFn);
+    return true;
   }
 
   if (fn->hasFlag(FLAG_AUTO_COPY_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_autoCopy(newFn);
+    return true;
   }
 
   if (fn->hasFlag(FLAG_UNREF_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_unref(newFn);
+    return true;
   }
 
+  return false;
 }
 
 FnSymbol*

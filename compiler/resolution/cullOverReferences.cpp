@@ -26,9 +26,7 @@
 #include "symbol.h"
 
 static bool
-refNecessary(SymExpr*                      se,
-             Map<Symbol*, Vec<SymExpr*>*>& defMap,
-             Map<Symbol*, Vec<SymExpr*>*>& useMap);
+refNecessary(SymExpr*                      se);
 
 //
 // Should we switch to the "value" function?
@@ -39,18 +37,12 @@ refNecessary(SymExpr*                      se,
 // Returning 'false' means to use the 'ref' return intent version.
 static bool
 shouldUseByValueFunction(FnSymbol*                     fn,
-                         SymExpr*                      se,
-                         Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                         Map<Symbol*, Vec<SymExpr*>*>& useMap) {
-  return !refNecessary(se, defMap, useMap);
+                         SymExpr*                      se) {
+  return !refNecessary(se);
 }
 
 static bool
-refNecessary(SymExpr*                      se,
-             Map<Symbol*, Vec<SymExpr*>*>& defMap,
-             Map<Symbol*, Vec<SymExpr*>*>& useMap) {
-  Vec<SymExpr*>* defs = defMap.get(se->symbol());
-
+refNecessary(SymExpr*                      se) {
   // The ref is necessary if it is for an explicit ref var
   if (se->symbol()->hasFlag(FLAG_REF_VAR)) {
     return true;
@@ -61,7 +53,19 @@ refNecessary(SymExpr*                      se,
   if (se->getValType() == se->typeInfo())
     return false;
 
-  if (defs && defs->n > 1) {
+  // Is there more than one definition for se?
+  // count defs up to some maximum.
+  bool more_than_one_def = false;
+  int def_count = 0;
+  for_SymbolDefs(def, se->symbol()) {
+    def_count++;
+    if (def_count > 1) {
+      more_than_one_def = true;
+      break;
+    }
+  }
+
+  if (more_than_one_def) {
     // If se is a reference that is written to,
     // we need to keep the ref version.
 
@@ -70,7 +74,7 @@ refNecessary(SymExpr*                      se,
     // We do care about PRIM_ASSIGN or if the argument is passed
     // to a function (typically = ) as ref, inout, or out argument.
     bool valueIsSet = false;
-    for_defs(def, defMap, se->symbol()) {
+    for_SymbolDefs(def, se->symbol()) {
       if (def->parentExpr) {
         if (CallExpr* parentCall = toCallExpr(def->parentExpr)) {
           if (parentCall->isPrimitive(PRIM_MOVE)) {
@@ -89,7 +93,7 @@ refNecessary(SymExpr*                      se,
     }
   }
 
-  for_uses(use, useMap, se->symbol()) {
+  for_SymbolUses(use, se->symbol()) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if (FnSymbol* fn = call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
@@ -106,7 +110,7 @@ refNecessary(SymExpr*                      se,
           return true;
 
       } else if (call->isPrimitive(PRIM_MOVE)) {
-        if (refNecessary(toSymExpr(call->get(1)), defMap, useMap))
+        if (refNecessary(toSymExpr(call->get(1))))
           return true;
 
       } else if (call->isPrimitive(PRIM_GET_MEMBER) ||
@@ -116,7 +120,7 @@ refNecessary(SymExpr*                      se,
         INT_ASSERT(move);
         INT_ASSERT(move->isPrimitive(PRIM_MOVE));
 
-        if (refNecessary(toSymExpr(move->get(1)), defMap, useMap))
+        if (refNecessary(toSymExpr(move->get(1))))
           return true;
 
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
@@ -209,11 +213,6 @@ refNecessary(SymExpr*                      se,
 //
 
 void cullOverReferences() {
-  Map<Symbol*, Vec<SymExpr*>*> defMap;
-  Map<Symbol*, Vec<SymExpr*>*> useMap;
-
-  buildDefUseMaps(defMap, useMap);
-
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
     // Make sure that the context call only has 2 options.
     INT_ASSERT(cc->options.length == 2);
@@ -248,7 +247,7 @@ void cullOverReferences() {
       INT_ASSERT(lhs);
 
       // Should we switch to the by-value form?
-      useValueCall = shouldUseByValueFunction(refFn, lhs, defMap, useMap);
+      useValueCall = shouldUseByValueFunction(refFn, lhs);
     } else {
       // e.g. array access in own statement like this:
       //   A(i)
@@ -286,7 +285,7 @@ void cullOverReferences() {
           }
         }
 
-        if (lhs && useMap.get(lhs->symbol()) && useMap.get(lhs->symbol())->n > 0) {
+        if (lhs && lhs->symbol()->isUsed()) {
           // If the LHS was used, set it to the address of the
           // new temporary (which is the function return value)
 
@@ -294,7 +293,7 @@ void cullOverReferences() {
           INT_ASSERT(moveInFn);
           Symbol* retSymbol = moveInFn->getReturnSymbol();
           // Check: are we adding a return of a local variable ?
-          for_uses(use, useMap, lhs->symbol()) {
+          for_SymbolUses(use, lhs->symbol()) {
             if (CallExpr* useCall = toCallExpr(use->parentExpr))
               if (useCall->isPrimitive(PRIM_MOVE))
                 if (SymExpr* useCallLHS = toSymExpr(useCall->get(1)))
@@ -323,6 +322,4 @@ void cullOverReferences() {
       cc->replace(refCall);
     }
   }
-
-  freeDefUseMaps(defMap, useMap);
 }

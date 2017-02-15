@@ -4,7 +4,7 @@ record R {
     this.n = n;
     writeln("Construct R: ", this.n);
   }
-  proc ~R() {
+  proc deinit() {
     writeln("Destroy R: ", this.n);
   }
 }

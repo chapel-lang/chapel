@@ -97,6 +97,8 @@ symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
 symbolFlag( FLAG_DONOR_FN, ypr, "donor fn" , "function donates ownership of the returned object to the calling function" )
 symbolFlag( FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING , ypr, "dont disable remote value forwarding" , ncm )
 symbolFlag( FLAG_END_COUNT , ypr, "end count" , ncm )
+symbolFlag( FLAG_ERRONEOUS_INITCOPY, npr, "erroneous initcopy", ncm)
+symbolFlag( FLAG_EPILOGUE_LABEL , npr, "epilogue label" , "distinguishes the epilogue label from other labels" )
 symbolFlag( FLAG_EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 symbolFlag( FLAG_EXPAND_TUPLES_WITH_VALUES , ypr, "expand tuples with values" , ncm )
 symbolFlag( FLAG_EXPORT , npr, "export" , ncm )
@@ -254,7 +256,6 @@ symbolFlag( FLAG_SHOULD_NOT_PASS_BY_REF, npr, "should not pass by ref", "this sy
 symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
 // Based on how this is used, I suggest renaming it to return_value_has_initializer
 // or something similar <hilde>.
-symbolFlag( FLAG_SPECIFIED_RETURN_TYPE , npr, "specified return type" , ncm )
 symbolFlag( FLAG_STAR_TUPLE , ypr, "star tuple" , "mark tuple types as star tuple types" )
 symbolFlag( FLAG_STAR_TUPLE_ACCESSOR , ypr, "star tuple accessor" , "this function for star tuple types" )
 symbolFlag( FLAG_SUPER_CLASS , npr, "super class" , ncm )

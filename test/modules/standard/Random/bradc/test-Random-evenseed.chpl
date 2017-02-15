@@ -17,7 +17,7 @@ var Vec1 : [Vector1] real;
 var Vec2 : [Vector1] real;
 var Vec3 : [Vector1] real;
 
-var rng = makeRandomStream(314159264, algorithm=rtype);
+var rng = makeRandomStream(real, 314159264, algorithm=rtype);
 
 rng.fillRandom(Vec1);
 

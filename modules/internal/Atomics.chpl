@@ -308,7 +308,7 @@ module Atomics {
     var _v:atomic_bool = create_atomic_bool();
 
     pragma "no doc"
-    inline proc ~atomicbool() {
+    inline proc deinit() {
       atomic_destroy_bool(_v);
     }
 
@@ -428,7 +428,7 @@ module Atomics {
   pragma "no doc"
   record atomic_uint8 {
     var _v:atomic_uint_least8_t = create_atomic_uint_least8();
-    inline proc ~atomic_uint8() {
+    inline proc deinit() {
       atomic_destroy_uint_least8_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):uint(8) {
@@ -531,7 +531,7 @@ module Atomics {
   pragma "no doc"
   record atomic_uint16 {
     var _v:atomic_uint_least16_t = create_atomic_uint_least16();
-    inline proc ~atomic_uint16() {
+    inline proc deinit() {
       atomic_destroy_uint_least16_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):uint(16) {
@@ -634,7 +634,7 @@ module Atomics {
   pragma "no doc"
   record atomic_uint32 {
     var _v:atomic_uint_least32_t = create_atomic_uint_least32();
-    inline proc ~atomic_uint32() {
+    inline proc deinit() {
       atomic_destroy_uint_least32_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):uint(32) {
@@ -737,7 +737,7 @@ module Atomics {
   pragma "no doc"
   record atomic_uint64 {
     var _v:atomic_uint_least64_t = create_atomic_uint_least64();
-    inline proc ~atomic_uint64() {
+    inline proc deinit() {
       atomic_destroy_uint_least64_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):uint(64) {
@@ -840,7 +840,7 @@ module Atomics {
   pragma "no doc"
   record atomic_int8 {
     var _v:atomic_int_least8_t = create_atomic_int_least8();
-    inline proc ~atomic_int8() {
+    inline proc deinit() {
       atomic_destroy_int_least8_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):int(8) {
@@ -943,7 +943,7 @@ module Atomics {
   pragma "no doc"
   record atomic_int16 {
     var _v:atomic_int_least16_t = create_atomic_int_least16();
-    inline proc ~atomic_int16() {
+    inline proc deinit() {
       atomic_destroy_int_least16_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):int(16) {
@@ -1046,7 +1046,7 @@ module Atomics {
   pragma "no doc"
   record atomic_int32 {
     var _v:atomic_int_least32_t = create_atomic_int_least32();
-    inline proc ~atomic_int32() {
+    inline proc deinit() {
       atomic_destroy_int_least32_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):int(32) {
@@ -1150,7 +1150,7 @@ module Atomics {
     var _v:atomic_int_least64_t = create_atomic_int_least64();
 
     pragma "no doc"
-    inline proc ~atomic_int64() {
+    inline proc deinit() {
       atomic_destroy_int_least64_t(_v);
     }
 
@@ -1363,7 +1363,7 @@ module Atomics {
   pragma "no doc"
   record atomic_real64 {
     var _v:atomic__real64 = create_atomic__real64();
-    inline proc ~atomic_real64() {
+    inline proc deinit() {
       atomic_destroy__real64(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):real(64) {
@@ -1443,7 +1443,7 @@ module Atomics {
   pragma "no doc"
   record atomic_real32 {
     var _v:atomic__real32 = create_atomic__real32();
-    inline proc ~atomic_real32() {
+    inline proc deinit() {
       atomic_destroy__real32(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):real(32) {

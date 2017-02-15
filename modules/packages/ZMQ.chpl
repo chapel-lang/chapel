@@ -219,6 +219,7 @@ module ZMQ {
   require "zmq.h", "-lzmq";
 
   use Reflection;
+  use ExplicitRefCount;
 
   private extern var errno: c_int;
 
@@ -408,24 +409,6 @@ module ZMQ {
   }
 
   pragma "no doc"
-  class RefCountBase {
-    var refcnt: atomic int;
-
-    proc incRefCount() {
-      refcnt.add(1);
-    }
-
-    proc decRefCount() {
-      return refcnt.fetchSub(1);
-    }
-
-    proc getRefCount() {
-      return refcnt.peek();
-    }
-
-  } // class RefCountBase
-
-  pragma "no doc"
   class ContextClass: RefCountBase {
     var ctx: c_void_ptr;
     var home: locale;
@@ -439,7 +422,7 @@ module ZMQ {
       }
     }
 
-    proc ~ContextClass() {
+    proc deinit() {
       on this.home {
         var ret = zmq_ctx_term(this.ctx):int;
         if ret == -1 {
@@ -467,7 +450,7 @@ module ZMQ {
     }
 
     pragma "no doc"
-    proc ~Context() {
+    proc deinit() {
       release();
     }
 
@@ -540,7 +523,7 @@ module ZMQ {
       }
     }
 
-    proc ~SocketClass() {
+    proc deinit() {
       on this.home {
         var ret = zmq_close(socket):int;
         if ret == -1 {
@@ -576,7 +559,7 @@ module ZMQ {
     }
 
     pragma "no doc"
-    proc ~Socket() {
+    proc deinit() {
       release();
     }
 
@@ -868,6 +851,7 @@ module ZMQ {
 
   pragma "no doc"
   proc =(ref lhs: Socket, rhs: Socket) {
+    if lhs.classRef == rhs.classRef then return;
     if lhs.classRef != nil then
       lhs.release();
     lhs.acquire(rhs.classRef);

@@ -54,6 +54,8 @@ Operators and overloaded functions require a type-based multiple
 dispatch mechanism.
 
 
+.. _readme-lambdaFns:
+
 Lambda functions
 ----------------
 

@@ -68,6 +68,9 @@ public:
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
 
+  void            insertBefore(AList exprs);
+  void            insertAfter(AList exprs);
+
   void            insertBefore(const char* format, ...);
   void            insertAfter(const char* format, ...);
   void            replace(const char* format, ...);
@@ -435,7 +438,7 @@ bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure
 const char* get_string(Expr* e); // fatal on failure
 
-CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md = NULL);
+CallExpr* callChplHereAlloc(Type* type, VarSymbol* md = NULL);
 void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
                          Type* t, VarSymbol* md = NULL);
 CallExpr* callChplHereFree(BaseAST* p);

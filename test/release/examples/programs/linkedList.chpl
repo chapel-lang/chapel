@@ -152,8 +152,8 @@ proc main() {
 
   var lst = new List(int);
   var rnd = if useClockSeed 
-              then new NPBRandomStream()
-              else new NPBRandomStream(seed = randomSeed);
+              then new NPBRandomStream(real)
+              else new NPBRandomStream(real, seed = randomSeed);
   const maxValue = 100;
 
   //

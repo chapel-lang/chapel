@@ -44,25 +44,30 @@
 #include "chpl.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "passes.h"
+#include "resolveIntents.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "resolveIntents.h"
-#include "stlUtil.h"
 
 //########################################################################
 //# Static Function Forward Declarations
 //########################################################################
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn, CallInfo* info);
+
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
+
 static void
 insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call);
+
 static FnSymbol*
 buildDefaultWrapper(FnSymbol* fn,
                     Vec<Symbol*>* defaults,
                     SymbolMap* paramMap,
                     CallInfo* info);
+
 static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
@@ -192,7 +197,7 @@ buildDefaultWrapper(FnSymbol* fn,
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
                                            wrapper->_this,
-                                           callChplHereAlloc((wrapper->_this->typeInfo())->symbol)));
+                                           callChplHereAlloc(wrapper->_this->typeInfo())));
 
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
@@ -1029,6 +1034,7 @@ buildPromotionWrapper(FnSymbol* fn,
     theProgram->block->insertAtTail(new DefExpr(lifn));
     toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
     normalize(lifn);
+    lifn->addFlag(FLAG_GENERIC);
     lifn->instantiationPoint = getVisibilityBlock(info->call);
 
 

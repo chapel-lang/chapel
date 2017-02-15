@@ -3,7 +3,7 @@
 # Makefile.sphinx interfaces with sphinx build commands
 include Makefile.sphinx
 
-CHPL2RST     = ./util/run-in-venv.bash ./util/chpl2rst.py
+CHPL2RST     = ../util/run-in-venv.bash ./util/chpl2rst.py
 
 CHPL_DOC_PRIMERS_DIR = primers/primers
 CHPL2RSTOPTS = --output=rst --prefix=$(CHPL_DOC_PRIMERS_DIR) --link=master
@@ -28,11 +28,11 @@ help-source:
 
 
 docs: FORCE
-	@./util/run-in-venv.bash $(MAKE) html || (echo;echo "If a documentation hierarchy change was made on the master branch, \
+	@../util/run-in-venv.bash $(MAKE) html-release || (echo;echo "If a documentation hierarchy change was made on the master branch, \
 	try resolving with: \`git clean "'$$CHPL_HOME'"/doc/*\`";echo)
 
 man-chapel: FORCE
-	./util/run-in-venv.bash $(MAKE) man
+	../util/run-in-venv.bash $(MAKE) man
 
 
 source: module-docs primers hellos symlinks
@@ -72,10 +72,10 @@ symlinks: clean-symlinks
 	ln -s $$CHPL_HOME/test/release/examples users-guide/locality/examples
 
 checkdocs: FORCE
-	./util/run-in-venv.bash $(MAKE) check
+	../util/run-in-venv.bash $(MAKE) check
 
 %.docs: FORCE
-	./util/run-in-venv.bash $(MAKE) $*.html
+	../util/run-in-venv.bash $(MAKE) $*.html
 
 
 clean: clean-source

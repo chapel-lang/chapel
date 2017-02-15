@@ -150,7 +150,7 @@ class CandidateDomain {
   //| >    destructor    | >
   //|/...................|/
 
-  proc ~CandidateDomain ()
+  proc deinit ()
   { 
     for i in 1..rank do delete signatures(i);
   }

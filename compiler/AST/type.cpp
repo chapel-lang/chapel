@@ -541,6 +541,7 @@ void AggregateType::verify() {
 AggregateType*
 AggregateType::copyInner(SymbolMap* map) {
   AggregateType* copy_type = new AggregateType(aggregateTag);
+  copy_type->initializerStyle = initializerStyle;
   copy_type->outer = outer;
   for_alist(expr, fields)
     copy_type->fields.insertAtTail(COPY_INT(expr));

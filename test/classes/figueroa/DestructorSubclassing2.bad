@@ -1,0 +1,2 @@
+DestructorSubclassing2.chpl:11: error: unresolved call 'C1.init(int(64), meme=C2)'
+DestructorSubclassing2.chpl:1: note: candidates are: C1.init(x: int(64))

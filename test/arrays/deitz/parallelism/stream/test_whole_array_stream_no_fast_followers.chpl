@@ -38,7 +38,7 @@ proc main() {
 // optionally print them to the console
 //
 proc initVectors(B, C) {
-  var randlist = new RandomStream(seed);
+  var randlist = new RandomStream(real, seed);
   randlist.fillRandom(B);
   randlist.fillRandom(C);
   delete randlist;

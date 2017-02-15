@@ -73,7 +73,7 @@ module DefaultOpaque {
       adomain = new DefaultAssociativeDom(_OpaqueIndex, dist, parSafe=parSafe);
     }
   
-    proc ~DefaultOpaqueDom() {
+    proc deinit() {
       delete adomain;
     }
   
@@ -161,7 +161,7 @@ module DefaultOpaque {
     var anarray = new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
                                             parSafeDom=parSafe, dom=dom.adomain);
   
-    proc ~DefaultOpaqueArr() {
+    proc deinit() {
       delete anarray;
     }
   

@@ -23,7 +23,6 @@
 #include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"
-#include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
 
@@ -36,87 +35,79 @@ enum InitBody {
   FOUND_BOTH
 };
 
-// Helper file for verifying the rules placed on initializers, and providing
-// the extra functionality associated with them.
 
-void temporaryInitializerFixup(CallExpr* call) {
-  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
-    // Support super.init() calls (for instance) when the super type does not
-    // define either an initializer or a constructor.  Also ignores errors from
-    // improperly inserted .init() calls (so be sure to check here if something
-    // is behaving oddly - Lydia, 08/19/16)
-    if (!strcmp(usym->unresolved, "init")) {
-      for_actuals(actual, call) {
-        if (NamedExpr* named = toNamedExpr(actual)) {
-          if (!strcmp(named->name, "meme")) {
-            if (SymExpr* sym = toSymExpr(named->actual)) {
-              if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
-                if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-                  // This code should be removed when the compiler generates
-                  // initializers as the default method of construction and
-                  // initialization for a type (Lydia note, 08/19/16)
-                  usym->unresolved = astr("_construct_", ct->symbol->name);
-                } else if (ct->initializerStyle == DEFINES_CONSTRUCTOR) {
-                  // This code should be removed when initializers are fully
-                  // supported and old style constructors are deprecated
-                  // (Lydia note, 08/19/16)
-                  USR_FATAL(call, "can't make init call on type with old constructor style");
-                }
-              }
-            }
-          }
-        }
+static InitBody getInitCall(FnSymbol* fn);
+static void     phase1Analysis(BlockStmt* body, AggregateType* t);
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    USR_FATAL(fn, "an initializer cannot be declared without parentheses");
+  } else {
+    InitBody bodyStyle = getInitCall(fn);
+
+    if (isClass(ct) == true) {
+      buildClassAllocator(fn, ct);
+      fn->addFlag(FLAG_INLINE);
+    }
+
+    if (bodyStyle != DID_NOT_FIND_INIT) {
+      phase1Analysis(fn->body, ct);
+
+      // Insert analysis of initCall here
+      if (bodyStyle == FOUND_SUPER_INIT && isRecord(ct)) {
+        // Need to find and remove any and all super.init() statements
+        // if the type is a record, as they will not resolve (inheritance
+        // and records is still being ironed out).
+
+      }
+
+    } else {
+      // Adds default initialization of all fields and an argumentless
+      // super.init() call at the beginning of the body for Phase-2-only
+      // initializers.
+      SET_LINENO(fn->body);
+
+      // LYDIA NOTE (11/30/16): This would be a really good spot for a
+      // re-entrant compiler call on what I'd like to create, which is
+      // a much simpler CallExpr, instead of what I have to do today,
+      // which is insert a fragile copy of the super.init() calls I
+      // check for, entirely dependent on how such a user call gets
+      // transformed by the preceding passes.
+      CallExpr* superPortion = new CallExpr(".",
+                                            new SymExpr(fn->_this),
+                                            new_StringSymbol("super"));
+      SymExpr*  initPortion  = new SymExpr(new_StringSymbol("init"));
+      CallExpr* base         = new CallExpr(".", superPortion, initPortion);
+      CallExpr* superCall    = new CallExpr(base);
+
+      fn->body->insertAtHead(superCall);
+
+      phase1Analysis(fn->body, ct);
+
+      if (isRecord(ct)) {
+        // We haven't finalized what inheritance means for records yet.
+        // Until we do, this call (while necessary for the divide between
+        // the phases), won't resolve.
+        superCall->remove();
       }
     }
-  }
-}
 
-static
-InitBody getInitCall(FnSymbol* fn);
+    // Insert phase 2 analysis here
 
-static
-void phase1Analysis(BlockStmt* body, AggregateType* t);
+    if (isClass(ct) == false) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
+    } else {
+      Symbol* voidType = dtVoid->symbol;
 
-
-
-
-void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
-  InitBody bodyStyle = getInitCall(fn);
-
-  if (bodyStyle != DID_NOT_FIND_INIT) {
-    phase1Analysis(fn->body, t);
-
-    // Insert analysis of initCall here
-    if (bodyStyle == FOUND_SUPER_INIT && isRecord(t)) {
-      // Need to find and remove any and all super.init() statements if the
-      // type is a record, as they will not resolve (inheritance and records
-      // is still being ironed out).
-
-    }
-  } else {
-    // Adds default initialization of all fields and an argumentless
-    // super.init() call at the beginning of the body for Phase-2-only
-    // initializers.
-    SET_LINENO(fn->body);
-    // LYDIA NOTE (11/30/16): This would be a really good spot for a re-entrant
-    // compiler call on what I'd like to create, which is a much simpler
-    // CallExpr, instead of what I have to do today, which is insert a fragile
-    // copy of the super.init() calls I check for, entirely dependent on how
-    // such a user call gets transformed by the preceding passes.
-    CallExpr* superPortion = new CallExpr(".", new SymExpr(fn->_this), new_StringSymbol("super"));
-    SymExpr* initPortion = new SymExpr(new_StringSymbol("init"));
-    CallExpr* base = new CallExpr(".", superPortion, initPortion);
-    CallExpr* superCall = new CallExpr(base);
-    fn->body->insertAtHead(superCall);
-    phase1Analysis(fn->body, t);
-    if (isRecord(t)) {
-      // We haven't finalized what inheritance means for records yet.  Until we
-      // do, this call (while necessary for the divide between the phases),
-      // won't resolve.
-      superCall->remove();
+      fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
     }
   }
-  // Insert phase 2 analysis here
 }
 
 // Returns true only if what was provided was a SymExpr whose symbol is "this"
@@ -468,39 +459,52 @@ bool isParentField(AggregateType* t, const char *name) {
   }
 }
 
-static
-void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
+static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
+  SET_LINENO(next);
+
   const char* nextField = field->sym->name;
 
-  SET_LINENO(next);
   // Do something appropriate with "super"
   if (field->sym->hasFlag(FLAG_SUPER_CLASS)) {
-    return;
-  }
 
   // For all other fields, insert an assignment into that field with the given
   // initialization, if we have one.
-  if (!field->init && !field->exprType) {
-    USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
-    return;
-  }
+  } else if (!field->init && !field->exprType) {
+    USR_FATAL_CONT(next,
+                   "can't omit initialization of field \"%s\", "
+                   "no type or default value provided",
+                   nextField);
 
-  Symbol* _this = toFnSymbol(next->parentSymbol)->_this;
-  CallExpr* thisAccess = new CallExpr(".", _this,
-                                      new_CStringSymbol(nextField));
-  CallExpr* newInit = NULL;
-  if (field->init) {
-    newInit = new CallExpr("=", thisAccess, field->init->copy());
   } else {
-    INT_ASSERT(field->exprType);
-    VarSymbol* tmp = newTemp("call_tmp");
-    next->insertBefore(new DefExpr(tmp));
-    next->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(tmp),
-                                    new CallExpr(PRIM_INIT,
-                                                 field->exprType->copy())));
-    newInit = new CallExpr("=", thisAccess, new SymExpr(tmp));
+    Symbol*   _this      = toFnSymbol(next->parentSymbol)->_this;
+
+    CallExpr* thisAccess = new CallExpr(".",
+                                        _this,
+                                        new_CStringSymbol(nextField));
+
+    if (field->init) {
+      CallExpr* newInit = new CallExpr("=", thisAccess, field->init->copy());
+
+      next->insertBefore(newInit);
+    } else {
+      INT_ASSERT(field->exprType);
+
+      VarSymbol* tmp     = newTemp("call_tmp");
+      VarSymbol* refTmp  = newTemp("ref_tmp");
+
+      next->insertBefore(new DefExpr(tmp));
+
+      next->insertBefore(new CallExpr(PRIM_MOVE,
+                                      new SymExpr(tmp),
+                                      new CallExpr(PRIM_INIT,
+                                                   field->exprType->copy())));
+
+
+      next->insertBefore(new DefExpr(refTmp));
+      next->insertBefore(new CallExpr(PRIM_MOVE, refTmp, thisAccess));
+      next->insertBefore(new CallExpr(PRIM_MOVE, refTmp, new SymExpr(tmp)));
+    }
   }
-  next->insertBefore(newInit);
 }
 
 // Takes in the current expr (which must be a loop), the current field
@@ -557,4 +561,79 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
   // encountered
 
   return false;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Consider                                                                    *
+*                                                                             *
+*   var x = new MyClass(10, 20, 30);                                          *
+*                                                                             *
+* and assume MyClass defines an initializer that accepts 3 integers.          *
+*                                                                             *
+* The goal is to allocate an instance of MyClass on the heap and then invoke  *
+* the appropriate init method on this instance.                               *
+*                                                                             *
+* This is implemented by defining an internal "type method" on MyClass that   *
+* performs the allocation and then invokes the init method on the resulting   *
+* instance.  Note that there is a distinct _new method for every init         *
+* method.                                                                     *
+*                                                                             *
+************************************** | *************************************/
+
+FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
+  SET_LINENO(ct);
+
+  FnSymbol*  fn          = new FnSymbol("_new");
+  BlockStmt* body        = fn->body;
+  ArgSymbol* type        = new ArgSymbol(INTENT_BLANK, "t", ct);
+  VarSymbol* newInstance = newTemp("instance", ct);
+  CallExpr*  allocCall   = callChplHereAlloc(ct);
+  CallExpr*  initCall    = new CallExpr("init", gMethodToken, newInstance);
+
+  type->addFlag(FLAG_TYPE_VARIABLE);
+
+  fn->addFlag(FLAG_METHOD);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+
+  fn->retExprType = new BlockStmt(new SymExpr(ct->symbol), BLOCK_SCOPELESS);
+
+  // Add the formal that provides the type for the type method
+  fn->insertFormalAtTail(type);
+
+  //
+  // Walk the formals to the init method
+  // Ignore _mt and _this
+  //   1) add a corresponding formal to the new type method
+  //   2) add that formal to the call to "init"
+  //
+  int count = 1;
+
+  for_formals(formal, initMethod) {
+    // Ignore _mt and this
+    if (count >= 3) {
+      ArgSymbol* arg = formal->copy();
+
+      fn->insertFormalAtTail(arg);
+      initCall->insertAtTail(new SymExpr(arg));
+    }
+
+    count = count + 1;
+  }
+
+  // Construct the body
+  body->insertAtTail(new DefExpr(newInstance));
+
+  body->insertAtTail(new CallExpr(PRIM_MOVE,   newInstance, allocCall));
+  body->insertAtTail(new CallExpr(PRIM_SETCID, newInstance));
+
+  body->insertAtTail(initCall);
+
+  body->insertAtTail(new CallExpr(PRIM_RETURN, newInstance));
+
+
+  // Insert the definition in to the tree
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+  return fn;
 }

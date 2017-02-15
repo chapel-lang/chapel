@@ -113,9 +113,9 @@ module SSCA2_RMAT_graph_generator
       // Random Numbers return in the range [0.0, 1.0)
 
       var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
-	               new NPBRandomStream (seed = 0556707007)
+	               new NPBRandomStream (real, seed = 0556707007)
 		     else
-		       new NPBRandomStream ();
+		       new NPBRandomStream (real);
 
       var   Noisy_a     : [edge_range] real, 
 	    Noisy_b     : [edge_range] real, 

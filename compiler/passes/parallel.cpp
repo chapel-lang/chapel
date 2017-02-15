@@ -110,7 +110,7 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn);
 // object. The wrapper function will then call the function
 // created by the previous parallel pass. This is a way to pass along
 // multiple args through the limitation of one arg in the runtime's
-// thread creation interface. 
+// thread creation interface.
 //
 // Implemented using BundleArgsFnData and the functions:
 //   create_arg_bundle_class
@@ -361,7 +361,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
   // set the references in the class instance
   int i = 1;
-  for_actuals(arg, fcall) 
+  for_actuals(arg, fcall)
   {
     // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
     // calls (and some other cases).
@@ -423,7 +423,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
       }
 
       // This strcmp code was moved from expr.cpp codegen,
-      // but there has got to be a better way to do this! 
+      // but there has got to be a better way to do this!
       if (strstr(baseType->symbol->name, "_EndCount") != NULL) {
         strcmp_found = true;
       }
@@ -628,7 +628,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     //  wrapon_fn(wrapped_args)
     // (without the locale arg).
 
-    // The locale arg is originally attached to the on_fn, but we copy it 
+    // The locale arg is originally attached to the on_fn, but we copy it
     // into the wrapper here, and then later on remove it completely.
     // The on_fn does not need this extra argument, and can find out its locale
     // by reading the task-private "here" pointer.
@@ -636,17 +636,17 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     // The above copy() used to be a remove(), based on the assumption that there was
     // exactly one wrapper for each on.  Now, the on_fn is outlined early and has
     // several callers, therefore severall wrapon_fns are generated.
-    // So, we leave the extra locale arg in place here and remove it later 
+    // So, we leave the extra locale arg in place here and remove it later
     // (see the last if (fn->hasFlag(FLAG_ON)) clause in passArgsToNestedFns()).
     localeArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(localeArg);
   } else {
     // create a task list argument.
-    ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList", 
+    ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList",
                                             dtCVoidPtr->refType );
     taskListArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(taskListArg);
-    ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode", 
+    ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode",
                                              dtInt[INT_SIZE_DEFAULT]);
     taskListNode->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(taskListNode);
@@ -686,7 +686,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
           new CallExpr(PRIM_MOVE, tmp,
           new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-      // Special case: 
+      // Special case:
       // If this is an on block, remember the first field,
       // but don't add to the list of actuals passed to the original on_fn.
       // It contains the locale on which the new task is launched.
@@ -810,9 +810,19 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
         int result = isDefAndOrUse(se);
         if (result & 1) {
           // first use/def of the variable is a def (normal case)
-          INT_ASSERT(useFirst==NULL);
-          found = true;
-          break;
+
+          // 'useFirst' may not be NULL if the 'result & 2' branch below is
+          // taken. Consider the following scenario:
+          //   (move refA (addr-of origSym))
+          // The second branch will set 'currDefSym = refA', and we will begin
+          // to iterate over its defs/uses. Finding the same expression should
+          // not count as 'finding' the right statement.
+          bool isOldStmt = useFirst == se->getStmtExpr() && currDefSym->isRef();
+
+          if (useFirst == NULL || !isOldStmt) {
+            found = true;
+            break;
+          }
         } else if (result & 2) {
           if (useFirst == NULL) {
             // This statement captures a reference to the variable
@@ -852,8 +862,8 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
   if (found)
     stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
   else
-    mod->initFn->insertBeforeReturn(new CallExpr
-                                    (PRIM_PRIVATE_BROADCAST, def->sym));
+    mod->initFn->insertBeforeEpilogue(new CallExpr
+                                     (PRIM_PRIVATE_BROADCAST, def->sym));
 }
 
 
@@ -1004,7 +1014,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         SET_LINENO(var);
         if (fn && innermostBlock == fn->body)
-          fn->insertBeforeReturnAfterLabel(callChplHereFree(move->get(1)->copy()));
+          fn->insertIntoEpilogue(callChplHereFree(move->get(1)->copy()));
         else {
           BlockStmt* block = toBlockStmt(innermostBlock);
           INT_ASSERT(block);

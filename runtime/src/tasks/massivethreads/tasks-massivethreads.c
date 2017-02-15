@@ -634,7 +634,7 @@ chpl_bool chpl_task_idEquals(chpl_taskID_t id1, chpl_taskID_t id2) {
   return id1 == id2;
 }
 
-char* chpl_task_idTostring(char* buff, size_t size, chpl_taskID_t id) {
+char* chpl_task_idToString(char* buff, size_t size, chpl_taskID_t id) {
   int ret = snprintf(buff, size, "%"PRIiPTR, id);
   if(ret>0 && ret<size)
     return buff;
