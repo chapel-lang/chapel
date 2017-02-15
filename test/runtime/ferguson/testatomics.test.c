@@ -19,9 +19,10 @@
 
 #include "chpl-atomics.h"
 #include <assert.h>
+#include <stdio.h>
 
 #define test(type) { \
-  bool lockless; \
+  int lockless; \
   atomic_ ## type a, b, c; \
   atomic_init_ ## type (&a, 1); \
   atomic_init_ ## type (&b, 2); \
@@ -84,12 +85,14 @@ int main(int argc, char** argv)
     atomic_uint_least8_t tmp;
     atomic_load_uint_least8_t(&tmp);
   }
-  /*
+
   test(uint_least8_t);
   test(uint_least16_t);
   test(uint_least32_t);
   test(uint_least64_t);
   test(uintptr_t);
-  */
+
+  printf("basic atomics test OK\n");
+
   return 0;
 }
