@@ -50,15 +50,17 @@ module DateTime {
   }
 
   extern "struct tm" record tm {
-    var tm_sec:   c_int; //   seconds [0,61]
-    var tm_min:   c_int; //   minutes [0,59]
-    var tm_hour:  c_int; //  hour [0,23]
-    var tm_mday:  c_int; //  day of month [1,31]
-    var tm_mon:   c_int; //   month of year [0,11]
-    var tm_year:  c_int; //  years since 1900
-    var tm_wday:  c_int; //  day of week [0,6] (Sunday = 0)
-    var tm_yday:  c_int; //  day of year [0,365]
-    var tm_isdst: c_int; // daylight savings flag
+    var tm_sec:   c_int;   // seconds [0,61]
+    var tm_min:   c_int;   // minutes [0,59]
+    var tm_hour:  c_int;   // hour [0,23]
+    var tm_mday:  c_int;   // day of month [1,31]
+    var tm_mon:   c_int;   // month of year [0,11]
+    var tm_year:  c_int;   // years since 1900
+    var tm_wday:  c_int;   // day of week [0,6] (Sunday = 0)
+    var tm_yday:  c_int;   // day of year [0,365]
+    var tm_isdst: c_int;   // daylight savings flag
+    var tm_gmtoff: c_long; // Seconds east of UTC
+    var tm_zone: c_ptr(c_char); // Timezone abbreviation
   }
 
   private proc getLocalTime(t: 2*int) {
@@ -66,7 +68,6 @@ module DateTime {
 
     extern proc localtime_r(const ref t: time_t, ref resultp: tm): void;
 
-    const t = getTimeOfDay();
     const t1:time_t = __primitive("cast", time_t, t(1));
     var breakDownTime: tm;
 
@@ -131,6 +132,10 @@ module DateTime {
     var preceding = daysBeforeMonth(year, month);
     if preceding > n {
       month -= 1;
+      if month == 0 {
+        month = 12;
+        year -= 1;
+      }
       preceding -= daysInMonth(year, month);
     }
     n -= preceding;
@@ -195,7 +200,7 @@ module DateTime {
      1 <= day <= the number of days in the given month and year
   */
   proc date.date(year, month, day) {
-    if year < MINYEAR || year > MAXYEAR then
+    if year < MINYEAR-1 || year > MAXYEAR+1 then
       halt("year is out of the valid range");
     if month < 1 || month > 12 then
       halt("month is out of the valid range");
@@ -223,8 +228,8 @@ module DateTime {
   }
 
   proc type date.fromordinal(ord) {
-    if ord < 1 || ord > date.max.toordinal() then
-      halt("ordinal out of range");
+    if ord < 0 || ord > 1+date.max.toordinal() then
+      halt("ordinal (", ord, ") out of range");
     const (y,m,d) = ordToYmd(ord);
     return new date(y,m,d);
   }
@@ -469,10 +474,17 @@ module DateTime {
     if microsecond != 0 {
       ret = ret + "." + makeNDigits(6, microsecond);
     }
-    const offset = utcoffset();
-    if offset.seconds != 0 {
-      ret = ret + " " + makeNDigits(2, offset.seconds/(60*60)) + ":" +
-                        makeNDigits(2, offset.seconds % (60*60) / 60);
+    var offset = utcoffset();
+    if tzinfo != nil {
+      var sign: string;
+      if offset.days < 0 {
+        offset = -offset;
+        sign = "-";
+      } else {
+        sign = "+";
+      }
+      ret = ret + sign + makeNDigits(2, offset.seconds/(60*60)) + ":" +
+                         makeNDigits(2, offset.seconds % (60*60) / 60);
     }
     return ret;
   }
@@ -486,8 +498,8 @@ module DateTime {
       // >>> central = pytz.timezone("US/Central")
       // >>> time(12, 3, 4, 5, tzinfo=central).utcoffset()
 
-      //return tzinfo.utcoffset();
-      return new timedelta();
+      return tzinfo.utcoffset(datetime.today());
+      //return new timedelta();
     }
   }
 
@@ -500,8 +512,8 @@ module DateTime {
       // >>> central = pytz.timezone("US/Central")
       // >>> time(12, 3, 4, 5, tzinfo=central).dst()
 
-      //return tzinfo.dst();
-      return new timedelta();
+      return tzinfo.dst(datetime.today());
+      //return new timedelta();
     }
   }
 
@@ -509,7 +521,7 @@ module DateTime {
     if tzinfo == nil then
       return "";
     else
-      return tzinfo.tzname();
+      return tzinfo.tzname(new datetime(1,1,1));
   }
 
   proc time.strftime(fmt: string) {
@@ -521,6 +533,19 @@ module DateTime {
     timeStruct.tm_sec = second: int(32);
     timeStruct.tm_min = minute: int(32);
     timeStruct.tm_hour = hour: int(32);
+    timeStruct.tm_year = 1900;
+    timeStruct.tm_mday = 1;
+    timeStruct.tm_mon = 1;
+
+    if tzinfo != nil {
+      timeStruct.tm_gmtoff = abs(utcoffset()).seconds;
+      timeStruct.tm_zone = __primitive("cast", c_ptr(c_char), tzname().c_str());
+      timeStruct.tm_isdst = dst().seconds:int(32);
+    } else {
+      timeStruct.tm_gmtoff = 0;
+      timeStruct.tm_zone = __primitive("cast", c_ptr(c_char), "".c_str());
+      timeStruct.tm_isdst = -1;
+    }
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str = __primitive("cast", c_string, c_ptrTo(buf)): string;
@@ -529,6 +554,16 @@ module DateTime {
   }
 
   /* Operators on time values */
+
+  proc ==(t1: time, t2: time): bool {
+    var dt1 = datetime.combine(d=new date(2000, 1, 1), t=t1);
+    var dt2 = datetime.combine(d=new date(2000, 1, 1), t=t2);
+    return dt1 == dt2;
+  }
+
+  proc !=(t1: time, t2: time) {
+    return !(t1 == t2);
+  }
 
   proc <(t1: time, t2: time): bool {
     if (t1.tzinfo != nil && t2.tzinfo == nil) ||
@@ -635,11 +670,11 @@ module DateTime {
     var chpl_time: time;
 
     proc type min {
-      return combine(date.min, time.min);
+      return this.combine(date.min, time.min);
     }
 
     proc type max {
-      return combine(date.max, time.max);
+      return this.combine(date.max, time.max);
     }
 
     proc type resolution {
@@ -726,12 +761,13 @@ module DateTime {
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=t(2));
     } else {
-      return (utcfromtimestamp(timestamp) + tz.utcoffset()).replace(tzinfo=tz);
+      var dt = datetime.utcfromtimestamp(timestamp);
+      return (dt + tz.utcoffset(dt)).replace(tzinfo=tz);
     }
   }
 
   proc type datetime.utcfromtimestamp(timestamp) {
-    return unixEpoch + new timedelta(seconds=timestamp);
+    return unixEpoch + new timedelta(seconds=timestamp:int, microseconds=((timestamp-timestamp:int)*1000000):int);
   }
 
   proc type datetime.fromordinal(ordinal) {
@@ -799,7 +835,7 @@ module DateTime {
 
   proc datetime.tzname() {
     if tzinfo == nil then
-      halt("tzname() called with nil tzinfo");
+      return "";
     return tzinfo.tzname(this);
   }
 
@@ -865,8 +901,21 @@ module DateTime {
     var micro = if microsecond > 0 then "." + zeroPad(6, microsecond) else "";
     var offset: string;
     if tzinfo != nil {
-      offset = strftime("%z");
-      offset = offset(1..3) + ":" + offset(4..5);
+      var utcoff = utcoffset();
+      var sign: string;
+      if utcoff < new timedelta(0) {
+        sign = '-';
+        utcoff = abs(utcoff);
+      } else {
+        sign = '+';
+      }
+      var hours = utcoff.seconds / (60*60);
+      var minutes = (utcoff.seconds % (60*60)) / 60;
+      //offset = strftime("%z");
+      offset = sign +
+               (if hours < 10 then "0" + hours:string else hours:string) +
+               ":" +
+               (if minutes < 10 then "0" + minutes:string else minutes:string);
     }
 
     return strftime("%Y-%m-%d" + sep + "%H:%M:%S" + micro + offset);
@@ -904,7 +953,7 @@ module DateTime {
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
     timeStruct.tm_wday = (weekday():int(32) + 1) % 7; // shift Sunday to 0
-    timeStruct.tm_yday = (this - new datetime(year, 1, 1)).days: int(32);
+    timeStruct.tm_yday = (this.replace(tzinfo=nil) - new datetime(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str = __primitive("cast", c_string, c_ptrTo(buf)): string;
@@ -993,11 +1042,36 @@ module DateTime {
       return new timedelta(days=newday, hours=newhour, minutes=newmin,
                            seconds=newsec, microseconds=newmicro);
     } else {
-      return (dt1.replace(tzinfo=nil) - dt1.utcoffset()) -
-             (dt2.replace(tzinfo=nil) - dt2.utcoffset());
+      return dt1.replace(tzinfo=nil) - dt2.replace(tzinfo=nil) +
+             dt2.utcoffset() - dt1.utcoffset();
     }
     halt("this should be unreachable");
     return new timedelta();
+  }
+
+  proc ==(dt1: datetime, dt2: datetime): bool {
+    if dt1.tzinfo == nil && dt2.tzinfo != nil ||
+       dt1.tzinfo != nil && dt2.tzinfo == nil {
+      halt("Cannot compare naive datetime to aware datetime");
+    } else if dt1.tzinfo == dt2.tzinfo {
+      // just ignore tzinfo
+      var d1:date = dt1.replace(tzinfo=nil).getdate(),
+          d2:date = dt2.replace(tzinfo=nil).getdate();
+      var t1:time = dt1.replace(tzinfo=nil).gettime(),
+          t2:time = dt2.replace(tzinfo=nil).gettime();
+     
+      return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day &&
+                        t1.hour == t2.hour && t1.minute == t2.minute &&
+                        t1.second == t2.second &&
+                        t1.microsecond == t2.microsecond;
+    } else {
+      return (dt1.replace(tzinfo=nil) - dt1.utcoffset()) ==
+             (dt2.replace(tzinfo=nil) - dt2.utcoffset());
+    }
+  }
+
+  proc !=(dt1: datetime, dt2: datetime) {
+    return !(dt1 == dt2);
   }
 
   proc <(dt1: datetime, dt2: datetime): bool {
