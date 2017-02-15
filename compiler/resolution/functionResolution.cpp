@@ -2457,6 +2457,16 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
     resolve_type_constructor(currCandidate->fn, info);
   }
 
+  // We should reject this candidate if any of the situations handled by this
+  // function are violated.
+  if (checkResolveFormalsWhereClauses(currCandidate) == false)
+    return;
+
+  candidates.add(currCandidate);
+}
+
+// Verifies the usage of this candidate function
+bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate) {
   /*
    * A derived generic type will use the type of its parent, and expects this to
    * be instantiated before it is.
@@ -2467,32 +2477,23 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
   for_formals(formal, currCandidate->fn) {
     if (Symbol* actual = currCandidate->formalIdxToActual.v[++coindex]) {
       if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-        return;
+        return false;
       }
 
       bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) || formal->intent == INTENT_PARAM;
       if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formalIsParam)) {
-        return;
+        return false;
       }
     }
   }
 
   //
-  // If the candidate is an instantiation of a generic function,
-  // re-evaluate the where clause here in order to make sure it
-  // evaluates to true and to catch errors in it.  Ultimately, we'd
-  // like to do this for all concrete functions (instantiated or not),
-  // but at present, enabling it for them causes problems, perhaps
-  // because we're generating bogus where clauses on concrete
-  // functions today and getting away with it since they're ignored.
+  // Evaluate where clauses
   //
-  if (currCandidate->fn->instantiatedFrom != NULL) {
-    if (!evaluateWhereClause(currCandidate->fn, /*generic=*/false)) {
-      return;
-    }
+  if (!evaluateWhereClause(currCandidate->fn)) {
+    return false;
   }
-
-  candidates.add(currCandidate);
+  return true;
 }
 
 
@@ -2515,39 +2516,9 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
     return;
   }
 
-  /*
-   * Early rejection of generic functions.
-   */
-  int coindex = 0;
-  for_formals(formal, currCandidate->fn) {
-    if (formal->type != dtUnknown) {
-      if (Symbol* actual = currCandidate->formalIdxToActual.v[coindex]) {
-        if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-          return;
-        }
+  if (checkGenericFormals(currCandidate) == false)
+    return;
 
-        if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-          Type* vt = actual->getValType();
-          Type* st = actual->type->scalarPromotionType;
-          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
-          if (!canInstantiate(actual->type, formal->type) &&
-              (!vt  || !canInstantiate(vt, formal->type)) &&
-              (!st  || !canInstantiate(st, formal->type)) &&
-              (!svt || !canInstantiate(svt, formal->type))) {
-
-            return;
-
-          }
-        } else {
-          bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) || formal->intent == INTENT_PARAM;
-          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formalIsParam)) {
-            return;
-          }
-        }
-      }
-    }
-    ++coindex;
-  }
 
   // Compute the param/type substitutions for generic arguments.
   currCandidate->computeSubstitutions();
@@ -2567,6 +2538,44 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
       filterCandidate(candidates, currCandidate, info);
     }
   }
+}
+
+// Verify that the generic formals are matched correctly
+bool checkGenericFormals(ResolutionCandidate* currCandidate) {
+  /*
+   * Early rejection of generic functions.
+   */
+  int coindex = 0;
+  for_formals(formal, currCandidate->fn) {
+    if (formal->type != dtUnknown) {
+      if (Symbol* actual = currCandidate->formalIdxToActual.v[coindex]) {
+        if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+          return false;
+        }
+
+        if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+          Type* vt = actual->getValType();
+          Type* st = actual->type->scalarPromotionType;
+          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+          if (!canInstantiate(actual->type, formal->type) &&
+              (!vt  || !canInstantiate(vt, formal->type)) &&
+              (!st  || !canInstantiate(st, formal->type)) &&
+              (!svt || !canInstantiate(svt, formal->type))) {
+
+            return false;
+
+          }
+        } else {
+          bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) || formal->intent == INTENT_PARAM;
+          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formalIsParam)) {
+            return false;
+          }
+        }
+      }
+    }
+    ++coindex;
+  }
+  return true;
 }
 
 
@@ -8664,7 +8673,7 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
         }
         if (fn) {
           resolveFormals(fn);
-          if (signature_match(pfn, fn)) {
+          if (signature_match(pfn, fn) && evaluateWhereClause(fn)) {
             resolveFns(fn);
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {

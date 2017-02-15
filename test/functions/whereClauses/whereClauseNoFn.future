@@ -1,4 +1,0 @@
-bug: where clauses are ignored on non-generic functions
-
-For non-generic functions, where clauses are ignored, which seems like
-a mistake.  Here, the where clause refers to a nonexistent function.

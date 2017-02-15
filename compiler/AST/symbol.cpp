@@ -1525,7 +1525,7 @@ int FnSymbol::hasGenericFormals() const {
     if (isGeneric == true) {
       hasGenericFormal = true;
 
-      if (formal->defaultExpr == false) {
+      if (formal->defaultExpr == NULL) {
         hasGenericDefaults = false;
       }
     }
