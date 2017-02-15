@@ -211,6 +211,13 @@ static CallExpr* userCall(CallExpr* call);
 static void issueCompilerError(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
 BlockStmt* getVisibilityBlock(Expr* expr);
+static void buildVisibleFunctionMap();
+static BlockStmt*
+getVisibleFunctions(BlockStmt* block,
+                    const char* name,
+                    Vec<FnSymbol*>& visibleFns,
+                    Vec<BlockStmt*>& visited,
+                    CallExpr* callOrigin);
 static Expr* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 void resolveDefaultGenericType(CallExpr* call);
@@ -3432,8 +3439,14 @@ static void reissueCompilerWarning(const char* str, int offset) {
   USR_WARN(from, "%s", str);
 }
 
-Map<BlockStmt*,VisibleFunctionBlock*> visibleFunctionMap;
-int nVisibleFunctions = 0; // for incremental build
+class VisibleFunctionBlock {
+ public:
+  Map<const char*,Vec<FnSymbol*>*> visibleFunctions;
+  VisibleFunctionBlock() { }
+};
+
+static Map<BlockStmt*,VisibleFunctionBlock*> visibleFunctionMap;
+static int nVisibleFunctions = 0; // for incremental build
 static Map<BlockStmt*,BlockStmt*> visibilityBlockCache;
 static Vec<BlockStmt*> standardModuleSet;
 
@@ -3483,7 +3496,7 @@ getVisibilityBlock(Expr* expr) {
   }
 }
 
-void buildVisibleFunctionMap() {
+static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
     FnSymbol* fn = gFnSymbols.v[i];
     if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
@@ -3536,7 +3549,7 @@ void buildVisibleFunctionMap() {
 // getVisibleFunctions returns the block appropriate for visibilityBlockCache
 // or NULL if there is none, e.g. when the next block up is the rootModule.
 //
-BlockStmt*
+static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
@@ -3828,6 +3841,47 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
   // Even if some formals are (now) types, if 'taskFn' remained generic,
   // gatherCandidates() would not instantiate it, for some reason.
   taskFn->removeFlag(FLAG_GENERIC);
+}
+
+void fillVisibleFuncVec(CallExpr* call, CallInfo &info,
+                        Vec<FnSymbol*> &visibleFns) {
+  //
+  // update visible function map as necessary
+  //
+  if (gFnSymbols.n != nVisibleFunctions) {
+    buildVisibleFunctionMap();
+  }
+
+  if (!call->isResolved()) {
+    if (!info.scope) {
+      Vec<BlockStmt*> visited;
+      getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited, call);
+    } else {
+      if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope)) {
+        if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
+          visibleFns.append(*fns);
+        }
+      }
+    }
+  } else {
+    visibleFns.add(call->isResolved());
+    handleTaskIntentArgs(call, call->isResolved(), info);
+  }
+
+  if ((explainCallLine && explainCallMatch(call)) ||
+      call->id == explainCallID)
+  {
+    USR_PRINT(call, "call: %s", toString(&info));
+    if (visibleFns.n == 0)
+      USR_PRINT(call, "no visible functions found");
+    bool first = true;
+    forv_Vec(FnSymbol, visibleFn, visibleFns) {
+      USR_PRINT(visibleFn, "%s %s",
+                first ? "visible functions are:" : "                      ",
+                toString(visibleFn));
+      first = false;
+    }
+  }
 }
 
 
@@ -4280,43 +4334,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   Vec<FnSymbol*> visibleFns; // visible functions
 
-  //
-  // update visible function map as necessary
-  //
-  if (gFnSymbols.n != nVisibleFunctions) {
-    buildVisibleFunctionMap();
-  }
-
-  if (!call->isResolved()) {
-    if (!info.scope) {
-      Vec<BlockStmt*> visited;
-      getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited, call);
-    } else {
-      if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope)) {
-        if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
-          visibleFns.append(*fns);
-        }
-      }
-    }
-  } else {
-    visibleFns.add(call->isResolved());
-    handleTaskIntentArgs(call, call->isResolved(), info);
-  }
-
-  if ((explainCallLine && explainCallMatch(call)) ||
-      call->id == explainCallID)
-  {
-    USR_PRINT(call, "call: %s", toString(&info));
-    if (visibleFns.n == 0)
-      USR_PRINT(call, "no visible functions found");
-    bool first = true;
-    forv_Vec(FnSymbol, visibleFn, visibleFns) {
-      USR_PRINT(visibleFn, "%s %s",
-                first ? "visible functions are:" : "                      ",
-                toString(visibleFn));
-      first = false;
-    }
-  }
+  fillVisibleFuncVec(call, info, visibleFns);
 
   Vec<ResolutionCandidate*> candidates;
   gatherCandidates(candidates, visibleFns, info);
