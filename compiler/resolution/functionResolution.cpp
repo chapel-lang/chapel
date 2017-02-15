@@ -259,6 +259,8 @@ computeReturnTypeParamVectors(BaseAST* ast,
                               Symbol* retSymbol,
                               Vec<Type*>& retTypes,
                               Vec<Symbol*>& retParams);
+static void
+insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
 static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
 static bool signature_match(FnSymbol* fn, FnSymbol* gn);
@@ -8004,7 +8006,7 @@ computeReturnTypeParamVectors(BaseAST* ast,
   AST_CHILDREN_CALL(ast, computeReturnTypeParamVectors, retSymbol, retTypes, retParams);
 }
 
-void
+static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
   if (CallExpr* call = toCallExpr(ast)) {
     if (call->parentSymbol == fn) {
@@ -8161,6 +8163,21 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
     }
   }
   AST_CHILDREN_CALL(ast, insertCasts, fn, casts);
+}
+
+//
+// insert casts as necessary
+//
+void insertAndResolveCasts(FnSymbol* fn) {
+  if (fn->retTag != RET_PARAM) {
+    Vec<CallExpr*> casts;
+
+    insertCasts(fn->body, fn, casts);
+
+    forv_Vec(CallExpr, cast, casts) {
+      resolveCallAndCallee(cast, true);
+    }
+  }
 }
 
 
@@ -8406,15 +8423,7 @@ resolveFns(FnSymbol* fn) {
   //
   // insert casts as necessary
   //
-  if (fn->retTag != RET_PARAM) {
-    Vec<CallExpr*> casts;
-
-    insertCasts(fn->body, fn, casts);
-
-    forv_Vec(CallExpr, cast, casts) {
-      resolveCallAndCallee(cast, true);
-    }
-  }
+  insertAndResolveCasts(fn);
 
   if (fn->isIterator() && !fn->iteratorInfo) {
     protoIteratorClass(fn);
