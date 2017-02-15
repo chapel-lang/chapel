@@ -3830,7 +3830,7 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
   taskFn->removeFlag(FLAG_GENERIC);
 }
 
-void fillVisibleFuncVec(CallExpr* call, CallInfo info,
+void fillVisibleFuncVec(CallExpr* call, CallInfo &info,
                         Vec<FnSymbol*> &visibleFns) {
   //
   // update visible function map as necessary
