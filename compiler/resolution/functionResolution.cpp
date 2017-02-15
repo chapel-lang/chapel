@@ -4427,22 +4427,13 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       }
     }
   } else {
-    INT_ASSERT(best->fn);
-    best->fn = defaultWrap(best->fn, &best->actualIdxToFormal, &info);
-    reorderActuals(best->fn, &best->actualIdxToFormal, &info);
-    coerceActuals(best->fn, &info);
-    best->fn = promotionWrap(best->fn, &info, /*buildFastFollowerChecks=*/true);
+    wrapAndCleanUpActuals(best, info, true);
     if (valueCall) {
       // If we're resolving a ref and non-ref pair,
       // also handle the value version. best is the ref version.
       CallInfo valueInfo(valueCall, checkonly);
 
-      INT_ASSERT(bestValue->fn);
-      bestValue->fn = defaultWrap(bestValue->fn, &bestValue->actualIdxToFormal,
-                                  &valueInfo);
-      reorderActuals(bestValue->fn, &bestValue->actualIdxToFormal, &valueInfo);
-      coerceActuals(bestValue->fn, &valueInfo);
-      bestValue->fn = promotionWrap(bestValue->fn, &valueInfo, /*buildFastFollowerChecks=*/false);
+      wrapAndCleanUpActuals(bestValue, valueInfo, false);
     }
   }
 
@@ -4545,6 +4536,15 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
       }
     }
   }
+}
+
+void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
+                           bool buildFastFollowerChecks) {
+  INT_ASSERT(best->fn);
+  best->fn = defaultWrap(best->fn, &best->actualIdxToFormal, &info);
+  reorderActuals(best->fn, &best->actualIdxToFormal, &info);
+  coerceActuals(best->fn, &info);
+  best->fn = promotionWrap(best->fn, &info, buildFastFollowerChecks);
 }
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
