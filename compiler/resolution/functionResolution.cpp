@@ -4521,8 +4521,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
                             CallInfo& info, CallExpr* call) {
   if ((explainCallLine && explainCallMatch(info.call)) ||
-      call->id == explainCallID)
-  {
+      call->id == explainCallID) {
     if (candidates.n == 0) {
       USR_PRINT(info.call, "no candidates found");
 
