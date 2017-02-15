@@ -1907,6 +1907,7 @@ module ChapelArray {
           // statements cannot come after the _delete_arr call.
           param domIsPrivatized  = _isPrivatized(_instance.dom);
           param distIsPrivatized = _isPrivatized(_instance.dom.dist);
+          // Store the instance's dom class before the instance is destroyed
           const instanceDom = _instance.dom;
           if domToRemove != nil {
             // remove that domain
