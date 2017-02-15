@@ -129,7 +129,7 @@ module DefaultRectangular {
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-      assignDomainWithGetSetIndices(this, rhs);
+      chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
     iter these_help(param d: int) {

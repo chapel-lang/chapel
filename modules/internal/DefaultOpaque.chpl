@@ -98,7 +98,7 @@ module DefaultOpaque {
     }
   
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-      assignDomainWithIndsIterSafeForRemoving(this, rhs);
+      chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
     }
 
     iter these() {

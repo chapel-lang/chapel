@@ -327,12 +327,12 @@ module ChapelDistribution {
     //
     // Rectangular domains can implement this function with:
     //   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    //     assignDomainWithGetSetIndices(this, rhs);
+    //     chpl_assignDomainWithGetSetIndices(this, rhs);
     //   }
     //
     // Irregular domains can implement this function with:
     //   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    //     assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    //     chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
     //   }
 
     proc dsiDisplayRepresentation() { }
@@ -891,14 +891,14 @@ module ChapelDistribution {
     delete arr;
   }
 
-  // domain assigment helpers
+  // domain assignment helpers
 
   // Implement simple reallocate/set indices/post reallocate
   // for compatability.
   // Domain implementations may supply their own dsiAssignDomain
   // that does something else.
   // lhs is a subclass of BaseRectangularDom
-  proc assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
+  proc chpl_assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
     where t:BaseRectangularDom
   {
     type arrType = lhs.getBaseArrType();
@@ -934,7 +934,7 @@ module ChapelDistribution {
   }
 
 
-  proc assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
+  proc chpl_assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
     where t:BaseSparseDom || t:BaseAssociativeDom || t:BaseOpaqueDom
   {
     //

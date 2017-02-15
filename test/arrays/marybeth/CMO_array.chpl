@@ -26,7 +26,7 @@ class CMODom: BaseRectangularDom {
   }
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    assignDomainWithGetSetIndices(this, rhs);
+    chpl_assignDomainWithGetSetIndices(this, rhs);
   }
 
   proc dsiMyDist() return dist;

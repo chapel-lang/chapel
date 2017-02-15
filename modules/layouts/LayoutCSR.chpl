@@ -94,7 +94,7 @@ class CSRDom: BaseSparseDomImpl {
   proc dsiSetIndices(x) { }
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
   }
 
   proc dsiBuildArray(type eltType)

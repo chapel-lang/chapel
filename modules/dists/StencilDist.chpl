@@ -893,7 +893,7 @@ proc StencilDom.dsiSetIndices(x) {
 }
 
 proc StencilDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-  assignDomainWithGetSetIndices(this, rhs);
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 proc StencilDom.dsiGetIndices() {

@@ -944,7 +944,7 @@ proc BlockDom.dsiGetIndices() {
 }
 
 proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-  assignDomainWithGetSetIndices(this, rhs);
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 // dsiLocalSlice

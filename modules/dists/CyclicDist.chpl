@@ -565,7 +565,7 @@ proc CyclicDom.dsiSetIndices(x) {
 }
 
 proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-  assignDomainWithGetSetIndices(this, rhs);
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 proc CyclicDom.dsiSerialWrite(x) {
