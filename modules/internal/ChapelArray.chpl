@@ -3065,9 +3065,8 @@ module ChapelArray {
 
     a._instance.dsiAssignDomain(b, lhsPrivate=false);
 
-    if _isPrivatized(a._instance) {
-      _reprivatize(a._value);
-    }
+    // MPF note: should this call _reprivatize(a._value) at this point?
+    // I think so, but I see errors if I enable it.
   }
 
   proc =(ref a: domain, b: _tuple) {
