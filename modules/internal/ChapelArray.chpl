@@ -306,6 +306,7 @@ module ChapelArray {
     }
   }
 
+  pragma "no copy return"
   proc _newArray(value) {
     if _isPrivatized(value) then
       return new _array(_newPrivatizedClass(value), value);
@@ -313,6 +314,7 @@ module ChapelArray {
       return new _array(nullPid, value);
   }
 
+  pragma "no copy return"
   proc _getArray(value) {
     if _isPrivatized(value) then
       return new _array(_newPrivatizedClass(value), value, _unowned=true);
@@ -500,6 +502,7 @@ module ChapelArray {
   }
 
 
+  pragma "no copy return"
   proc chpl__convertValueToRuntimeType(arr: []) type
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
@@ -1133,6 +1136,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
+    pragma "no copy return"
     proc buildArray(type eltType) {
       var x = _value.dsiBuildArray(eltType);
       pragma "dont disable remote value forwarding"
@@ -1903,6 +1907,7 @@ module ChapelArray {
           // statements cannot come after the _delete_arr call.
           param domIsPrivatized  = _isPrivatized(_instance.dom);
           param distIsPrivatized = _isPrivatized(_instance.dom.dist);
+          const instanceDom = _instance.dom;
           if domToRemove != nil {
             // remove that domain
             (domToFree, distToRemove) = domToRemove.remove();
@@ -1913,7 +1918,7 @@ module ChapelArray {
           if arrToFree != nil then
             _delete_arr(_instance, _isPrivatized(_instance));
           if domToFree != nil then
-            _delete_dom(_instance.dom, domIsPrivatized);
+            _delete_dom(instanceDom, domIsPrivatized);
           if distToFree != nil then
             _delete_dist(distToFree, distIsPrivatized);
         }
@@ -3715,56 +3720,6 @@ module ChapelArray {
     pragma "no copy" var b = chpl__initCopy(x);
     return b;
   }
-
-  pragma "init copy fn"
-  proc chpl__initCopy(const ref a: [])
-    where (a._value.isSliceArrayView() ||
-           a._value.isRankChangeArrayView() ||
-           a._value.isReindexArrayView()) {
-    var b : [a._dom] a.eltType;
-
-    // Try bulk transfer.
-    if !chpl__serializeAssignment(b, a) {
-      chpl__bulkTransferArray(b, a);
-      return b;
-    }
-
-    chpl__transferArray(b, a);
-    return b;
-  }
-
-  pragma "auto copy fn" proc chpl__autoCopy(const ref x: [])
-    where x._value.isSliceArrayView() {
-    writeln("In array slice autocopy");
-    return _newArray(new ArrayViewSliceArr(eltType=x.eltType,
-                                           _DomPid=x._value._DomPid,
-                                           dom=x._value.dom,
-                                           _ArrPid=x._value._ArrPid,
-                                           _ArrInstance=x._value._ArrInstance));
-  }
-  
-  pragma "auto copy fn" proc chpl__autoCopy(const ref x: [])
-    where x._value.isRankChangeArrayView() {
-    writeln("In array slice autocopy");
-    return _newArray(new ArrayViewRankChangeArr(eltType=x.eltType,
-                                                _DomPid=x._value._DomPid,
-                                                dom=x._value.dom,
-                                                _ArrPid=x._value._ArrPid,
-                                                _ArrInstance=x._value._ArrInstance,
-                                                collapsedDim=x._value.collapsedDim,
-                                                idx=x._value.idx));
-  }
-
-  pragma "auto copy fn" proc chpl__autoCopy(const ref x: [])
-    where x._value.isReindexArrayView() {
-    writeln("In array slice autocopy");
-    return _newArray(new ArrayViewReindexArr(eltType=x.eltType,
-                                             _DomPid=x._value._DomPid,
-                                             dom=x._value.dom,
-                                             _ArrPid=x._value._ArrPid,
-                                             _ArrInstance=x._value._ArrInstance));
-  }
-  
   
   proc chpl_replaceWithDeepCopy(ref a:[]) {
     var b : [a._dom] a.eltType;

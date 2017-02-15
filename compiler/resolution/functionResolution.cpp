@@ -8278,6 +8278,54 @@ static bool isVecIterator(FnSymbol* fn) {
   return false;
 }
 
+//
+// If the returnSymbol of 'fn' is assigned to from an _array record, insert
+// an autoCopy for that _array. If the autoCopy has not yet been resolved, this
+// function will call 'resolveAutoCopyEtc'.
+//
+// This supports the 'copy-out' rule for returning arrays.
+//
+static void insertAutoCopyForArrayReturn(FnSymbol* fn) {
+  Symbol* ret = fn->getReturnSymbol();
+  Type* retType = ret->type;
+
+  if (retType == dtUnknown) {
+    for_SymbolSymExprs(se, ret) {
+      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        if (call->isPrimitive(PRIM_MOVE) && se == call->get(1)) {
+          Type* rhsType = call->get(2)->typeInfo();
+          // BHARSH: Should this also check if fn->retTag != RET_TYPE?
+          if (rhsType->symbol->hasFlag(FLAG_ARRAY) &&
+              isTypeExpr(call->get(2)) == false &&
+              !fn->hasFlag(FLAG_CONSTRUCTOR) &&
+              !fn->hasFlag(FLAG_NO_COPY_RETURN) &&
+              !fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) &&
+              !fn->hasFlag(FLAG_INIT_COPY_FN) &&
+              !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
+              !fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
+
+            if (!hasAutoCopyForType(rhsType)) {
+              resolveAutoCopyEtc(rhsType);
+            }
+            SymExpr* copiedRHS = NULL;
+            if (isSymExpr(call->get(2))) {
+              copiedRHS = toSymExpr(call->get(2)->remove());
+            } else {
+              VarSymbol* tmp = newTemp(rhsType);
+              call->insertBefore(new DefExpr(tmp));
+              call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
+              copiedRHS = new SymExpr(tmp);
+            }
+            FnSymbol* autoFn = getAutoCopy(rhsType);
+            CallExpr* copy = new CallExpr(autoFn, copiedRHS);
+            call->insertAtTail(copy);
+          }
+        }
+      }
+    }
+  }
+}
+
 void
 resolveFns(FnSymbol* fn) {
   if (fn->isResolved())
@@ -8369,6 +8417,8 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
+
+  insertAutoCopyForArrayReturn(fn);
   resolveReturnType(fn);
 
   //

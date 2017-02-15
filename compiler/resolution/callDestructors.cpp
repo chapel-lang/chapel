@@ -590,7 +590,11 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
                 isSyncType(formalType) == false &&
                 isSingleType(formalType) == false)
             {
-              copyExpr = rhsCall;
+              SymExpr* nextLHS = toSymExpr(callNext->get(1));
+              INT_ASSERT(nextLHS);
+              if (nextLHS->symbol()->hasFlag(FLAG_RVV) == false) {
+                copyExpr = rhsCall;
+              }
             }
           }
         }
