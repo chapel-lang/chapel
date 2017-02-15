@@ -91,22 +91,6 @@ FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
 // visible functions
-class VisibleFunctionBlock {
- public:
-  Map<const char*,Vec<FnSymbol*>*> visibleFunctions;
-  VisibleFunctionBlock() { }
-};
-
-extern Map<BlockStmt*,VisibleFunctionBlock*> visibleFunctionMap;
-extern int nVisibleFunctions; // for incremental build
-void buildVisibleFunctionMap();
-BlockStmt*
-getVisibleFunctions(BlockStmt* block,
-                    const char* name,
-                    Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>& visited,
-                    CallExpr* callOrigin);
-
 void fillVisibleFuncVec(CallExpr* call, CallInfo &info,
                         Vec<FnSymbol*> &visibleFns);
 
