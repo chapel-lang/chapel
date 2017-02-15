@@ -402,6 +402,11 @@ void cullOverReferences() {
     if (sym->id == breakOnId1 || sym->id == breakOnId2)
       gdbShouldBreakHere();
 
+    // If we already determined that a symbol is const, no need to
+    // do additional work here.
+    if (sym->qualType().isConst())
+      continue;
+
     bool setter = false;
     bool revisit = false;
 
@@ -424,10 +429,10 @@ void cullOverReferences() {
           }
         }
 
-        // Check for the case that sym is passed to an
-        // array formal with blank intent. In that case,
-        // it depends on the determination of the called function.
-        if (call->isResolved()) {
+        if (FnSymbol* calledFn = call->isResolved()) {
+          // Check for the case that sym is passed to an
+          // array formal with blank intent. In that case,
+          // it depends on the determination of the called function.
           ArgSymbol* formal = actual_to_formal(se);
           if (formal->intent == INTENT_REF_MAYBE_CONST) {
             revisit = true;
@@ -436,6 +441,23 @@ void cullOverReferences() {
             // this Symbol's const-ness.
             revisitGraph[formal].push_back(sym);
             continue; // move on to the next iteration
+          }
+
+          // Check for the case that sym is the _this
+          // formal for a function marked with the flag
+          // FLAG_REF_TO_CONST_WHEN_CONST_THIS
+          // (which is used for field accessors among other things).
+          // In that event, it depends on how the returned
+          // value is used.
+          if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
+              formal->hasFlag(FLAG_ARG_THIS)) {
+            CallExpr* move = toCallExpr(call->parentExpr);
+            if (move->isPrimitive(PRIM_MOVE)) {
+              SymExpr* lhs = toSymExpr(move->get(1));
+              revisit = true;
+              revisitGraph[lhs->symbol()].push_back(sym);
+              continue; // move on to the next iteration
+            }
           }
         }
 
@@ -448,7 +470,8 @@ void cullOverReferences() {
             call = toCallExpr(call->parentExpr);
 
         if (call->isPrimitive(PRIM_MOVE)) {
-          Symbol* lhsSymbol = toSymExpr(call->get(1))->symbol();
+          SymExpr* lhs = toSymExpr(call->get(1));
+          Symbol* lhsSymbol = lhs->symbol();
           if (lhsSymbol->isRef() && lhsSymbol != sym) {
             collectedSymbols.push_back(lhsSymbol);
             revisit = true;
