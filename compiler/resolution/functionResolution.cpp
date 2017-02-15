@@ -4339,22 +4339,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   Vec<ResolutionCandidate*> candidates;
   gatherCandidates(candidates, visibleFns, info);
 
-  if ((explainCallLine && explainCallMatch(info.call)) ||
-      call->id == explainCallID)
-  {
-    if (candidates.n == 0) {
-      USR_PRINT(info.call, "no candidates found");
+  explainGatherCandidate(candidates, info, call);
 
-    } else {
-      bool first = true;
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
-        USR_PRINT(candidate->fn, "%s %s",
-                  first ? "candidates are:" : "               ",
-                  toString(candidate->fn));
-        first = false;
-      }
-    }
-  }
 
   Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
   bool explain = fExplainVerbose &&
@@ -4539,6 +4525,26 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   }
 
   return resolvedFn;
+}
+
+void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
+                            CallInfo& info, CallExpr* call) {
+  if ((explainCallLine && explainCallMatch(info.call)) ||
+      call->id == explainCallID)
+  {
+    if (candidates.n == 0) {
+      USR_PRINT(info.call, "no candidates found");
+
+    } else {
+      bool first = true;
+      forv_Vec(ResolutionCandidate*, candidate, candidates) {
+        USR_PRINT(candidate->fn, "%s %s",
+                  first ? "candidates are:" : "               ",
+                  toString(candidate->fn));
+        first = false;
+      }
+    }
+  }
 }
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {

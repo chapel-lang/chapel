@@ -138,6 +138,8 @@ public:
 
 bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
 bool checkGenericFormals(ResolutionCandidate* currCandidate);
+void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
+                            CallInfo& info, CallExpr* call);
 
 typedef enum {
   FIND_EITHER = 0,
