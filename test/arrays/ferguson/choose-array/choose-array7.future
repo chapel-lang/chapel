@@ -1,0 +1,3 @@
+language: should an array alias created with "=>" be copied when returned?
+
+Currently the aliases are copied-out like any other array.
