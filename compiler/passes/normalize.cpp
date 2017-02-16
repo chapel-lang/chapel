@@ -1389,6 +1389,16 @@ static void init_typed_var(VarSymbol* var,
                            Expr*      type,
                            Expr*      stmt,
                            VarSymbol* constTemp) {
+  VarSymbol* typeTemp = newTemp("type_tmp");
+  DefExpr*   typeDefn = new DefExpr(typeTemp);
+  CallExpr*  initCall = new CallExpr(PRIM_INIT, type->remove());
+  CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
+  BlockStmt* block    = NULL;
+
+  if (var->hasFlag(FLAG_PARAM)  == true) {
+    typeTemp->addFlag(FLAG_PARAM);
+  }
+
   //
   // MDN 2016/02/02
   // The code for resolving the type of an extern variable
@@ -1399,42 +1409,29 @@ static void init_typed_var(VarSymbol* var,
   //
   // However the remaining cases do not need it.
   //
-  BlockStmt* block = NULL;
-
   if (var->hasFlag(FLAG_EXTERN) == true) {
     block = new BlockStmt(NULL, BLOCK_SCOPELESS);
-  }
-
-  VarSymbol* typeTemp = newTemp("type_tmp");
-  DefExpr*   typeDefn = new DefExpr(typeTemp);
-  CallExpr*  initCall = NULL;
-
-  if (var->hasFlag(FLAG_PARAM)) {
-    typeTemp->addFlag(FLAG_PARAM);
-  }
-
-  initCall = new CallExpr(PRIM_MOVE,
-                          typeTemp,
-                          new CallExpr(PRIM_INIT, type->remove()));
-
-  if (block != NULL) {
     block->insertAtTail(typeDefn);
+
   } else {
     stmt->insertAfter(typeDefn);
   }
 
-  typeDefn->insertAfter(initCall);
+  typeDefn->insertAfter(initMove);
 
   if (constTemp->isType()) {
-    initCall->insertAfter(new CallExpr(PRIM_MOVE,
-                                       constTemp,
-                                       new CallExpr(PRIM_TYPEOF, typeTemp)));
+    CallExpr* typeOf = new CallExpr(PRIM_TYPEOF, typeTemp);
+
+    initMove->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeOf));
 
   } else {
-    initCall->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+    initMove->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
 
-    if (constTemp->hasFlag(FLAG_EXTERN))
-      (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
+    if (constTemp->hasFlag(FLAG_EXTERN)) {
+      unsigned int tag = block->blockTag;
+
+      block->blockTag = (BlockTag) (tag | BLOCK_EXTERN_TYPE);
+    }
   }
 
   if (block != NULL) {
