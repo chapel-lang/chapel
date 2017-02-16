@@ -13,15 +13,6 @@ hwloc primarily aims at helping high-performance computing (HPC) applications,
 but is also applicable to any project seeking to exploit code and/or data
 locality on modern computing platforms.
 
-Note that the hwloc project represents the merger of the libtopology project
-from inria and the Portable Linux Processor Affinity (PLPA) sub-project from
-Open MPI. Both of these prior projects are now deprecated. The first hwloc
-release was essentially a "re-branding" of the libtopology code base, but with
-both a few genuinely new features and a few PLPA-like features added in. Prior
-releases of hwloc included documentation about switching from PLPA to hwloc;
-this documentation has been dropped on the assumption that everyone who was
-using PLPA has already switched to hwloc.
-
 hwloc supports the following operating systems:
 
   * Linux (including old kernels not having sysfs topology information, with
@@ -55,14 +46,15 @@ no topology information is available.
 For development and debugging purposes, hwloc also offers the ability to work
 on "fake" topologies:
 
-  * Symmetrical tree of resources generated from a list of level arities
-  * Remote machine simulation through the gathering of Linux sysfs topology
- files
+  * Symmetrical tree of resources generated from a list of level arities, see
+ Synthetic topologies.
+  * Remote machine simulation through the gathering of topology as XML files,
+ see Importing and exporting topologies from/to XML files.
 
 hwloc can display the topology in a human-readable format, either in graphical
 mode (X11), or by exporting in one of several different formats, including:
-plain text, PDF, PNG, and FIG (see CLI Examples below). Note that some of the
-export formats require additional support libraries.
+plain text, PDF, PNG, and FIG (see Command-line Examples below). Note that some
+of the export formats require additional support libraries.
 
 hwloc offers a programming interface for manipulating topologies and objects.
 It also brings a powerful CPU bitmap API that is used to describe topology

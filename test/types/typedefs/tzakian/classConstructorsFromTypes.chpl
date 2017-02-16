@@ -7,4 +7,7 @@ proc bar(type t) {
   return M;
 }
 
-bar(foo);
+var x = bar(foo);
+
+delete x;
+

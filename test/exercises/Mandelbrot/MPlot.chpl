@@ -98,6 +98,7 @@ proc plotToFilePPM(NumSteps: [?Dom], outfile) {
   // it wasn't the user-supplied cutoff.
   //
   const maxSteps = max reduce NumSteps;
+  assert(maxSteps != 0, "NumSteps contains no positive values");
 
   //
   // Write the output data.  Though verbose, we use three loop nests
@@ -181,6 +182,7 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
   // it wasn't the user-supplied cutoff.
   //
   const maxSteps = max reduce NumSteps;
+  assert(maxSteps != 0, "NumSteps contains no positive values");
 
   //
   // Write the output data.  Though verbose, we use three loop nests

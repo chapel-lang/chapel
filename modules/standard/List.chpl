@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -134,6 +134,7 @@ record list {
 
   /*
     Remove the first encountered instance of `x` from the list.
+    Does nothing if `x` is not present in the list.
    */
   proc ref remove(x: eltType) {
     var tmp = first,

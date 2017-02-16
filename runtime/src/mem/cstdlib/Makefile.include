@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,6 @@ MEM_SUBDIR = src/mem/cstdlib
 
 ALL_SRCS += $(CURDIR)/$(MEM_SUBDIR)/*.c
 
-MEM_OBJDIR = $(RUNTIME_ROOT)/$(MEM_SUBDIR)/$(RUNTIME_OBJDIR)
+MEM_OBJDIR = $(RUNTIME_BUILD)/$(MEM_SUBDIR)
 
 include $(RUNTIME_ROOT)/$(MEM_SUBDIR)/Makefile.share

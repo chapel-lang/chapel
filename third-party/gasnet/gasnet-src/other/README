@@ -12,7 +12,7 @@ written by Dan Bonachea <bonachea@cs.berkeley.edu> that provides
 AM2 functionality over UDP. The authoritative version of AMUDP
 is located here:
 
-http://www.cs.berkeley.edu/~bonachea/amudp
+http://gasnet.lbl.gov/amudp
 
 If you make fixes or changes to the code in that directory, 
 please email them to Dan Bonachea <bonachea@cs.berkeley.edu>.
@@ -25,7 +25,7 @@ written by Dan Bonachea <bonachea@cs.berkeley.edu> that provides
 AM2 functionality over MPI. The authoritative version of AMMPI
 is located here:
 
-http://www.cs.berkeley.edu/~bonachea/ammpi
+http://gasnet.lbl.gov/ammpi
 
 If you make fixes or changes to the code in that directory, 
 please email them to Dan Bonachea <bonachea@cs.berkeley.edu>.

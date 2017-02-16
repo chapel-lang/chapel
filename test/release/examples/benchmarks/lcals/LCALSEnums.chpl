@@ -66,6 +66,7 @@ module LCALSEnums {
     //
     RAW,
     RAW_OMP,
+    RAW_SPMD,
     RAW_VECTOR_ONLY,
     FORALL_LAMBDA,
     FORALL_LAMBDA_OMP,

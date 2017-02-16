@@ -1,5 +1,0 @@
-This directory is meant to serve as a repository of Chapel performance
-results.  The file names should contain the date on which the timings
-were taken.
-
-The directory pbs/ contains sample usage of pbs on jaguar.

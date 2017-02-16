@@ -4,7 +4,10 @@ class A {
 
 proc bar(type T) {
   var t = new T();
+
   t.hello();
+
+  delete t;
 }
 
 

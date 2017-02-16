@@ -4,8 +4,8 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import third_party_utils, utils
-from utils import memoize
+import third_party_utils
+from utils import memoize, run_command
 
 
 @memoize
@@ -25,6 +25,6 @@ def get_link_args():
     jemalloc_config = get_jemalloc_config_file()
     libs = ['-ljemalloc']
     if os.access(jemalloc_config, os.X_OK):
-        jemalloc_libs = utils.run_command([jemalloc_config, '--libs'])
+        jemalloc_libs = run_command([jemalloc_config, '--libs'])
         libs += jemalloc_libs.split()
     return libs

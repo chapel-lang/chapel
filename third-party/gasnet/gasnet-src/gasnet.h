@@ -16,6 +16,10 @@
   #error Internal GASNet code should not directly include gasnet.h, just gasnet_internal.h
 #endif
 
+#ifdef __cplusplus
+  extern "C" { // cannot use GASNETI_BEGIN_EXTERNC here due to a header dependency cycle
+#endif
+
 /* Usage:
    see the GASNet specification and top-level README for details on how to use the GASNet interface
    clients should use the automatically-generated Makefile *.mak fragments to get the correct compile settings
@@ -140,8 +144,11 @@
 #endif
 
 /* additional safety check, in case a very smart linker removes all of the checks at the end of this file */
-#define gasnet_init _CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT( \
+#define gasnet_init _CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT(_CONCAT( \
                     gasnet_init_GASNET_,                             \
+                    GASNET_RELEASE_VERSION_MAJOR),                   \
+                    GASNET_RELEASE_VERSION_MINOR),                   \
+                    GASNET_RELEASE_VERSION_PATCH),                   \
                     GASNETI_THREAD_MODEL),                           \
                     GASNETI_PSHM_CONFIG_ENABLED),                    \
                     GASNETI_SEGMENT_CONFIG),                         \
@@ -253,10 +260,8 @@
   #define GASNETI_MAX_MEDIUM_PSHM 65000
 #endif
 
-GASNETI_BEGIN_EXTERNC
 extern const char *gasnet_ErrorName(int);
 extern const char *gasnet_ErrorDesc(int);
-GASNETI_END_EXTERNC
 
 /* ------------------------------------------------------------------------------------ */
 /* core types */
@@ -443,8 +448,12 @@ extern void (*gasnet_client_attach_hook)(void *, uintptr_t);
  * all objects in a given executable (client and library) must agree on all
  * of the following configuration settings, otherwise MANY things break,
  * often in very subtle and confusing ways (eg GASNet mutexes, threadinfo, etc.)
+ * DO NOT REMOVE ANYTHING FROM THIS LIST!!!!
  */
 #define GASNETI_LINKCONFIG_IDIOTCHECK(name) _CONCAT(gasneti_linkconfig_idiotcheck_,name)
+extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR));
+extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR));
+extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_PATCH_,GASNET_RELEASE_VERSION_PATCH));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_THREAD_MODEL);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_SEGMENT_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_DEBUG_CONFIG);
@@ -465,12 +474,18 @@ extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME));
 
 static int *gasneti_linkconfig_idiotcheck(void);
-/* use of void* here avoids a tinyc bug */
-static void *_gasneti_linkconfig_idiotcheck = (void *)&gasneti_linkconfig_idiotcheck;
+#if !PLATFORM_COMPILER_TINY /* avoid a tinyc bug */
+  #define GASNETI_IDIOTCHECK_RECURSIVE_REFERENCE 1
+  static int *(*_gasneti_linkconfig_idiotcheck)(void) = &gasneti_linkconfig_idiotcheck;
+#endif
 GASNETI_USED
 static int *gasneti_linkconfig_idiotcheck(void) {
   static int val;
-  val +=  GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_THREAD_MODEL)
+  val +=
+        + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR))
+        + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR))
+        + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_PATCH_,GASNET_RELEASE_VERSION_PATCH))
+        + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_THREAD_MODEL)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_SEGMENT_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_DEBUG_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TRACE_CONFIG)
@@ -489,20 +504,29 @@ static int *gasneti_linkconfig_idiotcheck(void) {
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME))
         ;
-  if (_gasneti_linkconfig_idiotcheck != (void*)&gasneti_linkconfig_idiotcheck)
-    val += ((int(*)(void))_gasneti_linkconfig_idiotcheck)();
+  #if GASNETI_IDIOTCHECK_RECURSIVE_REFERENCE
+  if (_gasneti_linkconfig_idiotcheck == &gasneti_linkconfig_idiotcheck)
+    val += *(*_gasneti_linkconfig_idiotcheck)();
+  #endif
   return &val;
 }
 extern int gasneti_internal_idiotcheck(gasnet_handlerentry_t *table, int numentries,
                                        uintptr_t segsize, uintptr_t minheapoffset);
 
 #if defined(GASNET_DEBUG) && (defined(__OPTIMIZE__) || defined(NDEBUG))
-  #ifndef GASNET_ALLOW_OPTIMIZED_DEBUG
+  #ifndef _IN_GASNET_TESTS_DELAY_C
+  /* NOTICE: The override switch for this check has recently changed names
+   * because the override is being removed in the next release of GASNet.  
+   * If you believe this override is important to you, please contact the
+   * GASNet developers: upc-devel@lbl.gov
+   */
     #error Tried to compile GASNet client code with optimization enabled but also GASNET_DEBUG (which seriously hurts performance). Reconfigure/rebuild GASNet without --enable-debug
   #endif
 #endif
 
 /* ------------------------------------------------------------------------------------ */
+
+GASNETI_END_EXTERNC
 
 #undef _IN_GASNET_H
 #endif

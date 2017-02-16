@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,7 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
+#include "TryStmt.h"
 
 AstDump::AstDump() {
   mName      =     0;
@@ -180,7 +181,7 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       writeFnSymbol(fn);
 
     } else if (isTypeSymbol(sym)) {
-      if (toAggregateType(sym->type)) {
+      if (isAggregateType(sym->type)) {
         if (sym->hasFlag(FLAG_SYNC))
           write("sync");
 
@@ -191,13 +192,15 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       writeSymbol("type", sym, true);
 
     } else if (VarSymbol* vs = toVarSymbol(sym)) {
-      if (vs->type->symbol->hasFlag(FLAG_SYNC))
+      if (isSyncType(vs->type)) {
         write("sync");
 
-      if (vs->type->symbol->hasFlag(FLAG_SINGLE))
+      } else if (isSingleType(vs->type)) {
         write("single");
+      }
 
-      writeSymbol("var", sym, true);
+      write(true, sym->qualType().qualStr(), false);
+      writeSymbol("", sym, true);
       writeFlags(mFP, sym);
 
     } else if (isLabelSymbol(sym)) {
@@ -235,7 +238,7 @@ void AstDump::exitNamedExpr(NamedExpr* node) {
 // SymExpr
 //
 void AstDump::visitSymExpr(SymExpr* node) {
-  Symbol*    sym = node->var;
+  Symbol*    sym = node->symbol();
   VarSymbol* var = toVarSymbol(sym);
 
   if (isBlockStmt(node->parentExpr) == true) {
@@ -327,6 +330,18 @@ void AstDump::exitBlockStmt(BlockStmt* node) {
   newline();
   write(false, "}", true);
   printBlockID(node);
+}
+
+void AstDump::visitForallIntents(ForallIntents* clause) {
+  newline();
+  write("with (");
+  for (int i = 0; i < clause->numVars(); i++) {
+    if (i > 0) write(false, ",", true);
+    if (clause->isReduce(i)) clause->riSpecs[i]->accept(this);
+    write(tfiTagDescrString(clause->fIntents[i]));
+    clause->fiVars[i]->accept(this);
+  }
+  write(false, ")", true);
 }
 
 
@@ -489,22 +504,45 @@ void AstDump::visitEblockStmt(ExternBlockStmt* node) {
 bool AstDump::enterGotoStmt(GotoStmt* node) {
   newline();
   switch (node->gotoTag) {
-    case GOTO_NORMAL:      write("goto");           break;
-    case GOTO_BREAK:       write("break");          break;
-    case GOTO_CONTINUE:    write("continue");       break;
-    case GOTO_RETURN:      write("gotoReturn");     break;
-    case GOTO_GETITER_END: write("gotoGetiterEnd"); break;
-    case GOTO_ITER_RESUME: write("gotoIterResume"); break;
-    case GOTO_ITER_END:    write("gotoIterEnd");    break;
+    case GOTO_NORMAL:         write("goto");              break;
+    case GOTO_BREAK:          write("break");             break;
+    case GOTO_CONTINUE:       write("continue");          break;
+    case GOTO_RETURN:         write("gotoReturn");        break;
+    case GOTO_GETITER_END:    write("gotoGetiterEnd");    break;
+    case GOTO_ITER_RESUME:    write("gotoIterResume");    break;
+    case GOTO_ITER_END:       write("gotoIterEnd");       break;
+    case GOTO_ERROR_HANDLING: write("gotoErrorHandling"); break;
   }
 
   if (SymExpr* label = toSymExpr(node->label)) {
-    if (label->var != gNil) {
-      writeSymbol(label->var, true);
+    if (label->symbol() != gNil) {
+      writeSymbol(label->symbol(), true);
     }
   }
 
   return true;
+}
+
+//
+// TryStmt
+//
+bool AstDump::enterTryStmt(TryStmt* node) {
+  newline();
+  if (node->tryBang()) {
+    write("Try!");
+  } else {
+    write("Try");
+  }
+  newline();
+  write("{");
+  ++mIndent;
+  return true;
+}
+
+void AstDump::exitTryStmt(TryStmt* node) {
+  --mIndent;
+  newline();
+  write("}");
 }
 
 //
@@ -567,6 +605,10 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
     writeSymbol(":", fn->retType->symbol, false);
   }
 
+  if (fn->throwsError()) {
+    write("throws");
+  }
+
   writeFlags(mFP, fn);
 }
 
@@ -584,8 +626,22 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
         case INTENT_OUT:       write("out arg");       break;
         case INTENT_CONST:     write("const arg");     break;
         case INTENT_CONST_IN:  write("const in arg");  break;
-        case INTENT_CONST_REF: write("const ref arg"); break;
-        case INTENT_REF:       write("ref arg");       break;
+        case INTENT_CONST_REF: {
+          if (arg->isWideRef()) {
+            write("const wide-ref arg");
+          } else {
+            write("const ref arg");
+          }
+          break;
+        }
+        case INTENT_REF: {
+          if (arg->isWideRef()) {
+            write("wide-ref arg");
+          } else {
+            write("ref arg");
+          }
+          break;
+        }
         case INTENT_PARAM:     write("param arg");     break;
         case INTENT_TYPE:      write("type arg");      break;
         case INTENT_BLANK:     write("arg");           break;

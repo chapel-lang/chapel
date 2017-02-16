@@ -26,3 +26,7 @@ var b = new B();
 
 a.foo();
 b.foo();
+
+delete b;
+delete a;
+

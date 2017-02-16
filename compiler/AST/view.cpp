@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,19 +23,20 @@
 
 #include "view.h"
 
+#include "AstDump.h"
+#include "AstDumpToNode.h"
 #include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "iterator.h"
 #include "log.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "WhileStmt.h"
-#include "AstDump.h"
-#include "AstDumpToNode.h"
-#include "iterator.h"
 
 #include <inttypes.h>
 
@@ -57,8 +58,8 @@ list_sym(Symbol* sym, bool type = true) {
   }
   if (toFnSymbol(sym)) {
     printf("fn ");
-  } else if (toArgSymbol(sym)) {
-    printf("arg ");
+  } else if (ArgSymbol* arg = toArgSymbol(sym)) {
+    printf("arg intent-%s ", arg->intentDescrString());
   } else if (toTypeSymbol(sym)) {
     printf("type ");
   }
@@ -91,6 +92,19 @@ block_explanation(BaseAST* ast, BaseAST* parentAst) {
   return "";
 }
 
+static const char*
+forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
+  if (ForallExpr* fe = toForallExpr(parentAst)) {
+    if (ast == fe->iteratorExpr)
+      return ") in( ";
+    if (ast == fe->expr)
+      return ") { ";
+    if (ast == fe->cond)
+      return "} if( ";
+  }
+  return NULL;
+}
+
 static bool
 list_line(Expr* expr, BaseAST* parentAst) {
   if (expr->isStmt())
@@ -119,10 +133,12 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       for (int i = 0; i < indent; i++)
         printf(" ");
     }
+    if (const char* expl = forall_explanation_start(ast, parentAst))
+      printf("%s", expl);
     if (GotoStmt* e = toGotoStmt(ast)) {
       printf("goto ");
       if (SymExpr* label = toSymExpr(e->label)) {
-        if (label->var != gNil) {
+        if (label->symbol() != gNil) {
           list_ast(e->label, ast, indent+1);
         }
       } else {
@@ -140,12 +156,20 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         printf("%s( ", e->primitive->name);
       else
         printf("call( ");
+    } else if (ForallExpr* e = toForallExpr(expr)) {
+      if (e->zippered) printf("zip ");
+      printf("forall( ");
     } else if (NamedExpr* e = toNamedExpr(expr)) {
       printf("%s = ", e->name);
     } else if (toDefExpr(expr)) {
-      printf("def ");
+      Symbol* sym = toDefExpr(expr)->sym;
+      if (sym->type != NULL) {
+        printf("def %s ", sym->qualType().qualStr());
+      } else {
+        printf("def ");
+      }
     } else if (SymExpr* e = toSymExpr(expr)) {
-      list_sym(e->var, false);
+      list_sym(e->symbol(), false);
     } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {
       printf("%s ", e->unresolved);
     } else if (isUseStmt(expr)) {
@@ -186,6 +210,9 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         printf("} ");
       else
         printf("}\n");
+    } else if (ForallExpr* e = toForallExpr(expr)) {
+      if (e->cond) printf(") ");
+      else         printf("} ");
     } else if (UseStmt* use = toUseStmt(expr)) {
       if (!use->isPlainUse()) {
         if (use->hasExceptList()) {
@@ -287,6 +314,12 @@ static void view_sym(Symbol* sym, bool number, int mark) {
   putchar('\'');
   if (sym->id == mark)
     printf("***");
+
+  if (isVarSymbol(sym) || isArgSymbol(sym)) {
+    QualifiedType qual = sym->qualType();
+    printf("%s ", qual.qualStr());
+  }
+
   if (toFnSymbol(sym)) {
     printf("fn ");
   } else if (toArgSymbol(sym)) {
@@ -357,7 +390,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
 
     if (SymExpr* sym = toSymExpr(expr)) {
       printf(" ");
-      view_sym(sym->var, number, mark);
+      view_sym(sym->symbol(), number, mark);
     } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
       printf(" '%s'", sym->unresolved);
     }
@@ -371,6 +404,8 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
 
   if (DefExpr* def = toDefExpr(ast)) {
     printf(" ");
+    if (ArgSymbol* arg = toArgSymbol(def->sym))
+      printf("intent-%s ", arg->intentDescrString());
     writeFlags(stdout, def->sym);
   }
 
@@ -614,7 +649,7 @@ const char* shortLoc(BaseAST* ast) {
     return "<no node provided>";
 
   const char* longLoc = stringLoc(ast);
-  const char* slash = (const char*) rindex(longLoc, '/');
+  const char* slash = (const char*) strrchr(longLoc, '/');
   return slash ? slash+1 : longLoc;
 }
 
@@ -739,7 +774,7 @@ void whocalls(BaseAST* ast) {
   }
   printf("whocalls(%s[%d])\n", ast->astTagAsString(), ast->id);
   if (SymExpr* se = toSymExpr(ast)) {
-    whocalls(se->var->id);
+    whocalls(se->symbol()->id);
   } else if (isSymbol(ast)) {
     whocalls(ast->id);
   } else {
@@ -765,7 +800,7 @@ void whocalls(int id) {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
       callAll++;
-      if (se->var->id == id) {
+      if (se->symbol()->id == id) {
         printf("  call %d  %s  %s\n", call->id,
                parentMsg(call, &callMatch, &callNonTreeMatch), debugLoc(call));
         if (whocalls_nview) nprint_view(call);
@@ -779,7 +814,7 @@ void whocalls(int id) {
       forAll++;
       // check each step, just in case
       if (SymExpr* act2 = toSymExpr(call->get(2)))
-        if (Symbol* ic = act2->var)
+        if (Symbol* ic = act2->symbol())
           if (AggregateType* ty = toAggregateType(ic->type))
             if (FnSymbol* init = ty->iteratorInfo->getIterator)
               if (ArgSymbol* form1 = init->getFormal(1))
@@ -805,9 +840,9 @@ void whocalls(int id) {
     }
   }
 
-  int ftMatch = 0, ftAll = ftableVec.n;
+  int ftMatch = 0, ftAll = ftableVec.size();
   for (int i = 0; i < ftAll; i++) {
-    if (ftableVec.v[i]->id == id) {
+    if (ftableVec.begin()[i]->id == id) {
       ftMatch++;
       printf("  ftableVec[%d]\n", i);
     }

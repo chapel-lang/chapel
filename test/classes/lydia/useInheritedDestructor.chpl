@@ -6,7 +6,7 @@ class A {
   var stored: storage = new storage();
   var uninit: storage;
 
-  proc ~A() {
+  proc deinit() {
     delete stored;
     delete uninit;
   }

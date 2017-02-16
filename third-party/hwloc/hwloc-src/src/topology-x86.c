@@ -81,7 +81,7 @@ enum cpuid_type {
 
 static void fill_amd_cache(struct procinfo *infos, unsigned level, int type, unsigned cpuid)
 {
-  struct cacheinfo *cache;
+  struct cacheinfo *cache, *tmpcaches;
   unsigned cachenum;
   unsigned long size = 0;
 
@@ -94,8 +94,13 @@ static void fill_amd_cache(struct procinfo *infos, unsigned level, int type, uns
   if (!size)
     return;
 
+  tmpcaches = realloc(infos->cache, (infos->numcaches+1)*sizeof(*infos->cache));
+  if (!tmpcaches)
+    /* failed to allocated, ignore that cache */
+    return;
+  infos->cache = tmpcaches;
   cachenum = infos->numcaches++;
-  infos->cache = realloc(infos->cache, infos->numcaches*sizeof(*infos->cache));
+
   cache = &infos->cache[cachenum];
 
   cache->type = type;
@@ -178,8 +183,9 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
   }
   infos->cpustepping = eax & 0xf;
 
-  if (cpuid_type == intel && infos->cpufamilynumber == 0x6 && infos->cpumodelnumber == 0x57)
-    data->is_knl = 1;
+  if (cpuid_type == intel && infos->cpufamilynumber == 0x6 &&
+      (infos->cpumodelnumber == 0x57 || infos->cpumodelnumber == 0x85))
+    data->is_knl = 1; /* KNM is the same as KNL */
 
   /* Get cpu vendor string from cpuid 0x00 */
   memset(regs, 0, sizeof(regs));

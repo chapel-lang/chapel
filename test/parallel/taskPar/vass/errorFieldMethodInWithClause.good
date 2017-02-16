@@ -1,17 +1,17 @@
-errorFieldMethodInWithClause.chpl:15: error: myField: cannot reference a field or function in a 'with' clause of a forall loop
+errorFieldMethodInWithClause.chpl:15: error: cannot reference a field or function 'myField' in a with-clause of this forall loop
 errorFieldMethodInWithClause.chpl:14: In function 'test':
-errorFieldMethodInWithClause.chpl:17: error: myProcc: cannot reference a field or function in a 'with' clause of a forall loop
-errorFieldMethodInWithClause.chpl:19: error: ourProc: cannot reference a field or function in a 'with' clause of a forall loop
-errorFieldMethodInWithClause.chpl:19: error: ourIter: cannot reference a field or function in a 'with' clause of a forall loop
-errorFieldMethodInWithClause.chpl:22: error: myField: cannot reference a field or function in a 'with' clause of a cobegin block
-errorFieldMethodInWithClause.chpl:26: error: myProcc: cannot reference a field or function in a 'with' clause of a cobegin block
-errorFieldMethodInWithClause.chpl:30: error: ourProc: cannot reference a field or function in a 'with' clause of a cobegin block
-errorFieldMethodInWithClause.chpl:30: error: ourIter: cannot reference a field or function in a 'with' clause of a cobegin block
-errorFieldMethodInWithClause.chpl:35: error: myField: cannot reference a field or function in a 'with' clause of a coforall loop
-errorFieldMethodInWithClause.chpl:37: error: myProcc: cannot reference a field or function in a 'with' clause of a coforall loop
-errorFieldMethodInWithClause.chpl:39: error: ourProc: cannot reference a field or function in a 'with' clause of a coforall loop
-errorFieldMethodInWithClause.chpl:39: error: ourIter: cannot reference a field or function in a 'with' clause of a coforall loop
-errorFieldMethodInWithClause.chpl:43: error: myField: cannot reference a field or function in a 'with' clause of a begin block
-errorFieldMethodInWithClause.chpl:45: error: myProcc: cannot reference a field or function in a 'with' clause of a begin block
-errorFieldMethodInWithClause.chpl:47: error: ourProc: cannot reference a field or function in a 'with' clause of a begin block
-errorFieldMethodInWithClause.chpl:47: error: ourIter: cannot reference a field or function in a 'with' clause of a begin block
+errorFieldMethodInWithClause.chpl:17: error: cannot reference a field or function 'myProcc' in a with-clause of this forall loop
+errorFieldMethodInWithClause.chpl:19: error: cannot reference a field or function 'ourProc' in a with-clause of this forall loop
+errorFieldMethodInWithClause.chpl:19: error: cannot reference a field or function 'ourIter' in a with-clause of this forall loop
+errorFieldMethodInWithClause.chpl:22: error: cannot reference a field or function 'myField' in a with-clause of this cobegin block
+errorFieldMethodInWithClause.chpl:26: error: cannot reference a field or function 'myProcc' in a with-clause of this cobegin block
+errorFieldMethodInWithClause.chpl:30: error: cannot reference a field or function 'ourProc' in a with-clause of this cobegin block
+errorFieldMethodInWithClause.chpl:30: error: cannot reference a field or function 'ourIter' in a with-clause of this cobegin block
+errorFieldMethodInWithClause.chpl:35: error: cannot reference a field or function 'myField' in a with-clause of this coforall loop
+errorFieldMethodInWithClause.chpl:37: error: cannot reference a field or function 'myProcc' in a with-clause of this coforall loop
+errorFieldMethodInWithClause.chpl:39: error: cannot reference a field or function 'ourProc' in a with-clause of this coforall loop
+errorFieldMethodInWithClause.chpl:39: error: cannot reference a field or function 'ourIter' in a with-clause of this coforall loop
+errorFieldMethodInWithClause.chpl:43: error: cannot reference a field or function 'myField' in a with-clause of this begin block
+errorFieldMethodInWithClause.chpl:45: error: cannot reference a field or function 'myProcc' in a with-clause of this begin block
+errorFieldMethodInWithClause.chpl:47: error: cannot reference a field or function 'ourProc' in a with-clause of this begin block
+errorFieldMethodInWithClause.chpl:47: error: cannot reference a field or function 'ourIter' in a with-clause of this begin block

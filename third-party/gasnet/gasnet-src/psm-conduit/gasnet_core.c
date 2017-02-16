@@ -82,6 +82,8 @@ GASNETI_COLD
 static void gasnetc_check_config(void) {
     gasneti_check_config_preinit();
 
+    gasneti_assert(sizeof(void*) == sizeof(intptr_t)); /* For enter/leave handler */
+
     /* (###) add code to do some sanity checks on the number of nodes, handlers
      * and/or segment sizes */
 }
@@ -139,7 +141,7 @@ static int gasneti_bootstrapInit(
 #endif
 #if HAVE_PMI_SPAWNER
     if ((!strcmp(spawner, "pmi") || (spawner == not_set)) &&
-            GASNET_OK == (res = gasneti_bootstrapInit_pmi(argc, argv, nodes_p, mynode_p))) {
+            GASNET_OK == (res = gasneti_bootstrapInit_pmi(argc_p, argv_p, nodes_p, mynode_p))) {
         gasneti_bootstrapFini_p = &gasneti_bootstrapFini_pmi;
         gasneti_bootstrapAbort_p    = &gasneti_bootstrapAbort_pmi;
         gasneti_bootstrapBarrier_p  = &gasneti_bootstrapBarrier_pmi;
@@ -157,6 +159,66 @@ static int gasneti_bootstrapInit(
     return res;
 }
 
+GASNETI_COLD
+static void gasneti_check_bug3333(int ver_major, int ver_minor) {
+    gasnet_node_t pshm_width;
+    gasnet_node_t node_width;
+
+    /* Step 0. Return early if no detailed check is required.
+     * TODO: check ver_major.ver_minor against fixed release when available.
+     */
+    if (gasneti_getenv_yesno_withdefault("GASNET_PSM_ENABLE_SHM", 0)) {
+        return;
+    }
+
+    /* Step 1. Maximum width of any compute node in this job (the "ppn").
+     * Replicates a portion of gasneti_nodemapInit w/o imposing the upper
+     * bounds of GASNETI_PSHM_MAX_NODES or GASNET_SUPERNODE_MAXSIZE.
+     */
+    {
+        uint32_t *allids = gasneti_malloc(gasneti_nodes * sizeof(uint32_t));
+        uint32_t myid = gasneti_gethostid();
+        int i, j;
+
+        gasneti_bootstrapExchange(&myid, sizeof(uint32_t), allids);
+
+        node_width = 0;
+        for (i = 0; i < gasneti_nodes; ++i) {
+            gasnet_node_t tmp = 1;
+            for (j = i+1; j < gasneti_nodes; ++j) {
+                tmp += (allids[j] == allids[i]);
+            }
+            node_width = MAX(node_width, tmp);
+        }
+
+        gasneti_free(allids);
+    }
+
+    /* Step 2. Maximum width of a pshm-domain (a "supernode"): */
+#if GASNET_PSHM
+    pshm_width = gasneti_getenv_int_withdefault("GASNET_SUPERNODE_MAXSIZE", 0, 0);
+    pshm_width = pshm_width ? pshm_width : gasneti_nodes; /* default value of 0 means unlimited */
+#else
+    pshm_width = 1;
+#endif
+
+    /* Step 3. All or none exit */
+    if (pshm_width < node_width) {
+        if (!gasneti_mynode) {
+            fprintf(stderr,
+"****************************************************************************\n"
+"* ERROR: This run would use PSM2's shared-memory device which is disabled  *\n"
+"* by default in this release.  Please see \"Bug 3333\" in psm-conduit/README *\n"
+"* (source) or README-psm (installed) for instructions to enable this run.  *\n"
+"****************************************************************************\n"
+);
+            fflush(stderr);
+        }
+        gasnetc_bootstrapBarrier();
+        gasneti_bootstrapFini();
+        _exit(1);
+    }
+}
 
 GASNETI_COLD
 static int gasnetc_init(int *argc, char ***argv) {
@@ -228,7 +290,9 @@ static int gasnetc_init(int *argc, char ***argv) {
         int ver_minor = PSM2_VERNO_MINOR;
         psm2_uuid_t uuid;
 
-#if GASNET_PSHM
+        gasneti_check_bug3333(ver_major, ver_minor);
+
+#if GASNET_PSHM && 0 /* DISABLED: see bug 3334 */
         /* Save memory (and maybe performance?) by disabling psm2's self and
            shared-memory communication models.  PSHM will be used instead. */
         setenv("PSM2_DEVICES", "hfi", 1);
@@ -453,6 +517,20 @@ static int gasnetc_reghandlers(gasnet_handlerentry_t *table, int numentries,
 
 
 /* -------------------------------------------------------------------------- */
+#if GASNETI_CLIENT_THREADS
+  /* The first field of threadinfo is a void* reserved for use by the "core".
+   * Since "handler_depth" is the only thread-specific state required, we
+   * just use it as an intptr_t without any additional indirection.
+   */
+  #define gasnetc_handler_depth (*(intptr_t*)gasnete_mythread())
+#else
+  static intptr_t gasnetc_handler_depth = 0;
+#endif
+#define gasnetc_enter_hander() ((void)++gasnetc_handler_depth)
+#define gasnetc_leave_hander() do {             \
+    --gasnetc_handler_depth;                    \
+    gasneti_assert(gasnetc_handler_depth >= 0); \
+  } while (0)
 
 int gasnetc_handler_short(psm2_am_token_t token,
         psm2_amarg_t* args, int nargs, void* addr, uint32_t len)
@@ -461,6 +539,8 @@ int gasnetc_handler_short(psm2_am_token_t token,
     int handler_idx;
     int gasnet_nargs;
     gasnet_token_t user_token = (gasnet_token_t)token;
+
+    gasnetc_enter_hander();
 
     gasneti_assert(nargs >= 1);
 
@@ -471,13 +551,11 @@ int gasnetc_handler_short(psm2_am_token_t token,
     gasneti_assert((nargs - 1) * 2 >= gasnet_nargs);
     gasneti_assert(handler_idx >= 0 && handler_idx < 256);
 
-    gasnetc_psm_state.handler_running = 1;
-
     GASNETI_RUN_HANDLER_SHORT(is_request, handler_idx,
             gasnetc_handler[handler_idx],
             user_token, (uint32_t*)&args[1], gasnet_nargs);
 
-    gasnetc_psm_state.handler_running = 0;
+    gasnetc_leave_hander();
     return 0;
 }
 
@@ -490,6 +568,8 @@ int gasnetc_handler_med(psm2_am_token_t token,
     int gasnet_nargs;
     void* userload;
     gasnet_token_t user_token = (gasnet_token_t)token;
+
+    gasnetc_enter_hander();
 
     gasneti_assert(nargs >= 1);
 
@@ -509,13 +589,11 @@ int gasnetc_handler_med(psm2_am_token_t token,
         userload = NULL;
     }
 
-    gasnetc_psm_state.handler_running = 1;
-
     GASNETI_RUN_HANDLER_MEDIUM(is_request, handler_idx,
             gasnetc_handler[handler_idx],
             user_token, (uint32_t*)&args[1], gasnet_nargs, userload, len);
 
-    gasnetc_psm_state.handler_running = 0;
+    gasnetc_leave_hander();
     return 0;
 }
 
@@ -528,6 +606,8 @@ int gasnetc_handler_long(psm2_am_token_t token,
     int gasnet_nargs;
     void* dest_addr;
     gasnet_token_t user_token = (gasnet_token_t)token;
+
+    gasnetc_enter_hander();
 
     gasneti_assert(nargs >= 2);
 
@@ -545,13 +625,11 @@ int gasnetc_handler_long(psm2_am_token_t token,
         memcpy(dest_addr, addr, len);
     }
 
-    gasnetc_psm_state.handler_running = 1;
-
     GASNETI_RUN_HANDLER_LONG(is_request, handler_idx,
             gasnetc_handler[handler_idx],
             user_token, (uint32_t*)&args[2], gasnet_nargs, dest_addr, len);
 
-    gasnetc_psm_state.handler_running = 0;
+    gasnetc_leave_hander();
     return 0;
 }
 
@@ -873,20 +951,17 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
 
 /* -------------------------------------------------------------------------- */
 
-/* Set when gasnetc_at/onexit() is called to prevent reentrancy */
-static int gasnetc_exit_in_progress = 0;
-
 #if HAVE_ON_EXIT
 GASNETI_COLD
 static void gasnetc_on_exit(int exitcode, void *arg) {
-    if(gasnetc_exit_in_progress == 0) {
+    if(gasnetc_psm_state.exit_in_progress == 0) {
         gasnetc_exit(exitcode);
     }
 }
 #else
 GASNETI_COLD
 static void gasnetc_atexit(void) {
-    if(gasnetc_exit_in_progress == 0) {
+    if(gasnetc_psm_state.exit_in_progress == 0) {
         gasnetc_exit(0);
     }
 }
@@ -895,22 +970,18 @@ static void gasnetc_atexit(void) {
 GASNETI_COLD
 extern void gasnetc_exit(int exitcode) {
     int i;
-    psm2_amarg_t psm2_args;
     psm2_error_t ret;
-    time_t t_start;
-    time_t t_cur;
 
     /* once we start a shutdown, ignore all future SIGQUIT signals or we risk
      * reentrancy */
     gasneti_reghandler(SIGQUIT, SIG_IGN);
 
-    gasneti_assert(gasnetc_exit_in_progress == 0);
-    gasnetc_exit_in_progress = 1;
-
     {  /* ensure only one thread ever continues past this point */
         static gasneti_mutex_t exit_lock = GASNETI_MUTEX_INITIALIZER;
         gasneti_mutex_lock(&exit_lock);
     }
+
+    gasnetc_psm_state.exit_in_progress = 1;
 
     GASNETI_TRACE_PRINTF(C,("gasnet_exit(%i)\n", exitcode));
 
@@ -918,22 +989,31 @@ extern void gasnetc_exit(int exitcode) {
     gasneti_trace_finish();
     gasneti_sched_yield();
 
+    /* Prior to attach we cannot send AMs to coordinate the exit */
+    if (! gasneti_attach_done) {
+        fprintf(stderr, "WARNING: GASNet psm-conduit may not shutdown cleanly when gasnet_exit() is called before gasnet_attach()\n");
+        gasneti_bootstrapAbort(exitcode);
+        gasneti_killmyprocess(exitcode);
+    }
+
     /* If called from a handler, there is no way gasnetc_exit can notify other
      * processes to exit (except the one that invoked this handler).  Cleaning
      * up properly will also be difficult due to psm2 already holding locks at
      * this point.  So, just abort. */
-    if (gasnetc_psm_state.handler_running) {
-        gasneti_fatalerror("GASNet psm conduit cannot support gasnet_exit called from a handler\n");
+    if (0 != gasnetc_handler_depth) {
+        fprintf(stderr, "WARNING: GASNet psm-conduit may not shutdown cleanly when gasnet_exit() is called from an AM handler\n");
+        gasneti_bootstrapAbort(exitcode);
+        gasneti_killmyprocess(exitcode);
     }
 
     /* (###) add code here to terminate the job across _all_ nodes
        with gasneti_killmyprocess(exitcode) (not regular exit()), preferably
        after raising a SIGQUIT to inform the client of the exit
        */
-    psm2_args.u32w0 = exitcode;
-
-    for(i = 0; i < gasneti_nodes; i++) {
-        ret = gasnetc_AMRequestShortM(i,
+    /* TODO: in the common (collective exit) case this is N^2 communication! */
+    for(i = 1; i < gasneti_nodes; i++) {
+        int j = (gasneti_mynode + i) % gasneti_nodes;
+        ret = gasnetc_AMRequestShortM(j,
                 gasneti_handleridx(gasnetc_handler_exit2), 1, exitcode);
         if (ret != GASNET_OK) {
             gasneti_fatalerror("AMRequestShortM (from gasnetc_exit) failure: %s\n",
@@ -941,9 +1021,11 @@ extern void gasnetc_exit(int exitcode) {
         }
     }
 
-    /* Poll for 60 seconds, then give up and exit. */
-    for(t_cur = t_start = time(NULL);
-            t_cur - t_start < 60; t_cur = time(NULL)) {
+    /* Poll for 60 seconds for at least one exit2 msg, then give up and exit. */
+    const uint64_t timeout_ns = 60 * 1000000000L;
+    const gasneti_tick_t t_start = gasneti_ticks_now();
+    while (gasneti_ticks_to_ns(gasneti_ticks_now() - t_start) < timeout_ns) {
+        if (gasnetc_psm_state.exit_in_progress) break;
         gasneti_sched_yield();
         gasnetc_AMPoll();
     }

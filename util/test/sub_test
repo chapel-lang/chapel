@@ -48,6 +48,9 @@
 # CHPL_SYSTEM_PREDIFF: If set, run that script on each test output
 # CHPL_COMM: Chapel communication layer
 # CHPL_COMPONLY: Only build the test (same as -noexec flag)
+# CHPL_TEST_NUM_LOCALES_AVAILABLE: same as CHPL_TEST_MAX_LOCALES (for backwards compatibility)
+# CHPL_TEST_MAX_LOCALES: Maximum number of locales to use (overrides above)
+# CHPL_TEST_MULTILOCALE_ONLY: Only run tests that use numlocales > 1
 # CHPL_NO_STDIN_REDIRECT: do not redirect stdin when running tests
 #                         also, skip tests with .stdin files
 # CHPL_LAUNCHER_TIMEOUT: if defined, pass an option/options to the executable
@@ -293,6 +296,15 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
 def DiffFiles(f1, f2):
     sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
     p = subprocess.Popen(['diff',f1,f2],
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
+    if p.returncode != 0:
+        sys.stdout.write(trim_output(myoutput))
+    return p.returncode
+
+def DiffBinaryFiles(f1, f2):
+    sys.stdout.write('[Executing binary diff %s %s]\n'%(f1, f2))
+    p = subprocess.Popen(['diff', '-a', f1,f2],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
     if p.returncode != 0:
@@ -664,6 +676,12 @@ if os.getenv("CHPL_TEST_EXEC_TIME_WARN_LIMIT"):
 else:
     execTimeWarnLimit = 0
 
+# get a threshold for which to skip any remaining trials
+if os.getenv("CHPL_TEST_EXEC_TIME_LIMIT_NUM_TRIALS"):
+    execTimeSkipTrials = int(os.getenv('CHPL_TEST_EXEC_TIME_LIMIT_NUM_TRIALS', '0'))
+else:
+    execTimeSkipTrials = 0
+
 # directory level timeout
 if os.access('./TIMEOUT',os.R_OK):
     directoryTimeout = ReadIntegerValue('./TIMEOUT', localdir)
@@ -721,7 +739,9 @@ else:
     globalNumlocales=int(os.getenv('NUMLOCALES', '0'))
 # sys.stdout.write('globalNumlocales=%s\n'%(globalNumlocales))
 
-maxLocalesAvailable = os.getenv('CHPL_TEST_NUM_LOCALES_AVAILABLE')
+maxLocalesAvailable = os.getenv('CHPL_TEST_MAX_LOCALES')
+if maxLocalesAvailable == None:
+    maxLocalesAvailable = os.getenv('CHPL_TEST_NUM_LOCALES_AVAILABLE')
 if maxLocalesAvailable is not None:
     maxLocalesAvailable = int(maxLocalesAvailable)
 
@@ -856,7 +876,7 @@ globalChpldocOpts = dirChpldocOpts + envChpldocOpts
 #
 # Global PERFNUMTRIALS
 #
-if perftest and os.access(PerfDirFile('NUMTRIALS'), os.R_OK): # ./PERFNUMTRIALS
+if os.access(PerfDirFile('NUMTRIALS'), os.R_OK): # ./PERFNUMTRIALS
     globalNumTrials = ReadIntegerValue(PerfDirFile('NUMTRIALS'), localdir)
 else:
     globalNumTrials=int(os.getenv('CHPL_TEST_NUM_TRIALS', '1'))
@@ -1087,7 +1107,7 @@ for testname in testsrc:
         elif (perftest and suffix==PerfSfx('timeexec') and os.access(f, os.R_OK)): #e.g. .perftimeexec
             timer = GetTimer(f)
 
-        elif (perftest and suffix==PerfSfx('numtrials') and os.access(f, os.R_OK)): #e.g. .perfnumtrials
+        elif (suffix==PerfSfx('numtrials') and os.access(f, os.R_OK)): #e.g. .perfnumtrials
             numTrials = ReadIntegerValue(f, localdir)
 
         elif (suffix=='.killtimeout' and os.access(f, os.R_OK)):
@@ -1177,11 +1197,16 @@ for testname in testsrc:
     else:
         if maxLocalesAvailable is not None:
             if numlocales > maxLocalesAvailable:
-                sys.stdout.write('[Warning: skipping {0} because it requires '
+                sys.stdout.write('[Skipping test {0} because it requires '
                                  '{1} locales but only {2} are available]\n'
                                  .format(os.path.join(localdir, test_filename),
                                          numlocales, maxLocalesAvailable))
                 continue
+        if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1):
+            sys.stdout.write('[Warning: skipping {0} because it does not '
+                             'use more than one locale]\n'
+                             .format(os.path.join(localdir, test_filename)))
+            continue
         numlocexecopts = ' -nl '+str(numlocales)
 
     # if any performance test has a timeout longer than the default we only
@@ -1489,7 +1514,7 @@ for testname in testsrc:
                 sys.stdout.write(p.communicate()[0])
                 sys.stdout.flush()
 
-            
+
             # find the compiler .good file to compare against. The compiler
             # .good file can be of the form testname.<configuration>.good or
             # explicitname.<configuration>.good. It's not currently setup to
@@ -1504,7 +1529,10 @@ for testname in testsrc:
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
-                sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
+                if perftest:
+                    sys.stdout.write('[Error compilation failed for %s]\n'%(test_name))
+                else:
+                    sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 sys.stdout.write(origoutput)
                 cleanup(execname)
@@ -1788,7 +1816,11 @@ for testname in testsrc:
             #
             # Run program (with timeout)
             #
+            skip_remaining_trials = False
             for count in xrange(numTrials):
+                if skip_remaining_trials:
+                    break
+
                 exec_limiter = execution_limiter.NoLock()
                 if os.getenv("CHPL_TEST_LIMIT_RUNNING_EXECUTABLES") is not None:
                     exec_name = os.path.join(localdir, test_filename)
@@ -1824,6 +1856,10 @@ for testname in testsrc:
                             launcher_error = 'Jira 17 -- Missing output file for'
                         elif re.search('aprun: Unexpected close of the apsys control connection', output, re.IGNORECASE) != None:
                             launcher_error = 'Jira 193 -- Unexpected close of apsys for'
+                        elif re.search('Transient MPP reservation error on create', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 203 -- Transient MPP reservation error for'
+                        elif re.search('Failed to recv data from background qsub', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 260 -- Failed to recv data from background qsub for'
                         elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
                               re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
                             exectimeout = True
@@ -1924,9 +1960,13 @@ for testname in testsrc:
                 print('[Elapsed execution time for "{0}" - {1:.3f} '
                     'seconds]'.format(test_name, elapsedExecTime))
 
-                if execTimeWarnLimit and elapsedExcTime > execTimeWarnLimit:
+
+                if execTimeWarnLimit and elapsedExecTime > execTimeWarnLimit:
                     sys.stdout.write('[Warning: %s/%s took over %.0f seconds to '
                         'execute]\n' %(localdir, test_filename, execTimeWarnLimit))
+
+                if execTimeSkipTrials and elapsedExecTime > execTimeSkipTrials:
+                    skip_remaining_trials = True
 
                 if catfiles:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%
@@ -2012,7 +2052,22 @@ for testname in testsrc:
                             os.unlink(execlog)
                             sys.stdout.write('%s[Success '%(futuretest))
                         else:
-                            sys.stdout.write('%s[Error '%(futuretest))
+                            # If the output contains messages consistent with JIRA 154, add a
+                            # hint to the error summary and force a text base diff since
+                            # sometimes the output contains a null character
+                            extra_msg = ''
+                            err_strings = ['got exn while reading exit code: connection closed',
+                                           'slave got an unknown command on coord socket:',
+                                           'Slave got an xSocket: connection closed on recv',
+                                           'recursive failure in AMUDP_SPMDShutdown']
+                            for s in err_strings:
+                                if re.search(s, output, re.IGNORECASE) != None:
+                                    extra_msg = '(possible JIRA 154) '
+                                    DiffBinaryFiles(execgoodfile, execlog)
+                                    break
+
+                            sys.stdout.write('%s[Error %s'%(futuretest, extra_msg))
+
                         sys.stdout.write('matching program output for %s/%s'%
                                         (localdir, test_filename))
                         if result!=0:

@@ -60,7 +60,7 @@ config const verify = true;
 config const allowUnusedLocales = false,
              gridRows = computeGridRows(),
              gridCols = numLocales / gridRows;
-const targetLocales => setupLocaleGrid();
+const targetLocales = setupLocaleGrid();
 
 //
 // The program entry point
@@ -115,7 +115,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
      point (blk, blk) is the upper-left location of the currently
      unfactored matrix (the dotted region represents the areas
      factored in prior iterations).  The unfactored matrix is
-     partioned into four subdomains: tl, tr, bl, and br, and an
+     partitioned into four subdomains: tl, tr, bl, and br, and an
      additional domain (not shown), l, that is the union of tl and bl.
 
                 (point blk, blk)
@@ -158,7 +158,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
 
 //
 // Distributed matrix-multiply for HPL. The idea behind this algorithm is that
-// some point the matrix will be partioned as shown in the following diagram:
+// some point the matrix will be partitioned as shown in the following diagram:
 //
 //    [1]----+-----+-----+-----+
 //     |     |bbbbb|bbbbb|bbbbb|  Solve for the dotted region by

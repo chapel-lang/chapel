@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -321,8 +321,14 @@ void parseDependentModules(ModTag modtype) {
         // if we haven't found the standard version of the module then we
         // need to parse it
         if (!foundInt) {
-          ModuleSymbol* mod = parseFile(stdModNameToFilename(modName),
-                                        MOD_STANDARD);
+
+          const char* filename = stdModNameToFilename(modName);
+          if (filename == NULL) {
+            // The use statement could be of an enum.  Continue and if that
+            // doesn't resolve later then we'll notice during scopeResolve
+            continue;
+          }
+          ModuleSymbol* mod = parseFile(filename, MOD_STANDARD);
 
           // if we also found a user module by the same name, we need to
           // rename the standard module and the use of it

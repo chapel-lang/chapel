@@ -17,6 +17,13 @@ record R
     c = new C();
   }
 
+  proc init(other:R) {
+    // TODO: maybe have way to allow the user to use a compiler generated copy
+    // initializer?
+    this.c = other.c;
+    super.init();
+  }
+
   proc deinit()
   {
     writeln("in deinit of R");

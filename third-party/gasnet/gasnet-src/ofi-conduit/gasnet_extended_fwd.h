@@ -11,7 +11,7 @@
 #ifndef _GASNET_EXTENDED_FWD_H
 #define _GASNET_EXTENDED_FWD_H
 
-#define GASNET_EXTENDED_VERSION      GASNET_CORE_VERSION
+#define GASNET_EXTENDED_VERSION      0.3
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
 #define GASNET_EXTENDED_NAME         OFI
 #define GASNET_EXTENDED_NAME_STR     _STRINGIFY(GASNET_EXTENDED_NAME)
@@ -121,8 +121,23 @@ typedef struct _gasnete_op_t *gasnet_handle_t;
 #define GASNETI_DIRECT_GET_BULK 1
 #define GASNETI_DIRECT_PUT_BULK 1
 
+/* Configure use of AM-based implementation of get/put/memset */
+/* NOTE: Barriers, Collectives, VIS may use GASNETE_USING_REF_* in algorithm selection */
+#define GASNETE_USING_REF_EXTENDED_MEMSET   1
+
+/* Conduit implements memset directly via amref: */
+#define gasnete_amref_memset_nb     gasnete_memset_nb
+#define gasnete_amref_memset_nbi    gasnete_memset_nbi
+
  /* TODO: use AM for barrier; should update to DISSEM: auto-checking */
 #define GASNETE_BARRIER_DEFAULT "AMDISSEM"
+
+/* Additions to default eop and iop types */
+#define GASNETE_CONDUIT_EOP_FIELDS \
+                ofi_op_ctxt_t ofi;
+#define GASNETE_CONDUIT_IOP_FIELDS      \
+                ofi_op_ctxt_t get_ofi;  \
+                ofi_op_ctxt_t put_ofi;
 
 #endif
 

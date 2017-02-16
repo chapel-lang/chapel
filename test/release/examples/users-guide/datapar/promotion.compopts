@@ -1,0 +1,2 @@
+-stestError=false   # promotion.good
+-stestError=true    # promotion-error.good

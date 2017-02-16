@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -95,12 +95,12 @@ bool qio_allow_default_mmap = true;
 #ifdef _chplrt_H_
 qioerr qio_lock(qio_lock_t* x) {
   // recursive mutex based on glibc pthreads implementation
-  int64_t id = chpl_task_getId();
+  chpl_taskID_t id = chpl_task_getId();
 
-  assert( id != NULL_OWNER );
+  assert( ! chpl_task_idEquals(id, NULL_OWNER) );
 
   // check whether we already hold the mutex.
-  if( x->owner == id ) {
+  if( chpl_task_idEquals(x->owner, id) ) {
     // just bump the counter.
     ++x->count;
     return 0;
@@ -109,17 +109,17 @@ qioerr qio_lock(qio_lock_t* x) {
   // we have to get the mutex.
   chpl_sync_lock(&x->sv);
 
-  assert( x->owner == NULL_OWNER );
+  assert( chpl_task_idEquals(x->owner, NULL_OWNER) );
   x->count = 1;
   x->owner = id;
 
   return 0;
 }
 void qio_unlock(qio_lock_t* x) {
-  int64_t id = chpl_task_getId();
+  chpl_taskID_t id = chpl_task_getId();
 
   // recursive mutex based on glibc pthreads implementation
-  if( x->owner != id ) {
+  if( ! chpl_task_idEquals(x->owner, id) ) {
     abort();
   }
 
@@ -1809,6 +1809,7 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
   qioerr err = 0;
   qioerr flush_or_truncate_error = 0;
   qioerr destroy_buffer_error = 0;
+  qioerr close_file_error = 0;
   qio_method_t method = (qio_method_t) (ch->hints & QIO_METHODMASK);
   qio_chtype_t type = (qio_chtype_t) (ch->hints & QIO_CHTYPEMASK);
   struct stat stats;
@@ -1882,9 +1883,17 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
 
   ch->hints |= QIO_CHTYPE_CLOSED; // set to invalid type so funcs return EINVAL
 
+  // If this channel is the last owner of the file, close the file
+  // now so we can return an error here if there was one.
+  // The file will be destroyed in the qio_file_release call below.
+  if (DO_GET_REFCNT(ch->file) == 1) {
+    close_file_error = qio_file_close(ch->file);
+  }
+
   qio_file_release(ch->file);
   ch->file = NULL;
 
+  if( close_file_error ) return close_file_error;
   if( flush_or_truncate_error ) return flush_or_truncate_error;
   if( destroy_buffer_error ) return destroy_buffer_error;
   return err;

@@ -103,7 +103,7 @@ class Level {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~Level () 
+  proc deinit () 
   {
     for grid in grids
     {
@@ -348,7 +348,7 @@ class SiblingGhostRegion {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~SiblingGhostRegion () {}
+  proc deinit () {}
 
   // /|'''''''''''''''''''/|
   //< |    destructor    < |

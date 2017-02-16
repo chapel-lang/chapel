@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -153,7 +153,7 @@ bool IpeProcedure::isActualRef(Expr* actual) const
 
   if (SymExpr* symExpr = toSymExpr(actual))
   {
-    if (ArgSymbol* arg = toArgSymbol(symExpr->var))
+    if (ArgSymbol* arg = toArgSymbol(symExpr->symbol()))
     {
       retval = (arg->intent & INTENT_REF) ? true : false;
     }

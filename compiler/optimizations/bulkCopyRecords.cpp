@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -43,6 +43,30 @@ static bool isAssignment(FnSymbol* fn)
   return true;
 }
 
+static std::map<Type*, bool> containsRef;
+
+static bool typeContainsRef(Type* t, bool isRoot = true)
+{
+  if (containsRef.count(t))
+    return containsRef[t];
+
+  bool hasRef = false;
+
+  if (!isRoot && isReferenceType(t)) {
+    hasRef = true;
+  } else if (AggregateType* at = toAggregateType(t)) {
+    if (!at->isClass()) {
+      for_fields(field, at) {
+        hasRef |= typeContainsRef(field->type, false);
+      }
+    }
+  }
+
+  containsRef[t] = hasRef;
+
+  return hasRef;
+}
+
 /* Find assignment functions that this optimization
    should replace with bit copies.
 
@@ -50,6 +74,7 @@ static bool isAssignment(FnSymbol* fn)
     - fn is an assignment function
     - the lhs and rhs arguments have the same type
     - the lhs and rhs arguments are POD types
+    - the lhs and rhs arguments do not contain references
  */
 static bool isTrivialAssignment(FnSymbol* fn)
 {
@@ -67,6 +92,11 @@ static bool isTrivialAssignment(FnSymbol* fn)
   // (due to problems providing additional arguments for
   //  PRIM_ASSIGN).
   if (argType == dtString)
+    return false;
+
+  // Neither type may contain references
+  // (since these would be dereferenced in the assignment)
+  if (typeContainsRef(lhs->type) || typeContainsRef(rhs->type))
     return false;
 
   // Both argument types must be POD types
@@ -106,4 +136,6 @@ void bulkCopyRecords()
     if (isTrivialAssignment(fn))
       replaceSimpleAssignment(fn);
   }
+
+  containsRef.clear();
 }

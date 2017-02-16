@@ -1,10 +1,9 @@
-bug: compiler crashes when the program applies 'forall' to something that has a serial iterator but neither a leader nor a follower.
+feature request: 'these' should enable forall loops
 
-This happens when that "something" is either a record or a class.
+This is a variation on
 
-Currently I get the internal failure:
+  test/functions/promotion/theseShouldPromote2.future
+  https://github.com/chapel-lang/chapel/issues/5114
 
-ChapelArray.chpl:1981: error: unable to resolve call [functionResolution.cpp:2894]
-
-TODO: also ensure that it works when TEST is a class, not a record,
-and also when there is only one of the (leader, follower) iterators.
+except with an explicit forall instead of (implicit) promotion.
+The record-vs-class difference is insignificant w.r.t. #5114 .

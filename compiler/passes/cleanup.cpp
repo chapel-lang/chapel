@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,11 +24,12 @@
 // transformations that would be difficult to do while parsing.
 //
 
+#include "passes.h"
+
 #include "astutil.h"
-#include "stlUtil.h"
 #include "build.h"
 #include "expr.h"
-#include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -96,7 +97,7 @@ insertDestructureStatements(Expr* S1, Expr* S2, CallExpr* lhs, Expr* rhs) {
                              new SymExpr(new_IntSymbol(lhs->numActuals())),
                              new CallExpr(".", rhs->copy(),
                                           new_CStringSymbol("size"))),
-                new CallExpr("compilerError", new_CStringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
+                new CallExpr("compilerError", new_StringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
 
   for_actuals(expr, lhs) {
     i++;
@@ -148,31 +149,34 @@ destructureTupleAssignment(CallExpr* call) {
   }
 }
 
-
 static void flatten_primary_methods(FnSymbol* fn) {
   if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
     Expr* insertPoint = ts->defPoint;
+
     while (toTypeSymbol(insertPoint->parentSymbol))
       insertPoint = insertPoint->parentSymbol->defPoint;
+
     DefExpr* def = fn->defPoint;
+
     def->remove();
+
     insertPoint->insertBefore(def);
+
     if (fn->userString && fn->name != ts->name) {
       if (strncmp(fn->userString, "ref ", 4) == 0) {
         // fn->userString of "ref foo()"
         // Move "ref " before the type name so we end up with "ref Type.foo()"
         // instead of "Type.ref foo()"
-        fn->userString = astr("ref ", ts->name, ".", fn->userString+4);
+        fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
       } else {
         fn->userString = astr(ts->name, ".", fn->userString);
       }
     }
-    if (ts->hasFlag(FLAG_SYNC))
-      fn->addFlag(FLAG_SYNC);
-    if (ts->hasFlag(FLAG_SINGLE))
-      fn->addFlag(FLAG_SINGLE);
-    if (ts->hasFlag(FLAG_ATOMIC_TYPE))
+
+
+    if (ts->hasFlag(FLAG_ATOMIC_TYPE)) {
       fn->addFlag(FLAG_ATOMIC_TYPE);
+    }
   }
 }
 
@@ -193,29 +197,46 @@ static void change_cast_in_where(FnSymbol* fn) {
 }
 
 
-void cleanup(void) {
+static void add_parens_to_deinit_fns(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_DESTRUCTOR))
+    // Make paren-less decls act as paren-ful. Otherwise
+    // "arg.deinit()" in proc chpl__delete(arg)
+    // would not resolve.
+    fn->removeFlag(FLAG_NO_PARENS);
+}
+
+
+void cleanup() {
   std::vector<BaseAST*> asts;
+
   collect_asts(rootModule, asts);
 
   for_vector(BaseAST, ast, asts) {
-    SET_LINENO(ast);
     if (DefExpr* def = toDefExpr(ast)) {
+      SET_LINENO(ast);
+
       normalize_nested_function_expressions(def);
     }
   }
 
   for_vector(BaseAST, ast1, asts) {
     SET_LINENO(ast1);
+
     if (BlockStmt* block = toBlockStmt(ast1)) {
-      if (block->blockTag == BLOCK_SCOPELESS && block->list)
+      if (block->blockTag == BLOCK_SCOPELESS && block->list) {
         flatten_scopeless_block(block);
+      }
+
     } else if (CallExpr* call = toCallExpr(ast1)) {
-      if (call->isNamed("_build_tuple"))
+      if (call->isNamed("_build_tuple")) {
         destructureTupleAssignment(call);
+      }
+
     } else if (DefExpr* def = toDefExpr(ast1)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         flatten_primary_methods(fn);
         change_cast_in_where(fn);
+        add_parens_to_deinit_fns(fn);
       }
     }
   }

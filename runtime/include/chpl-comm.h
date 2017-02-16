@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -76,6 +76,49 @@ extern const int chpl_heterogeneous;
 
 // chpl_comm_nb_handle_t must be defined in the comm layer header
 // chpl-comm-task-decls.h
+
+// uses comm-layer specific chpl_comm_bundleData_t
+// uses task-layer specific chpl_task_bundleData_t
+
+typedef struct {
+  // Including space for the task_bundle here helps with
+  // running tasks locally, but it doesn't normally need
+  // to be communicated over the network.
+  chpl_task_bundle_t task_bundle;
+  // Including space for some comm information here helps
+  // the comm layer communicate some values to a wrapper
+  // function that is run in a task.
+  chpl_comm_bundleData_t comm;
+} chpl_comm_on_bundle_t;
+
+typedef chpl_comm_on_bundle_t *chpl_comm_on_bundle_p;
+
+static inline
+chpl_task_bundle_t* chpl_comm_on_bundle_task_bundle(chpl_comm_on_bundle_t* a)
+{
+  return &a->task_bundle;
+}
+
+//
+// Call a chpl_ftable[] function in a task.
+//
+// This is a convenience function for use by the module code, in which
+// we have function table indices rather than function pointers.
+//
+static inline
+void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
+                              chpl_comm_on_bundle_t* arg,// function arg
+                              size_t arg_size,        // length of arg in bytes
+                              c_sublocid_t subloc,    // desired sublocale
+                              int lineno,             // source line
+                              int32_t filename) {     // source filename
+    chpl_task_taskCallFTable(fid,
+                             chpl_comm_on_bundle_task_bundle(arg), arg_size,
+                             subloc,
+                             lineno, filename);
+}
+
+
 
 // Do a GET in a nonblocking fashion, returning a handle which can be used to
 // wait for the GET to complete. The destination buffer must not be modified
@@ -160,7 +203,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 void chpl_comm_post_task_init(void);
 
 //
-// a final comm layer stub before barrier synching and calling into
+// a final comm layer stub before barrier syncing and calling into
 // the user code.  It is recommended that a debugging message be
 // printed here indicating that each locale has started using
 // chpl_msg() and a verbosity level of 2 (which will cause it to be
@@ -171,6 +214,9 @@ void chpl_comm_rollcall(void);
 //
 // Inform callers as to the communication layer's desired starting address
 // and length for the shared heap, if any.
+//
+// This function may be called multiple times during program
+// initialization.
 //
 void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p);
 
@@ -291,7 +337,7 @@ void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 //   Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
 //   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 //
-void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, int32_t dstlocale, 
+void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
                      void* srcaddr, size_t* srcstrides, size_t* count,
                      int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
                      int ln, int32_t fn);
@@ -299,7 +345,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, int32_t dstlocale,
 //
 // same as chpl_comm_puts(), but do get instead
 //
-void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, int32_t srclocale, 
+void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode,
                      void* srcaddr, size_t* srcstrides, size_t* count,
                      int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
                      int ln, int32_t fn);
@@ -318,6 +364,7 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
 //
 // Runs a function f on a remote locale, passing it
 // arg where size of arg is stored in arg_size.
+// arg can be reused immediately after this call completes.
 //
 // This call will block the current task until the remote function has
 // completed. Use chpl_comm_execute_on_nb if you do not want to wait.
@@ -325,19 +372,24 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
 //   multiple executeOns to the same locale should be handled concurrently
 //
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid, void *arg, size_t arg_size);
+                          chpl_fn_int_t fid,
+                          chpl_comm_on_bundle_t *arg, size_t arg_size);
 
 //
 // non-blocking execute_on
+// arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                             chpl_fn_int_t fid, void *arg, size_t arg_size);
+                             chpl_fn_int_t fid,
+                             chpl_comm_on_bundle_t *arg, size_t arg_size);
 
 //
 // fast execute_on (i.e., run in handler)
+// arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                         chpl_fn_int_t fid, void *arg, size_t arg_size);
+                         chpl_fn_int_t fid,
+                         chpl_comm_on_bundle_t *arg, size_t arg_size);
 
 
 //

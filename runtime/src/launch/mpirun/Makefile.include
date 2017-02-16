@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,7 @@
 
 LAUNCH_SUBDIR = src/launch/mpirun
 
-LAUNCH_OBJDIR = $(RUNTIME_ROOT)/$(LAUNCH_SUBDIR)/$(LAUNCHER_OBJDIR)
+LAUNCH_OBJDIR = $(LAUNCHER_BUILD)/$(LAUNCH_SUBDIR)
 
 ALL_SRCS += $(CURDIR)/$(LAUNCH_SUBDIR)/*.c
 

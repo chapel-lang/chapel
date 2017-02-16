@@ -1,4 +1,4 @@
-.TH "hwloc_component" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_component" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -45,7 +45,7 @@ Component ABI version, set to \fBHWLOC_COMPONENT_ABI\fP\&.
 
 .PP
 Component data, pointing to a struct \fBhwloc_disc_component\fP or struct hwloc_xml_component\&. 
-.SS "void(* hwloc_component::finalize)(unsigned long \fBflags\fP)"
+.SS "void(* hwloc_component::finalize) (unsigned long \fBflags\fP)"
 
 .PP
 Process-wide component termination callback\&. This optional callback is called after unregistering the component from the hwloc core (before unloading the plugin)\&.
@@ -62,7 +62,7 @@ If the component uses ltdl for loading its own plugins, it should load/unload th
 
 .PP
 Component flags, unused for now\&. 
-.SS "int(* hwloc_component::init)(unsigned long \fBflags\fP)"
+.SS "int(* hwloc_component::init) (unsigned long \fBflags\fP)"
 
 .PP
 Process-wide component initialization callback\&. This optional callback is called when the component is registered to the hwloc core (after loading the plugin)\&.

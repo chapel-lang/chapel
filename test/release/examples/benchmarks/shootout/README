@@ -14,15 +14,20 @@ At present, this directory contains the following codes:
     binarytrees.chpl    : Allocates and deallocates many, many binary trees
     chameneosredux.chpl : Simulates meetings between color-changing Chameneos
     fannkuchredux.chpl  : Performs many operations on small arrays
+    knucleotide.chpl    : Count the frequencies of specific nucleotide sequences
     mandelbrot.chpl     : Plots the mandelbrot set [-1.5-i,0.5+i] on a bitmap
     meteor.chpl         : Performs a parallel search for all solutions to a
                           puzzle
     meteor-fast.chpl    : A less readable, but much faster version of meteor.
     nbody.chpl          : Performs an n-body simulation of the Jovian planets
-    pidigits.chpl       : Computes digits of pi using GMP, if available
+    pidigits.chpl       : Computes digits of pi using bigints (if available)
+    pidigits-fast.chpl  : An optimized version of the above
     regexdna.chpl       : Performs DNA matching
+    revcomp.chpl        : Calculate the strand to bind with a given DNA strand
     spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
     threadring.chpl     : Passes a token between a large number of threads
+    fasta.chpl          : Generates DNA with different nucleotide distributions
+                          and a random number generator
 
 Over time, we plan to create versions of all the benchmarks and to
 enter Chapel into the competition.  Draft versions of other benchmarks
@@ -43,41 +48,13 @@ The following are a list of planned improvements to Chapel and/or our
 implementations that would benefit the codes:
 
 
-binarytrees.chpl
-----------------
-o The Chapel compiler should really be able to infer the return types
-  of these recursive functions...
-
-o Related: the type function Tree.build() could be made into a
-  constructor except that the compiler can't resolve the return type
-  of the constructor because it's recursive (which is silly since it's
-  a constructor); yet we can't declare the return type because it's a
-  constructor.  I.e., we should be able to write:
-
-    proc Tree(item, depth) {
-      this.item = item;
-      if depth {
-        left = new Tree(2*item-1, depth-1);
-        right = new Tree(2*item-1, depth-1);
-      }
-    }
-
-o It seems like we should be able to write a strength-reduction
-  oriented overload of the ** operator in order to replace the '1 <<'
-  expression with a 2** operation without loss of performance (looking
-  for param base expressions equal to 2 (or a power of 2?).  I believe
-  we already specialize ** for certain integral param exponents, but
-  not for the base expression?
+binarytrees
+-----------
+o no current TODOs
 
 
-chameneosredux.chpl
--------------------
-o add user-level support for an enum iterator and replace array in
-  printColorEquations() with it
-
-o add support for a param enum.size query (not sure we'd actually use
-  this, though...)
-
+chameneosredux
+--------------
 o once we map to C11 atomics/utilize memory order arguments, can
   performance be improved via different memory orders?
 
@@ -106,8 +83,8 @@ o Chapel has discussed supporting some standard record-wrapped class
   this in terms of avoiding the cleanup steps.
 
 
-fannkuchredux.chpl
-------------------
+fannkuchredux
+-------------
 o optimize slice assignment such that pp[0..i] = p[0..i] can be
   written without penalty
 
@@ -122,31 +99,61 @@ o improve magic number default for nChunks?
 o make scans not generate warnings and use them to compute/initialize
   fact?
 
-o remove warning for serial whole-array assignment when RHS is serial
-  and then use an initfact() iterator / procedure to initialize fact[]
-  at declaration time
-
 o should globals be allowed to be declared below main()?  If so, move
   fact[] to the bottom of the file?
 
 
-fasta.chpl
-----------
-o Shouldn't ascii() return an int(8)/uint(8) by default?
-
+fasta
+-----
 o We should introduce local "static" variables (using some other
   keyword) and use it to define some of the variables that are
   currently at global or outer scopes unnecessarily
 
-o Should writef("%s", str) and write(str) be equivalent?  If so,
-  it looks like we have a bug.
+o It seems like a param uint(8) whose value is known to fit in an
+  int(8) should be assignable without a cast, but currently it isn't.
+
+o Multiple config types can't currently be declared with a current
+  statement it seems.  If they were, I'd alias int(8) to 'char'
+  but don't care about it enough to have two config type statements
+  (which seems lame).
+
+o Seems like we should have an iterator that does the block-cyclic
+  round robin dealing out of chunks of a given size from a range...
 
 
-mandelbrot.chpl
----------------
-o extend the dynamic() iterators for ranges to support domains and
-  collapse the two nested loops into a single loop over a 2D domain.
+knucleotide
+-----------
+o We currently combine per-task associative domains into the shared
+  one an element at a time, but using the new bulk-add interface for
+  irregular domains, we should be able to do this faster (at present
+  time, however, bulk-add is only supported by sparse, not associative
+  :( ).
 
+o I find myself wondering whether the coforall + chunking could be
+  converted into a forall with a '+ reduce' intent on associative
+  domains.  Does that make sense?  What would it take for it to work?
+  
+o Consider the difference in performance between associative and chaining;
+  tighten up associative domain to try and close this gap
+  - support user-defined hashes to avoid double-hashing
+  - BHarsh thinks there's an extraneous % operation?
+  - what else...?
+
+o Good motivation for optimizing 1D array reallocations with a common
+  low bound?
+
+o Why does '(data:[] uint(8)) op= 0x20' not work?
+
+o Should readline() support an overload that takes an array of int(8)?
+
+o Could we use a 'sorted' iterator to print freqs rather than storing into
+  an array?
+
+o Shouldn't we be able to do a param for loop over a lo..#size param range
+
+
+mandelbrot
+----------
 o add an 'unroll' capability to loops and use it to unroll the 'for
   off ...' loop which is about twice as fast with manual unrolling.
   (we weren't willing to unroll it manually in this version)
@@ -155,19 +162,26 @@ o have the compiler automatically optimize writes to 'stdout' in
   serial code segments to avoid the need to manually get a lock-free
   channel to it.
 
-o explore expressing the complex values using Chapel's 'complex' type,
-  even if it means plucking C.re and C.im out and operating on them
-  directly rather than using higher-level complex operations to avoid
-  overheads associated with using cleaner complex operations.
+
+meteor /meteor-fast
+-------------------
+o would using 1-based arrays rather than 0-based clean anything up?
+
+o It would be nice to be able to write:
+    var x = min reduce for x in X do x;
+  as:
+    serial var x = min reduce X;
+  or (preferably):
+    var x = serial min reduce X;
+  this suggests either adding a serial expression or permitting
+  reductions or variable declarations to be prefixed by 'serial'.
 
 
-nbody.chpl
-----------
+nbody
+-----
 o explore possibility of enabling vectorization (perhaps by applying
   'vectorizeOnly() to tuple operations?)
   - explore padding to better align velocity field
-
-o have compiler eliminate inner multiplies
 
 o support sum-of-squares library function for all tuples?  (collections?)
   Improve and lean on Norm module more?  Optimize reductions so that
@@ -183,18 +197,42 @@ o as initializers are enabled, change 'mass' from 'var' to 'const'
   field
 
 
-pidigits.chpl
--------------
-o promote mpz_t types to a record-based implementation with:
-  - a better name
-  - arithmetic operators defined for it
-  - automatic memory reclamation when it leaves scope
-  - support for native Chapel types rather than exposing C types
-    (using safecasts at any downward-facing interfaces)
+pidigits
+--------
+o we are currently losing performance when calling binary operators
+  on bigints and assigning the result to a third bigint because
+  the operator creates a value to store the result and then (deep)
+  copies it into the result.  It would be nice to be able to use
+  this form without taking a hit relative to the method-based form.
+
+o tmp1/tmp2 could be declared in extract_digit(), but with a
+  performance penalty.  Another use of local static variables?
 
 
-spectralnorm.chpl
------------------
+regexdna
+--------
+o no current TODOs
+
+
+revcomp
+-------
+o The pattern ascii(mystring[i]) seems like it ought to be very
+  optimizable compared to what we do now, and to support param
+  versions in the event that mystring and 'i' are both params.  As a
+  short-term workaround, ascii() could take an optional "offset"
+  argument that would allow us to write this as ascii(mystring, i).
+  Longer-term, I wonder what could be done to reduce the overhead of
+  this pattern (and maybe, more generally, string indexing).
+
+o Should we be able to support a param loop over lo..hi by 2?
+
+o Each time I use readline() I'm sad that I have to declare a
+  'numRead' variable ahead of it.  Could this return a tuple
+  or something to avoid having to pass in this argument?
+
+
+spectralnorm
+------------
 o spectral norm really wants partial reductions... :(
 
 o What could we do to not pass 'tmp' in as an input argument?  Should
@@ -218,7 +256,6 @@ o are the domain queries costing us more than we'd like?
 o should Chapel's dynamic() iterators default to a chunksize of 1?
 
 
-threadring.chpl
----------------
-o map Chapel's sync vars more directly down to Qthreads' sync vars
-  to avoid space and time overheads
+threadring
+----------
+o no current TODOs

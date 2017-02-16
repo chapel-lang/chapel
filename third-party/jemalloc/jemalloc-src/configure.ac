@@ -171,9 +171,14 @@ fi
 if test "x$CFLAGS" = "x" ; then
   no_CFLAGS="yes"
   if test "x$GCC" = "xyes" ; then
-    JE_CFLAGS_APPEND([-std=gnu99])
-    if test "x$je_cv_cflags_appended" = "x-std=gnu99" ; then
+    JE_CFLAGS_APPEND([-std=gnu11])
+    if test "x$je_cv_cflags_appended" = "x-std=gnu11" ; then
       AC_DEFINE_UNQUOTED([JEMALLOC_HAS_RESTRICT])
+    else
+      JE_CFLAGS_APPEND([-std=gnu99])
+      if test "x$je_cv_cflags_appended" = "x-std=gnu99" ; then
+        AC_DEFINE_UNQUOTED([JEMALLOC_HAS_RESTRICT])
+      fi
     fi
     JE_CFLAGS_APPEND([-Wall])
     JE_CFLAGS_APPEND([-Werror=declaration-after-statement])
@@ -203,10 +208,7 @@ if test "x$CFLAGS" = "x" ; then
     fi
   fi
 fi
-dnl Append EXTRA_CFLAGS to CFLAGS, if defined.
-if test "x$EXTRA_CFLAGS" != "x" ; then
-  JE_CFLAGS_APPEND([$EXTRA_CFLAGS])
-fi
+AC_SUBST([EXTRA_CFLAGS])
 AC_PROG_CPP
 
 AC_C_BIGENDIAN([ac_cv_big_endian=1], [ac_cv_big_endian=0])
@@ -313,6 +315,7 @@ o="$ac_objext"
 a="a"
 exe="$ac_exeext"
 libprefix="lib"
+link_whole_archive="0"
 DSO_LDFLAGS='-shared -Wl,-soname,$(@F)'
 RPATH='-Wl,-rpath,$(1)'
 SOREV="${so}.${rev}"
@@ -345,13 +348,12 @@ dnl
 dnl Define cpp macros in CPPFLAGS, rather than doing AC_DEFINE(macro), since the
 dnl definitions need to be seen before any headers are included, which is a pain
 dnl to make happen otherwise.
+CFLAGS="$CFLAGS"
 default_munmap="1"
 maps_coalesce="1"
 case "${host}" in
   *-*-darwin* | *-*-ios*)
-	CFLAGS="$CFLAGS"
 	abi="macho"
-	AC_DEFINE([JEMALLOC_PURGE_MADVISE_FREE], [ ])
 	RPATH=""
 	LD_PRELOAD_VAR="DYLD_INSERT_LIBRARIES"
 	so="dylib"
@@ -362,35 +364,37 @@ case "${host}" in
 	sbrk_deprecated="1"
 	;;
   *-*-freebsd*)
-	CFLAGS="$CFLAGS"
 	abi="elf"
 	AC_DEFINE([JEMALLOC_SYSCTL_VM_OVERCOMMIT], [ ])
-	AC_DEFINE([JEMALLOC_PURGE_MADVISE_FREE], [ ])
 	force_lazy_lock="1"
 	;;
   *-*-dragonfly*)
-	CFLAGS="$CFLAGS"
 	abi="elf"
-	AC_DEFINE([JEMALLOC_PURGE_MADVISE_FREE], [ ])
 	;;
   *-*-openbsd*)
-	CFLAGS="$CFLAGS"
 	abi="elf"
-	AC_DEFINE([JEMALLOC_PURGE_MADVISE_FREE], [ ])
 	force_tls="0"
 	;;
   *-*-bitrig*)
-	CFLAGS="$CFLAGS"
 	abi="elf"
-	AC_DEFINE([JEMALLOC_PURGE_MADVISE_FREE], [ ])
 	;;
-  *-*-linux*)
-	CFLAGS="$CFLAGS"
+  *-*-linux-android)
+	dnl syscall(2) and secure_getenv(3) are exposed by _GNU_SOURCE.
 	CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
 	abi="elf"
 	AC_DEFINE([JEMALLOC_HAS_ALLOCA_H])
 	AC_DEFINE([JEMALLOC_PROC_SYS_VM_OVERCOMMIT_MEMORY], [ ])
-	AC_DEFINE([JEMALLOC_PURGE_MADVISE_DONTNEED], [ ])
+	AC_DEFINE([JEMALLOC_THREADED_INIT], [ ])
+	AC_DEFINE([JEMALLOC_C11ATOMICS])
+	force_tls="0"
+	default_munmap="0"
+	;;
+  *-*-linux* | *-*-kfreebsd*)
+	dnl syscall(2) and secure_getenv(3) are exposed by _GNU_SOURCE.
+	CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
+	abi="elf"
+	AC_DEFINE([JEMALLOC_HAS_ALLOCA_H])
+	AC_DEFINE([JEMALLOC_PROC_SYS_VM_OVERCOMMIT_MEMORY], [ ])
 	AC_DEFINE([JEMALLOC_THREADED_INIT], [ ])
 	AC_DEFINE([JEMALLOC_USE_CXX_THROW], [ ])
 	default_munmap="0"
@@ -404,15 +408,12 @@ case "${host}" in
 #error aout
 #endif
 ]])],
-                          [CFLAGS="$CFLAGS"; abi="elf"],
+                          [abi="elf"],
                           [abi="aout"])
 	AC_MSG_RESULT([$abi])
-	AC_DEFINE([JEMALLOC_PURGE_MADVISE_FREE], [ ])
 	;;
   *-*-solaris2*)
-	CFLAGS="$CFLAGS"
 	abi="elf"
-	AC_DEFINE([JEMALLOC_PURGE_MADVISE_FREE], [ ])
 	RPATH='-Wl,-R,$(1)'
 	dnl Solaris needs this for sigwait().
 	CPPFLAGS="$CPPFLAGS -D_POSIX_PTHREAD_SEMANTICS"
@@ -431,7 +432,6 @@ case "${host}" in
   *-*-mingw* | *-*-cygwin*)
 	abi="pecoff"
 	force_tls="0"
-	force_lazy_lock="1"
 	maps_coalesce="0"
 	RPATH=""
 	so="dll"
@@ -448,6 +448,7 @@ case "${host}" in
         else
 	  importlib="${so}"
 	  DSO_LDFLAGS="-shared"
+	  link_whole_archive="1"
 	fi
 	a="lib"
 	libprefix=""
@@ -485,6 +486,7 @@ AC_SUBST([o])
 AC_SUBST([a])
 AC_SUBST([exe])
 AC_SUBST([libprefix])
+AC_SUBST([link_whole_archive])
 AC_SUBST([DSO_LDFLAGS])
 AC_SUBST([EXTRA_LDFLAGS])
 AC_SUBST([SOREV])
@@ -496,6 +498,15 @@ AC_SUBST([MKLIB])
 AC_SUBST([ARFLAGS])
 AC_SUBST([AROUT])
 AC_SUBST([CC_MM])
+
+dnl Determine whether libm must be linked to use e.g. log(3).
+AC_SEARCH_LIBS([log], [m], , [AC_MSG_ERROR([Missing math functions])])
+if test "x$ac_cv_search_log" != "xnone required" ; then
+  LM="$ac_cv_search_log"
+else
+  LM=
+fi
+AC_SUBST(LM)
 
 JE_COMPILABLE([__attribute__ syntax],
               [static __attribute__((unused)) void foo(void){}],
@@ -943,9 +954,9 @@ fi
 AC_MSG_CHECKING([configured backtracing method])
 AC_MSG_RESULT([$backtrace_method])
 if test "x$enable_prof" = "x1" ; then
-  if test "x$abi" != "xpecoff"; then
-    dnl Heap profiling uses the log(3) function.
-    LIBS="$LIBS -lm"
+  dnl Heap profiling uses the log(3) function.
+  if test "x$LM" != "x" ; then
+    LIBS="$LIBS $LM"
   fi
 
   AC_DEFINE([JEMALLOC_PROF], [ ])
@@ -1318,6 +1329,14 @@ if test "x$abi" != "xpecoff" ; then
   AC_CHECK_LIB([pthread], [pthread_create], [LIBS="$LIBS -lpthread"],
                [AC_SEARCH_LIBS([pthread_create], , ,
                                AC_MSG_ERROR([libpthread is missing]))])
+  JE_COMPILABLE([pthread_atfork(3)], [
+#include <pthread.h>
+], [
+  pthread_atfork((void *)0, (void *)0, (void *)0);
+], [je_cv_pthread_atfork])
+  if test "x${je_cv_pthread_atfork}" = "xyes" ; then
+    AC_DEFINE([JEMALLOC_HAVE_PTHREAD_ATFORK], [ ])
+  fi
 fi
 
 CPPFLAGS="$CPPFLAGS -D_REENTRANT"
@@ -1336,6 +1355,73 @@ if test "x$je_cv_cray_prgenv_wrapper" = "xyes" ; then
     AC_SEARCH_LIBS([clock_gettime], [rt])
 
     CFLAGS="${SAVED_CFLAGS}"
+  fi
+fi
+
+dnl check for CLOCK_MONOTONIC_COARSE (Linux-specific).
+JE_COMPILABLE([clock_gettime(CLOCK_MONOTONIC_COARSE, ...)], [
+#include <time.h>
+], [
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
+], [je_cv_clock_monotonic_coarse])
+if test "x${je_cv_clock_monotonic_coarse}" = "xyes" ; then
+  AC_DEFINE([JEMALLOC_HAVE_CLOCK_MONOTONIC_COARSE])
+fi
+
+dnl check for CLOCK_MONOTONIC.
+JE_COMPILABLE([clock_gettime(CLOCK_MONOTONIC, ...)], [
+#include <unistd.h>
+#include <time.h>
+], [
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+#if !defined(_POSIX_MONOTONIC_CLOCK) || _POSIX_MONOTONIC_CLOCK < 0
+#  error _POSIX_MONOTONIC_CLOCK missing/invalid
+#endif
+], [je_cv_clock_monotonic])
+if test "x${je_cv_clock_monotonic}" = "xyes" ; then
+  AC_DEFINE([JEMALLOC_HAVE_CLOCK_MONOTONIC])
+fi
+
+dnl Check for mach_absolute_time().
+JE_COMPILABLE([mach_absolute_time()], [
+#include <mach/mach_time.h>
+], [
+	mach_absolute_time();
+], [je_cv_mach_absolute_time])
+if test "x${je_cv_mach_absolute_time}" = "xyes" ; then
+  AC_DEFINE([JEMALLOC_HAVE_MACH_ABSOLUTE_TIME])
+fi
+
+dnl Use syscall(2) (if available) by default.
+AC_ARG_ENABLE([syscall],
+  [AS_HELP_STRING([--disable-syscall], [Disable use of syscall(2)])],
+[if test "x$enable_syscall" = "xno" ; then
+  enable_syscall="0"
+else
+  enable_syscall="1"
+fi
+],
+[enable_syscall="1"]
+)
+if test "x$enable_syscall" = "x1" ; then
+  dnl Check if syscall(2) is usable.  Treat warnings as errors, so that e.g. OS
+  dnl X 10.12's deprecation warning prevents use.
+  SAVED_CFLAGS="${CFLAGS}"
+  JE_CFLAGS_APPEND([-Werror])
+  JE_COMPILABLE([syscall(2)], [
+#include <sys/syscall.h>
+#include <unistd.h>
+], [
+	syscall(SYS_write, 2, "hello", 5);
+],
+                [je_cv_syscall])
+  CFLAGS="${SAVED_CFLAGS}"
+  if test "x$je_cv_syscall" = "xyes" ; then
+    AC_DEFINE([JEMALLOC_USE_SYSCALL], [ ])
   fi
 fi
 
@@ -1393,9 +1479,17 @@ fi
 ],
 [enable_lazy_lock=""]
 )
-if test "x$enable_lazy_lock" = "x" -a "x${force_lazy_lock}" = "x1" ; then
-  AC_MSG_RESULT([Forcing lazy-lock to avoid allocator/threading bootstrap issues])
-  enable_lazy_lock="1"
+if test "x${enable_lazy_lock}" = "x" ; then
+  if test "x${force_lazy_lock}" = "x1" ; then
+    AC_MSG_RESULT([Forcing lazy-lock to avoid allocator/threading bootstrap issues])
+    enable_lazy_lock="1"
+  else
+    enable_lazy_lock="0"
+  fi
+fi
+if test "x${enable_lazy_lock}" = "x1" -a "x${abi}" = "xpecoff" ; then
+  AC_MSG_RESULT([Forcing no lazy-lock because thread creation monitoring is unimplemented])
+  enable_lazy_lock="0"
 fi
 if test "x$enable_lazy_lock" = "x1" ; then
   if test "x$abi" != "xpecoff" ; then
@@ -1406,8 +1500,6 @@ if test "x$enable_lazy_lock" = "x1" ; then
       ])
   fi
   AC_DEFINE([JEMALLOC_LAZY_LOCK], [ ])
-else
-  enable_lazy_lock="0"
 fi
 AC_SUBST([enable_lazy_lock])
 
@@ -1530,12 +1622,41 @@ dnl Check for madvise(2).
 JE_COMPILABLE([madvise(2)], [
 #include <sys/mman.h>
 ], [
-	{
-		madvise((void *)0, 0, 0);
-	}
+	madvise((void *)0, 0, 0);
 ], [je_cv_madvise])
 if test "x${je_cv_madvise}" = "xyes" ; then
   AC_DEFINE([JEMALLOC_HAVE_MADVISE], [ ])
+
+  dnl Check for madvise(..., MADV_FREE).
+  JE_COMPILABLE([madvise(..., MADV_FREE)], [
+#include <sys/mman.h>
+], [
+	madvise((void *)0, 0, MADV_FREE);
+], [je_cv_madv_free])
+  if test "x${je_cv_madv_free}" = "xyes" ; then
+    AC_DEFINE([JEMALLOC_PURGE_MADVISE_FREE], [ ])
+  fi
+
+  dnl Check for madvise(..., MADV_DONTNEED).
+  JE_COMPILABLE([madvise(..., MADV_DONTNEED)], [
+#include <sys/mman.h>
+], [
+	madvise((void *)0, 0, MADV_DONTNEED);
+], [je_cv_madv_dontneed])
+  if test "x${je_cv_madv_dontneed}" = "xyes" ; then
+    AC_DEFINE([JEMALLOC_PURGE_MADVISE_DONTNEED], [ ])
+  fi
+
+  dnl Check for madvise(..., MADV_[NO]HUGEPAGE).
+  JE_COMPILABLE([madvise(..., MADV_[[NO]]HUGEPAGE)], [
+#include <sys/mman.h>
+], [
+	madvise((void *)0, 0, MADV_HUGEPAGE);
+	madvise((void *)0, 0, MADV_NOHUGEPAGE);
+], [je_cv_thp])
+  if test "x${je_cv_thp}" = "xyes" ; then
+    AC_DEFINE([JEMALLOC_THP], [ ])
+  fi
 fi
 
 dnl ============================================================================
@@ -1593,6 +1714,25 @@ AC_CACHE_CHECK([for __builtin_clz],
 
 if test "x${je_cv_builtin_clz}" = "xyes" ; then
   AC_DEFINE([JEMALLOC_HAVE_BUILTIN_CLZ], [ ])
+fi
+
+dnl ============================================================================
+dnl Check for os_unfair_lock operations as provided on Darwin.
+
+JE_COMPILABLE([Darwin os_unfair_lock_*()], [
+#include <os/lock.h>
+#include <AvailabilityMacros.h>
+], [
+	#if MAC_OS_X_VERSION_MIN_REQUIRED < 101200
+	#error "os_unfair_lock is not supported"
+	#else
+	os_unfair_lock lock = OS_UNFAIR_LOCK_INIT;
+	os_unfair_lock_lock(&lock);
+	os_unfair_lock_unlock(&lock);
+	#endif
+], [je_cv_os_unfair_lock])
+if test "x${je_cv_os_unfair_lock}" = "xyes" ; then
+  AC_DEFINE([JEMALLOC_OS_UNFAIR_LOCK], [ ])
 fi
 
 dnl ============================================================================
@@ -1839,6 +1979,7 @@ AC_MSG_RESULT([])
 AC_MSG_RESULT([CONFIG             : ${CONFIG}])
 AC_MSG_RESULT([CC                 : ${CC}])
 AC_MSG_RESULT([CFLAGS             : ${CFLAGS}])
+AC_MSG_RESULT([EXTRA_CFLAGS       : ${EXTRA_CFLAGS}])
 AC_MSG_RESULT([CPPFLAGS           : ${CPPFLAGS}])
 AC_MSG_RESULT([LDFLAGS            : ${LDFLAGS}])
 AC_MSG_RESULT([EXTRA_LDFLAGS      : ${EXTRA_LDFLAGS}])

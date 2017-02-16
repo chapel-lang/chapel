@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2012 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -319,6 +319,7 @@ windows_declare_color(void *output, int r, int g, int b)
   struct lstopo_windows_output *woutput = output;
   HBRUSH brush;
   COLORREF color;
+  struct color *tmp;
 
   if (!woutput->drawing)
     return;
@@ -330,7 +331,12 @@ windows_declare_color(void *output, int r, int g, int b)
     exit(EXIT_FAILURE);
   }
 
-  colors = realloc(colors, sizeof(*colors) * (numcolors + 1));
+  tmp = realloc(colors, sizeof(*colors) * (numcolors + 1));
+  if (!tmp) {
+    fprintf(stderr, "Failed to realloc the colors array\n");
+    return;
+  }
+  colors = tmp;
   colors[numcolors].r = r;
   colors[numcolors].g = g;
   colors[numcolors].b = b;

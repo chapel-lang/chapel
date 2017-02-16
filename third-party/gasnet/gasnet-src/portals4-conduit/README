@@ -1,5 +1,6 @@
 GASNet portals4-conduit documentation -*- text -*-
-Brian Barrett <bwbarre@sandia.gov>
+Original Author: Brian Barrett <bwbarre@sandia.gov>
+Contact info: Portals Dev Team <ng-portals@sandia.gov>
 
 User Information:
 -----------------
@@ -14,12 +15,27 @@ the specification,  can be found at the Sandia Portals page:
 A reference implementation of Portals 4.0 which runs over InfiniBand and
 UDP is available at:
 
-  https://code.google.com/p/portals4/
+  https://github.com/Portals4/portals4
+
+Where this conduit runs:
+-----------------------
+
+portals4-conduit is a portable conduit that should run anywhere with a 
+working implementation of the Portals 4 API. See the Portals documentation
+for more information on current implementations.
+
+Users with InfiniBand hardware are encouraged to use ibv-conduit instead, 
+which implements GASNet directly over IB verbs.
+
+Users with Ethernet hardware are encouraged to use udp-conduit instead, 
+which implements GASNet directly over UDP.
 
 Recognized environment variables:
 ---------------------------------
 
 * All the standard GASNet environment variables (see top-level README)
+
+* Conduit-specific environment variables:
 
 GASNET_AM_BUFFER_SIZE=<size>
   Size of each bounce buffer, in bytes, for receiving active messages.
@@ -55,6 +71,35 @@ GASNET_EXTENDED_EVENT_QUEUE_LENGTH=<count>
   API communication.  One entry is required for each outstanding put
   or get operation at the initiator and no resources are required on
   the target.  The default is 8192.
+
+* Portals 4 environment variables:
+
+The Portals 4 implementation may provide environment variables to modify its
+behavior. The reference implementation offers several settings that may be
+relevant when using portals-conduit:
+
+  * PTL_IFACE_NAME allows for the explicit naming of the network interface to
+    be used by Portals, for example ib0, eno1, etc. This may be necessary on
+    systems utilizing non-standard interface naming.
+
+  * PTL_DISABLE_MEM_REG_CACHE=[0|1] activates/deactivates the IB memory
+    registration cache. Enabling allows Portals to amortize memory registration
+    overheads across multiple RMA operations and provides the best performance,
+    but requires the ummunotify Linux kernel module in order to run correctly.
+    Disabling it removes the requirement for ummunotify, and the implementation
+    does not keep a registered memory cache - this may lower performance but
+    helps ensure correctness.
+
+  * PTL_ENABLE_MEM=[0|1] will deactivate/activate local memory bypass transport at
+    the Portals level, if one is compiled in.  This will path will only be
+    reached if the GASNet PSHM bypass has been disabled, and it requires the
+    KNEM kernel module.
+
+  * PTL_DEBUG=1 activates Portals-level debug tracing
+
+  * PTL_LOG_LEVEL=[0|1|2|3] will set the trace level.
+
+See the Portals 4 documentation for the most up-to-date information. 
 
 Optional compile-time settings:
 ------------------------------

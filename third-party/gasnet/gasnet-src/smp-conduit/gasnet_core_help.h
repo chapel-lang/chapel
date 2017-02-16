@@ -11,8 +11,6 @@
 #ifndef _GASNET_CORE_HELP_H
 #define _GASNET_CORE_HELP_H
 
-GASNETI_BEGIN_EXTERNC
-
 #include <gasnet_help.h>
 
 #define GASNETC_MAX_ARGS   16
@@ -24,7 +22,5 @@ GASNETI_BEGIN_EXTERNC
 #endif
 
 #define GASNETC_MAX_LONG   ((size_t)0x7fffffff) /* unlimited */
-
-GASNETI_END_EXTERNC
 
 #endif

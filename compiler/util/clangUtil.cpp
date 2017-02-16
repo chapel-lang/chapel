@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,6 +45,8 @@
 
 #include "build.h"
 
+#include "llvmDebug.h"
+
 typedef Type ChapelType;
 
 #ifndef HAVE_LLVM
@@ -78,6 +80,16 @@ using namespace llvm;
 //
 // This one is not normally included by clang clients
 // and not normally installed in the include directory.
+//
+// Q. Could we instead call methods on clang::CodeGenerator subclass of
+// ASTConsumer such as HandleTopLevelDecl to achieve what we want?
+// We would have a different AST visitor for populating the LVT.
+//
+// It is likely that we can leave the C parser "open" somehow and then
+// add statements to it at the end.
+// BUT we couldn't call EmitDeferredDecl.
+//
+//
 #include "CodeGenModule.h"
 #include "CGRecordLayout.h"
 #include "CGDebugInfo.h"
@@ -327,7 +339,10 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       int hex;
       int isfloat;
       if( negate ) numString.append("-");
-      numString.append(tok.getLiteralData(), tok.getLength());
+
+      if (tok.getLiteralData() && tok.getLength()) {
+        numString.append(tok.getLiteralData(), tok.getLength());
+      }
 
       if( debugPrint) printf("num = %s\n", numString.c_str());
 
@@ -856,26 +871,35 @@ CREATE_AST_CONSUMER_RETURN_TYPE CCodeGenAction::CreateASTConsumer(
 #endif
 };
 
-static void cleanupClang(GenInfo* info)
-{
+static void finishClang(GenInfo* info){
   if( info->cgBuilder ) {
     info->cgBuilder->Release();
-    delete info->cgBuilder;
-    info->cgBuilder = NULL;
   }
-  delete info->targetData;
-  info->targetData = NULL;
-  delete info->Clang;
-  info->Clang = NULL;
-  delete info->cgAction;
-  info->cgAction = NULL;
   info->Diags.reset();
   info->DiagID.reset();
 }
 
+static void deleteClang(GenInfo* info){
+  if( info->cgBuilder ) {
+    delete info->cgBuilder;
+    info->cgBuilder = NULL;
+  }
+  delete info->targetData;
+  delete info->Clang;
+  info->Clang = NULL;
+  delete info->cgAction;
+  info->cgAction = NULL;
+}
+
+static void cleanupClang(GenInfo* info)
+{
+  finishClang(info);
+  deleteClang(info);
+}
+
 void setupClang(GenInfo* info, std::string mainFile)
 {
-  std::string clangexe = info->clangInstallDir + "/bin/clang";
+  std::string clangexe = info->clangCC;
   std::vector<const char*> clangArgs;
   for( size_t i = 0; i < info->clangCCArgs.size(); ++i ) {
     clangArgs.push_back(info->clangCCArgs[i].c_str());
@@ -994,13 +1018,16 @@ void finishCodegenLLVM() {
   info->FPM_postgen = NULL;
 
   // Now finish any Clang code generation.
-  cleanupClang(info);
+  finishClang(info);
+
+  if(debug_info)debug_info->finalize();
 
   // Verify the LLVM module.
   if( developer ) {
     bool problems;
 #if HAVE_LLVM_VER >= 35
     problems = verifyModule(*info->module, &errs());
+    //problems = false;
 #else
     problems = verifyModule(*info->module, PrintMessageAction);
 #endif
@@ -1106,7 +1133,7 @@ void runClang(const char* just_parse_filename) {
     // We're handling an extern block and not using the LLVM backend.
     // Don't ask for any compiler-specific C flags.
     readargsfrom = compileline + " --llvm"
-                                 " --llvm-install-dir"
+                                 " --clang"
                                  " --clang-sysroot-arguments"
                                  " --includes-and-defines";
   } else {
@@ -1114,7 +1141,7 @@ void runClang(const char* just_parse_filename) {
     // in order to prepare for an --llvm compilation.
     // Use compiler-specific flags for clang-included.
     readargsfrom = compileline + " --llvm"
-                                 " --llvm-install-dir"
+                                 " --clang"
                                  " --clang-sysroot-arguments"
                                  " --cflags"
                                  " --includes-and-defines";
@@ -1123,17 +1150,18 @@ void runClang(const char* just_parse_filename) {
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangLDArgs;
   std::vector<std::string> clangOtherArgs;
-  std::string clangInstallDir;
+  std::string clangCC, clangCXX;
 
   // Gather information from readargsfrom into clangArgs.
   readArgsFromCommand(readargsfrom.c_str(), args);
-  if( args.size() < 1 ) USR_FATAL("Could not find runtime dependencies for --llvm build");
+  if( args.size() < 2 ) USR_FATAL("Could not find runtime dependencies for --llvm build");
 
-  clangInstallDir = args[0];
+  clangCC = args[0];
+  clangCXX = args[1];
 
   // Note that these CC arguments will be saved in info->clangCCArgs
   // and will be used when compiling C files as well.
-  for( size_t i = 1; i < args.size(); ++i ) {
+  for( size_t i = 2; i < args.size(); ++i ) {
     clangCCArgs.push_back(args[i]);
   }
  
@@ -1193,7 +1221,7 @@ void runClang(const char* just_parse_filename) {
   // Initialize gGenInfo
   // Toggle LLVM code generation in our clang run;
   // turn it off if we just wanted to parse some C.
-  gGenInfo = new GenInfo(clangInstallDir,
+  gGenInfo = new GenInfo(clangCC, clangCXX,
                          compileline, clangCCArgs, clangLDArgs, clangOtherArgs,
                          just_parse_filename != NULL);
 
@@ -1856,13 +1884,15 @@ void makeBinaryLLVM(void) {
   output.keep();
   output.os().flush();
 
+  //finishClang is before the call to the debug finalize
+  deleteClang(info);
 
   std::string options = "";
 
   std::string home(CHPL_HOME);
   std::string compileline = info->compileline;
   compileline += " --llvm"
-                 " --llvm-install-dir"
+                 " --clang"
                  " --main.o"
                  " --clang-sysroot-arguments"
                  " --libraries";
@@ -1870,8 +1900,9 @@ void makeBinaryLLVM(void) {
   readArgsFromCommand(compileline.c_str(), args);
   INT_ASSERT(args.size() >= 1);
 
-  std::string clangInstall = args[0];
-  std::string maino = args[1];
+  std::string clangCC = args[0];
+  std::string clangCXX = args[1];
+  std::string maino = args[2];
   std::vector<std::string> dotOFiles;
 
   // Gather C flags for compiling C files.
@@ -1887,8 +1918,8 @@ void makeBinaryLLVM(void) {
     const char* inputFilename = gChplCompilationConfig.pathname;
     const char* objFilename = objectFileForCFile(inputFilename);
 
-    mysystem(astr(clangInstall.c_str(),
-                  "/bin/clang -c -o ",
+    mysystem(astr(clangCC.c_str(),
+                  " -c -o ",
                   objFilename,
                   " ",
                   inputFilename,
@@ -1902,8 +1933,8 @@ void makeBinaryLLVM(void) {
   while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {
       const char* objFilename = objectFileForCFile(inputFilename);
-      mysystem(astr(clangInstall.c_str(),
-                    "/bin/clang -c -o ", objFilename,
+      mysystem(astr(clangCC.c_str(),
+                    " -c -o ", objFilename,
                     " ", inputFilename, cargs.c_str()),
                "Compile C File");
       dotOFiles.push_back(objFilename);
@@ -1943,7 +1974,7 @@ void makeBinaryLLVM(void) {
   // Run the linker. We always use clang++ because some third-party
   // libraries are written in C++. With the C backend, this switcheroo
   // is accomplished in the Makefiles somewhere
-  std::string command = clangInstall + "/bin/clang++ " + options + " " +
+  std::string command = clangCXX + " " + options + " " +
                         moduleFilename + " " + maino +
                         " -o " + tmpbinname;
   for( size_t i = 0; i < dotOFiles.size(); i++ ) {
@@ -1951,8 +1982,8 @@ void makeBinaryLLVM(void) {
     command += dotOFiles[i];
   }
 
-  // 0 is llvm install dir, 1 is main.o
-  for(size_t i = 2; i < args.size(); ++i) {
+  // 0 is clang, 1 is clang++, 2 is main.o
+  for(size_t i = 3; i < args.size(); ++i) {
     command += " ";
     command += args[i];
   }

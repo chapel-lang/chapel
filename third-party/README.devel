@@ -38,3 +38,16 @@ the CWD is third-party/qthread/:
 
 (Note that Qthreads is not perfect here since it's not really released
 in "versions" currently.  But as an example it's good enough.)
+
+
+
+chpl-venv/
+==========
+
+README describes the use of the chpl-venv/ subdirectory to hold some
+dependencies of chpldoc and the testing system.  As for those end-user
+tools, chpl-venv is used to hold dependencies of the chplspell
+developer tool.
+
+See chplspell-requirements for a complete list of packages that are
+installed.

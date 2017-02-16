@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,8 +35,6 @@ class CallExpr;
 class SymExpr;
 class Expr;
 
-void normalize(BaseAST* base);
-
 // return vec of CallExprs of FnSymbols (no primitives)
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls);
 
@@ -49,7 +47,9 @@ void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs);
 void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts);
 void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs);
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs);
-void collectMyCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs, FnSymbol* fn);
+void collectMyCallExprs(BaseAST* ast,
+                        std::vector<CallExpr*>& callExprs,
+                        FnSymbol* fn);
 void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts);
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
 void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs);
@@ -73,11 +73,21 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<SymExpr*>& symExprs);
 
 //
+// collect set of symbols
+//
+void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet);
+
+
+//
 // Checks if a callExpr is one of the op= primitives
 // Note, this does not check if a callExpr is an
 // op= function call (such as before inlining)
 //
 bool isOpEqualPrim(CallExpr* call);
+
+bool isMoveOrAssign(CallExpr* call);
+
+bool isDerefMove(CallExpr* call);
 
 //
 // Checks if a callExpr is a relational operator (<, <=, >, >=, ==, !=)
@@ -96,10 +106,8 @@ int isDefAndOrUse(SymExpr* se);
 // vectors are built differently depending on the other arguments
 //
 
-// builds the vectors for every variable/argument in 'symSet' and
-// looks for uses and defs only in 'symExprs'
+// builds the vectors for every variable/argument in 'symSet'
 void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Vec<SymExpr*>& symExprs,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
 
@@ -120,13 +128,6 @@ void buildDefUseMaps(BlockStmt* block,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
 
-// builds the vectors for every variable/argument in 'symSet' and
-// looks for uses and defs in the entire program
-inline void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
-}
 
 //
 // add a def to a defMap or a use to a useMap

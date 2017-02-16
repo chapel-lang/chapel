@@ -1,4 +1,4 @@
-.TH "hwloc_disc_component" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_disc_component" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -40,7 +40,7 @@ This is the major kind of components, taking care of the discovery\&. They are r
 Component types to exclude, as an OR'ed set of \fBhwloc_disc_component_type_e\fP\&. For a GLOBAL component, this usually includes all other types (~0)\&.
 .PP
 Other components only exclude types that may bring conflicting topology information\&. MISC components should likely not be excluded since they usually bring non-primary additional information\&. 
-.SS "struct \fBhwloc_backend\fP*(* hwloc_disc_component::instantiate)(struct \fBhwloc_disc_component\fP *component, const void *data1, const void *data2, const void *data3)"
+.SS "struct \fBhwloc_backend\fP*(* hwloc_disc_component::instantiate) (struct \fBhwloc_disc_component\fP *component, const void *data1, const void *data2, const void *data3)"
 
 .PP
 Instantiate callback to create a backend from the component\&. Parameters data1, data2, data3 are NULL except for components that have special enabling routines such as \fBhwloc_topology_set_xml()\fP\&. 

@@ -11,7 +11,7 @@ module CGMakeA {
     var size = 1.0;
     const ratio = rcond ** (1.0 / n);
 
-    var randStr = new NPBRandomStream(314159265);
+    var randStr = new NPBRandomStream(real, 314159265);
     randStr.getNext();   // drop a value on floor to match NPB version
 
     for iouter in 1..n {
@@ -67,7 +67,7 @@ module CGMakeA {
     //  writeln("IndArr is: ", IndArr);
 
     // sort indices
-    QuickSort(IndArr);
+    quickSort(IndArr);
 
     //  writeln("After sort, IndArr is: ", IndArr);
     

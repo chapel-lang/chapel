@@ -9,7 +9,6 @@ Just two yields within the leader would be sufficient, but
 it seems an 'if' is also needed. A couple of extra yields are just frills.
 */
 
-extern proc chpl_task_sleep(t:uint) : void; // instead of 'use Time'
 config const x = 0;  // ensure it's not known to the compiler
 
 // viter (Vass's iter): a leader with multiple yields
@@ -32,18 +31,20 @@ iter viter(param tag: iterKind, followThis) where tag == iterKind.follower {
 // 'forall' and the array are within a function
 proc test() {
   var AA7: [0..2] real;
-  forall idx7 in viter() do begin {
-    AA7(idx7) = 77;
+  sync {
+    forall idx7 in viter() do begin {
+        AA7(idx7) = 77;
+      }
   }
-  chpl_task_sleep(1);
   writeln(AA7);
 }
 test();
 
 // now the same at the top level
 var AA9: [0..2] real;
-forall idx9 in viter() do begin {
-  AA9(idx9) = 99;
+sync {
+  forall idx9 in viter() do begin {
+      AA9(idx9) = 99;
+    }
 }
-chpl_task_sleep(1);
 writeln(AA9);

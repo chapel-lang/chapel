@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -24,7 +24,9 @@ RESOLUTION_SRCS =                                    \
 	implementForallIntents.cpp                   \
 	generics.cpp                                 \
 	functionResolution.cpp                       \
+	initializerResolution.cpp                    \
 	lowerIterators.cpp                           \
+	tuples.cpp                                   \
 	wrappers.cpp
 
 SVN_SRCS = $(RESOLUTION_SRCS)

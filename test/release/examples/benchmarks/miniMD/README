@@ -63,7 +63,6 @@ This directory's contents are as follows:
     forces.chpl         : implementations for EAM and LJ force computations
     thermo.chpl         : calculation of energy, temperature, pressure
     neighbor.chpl       : calculation and updating of neighbor atoms
-    StencilDist.chpl    : domain map used for stencil computations
   
   miniMD.*              : other files used in the Chapel testing system
 
@@ -121,7 +120,7 @@ the mantevo website, download the reference version, and use those files.
 Execution Options
 -----------------
 
-The following are config[uration] const[ant]s thatn can be used to
+The following are config[uration] const[ant]s that can be used to
 modify the execution at program launch time. These can bet set on 
 the execution-time command line using the following flag styles:
 
@@ -271,8 +270,6 @@ PERFORMANCE TODOs:
 * A global 'perBinSpace' is a bit of a bottleneck. Is there a better way to 
   do this?
 
-* Check StencilDist on 1D
-
 * Is bulk transfer firing when we think it is?
 
 * param loops & variables
@@ -282,8 +279,6 @@ PERFORMANCE TODOs:
 * RADOpt is currently turned off for the stencil distribution version. More 
   work needs to be done in StencilDist to support this, among some other 
   features
-
-* Boundary iteration needs to be parallelized and optimized for communication.
 
 
 MISCELLANEOUS TODOs:

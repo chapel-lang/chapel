@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -180,31 +180,55 @@ printErrorHeader(BaseAST* ast) {
   if (!err_print) {
     if (Expr* expr = toExpr(ast)) {
       Symbol* parent = expr->parentSymbol;
+
       if (isArgSymbol(parent))
         parent = parent->defPoint->parentSymbol;
+
       FnSymbol* fn = toFnSymbol(parent);
+
       fn = findNonTaskCaller(fn);
+
       if (fn && fn != err_fn) {
         err_fn = fn;
+
         while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {
-          if (fn == fn->getModule()->initFn)
+          if (fn == fn->getModule()->initFn) {
             break;
+          }
+
           err_fn = fn;
         }
+
         // If the function is compiler-generated, or inlined, or doesn't match
         // the error function and line number, nothing is printed.
-        if (err_fn->getModule()->initFn != err_fn &&
+        if (err_fn->getModule()->initFn != err_fn     &&
             !err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-            !err_fn->hasFlag(FLAG_INLINE) &&
             err_fn->linenum()) {
-          fprintf(stderr, "%s:%d: In ",
-                  cleanFilename(err_fn), err_fn->linenum());
-          if (!strncmp(err_fn->name, "_construct_", 11)) {
-            fprintf(stderr, "initializer '%s':\n", err_fn->name+11);
-          } else {
-            fprintf(stderr, "%s '%s':\n",
-                    (err_fn->isIterator() ? "iterator" : "function"),
-                    err_fn->name);
+          bool suppress = false;
+
+          // Initializer might be inlined
+          if (err_fn->hasFlag(FLAG_INLINE) == true) {
+            suppress = (strcmp(err_fn->name, "init") != 0) ? true : false;
+          }
+
+          if (suppress == false) {
+            fprintf(stderr,
+                    "%s:%d: In ",
+                    cleanFilename(err_fn),
+                    err_fn->linenum());
+
+            if (strncmp(err_fn->name, "_construct_", 11) == 0) {
+              fprintf(stderr, "initializer '%s':\n", err_fn->name+11);
+
+            } else if (strcmp(err_fn->name, "init") == 0) {
+              fprintf(stderr, "initializer:\n");
+
+            } else {
+              fprintf(stderr,
+                      "%s '%s':\n",
+                      (err_fn->isIterator() ? "iterator" : "function"),
+                      err_fn->name);
+            }
           }
         }
       }

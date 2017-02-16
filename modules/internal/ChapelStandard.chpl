@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,7 @@ module ChapelStandard {
   use CPtr;
   use CString;
   use String;
+  use ChapelDebugPrint;
   use ChapelEnv;
   use ChapelBase;
   use MemConsistency;

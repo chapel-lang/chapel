@@ -1,3 +1,8 @@
+unimplemented feature: new initializers on generic classes not supported
+
+Once they are supported, it is likely this will turn back into:
+
+---
 bug: assigning param member causes segfault
 
 For some reason, assigning the param 'foo' member in its initializer

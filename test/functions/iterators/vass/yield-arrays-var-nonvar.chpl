@@ -3,6 +3,8 @@
 const P = {1..1};
 var cnt = 222;
 
+var global: [P]int;
+
 iter rtValIter() : [P]int {
   var p: [P]int;
   p[1] = 111;
@@ -14,13 +16,12 @@ iter rtValIter() : [P]int {
 }
 
 iter rtRefIter() ref : [P]int {
-  var p: [P]int;
-  p[1] = 111;
-  writeln("rtref-1 ", p[1]);
-  yield p;
-  writeln("rtref-2 ", p[1]);
-  yield p;
-  writeln("rtref-3 ", p[1]);
+  global[1] = 111;
+  writeln("rtref-1 ", global[1]);
+  yield global;
+  writeln("rtref-2 ", global[1]);
+  yield global;
+  writeln("rtref-3 ", global[1]);
 }
 
 iter ntValIter() {
@@ -34,13 +35,12 @@ iter ntValIter() {
 }
 
 iter ntRefIter() ref {
-  var p: [P]int;
-  p[1] = 111;
-  writeln("ntref-1 ", p[1]);
-  yield p;
-  writeln("ntref-2 ", p[1]);
-  yield p;
-  writeln("ntref-3 ", p[1]);
+  global[1] = 111;
+  writeln("ntref-1 ", global[1]);
+  yield global;
+  writeln("ntref-2 ", global[1]);
+  yield global;
+  writeln("ntref-3 ", global[1]);
 }
 
 writeln();

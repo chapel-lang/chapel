@@ -168,8 +168,6 @@ proc main() {
 
   if printTimings then
     printTimingData("buckets");
-
-  delete barrier;
 }
 
 

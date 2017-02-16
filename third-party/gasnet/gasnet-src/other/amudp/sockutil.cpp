@@ -5,10 +5,18 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
+#include <portable_inttypes.h>
+#include "sockaddr.h" // for gasnet_tools/gasnet_config.h
+#if HAVE_GETIFADDRS
+  #if HAVE_IFADDRS_H
+    #include <ifaddrs.h>
+  #endif
+  #include <net/if.h>
+#endif
+
 #include "sockutil.h"
 #include "sig.h"
-#include "sockaddr.h"
-#include "portable_inttypes.h"
 
 bool endianconvert = false;
 
@@ -16,29 +24,12 @@ bool endianconvert = false;
 static int isinit = 0;
 static bool nh_cvt = false;
 #define CHECKINIT() assert(isinit > 0)
-#ifdef WINSOCK
-  bool socklibinit(){
-    WSADATA d;
-    if (!WSAStartup(MAKEWORD(1,1), &d)) {
-      nh_cvt = isLittleEndian();
-      isinit++;
-      return true;
-    } else return false;
-  }
-  bool socklibend() {
-    WSACleanup();
-    isinit--;
-    return true;
-  }
-#else
-  #include <errno.h>      // errno, strerror
-  bool socklibinit(){ 
-    nh_cvt = isLittleEndian();
-    isinit++; 
-    return true; 
-  }
-  bool socklibend(){ isinit--; return true; }
-#endif
+bool socklibinit(){ 
+  nh_cvt = isLittleEndian();
+  isinit++; 
+  return true; 
+}
+bool socklibend(){ isinit--; return true; }
 //-------------------------------------------------------------------------------------
 SOCKET listen_socket(unsigned short port, bool allowshared) {
   // create a socket to listen to a specific port
@@ -79,20 +70,39 @@ SOCKET accept_socket(SOCKET listener, struct sockaddr* calleraddr) {
   while (1) {
     SOCKET newsock;
     if ((newsock = SOCK_accept(listener, calleraddr, &sz)) == INVALID_SOCKET) {
-      #ifndef WINSOCK
-        if (errno == EINTR) continue; // ignore signal interruptions - keep blocking
-      #endif
+      if (errno == EINTR) continue; // ignore signal interruptions - keep blocking
       closesocket(listener);
       xsocket(listener, "accept() failed on listener socket");
     }
+
+    disable_sigpipe(newsock);
 
     return newsock;
   }
 }
 //-------------------------------------------------------------------------------------
+bool disable_sigpipe(SOCKET s) {
+  #ifdef SO_NOSIGPIPE
+    // Some OSs (eg BSD) allow SIGPIPE generation to be blocked at the socket level
+    #ifndef SIGPIPE_BLOCKED
+    #define SIGPIPE_BLOCKED 1
+    #endif
+    int set = 1;
+    if (setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, (char *)&set, sizeof(set)) == -1) {
+      closesocket(s);
+      xsocket(s, "setsockopt() failed to set SO_NOSIGPIPE");
+    }
+    return true;
+  #else // flag doesn't exist
+    return false;
+  #endif
+} 
+//-------------------------------------------------------------------------------------
 SOCKET connect_socket(struct sockaddr* saddr) {
   SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (s == INVALID_SOCKET) xsocket(s, "socket() failed while creating a connect socket");
+
+  disable_sigpipe(s);
 
   if (connect(s, saddr, sizeof(struct sockaddr)) == SOCKET_ERROR) {
     closesocket(s);
@@ -131,6 +141,8 @@ SOCKET connect_socket(char* addr) {
   SOCKET s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (s == INVALID_SOCKET) xsocket(s, "socket() failed while creating a connect socket");
 
+  disable_sigpipe(s);
+
   if (connect(s, (struct sockaddr*)&saddr, sizeof(struct sockaddr_in)) == SOCKET_ERROR) {
     closesocket(s);
     xsocket(s, "connect() failed while creating a connect socket");
@@ -159,20 +171,31 @@ void recvAll(SOCKET s, void* buffer, int numbytes) {
   }
 }
 //-------------------------------------------------------------------------------------
-void sendAll(SOCKET s, const void* buffer, int numbytes, int dothrow) {
+#ifdef MSG_NOSIGNAL
+  // POSIX mandates a SIGPIPE on send() to a disconnected stream socket
+  // but it's more efficient and less disruptive to clients to handle this via return code
+  // Linux and a few others allow this to be disabled via send flag
+  #define SEND_FLAGS MSG_NOSIGNAL 
+  #ifndef SIGPIPE_BLOCKED
+  #define SIGPIPE_BLOCKED 1
+  #endif
+#else
+  #define SEND_FLAGS 0
+#endif
+void sendAll(SOCKET s, const void* buffer, int numbytes, bool dothrow) {
   // blocks until it can send numbytes on s from buffer
   // (throws xSocket on close by default)
-  #if !PLATFORM_OS_MSWINDOWS
+  #if !SIGPIPE_BLOCKED
+    // must use heavyweight method to block SIGPIPE errors
     LPSIGHANDLER oldsighandler = reghandler(SIGPIPE, (LPSIGHANDLER)SIG_IGN); 
-    // ignore broken pipes, because we get that when we write to a socket after other side reset
   #endif
   char *buf = (char*)buffer;
   while (numbytes) {
     int retval;
-    retval = send(s, buf, numbytes, 0);
+    retval = send(s, buf, numbytes, SEND_FLAGS);
     if (retval == SOCKET_ERROR) {
       closesocket(s);
-      #if !PLATFORM_OS_MSWINDOWS
+      #if !SIGPIPE_BLOCKED
         reghandler(SIGPIPE, oldsighandler); // restore handler
       #endif
       if (dothrow) xsocket(s, "error in sendAll() - connection closed");
@@ -183,12 +206,12 @@ void sendAll(SOCKET s, const void* buffer, int numbytes, int dothrow) {
     buf += retval;
     numbytes -= retval;
   }
-  #if !PLATFORM_OS_MSWINDOWS
+  #if !SIGPIPE_BLOCKED
     reghandler(SIGPIPE, oldsighandler); // restore handler
   #endif
 }
 //-------------------------------------------------------------------------------------
-void sendAll(SOCKET s, const char* buffer, int numbytes, int dothrow) {
+void sendAll(SOCKET s, const char* buffer, int numbytes, bool dothrow) {
   if (numbytes == -1) numbytes = strlen(buffer);
   sendAll(s, (void *)buffer, numbytes, dothrow);
 }
@@ -399,14 +422,16 @@ SockAddr DNSLookup(const char *hostnameOrIPStr) {
   }
 }
 //-------------------------------------------------------------------------------------
-bool inputWaiting(SOCKET s) { // returns true if input or close conn is waiting
+bool inputWaiting(SOCKET s, bool dothrow) { // returns true if input or close conn is waiting
   fd_set sockset;
   timeval tm = {0, 0};
   FD_ZERO(&sockset);
   FD_SET(s, &sockset);
   int retval = select(s+1, &sockset, NULL, NULL, &tm);
-  if (retval == SOCKET_ERROR) xsocket(s, "select");
-  else if (retval > 0) return true; // new input or closed conn
+  if_pf (retval == SOCKET_ERROR) {
+    if (dothrow) xsocket(s, "select");
+    else return true; // error waiting
+  } else if (retval > 0) return true; // new input or closed conn
   
   return false;
 }
@@ -514,26 +539,16 @@ bool isClosed(SOCKET s) {
   int len = recv(s, &c, 1, MSG_PEEK); // something is waiting -> never blocks
   if (len == 0) return true; // socket closed
   else if (len == SOCKET_ERROR) {
-    int err = getSocketErrorCode();
-    #ifdef WINSOCK
-      if (err == WSAECONNRESET ||
-          err == WSAENOTCONN ||
-          err == WSAENETRESET ||
-          err == WSAECONNABORTED ||
-          err == WSAESHUTDOWN ||
-          err == WSAENOTSOCK ||
-          err == WSAETIMEDOUT) return true;
-    #else
-      if (err == ECONNRESET ||
-          err == ENOTCONN ||
-          err == ENETRESET ||
-          err == ECONNABORTED ||
-          err == ESHUTDOWN ||
-          err == EPIPE ||
-          err == ENOTSOCK ||
-          err == EBADF ||
-          err == ETIMEDOUT) return true;
-    #endif
+    int err = errno;
+    if (err == ECONNRESET ||
+        err == ENOTCONN ||
+        err == ENETRESET ||
+        err == ECONNABORTED ||
+        err == ESHUTDOWN ||
+        err == EPIPE ||
+        err == ENOTSOCK ||
+        err == EBADF ||
+        err == ETIMEDOUT) return true;
     else xsocket(s, "recv(MSG_PEEK) within isClosed()"); // some error
   }
 
@@ -555,114 +570,20 @@ bool hasOOBdata(SOCKET s) {
   return false;
 }
 //------------------------------------------------------------------------------------
-#ifdef WINSOCK
-// return string associated with a given code
-#define MAKEERRSTRING(code, desc)  { code, #code ": " desc }
-char const *errorCodeString(int code) {
-  static struct {
-    int code;
-    char const *message;
-  } const arr[] = {
-    MAKEERRSTRING(  WSAEACCES,          "Broadcast address requested, proper flags not set" ),
-    MAKEERRSTRING(  WSAEADDRINUSE,      "Specified address already in use" ),
-    MAKEERRSTRING(  WSAEADDRNOTAVAIL,   "Address not available or accessible" ),
-    MAKEERRSTRING(  WSAEAFNOSUPPORT,    "Address format not supported" ),
-    MAKEERRSTRING(  WSAEALREADY,        "\"already\" something (?)" ),    // already what?
-    MAKEERRSTRING(  WSAEBADF,           "Bad file number" ),
-    MAKEERRSTRING(  WSAECONNABORTED,    "Connection aborted, possibly due to timeout" ),
-    MAKEERRSTRING(  WSAECONNREFUSED,    "Connection refused" ),
-    MAKEERRSTRING(  WSAECONNRESET,      "Connection reset by remote side" ),
-    MAKEERRSTRING(  WSAEDESTADDRREQ,    "Destination address required" ),
-    MAKEERRSTRING(  WSAEDISCON,         "Socket disconnected" ),
-    MAKEERRSTRING(  WSAEDQUOT,          "\"DQUOT\" (?)" ),     // what does this mean?
-    MAKEERRSTRING(  WSAEFAULT,          "Memory buffer too small" ),
-    MAKEERRSTRING(  WSAEHOSTDOWN,       "Remote host is down" ),
-    MAKEERRSTRING(  WSAEHOSTUNREACH,    "Remote host is unreachable" ),
-    MAKEERRSTRING(  WSAEINPROGRESS,     "Blocking call in progress" ),
-    MAKEERRSTRING(  WSAEINTR,           "Blocking call interrupted" ),
-    MAKEERRSTRING(  WSAEINVAL,          "Invalid parameter" ),
-    MAKEERRSTRING(  WSAEISCONN,         "Socket already connected" ),
-    MAKEERRSTRING(  WSAELOOP,           "Routing loop discovered (?)" ),
-    MAKEERRSTRING(  WSAEMFILE,          "No more file descriptors available" ),
-    MAKEERRSTRING(  WSAEMSGSIZE,        "Message size exceeds maximum datagram size" ),
-    MAKEERRSTRING(  WSAENAMETOOLONG,    "Name too long" ),
-    MAKEERRSTRING(  WSAENETDOWN,        "Network subsystem failure detected" ),
-    MAKEERRSTRING(  WSAENETRESET,       "Connection was reset" ),
-    MAKEERRSTRING(  WSAENETUNREACH,     "Network is unreachable" ),
-    MAKEERRSTRING(  WSAENOBUFS,         "Insufficient buffer space available" ),
-    MAKEERRSTRING(  WSAENOPROTOOPT,     "Invalid protocol option" ),
-    MAKEERRSTRING(  WSAENOTCONN,        "Socket is not connected" ),
-    MAKEERRSTRING(  WSAENOTEMPTY,       "Buffer not empty" ),
-    MAKEERRSTRING(  WSAENOTSOCK,        "Connection is already closed" ),
-    MAKEERRSTRING(  WSAEOPNOTSUPP,      "Operation not supported (e.g. OOB)" ),
-    MAKEERRSTRING(  WSAEPFNOSUPPORT,    "Protocol family not supported" ),
-    MAKEERRSTRING(  WSAEPROCLIM,        "\"PROCLIM\" (?)" ),    // anyone know what this means?
-    MAKEERRSTRING(  WSAEPROTONOSUPPORT, "The specified protocol is not supported" ),
-    MAKEERRSTRING(  WSAEPROTOTYPE,      "Specified protocol is wrong type" ),
-    MAKEERRSTRING(  WSAEREMOTE,         "Error at remote host" ),
-    MAKEERRSTRING(  WSAESHUTDOWN,       "Socket has been shut down" ),
-    MAKEERRSTRING(  WSAESOCKTNOSUPPORT, "Socket type not supported" ),
-    MAKEERRSTRING(  WSAESTALE,          "Stale handle" ),
-    MAKEERRSTRING(  WSAETIMEDOUT,       "Connection timed out" ),
-    MAKEERRSTRING(  WSAETOOMANYREFS,    "Too many references" ),
-    MAKEERRSTRING(  WSAEUSERS,          "Too many users" ),
-    MAKEERRSTRING(  WSAEWOULDBLOCK,     "Asynchronous operation cannot be scheduled" ),
-    MAKEERRSTRING(  WSAHOST_NOT_FOUND,  "Authoritative Answer Host not found" ),
-    MAKEERRSTRING(  WSANO_ADDRESS,      "No address, look for MX record (?)" ),
-    MAKEERRSTRING(  WSANO_DATA,         "Valid name, no data record of requested type" ),
-    MAKEERRSTRING(  WSANO_RECOVERY,     "Non-recoverable error" ),
-    MAKEERRSTRING(  WSANOTINITIALISED,  "Winsock not initialized" ),
-    MAKEERRSTRING(  WSASYSNOTREADY,     "Network subsystem not ready" ),
-    MAKEERRSTRING(  WSATRY_AGAIN,       "Non-Authoritative Host not found" ),
-    MAKEERRSTRING(  WSAVERNOTSUPPORTED, "Winsock version not supported" ),
 
-    MAKEERRSTRING(  0,                  "No error" )
-    };
-
-  for (int i=0; i < sizeof(arr)/sizeof(arr[0]); i++) {
-    if (arr[i].code == code) {
-      return arr[i].message;
-    }
-  }
-
-  // unknown code
-  return NULL;
-}
-
-int getSocketErrorCode() {
-  return WSAGetLastError();
-}
-//------------------------------------------------------------------------------------
-#else //    ^^ win32    unix vv
-
-
-char const *errorCodeString(int code){
-  return strerror(code);
-}
-
-int getSocketErrorCode() {
-  return errno;
-}
-
-#endif
-//------------------------------------------------------------------------------------
 #undef select
 extern int myselect(int  n,  fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
             struct timeval *timeout) {
   #ifdef FD_SETSIZE
     assert((unsigned int)n <= (unsigned int)FD_SETSIZE);
   #endif
-  #if PLATFORM_OS_MSWINDOWS
-    return select(n, readfds, writefds, exceptfds, timeout);
-  #else
-    /* a select that ignores UNIX's ridiculously inconvenient interrupt signals */
-    int retval;
-    do {
-      retval = select(n, readfds, writefds, exceptfds, timeout);
-    } while (retval == SOCKET_ERROR && errno == EINTR);
-    return retval;
-  #endif
 
+  /* a select that ignores UNIX's ridiculously inconvenient interrupt signals */
+  int retval;
+  do {
+      retval = select(n, readfds, writefds, exceptfds, timeout);
+  } while (retval == SOCKET_ERROR && errno == EINTR);
+  return retval;
 }
 /* ------------------------------------------------------------------------------------ */
 extern int myrecvfrom(SOCKET s, char * buf, int len, int flags,                  
@@ -675,42 +596,41 @@ extern int myrecvfrom(SOCKET s, char * buf, int len, int flags,
     int retval = SOCK_recvfrom(s, buf, len, flags, from, psz);
     if (fromlen) *fromlen = (int)sz;
 
-    #ifdef WINSOCK
-     /* winsock returns WSAECONNRESET from recvfrom on UDP sockets to 
-      * indicate the receipt of an ICMP "Port Unreachable" message 
-      * caused by a previous sendto()
-      * this probably means the remote node crashed, but may just 
-      * indicate a network partition or congestion
-      */
-     if (retval == SOCKET_ERROR && WSAGetLastError() == WSAECONNRESET) 
-       continue; /* ignore it */
-    #else
-     if (retval == SOCKET_ERROR && errno == EINTR) 
-       continue;
-    #endif
+    if (retval == SOCKET_ERROR && errno == EINTR) continue;
+
     return retval;
   }
 }
 /* ------------------------------------------------------------------------------------ */
 #if HAVE_GETIFADDRS
-#if HAVE_IFADDRS_H
-#include <ifaddrs.h>
-#endif
-bool getIfaceAddr(SockAddr ipnet_sa, SockAddr &ret) {
+bool getIfaceAddr(SockAddr ipnet_sa, SockAddr &ret, char *subnets, size_t subnetsz) {
   struct sockaddr_in *net = (sockaddr_in*)ipnet_sa;
   struct sockaddr_in *result = (sockaddr_in*)ret;
   bool found = false;
   struct ifaddrs *ifas;
+  if (subnets) subnets[0] = '\0';
 
   if (getifaddrs(&ifas) != -1) {
     for (struct ifaddrs *ifa = ifas; ifa != NULL; ifa = ifa->ifa_next) {
-      if (!ifa->ifa_addr || (ifa->ifa_addr->sa_family != AF_INET))
-        continue;
-      
+      if (!ifa->ifa_addr 
+          || (ifa->ifa_addr->sa_family != AF_INET)  
+          || !(ifa->ifa_flags & IFF_RUNNING) // ignore disabled interfaces
+       ) continue;
+    
       struct sockaddr_in *if_addr = (sockaddr_in*)ifa->ifa_addr;
       struct sockaddr_in *if_mask = (sockaddr_in*)ifa->ifa_netmask;
+      unsigned long subnet = if_addr->sin_addr.s_addr & if_mask->sin_addr.s_addr;
 
-      if ((if_addr->sin_addr.s_addr & if_mask->sin_addr.s_addr) == net->sin_addr.s_addr) {
+      if (if_addr->sin_addr.s_addr == INADDR_ANY) continue; // can't use a wildcard interface (0.0.0.0)
+
+      if (subnets && subnetsz > 0) {
+        snprintf(subnets, subnetsz, "%s ",SockAddr((unsigned long)ntohl(subnet),0).IPStr());
+        size_t len = strlen(subnets);
+        subnets += len;
+        subnetsz -= len;
+      }
+
+      if (subnet == net->sin_addr.s_addr) {
         memcpy(result, if_addr, sizeof(struct sockaddr_in));
         result->sin_port = 0;
         found = true;

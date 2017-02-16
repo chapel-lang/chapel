@@ -95,6 +95,9 @@ void (*gasnet_client_attach_hook)(void *, uintptr_t) = NULL;
 
 int gasneti_wait_mode = GASNET_WAIT_SPIN;
 
+int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR)) = 1;
+int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR)) = 1;
+int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_PATCH_,GASNET_RELEASE_VERSION_PATCH)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_THREAD_MODEL) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_SEGMENT_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_DEBUG_CONFIG) = 1;
@@ -675,7 +678,11 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
   #endif
 
   int gasneti_pthread_create(gasneti_pthread_create_fn_t *create_fn, pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) {
-    GASNETI_TRACE_PRINTF(I, ("gasneti_pthread_create(%p, %p, %p, %p, %p)", create_fn, thread, attr, start_routine, arg));
+    // There is no portable way to printf a pointer-to-function. This way avoids warnings with -pedantic
+    union { void *vp; gasneti_pthread_create_fn_t *cfp; void *(*sfp)(void *); } ucreate, ustart; 
+    ucreate.cfp = create_fn;
+    ustart.sfp = start_routine;
+    GASNETI_TRACE_PRINTF(I, ("gasneti_pthread_create(%p, %p, %p, %p, %p)", ucreate.vp, (void *)thread, (void *)attr, ustart.vp, arg));
     return GASNETC_PTHREAD_CREATE_OVERRIDE(create_fn, thread, attr, start_routine, arg);
   }
 #endif
@@ -691,8 +698,10 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
   m = myext; while (*mn) { *m = tolower(*mn); m++; mn++; }
   *m = '\0';
   if ( /* is a portable network conduit */
-      (!strcmp("mpi",mycore) && !strcmp("reference",myext)) || 
-      (!strcmp("udp",mycore) && !strcmp("reference",myext))
+         (!strcmp("mpi",mycore) && !strcmp("reference",myext))
+      || (!strcmp("udp",mycore) && !strcmp("reference",myext))
+      || (!strcmp("ofi",mycore) && !strcmp("ofi",myext))
+      || (!strcmp("portals4",mycore) && !strcmp("portals4",myext))
       ) {
     const char *p = GASNETI_CONDUITS;
     char natives[255];
@@ -710,9 +719,11 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
         p += len;
         p += strspn(p,GASNETI_CONDUITS_DELIM);
         /* Ignore the portable conduits */
+        if (!strcmp(name,"smp")) continue;
         if (!strcmp(name,"mpi")) continue;
         if (!strcmp(name,"udp")) continue;
-        if (!strcmp(name,"smp")) continue;
+        if (!strcmp(name,"ofi")) continue;
+        if (!strcmp(name,"portals4")) continue;
       #if !GASNET_SEQ
         /* Ignore conduits that lack thread safety */
         if (!strcmp(name,"shmem")) continue;
@@ -1802,15 +1813,31 @@ extern char *_gasneti_extern_strndup(const char *s, size_t n GASNETI_CURLOCFARG)
 }
 
 #if GASNET_DEBUGMALLOC
-  extern void *(*gasnett_debug_malloc_fn)(size_t sz GASNETI_CURLOCFARG);
-  extern void *(*gasnett_debug_calloc_fn)(size_t N, size_t S GASNETI_CURLOCFARG);
-  extern void (*gasnett_debug_free_fn)(void *ptr GASNETI_CURLOCFARG);
-  void *(*gasnett_debug_malloc_fn)(size_t sz GASNETI_CURLOCFARG) =
+  extern void *(*gasnett_debug_malloc_fn)(size_t sz, const char *curloc);
+  extern void *(*gasnett_debug_calloc_fn)(size_t N, size_t S, const char *curloc);
+  extern void *(*gasnett_debug_realloc_fn)(void *ptr, size_t sz, const char *curloc);
+  extern void (*gasnett_debug_free_fn)(void *ptr, const char *curloc);
+  void *(*gasnett_debug_malloc_fn)(size_t sz, const char *curloc) =
          &_gasneti_extern_malloc;
-  void *(*gasnett_debug_calloc_fn)(size_t N, size_t S GASNETI_CURLOCFARG) =
+  void *(*gasnett_debug_calloc_fn)(size_t N, size_t S, const char *curloc) =
          &_gasneti_extern_calloc;
-  void (*gasnett_debug_free_fn)(void *ptr GASNETI_CURLOCFARG) =
+  void *(*gasnett_debug_realloc_fn)(void *ptr, size_t sz, const char *curloc) =
+        &_gasneti_extern_realloc;
+  void (*gasnett_debug_free_fn)(void *ptr, const char *curloc) =
          &_gasneti_extern_free;
+  /* these only exist with debug malloc */
+  extern void (*gasnett_debug_memcheck_fn)(void *ptr, const char *curloc);
+  extern void (*gasnett_debug_memcheck_one_fn)(const char *curloc);
+  extern void (*gasnett_debug_memcheck_all_fn)(const char *curloc);
+  extern void _gasneti_extern_memcheck(void *ptr, const char *curloc) {
+    _gasneti_memcheck(ptr, curloc, 0);
+  }
+  void (*gasnett_debug_memcheck_fn)(void *ptr, const char *curloc) = 
+        &_gasneti_extern_memcheck;
+  void (*gasnett_debug_memcheck_one_fn)(const char *curloc) = 
+        &_gasneti_memcheck_one;
+  void (*gasnett_debug_memcheck_all_fn)(const char *curloc) =
+        &_gasneti_memcheck_all;
 #endif
 
 /* don't put anything here - malloc stuff must come last */

@@ -96,8 +96,8 @@ k=5 thresh=1e-05 compressed=true
 sum coefficients:
    level  0   #boxes=   1  norm=1.00e+00
 difference coefficients:
-   level  0   #boxes=   1  norm=8.08e-17
-   level  1   #boxes=   2  norm=1.61e-16
-   level  2   #boxes=   4  norm=2.93e-16
+   level  0   #boxes=   1  norm=0.00e+00
+   level  1   #boxes=   2  norm=0.00e+00
+   level  2   #boxes=   4  norm=0.00e+00
 -----------------------------------------------------
 

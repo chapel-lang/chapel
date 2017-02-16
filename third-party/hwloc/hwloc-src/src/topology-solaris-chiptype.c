@@ -1,6 +1,7 @@
 /*
  * Copyright © 2009-2010 Oracle and/or its affiliates.  All rights reserved.
  * Copyright © 2013 Université Bordeaux.  All rights reserved.
+ * Copyright © 2016 Inria.  All rights reserved.
  *
  * $COPYRIGHT$
  *
@@ -52,7 +53,9 @@ static const char* sparc_modes[] = {
     "T1",
     "T2",
     "SPARC64_VII",
-    "ROCK"
+    "ROCK",
+    "T5"
+/* needs T4, T3 and T2+ ? */
 };
 
 /*****************************************************************************
@@ -143,6 +146,10 @@ static void assign_string_value(int index, char* string_val) {
     else if (strncasecmp(string_val, "SUNW,Rock",
                          PICL_PROPNAMELEN_MAX) == 0) {
       dss_chip_mode = 8;
+    }
+    else if (strncasecmp(string_val, "SPARC-T5",
+			 PICL_PROPNAMELEN_MAX) == 0) {
+      dss_chip_mode = 9;
     }
   } else if (index == 8) {  /* ProcessorType */
       strncpy(&dss_chip_type[0], string_val, PICL_PROPNAMELEN_MAX);

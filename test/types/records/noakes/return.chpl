@@ -26,7 +26,7 @@ record Rec
       writeln("Constructing Rec       id:  ", id);
   }
 
-  proc ~Rec()
+  proc deinit()
   {
     if (sDebug == true) then
       writeln("Destroying   Rec       id:  ", id);

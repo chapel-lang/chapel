@@ -1,8 +1,8 @@
-.TH "Topology Detection Configuration and Query" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_configuration" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Topology Detection Configuration and Query \- 
+hwlocality_configuration \- Topology Detection Configuration and Query
 .SS "Data Structures"
 
 .in +1c
@@ -69,9 +69,7 @@ Topology Detection Configuration and Query \-
 .RI "int \fBhwloc_topology_is_thissystem\fP (\fBhwloc_topology_t\fP restrict topology)"
 .br
 .ti -1c
-.RI "const struct 
-.br
-\fBhwloc_topology_support\fP * \fBhwloc_topology_get_support\fP (\fBhwloc_topology_t\fP restrict topology)"
+.RI "const struct \fBhwloc_topology_support\fP * \fBhwloc_topology_get_support\fP (\fBhwloc_topology_t\fP restrict topology)"
 .br
 .ti -1c
 .RI "void \fBhwloc_topology_set_userdata\fP (\fBhwloc_topology_t\fP topology, const void *userdata)"
@@ -122,7 +120,7 @@ Detect the whole PCI hierarchy\&. This flag enables detection of all I/O devices
 Detect instruction caches\&. This flag enables detection of Instruction caches, instead of only Data and Unified caches\&. 
 .SH "Function Documentation"
 .PP 
-.SS "unsigned long hwloc_topology_get_flags (\fBhwloc_topology_t\fPtopology)"
+.SS "unsigned long hwloc_topology_get_flags (\fBhwloc_topology_t\fP topology)"
 
 .PP
 Get OR'ed flags of a topology\&. Get the OR'ed set of \fBhwloc_topology_flags_e\fP of a topology\&.
@@ -133,29 +131,29 @@ the flags previously set with \fBhwloc_topology_set_flags()\fP\&.
 .RE
 .PP
 
-.SS "const struct \fBhwloc_topology_support\fP* hwloc_topology_get_support (\fBhwloc_topology_t\fP restricttopology)"
+.SS "const struct \fBhwloc_topology_support\fP* hwloc_topology_get_support (\fBhwloc_topology_t\fP restrict topology)"
 
 .PP
 Retrieve the topology support\&. Each flag indicates whether a feature is supported\&. If set to 0, the feature is not supported\&. If set to 1, the feature is supported, but the corresponding call may still fail in some corner cases\&.
 .PP
 These features are also listed by hwloc-info --support 
-.SS "void* hwloc_topology_get_userdata (\fBhwloc_topology_t\fPtopology)"
+.SS "void* hwloc_topology_get_userdata (\fBhwloc_topology_t\fP topology)"
 
 .PP
 Retrieve the topology-specific userdata pointer\&. Retrieve the application-given private data pointer that was previously set with \fBhwloc_topology_set_userdata()\fP\&. 
-.SS "int hwloc_topology_ignore_all_keep_structure (\fBhwloc_topology_t\fPtopology)"
+.SS "int hwloc_topology_ignore_all_keep_structure (\fBhwloc_topology_t\fP topology)"
 
 .PP
 Ignore all objects that do not bring any structure\&. Ignore all objects that do not bring any structure: This is equivalent to calling \fBhwloc_topology_ignore_type_keep_structure()\fP for all object types\&. 
-.SS "int hwloc_topology_ignore_type (\fBhwloc_topology_t\fPtopology, \fBhwloc_obj_type_t\fPtype)"
+.SS "int hwloc_topology_ignore_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
 
 .PP
 Ignore an object type\&. Ignore all objects from the given type\&. The bottom-level type \fBHWLOC_OBJ_PU\fP may not be ignored\&. The top-level object of the hierarchy will never be ignored, even if this function succeeds\&. Group objects are always ignored if they do not bring any structure since they are designed to add structure to the topology\&. I/O objects may not be ignored, topology flags should be used to configure their discovery instead\&. 
-.SS "int hwloc_topology_ignore_type_keep_structure (\fBhwloc_topology_t\fPtopology, \fBhwloc_obj_type_t\fPtype)"
+.SS "int hwloc_topology_ignore_type_keep_structure (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
 
 .PP
 Ignore an object type if it does not bring any structure\&. Ignore all objects from the given type as long as they do not bring any structure: Each ignored object should have a single children or be the only child of its parent\&. The bottom-level type \fBHWLOC_OBJ_PU\fP may not be ignored\&. I/O objects may not be ignored, topology flags should be used to configure their discovery instead\&. 
-.SS "int hwloc_topology_is_thissystem (\fBhwloc_topology_t\fP restricttopology)"
+.SS "int hwloc_topology_is_thissystem (\fBhwloc_topology_t\fP restrict topology)"
 
 .PP
 Does the topology context come from this system? 
@@ -168,7 +166,7 @@ Does the topology context come from this system?
 .RE
 .PP
 
-.SS "int hwloc_topology_set_custom (\fBhwloc_topology_t\fPtopology)"
+.SS "int hwloc_topology_set_custom (\fBhwloc_topology_t\fP topology)"
 
 .PP
 Prepare the topology for custom assembly\&. The topology then contains a single root object\&. It must then be built by inserting other topologies with \fBhwloc_custom_insert_topology()\fP or single objects with \fBhwloc_custom_insert_group_object_by_parent()\fP\&. \fBhwloc_topology_load()\fP must be called to finalize the new topology as usual\&.
@@ -183,7 +181,7 @@ On success, the custom component replaces the previously enabled component (if a
 .RE
 .PP
 
-.SS "int hwloc_topology_set_distance_matrix (\fBhwloc_topology_t\fP restricttopology, \fBhwloc_obj_type_t\fPtype, unsignednbobjs, unsigned *os_index, float *distances)"
+.SS "int hwloc_topology_set_distance_matrix (\fBhwloc_topology_t\fP restrict topology, \fBhwloc_obj_type_t\fP type, unsigned nbobjs, unsigned * os_index, float * distances)"
 
 .PP
 Provide a distance matrix\&. Provide the matrix of distances between a set of objects of the given type\&. \fCnbobjs\fP must be at least 2\&. The set may or may not contain all the existing objects of this type\&. The objects are specified by their OS/physical index in the \fCos_index\fP array\&. The \fCdistances\fP matrix follows the same order\&. The distance from object i to object j in the i*nbobjs+j\&.
@@ -196,7 +194,7 @@ Distance matrices are ignored in multi-node topologies\&.
 .RE
 .PP
 
-.SS "int hwloc_topology_set_flags (\fBhwloc_topology_t\fPtopology, unsigned longflags)"
+.SS "int hwloc_topology_set_flags (\fBhwloc_topology_t\fP topology, unsigned long flags)"
 
 .PP
 Set OR'ed flags to non-yet-loaded topology\&. Set a OR'ed set of \fBhwloc_topology_flags_e\fP onto a topology that was not yet loaded\&.
@@ -204,7 +202,7 @@ Set OR'ed flags to non-yet-loaded topology\&. Set a OR'ed set of \fBhwloc_topolo
 If this function is called multiple times, the last invokation will erase and replace the set of flags that was previously set\&.
 .PP
 The flags set in a topology may be retrieved with \fBhwloc_topology_get_flags()\fP 
-.SS "int hwloc_topology_set_fsroot (\fBhwloc_topology_t\fP restricttopology, const char *restrictfsroot_path)"
+.SS "int hwloc_topology_set_fsroot (\fBhwloc_topology_t\fP restrict topology, const char *restrict fsroot_path)"
 
 .PP
 Change the file-system root path when building the topology from sysfs/procfs\&. On Linux system, use sysfs and procfs files as if they were mounted on the given \fCfsroot_path\fP instead of the main file-system root\&. Setting the environment variable HWLOC_FSROOT may also result in this behavior\&. Not using the main file-system root causes \fBhwloc_topology_is_thissystem()\fP to return 0\&.
@@ -226,7 +224,7 @@ On success, the Linux component replaces the previously enabled component (if an
 .RE
 .PP
 
-.SS "int hwloc_topology_set_pid (\fBhwloc_topology_t\fP restricttopology, hwloc_pid_tpid)"
+.SS "int hwloc_topology_set_pid (\fBhwloc_topology_t\fP restrict topology, hwloc_pid_t pid)"
 
 .PP
 Change which process the topology is viewed from\&. On some systems, processes may have different views of the machine, for instance the set of allowed CPUs\&. By default, hwloc exposes the view from the current process\&. Calling \fBhwloc_topology_set_pid()\fP permits to make it expose the topology of the machine from the point of view of another process\&.
@@ -239,7 +237,7 @@ Change which process the topology is viewed from\&. On some systems, processes m
 .RE
 .PP
 
-.SS "int hwloc_topology_set_synthetic (\fBhwloc_topology_t\fP restricttopology, const char *restrictdescription)"
+.SS "int hwloc_topology_set_synthetic (\fBhwloc_topology_t\fP restrict topology, const char *restrict description)"
 
 .PP
 Enable synthetic topology\&. Gather topology information from the given \fCdescription\fP, a space-separated string of numbers describing the arity of each level\&. Each number may be prefixed with a type and a colon to enforce the type of a level\&. If only some level types are enforced, hwloc will try to choose the other types according to usual topologies, but it may fail and you may have to specify more level types manually\&. See also the \fBSynthetic topologies\fP\&.
@@ -256,7 +254,7 @@ On success, the synthetic component replaces the previously enabled component (i
 .RE
 .PP
 
-.SS "void hwloc_topology_set_userdata (\fBhwloc_topology_t\fPtopology, const void *userdata)"
+.SS "void hwloc_topology_set_userdata (\fBhwloc_topology_t\fP topology, const void * userdata)"
 
 .PP
 Set the topology-specific userdata pointer\&. Each topology may store one application-given private data pointer\&. It is initialized to \fCNULL\fP\&. hwloc will never modify it\&.
@@ -264,7 +262,7 @@ Set the topology-specific userdata pointer\&. Each topology may store one applic
 Use it as you wish, after \fBhwloc_topology_init()\fP and until hwloc_topolog_destroy()\&.
 .PP
 This pointer is not exported to XML\&. 
-.SS "int hwloc_topology_set_xml (\fBhwloc_topology_t\fP restricttopology, const char *restrictxmlpath)"
+.SS "int hwloc_topology_set_xml (\fBhwloc_topology_t\fP restrict topology, const char *restrict xmlpath)"
 
 .PP
 Enable XML-file based topology\&. Gather topology information from the XML file given at \fCxmlpath\fP\&. Setting the environment variable HWLOC_XMLFILE may also result in this behavior\&. This file may have been generated earlier with \fBhwloc_topology_export_xml()\fP or lstopo file\&.xml\&.
@@ -286,7 +284,7 @@ On success, the XML component replaces the previously enabled component (if any)
 .RE
 .PP
 
-.SS "int hwloc_topology_set_xmlbuffer (\fBhwloc_topology_t\fP restricttopology, const char *restrictbuffer, intsize)"
+.SS "int hwloc_topology_set_xmlbuffer (\fBhwloc_topology_t\fP restrict topology, const char *restrict buffer, int size)"
 
 .PP
 Enable XML based topology using a memory buffer (instead of a file, as with \fBhwloc_topology_set_xml()\fP)\&. Gather topology information from the XML memory buffer given at \fCbuffer\fP and of length \fCsize\fP\&. This buffer may have been filled earlier with \fBhwloc_topology_export_xmlbuffer()\fP\&.

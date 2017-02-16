@@ -40,6 +40,14 @@ struct lstopo_output {
   unsigned min_pu_textwidth;
 };
 
+struct style {
+  struct stylecolor { int r, g, b; }
+	bg,	/* main box background color */
+	t,	/* main text color */
+	bg2,	/* other box background color */
+	t2;	/* other text color */
+};
+
 struct lstopo_obj_userdata {
   /* original common userdata (we replace the first one with this extended structure) */
   struct hwloc_utils_userdata common;
@@ -49,6 +57,10 @@ struct lstopo_obj_userdata {
   unsigned height;
   unsigned fontsize;
   unsigned gridsize;
+
+  /* custom style */
+  struct style style;
+  unsigned style_set; /* 0x1 if bg set, 0x2 for t, 0x4 for bg2, 0x8 for t2 */
 };
 
 typedef void output_method (struct lstopo_output *output, const char *filename);

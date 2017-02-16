@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -143,16 +143,6 @@ module ChapelLocale {
              else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
     /*
-      :proc:`numCores` is a deprecated predecessor to :proc:`numPUs`,
-      equivalent to `numPUs(logical=true, accessible=true)`.  It will
-      be removed after Chapel 1.13 is released.
-     */
-    proc numCores: int {
-      compilerWarning("numCores is deprecated; please use numPUs() instead");
-      return this.numPUs(logical=true, accessible=true);
-    }
-
-    /*
       This is the maximum task concurrency that one can expect to
       achieve on this locale.  The value is an estimate by the
       runtime tasking layer.  Typically it is the number of physical
@@ -168,7 +158,7 @@ module ChapelLocale {
       stack for any task on the current locale, including the
       caller.
     */
-    const callStackSize: size_t;
+    var callStackSize: size_t;
 
     /*
       Get the integer identifier for the top-level locale the
@@ -267,7 +257,7 @@ module ChapelLocale {
     proc getChildCount() : int {
       _throwPVFCError();
       return 0;
-    }      
+    }
   
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
@@ -297,6 +287,33 @@ module ChapelLocale {
 
     //------------------------------------------------------------------------}
   }
+
+  /* This class is used during initialization and is returned when
+     'here' is used before the locale hierarchy is initialized.
+   */
+  pragma "no doc"
+  class DummyLocale : locale {
+    proc chpl_id() : int {
+      return -1;
+    }
+    proc chpl_localeid() : chpl_localeID_t {
+      return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
+    }
+    proc chpl_name() : string {
+      return "dummy-locale";
+    }
+    proc getChildCount() : int {
+      return 0;
+    }
+    proc getChild(idx:int) : locale {
+      return this;
+    }
+    proc addChild(loc:locale)
+    {
+      halt("addChild on DummyLocale");
+    }
+  }
+
 
   pragma "no doc"
   class AbstractLocaleModel : locale {
@@ -481,11 +498,13 @@ module ChapelLocale {
       // so tell the compiler to not insert them.
       pragma "no copy" pragma "no auto destroy"
       const origLocales => (origRootLocale:RootLocale).getDefaultLocaleArray();
-      var origRL = origLocales._value.theData;
-      var newRL = newRootLocale.getDefaultLocaleArray()._value.theData;
+      assert(origLocales._value.oneDData
+             && newRootLocale.getDefaultLocaleArray()._value.oneDData);
+      var origRL = origLocales._value.theDataChunk(0);
+      var newRL = newRootLocale.getDefaultLocaleArray()._value.theDataChunk(0);
       // We must directly implement a bulk copy here, as the mechanisms
       // for doing so via a whole array assignment are not initialized
-      // yet and copying element-by-element via a for loop is is costly.
+      // yet and copying element-by-element via a for loop is costly.
       __primitive("chpl_comm_array_get",
                   __primitive("array_get", newRL, 0),
                   0 /* locale 0 */,
@@ -497,8 +516,9 @@ module ChapelLocale {
     if locIdx!=0 {
       // We mimic a private Locales array alias by using the move
       // primitive.
-      __primitive("move", Locales,
-                  (rootLocale:RootLocale).getDefaultLocaleArray());
+      pragma "no auto destroy"
+      const tmp => (rootLocale:RootLocale).getDefaultLocaleArray();
+      __primitive("move", Locales, tmp);
     }
   }
 
@@ -509,7 +529,7 @@ module ChapelLocale {
   // representative.
   // The dummy locale provides system-default tasking and memory management.
   pragma "no doc"
-  const dummyLocale = new locale();
+  const dummyLocale = new DummyLocale();
 
   pragma "no doc"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;

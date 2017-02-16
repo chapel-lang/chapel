@@ -20,7 +20,7 @@ for f in DistFiles {
     var base = basename(f);
     var uname:c_string;
     sys_getenv(c"USER", uname);
-    var to = "/tmp/" + uname + base;
+    var to = "/tmp/" + uname:string + base;
     if verbose then writeln("on ", here.id, " copying from ", from, " to ", to);
     copy(from, to);
     f = to;

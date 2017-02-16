@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -29,6 +29,13 @@ typedef void* chpl_comm_nb_handle_t;
 typedef struct {
   int dummy;    // structs must be nonempty
 } chpl_comm_taskPrvData_t;
+
+//
+// Comm layer private area within executeOn argument bundles
+// (bundle.comm)
+typedef struct {
+  int64_t dummy;    // structs must be nonempty
+} chpl_comm_bundleData_t;
 
 #undef HAS_CHPL_CACHE_FNS
 

@@ -1,0 +1,4 @@
+bug: argument capture for coforall in wrong place
+
+Capturing arguments for coforalls should be after
+the iterator yields them.

@@ -361,8 +361,8 @@ arrays as indices within an associative domain.
 \end{future}
 
 \begin{openissue}
-Assignment of an associative domain literal results in the a warning message
-being printed altering the user that whole-domain assignment has been
+Assignment of an associative domain literal results in a warning message
+being printed alerting the user that whole-domain assignment has been
 serialized. This results from the resize operation over associative arrays not
 being parsafe. 
 \end{openissue}
@@ -714,6 +714,9 @@ regular domains); or a tuple of indices or a loop that enumerates
 indices (for irregular domains).  If the domain variable being
 assigned was used to declare arrays, these arrays are reallocated as
 discussed in~\rsec{Association_of_Arrays_to_Domains}.
+
+It is an error to assign a stridable domain to an unstridable domain
+without an explicit conversion.
 
 \begin{example}
 The following three assignments show ways of assigning indices to a

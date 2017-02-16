@@ -1,2 +1,2 @@
 (x = 5)
-extern_class_nl_extern_proc.chpl:12: error: cannot pass non-local extern class to extern procedure
+extern_class_nl_extern_proc.chpl:13: error: cannot pass non-local extern class to extern procedure

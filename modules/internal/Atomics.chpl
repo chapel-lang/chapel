@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -85,23 +85,19 @@ module Atomics {
   extern type atomic__real64;
   extern type atomic__real32;
 
-  extern type atomic_flag;
+  extern type atomic_bool;
 
   extern proc atomic_thread_fence(order:memory_order);
-  extern proc atomic_signal_thread_fence(order:memory_order);
+  extern proc atomic_signal_fence(order:memory_order);
 
-  extern proc atomic_is_lock_free_flag(ref obj:atomic_flag):bool;
-  extern proc atomic_init_flag(ref obj:atomic_flag, value:bool);
-  extern proc atomic_destroy_flag(ref obj:atomic_flag);
-  extern proc atomic_store_explicit_flag(ref obj:atomic_flag, value:bool, order:memory_order);
-  extern proc atomic_load_explicit_flag(ref obj:atomic_flag, order:memory_order):bool;
-  extern proc atomic_exchange_explicit_flag(ref obj:atomic_flag, value:bool, order:memory_order):bool;
-  extern proc atomic_compare_exchange_strong_explicit_flag(ref obj:atomic_flag, expected:bool, desired:bool, order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_flag(ref obj:atomic_flag, expected:bool, desired:bool, order:memory_order):bool;
-  extern proc atomic_flag_test_and_set_explicit(ref obj:atomic_flag, order:memory_order):bool;
-  extern proc atomic_flag_test_and_set(ref obj:atomic_flag):bool;
-  extern proc atomic_flag_clear_explicit(ref obj:atomic_flag, order:memory_order);
-  extern proc atomic_flag_clear(ref obj:atomic_flag);
+  extern proc atomic_is_lock_free_bool(ref obj:atomic_bool):bool;
+  extern proc atomic_init_bool(ref obj:atomic_bool, value:bool);
+  extern proc atomic_destroy_bool(ref obj:atomic_bool);
+  extern proc atomic_store_explicit_bool(ref obj:atomic_bool, value:bool, order:memory_order);
+  extern proc atomic_load_explicit_bool(ref obj:atomic_bool, order:memory_order):bool;
+  extern proc atomic_exchange_explicit_bool(ref obj:atomic_bool, value:bool, order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_bool(ref obj:atomic_bool, expected:bool, desired:bool, order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_bool(ref obj:atomic_bool, expected:bool, desired:bool, order:memory_order):bool;
 
   extern proc atomic_is_lock_free_uint_least8_t(ref obj:atomic_uint_least8_t):bool;
   extern proc atomic_init_uint_least8_t(ref obj:atomic_uint_least8_t, value:uint(8));
@@ -260,7 +256,7 @@ module Atomics {
 
   // these can be called just the way they are:
   //extern proc atomic_thread_fence(order:memory_order);
-  //extern proc atomic_signal_thread_fence(order:memory_order);
+  //extern proc atomic_signal_fence(order:memory_order);
   // but they only handle the local portion of a fence.
   // To include PUTs or GETs in the fence, use atomic_fence instead:
   pragma "no doc"
@@ -271,7 +267,7 @@ module Atomics {
 
   pragma "no doc"
   proc chpl__processorAtomicType(type base_type) type {
-    if base_type==bool then return atomicflag;
+    if base_type==bool then return atomicbool;
     else if base_type==uint(8) then return atomic_uint8;
     else if base_type==uint(16) then return atomic_uint16;
     else if base_type==uint(32) then return atomic_uint32;
@@ -296,9 +292,9 @@ module Atomics {
 
 
   pragma "no doc"
-  inline proc create_atomic_flag():atomic_flag {
-    var ret:atomic_flag;
-    atomic_init_flag(ret, false);
+  inline proc create_atomic_bool():atomic_bool {
+    var ret:atomic_bool;
+    atomic_init_bool(ret, false);
     return ret;
   }
 
@@ -307,13 +303,13 @@ module Atomics {
   /*
      The boolean atomic type.
   */
-  record atomicflag {
+  record atomicbool {
     pragma "no doc"
-    var _v:atomic_flag = create_atomic_flag();
+    var _v:atomic_bool = create_atomic_bool();
 
     pragma "no doc"
-    inline proc ~atomicflag() {
-      atomic_destroy_flag(_v);
+    inline proc deinit() {
+      atomic_destroy_bool(_v);
     }
 
     /*
@@ -321,7 +317,7 @@ module Atomics {
     */
     inline proc read(order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      on this do ret = atomic_load_explicit_flag(_v, order);
+      on this do ret = atomic_load_explicit_bool(_v, order);
       return ret;
     }
 
@@ -329,7 +325,7 @@ module Atomics {
        Stores `value` as the new value.
     */
     inline proc write(value:bool, order:memory_order = memory_order_seq_cst) {
-      on this do atomic_store_explicit_flag(_v, value, order);
+      on this do atomic_store_explicit_bool(_v, value, order);
     }
 
     /*
@@ -337,7 +333,7 @@ module Atomics {
     */
     inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      on this do ret = atomic_exchange_explicit_flag(_v, value, order);
+      on this do ret = atomic_exchange_explicit_bool(_v, value, order);
       return ret;
     }
 
@@ -353,7 +349,7 @@ module Atomics {
     */
     inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      on this do ret = atomic_compare_exchange_weak_explicit_flag(_v, expected, desired, order);
+      on this do ret = atomic_compare_exchange_weak_explicit_bool(_v, expected, desired, order);
       return ret;
     }
 
@@ -363,7 +359,7 @@ module Atomics {
     */
     inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      on this do ret = atomic_compare_exchange_strong_explicit_flag(_v, expected, desired, order);
+      on this do ret = atomic_compare_exchange_strong_explicit_bool(_v, expected, desired, order);
       return ret;
     }
 
@@ -372,7 +368,7 @@ module Atomics {
     */
     inline proc testAndSet(order:memory_order = memory_order_seq_cst) {
       var ret:bool;
-      on this do ret = atomic_flag_test_and_set_explicit(_v, order);
+      on this do ret = atomic_exchange_explicit_bool(_v, true, order);
       return ret;
     }
 
@@ -380,7 +376,7 @@ module Atomics {
        Stores `false` as the new value.
     */
     inline proc clear(order:memory_order = memory_order_seq_cst) {
-      on this do atomic_flag_clear_explicit(_v, order);
+      on this do atomic_store_explicit_bool(_v, false, order);
     }
 
     /*
@@ -391,7 +387,7 @@ module Atomics {
     */
     inline proc waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
       on this {
-        while (atomic_load_explicit_flag(_v, memory_order_relaxed) != val) {
+        while (atomic_load_explicit_bool(_v, memory_order_relaxed) != val) {
           chpl_task_yield();
         }
         // After waiting for the value, do a thread fence
@@ -432,7 +428,7 @@ module Atomics {
   pragma "no doc"
   record atomic_uint8 {
     var _v:atomic_uint_least8_t = create_atomic_uint_least8();
-    inline proc ~atomic_uint8() {
+    inline proc deinit() {
       atomic_destroy_uint_least8_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):uint(8) {
@@ -535,7 +531,7 @@ module Atomics {
   pragma "no doc"
   record atomic_uint16 {
     var _v:atomic_uint_least16_t = create_atomic_uint_least16();
-    inline proc ~atomic_uint16() {
+    inline proc deinit() {
       atomic_destroy_uint_least16_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):uint(16) {
@@ -638,7 +634,7 @@ module Atomics {
   pragma "no doc"
   record atomic_uint32 {
     var _v:atomic_uint_least32_t = create_atomic_uint_least32();
-    inline proc ~atomic_uint32() {
+    inline proc deinit() {
       atomic_destroy_uint_least32_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):uint(32) {
@@ -741,7 +737,7 @@ module Atomics {
   pragma "no doc"
   record atomic_uint64 {
     var _v:atomic_uint_least64_t = create_atomic_uint_least64();
-    inline proc ~atomic_uint64() {
+    inline proc deinit() {
       atomic_destroy_uint_least64_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):uint(64) {
@@ -844,7 +840,7 @@ module Atomics {
   pragma "no doc"
   record atomic_int8 {
     var _v:atomic_int_least8_t = create_atomic_int_least8();
-    inline proc ~atomic_int8() {
+    inline proc deinit() {
       atomic_destroy_int_least8_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):int(8) {
@@ -947,7 +943,7 @@ module Atomics {
   pragma "no doc"
   record atomic_int16 {
     var _v:atomic_int_least16_t = create_atomic_int_least16();
-    inline proc ~atomic_int16() {
+    inline proc deinit() {
       atomic_destroy_int_least16_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):int(16) {
@@ -1050,7 +1046,7 @@ module Atomics {
   pragma "no doc"
   record atomic_int32 {
     var _v:atomic_int_least32_t = create_atomic_int_least32();
-    inline proc ~atomic_int32() {
+    inline proc deinit() {
       atomic_destroy_int_least32_t(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):int(32) {
@@ -1154,7 +1150,7 @@ module Atomics {
     var _v:atomic_int_least64_t = create_atomic_int_least64();
 
     pragma "no doc"
-    inline proc ~atomic_int64() {
+    inline proc deinit() {
       atomic_destroy_int_least64_t(_v);
     }
 
@@ -1367,7 +1363,7 @@ module Atomics {
   pragma "no doc"
   record atomic_real64 {
     var _v:atomic__real64 = create_atomic__real64();
-    inline proc ~atomic_real64() {
+    inline proc deinit() {
       atomic_destroy__real64(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):real(64) {
@@ -1447,7 +1443,7 @@ module Atomics {
   pragma "no doc"
   record atomic_real32 {
     var _v:atomic__real32 = create_atomic__real32();
-    inline proc ~atomic_real32() {
+    inline proc deinit() {
       atomic_destroy__real32(_v);
     }
     inline proc read(order:memory_order = memory_order_seq_cst):real(32) {
@@ -1524,10 +1520,10 @@ module Atomics {
   // We need to explicitly define these for all types because the atomic
   //  types are records and unless explicitly defined, it will resolve
   //  to the normal record version of the function.  Sigh.
-  inline proc =(ref a:atomicflag, b:atomicflag) {
+  inline proc =(ref a:atomicbool, b:atomicbool) {
     a.write(b.read());
   }
-  inline proc =(ref a:atomicflag, b) {
+  inline proc =(ref a:atomicbool, b) {
     compilerError("Cannot directly assign atomic variables");
   }
   inline proc =(ref a:atomic_uint8, b:atomic_uint8) {

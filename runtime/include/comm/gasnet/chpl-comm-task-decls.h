@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,5 +30,14 @@ typedef void* chpl_comm_nb_handle_t;
 typedef struct {
     chpl_cache_taskPrvData_t cache_data;
 } chpl_comm_taskPrvData_t;
+
+//
+// Comm layer private area within executeOn argument bundles
+// (bundle.comm)
+typedef struct {
+  int caller;
+
+  void* ack; // address on caller to post acknowledgement
+} chpl_comm_bundleData_t;
 
 #endif

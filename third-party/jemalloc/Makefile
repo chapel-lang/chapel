@@ -10,6 +10,8 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_JEMALLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
+else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
+CHPL_JEMALLOC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
 endif
 
 CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \
@@ -39,6 +41,16 @@ CHPL_JEMALLOC_CFG_OPTIONS += --with-malloc-conf=purge:decay
 #  level if it finds that one has already been specified.
 #  """
 CHPL_JEMALLOC_EXTRA_CFLAGS += $(CFLAGS)
+
+
+# Tell configure that __builtin_unreachable is broken on osx+gnu by giving it a
+# "cached" value to use. This is a workaround until the problem an be resolved
+# upstream. See https://github.com/jemalloc/jemalloc/pull/504 for more info.
+ifeq ($(CHPL_MAKE_PLATFORM),darwin)
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),gnu)
+CHPL_JEMALLOC_CFG_OPTIONS += je_cv_gcc_builtin_unreachable=no
+endif
+endif
 
 CHPL_JEMALLOC_CFG_OPTIONS += $(CHPL_JEMALLOC_MORE_CFG_OPTIONS)
 

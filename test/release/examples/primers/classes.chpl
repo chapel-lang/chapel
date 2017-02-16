@@ -1,14 +1,13 @@
+// Classes
+
 /*
- * Classes Primer
- *
- * This primer covers the declaration and use of classes.
- *
- */
+   This primer covers the declaration and use of classes.
+*/
 
 //
 // A class is a type that can contain variables and constants, called
 // fields, as well as functions and iterators called methods.  A new
-// class type is declared using the 'class' keyword.
+// class type is declared using the ``class`` keyword.
 //
 class C {
   var a, b: int;
@@ -18,39 +17,39 @@ class C {
 }
 
 //
-// Class variables can be declared using the 'new' keyword to call the
-// constructor for the class C.  The default constructor has an argument for
+// Class variables can be declared using the ``new`` keyword to call the
+// constructor for the class ``C``.  The default constructor has an argument for
 // each field in the class.  Once a class has been constructed, its methods
 // can be called.
 //
-var c = new C(1, 2);
-c.printFields();
+var foo = new C(1, 2);
+foo.printFields();
 
 //
 // Default output is supported so a class can be written by making a
-// call to write or writeln.  Default input is also supported.
+// call to ``write`` or ``writeln``.  Default input is also supported.
 //
-writeln(c);
+writeln(foo);
 
 //
 // Methods can also be defined outside of the class body by prefixing
 // the method name with the class name.  All methods have an implicit
-// 'this' argument that is a reference to the class instance, or
-// object.  The 'this' argument can be used to access a field
-// explicitly.  For example, in the method below, the 'this' argument
-// is used to access the 'b' field which is otherwise shadowed by the
-// 'b' argument.
+// ``this`` argument that is a reference to the class instance, or
+// object.  The ``this`` argument can be used to access a field
+// explicitly.  For example, in the method below, the ``this`` argument
+// is used to access the ``b`` field which is otherwise shadowed by the
+// ``b`` argument.
 //
 proc C.sum_a_b_b(b: int) {
   return a + b + this.b;
 }
-writeln(c.sum_a_b_b(3));
+writeln(foo.sum_a_b_b(3));
 
 //
-// Here, a class named 'D' is declared as a derived class from 'C'.
-// This new class has all of the fields and methods from 'C', plus any
-// additional fields or methods it declares.  The printFields method
-// has the same signature as a method from 'C'--it is overridden.
+// Here, a class named ``D`` is declared as a derived class from ``C``.
+// This new class has all of the fields and methods from ``C``, plus any
+// additional fields or methods it declares.  The ``printFields`` method
+// has the same signature as a method from ``C`` -- it is overridden.
 //
 class D: C {
   var c = 1.2, d = 3.4;
@@ -60,23 +59,23 @@ class D: C {
 }
 
 //
-// The static type of the variable 'c', declared above, is 'C'.
-// Because the class 'D' is derived from 'C', the variable 'c' can
-// reference an object of type 'D'.  If an overridden method such as
-// printFields is called, it is dynamically dispatched to the method
-// with the most specific dynamic type.  The 'delete' keyword can be
-// used to free memory associated with c before pointing it an instance
-// of 'D'.
+// The static type of the variable ``foo``, declared above, is ``C``.
+// Because the class ``D`` is derived from ``C``, the variable ``foo`` can
+// reference an object of type ``D``.  If an overridden method such as
+// ``printFields`` is called, it is dynamically dispatched to the method
+// with the most specific dynamic type.  The ``delete`` keyword can be
+// used to free memory associated with ``foo`` before pointing it an instance
+// of ``D``.
 //
-delete c;
-c = new D(3, 4);
-c.printFields();
-delete c;
+delete foo;
+foo = new D(3, 4);
+foo.printFields();
+delete foo;
 
 //
 // There are a few method names that cause the method to have special
-// meaning.  A method named 'this' allows a class to be indexed like
-// an array.  A method named 'these' allows a class to be iterated
+// meaning.  A method named ``this`` allows a class to be indexed like
+// an array.  A method named ``these`` allows a class to be iterated
 // over.
 //
 class ArrayLike {
@@ -100,7 +99,7 @@ class ArrayLike {
 }
 
 //
-// An 'ArrayLike' object can be indexed like a 4 element array and it
+// This ``ArrayLike`` object can be indexed like a 4 element array and it
 // can be iterated over in a loop.
 //
 var a = new ArrayLike();

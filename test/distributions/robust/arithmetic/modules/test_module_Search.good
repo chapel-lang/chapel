@@ -1,18 +1,18 @@
 Search array
-	LinearSearch: SUCCESS
-	BinarySearch: SUCCESS
+	linearSearch: SUCCESS
+	binarySearch: SUCCESS
 Search aliased array
-	LinearSearch: SUCCESS
-	BinarySearch: SUCCESS
+	linearSearch: SUCCESS
+	binarySearch: SUCCESS
 Search reindexed array
-	LinearSearch: SUCCESS
-	BinarySearch: SUCCESS
+	linearSearch: SUCCESS
+	binarySearch: SUCCESS
 Search rank changed array (2D->1D)
-	LinearSearch: SUCCESS
-	BinarySearch: SUCCESS
+	linearSearch: SUCCESS
+	binarySearch: SUCCESS
 Search rank changed array (3D->1D)
-	LinearSearch: SUCCESS
-	BinarySearch: SUCCESS
+	linearSearch: SUCCESS
+	binarySearch: SUCCESS
 Search rank changed array (4D->1D)
-	LinearSearch: SUCCESS
-	BinarySearch: SUCCESS
+	linearSearch: SUCCESS
+	binarySearch: SUCCESS

@@ -1,5 +1,5 @@
 //
-// Embarassingly Parallel Implementation of STREAM Triad
+// Embarrassingly Parallel Implementation of STREAM Triad
 //
 // This version of the stream benchmark is not as elegant as
 // stream.chpl.  It is a per-locale code with no communication in the
@@ -153,7 +153,7 @@ proc printConfiguration() {
 // Initialize vectors B and C using a random stream of values
 //
 proc initVectors(B, C) {
-  var randlist = new RandomStream(seed);
+  var randlist = new RandomStream(real, seed);
 
   randlist.fillRandom(B);
   randlist.fillRandom(C);

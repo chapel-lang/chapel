@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +25,6 @@
 
 // The type for task private data
 typedef struct {
-  chpl_bool serial_state;      // true: serialize execution
   chpl_comm_taskPrvData_t comm_data;
 } chpl_task_prvData_t;
 

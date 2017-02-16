@@ -1,8 +1,8 @@
-.TH "Topology Creation and Destruction" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_creation" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Topology Creation and Destruction \- 
+hwlocality_creation \- Topology Creation and Destruction
 .SS "Typedefs"
 
 .in +1c
@@ -40,7 +40,7 @@ Topology Creation and Destruction \-
 Topology context\&. To be initialized with \fBhwloc_topology_init()\fP and built with \fBhwloc_topology_load()\fP\&. 
 .SH "Function Documentation"
 .PP 
-.SS "void hwloc_topology_check (\fBhwloc_topology_t\fPtopology)"
+.SS "void hwloc_topology_check (\fBhwloc_topology_t\fP topology)"
 
 .PP
 Run internal checks on a topology structure\&. The program aborts if an inconsistency is detected in the given topology\&.
@@ -58,7 +58,7 @@ The input topology should have been previously loaded with \fBhwloc_topology_loa
 .RE
 .PP
 
-.SS "void hwloc_topology_destroy (\fBhwloc_topology_t\fPtopology)"
+.SS "void hwloc_topology_destroy (\fBhwloc_topology_t\fP topology)"
 
 .PP
 Terminate and free a topology context\&. 
@@ -69,7 +69,7 @@ Terminate and free a topology context\&.
 .RE
 .PP
 
-.SS "int hwloc_topology_dup (\fBhwloc_topology_t\fP *newtopology, \fBhwloc_topology_t\fPoldtopology)"
+.SS "int hwloc_topology_dup (\fBhwloc_topology_t\fP * newtopology, \fBhwloc_topology_t\fP oldtopology)"
 
 .PP
 Duplicate a topology\&. The entire topology structure as well as its objects are duplicated into a new one\&.
@@ -82,7 +82,7 @@ Object userdata is not duplicated since hwloc does not know what it point to\&. 
 .RE
 .PP
 
-.SS "int hwloc_topology_init (\fBhwloc_topology_t\fP *topologyp)"
+.SS "int hwloc_topology_init (\fBhwloc_topology_t\fP * topologyp)"
 
 .PP
 Allocate a topology context\&. 
@@ -98,7 +98,7 @@ Allocate a topology context\&.
 .RE
 .PP
 
-.SS "int hwloc_topology_load (\fBhwloc_topology_t\fPtopology)"
+.SS "int hwloc_topology_load (\fBhwloc_topology_t\fP topology)"
 
 .PP
 Build the actual topology\&. Build the actual topology once initialized with \fBhwloc_topology_init()\fP and tuned with \fBTopology Detection Configuration and Query\fP routines\&. No other routine may be called earlier using this topology context\&.
@@ -118,6 +118,8 @@ Build the actual topology\&. Build the actual topology once initialized with \fB
 On failure, the topology is reinitialized\&. It should be either destroyed with \fBhwloc_topology_destroy()\fP or configured and loaded again\&.
 .PP
 This function may be called only once per topology\&.
+.PP
+The binding of the current thread or process may temporarily change during this call but it will be restored before it returns\&.
 .RE
 .PP
 \fBSee also:\fP

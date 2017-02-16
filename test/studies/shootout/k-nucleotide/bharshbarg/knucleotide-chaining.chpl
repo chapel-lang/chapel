@@ -1,4 +1,5 @@
 use IO;
+use Sort;
 
 extern proc memcpy(x : [], b:c_string, len:int);
 
@@ -58,7 +59,7 @@ class Table {
     }
   }
 
-  proc ~Table() {
+  proc deinit() {
     for n in table do {
       var cur = n;
       while cur != nil {
@@ -117,7 +118,7 @@ proc write_frequencies(data : [] uint(8), size : int) {
   var arr : [1..freqs.size] (int, uint);
   for (a, (k,v)) in zip(arr, freqs) do
     a = (v,k);
-  QuickSort(arr, reverse=true);
+  quickSort(arr, comparator=reverseComparator);
 
   for (f, s) in arr do
     writef("%s %.3dr\n", decode(s, size), (100.0 * f) / sum);
@@ -131,7 +132,7 @@ proc write_count(data : [] uint(8), str : string) {
   delete freqs;
 }
 
-proc string.toBytes() ref {
+proc string.toBytes() {
    var b : [1..this.length] uint(8);
    memcpy(b, this.c_str(), this.length);
    return b;

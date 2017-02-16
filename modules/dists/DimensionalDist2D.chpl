@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -272,9 +272,6 @@ class DimensionalDist2D : BaseDist {
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
   var dataParIgnoreRunningTasks: bool = getDataParIgnoreRunningTasks();
   var dataParMinGranularity: int      = getDataParMinGranularity();
-
-  // for privatization
-  var pid: int = -1;
 }
 
 // class LocDimensionalDist - no local distribution descriptor - for now
@@ -325,9 +322,6 @@ class DimensionalDom : BaseRectangularDom {
 
   // local domain descriptors
   var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
-
-  // for privatization
-  var pid: int = -1;
 }
 
 class LocDimensionalDom {
@@ -353,7 +347,7 @@ class DimensionalArr : BaseArr {
   const dom; // must be a DimensionalDom
 
   // same as 'dom'; for an alias (e.g. a slice), 'dom' of the original array
-  const allocDom; // must be a DimensionalDom
+  const allocDom: dom.type; // must be a DimensionalDom
 
   proc rank param return dom.rank;
   proc targetIds return localAdescs.domain;
@@ -364,9 +358,6 @@ class DimensionalArr : BaseArr {
   // NOTE: 'dom' must be initialized prior to initializing 'localAdescs'
   var localAdescs: [dom.targetIds]
                       LocDimensionalArr(eltType, allocDom.locDdescType);
-
-  // for privatization
-  var pid: int = -1;
 }
 
 class LocDimensionalArr {
@@ -434,10 +425,10 @@ proc newDimensionalDist2D(
 // Check all restrictions/assumptions that must be satisfied by the user
 // when constructing a DimensionalDist2D.
 proc DimensionalDist2D.checkInvariants(): void {
-  proc ensure(param cond:bool, param msg:c_string) {
+  proc ensure(param cond:bool, param msg:string) {
     if !cond then compilerError(msg, 3);
   }
-  ensure(targetLocales.rank == 2, "DimensionalDist2D requires 'targetLocales' to be a 2-dimensional array, got " + targetLocales.rank:c_string + " dimension(s)");
+  ensure(targetLocales.rank == 2, "DimensionalDist2D requires 'targetLocales' to be a 2-dimensional array, got " + targetLocales.rank:string + " dimension(s)");
   ensure(rank == targetLocales.rank, "DimensionalDist2D bug: inconsistent rank");
   ensure(targetLocales.eltType == locale, "DimensionalDist2D requires 'targetLocales' to be an array of locales, got an array of " + targetLocales.eltType:string);
   ensure(targetIds.idxType == locIdT, "DimensionalDist2D currently requires 'idxType' of 'targetLocales.domain' to be " + locIdT:string + ", got " + targetIds.idxType:string);
@@ -545,7 +536,7 @@ proc DimensionalDist2D.dimSpecifier(param dim: int) {
     return di2;
   else
     compilerError("DimensionalDist2D presently supports dimSpecifier()",
-                  " only for dimension 1 or 2, got dim=", dim:c_string);
+                  " only for dimension 1 or 2, got dim=", dim:string);
 }
 
 
@@ -767,7 +758,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
            (rank, idxType:string, stridable));
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
-                  " got ", rank:c_string, " dimensions");
+                  " got ", rank:string, " dimensions");
 
   // todo: ideally, this will not be required;
   // furthermore, DimensionalDist2D shouldn't be specific to idxType.
@@ -981,7 +972,7 @@ proc DimensionalArr.isAlias
 
 // create a new array over this domain
 proc DimensionalDom.dsiBuildArray(type eltType)
-  : DimensionalArr(eltType, this.type, this.type)
+  : DimensionalArr(eltType, this.type)
 {
   _traceddd(this, ".dsiBuildArray");
   if rank != 2 then
@@ -1079,6 +1070,9 @@ proc DimensionalArr.dsiSlice(sliceDef: DimensionalDom) {
   const slicee = this;
   if slicee.rank != sliceDef.rank then
     compilerError("slicing with a different rank");
+
+  if sliceDef.type != slicee.allocDom.type then
+    compilerError("slicing a Dimensional array with a domain of a different type than the array's domain is currently not available");
 
   const result = new DimensionalArr(eltType  = slicee.eltType,
                                     dom      = sliceDef,

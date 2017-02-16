@@ -1,0 +1,3 @@
+calling noPropError
+should not propagate
+no-prop-implicit.chpl:5: error: uncaught error

@@ -23,9 +23,11 @@ createTaskFunctions :
 resolve :
 resolveIntents :
 checkResolved :
+replaceArrayAccessesWithRefTemps :
 processIteratorYields :
 flattenFunctions :
 cullOverReferences :
+lowerErrorHandling :
 callDestructors :
 lowerIterators :
 parallel :
@@ -47,6 +49,7 @@ insertWideReferences :
 optimizeOnClauses :
 addInitCalls :
 insertLineNumbers :
+denormalize :
 codegen :
 makeBinary :
 driverCleanup :

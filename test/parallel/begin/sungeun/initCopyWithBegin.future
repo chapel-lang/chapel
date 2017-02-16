@@ -1,9 +1,0 @@
-bug: Cannot have begin statements in chpl__initCopy() or anything called from it
-
-Due to the implicit sync around main, all begin statements require the
-global _endCount var for this sync, which requires it to be passed
-through all enclosing calls.
-
-This test asserts during the removeUnnecessaryAutoCopyCalls pass as it
-checks to make sure that initCopy and autoCopy take no more than 1
-argument.

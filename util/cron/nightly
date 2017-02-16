@@ -523,14 +523,18 @@ if ($buildruntime == 0) {
     $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $nochangerecipient";
 
-    print "Mailing to minimal group\n";
-    open(MAIL, $mailcommand);
+    if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+        print "Mailing to minimal group\n";
+        open(MAIL, $mailcommand);
 
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
-    print MAIL "Built compiler but not runtime, and did not run tests\n";
-    print MAIL endMailHeader();
-    print MAIL endMailChplenv();
-    close(MAIL);
+        print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
+        print MAIL "Built compiler but not runtime, and did not run tests\n";
+        print MAIL endMailHeader();
+        print MAIL endMailChplenv();
+        close(MAIL);
+    } else {
+        print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+    }
     exit 0;
 }
 
@@ -599,6 +603,12 @@ if ($examples == 1) {
 }
 if ($parnodefile eq "") {
     $testflags = "$testflags $testdirs";
+} else {
+    if ($testdirs ne "") {
+        mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE",
+                 "making directory file", 1, 1);
+        $testflags = "$testflags -dirfile DIRFILE";
+    }
 }
 
 if (!($dist eq "")) {
@@ -703,14 +713,18 @@ if ($runtests == 0) {
     $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
-    open(MAIL, $mailcommand);
+    if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+        open(MAIL, $mailcommand);
 
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
-    print MAIL "Built compiler and runtime but did not run tests\n";
-    print MAIL endMailHeader();
-    print MAIL endMailChplenv();
+        print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
+        print MAIL "Built compiler and runtime but did not run tests\n";
+        print MAIL endMailHeader();
+        print MAIL endMailChplenv();
 
-    close(MAIL);
+        close(MAIL);
+    } else {
+        print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+    }
 
 } else {
 
@@ -816,9 +830,7 @@ if ($runtests == 0) {
     }
 
 # FIXME: Pass correct args here!
-if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
     `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
-}
 
 #
 # analyze memory leaks tests

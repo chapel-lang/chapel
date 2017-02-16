@@ -754,38 +754,7 @@ The design of constructors, especially for generic classes, is
 under development, so the above specification may change.
 \end{openissue}
 
-\section{Where Expressions}
-\label{Where_Expressions}
-\index{where@\chpl{where}}
-\index{expressions!where@\chpl{where}}
-\index{generics!where@\chpl{where}}
-
-The instantiation of a generic function can be constrained by {\em
-where clauses}.  A where clause is specified in the definition of a
-function~(\rsec{Function_Definitions}).  When a function is
-instantiated, the expression in the where clause must be a parameter
-expression and must evaluate to either \chpl{true} or \chpl{false}.
-If it evaluates to \chpl{false}, the instantiation is rejected and the
-function is not a possible candidate for function resolution.
-Otherwise, the function is instantiated.
-\begin{chapelexample}{whereClause.chpl}
-Given two overloaded function definitions
-\begin{chapel}
-proc foo(x) where x.type == int { writeln("int"); }
-proc foo(x) where x.type == real { writeln("real"); }
-\end{chapel}
-\begin{chapelpost}
-foo(3);
-foo(3.14);
-\end{chapelpost}
-\begin{chapeloutput}
-int
-real
-\end{chapeloutput}
-the call foo(3) resolves to the first definition because when the
-second function is instantiated the where clause evaluates to false.
-\end{chapelexample}
-
+\pagebreak
 \section{User-Defined Compiler Diagnostics}
 \label{User_Defined_Compiler_Errors}
 \index{user-defined compiler diagnostics}
@@ -867,6 +836,86 @@ foo.chpl:6: error: foo() called with non-matching types: int != real
 
 \end{chapelexample}
 
+\section{Creating General and Specialized Versions of a Function}
+\label{Creating_General_and_Specialized_Versions_of_a_Function}
+\index{specific instantiations}
+\index{generic specialization}
+\index{generic functions and special versions}
+
+The Chapel language facility supports three mechanisms for using generic
+functions along with concrete functions. These mechanisms allow users to
+create a general generic implementation and also a special implementation
+for specific concrete types.
+
+The first mechanism applies to functions.
+According to the function resolution rules described in
+\rsec{Function_Resolution}, functions accepting concrete arguments are
+selected in preference to those with a totally generic argument. So,
+creating a second version of a generic function that declares a concrete
+type will cause the concrete function to be used where possible:
+
+\begin{chapelexample}{specializeGenericFunction.chpl}
+\begin{chapel}
+proc foo(x) {
+  writeln("in generic foo(x)");
+}
+proc foo(x:int) {
+  writeln("in specific foo(x:int)");
+}
+
+var myReal:real;
+foo(myReal); // outputs "in generic foo(x)"
+var myInt:int;
+foo(myInt); // outputs "in specific foo(x:int)"
+\end{chapel}
+\begin{chapeloutput}
+in generic foo(x)
+in specific foo(x:int)
+\end{chapeloutput}
+\end{chapelexample}
+
+This program will run the generic foo function if the argument is a real,
+but it runs the specific version for int if the argument is an int.
+
+The second mechanism applies when working with methods on generic types.
+When declaring a secondary method, the receiver type can be a
+parenthesized expression. In that case, the compiler will evaluate the
+parenthesized expression at compile time in order to find the concrete
+receiver type. Then, the resolution rules described above will cause the
+concrete method to be selected when applicable. For example:
+
+\begin{chapelexample}{specializeGenericMethod.chpl}
+\begin{chapel}
+
+record MyNode {
+  var field;  // since no type is specified here, MyNode is a generic type
+}
+
+proc MyNode.foo() {
+  writeln("in generic MyNode.foo()");
+}
+proc (MyNode(int)).foo() {
+  writeln("in specific MyNode(int).foo()");
+}
+
+var myRealNode = new MyNode(1.0);
+myRealNode.foo(); // outputs "in generic MyNode.foo()"
+var myIntNode = new MyNode(1);
+myIntNode.foo(); // outputs "in specific MyNode(int).foo()"
+\end{chapel}
+\begin{chapeloutput}
+in generic MyNode.foo()
+in specific MyNode(int).foo()
+\end{chapeloutput}
+\end{chapelexample}
+
+The third mechanism is to use a where clause. Where clauses limit a
+generic method to particular cases. Unlike the previous two cases, a
+where clause can be used to declare special implementation of a function
+that works with some set of types - in other words, the special
+implementation can still be a generic function.  See also
+\rsec{Where_Expressions}.
+
 \section{Example: A Generic Stack}
 \label{Example_Generic_Stack}
 \index{generics!examples!stack}
@@ -890,8 +939,10 @@ record Stack {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
+    var oldItem = top.item;
     top = top.next;
-    return oldTop.item;
+    delete oldTop;
+    return oldItem;
   }
 
   proc isEmpty return top == nil;

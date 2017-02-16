@@ -11,8 +11,6 @@
 #ifndef _GASNET_CORE_HELP_H
 #define _GASNET_CORE_HELP_H
 
-GASNETI_BEGIN_EXTERNC
-
 #if defined(GASNET_PAR) && GASNETC_GNI_MULTI_DOMAIN
   /* Poll without progress functions */
   #define gasnetc_AMPoll() gasnetc_AMPoll_core(GASNETE_THREAD_GET_ALONE)
@@ -59,7 +57,5 @@ GASNETI_BEGIN_EXTERNC
     return gasnetc_AMPoll_internal(GASNETC_AM_POLL_PASS);
   }
 #endif
-
-GASNETI_END_EXTERNC
 
 #endif

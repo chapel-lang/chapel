@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,8 @@
 #include "optimizations.h"
 
 #include "astutil.h"
+#include "stringutil.h"
+#include "stlUtil.h"
 #include "expr.h"
 #include "stmt.h"
 
@@ -38,6 +40,22 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Symbol*                       field,
                           Symbol*                       ref);
 
+class DotInfo {
+  public:
+    bool finalized;
+    bool usesDotLocale;
+    std::vector<SymExpr*> todo;
+    DotInfo();
+};
+DotInfo::DotInfo() : finalized(false), usesDotLocale(false) { }
+
+static std::map<Symbol*, DotInfo*> dotLocaleMap;
+typedef std::map<Symbol*, DotInfo*>::iterator DotInfoIter;
+
+static void computeUsesDotLocale();
+
+static void replaceRecordWrappedRefs();
+
 /************************************* | **************************************
 *                                                                             *
 * Convert reference args into values if they are only read and reading them   *
@@ -49,8 +67,12 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
 void remoteValueForwarding() {
   if (fNoRemoteValueForwarding == false) {
+    inferConstRefs();
+    computeUsesDotLocale();
     Map<Symbol*, Vec<SymExpr*>*> defMap;
     Map<Symbol*, Vec<SymExpr*>*> useMap;
+
+    replaceRecordWrappedRefs();
 
     buildDefUseMaps(defMap, useMap);
 
@@ -58,6 +80,124 @@ void remoteValueForwarding() {
     updateTaskFunctions(defMap, useMap);
 
     freeDefUseMaps(defMap, useMap);
+
+    for (DotInfoIter it = dotLocaleMap.begin(); it != dotLocaleMap.end(); ++it) {
+      delete it->second;
+    }
+    dotLocaleMap.clear();
+  }
+}
+
+//
+// A helper function for replaceRecordWrappedRefs that updates the type and
+// Qualifier for the LHS of the move and adds it to a list of Symbols whose
+// uses may need updating.
+//
+static void fixLHS(CallExpr* move, std::vector<Symbol*>& todo) {
+  Symbol* LHS = toSymExpr(move->get(1))->symbol();
+  if (LHS->isRef()) {
+    LHS->type = LHS->getValType();
+    LHS->qual = QUAL_VAL;
+    todo.push_back(LHS);
+  }
+}
+
+
+//
+// Replaces reference fields to record-wrapped types with QUAL_VAL fields of
+// the same type. This transformation results in less communication as these
+// record-wrapped fields will be bulk-copied across the network such that
+// accessing the 'pid' or '_instance' fields will be a local operation.
+//
+// This is valid because the record-wrapped types (e.g. _array) are immutable.
+// Currently the difference between a ref-array and a val-array is used by the
+// compiler to determine when to copy or destroy these objects. This logic is
+// handled in callDestructors, so by this point the distinction is no longer
+// important.
+//
+// After the fields are transformed, a number of primitives may be used
+// incorrectly. For example, PRIM_GET_MEMBER_VALUE will return a reference if
+// the field is a reference. After this transformation this primitive will
+// return a QUAL_VAL, meaning the LHS of the parent PRIM_MOVE should also
+// become a QUAL_VAL.
+//
+static void replaceRecordWrappedRefs() {
+  std::vector<Symbol*> todo;
+
+  // Changes reference fields with a record-wrapped type into value fields.
+  // Note that this will modify arg bundle classes.
+  forv_Vec(AggregateType, aggType, gAggregateTypes) {
+    if (!aggType->symbol->hasFlag(FLAG_REF)) {
+      for_fields(field, aggType) {
+        if (field->isRef() && isRecordWrappedType(field->getValType())) {
+          field->type = field->getValType();
+          field->qual = QUAL_VAL;
+          todo.push_back(field);
+        }
+      }
+    }
+  }
+
+  // I'd like to be able to just iterate over the uses of tuple fields, but
+  // we don't have a good way of doing that today. The case to worry about
+  // is when we're indexing into a tuple with an integer (param or otherwise).
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+      CallExpr* move = toCallExpr(call->parentExpr);
+      INT_ASSERT(isMoveOrAssign(move));
+
+      if (!call->isRef()) {
+        INT_ASSERT(isRecordWrappedType(call->typeInfo()->getValType()));
+        fixLHS(move, todo);
+      }
+    }
+  }
+
+  // Try and find references that were initialized with the field reference,
+  // and fix them to be QUAL_VAL
+  //
+  // These primitives were chosen because without fixing them we would see
+  // testing failures.
+  //
+  // Currently it is not necessary to insert a PRIM_SET_REFERENCE when passing
+  // a value to a reference-formal because codegen will handle that implicitly.
+  // BHARSH TODO: I'm not sure if that's the desired behavior, but that's what
+  // was done for the initial qualified refs merge.
+  //
+  while (todo.size() > 0) {
+    Symbol* sym = todo.back();
+    todo.pop_back();
+    INT_ASSERT(!sym->isRef() && isRecordWrappedType(sym->type));
+
+    for_SymbolSymExprs(se, sym) {
+      CallExpr* call = toCallExpr(se->parentExpr);
+      INT_ASSERT(call);
+
+      if (call->isPrimitive(PRIM_MOVE)) {
+        if (se == call->get(2)) {
+          fixLHS(call, todo);
+        }
+      }
+      else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+        if (se == call->get(2)) {
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(isMoveOrAssign(move));
+          fixLHS(move, todo);
+        }
+      }
+      else if (call->isPrimitive(PRIM_RETURN)) {
+        FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(fn);
+        fn->retType = sym->type;
+
+        forv_Vec(CallExpr, fncall, *fn->calledBy) {
+          CallExpr* move = toCallExpr(fncall->parentExpr);
+          if (move && isMoveOrAssign(move)) {
+            fixLHS(move, todo);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -116,6 +256,7 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
             }
 
             field->type = vt;
+            field->qual = QUAL_VAL;
           }
         }
       }
@@ -142,7 +283,7 @@ static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
       INT_ASSERT(lhs);
 
-      if (isSafeToDeref(defMap, useMap, field, lhs->var) == false) {
+      if (isSafeToDeref(defMap, useMap, field, lhs->symbol()) == false) {
         retval = false;
         break;
       }
@@ -169,10 +310,6 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
 static bool isSufficientlyConst(ArgSymbol* arg);
 
-static bool isSafeToDerefArg(Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                             Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                             Symbol*                       arg);
-
 static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
                           FnSymbol*                     fn,
                           ArgSymbol*                    arg);
@@ -184,8 +321,7 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   buildSyncAccessFunctionSet(syncSet);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-
-    if (isTaskFun(fn)) {
+    if (fn->hasFlag(FLAG_ON) == true) {
       // Would need to flatten them if they are not already.
       INT_ASSERT(isGlobal(fn));
 
@@ -206,10 +342,25 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             ArgSymbol*                    arg) {
   bool retval = false;
 
+  // Forward array values and references to array values.
+  // This is OK because the array/domain/distribution wrapper
+  // records have fields that do not vary.
+  // It does not matter if the on-body synchronizes.
+  // (The array class, e.g. DefaultRectangularArr, is what varies,
+  //  and it contains a pointer to the actual data, which might
+  //  be replaced with another pointer).
+  // An alternative strategy would be to migrate the contents of the
+  // array header class into the wrapper record - but that would require
+  // quite a lot of code changes, and some other features have entangled
+  // designs (including privatization and the DSI interface).
+  if (isRecordWrappedType(arg->getValType())) {
+    retval = true;
+
+
   // If this function accesses sync vars and the argument is not
   // const, then we cannot remote value forward the argument due
-  // to the fence implied by the sync var accesses */
-  if (syncFns.set_in(fn) && isSufficientlyConst(arg) == false) {
+  // to the fence implied by the sync var accesses
+  } else if (syncFns.set_in(fn) && isSufficientlyConst(arg) == false) {
     retval = false;
 
   // If this argument is a reference atomic type, we need to preserve
@@ -221,9 +372,30 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // to convert atomic formals to ref formals.
   } else if (isAtomicType(arg->type)) {
     retval = false;
-
-  } else if (arg->type->symbol->hasFlag(FLAG_REF)  == true &&
-             isSafeToDerefArg(defMap, useMap, arg) == true) {
+  } else if (arg->isRef()) {
+    // can forward if the actual is a QUAL_CONST_VAL or a ref-to-const
+    DotInfo* info = dotLocaleMap[arg];
+    if (info && info->usesDotLocale) {
+      retval = false;
+    } else if (arg->intent == INTENT_CONST_REF) {
+      if (isClass(arg->getValType())) {
+        // When passing a reference to a class across an on-statement, it will
+        // normally be generated as a wide-reference to a wide-class. When the
+        // reference is a const-ref, this introduces unnecessary communication
+        // to simply get to the wide class pointer. Because the reference is
+        // never written to, we can simply RVF the class pointer.
+        retval = true;
+      } else {
+        retval = arg->hasFlag(FLAG_REF_TO_CONST);
+      }
+    } else {
+      retval = false;
+    }
+  } else if (arg->intent == INTENT_CONST_IN &&
+      !arg->type->symbol->hasFlag(FLAG_REF)) {
+    // BHARSH TODO: This can currently happen when the arg is the lhs of a +=,
+    // but it obviously needs to have the 'ref' intent. One example can be seen
+    // for += between strings.
     retval = true;
 
   } else {
@@ -234,13 +406,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 }
 
 static bool isSufficientlyConst(ArgSymbol* arg) {
-  Type* argValType = arg->getValType();
   bool  retval     = false;
-
-  // Arg is an array, so it's sufficiently constant (because this
-  // refers to the descriptor, not the array's values
-  if (argValType->symbol->hasFlag(FLAG_ARRAY)) {
-    retval = true;
 
   //
   // See if this argument is 'const in'; if it is, it's a good candidate for
@@ -261,8 +427,8 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   //
   //     test/multilocale/bradc/needMultiLocales/remoteReal.chpl
   //
-  } else if (arg->intent == INTENT_CONST_IN  &&
-             !arg->type->symbol->hasFlag(FLAG_REF)) {
+  if (arg->intent == INTENT_CONST_IN  &&
+      !arg->type->symbol->hasFlag(FLAG_REF)) {
     retval = true;
 
   // otherwise, conservatively assume it varies
@@ -273,12 +439,6 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   return retval;
 }
 
-static bool isSafeToDerefArg(Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                             Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                             Symbol*                       arg) {
-  return isSafeToDeref(defMap, useMap, NULL, arg);
-}
-
 static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
                           FnSymbol*                     fn,
                           ArgSymbol*                    arg) {
@@ -286,21 +446,32 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
   Type* prevArgType = arg->type;
 
   arg->type = arg->getValType();
+  // TODO: What should the intent be here?
 
   forv_Vec(CallExpr, call, *fn->calledBy) {
     // Find actual for arg.
     SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
 
-    INT_ASSERT(actual && actual->var->type == prevArgType);
+    INT_ASSERT(actual && actual->getValType() == prevArgType->getValType());
     SET_LINENO(actual);
 
     // Insert de-reference temp of value.
     VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
+    if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
+      deref->addFlag(FLAG_COFORALL_INDEX_VAR);
+    }
+
+    Expr* rhs = NULL;
+    if (actual->isRef()) {
+      rhs = new CallExpr(PRIM_DEREF, new SymExpr(actual->symbol()));
+    } else {
+      rhs = new SymExpr(actual->symbol());
+    }
 
     call->insertBefore(new DefExpr(deref));
     call->insertBefore(new CallExpr(PRIM_MOVE,
                                     deref,
-                                    new CallExpr(PRIM_DEREF, actual->var)));
+                                    rhs));
 
     actual->replace(new SymExpr(deref));
   }
@@ -310,6 +481,7 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
     SET_LINENO(use);
 
     CallExpr* call = toCallExpr(use->parentExpr);
+    if (!call) continue;
 
     if (call && call->isPrimitive(PRIM_DEREF)) {
       call->replace(new SymExpr(arg));
@@ -321,14 +493,38 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
       Expr*      stmt   = use->getStmtExpr();
       VarSymbol* reref = newTemp("rvfRerefTmp", prevArgType);
 
+      Expr* rhs = NULL;
+      if (reref->isRef()) {
+        rhs = new CallExpr(PRIM_ADDR_OF, arg);
+      } else {
+        rhs = new SymExpr(arg);
+      }
+
       stmt->insertBefore(new DefExpr(reref));
       stmt->insertBefore(new CallExpr(PRIM_MOVE,
                                       reref,
-                                      new CallExpr(PRIM_ADDR_OF, arg)));
+                                      rhs));
 
       use->replace(new SymExpr(reref));
     }
   }
+}
+
+
+static bool isSyncSingleMethod(FnSymbol* fn) {
+
+  bool retval = false;
+
+  if (fn->_this != NULL) {
+    Type* valType = fn->_this->getValType();
+
+    if  (isSyncType(valType)   == true ||
+         isSingleType(valType) == true) {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
@@ -341,50 +537,29 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
   Vec<FnSymbol*> syncAccessFunctionVec;
 
   //
-  // Find all functions that directly call sync access primitives.
+  // Find all methods on sync/single vars
   //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
-      if (call->isPrimitive(PRIM_SYNC_INIT) ||
-          call->isPrimitive(PRIM_SYNC_LOCK) ||
-          call->isPrimitive(PRIM_SYNC_UNLOCK) ||
-          call->isPrimitive(PRIM_SYNC_WAIT_FULL) ||
-          call->isPrimitive(PRIM_SYNC_WAIT_EMPTY) ||
-          call->isPrimitive(PRIM_SYNC_SIGNAL_FULL) ||
-          call->isPrimitive(PRIM_SYNC_SIGNAL_EMPTY) ||
-          call->isPrimitive(PRIM_SINGLE_INIT) ||
-          call->isPrimitive(PRIM_SINGLE_LOCK) ||
-          call->isPrimitive(PRIM_SINGLE_UNLOCK) ||
-          call->isPrimitive(PRIM_SINGLE_WAIT_FULL) ||
-          call->isPrimitive(PRIM_SINGLE_SIGNAL_FULL) ||
-          call->isPrimitive(PRIM_WRITEEF) ||
-          call->isPrimitive(PRIM_WRITEFF) ||
-          call->isPrimitive(PRIM_WRITEXF) ||
-          call->isPrimitive(PRIM_READFE) ||
-          call->isPrimitive(PRIM_READFF) ||
-          call->isPrimitive(PRIM_READXX) ||
-          call->isPrimitive(PRIM_SYNC_IS_FULL) ||
-          call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
-          call->isPrimitive(PRIM_SINGLE_READFF) ||
-          call->isPrimitive(PRIM_SINGLE_READXX) ||
-          call->isPrimitive(PRIM_SINGLE_IS_FULL)) {
-        if (!parent->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
-            !syncAccessFunctionSet.set_in(parent)) {
-          syncAccessFunctionSet.set_add(parent);
-          syncAccessFunctionVec.add(parent);
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (isSyncSingleMethod(fn)) {
+      if (!fn->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
+          !syncAccessFunctionSet.set_in(fn)) {
+        syncAccessFunctionSet.set_add(fn);
+        syncAccessFunctionVec.add(fn);
 #ifdef DEBUG_SYNC_ACCESS_FUNCTION_SET
-          printf("%s:%d %s\n",
-                 parent->getModule()->name,
-                 parent->linenum(),
-                 parent->name);
+        printf("%s:%d %s\n",
+               fn->getModule()->name,
+               fn->linenum(),
+               fn->name);
 #endif
-        }
       }
     }
   }
 
   //
-  // Find all functions that indirectly call sync access primitives.
+  // Find all functions that indirectly call methods on sync/single vars. Note
+  // that syncAccessFunctionSet is just used for fast membership check, while
+  // syncAccessFunctionVec is trickily appended to while iterating over it so
+  // that we look at callsites of newly discovered functions.
   //
   forv_Vec(FnSymbol, fn, syncAccessFunctionVec) {
     forv_Vec(CallExpr, caller, *fn->calledBy) {
@@ -510,7 +685,11 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     if (call->isResolved()) {
       ArgSymbol* arg = actual_to_formal(use);
 
-      retval = isSafeToDeref(defMap, useMap, field, arg, visited);
+      if (arg->intent == INTENT_CONST_REF) {
+        retval = true;
+      } else {
+        retval = isSafeToDeref(defMap, useMap, field, arg, visited);
+      }
 
     } else if (call->isPrimitive(PRIM_MOVE)) {
       SymExpr* newRef = toSymExpr(call->get(1));
@@ -520,7 +699,7 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       retval = isSafeToDeref(defMap,
                              useMap,
                              field,
-                             newRef->var,
+                             newRef->symbol(),
                              visited);
 
     } else if (call->isPrimitive(PRIM_SET_MEMBER) == true &&
@@ -529,7 +708,7 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
       INT_ASSERT(se);
 
-      if (se->var != field) {
+      if (se->symbol() != field) {
         retval = false;
       }
 
@@ -544,3 +723,97 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   return retval;
 }
 
+static bool computeDotLocale(Symbol* sym) {
+  INT_ASSERT(sym->isRef());
+
+  DotInfo* info = dotLocaleMap[sym];
+
+  if (info == NULL) {
+    // No uses of this symbol, so definitely no uses of dot-locale
+    return false;
+  } else if (info->finalized) {
+    return info->usesDotLocale;
+  }
+
+  bool retval = false;
+
+  while (!info->todo.empty() && !retval) {
+    SymExpr* use = info->todo.back();
+    info->todo.pop_back();
+
+    CallExpr* call = toCallExpr(use->parentExpr);
+    INT_ASSERT(call);
+    CallExpr* parent = toCallExpr(call->parentExpr);
+
+    if (call->isResolved()) {
+      ArgSymbol* form = actual_to_formal(use);
+      if (form->isRef() && computeDotLocale(form)) retval = true;
+    } else if (parent && isMoveOrAssign(parent)) {
+      // If something copies this reference, we need to see if the new
+      // reference also uses .locale
+      Symbol* LHS = toSymExpr(parent->get(1))->symbol();
+      if (call->isPrimitive(PRIM_ADDR_OF) ||
+          call->isPrimitive(PRIM_SET_REFERENCE)) {
+        if (computeDotLocale(LHS)) retval = true;
+      } else if (call->isPrimitive(PRIM_GET_MEMBER) ||
+                 call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                 call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                 call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+        // Check if the field is used in a .locale
+        if (LHS->isRef() && use == call->get(2) && computeDotLocale(LHS)) {
+          retval = true;
+        }
+      } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+                 call->isPrimitive(PRIM_WIDE_GET_NODE)) {
+        retval = true;
+      }
+    } else if (call->isPrimitive(PRIM_MOVE)) {
+      SymExpr* LHS = toSymExpr(call->get(1));
+      if (LHS->isRef() && use != LHS && computeDotLocale(LHS->symbol())) retval = true;
+    } else if (call->isPrimitive(PRIM_SET_MEMBER) && use == call->get(3)) {
+      // See if the field we're setting may use .locale
+      // This could be improved by only looking at the base object's instance,
+      // but that's much more complicated.
+      SymExpr* member = toSymExpr(call->get(2));
+      if (member->isRef() && computeDotLocale(member->symbol())) {
+        retval = true;
+      }
+    } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+      // BHARSH 2016-11-02: We could try to handle the homogeneous tuple case
+      // by iterating over all of the fields, but to keep this initial
+      // implementation simple I'm tempted to just return true and leave this
+      // case for later.
+      retval = true;
+    }
+  }
+
+  info->finalized = true;
+  info->usesDotLocale = retval;
+
+  return retval;
+}
+
+static void computeUsesDotLocale() {
+  std::vector<Symbol*> todo;
+
+  forv_Vec(SymExpr, se, gSymExprs) {
+    if (!(isVarSymbol(se->symbol()) || isArgSymbol(se->symbol()))) continue;
+    if (!se->isRef()) continue;
+
+    DotInfo* info = NULL;
+    DotInfoIter it = dotLocaleMap.find(se->symbol());
+    if (it == dotLocaleMap.end()) {
+      info = new DotInfo();
+      todo.push_back(se->symbol());
+      dotLocaleMap[se->symbol()] = info;
+    } else {
+      info = it->second;
+    }
+
+    info->todo.push_back(se);
+  }
+
+  for_vector(Symbol, sym, todo) {
+    computeDotLocale(sym);
+  }
+}

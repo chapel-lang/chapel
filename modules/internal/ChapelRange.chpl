@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -84,9 +84,9 @@
 
  */
 module ChapelRange {
-  
-  use Math; // for abs().
-  
+
+  use Math;
+
   // Turns on range iterator debugging.
   pragma "no doc"
   config param debugChapelRange = false;
@@ -197,9 +197,9 @@ module ChapelRange {
   // for debugging
   pragma "no doc"
   proc range.displayRepresentation(msg: string = ""): void {
-    writeln(msg, "(", idxType:string, ",", boundedType, ",", stridable,
-            " : ", low, ",", high, ",", stride, ",",
-            if aligned then alignment:string else "?", ")");
+    chpl_debug_writeln(msg, "(", idxType:string, ",", boundedType, ",", stridable,
+                       " : ", low, ",", high, ",", stride, ",",
+                       if aligned then alignment:string else "?", ")");
   }
 
   //////////////////////////////////////////////////////////////////////////////////
@@ -928,7 +928,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       if chpl_need_to_check_step(step, strType) &&
          step > (max(strType):step.type)
       then
-        __primitive("chpl_error", c"the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string);
+        __primitive("chpl_error", ("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string):c_string);
     }
   }
 
@@ -969,6 +969,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
    *
    * because the parser renames the routine since 'by' is a keyword.
    */
+  pragma "no doc"
   inline proc by(r, step) {
     if !isRange(r) then
       compilerError("the first argument of the 'by' operator is not a range");
@@ -985,6 +986,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
    */
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
+  pragma "no doc"
   inline proc by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step:r.strType);
@@ -1640,7 +1642,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
     }
     if debugChapelRange {
-      writeln("*** In range standalone iterator:");
+      chpl_debug_writeln("*** In range standalone iterator:");
     }
 
     const len = this.length;
@@ -1648,7 +1650,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                       1 else _computeNumChunks(len);
 
     if debugChapelRange {
-      writeln("*** RI: length=", len, " numChunks=", numChunks);
+      chpl_debug_writeln("*** RI: length=", len, " numChunks=", numChunks);
     }
 
     if numChunks <= 1 {
@@ -1689,7 +1691,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
     if debugChapelRange then
-      writeln("*** In range leader:"); // ", this);
+      chpl_debug_writeln("*** In range leader:"); // ", this);
     const numSublocs = here.getChildCount();
 
     if localeModelHasSublocales && numSublocs != 0 {
@@ -1710,11 +1712,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                                                   minIndicesPerTask,
                                                   len);
       if debugDataParNuma {
-        writeln("### numSublocs = ", numSublocs, "\n" +
-                "### numTasksPerSubloc = ", numSublocTasks, "\n" +
-                "### ignoreRunning = ", ignoreRunning, "\n" +
-                "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
-                "### numChunks = ", numChunks);
+        chpl_debug_writeln("### numSublocs = ", numSublocs, "\n" +
+                           "### numTasksPerSubloc = ", numSublocTasks, "\n" +
+                           "### ignoreRunning = ", ignoreRunning, "\n" +
+                           "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+                           "### numChunks = ", numChunks);
       }
         
       if numChunks == 1 {
@@ -1724,8 +1726,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           local on here.getChild(chunk) {
             if debugDataParNuma {
               if chunk!=chpl_getSubloc() then
-                writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
-                        ", on "+chpl_getSubloc()+") ***");
+                chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be "+
+                                   chunk+", on "+chpl_getSubloc()+") ***");
             }
             const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
             const locRange = lo..hi;
@@ -1741,8 +1743,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
             coforall core in 0..#numTasks {
               const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
               if debugDataParNuma {
-                writeln("### chunk = ", chunk, "  core = ", core, "  " +
-                        "locRange = ", locRange, "  coreRange = ", low..high);
+                chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  " +
+                                   "locRange = ", locRange, "  coreRange = ", low..high);
               }
               yield (low..high,);
             }
@@ -1757,8 +1759,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   
       if debugChapelRange
       {
-        writeln("*** RI: length=", v, " numChunks=", numChunks);
-        writeln("*** RI: Using ", numChunks, " chunk(s)");
+        chpl_debug_writeln("*** RI: length=", v, " numChunks=", numChunks);
+        chpl_debug_writeln("*** RI: Using ", numChunks, " chunk(s)");
       }
   
       if numChunks == 1 then
@@ -1769,7 +1771,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         {
           const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
           if debugChapelRange then
-            writeln("*** RI: tuple = ", (lo..hi,));
+            chpl_debug_writeln("*** RI: tuple = ", (lo..hi,));
           yield (lo..hi,);
         }
       }
@@ -1791,12 +1793,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       compilerError("iteration over a range with multi-dimensional iterator");
   
     if debugChapelRange then
-      writeln("In range follower code: Following ", followThis);
+      chpl_debug_writeln("In range follower code: Following ", followThis);
   
     var myFollowThis = followThis(1);
   
     if debugChapelRange then
-      writeln("Range = ", myFollowThis);
+      chpl_debug_writeln("Range = ", myFollowThis);
   
     if ! this.hasFirst() {
       if this.isEmpty() {
@@ -1837,7 +1839,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         }
 
         if debugChapelRange then
-          writeln("Expanded range = ",r);
+          chpl_debug_writeln("Expanded range = ",r);
 
         for i in r do
           yield i;
@@ -1854,7 +1856,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         }
 
         if debugChapelRange then
-          writeln("Expanded range = ",r);
+          chpl_debug_writeln("Expanded range = ",r);
 
         for i in r do
           yield i;
@@ -1873,7 +1875,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       {
         const r = first .. by stride:strType;
         if debugChapelRange then
-          writeln("Expanded range = ",r);
+          chpl_debug_writeln("Expanded range = ",r);
       
         for i in r do
           yield i;
@@ -1882,7 +1884,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       {
         const r = .. first by stride:strType;
         if debugChapelRange then
-          writeln("Expanded range = ",r);
+          chpl_debug_writeln("Expanded range = ",r);
       
         for i in r do
           yield i;
@@ -2098,8 +2100,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var U = (one, zero, u);
     var V = (zero, one, v);
   
-    while V(3) != 0 do
-      (U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
+    while V(3) != 0 {
+      // This is a workaround for a bug.
+      // The previous version was:
+      //(U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
+      var oldU = U;
+      var q = U(3)/V(3);
+      U = V;
+      V = oldU - V * (q, q, q);
+    }
   
     return (U(3), U(1));
   }

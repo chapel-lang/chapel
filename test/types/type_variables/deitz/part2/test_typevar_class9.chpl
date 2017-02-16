@@ -8,7 +8,7 @@ class foo {
   type t;
   var  x : bar(t) = new bar(t);
 
-  proc ~foo() {
+  proc deinit() {
     delete x;
   }
 

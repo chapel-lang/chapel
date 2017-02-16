@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -22,9 +22,11 @@
 
 #include "symbol.h"
 #include "type.h"
+#include "expr.h"
 
 IntentTag blankIntentForType(Type* t);
 IntentTag concreteIntent(IntentTag existingIntent, Type* t);
+IntentTag concreteIntentForArg(ArgSymbol* arg);
 void resolveArgIntent(ArgSymbol* arg);
 
 #endif

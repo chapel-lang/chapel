@@ -1,2 +1,2 @@
-multipleInits.chpl:9: error: multiple initializations of field "f2" detected
-multipleInits.chpl:8:  note: previous initialization(s) were here
+multipleInits.chpl:6: In initializer:
+multipleInits.chpl:9: error: multiple initializations of field "f2"

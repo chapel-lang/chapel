@@ -102,12 +102,11 @@ load_target_compiler ${COMPILER}
 
 # Do minor fixups
 case $COMPILER in
-    cray)
+    cray|intel|gnu)
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
-        module swap craype-network-aries craype-target-local_host
-        ;;
-    intel|gnu)
+        module unload $(module list -t 2>&1 | grep craype-network)
+        module load craype-network-none
         ;;
     pgi)
         # EJR (04/07/16): Since the default pgi was upgraded from 15.10.0 to
@@ -122,11 +121,13 @@ case $COMPILER in
         ;;
 esac
 
-#libsci_module=$(module list -t 2>&1 | grep libsci)
-#if [ -n "${libsci_module}" ] ; then
-#    log_info "Unloading cray-libsci module: ${libsci_module}"
-#    module unload $libsci_module
-#fi
+if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
+    libsci_module=$(module list -t 2>&1 | grep libsci)
+    if [ -n "${libsci_module}" ] ; then
+        log_info "Unloading cray-libsci module: ${libsci_module}"
+        module unload $libsci_module
+    fi
+fi
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 
@@ -149,6 +150,13 @@ my_arch=$($CHPL_HOME/util/chplenv/chpl_arch.py 2> /dev/null)
 if [ "${my_arch}" = "none" ] ; then
     log_info "Loading craype-shanghai module to stifle chpl_arch.py warnings."
     module load craype-shanghai
+fi
+
+# no cpu targeting module supports the esxbld CPUs, so force x86-64
+if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
+    module unload $(module list -t 2>&1| grep craype-| grep -v craype-network |grep -v craype-target)
+    log_info "Setting CRAY_CPU_TARGET to x86-64 to stifle chpl_arch.py warnings."
+    export CRAY_CPU_TARGET=x86-64
 fi
 
 if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then

@@ -162,10 +162,13 @@ module dataflow_block_cholesky {
 	for (AJI_rows, A_later_K_rows) 
           in symmetric_2_by_2_block_partition (AJKJK_row_indices) 
 	  do {
-	    begin {
+	    begin with (in AII_rc_indices,
+                        in AII_rc_indices,
+                        in AJI_rows,
+                        in A_later_K_rows) {
 	      compute_subdiagonal_block_launch_Schur_complement
-		( A (AII_rc_indices, AII_rc_indices), 
-		  A (AJI_rows, AII_rc_indices),
+		( AII_rc_indices, AII_rc_indices,
+		  AJI_rows, AII_rc_indices,
 		  A, A_later_K_rows );
 	    }
 	  }
@@ -196,17 +199,17 @@ module dataflow_block_cholesky {
 
 
     proc compute_subdiagonal_block_launch_Schur_complement 
-      ( LII : [], LJlaterKI : [], A : [], later_rows ) {
+      ( LII_rows, LII_cols, LJlaterKI_rows, LJlaterKI_cols, A : [], later_rows ) {
 
       // block indices for offdiagonal block 
 
-      const I = LJlaterKI.domain.dim(1).low,
-            J = LJlaterKI.domain.dim(2).low;
+      const I = LJlaterKI_rows.low,
+            J = LJlaterKI_cols.low;
 
-      const AJJ_cols     = LII.domain.dim (2);
+      const AJJ_cols     = LII_cols;
 
-      assert ( AJJ_cols == LII.domain.dim (1) && 
-               AJJ_cols == LJlaterKI.domain.dim (2) );
+      assert ( AJJ_cols == LII_rows &&
+               AJJ_cols == LJlaterKI_cols );
 
       // wait for all Schur complement modifications 
       // to be made to this subdiagonal block
@@ -215,7 +218,7 @@ module dataflow_block_cholesky {
  
       // apply the inverse of the diagonal block to the subdiagonal block
 
-      transposed_block_triangular_solve ( LII, LJlaterKI );
+      transposed_block_triangular_solve ( A(LII_rows, LII_cols), A(LJlaterKI_rows, LJlaterKI_cols) );
 
       // this block of the factorization is complete
 
@@ -223,16 +226,23 @@ module dataflow_block_cholesky {
 
       // modify the related diagonal block of the Schur complement
 
-      begin { modify_Schur_complement_diagonal_block ( LJlaterKI, A ); }
+      begin with (in LJlaterKI_rows, in LJlaterKI_cols) {
+        modify_Schur_complement_diagonal_block ( LJlaterKI_rows,
+                                                 LJlaterKI_cols,
+                                                 A );
+      }
 
       // spawn rest of the Schur complement tasks for the symmetric reduced 
       // matrix.  For each K > J, compute A (K,J) -= L(K,I) * L(J,I)^T
 
       for AKJ_rows in vector_block_partition (later_rows) do {
 
-	begin {
+	begin with (in AKJ_rows,
+                    in AJJ_cols,
+                    in LJlaterKI_rows,
+                    in LJlaterKI_cols) {
 	  modify_Schur_complement_off_diagonal_block 
-	      ( A (AKJ_rows, AJJ_cols ), LJlaterKI, A );
+	      ( AKJ_rows, AJJ_cols,  LJlaterKI_rows, LJlaterKI_cols, A );
 	}
       }
     }
@@ -244,13 +254,11 @@ module dataflow_block_cholesky {
     // to a diagonal subblock.
     // ====================================================
    
-    proc modify_Schur_complement_diagonal_block ( LJJ : [], A : [] ) {
+    proc modify_Schur_complement_diagonal_block ( LJJ_rows, LJJ_cols, A : [] ) {
 
       // block indices for offdiagonal block 
 
-      const LJJ_rows = LJJ.domain.dim (1),
-            LJJ_cols = LJJ.domain.dim (2),
-            J      = LJJ_rows.low;
+      const J      = LJJ_rows.low;
 
       // acquire lock for target block
 
@@ -264,7 +272,7 @@ module dataflow_block_cholesky {
 
       for i in LJJ_rows do
         for j in LJJ_rows (..i) do {
-          A (i,j) -= + reduce [k in LJJ_cols] LJJ (i,k) * LJJ (j,k);
+          A (i,j) -= + reduce [k in LJJ_cols] A (i,k) * A (j,k);
         }
 
       // check if this is the final modification to this block
@@ -292,19 +300,15 @@ module dataflow_block_cholesky {
     // ====================================================
 
     proc modify_Schur_complement_off_diagonal_block 
-                                             ( LKI : [], LJI : [], A : [] ) {
+                                             ( LKI_rows, LKI_cols, LJI_rows, LJI_cols, A : [] ) {
 
       // block indices for pair of offdiagonal blocks 
-
-      const LKI_rows = LKI.domain.dim(1),
-            LKI_cols = LKI.domain.dim(2),
-            LJI_rows = LJI.domain.dim(1);
 
       const K = LKI_rows.low,
             I = LKI_cols.low,
             J = LJI_rows.low;
 
-      assert ( I == LJI.domain.dim(2).low );
+      assert ( I == LJI_cols.low );
  
       // wait for the second off-diagonal block to become ready
 
@@ -320,7 +324,7 @@ module dataflow_block_cholesky {
 
       for i in LKI_rows do
         for j in LJI_rows do {
-          A (i,j) -= + reduce [k in LKI_cols] LKI (i,k) * LJI (j,k);
+          A (i,j) -= + reduce [k in LKI_cols] A (i,k) * A (j,k);
         }
 
       // check if this is the final modification to this block

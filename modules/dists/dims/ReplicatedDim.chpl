@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,7 @@
 //
 
 use DimensionalDist2D;
+use RangeChunk only ;
 
 /*
 This Replicated dimension specifier is for use with the
@@ -357,9 +358,8 @@ proc Replicated1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTas
   : dsiMyDensifiedRangeType1d(globDD)
 {
   type IT = globDD.idxType;
-  const (startIx, endIx) = _computeChunkStartEnd(locWholeR.length,
-                                                 numTasks:IT, taskid:IT+1);
-  return (startIx:IT - 1) .. (endIx:IT - 1);
+  const (start, end) = chunkOrder(locWholeR, numTasks:IT, taskid:IT);
+  return (start:IT)..(end:IT);
 }
 
 // REQ the range type returned/yielded by dsiMyDensifiedRangeForSingleTask1d()

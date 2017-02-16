@@ -44,7 +44,7 @@ class LevelVariable {
   //| >    destructor    | >
   //|/...................|/
 
-  proc ~LevelVariable ()
+  proc deinit ()
   {
     for grid_var in grid_variables do delete grid_var;
   }
@@ -78,9 +78,8 @@ class LevelVariable {
   proc this(
     grid: Grid, 
     D: domain(dimension, stridable=true)) 
-  ref {
-    var alias => grid_variables(grid).value(D);
-    return alias;
+  {
+    return grid_variables(grid).value(D);
   }
   // /|'''''''''''''''''''''/|
   //< |    this methods    < |

@@ -220,7 +220,7 @@ inline proc initFreeSurface(freeSurface) {
                                     else freeSurface.rank*freeSurface.idxType;
 
     for (a,b) in zip(sortedSurface, freeSurface) do a = b;
-    QuickSort(sortedSurface);
+    quickSort(sortedSurface);
 
     writeln(size);
     for b in sortedSurface do
@@ -286,7 +286,7 @@ inline proc elemIdxTo3D(ind) {
 }
 
 /* Turn a 2D node index into a 3D index by inserting the value
-   'newval' in diemnsion 'newdim' */
+   'newval' in dimension 'newdim' */
 
 inline proc node2DToIdx(param rank, ij, newdim, newval) {
   var ijk: 3*int;

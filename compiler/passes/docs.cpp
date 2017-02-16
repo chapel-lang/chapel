@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -306,8 +306,8 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   // based on the install path in the third-party/chpl-venv/ dir.
 
   const char * venvDir = astr(
-    CHPL_HOME, "/third-party/chpl-venv/install/",
-    CHPL_HOST_PLATFORM, "/chpl-virtualenv");
+    CHPL_HOME, "/third-party/chpl-venv/install/", CHPL_HOST_PLATFORM,
+    "/py", getChplPythonVersion().c_str(), "/chpl-virtualenv");
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
 

@@ -1,0 +1,1 @@
+forStudents/Image.chpl:30: error: pixelType 'int(8)' isn't big enough to store 8 bits per color

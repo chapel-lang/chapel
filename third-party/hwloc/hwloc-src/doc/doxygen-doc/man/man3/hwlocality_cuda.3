@@ -1,8 +1,8 @@
-.TH "Interoperability with the CUDA Driver API" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_cuda" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Interoperability with the CUDA Driver API \- 
+hwlocality_cuda \- Interoperability with the CUDA Driver API
 .SS "Functions"
 
 .in +1c
@@ -27,7 +27,7 @@ Interoperability with the CUDA Driver API \-
 This interface offers ways to retrieve topology information about CUDA devices when using the CUDA Driver API\&. 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_cuda_get_device_cpuset (\fBhwloc_topology_t\fPtopology, CUdevicecudevice, \fBhwloc_cpuset_t\fPset)\fC [inline]\fP, \fC [static]\fP"
+.SS "static int hwloc_cuda_get_device_cpuset (\fBhwloc_topology_t\fP topology, CUdevice cudevice, \fBhwloc_cpuset_t\fP set)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the CPU set of logical processors that are physically close to device \fCcudevice\fP\&. Return the CPU set describing the locality of the CUDA device \fCcudevice\fP\&.
@@ -37,7 +37,7 @@ Topology \fCtopology\fP and device \fCcudevice\fP must match the local machine\&
 The function only returns the locality of the device\&. If more information about the device is needed, OS objects should be used instead, see \fBhwloc_cuda_get_device_osdev()\fP and \fBhwloc_cuda_get_device_osdev_by_index()\fP\&.
 .PP
 This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset\&. 
-.SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_osdev (\fBhwloc_topology_t\fPtopology, CUdevicecudevice)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_osdev (\fBhwloc_topology_t\fP topology, CUdevice cudevice)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the hwloc OS device object corresponding to CUDA device \fCcudevice\fP\&. Return the hwloc OS device object that describes the given CUDA device \fCcudevice\fP\&. Return NULL if there is none\&.
@@ -50,7 +50,7 @@ The corresponding hwloc PCI device may be found by looking at the result parent 
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_osdev_by_index (\fBhwloc_topology_t\fPtopology, unsignedidx)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_osdev_by_index (\fBhwloc_topology_t\fP topology, unsigned idx)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the hwloc OS device object corresponding to the CUDA device whose index is \fCidx\fP\&. Return the OS device object describing the CUDA device whose index is \fCidx\fP\&. Return NULL if there is none\&.
@@ -65,11 +65,11 @@ This function is identical to \fBhwloc_cudart_get_device_osdev_by_index()\fP\&.
 .RE
 .PP
 
-.SS "static int hwloc_cuda_get_device_pci_ids (\fBhwloc_topology_t\fPtopology, CUdevicecudevice, int *domain, int *bus, int *dev)\fC [inline]\fP, \fC [static]\fP"
+.SS "static int hwloc_cuda_get_device_pci_ids (\fBhwloc_topology_t\fP topology, CUdevice cudevice, int * domain, int * bus, int * dev)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Return the domain, bus and device IDs of the CUDA device \fCcudevice\fP\&. Device \fCcudevice\fP must match the local machine\&. 
-.SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_pcidev (\fBhwloc_topology_t\fPtopology, CUdevicecudevice)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_pcidev (\fBhwloc_topology_t\fP topology, CUdevice cudevice)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the hwloc PCI device object corresponding to the CUDA device \fCcudevice\fP\&. Return the PCI device object describing the CUDA device \fCcudevice\fP\&. Return NULL if there is none\&.

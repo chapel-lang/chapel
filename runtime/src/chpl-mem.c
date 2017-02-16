@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,11 @@ static int heapInitialized = 0;
 void chpl_mem_init(void) {
   chpl_mem_layerInit();
   heapInitialized = 1;
+
+  // compute desired shared heap page size
+  // after this point, chpl_getHeapPageSize() will return
+  // a shared heap page size instead of 0.
+  chpl_computeHeapPageSize();
 }
 
 

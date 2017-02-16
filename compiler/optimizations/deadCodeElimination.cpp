@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -68,27 +68,19 @@ static unsigned int deadModuleCount;
 // Removes local variables that are only targets for moves, but are
 // never used anywhere.
 //
-static bool isDeadVariable(Symbol* var,
-                           Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                           Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  if (var->type->symbol->hasFlag(FLAG_REF)) {
-    Vec<SymExpr*>* uses = useMap.get(var);
-    Vec<SymExpr*>* defs = defMap.get(var);
-    return (!uses || uses->n == 0) && (!defs || defs->n <= 1);
+static bool isDeadVariable(Symbol* var) {
+  if (var->isRef()) {
+    // is it defined more than once?
+    int ndefs = var->countDefs(/*max*/ 2);
+    return (!var->isUsed()) && (ndefs <= 1);
   } else {
-    Vec<SymExpr*>* uses = useMap.get(var);
-    return !uses || uses->n == 0;
+    return !var->isUsed();
   }
 }
 
 void deadVariableElimination(FnSymbol* fn) {
   Vec<Symbol*> symSet;
-  Vec<SymExpr*> symExprs;
-  collectSymbolSetSymExprVec(fn, symSet, symExprs);
-
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(symSet, symExprs, defMap, useMap);
+  collectSymbolSet(fn, symSet);
 
   forv_Vec(Symbol, sym, symSet)
   {
@@ -100,8 +92,8 @@ void deadVariableElimination(FnSymbol* fn) {
     if (sym == fn->_this)
       continue;
 
-    if (isDeadVariable(sym, defMap, useMap)) {
-      for_defs(se, defMap, sym) {
+    if (isDeadVariable(sym)) {
+      for_SymbolDefs(se, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
         INT_ASSERT(call &&
                    (call->isPrimitive(PRIM_MOVE) ||
@@ -115,8 +107,6 @@ void deadVariableElimination(FnSymbol* fn) {
       sym->defPoint->remove();
     }
   }
-
-  freeDefUseMaps(defMap, useMap);
 }
 
 //
@@ -144,15 +134,18 @@ void deadExpressionElimination(FnSymbol* fn) {
           expr->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
           expr->isPrimitive(PRIM_GET_MEMBER) ||
           expr->isPrimitive(PRIM_DEREF) ||
-          expr->isPrimitive(PRIM_ADDR_OF)) {
+          expr->isPrimitive(PRIM_ARRAY_GET) ||
+          expr->isPrimitive(PRIM_ADDR_OF) ||
+          expr->isPrimitive(PRIM_SET_REFERENCE)) {
         if (expr->isStmtExpr())
           expr->remove();
       }
 
-      if (expr->isPrimitive(PRIM_MOVE) || expr->isPrimitive(PRIM_ASSIGN))
+      if (expr->isPrimitive(PRIM_MOVE) ||
+          expr->isPrimitive(PRIM_ASSIGN))
         if (SymExpr* lhs = toSymExpr(expr->get(1)))
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
-            if (lhs->var == rhs->var)
+            if (lhs->symbol() == rhs->symbol())
               expr->remove();
 
     } else if (CondStmt* cond = toCondStmt(ast)) {
@@ -310,40 +303,39 @@ void deadCodeElimination(FnSymbol* fn) {
 // (EJR 01/12/15)
 static void deadStringLiteralElimination() {
 
-  // build up global defUse maps
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
-
   // find all the symExprs in the string literal module
   std::vector<SymExpr*> symExprs;
   collectSymExprs(stringLiteralModule, symExprs);
 
   for_vector(SymExpr, stringUse, symExprs) {
+    Symbol* stringSym = stringUse->symbol();
     // if we're looking at a Chapel string created from a string literal
-    if (stringUse->var->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+    if (stringSym->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
       // and there's only a single use of it
-      Vec<SymExpr*>* stringUses = useMap.get(stringUse->var);
-      if (stringUses && stringUses->n == 1) {
+      int nuses = stringSym->countUses(/*max*/ 2);
+      if (nuses == 1) {
         // then that use is the RHS of `ret_to_arg_ref_tmp = &str_literal_id`,
         // which is only used in the string constructor so the string is dead. 
-        assert(stringUses->v[0] == stringUse);
+        for_SymbolUses(use, stringSym) {
+          // this loop should only run once
+          assert(use == stringUse);
+        }
 
         // gather the AST used to create a Chapel string from the literal,
         // using variable names that mimic the current generated code
         CallExpr*      ret_to_arg_assign = toCallExpr(stringUse->getStmtExpr());
         SymExpr*       ret_to_arg        = toSymExpr(ret_to_arg_assign->get(1));
-        Vec<SymExpr*>* ret_to_arg_uses   = useMap.get(ret_to_arg->var);
-        INT_ASSERT(ret_to_arg_uses && ret_to_arg_uses->n == 1);
-        CallExpr*      stringCtor        = toCallExpr(ret_to_arg_uses->v[0]->parentExpr);
+        SymExpr*       ret_to_arg_use    = ret_to_arg->symbol()->getSingleUse();
+        INT_ASSERT(ret_to_arg_use != NULL);
+        CallExpr*      stringCtor        = toCallExpr(ret_to_arg_use->parentExpr);
         SymExpr*       call_tmp          = toSymExpr(stringCtor->get(1));
-        Vec<SymExpr*>* call_tmp_defs     = defMap.get(call_tmp->var);
-        INT_ASSERT(call_tmp_defs && call_tmp_defs->n == 1);
-        CallExpr*      call_tmp_assign   = toCallExpr(call_tmp_defs->v[0]->parentExpr);
+        SymExpr*       call_tmp_def      = call_tmp->symbol()->getSingleDef();
+        INT_ASSERT(call_tmp_def != NULL);
+        CallExpr*      call_tmp_assign   = toCallExpr(call_tmp_def->parentExpr);
 
         // remove all the AST, in the order listed in the function comment
-        stringUse->var->defPoint->remove();
-        call_tmp->var->defPoint->remove();
+        stringUse->symbol()->defPoint->remove();
+        call_tmp->symbol()->defPoint->remove();
         call_tmp_assign->remove();
         ret_to_arg->remove();
         ret_to_arg_assign->remove();
@@ -351,7 +343,6 @@ static void deadStringLiteralElimination() {
       }
     }
   }
-  freeDefUseMaps(defMap, useMap);
 }
 
 
@@ -580,12 +571,11 @@ void removeDeadIterResumeGotos() {
 // Make sure there are no iterResumeGotos to remove.
 // Reset removedIterResumeLabels.
 //
-void verifyNcleanRemovedIterResumeGotos() {
+void verifyRemovedIterResumeGotos() {
   forv_Vec(LabelSymbol, labsym, removedIterResumeLabels) {
     if (!isAlive(labsym) && isAlive(labsym->iterResumeGoto))
       INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label - missing a call to removeDeadIterResumeGotos?");
   }
-  removedIterResumeLabels.clear();
 }
 
 // 2014/10/15

@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -48,11 +48,11 @@ ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
 	CHPL_AUXIO_INCLUDE ?= \
 		-I$(JAVA_INSTALL)/include \
 		-I$(JAVA_INSTALL)/include/linux \
-		-I$(HADOOP_INSTALL)/src/c++/libhdfs \
+		-I$(HADOOP_INSTALL)/include \
 
 	CHPL_AUXIO_LIBS ?= \
 		-L$(JAVA_INSTALL)/jre/lib/amd64/server \
-		-L$(HADOOP_INSTALL)/c++/Linux-amd64-64/lib 
+		-L$(HADOOP_INSTALL)/lib/native 
 endif 
 
 
@@ -65,14 +65,12 @@ RUNTIME_INCLS += \
         -I$(RUNTIME_INCLUDE_ROOT)/comm \
         -I$(RUNTIME_INCLUDE_ROOT)/tasks/$(CHPL_MAKE_TASKS) \
         -I$(RUNTIME_INCLUDE_ROOT)/threads/$(CHPL_MAKE_THREADS) \
-        -I$(RUNTIME_INCLUDE_ROOT)/comp-$(CHPL_MAKE_COMPILER) \
-        -I$(RUNTIME_INCLUDE_ROOT)/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
         -I$(RUNTIME_INCLUDE_ROOT) \
         -I$(RUNTIME_INCLUDE_ROOT)/qio \
         -I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
         -I$(RUNTIME_INCLUDE_ROOT)/mem/$(CHPL_MAKE_MEM) \
         -I$(THIRD_PARTY_DIR)/utf8-decoder \
-        -I$(CHPL_MAKE_HOME)/runtime/src/$(RUNTIME_OBJDIR) \
+        -I$(RUNTIME_BUILD)/include \
 
 RUNTIME_CYGWIN=0
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cygwin32)

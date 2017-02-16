@@ -193,6 +193,7 @@ Set size of margin between elements.
 Horizontal graphical layout instead of nearly 4/3 ratio.
 If a comma-separated list of types is given, the layout only
 applies to the corresponding containers.
+Ignored for bridges since their children are always vertically aligned.
 .TP
 \fB\-\-vert\fR, \fB\-\-vert\fR=<type1,...>
 Vertical graphical layout instead of nearly 4/3 ratio.
@@ -200,10 +201,10 @@ If a comma-separated list of types is given, the layout only
 applies to the corresponding containers.
 .TP
 \fB\-\-rect\fR, \fB\-\-rect\fR=<type1,...>
-Rectangular graphical layout with nearly 4/3 ratio,
-including when placing NUMA nodes.
+Rectangular graphical layout with nearly 4/3 ratio.
 If a comma-separated list of types is given, the layout only
 applies to the corresponding containers.
+Ignored for bridges since their children are always vertically aligned.
 .TP
 \fB\-\-no\-legend\fR
 Remove the text legend at the bottom.
@@ -417,10 +418,10 @@ For instance, to display all core objects in blue (with white names):
 .\" **************************
 .SH LAYOUT
 In its graphical output, lstopo uses simple rectangular heuristics
-to try to achieve a 4/3 ratio between width and height. However,
-in the particular case of NUMA nodes, the layout is always a flat
-rectangle, to avoid letting the user believe any particular NUMA
-topology (lstopo is not able to render that yet).
+to try to achieve a 4/3 ratio between width and height.
+Although the hierarchy of resources is properly reflected,
+the exact physical organization (NUMA distances, rings,
+complete graphs, etc.) is currently ignored.
 .
 The layout of a level may be changed with \-\-vert, \-\-horiz,
 and \-\-rect.

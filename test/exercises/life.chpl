@@ -14,7 +14,7 @@ config const printGenerations: bool = true, // print grid at each iteration
              p:                int = 20,    // initial percentage of live cells
              k:                int = 10;    // maximum number of generations
 
-// seed the random stream with something reproducable?
+// seed the random stream with something reproducible?
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 

@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -17,8 +17,9 @@
 
 COMMON_SUBDIR = src
 
-COMMON_OBJDIR = $(RUNTIME_ROOT)/$(COMMON_SUBDIR)/$(RUNTIME_OBJDIR)
-COMMON_LAUNCHER_OBJDIR = $(RUNTIME_ROOT)/$(COMMON_SUBDIR)/$(LAUNCHER_OBJDIR)
+
+COMMON_OBJDIR = $(RUNTIME_BUILD)/$(COMMON_SUBDIR)
+COMMON_LAUNCHER_OBJDIR = $(LAUNCHER_BUILD)/$(COMMON_SUBDIR)
 
 ALL_SRCS += $(CURDIR)/$(COMMON_SUBDIR)/*.c
 

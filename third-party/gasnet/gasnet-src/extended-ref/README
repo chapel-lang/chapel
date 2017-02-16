@@ -4,6 +4,10 @@ Dan Bonachea <bonachea@cs.berkeley.edu>
 User Information:
 -----------------
 
+The extended-ref directory is not intended for direct use by end users.
+It contains common code used to implement parts of the GASNet Extended 
+API within many conduits.
+
 Recognized environment variables:
 ---------------------------------
 

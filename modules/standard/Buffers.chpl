@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,7 +38,7 @@
  */
 module Buffers {
   use SysBasic;
-  use Error;
+  use SysError;
 
   pragma "no doc"
   extern type qbytes_ptr_t;
@@ -69,7 +69,11 @@ module Buffers {
   private extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
   private extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, out bytes_out):syserr;
   private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
+  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):syserr;
+  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):syserr;
   private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
+  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):syserr;
+  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):syserr;
 
   private extern proc qbuffer_begin(buf:qbuffer_ptr_t):qbuffer_iter_t;
   private extern proc qbuffer_end(buf:qbuffer_ptr_t):qbuffer_iter_t;
@@ -101,7 +105,7 @@ module Buffers {
   /* This type represents a contiguous sequence of bytes.
      This sequence of bytes is represented with a C pointer and length and is
      currently reference counted.  Note that this record contains private
-     fields in addition to the home field. 
+     fields in addition to the home field.
 
    */
   pragma "ignore noinit"
@@ -131,7 +135,7 @@ module Buffers {
   }*/
 
   /* Construct a bytes object by allocating zero-filled memory.
-   
+
      :arg len: the number of bytes to allocate
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
@@ -161,7 +165,7 @@ module Buffers {
   }
   pragma "no doc"
   private proc create_iobuf():bytes {
-    var err:syserr = ENOERR; 
+    var err:syserr = ENOERR;
     var ret = create_iobuf(err);
     if err then ioerror(err, "in create_iobuf");
     return ret;
@@ -179,7 +183,7 @@ module Buffers {
       var ret:bytes;
       ret.home = here;
       // The initial ref count is 1, so no need to call qbytes_retain here.
-      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal); 
+      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal);
       return ret;
     }
   }
@@ -203,19 +207,31 @@ module Buffers {
         qbytes_release(ret._bytes_internal);
       }
       ret.home = here;
-      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal); 
-      // On return from bulk_get_bytes, the ref count in ret._bytes_internal 
+      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal);
+      // On return from bulk_get_bytes, the ref count in ret._bytes_internal
       // should be 1.
       // Note that the error case is not handled (bulk_get_bytes must succeed).
     }
   }
 
   pragma "no doc"
-  proc bytes.~bytes() {
+  proc bytes.deinit() {
     on this.home {
       qbytes_release(this._bytes_internal);
       this._bytes_internal = QBYTES_PTR_NULL;
     }
+  }
+
+  /*
+    .. note::
+
+       The pointer returned by this method is only valid for the lifetime of
+       the :type:`bytes` object and will be invalid if this memory is freed.
+
+    :returns: a :type:`c_void_ptr` to the internal byte array
+   */
+  proc bytes.ptr(): c_void_ptr {
+    return qbytes_data(this._bytes_internal);
   }
 
   /* :returns: the number of bytes stored in a :record:`bytes` object */
@@ -231,7 +247,7 @@ module Buffers {
   /* This type represents a particular location with a buffer.
      Use buffer methods like :proc:`buffer.start` and :proc:`buffer.advance` to
      create and manipulate :record:`buffer_iterator` s.  Note that this record
-     contains private fields in addition to the home field. 
+     contains private fields in addition to the home field.
 
    */
   pragma "ignore noinit"
@@ -241,7 +257,7 @@ module Buffers {
     pragma "no doc"
     var _bufit_internal:qbuffer_iter_t = qbuffer_iter_null();
   }
-  
+
   /* Create a :record:`buffer_iterator` that points nowhere */
   pragma "no doc"
   proc buffer_iterator.buffer_iterator() {
@@ -271,7 +287,7 @@ module Buffers {
 
   /* A buffer which can contain multiple memory regions
      (that is, multiple regions of :record:`bytes` objects).  Note that this
-     record contains private fields in addition to the home field. 
+     record contains private fields in addition to the home field.
 
    */
   pragma "ignore noinit"
@@ -365,7 +381,7 @@ module Buffers {
       var ret:buffer;
       var start_offset:int(64);
       var end_offset:int(64);
-     
+
       on x.home {
         start_offset = qbuffer_start_offset(x._buf_internal);
         end_offset = qbuffer_end_offset(x._buf_internal);
@@ -416,7 +432,7 @@ module Buffers {
 
       var start_offset:int(64);
       var end_offset:int(64);
-     
+
       on x.home {
         start_offset = qbuffer_start_offset(x._buf_internal);
         end_offset = qbuffer_end_offset(x._buf_internal);
@@ -446,7 +462,7 @@ module Buffers {
 
 
   pragma "no doc"
-  proc buffer.~buffer() {
+  proc buffer.deinit() {
     on this.home {
       qbuffer_release(this._buf_internal);
       this._buf_internal = QBUFFER_PTR_NULL;
@@ -610,17 +626,21 @@ module Buffers {
 
   /* methods to read/write basic types. */
 
-  /* Read a basic type from a buffer. This method reads the value
-     by copying from memory - so it reads a binary value in native endianness.
-     
+  /* Read a basic type (integral or floating point value) or :type:`string`
+     from a buffer.
+     For basic types, this method reads the value by copying from memory -
+     so it reads a binary value in native endianness. For strings, this method
+     reads a string encoded as the string length (as :type:`int`) followed by
+     that number of bytes (as :type:`uint(8)`).
+
      :arg it: a :record:`buffer_iterator` where reading will start
-     :arg value: a basic type (integral or floating point value)
+     :arg value: a basic type or :type:`string`
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
      :returns: a buffer iterator storing the position immediately after
                the read value.
   */
-  proc buffer.copyout(it:buffer_iterator, out value, out error:syserr):buffer_iterator {
+  proc buffer.copyout(it:buffer_iterator, out value: ?T, out error:syserr):buffer_iterator where isNumericType(T) {
     var ret:buffer_iterator;
     ret.home = this.home;
     on this.home {
@@ -634,6 +654,37 @@ module Buffers {
     }
     return ret;
   }
+
+  pragma "no doc"
+  proc buffer.copyout(it:buffer_iterator, out value: string, out error:syserr):buffer_iterator {
+    var ret:buffer_iterator;
+    ret.home = this.home;
+    on this.home {
+      var start = it;
+      var end = it;
+      // Read string length
+      var len: int;
+      this.advance(end, numBytes(int));
+      error = qbuffer_copyout(this._buf_internal,
+                              start._bufit_internal, end._bufit_internal,
+                              len, numBytes(int));
+      ret = end;
+      // Read byte array
+      if !error {
+        this.advance(start, numBytes(int));
+        this.advance(end, len);
+        var buf = c_calloc(uint(8), (len+1):size_t);
+        error = qbuffer_copyout(this._buf_internal,
+                                start._bufit_internal, end._bufit_internal,
+                                buf, len);
+        value = new string(buff=buf, length=len, size=len+1,
+                             owned=true, needToCopy=false);
+        ret = end;
+      }
+    }
+    return ret;
+  }
+
   pragma "no doc"
   proc buffer.copyout(it:buffer_iterator, out value):buffer_iterator {
     var err:syserr = ENOERR;
@@ -642,17 +693,21 @@ module Buffers {
     return ret;
   }
 
-  /* Write a basic type to a buffer. This method writes the value
-     by copying to memory - so it reads a binary value in native endianness.
-     
+  /* Write a basic type (integral or floating point value) or :type:`string`
+     to a buffer.
+     For basic types, this method writes the value by copying to memory -
+     so it writes a binary value in native endianness. For strings, this method
+     writes a string encoded as the string length (as :type:`int`) followed by
+     that number of bytes (as :type:`uint(8)`).
+
      :arg it: a :record:`buffer_iterator` where reading will start
-     :arg value: a basic type (integral or floating point value)
+     :arg value: a basic type or :type:`string`
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
      :returns: a buffer iterator storing the position immediately after
                the written value.
   */
-  proc buffer.copyin( it:buffer_iterator, value, out error:syserr):buffer_iterator {
+  proc buffer.copyin( it:buffer_iterator, value: ?T, out error:syserr):buffer_iterator where isNumericType(T) {
     var ret:buffer_iterator;
     ret.home = this.home;
     on this.home {
@@ -672,6 +727,35 @@ module Buffers {
     }
     return ret;
   }
+
+  pragma "no doc"
+  proc buffer.copyin( it:buffer_iterator, value: string, out error:syserr):buffer_iterator {
+    var ret:buffer_iterator;
+    ret.home = this.home;
+    on this.home {
+      var start = it;
+      var end = it;
+      var tmp = value;
+      var len = value.length:int;
+      // Write string length
+      this.advance(end, numBytes(int));
+      error = qbuffer_copyin(this._buf_internal,
+                             start._bufit_internal, end._bufit_internal,
+                             len, numBytes(int));
+      ret = end;
+      // Write byte array
+      if !error {
+        this.advance(start, numBytes(int));
+        this.advance(end, len);
+        error = qbuffer_copyin(this._buf_internal,
+                               start._bufit_internal, end._bufit_internal,
+                               tmp.c_str():c_void_ptr, len);
+        ret = end;
+      }
+    }
+    return ret;
+  }
+
   pragma "no doc"
   proc buffer.copyin( it:buffer_iterator, value):buffer_iterator {
     var err:syserr = ENOERR;

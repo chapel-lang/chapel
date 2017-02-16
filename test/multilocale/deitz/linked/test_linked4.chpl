@@ -12,7 +12,7 @@ class D {
       on Locales(i) do cs[i] = new C(i);
   }
 
-  proc ~D() {
+  proc deinit() {
     coforall i in 0..numLocales-1 do
       on Locales(i) do delete cs[i];
   }

@@ -42,7 +42,7 @@ record WeightedParticle3D {
 
 proc generateRandom(pp : []WeightedParticle3D) {
   var x,y,z : real;
-  var rng = new RandomStream();
+  var rng = new RandomStream(real);
   for ip in pp {
     x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z=rng.getNext()*1000.0;
     ip.x = (x,y,z);
@@ -148,7 +148,7 @@ class KDNode {
     return (left==nil) && (right==nil);
   }
 
-  proc ~KDNode() {
+  proc deinit() {
     if left then delete left;
     if right then delete right;
   }

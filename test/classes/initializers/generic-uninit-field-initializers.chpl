@@ -13,7 +13,10 @@
 class A {
   type t;
   var x:t;
-  proc init(type t) { }
+  proc init(type t) {
+    this.t = t;
+    super.init();
+  }
   // initializer for class 'A' requires a generic argument called 't'
 }
 
@@ -30,7 +33,10 @@ delete a;
 
 class B {
   param p;
-  proc init(param p) { }
+  proc init(param p) {
+    this.p = p;
+    super.init();
+  }
   // initializer for class 'B' requires a generic argument called 'p'
 }
 
@@ -46,7 +52,10 @@ delete b;
 
 class C {
   const cst;
-  proc init(cst) { }
+  proc init(cst) {
+    this.cst = cst;
+    super.init();
+  }
   // initializer for class 'C' requires a generic argument called 'cst'
 }
 
@@ -64,7 +73,10 @@ delete c;
 
 class D {
   var vbl;
-  proc init(vbl) { }
+  proc init(vbl) {
+    this.vbl = vbl;
+    super.init();
+  }
   // initializer for class 'D' requires a generic argument called 'vbl'
 }
 

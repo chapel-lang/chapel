@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -209,7 +209,7 @@ typedef qio_fdflag_t fdflag_t;
 // make a re-entrant lock.
 typedef struct {
   chpl_sync_aux_t sv;
-  int64_t owner; // task ID of owner.
+  chpl_taskID_t owner; // task ID of owner.
   uint64_t count; // how many times owner has locked.
 } qio_lock_t;
 
@@ -1048,6 +1048,12 @@ static inline
 void qio_channel_unlock(qio_channel_t* ch)
 {
   qio_unlock(&ch->lock);
+}
+
+static inline
+qio_file_t* qio_channel_get_file(qio_channel_t* ch)
+{
+  return ch->file;
 }
 
 // You should lock/ get ptr/ unlock

@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,7 @@
 
 THREADS_SUBDIR = src/threads/$(CHPL_MAKE_THREADS)
 
-THREADS_OBJDIR = $(RUNTIME_ROOT)/$(THREADS_SUBDIR)/$(RUNTIME_OBJDIR)
+THREADS_OBJDIR = $(RUNTIME_BUILD)/$(THREADS_SUBDIR)
 
 #
 # threads-none has no sources, so don't add anything below, as usual

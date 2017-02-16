@@ -10,10 +10,10 @@ config type stringType = string;
 proc setupDistributions() {
   if distType == DistType.default {
     return (
-            new dmap(new DefaultDist()),
-            new dmap(new DefaultDist()),
-            new dmap(new DefaultDist()),
-            new dmap(new DefaultDist())
+            defaultDist,
+            defaultDist,
+            defaultDist,
+            defaultDist
            );
   }
 }

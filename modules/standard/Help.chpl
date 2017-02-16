@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,7 +30,7 @@
        }
      }
 
-   See doc/release/technotes/main.rst in a Chapel release for more
+   See doc/technotes/main.rst in a Chapel release for more
    information on this feature.
 
    Programs that use this feature might need to expand upon the usage message

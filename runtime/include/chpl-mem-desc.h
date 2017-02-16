@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -73,6 +73,7 @@
   m(MUTEX,                "mutex",                                    false), \
   m(LOCK_REPORT_DATA,     "lock report data",                         false), \
   m(TASK_POOL_DESC,       "task pool descriptor",                     false), \
+  m(TASK_ARG_AND_POOL_DESC, "task body argument and pool descriptor", false), \
   m(TASK_LIST_DESC,       "task list descriptor",                     false), \
   m(THREAD_PRV_DATA,      "thread private data",                      false), \
   m(THREAD_LIST_DESC,     "thread list descriptor",                   false), \

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -35,9 +35,9 @@
 // one argument.
 //
 static inline
-void chpl_ftable_call(chpl_fn_int_t fid, void* arg)
+void chpl_ftable_call(chpl_fn_int_t fid, chpl_comm_on_bundle_t* bundle)
 {
-  (*chpl_ftable[fid])(arg);
+  (*chpl_ftable[fid])(bundle);
 }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -418,7 +418,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   if ! qio_regexp_ok(ret._regexp) {
     var err_str = qio_regexp_error(ret._regexp);
 
-    var err_msg = "Error " + err_str + " when compiling regexp '" + pattern + "'";
+    var err_msg = "Error " + err_str:string + " when compiling regexp '" + pattern + "'";
     __primitive("chpl_error", err_msg.c_str());
   }
   return ret;
@@ -593,7 +593,7 @@ record regexp {
 
   // note - more = overloads are below.
   pragma "no doc"
-  proc ref ~regexp() {
+  proc ref deinit() {
     qio_regexp_release(_regexp);
     _regexp = qio_regexp_null();
   }

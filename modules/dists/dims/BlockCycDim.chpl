@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@
 //
 
 use DimensionalDist2D;
-
+use RangeChunk only ;
 
 config const BlockCyclicDim_allowParLeader = true;
 config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing
@@ -775,25 +775,9 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
 
   // Here is the densified range for all indices on this locale.
   const hereDenseInds = 0:resultIdxType..#wholeR.length by nLocs align AL;
-  const hereNumInds   = hereDenseInds.length;
-  const hereFirstInd  = hereDenseInds.first;
 
-  // This is our piece of hereNumInds
-  const (begNo,endNo) = _computeChunkStartEnd(hereNumInds, numTasks, taskid+1);
-
-  // Pick the corresponding part of hereDenseInds
-  const begIx = ( hereFirstInd + (begNo - 1) * nLocs ):resultIdxType;
-  const endIx = ( hereFirstInd + (endNo - 1) * nLocs ):resultIdxType;
-  assert(hereDenseInds.member(begIx));
-  assert(hereDenseInds.member(endIx));
-
-//writeln("MyDensifiedRangeForTaskID(", globDD.name, ") on ", locId,
-//        "  taskid ", taskid, " of ", numTasks, "  ", begIx, "...", endIx,
-//        "   fl=", firstLoc, " al=", AL,
-//        "  fullR ", hereDenseInds, " myR ", begIx .. endIx by nLocs,
-//        "");
-
-  return begIx .. endIx by nLocs;
+  // This is our chunk of hereDenseInds
+  return chunk(hereDenseInds, numTasks, taskid);
 }
 
 proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type

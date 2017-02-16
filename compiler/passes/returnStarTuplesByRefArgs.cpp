@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,6 +35,13 @@ void returnStarTuplesByRefArgs() {
     if ((fn->retType->symbol->hasFlag(FLAG_STAR_TUPLE))) {
       SET_LINENO(fn);
 
+      // MPF 2016-10-02: I expect this code is no longer necessary
+      // since star tuples should be returned through a reference
+      // along with other records in callDestructors.
+      //
+      // Even so, this code still seems to run with --baseline.,
+      // so figuring out how to remove it remains a TODO..
+
       //
       // change function interface to take a reference
       //
@@ -42,10 +49,10 @@ void returnStarTuplesByRefArgs() {
       //
       // Is it redundant to make this both have ref intent and ref type?
       //
-      ArgSymbol* arg = new ArgSymbol(INTENT_REF, "_ret", ret->type->refType);
+      ArgSymbol* arg = new ArgSymbol(INTENT_REF, "_ret", ret->getValType());
       fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
-      fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, arg, ret));
+      fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE, arg, ret));
       CallExpr* call = toCallExpr(fn->body->body.tail);
       INT_ASSERT(call && call->isPrimitive(PRIM_RETURN));
       call->get(1)->replace(new SymExpr(gVoid));
@@ -96,7 +103,7 @@ void returnStarTuplesByRefArgs() {
         SET_LINENO(call);
         AggregateType* ct = toAggregateType(type);
         SymExpr* se = toSymExpr(call->get(2));
-        int i = atoi(se->var->name+1);
+        int i = atoi(se->symbol()->name+1);
         INT_ASSERT(i >= 1 && i <= ct->fields.length);
         if (call->isPrimitive(PRIM_SET_MEMBER))
           call->primitive = primitives[PRIM_SET_SVEC_MEMBER];

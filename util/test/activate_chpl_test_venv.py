@@ -8,14 +8,14 @@ import sys
 chplenv_dir = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-from chplenv import utils
+from chplenv import chpl_home_utils
 from chplenv import chpl_platform
 from chplenv import chpl_make
 
 # Activate a virtualenv that has testing infrastructure requirements installed
 #
-# By default, we will try to use 
-#   $CHPL_HOME/third-party/chpl-venv/install/$CHPL_HOST_PLATFORM/chpl-virtualenv 
+# By default, we will try to use
+#   $CHPL_HOME/third-party/chpl-venv/install/$CHPL_HOST_PLATFORM/$python_version_dir/chpl-virtualenv
 # as our virtualenv. We then check for a sentinel file that test-venv
 # creates when it's been successfully installed and finally activate
 # the virtualenv.
@@ -56,12 +56,13 @@ def activate_venv():
 
         # check Chapel test-venv for successful installation sentinel
         else:
-            chpl_home = os.path.join(utils.get_chpl_home(), '')
+            chpl_home = os.path.join(chpl_home_utils.get_chpl_home(), '')
             third_party = os.path.join(chpl_home, 'third-party')
             host_platform = chpl_platform.get('host')
+            python_version_dir  = 'py{0}.{1}'.format(sys.version_info[0], sys.version_info[1])
 
             venv_dir = os.path.join(third_party, 'chpl-venv', 'install',
-                                    host_platform, 'chpl-virtualenv')
+                                    host_platform, python_version_dir, 'chpl-virtualenv')
             sentinel_file = os.path.join(venv_dir, 'chpl-test-reqs')
             if not os.path.isfile(sentinel_file):
                 error('Chapel test virtualenv is not available, run `{0} '

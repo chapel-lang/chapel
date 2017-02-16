@@ -259,7 +259,6 @@ module elemental_cholesky_unsymmetric_index_ranges {
 	  }
       }
     }
-    delete bar;
 
     // return success 
 

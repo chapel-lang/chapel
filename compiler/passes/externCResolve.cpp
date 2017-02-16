@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -218,16 +218,17 @@ static const char* convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *
 
   //If we've already converted this, return immediately to
   //  avoid multiple Chapel definitions.
-  if( alreadyConvertedExtern(module, typedef_name) ) return typedef_name;
+  if( alreadyConvertedExtern(module, typedef_name) )
+    return typedef_name;
 
   if( contents_type->isStructureType() ) {
     clang::RecordDecl *rd = contents_type->getAsStructureType()->getDecl();
-    const char* struct_name = rd->getNameAsString().c_str();
+    const char* struct_name = astr(rd->getNameAsString().c_str());
     // We already make 'struct some_structure { .. }' create a
     // Chapel type for 'some_structure'. So if this is a typedef
     // creating an alias for 'struct some_structure' == 'some_structure',
     // just return the result of adding the structure.
-    if( 0 == strcmp(typedef_name, struct_name) ) {
+    if( typedef_name == struct_name ) {
       convertToChplType(module, contents_type, results);
       do_typedef = false;
     }
@@ -323,8 +324,13 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
     f->addFlag(FLAG_EXTERN);
     f->addFlag(FLAG_LOCAL_ARGS);
     Expr* chpl_type = convertToChplType(module, resultType.getTypePtr(), results);
-    BlockStmt* result = buildFunctionDecl(
-       f, RET_VALUE, chpl_type, NULL, NULL, NULL);
+    BlockStmt* result = buildFunctionDecl( f, // fn
+                                           RET_VALUE, // retTag
+                                           chpl_type, // ret type
+                                           false,  // throws
+                                           NULL, // where
+                                           NULL, // body
+                                           NULL); // docs
 
     //convert args
     for (clang::FunctionDecl::param_iterator it=fd->param_begin(); it < fd->param_end(); ++it) {

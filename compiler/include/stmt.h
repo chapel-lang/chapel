@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,7 @@
 #include <map>
 
 #include "expr.h"
+#include "foralls.h"
 
 #ifdef HAVE_LLVM
 
@@ -155,6 +156,7 @@ public:
   virtual bool        isCForLoop()                                 const;
 
   virtual void        checkConstLoops();
+  void                removeForallIntents();
 
   virtual bool        deadBlockCleanup();
 
@@ -163,6 +165,9 @@ public:
   void                insertAtHead(Expr* ast);
   void                insertAtTail(Expr* ast);
   void                insertAtTailBeforeFlow(Expr* ast);
+
+  void                insertAtHead(AList exprs);
+  void                insertAtTail(AList exprs);
 
   void                insertAtHead(const char* format, ...);
   void                insertAtTail(const char* format, ...);
@@ -187,7 +192,8 @@ public:
   AList               body;
   CallExpr*           modUses;       // module uses
   const char*         userLabel;
-  CallExpr*           byrefVars; //ref-clause in begin/cobegin/coforall/forall
+  CallExpr*           byrefVars;     // task intents - task constructs only
+  ForallIntents*      forallIntents; // only for forall-body blocks
 
 private:
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
@@ -236,7 +242,8 @@ enum GotoTag {
   GOTO_RETURN,
   GOTO_GETITER_END,
   GOTO_ITER_RESUME,
-  GOTO_ITER_END
+  GOTO_ITER_END,
+  GOTO_ERROR_HANDLING
 };
 
 
@@ -306,14 +313,15 @@ extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 // statement-level expression.
 void         codegenStmt(Expr* stmt);
 
+bool isDirectlyUnderBlockStmt(const Expr* expr);
+
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,
 // if possible; NULL otherwise.
 LabelSymbol* getGotoLabelSymbol(GotoStmt* gs);
 GotoStmt*    getGotoLabelsIterResumeGoto(GotoStmt* gs);
 
 void         removeDeadIterResumeGotos();
-void         verifyNcleanRemovedIterResumeGotos();
-
-void         verifyNcleanCopiedIterResumeGotos();
+void         verifyRemovedIterResumeGotos();
+void         verifyCopiedIterResumeGotos();
 
 #endif

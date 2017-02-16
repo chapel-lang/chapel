@@ -39,6 +39,8 @@ def main():
     preprocess_options()
     args = parser.parse_args()
 
+    check_environment_with_args()
+
     invocation_dir = os.getcwd()
     
     run_tests(args.tests)
@@ -558,6 +560,9 @@ def check_environment():
     if "CHPL_DEVELOPER" in os.environ: # unset CHPL_DEVELOPER
         del os.environ["CHPL_DEVELOPER"]
 
+    if "CHPL_UNWIND" in os.environ:    # squash CHPL_UNWIND output
+        os.environ["CHPL_RT_UNWIND"] = "0"
+
     # Check for $CHPL_HOME
     global home
     if "CHPL_HOME" in os.environ:
@@ -582,17 +587,24 @@ def check_environment():
             print("Error: Cannot find {0}.".format(util_dir))
             sys.exit(1)
 
+def check_environment_with_args():
     # find test dir and check for access
     global test_dir, auto_gen_spec_tests
-    test_dir = os.path.join(home, "test")
+
     auto_gen_spec_tests = os.access(os.path.join(home, "spec"), os.F_OK)
-    if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
-        or not os.access(test_dir, os.X_OK)):
-        test_dir = os.path.join(home, "examples")
-        auto_gen_spec_tests = False
+
+    if args.test_root_dir:
+        test_dir = str(args.test_root_dir)
+    else:
+        test_dir = os.path.join(home, "test")
         if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
             or not os.access(test_dir, os.X_OK)):
-            test_dir = os.getcwd()
+            test_dir = os.path.join(home, "examples")
+            auto_gen_spec_tests = False
+            if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
+                or not os.access(test_dir, os.X_OK)):
+                test_dir = os.getcwd()
+
     if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
         or not os.access(test_dir, os.X_OK)):
         print("Cannot write to test directory {0}".format(test_dir))
@@ -667,7 +679,11 @@ def set_up_environment():
         args.performance = True
         args.gen_graphs = True
         args.compopts += " --fast"
-        if not tgt_platform == "darwin":
+        # Force static linking unless the target requires dynamic.
+        if (tgt_platform != 'darwin' and
+            not (chpl_compiler.get('target').startswith("cray-prgenv") and
+                 (os.getenv("CRAY_MEMKIND", "") != "" or
+                  chpl_locale_model.get() != 'flat'))):
             args.compopts += " --static"
 
     if args.performance_configs:
@@ -691,7 +707,7 @@ def set_up_environment():
         os.environ["CHPL_LAUNCHER_TIMEOUT"] = str(args.launcher_timeout)
 
     # num trials
-    os.environ["CHPL_TEST_NUM_TRIALS"] = str(args.num_trials)
+    os.environ["CHPL_TEST_NUM_TRIALS"] = args.num_trials
 
     # test root dir
     if args.test_root_dir:
@@ -951,7 +967,7 @@ def set_up_executables():
     os.environ['EXECOPTS'] = args.execopts
 
     logger.write('[launchcmd: "{0}"]'.format(args.launch_cmd))
-    os.environ['LAUNCHCMD'] = args.launch_cmd
+    os.environ['LAUNCHCMD'] = os.path.expandvars(args.launch_cmd)
 
     comm = chpl_comm.get()
     launcher = chpl_launcher.get()
@@ -983,14 +999,27 @@ def set_up_executables():
 
     # comm
     if comm != "none" and args.num_locales == "0":
-        args.num_locales = 1
+        args.num_locales = "1"
 
     if args.num_locales == "0":
         logger.write('[numlocales: "(default)"]')
     else:
         logger.write('[numlocales: "{0}"]'.format(args.num_locales))
 
-    os.environ["NUMLOCALES"] = str(args.num_locales)
+    os.environ["NUMLOCALES"] = args.num_locales
+
+    if args.max_locales == "0":
+        logger.write('[max_locales: "(default)"]')
+    else:
+        logger.write('[max_locales: "{0}"]'.format(args.max_locales))
+        os.environ["CHPL_TEST_MAX_LOCALES"] = args.max_locales
+
+    # only run multilocale tests
+    if args.multilocale_only:
+        if comm != "none":
+            os.environ["CHPL_TEST_MULTILOCALE_ONLY"] = "true"
+        else:
+            logger.write("[Warning: Ignoring --multilocale-only for CHPL_COMM=none]")
 
     # pre-exec
     if args.preexec:
@@ -1199,7 +1228,7 @@ def parser_setup():
             dest="compiler", help="set alternate compiler")
     # program launch utility
     parser.add_argument("-launchcmd", "--launchcmd", action="store",
-            dest="launch_cmd", default="",
+            dest="launch_cmd", default=os.getenv("CHPL_TEST_LAUNCHCMD", ""),
             help="set a program to launch generated executables")
     # compiler options
     parser.add_argument("-compopts", "--compopts", action="append",
@@ -1292,6 +1321,14 @@ def parser_setup():
     parser.add_argument("-numlocales", "--numlocales", action="store",
             dest="num_locales", default="0",
             help="set the number of locales to run on")
+    # run tests that specify numlocales > 1
+    parser.add_argument("-max-locales", "--max-locales",
+            action="store", dest="max_locales", default="0",
+            help="Maximum number of locales to use")
+    # run tests that specify numlocales > 1
+    parser.add_argument("-multilocale-only", "--multilocale-only",
+            action="store_true", dest="multilocale_only",
+            help="Only run multilocale test (ignored for comm none)")
     # stdin redirect
     parser.add_argument("-nostdinredirect", "--nostdinredirect",
             action="store_true", dest="no_stdin_redirect",

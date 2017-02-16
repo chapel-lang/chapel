@@ -1,1 +1,0 @@
-fieldNumToName.chpl:4: error: fieldNumToName deprecated. Use getFieldName

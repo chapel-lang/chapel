@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,12 +56,14 @@ extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
+extern bool fNoOptimizeArrayIndexing;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoVectorize;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
 extern bool fRemoveUnreachableBlocks;
+extern bool fReplaceArrayAccessesWithRefTemps;
 extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
 extern int  tuple_copy_limit;
@@ -112,11 +114,13 @@ extern bool widePointersStruct;
 extern char fExplainCall[256];
 extern int  explainCallID;
 extern int  breakOnResolveID;
+extern bool fDenormalize;
 extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
 /// resolution.
 extern bool fExplainVerbose;
 extern bool fParseOnly;
+extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
 extern bool fPrintIDonError;
 extern bool fPrintModuleResolution;
@@ -165,6 +169,7 @@ extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 
+extern bool fReportOptimizedArrayIndexing;
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportOrderIndependentLoops;
 extern bool fReportOptimizedOn;

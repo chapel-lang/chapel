@@ -63,7 +63,7 @@ class Function {
     var   rp    : [dcDom] real;
 
 
-    proc ~Function() {
+    proc deinit() {
         delete sumC;
         delete diffC;
     }
@@ -178,8 +178,8 @@ class Function {
     proc refine(curNode: Node) {
         // project f(x) at next level
         var sc : [0..2*k-1] real;
-        var s0 : [0..k-1] => sc[0..k-1];
-        var s1 : [0..k-1] => sc[k..2*k-1];
+        ref s0 = sc[0..k-1];
+        ref s1 = sc[k..2*k-1];
 
         const child = curNode.get_children();
         s0 = project(child(1));
@@ -561,7 +561,8 @@ class Function {
     inline proc truncate(x) {
       const eps = 1e-8;
       if abs(x) < eps then return 0.0;
-      else return x;
+      if abs(x) > 1.0/eps then return trunc(x/10) * 10;
+      return x;
     }
     
     /** Mostly for debugging, print summary of coefficients,

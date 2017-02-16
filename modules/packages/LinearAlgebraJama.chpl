@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -2245,7 +2245,7 @@ class Matrix {
 
    proc random (m, n:int) {
       var A = new Matrix(m,n);
-      var randlist = new RandomStream(seed);
+      var randlist = new RandomStream(real, seed);
       randlist.fillRandom(A.A);
       return A;
    }
@@ -2262,7 +2262,7 @@ class Matrix {
 
 proc random (m, n:int) {
    var A = new Matrix(m,n);
-   var randlist = new RandomStream(seed);
+   var randlist = new RandomStream(real, seed);
    randlist.fillRandom(A.A);
    return A;
 }

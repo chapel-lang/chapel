@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,9 +47,25 @@ ArgSymbol* tiMarkForIntent(IntentTag intent) {
     case INTENT_REF:       return tiMarkRef;       break;
     case INTENT_PARAM:     return NULL;            break;
     case INTENT_TYPE:      return NULL;            break;
-    default: INT_FATAL("unexpected intent in tiMarkForIntent()");
-             return NULL; break;
   }
+  INT_FATAL("unexpected intent in tiMarkForIntent()");
+  return NULL; // dummy
+}
+
+// Same except uses TFITag. It is encoded as int to deal with header ordering.
+// Do not invoke on TFI_REDUCE.
+ArgSymbol* tiMarkForTFIntent(int tfIntent) {
+  switch ((TFITag)tfIntent) {
+    case TFI_DEFAULT:   return tiMarkBlank;     break;
+    case TFI_CONST:     return tiMarkConstDflt; break;
+    case TFI_IN:        return tiMarkIn;        break;
+    case TFI_CONST_IN:  return tiMarkConstIn;   break;
+    case TFI_REF:       return tiMarkRef;       break;
+    case TFI_CONST_REF: return tiMarkConstRef;  break;
+    case TFI_REDUCE:    break; // there is tiMark for reduce intents
+  }
+  INT_FATAL("unexpected intent in tiMarkForTFIntent()");
+  return NULL; // dummy
 }
 
 #define tiMarkAdd(intent, mark) \
@@ -291,7 +307,7 @@ findOuterVars(FnSymbol* fn, SymbolMap& uses) {
 
   for_vector(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
-      Symbol* sym = symExpr->var;
+      Symbol* sym = symExpr->symbol();
 
       if (isLcnSymbol(sym)) {
         if (!isCorrespCoforallIndex(fn, sym) && isOuterVar(sym, fn))
@@ -302,7 +318,9 @@ findOuterVars(FnSymbol* fn, SymbolMap& uses) {
 }
 
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
-void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
+// Same as markOuterVarsWithIntents() in implementForallIntents.cpp,
+// except uses byrefVars instead of forallIntents.
+static void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
   if (!byrefVars) return;
   Symbol* marker = NULL;
 
@@ -314,7 +332,7 @@ void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
                     // should have been resolved in ScopeResolve
                     // or it is a SymExpr over a tiMark ArgSymbol
                     //                 or over chpl__reduceGlob
-    Symbol* var = se->var;
+    Symbol* var = se->symbol();
     if (marker) {
       SymbolMapElem* elem = uses.get_record(var);
       if (elem) {
@@ -426,11 +444,16 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
             INT_ASSERT(e->value == markUnspecified);
 
           newFormal = new ArgSymbol(argTag, sym->name, sym->type);
+          if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
+            newFormal->addFlag(FLAG_COFORALL_INDEX_VAR);
+
           if (ArgSymbol* symArg = toArgSymbol(sym))
             if (symArg->hasFlag(FLAG_MARKED_GENERIC))
               newFormal->addFlag(FLAG_MARKED_GENERIC);
           newActual = e->key;
           symReplace = newFormal;
+          if (!newActual->isConstant() && newFormal->isConstant())
+            newFormal->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }
 
         call->insertAtTail(newActual);
@@ -451,8 +474,8 @@ void replaceVarUses(Expr* topAst, SymbolMap& vars) {
       SET_LINENO(oldSym);
       Symbol* newSym = e->value;
       for_vector(SymExpr, se, symExprs)
-        if (se->var == oldSym)
-          se->var = newSym;
+        if (se->symbol() == oldSym)
+          se->setSymbol(newSym);
     }
   }
 }
@@ -523,7 +546,7 @@ void createTaskFunctions(void) {
             SET_LINENO(fnSymbol);
             fnSymbol->insertAtHead(
                 new CallExpr("chpl_rmem_consist_maybe_release", order));
-            fnSymbol->insertBeforeReturn(
+            fnSymbol->insertBeforeEpilogue(
                 new CallExpr("chpl_rmem_consist_maybe_acquire", order));
           }
         }
@@ -532,11 +555,11 @@ void createTaskFunctions(void) {
   }
 
   // Process task-creating constructs. We include 'on' blocks, too.
-  // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    bool hasTaskIntentClause = false;  // this 'block' has task intent clause ?
-    // Loops are not a parallel block construct
     if (block->isLoopStmt() == true) {
+      // Loops are not a parallel block construct, so do nothing.
+      // The isLoopStmt() test guards the call blockInfoGet() below
+      // from issuing "Migration" warnings.
 
     } else if (CallExpr* info = block->blockInfoGet()) {
       SET_LINENO(block);
@@ -563,7 +586,7 @@ void createTaskFunctions(void) {
 
         // Remove the param arg that distinguishes a local-on
         SymExpr* isLocalOn = toSymExpr(info->argList.head->remove());
-        if (isLocalOn->var == gTrue) {
+        if (isLocalOn->symbol() == gTrue) {
           fn->addFlag(FLAG_LOCAL_ON);
 
           // Insert runtime check
@@ -579,7 +602,7 @@ void createTaskFunctions(void) {
             CallExpr* neq = new CallExpr(PRIM_NOTEQUAL, curNodeID, targetNodeID);
 
             // Build error
-            CallExpr* err = new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Local-on is not local")); 
+            CallExpr* err = new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Local-on is not local"));
 
             CondStmt* cond = new CondStmt(neq, err);
             block->insertBefore(cond);
@@ -713,7 +736,6 @@ void createTaskFunctions(void) {
         fn->retType = dtVoid;
 
         if (needsCapture(fn)) { // note: does not apply to blocking on stmts.
-          hasTaskIntentClause = true;
 
           // Convert referenced variables to explicit arguments.
           SymbolMap uses;
@@ -733,10 +755,7 @@ void createTaskFunctions(void) {
 
     // 'byrefVars' should have been eliminated for those blocks where it is
     // syntactically allowed, and should be always empty for anything else.
-    // Except where it marks a forall loop body.
-    INT_ASSERT(!block->byrefVars ||
-               (!hasTaskIntentClause &&
-                block->byrefVars->isPrimitive(PRIM_FORALL_LOOP)));
+    INT_ASSERT(!block->byrefVars);
 
   } // for block
 

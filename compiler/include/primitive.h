@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@
 class CallExpr;
 class Type;
 class VarSymbol;
+class QualifiedType;
 
 enum PrimitiveTag {
   PRIM_UNKNOWN = 0,    // use for any primitives not in this list
@@ -39,6 +40,7 @@ enum PrimitiveTag {
                         // generating code.
   PRIM_REF_TO_STRING,
   PRIM_RETURN,
+  PRIM_THROW,
   PRIM_YIELD,
   PRIM_UNARY_MINUS,
   PRIM_UNARY_PLUS,
@@ -73,6 +75,7 @@ enum PrimitiveTag {
   PRIM_AND_ASSIGN,
   PRIM_OR_ASSIGN,
   PRIM_XOR_ASSIGN,
+  PRIM_REDUCE_ASSIGN,
 
   PRIM_MIN,
   PRIM_MAX,
@@ -95,35 +98,9 @@ enum PrimitiveTag {
 
   PRIM_ADDR_OF,             // set a reference to a value
   PRIM_DEREF,               // dereference a reference
+  PRIM_SET_REFERENCE,       // set a reference
 
   PRIM_LOCAL_CHECK,         // assert that a wide ref is on this locale
-
-  PRIM_SYNC_INIT,
-  PRIM_SYNC_DESTROY,
-  PRIM_SYNC_LOCK,
-  PRIM_SYNC_UNLOCK,
-  PRIM_SYNC_WAIT_FULL,
-  PRIM_SYNC_WAIT_EMPTY,
-  PRIM_SYNC_SIGNAL_FULL,
-  PRIM_SYNC_SIGNAL_EMPTY,
-  PRIM_SINGLE_INIT,
-  PRIM_SINGLE_DESTROY,
-  PRIM_SINGLE_LOCK,
-  PRIM_SINGLE_UNLOCK,
-  PRIM_SINGLE_WAIT_FULL,
-  PRIM_SINGLE_SIGNAL_FULL,
-
-  PRIM_WRITEEF,
-  PRIM_WRITEFF,
-  PRIM_WRITEXF,
-  PRIM_READFE,
-  PRIM_READFF,
-  PRIM_READXX,
-  PRIM_SYNC_IS_FULL,
-  PRIM_SINGLE_WRITEEF,
-  PRIM_SINGLE_READFF,
-  PRIM_SINGLE_READXX,
-  PRIM_SINGLE_IS_FULL,
 
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
@@ -152,6 +129,7 @@ enum PrimitiveTag {
   PRIM_CHPL_COMM_GET_STRD,      // Direct calls to the Chapel comm layer for strided comm
   PRIM_CHPL_COMM_PUT_STRD,      //  may eventually add others (e.g., non-blocking)
 
+  PRIM_OPTIMIZE_ARRAY_BLK_MULT,
   PRIM_ARRAY_ALLOC,
   PRIM_ARRAY_FREE,
   PRIM_ARRAY_FREE_ELTS,
@@ -185,7 +163,6 @@ enum PrimitiveTag {
   PRIM_BLOCK_LOCAL,             // BlockStmt::blockInfo - local block
   PRIM_BLOCK_UNLOCAL,           // BlockStmt::blockInfo - unlocal local block
 
-  PRIM_FORALL_LOOP,             // BlockStmt::byrefVars - forall loop body
   PRIM_TO_LEADER,
   PRIM_TO_FOLLOWER,
   PRIM_TO_STANDALONE,
@@ -231,8 +208,6 @@ enum PrimitiveTag {
 
   PRIM_FTABLE_CALL,
 
-  PRIM_IS_SYNC_TYPE,
-  PRIM_IS_SINGLE_TYPE,
   PRIM_IS_TUPLE_TYPE,
   PRIM_IS_STAR_TUPLE_TYPE,
   PRIM_SET_SVEC_MEMBER,
@@ -245,6 +220,7 @@ enum PrimitiveTag {
   PRIM_FIELD_NUM_TO_NAME,
   PRIM_FIELD_NAME_TO_NUM,
   PRIM_FIELD_BY_NUM,
+  PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL,
   PRIM_IS_UNION_TYPE,
   PRIM_IS_ATOMIC_TYPE,
   PRIM_IS_REF_ITER_TYPE,
@@ -266,17 +242,21 @@ enum PrimitiveTag {
 
   PRIM_GET_COMPILER_VAR,
 
+  PRIM_STACK_ALLOCATE_CLASS,
+  PRIM_ZIP,
+  PRIM_REQUIRE,
+
   NUM_KNOWN_PRIMS
 };
 
 class PrimitiveOp { public:
   PrimitiveTag tag;
   const char *name;
-  Type *(*returnInfo)(CallExpr*);
+  QualifiedType (*returnInfo)(CallExpr*);
   bool isEssential; // has effects visible outside of the function
   bool passLineno;  // pass line number and filename to this primitive
 
-  PrimitiveOp(PrimitiveTag atag, const char *aname, Type *(*areturnInfo)(CallExpr*));
+  PrimitiveOp(PrimitiveTag atag, const char *aname, QualifiedType (*areturnInfo)(CallExpr*));
 };
 
 extern HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
@@ -286,9 +266,8 @@ extern PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 void printPrimitiveCounts(const char* passName);
 void initPrimitive();
 
-extern Map<const char*, VarSymbol*> memDescsMap;
 extern Vec<const char*> memDescsVec;
-
 VarSymbol* newMemDesc(const char* str);
+VarSymbol* newMemDesc(Type* type);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -299,6 +299,9 @@ void ParamForLoop::verify()
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "ParamForLoop::verify. byrefVars is not NULL");
+
+  if (forallIntents             != 0)
+    INT_FATAL(this, "ParamForLoop::verify. forallIntents is not NULL");
 }
 
 GenRet ParamForLoop::codegen()
@@ -377,9 +380,9 @@ CallExpr* ParamForLoop::foldForResolve()
   if (!lse             || !hse             || !sse)
     USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
-  VarSymbol* lvar      = toVarSymbol(lse->var);
-  VarSymbol* hvar      = toVarSymbol(hse->var);
-  VarSymbol* svar      = toVarSymbol(sse->var);
+  VarSymbol* lvar      = toVarSymbol(lse->symbol());
+  VarSymbol* hvar      = toVarSymbol(hse->symbol());
+  VarSymbol* svar      = toVarSymbol(sse->symbol());
 
   CallExpr*  noop      = new CallExpr(PRIM_NOOP);
 
@@ -389,7 +392,7 @@ CallExpr* ParamForLoop::foldForResolve()
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
     USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
-  Symbol*      idxSym  = idxExpr->var;
+  Symbol*      idxSym  = idxExpr->symbol();
   Symbol*      continueSym = continueLabelGet();
   Type*        idxType = indexType();
   IF1_int_type idxSize = (get_width(idxType) == 32) ? INT_SIZE_32 : INT_SIZE_64;

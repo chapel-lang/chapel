@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -173,6 +173,10 @@ sparse           return processToken(yyscanner, TSPARSE);
 subdomain        return processToken(yyscanner, TSUBDOMAIN);
 sync             return processToken(yyscanner, TSYNC);
 then             return processToken(yyscanner, TTHEN);
+throw            return processToken(yyscanner, TTHROW);
+throws           return processToken(yyscanner, TTHROWS);
+try              return processToken(yyscanner, TTRY);
+"try!"           return processToken(yyscanner, TTRYBANG);
 type             return processToken(yyscanner, TTYPE);
 union            return processToken(yyscanner, TUNION);
 use              return processToken(yyscanner, TUSE);
@@ -200,6 +204,7 @@ zip              return processToken(yyscanner, TZIP);
 "||="            return processToken(yyscanner, TASSIGNLOR);
 "<<="            return processToken(yyscanner, TASSIGNSL);
 ">>="            return processToken(yyscanner, TASSIGNSR);
+"reduce="        return processToken(yyscanner, TASSIGNREDUCE);
 
 "=>"             return processToken(yyscanner, TALIAS);
 

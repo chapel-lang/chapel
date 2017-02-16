@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -18,6 +18,10 @@
 # Suppress warning about variables used before defined
 CRAYPE_GEN_CFLAGS = -hnomessage=7212
 
+# Suppress warnings about unsigned ints being compared to 0
+CRAYPE_GEN_CFLAGS += -hnomessage=186
+
+
 FAST_FLOAT_GEN_CFLAGS = -hfp2
 IEEE_FLOAT_GEN_CFLAGS = -hfp0
 
@@ -30,9 +34,7 @@ IEEE_FLOAT_GEN_CFLAGS = -hfp0
 # to add time. For Chapel codes, -O0 tends to give the fastest compile times,
 # which is why it is used here. -hdevelop is something to look at in the future
 # if execution time becomes too slow with -O0.
-ifneq ($(OPTIMIZE),1)
-CFLAGS += -O0
-endif
+NO_OPT_CFLAGS += -O0
 
 #
 # The current Cray compiler does not compile GASNet cleanly, so we have

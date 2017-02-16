@@ -1,0 +1,2 @@
+noReturnInInit.chpl:82: In initializer:
+noReturnInInit.chpl:84: error: illegal cast from Tree to void

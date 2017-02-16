@@ -16,7 +16,7 @@ proc main(args: [] string) {
   var data : [1..fileLen] uint(8);
   var r = inFile.reader(locking=false);
 
-  const pairs = [c in "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n"] ascii(c):uint(8);
+  const pairs = [c in "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n"] ascii(c);
 
   // initialize complement table
   for i in 1..pairs.size by 2 {

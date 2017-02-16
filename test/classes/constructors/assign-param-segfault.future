@@ -1,4 +1,9 @@
-bug: assigning param member causes segfault
+bug: assigning param member triggers compiler error about multiple assignments to param
+
+This program used to segfault until a compiler error was added for multiple
+assignments to a param. If this behavior is still illegal within constructors,
+a more descriptive compiler error would be nice. Here's the original
+description of the segfault behavior, in case it's still useful:
 
 For some reason, assigning the param 'foo' member in its constructor
 causes a segfault rather than a useful error message.  Strangely,

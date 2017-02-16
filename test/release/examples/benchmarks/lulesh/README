@@ -135,7 +135,7 @@ the execution-time command line using the following flag styles:
                        input dataset is to be computed
 
 * initialWidth: int -- the initial width of the cube if the input dataset is
-                       to be cmoputed
+                       to be computed
 
 * dtfixed: real -- the fixed time increment (only seems to have an
                    effect based on its sign?!?)
@@ -204,7 +204,7 @@ main
       -> CalcTimeConstraintsForElems
          -> CalcCourantConstraintForElems
             -> computeDTF
-         -> CalcHydryoConstraintForElems
+         -> CalcHydroConstraintForElems
    -> deprint (if debug)
  }
 

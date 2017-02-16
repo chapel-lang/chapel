@@ -27,7 +27,7 @@ module RunParallelRawLoops {
             const pmin = loop_data.RealArray_scalars[2];
             const eosvmax = loop_data.RealArray_scalars[3];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               forall i in 0..#len {
                 bvc[i] = cls * (compression[i] + 1.0);
               }
@@ -71,7 +71,7 @@ module RunParallelRawLoops {
             const q_cut = loop_data.RealArray_scalars[3];
 
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               forall i in 0..#len {
                 e_new[i] = e_old[i] - 0.5 * delvc[i] *
                            (p_old[i] + q_old[i]) + 0.5 * work[i];
@@ -174,7 +174,7 @@ module RunParallelRawLoops {
 
             const vnormq = 0.083333333333333333;
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               forall i in dom.fpz..dom.lpz {
                 const x71 = x7[i] - x1[i],
                       x72 = x7[i] - x2[i],
@@ -264,7 +264,7 @@ module RunParallelRawLoops {
             const ptiny = 1.0e-20;
             const half = 0.5;
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               forall ii in 0..#dom.n_real_zones with (ref dom) {
                 const i  = dom.real_zones[ii];
 
@@ -315,7 +315,7 @@ module RunParallelRawLoops {
                   c20 = c10*r_fratio;
             const ireal = 0.0 + 1.0i;
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               forall k in kmin..kmax-1 {
                 for j in jmin..jmax-1 {
                   var it0    = (k*(jmax+1) + j) * (imax+1);
@@ -399,7 +399,7 @@ module RunParallelRawLoops {
             var in1  => loop_data.RealArray_1D[3];
             var in2  => loop_data.RealArray_1D[4];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               forall i in 0..#len {
                 const res = -in1[i] - in2[i];
                 out3[i] = res;
@@ -418,7 +418,7 @@ module RunParallelRawLoops {
             var in1  => loop_data.RealArray_1D[3];
             var in2  => loop_data.RealArray_1D[4];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               forall i in 0..#len {
                 out1[i] = in1[i] * in2[i];
                 out2[i] = in1[i] + in2[i];
@@ -436,7 +436,7 @@ module RunParallelRawLoops {
             var x1 => loop_data.RealArray_1D[3];
             var x2 => loop_data.RealArray_1D[4];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               forall i in 0..#len {
                 var s = b[i]*b[i] - 4.0*a[i]*c[i];
                 if s >= 0 {
@@ -468,8 +468,8 @@ module RunParallelRawLoops {
             var sumx = 0.0;
             var val = 0.0;
             ltimer.start();
-            for isamp in 0..#num_samples {
-              forall i in 0..#len with (+ reduce sumx) {
+            for 0..#num_samples {
+              forall i in 0..(len-1):int(32) with (+ reduce sumx) {
                 var x = x0 + i*h;
                 sumx += trap_int_func(x, y, xp, yp);
               }
@@ -507,7 +507,7 @@ module RunParallelRawLoops {
                  Convert the over-indexed pairs into in-bounds pairs */
               return (i+j/25, j%25);
             }
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               forall ip in 0..#len {
                 var i1, j1, i2, j2: int;
                 // These casts to int(32) overflow and behave differently

@@ -89,7 +89,7 @@ sub gasnet_encode($) {
     my $platform    = $ENV{'GASNET_PLATFORM'};
     #print "using platform hint: $platform\n";
     my $is_lam      = ($mpirun_help =~ m|LAM/MPI|);
-    my $is_ompi     = ($mpirun_help =~ m|OpenRTE|);
+    my $is_ompi     = ($mpirun_help =~ m|Open ?RTE|);
     my $is_mpich2   = ($mpirun_help =~ m|MPICH1 compatibility|);
     my $is_mpiexec  = ($mpirun_help =~ m|mpiexec|);
     my $is_mpiexec_nt = ($mpirun_help =~ m|mpiexec| && $uname =~ m|cygwin|i );
@@ -143,8 +143,8 @@ sub gasnet_encode($) {
 	%envfmt = ( 'pre' => '-x',
 		    'inter' => '-x'
 		  );
-        # Seen to crash 1.4.2
-        #$ppn_opt = '-npernode' if ($mpirun_help =~ m/\bnpernode\b/);
+        # Seen to crash 1.4.2, but OK for a long time
+        $ppn_opt = '-npernode' if ($mpirun_help =~ m/\bnpernode\b/);
     } elsif ($is_mpich2) {
 	$spawner_desc = "MPICH2/mpiexec";
 	# pass env as "-envlist A,B,C"
