@@ -55,6 +55,7 @@
 static bool symExprIsSet(SymExpr* sym);
 static void lowerContextCall(ContextCallExpr* cc, bool useSetter);
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
+static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst);
 
 static bool
 symExprIsSetByDef(SymExpr* def) {
@@ -281,7 +282,8 @@ void markNotConst(Symbol* sym)
 static
 void transitivelyMarkNotConst(Symbol* sym,
                               revisitGraph_t & graph,
-                              revisitUnknowns_t & unknownConstSyms)
+                              revisitUnknowns_t & unknownConstSyms,
+                              std::map<BaseAST*, BaseAST*> & reasonNotConst)
 {
   std::vector<Symbol*> & dependentSymbols = graph[sym];
 
@@ -290,8 +292,9 @@ void transitivelyMarkNotConst(Symbol* sym,
       // otherSym still has unknown const-ness
       // mark it as not-const
       markNotConst(otherSym);
+      reasonNotConst[otherSym] = sym;
       unknownConstSyms.erase(otherSym);
-      transitivelyMarkNotConst(otherSym, graph, unknownConstSyms);
+      transitivelyMarkNotConst(otherSym, graph, unknownConstSyms, reasonNotConst);
     }
   }
 }
@@ -355,6 +358,7 @@ void cullOverReferences() {
   std::set<Symbol*> unknownConstSyms;
   //std::set<Symbol*> ignoredDefs;
 
+  std::map<BaseAST*, BaseAST*> reasonNotConst;
 
   revisitGraph_t revisitGraph;
 
@@ -491,7 +495,16 @@ void cullOverReferences() {
       }
 
       // Determine if se represents a "setting" or a "getting" mention of sym
-      setter |= symExprIsSet(se);
+      if (symExprIsSet(se) && !setter) {
+        setter = true;
+        reasonNotConst[sym] = se;
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          if (call->isResolved()) {
+            ArgSymbol* formal = actual_to_formal(se);
+            reasonNotConst[se] = formal;
+          }
+        }
+      }
     }
 
     if (revisit) {
@@ -602,7 +615,8 @@ void cullOverReferences() {
         if (!sym->qualType().isConst()) {
           // If sym has known const-ness, and it's a setter,
           // propagate that information in the graph.
-          transitivelyMarkNotConst(sym, revisitGraph, unknownConstSyms);
+          transitivelyMarkNotConst(sym, revisitGraph, unknownConstSyms,
+              reasonNotConst);
         }
       }
     }
@@ -660,6 +674,8 @@ void cullOverReferences() {
       }
     }
   }*/
+
+  lateConstCheck(reasonNotConst);
 }
 
 
@@ -814,4 +830,156 @@ void lowerContextCall(ContextCallExpr* cc, bool useSetter)
       // Replace the ContextCallExpr with the ref call
       cc->replace(refCall);
     }
+}
+
+static void printReason(BaseAST* reason)
+{
+  Expr* expr = toExpr(reason);
+  if (Symbol* s = toSymbol(reason))
+    expr = s->defPoint;
+  ModuleSymbol* mod = expr->getModule();
+
+  if (developer || mod->modTag == MOD_USER) {
+    if (isArgSymbol(reason) || isFnSymbol(reason))
+      USR_PRINT(reason, "to ref formal here");
+    else
+      USR_PRINT(reason, "passed as ref here");
+  }
+}
+
+
+/* Since const-checking can depend on ref-pair determination
+   or upon the determination of whether an array formal with
+   blank intent is passed by ref or by value, do final const checking here.
+
+   TODO: decide if we also need const checking in functionResolution.cpp.
+ */
+static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
+{
+  forv_Vec(CallExpr, call, gCallExprs) {
+
+    // Ignore calls removed earlier by this pass.
+    if (call->parentExpr == NULL)
+      continue;
+
+
+    if (FnSymbol* calledFn = call->isResolved()) {
+      char cn1 = calledFn->name[0];
+      const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
+      // resolved calls
+      for_formals_actuals(formal, actual, call) {
+        bool error = false;
+        if (actual->qualType().isConst() && ! formal->qualType().isConst()) {
+
+          // But... it's OK if we're calling a function marked
+          // FLAG_REF_TO_CONST_WHEN_CONST_THIS and the result is
+          // marked const. In that case, we pretend that the `this`
+          // argument would be marked const too.
+          if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
+              formal->hasFlag(FLAG_ARG_THIS)) {
+            CallExpr* move = toCallExpr(call->parentExpr);
+            if (move && move->isPrimitive(PRIM_MOVE)) {
+              SymExpr* lhs = toSymExpr(move->get(1));
+              Symbol* lhsSym = lhs->symbol();
+              if (lhsSym->qualType().isConst())
+                ; // OK, lhsSym has const Qualifier
+              else if (lhsSym->hasFlag(FLAG_REF_TO_CONST))
+                ; // OK, lhsSym is marked with FLAG_REF_TO_CONST
+              else
+                error = true; // l-value error
+            }
+          } else {
+            error = true;
+          }
+        }
+
+        // For now, ignore errors with tuple construction/build_tuple
+        if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
+            (calledFn->hasFlag(FLAG_CONSTRUCTOR) &&
+             calledFn->retType->symbol->hasFlag(FLAG_TUPLE)))
+          error = false;
+
+        // For now, ignore errors with `this` formal
+        if (formal->hasFlag(FLAG_ARG_THIS))
+          error = false;
+
+        if (error) {
+          USR_FATAL_CONT(actual,
+                        "const actual is passed to %s formal '%s'"
+                        " of %s%s",
+                        formal->intentDescrString(),
+                        formal->name,
+                        calledFn->name, calleeParens);
+
+          printReason(formal);
+
+          BaseAST* reason = reasonNotConst[formal];
+          BaseAST* lastReason = formal;
+          while (reason) {
+
+            BaseAST* printCause = reason;
+
+            // If the last reason and the this reason are both Symbols,
+            // try to figure out what links them by looking at uses
+            // of lastReason.
+            if (isSymbol(lastReason) && isArgSymbol(reason)) {
+              Symbol* lastSym = toSymbol(lastReason);
+              ArgSymbol* curFormal = toArgSymbol(reason);
+              for_SymbolSymExprs(se, lastSym) {
+                if (CallExpr* parentCall = toCallExpr(se->parentExpr))
+                  if (parentCall->isResolved())
+                    if (curFormal == actual_to_formal(se)) {
+                      printReason(se);
+                      break;
+                    }
+              }
+            }
+
+            // Go from LHS VarSymbol to called fn
+            // for better reporting for the reason of context-call
+            if (VarSymbol* v = toVarSymbol(reason)) {
+              for_SymbolDefs(def, v) {
+                if (CallExpr* parentCall = toCallExpr(def->parentExpr))
+                  if (parentCall->isPrimitive(PRIM_MOVE))
+                    if (CallExpr* rhsCall = toCallExpr(parentCall->get(2)))
+                      if (FnSymbol* rhsCalledFn = rhsCall->isResolved()) {
+                        printReason(def);
+                        printReason(rhsCalledFn);
+                        printCause = NULL;
+                        break;
+                      }
+              }
+            }
+
+            if (printCause) {
+              // Print out an annotation line
+              printReason(printCause);
+            }
+
+            if (reasonNotConst.count(reason) != 0) {
+              lastReason = reason;
+              reason = reasonNotConst[reason];
+            } else
+              break;
+          }
+        }
+      }
+    }
+
+    // For now, don't check primitives. Compiler can be loose
+    // with const-ness on its own internal temporaries.
+    /*else {
+      // Primitives
+      Expr* dest = NULL;
+      Expr* src = NULL;
+      bool isSetting = getSettingPrimitiveDstSrc(call, &dest, &src);
+      if (isSetting) {
+        if (SymExpr* destSe = toSymExpr(dest)) {
+          if (destSe->symbol()->qualType().isConst()) {
+	    USR_FATAL_CONT(call, "setting const variable");
+          }
+        }
+      }
+    }*/
+  }
 }
