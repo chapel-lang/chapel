@@ -1189,8 +1189,13 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       } else if (init == NULL) {
         init_typed_var(var, type,       stmt, constTemp);
 
-      } else {
+      } else if (var->hasFlag(FLAG_PARAM) == false) {
         init_typed_var(var, type, init, stmt, constTemp);
+
+      } else {
+        CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
+
+        stmt->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
       }
     }
 
@@ -1326,19 +1331,6 @@ static void init_typed_var(VarSymbol* var,
                            Expr*      init,
                            Expr*      stmt,
                            VarSymbol* constTemp) {
-  //
-  // use cast for parameters to avoid multiple parameter assignments
-  //
-  if (var->hasFlag(FLAG_PARAM)) {
-    stmt->insertAfter(new CallExpr(PRIM_MOVE,
-                                   var,
-                                   new CallExpr("_cast",
-                                                type->remove(),
-                                                init->remove())));
-
-    return;
-  }
-
   if (init->isNoInitExpr() == true) {
     init->remove();
 
@@ -1372,10 +1364,6 @@ static void init_typed_var(VarSymbol* var,
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);
     CallExpr*  initCall = NULL;
-
-    if (var->hasFlag(FLAG_PARAM)) {
-      typeTemp->addFlag(FLAG_PARAM);
-    }
 
     initCall = new CallExpr(PRIM_MOVE,
                             typeTemp,
