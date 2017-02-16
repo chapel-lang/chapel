@@ -21,7 +21,7 @@ REAL_SUFFIX = _real
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-#LD = $(CC)
+LD = $(CC)
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
