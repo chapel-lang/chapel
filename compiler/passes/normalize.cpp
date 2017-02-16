@@ -1123,6 +1123,11 @@ static void init_untyped_var(VarSymbol* var,
 
 static void init_typed_var(VarSymbol* var,
                            Expr*      type,
+                           Expr*      stmt,
+                           VarSymbol* constTemp);
+
+static void init_typed_var(VarSymbol* var,
+                           Expr*      type,
                            Expr*      init,
                            Expr*      stmt,
                            VarSymbol* constTemp);
@@ -1134,11 +1139,6 @@ static void init_noinit_var(VarSymbol* var,
                             Expr*      init,
                             Expr*      stmt,
                             VarSymbol* constTemp);
-
-static void init_typed_var(VarSymbol* var,
-                           Expr*      type,
-                           Expr*      stmt,
-                           VarSymbol* constTemp);
 
 static void updateVariableAutoDestroy(DefExpr* defExpr);
 
@@ -1337,6 +1337,60 @@ static void init_untyped_var(VarSymbol* var,
 
 static void init_typed_var(VarSymbol* var,
                            Expr*      type,
+                           Expr*      stmt,
+                           VarSymbol* constTemp) {
+  VarSymbol* typeTemp = newTemp("type_tmp");
+  DefExpr*   typeDefn = new DefExpr(typeTemp);
+  CallExpr*  initCall = new CallExpr(PRIM_INIT, type->remove());
+  CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
+  BlockStmt* block    = NULL;
+
+  if (var->hasFlag(FLAG_PARAM)  == true) {
+    typeTemp->addFlag(FLAG_PARAM);
+  }
+
+  //
+  // Noakes 2016/02/02
+  // The code for resolving the type of an extern variable
+  //
+  //   functionResolution.cpp : resolveExternVarSymbols()
+  //
+  // expects to find the init code inside a block stmt.
+  //
+  // However the remaining cases do not need it.
+  //
+  if (var->hasFlag(FLAG_EXTERN) == true) {
+    block = new BlockStmt(NULL, BLOCK_SCOPELESS);
+    block->insertAtTail(typeDefn);
+
+  } else {
+    stmt->insertAfter(typeDefn);
+  }
+
+  typeDefn->insertAfter(initMove);
+
+  if (constTemp->isType()) {
+    CallExpr* typeOf = new CallExpr(PRIM_TYPEOF, typeTemp);
+
+    initMove->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeOf));
+
+  } else {
+    initMove->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+
+    if (constTemp->hasFlag(FLAG_EXTERN)) {
+      unsigned int tag = block->blockTag;
+
+      block->blockTag = (BlockTag) (tag | BLOCK_EXTERN_TYPE);
+    }
+  }
+
+  if (block != NULL) {
+    stmt->insertAfter(block);
+  }
+}
+
+static void init_typed_var(VarSymbol* var,
+                           Expr*      type,
                            Expr*      init,
                            Expr*      stmt,
                            VarSymbol* constTemp) {
@@ -1394,60 +1448,6 @@ static void init_noinit_var(VarSymbol* var,
   } else {
     // Ignore no-init expression and fall back on default init
     init_typed_var(var, type, stmt, constTemp);
-  }
-}
-
-static void init_typed_var(VarSymbol* var,
-                           Expr*      type,
-                           Expr*      stmt,
-                           VarSymbol* constTemp) {
-  VarSymbol* typeTemp = newTemp("type_tmp");
-  DefExpr*   typeDefn = new DefExpr(typeTemp);
-  CallExpr*  initCall = new CallExpr(PRIM_INIT, type->remove());
-  CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
-  BlockStmt* block    = NULL;
-
-  if (var->hasFlag(FLAG_PARAM)  == true) {
-    typeTemp->addFlag(FLAG_PARAM);
-  }
-
-  //
-  // Noakes 2016/02/02
-  // The code for resolving the type of an extern variable
-  //
-  //   functionResolution.cpp : resolveExternVarSymbols()
-  //
-  // expects to find the init code inside a block stmt.
-  //
-  // However the remaining cases do not need it.
-  //
-  if (var->hasFlag(FLAG_EXTERN) == true) {
-    block = new BlockStmt(NULL, BLOCK_SCOPELESS);
-    block->insertAtTail(typeDefn);
-
-  } else {
-    stmt->insertAfter(typeDefn);
-  }
-
-  typeDefn->insertAfter(initMove);
-
-  if (constTemp->isType()) {
-    CallExpr* typeOf = new CallExpr(PRIM_TYPEOF, typeTemp);
-
-    initMove->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeOf));
-
-  } else {
-    initMove->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-
-    if (constTemp->hasFlag(FLAG_EXTERN)) {
-      unsigned int tag = block->blockTag;
-
-      block->blockTag = (BlockTag) (tag | BLOCK_EXTERN_TYPE);
-    }
-  }
-
-  if (block != NULL) {
-    stmt->insertAfter(block);
   }
 }
 
