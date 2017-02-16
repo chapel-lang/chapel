@@ -231,6 +231,8 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
 static FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
+static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
+                                        SymExpr* rhs);
 static void resolveSetMember(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
@@ -4847,15 +4849,20 @@ static void resolveSetMember(CallExpr* call) {
     fs->type = t;
   }
 
+  INT_ASSERT(isSymExpr(call->get(3)));
+  handleSetMemberTypeMismatch(t, fs, call, toSymExpr(call->get(3)));
+}
+
+
+static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
+                                        SymExpr* rhs) {
   if (t != fs->type && t != dtNil && t != dtObject) {
-    SymExpr* se = toSymExpr(call->get(3));
-    Symbol* actual = se->symbol();
+    Symbol* actual = rhs->symbol();
     FnSymbol* fn = toFnSymbol(call->parentSymbol);
     if (canCoerceTuples(t, actual, fs->type, fn)) {
       // Add a PRIM_MOVE so that insertCasts will take care of it later.
       VarSymbol* tmp = newTemp("coerce_elt", fs->type);
       call->insertBefore(new DefExpr(tmp));
-      Expr* rhs = call->get(3);
       rhs->remove();
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
       call->insertAtTail(tmp);
