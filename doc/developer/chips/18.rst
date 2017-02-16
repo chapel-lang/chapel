@@ -245,7 +245,7 @@ partitioning of the array's domain among 4 tasks.  We will have poor
 affinity no matter what we do, and thus poor performance.
 
 DSIUtil chunking need not partition on the leftmost dimension of a
-multi-dimension domain.  It actually selects the leftmost dimension
+multi-dimensional domain.  It actually selects the leftmost dimension
 whose size is at least as large as the number of NUMA domains.  Consider
 this array:
 
@@ -396,10 +396,10 @@ This is a start, but note that if either the for-stmt here cannot be
 converted to a forall-stmt or ``complicatedExpensiveComputation()``
 really is as expensive as its name implies then the ``nextLayer``
 references in the loop kernel may not actually be particularly
-NUMA-sensitive, in that getting them perfectly right makes the loop run
-any faster overall.  But for now this is is all we have seen that might
-be sensitive to the cost of array-by-array registration as described
-here.
+NUMA-sensitive, in that the performance will be driven by other things
+and whether the NUMA affinity is right or wrong will not make much
+difference.  But for now this is all we have seen that might be affected
+by the cost of array-by-array registration as described here.
 
 If no such applications exist the performance concerns would be reduced
 but not eliminated, because there would still be the need for dynamic
@@ -525,10 +525,11 @@ optimizations that could be made in the access code.  Nevertheless while
 the multi-ddata access code could be faster than it is now, it will not
 ever be as simple or fast as plain base-plus-offset addressing.  At
 least with all the addressing exposed, getting within something like 3x
-of single-ddata for single-dimension arrays is probably the best we can
-hope for.  For multi-dimension arrays we can probably get closer just
-because multi-dimension addressing is more complicated and multi-ddata
-only adds a fixed cost, but the effect will always be noticeable.
+of single-ddata for single-dimensional arrays is probably the best we
+can hope for.  For multi-dimensional arrays we can probably get closer
+just because multi-dimensional addressing is more complicated and
+multi-ddata only adds a fixed cost, but the effect will always be
+noticeable.
 
 This does not mean that multi-ddata necessarily has bad performance
 overall.  Single-ddata only performs much better when the multi-ddata
