@@ -2,13 +2,5 @@ loc-arr-slice.chpl:1: In function 'badReturnRefLocal':
 loc-arr-slice.chpl:3: error: illegal expression to return by ref
 loc-arr-slice.chpl:6: In function 'badReturnRefConstant':
 loc-arr-slice.chpl:7: error: function cannot return constant by ref
-loc-arr-slice.chpl:10: In function 'badReturnSliceLocal':
-loc-arr-slice.chpl:12: error: illegal return of array aliasing a local array
-loc-arr-slice.chpl:15: In function 'badReturnAliasLocal':
-loc-arr-slice.chpl:17: error: illegal return of array aliasing a local array
-loc-arr-slice.chpl:21: In function 'badReturnAliasSliceLocal':
-loc-arr-slice.chpl:23: error: illegal return of array aliasing a local array
-loc-arr-slice.chpl:27: In function 'badReturnAliasAliasLocal':
-loc-arr-slice.chpl:29: error: illegal return of array aliasing a local array
-loc-arr-slice.chpl:34: In function 'badReturnSliceSliceLocal':
-loc-arr-slice.chpl:36: error: illegal return of array aliasing a local array
+loc-arr-slice.chpl:15: In function 'badReturnSliceByRef':
+loc-arr-slice.chpl:16: error: illegal expression to return by ref
