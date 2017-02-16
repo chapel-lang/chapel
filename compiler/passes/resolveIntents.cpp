@@ -139,8 +139,7 @@ static IntentTag blankIntentForThisArg(Type* t) {
   else if (t->symbol->hasFlag(FLAG_REF))
     return INTENT_REF;
   else if (isRecord(t) || isUnion(t))
-    return INTENT_REF;
-    // should be return INTENT_CONST_REF;
+    return INTENT_CONST_REF;
   else
     return INTENT_CONST_IN;
 }
