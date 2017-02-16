@@ -26,10 +26,19 @@ include $(GASNET_SETUP_MAKEFILE)
 # current PrgEnv.
 #
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xt cray-xe cray-xc cray-xk))
-# Just don't set CC and LD - they'll be set by our compiler/Makefile....
+# On Crays, don't set CC -- it'll be set in our Makefiles and GASNet tends
+# to hard-code them to a point that our modules aren't portable across
+# systems or PE versions.  Set LD to the C++ compiler, as we would in
+# Makefile.comm-none.
+#
+LD = $(CXX)
 else
 ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
-# Just don't set CC and LD - they'll be set by our compiler/Makefile....
+#
+# Just don't set CC -- it'll be set by our compiler/Makefile....
+# set LD to CXX as we do in Makefile.comm-none
+#
+LD = $(CXX)
 else
 CC = $(GASNET_CC)
 LD = $(GASNET_LD)
