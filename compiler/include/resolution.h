@@ -215,6 +215,7 @@ void resolveTypedefedArgTypes(FnSymbol* fn);
 extern bool tryFailure;
 void insertFormalTemps(FnSymbol* fn);
 void insertAndResolveCasts(FnSymbol* fn);
+void ensureInMethodList(FnSymbol* fn);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
 void reorderActuals(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
