@@ -1193,20 +1193,18 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
         init_untyped_var(var, init, stmt, constTemp);
 
       } else if (init == NULL) {
-        init_typed_var(var, type,       stmt, constTemp);
+        init_typed_var(var, type, stmt, constTemp);
 
-      } else if (var->hasFlag(FLAG_PARAM) == false) {
-        if (init->isNoInitExpr() == true) {
-          init_noinit_var(var, type, init, stmt, constTemp);
-
-        } else {
-          init_typed_var(var, type, init, stmt, constTemp);
-        }
-
-      } else {
+      } else if (var->hasFlag(FLAG_PARAM) == true) {
         CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
 
         stmt->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
+
+      } else if (init->isNoInitExpr() == true) {
+        init_noinit_var(var, type, init, stmt, constTemp);
+
+      } else {
+        init_typed_var(var, type, init, stmt, constTemp);
       }
     }
 
