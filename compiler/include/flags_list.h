@@ -243,7 +243,9 @@ symbolFlag( FLAG_REDUCESCANOP , ypr, "ReduceScanOp" , "the ReduceScanOp class" )
 symbolFlag( FLAG_REF , ypr, "ref" , ncm )
 symbolFlag( FLAG_REF_FOR_CONST_FIELD_OF_THIS , npr, "reference to a const field of 'this'" , ncm )
 symbolFlag( FLAG_REF_ITERATOR_CLASS , npr, "ref iterator class" , ncm )
-// FLAG_REF_TO_CONST means reference to immutable
+// Does FLAG_REF_TO_CONST means reference to immutable?
+// maybe it is intented to, but that is not true in
+// setFlagsAndCheckForConstAccess
 symbolFlag( FLAG_REF_TO_CONST , npr, "reference to a const" , "a temp or a function that returns a reference to a Chapel const, e.g. an accessor to a const field or its result" )
 symbolFlag( FLAG_REF_TO_CONST_WHEN_CONST_THIS , ypr, "reference to const when const this" , "a function that returns a reference to a Chapel const when 'this' is const" )
 symbolFlag( FLAG_REF_VAR , ypr, "ref var" , "reference variable" )
