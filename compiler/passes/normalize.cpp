@@ -1116,16 +1116,16 @@ static void init_config_var(VarSymbol* var,
                             Expr*&     stmt,
                             VarSymbol* constTemp);
 
+static void init_untyped_var(VarSymbol* var,
+                             Expr*      init,
+                             Expr*      stmt,
+                             VarSymbol* constTemp);
+
 static void init_typed_var(VarSymbol* var,
                            Expr*      type,
                            Expr*      init,
                            Expr*      stmt,
                            VarSymbol* constTemp);
-
-static void init_untyped_var(VarSymbol* var,
-                             Expr*      init,
-                             Expr*      stmt,
-                             VarSymbol* constTemp);
 
 static void updateVariableAutoDestroy(DefExpr* defExpr);
 
@@ -1176,10 +1176,11 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
         init_config_var(var, stmt, constTemp);
       }
 
-      if (type) {
-        init_typed_var(var, type, init, stmt, constTemp);
-      } else {
+      if (type == NULL) {
         init_untyped_var(var, init, stmt, constTemp);
+
+      } else {
+        init_typed_var(var, type, init, stmt, constTemp);
       }
     }
 
@@ -1281,6 +1282,36 @@ static void init_config_var(VarSymbol* var,
   stmt = noop; // insert regular definition code in then block
 }
 
+
+static void init_untyped_var(VarSymbol* var,
+                             Expr*      init,
+                             Expr*      stmt,
+                             VarSymbol* constTemp) {
+  // See Note 4.
+  //
+  // initialize untyped variable with initialization expression
+  //
+  // sjd: this new specialization of PRIM_NEW addresses the test
+  //         test/classes/diten/test_destructor.chpl
+  //      in which we call an explicit record destructor and avoid
+  //      calling the default constructor.  However, if written with
+  //      an explicit type, this would happen.  The record in this
+  //      test is an issue since its destructor deletes field c, but
+  //      the default constructor does not 'new' it.  Thus if we
+  //      pass the record to a function and it is copied, we have an
+  //      issue since we will do a double free.
+  //
+  CallExpr* initCall = toCallExpr(init);
+  Expr*     rhs      = NULL;
+
+  if (initCall && initCall->isPrimitive(PRIM_NEW)) {
+    rhs = init->remove();
+  } else {
+    rhs = new CallExpr("chpl__initCopy", init->remove());
+  }
+
+  stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, rhs));
+}
 
 static void init_typed_var(VarSymbol* var,
                            Expr*      type,
@@ -1425,37 +1456,6 @@ static void init_typed_var(VarSymbol* var,
       stmt->insertAfter(block);
     }
   }
-}
-
-
-static void init_untyped_var(VarSymbol* var,
-                             Expr*      init,
-                             Expr*      stmt,
-                             VarSymbol* constTemp) {
-  // See Note 4.
-  //
-  // initialize untyped variable with initialization expression
-  //
-  // sjd: this new specialization of PRIM_NEW addresses the test
-  //         test/classes/diten/test_destructor.chpl
-  //      in which we call an explicit record destructor and avoid
-  //      calling the default constructor.  However, if written with
-  //      an explicit type, this would happen.  The record in this
-  //      test is an issue since its destructor deletes field c, but
-  //      the default constructor does not 'new' it.  Thus if we
-  //      pass the record to a function and it is copied, we have an
-  //      issue since we will do a double free.
-  //
-  CallExpr* initCall = toCallExpr(init);
-  Expr*     rhs      = NULL;
-
-  if (initCall && initCall->isPrimitive(PRIM_NEW)) {
-    rhs = init->remove();
-  } else {
-    rhs = new CallExpr("chpl__initCopy", init->remove());
-  }
-
-  stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, rhs));
 }
 
 
