@@ -229,6 +229,10 @@ AllCompTime:
     - disable function resolution optimization (#4476)
   09/14/16:
     - re-enable function resolution optimization (#4517)
+  02/02/17:
+    - Fix parse slowdown (#5257)
+  02/06/17:
+    - Loop over Defs and Uses with SymbolSymExprs (#5285)
 
 arrayPerformance-1d:
   03/19/15:
@@ -607,6 +611,8 @@ memleaksfull:
     - Sync as record (#4309)
   08/23/16:
     - Fix gasnet config for recent memory leak updates (#4375)
+  02/08/17:
+    - Add Futures package module - lambda functions leaking (#5135)
 
 meteor:
   12/18/13:
