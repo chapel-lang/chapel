@@ -75,6 +75,7 @@ class LevelVariable {
     return grid_variables(grid);
   }
 
+  pragma "no copy return"
   proc this(
     grid: Grid, 
     D: domain(dimension, stridable=true)) 
