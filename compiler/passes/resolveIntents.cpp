@@ -129,14 +129,18 @@ static IntentTag constIntentForThisArg(Type* t) {
 static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
 
-  if (t->symbol->hasFlag(FLAG_ARRAY))
+  // This applies to both arguments of type _ref(t) and t
+  if (t->getValType()->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
     return INTENT_REF_MAYBE_CONST;
 
   if (isRecordWrappedType(t))  // domain / distribution
     // array, domain, distribution wrapper records are immutable
     return INTENT_CONST_REF;
-  else if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
-    return INTENT_REF; // TODO -- default to ref for user records?
+  else if (t->symbol->hasFlag(FLAG_REF))
+    return INTENT_REF;
+  else if (isRecord(t) || isUnion(t))
+    return INTENT_REF;
+    // should be return INTENT_CONST_REF;
   else
     return INTENT_CONST_IN;
 }
