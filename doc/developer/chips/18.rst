@@ -692,6 +692,17 @@ badly with any envisioned multi-ddata.
 
 ----
 
+.. code-block:: chapel
+
+   var A: [0..7] [0..#2**20] int;
+   forall i in A.domain do forall j in A(i).domain do f(A(i)(j));
+
+Arrays of arrays are a use case we have not put any thought into yet,
+but we will need to do so when thinking longer term about the full
+solution space.
+
+----
+
 *Add examples here.*
 
 
