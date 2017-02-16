@@ -213,10 +213,13 @@ QualifiedType Symbol::qualType() {
     Qualifier q = qualifierForArgIntent(arg->intent);
     if (qual == QUAL_WIDE_REF && (q == QUAL_REF || q == QUAL_CONST_REF)) {
       q = QUAL_WIDE_REF;
+      // MPF: Should this be CONST_WIDE_REF in some cases?
     }
     ret = QualifiedType(type, q);
   } else {
     ret = QualifiedType(type, qual);
+    if (hasFlag(FLAG_CONST))
+      ret = ret.toConst();
   }
 
   return ret;
