@@ -41,8 +41,9 @@ var rr = new RR(new R(2));
 writeln("writeX: ");
 outputX(r.foo());
 outputX(rr.bar().foo());
+outputX(rr.bar().x);
 
 writeln("setX: ");
 setX(r.foo());
 setX(rr.bar().foo());
-
+setX(rr.bar().x);
