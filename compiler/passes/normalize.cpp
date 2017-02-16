@@ -216,8 +216,8 @@ void normalize(FnSymbol* fn) {
 * then lets the reset of normalize sort things out.  The module looks         *
 * reasonable by the end of the pass but odd in the middle.                    *
 *                                                                             *
-* MDN 2014/07/25 At some point this transformation should be reworked to be   *
-* more delicate e.g. insert an empty init function and then carefully         *
+* Noakes 2014/07/25 At some point this transformation should be reworked to   *
+* be more delicate e.g. insert an empty init function and then carefully      *
 * populate it so that the AST is well-behaved at all points.                  *
 *                                                                             *
 ************************************** | *************************************/
@@ -1129,6 +1129,12 @@ static void init_typed_var(VarSymbol* var,
 
 static bool isModuleNoinit(VarSymbol* var, Expr* init);
 
+static void init_noinit_var(VarSymbol* var,
+                            Expr*      type,
+                            Expr*      init,
+                            Expr*      stmt,
+                            VarSymbol* constTemp);
+
 static void init_typed_var(VarSymbol* var,
                            Expr*      type,
                            Expr*      stmt,
@@ -1190,7 +1196,12 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
         init_typed_var(var, type,       stmt, constTemp);
 
       } else if (var->hasFlag(FLAG_PARAM) == false) {
-        init_typed_var(var, type, init, stmt, constTemp);
+        if (init->isNoInitExpr() == true) {
+          init_noinit_var(var, type, init, stmt, constTemp);
+
+        } else {
+          init_typed_var(var, type, init, stmt, constTemp);
+        }
 
       } else {
         CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
@@ -1331,32 +1342,17 @@ static void init_typed_var(VarSymbol* var,
                            Expr*      init,
                            Expr*      stmt,
                            VarSymbol* constTemp) {
-  init->remove();
+  VarSymbol* typeTemp = newTemp("type_tmp");
+  DefExpr*   typeDefn = new DefExpr(typeTemp);
+  CallExpr*  initCall = new CallExpr(PRIM_INIT, type->remove());
+  CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
+  CallExpr*  assign   = new CallExpr("=",       typeTemp,  init->remove());
+  CallExpr*  varMove  = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
 
-  if (init->isNoInitExpr() == true) {
-    if (fUseNoinit == true || isModuleNoinit(var, init) == true) {
-      CallExpr* noinitCall = new CallExpr(PRIM_NO_INIT, type->remove());
-
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, noinitCall));
-
-    } else {
-      // Ignore no-init expression and fall back on default init
-      init_typed_var(var, type, stmt, constTemp);
-    }
-
-  } else {
-    VarSymbol* typeTemp = newTemp("type_tmp");
-    DefExpr*   typeDefn = new DefExpr(typeTemp);
-    CallExpr*  initCall = new CallExpr(PRIM_INIT, type->remove());
-    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
-    CallExpr*  assign   = new CallExpr("=",       typeTemp,  init);
-    CallExpr*  varMove  = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
-
-    stmt->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(assign);
-    assign->insertAfter(varMove);
-  }
+  stmt->insertAfter(typeDefn);
+  typeDefn->insertAfter(initMove);
+  initMove->insertAfter(assign);
+  assign->insertAfter(varMove);
 }
 
 // Internal and Standard modules always honor no-init
@@ -1385,6 +1381,24 @@ static bool isModuleNoinit(VarSymbol* var, Expr* init) {
   return retval;
 }
 
+static void init_noinit_var(VarSymbol* var,
+                            Expr*      type,
+                            Expr*      init,
+                            Expr*      stmt,
+                            VarSymbol* constTemp) {
+  init->remove();
+
+  if (fUseNoinit == true || isModuleNoinit(var, init) == true) {
+    CallExpr* noinitCall = new CallExpr(PRIM_NO_INIT, type->remove());
+
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, noinitCall));
+
+  } else {
+    // Ignore no-init expression and fall back on default init
+    init_typed_var(var, type, stmt, constTemp);
+  }
+}
+
 static void init_typed_var(VarSymbol* var,
                            Expr*      type,
                            Expr*      stmt,
@@ -1400,7 +1414,7 @@ static void init_typed_var(VarSymbol* var,
   }
 
   //
-  // MDN 2016/02/02
+  // Noakes 2016/02/02
   // The code for resolving the type of an extern variable
   //
   //   functionResolution.cpp : resolveExternVarSymbols()
