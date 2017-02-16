@@ -1127,6 +1127,11 @@ static void init_typed_var(VarSymbol* var,
                            Expr*      stmt,
                            VarSymbol* constTemp);
 
+static void init_typed_var(VarSymbol* var,
+                           Expr*      type,
+                           Expr*      stmt,
+                           VarSymbol* constTemp);
+
 static void updateVariableAutoDestroy(DefExpr* defExpr);
 
 static void normalizeVariableDefinition(DefExpr* defExpr) {
@@ -1178,6 +1183,9 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
 
       if (type == NULL) {
         init_untyped_var(var, init, stmt, constTemp);
+
+      } else if (init == NULL) {
+        init_typed_var(var, type,       stmt, constTemp);
 
       } else {
         init_typed_var(var, type, init, stmt, constTemp);
@@ -1458,6 +1466,151 @@ static void init_typed_var(VarSymbol* var,
   }
 }
 
+static void init_typed_var(VarSymbol* var,
+                           Expr*      type,
+                           Expr*      stmt,
+                           VarSymbol* constTemp) {
+  Expr* init = NULL;
+
+  //
+  // use cast for parameters to avoid multiple parameter assignments
+  //
+  if (init && var->hasFlag(FLAG_PARAM)) {
+    stmt->insertAfter(new CallExpr(PRIM_MOVE,
+                                   var,
+                                   new CallExpr("_cast",
+                                                type->remove(),
+                                                init->remove())));
+
+    return;
+  }
+
+  //
+  // initialize variable based on specified type and then assign it
+  // the initialization expression if it exists
+  //
+  bool isNoinit     = init && init->isNoInitExpr();
+  bool moduleNoinit = false;
+
+  if (isNoinit && !fUseNoinit) {
+    // In the case where --no-use-noinit is thrown, we want to still use
+    // noinit in the module code (as the correct operation of complexes
+    // depends on it).
+
+    // Lydia note: The requirement for complexes is expected to go away when
+    // we transition to constructors for all types instead of the _defaultOf
+    // function
+    Symbol* moduleSource = var;
+
+    while (!isModuleSymbol(moduleSource)  &&
+           moduleSource           != NULL &&
+           moduleSource->defPoint != NULL) {
+      // This will go up the definition tree until it reaches a module symbol
+      // Or until it encounters a null field.
+      moduleSource = moduleSource->defPoint->parentSymbol;
+    }
+
+    ModuleSymbol* mod = toModuleSymbol(moduleSource);
+
+    if (mod != NULL && moduleSource->defPoint != NULL) {
+      // As these are the only other cases that would have caused the prior
+      // while loop to exit, the moduleSource must be a module
+      moduleNoinit = mod->modTag == MOD_INTERNAL ||
+                     mod->modTag == MOD_STANDARD;
+
+      // Check if the parent module of this variable is a standard or
+      // internal module, and store the result of this check in moduleNoinit
+    }
+  }
+
+  // Lydia note:  I'm adding fUseNoinit here because utilizing noinit with
+  // return temps is necessary, so the only instances that should be
+  // controlled by the flag are generated here
+  if (isNoinit && (fUseNoinit || moduleNoinit)) {
+    // Only perform this action if noinit has been specified and the flag
+    // --no-use-noinit has not been thrown (or if the noinit is found in
+    // module code)
+    var->defPoint->init->remove();
+
+    CallExpr* initCall = new CallExpr(PRIM_MOVE,
+                                      var,
+                                      new CallExpr(PRIM_NO_INIT,
+                                                   type->remove()));
+
+    // Since the variable won't have been defined just yet (stmt is
+    // its def expression after all), insert the move after the defPoint
+    stmt->insertAfter(initCall);
+
+  } else {
+    if (!fUseNoinit && isNoinit) {
+      // The instance would be initialized to noinit, but we aren't allowing
+      // noinit, so remove the initialization expression, allowing  it to
+      // default initialize.
+      init->remove();
+      init = NULL;
+    }
+
+    //
+    // MDN 2016/02/02
+    // The code for resolving the type of an extern variable
+    //
+    //   functionResolution.cpp : resolveExternVarSymbols()
+    //
+    // expects to find the init code inside a block stmt.
+    //
+    // However the remaining cases do not need it.
+    //
+    BlockStmt* block = NULL;
+
+    if (var->hasFlag(FLAG_EXTERN) == true) {
+      block = new BlockStmt(NULL, BLOCK_SCOPELESS);
+    }
+
+    VarSymbol* typeTemp = newTemp("type_tmp");
+    DefExpr*   typeDefn = new DefExpr(typeTemp);
+    CallExpr*  initCall = NULL;
+
+    if (var->hasFlag(FLAG_PARAM)) {
+      typeTemp->addFlag(FLAG_PARAM);
+    }
+
+    initCall = new CallExpr(PRIM_MOVE,
+                            typeTemp,
+                            new CallExpr(PRIM_INIT, type->remove()));
+
+    if (block != NULL) {
+      block->insertAtTail(typeDefn);
+    } else {
+      stmt->insertAfter(typeDefn);
+    }
+
+    typeDefn->insertAfter(initCall);
+
+    if (init) {
+      CallExpr* assign = new CallExpr("=",       typeTemp,  init->remove());
+      CallExpr* move   = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
+
+      // This should be copy-initialization, not assignment.
+      initCall->insertAfter(assign);
+      assign->insertAfter(move);
+
+    } else if (constTemp->isType()) {
+      initCall->insertAfter(new CallExpr(PRIM_MOVE,
+                                         constTemp,
+                                         new CallExpr(PRIM_TYPEOF, typeTemp)));
+
+    } else {
+      initCall->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+
+      if (constTemp->hasFlag(FLAG_EXTERN))
+        (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
+    }
+
+    if (block != NULL) {
+      stmt->insertAfter(block);
+    }
+  }
+}
 
 static void updateVariableAutoDestroy(DefExpr* defExpr) {
   VarSymbol* var = toVarSymbol(defExpr->sym);
