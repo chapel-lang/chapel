@@ -4,11 +4,11 @@ NUMA-Aware Array Storage
 Status
   Draft
 
-Author
-  Greg Titus (lead)
-  Ben Harshbarger
-  Elliot Ronaghan
-  Michael Ferguson
+Authors
+  Greg Titus (lead),
+  Ben Harshbarger,
+  Elliot Ronaghan,
+  Michael Ferguson,
   Sung-Eun Choi
 
 Abstract
@@ -26,8 +26,8 @@ particular array elements need to run on CPUs close to the NUMA domain
 on which those array elements are stored.  With ``locModel=numa``, the
 ``DefaultRectangular`` domain has long had NUMA-aware parallel
 iteration, based on ``DSIUtil.chpl:_computeChunkStuff()`` and related
-functionality.  (From here on this will be referred to as *DSIUtil*
-chunking.)  DSIUtil chunking divides the domain as equally as possible
+functionality.  (From here on this will be referred to as *DSIUtil
+chunking*.)  DSIUtil chunking divides the domain as equally as possible
 into subdomains, one for each sublocale, and then creates a task on each
 sublocale to process each subdomain.  What was missing was the ability
 to localize array data in a matching NUMA-sensitive way.  Recent work
@@ -43,19 +43,28 @@ multi-chunk array addressing code is more complicated than that for
 single-chunk addressing because of the need to compute a chunk index
 from the array index.  Thus the dsiAccess() array access method runs
 about 8x slower for multi-ddata arrays than for single-ddata ones.  In
-some cases the extra computation can be in effect hoisted out of kernel
+some cases the extra computation in effect can be hoisted out of kernel
 loops, but not always.  At present any loop which does not use the
 ``DefaultRectangularArr`` serial, parallel standalone, or parallel
 follower iterators performs quite poorly, and really only the parallel
 iterators give good performance.  The serial one is distinctly slower
 than for single-ddata, just not as bad as some other cases.  As an
 example, the following loop written in a natural style performs quite
-badly.
+badly with the current multi-ddata implementation, compared to how it
+does with single-ddata.
 
 .. code-block:: chapel
 
   forall i in A.domain do
     A(i) = i;
+
+But the following fairly similar loop performs quite well, similarly to
+how it does with ``locModel=flat``.
+
+.. code-block:: chapel
+
+  forall (a,i) in zip(A,A.domain) do
+    a = i;
 
 This CHIP documents our mid-course exploration of solutions for this
 problem and some other related ones.
@@ -142,29 +151,31 @@ What Matters for NUMA
 
 * network cooperation
 
-  Some network interface chips (NICs), including Cray's Aries, require
-  that memory be "registered" with them in order to be referenced in
-  network operations.  At least for Aries and probably for some others,
-  this involves pinning virtual addresses to physical addresses to fix
-  their relationship.  Doing so necessarily also sets the pages' NUMA
-  locality, since NUMA locality is a physical characteristic.  If the
-  localization of a registered page is to be changed, then the page must
-  be un-registered first and re-registered afterward.  By itself this
-  may not be very costly, but broadcasting the new registration to the
-  other nodes which need it, and synchronizing that broadcast, may be.
+  Some networks and/or their software interfaces, including the
+  libfabric interface and the Cray Aries network when accessed via
+  certain interfaces, require that memory be "registered" with them in
+  order to be referenced in network operations.  For Aries and likely
+  some others, this involves pinning virtual addresses to physical
+  addresses to fix their relationship.  Doing so necessarily also sets
+  the pages' NUMA locality, since NUMA locality is a physical
+  characteristic.  If the localization of a registered page is to be
+  changed, then the page must be un-registered first and re-registered
+  afterward.  By itself this may not be very costly, but broadcasting
+  the new registration to the other nodes which need it, and
+  synchronizing that broadcast, may be.
 
   The Cray network can have some secondary effects on NUMA performance.
-  On Cray X\* systems the NIC is slightly closer to NUMA domain 0 than
-  to NUMA domain 1.  That is, it takes slightly less time for the NIC to
-  access memory on NUMA domain 0.  So to maximize remote reference
-  performance for a given array we should allocate as much of it as
-  possible on NUMA domain 0 and only use NUMA domain 1 as a fallback.
-  However, remote references take longer than local ones, so doing this
-  only reduces the total remote latency by a small amount.  That being
-  the case, if there is significant local reference traffic to an array
-  that is also sometimes referenced remotely it is better to balance its
-  storage across the NUMA domains in order to receive the up to 2x local
-  performance benefit of doing so.
+  On Cray XC series systems the NIC is slightly closer to NUMA domain 0
+  than to NUMA domain 1.  That is, it takes slightly less time for the
+  NIC to access memory on NUMA domain 0.  So to maximize remote
+  reference performance for a given array we should allocate as much of
+  it as possible on NUMA domain 0 and only use NUMA domain 1 as a
+  fallback.  However, remote references take longer than local ones, so
+  doing this only reduces the total remote latency by a small amount.
+  That being the case, if there is significant local reference traffic
+  to an array that is also sometimes referenced remotely it is better to
+  balance its storage across the NUMA domains in order to receive the up
+  to 2x local performance benefit of doing so.
 
 
 NUMA Array Storage Alternatives
@@ -191,9 +202,15 @@ Description
 ...........
 
 This is the simplest model: allocate one ddata for an array and then
-NUMA-localize that memory.  It is what Chapel with ``locModel=numa``
-used to do, and still does for arrays of fewer than 2\*\*20 elements,
-and effectively what C with first-touch does.
+NUMA-localize that memory.  This is effectively what C and other
+languages do on NUMA architectures, implicitly, using first-touch.  Even
+Chapel does this, again implicitly by means of first-touch, for
+``locModel=flat`` and for arrays small enough to be placed on a single
+ddata chunk with ``locModel=numa``.  The proposal here is to do it
+explicitly instead, in order to get the desired localization in cases
+where first-touch fails to do so.  This can happen due to things like
+pre-localization of the memory, or the first touch coming from a CPU on
+other than the desired NUMA domain.
 
 
 Analysis
@@ -292,7 +309,7 @@ But for now we are not pursuing it further.
 The allocate-then-localize model used for single-ddata does not
 cooperate well with network interfaces that require registered memory.
 Chapel registers the heap and other data with the NIC for ``comm=ugni``
-on Cray X\* systems and also for ``comm=gasnet, conduit=aries``.
+and also for ``comm=gasnet, conduit=aries`` on Cray XC systems.
 Registration pins virtual pages to physical pages in order to fix their
 relationship.  But changing NUMA locality necessarily means changing
 physical addresses (because NUMA is a physical characteristic), which
@@ -304,9 +321,11 @@ allocation.
 All of the single-ddata alternatives have a lower limit on the size of
 array they can be applied to without too much waste.  Since the minimum
 unit of NUMA localization is a page, if it is to be localized an array
-needs to occupy at least as many memory pages as there are NUMA domains
-to avoid wasting space.  This can be large if NIC memory registration
-requires the use of hugepages, as it does on Cray X\* systems.
+needs to occupy at least as many memory pages as there are NUMA domains,
+and preferably many more to avoid wasting space.  This can be a large
+amount of memory if hugepages are being used, as will be the case for
+the highest-performing Chapel multi-locale configurations on Cray XC
+systems.
 
 
 Single-ddata with Separate Arrays
@@ -373,11 +392,18 @@ many NUMA-sensitive arrays turned up one that looks like this:
        }
     }
 
-Note that if either the for-stmt cannot be converted to a forall-stmt or
-``complicatedExpensiveComputation()`` really is expensive then the
-``nextLayer`` references in the kernel may not really be NUMA-sensitive.
-But for now this is is all we have seen that might be sensitive to the
-cost of array-by-array registration as described here.
+This is a start, but note that if either the for-stmt here cannot be
+converted to a forall-stmt or ``complicatedExpensiveComputation()``
+really is as expensive as its name implies then the ``nextLayer``
+references in the loop kernel may not actually be particularly
+NUMA-sensitive, in that getting them perfectly right makes the loop run
+any faster overall.  But for now this is is all we have seen that might
+be sensitive to the cost of array-by-array registration as described
+here.
+
+If no such applications exist the performance concerns would be reduced
+but not eliminated, because there would still be the need for dynamic
+registration and broadcast as arrays were created.
 
 
 Single-ddata with Cyclic Localization
@@ -494,15 +520,18 @@ This could be sped up significantly by doing an integer multiply by the
 reciprocal instead, or even a right-shift for power-of-two divisors.
 The ddatas and other per-chunk information are themselves currently
 stored as a ddata of records, which could be a tuple of records at a
-fair saving at array creation time.  And the are some other small
+fair saving at array creation time.  And there are some other small
 optimizations that could be made in the access code.  Nevertheless while
 the multi-ddata access code could be faster than it is now, it will not
-ever be as simple or fast as plain base-plus-offset addressing.  AT
+ever be as simple or fast as plain base-plus-offset addressing.  At
 least with all the addressing exposed, getting within something like 3x
-of single-ddata is probably the best we can hope for.
+of single-ddata for single-dimension arrays is probably the best we can
+hope for.  For multi-dimension arrays we can probably get closer just
+because multi-dimension addressing is more complicated and multi-ddata
+only adds a fixed cost, but the effect will always be noticeable.
 
 This does not mean that multi-ddata necessarily has bad performance
-overall.  Single-ddata only performs much better in when the multi-ddata
+overall.  Single-ddata only performs much better when the multi-ddata
 access cost is exposed.  The worst situation from a usability standpoint
 is probably parallel iteration over an array's domain, not zippered with
 iteration over the array itself.  Here the full cost of the array access
@@ -583,8 +612,8 @@ small enough for a single locale, because of the added involvement of
 the ``Block`` domain map where it is not currently used.
 
 
-Some Interesting Cases
-``````````````````````
+Some Interesting Use Cases
+``````````````````````````
 
 *This whole section is work in progress.*
 
