@@ -1127,6 +1127,8 @@ static void init_typed_var(VarSymbol* var,
                            Expr*      stmt,
                            VarSymbol* constTemp);
 
+static bool isModuleNoinit(VarSymbol* var, Expr* init);
+
 static void init_typed_var(VarSymbol* var,
                            Expr*      type,
                            Expr*      stmt,
@@ -1219,7 +1221,6 @@ static void init_array_alias(VarSymbol* var,
   stmt->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
 }
 
-
 static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt) {
   Expr* varLocation = NULL;
 
@@ -1261,7 +1262,6 @@ static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt) {
                                  var,
                                  new CallExpr(PRIM_ADDR_OF, varLocation)));
 }
-
 
 static void init_config_var(VarSymbol* var,
                             Expr*&     stmt,
@@ -1340,42 +1340,9 @@ static void init_typed_var(VarSymbol* var,
   }
 
   if (init->isNoInitExpr() == true) {
-    bool moduleNoinit = false;
-
-    if (fUseNoinit == false) {
-      // In the case where --no-use-noinit is thrown, we want to still use
-      // noinit in the module code (as the correct operation of complexes
-      // depends on it).
-
-      // Lydia note: The requirement for complexes is expected to go away when
-      // we transition to constructors for all types instead of the _defaultOf
-      // function
-      Symbol* moduleSource = var;
-
-      while (!isModuleSymbol(moduleSource)  &&
-             moduleSource           != NULL &&
-             moduleSource->defPoint != NULL) {
-        // This will go up the definition tree until it reaches a module symbol
-        // Or until it encounters a null field.
-        moduleSource = moduleSource->defPoint->parentSymbol;
-      }
-
-      ModuleSymbol* mod = toModuleSymbol(moduleSource);
-
-      if (mod != NULL && moduleSource->defPoint != NULL) {
-        // As these are the only other cases that would have caused the prior
-        // while loop to exit, the moduleSource must be a module
-        moduleNoinit = mod->modTag == MOD_INTERNAL ||
-          mod->modTag == MOD_STANDARD;
-
-        // Check if the parent module of this variable is a standard or
-        // internal module, and store the result of this check in moduleNoinit
-      }
-    }
-
     init->remove();
 
-    if (fUseNoinit == true || moduleNoinit == true) {
+    if (fUseNoinit == true || isModuleNoinit(var, init) == true) {
       CallExpr* noinitCall = new CallExpr(PRIM_NO_INIT, type->remove());
 
       stmt->insertAfter(new CallExpr(PRIM_MOVE, var, noinitCall));
@@ -1446,6 +1413,32 @@ static void init_typed_var(VarSymbol* var,
       stmt->insertAfter(block);
     }
   }
+}
+
+// Internal and Standard modules always honor no-init
+//
+// As a minimum, the complex type appears to rely on this
+static bool isModuleNoinit(VarSymbol* var, Expr* init) {
+  bool isNoinit = init->isNoInitExpr();
+  bool retval   = false;
+
+  if (isNoinit == true && fUseNoinit == false) {
+    Symbol* moduleSource = var;
+
+    while (isModuleSymbol(moduleSource)  == false &&
+           moduleSource                  != NULL &&
+           moduleSource->defPoint        != NULL) {
+      moduleSource = moduleSource->defPoint->parentSymbol;
+    }
+
+    if (ModuleSymbol* mod = toModuleSymbol(moduleSource)) {
+      if (moduleSource->defPoint != NULL) {
+        retval = mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD;
+      }
+    }
+  }
+
+  return retval;
 }
 
 static void init_typed_var(VarSymbol* var,
