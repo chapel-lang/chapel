@@ -1032,6 +1032,7 @@ module ChapelBase {
     return if x != 0i then true else false;
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -1039,6 +1040,7 @@ module ChapelBase {
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, param init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -1046,6 +1048,7 @@ module ChapelBase {
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, init: _nilType) {
     pragma "no auto destroy" var x: t;
     return x;

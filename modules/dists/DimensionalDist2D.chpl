@@ -1061,6 +1061,7 @@ proc DimensionalArr.dsiSerialWrite(f): void {
 
 /// slicing, reindexing, rank change, reallocation //////////////////////////
 
+pragma "no copy return"
 proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
   const dom = this.dom;
   const dist = dom.dist;

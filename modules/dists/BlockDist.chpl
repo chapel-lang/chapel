@@ -1284,6 +1284,7 @@ proc BlockArr.dsiSerialWrite(f) {
   }
 }
 
+pragma "no copy return"
 proc BlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {

@@ -725,6 +725,7 @@ class CyclicArr: BaseArr {
   const SENTINEL = max(rank*idxType);
 }
 
+pragma "no copy return"
 proc CyclicArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
