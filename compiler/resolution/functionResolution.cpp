@@ -8295,13 +8295,19 @@ static void insertAutoCopyForArrayReturn(FnSymbol* fn) {
         if (call->isPrimitive(PRIM_MOVE) && se == call->get(1)) {
           Type* rhsType = call->get(2)->typeInfo();
           // BHARSH: Should this also check if fn->retTag != RET_TYPE?
+          //
+          // TODO: Should we check if the RHS is a symbol with 'no auto
+          // destroy' on it? If it is, then we'd be copying the RHS and it
+          // would never be destroyed...
           if (rhsType->symbol->hasFlag(FLAG_ARRAY) &&
               isTypeExpr(call->get(2)) == false &&
               !fn->hasFlag(FLAG_CONSTRUCTOR) &&
               !fn->hasFlag(FLAG_NO_COPY_RETURN) &&
+              !fn->hasFlag(FLAG_UNALIAS_FN) &&
               !fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) &&
               !fn->hasFlag(FLAG_INIT_COPY_FN) &&
               !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
+              !fn->hasFlag(FLAG_IF_EXPR_FN) &&
               !fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
 
             if (!hasAutoCopyForType(rhsType)) {
@@ -8310,11 +8316,21 @@ static void insertAutoCopyForArrayReturn(FnSymbol* fn) {
             SymExpr* copiedRHS = NULL;
             if (isSymExpr(call->get(2))) {
               copiedRHS = toSymExpr(call->get(2)->remove());
-            } else {
-              VarSymbol* tmp = newTemp(rhsType);
-              call->insertBefore(new DefExpr(tmp));
-              call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
-              copiedRHS = new SymExpr(tmp);
+            } else if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+              if (rhsCall->isPrimitive(PRIM_DEREF)) {
+                // BHARSH 2017-02-15:
+                // ReturnByRef::updateAssignmentsFromRefTypeToValue in the
+                // callDestructors pass would otherwise attempt to insert an
+                // additional autoCopy when it sees the PRIM_DEREF. I observed
+                // that the copy would not be destroyed.
+                copiedRHS = toSymExpr(rhsCall->get(1)->copy());
+                call->get(2)->remove();
+              } else {
+                VarSymbol* tmp = newTemp("array_autoCopy_ret_tmp", rhsType);
+                call->insertBefore(new DefExpr(tmp));
+                call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
+                copiedRHS = new SymExpr(tmp);
+              }
             }
             FnSymbol* autoFn = getAutoCopy(rhsType);
             CallExpr* copy = new CallExpr(autoFn, copiedRHS);
