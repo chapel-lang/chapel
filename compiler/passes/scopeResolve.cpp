@@ -1778,7 +1778,7 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
   WFDIWmark mark(markLoc, origUSE->unresolved);
 
   if (!warnedForDotInsideWith.count(mark)) {
-    USR_FATAL_CONT(origUSE, "%s: cannot reference a field or function in a 'with' clause of a %s", origUSE->unresolved, construct);
+    USR_FATAL_CONT(origUSE, "cannot reference a field or function '%s' in a with-clause of this %s", origUSE->unresolved, construct);
     warnedForDotInsideWith.insert(mark);
   }
 }
