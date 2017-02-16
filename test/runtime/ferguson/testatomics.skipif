@@ -1,3 +1,13 @@
 # Skipping if CHPL_ATOMICS == locks because it is too hard
 # to link with the appropriate parts of the Chapel runtime.
 CHPL_ATOMICS==locks
+# Skipping under valgrind because of an error like this:
+# Conditional jump or move depends on uninitialised value(s)
+#   at 0x400642: atomic_store_explicit_bool (chpl-atomics.h:310)
+#   by 0x40066E: atomic_store_bool (chpl-atomics.h:310)
+#   by 0x401728: main (testatomics.test.c:77)
+#
+# and looking at the implementation of atomic_store_explicit_bool, it
+# does in fact have a loop depending on an uninitialized value
+# (because it checks that a compare-and-swap worked)
+CHPL_TEST_VGRND_EXE==on
