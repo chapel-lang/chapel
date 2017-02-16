@@ -1331,9 +1331,9 @@ static void init_typed_var(VarSymbol* var,
                            Expr*      init,
                            Expr*      stmt,
                            VarSymbol* constTemp) {
-  if (init->isNoInitExpr() == true) {
-    init->remove();
+  init->remove();
 
+  if (init->isNoInitExpr() == true) {
     if (fUseNoinit == true || isModuleNoinit(var, init) == true) {
       CallExpr* noinitCall = new CallExpr(PRIM_NO_INIT, type->remove());
 
@@ -1345,48 +1345,17 @@ static void init_typed_var(VarSymbol* var,
     }
 
   } else {
-    //
-    // MDN 2016/02/02
-    // The code for resolving the type of an extern variable
-    //
-    //   functionResolution.cpp : resolveExternVarSymbols()
-    //
-    // expects to find the init code inside a block stmt.
-    //
-    // However the remaining cases do not need it.
-    //
-    BlockStmt* block = NULL;
-
-    if (var->hasFlag(FLAG_EXTERN) == true) {
-      block = new BlockStmt(NULL, BLOCK_SCOPELESS);
-    }
-
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);
-    CallExpr*  initCall = NULL;
+    CallExpr*  initCall = new CallExpr(PRIM_INIT, type->remove());
+    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
+    CallExpr*  assign   = new CallExpr("=",       typeTemp,  init);
+    CallExpr*  varMove  = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
 
-    initCall = new CallExpr(PRIM_MOVE,
-                            typeTemp,
-                            new CallExpr(PRIM_INIT, type->remove()));
-
-    if (block != NULL) {
-      block->insertAtTail(typeDefn);
-    } else {
-      stmt->insertAfter(typeDefn);
-    }
-
-    typeDefn->insertAfter(initCall);
-
-    CallExpr* assign = new CallExpr("=",       typeTemp,  init->remove());
-    CallExpr* move   = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
-
-    // This should be copy-initialization, not assignment.
-    initCall->insertAfter(assign);
-    assign->insertAfter(move);
-
-    if (block != NULL) {
-      stmt->insertAfter(block);
-    }
+    stmt->insertAfter(typeDefn);
+    typeDefn->insertAfter(initMove);
+    initMove->insertAfter(assign);
+    assign->insertAfter(varMove);
   }
 }
 
