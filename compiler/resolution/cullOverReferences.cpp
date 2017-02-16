@@ -418,6 +418,9 @@ void cullOverReferences() {
         // and the determination depends on which branch is chosen.
         if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
           if (contextCallItDepends(sym, cc/*, ignoredDefs*/)) {
+            // since lhs->symbol() is the result of a move from
+            // a ContextCallExpr, it will already be in the list
+            // of collectedSymbols.
             revisit = true;
             CallExpr* move = toCallExpr(cc->parentExpr);
             SymExpr* lhs = toSymExpr(move->get(1));
@@ -435,6 +438,8 @@ void cullOverReferences() {
           // it depends on the determination of the called function.
           ArgSymbol* formal = actual_to_formal(se);
           if (formal->intent == INTENT_REF_MAYBE_CONST) {
+            // since it has INTENT_REF_MAYBE_CONST, it will
+            // already be in the list of collectedSymbols.
             revisit = true;
             // Make a note that determining how formal
             // is used (const or not?) will allow us to resolve
@@ -452,11 +457,15 @@ void cullOverReferences() {
           if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
               formal->hasFlag(FLAG_ARG_THIS)) {
             CallExpr* move = toCallExpr(call->parentExpr);
-            if (move->isPrimitive(PRIM_MOVE)) {
+            if (move && move->isPrimitive(PRIM_MOVE)) {
               SymExpr* lhs = toSymExpr(move->get(1));
-              revisit = true;
-              revisitGraph[lhs->symbol()].push_back(sym);
-              continue; // move on to the next iteration
+              Symbol* lhsSymbol = lhs->symbol();
+              if (lhsSymbol->isRef() && lhsSymbol != sym) {
+                collectedSymbols.push_back(lhsSymbol);
+                revisit = true;
+                revisitGraph[lhsSymbol].push_back(sym);
+                continue; // move on to the next iteration
+              }
             }
           }
         }
@@ -621,21 +630,22 @@ void cullOverReferences() {
   // Now, lower ContextCalls and remove INTENT_REF_MAYBE_CONST.
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
     // Some ContextCallExprs have already been removed above
-    if (cc->parentExpr != NULL) {
-      CallExpr* move = toCallExpr(cc->parentExpr);
+    if (cc->parentExpr == NULL)
+      continue;
 
-      bool useSetter = false;
+    CallExpr* move = toCallExpr(cc->parentExpr);
 
-      if (move) {
-        SymExpr* lhs = toSymExpr(move->get(1));
-        Qualifier qual = lhs->symbol()->qualType().getQual();
-        // Expecting only REF or CONST_REF at this point.
-        INT_ASSERT(qual == QUAL_REF || qual == QUAL_CONST_REF);
-        useSetter = (qual == QUAL_REF);
-      }
+    bool useSetter = false;
 
-      lowerContextCall(cc, useSetter);
+    if (move) {
+      SymExpr* lhs = toSymExpr(move->get(1));
+      Qualifier qual = lhs->symbol()->qualType().getQual();
+      // Expecting only REF or CONST_REF at this point.
+      INT_ASSERT(qual == QUAL_REF || qual == QUAL_CONST_REF);
+      useSetter = (qual == QUAL_REF);
     }
+
+    lowerContextCall(cc, useSetter);
   }
 
   // Now, lower ArgSymbol argument intent.
