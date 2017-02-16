@@ -1103,14 +1103,9 @@ static void insert_call_temps(CallExpr* call)
 *                                                                             *
 ************************************** | *************************************/
 
-static void init_array_alias(VarSymbol* var,
-                             Expr*      type,
-                             Expr*      init,
-                             DefExpr*   defExpr);
+static void init_array_alias(DefExpr* defExpr);
 
-static void init_ref_var(VarSymbol*     var,
-                         Expr*          init,
-                         DefExpr*       defExpr);
+static void init_ref_var(DefExpr* defExpr);
 
 static void init_config_var(VarSymbol* var,
                             Expr*&     insert,
@@ -1164,11 +1159,11 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
 
     // handle var ... : ... => ...;
     } else if (var->hasFlag(FLAG_ARRAY_ALIAS)) {
-      init_array_alias(var, type, init, defExpr);
+      init_array_alias(defExpr);
 
     // handle ref variables
     } else if (var->hasFlag(FLAG_REF_VAR)) {
-      init_ref_var(var, init, defExpr);
+      init_ref_var(defExpr);
 
     } else {
       VarSymbol* constTemp = var;
@@ -1211,31 +1206,32 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   }
 }
 
-static void init_array_alias(VarSymbol* var,
-                             Expr*      type,
-                             Expr*      init,
-                             DefExpr*   defExpr) {
-  CallExpr* partial = NULL;
+static void init_array_alias(DefExpr* defExpr) {
+  VarSymbol* var = toVarSymbol(defExpr->sym);
 
-  if (type == NULL) {
-    partial = new CallExpr("newAlias", gMethodToken, init->remove());
+  if (defExpr->exprType == NULL) {
+    Expr*     init     = defExpr->init->remove();
+    CallExpr* newAlias = new CallExpr("newAlias", gMethodToken, init);
 
-    // newAlias is not a method, so we don't set the methodTag
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, newAlias));
 
   } else {
-    CallExpr* reindex = new CallExpr("reindex", gMethodToken, init->remove());
+    Expr*     init    = defExpr->init->remove();
+    Expr*     type    = defExpr->exprType->remove();
+    CallExpr* reindex = new CallExpr("reindex",  gMethodToken, init);
+    CallExpr* partial = new CallExpr(reindex,    type);
 
     reindex->partialTag = true;
     reindex->methodTag  = true;
 
-    partial = new CallExpr(reindex, type->remove());
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
   }
-
-  defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
 }
 
-static void init_ref_var(VarSymbol* var, Expr* init, DefExpr* defExpr) {
-  Expr* varLocation = NULL;
+static void init_ref_var(DefExpr* defExpr) {
+  VarSymbol* var         = toVarSymbol(defExpr->sym);
+  Expr*      init        = defExpr->init;
+  Expr*      varLocation = NULL;
 
   if (init == NULL) {
     USR_FATAL_CONT(var,
@@ -1252,8 +1248,8 @@ static void init_ref_var(VarSymbol* var, Expr* init, DefExpr* defExpr) {
 
         defExpr->insertBefore(new DefExpr(constRefTemp));
         defExpr->insertBefore(new CallExpr(PRIM_MOVE,
-                                        constRefTemp,
-                                        init->remove()));
+                                           constRefTemp,
+                                           init->remove()));
 
         varLocation = new SymExpr(constRefTemp);
       }
