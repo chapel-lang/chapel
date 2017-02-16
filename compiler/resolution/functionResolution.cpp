@@ -259,6 +259,8 @@ computeReturnTypeParamVectors(BaseAST* ast,
                               Symbol* retSymbol,
                               Vec<Type*>& retTypes,
                               Vec<Symbol*>& retParams);
+static void
+insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
 static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
 static bool signature_match(FnSymbol* fn, FnSymbol* gn);
@@ -8004,7 +8006,7 @@ computeReturnTypeParamVectors(BaseAST* ast,
   AST_CHILDREN_CALL(ast, computeReturnTypeParamVectors, retSymbol, retTypes, retParams);
 }
 
-void
+static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
   if (CallExpr* call = toCallExpr(ast)) {
     if (call->parentSymbol == fn) {
@@ -8163,6 +8165,21 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
   AST_CHILDREN_CALL(ast, insertCasts, fn, casts);
 }
 
+//
+// insert casts as necessary
+//
+void insertAndResolveCasts(FnSymbol* fn) {
+  if (fn->retTag != RET_PARAM) {
+    Vec<CallExpr*> casts;
+
+    insertCasts(fn->body, fn, casts);
+
+    forv_Vec(CallExpr, cast, casts) {
+      resolveCallAndCallee(cast, true);
+    }
+  }
+}
+
 
 static void instantiate_default_constructor(FnSymbol* fn) {
   //
@@ -8279,6 +8296,27 @@ static void resolveReturnType(FnSymbol* fn)
     fn->retType = retType;
   }
 
+}
+
+void ensureInMethodList(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_METHOD) && fn->_this != NULL) {
+    Type* thisType = fn->_this->type->getValType();
+    bool  found    = false;
+
+    INT_ASSERT(thisType);
+    INT_ASSERT(thisType != dtUnknown);
+
+    forv_Vec(FnSymbol, method, thisType->methods) {
+      if (method == fn) {
+        found = true;
+        break;
+      }
+    }
+
+    if (found == false) {
+      thisType->methods.add(fn);
+    }
+  }
 }
 
 // Simple wrappers to check if a function is a specific type of iterator
@@ -8406,15 +8444,7 @@ resolveFns(FnSymbol* fn) {
   //
   // insert casts as necessary
   //
-  if (fn->retTag != RET_PARAM) {
-    Vec<CallExpr*> casts;
-
-    insertCasts(fn->body, fn, casts);
-
-    forv_Vec(CallExpr, cast, casts) {
-      resolveCallAndCallee(cast, true);
-    }
-  }
+  insertAndResolveCasts(fn);
 
   if (fn->isIterator() && !fn->iteratorInfo) {
     protoIteratorClass(fn);
@@ -8495,24 +8525,7 @@ resolveFns(FnSymbol* fn) {
   //
   // make sure methods are in the methods list
   //
-  if (fn->hasFlag(FLAG_METHOD) && fn->_this != NULL) {
-    Type* thisType = fn->_this->type->getValType();
-    bool  found    = false;
-
-    INT_ASSERT(thisType);
-    INT_ASSERT(thisType != dtUnknown);
-
-    forv_Vec(FnSymbol, method, thisType->methods) {
-      if (method == fn) {
-        found = true;
-        break;
-      }
-    }
-
-    if (found == false) {
-      thisType->methods.add(fn);
-    }
-  }
+  ensureInMethodList(fn);
 }
 
 
