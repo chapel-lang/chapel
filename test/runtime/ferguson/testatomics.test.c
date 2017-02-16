@@ -74,6 +74,8 @@ int main(int argc, char** argv)
 {
   atomic_bool flag;
 
+  memset(&flag, 0, sizeof(flag));
+
   atomic_store_bool(&flag, false);
   assert( false == atomic_exchange_bool(&flag, true) );
   assert( true == atomic_exchange_bool(&flag, true) );
