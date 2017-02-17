@@ -254,18 +254,7 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
 
 static void
 renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
-  if (sym->name[strlen(sym->name)-1] == ')') {
-    // avoid "strange" instantiated type names based on partial instantiation
-    //  instead of C(int,real)(imag) this results in C(int,real,imag)
-    char* buf = (char*)malloc(strlen(sym->name) + 1);
-    memcpy(buf, sym->name, strlen(sym->name));
-    buf[strlen(sym->name)-1] = '\0';
-    sym->name = astr(buf, ",");
-    free(buf);
-  } else {
-    sym->name = astr(sym->name, "(");
-  }
-  sym->cname = astr(sym->cname, "_");
+  sym->renameInstantiatedMulti(subs, fn);
   bool first = false;
   for_formals(formal, fn) {
     if (Symbol* value = subs.get(formal)) {

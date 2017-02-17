@@ -867,6 +867,27 @@ void TypeSymbol::accept(AstVisitor* visitor) {
   }
 }
 
+void TypeSymbol::renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn) {
+  renameInstantiatedStart();
+}
+
+void TypeSymbol::renameInstantiatedStart() {
+  if (this->name[strlen(this->name)-1] == ')') {
+    // avoid "strange" instantiated type names based on partial instantiation
+    //  instead of C(int,real)(imag) this results in C(int,real,imag)
+    char* buf = (char*)malloc(strlen(this->name) + 1);
+    memcpy(buf, this->name, strlen(this->name));
+    buf[strlen(this->name)-1] = '\0';
+    this->name = astr(buf, ",");
+    free(buf);
+  } else {
+    this->name = astr(this->name, "(");
+  }
+  this->cname = astr(this->cname, "_");
+}
+
+
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
