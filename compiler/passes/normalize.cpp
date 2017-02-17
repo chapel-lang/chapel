@@ -63,10 +63,6 @@ static void hack_resolve_types(ArgSymbol* arg);
 
 static void find_printModuleInit_stuff();
 
-
-
-
-
 static void processSyntacticDistributions(CallExpr* call);
 static bool is_void_return(CallExpr* call);
 static void normalize(BaseAST* base);
@@ -74,7 +70,13 @@ static void normalize_returns(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
+
+static void normalizeTypeAlias(DefExpr* def);
+static void normalizeArrayAlias(DefExpr* def);
 static void normalizeVariableDefinition(DefExpr* def);
+
+static void updateVariableAutoDestroy(DefExpr* defExpr);
+
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                                       DefExpr* def,
                                                       int width);
@@ -389,39 +391,75 @@ static void normalizeTheProgram() {
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
 static void normalize(BaseAST* base) {
-  std::vector<CallExpr*> calls;
-  collectCallExprs(base, calls);
-  for_vector(CallExpr, call, calls) {
+  //
+  // Phase 1
+  //
+  std::vector<CallExpr*> calls1;
+
+  collectCallExprs(base, calls1);
+
+  for_vector(CallExpr, call, calls1) {
     processSyntacticDistributions(call);
   }
 
+
+
+  //
+  // Phase 2
+  //
   std::vector<Symbol*> symbols;
+
   collectSymbols(base, symbols);
+
   for_vector(Symbol, symbol, symbols) {
     if (FnSymbol* fn = toFnSymbol(symbol))
       normalize_returns(fn);
   }
 
-  for_vector(Symbol, symbol2, symbols) {
-    if (VarSymbol* var = toVarSymbol(symbol2)) {
+  //
+  // Phase 3
+  //
+  for_vector(Symbol, symbol, symbols) {
+    if (VarSymbol* var = toVarSymbol(symbol)) {
       DefExpr* defExpr = var->defPoint;
 
       if (FnSymbol* fn = toFnSymbol(defExpr->parentSymbol)) {
         if (fn != stringLiteralModule->initFn) {
-          normalizeVariableDefinition(defExpr);
+          Expr* type = defExpr->exprType;
+          Expr* init = defExpr->init;
+
+          if (type != NULL || init != NULL) {
+            if (var->isType() == true) {
+              normalizeTypeAlias(defExpr);
+
+            } else if (var->hasFlag(FLAG_ARRAY_ALIAS) == true) {
+              normalizeArrayAlias(defExpr);
+
+            } else {
+              normalizeVariableDefinition(defExpr);
+            }
+
+            updateVariableAutoDestroy(defExpr);
+          }
         }
       }
     }
   }
 
-  calls.clear();
-  collectCallExprs(base, calls);
-  for_vector(CallExpr, call1, calls) {
-    applyGetterTransform(call1);
-    insert_call_temps(call1);
+  //
+  // Phase 4
+  //
+  std::vector<CallExpr*> calls2;
+
+  collectCallExprs(base, calls2);
+
+  for_vector(CallExpr, call, calls2) {
+    applyGetterTransform(call);
+    insert_call_temps(call);
   }
-  for_vector(CallExpr, call2, calls) {
-    call_constructor_for_class(call2);
+
+  for_vector(CallExpr, call, calls2) {
+    call_constructor_for_class(call);
   }
 }
 
@@ -1097,13 +1135,59 @@ static void insert_call_temps(CallExpr* call)
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void normalizeTypeAlias(DefExpr* defExpr) {
+  SET_LINENO(defExpr);
+
+  Symbol* var  = defExpr->sym;
+  Expr*   type = defExpr->exprType;
+  Expr*   init = defExpr->init;
+
+  INT_ASSERT(type == NULL);
+  INT_ASSERT(init != NULL);
+
+  defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init->copy()));
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void normalizeArrayAlias(DefExpr* defExpr) {
+  SET_LINENO(defExpr);
+
+  Symbol* var  = defExpr->sym;
+  Expr*   init = defExpr->init->remove();
+
+  if (defExpr->exprType == NULL) {
+    CallExpr* newAlias = new CallExpr("newAlias", gMethodToken, init);
+
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, newAlias));
+
+  } else {
+    Expr*     type    = defExpr->exprType->remove();
+    CallExpr* reindex = new CallExpr("reindex",  gMethodToken, init);
+    CallExpr* partial = new CallExpr(reindex,    type);
+
+    reindex->partialTag = true;
+    reindex->methodTag  = true;
+
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 * normalizeVariableDefinition removes DefExpr::exprType and DefExpr::init     *
 * from a variable's def expression, normalizing the AST with primitive        *
 * moves, calls to chpl__initCopy, _init, and _cast, and assignments.          *
 *                                                                             *
 ************************************** | *************************************/
-
-static void init_array_alias(DefExpr* defExpr);
 
 static void init_ref_var(DefExpr* defExpr);
 
@@ -1135,96 +1219,58 @@ static void init_noinit_var(VarSymbol* var,
                             Expr*      insert,
                             VarSymbol* constTemp);
 
-static void updateVariableAutoDestroy(DefExpr* defExpr);
-
 static void normalizeVariableDefinition(DefExpr* defExpr) {
+  SET_LINENO(defExpr);
+
   VarSymbol* var  = toVarSymbol(defExpr->sym);
   Expr*      type = defExpr->exprType;
   Expr*      init = defExpr->init;
 
-  if (type != NULL || init != NULL) {
-    SET_LINENO(defExpr);
+  if (var->hasFlag(FLAG_NO_COPY)) {
+    INT_ASSERT(type == NULL);
+    INT_ASSERT(init != NULL);
 
-    if (var->hasFlag(FLAG_NO_COPY)) {
-      INT_ASSERT(type == NULL);
-      INT_ASSERT(init != NULL);
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
 
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
-
-    } else if (var->isType() == true) {
-      INT_ASSERT(type == NULL);
-      INT_ASSERT(init != NULL);
-
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init->copy()));
-
-    // handle var ... : ... => ...;
-    } else if (var->hasFlag(FLAG_ARRAY_ALIAS)) {
-      init_array_alias(defExpr);
-
-    // handle ref variables
-    } else if (var->hasFlag(FLAG_REF_VAR)) {
-      init_ref_var(defExpr);
-
-    } else {
-      VarSymbol* constTemp = var;
-      Expr*      insert    = defExpr;
-
-      if (var->hasFlag(FLAG_CONST)  ==  true &&
-          var->hasFlag(FLAG_EXTERN) == false) {
-        constTemp = newTemp("const_tmp");
-
-        defExpr->insertBefore(new DefExpr(constTemp));
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
-      }
-
-      // insert code to initialize a config variable
-      if (var->hasFlag(FLAG_CONFIG) == true &&
-          var->hasFlag(FLAG_PARAM)  == false) {
-        init_config_var(var, insert, constTemp);
-      }
-
-      if (type == NULL) {
-        init_untyped_var(var, init, insert, constTemp);
-
-      } else if (init == NULL) {
-        init_typed_var(var, type, insert, constTemp);
-
-      } else if (var->hasFlag(FLAG_PARAM) == true) {
-        CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
-
-        insert->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
-
-      } else if (init->isNoInitExpr() == true) {
-        init_noinit_var(var, type, init, insert, constTemp);
-
-      } else {
-        init_typed_var(var, type, init, insert, constTemp);
-      }
-    }
-
-    updateVariableAutoDestroy(defExpr);
-  }
-}
-
-static void init_array_alias(DefExpr* defExpr) {
-  VarSymbol* var = toVarSymbol(defExpr->sym);
-
-  if (defExpr->exprType == NULL) {
-    Expr*     init     = defExpr->init->remove();
-    CallExpr* newAlias = new CallExpr("newAlias", gMethodToken, init);
-
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, newAlias));
+  // handle ref variables
+  } else if (var->hasFlag(FLAG_REF_VAR)) {
+    init_ref_var(defExpr);
 
   } else {
-    Expr*     init    = defExpr->init->remove();
-    Expr*     type    = defExpr->exprType->remove();
-    CallExpr* reindex = new CallExpr("reindex",  gMethodToken, init);
-    CallExpr* partial = new CallExpr(reindex,    type);
+    VarSymbol* constTemp = var;
+    Expr*      insert    = defExpr;
 
-    reindex->partialTag = true;
-    reindex->methodTag  = true;
+    if (var->hasFlag(FLAG_CONST)  ==  true &&
+        var->hasFlag(FLAG_EXTERN) == false) {
+      constTemp = newTemp("const_tmp");
 
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
+      defExpr->insertBefore(new DefExpr(constTemp));
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
+    }
+
+    // insert code to initialize a config variable
+    if (var->hasFlag(FLAG_CONFIG) == true &&
+        var->hasFlag(FLAG_PARAM)  == false) {
+      init_config_var(var, insert, constTemp);
+    }
+
+    if (type == NULL) {
+      init_untyped_var(var, init, insert, constTemp);
+
+    } else if (init == NULL) {
+      init_typed_var(var, type, insert, constTemp);
+
+    } else if (var->hasFlag(FLAG_PARAM) == true) {
+      CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
+
+      insert->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
+
+    } else if (init->isNoInitExpr() == true) {
+      init_noinit_var(var, type, init, insert, constTemp);
+
+    } else {
+      init_typed_var(var, type, init, insert, constTemp);
+    }
   }
 }
 
@@ -1445,6 +1491,12 @@ static void init_noinit_var(VarSymbol* var,
     init_typed_var(var, type, insert, constTemp);
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void updateVariableAutoDestroy(DefExpr* defExpr) {
   VarSymbol* var = toVarSymbol(defExpr->sym);
