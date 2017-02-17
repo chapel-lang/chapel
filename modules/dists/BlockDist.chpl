@@ -1537,22 +1537,33 @@ proc BlockArr.doiBulkTransfer(B, viewDom) {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransfer");
   const actual = chpl__getActualArray(B);
-  const actDom = chpl__getViewDom(B);
+  // TODO: how to avoid a deep copy of the domain here? If it's distributed,
+  // it can cause a lot of comms...
+  pragma "no copy" const actDom = chpl__getViewDom(B);
 
   if debugBlockDistBulkTransfer then resetCommDiagnostics();
+
+  const equalDoms = (this.dom.whole == actual.dom.whole) &&
+                    (this.dom.dist.dsiEqualDMaps(actual.dom.dist));
 
   // Use zippered iteration to piggyback data movement with the remote
   //  fork.  This avoids remote gets for each access to locArr[i] and
   //  actual.locArr[i]
-  coforall (i, myLocArr, BmyLocArr) in zip(dom.dist.targetLocDom,
+  coforall (i, myLocArr, BmyLocArr, myLocDom, BLocDom) in zip(dom.dist.targetLocDom,
                                         locArr,
-                                        actual.locArr) {
+                                        actual.locArr,
+                                        this.dom.locDoms,
+                                        actual.dom.locDoms) {
     on dom.dist.targetLocales(i) {
       if this.rank == B.rank {
         if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
 
-        const viewBlock = this.dom.locDoms[i].myBlock[viewDom];
-        if this.rank == 1 {
+        const viewBlock = myLocDom.myBlock[viewDom];
+
+        if equalDoms {
+          const theirView = BLocDom.myBlock[actDom];
+          myLocArr.myElems[viewBlock] = BmyLocArr.myElems[theirView];
+        } else if this.rank == 1 {
           var start = viewBlock.low;
 
           for (rid, rlo, size) in ConsecutiveChunks(viewDom, actual.dom, actDom, viewBlock.size, start) {
