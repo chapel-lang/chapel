@@ -1,1 +1,0 @@
-language: semantically the arrays *should* copy-out, but can we optimize away the copies?
