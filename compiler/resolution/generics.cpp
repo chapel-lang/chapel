@@ -252,76 +252,6 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
   }
 }
 
-static void
-renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
-  if (sym->name[strlen(sym->name)-1] == ')') {
-    // avoid "strange" instantiated type names based on partial instantiation
-    //  instead of C(int,real)(imag) this results in C(int,real,imag)
-    char* buf = (char*)malloc(strlen(sym->name) + 1);
-    memcpy(buf, sym->name, strlen(sym->name));
-    buf[strlen(sym->name)-1] = '\0';
-    sym->name = astr(buf, ",");
-    free(buf);
-  } else {
-    sym->name = astr(sym->name, "(");
-  }
-  sym->cname = astr(sym->cname, "_");
-  bool first = false;
-  for_formals(formal, fn) {
-    if (Symbol* value = subs.get(formal)) {
-      if (TypeSymbol* ts = toTypeSymbol(value)) {
-        if (!first && sym->hasFlag(FLAG_TUPLE)) {
-          if (sym->hasFlag(FLAG_STAR_TUPLE)) {
-            sym->name = astr(istr(fn->numFormals()-1), "*", ts->name);
-            sym->cname = astr(sym->cname, "star_", ts->cname);
-            return;
-          } else {
-            sym->name = astr("(");
-          }
-        }
-        if (!sym->hasFlag(FLAG_STAR_TUPLE)) {
-          if (first) {
-            sym->name = astr(sym->name, ",");
-            sym->cname = astr(sym->cname, "_");
-          }
-          sym->name = astr(sym->name, ts->name);
-          sym->cname = astr(sym->cname, ts->cname);
-        }
-        first = true;
-      } else {
-        if (first) {
-          sym->name = astr(sym->name, ",");
-          sym->cname = astr(sym->cname, "_");
-        }
-        VarSymbol* var = toVarSymbol(value);
-        if (var && var->immediate) {
-          Immediate* immediate = var->immediate;
-          if (var->type == dtString || var->type == dtStringC)
-            renameInstantiatedTypeString(sym, var);
-          else if (immediate->const_kind == NUM_KIND_BOOL) {
-            // Handle boolean types specially.
-            const char* name4bool = immediate->bool_value() ? "true" : "false";
-            const char* cname4bool = immediate->bool_value() ? "T" : "F";
-            sym->name = astr(sym->name, name4bool);
-            sym->cname = astr(sym->cname, cname4bool);
-          } else {
-            const size_t bufSize = 128;
-            char imm[bufSize];
-            snprint_imm(imm, bufSize, *var->immediate);
-            sym->name = astr(sym->name, imm);
-            sym->cname = astr(sym->cname, imm);
-          }
-        } else {
-          sym->name = astr(sym->name, value->cname);
-          sym->cname = astr(sym->cname, value->cname);
-        }
-        first = true;
-      }
-    }
-  }
-  sym->name = astr(sym->name, ")");
-}
-
 /** Instantiate a type
  *
  * \param fn   Type constructor we are working on
@@ -392,7 +322,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
     }
   }
 
-  renameInstantiatedType(newType->symbol, subs, fn);
+  newType->symbol->renameInstantiatedMulti(subs, fn);
 
   fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
 

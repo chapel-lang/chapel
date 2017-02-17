@@ -383,6 +383,9 @@ class TypeSymbol : public Symbol {
   virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(TypeSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+
+  void renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn);
+
   GenRet codegen();
   void codegenDef();
   void codegenPrototype();
@@ -391,6 +394,11 @@ class TypeSymbol : public Symbol {
   void codegenMetadata();
 
   const char* doc;
+
+ private:
+  void renameInstantiatedStart();
+  void renameInstantiatedIndividual(Symbol* sym);
+  void renameInstantiatedEnd();
 };
 
 /************************************* | **************************************
