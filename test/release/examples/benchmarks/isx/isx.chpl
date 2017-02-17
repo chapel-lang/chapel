@@ -138,8 +138,7 @@ if printConfig then
 
 
 
-const LocTaskSpace = {0..#numTasks};
-const DistTaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
+const DistTaskSpace = {0..#numTasks} dmapped Block({0..#numTasks});
 
 var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
 var recvOffset: [DistTaskSpace] atomic int;
