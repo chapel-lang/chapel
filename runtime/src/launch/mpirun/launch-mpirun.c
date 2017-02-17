@@ -26,7 +26,7 @@
 
 #define CHPL_SPMD "--spmd"
 
-static char* mpi_num_ranks=NULL;
+static char* mpi_num_ranks="1";
 
 static char _nlbuf[16];
 static char** chpl_launch_create_argv(const char *launch_cmd,
@@ -38,7 +38,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   int numranks;
 
   // TODO When MPI Comm layer is supported, support -nl>1 && CHPL_COMM!=none
-  if (numLocales != 1 || mpi_num_ranks==NULL) {
+  if (numLocales != 1) {
     chpl_error("For mpirun, specify number of SPMD images via --spmd <#>", 0, 0);
   }
   if (strcmp(CHPL_COMM, "none") != 0) {
