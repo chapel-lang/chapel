@@ -166,7 +166,7 @@ proc main() {
 
   if debug {
     writeln("final buckets =\n");
-    for (i,b) in zip(LocTaskSpace, allBucketKeys) do
+    for (i,b) in zip(0..#numTasks, allBucketKeys) do
       writeln("Bucket ", i, " (owned by ", b.locale.id, "): ", b);
   }
 
@@ -194,7 +194,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
     subTimer.clear();
   }
 
-  var bucketSizes: [LocTaskSpace] int;
+  var bucketSizes: [0..#numTasks] int;
   countLocalBucketSizes(myKeys, bucketSizes);
   if debug then writeln(taskID, ": bucketSizes = ", bucketSizes);
 
@@ -203,7 +203,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
     subTimer.clear();
   }
 
-  var sendOffsets: [LocTaskSpace] int = + scan bucketSizes;
+  var sendOffsets: [0..#numTasks] int = + scan bucketSizes;
   sendOffsets -= bucketSizes;
   if debug then writeln(taskID, ": sendOffsets = ", sendOffsets);
 
@@ -251,7 +251,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
 
 
 proc bucketizeLocalKeys(taskID, myKeys, sendOffsets, myBucketedKeys) {
-  var bucketOffsets: [LocTaskSpace] int;
+  var bucketOffsets: [0..#numTasks] int;
 
   bucketOffsets = sendOffsets;
 
@@ -276,7 +276,7 @@ proc countLocalBucketSizes(myKeys, bucketSizes) {
 
 
 proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
-  for locid in LocTaskSpace {
+  for locid in 0..#numTasks {
     //
     // perturb the destination locale by our ID to avoid bottlenecks
     //
