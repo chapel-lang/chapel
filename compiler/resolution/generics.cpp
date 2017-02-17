@@ -252,11 +252,6 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
   }
 }
 
-static void
-renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
-  sym->renameInstantiatedMulti(subs, fn);
-}
-
 /** Instantiate a type
  *
  * \param fn   Type constructor we are working on
@@ -327,7 +322,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
     }
   }
 
-  renameInstantiatedType(newType->symbol, subs, fn);
+  newType->symbol->renameInstantiatedMulti(subs, fn);
 
   fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
 
