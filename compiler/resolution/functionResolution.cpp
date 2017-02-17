@@ -8285,7 +8285,7 @@ static bool isVecIterator(FnSymbol* fn) {
 //
 // This supports the 'copy-out' rule for returning arrays.
 //
-static void insertAutoCopyForArrayReturn(FnSymbol* fn) {
+static void insertUnrefForArrayReturn(FnSymbol* fn) {
   Symbol* ret = fn->getReturnSymbol();
   Type* retType = ret->type;
 
@@ -8309,10 +8309,6 @@ static void insertAutoCopyForArrayReturn(FnSymbol* fn) {
               !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
               !fn->hasFlag(FLAG_IF_EXPR_FN) &&
               !fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
-
-            if (!hasAutoCopyForType(rhsType)) {
-              resolveAutoCopyEtc(rhsType);
-            }
             SymExpr* copiedRHS = NULL;
             if (isSymExpr(call->get(2))) {
               copiedRHS = toSymExpr(call->get(2)->remove());
@@ -8326,15 +8322,24 @@ static void insertAutoCopyForArrayReturn(FnSymbol* fn) {
                 copiedRHS = toSymExpr(rhsCall->get(1)->copy());
                 call->get(2)->remove();
               } else {
-                VarSymbol* tmp = newTemp("array_autoCopy_ret_tmp", rhsType);
+                VarSymbol* tmp = newTemp("array_unref_ret_tmp", rhsType);
                 call->insertBefore(new DefExpr(tmp));
                 call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
                 copiedRHS = new SymExpr(tmp);
               }
             }
-            FnSymbol* autoFn = getAutoCopy(rhsType);
-            CallExpr* copy = new CallExpr(autoFn, copiedRHS);
-            call->insertAtTail(copy);
+
+            CallExpr* copy = new CallExpr("chpl__unref", copiedRHS);
+            FnSymbol* unrefFn = resolveUninsertedCall(NULL, call, copy, false);
+            if (unrefFn->isResolved() == false) {
+              resolveFns(unrefFn);
+            }
+            if (unrefFn->retType != copiedRHS->typeInfo()) {
+              call->insertAtTail(copy);
+            } else {
+              // Not an array-view, just return by value without a copy.
+              call->insertAtTail(copiedRHS->copy());
+            }
           }
         }
       }
@@ -8434,7 +8439,7 @@ resolveFns(FnSymbol* fn) {
   }
 
 
-  insertAutoCopyForArrayReturn(fn);
+  insertUnrefForArrayReturn(fn);
   resolveReturnType(fn);
 
   //

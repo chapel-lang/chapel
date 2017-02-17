@@ -3758,6 +3758,23 @@ module ChapelArray {
     b._unowned = true;
   }
 
+  // Used to implement the copy-out language semantics
+  // Relies on the return types being different to detect an ArrayView at
+  // compile-time
+  pragma "no copy return"
+  inline proc chpl__unref(x: []) where chpl__isArrayView(x._value) {
+    // intended to call initCopy
+    pragma "no auto destroy" var ret = x;
+    return ret;
+  }
+
+  // Intended to return whatever it gets without copying
+  pragma "no copy return"
+  inline proc chpl__unref(x: []) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
+
 
   // see comment on chpl__unalias for domains
   pragma "unalias fn"

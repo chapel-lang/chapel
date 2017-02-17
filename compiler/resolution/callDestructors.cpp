@@ -590,20 +590,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
                 isSyncType(formalType) == false &&
                 isSingleType(formalType) == false)
             {
-              // In functionResolution, insertAutoCopyForArrayReturn inserts
-              // AST like this:
-              //
-              // (move ret chpl__autoCopy(foo))
-              //
-              // We do not want to remove this autoCopy as it implements the
-              // desired copy-out semantics of the language. The 'ret' variable
-              // should be marked with FLAG_RVV, so we can test for that case
-              // here and avoid it.
-              SymExpr* nextLHS = toSymExpr(callNext->get(1));
-              INT_ASSERT(nextLHS);
-              if (nextLHS->symbol()->hasFlag(FLAG_RVV) == false) {
-                copyExpr = rhsCall;
-              }
+              copyExpr = rhsCall;
             }
           }
         }
