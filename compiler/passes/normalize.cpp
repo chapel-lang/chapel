@@ -76,6 +76,32 @@ static void normalizeArrayAlias(DefExpr* defExpr);
 static void normalizeConfigVariableDefinition(DefExpr* defExpr);
 static void normalizeVariableDefinition(DefExpr* defExpr);
 
+static void init_ref_var(DefExpr* defExpr);
+
+static void init_untyped_var(VarSymbol* var,
+                             Expr*      init,
+                             Expr*      insert,
+                             VarSymbol* constTemp);
+
+static void init_typed_var(VarSymbol* var,
+                           Expr*      type,
+                           Expr*      insert,
+                           VarSymbol* constTemp);
+
+static void init_typed_var(VarSymbol* var,
+                           Expr*      type,
+                           Expr*      init,
+                           Expr*      insert,
+                           VarSymbol* constTemp);
+
+static bool isModuleNoinit(VarSymbol* var, Expr* init);
+
+static void init_noinit_var(VarSymbol* var,
+                            Expr*      type,
+                            Expr*      init,
+                            Expr*      insert,
+                            VarSymbol* constTemp);
+
 static void updateVariableAutoDestroy(DefExpr* defExpr);
 
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
@@ -1188,39 +1214,41 @@ static void normalizeArrayAlias(DefExpr* defExpr) {
 
 /************************************* | **************************************
 *                                                                             *
-* normalizeVariableDefinition removes DefExpr::exprType and DefExpr::init     *
-* from a variable's def expression, normalizing the AST with primitive        *
-* moves, calls to chpl__initCopy, _init, and _cast, and assignments.          *
+* Config variables are fundamentally different form non-configs especially    *
+* for multi-locale programs. Non-param config variables e.g.                  *
+*                                                                             *
+*   config var x : int = 10;                                                  *
+*                                                                             *
+* should be "initialized" in a manner that is approximately                   *
+*                                                                             *
+*   var x : int = no-init;                                                    *
+*                                                                             *
+*   if (!chpl_config_has_value("x", <module-name>)) then                      *
+*     x = 10;                                                                 *
+*   else                                                                      *
+*     x = chpl_config_get_value("x", <module-name>);                          *
+*                                                                             *
+* and such that the conditional arms of the if-stmt implement initialization  *
+* rather than assignment.  This requires additional care for config const and *
+* multi-locale in order to enable privitization to be implemented correctly.  *
+*                                                                             *
+* Noakes Feb 17, 2017:                                                        *
+*   The comppiler has weaknesses with variable initialization which are a     *
+* little more evident for config variables.  Configs have been split from     *
+* non-configs to enable them to evolve independently in the nearer term.      *
+*                                                                             *
+* Additionally the current implementation has, undocumented and confusing,    *
+* support for config ref and config const ref.  There has been discussion     *
+* on whether to turn this in to a compile-time error or to continue the       *
+* current support.                                                            *
 *                                                                             *
 ************************************** | *************************************/
 
-static Symbol* varModuleName(VarSymbol* var);
+static CondStmt* assignConfig(VarSymbol* var,
+                              VarSymbol* varTmp,
+                              Expr*      noop);
 
-static void    init_ref_var(DefExpr* defExpr);
-
-static void    init_untyped_var(VarSymbol* var,
-                             Expr*      init,
-                             Expr*      insert,
-                             VarSymbol* constTemp);
-
-static void    init_typed_var(VarSymbol* var,
-                              Expr*      type,
-                              Expr*      insert,
-                              VarSymbol* constTemp);
-
-static void    init_typed_var(VarSymbol* var,
-                              Expr*      type,
-                              Expr*      init,
-                              Expr*      insert,
-                              VarSymbol* constTemp);
-
-static bool    isModuleNoinit(VarSymbol* var, Expr* init);
-
-static void    init_noinit_var(VarSymbol* var,
-                               Expr*      type,
-                               Expr*      init,
-                               Expr*      insert,
-                               VarSymbol* constTemp);
+static Symbol*   varModuleName(VarSymbol* var);
 
 static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
@@ -1229,64 +1257,36 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
   Expr*      type = defExpr->exprType;
   Expr*      init = defExpr->init;
 
-  // handle ref variables
+  // Noakes: Feb 17, 2017
+  //   config ref / const ref can be overridden at compile time.
+  //   There is a proposal to convert this to a compile time error.
   if (var->hasFlag(FLAG_REF_VAR)) {
     init_ref_var(defExpr);
 
   } else {
-    VarSymbol* constTemp = var;
-    Expr*      insert    = defExpr;
+    VarSymbol* varTmp = var;
+    Expr*      insert = defExpr;
 
-    if (var->hasFlag(FLAG_NO_COPY) == false) {
+    // insert code to initialize a config var/const
+    // config param is evaluated at compile time
+    if (var->hasFlag(FLAG_PARAM) == false) {
       if (var->hasFlag(FLAG_CONST)  ==  true &&
           var->hasFlag(FLAG_EXTERN) == false) {
-        constTemp = newTemp("const_tmp");
+        varTmp = newTemp("tmp");
 
-        defExpr->insertBefore(new DefExpr(constTemp));
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
+        defExpr->insertBefore(new DefExpr(varTmp));
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, varTmp));
       }
 
-      // insert code to initialize a config variable
-      if (var->hasFlag(FLAG_PARAM)  == false) {
-        Symbol*   modName  = varModuleName(var);
-
-        SymExpr*  name0    = new SymExpr(new_CStringSymbol(var->name));
-        CallExpr* hasValue = new CallExpr("chpl_config_has_value",
-                                          name0,
-                                          modName);
-
-        SymExpr*  name1    = new SymExpr(new_CStringSymbol(var->name));
-        CallExpr* typeOf   = new CallExpr(PRIM_TYPEOF, constTemp);
-
-        SymExpr*  name2    = new SymExpr(new_CStringSymbol(var->name));
-        CallExpr* getValue = new CallExpr("chpl_config_get_value",
-                                          name2,
-                                          modName);
-
-        CallExpr* strToVal = new CallExpr("_command_line_cast",
-                                          name1,
-                                          typeOf,
-                                          getValue);
-
-        Expr*     noop     = new CallExpr(PRIM_NOOP);
-
-        CallExpr* moveTmp  = new CallExpr(PRIM_MOVE,
-                                          constTemp,
-                                          strToVal);
-
-        defExpr->insertAfter(new CondStmt(new CallExpr("!", hasValue),
-                                          noop,
-                                          moveTmp));
-
-        insert = noop;
-      }
+      insert = new CallExpr(PRIM_NOOP);
+      defExpr->insertAfter(assignConfig(var, varTmp, insert));
     }
 
     if (type == NULL) {
-      init_untyped_var(var, init, insert, constTemp);
+      init_untyped_var(var, init, insert, varTmp);
 
     } else if (init == NULL) {
-      init_typed_var(var, type, insert, constTemp);
+      init_typed_var(var, type, insert, varTmp);
 
     } else if (var->hasFlag(FLAG_PARAM) == true) {
       CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
@@ -1294,12 +1294,47 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
       insert->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
 
     } else if (init->isNoInitExpr() == true) {
-      init_noinit_var(var, type, init, insert, constTemp);
+      init_noinit_var(var, type, init, insert, varTmp);
 
     } else {
-      init_typed_var(var, type, init, insert, constTemp);
+      init_typed_var(var, type, init, insert, varTmp);
     }
   }
+}
+
+static CondStmt* assignConfig(VarSymbol* var, VarSymbol* varTmp, Expr* noop) {
+  Symbol*    modName  = varModuleName(var);
+
+  //
+  // A fragment for the conditional test
+  //
+  SymExpr*   name0    = new SymExpr(new_CStringSymbol(var->name));
+  CallExpr*  hasValue = new CallExpr("chpl_config_has_value", name0, modName);
+  CallExpr*  test     = new CallExpr("!", hasValue);
+
+  //
+  // An "empty" block stmt for the consequent
+  //
+  BlockStmt* cons     = new BlockStmt(noop);
+
+  //
+  // The alternative sets the config from the command line
+  //
+  SymExpr*   name1    = new SymExpr(new_CStringSymbol(var->name));
+  CallExpr*  typeOf   = new CallExpr(PRIM_TYPEOF, varTmp);
+
+  SymExpr*   name2    = new SymExpr(new_CStringSymbol(var->name));
+  CallExpr*  getValue = new CallExpr("chpl_config_get_value", name2, modName);
+
+  CallExpr*  strToVal = new CallExpr("_command_line_cast",
+                                     name1,
+                                     typeOf,
+                                     getValue);
+
+  CallExpr*  moveTmp  = new CallExpr(PRIM_MOVE, varTmp, strToVal);
+  BlockStmt* alt      = new BlockStmt(moveTmp);
+
+  return new CondStmt(test, cons, alt);
 }
 
 static Symbol* varModuleName(VarSymbol* var) {
@@ -1308,6 +1343,14 @@ static Symbol* varModuleName(VarSymbol* var) {
 
   return new_CStringSymbol(isInternal ? "Built-in" : module->name);
 }
+
+/************************************* | **************************************
+*                                                                             *
+* normalizeVariableDefinition removes DefExpr::exprType and DefExpr::init     *
+* from a variable's def expression, normalizing the AST with primitive        *
+* moves, calls to chpl__initCopy, _init, and _cast, and assignments.          *
+*                                                                             *
+************************************** | *************************************/
 
 static void normalizeVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
