@@ -1544,6 +1544,7 @@ proc BlockArr.doiBulkTransfer(B, viewDom) {
   if debugBlockDistBulkTransfer then resetCommDiagnostics();
 
   const equalDoms = (this.dom.whole == actual.dom.whole) &&
+                    (actDom == viewDom) &&
                     (this.dom.dist.dsiEqualDMaps(actual.dom.dist));
 
   // Use zippered iteration to piggyback data movement with the remote
