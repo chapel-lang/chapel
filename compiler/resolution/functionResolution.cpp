@@ -157,6 +157,8 @@ Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotio
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
 std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
+static char arrayUnrefName[] = "array_unref_ret_tmp";
+
 //#
 //# Static Function Declarations
 //#
@@ -6458,7 +6460,10 @@ preFold(Expr* expr) {
               // Should always be true, but just in case...
               if (SymExpr* holdsDest = toSymExpr(parent->get(1))) {
                 Symbol* dest = holdsDest->symbol();
-                if (dest->hasFlag(FLAG_TEMP) && !strcmp(dest->name, "ret")) {
+                // TODO: Surely there's a better way to test for this pattern
+                bool okName = strcmp(dest->name, "ret") == 0 ||
+                              strcmp(dest->name, arrayUnrefName) == 0;
+                if (dest->hasFlag(FLAG_TEMP) && okName) {
                   nowarn = true;
                 }
               }
@@ -8287,59 +8292,50 @@ static bool isVecIterator(FnSymbol* fn) {
 //
 static void insertUnrefForArrayReturn(FnSymbol* fn) {
   Symbol* ret = fn->getReturnSymbol();
-  Type* retType = ret->type;
 
-  if (retType == dtUnknown) {
-    for_SymbolSymExprs(se, ret) {
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
-        if (call->isPrimitive(PRIM_MOVE) && se == call->get(1)) {
-          Type* rhsType = call->get(2)->typeInfo();
-          // BHARSH: Should this also check if fn->retTag != RET_TYPE?
-          //
-          // TODO: Should we check if the RHS is a symbol with 'no auto
-          // destroy' on it? If it is, then we'd be copying the RHS and it
-          // would never be destroyed...
-          if (rhsType->symbol->hasFlag(FLAG_ARRAY) &&
-              isTypeExpr(call->get(2)) == false &&
-              !fn->hasFlag(FLAG_CONSTRUCTOR) &&
-              !fn->hasFlag(FLAG_NO_COPY_RETURN) &&
-              !fn->hasFlag(FLAG_UNALIAS_FN) &&
-              !fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) &&
-              !fn->hasFlag(FLAG_INIT_COPY_FN) &&
-              !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
-              !fn->hasFlag(FLAG_IF_EXPR_FN) &&
-              !fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
-            SymExpr* copiedRHS = NULL;
-            if (isSymExpr(call->get(2))) {
-              copiedRHS = toSymExpr(call->get(2)->remove());
-            } else if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-              if (rhsCall->isPrimitive(PRIM_DEREF)) {
-                // BHARSH 2017-02-15:
-                // ReturnByRef::updateAssignmentsFromRefTypeToValue in the
-                // callDestructors pass would otherwise attempt to insert an
-                // additional autoCopy when it sees the PRIM_DEREF. I observed
-                // that the copy would not be destroyed.
-                copiedRHS = toSymExpr(rhsCall->get(1)->copy());
-                call->get(2)->remove();
-              } else {
-                VarSymbol* tmp = newTemp("array_unref_ret_tmp", rhsType);
-                call->insertBefore(new DefExpr(tmp));
-                call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
-                copiedRHS = new SymExpr(tmp);
-              }
-            }
+  // BHARSH: Should this also check if fn->retTag != RET_TYPE?
+  //
+  // Do nothing for these kinds of functions:
+  if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
+      fn->hasFlag(FLAG_NO_COPY_RETURN) ||
+      fn->hasFlag(FLAG_UNALIAS_FN) ||
+      fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
+      fn->hasFlag(FLAG_INIT_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_IF_EXPR_FN) ||
+      fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
+    return;
+  }
 
-            CallExpr* copy = new CallExpr("chpl__unref", copiedRHS);
-            FnSymbol* unrefFn = resolveUninsertedCall(NULL, call, copy, false);
-            if (unrefFn->isResolved() == false) {
-              resolveFns(unrefFn);
-            }
-            if (unrefFn->retType != copiedRHS->typeInfo()) {
-              call->insertAtTail(copy);
-            } else {
-              // Not an array-view, just return by value without a copy.
-              call->insertAtTail(copiedRHS->copy());
-            }
+  for_SymbolSymExprs(se, ret) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      if (call->isPrimitive(PRIM_MOVE) && se == call->get(1)) {
+        Type* rhsType = call->get(2)->typeInfo();
+        // TODO: Should we check if the RHS is a symbol with 'no auto
+        // destroy' on it? If it is, then we'd be copying the RHS and it
+        // would never be destroyed...
+        if (rhsType->symbol->hasFlag(FLAG_ARRAY) &&
+            isTypeExpr(call->get(2)) == false) {
+          VarSymbol* tmp = newTemp(arrayUnrefName, rhsType);
+
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
+
+          CallExpr* unrefCall = new CallExpr("chpl__unref", tmp);
+          call->insertAtTail(unrefCall);
+          FnSymbol* unrefFn = resolveNormalCall(unrefCall);
+          resolveFns(unrefFn);
+
+          if (unrefFn->retType == tmp->typeInfo()) {
+            // If the types are equal, we must be dealing with a non-view
+            // array, so we can remove the useless unref call.
+            unrefCall->replace(new SymExpr(tmp));
+          } else {
+            // The array is an ArrayView
+            //
+            // Used by callDestructors to catch assignment from a ref to
+            // 'tmp' when we know we don't want to copy.
+            tmp->addFlag(FLAG_NO_COPY);
           }
         }
       }

@@ -306,6 +306,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
               symRhs->type                      == symLhs->type)
           {
             if (symLhs->hasFlag(FLAG_ARG_THIS) == false &&
+                symLhs->hasFlag(FLAG_NO_COPY)  == false &&
                 (symRhs->intent == INTENT_REF ||
                  symRhs->intent == INTENT_CONST_REF))
             {
@@ -373,19 +374,23 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
             // `init_untyped_var` in the `normalize` pass may insert an
             // initCopy, which means that we should not insert an autocopy
             // for that same variable.
-            bool initCopied = false;
+            //
+            // A chpl__unref call may be inserted to implement copy-out
+            // semantics for the returning of arrays.
+            bool isCopied = false;
             for_SymbolUses(use, varLhs) {
               if (CallExpr* call = toCallExpr(use->parentExpr)) {
                 if (FnSymbol* parentFn = call->isResolved()) {
-                  if (parentFn->hasFlag(FLAG_INIT_COPY_FN)) {
-                    initCopied = true;
+                  if (parentFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                      parentFn->hasFlag(FLAG_UNREF_FN)) {
+                    isCopied = true;
                     break;
                   }
                 }
               }
             }
 
-            if (!initCopied) {
+            if (!isCopied) {
               SET_LINENO(move);
 
               SymExpr*  lhsCopy0 = symLhs->copy();
