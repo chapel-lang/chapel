@@ -1344,6 +1344,47 @@ static Symbol* varModuleName(VarSymbol* var) {
   return new_CStringSymbol(isInternal ? "Built-in" : module->name);
 }
 
+static void init_typed_var(VarSymbol* var,
+                           Expr*      type,
+                           Expr*      insert,
+                           VarSymbol* constTemp) {
+  VarSymbol* typeTemp = newTemp("type_tmp");
+  DefExpr*   typeDefn = new DefExpr(typeTemp);
+  CallExpr*  initCall = new CallExpr(PRIM_INIT, type->remove());
+  CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
+
+  //
+  // Noakes 2016/02/02
+  // The code for resolving the type of an extern variable
+  //
+  //   functionResolution.cpp : resolveExternVarSymbols()
+  //
+  // expects to find the init code inside a block stmt.
+  //
+  // However the remaining cases do not need it.
+  //
+  if (var->hasFlag(FLAG_EXTERN) == true) {
+    INT_ASSERT(var->hasFlag(FLAG_PARAM) == false);
+
+    BlockStmt* block = new BlockStmt(NULL, BLOCK_EXTERN_TYPE);
+
+    block->insertAtTail(typeDefn);
+    block->insertAtTail(initMove);
+    block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+
+    insert->insertAfter(block);
+
+  } else {
+    if (var->hasFlag(FLAG_PARAM) == true) {
+      typeTemp->addFlag(FLAG_PARAM);
+    }
+
+    insert->insertAfter(typeDefn);
+    typeDefn->insertAfter(initMove);
+    initMove->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 * normalizeVariableDefinition removes DefExpr::exprType and DefExpr::init     *
@@ -1351,6 +1392,8 @@ static Symbol* varModuleName(VarSymbol* var) {
 * moves, calls to chpl__initCopy, _init, and _cast, and assignments.          *
 *                                                                             *
 ************************************** | *************************************/
+
+static void normVarTypeWoutInit(DefExpr* expr);
 
 static void normalizeVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
@@ -1362,6 +1405,9 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   // handle ref variables
   if (var->hasFlag(FLAG_REF_VAR)) {
     init_ref_var(defExpr);
+
+  } else if (type != NULL && init == NULL) {
+    normVarTypeWoutInit(defExpr);
 
   } else {
     VarSymbol* constTemp = var;
@@ -1380,7 +1426,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       init_untyped_var(var, init, defExpr, constTemp);
 
     } else if (init == NULL) {
-      init_typed_var(var, type, defExpr, constTemp);
+      INT_ASSERT(false);
 
     } else if (var->hasFlag(FLAG_PARAM) == true) {
       CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
@@ -1475,57 +1521,60 @@ static void init_untyped_var(VarSymbol* var,
   }
 }
 
-static void init_typed_var(VarSymbol* var,
-                           Expr*      type,
-                           Expr*      insert,
-                           VarSymbol* constTemp) {
-  VarSymbol* typeTemp = newTemp("type_tmp");
-  DefExpr*   typeDefn = new DefExpr(typeTemp);
-  CallExpr*  initCall = new CallExpr(PRIM_INIT, type->remove());
-  CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
-  BlockStmt* block    = NULL;
+static void normVarTypeWoutInit(DefExpr* defExpr) {
+  SET_LINENO(defExpr);
 
-  if (var->hasFlag(FLAG_PARAM)  == true) {
-    typeTemp->addFlag(FLAG_PARAM);
-  }
+  Symbol* var      = defExpr->sym;
+  Expr*   typeExpr = defExpr->exprType->remove();
 
-  //
   // Noakes 2016/02/02
   // The code for resolving the type of an extern variable
   //
   //   functionResolution.cpp : resolveExternVarSymbols()
   //
   // expects to find the init code inside a block stmt.
-  //
-  // However the remaining cases do not need it.
-  //
   if (var->hasFlag(FLAG_EXTERN) == true) {
-    block = new BlockStmt(NULL, BLOCK_SCOPELESS);
+    BlockStmt* block    = new BlockStmt(NULL, BLOCK_EXTERN_TYPE);
+
+    VarSymbol* typeTemp = newTemp("type_tmp");
+    DefExpr*   typeDefn = new DefExpr(typeTemp);
+    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
+
     block->insertAtTail(typeDefn);
+    block->insertAtTail(initMove);
+    block->insertAtTail(new CallExpr(PRIM_MOVE, var, typeTemp));
+
+    defExpr->insertAfter(block);
 
   } else {
-    insert->insertAfter(typeDefn);
-  }
+    VarSymbol* typeTemp = newTemp("type_tmp");
+    DefExpr*   typeDefn = new DefExpr(typeTemp);
+    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
 
-  typeDefn->insertAfter(initMove);
+    if (var->hasFlag(FLAG_CONST)   ==  true &&
+        var->hasFlag(FLAG_NO_COPY) == false) {
+      Symbol*   tmp     = newTemp("tmp");
+      CallExpr* tmpMove = new CallExpr(PRIM_MOVE, tmp, typeTemp);
+      CallExpr* varMove = new CallExpr(PRIM_MOVE, var, tmp);
 
-  if (constTemp->isType()) {
-    CallExpr* typeOf = new CallExpr(PRIM_TYPEOF, typeTemp);
+      defExpr->insertBefore(new DefExpr(tmp));
 
-    initMove->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeOf));
+      defExpr->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+      initMove->insertAfter(tmpMove);
+      tmpMove->insertAfter(varMove);
 
-  } else {
-    initMove->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+    } else {
+      if (var->hasFlag(FLAG_PARAM) == true) {
+        typeTemp->addFlag(FLAG_PARAM);
+      }
 
-    if (constTemp->hasFlag(FLAG_EXTERN)) {
-      unsigned int tag = block->blockTag;
-
-      block->blockTag = (BlockTag) (tag | BLOCK_EXTERN_TYPE);
+      defExpr->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+      initMove->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
     }
-  }
-
-  if (block != NULL) {
-    insert->insertAfter(block);
   }
 }
 
