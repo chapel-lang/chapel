@@ -1412,7 +1412,22 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   } else {
     VarSymbol* constTemp = var;
 
-    if (var->hasFlag(FLAG_NO_COPY) == false) {
+    if (var->hasFlag(FLAG_NO_COPY) == true) {
+      // If a type expression is set, normalize would normally
+      // use defaultOf/assignment anyway. As of 9-21-2016
+      // setting FLAG_NO_COPY and having a type leads to some
+      // unresolved type expression hanging around in the AST.
+
+      // Noakes 2017/02/19
+      //   Behavior locked in by futures in test/trivial/sungeun/pragmas
+
+      INT_ASSERT(init != NULL);
+      INT_ASSERT(type == NULL);
+
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
+      return;
+
+    } else {
       if (var->hasFlag(FLAG_CONST)  ==  true &&
           var->hasFlag(FLAG_EXTERN) == false) {
         constTemp = newTemp("const_tmp");
@@ -1526,6 +1541,11 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
 
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
+
+  // Noakes 2017/02/19
+  //   This replicates some strange business logic that is currently
+  //   locked in by futures in test/trivial/sungeun/pragmas
+  INT_ASSERT(var->hasFlag(FLAG_NO_COPY) == false);
 
   // Noakes 2016/02/02
   // The code for resolving the type of an extern variable
