@@ -23,21 +23,19 @@
 
 #include "AstToText.h"
 #include "astutil.h"
+#include "AstVisitor.h"
 #include "build.h"
 #include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
 #include "ipe.h"
+#include "iterator.h"
 #include "misc.h"
 #include "passes.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
-
-#include "iterator.h"
-
-#include "AstVisitor.h"
 
 static bool isDerivedType(Type* type, Flag flag);
 
@@ -483,24 +481,31 @@ std::string EnumType::docsDirective() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-AggregateType::AggregateType(AggregateTag initTag) :
-  Type(E_AggregateType, NULL),
-  aggregateTag(initTag),
-  initializerStyle(DEFINES_NONE_USE_DEFAULT),
-  fields(),
-  inherits(),
-  outer(NULL),
-  iteratorInfo(NULL),
-  doc(NULL)
-{
-  if (aggregateTag == AGGREGATE_CLASS) { // set defaultValue to nil to keep it
-                                 // from being constructed
+AggregateType::AggregateType(AggregateTag initTag)
+  : Type(E_AggregateType, NULL) {
+
+  aggregateTag       = initTag;
+  initializerStyle   = DEFINES_NONE_USE_DEFAULT;
+  outer              = NULL;
+  iteratorInfo       = NULL;
+  doc                = NULL;
+
+  fields.parent      = this;
+  inherits.parent    = this;
+
+  mIsGeneric         = false;
+
+  // set defaultValue to nil to keep it from being constructed
+  if (aggregateTag == AGGREGATE_CLASS) {
     defaultValue = gNil;
   }
-  methods.clear();
-  fields.parent = this;
-  inherits.parent = this;
+
   gAggregateTypes.add(this);
 }
 
@@ -508,62 +513,128 @@ AggregateType::AggregateType(AggregateTag initTag) :
 AggregateType::~AggregateType() {
   // Delete references to this in iteratorInfo when destroyed.
   if (iteratorInfo) {
-    if (iteratorInfo->iclass == this)
+    if (iteratorInfo->iclass == this) {
       iteratorInfo->iclass = NULL;
-    if (iteratorInfo->irecord == this)
+    }
+
+    if (iteratorInfo->irecord == this) {
       iteratorInfo->irecord = NULL;
+    }
   }
+}
+
+
+AggregateType* AggregateType::copyInner(SymbolMap* map) {
+  AggregateType* copy_type = new AggregateType(aggregateTag);
+
+  copy_type->initializerStyle = initializerStyle;
+  copy_type->outer            = outer;
+
+  for_alist(expr, fields) {
+    copy_type->fields.insertAtTail(COPY_INT(expr));
+  }
+
+  for_alist(expr, inherits) {
+    copy_type->inherits.insertAtTail(COPY_INT(expr));
+  }
+
+  for_fields(field, copy_type) {
+    if (FnSymbol* fn = toFnSymbol(field)) {
+      copy_type->methods.add(fn);
+    }
+  }
+
+  return copy_type;
 }
 
 
 void AggregateType::verify() {
   Type::verify();
+
   if (astTag != E_AggregateType) {
     INT_FATAL(this, "Bad AggregateType::astTag");
   }
+
   if (aggregateTag != AGGREGATE_CLASS &&
       aggregateTag != AGGREGATE_RECORD &&
-      aggregateTag != AGGREGATE_UNION)
+      aggregateTag != AGGREGATE_UNION) {
     INT_FATAL(this, "Bad AggregateType::aggregateTag");
-  if (fields.parent != this || inherits.parent != this)
+  }
+
+  if (fields.parent != this || inherits.parent != this) {
     INT_FATAL(this, "Bad AList::parent in AggregateType");
+  }
+
   for_alist(expr, fields) {
-    if (expr->parentSymbol != symbol)
+    if (expr->parentSymbol != symbol) {
       INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
+    }
   }
+
   for_alist(expr, inherits) {
-    if (expr->parentSymbol != symbol)
+    if (expr->parentSymbol != symbol) {
       INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
+    }
   }
 }
 
 
-AggregateType*
-AggregateType::copyInner(SymbolMap* map) {
-  AggregateType* copy_type = new AggregateType(aggregateTag);
-  copy_type->initializerStyle = initializerStyle;
-  copy_type->outer = outer;
-  for_alist(expr, fields)
-    copy_type->fields.insertAtTail(COPY_INT(expr));
-  for_alist(expr, inherits)
-    copy_type->inherits.insertAtTail(COPY_INT(expr));
-  for_fields(field, copy_type) {
-    if (FnSymbol* fn = toFnSymbol(field))
-      copy_type->methods.add(fn);
-  }
-  return copy_type;
+int AggregateType::numFields() const {
+  return fields.length;
 }
 
+bool AggregateType::isClass() const {
+  return aggregateTag == AGGREGATE_CLASS;
+}
 
-static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
-  if (def->sym->hasFlag(FLAG_REF_VAR)) {
-      USR_FATAL_CONT(def,
+bool AggregateType::isRecord() const {
+  return aggregateTag == AGGREGATE_RECORD;
+}
+
+bool AggregateType::isUnion() const {
+  return aggregateTag == AGGREGATE_UNION;
+}
+
+bool AggregateType::isGeneric() const {
+  return mIsGeneric;
+}
+
+void AggregateType::addDeclarations(Expr* expr) {
+  if (DefExpr* defExpr = toDefExpr(expr)) {
+    addDeclaration(defExpr);
+
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    for_alist(stmt, block->body) {
+      addDeclarations(stmt);
+    }
+
+  } else {
+    INT_FATAL(expr, "unexpected case");
+  }
+}
+
+void AggregateType::addDeclaration(DefExpr* defExpr) {
+  if (defExpr->sym->hasFlag(FLAG_REF_VAR)) {
+      USR_FATAL_CONT(defExpr,
                      "References cannot be members of classes "
                      "or records yet.");
   }
 
-  if (FnSymbol* fn = toFnSymbol(def->sym)) {
-    ct->methods.add(fn);
+  if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+    var->makeField();
+
+    if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      mIsGeneric = true;
+
+    } else if (var->hasFlag(FLAG_PARAM) == true) {
+      mIsGeneric = true;
+
+    } else if (defExpr->exprType == NULL) {
+      mIsGeneric = true;
+    }
+
+  } else if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
+    methods.add(fn);
 
     if (fn->_this) {
       // get the name used in the type binding clause
@@ -579,10 +650,8 @@ static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
       Expr* firstexpr = bs->body.first();
       INT_ASSERT(firstexpr);
 
-      UnresolvedSymExpr* sym = toUnresolvedSymExpr(firstexpr);
-      INT_ASSERT(sym);
-
-      const char* name = sym->unresolved;
+      UnresolvedSymExpr* sym  = toUnresolvedSymExpr(firstexpr);
+      const char*        name = sym->unresolved;
 
       // ... then report it to the user
       USR_FATAL_CONT(fn->_this,
@@ -591,7 +660,7 @@ static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
                      "or union",
                      name);
     } else {
-      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", ct);
+      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
 
       fn->_this = arg;
 
@@ -612,42 +681,15 @@ static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
     }
   }
 
-  if (VarSymbol* var = toVarSymbol(def->sym)) {
-    // Identify VarSymbol as class/record member.
-    var->makeField();
+  if (defExpr->parentSymbol != NULL || defExpr->list != NULL) {
+    defExpr->remove();
   }
 
-  if (def->parentSymbol || def->list) {
-    def->remove();
-  }
-
-  // Lydia note (Sept 2, 2016): Based on control flow, this adds even the
-  // function symbols we just handled into the fields alist for the type.
-  // Shouldn't placing them in ct->methods be sufficient?
-  if (tail) {
-    ct->fields.insertAtTail(def);
-  } else {
-    ct->fields.insertAtHead(def);
-  }
+  fields.insertAtTail(defExpr);
 }
 
 
-void AggregateType::addDeclarations(Expr* expr, bool tail) {
-  if (DefExpr* def = toDefExpr(expr)) {
-    addDeclaration(this, def, tail);
-
-  } else if (BlockStmt* block = toBlockStmt(expr)) {
-    for_alist(stmt, block->body) {
-      addDeclarations(stmt, tail);
-    }
-
-  } else {
-    INT_FATAL(expr, "unexpected case");
-  }
-}
-
-
-void AggregateType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void AggregateType::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
   INT_FATAL(this, "Unexpected case in AggregateType::replaceChild");
 }
 
@@ -841,7 +883,9 @@ std::string AggregateType::docsSuperClass() {
       if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
         superClassNames.push_back(use->unresolved);
       } else {
-        INT_FATAL(expr, "Expected UnresolvedSymExpr for all members of inherits alist.");
+        INT_FATAL(expr,
+                  "Expected UnresolvedSymExpr for all members "
+                  "of inherits alist.");
       }
     }
 
@@ -876,9 +920,16 @@ std::string AggregateType::docsDirective() {
       return ".. record:: ";
     }
   }
+
   return "";
 }
 
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 void initRootModule() {
   rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
@@ -891,11 +942,11 @@ void initStringLiteralModule() {
   theProgram->block->insertAtTail(new DefExpr(stringLiteralModule));
 }
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname);
 static PrimitiveType* createInternalType (const char* name, const char* cname);
@@ -1149,11 +1200,11 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
   return retval;
 }
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 DefExpr* defineObjectClass() {
   DefExpr* retval = 0;
