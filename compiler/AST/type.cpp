@@ -499,6 +499,8 @@ AggregateType::AggregateType(AggregateTag initTag)
   fields.parent      = this;
   inherits.parent    = this;
 
+  mIsGeneric         = false;
+
   // set defaultValue to nil to keep it from being constructed
   if (aggregateTag == AGGREGATE_CLASS) {
     defaultValue = gNil;
@@ -593,6 +595,10 @@ bool AggregateType::isUnion() const {
   return aggregateTag == AGGREGATE_UNION;
 }
 
+bool AggregateType::isGeneric() const {
+  return mIsGeneric;
+}
+
 void AggregateType::addDeclarations(Expr* expr) {
   if (DefExpr* defExpr = toDefExpr(expr)) {
     addDeclaration(defExpr);
@@ -616,6 +622,16 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
 
   if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
     var->makeField();
+
+    if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      mIsGeneric = true;
+
+    } else if (var->hasFlag(FLAG_PARAM) == true) {
+      mIsGeneric = true;
+
+    } else if (defExpr->exprType == NULL) {
+      mIsGeneric = true;
+    }
 
   } else if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
     methods.add(fn);
