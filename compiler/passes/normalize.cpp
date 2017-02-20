@@ -76,7 +76,7 @@ static void normalizeArrayAlias(DefExpr* defExpr);
 static void normalizeConfigVariableDefinition(DefExpr* defExpr);
 static void normalizeVariableDefinition(DefExpr* defExpr);
 
-static void init_ref_var(DefExpr* defExpr);
+static void normRefVar(DefExpr* defExpr);
 
 static void init_untyped_var(VarSymbol* var,
                              Expr*      init,
@@ -1261,7 +1261,7 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
   //   config ref / const ref can be overridden at compile time.
   //   There is a proposal to convert this to a compile time error.
   if (var->hasFlag(FLAG_REF_VAR)) {
-    init_ref_var(defExpr);
+    normRefVar(defExpr);
 
   } else {
     VarSymbol* varTmp = var;
@@ -1344,6 +1344,41 @@ static Symbol* varModuleName(VarSymbol* var) {
   return new_CStringSymbol(isInternal ? "Built-in" : module->name);
 }
 
+static void init_untyped_var(VarSymbol* var,
+                             Expr*      init,
+                             Expr*      insert,
+                             VarSymbol* constTemp) {
+  if (var->hasFlag(FLAG_NO_COPY)) {
+    insert->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
+
+  } else {
+    // See Note 4.
+    //
+    // initialize untyped variable with initialization expression
+    //
+    // sjd: this new specialization of PRIM_NEW addresses the test
+    //         test/classes/diten/test_destructor.chpl
+    //      in which we call an explicit record destructor and avoid
+    //      calling the default constructor.  However, if written with
+    //      an explicit type, this would happen.  The record in this
+    //      test is an issue since its destructor deletes field c, but
+    //      the default constructor does not 'new' it.  Thus if we
+    //      pass the record to a function and it is copied, we have an
+    //      issue since we will do a double free.
+    //
+    CallExpr* initCall = toCallExpr(init);
+    Expr*     rhs      = NULL;
+
+    if (initCall && initCall->isPrimitive(PRIM_NEW)) {
+      rhs = init->remove();
+    } else {
+      rhs = new CallExpr("chpl__initCopy", init->remove());
+    }
+
+    insert->insertAfter(new CallExpr(PRIM_MOVE, constTemp, rhs));
+  }
+}
+
 static void init_typed_var(VarSymbol* var,
                            Expr*      type,
                            Expr*      insert,
@@ -1393,6 +1428,7 @@ static void init_typed_var(VarSymbol* var,
 *                                                                             *
 ************************************** | *************************************/
 
+static void normVarTypeInference(DefExpr* expr);
 static void normVarTypeWoutInit(DefExpr* expr);
 
 static void normalizeVariableDefinition(DefExpr* defExpr) {
@@ -1404,10 +1440,13 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
 
   // handle ref variables
   if (var->hasFlag(FLAG_REF_VAR)) {
-    init_ref_var(defExpr);
+    normRefVar(defExpr);
 
   } else if (type != NULL && init == NULL) {
     normVarTypeWoutInit(defExpr);
+
+  } else if (type == NULL && init != NULL) {
+    normVarTypeInference(defExpr);
 
   } else {
     VarSymbol* constTemp = var;
@@ -1437,10 +1476,10 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       }
     }
 
-    if (type == NULL) {
-      init_untyped_var(var, init, defExpr, constTemp);
+    if        (type == NULL && init != NULL) {
+      INT_ASSERT(false);
 
-    } else if (init == NULL) {
+    } else if (type != NULL && init == NULL) {
       INT_ASSERT(false);
 
     } else if (var->hasFlag(FLAG_PARAM) == true) {
@@ -1457,7 +1496,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   }
 }
 
-static void init_ref_var(DefExpr* defExpr) {
+static void normRefVar(DefExpr* defExpr) {
   VarSymbol* var         = toVarSymbol(defExpr->sym);
   Expr*      init        = defExpr->init;
   Expr*      varLocation = NULL;
@@ -1501,44 +1540,52 @@ static void init_ref_var(DefExpr* defExpr) {
                                     new CallExpr(PRIM_ADDR_OF, varLocation)));
 }
 
-static void init_untyped_var(VarSymbol* var,
-                             Expr*      init,
-                             Expr*      insert,
-                             VarSymbol* constTemp) {
-  if (var->hasFlag(FLAG_NO_COPY)) {
-    insert->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
+
+
+//
+// const <name> = <value>;
+// var   <name> = <value>;
+// param <name> = <value>;
+//
+// The type of <name> will be inferred from the type of <value>
+//
+static void normVarTypeInference(DefExpr* defExpr) {
+  Symbol* var  = defExpr->sym;
+  Expr*   init = defExpr->init->remove();
+
+  if (var->hasFlag(FLAG_NO_COPY) == true) {
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init));
 
   } else {
-    // See Note 4.
-    //
-    // initialize untyped variable with initialization expression
-    //
-    // sjd: this new specialization of PRIM_NEW addresses the test
-    //         test/classes/diten/test_destructor.chpl
-    //      in which we call an explicit record destructor and avoid
-    //      calling the default constructor.  However, if written with
-    //      an explicit type, this would happen.  The record in this
-    //      test is an issue since its destructor deletes field c, but
-    //      the default constructor does not 'new' it.  Thus if we
-    //      pass the record to a function and it is copied, we have an
-    //      issue since we will do a double free.
-    //
     CallExpr* initCall = toCallExpr(init);
-    Expr*     rhs      = NULL;
+    Symbol*   tmp      = var;
 
-    if (initCall && initCall->isPrimitive(PRIM_NEW)) {
-      rhs = init->remove();
-    } else {
-      rhs = new CallExpr("chpl__initCopy", init->remove());
+    if (var->hasFlag(FLAG_CONST) == true) {
+      tmp = newTemp("const_tmp");
+
+      defExpr->insertBefore(new DefExpr(tmp));
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
     }
 
-    insert->insertAfter(new CallExpr(PRIM_MOVE, constTemp, rhs));
+    if (initCall && initCall->isPrimitive(PRIM_NEW)) {
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, init));
+    } else {
+      CallExpr* rhs = new CallExpr("chpl__initCopy", init);
+
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
+    }
   }
 }
 
-static void normVarTypeWoutInit(DefExpr* defExpr) {
-  SET_LINENO(defExpr);
+//
+// const <name> : <type>;
+// var   <name> : <type>;
+// param <name> : <type>;
+//
+// The type is explicit and the initial value is implied by the type
+//
 
+static void normVarTypeWoutInit(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
 
