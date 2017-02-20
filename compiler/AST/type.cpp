@@ -593,15 +593,32 @@ bool AggregateType::isUnion() const {
   return aggregateTag == AGGREGATE_UNION;
 }
 
-static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
-  if (def->sym->hasFlag(FLAG_REF_VAR)) {
-      USR_FATAL_CONT(def,
+void AggregateType::addDeclarations(Expr* expr) {
+  if (DefExpr* defExpr = toDefExpr(expr)) {
+    addDeclaration(defExpr);
+
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    for_alist(stmt, block->body) {
+      addDeclarations(stmt);
+    }
+
+  } else {
+    INT_FATAL(expr, "unexpected case");
+  }
+}
+
+void AggregateType::addDeclaration(DefExpr* defExpr) {
+  if (defExpr->sym->hasFlag(FLAG_REF_VAR)) {
+      USR_FATAL_CONT(defExpr,
                      "References cannot be members of classes "
                      "or records yet.");
   }
 
-  if (FnSymbol* fn = toFnSymbol(def->sym)) {
-    ct->methods.add(fn);
+  if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+    var->makeField();
+
+  } else if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
+    methods.add(fn);
 
     if (fn->_this) {
       // get the name used in the type binding clause
@@ -617,10 +634,8 @@ static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
       Expr* firstexpr = bs->body.first();
       INT_ASSERT(firstexpr);
 
-      UnresolvedSymExpr* sym = toUnresolvedSymExpr(firstexpr);
-      INT_ASSERT(sym);
-
-      const char* name = sym->unresolved;
+      UnresolvedSymExpr* sym  = toUnresolvedSymExpr(firstexpr);
+      const char*        name = sym->unresolved;
 
       // ... then report it to the user
       USR_FATAL_CONT(fn->_this,
@@ -629,7 +644,7 @@ static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
                      "or union",
                      name);
     } else {
-      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", ct);
+      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
 
       fn->_this = arg;
 
@@ -650,42 +665,15 @@ static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
     }
   }
 
-  if (VarSymbol* var = toVarSymbol(def->sym)) {
-    // Identify VarSymbol as class/record member.
-    var->makeField();
+  if (defExpr->parentSymbol != NULL || defExpr->list != NULL) {
+    defExpr->remove();
   }
 
-  if (def->parentSymbol || def->list) {
-    def->remove();
-  }
-
-  // Lydia note (Sept 2, 2016): Based on control flow, this adds even the
-  // function symbols we just handled into the fields alist for the type.
-  // Shouldn't placing them in ct->methods be sufficient?
-  if (tail) {
-    ct->fields.insertAtTail(def);
-  } else {
-    ct->fields.insertAtHead(def);
-  }
+  fields.insertAtTail(defExpr);
 }
 
 
-void AggregateType::addDeclarations(Expr* expr, bool tail) {
-  if (DefExpr* def = toDefExpr(expr)) {
-    addDeclaration(this, def, tail);
-
-  } else if (BlockStmt* block = toBlockStmt(expr)) {
-    for_alist(stmt, block->body) {
-      addDeclarations(stmt, tail);
-    }
-
-  } else {
-    INT_FATAL(expr, "unexpected case");
-  }
-}
-
-
-void AggregateType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void AggregateType::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
   INT_FATAL(this, "Unexpected case in AggregateType::replaceChild");
 }
 

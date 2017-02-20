@@ -319,7 +319,7 @@ public:
   virtual void          accept(AstVisitor* visitor);
   virtual void          printDocs(std::ostream* file, unsigned int tabs);
 
-  void                  addDeclarations(Expr* expr, bool tail = true);
+  void                  addDeclarations(Expr* expr);
 
   void                  codegenDef();
 
@@ -372,9 +372,10 @@ public:
 
 private:
   virtual std::string   docsDirective();
-  std::string           docsSuperClass();
-};
 
+  std::string           docsSuperClass();
+  void                  addDeclaration(DefExpr* defExpr);
+};
 
 /************************************* | **************************************
 *                                                                             *
