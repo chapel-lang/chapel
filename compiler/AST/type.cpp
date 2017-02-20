@@ -23,21 +23,19 @@
 
 #include "AstToText.h"
 #include "astutil.h"
+#include "AstVisitor.h"
 #include "build.h"
 #include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
 #include "ipe.h"
+#include "iterator.h"
 #include "misc.h"
 #include "passes.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
-
-#include "iterator.h"
-
-#include "AstVisitor.h"
 
 static bool isDerivedType(Type* type, Flag flag);
 
@@ -483,6 +481,11 @@ std::string EnumType::docsDirective() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
@@ -554,6 +557,22 @@ AggregateType::copyInner(SymbolMap* map) {
   return copy_type;
 }
 
+
+int AggregateType::numFields() const {
+  return fields.length;
+}
+
+bool AggregateType::isClass() const {
+  return aggregateTag == AGGREGATE_CLASS;
+}
+
+bool AggregateType::isRecord() const {
+  return aggregateTag == AGGREGATE_RECORD;
+}
+
+bool AggregateType::isUnion() const {
+  return aggregateTag == AGGREGATE_UNION;
+}
 
 static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
   if (def->sym->hasFlag(FLAG_REF_VAR)) {
@@ -880,6 +899,12 @@ std::string AggregateType::docsDirective() {
 }
 
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 void initRootModule() {
   rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
   rootModule->filename = astr("<internal>");
@@ -891,11 +916,11 @@ void initStringLiteralModule() {
   theProgram->block->insertAtTail(new DefExpr(stringLiteralModule));
 }
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname);
 static PrimitiveType* createInternalType (const char* name, const char* cname);
@@ -1149,11 +1174,11 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
   return retval;
 }
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 DefExpr* defineObjectClass() {
   DefExpr* retval = 0;

@@ -287,6 +287,12 @@ private:
 };
 
 
+/************************************* | **************************************
+*                                                                             *
+* A base type for union, class, and record.                                   *
+*                                                                             *
+************************************** | *************************************/
+
 enum AggregateTag {
   AGGREGATE_CLASS,
   AGGREGATE_RECORD,
@@ -299,52 +305,82 @@ enum InitializerStyle {
   DEFINES_NONE_USE_DEFAULT
 };
 
+
 class AggregateType : public Type {
- public:
-  AggregateTag aggregateTag;
-  InitializerStyle initializerStyle;
-  AList fields;
-  AList inherits; // used from parsing, sets dispatchParents
-  Symbol* outer;  // pointer to an outer class if this is an inner class
-
-  IteratorInfo* iteratorInfo; // Attached only to iterator class/records
-
-  const char *doc;
-
+public:
   AggregateType(AggregateTag initTag);
   ~AggregateType();
-  void verify();
-  virtual void    accept(AstVisitor* visitor);
+
   DECLARE_COPY(AggregateType);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void addDeclarations(Expr* expr, bool tail = true);
 
-  GenRet codegenClassStructType();
-  void codegenDef();
-  void codegenPrototype();
-  const char* classStructName(bool standalone);
-  int codegenStructure(FILE* outfile, const char* baseoffset);
-  int codegenFieldStructure(FILE* outfile, bool nested, const char* baseoffset);
+  virtual void          replaceChild(BaseAST* oldAst, BaseAST* newAst);
 
-  int getMemberGEP(const char *name);
+  virtual void          verify();
+  virtual void          accept(AstVisitor* visitor);
+  virtual void          printDocs(std::ostream* file, unsigned int tabs);
 
-  int getFieldPosition(const char* name, bool fatal = true);
-  Symbol* getField(const char* name, bool fatal = true);
-  Symbol* getField(int i);
+  void                  addDeclarations(Expr* expr, bool tail = true);
+
+  void                  codegenDef();
+
+  void                  codegenPrototype();
+
+  GenRet                codegenClassStructType();
+
+  int                   codegenStructure(FILE*       outfile,
+                                         const char* baseoffset);
+
+  int                   codegenFieldStructure(FILE*       outfile,
+                                              bool        nested,
+                                              const char* baseOffset);
+
+  const char*           classStructName(bool standalone);
+
+  int                   getMemberGEP(const char* name);
+
+  int                   getFieldPosition(const char* name,
+                                         bool        fatal = true);
+
+  Symbol*               getField(const char* name, bool fatal = true);
+  Symbol*               getField(int i);
+
   // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
-  QualifiedType getFieldType(Expr* e);
-  int numFields() { return fields.length; }
-  bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
-  bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }
-  bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
+  QualifiedType         getFieldType(Expr* e);
 
-  virtual void printDocs(std::ostream *file, unsigned int tabs);
+  int                   numFields()                                      const;
+
+  bool                  isClass()                                        const;
+  bool                  isRecord()                                       const;
+  bool                  isUnion()                                        const;
+
+
+  AggregateTag          aggregateTag;
+  InitializerStyle      initializerStyle;
+
+  AList                 fields;
+
+  // used from parsing, sets dispatchParents
+  AList                 inherits;
+
+  // pointer to an outer class if this is an inner class
+  Symbol*               outer;
+
+  // Attached only to iterator class/records
+  IteratorInfo*         iteratorInfo;
+
+  const char*           doc;
 
 private:
-  virtual std::string docsDirective();
-  std::string docsSuperClass();
+  virtual std::string   docsDirective();
+  std::string           docsSuperClass();
 };
 
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class PrimitiveType : public Type {
  public:
@@ -362,6 +398,12 @@ private:
   virtual std::string docsDirective();
 };
 
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 #ifndef TYPE_EXTERN
 #define TYPE_EXTERN extern
