@@ -1486,16 +1486,18 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   } else if (type != NULL && init == NULL) {
     normVarTypeWoutInit(defExpr);
 
-  } else if (type != NULL && init != NULL && var->hasFlag(FLAG_PARAM) == true) {
-    CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
-
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
-
-  } else if (type != NULL && init != NULL && init->isNoInitExpr() == true) {
-    normVarNoinit(defExpr);
-
   } else if (type != NULL && init != NULL) {
-    normVarTypeWithInit(defExpr);
+    if (var->hasFlag(FLAG_PARAM) == true) {
+      CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
+
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
+
+    } else if (init->isNoInitExpr() == true) {
+      normVarNoinit(defExpr);
+
+    } else {
+      normVarTypeWithInit(defExpr);
+    }
 
   } else {
     INT_ASSERT(false);
@@ -1548,8 +1550,8 @@ static void normRefVar(DefExpr* defExpr) {
 
 //
 // const <name> = <value>;
-// var   <name> = <value>;
 // param <name> = <value>;
+// var   <name> = <value>;
 //
 // The type of <name> will be inferred from the type of <value>
 //
@@ -1583,8 +1585,8 @@ static void normVarTypeInference(DefExpr* defExpr) {
 
 //
 // const <name> : <type>;
-// var   <name> : <type>;
 // param <name> : <type>;
+// var   <name> : <type>;
 //
 // The type is explicit and the initial value is implied by the type
 //
