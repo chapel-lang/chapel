@@ -1461,11 +1461,16 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   if (var->hasFlag(FLAG_REF_VAR)) {
     normRefVar(defExpr);
 
+  } else if (type == NULL && init != NULL) {
+    normVarTypeInference(defExpr);
+
   } else if (type != NULL && init == NULL) {
     normVarTypeWoutInit(defExpr);
 
-  } else if (type == NULL && init != NULL) {
-    normVarTypeInference(defExpr);
+  } else if (type != NULL && init != NULL && var->hasFlag(FLAG_PARAM) == true) {
+    CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
+
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
 
   } else if (type != NULL && init != NULL && init->isNoInitExpr() == true) {
     normVarNoinit(defExpr);
@@ -1505,9 +1510,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       INT_ASSERT(false);
 
     } else if (var->hasFlag(FLAG_PARAM) == true) {
-      CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
-
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
+      INT_ASSERT(false);
 
     } else if (init->isNoInitExpr() == true) {
       INT_ASSERT(false);
