@@ -2,6 +2,9 @@
 // that rankChange
 
 var B: [1..10, 1..10] int;
-var A = B[1..10, 1];
+ref A = B[1..10, 1];
 
 for i in 1..10 do A[i] = i;
+
+writeln("B is:\n", B);
+writeln("A is: ", A);

@@ -537,16 +537,18 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 {
   SET_LINENO(moveExpr);
 
-  Expr*     lhs      = moveExpr->get(1);
+  Expr*     lhs       = moveExpr->get(1);
 
-  CallExpr* callExpr = toCallExpr(moveExpr->get(2));
-  FnSymbol* fn       = callExpr->isResolved();
+  CallExpr* callExpr  = toCallExpr(moveExpr->get(2));
+  FnSymbol* fn        = callExpr->isResolved();
 
-  Expr*     nextExpr = moveExpr->next;
-  CallExpr* copyExpr = NULL;
+  Expr*     nextExpr  = moveExpr->next;
+  CallExpr* copyExpr  = NULL;
 
-  Symbol*   useLhs   = toSymExpr(lhs)->symbol();
-  Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
+  Symbol*   useLhs    = toSymExpr(lhs)->symbol();
+  Symbol*   refVar    = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
+
+  FnSymbol* unaliasFn = NULL;
 
   // Make sure that we created a temp with a type
   INT_ASSERT(useLhs->type->refType);
@@ -577,9 +579,14 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
             Type*      formalType = formalArg->type;
             Type*      actualType = rhsCall->get(1)->getValType();
             Type*      returnType = rhsFn->retType->getValType();
-            // Cannot reduce initCopy/autoCopy when types differ
+
+            unaliasFn = getUnalias(useLhs->type);
+
+            // Cannot reduce initCopy/autoCopy when types differ (unless there
+            //   is an unaliasFn available)
             // Cannot reduce initCopy/autoCopy for sync variables
-            if (actualType == returnType &&
+            bool typesOK = (unaliasFn != NULL) || (actualType == returnType);
+            if (typesOK &&
                 isSyncType(formalType) == false &&
                 isSingleType(formalType) == false)
             {
@@ -605,15 +612,22 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   if (copyExpr) {
     FnSymbol* rhsFn = copyExpr->isResolved();
 
-    copyExpr->replace(copyExpr->get(1)->remove());
-
-    // But... if we're replacing an init copy, we got to a user
-    // variable, so add an unalias call if there is one
-    if (rhsFn->hasFlag(FLAG_INIT_COPY_FN)) {
-      FnSymbol* unaliasFn = getUnalias(useLhs->type);
-      if (unaliasFn) {
-        callExpr->insertAfter(new CallExpr(unaliasFn, refVar));
-      }
+    // If replacing an init copy, we got to a user variable. Use an unalias
+    // call if possible
+    if (rhsFn->hasFlag(FLAG_INIT_COPY_FN) && unaliasFn != NULL) {
+      // BHARSH: It seems important that there's a temporary to store the
+      // result of the unaliasFn call. Otherwise we'll move into a variable
+      // that has multiplie uses, which seems to cause a variety of problems.
+      //
+      // In particular, I noticed that `changeRetToArgAndClone` would generate
+      // bad AST if I simply did this:
+      //   copyExpr->replace(new CallExpr(unaliasFn, refVar));
+      VarSymbol* unaliasTemp = newTemp("unaliasTemp", unaliasFn->retType);
+      callExpr->insertBefore(new DefExpr(unaliasTemp));
+      callExpr->insertAfter(new CallExpr(PRIM_MOVE, unaliasTemp, new CallExpr(unaliasFn, refVar)));
+      copyExpr->replace(new SymExpr(unaliasTemp));
+    } else {
+      copyExpr->replace(copyExpr->get(1)->remove());
     }
   }
 }

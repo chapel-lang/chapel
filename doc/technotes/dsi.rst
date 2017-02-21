@@ -636,19 +636,6 @@ as an indication of what procedure(s) need to be defined.
   That class must satisfy the requirements on ``GlobalDomain`` defined in this
   document.]
 
-.. method:: proc GlobalArray.dsiSlice(sliceDef: GlobalDomain)
-
-  Returns a ``GlobalArray`` object representing a slice of the array
-  corresponding to `this`. Like generally in Chapel, the array elements
-  in the slice must be aliases of the corresponding elements of `this`.
-  The argument ``sliceDef`` defines the slice, i.e., which of the elements
-  of `this` are to be included in the result.
-
-.. [TODO: the following seems correct. The returned object can be an instance
-  of a different class than the receiver, at the implementor's discretion.
-  That class must satisfy the requirements on ``GlobalArray`` defined in this
-  document.]
-
 .. method:: proc GlobalArray.dsiReindex(reindexDef: GlobalDomain)
 
   Similar to ``dsiSlice``, except: The array alias represented by the

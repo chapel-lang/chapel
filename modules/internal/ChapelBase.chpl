@@ -1099,12 +1099,21 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "unalias fn"
-  inline proc chpl__unalias(ref x) { }
+  inline proc chpl__unalias(x) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
 
   pragma "unalias fn"
-  inline proc chpl__unalias(x:_iteratorClass) { }
+  inline proc chpl__unalias(x:_iteratorClass) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
   pragma "unalias fn"
-  inline proc chpl__unalias(const ref x:_iteratorRecord) { }
+  inline proc chpl__unalias(const ref x:_iteratorRecord) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
 
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;

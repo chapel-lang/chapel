@@ -622,19 +622,6 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
   return sum;
 }
 
-proc SparseBlockArr.dsiSlice(d: SparseBlockDom) {
-  var alias = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
-  var thisid = this.locale.id;
-  coforall i in d.dist.targetLocDom {
-    on d.dist.targetLocales(i) {
-      alias.locArr[i] = new LocSparseBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].mySparseBlock]);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-    }
-  }
-  return alias;
-}
-
 proc SparseBlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
@@ -674,60 +661,6 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-
-proc SparseBlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
-  var alias = new SparseBlockArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
-  var thisid = this.locale.id;
-  coforall ind in d.dist.targetLocDom {
-    on d.dist.targetLocales(ind) {
-      const locDom = d.getLocDom(ind);
-      // locSlice is a tuple of ranges and scalars. It will match the basic
-      // shape of the args argument.
-      var locSlice: _matchArgsShape(range(idxType=idxType, stridable=stridable), idxType, args);
-      // collapsedDims stores the value any collapsed dimension is down to.
-      // For any non-collapsed dimension, that position is ignored.
-      // This tuple is then passed to the targetLocsIdx function to build up a
-      // partial index into this.targetLocDom with correct values set for all
-      // collapsed dimensions. The rest of the dimensions get their values from
-      // ind - an index into the new rank changed targetLocDom.
-      var collapsedDims: rank*idxType;
-      var locArrInd: rank*int;
-
-      var j = 1;
-      for param i in 1..args.size {
-        if isCollapsedDimension(args(i)) {
-          locSlice(i) = args(i);
-          collapsedDims(i) = args(i);
-        } else {
-          locSlice(i) = locDom.mySparseBlock.dim(j)(args(i));
-          j += 1;
-        }
-      }
-      locArrInd = dom.dist.targetLocsIdx(collapsedDims);
-      j = 1;
-      // Now that the locArrInd values are known for the collapsed dimensions
-      // Pull the rest of the dimensions values from ind
-      for param i in 1..args.size {
-        if !isCollapsedDimension(args(i)) {
-          if newRank > 1 then
-            locArrInd(i) = ind(j);
-          else
-            locArrInd(i) = ind;
-          j += 1;
-        }
-      }
-
-      alias.locArr[ind] =
-        new LocSparseBlockArr(eltType=eltType, rank=newRank, idxType=d.idxType,
-                        stridable=d.stridable, locDom=locDom,
-                        myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
-
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[ind];
-    }
-  }
-  return alias;
-}
 
 proc SparseBlockArr.dsiReindex(d: SparseBlockDom) {
   var alias = new SparseBlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
@@ -858,7 +791,7 @@ proc SparseBlockArr.doiCanBulkTransfer() {
 
 // TODO This function needs to be fixed. For now, explicitly returning false
 // from dsiSupportsBulkTransfer, so this function should never be compiled
-proc SparseBlockArr.doiBulkTransfer(B) {
+proc SparseBlockArr.doiBulkTransfer(B, viewDom) {
   halt("SparseBlockArr.doiBulkTransfer not yet implemented");
 /*
   if debugSparseBlockDistBulkTransfer then resetCommDiagnostics();

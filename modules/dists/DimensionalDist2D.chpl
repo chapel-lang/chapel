@@ -1061,32 +1061,6 @@ proc DimensionalArr.dsiSerialWrite(f): void {
 
 /// slicing, reindexing, rank change, reallocation //////////////////////////
 
-proc DimensionalArr.dsiSlice(sliceDef: DimensionalDom) {
-  _traceddd(this, ".dsiSlice of ", this.dom.whole, " with ", sliceDef.whole);
-
-//writeln("slicing DimensionalArr ", this.dom.dsiDims(), "  with DimensionalDom ", sliceDef.dsiDims());
-
-// started with dsiBuildArray, modified like ReplicatedArr.dsiSlice
-  const slicee = this;
-  if slicee.rank != sliceDef.rank then
-    compilerError("slicing with a different rank");
-
-  if sliceDef.type != slicee.allocDom.type then
-    compilerError("slicing a Dimensional array with a domain of a different type than the array's domain is currently not available");
-
-  const result = new DimensionalArr(eltType  = slicee.eltType,
-                                    dom      = sliceDef,
-                                    allocDom = slicee.allocDom);
-
-  // reuse the original array's local descriptors,
-  // ensuring sliceDef and slicee are over the same set of locales/targetIds
-  assert(sliceDef.localDdescs.domain == slicee.localAdescs.domain);
-  result.localAdescs = slicee.localAdescs;
-
-  assert(result.isAlias);
-  return result;
-}
-
 proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
   const dom = this.dom;
   const dist = dom.dist;
@@ -1127,14 +1101,6 @@ proc DimensionalArr.dsiReindex(reindexDef: WrapperRectDom) {
 
 proc DimensionalDist2D.dsiCreateRankChangeDist(param newRank: int, args) {
   return genericDsiCreateRankChangeDist(this, newRank, args);
-}
-
-proc DimensionalArr.dsiRankChange(sliceDefDom: WrapperRectDom,
-                                  param newRank: int,
-                                  param newStridable: bool,
-                                  sliceDefIndsRanges) {
-  return genericDsiRankChange(this, sliceDefDom, newRank, newStridable,
-                              sliceDefIndsRanges);
 }
 
 */
