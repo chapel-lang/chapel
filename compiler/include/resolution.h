@@ -138,6 +138,10 @@ public:
 
 bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
 bool checkGenericFormals(ResolutionCandidate* currCandidate);
+void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
+                            CallInfo& info, CallExpr* call);
+void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
+                           bool buildFastFollowerChecks);
 
 typedef enum {
   FIND_EITHER = 0,
@@ -210,7 +214,8 @@ void resolveTypedefedArgTypes(FnSymbol* fn);
 // FnSymbol changes
 extern bool tryFailure;
 void insertFormalTemps(FnSymbol* fn);
-void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
+void insertAndResolveCasts(FnSymbol* fn);
+void ensureInMethodList(FnSymbol* fn);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
 void reorderActuals(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);

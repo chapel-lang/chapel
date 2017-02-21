@@ -45,6 +45,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "TryStmt.h"
+#include "typeSpecifier.h"
 #include "view.h"
 #include "WhileStmt.h"
 
@@ -233,6 +234,8 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
 static FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
+static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
+                                        SymExpr* rhs);
 static void resolveSetMember(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
@@ -261,6 +264,8 @@ computeReturnTypeParamVectors(BaseAST* ast,
                               Symbol* retSymbol,
                               Vec<Type*>& retTypes,
                               Vec<Symbol*>& retParams);
+static void
+insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
 static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
 static bool signature_match(FnSymbol* fn, FnSymbol* gn);
@@ -4341,22 +4346,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   Vec<ResolutionCandidate*> candidates;
   gatherCandidates(candidates, visibleFns, info);
 
-  if ((explainCallLine && explainCallMatch(info.call)) ||
-      call->id == explainCallID)
-  {
-    if (candidates.n == 0) {
-      USR_PRINT(info.call, "no candidates found");
+  explainGatherCandidate(candidates, info, call);
 
-    } else {
-      bool first = true;
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
-        USR_PRINT(candidate->fn, "%s %s",
-                  first ? "candidates are:" : "               ",
-                  toString(candidate->fn));
-        first = false;
-      }
-    }
-  }
 
   Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
   bool explain = fExplainVerbose &&
@@ -4443,22 +4434,13 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       }
     }
   } else {
-    INT_ASSERT(best->fn);
-    best->fn = defaultWrap(best->fn, &best->actualIdxToFormal, &info);
-    reorderActuals(best->fn, &best->actualIdxToFormal, &info);
-    coerceActuals(best->fn, &info);
-    best->fn = promotionWrap(best->fn, &info, /*buildFastFollowerChecks=*/true);
+    wrapAndCleanUpActuals(best, info, true);
     if (valueCall) {
       // If we're resolving a ref and non-ref pair,
       // also handle the value version. best is the ref version.
       CallInfo valueInfo(valueCall, checkonly);
 
-      INT_ASSERT(bestValue->fn);
-      bestValue->fn = defaultWrap(bestValue->fn, &bestValue->actualIdxToFormal,
-                                  &valueInfo);
-      reorderActuals(bestValue->fn, &bestValue->actualIdxToFormal, &valueInfo);
-      coerceActuals(bestValue->fn, &valueInfo);
-      bestValue->fn = promotionWrap(bestValue->fn, &valueInfo, /*buildFastFollowerChecks=*/false);
+      wrapAndCleanUpActuals(bestValue, valueInfo, false);
     }
   }
 
@@ -4541,6 +4523,34 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   }
 
   return resolvedFn;
+}
+
+void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
+                            CallInfo& info, CallExpr* call) {
+  if ((explainCallLine && explainCallMatch(info.call)) ||
+      call->id == explainCallID) {
+    if (candidates.n == 0) {
+      USR_PRINT(info.call, "no candidates found");
+
+    } else {
+      bool first = true;
+      forv_Vec(ResolutionCandidate*, candidate, candidates) {
+        USR_PRINT(candidate->fn, "%s %s",
+                  first ? "candidates are:" : "               ",
+                  toString(candidate->fn));
+        first = false;
+      }
+    }
+  }
+}
+
+void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
+                           bool buildFastFollowerChecks) {
+  INT_ASSERT(best->fn);
+  best->fn = defaultWrap(best->fn, &best->actualIdxToFormal, &info);
+  reorderActuals(best->fn, &best->actualIdxToFormal, &info);
+  coerceActuals(best->fn, &info);
+  best->fn = promotionWrap(best->fn, &info, buildFastFollowerChecks);
 }
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
@@ -4842,15 +4852,20 @@ static void resolveSetMember(CallExpr* call) {
     fs->type = t;
   }
 
+  INT_ASSERT(isSymExpr(call->get(3)));
+  handleSetMemberTypeMismatch(t, fs, call, toSymExpr(call->get(3)));
+}
+
+
+static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
+                                        SymExpr* rhs) {
   if (t != fs->type && t != dtNil && t != dtObject) {
-    SymExpr* se = toSymExpr(call->get(3));
-    Symbol* actual = se->symbol();
+    Symbol* actual = rhs->symbol();
     FnSymbol* fn = toFnSymbol(call->parentSymbol);
     if (canCoerceTuples(t, actual, fs->type, fn)) {
       // Add a PRIM_MOVE so that insertCasts will take care of it later.
       VarSymbol* tmp = newTemp("coerce_elt", fs->type);
       call->insertBefore(new DefExpr(tmp));
-      Expr* rhs = call->get(3);
       rhs->remove();
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
       call->insertAtTail(tmp);
@@ -6289,96 +6304,19 @@ static Expr* resolvePrimInit(CallExpr* call)
   return result;
 }
 
-static Expr*
-preFold(Expr* expr) {
+static Expr* preFold(Expr* expr) {
   Expr* result = expr;
+
   if (CallExpr* call = toCallExpr(expr)) {
     // Match calls that look like:  (<type-symbol> <immediate-integer>)
     // and replace them with:       <new-type-symbol>
     // <type-symbol> is in {dtBools, dtInt, dtUint, dtReal, dtImag, dtComplex}.
-    // This replaces, e.g. ( dtInt[INT_SIZE_DEFAULT] 32) with dtInt[INT_SIZE_32].
-    if (SymExpr* sym = toSymExpr(call->baseExpr)) {
-      if (TypeSymbol* type = toTypeSymbol(sym->symbol())) {
-        if (call->numActuals() == 1) {
-          if (SymExpr* arg = toSymExpr(call->get(1))) {
-            if (VarSymbol* var = toVarSymbol(arg->symbol())) {
-              if (var->immediate) {
-                if (NUM_KIND_INT == var->immediate->const_kind ||
-                    NUM_KIND_UINT == var->immediate->const_kind) {
-                  int size;
-                  if (NUM_KIND_INT == var->immediate->const_kind) {
-                    size = var->immediate->int_value();
-                  } else {
-                    size = (int)var->immediate->uint_value();
-                  }
-                  TypeSymbol* tsize = NULL;
-                  if (type == dtBools[BOOL_SIZE_SYS]->symbol) {
-                    switch (size) {
-                    case 8: tsize = dtBools[BOOL_SIZE_8]->symbol; break;
-                    case 16: tsize = dtBools[BOOL_SIZE_16]->symbol; break;
-                    case 32: tsize = dtBools[BOOL_SIZE_32]->symbol; break;
-                    case 64: tsize = dtBools[BOOL_SIZE_64]->symbol; break;
-                    default:
-                      USR_FATAL( call, "illegal size %d for bool", size);
-                    }
-                    result = new SymExpr(tsize);
-                    call->replace(result);
-                  } else if (type == dtInt[INT_SIZE_DEFAULT]->symbol) {
-                    switch (size) {
-                    case 8: tsize = dtInt[INT_SIZE_8]->symbol; break;
-                    case 16: tsize = dtInt[INT_SIZE_16]->symbol; break;
-                    case 32: tsize = dtInt[INT_SIZE_32]->symbol; break;
-                    case 64: tsize = dtInt[INT_SIZE_64]->symbol; break;
-                    default:
-                      USR_FATAL( call, "illegal size %d for int", size);
-                    }
-                    result = new SymExpr(tsize);
-                    call->replace(result);
-                  } else if (type == dtUInt[INT_SIZE_DEFAULT]->symbol) {
-                    switch (size) {
-                    case  8: tsize = dtUInt[INT_SIZE_8]->symbol;  break;
-                    case 16: tsize = dtUInt[INT_SIZE_16]->symbol; break;
-                    case 32: tsize = dtUInt[INT_SIZE_32]->symbol; break;
-                    case 64: tsize = dtUInt[INT_SIZE_64]->symbol; break;
-                    default:
-                      USR_FATAL( call, "illegal size %d for uint", size);
-                    }
-                    result = new SymExpr(tsize);
-                    call->replace(result);
-                  } else if (type == dtReal[FLOAT_SIZE_64]->symbol) {
-                    switch (size) {
-                    case 32:  tsize = dtReal[FLOAT_SIZE_32]->symbol;  break;
-                    case 64:  tsize = dtReal[FLOAT_SIZE_64]->symbol;  break;
-                    default:
-                      USR_FATAL( call, "illegal size %d for real", size);
-                    }
-                    result = new SymExpr(tsize);
-                    call->replace(result);
-                  } else if (type == dtImag[FLOAT_SIZE_64]->symbol) {
-                    switch (size) {
-                    case 32:  tsize = dtImag[FLOAT_SIZE_32]->symbol;  break;
-                    case 64:  tsize = dtImag[FLOAT_SIZE_64]->symbol;  break;
-                    default:
-                      USR_FATAL( call, "illegal size %d for imag", size);
-                    }
-                    result = new SymExpr(tsize);
-                    call->replace(result);
-                  } else if (type == dtComplex[COMPLEX_SIZE_128]->symbol) {
-                    switch (size) {
-                    case 64:  tsize = dtComplex[COMPLEX_SIZE_64]->symbol;  break;
-                    case 128: tsize = dtComplex[COMPLEX_SIZE_128]->symbol; break;
-                    default:
-                      USR_FATAL( call, "illegal size %d for complex", size);
-                    }
-                    result = new SymExpr(tsize);
-                    call->replace(result);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+    // This replaces, e.g.
+    //   dtInt[INT_SIZE_DEFAULT] 32) with dtInt[INT_SIZE_32].
+    if (Type* type = typeForTypeSpecifier(call)) {
+      result = new SymExpr(type->symbol);
+
+      call->replace(result);
     }
 
     if (SymExpr* sym = toSymExpr(call->baseExpr)) {
@@ -8004,7 +7942,7 @@ computeReturnTypeParamVectors(BaseAST* ast,
   AST_CHILDREN_CALL(ast, computeReturnTypeParamVectors, retSymbol, retTypes, retParams);
 }
 
-void
+static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
   if (CallExpr* call = toCallExpr(ast)) {
     if (call->parentSymbol == fn) {
@@ -8163,6 +8101,21 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
   AST_CHILDREN_CALL(ast, insertCasts, fn, casts);
 }
 
+//
+// insert casts as necessary
+//
+void insertAndResolveCasts(FnSymbol* fn) {
+  if (fn->retTag != RET_PARAM) {
+    Vec<CallExpr*> casts;
+
+    insertCasts(fn->body, fn, casts);
+
+    forv_Vec(CallExpr, cast, casts) {
+      resolveCallAndCallee(cast, true);
+    }
+  }
+}
+
 
 static void instantiate_default_constructor(FnSymbol* fn) {
   //
@@ -8279,6 +8232,27 @@ static void resolveReturnType(FnSymbol* fn)
     fn->retType = retType;
   }
 
+}
+
+void ensureInMethodList(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_METHOD) && fn->_this != NULL) {
+    Type* thisType = fn->_this->type->getValType();
+    bool  found    = false;
+
+    INT_ASSERT(thisType);
+    INT_ASSERT(thisType != dtUnknown);
+
+    forv_Vec(FnSymbol, method, thisType->methods) {
+      if (method == fn) {
+        found = true;
+        break;
+      }
+    }
+
+    if (found == false) {
+      thisType->methods.add(fn);
+    }
+  }
 }
 
 // Simple wrappers to check if a function is a specific type of iterator
@@ -8475,15 +8449,7 @@ resolveFns(FnSymbol* fn) {
   //
   // insert casts as necessary
   //
-  if (fn->retTag != RET_PARAM) {
-    Vec<CallExpr*> casts;
-
-    insertCasts(fn->body, fn, casts);
-
-    forv_Vec(CallExpr, cast, casts) {
-      resolveCallAndCallee(cast, true);
-    }
-  }
+  insertAndResolveCasts(fn);
 
   if (fn->isIterator() && !fn->iteratorInfo) {
     protoIteratorClass(fn);
@@ -8564,24 +8530,7 @@ resolveFns(FnSymbol* fn) {
   //
   // make sure methods are in the methods list
   //
-  if (fn->hasFlag(FLAG_METHOD) && fn->_this != NULL) {
-    Type* thisType = fn->_this->type->getValType();
-    bool  found    = false;
-
-    INT_ASSERT(thisType);
-    INT_ASSERT(thisType != dtUnknown);
-
-    forv_Vec(FnSymbol, method, thisType->methods) {
-      if (method == fn) {
-        found = true;
-        break;
-      }
-    }
-
-    if (found == false) {
-      thisType->methods.add(fn);
-    }
-  }
+  ensureInMethodList(fn);
 }
 
 
