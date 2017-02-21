@@ -8316,10 +8316,12 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
         // would never be destroyed...
         if (rhsType->symbol->hasFlag(FLAG_ARRAY) &&
             isTypeExpr(call->get(2)) == false) {
+          Expr* origRHS = call->get(2)->remove();
           VarSymbol* tmp = newTemp(arrayUnrefName, rhsType);
 
           call->insertBefore(new DefExpr(tmp));
-          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
+          CallExpr* init_unref_tmp = new CallExpr(PRIM_MOVE, tmp, origRHS->copy());
+          call->insertBefore(init_unref_tmp);
 
           CallExpr* unrefCall = new CallExpr("chpl__unref", tmp);
           call->insertAtTail(unrefCall);
@@ -8329,7 +8331,12 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           if (unrefFn->retType == tmp->typeInfo()) {
             // If the types are equal, we must be dealing with a non-view
             // array, so we can remove the useless unref call.
-            unrefCall->replace(new SymExpr(tmp));
+            unrefCall->replace(origRHS->copy());
+
+            // Remove now-useless AST
+            tmp->defPoint->remove();
+            init_unref_tmp->remove();
+            INT_ASSERT(unrefCall->inTree() == false);
           } else {
             // The array is an ArrayView
             //
