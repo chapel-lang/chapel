@@ -26,13 +26,43 @@ include $(GASNET_SETUP_MAKEFILE)
 # current PrgEnv.
 #
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xt cray-xe cray-xc cray-xk))
-# Just don't set CC and LD - they'll be set by our compiler/Makefile....
+# On Crays, don't set CC -- it'll be set in our Makefiles and GASNet tends
+# to hard-code them to a point that our modules aren't portable across
+# systems or PE versions.  Set LD to the C++ compiler, as we would in
+# Makefile.comm-none.
+#
+LD = $(CXX)
 else
 ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
-# Just don't set CC and LD - they'll be set by our compiler/Makefile....
+#
+# Just don't set CC -- it'll be set by our compiler/Makefile....
+# set LD to CXX as we do in Makefile.comm-none
+#
+LD = $(CXX)
 else
+#
+# Use GASNet's choice of C compiler
+#
 CC = $(GASNET_CC)
-LD = $(GASNET_LD)
+#
+# For the linker, we tend to want a C++ linker, in order to support
+# linking in components developed in C++ like re2 or user C++ code.
+# However, GASNet doesn't provide any guarantees that their linker
+# will be a C++ compiler.  Based on conversation with the GASNet
+# team, we should expect it either to be GASNET_CC, GASNET_CXX, or
+# MPI_CC.  The following conditional handles these cases, switching
+# to the C++ choice in the first and third cases.
+#
+ifeq ($(GASNET_LD),$(GASNET_CXX))
+LD = $(GASNET_LD)   # GASNet chose C++ linker so stick with it
+else ifeq ($(GASNET_LD),$(GASNET_CC))
+LD = $(GASNET_CXX)  # GASNet chose C, so switch to C++
+else ifeq ($(GASNET_LD),$(MPI_CC))
+LD = mpicxx         # GASNet chose mpicc, so we'll choose mpicxx
+else
+LD = $(CXX)
+$(warning GASNET_LD unexpectedly set to '$(GASNET_LD)'.  Please file a Chapel bug against this.)
+endif
 endif
 endif
 
