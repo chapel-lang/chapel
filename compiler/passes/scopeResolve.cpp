@@ -642,29 +642,32 @@ void UseStmt::createRelatedNames(Symbol* maybeType) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void addClassToHierarchy(AggregateType*       ct,
-                                Vec<AggregateType*>* localSeen);
+static void           addClassToHierarchy(AggregateType*            ct,
+                                          std::set<AggregateType*>& seen);
 
 static AggregateType* discoverParentAndCheck(Expr*          storesName,
                                              AggregateType* child);
 
 static void addClassToHierarchy(AggregateType* ct) {
-  Vec<AggregateType*> localSeen; // classes in potential cycle
+  std::set<AggregateType*> localSeen; // classes in potential cycle
 
-  return addClassToHierarchy(ct, &localSeen);
+  addClassToHierarchy(ct, localSeen);
 }
 
-static void addClassToHierarchy(AggregateType*       ct,
-                                Vec<AggregateType*>* localSeen) {
-  static Vec<AggregateType*> globalSeen; // classes already in hierarchy
+static void addClassToHierarchy(AggregateType*            ct,
+                                std::set<AggregateType*>& localSeen) {
+  // classes already in hierarchy
+  static std::set<AggregateType*> globalSeen;
 
-  if (localSeen->set_in(ct))
+  if (localSeen.find(ct)  != localSeen.end())  {
     USR_FATAL(ct, "Class hierarchy is cyclic");
+  }
 
-  if (globalSeen.set_in(ct))
+  if (globalSeen.find(ct) != globalSeen.end()) {
     return;
+  }
 
-  globalSeen.set_add(ct);
+  globalSeen.insert(ct);
 
   add_root_type(ct);
 
@@ -672,7 +675,7 @@ static void addClassToHierarchy(AggregateType*       ct,
   for_alist(expr, ct->inherits) {
     AggregateType* pt = discoverParentAndCheck(expr, ct);
 
-    localSeen->set_add(ct);
+    localSeen.insert(ct);
 
     addClassToHierarchy(pt, localSeen);
 
@@ -684,14 +687,16 @@ static void addClassToHierarchy(AggregateType*       ct,
 
     expr->remove();
 
-    if (isClass(ct)) {
+    if (isClass(ct) == true) {
       SET_LINENO(ct);
+
       // For a class, just add a super class pointer.
       VarSymbol* super = new VarSymbol("super", pt);
 
       super->addFlag(FLAG_SUPER_CLASS);
 
       ct->fields.insertAtHead(new DefExpr(super));
+
     } else {
       SET_LINENO(ct);
 
@@ -702,7 +707,7 @@ static void addClassToHierarchy(AggregateType*       ct,
           bool alreadyContainsField = false;
 
           for_fields(myfield, ct) {
-            if (!strcmp(myfield->name, field->name)) {
+            if (strcmp(myfield->name, field->name) == 0) {
               alreadyContainsField = true;
               break;
             }
@@ -710,7 +715,9 @@ static void addClassToHierarchy(AggregateType*       ct,
 
           if (!alreadyContainsField) {
             DefExpr* def = field->defPoint->copy();
+
             ct->fields.insertAtHead(def);
+
             def->sym->addFlag(FLAG_PARENT_FIELD);
           }
         }
