@@ -1,5 +1,8 @@
 /* Helper functions used in BLAS tests */
 
+use Random;
+use BLAS;
+
 config const errorThresholdDouble = 1.e-10;
 config const errorThresholdSingle = 1.e-5;
 
@@ -55,7 +58,7 @@ proc makeHerm(A : [?Adom]) {
 }
 
 // Zero out upper or lower triangular piece
-proc zeroTri(A:[?Adom], zeroLow:bool=true) {
+proc zeroTri(A:[?Adom], zeroLow:bool=true) where A.domain.rank == 2 {
   type t = A.eltType;
   const zero = 0 : t;
   forall (i,j) in Adom {
@@ -85,8 +88,8 @@ inline proc conjg(x : real(64)) {
 }
 
 
-/* Convert array to band-storage, assumes 0-based index */
-proc bandArray(A: [?Dom] ?eltType, l, u) where A.rank == 2 {
+// Band Array
+proc bandArray(A: [?Dom] ?eltType, l, u, uplo=Uplo.Upper) where A.rank == 2 {
 
   const m = Dom.dim(1).size,
         n = Dom.dim(2).size;
@@ -106,6 +109,61 @@ proc bandArray(A: [?Dom] ?eltType, l, u) where A.rank == 2 {
   return a;
 }
 
+// Triangular band array
+proc bandArrayTriangular(A: [?Dom] ?eltType, k, uplo=Uplo.Upper)
+  where A.rank == 2 {
+
+  // Must be square matrix
+  assert(Dom.dim(1).size == Dom.dim(2).size);
+
+  // Matrix order
+  const n = Dom.dim(1).size;
+
+  // double check this...
+  var a: [{0..#(k+1), 0..#n}] eltType;
+
+  var m = 0;
+  var irange: range;
+
+  for j in 0..#n {
+    if uplo == Uplo.Upper {
+      m = k - j;
+      irange = max(0, j-k)..j;
+    } else {
+      m = -j;
+      irange = j..min(n, j+k+1)-1;
+    }
+    for i in irange {
+      a[m+i, j] = A[i, j];
+    }
+  }
+  return a;
+}
+
+
+// Dense array from band array
+proc bandArrayDense(a: [?Dom] ?eltType, l, u, m, n) where a.rank == 2 {
+
+  const k = min(m, n),
+        rows = 1+l+u;
+
+  var A: [{0..#m, 0..#n}] eltType;
+
+  for j in 1..k {
+    for i in max(1, j-u)..min(n, j+l) {
+      const idx = u+i-j;
+      A[i-1, j-1] = a[idx, j-1];
+    }
+  }
+
+  return A;
+}
+
+/* Create packed array from dense array, assume 0-based domain*/
+proc packedArray(A: [?Dom] ?elType) where A.rank == 2 {
+  // TODO
+}
+
 
 /* Naive transpose */
 proc transpose(A: [?D] ?t) where A.rank == 2 {
@@ -117,5 +175,12 @@ proc transpose(A: [?D] ?t) where A.rank == 2 {
   for (i, j) in D {
     B[j, i] = A[i, j];
   }
+  return B;
+}
+
+/* Adjoint = transpose, then complex conjugate */
+proc adjoint(A: [?D] ?t) where A.rank == 2 {
+  var B = transpose(A);
+  B = conjg(A);
   return B;
 }
