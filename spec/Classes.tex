@@ -219,6 +219,11 @@ type-binding:
   `(' expr `)' .
 
 \end{syntax}
+
+% Note: at the time `const ref` and `const` this intents were
+% added, we didn't see any conceptual reason not to support
+% `const in` and `in` this intents; it's just not a pressing concern.
+
 Methods defined within the lexical scope of a class, record, or union
 are referred to as \emph{primary methods}.  For such methods,
 the \sntx{type-binding} is omitted and is taken to be the
