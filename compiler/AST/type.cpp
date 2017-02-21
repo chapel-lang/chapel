@@ -599,6 +599,10 @@ bool AggregateType::isGeneric() const {
   return mIsGeneric;
 }
 
+void AggregateType::markAsGeneric() {
+  mIsGeneric = true;
+}
+
 void AggregateType::addDeclarations(Expr* expr) {
   if (DefExpr* defExpr = toDefExpr(expr)) {
     addDeclaration(defExpr);

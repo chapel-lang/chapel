@@ -352,7 +352,10 @@ public:
   bool                  isClass()                                        const;
   bool                  isRecord()                                       const;
   bool                  isUnion()                                        const;
+
   bool                  isGeneric()                                      const;
+  void                  markAsGeneric();
+
 
 
   AggregateTag          aggregateTag;
