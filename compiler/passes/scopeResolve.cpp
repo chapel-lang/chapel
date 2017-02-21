@@ -681,6 +681,10 @@ static void addClassToHierarchy(AggregateType*            ct,
 
     ct->dispatchParents.add(pt);
 
+    if (ct->isGeneric() == false && pt->isGeneric() == true) {
+      ct->markAsGeneric();
+    }
+
     if (pt->dispatchChildren.add_exclusive(ct) == false) {
       INT_ASSERT(false);
     }
