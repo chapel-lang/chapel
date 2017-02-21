@@ -16,6 +16,8 @@ Classes
 * add destructors description
 * indicate that parentheses-less methods are statically dispatched,
   just like fields
+* Consider moving methods into a new chapter, since we can have methods
+  on integers or records. Consider a new cut at describing this intents.
 
 Conversions
 -----------
