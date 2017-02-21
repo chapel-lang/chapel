@@ -946,15 +946,16 @@ module ChapelArray {
           // and mark the domain to be freed when that number reaches 0.
           // Additionally, if the number is 0, remove the domain from
           // the distribution and possibly get the distribution to free.
-          var (domToFree, distToRemove) = _instance.remove();
+          const inst = _instance;
+          var (domToFree, distToRemove) = inst.remove();
           var distToFree:BaseDist = nil;
           if distToRemove != nil {
             distToFree = distToRemove.remove();
           }
           if domToFree != nil then
-            _delete_dom(_instance, _isPrivatized(_instance));
+            _delete_dom(inst, _isPrivatized(inst));
           if distToFree != nil then
-            _delete_dist(distToFree, _isPrivatized(_instance.dist));
+            _delete_dist(distToFree, _isPrivatized(inst.dist));
         }
       }
     }
