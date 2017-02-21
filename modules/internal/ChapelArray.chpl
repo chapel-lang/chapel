@@ -147,8 +147,6 @@ module ChapelArray {
   pragma "no doc"
   param nullPid = -1;
 
-  config param alwaysUseArrayViews = true;
-
   pragma "no doc"
   config param debugBulkTransfer = false;
   pragma "no doc"
@@ -1048,7 +1046,8 @@ module ChapelArray {
     pragma "no doc"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
       var ranges = _getRankChangeRanges(args);
-      param newRank = ranges.size, stridable = chpl__anyStridable(ranges) || chpl__anyStridable(dims());
+      param newRank = ranges.size,
+            stridable = chpl__anyStridable(ranges) || this.stridable;
       var newRanges: newRank*range(idxType=_value.idxType, stridable=stridable);
       var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
       var sameDist = (newDistVal == _value.dist);
@@ -2060,7 +2059,6 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
 
-
     // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
@@ -2068,38 +2066,23 @@ module ChapelArray {
     proc this(ranges: range(?) ...rank) {
       if boundsChecking then
         checkSlice((... ranges));
-      // dsiSlice takes ownership of d._value
 
-      //
-      // TODO: This computes a local domain (?).  Do we want to do
-      // that or compute the global domain?
-      //
       pragma "no auto destroy" var d = _dom((...ranges));
       d._value._free_when_no_arrs = true;
-      var a = chpl_arraySliceHelp();
 
-      proc chpl_arraySliceHelp() {
-        //        if (alwaysUseArrayViews ||
-        //            !canResolveMethod(this._value, "dsiSlice", d._value)) {
-          // if we're slicing a slice, short-circuit the slice out
-          const (arr, arrpid)  = if (_value.isSliceArrayView()) then (this._value.arr, this._value._ArrPid)
-                                 else (this._value, this._pid);
+      //
+      // If this is already a slice array view, we can short-circuit
+      // down to the underlying array.
+      //
+      const (arr, arrpid) = if (_value.isSliceArrayView())
+                              then (this._value.arr, this._value._ArrPid)
+                              else (this._value, this._pid);
 
-          // I don't believe I want to set _arrAlias on this branch because
-          // we're not aliasing the _ddata field of an array directly, only
-          // through its owning array's descriptor...
-
-          return new ArrayViewSliceArr(eltType=this.eltType,
-                                       _DomPid=d._pid,
-                                       dom=d._instance,
-                                       _ArrPid=arrpid,
-                                       _ArrInstance=arr);
-          //        } else {
-          //          var a = _value.dsiSlice(d._value);
-          //          a._arrAlias = _value;
-          //          return a;
-          //        }
-      }
+      var a = new ArrayViewSliceArr(eltType=this.eltType,
+                                    _DomPid=d._pid,
+                                    dom=d._instance,
+                                    _ArrPid=arrpid,
+                                    _ArrInstance=arr);
 
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
@@ -2115,36 +2098,37 @@ module ChapelArray {
         checkRankChange(args);
       var newD = _dom((...args));
       var ranges = _getRankChangeRanges(newD.dims());
-      //      param rank = ranges.size, stridable = chpl__anyStridable(ranges);
+      //
+      // TODO: Currently, the domain created to represent the
+      // rank-change domain is non-distributed.  Ultimately, we need
+      // to create a domain view class that supports a rank-change
+      // view on a higher-dimensional domain as in the original array
+      // view attempt.
+      //
       pragma "no auto destroy" var d = {(...ranges)};
       d._value._free_when_no_arrs = true;
 
+      //
+      // Compute which dimensions are collapsed and what the index
+      // (idx) is in the event that it is.  These will be stored in
+      // the array view to convert from lower-D indices to higher-.
+      //
       var collapsedDim: rank*bool;
-      //      compilerWarning("rank = " + rank + " " + collapsedDim.type:string);
-
       var idx: rank*idxType;
-      var fullD: rank*ranges(1).type;
 
-      /*
-      compilerWarning(args.type:string);
-      compilerWarning(fullD.type:string);
-      compilerWarning(ranges.type:string);
-      */
-      
       for param i in 1..rank {
         if (isRange(args(i))) {
           collapsedDim(i) = false;
-          fullD(i) = _dom.dim(i)[args(i)];
         } else {
           collapsedDim(i) = true;
           idx(i) = args(i);
-          fullD(i) = args(i)..args(i);
         }
       }
 
-      const (arr, arrpid)  = /*if (_value.isSliceArrayView())
-                               then (this._value.arr, this._value._ArrPid)
-                               else*/ (this._value, this._pid);
+      // TODO: With additional effort, we could collapse rank changes of
+      // rank-change array views to a single array view, similar to what
+      // we do for slices.
+      const (arr, arrpid)  = (this._value, this._pid);
 
       var a = new ArrayViewRankChangeArr(eltType=this.eltType,
                                          _DomPid = d._pid,
@@ -2154,8 +2138,6 @@ module ChapelArray {
                                          collapsedDim=collapsedDim,
                                          idx=idx);
 
-      //      var a = _value.dsiRankChange(d._value, rank, stridable, args);
-      //      a._arrAlias = _value;
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
       return _newArray(a);
@@ -2303,39 +2285,33 @@ module ChapelArray {
         compilerError("rank mismatch: cannot reindex() from " + rank +
                       " dimension(s) to " + d.rank);
 
-      // Optimization: Just return an alias of this array when
-      // reindexing to the same domain. We skip same-ness test
-      // if the domain descriptors' types are disjoint.
-      /*
-      if isSubtype(_value.dom.type, d._value.type) ||
-         isSubtype(d._value.type, _value.dom.type)
-      then
-        if _value.dom:object == d._value:object then
-          return newAlias();
-      */
-
       for param i in 1..rank do
         if d.dim(i).length != _value.dom.dsiDim(i).length then
           halt("extent in dimension ", i, " does not match actual");
 
-      // dsiReindex takes ownership of newDom._value.
-      //      writeln("d is: ", d);
-      //      writeln("_dom is: ", _dom);
+      //
+      // TODO: Currently, the domain created to represent the
+      // rank-change domain is non-distributed.  Ultimately, we need
+      // to create a domain view class that supports a rank-change
+      // view on a higher-dimensional domain as in the original array
+      // view attempt.
+      //
       pragma "no auto destroy" var newDom = {(...d.dims())};
       newDom._value._free_when_no_arrs = true;
-      const (arr, arrpid)  = //if (_value.isSliceArrayView()) then (this._value.arr, this._value._ArrPid)
-        //        else
-        (this._value, this._pid);
-      //      writeln("newDom is: ", newDom);
-      var a = new ArrayViewReindexArr(eltType=this.eltType,
+
+      // TODO: With additional effort, we could collapse rank changes of
+      // rank-change array views to a single array view, similar to what
+      // we do for slices.
+      const (arr, arrpid) = (this._value, this._pid);
+
+      var x = new ArrayViewReindexArr(eltType=this.eltType,
                                       _DomPid = newDom._pid,
                                       dom = newDom._instance,
                                       _ArrPid=arrpid,
                                       _ArrInstance=arr);
-      //      x._arrAlias = _value;
       // this doesn't need to lock since we just created the domain d
-      newDom._value.add_arr(a, locking=false);
-      return _newArray(a);
+      newDom._value.add_arr(x, locking=false);
+      return _newArray(x);
     }
 
     // reindex for all non-rectangular domain types.
@@ -3652,36 +3628,6 @@ module ChapelArray {
     return b;
   }
 
-  proc chpl_replaceWithDeepCopy(ref a:domain) {
-    var b : a.type;
-
-    if isRectangularDom(a) && isRectangularDom(b) {
-      b.setIndices(a.getIndices());
-    } else {
-      // TODO: These should eventually become forall loops, hence the
-      // warning
-      //
-      // NOTE: See above note regarding associative domains
-      //
-      //compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-      for i in a do
-        b.add(i);
-    }
-
-    if ! a._unowned {
-      // destroy the old domain now that we are replacing it
-      a._do_destroy();
-    }
-
-    a._pid = b._pid;
-    a._instance = b._instance;
-    a._unowned = false;
-
-    b._pid = nullPid;
-    b._instance = nil;
-    b._unowned = true;
-  }
-
   // This implementation of arrays and domains can create aliases
   // of domains and arrays. Additionally, array aliases are possible
   // in the language with the => operator.
@@ -3729,41 +3675,6 @@ module ChapelArray {
     pragma "no copy" var b = chpl__initCopy(x);
     return b;
   }
-  
-  proc chpl_replaceWithDeepCopy(ref a:[]) {
-    var b : [a._dom] a.eltType;
-
-    // Try bulk transfer.
-    if !chpl__serializeAssignment(b, a) {
-      chpl__bulkTransferArray(b, a);
-    } else {
-      chpl__transferArray(b, a);
-    }
-
-    a._do_destroy();
-
-    a._pid = b._pid;
-    //
-    // TODO: What would be a cleaner way to deal with this?  The
-    // problem is that the compiler tries to resolve chpl__unalias for
-    // all record types, and so tries to resolve this for array views.
-    // But for an array view, the _instance field of 'a' is not going
-    // to be of the same type as that of 'b' by definition, so the
-    // assignment between instances below fails.  I used this
-    // conditional plus halt as a workaround, though to date, the halt
-    // has not actually been triggered.
-    //
-    if a._instance.type != b._instance.type {
-      halt("Mismatching types in chpl_replaceWithDeepCopy");
-    } else {
-      a._instance = b._instance;  // array classes don't match if 'a' was a slice
-    }
-    a._unowned = false;
-
-    b._pid = nullPid;
-    b._instance = nil;
-    b._unowned = true;
-  }
 
   // Used to implement the copy-out language semantics
   // Relies on the return types being different to detect an ArrayView at
@@ -3786,7 +3697,7 @@ module ChapelArray {
   // see comment on chpl__unalias for domains
   pragma "unalias fn"
   inline proc chpl__unalias(x: []) {
-    const isalias = (x._unowned) || (x._value._arrAlias != nil);
+    const isalias = x._unowned;
 
     if isalias {
       // Intended to call chpl__initCopy
@@ -3802,8 +3713,8 @@ module ChapelArray {
 
   pragma "unalias fn"
   inline proc chpl__unalias(x: [])
-  where (x._value.isSliceArrayView() || 
-         x._value.isRankChangeArrayView() || 
+  where (x._value.isSliceArrayView() ||
+         x._value.isRankChangeArrayView() ||
          x._value.isReindexArrayView()) {
     // Intended to call chpl__initCopy
     pragma "no auto destroy" var ret = x;
