@@ -803,7 +803,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for GER routines::
+    Wrapper for GER routines, which perform the following operation::
 
       A := alpha*x*y'+ A
 
@@ -836,7 +836,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for GERC routines::
+    Wrapper for GERC routines, which perform the following operation::
 
       A := alpha*x*conjg(y') + A
 
@@ -867,7 +867,6 @@ module BLAS {
 
   }
 
-   // TODO - convert ' -> trans()
   /*
     Wrapper for the GERU routines::
 
@@ -943,6 +942,7 @@ module BLAS {
 
       y := alpha*A*x + beta*y
 
+    https://software.intel.com/en-us/node/520755
   */
   proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             ref alpha: eltType, ref beta: eltType,
@@ -961,10 +961,10 @@ module BLAS {
 
     select eltType {
       when complex(64) {
-        C_BLAS.cblas_chemv(order, uplo, n, alpha, A, _ldA, X, incx, beta, Y, incy);
+        C_BLAS.cblas_chemv(order, uplo, m, alpha, A, _ldA, X, incx, beta, Y, incy);
       }
       when complex(128) {
-        C_BLAS.cblas_zhemv(order, uplo, n, alpha, A, _ldA, X, incx, beta, Y, incy);
+        C_BLAS.cblas_zhemv(order, uplo, m, alpha, A, _ldA, X, incx, beta, Y, incy);
       }
       otherwise {
         compilerError("Unknown type in hemv: ", eltType:string);
@@ -976,6 +976,8 @@ module BLAS {
     Wrapper for the HER routines::
 
       A := alpha*x*conjg(x') + A
+
+    https://software.intel.com/en-us/node/520756
   */
   proc her(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
             order : Order = Order.Row,
@@ -988,17 +990,17 @@ module BLAS {
 
     // TODO -- assert m == n
 
+    // TODO -- Assert alpha is real
+
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
 
     select eltType {
       when complex(64) {
-        var alpha1 = alpha: complex(64);
-        C_BLAS.cblas_cher(order, uplo, n, alpha1, X, incx, A, _ldA);
+        C_BLAS.cblas_cher(order, uplo, n, alpha, X, incx, A, _ldA);
       }
       when complex(128) {
-        var alpha1 = alpha: complex(128);
-        C_BLAS.cblas_zher(order, uplo, n, alpha1, X, incx, A, _ldA);
+        C_BLAS.cblas_zher(order, uplo, n, alpha, X, incx, A, _ldA);
       }
       otherwise {
         compilerError("Unknown type in her: ", eltType:string);
@@ -1045,6 +1047,8 @@ module BLAS {
     Wrapper for the HPMV routines::
 
       y := alpha*A*x + beta*y
+
+    https://software.intel.com/en-us/node/520765
 
   */
   proc hpmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1263,7 +1267,11 @@ module BLAS {
   }
 
   /*
+    Wrapper for the SYMV routines::
 
+      y := alpha*A*x + beta*y
+
+    https://software.intel.com/en-us/node/520765
   */
   proc symv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             alpha, beta,
@@ -1293,7 +1301,11 @@ module BLAS {
   }
 
   /*
+    Wrapper for SYR routines::
 
+      A := alpha*x*x' + A
+
+    https://software.intel.com/en-us/node/520766
   */
   proc syr(A: [?Adom] ?eltType, X: [?vDom] eltType,
            alpha,
@@ -1324,6 +1336,11 @@ module BLAS {
   }
 
   /*
+    Wrapper for SYR2 routines::
+
+      A := alpha*x*y'+ alpha*y*x' + A
+
+    https://software.intel.com/en-us/node/520767
 
   */
   proc syr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1364,6 +1381,7 @@ module BLAS {
 
   */
   proc tbmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+            k: c_int,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1371,32 +1389,26 @@ module BLAS {
             ldA : int = 0, incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
-
-
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int,
-        k : c_int;
+        n = Adom.dim(2).size : c_int;
     // TODO -- check if m == n
-
-    if trans > Op.N then k = Adom.dim(2).size : c_int;
-                    else k = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
 
     select eltType {
       when real(32) {
-        C_BLAS.cblas_stbmv(order, uplo, trans, diag, n, k, A, _ldA, X, incx);
+        C_BLAS.cblas_stbmv(order, uplo, trans, diag, m, k, A, _ldA, X, incx);
       }
       when real(64) {
-        C_BLAS.cblas_dtbmv(order, uplo, trans, diag, n, k, A, _ldA, X, incx);
+        C_BLAS.cblas_dtbmv(order, uplo, trans, diag, m, k, A, _ldA, X, incx);
       }
       when complex(64) {
-        C_BLAS.cblas_ctbmv(order, uplo, trans, Diag, n, k, A, _ldA, X, incx);
+        C_BLAS.cblas_ctbmv(order, uplo, trans, Diag, m, k, A, _ldA, X, incx);
       }
       when complex(128) {
-        C_BLAS.cblas_ztbmv(order, uplo, trans, Diag, n, k, A, _ldA, X, incx);
+        C_BLAS.cblas_ztbmv(order, uplo, trans, Diag, m, k, A, _ldA, X, incx);
       }
       otherwise {
         compilerError("Unknown type in tbmv: ", eltType:string);
@@ -1531,7 +1543,11 @@ module BLAS {
   }
 
   /*
+    Wrapper for TRMV routines::
 
+      x := op(A)*x
+
+    https://software.intel.com/en-us/node/520772
   */
   proc trmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
             trans : Op = Op.N,
@@ -1552,16 +1568,16 @@ module BLAS {
 
     select eltType {
       when real(32) {
-        C_BLAS.cblas_strmv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+        C_BLAS.cblas_strmv(order, uplo, trans, diag, m, A, _ldA, X, incx);
       }
       when real(64) {
-        C_BLAS.cblas_dtrmv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+        C_BLAS.cblas_dtrmv(order, uplo, trans, diag, m, A, _ldA, X, incx);
       }
       when complex(64) {
-        C_BLAS.cblas_ctrmv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+        C_BLAS.cblas_ctrmv(order, uplo, trans, diag, m, A, _ldA, X, incx);
       }
       when complex(128) {
-        C_BLAS.cblas_ztrmv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+        C_BLAS.cblas_ztrmv(order, uplo, trans, diag, m, A, _ldA, X, incx);
       }
       otherwise {
         compilerError("Unknown type in trmv: ", eltType:string);
@@ -1570,9 +1586,13 @@ module BLAS {
   }
 
   /*
+    Wrapper for the TRSV routines::
 
+      A*op(x) = b
+
+    https://software.intel.com/en-us/node/520773
   */
-  proc trsv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc trsv(A: [?Adom] ?eltType, B: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1591,16 +1611,16 @@ module BLAS {
 
     select eltType {
       when real(32) {
-        C_BLAS.cblas_strsv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+        C_BLAS.cblas_strsv(order, uplo, trans, diag, n, A, _ldA, B, incx);
       }
       when real(64) {
-        C_BLAS.cblas_dtrsv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+        C_BLAS.cblas_dtrsv(order, uplo, trans, diag, n, A, _ldA, B, incx);
       }
       when complex(64) {
-        C_BLAS.cblas_ctrsv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+        C_BLAS.cblas_ctrsv(order, uplo, trans, diag, n, A, _ldA, B, incx);
       }
       when complex(128) {
-        C_BLAS.cblas_ztrsv(order, uplo, trans, diag, n, A, _ldA, X, incx);
+        C_BLAS.cblas_ztrsv(order, uplo, trans, diag, n, A, _ldA, B, incx);
       }
       otherwise {
         compilerError("Unknown type in trsv: ", eltType:string);
