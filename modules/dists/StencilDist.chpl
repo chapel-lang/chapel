@@ -1320,6 +1320,7 @@ proc StencilArr.dsiSerialWrite(f) {
   }
 }
 
+pragma "no copy return"
 proc StencilArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
@@ -1463,6 +1464,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 //
 // Copies the range slice function in ChapelArray.
 //
+pragma "no copy return"
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
   a._arrAlias = _value;

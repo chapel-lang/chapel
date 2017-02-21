@@ -232,18 +232,16 @@ proc ReplicatedDist.dsiSupportsPrivatization() param return true;
 proc ReplicatedDist.dsiGetPrivatizeData() {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiGetPrivatizeData");
 
-  // TODO: return the targetLocales array by value,
-  // to reduce communication needed in dsiPrivatize()
-  // perhaps by wrapping it in a class (or tuple?).
-  return targetLocales;
+  // TODO: Returning 'targetLocales' here results in a memory leak. Why?
+  // Other distributions seem to do this 'return 0' as well...
+  return 0;
 }
 
-proc ReplicatedDist.dsiPrivatize(privatizeData: this.targetLocales.type)
-  : this.type
+proc ReplicatedDist.dsiPrivatize(privatizeData)
 {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiPrivatize on ", here);
 
-  const otherTargetLocales = privatizeData;
+  const otherTargetLocales = this.targetLocales;
 
   // make private copy of targetLocales and its domain
   const privDom = otherTargetLocales.domain;
