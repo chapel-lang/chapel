@@ -33,6 +33,8 @@ Expressions
 * add param prototypes for ! operator (and other operators whose
   param versions aren't documented?)
 
+* describe the semantics/meaning of hexadecimal real literals
+  (and presumably also non-hexadecimal literals too)
 
 Ranges
 ------
