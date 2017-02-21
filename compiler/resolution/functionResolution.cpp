@@ -296,7 +296,7 @@ static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
-static void removeUnusedGlobals();
+static void removeUnusedModuleVariables();
 static void removeParamArgs();
 static void removeRandomPrimitives();
 static void removeActualNames();
@@ -9917,7 +9917,7 @@ pruneResolvedTree() {
   replaceTypeArgsWithFormalTypeTemps();
   removeParamArgs();
 
-  removeUnusedGlobals();
+  removeUnusedModuleVariables();
   removeUnusedTypes();
   removeActualNames();
   removeFormalTypeAndInitBlocks();
@@ -10049,17 +10049,19 @@ static void removeUnusedTypes() {
   }
 }
 
-static void removeUnusedGlobals()
-{
-  forv_Vec(DefExpr, def, gDefExprs)
-  {
-    // Remove unused global variables
-    if (toVarSymbol(def->sym))
-      if (toModuleSymbol(def->parentSymbol))
-        if (def->sym->type == dtUnknown ||
-            (def->sym->type->symbol->hasFlag(FLAG_GENERIC) &&
-             def->sym->hasFlag(FLAG_TYPE_VARIABLE)))
-          def->remove();
+// Remove module level variables if they are not defined or used
+// With the exception of variables that are defined in the rootModule
+static void removeUnusedModuleVariables() {
+  forv_Vec(DefExpr, def, gDefExprs) {
+    if (VarSymbol* var = toVarSymbol(def->sym)) {
+      if (ModuleSymbol* module = toModuleSymbol(def->parentSymbol)) {
+        if (var->isDefined() == false && var->isUsed() == false) {
+          if (module != rootModule) {
+            def->remove();
+          }
+        }
+      }
+    }
   }
 }
 
