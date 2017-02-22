@@ -499,44 +499,50 @@ static void normalize(BaseAST* base) {
   }
 }
 
-// We can't really do this before resolution, because we need to know
-// if symbols used as actual arguments are passed by ref, inout, or out
-// (all of which would be considered definitions).
-// The workaround for this has been early initialization --
-// which is redundant with guaranteed initialization, at least with respect
-// to class instances.
-// Given that it is not completely correct, and it forces unnecessary
-// initializations to be added to the AST, I recommend that the check be
-// removed from this pass (and perhaps reinserted in a later pass).
-static void
-checkUseBeforeDefs() {
+/************************************* | **************************************
+*                                                                             *
+* We can't really do this before resolution, because we need to know if       *
+* symbols used as actual arguments are passed by ref, inout, or out           *
+* (all of which would be considered definitions).                             *
+*                                                                             *
+* The workaround for this has been early initialization -- which is redundant *
+* with guaranteed initialization, at least with respect to class instances.   *
+*                                                                             *
+************************************** | *************************************/
+
+static void checkUseBeforeDefs() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint->parentSymbol)
-    {
-      ModuleSymbol* mod = fn->getModule();
-      Vec<const char*> undeclared;
-      Vec<Symbol*> undefined;
+    if (fn->defPoint->parentSymbol) {
+      ModuleSymbol*         mod = fn->getModule();
+
+      Vec<Symbol*>          defined;
+
+      Vec<Symbol*>          undefined;
+      Vec<const char*>      undeclared;
+
       std::vector<BaseAST*> asts;
-      Vec<Symbol*> defined;
 
       // Walk the asts in this function.
       collect_asts_postorder(fn, asts);
+
       for_vector(BaseAST, ast, asts) {
         // Adds definitions (this portion could probably be made into a
         // separate function - see loopInvariantCodeMotion and copyPropagation)
         if (CallExpr* call = toCallExpr(ast)) {
           // A symbol gets defined when it appears on the LHS of a move or
           // assignment.
-          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-            if (SymExpr* se = toSymExpr(call->get(1)))
+          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+            if (SymExpr* se = toSymExpr(call->get(1))) {
               defined.set_add(se->symbol());
-        } else if (DefExpr* def = toDefExpr(ast)) {
+            }
+          }
 
+        } else if (DefExpr* def = toDefExpr(ast)) {
           // All arg symbols are defined.
-          if (isArgSymbol(def->sym))
+          if (isArgSymbol(def->sym)) {
             defined.set_add(def->sym);
 
-          if (VarSymbol* vs = toVarSymbol(def->sym)) {
+          } else if (VarSymbol* vs = toVarSymbol(def->sym)) {
             // All type aliases are taken as defined.
             if (vs->isType()) {
               defined.set_add(def->sym);
@@ -562,20 +568,26 @@ checkUseBeforeDefs() {
           // that symbol is not defined/declared before use
           if (SymExpr* sym = toSymExpr(ast)) {
             CallExpr* call = toCallExpr(sym->parentExpr);
+
             if (call &&
                 (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
-                call->get(1) == sym)
+                call->get(1) == sym) {
               continue; // We already handled this case above.
+            }
 
-            if (toModuleSymbol(sym->symbol())) {
-              if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-                UseStmt* use = toUseStmt(sym->parentExpr);
-                if (!use) {
+            if (isModuleSymbol(sym->symbol()) == true) {
+              if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
+                if (isUseStmt(sym->parentExpr) == false) {
                   SymExpr* prev = toSymExpr(sym->prev);
-                  if (!prev || prev->symbol() != gModuleToken)
-                    USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->symbol()->name);
+
+                  if (prev == NULL || prev->symbol() != gModuleToken) {
+                    USR_FATAL_CONT(sym,
+                                   "illegal use of module '%s'",
+                                   sym->symbol()->name);
+                  }
                 }
               }
+
             } else if (isLcnSymbol(sym->symbol())) {
               if (sym->symbol()->defPoint->parentExpr != rootModule->block &&
                   (sym->symbol()->defPoint->parentSymbol == fn ||
@@ -583,27 +595,38 @@ checkUseBeforeDefs() {
                 if (!defined.set_in(sym->symbol()) && !undefined.set_in(sym->symbol())) {
                   if (!sym->symbol()->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
                       !sym->symbol()->hasFlag(FLAG_TEMP)) {
-                    USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->symbol()->name);
+                    USR_FATAL_CONT(sym,
+                                   "'%s' used before defined (first used here)",
+                                   sym->symbol()->name);
+
                     undefined.set_add(sym->symbol());
                   }
                 }
               }
             }
+
           } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
             CallExpr* call = toCallExpr(sym->parentExpr);
+
             if (call &&
-                (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
-                call->get(1) == sym)
+                (call->isPrimitive(PRIM_MOVE) ||
+                 call->isPrimitive(PRIM_ASSIGN)) &&
+                call->get(1) == sym) {
               continue; // We already handled this case above.
+            }
+
             if ((!call ||
                  (call->baseExpr != sym &&
                   !call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) &&
                   !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) &&
                 sym->unresolved) {
+
               if (!undeclared.set_in(sym->unresolved)) {
-                if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-                  USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
+                if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
+                  USR_FATAL_CONT(sym,
+                                 "'%s' undeclared (first use this function)",
                                  sym->unresolved);
+
                   undeclared.set_add(sym->unresolved);
                 }
               }
@@ -614,6 +637,12 @@ checkUseBeforeDefs() {
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void
 moveGlobalDeclarationsToModuleScope() {
