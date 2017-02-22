@@ -536,14 +536,6 @@ static void checkUseBeforeDefs() {
           // we check if it is a (resolved/unresolved) symbol and make sure
           // that symbol is not defined/declared before use
           if (SymExpr* sym = toSymExpr(ast)) {
-            CallExpr* call = toCallExpr(sym->parentExpr);
-
-            if (call &&
-                (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
-                call->get(1) == sym) {
-              continue; // We already handled this case above.
-            }
-
             if (isModuleSymbol(sym->symbol()) == true) {
               if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
                 if (isUseStmt(sym->parentExpr) == false) {
@@ -606,11 +598,21 @@ static void checkUseBeforeDefs() {
 static Symbol* theDefinedSymbol(BaseAST* ast) {
   Symbol* retval = NULL;
 
+  // 1) A symbol is "defined" defined if it is the LHS of a move or assign
   if (CallExpr* call = toCallExpr(ast)) {
-    // A symbol is "defined" when it appears on LHS of a move or assign
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         retval = se->symbol();
+      }
+    }
+
+  // 2) Another way to find the symbol that will be found by 1)
+  } else if (SymExpr* se = toSymExpr(ast)) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+        if (call->get(1) == se) {
+          retval = se->symbol();
+        }
       }
     }
 
