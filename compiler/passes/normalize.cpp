@@ -592,15 +592,17 @@ static void checkUseBeforeDefs() {
               if (sym->symbol()->defPoint->parentExpr != rootModule->block &&
                   (sym->symbol()->defPoint->parentSymbol == fn ||
                    (sym->symbol()->defPoint->parentSymbol == mod && mod->initFn == fn))) {
-                if (defined.find(sym->symbol())   == defined.end() &&
-                    undefined.find(sym->symbol()) == undefined.end()) {
+                if (defined.find(sym->symbol())   == defined.end()) {
                   if (!sym->symbol()->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
                       !sym->symbol()->hasFlag(FLAG_TEMP)) {
-                    USR_FATAL_CONT(sym,
-                                   "'%s' used before defined (first used here)",
-                                   sym->symbol()->name);
+                    // Only complain one time
+                    if (undefined.find(sym->symbol()) == undefined.end()) {
+                      USR_FATAL_CONT(sym,
+                                     "'%s' used before defined (first used here)",
+                                     sym->symbol()->name);
 
-                    undefined.insert(sym->symbol());
+                      undefined.insert(sym->symbol());
+                    }
                   }
                 }
               }
@@ -622,8 +624,9 @@ static void checkUseBeforeDefs() {
                   !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) &&
                 sym->unresolved) {
 
-              if (undeclared.find(sym->unresolved) == undeclared.end()) {
-                if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
+              if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
+                // Only complain one time
+                if (undeclared.find(sym->unresolved) == undeclared.end()) {
                   USR_FATAL_CONT(sym,
                                  "'%s' undeclared (first use this function)",
                                  sym->unresolved);
