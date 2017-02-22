@@ -316,6 +316,7 @@ bool inBuildTupleForChplIter(SymExpr* se)
   return false;
 }
 
+// Get the non-fast-follower Follower
 static
 ForLoop* findFollowerForLoop(BlockStmt* block) {
   ForLoop* ret = NULL;
@@ -326,6 +327,13 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
     }
     if (BlockStmt* blk = toBlockStmt(e)) {
       ret = findFollowerForLoop(blk);
+      if (ret) return ret;
+    }
+    if (CondStmt* cond = toCondStmt(e)) {
+      // Look in the else block to find the non-fast-follower
+      // in case it is decided at run-time whether fast
+      // followers can be used.
+      ret = findFollowerForLoop(cond->elseStmt);
       if (ret) return ret;
     }
     e = e->next;
@@ -434,6 +442,8 @@ When considering non-zippered iteration, detailsVector contains exactly
 one element. It storesinformation
 about the loop. In leader/follower loops, it contains information about
 the follower loop.
+
+Always uses the non-fast-follower version of the follower loop.
  */
 static
 void gatherLoopDetails(ForLoop*  forLoop,
@@ -876,7 +886,9 @@ void cullOverReferences() {
                   // of the iterator, it is overwritten in protoIteratorClass.
 
                   // This flag should be set for array iteration
-                  if (iterable == sym && iteratorYieldsConstWhenConstThis) {
+                  if (iterable == sym &&
+                      iteratorYieldsConstWhenConstThis &&
+                      index->isRef()) {
                     // Now the const-ness of the array depends
                     // on whether or not the yielded value is set
 
