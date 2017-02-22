@@ -536,14 +536,24 @@ checkUseBeforeDefs() {
           if (isArgSymbol(def->sym))
             defined.set_add(def->sym);
 
-          if (VarSymbol* vs = toVarSymbol(def->sym))
-          {
+          if (VarSymbol* vs = toVarSymbol(def->sym)) {
             // All type aliases are taken as defined.
-            if (vs->isType())
+            if (vs->isType()) {
               defined.set_add(def->sym);
-            // All variables of type 'void' are treated as defined.
-            if (vs->typeInfo() == dtVoid)
-              defined.set_add(vs);
+            } else {
+              Type* type = vs->typeInfo();
+
+              // All variables of type 'void' are treated as defined.
+              if (type == dtVoid) {
+                defined.set_add(vs);
+
+              // non generic records with initializers are defined
+              } else if (AggregateType* at = toAggregateType(type)) {
+                if (isNonGenericRecordWithInit(at) == true) {
+                  defined.set_add(vs);
+                }
+              }
+            }
           }
 
         } else {
