@@ -6,6 +6,7 @@ const-error-iterated.chpl:3: note: to ref formal here
 const-error-iterated.chpl:86: error: const actual is passed to 'ref' formal 'A' of writeForallA()
 const-error-iterated.chpl:16: note: to ref formal here
 const-error-iterated.chpl:17: note: passed as ref here
+const-error-iterated.chpl:17: note: passed as ref here
 const-error-iterated.chpl:18: note: passed as ref here
 const-error-iterated.chpl:3: note: to ref formal here
 const-error-iterated.chpl:87: error: const actual is passed to 'ref' formal 'A' of promotedAssign()
