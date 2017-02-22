@@ -1223,6 +1223,8 @@ resolveFormals(FnSymbol* fn) {
         // It is temporary because we expect more of the
         // compiler to handle 'refness' of an ArgSymbol
         // in the future.
+        // And pass domains by 'const ref' instead of 'ref'
+        formal->intent = concreteIntentForArg(formal);
         makeRefType(formal->type);
         formal->type = formal->type->refType;
       }
