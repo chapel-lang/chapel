@@ -34,6 +34,25 @@ class ArrayViewRankChangeArr: BaseArr {
 
   const collapsedDim;  // rank*bool    TODO: constrain this
   const idx;           // rank*idxType TODO: and this
+
+  const indexCache = buildIndexCache();
+
+  proc shouldUseIndexCache() param {
+    return _ArrInstance.isDefaultRectangular() &&
+           defRectSimpleDData;
+  }
+
+  proc buildIndexCache() {
+    if shouldUseIndexCache() {
+      if (chpl__isArrayView(_ArrInstance)) {
+        return _ArrInstance.indexCache.toRankChange(dom, collapsedDim, idx);
+      } else {
+        return _ArrInstance.dsiGetRAD().toRankChange(dom, collapsedDim, idx);
+      }
+    } else {
+      return false;
+    }
+  }
   
   inline proc privDom {
     if _isPrivatized(dom) {
@@ -132,19 +151,34 @@ class ArrayViewRankChangeArr: BaseArr {
 
   inline proc dsiAccess(i) ref {
     checkBounds(i);
-    return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    if shouldUseIndexCache() {
+      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      return indexCache.shiftedDataElem(dataIdx);
+    } else {
+      return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    }
   }
 
   inline proc dsiAccess(i)
   where !shouldReturnRvalueByConstRef(eltType) {
     checkBounds(i);
-    return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    if shouldUseIndexCache() {
+      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      return indexCache.shiftedDataElem(dataIdx);
+    } else {
+      return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    }
   }
 
   inline proc dsiAccess(i) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     checkBounds(i);
-    return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    if shouldUseIndexCache() {
+      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      return indexCache.shiftedDataElem(dataIdx);
+    } else {
+      return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    }
   }
 
   proc dsiTargetLocales() {

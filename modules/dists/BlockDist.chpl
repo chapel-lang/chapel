@@ -1066,41 +1066,6 @@ proc BlockArr.dsiDestroyArr(isslice:bool) {
   }
 }
 
-inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
-  // modified from DefaultRectangularArr.getDataIndex
-  if stridable {
-    var sum = origin;
-    for param i in 1..rank do
-      sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
-    if defRectSimpleDData then {
-      return sum;
-    } else {
-      if mdNumChunks == 1 {
-        return (0, sum);
-      } else {
-        const chunk = mdInd2Chunk(ind(mdParDim));
-        return (chunk, sum - mData(chunk).dataOff);
-      }
-    }
-  } else {
-    var sum = if earlyShiftData then 0:idxType else origin;
-    for param i in 1..rank do
-      sum += ind(i) * blk(i);
-    if !earlyShiftData then sum -= factoredOffs;
-    if defRectSimpleDData {
-      return sum;
-    }
-    else {
-      if mdNumChunks == 1 {
-        return (0, sum);
-      } else {
-        const chunk = mdInd2Chunk(ind(mdParDim));
-        return (chunk, sum - mData(chunk).dataOff);
-      }
-    }
-  }
-}
-
 inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
   return myLocArr.this(i);
 }
@@ -1154,7 +1119,7 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
       if radata(rlocIdx).shiftedDataChunk(0) != nil {
-        var dataIdx = radata(rlocIdx).getDataIndex(myLocArr.stridable, i);
+        var dataIdx = radata(rlocIdx).getBlockDataIndex(myLocArr.stridable, i);
         return radata(rlocIdx).shiftedDataElem(dataIdx);
       }
     }

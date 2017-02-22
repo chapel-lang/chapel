@@ -32,6 +32,25 @@ module ArrayViewReindex {
     const _ArrPid;
     const _ArrInstance;
 
+    const indexCache = buildIndexCache();
+
+    proc shouldUseIndexCache() param {
+      return _ArrInstance.isDefaultRectangular() &&
+             defRectSimpleDData;
+    }
+
+    proc buildIndexCache() {
+      if shouldUseIndexCache() {
+        if (chpl__isArrayView(_ArrInstance)) {
+          return _ArrInstance.indexCache.toReindex(dom);
+        } else {
+          return _ArrInstance.dsiGetRAD().toReindex(dom);
+        }
+      } else {
+        return false;
+      }
+    }
+
     inline proc privDom {
       if _isPrivatized(dom) {
         return chpl_getPrivatizedCopy(dom.type, _DomPid);
@@ -132,7 +151,12 @@ module ArrayViewReindex {
       //      writeln("Got an access of ", i);
       //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
       checkBounds(i);
-      return arr.dsiAccess(chpl_reindexConvertIdx(i));
+      if shouldUseIndexCache() {
+        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        return indexCache.shiftedDataElem(dataIdx);
+      } else {
+        return arr.dsiAccess(chpl_reindexConvertIdx(i));
+      }
     }
 
     inline proc dsiAccess(i)
@@ -140,7 +164,12 @@ module ArrayViewReindex {
       //      writeln("Got an access of ", i);
       //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
       checkBounds(i);
-      return arr.dsiAccess(chpl_reindexConvertIdx(i));
+      if shouldUseIndexCache() {
+        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        return indexCache.shiftedDataElem(dataIdx);
+      } else {
+        return arr.dsiAccess(chpl_reindexConvertIdx(i));
+      }
     }
 
     inline proc dsiAccess(i) const ref
@@ -148,7 +177,12 @@ module ArrayViewReindex {
       //      writeln("Got an access of ", i);
       //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
       checkBounds(i);
-      return arr.dsiAccess(chpl_reindexConvertIdx(i));
+      if shouldUseIndexCache() {
+        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        return indexCache.shiftedDataElem(dataIdx);
+      } else {
+        return arr.dsiAccess(chpl_reindexConvertIdx(i));
+      }
     }
 
     proc dsiTargetLocales() {
