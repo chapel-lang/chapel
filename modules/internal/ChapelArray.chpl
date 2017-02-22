@@ -2319,10 +2319,7 @@ module ChapelArray {
     pragma "no doc"
     pragma "fn returns aliasing array"
     proc reindex(d:domain) {
-      if this.domain != d then
-        halt("Reindexing of non-rectangular arrays is undefined.");
-      // Does this need to call newAlias()?
-      return newAlias();
+      compilerError("Reindexing non-rectangular arrays is not permitted.");
     }
 
     pragma "no doc"
@@ -3697,11 +3694,17 @@ module ChapelArray {
   // see comment on chpl__unalias for domains
   pragma "unalias fn"
   inline proc chpl__unalias(x: []) {
+    param isview = (x._value.isSliceArrayView() ||
+                    x._value.isRankChangeArrayView() ||
+                    x._value.isReindexArrayView());
     const isalias = x._unowned;
 
-    if isalias {
+    if isview || isalias {
       // Intended to call chpl__initCopy
       pragma "no auto destroy" var ret = x;
+      // Since chpl__unalias replaces a initCopy(auto/initCopy()) the
+      // inner value needs to be auto-destroyed.
+      // TODO: Should this be inserted by the compiler?
       chpl__autoDestroy(x);
       return ret;
     } else {
@@ -3709,22 +3712,6 @@ module ChapelArray {
       pragma "no copy" var ret = x;
       return ret;
     }
-  }
-
-  pragma "unalias fn"
-  inline proc chpl__unalias(x: [])
-  where (x._value.isSliceArrayView() ||
-         x._value.isRankChangeArrayView() ||
-         x._value.isReindexArrayView()) {
-    // Intended to call chpl__initCopy
-    pragma "no auto destroy" var ret = x;
-
-    // Since chpl__unalias replaces a initCopy(auto/initCopy()) the inner value
-    // needs to be auto-destroyed.
-    // TODO: Should this be inserted by the compiler?
-    chpl__autoDestroy(x);
-
-    return ret;
   }
 
   //
