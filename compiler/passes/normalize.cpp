@@ -580,19 +580,10 @@ static void checkUseBeforeDefs() {
           } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
             CallExpr* call = toCallExpr(sym->parentExpr);
 
-            if (call &&
-                (call->isPrimitive(PRIM_MOVE) ||
-                 call->isPrimitive(PRIM_ASSIGN)) &&
-                call->get(1) == sym) {
-              continue; // We already handled this case above.
-            }
-
-            if ((!call ||
-                 (call->baseExpr != sym &&
-                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) &&
-                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) &&
-                sym->unresolved) {
-
+            if (!call ||
+                (call->baseExpr != sym &&
+                 !call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) &&
+                 !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) {
               if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
                 // Only complain one time
                 if (undeclared.find(sym->unresolved) == undeclared.end()) {
