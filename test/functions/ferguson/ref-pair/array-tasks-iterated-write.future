@@ -1,1 +1,1 @@
-bug: looping over array setting elements does not change intent
+bug: zippered coforall does not correctly track ref intent  

@@ -14,24 +14,10 @@ proc writeit(ref x) {
   x = 1;
 }
 
-proc writeForA(A) {
-  for a in A {
-    writeit(a);
+proc writeCoforallZip(A, B) {
+  coforall (a,b) in zip(A,B) {
+    a = b;
   }
 }
 
-proc writeForallA(A) {
-  forall a in A {
-    writeit(a);
-  }
-}
-
-proc writeCoforallA(A) {
-  coforall a in A {
-    writeit(a);
-  }
-}
-
-writeForA(getter(globalArray));
-writeForallA(getter(globalArray));
-writeCoforallA(getter(globalArray));
+writeCoforallZip(getter(globalArray), getter(globalArray));

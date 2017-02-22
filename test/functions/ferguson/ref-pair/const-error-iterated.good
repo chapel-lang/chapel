@@ -1,0 +1,37 @@
+const-error-iterated.chpl:85: error: const actual is passed to 'ref' formal 'A' of writeForA()
+const-error-iterated.chpl:11: note: to ref formal here
+const-error-iterated.chpl:12: note: passed as ref here
+const-error-iterated.chpl:13: note: passed as ref here
+const-error-iterated.chpl:3: note: to ref formal here
+const-error-iterated.chpl:86: error: const actual is passed to 'ref' formal 'A' of writeForallA()
+const-error-iterated.chpl:16: note: to ref formal here
+const-error-iterated.chpl:17: note: passed as ref here
+const-error-iterated.chpl:18: note: passed as ref here
+const-error-iterated.chpl:3: note: to ref formal here
+const-error-iterated.chpl:87: error: const actual is passed to 'ref' formal 'A' of promotedAssign()
+const-error-iterated.chpl:31: note: to ref formal here
+const-error-iterated.chpl:32: note: passed as ref here
+const-error-iterated.chpl:88: error: const actual is passed to 'ref' formal 'A' of writeForAZip()
+const-error-iterated.chpl:21: note: to ref formal here
+const-error-iterated.chpl:22: note: passed as ref here
+const-error-iterated.chpl:23: note: passed as ref here
+const-error-iterated.chpl:89: error: const actual is passed to 'ref' formal 'A' of writeForallAZip()
+const-error-iterated.chpl:26: note: to ref formal here
+const-error-iterated.chpl:27: note: passed as ref here
+const-error-iterated.chpl:28: note: passed as ref here
+const-error-iterated.chpl:90: error: const actual is passed to 'ref' formal 'A' of writeCoforallA()
+const-error-iterated.chpl:35: note: to ref formal here
+const-error-iterated.chpl:36: note: passed as ref here
+const-error-iterated.chpl:36: note: passed as ref here
+const-error-iterated.chpl:36: note: passed as ref here
+const-error-iterated.chpl:36: note: passed as ref here
+const-error-iterated.chpl:36: note: passed as ref here
+const-error-iterated.chpl:36: note: to ref formal here
+const-error-iterated.chpl:37: note: passed as ref here
+const-error-iterated.chpl:3: note: to ref formal here
+const-error-iterated.chpl:91: error: const actual is passed to 'ref' formal 'A' of writeCoforallAZip()
+const-error-iterated.chpl:41: note: to ref formal here
+const-error-iterated.chpl:42: note: passed as ref here
+const-error-iterated.chpl:91: error: const actual is passed to 'ref' formal 'B' of writeCoforallAZip()
+const-error-iterated.chpl:41: note: to ref formal here
+const-error-iterated.chpl:42: note: passed as ref here

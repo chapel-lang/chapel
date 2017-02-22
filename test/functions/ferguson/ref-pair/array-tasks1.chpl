@@ -139,7 +139,6 @@ proc writeCaptureBegin(A) {
   }
 }
 
-
 proc writePromoted(A) {
   A = 1;
 }
