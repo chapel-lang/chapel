@@ -518,7 +518,7 @@ static void checkUseBeforeDefs() {
       std::set<Symbol*>     defined;
 
       std::set<Symbol*>     undefined;
-      Vec<const char*>      undeclared;
+      std::set<const char*> undeclared;
 
       std::vector<BaseAST*> asts;
 
@@ -622,13 +622,13 @@ static void checkUseBeforeDefs() {
                   !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) &&
                 sym->unresolved) {
 
-              if (!undeclared.set_in(sym->unresolved)) {
+              if (undeclared.find(sym->unresolved) == undeclared.end()) {
                 if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
                   USR_FATAL_CONT(sym,
                                  "'%s' undeclared (first use this function)",
                                  sym->unresolved);
 
-                  undeclared.set_add(sym->unresolved);
+                  undeclared.insert(sym->unresolved);
                 }
               }
             }
