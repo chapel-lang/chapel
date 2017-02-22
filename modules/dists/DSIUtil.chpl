@@ -451,7 +451,7 @@ proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
 //
 // setupTargetLocalesArray
 //
-proc setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
+proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
   param rank = targetLocDom.rank;
   if rank != 1 && specifiedLocArr.rank == 1 {
     const factors = _factor(rank, specifiedLocArr.numElements);
