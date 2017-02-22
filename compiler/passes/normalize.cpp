@@ -517,7 +517,7 @@ static void checkUseBeforeDefs() {
 
       std::set<Symbol*>     defined;
 
-      Vec<Symbol*>          undefined;
+      std::set<Symbol*>     undefined;
       Vec<const char*>      undeclared;
 
       std::vector<BaseAST*> asts;
@@ -592,15 +592,15 @@ static void checkUseBeforeDefs() {
               if (sym->symbol()->defPoint->parentExpr != rootModule->block &&
                   (sym->symbol()->defPoint->parentSymbol == fn ||
                    (sym->symbol()->defPoint->parentSymbol == mod && mod->initFn == fn))) {
-                if (defined.find(sym->symbol()) == defined.end() &&
-                    !undefined.set_in(sym->symbol())) {
+                if (defined.find(sym->symbol())   == defined.end() &&
+                    undefined.find(sym->symbol()) == undefined.end()) {
                   if (!sym->symbol()->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
                       !sym->symbol()->hasFlag(FLAG_TEMP)) {
                     USR_FATAL_CONT(sym,
                                    "'%s' used before defined (first used here)",
                                    sym->symbol()->name);
 
-                    undefined.set_add(sym->symbol());
+                    undefined.insert(sym->symbol());
                   }
                 }
               }
