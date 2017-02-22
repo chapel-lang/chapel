@@ -515,7 +515,7 @@ static void checkUseBeforeDefs() {
     if (fn->defPoint->parentSymbol) {
       ModuleSymbol*         mod = fn->getModule();
 
-      Vec<Symbol*>          defined;
+      std::set<Symbol*>     defined;
 
       Vec<Symbol*>          undefined;
       Vec<const char*>      undeclared;
@@ -533,30 +533,30 @@ static void checkUseBeforeDefs() {
           // assignment.
           if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
             if (SymExpr* se = toSymExpr(call->get(1))) {
-              defined.set_add(se->symbol());
+              defined.insert(se->symbol());
             }
           }
 
         } else if (DefExpr* def = toDefExpr(ast)) {
           // All arg symbols are defined.
           if (isArgSymbol(def->sym)) {
-            defined.set_add(def->sym);
+            defined.insert(def->sym);
 
           } else if (VarSymbol* vs = toVarSymbol(def->sym)) {
             // All type aliases are taken as defined.
             if (vs->isType()) {
-              defined.set_add(def->sym);
+              defined.insert(def->sym);
             } else {
               Type* type = vs->typeInfo();
 
               // All variables of type 'void' are treated as defined.
               if (type == dtVoid) {
-                defined.set_add(vs);
+                defined.insert(vs);
 
               // non generic records with initializers are defined
               } else if (AggregateType* at = toAggregateType(type)) {
                 if (isNonGenericRecordWithInit(at) == true) {
-                  defined.set_add(vs);
+                  defined.insert(vs);
                 }
               }
             }
@@ -592,7 +592,8 @@ static void checkUseBeforeDefs() {
               if (sym->symbol()->defPoint->parentExpr != rootModule->block &&
                   (sym->symbol()->defPoint->parentSymbol == fn ||
                    (sym->symbol()->defPoint->parentSymbol == mod && mod->initFn == fn))) {
-                if (!defined.set_in(sym->symbol()) && !undefined.set_in(sym->symbol())) {
+                if (defined.find(sym->symbol()) == defined.end() &&
+                    !undefined.set_in(sym->symbol())) {
                   if (!sym->symbol()->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
                       !sym->symbol()->hasFlag(FLAG_TEMP)) {
                     USR_FATAL_CONT(sym,
