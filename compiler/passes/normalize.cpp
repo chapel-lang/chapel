@@ -533,55 +533,61 @@ static void checkUseBeforeDefs() {
         // The AST in question is not one of our methods of declaration so now
         // we check if it is a (resolved/unresolved) symbol and make sure
         // that symbol is not defined/declared before use
-        } else if (SymExpr* sym = toSymExpr(ast)) {
-          if (isModuleSymbol(sym->symbol()) == true) {
+        } else if (SymExpr* se = toSymExpr(ast)) {
+          Symbol* sym = se->symbol();
+
+          if (isModuleSymbol(sym) == true) {
             if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
-              if (isUseStmt(sym->parentExpr) == false) {
-                SymExpr* prev = toSymExpr(sym->prev);
+              if (isUseStmt(se->parentExpr) == false) {
+                SymExpr* prev = toSymExpr(se->prev);
 
                 if (prev == NULL || prev->symbol() != gModuleToken) {
-                  USR_FATAL_CONT(sym,
+                  USR_FATAL_CONT(se,
                                  "illegal use of module '%s'",
-                                 sym->symbol()->name);
+                                 sym->name);
                 }
               }
             }
 
-          } else if (isLcnSymbol(sym->symbol())) {
-            if (sym->symbol()->defPoint->parentExpr != rootModule->block &&
-                (sym->symbol()->defPoint->parentSymbol == fn ||
-                 (sym->symbol()->defPoint->parentSymbol == mod && mod->initFn == fn))) {
-              if (defined.find(sym->symbol())   == defined.end()) {
-                if (!sym->symbol()->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
-                    !sym->symbol()->hasFlag(FLAG_TEMP)) {
-                  // Only complain one time
-                  if (undefined.find(sym->symbol()) == undefined.end()) {
-                    USR_FATAL_CONT(sym,
-                                   "'%s' used before defined (first used here)",
-                                   sym->symbol()->name);
+          } else if (isLcnSymbol(sym) == true) {
+            Symbol* parent = sym->defPoint->parentSymbol;
 
-                    undefined.insert(sym->symbol());
+            if (sym->defPoint->parentExpr != rootModule->block &&
+                (parent == fn || (parent == mod && mod->initFn == fn))) {
+              if (defined.find(sym) == defined.end()) {
+                if (sym->hasFlag(FLAG_ARG_THIS) == false &&
+                    sym->hasFlag(FLAG_EXTERN)   == false &&
+                    sym->hasFlag(FLAG_TEMP)     == false) {
+                  // Only complain one time
+                  if (undefined.find(sym) == undefined.end()) {
+                    USR_FATAL_CONT(se,
+                                   "'%s' used before defined (first used here)",
+                                   sym->name);
+
+                    undefined.insert(sym);
                   }
                 }
               }
             }
           }
 
-        } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
-          CallExpr* call = toCallExpr(sym->parentExpr);
+        } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(ast)) {
+          CallExpr* call = toCallExpr(use->parentExpr);
 
           if (!call ||
-              (call->baseExpr != sym &&
+              (call->baseExpr != use &&
                !call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) &&
                !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) {
             if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
-              // Only complain one time
-              if (undeclared.find(sym->unresolved) == undeclared.end()) {
-                USR_FATAL_CONT(sym,
-                               "'%s' undeclared (first use this function)",
-                               sym->unresolved);
+              const char* name = use->unresolved;
 
-                undeclared.insert(sym->unresolved);
+              // Only complain one time
+              if (undeclared.find(name) == undeclared.end()) {
+                USR_FATAL_CONT(use,
+                               "'%s' undeclared (first use this function)",
+                               name);
+
+                undeclared.insert(name);
               }
             }
           }
