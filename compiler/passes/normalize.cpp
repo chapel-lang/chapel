@@ -510,6 +510,8 @@ static void normalize(BaseAST* base) {
 *                                                                             *
 ************************************** | *************************************/
 
+static Symbol* theDefinedSymbol(BaseAST* ast);
+
 static void checkUseBeforeDefs() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint->parentSymbol) {
@@ -526,41 +528,8 @@ static void checkUseBeforeDefs() {
       collect_asts_postorder(fn, asts);
 
       for_vector(BaseAST, ast, asts) {
-        // Adds definitions (this portion could probably be made into a
-        // separate function - see loopInvariantCodeMotion and copyPropagation)
-        if (CallExpr* call = toCallExpr(ast)) {
-          // A symbol gets defined when it appears on the LHS of a move or
-          // assignment.
-          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-            if (SymExpr* se = toSymExpr(call->get(1))) {
-              defined.insert(se->symbol());
-            }
-          }
-
-        } else if (DefExpr* def = toDefExpr(ast)) {
-          // All arg symbols are defined.
-          if (isArgSymbol(def->sym)) {
-            defined.insert(def->sym);
-
-          } else if (VarSymbol* vs = toVarSymbol(def->sym)) {
-            // All type aliases are taken as defined.
-            if (vs->isType()) {
-              defined.insert(def->sym);
-            } else {
-              Type* type = vs->typeInfo();
-
-              // All variables of type 'void' are treated as defined.
-              if (type == dtVoid) {
-                defined.insert(vs);
-
-              // non generic records with initializers are defined
-              } else if (AggregateType* at = toAggregateType(type)) {
-                if (isNonGenericRecordWithInit(at) == true) {
-                  defined.insert(vs);
-                }
-              }
-            }
-          }
+        if (Symbol* symbol = theDefinedSymbol(ast)) {
+          defined.insert(symbol);
 
         } else {
           // The AST in question is not one of our methods of declaration so now
@@ -640,6 +609,49 @@ static void checkUseBeforeDefs() {
       }
     }
   }
+}
+
+// If the AST node defines a symbol, then extract that symbol
+static Symbol* theDefinedSymbol(BaseAST* ast) {
+  Symbol* retval = NULL;
+
+  if (CallExpr* call = toCallExpr(ast)) {
+    // A symbol is "defined" when it appears on LHS of a move or assign
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        retval = se->symbol();
+      }
+    }
+
+  } else if (DefExpr* def = toDefExpr(ast)) {
+    Symbol* sym = def->sym;
+
+    // All arg symbols are defined.
+    if (isArgSymbol(sym)) {
+      retval = sym;
+
+    } else if (VarSymbol* var = toVarSymbol(sym)) {
+      // All type aliases are taken as defined.
+      if (var->isType() == true) {
+        retval = var;
+      } else {
+        Type* type = var->typeInfo();
+
+        // All variables of type 'void' are treated as defined.
+        if (type == dtVoid) {
+          retval = var;
+
+        // non generic records with initializers are defined
+        } else if (AggregateType* at = toAggregateType(type)) {
+          if (isNonGenericRecordWithInit(at) == true) {
+            retval = var;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
