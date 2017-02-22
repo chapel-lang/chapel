@@ -1186,25 +1186,14 @@ module DefaultRectangular {
           // If we detect that blk is never changed then then blk(rank) == 1.
           // Knowing this, we need not multiply the final ind(...) by anything.
           // This relies on us marking every function that modifies blk
-          if __primitive("optimize_array_blk_mult") {
-            if rank == 1 {
-              dataInd = ind;
-            } else {
-              dataInd = 0;
-              for param i in 1..rank-1 {
-                dataInd += ind(i) * blk(i);
-              }
-              dataInd += ind(rank);
-            }
+          if rank == 1 {
+            dataInd = ind;
           } else {
-            if rank == 1 {
-              dataInd = ind * blk(1);
-            } else {
-              dataInd = 0;
-              for param i in 1..rank {
-                dataInd += ind(i) * blk(i);
-              }
+            dataInd = 0;
+            for param i in 1..rank-1 {
+              dataInd += ind(i) * blk(i);
             }
+            dataInd += ind(rank);
           }
           yield dd(dataInd);
         }
@@ -1389,17 +1378,10 @@ module DefaultRectangular {
 
         // optimize common case to get cleaner generated code
         if (rank == 1 && wantShiftedIndex) {
-          if __primitive("optimize_array_blk_mult") {
-            if chunkify then
-              return chunked_dataIndex(ind(1));
-            else
-              return ind(1);
-          } else {
-            if chunkify then
-              return chunked_dataIndex(ind(1) * blk(1));
-            else
-              return ind(1) * blk(1);
-          }
+          if chunkify then
+            return chunked_dataIndex(ind(1));
+          else
+            return ind(1);
         } else {
           var sum = if wantShiftedIndex then 0:idxType else origin;
 
