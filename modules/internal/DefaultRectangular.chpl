@@ -1622,6 +1622,8 @@ module DefaultRectangular {
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(idxType);
 
+    const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
+
     proc writeSpaces(dim:int) {
       for i in 1..dim {
         f <~> new ioLiteral(" ");
@@ -1780,6 +1782,53 @@ module DefaultRectangular {
         arr.dsiPostReallocate();
       }
 
+    } else if _isSimpleIoType(arr.eltType) && f.binary() &&
+       isNative && arr.isDataContiguous(dom) {
+      // If we can, we would like to read/write the array as a single write op
+      // since _ddata is just a pointer to the memory location we just pass
+      // that along with the size of the array. This is only possible when the
+      // byte order is set to native or its equivalent.
+      pragma "no prototype"
+      extern proc sizeof(type x): size_t;
+      const elemSize = sizeof(arr.eltType);
+      if boundsChecking {
+        var rw = if f.writing then "write" else "read";
+        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
+               "length of array to ", rw, " is greater than ssize_t can hold");
+      }
+      if defRectSimpleDData {
+        const len = dom.dsiNumIndices;
+        const src = arr.theDataChunk(0);
+        const idx = arr.getDataIndex(dom.dsiLow);
+        const size = len:ssize_t*elemSize:ssize_t;
+        if f.writing {
+          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+        } else {
+          f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+        }
+      } else {
+        var indLo = dom.dsiLow;
+        for chunk in 0..#arr.mdNumChunks {
+          if arr.mData(chunk).pdr.length >= 0 {
+            const src = arr.theDataChunk(chunk);
+            if isTuple(indLo) then
+              indLo(arr.mdParDim) = arr.mData(chunk).pdr.low;
+            else
+              indLo = arr.mData(chunk).pdr.low;
+            const (_, idx) = arr.getDataIndex(indLo);
+            const blkLen = if arr.mdParDim == arr.rank
+                           then 1
+                           else arr.blk(arr.mdParDim) / arr.blk(arr.mdParDim+1);
+            const len = arr.mData(chunk).pdr.length * blkLen;
+            const size = len:ssize_t*elemSize:ssize_t;
+            if f.writing {
+              f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+            } else {
+              f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+            }
+          }
+        }
+      }
     } else {
       const zeroTup: rank*idxType;
       recursiveArrayWriter(zeroTup);
@@ -1787,90 +1836,11 @@ module DefaultRectangular {
   }
 
   proc DefaultRectangularArr.dsiSerialWrite(f) {
-    var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
-
-    if _isSimpleIoType(eltType) && f.binary() &&
-       isNative && isDataContiguous(this.dom) {
-      // If we can, we would like to write the array out as a single write op
-      // since _ddata is just a pointer to the memory location we just pass
-      // that along with the size of the array. This is only possible when the
-      // byte order is set to native or its equivalent.
-      pragma "no prototype"
-      extern proc sizeof(type x): size_t;
-      const elemSize = sizeof(eltType);
-      if boundsChecking then
-        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
-               "length of array to write is greater than ssize_t can hold");
-      if defRectSimpleDData {
-        const len = dom.dsiNumIndices;
-        const src = theDataChunk(0);
-        const idx = getDataIndex(dom.dsiLow);
-        const size = len:ssize_t*elemSize:ssize_t;
-        f.writeBytes(_ddata_shift(eltType, src, idx), size);
-      } else {
-        var indLo = dom.dsiLow;
-        for chunk in 0..#mdNumChunks {
-          if mData(chunk).pdr.length >= 0 {
-            const src = theDataChunk(chunk);
-            if isTuple(indLo) then
-              indLo(mdParDim) = mData(chunk).pdr.low;
-            else
-              indLo = mData(chunk).pdr.low;
-            const (_, idx) = getDataIndex(indLo);
-            const blkLen = if mdParDim == rank
-                           then 1
-                           else blk(mdParDim) / blk(mdParDim+1);
-            const len = mData(chunk).pdr.length * blkLen;
-            const size = len:ssize_t*elemSize:ssize_t;
-            f.writeBytes(_ddata_shift(eltType, src, idx), size);
-          }
-        }
-      }
-    } else {
-      dsiSerialReadWrite(f);
-    }
+    dsiSerialReadWrite(f);
   }
 
   proc DefaultRectangularArr.dsiSerialRead(f) {
-    var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
-
-    if _isSimpleIoType(eltType) && f.binary() &&
-       isNative && isDataContiguous(this.dom) {
-      // read the data in one op if possible, same comments as above apply
-      pragma "no prototype"
-      extern proc sizeof(type x): size_t;
-      const elemSize = sizeof(eltType);
-      if boundsChecking then
-        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
-               "length of array to read is greater than ssize_t can hold");
-      if defRectSimpleDData {
-        const len = dom.dsiNumIndices;
-        const src = theDataChunk(0);
-        const idx = getDataIndex(dom.dsiLow);
-        const size = len:ssize_t*elemSize:ssize_t;
-        f.readBytes(_ddata_shift(eltType, src, idx), size);
-      } else {
-        var indLo = dom.dsiLow;
-        for chunk in 0..#mdNumChunks {
-          if mData(chunk).pdr.length >= 0 {
-            const src = theDataChunk(chunk);
-            if isTuple(indLo) then
-              indLo(mdParDim) = mData(chunk).pdr.low;
-            else
-              indLo = mData(chunk).pdr.low;
-            const (_, idx) = getDataIndex(indLo);
-            const blkLen = if mdParDim == rank
-                           then 1
-                           else blk(mdParDim) / blk(mdParDim+1);
-            const len = mData(chunk).pdr.length * blkLen;
-            const size = len:ssize_t*elemSize:ssize_t;
-            f.readBytes(_ddata_shift(eltType, src, idx), size);
-          }
-        }
-      }
-    } else {
-      dsiSerialReadWrite(f);
-    }
+    dsiSerialReadWrite(f);
   }
 
   // This is very conservative.
