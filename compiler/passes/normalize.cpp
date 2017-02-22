@@ -530,34 +530,29 @@ static void checkUseBeforeDefs() {
         if (Symbol* sym = theDefinedSymbol(ast)) {
           defined.insert(sym);
 
-        // The AST in question is not one of our methods of declaration so now
-        // we check if it is a (resolved/unresolved) symbol and make sure
-        // that symbol is not defined/declared before use
         } else if (SymExpr* se = toSymExpr(ast)) {
           Symbol* sym = se->symbol();
 
-          if (isModuleSymbol(sym) == true) {
-            if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
-              if (isUseStmt(se->parentExpr) == false) {
-                SymExpr* prev = toSymExpr(se->prev);
+          if (isModuleSymbol(sym)                    == true  &&
+              isFnSymbol(fn->defPoint->parentSymbol) == false &&
+              isUseStmt(se->parentExpr)              == false) {
+            SymExpr* prev = toSymExpr(se->prev);
 
-                if (prev == NULL || prev->symbol() != gModuleToken) {
-                  USR_FATAL_CONT(se,
-                                 "illegal use of module '%s'",
-                                 sym->name);
-                }
-              }
+            if (prev == NULL || prev->symbol() != gModuleToken) {
+              USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
             }
 
           } else if (isLcnSymbol(sym) == true) {
-            Symbol* parent = sym->defPoint->parentSymbol;
+            if (sym->defPoint->parentExpr != rootModule->block) {
+              Symbol* parent = sym->defPoint->parentSymbol;
 
-            if (sym->defPoint->parentExpr != rootModule->block &&
-                (parent == fn || (parent == mod && mod->initFn == fn))) {
-              if (defined.find(sym) == defined.end()) {
-                if (sym->hasFlag(FLAG_ARG_THIS) == false &&
-                    sym->hasFlag(FLAG_EXTERN)   == false &&
+              if (parent == fn || (parent == mod && mod->initFn == fn)) {
+                if (defined.find(sym)           == defined.end() &&
+
+                    sym->hasFlag(FLAG_ARG_THIS) == false         &&
+                    sym->hasFlag(FLAG_EXTERN)   == false         &&
                     sym->hasFlag(FLAG_TEMP)     == false) {
+
                   // Only complain one time
                   if (undefined.find(sym) == undefined.end()) {
                     USR_FATAL_CONT(se,
@@ -574,10 +569,10 @@ static void checkUseBeforeDefs() {
         } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(ast)) {
           CallExpr* call = toCallExpr(use->parentExpr);
 
-          if (!call ||
-              (call->baseExpr != use &&
-               !call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) &&
-               !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) {
+          if (call == NULL ||
+              (call->baseExpr                              != use   &&
+               call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) == false &&
+               call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)    == false)) {
             if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
               const char* name = use->unresolved;
 
