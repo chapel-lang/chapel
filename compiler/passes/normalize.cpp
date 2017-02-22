@@ -33,6 +33,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "TransformLogicalShortCircuit.h"
+#include "typeSpecifier.h"
 
 #include <cctype>
 #include <set>
@@ -101,6 +102,10 @@ static void init_noinit_var(VarSymbol* var,
                             VarSymbol* constTemp);
 
 static bool moduleHonorsNoinit(Symbol* var, Expr* init);
+
+static bool isPrimitiveScalar(Type* type);
+static bool isNonGenericClass(Type* type);
+static bool isNonGenericRecordWithInit(Type* type);
 
 static void updateVariableAutoDestroy(DefExpr* defExpr);
 
@@ -1594,6 +1599,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
 static void normVarTypeWoutInit(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
+  Type*   type     = typeForTypeSpecifier(typeExpr);
 
   // Noakes 2017/02/19
   //   This replicates some strange business logic that is currently
@@ -1619,6 +1625,22 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
     block->insertAtTail(new CallExpr(PRIM_MOVE, var, typeTemp));
 
     defExpr->insertAfter(block);
+
+  } else if (isPrimitiveScalar(type)          == true) {
+    CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
+
+    var->type = type;
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defVal));
+
+  } else if (isNonGenericClass(type)          == true) {
+    CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
+
+    var->type = type;
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defVal));
+
+  } else if (isNonGenericRecordWithInit(type) == true) {
+    var->type = type;
+    defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
@@ -1737,6 +1759,73 @@ static void normVarNoinit(DefExpr* defExpr) {
     // Ignore no-init expression and fall back on default init
     normVarTypeWoutInit(defExpr);
   }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isPrimitiveScalar(Type* type) {
+  bool retval = false;
+
+  if (type == dtBools[BOOL_SIZE_8]         ||
+      type == dtBools[BOOL_SIZE_16]        ||
+      type == dtBools[BOOL_SIZE_32]        ||
+      type == dtBools[BOOL_SIZE_64]        ||
+
+      type == dtInt[INT_SIZE_8]            ||
+      type == dtInt[INT_SIZE_16]           ||
+      type == dtInt[INT_SIZE_32]           ||
+      type == dtInt[INT_SIZE_64]           ||
+
+      type == dtUInt[INT_SIZE_8]           ||
+      type == dtUInt[INT_SIZE_16]          ||
+      type == dtUInt[INT_SIZE_32]          ||
+      type == dtUInt[INT_SIZE_64]          ||
+
+      type == dtReal[FLOAT_SIZE_32]        ||
+      type == dtReal[FLOAT_SIZE_64]        ||
+
+      type == dtImag[FLOAT_SIZE_32]        ||
+      type == dtImag[FLOAT_SIZE_64]) {
+
+    retval = true;
+
+  } else {
+    retval = false;
+  }
+
+  return retval;
+}
+
+static bool isNonGenericClass(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isGeneric()                  == false &&
+        at->isClass()                    ==  true &&
+        at->symbol->hasFlag(FLAG_EXTERN) == false) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+static bool isNonGenericRecordWithInit(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isGeneric()      == false &&
+        at->isRecord()       == true  &&
+        at->initializerStyle == DEFINES_INITIALIZER) {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
