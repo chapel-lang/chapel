@@ -1782,8 +1782,9 @@ module DefaultRectangular {
         arr.dsiPostReallocate();
       }
 
-    } else if _isSimpleIoType(arr.eltType) && f.binary() &&
-       isNative && arr.isDataContiguous(dom) {
+    } else if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
+              _isSimpleIoType(arr.eltType) && f.binary() &&
+              isNative && arr.isDataContiguous(dom) {
       // If we can, we would like to read/write the array as a single write op
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the
