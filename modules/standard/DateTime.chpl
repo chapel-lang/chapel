@@ -1,20 +1,63 @@
-module DateTime {
+/*
+ * Copyright 2004-2017 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
+/* Support for representing dates, times, combined dates and times and
+   timedeltas.  This module is modeled heavily off of the python module
+   'datetime'.
+
+    For more detailed descriptions of this functionality, please see the
+    python docs:
+
+    https://docs.python.org/2.7/library/datetime.html
+
+    Since Chapel doesn't have a "None" value, "nil" is used instead.
+    The spot where this is most noticeable is in the "replace()" methods,
+    where the argument "tzinfo" is always required.  This is because
+    there is no way to determine if "nil" was passed explicitly, or
+    if the default value was used, so it needs to be made explicit.
+
+    Operators are supported for adding, subtracting, and comparing dates,
+    times, datetimes and timedeltas.
+
+    Operators are also supported for multiplying and dividing timedeltas.
+ */
+
+module DateTime {
+  /* The minimum year allowed in date objects */
   param MINYEAR = 1;
+  /* The maximum year allowed in date objects */
   param MAXYEAR = 9999;
 
-  const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  const DAYS_BEFORE_MONTH = init_days_before_month();
+  private const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  private const DAYS_BEFORE_MONTH = init_days_before_month();
 
+  /* The Unix Epoch date and time */
   const unixEpoch = new datetime(1970, 1, 1);
 
-  const DI400Y = daysBeforeYear(401);
-  const DI100Y = daysBeforeYear(101);
-  const DI4Y   = daysBeforeYear(5);
+  private const DI400Y = daysBeforeYear(401);
+  private const DI100Y = daysBeforeYear(101);
+  private const DI4Y   = daysBeforeYear(5);
 
   // This is here to work around issue #5267
-  const chpl_today = datetime.today();
+  private const chpl_today = datetime.today();
 
+  /* Days in the week, starting with Monday=0 */
   enum DayOfWeek {
     Monday =    0,
     Tuesday =   1,
@@ -25,6 +68,7 @@ module DateTime {
     Sunday =    6
   }
 
+  /* Days in the week, starting with Monday=1 */
   enum ISODayOfWeek {
     Monday =    1,
     Tuesday =   2,
@@ -49,6 +93,7 @@ module DateTime {
     return (tv.tv_sec, tv.tv_usec);
   }
 
+  pragma "no doc"
   extern "struct tm" record tm {
     var tm_sec:   c_int;   // seconds [0,61]
     var tm_min:   c_int;   // minutes [0,59]
@@ -159,30 +204,37 @@ module DateTime {
       return DAYS_IN_MONTH(month);
   }
 
-
+/* A record representing a date */
   record date {
+    pragma "no doc"
     var chpl_year, chpl_month, chpl_day: int;
 
+    /* The year represented by this date value */
     proc year {
       return chpl_year;
     }
 
+    /* The month represented by this date value */
     proc month {
       return chpl_month;
     }
 
+    /* The day represented by this date value */
     proc day {
       return chpl_day;
     }
 
+    /* The minimum representable date */
     proc type min {
       return new date(MINYEAR, 1, 1);
     }
 
+    /* The maximum representable date */
     proc type max {
       return new date(MAXYEAR, 12, 31);
     }
 
+    /* The minimum non-zero difference between two dates */
     proc type resolution {
       return new timedelta(days=1);
     }
@@ -191,7 +243,7 @@ module DateTime {
 
   /* constructors/factories for date values */
 
-  /* Construct a new date object from a year, month, and day. All
+  /* Construct a new date value from a year, month, and day. All
      three arguments are required and must be in valid ranges.  The
      valid ranges are:
 
@@ -212,6 +264,7 @@ module DateTime {
     this.chpl_day = day;
   }
 
+  /* A date object representing the current day */
   proc type date.today() {
     const timeSinceEpoch = getTimeOfDay();
     const td = new timedelta(seconds=timeSinceEpoch(1),
@@ -220,6 +273,7 @@ module DateTime {
     return unixEpoch.getdate() + td;
   }
 
+  /* The date that is `timestamp` seconds from the epoch */
   proc type date.fromtimestamp(timestamp) {
     const sec = timestamp: int;
     const us = ((timestamp-sec) * 1000000 + 0.5):int;
@@ -227,6 +281,7 @@ module DateTime {
     return unixEpoch.getdate() + td;
   }
 
+  /* The date that is `ord` days from 1-1-0001 */
   proc type date.fromordinal(ord) {
     if ord < 0 || ord > 1+date.max.toordinal() then
       halt("ordinal (", ord, ") out of range");
@@ -237,6 +292,7 @@ module DateTime {
 
   /* Methods on date values */
 
+  /* Replace the year, month and/or day in a date to create a new date */
   proc date.replace(year=0, month=0, day=0) {
     const newYear = if year > 0 then year else this.year;
     const newMonth = if month > 0 then month else this.month;
@@ -244,6 +300,7 @@ module DateTime {
     return new date(newYear, newMonth, newDay);
   }
 
+  /* Return a filled record matching the C "struct tm" type for the given date */
   proc date.timetuple() {
     var timeStruct: tm;
 
@@ -261,6 +318,7 @@ module DateTime {
     return timeStruct; 
   }
 
+  /* Return the number of days since 1-1-0001 this date represents */
   proc date.toordinal() {
     return ymdToOrd(year, month, day);
   }
@@ -276,6 +334,9 @@ module DateTime {
     return (weekday():int + 1): ISODayOfWeek;
   }
 
+  /* Return the ISO date as a tuple containing the ISO year, ISO week number,
+     and ISO day of the week
+   */
   proc date.isocalendar() {
     proc findThursday(d: date) {
       var wd = d.weekday();
@@ -323,6 +384,7 @@ module DateTime {
     return yearstr + "-" + monthstr + "-" + daystr;
   }
 
+  /* Return a string representing the date */
   proc date.ctime() {
     const month = strftime("%b");
     const wday = strftime("%a");
@@ -332,6 +394,7 @@ module DateTime {
            " " + extraSpace + day + " 00:00:00 " + year;
   }
 
+  /* Return a formatted string matching the format argument and the date */
   proc date.strftime(fmt: string) {
     extern proc strftime(s: c_void_ptr, size: size_t, format: c_string, ref timeStruct: tm);
     const bufLen: size_t = 100;
@@ -352,72 +415,90 @@ module DateTime {
 
 
   /* Operators on date values */
-
+  pragma "no doc"
   proc +(d: date, t: timedelta): date {
     return date.fromordinal(d.toordinal() + t.days);
   }
 
+  pragma "no doc"
   proc +(t: timedelta, d: date): date {
     return d + t;
   }
 
+  pragma "no doc"
   proc -(d: date, t: timedelta): date {
     return date.fromordinal(d.toordinal() - t.days);
   }
 
+  pragma "no doc"
   proc -(d1: date, d2: date): timedelta {
     return new timedelta(days=d1.toordinal() - d2.toordinal());
   }
 
+  pragma "no doc"
   proc <(d1: date, d2: date) {
     return d1.toordinal() < d2.toordinal();
   }
 
+  pragma "no doc"
   proc <=(d1: date, d2: date) {
     return d1.toordinal() <= d2.toordinal();
   }
 
+  pragma "no doc"
   proc >(d1: date, d2: date) {
     return d1.toordinal() > d2.toordinal();
   }
 
+  pragma "no doc"
   proc >=(d1: date, d2: date) {
     return d1.toordinal() >= d2.toordinal();
   }
 
 
+  /* A record representing a time */
   record time {
+    pragma "no doc"
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
+    pragma "no doc"
     var chpl_tzinfo: TZInfo;
 
+    /* The hour represented by this date value */
     proc hour {
       return chpl_hour;
     }
 
+    /* The minute represented by this date value */
     proc minute {
       return chpl_minute;
     }
 
+    /* The second represented by this date value */
     proc second {
       return chpl_second;
     }
 
+    /* The microsecond represented by this date value */
     proc microsecond {
       return chpl_microsecond;
     }
 
+    /* The timezone represented by this date value */
     proc tzinfo {
       return chpl_tzinfo;
     }
 
+    /* The minimum representable time */
     proc type min {
       return new time();
     }
 
+    /* The maximum representable time */
     proc type max {
       return new time(23, 59, 59, 999999);
     }
 
+    /* The minimum non-zero difference between two times */
     proc type resolution {
       return new timedelta(microseconds=1);
     }
@@ -425,6 +506,9 @@ module DateTime {
 
   /* constructors/factories for time values */
 
+  /* Construct a new time value from the given hour, minute, second,
+     microsecond, and timezone.  All arguments are optional
+   */
   proc time.time(hour=0, minute=0, second=0, microsecond=0,
                  tzinfo:TZInfo=nil) {
     if hour < 0 || hour >= 24 then
@@ -442,12 +526,17 @@ module DateTime {
     this.chpl_tzinfo = tzinfo;
   }
 
+  pragma "no doc"
   proc time.~time() {
     // delete tzinfo if needed
   }
 
   /* Methods on time values */
 
+  /* Replace the hour, minute, second, microsecond and tzinfo in a time
+     to create a new time. The tzinfo argument is required, the rest are
+     optional.
+   */
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
                     tzinfo:TZInfo) {
     const newhour = if hour != -1 then hour else this.hour;
@@ -458,6 +547,7 @@ module DateTime {
     return new time(newhour, newminute, newsecond, newmicrosecond, tzinfo);
   }
 
+  /* Return a string representing the time in ISO format */
   proc time.isoformat() {
     proc makeNDigits(n, d) {
       var ret = d:string;
@@ -489,34 +579,26 @@ module DateTime {
     return ret;
   }
 
+  /* Return the offset from UTC */
   proc time.utcoffset() {
     if tzinfo == nil {
       return new timedelta();
     } else {
-      // TODO: What should this do? python's time.utcoffset() seems to
-      // return None even when tzinfo is set to e.g. central or pacific
-      // >>> central = pytz.timezone("US/Central")
-      // >>> time(12, 3, 4, 5, tzinfo=central).utcoffset()
-
       return tzinfo.utcoffset(datetime.today());
-      //return new timedelta();
     }
   }
 
+  /* Return the daylight saving time offset */
   proc time.dst() {
     if tzinfo == nil {
       return new timedelta();
     } else {
-      // TODO: What should this do? python's time.utcoffset() seems to
-      // return None even when tzinfo is set to e.g. central or pacific
-      // >>> central = pytz.timezone("US/Central")
-      // >>> time(12, 3, 4, 5, tzinfo=central).dst()
-
       return tzinfo.dst(datetime.today());
       //return new timedelta();
     }
   }
 
+  /* Return the name of the timezone for this time value */
   proc time.tzname() {
     if tzinfo == nil then
       return "";
@@ -524,6 +606,7 @@ module DateTime {
       return tzinfo.tzname(new datetime(1,1,1));
   }
 
+  /* Return a string matching the format argument for this time */
   proc time.strftime(fmt: string) {
     extern proc strftime(s: c_void_ptr, size: size_t, format: c_string, ref timeStruct: tm);
     const bufLen: size_t = 100;
@@ -555,16 +638,19 @@ module DateTime {
 
   /* Operators on time values */
 
+  pragma "no doc"
   proc ==(t1: time, t2: time): bool {
     var dt1 = datetime.combine(d=new date(2000, 1, 1), t=t1);
     var dt2 = datetime.combine(d=new date(2000, 1, 1), t=t2);
     return dt1 == dt2;
   }
 
+  pragma "no doc"
   proc !=(t1: time, t2: time) {
     return !(t1 == t2);
   }
 
+  pragma "no doc"
   proc <(t1: time, t2: time): bool {
     if (t1.tzinfo != nil && t2.tzinfo == nil) ||
         (t1.tzinfo == nil && t2.tzinfo != nil) {
@@ -599,6 +685,7 @@ module DateTime {
     return false;
   }
 
+  pragma "no doc"
   proc <=(t1: time, t2: time): bool {
     if (t1.tzinfo != nil && t2.tzinfo == nil) ||
         (t1.tzinfo == nil && t2.tzinfo != nil) {
@@ -620,6 +707,7 @@ module DateTime {
     return false;
   }
 
+  pragma "no doc"
   proc >(t1: time, t2: time): bool {
     if (t1.tzinfo != nil && t2.tzinfo == nil) ||
         (t1.tzinfo == nil && t2.tzinfo != nil) {
@@ -642,6 +730,7 @@ module DateTime {
     return false;
   }
 
+  pragma "no doc"
   proc >=(t1: time, t2: time): bool {
     if (t1.tzinfo != nil && t2.tzinfo == nil) ||
         (t1.tzinfo == nil && t2.tzinfo != nil) {
@@ -664,51 +753,64 @@ module DateTime {
     return false;
   }
 
-
+  /* A record representing a combined date and time */
   record datetime {
+    pragma "no doc"
     var chpl_date: date;
+    pragma "no doc"
     var chpl_time: time;
 
+    /* The minimum representable date and time */
     proc type min {
       return this.combine(date.min, time.min);
     }
 
+    /* The maximum representable date and time */
     proc type max {
       return this.combine(date.max, time.max);
     }
 
+    /* The minimum non-zero difference between two datetimes */
     proc type resolution {
       return new timedelta(microseconds=1);
     }
 
+    /* The year represented by this datetime value */
     proc year {
       return chpl_date.year;
     }
 
+    /* The month represented by this datetime value */
     proc month {
       return chpl_date.month;
     }
 
+    /* The day represented by this datetime value */
     proc day {
       return chpl_date.day;
     }
 
+    /* The hour represented by this datetime value */
     proc hour {
       return chpl_time.hour;
     }
 
+    /* The minute represented by this datetime value */
     proc minute {
       return chpl_time.minute;
     }
 
+    /* The second represented by this datetime value */
     proc second {
       return chpl_time.second;
     }
 
+    /* The microsecond represented by this datetime value */
     proc microsecond {
       return chpl_time.microsecond;
     }
 
+    /* The timezone represented by this datetime value */
     proc tzinfo {
       return chpl_time.tzinfo;
     }
@@ -716,6 +818,9 @@ module DateTime {
 
   /* Constructors/factories for datetime values */
 
+  /* Construct a new time value from the given year, month, day, hour,
+     minute, second, microsecond and timezone.  The year, month, and day
+     arguments are required, the rest are optional. */
   proc datetime.datetime(year, month, day,
                 hour=0, minute=0, second=0, microsecond=0,
                 tzinfo:TZInfo=nil) {
@@ -723,10 +828,12 @@ module DateTime {
     chpl_time = new time(hour, minute, second, microsecond, tzinfo);
   }
 
+  /* Return a datetime value representing the current time and date */
   proc type datetime.today() {
     return this.now();
   }
 
+  /* Return a datetime value representing the current time and date */
   proc type datetime.now(tz: TZInfo = nil) {
     if tz == nil {
       const timeSinceEpoch = getTimeOfDay();
@@ -745,6 +852,7 @@ module DateTime {
     }
   }
 
+  /* Return a datetime value representing the current time and date in UTC */
   proc type datetime.utcnow() {
     const timeSinceEpoch = getTimeOfDay();
     const td = new timedelta(seconds=timeSinceEpoch(1),
@@ -752,6 +860,7 @@ module DateTime {
     return unixEpoch + td;
   }
 
+  /* The datetime that is `timestamp` seconds from the epoch */
   proc type datetime.fromtimestamp(timestamp: real, tz: TZInfo = nil) {
     if tz == nil {
       var t = (timestamp:int, ((timestamp-timestamp:int)*1000000):int);
@@ -766,14 +875,17 @@ module DateTime {
     }
   }
 
+  /* The datetime that is `timestamp` seconds from the epoch in UTC */
   proc type datetime.utcfromtimestamp(timestamp) {
     return unixEpoch + new timedelta(seconds=timestamp:int, microseconds=((timestamp-timestamp:int)*1000000):int);
   }
 
+  /* The datetime that is `ordinal` days from 1-1-0001 */
   proc type datetime.fromordinal(ordinal) {
     return datetime.combine(date.fromordinal(ordinal), new time());
   }
 
+  /* Form a datetime value from a given date and time */
   proc type datetime.combine(d: date, t: time) {
     return new datetime(d.year, d.month, d.day,
                         t.hour, t.minute, t.second, t.microsecond, t.tzinfo);
@@ -781,10 +893,12 @@ module DateTime {
 
   /* Methods on datetime values */
 
+  /* Get the date portion of the datetime value */
   proc datetime.getdate() {
     return chpl_date;
   }
 
+  /* Get the time portion of the datetime value, with tzinfo=nil */
   proc datetime.gettime() {
     if chpl_time.tzinfo == nil then
       return chpl_time;
@@ -793,10 +907,15 @@ module DateTime {
                       second=second, microsecond=microsecond);
   }
 
+  /* Get the time portion of the datetime value including the tzinfo field */
   proc datetime.timetz() {
     return chpl_time;
   }
 
+  /* Replace the year, month, day, hour, minute, second, microsecond, or tzinfo
+     to form a new datetime object.  The tzinfo argument is required, the rest
+     are optional.
+   */
   proc datetime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
                         tzinfo: TZInfo) {
@@ -811,6 +930,7 @@ module DateTime {
                tzinfo));
   }
 
+  /* Return the date and time converted into the timezone in the argument */
   proc datetime.astimezone(tz: TZInfo) {
     if tzinfo == tz {
       return this;
@@ -819,6 +939,7 @@ module DateTime {
     return tz.fromutc(utc);
   }
 
+  /* Return the offset from UTC */
   proc datetime.utcoffset() {
     if tzinfo == nil {
       halt("utcoffset called on naive datetime");
@@ -827,18 +948,22 @@ module DateTime {
     }
   }
 
+  /* Return the daylight saving time offset */
   proc datetime.dst() {
     if tzinfo == nil then
       halt("dst() called with nil tzinfo");
     return tzinfo.dst(this);
   }
 
+  /* Return the name of the timezone for this datetime value */
   proc datetime.tzname() {
     if tzinfo == nil then
       return "";
     return tzinfo.tzname(this);
   }
 
+  /* Return a filled record matching the C "struct tm" type for the given
+     datetime */
   proc datetime.timetuple() {
     var timeStruct: tm;
     timeStruct.tm_sec = second: int(32);
@@ -861,6 +986,9 @@ module DateTime {
     return timeStruct;
   }
 
+  /* Return a filled record matching the C "struct tm" type for the given
+     datetime in UTC
+   */
   proc datetime.utctimetuple() {
     if tzinfo == nil {
       var ret = timetuple();
@@ -874,22 +1002,29 @@ module DateTime {
     }
   }
 
+  /* Return the number of days since 1-1-0001 this datetime represents */
   proc datetime.toordinal() {
     return getdate().toordinal();
   }
 
+  /* Return the day of the week as a DayOfWeek. Monday == 0, Sunday == 6 */
   proc datetime.weekday() {
     return getdate().weekday();
   }
 
+  /* Return the day of the week as an ISODayOfWeek. Monday==1, Sunday==7 */
   proc datetime.isoweekday() {
     return getdate().isoweekday();
   }
 
+  /* Return the ISO date as a tuple containing the ISO year, ISO week number,
+     and ISO day of the week
+   */
   proc datetime.isocalendar() {
     return getdate().isocalendar();
   }
 
+  /* Return the datetime as a string in ISO format */
   proc datetime.isoformat(sep="T") {
     proc zeroPad(nDigits: int, i: int) {
       var numStr = i:string;
@@ -921,6 +1056,7 @@ module DateTime {
     return strftime("%Y-%m-%d" + sep + "%H:%M:%S" + micro + offset);
   }
 
+  /* Create a datetime as described by the date_string and format string */
   proc type datetime.strptime(date_string: string, format: string) {
     extern proc strptime(buf: c_string, format: c_string, ref ts: tm);
     var timeStruct: tm;
@@ -933,7 +1069,7 @@ module DateTime {
                         timeStruct.tm_sec);
   }
 
-
+  /* Create a string from a datetime matching the format string */
   proc datetime.strftime(fmt: string) {
     extern proc strftime(s: c_void_ptr, size: size_t, format: c_string, ref timeStruct: tm);
     const bufLen: size_t = 100;
@@ -964,6 +1100,7 @@ module DateTime {
 
   /* Operators on datetime values */
 
+  pragma "no doc"
   proc +(td: timedelta, dt: datetime) {
     var newmicro = dt.microsecond + td.microseconds;
     var newsec = dt.second + td.seconds;
@@ -990,10 +1127,12 @@ module DateTime {
 
   }
 
+  pragma "no doc"
   proc +(dt: datetime, td: timedelta) {
     return td + dt;
   }
 
+  pragma "no doc"
   proc -(dt: datetime, td: timedelta) {
     var deltasec  = td.seconds % 60;
     var deltamin  = (td.seconds / 60) % 60;
@@ -1028,6 +1167,7 @@ module DateTime {
                                      tzinfo=dt.tzinfo));
   }
 
+  pragma "no doc"
   proc -(dt1: datetime, dt2: datetime): timedelta {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
        (dt1.tzinfo == nil && dt2.tzinfo != nil) {
@@ -1049,6 +1189,7 @@ module DateTime {
     return new timedelta();
   }
 
+  pragma "no doc"
   proc ==(dt1: datetime, dt2: datetime): bool {
     if dt1.tzinfo == nil && dt2.tzinfo != nil ||
        dt1.tzinfo != nil && dt2.tzinfo == nil {
@@ -1070,10 +1211,12 @@ module DateTime {
     }
   }
 
+  pragma "no doc"
   proc !=(dt1: datetime, dt2: datetime) {
     return !(dt1 == dt2);
   }
 
+  pragma "no doc"
   proc <(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
@@ -1092,6 +1235,7 @@ module DateTime {
     return false;
   }
 
+  pragma "no doc"
   proc <=(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
@@ -1110,6 +1254,7 @@ module DateTime {
     return false;
   }
 
+  pragma "no doc"
   proc >(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
@@ -1128,6 +1273,7 @@ module DateTime {
     return false;
   }
 
+  pragma "no doc"
   proc >=(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
@@ -1165,24 +1311,34 @@ module DateTime {
      kept within the following ranges:
 
      0 <= microseconds < 1000000
+
      0 <= seconds < 60*60*24
+
      -999999999 <= days <= 999999999
 
      It is an overflow error if `days` is outside the given range.
    */
   record timedelta {
+    pragma "no doc"
     var chpl_days: int;
+
+    pragma "no doc"
     var chpl_seconds: int;
+
+    pragma "no doc"
     var chpl_microseconds: int;
 
+    /* The number of days this timedelta represents */
     proc days {
       return chpl_days;
     }
 
+    /* The number of seconds this timedelta represents */
     proc seconds {
       return chpl_seconds;
     }
 
+    /* The number of microseconds this timedelta represents */
     proc microseconds {
       return chpl_microseconds;
     }
@@ -1248,6 +1404,7 @@ module DateTime {
       halt("Overflow: days > 999999999");
   }
 
+  /* Create a timedelta from a given number of seconds */
   proc timedelta.timedelta(timestamp: real) {
     return new timedelta(seconds = timestamp:int, microseconds=((timestamp - timestamp:int)*1000000):int);
   }
@@ -1263,14 +1420,17 @@ module DateTime {
 
   /* Operators on timedelta values */
 
+  pragma "no doc"
   proc *(i: int, t: timedelta) {
     return new timedelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
+  pragma "no doc"
   proc *(t: timedelta, i: int) {
     return new timedelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
+  pragma "no doc"
   proc /(t: timedelta, i: int) {
     var day = t.days / i;
     var second = t.seconds + (t.days % i)*24*60*60;
@@ -1285,26 +1445,31 @@ module DateTime {
     return new timedelta(days=day, seconds=second, microseconds=microsecond);
   }
 
+  pragma "no doc"
   proc +(t: timedelta) {
     return t;
   }
 
+  pragma "no doc"
   proc -(t: timedelta) {
     return new timedelta(days=-t.days, seconds=-t.seconds, microseconds=-t.microseconds);
   }
 
+  pragma "no doc"
   proc +(lhs: timedelta, rhs: timedelta) {
     return new timedelta(days=lhs.days+rhs.days,
                          seconds=lhs.seconds+rhs.seconds,
                          microseconds=lhs.microseconds+rhs.microseconds);
   }
 
+  pragma "no doc"
   proc -(lhs: timedelta, rhs: timedelta) {
     return new timedelta(days=lhs.days-rhs.days,
                          seconds=lhs.seconds-rhs.seconds,
                          microseconds=lhs.microseconds-rhs.microseconds);
   }
 
+  pragma "no doc"
   proc >(lhs: timedelta, rhs: timedelta) {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
@@ -1313,10 +1478,12 @@ module DateTime {
     return lhs.microseconds > rhs.microseconds;
   }
 
+  pragma "no doc"
   proc >=(lhs: timedelta, rhs: timedelta) {
     return lhs > rhs || lhs == rhs;
   }
 
+  pragma "no doc"
   proc <(lhs: timedelta, rhs: timedelta) {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
@@ -1325,6 +1492,7 @@ module DateTime {
     return lhs.microseconds < rhs.microseconds;
   }
 
+  pragma "no doc"
   proc <=(lhs: timedelta, rhs: timedelta) {
     return lhs < rhs || lhs == rhs;
   }
@@ -1339,6 +1507,7 @@ module DateTime {
       return t;
   }
 
+  pragma "no doc"
   proc _cast(type s, t: timedelta) where s == string {
     var str: string;
     if t.days != 0 {
@@ -1371,20 +1540,29 @@ module DateTime {
     return str;
   }
 
-  /* Abstract base class for time zones */
+  /* Abstract base class for time zones. This class should not be used
+     directly, but concrete implementations of time zones should be
+     derived from it. */
   class TZInfo {
+    /* The offset from UTC this class represents */
     proc utcoffset(dt: datetime):timedelta {
       halt("Abstract base method called");
       return new timedelta();
     }
+
+    /* The timedelta for daylight saving time */
     proc dst(dt: datetime):timedelta {
       halt("Abstract base method called");
       return new timedelta();
     }
+
+    /* The name of this time zone */
     proc tzname(dt: datetime):string {
       halt("Abstract base method called");
       return "";
     }
+
+    /* Convert a time in UTC to this time zone */
     proc fromutc(in dt: datetime): datetime {
       halt("Abstract base method called");
       return new datetime(0,0,0);
