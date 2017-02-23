@@ -36,4 +36,6 @@ class SymExpr;
 
 void temporaryInitializerFixup(CallExpr* call);
 
+void removeAggTypeFieldInfo();
+
 #endif
