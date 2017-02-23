@@ -8,4 +8,7 @@ show, this isn't the case with user-defined constructors as well.
 
 Once the compiler-generated initializer is similarly generic, this
 test should work again.  Once it does, we should remove the
-tensor-workaround.chpl variation of it.
+tensor-workaround.chpl variation of it.  We should also be able to
+remove a similar manually-introduced constructor for CandidateDomain
+in test/studies/amr/lib/amr/BergerRigoutsosClustering.chpl.
+
