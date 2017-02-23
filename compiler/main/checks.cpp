@@ -573,8 +573,10 @@ static void checkAggregateTypes()
   {
     if (! at->defaultInitializer && at->initializerStyle != DEFINES_INITIALIZER)
       INT_FATAL(at, "aggregate type did not define an initializer and has no default constructor");
-    if (! at->defaultTypeConstructor)
-      INT_FATAL(at, "aggregate type has no default type constructor");
+    if (! at->defaultTypeConstructor &&
+        at->initializerStyle != DEFINES_INITIALIZER)
+      INT_FATAL(at, "aggregate type did not define an initializer and "
+                "has no default type constructor");
   }
 }
 
