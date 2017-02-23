@@ -641,6 +641,7 @@ module DefaultRectangular {
     param rank : int;
     type idxType;
     param stridable: bool;
+    param blkChanged : bool = false;
 
     var off: rank*idxType;
     var blk: rank*idxType;
@@ -706,45 +707,76 @@ module DefaultRectangular {
   }
 
   inline proc _remoteAccessData.getBlockDataIndex(param stridable, ind: rank*idxType) {
-    // modified from DefaultRectangularArr.getDataIndex
-    if stridable {
-      var sum = origin;
-      for param i in 1..rank do
-        sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
-      if defRectSimpleDData then {
-        return sum;
+      param chunkify = !defRectSimpleDData;
+
+      if stridable {
+        inline proc chunked_dataIndex(sum, str) {
+          if mdNumChunks == 1 {
+            return (0, sum);
+          } else {
+            const chunk = mdInd2Chunk(ind(mdParDim));
+            return (chunk, sum - mData(chunk).dataOff);
+          }
+        }
+
+        var sum = origin;
+        for param i in 1..rank do
+          sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
+        if chunkify then
+          return chunked_dataIndex(sum, str=abs(str(mdParDim)):idxType);
+        else
+          return sum;
       } else {
-        if mdNumChunks == 1 {
-          return (0, sum);
+        inline proc chunked_dataIndex(sum) {
+          if mdNumChunks == 1 {
+            return (0, sum);
+          } else {
+            const chunk = mdInd2Chunk(ind(mdParDim));
+            return (chunk, sum - mData(chunk).dataOff);
+          }
+        }
+
+        // optimize common case to get cleaner generated code
+        if (rank == 1 && earlyShiftData) {
+          if blkChanged {
+            if chunkify then
+              return chunked_dataIndex(ind(1) * blk(1));
+            else
+              return ind(1) * blk(1);
+          } else {
+            if chunkify then
+              return chunked_dataIndex(ind(1));
+            else
+              return ind(1);
+          }
         } else {
-          const chunk = mdInd2Chunk(ind(mdParDim));
-          return (chunk, sum - mData(chunk).dataOff);
+          var sum = if earlyShiftData then 0:idxType else origin;
+
+          if blkChanged {
+            for param i in 1..rank {
+              sum += ind(i) * blk(i);
+            }
+          } else {
+            for param i in 1..rank-1 {
+              sum += ind(i) * blk(i);
+            }
+            sum += ind(rank);
+          }
+
+          if !earlyShiftData then sum -= factoredOffs;
+          if chunkify then
+            return chunked_dataIndex(sum);
+          else
+            return sum;
         }
       }
-    } else {
-      var sum = if earlyShiftData then 0:idxType else origin;
-      for param i in 1..rank do
-        sum += ind(i) * blk(i);
-      if !earlyShiftData then sum -= factoredOffs;
-      if defRectSimpleDData {
-        return sum;
-      }
-      else {
-        if mdNumChunks == 1 {
-          return (0, sum);
-        } else {
-          const chunk = mdInd2Chunk(ind(mdParDim));
-          return (chunk, sum - mData(chunk).dataOff);
-        }
-      }
-    }
   }
 
   proc _remoteAccessData.toSlice(newDom) {
     compilerAssert(defRectSimpleDData);
     compilerAssert(this.rank == newDom.rank);
     type idxSignedType = chpl__signedType(newDom.idxType);
-    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable);
+    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable, blkChanged);
     rad.data        = this.data;
     rad.shiftedData = this.shiftedData;
     rad.blk         = this.blk;
@@ -776,7 +808,7 @@ module DefaultRectangular {
     compilerAssert(defRectSimpleDData);
     compilerAssert(this.rank == newDom.rank);
     type idxSignedType = chpl__signedType(newDom.idxType);
-    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable);
+    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable, blkChanged);
     rad.data        = this.data;
     rad.shiftedData = this.shiftedData;
     rad.origin      = this.origin:newDom.idxType;
@@ -804,7 +836,7 @@ module DefaultRectangular {
     compilerAssert(this.rank == idx.size);
     compilerAssert(this.rank != newDom.rank);
     const collapsedDims = chpl__tuplify(cd);
-    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable);
+    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable, true);
     rad.data        = this.data;
     rad.shiftedData = this.shiftedData;
     rad.origin      = this.origin:newDom.idxType;
