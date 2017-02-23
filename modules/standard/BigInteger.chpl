@@ -111,6 +111,12 @@ See :mod:`GMP` for more information on how to use GMP with Chapel.
 module BigInteger {
   use GMP;
 
+  enum Round {
+    DOWN = -1,
+    ZERO =  0,
+    UP   =  1
+  }
+
   pragma "ignore noinit"
   record bigint {
     /* The underlying GMP C structure */
