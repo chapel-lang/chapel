@@ -780,20 +780,21 @@ module DefaultRectangular {
     compilerAssert(defRectSimpleDData);
     compilerAssert(this.rank == newDom.rank);
     type idxSignedType = chpl__signedType(newDom.idxType);
-    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable, blkChanged);
+    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable, newDom.stridable || this.blkChanged);
     rad.data        = this.data;
-    rad.shiftedData = this.shiftedData;
-    rad.blk         = this.blk;
+    rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
     rad.origin      = this.origin:newDom.idxType;
     for param i in 1..rank {
       rad.off(i) = newDom.dsiDim(i).low;
       rad.str(i) = newDom.dsiDim(i).stride;
-      const shift = blk(i) * (newDom.dsiDim(i).low - this.off(i)) / abs(this.str(i)) : newDom.idxType;
+      const shift = this.blk(i) * (newDom.dsiDim(i).low - this.off(i)) / abs(this.str(i)) : newDom.idxType;
       if this.str(i) > 0 {
         rad.origin += shift;
       } else {
         rad.origin -= shift;
       }
+      const mult = (newDom.dsiDim(i).stride / this.str(i)) : newDom.idxType;
+      rad.blk(i) = this.blk(i) * mult;
     }
     for param i in 1..rank do {
       rad.factoredOffs = rad.factoredOffs + rad.blk(i) * rad.off(i);
@@ -814,7 +815,7 @@ module DefaultRectangular {
     type idxSignedType = chpl__signedType(newDom.idxType);
     var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable, blkChanged);
     rad.data        = this.data;
-    rad.shiftedData = this.shiftedData;
+    rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
     rad.origin      = this.origin:newDom.idxType;
     for param i in 1..rank {
       rad.off(i) = newDom.dsiDim(i).low;
@@ -842,7 +843,7 @@ module DefaultRectangular {
     const collapsedDims = chpl__tuplify(cd);
     var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable, true);
     rad.data        = this.data;
-    rad.shiftedData = this.shiftedData;
+    rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
     rad.origin      = this.origin:newDom.idxType;
     type idxSignedType = chpl__signedType(newDom.idxType);
     var curDim = 1;
