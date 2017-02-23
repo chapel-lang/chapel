@@ -175,7 +175,7 @@ record Empty {
 }
 
 
-proc process_json(logfile:channel, fname:string, Pairs) {
+proc process_json(logfile:channel, fname:string, ref Pairs) {
   var tweet:Tweet;
   var empty:Empty;
   var err:syserr;
