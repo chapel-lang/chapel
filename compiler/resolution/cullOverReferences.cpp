@@ -1338,6 +1338,8 @@ static void printReason(BaseAST* reason)
  */
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 {
+  return; // TODO disabled for now
+
   forv_Vec(CallExpr, call, gCallExprs) {
 
     // Ignore calls removed earlier by this pass.
