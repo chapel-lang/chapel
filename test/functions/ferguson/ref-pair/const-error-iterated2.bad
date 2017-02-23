@@ -1,6 +1,2 @@
-const-error-iterated2.chpl:14: error: const actual is passed to 'ref' formal 'A' of readCoforallAZip()
-const-error-iterated2.chpl:7: note: to ref formal here
-const-error-iterated2.chpl:8: note: passed as ref here
-const-error-iterated2.chpl:14: error: const actual is passed to 'ref' formal 'B' of readCoforallAZip()
-const-error-iterated2.chpl:7: note: to ref formal here
-const-error-iterated2.chpl:8: note: passed as ref here
+0
+0
