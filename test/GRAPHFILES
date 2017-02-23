@@ -78,6 +78,8 @@ distributions/robust/associative/performance/array_iter.graph
 performance/elliot/no-op.graph
 performance/bharshbarg/forall-dom-range.graph
 performance/bharshbarg/arr-forall.graph
+performance/bharshbarg/views-forall-index.graph
+performance/bharshbarg/views-forall-iter.graph
 studies/prk/stencil/prk-stencil-time.graph
 types/string/ferguson/temporary-copies.graph
 types/string/psahabu/perf/arguments.graph
