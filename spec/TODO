@@ -16,6 +16,8 @@ Classes
 * add destructors description
 * indicate that parentheses-less methods are statically dispatched,
   just like fields
+* Consider moving methods into a new chapter, since we can have methods
+  on integers or records. Consider a new cut at describing this intents.
 
 Conversions
 -----------
@@ -33,6 +35,8 @@ Expressions
 * add param prototypes for ! operator (and other operators whose
   param versions aren't documented?)
 
+* describe the semantics/meaning of hexadecimal real literals
+  (and presumably also non-hexadecimal literals too)
 
 Ranges
 ------

@@ -60,7 +60,7 @@ static void normalize_nested_function_expressions(DefExpr* def) {
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
         if (AggregateType* ct = toAggregateType(ts->type)) {
           def->replace(new UnresolvedSymExpr(def->sym->name));
-          ct->addDeclarations(def, true);
+          ct->addDeclarations(def);
           return;
         }
       }
@@ -77,7 +77,7 @@ static void normalize_nested_function_expressions(DefExpr* def) {
     if (TypeSymbol* ts = toTypeSymbol(parent->defPoint->parentSymbol)) {
       AggregateType* ct = toAggregateType(ts->type);
       INT_ASSERT(ct);
-      ct->addDeclarations(def->remove(), true);
+      ct->addDeclarations(def->remove());
     } else {
       parent->defPoint->insertBefore(def->remove());
     }

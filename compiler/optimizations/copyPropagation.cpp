@@ -416,6 +416,7 @@ static bool isUse(SymExpr* se)
       if (se == call->get(1))
         return false;
       return true;
+     case PRIM_ARRAY_ALLOC:
      case PRIM_ADDR_OF:
       return false; // See Note #2.
      case PRIM_PRIVATE_BROADCAST:

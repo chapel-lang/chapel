@@ -110,18 +110,3 @@ fi
 if [ -z "$CHPL_TEST_COMP_PERF_DIR" ]; then
     export CHPL_TEST_COMP_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
 fi
-
-# When module function is available, ie on a cray, load the subversion module.
-if [ -f /etc/modules/bash ] ; then
-    log_info "Initializing module command."
-    source /etc/modules/bash
-
-    if [ -n "$(type module 2> /dev/null)" ] ; then
-        log_info "Loading subversion module."
-        # FIXME: Can we get rid of this in a github world?
-        #        (thomasvandoren, 2014-07-09)
-        module load cpkg all/append subversion
-    else
-        log_error "Failed to find module command after sourcing /etc/modules/bash."
-    fi
-fi

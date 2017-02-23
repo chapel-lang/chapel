@@ -875,6 +875,87 @@ void TypeSymbol::accept(AstVisitor* visitor) {
   }
 }
 
+void TypeSymbol::renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn) {
+  renameInstantiatedStart();
+
+  bool notFirst = false;
+  for_formals(formal, fn) {
+    if (Symbol* value = subs.get(formal)) {
+      if (!notFirst) {
+        if (TypeSymbol* ts = toTypeSymbol(value)) {
+          if (this->hasFlag(FLAG_TUPLE)) {
+            if (this->hasFlag(FLAG_STAR_TUPLE)) {
+              this->name = astr(istr(fn->numFormals()-1), "*", ts->name);
+              this->cname = astr(this->cname, "star_", ts->cname);
+              return;
+            } else {
+              this->name = astr("(");
+            }
+          }
+        }
+        notFirst = true;
+      } else {
+        this->name = astr(this->name, ",");
+        this->cname = astr(this->cname, "_");
+      }
+      renameInstantiatedIndividual(value);
+    }
+  }
+
+  renameInstantiatedEnd();
+}
+
+void TypeSymbol::renameInstantiatedStart() {
+  if (this->name[strlen(this->name)-1] == ')') {
+    // avoid "strange" instantiated type names based on partial instantiation
+    //  instead of C(int,real)(imag) this results in C(int,real,imag)
+    char* buf = (char*)malloc(strlen(this->name) + 1);
+    memcpy(buf, this->name, strlen(this->name));
+    buf[strlen(this->name)-1] = '\0';
+    this->name = astr(buf, ",");
+    free(buf);
+  } else {
+    this->name = astr(this->name, "(");
+  }
+  this->cname = astr(this->cname, "_");
+}
+
+void TypeSymbol::renameInstantiatedIndividual(Symbol* sym) {
+  if (TypeSymbol* ts = toTypeSymbol(sym)) {
+    if (!this->hasFlag(FLAG_STAR_TUPLE)) {
+      this->name = astr(this->name, ts->name);
+      this->cname = astr(this->cname, ts->cname);
+    }
+  } else {
+    VarSymbol* var = toVarSymbol(sym);
+    if (var && var->immediate) {
+      Immediate* immediate = var->immediate;
+      if (var->type == dtString || var->type == dtStringC)
+        renameInstantiatedTypeString(this, var);
+      else if (immediate->const_kind == NUM_KIND_BOOL) {
+        // Handle boolean types specially.
+        const char* name4bool = immediate->bool_value() ? "true" : "false";
+        const char* cname4bool = immediate->bool_value() ? "T" : "F";
+        this->name = astr(this->name, name4bool);
+        this->cname = astr(this->cname, cname4bool);
+      } else {
+        const size_t bufSize = 128;
+        char imm[bufSize];
+        snprint_imm(imm, bufSize, *var->immediate);
+        this->name = astr(this->name, imm);
+        this->cname = astr(this->cname, imm);
+      }
+    } else {
+      this->name = astr(this->name, sym->cname);
+      this->cname = astr(this->cname, sym->cname);
+    }
+  }
+}
+
+void TypeSymbol::renameInstantiatedEnd() {
+  this->name = astr(this->name, ")");
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
