@@ -1,0 +1,2 @@
+set-const-ref-this.chpl:4: In function 'f':
+set-const-ref-this.chpl:6: error: illegal lvalue in assignment
