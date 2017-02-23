@@ -706,6 +706,10 @@ module DefaultRectangular {
     }
   }
 
+  inline proc _remoteAccessData.getBlockDataIndex(param stridable, ind : idxType) {
+    return this.getBlockDataIndex(stridable, chpl__tuplify(ind));
+  }
+
   inline proc _remoteAccessData.getBlockDataIndex(param stridable, ind: rank*idxType) {
       param chunkify = !defRectSimpleDData;
 

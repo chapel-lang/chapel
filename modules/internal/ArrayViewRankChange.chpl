@@ -96,13 +96,25 @@ class ArrayViewRankChangeArr: BaseArr {
   // standard iterators
   //
   iter these() ref {
-    for i in privDom do
-      yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    for i in privDom {
+      if shouldUseIndexCache() {
+        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        yield indexCache.shiftedDataElem(dataIdx);
+      } else {
+        yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+      }
+    }
   }
 
   iter these(param tag: iterKind) ref where tag == iterKind.standalone {
-    for i in privDom.these(tag) do
-      yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    for i in privDom.these(tag) {
+      if shouldUseIndexCache() {
+        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        yield indexCache.shiftedDataElem(dataIdx);
+      } else {
+        yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+      }
+    }
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
@@ -115,7 +127,12 @@ class ArrayViewRankChangeArr: BaseArr {
   iter these(param tag: iterKind, followThis) ref
     where tag == iterKind.follower {
     for i in privDom.these(tag, followThis) {
-      yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+      if shouldUseIndexCache() {
+        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        yield indexCache.shiftedDataElem(dataIdx);
+      } else {
+        yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+      }
     }
   }
 
