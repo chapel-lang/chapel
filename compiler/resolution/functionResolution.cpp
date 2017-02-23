@@ -9917,6 +9917,8 @@ pruneResolvedTree() {
   replaceTypeArgsWithFormalTypeTemps();
   removeParamArgs();
 
+  removeAggTypeFieldInfo();
+
   removeUnusedModuleVariables();
   removeUnusedTypes();
   removeActualNames();
