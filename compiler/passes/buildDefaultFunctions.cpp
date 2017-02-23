@@ -1073,7 +1073,7 @@ static void build_record_copy_function(AggregateType* ct) {
 
   // if no copy-init function existed...
   FnSymbol*  fn  = new FnSymbol("chpl__initCopy");
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  ArgSymbol* arg = new ArgSymbol(INTENT_CONST, "x", ct);
 
   fn->addFlag(FLAG_INIT_COPY_FN);
   fn->addFlag(FLAG_COMPILER_GENERATED);
