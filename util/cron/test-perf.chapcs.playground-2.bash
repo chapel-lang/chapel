@@ -16,6 +16,6 @@ START_DATE=02/22/17
 cp -r $CHPL_INTERNAL_REPO/chapel-overlay/* $CHPL_HOME/
 export CHPL_TASKS=muxed
 
-perf_arg=s"-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
+perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 5 -startdate $START_DATE"
 $CWD/nightly -cron ${perf_args} ${nightly_args}
