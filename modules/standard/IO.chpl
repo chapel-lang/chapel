@@ -4077,7 +4077,8 @@ proc stringify(args ...?k):string {
 
 private var _arg_to_proto_names = ("a", "b", "c", "d", "e", "f");
 
-private proc _args_to_proto(const args ...?k, preArg:string) {
+private proc _args_to_proto(args ...?k,
+                    preArg:string) {
   // FIX ME: lot of potential leaking going on here with string concat
   // But this is used for error handling so maybe we don't care.
   var err_args: string;
@@ -4556,7 +4557,7 @@ proc channel.read(type t ...?numTypes) where numTypes > 1 {
 
 // documented in style= error= version
 pragma "no doc"
-inline proc channel.write(const args ...?k, out error:syserr):bool {
+inline proc channel.write(args ...?k, out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
   on this.home {
@@ -4573,7 +4574,7 @@ inline proc channel.write(const args ...?k, out error:syserr):bool {
 
 // documented in style= error= version
 pragma "no doc"
-inline proc channel.write(const args ...?k):bool {
+inline proc channel.write(args ...?k):bool {
   var e:syserr = ENOERR;
   this.write((...args), error=e);
   if !e then return true;
@@ -4602,7 +4603,7 @@ inline proc channel.write(const args ...?k):bool {
    :returns: `true` if the write succeeded
 
  */
-proc channel.write(const args ...?k,
+proc channel.write(args ...?k,
                    style:iostyle,
                    out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
@@ -4902,11 +4903,11 @@ const stdout:channel(true, iokind.dynamic, true) = openfp(chpl_cstdout()).writer
 const stderr:channel(true, iokind.dynamic, true) = openfp(chpl_cstderr()).writer();
 
 /* Equivalent to stdout.write. See :proc:`channel.write` */
-proc write(const args ...?n) {
+proc write(args ...?n) {
   stdout.write((...args));
 }
 /* Equivalent to stdout.writeln. See :proc:`channel.writeln` */
-proc writeln(const args ...?n) {
+proc writeln(args ...?n) {
   stdout.writeln((...args));
 }
 
@@ -5817,7 +5818,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
                is not provided and an error is encountered, this function
                will halt with an error message.
  */
-proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
+proc channel.writef(fmtStr:string, args ...?k, out error:syserr):bool {
   if !writing then compilerError("writef on read-only channel");
   error = ENOERR;
   on this.home {
@@ -6324,7 +6325,7 @@ proc channel.readf(fmtStr:string, out error:syserr):bool {
 
 // documented in string error= version
 pragma "no doc"
-proc channel.writef(fmt: string, const args ...?k) {
+proc channel.writef(fmt: string, args ...?k) {
   var e:syserr = ENOERR;
   this.writef(fmt, (...args), error=e);
   if !e then return true;
@@ -6374,7 +6375,7 @@ proc channel.readf(fmt:string) {
 }
 
 /* Call ``stdout.writef``; see :proc:`channel.writef`. */
-proc writef(fmt:string, const args ...?k):bool {
+proc writef(fmt:string, args ...?k):bool {
   return stdout.writef(fmt, (...args));
 }
 // documented in string version
