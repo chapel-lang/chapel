@@ -407,16 +407,18 @@ void findZipperedIndexVariables(Symbol* index, std::vector<IteratorDetails>&
             toCallExpr(indexSeParentCall->parentExpr)) {
           if (gpCall->isPrimitive(PRIM_MOVE)) {
             SymExpr* lhsSe = toSymExpr(gpCall->get(1));
-            SymExpr* gottenFieldSe = toSymExpr(indexSeParentCall->get(2));
-            int i = 0;
-            for_fields(field, tupleType) {
-              if (gottenFieldSe->symbol() == field) {
-                // setting .index twice probably means we are working
-                // with some new & different AST
-                INT_ASSERT(!detailsVector[i].index);
-                detailsVector[i].index = lhsSe->symbol();
+            if (lhsSe && lhsSe->symbol()->hasFlag(FLAG_INDEX_VAR)) {
+              SymExpr* gottenFieldSe = toSymExpr(indexSeParentCall->get(2));
+              int i = 0;
+              for_fields(field, tupleType) {
+                if (gottenFieldSe->symbol() == field) {
+                  // setting .index twice probably means we are working
+                  // with some new & different AST
+                  INT_ASSERT(!detailsVector[i].index);
+                  detailsVector[i].index = lhsSe->symbol();
+                }
+                i++;
               }
-              i++;
             }
           }
         }
@@ -454,7 +456,8 @@ void gatherLoopDetails(ForLoop*  forLoop,
 {
   Symbol* index = forLoop->indexGet()->symbol();
   Symbol* iterator = forLoop->iteratorGet()->symbol();
-  bool zippered = forLoop->zipperedGet();
+  bool zippered = forLoop->zipperedGet() &&
+                  iterator->type->symbol->hasFlag(FLAG_TUPLE);
 
   // find the variable marked with "chpl__iter" variable
   // in the loop header.
@@ -892,6 +895,7 @@ void cullOverReferences() {
                   if (iterableSe &&
                       iterableSe->symbol() == sym &&
                       iteratorYieldsConstWhenConstThis &&
+                      index &&
                       index->isRef()) {
                     // Now the const-ness of the array depends
                     // on whether or not the yielded value is set
