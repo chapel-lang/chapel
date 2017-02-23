@@ -1,4 +1,4 @@
-.TH "hwlocality_configuration" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_configuration" 3 "Thu Feb 23 2017" "Version 1.11.6" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -23,7 +23,7 @@ hwlocality_configuration \- Topology Detection Configuration and Query
 
 .in +1c
 .ti -1c
-.RI "enum \fBhwloc_topology_flags_e\fP { \fBHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM\fP, \fBHWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM\fP, \fBHWLOC_TOPOLOGY_FLAG_IO_DEVICES\fP, \fBHWLOC_TOPOLOGY_FLAG_IO_BRIDGES\fP, \fBHWLOC_TOPOLOGY_FLAG_WHOLE_IO\fP, \fBHWLOC_TOPOLOGY_FLAG_ICACHES\fP }"
+.RI "enum \fBhwloc_topology_flags_e\fP { \fBHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM\fP, \fBHWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM\fP, \fBHWLOC_TOPOLOGY_FLAG_IO_DEVICES\fP, \fBHWLOC_TOPOLOGY_FLAG_IO_BRIDGES\fP, \fBHWLOC_TOPOLOGY_FLAG_WHOLE_IO\fP, \fBHWLOC_TOPOLOGY_FLAG_ICACHES\fP, \fBHWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES\fP }"
 .br
 .in -1c
 .SS "Functions"
@@ -98,7 +98,9 @@ Flags to be set onto a topology context before load\&. Flags should be given to 
 \fB\fIHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM \fP\fP
 Detect the whole system, ignore reservations and offline settings\&. Gather all resources, even if some were disabled by the administrator\&. For instance, ignore Linux Cgroup/Cpusets and gather all processors and memory nodes, and ignore the fact that some resources may be offline\&.
 .PP
-When this flag is not set, PUs that are disallowed are not added to the topology\&. Parent objects (package, core, cache, etc\&.) are added only if some of their children are allowed\&. NUMA nodes are always added but their available memory is set to 0 when disallowed\&. 
+When this flag is not set, PUs that are disallowed are not added to the topology\&. Parent objects (package, core, cache, etc\&.) are added only if some of their children are allowed\&. NUMA nodes are always added but their available memory is set to 0 when disallowed\&.
+.PP
+If the current topology is exported to XML and reimported later, this flag should be set again in the reimported topology so that disallowed resources are reimported as well\&. 
 .TP
 \fB\fIHWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM \fP\fP
 Assume that the selected backend provides the topology for the system on which we are running\&. This forces \fBhwloc_topology_is_thissystem()\fP to return 1, i\&.e\&. makes hwloc assume that the selected backend provides the topology for the system on which we are running, even if it is not the OS-specific backend but the XML backend for instance\&. This means making the binding functions actually call the OS-specific system calls and really do binding, while the XML backend would otherwise provide empty hooks just returning success\&.
@@ -118,6 +120,15 @@ Detect the whole PCI hierarchy\&. This flag enables detection of all I/O devices
 .TP
 \fB\fIHWLOC_TOPOLOGY_FLAG_ICACHES \fP\fP
 Detect instruction caches\&. This flag enables detection of Instruction caches, instead of only Data and Unified caches\&. 
+.TP
+\fB\fIHWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES \fP\fP
+Get the set of allowed resources from the local operating system even if the topology was loaded from XML or synthetic description\&. If the topology was loaded from XML or from a synthetic string, restrict it by applying the current process restrictions such as Linux Cgroup/Cpuset\&.
+.PP
+This is useful when the topology is not loaded directly from the local machine (e\&.g\&. for performance reason) and it comes with all resources, while the running process is restricted to only parts of the machine\&.
+.PP
+This flag is ignored unless \fBHWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM\fP is also set since the loaded topology must match the underlying machine where restrictions will be gathered from\&.
+.PP
+Setting the environment variable HWLOC_THISSYSTEM_ALLOWED_RESOURCES would result in the same behavior\&. 
 .SH "Function Documentation"
 .PP 
 .SS "unsigned long hwloc_topology_get_flags (\fBhwloc_topology_t\fP topology)"
