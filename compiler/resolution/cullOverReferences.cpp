@@ -651,10 +651,9 @@ void gatherLoopDetails(ForLoop*  forLoop,
         followerIndex = collapseIndexVarReferences(followerIndex);
         detailsVector[0].index = followerIndex;
         detailsVector[0].iteratorClass = followerIterator->typeInfo();
-        detailsVector[0].iterator =
-          getTheIteratorFn(detailsVector[0].iteratorClass);
+        detailsVector[0].iterator = getTheIteratorFn(detailsVector[0].iteratorClass);
       } else {
-	// Set detailsVector[i].index
+        // Set detailsVector[i].index
         findZipperedIndexVariables(followerIndex, detailsVector);
 
         // Figure out iterator class of zippered followers from
@@ -1466,7 +1465,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
       if (isSetting) {
         if (SymExpr* destSe = toSymExpr(dest)) {
           if (destSe->symbol()->qualType().isConst()) {
-	    USR_FATAL_CONT(call, "setting const variable");
+            USR_FATAL_CONT(call, "setting const variable");
           }
         }
       }
