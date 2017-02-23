@@ -777,6 +777,7 @@ void cullOverReferences() {
   for(size_t i = 0; i < collectedSymbols.size(); i++) {
 
     Symbol* sym = collectedSymbols[i];
+    //printf("Working on symbol %i\n", sym->id);
 
     if (sym->id == breakOnId1 || sym->id == breakOnId2)
       gdbShouldBreakHere();
@@ -815,13 +816,13 @@ void cullOverReferences() {
         // index variable?
         {
           // Find enclosing PRIM_MOVE
-          CallExpr* parentCall = toCallExpr(se->parentExpr);
-          while (parentCall && !parentCall->isPrimitive(PRIM_MOVE))
-            parentCall = toCallExpr(parentCall->parentExpr);
+          CallExpr* move = toCallExpr(se->parentExpr->getStmtExpr());
+          if (!move->isPrimitive(PRIM_MOVE))
+            move = NULL;
 
-          if (parentCall != NULL) {
+          if (move != NULL) {
             // Now, LHS of PRIM_MOVE is iterator variable
-            SymExpr* lhs = toSymExpr(parentCall->get(1));
+            SymExpr* lhs = toSymExpr(move->get(1));
             Symbol* iterator = lhs->symbol();
 
             // marked with chpl__iter or with type iterator class?
@@ -832,7 +833,7 @@ void cullOverReferences() {
 //              printf("considering iterator %i\n", iterator->id);
 
               // Scroll through exprs until we find ForLoop
-              Expr* e = parentCall;
+              Expr* e = move;
               while (e && !isForLoop(e)) {
                 e = e->next;
               }
@@ -1385,6 +1386,8 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
           error = false;
 
         if (error) {
+          //gdbShouldBreakHere(); // Debug
+
           USR_FATAL_CONT(actual,
                         "const actual is passed to %s formal '%s'"
                         " of %s%s",
