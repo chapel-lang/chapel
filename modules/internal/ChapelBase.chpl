@@ -740,9 +740,31 @@ module ChapelBase {
     return ret;
   }
 
-  inline proc _ddata_allocate(type eltType, size: integral) {
+  enum localizationStyle_t { localizeNone, localizeWhole, localizeParts };
+
+  inline proc _ddata_localize(type eltType, dd: _ddata(eltType), size: integral,
+                              locStyle: localizationStyle_t,
+                              subloc: chpl_sublocID_t) {
+    if locStyle != localizationStyle_t.localizeNone {
+      // Temporary localization; soon to be done during allocation
+      extern proc chpl_topo_setMemLocality(p: c_ptr, size: size_t,
+                                           onlyInside: bool,
+                                           doSubchunks: bool,
+                                           subloc: chpl_sublocID_t);
+      extern proc sizeof(type t): size_t;
+      const memSize = size:size_t * sizeof(eltType);
+      chpl_topo_setMemLocality(c_ptrTo(dd(0)), memSize, true,
+                               locStyle == localizationStyle_t.localizeParts,
+                               subloc);
+    }
+  }
+
+  inline proc _ddata_allocate(type eltType, size: integral,
+                              locStyle = localizationStyle_t.localizeNone,
+                              subloc = c_sublocid_any) {
     var ret:_ddata(eltType);
     __primitive("array_alloc", ret, eltType, size);
+    _ddata_localize(eltType, ret, size, locStyle, subloc);
     init_elts(ret, size, eltType);
     return ret;
   }

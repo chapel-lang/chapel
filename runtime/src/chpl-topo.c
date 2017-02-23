@@ -1,0 +1,257 @@
+/*
+ * Copyright 2017-2017 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+//
+// Compute node topology support
+//
+#include "chplrt.h"
+
+#include "chpl-align.h"
+#include "chplsys.h"
+#include "chpl-topo.h"
+#include "chpltypes.h"
+#include "error.h"
+
+#include <errno.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+
+#ifdef CHPL_HAS_HWLOC
+//
+// We have hwloc, so provide a real implementation of the topology
+// interface.
+//
+#include "hwloc.h"
+
+#ifdef DEBUG
+// note: format arg 'f' must be a string constant
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%s:%d" f "\n", __FILE__, __LINE__, ## __VA_ARGS__);   \
+        } while (0)
+#else
+#define _DBG_P(f, ...)
+#endif
+
+static hwloc_topology_t topology;
+
+static int topoDepth;
+
+static int numaLevel;
+static int numNumaDomains;
+
+
+static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
+                                            hwloc_nodeset_t);
+static void report_error(const char*, int);
+
+
+void chpl_topo_init(void) {
+  //
+  // Allocate and initialize topology object.
+  //
+  if (hwloc_topology_init(&topology)) {
+    report_error("hwloc_topology_init()", errno);
+  }
+
+  //
+  // Limit discovery.
+  //
+  if (hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM)) {
+    report_error("hwloc_topology_set_flags()", errno);
+  }
+
+  //
+  // Perform the topology detection.
+  //
+  if (hwloc_topology_load(topology)) {
+    report_error("hwloc_topology_load()", errno);
+  }
+
+  //
+  // We need depth information.
+  //
+  topoDepth = hwloc_topology_get_depth(topology);
+
+  //
+  // How many NUMA domains do we have?
+  //
+  {
+    int level;
+
+    //
+    // Note: if there are multiple levels with NUMA nodes, this just finds
+    // the uppermost.
+    //
+    for (level = 0, numaLevel = -1;
+         level < topoDepth && numaLevel == -1;
+         level++) {
+      if (hwloc_get_depth_type(topology, level) == HWLOC_OBJ_NUMANODE) {
+        numaLevel = level;
+      }
+    }
+  }
+
+  numNumaDomains = hwloc_get_nbobjs_by_depth(topology, numaLevel);
+}
+
+
+void chpl_topo_exit(void) {
+  hwloc_topology_destroy(topology);
+}
+
+
+void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
+                              chpl_bool doSubchunks, c_sublocid_t subloc) {
+  unsigned char* pCh = (unsigned char*) p;
+  const size_t pgSize = chpl_getHeapPageSize();
+  const size_t pgMask = pgSize - 1;
+  unsigned char* pPgLo;
+  size_t nPages;
+  hwloc_obj_t numaObj;
+
+  _DBG_P("chpl_topo_setMemLocality(%p, %#zx, onlyIn=%s, doSub=%s, %d)\n",
+         p, size,
+         (onlyInside ? "T" : "F"), (doSubchunks ? "T" : "F"), (int) subloc);
+
+  if (onlyInside) {
+    pPgLo = round_up_to_mask_ptr(pCh, pgMask);
+    if (size < pPgLo - pCh)
+      nPages = 0;
+    else
+      nPages = round_down_to_mask(size - (pPgLo - pCh), pgMask) / pgSize;
+  } else {
+    pPgLo = round_down_to_mask_ptr(pCh, pgMask);
+    nPages = round_up_to_mask(size + (pCh - pPgLo), pgMask) / pgSize;
+  }
+
+  _DBG_P("    localize %p, %#zx bytes (%#zx pages)\n",
+         pPgLo, nPages * pgSize, nPages);
+
+  if (nPages == 0)
+    return;
+
+  if (doSubchunks) {
+    int i;
+    size_t pg;
+    size_t pgNext;
+
+    for (i = 0, pg = 0; i < numNumaDomains; i++, pg = pgNext) {
+      if (i == numNumaDomains - 1)
+        pgNext = nPages;
+      else
+        pgNext = 1 + (nPages * (i + 1) - 1) / numNumaDomains;
+      numaObj = hwloc_get_obj_by_depth(topology, numaLevel, i);
+      chpl_topo_setMemLocalityByPages(pPgLo + pg * pgSize,
+                                      (pgNext - pg) * pgSize,
+                                      numaObj->nodeset);
+    }
+  }
+  else if (subloc >= 0 && subloc < numNumaDomains) {
+    numaObj = hwloc_get_obj_by_depth(topology, numaLevel, subloc);
+    chpl_topo_setMemLocalityByPages(pPgLo, nPages * pgSize, numaObj->nodeset);
+  }
+}
+
+
+//
+// p must be page aligned and the page size must evenly divide size
+//
+static
+void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
+                                     hwloc_nodeset_t nodeset) {
+  const int flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
+
+  _DBG_P("hwloc_set_area_membind_nodeset(%p, %#zx, %d)\n", p, size,
+         (int) hwloc_bitmap_first(nodeset));
+  if (hwloc_set_area_membind_nodeset(topology, p, size,
+                                     nodeset, HWLOC_MEMBIND_BIND, flags)) {
+    report_error("hwloc_set_area_membind_nodeset()", errno);
+  }
+}
+
+
+void chpl_topo_showMemLocality(void* p, size_t size, int prefixLen) {
+  FILE* f = stdout;
+  unsigned char* pCh;
+  size_t pgSize;
+  unsigned char* pPgLo;
+  size_t sizePgs;
+  unsigned char* pPg;
+  hwloc_nodeset_t nodeset = hwloc_bitmap_alloc();
+  const int flags = HWLOC_MEMBIND_STRICT | HWLOC_MEMBIND_BYNODESET;
+  hwloc_membind_policy_t policy;
+  int node;
+  int nodeLast;
+  unsigned char* pPgLast;
+
+  pCh = (unsigned char*) p;
+  pgSize = chpl_getHeapPageSize();
+  pPgLo = round_down_to_mask_ptr(pCh, pgSize - 1);
+  sizePgs = round_up_to_mask(size + (pCh - pPgLo), pgSize - 1);
+
+  pPgLast = pPgLo;
+  if (hwloc_get_area_membind_nodeset(topology, pPgLast, pgSize,
+                                     nodeset, &policy, flags)) {
+    report_error("hwloc_get_area_membind_nodeset()", errno);
+  }
+  nodeLast = hwloc_bitmap_first(nodeset);
+
+  for (pPg = pPgLo + pgSize; pPg < pPgLo + sizePgs; pPg += pgSize) {
+    if (hwloc_get_area_membind_nodeset(topology, pPg, pgSize,
+                                       nodeset, &policy, flags)) {
+      report_error("hwloc_get_area_membind_nodeset()", errno);
+    }
+
+    if ((node = hwloc_bitmap_first(nodeset)) != nodeLast) {
+      fprintf(f, "%*s%p-%p: %d\n", prefixLen, "",
+              pPgLast, pPg - 1, nodeLast);
+      nodeLast = node;
+      pPgLast = pPg;
+    }
+  }
+
+  fprintf(f, "%*s%p-%p: %d\n", prefixLen, "",
+          pPgLast, pPg - 1, nodeLast);
+}
+
+
+static
+void report_error(const char* what, int errnum) {
+  char buf[100];
+
+  snprintf(buf, sizeof(buf), "%s: %s", what, strerror(errnum));
+  chpl_internal_error(buf);
+}
+
+#else
+//
+// We do not have hwloc, so provide a vacuous implementation of the
+// topology interface.
+//
+
+void chpl_topo_init(void) { }
+void chpl_topo_exit(void) { }
+void chpl_topo_setMemLocality(c_sublocid_t, void*, size_t, chpl_bool) { }
+
+#endif // if defined(CHPL_HAS_HWLOC)

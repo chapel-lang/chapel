@@ -1303,7 +1303,11 @@ module DefaultRectangular {
                            by dom.dsiDim(mdParDim).stride;
           else
             mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high;
-          mData(0).data = _ddata_allocate(eltType, size);
+          mData(0).data =
+            _ddata_allocate(eltType, size,
+                            locStyle = if here.maxTaskPar < 2
+                                       then localizationStyle_t.localizeNone
+                                       else localizationStyle_t.localizeParts);
         } else {
           var dataOff: idxType = 0;
           for i in 0..#mdNumChunks do local on here.getChild(i) {
@@ -1314,7 +1318,10 @@ module DefaultRectangular {
             else
               mData(i).pdr = lo..hi;
             const chunkSize = size / mdRLen * mData(i).pdr.length;
-            mData(i).data = _ddata_allocate(eltType, chunkSize);
+            mData(i).data =
+              _ddata_allocate(eltType, chunkSize,
+                              locStyle = localizationStyle_t.localizeWhole,
+                              subloc = i:chpl_sublocID_t);
             dataOff += chunkSize;
           }
         }
