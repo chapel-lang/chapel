@@ -1,2 +1,4 @@
-semantic: should this be legal?
+semantic: In early 2017 this is believed to be an invalid program.
 
+However we do not currently have a principled analysis that will
+generate the desired compile time error.
