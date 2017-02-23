@@ -342,7 +342,7 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
 }
 
 struct IteratorDetails {
-  Symbol*   iterable;
+  Expr*     iterable;
   Symbol*   index;
   Type*     iteratorClass;
   FnSymbol* iterator;
@@ -496,9 +496,9 @@ void gatherLoopDetails(ForLoop*  forLoop,
       index = collapseIndexVarReferences(index);
 
       // The thing being iterated over is the argument to getIterator
-      SymExpr* iterable = toSymExpr(getIteratorCall->get(1));
+      Expr* iterable = getIteratorCall->get(1);
       IteratorDetails details;
-      details.iterable = iterable->symbol();
+      details.iterable = iterable;
       details.index = index;
       details.iteratorClass = iterator->type;
       details.iterator = getTheIteratorFn(details.iteratorClass);
@@ -528,9 +528,9 @@ void gatherLoopDetails(ForLoop*  forLoop,
         CallExpr* move = toCallExpr(def->parentExpr);
         CallExpr* getIterator = toCallExpr(move->get(2));
         // The argument to _getIterator is the iterable
-        SymExpr* iterable = toSymExpr(getIterator->get(1));
+        Expr* iterable = getIterator->get(1);
         IteratorDetails details;
-        details.iterable = iterable->symbol();
+        details.iterable = iterable;
         details.index = NULL; // set below
         details.iteratorClass = getIterator->typeInfo();
         details.iterator = getTheIteratorFn(details.iteratorClass);
@@ -568,18 +568,20 @@ void gatherLoopDetails(ForLoop*  forLoop,
       CallExpr* move = toCallExpr(def->parentExpr);
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
 
-      SymExpr* iterable = toSymExpr(move->get(2));
+      Expr* iterable = move->get(2);
 
       // If the preceeding statement is a PRIM_MOVE setting
       // moveAddr, use its argument as the iterable.
-      CallExpr* prev = toCallExpr(move->prev);
-      if (prev && prev->isPrimitive(PRIM_MOVE))
-        if (SymExpr* lhs = toSymExpr(move->get(1)))
-          if (lhs->symbol() == iterable->symbol())
-            if (CallExpr* addrOf = toCallExpr(prev->get(2)))
-              if (addrOf->isPrimitive(PRIM_ADDR_OF) ||
-                  addrOf->isPrimitive(PRIM_SET_REFERENCE))
-              iterable = toSymExpr(addrOf->get(1));
+      if (SymExpr* iterableSe = toSymExpr(iterable)) {
+        CallExpr* prev = toCallExpr(move->prev);
+        if (prev && prev->isPrimitive(PRIM_MOVE))
+          if (SymExpr* lhs = toSymExpr(move->get(1)))
+            if (lhs->symbol() == iterableSe->symbol())
+              if (CallExpr* addrOf = toCallExpr(prev->get(2)))
+                if (addrOf->isPrimitive(PRIM_ADDR_OF) ||
+                    addrOf->isPrimitive(PRIM_SET_REFERENCE))
+                iterable = addrOf->get(1);
+      }
 
       INT_ASSERT(iterable);
 
@@ -589,7 +591,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
       index = collapseIndexVarReferences(index);
 
       IteratorDetails details;
-      details.iterable = iterable->symbol();
+      details.iterable = iterable;
       details.index = index;
       details.iteratorClass = iterator->type;
       details.iterator = getTheIteratorFn(details.iteratorClass);
@@ -610,11 +612,11 @@ void gatherLoopDetails(ForLoop*  forLoop,
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
 
       if (!zippered) {
-        SymExpr* se = toSymExpr(move->get(2));
-        INT_ASSERT(se);
+        Expr* iterable = move->get(2);
+        INT_ASSERT(iterable);
         // Comes up in non-zippered leader-follower iteration
         IteratorDetails details;
-        details.iterable = se->symbol();
+        details.iterable = iterable;
         // Other details set below.
         detailsVector.push_back(details);
       } else {
@@ -626,7 +628,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
           INT_ASSERT(actualSe); // otherwise not normalized
           // actualSe is the iterable in this case
           IteratorDetails details;
-          details.iterable = actualSe->symbol();
+          details.iterable = actualSe;
           // Other details set below.
           detailsVector.push_back(details);
         }
@@ -866,9 +868,10 @@ void cullOverReferences() {
                 for (size_t i = 0; i < detailsVector.size(); i++) {
                   bool iteratorYieldsConstWhenConstThis = false;
 
-                  Symbol* iterable = detailsVector[i].iterable;
+                  Expr* iterable = detailsVector[i].iterable;
                   Symbol* index = detailsVector[i].index;
                   FnSymbol* iteratorFn  = detailsVector[i].iterator;
+                  SymExpr* iterableSe = toSymExpr(iterable);
 //                  printf("iterator fn is %i\n", iteratorFn->id);
 //                  printf("iterable is %i\n", iterable->id);
 //                  printf("index is %i\n", index->id);
@@ -887,7 +890,8 @@ void cullOverReferences() {
                   // of the iterator, it is overwritten in protoIteratorClass.
 
                   // This flag should be set for array iteration
-                  if (iterable == sym &&
+                  if (iterableSe &&
+                      iterableSe->symbol() == sym &&
                       iteratorYieldsConstWhenConstThis &&
                       index->isRef()) {
                     // Now the const-ness of the array depends
