@@ -235,7 +235,7 @@ class MMReader {
       return (nrows, ncols);
    }
 
-   proc read_sparse_data(toret:[] ?T, spDom:domain) {
+   proc read_sparse_data(toret:[] ?T, ref spDom:domain) {
       param isSparse = isSparseDom(toret.domain);
       var done:bool = true;
       var tfmt :string;
@@ -278,7 +278,7 @@ class MMReader {
       }
    }
 
-   proc read_dense_data(toret:[] ?T, spDom:domain) {
+   proc read_dense_data(toret:[] ?T, ref spDom:domain) {
       param isSparse = isSparseDom(toret.domain);
       var tfmt :string;
 
