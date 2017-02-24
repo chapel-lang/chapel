@@ -21,7 +21,7 @@
 #include "qthread_innards.h" /* for qlib */
 #include "qt_qthread_mgmt.h"
 
-int nanosleep(const struct timespec *rqtp,
+int qt_nanosleep(const struct timespec *rqtp,
               struct timespec       *rmtp)
 {
     if (qt_blockable()) {
@@ -41,16 +41,26 @@ int nanosleep(const struct timespec *rqtp,
         qtimer_destroy(t);
         return 0;
     } else {
-#if HAVE_SYSCALL && HAVE_DECL_SYS_NANOSLEEP
-        return syscall(SYS_nanosleep, rqtp, rmtp);
-
-#else
         if (rmtp) {
             *rmtp = *rqtp;
         }
         return 0;
-#endif
     }
 }
+
+#if HAVE_SYSCALL && HAVE_DECL_SYS_NANOSLEEP
+int nanosleep(const struct timespec *rqtp,
+              struct timespec       *rmtp)
+{
+    if (qt_blockable()) {
+      return qt_nanosleep(rqtp, rmtp);
+    } else {
+      return syscall(SYS_nanosleep, rqtp, rmtp);
+    }
+}
+
+#endif /* if HAVE_SYSCALL && HAVE_DECL_SYS_NANOSLEEP */
+
+/* vim:set expandtab: */
 
 /* vim:set expandtab: */
