@@ -22,7 +22,7 @@
 #include "qt_qthread_mgmt.h"
 
 int qt_nanosleep(const struct timespec *rqtp,
-              struct timespec       *rmtp)
+                 struct timespec       *rmtp)
 {
     if (qt_blockable()) {
         qtimer_t t       = qtimer_create();

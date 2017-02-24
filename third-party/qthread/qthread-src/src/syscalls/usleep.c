@@ -49,5 +49,4 @@ int usleep(useconds_t useconds)
 
 #endif /* if HAVE_SYSCALL && HAVE_DECL_SYS_USLEEP */
 
-
 /* vim:set expandtab: */

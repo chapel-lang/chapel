@@ -45,6 +45,7 @@ unsigned int sleep(unsigned int seconds)
     return syscall(SYS_sleep, seconds);
   }
 }
+
 #endif /* if HAVE_SYSCALL && HAVE_DECL_SYS_SLEEP */
 
 /* vim:set expandtab: */
