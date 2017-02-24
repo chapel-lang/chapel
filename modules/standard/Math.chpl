@@ -385,11 +385,11 @@ module Math {
 
      :rtype: An imaginary number of the same type as `z`.
   */
-  inline proc conjg(z: imag(?w)) {
+  inline proc conjg(z: imag(?w)): imag(w) {
     return -z;
   }
 
-  /* Returns value `z`.
+  /* Returns the argument `z`.
 
      :rtype: A number that is not complex or imaginary of the same type as `z`.
   */
