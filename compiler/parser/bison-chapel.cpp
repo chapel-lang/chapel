@@ -7806,7 +7806,7 @@ yyreduce:
 
 /* Line 1806 of yacc.c  */
 #line 1535 "chapel.ypp"
-    { (yyval.pexpr) = new CallExpr("_cast", (yyvsp[(3) - (3)].pexpr), (yyvsp[(1) - (3)].pexpr)); }
+    { (yyval.pexpr) = createCast((yyvsp[(1) - (3)].pexpr), (yyvsp[(3) - (3)].pexpr)); }
     break;
 
   case 386:
