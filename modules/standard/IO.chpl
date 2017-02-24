@@ -4625,7 +4625,7 @@ proc channel.write(args ...?k,
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.write(args ...?k,
+proc channel.write(const args ...?k,
                    style:iostyle):bool {
   var e:syserr = ENOERR;
   this.write((...args), style=style, error=e);
@@ -4652,19 +4652,19 @@ proc channel.writeln():bool {
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.writeln(args ...?k, out error:syserr):bool {
+proc channel.writeln(const args ...?k, out error:syserr):bool {
   return this.write((...args), new ioNewline(), error=error);
 }
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.writeln(args ...?k):bool {
+proc channel.writeln(const args ...?k):bool {
   return this.write((...args), new ioNewline());
 }
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.writeln(args ...?k,
+proc channel.writeln(const args ...?k,
                      style:iostyle):bool {
   return this.write((...args), new ioNewline(), style=style);
 }
@@ -4689,7 +4689,7 @@ proc channel.writeln(args ...?k,
    :returns: `true` if the write succeeded
 
  */
-proc channel.writeln(args ...?k,
+proc channel.writeln(const args ...?k,
                      style:iostyle,
                      out error:syserr):bool {
   return this.write((...args), new ioNewline(), style=style, error=error);
