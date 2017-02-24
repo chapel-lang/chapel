@@ -32,7 +32,7 @@ unsigned int qt_sleep(unsigned int seconds)
         qtimer_destroy(t);
         return 0;
     } else {
-        return 0;
+        return seconds;
     }
 }
 
