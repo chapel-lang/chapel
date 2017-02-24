@@ -27,9 +27,14 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-cairo \
                           --disable-libxml2 \
                           --disable-libudev \
-                          --disable-libnuma \
                           --disable-opencl \
                           --disable-pci
+
+ifeq ($(CHPL_MAKE_LOCALE_MODEL),flat)
+CHPL_HWLOC_CFG_OPTIONS += --disable-libnuma
+else
+CHPL_HWLOC_CFG_OPTIONS += --enable-libnuma
+endif
 
 CHPL_HWLOC_CFG_OPTIONS += $(CHPL_HWLOC_MORE_CFG_OPTIONS)
 
