@@ -289,14 +289,11 @@ that has been closed.
 It is an error to close a file when it has channels that
 have not been closed.
 
-In the future we plan to implement reference counting for files
-and channels. Each file and channel will be closed automatically
-when no references remain to it. For example, if only a local
-variable refers to a channel, the channel will be closed
-when that variable goes out of scope.
-
-The ability for the program to close a file or a channel
-explicitly will remain available.
+Files and channels are reference counted. Each file and channel is
+closed automatically when no references to it remain. For example, if
+a local variable is the only reference to a channel, the channel will
+be closed when that variable goes out of scope.  Programs may also
+close a file or channel explicitly.
 
 .. _about-io-style:
 
