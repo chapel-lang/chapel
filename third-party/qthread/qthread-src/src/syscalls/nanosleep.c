@@ -62,5 +62,3 @@ int nanosleep(const struct timespec *rqtp,
 #endif /* if HAVE_SYSCALL && HAVE_DECL_SYS_NANOSLEEP */
 
 /* vim:set expandtab: */
-
-/* vim:set expandtab: */
