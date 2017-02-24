@@ -499,6 +499,7 @@ AggregateType::AggregateType(AggregateTag initTag)
   fields.parent      = this;
   inherits.parent    = this;
 
+  genericField       = 0;
   mIsGeneric         = false;
 
   // set defaultValue to nil to keep it from being constructed
@@ -712,6 +713,116 @@ void AggregateType::accept(AstVisitor* visitor) {
 
     visitor->exitAggrType(this);
   }
+}
+
+// Returns true if the type has generic fields, false otherwise.  If the index
+// of the generic field has not previously been set, set it.
+bool AggregateType::setNextGenericField() {
+  // Don't redo work
+  if (genericField > 0)
+    return true;
+
+  int idx = 1;
+  for_fields(field, this) {
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_PARAM) ||
+        (field->defPoint->init == NULL && field->defPoint->exprType == NULL
+         && field->type == NULL)) {
+      // TODO: do something special if the type of the field is known but
+      // generic
+      genericField = idx;
+      break;
+    }
+    idx++;
+  }
+  if (genericField != 0)
+    return true;
+  else
+    return false;
+}
+
+AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
+  // If the index of the field is prior to the index of the next generic field
+  // then trivially return ourselves
+  if (index < genericField)
+    return this;
+
+  // First, look to see if we have an instantiation with that value already
+  for_vector(AggregateType, at, instantiations) {
+    // TODO: test me
+    Symbol* field = at->getField(genericField);
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
+      if (field->type == t->typeInfo())
+        return at;
+    }
+    if (field->defPoint->init == t) {
+      // TODO: isn't init a BlockStmt*?  Shouldn't I be comparing against the
+      // Symbol being used instead of its reference?
+      // If so, return it
+      return at;
+    }
+  }
+  // Otherwise, we need to create an instantiation for that type
+  AggregateType* newInstance = toAggregateType(this->symbol->copy()->type);
+  this->symbol->defPoint->insertBefore(new DefExpr(newInstance->symbol));
+  newInstance->symbol->copyFlags(this->symbol);
+
+  newInstance->substitutions.copy(this->substitutions);
+
+  Symbol* field = newInstance->getField(genericField);
+  if (field->hasFlag(FLAG_PARAM)) {
+    if (isArgSymbol(t->symbol())) {
+      FnSymbol* argsFn = toFnSymbol(t->symbol()->defPoint->parentSymbol);
+      INT_ASSERT(argsFn);
+      // TODO: I don't think this is going to work
+    }
+    newInstance->substitutions.put(field, t->symbol());
+    newInstance->symbol->renameInstantiatedSingle(t->symbol());
+  } else {
+    newInstance->substitutions.put(field, t->typeInfo()->symbol);
+    newInstance->symbol->renameInstantiatedSingle(t->typeInfo()->symbol);
+  }
+
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
+    field->type = t->typeInfo();
+  } else {
+    if (!field->defPoint->exprType && !field->type)
+      field->type = t->typeInfo();
+    else if (field->defPoint->exprType->typeInfo() != t->typeInfo()) {
+      // TODO: Something something, casts and coercions
+    }
+  }
+  instantiations.push_back(newInstance);
+  newInstance->instantiatedFrom = this;
+
+  // Handle dispatch parents (because it totally makes sense for this to have
+  // been done outside of the AggregateType by
+  // instantiateTypeForTypeConstructor.  Totally)
+  forv_Vec(Type, t, this->dispatchParents) {
+    newInstance->dispatchParents.add(t);
+    bool inserted = t->dispatchChildren.add_exclusive(newInstance);
+    INT_ASSERT(inserted);
+  }
+
+  DefExpr* next = toDefExpr(field->defPoint->next);
+  newInstance->genericField = this->genericField + 1;
+  while (next) {
+    if (next->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+        next->sym->hasFlag(FLAG_PARAM) ||
+        (next->init == NULL && next->exprType == NULL)) {
+      // This is the next value for genericField
+      break;
+    } else {
+      newInstance->genericField = newInstance->genericField + 1;
+      next = toDefExpr(next->next);
+    }
+  }
+
+  if (newInstance->genericField > newInstance->fields.length) {
+    newInstance->genericField = 0;
+    newInstance->symbol->removeFlag(FLAG_GENERIC);
+  }
+
+  return newInstance;
 }
 
 

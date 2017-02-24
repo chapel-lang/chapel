@@ -897,6 +897,16 @@ void TypeSymbol::renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn) {
   renameInstantiatedEnd();
 }
 
+void TypeSymbol::renameInstantiatedSingle(Symbol* sym) {
+  renameInstantiatedStart();
+  if (this->hasFlag(FLAG_TUPLE)) {
+    USR_FATAL(sym, "initializers don't handle tuples yet, sorry!");
+  } else {
+    renameInstantiatedIndividual(sym);
+  }
+  renameInstantiatedEnd();
+}
+
 void TypeSymbol::renameInstantiatedStart() {
   if (this->name[strlen(this->name)-1] == ')') {
     // avoid "strange" instantiated type names based on partial instantiation

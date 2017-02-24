@@ -29,6 +29,7 @@
 
 #include <cstdio>
 #include <map>
+#include <vector>
 
 /*
   Things which must be changed if instance variables are added
@@ -334,6 +335,10 @@ public:
                                               bool        nested,
                                               const char* baseOffset);
 
+  bool                  setNextGenericField();
+  AggregateType*        getInstantiation(SymExpr* t, int index);
+
+
   const char*           classStructName(bool standalone);
 
   int                   getMemberGEP(const char* name);
@@ -379,6 +384,9 @@ private:
 
   std::string           docsSuperClass();
   void                  addDeclaration(DefExpr* defExpr);
+
+  std::vector<AggregateType*> instantiations;
+  int                   genericField;
 
   bool                  mIsGeneric;
 };
