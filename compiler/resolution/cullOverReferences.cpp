@@ -103,42 +103,6 @@ symExprIsSetByUse(SymExpr* use) {
           return true;
         }
 
-        /*
-      } else if (call->isPrimitive(PRIM_MOVE)) {
-
-        // TODO: remove this branch (handled already)
-
-        // If it's move lhs rhs, and se is rhs
-        // ref is necessary for rhs if ref is necessary for lhs
-        // Does this only come up for compiler-introduced moves?
-        if (symbolIsSetLocal(toSymExpr(call->get(1))->symbol()))
-          return true;
-
-      } else if (call->isPrimitive(PRIM_ADDR_OF) ||
-                 call->isPrimitive(PRIM_SET_REFERENCE)) {
-        // TODO: remove this branch (handled already)
-
-        // Handles inner functions
-        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
-          if (parentCall->isPrimitive(PRIM_MOVE)) {
-            if (symbolIsSetLocal(toSymExpr(parentCall->get(1))->symbol()))
-              return true;
-          }
-        }
-
-      } else if (call->isPrimitive(PRIM_GET_MEMBER) ||
-                 call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
-        // Getting a reference to a record/tuple member
-        // the se would be the record/tuple variable
-        CallExpr* move = toCallExpr(call->parentExpr);
-
-        INT_ASSERT(move);
-        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-
-        if (symbolIsSetLocal(toSymExpr(move->get(1))->symbol()))
-          return true;
-
-         */
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         // PRIM_SET_MEMBER to set the pointer inside of a reference
         // counts as "setter"
@@ -166,6 +130,7 @@ symExprIsSetByUse(SymExpr* use) {
 
         // MPF: This seems like a workaround to me
         // How can this be right for a ref-pair returning const-ref/ref?
+        // TODO: can we disable this?
         return true;
       }
     }
@@ -202,23 +167,6 @@ bool symExprIsSet(SymExpr* se)
 
   return ret;
 }
-
-/*
-
-// Figure out if a symbol is set based upon its defs and uses.
-// Does not properly handle certain cases, such as
-// context calls. Used to handle extra temporaries
-// sometimes added by the compiler.
-static
-bool symbolIsSetLocal(Symbol* sym)
-{
-  for_SymbolSymExprs(se, sym) {
-    if (symExprIsSet(se))
-      return true;
-  }
-  return false;
-}
-*/
 
 static
 bool callSetsSymbol(Symbol* sym, CallExpr* call)
@@ -704,7 +652,7 @@ void cullOverReferences() {
 
   /* A note about the structure of this pass:
 
-     While it's interprocedural, it shouldn't present a problem for
+     While it's interprocedural, it shouldn't present a big problem for
      separate compilation. The reason is that functions compiled into
      a library should know whether or not they are setting their arguments.
      Combining that fact with the plan to make the compiler produce a
@@ -712,8 +660,9 @@ void cullOverReferences() {
      there is no problem.
 
      (However, any interface describing a callable function / call-back
-      function will need to have some other default (possibly blank
-      argument intent leads to compilation error).
+      function will need to have some other default -- possibly blank
+      argument intent leads to compilation error for ref-if-modified types
+      like arrays).
 
      Second, this pass works in a uses-to-defs manner and is an
      interprocedural analysis. However, that does not mean that it can't
@@ -734,7 +683,6 @@ void cullOverReferences() {
   std::vector<Symbol*> collectedSymbols;
 
   std::set<Symbol*> unknownConstSyms;
-  //std::set<Symbol*> ignoredDefs;
 
   std::map<BaseAST*, BaseAST*> reasonNotConst;
 
@@ -781,7 +729,6 @@ void cullOverReferences() {
   for(size_t i = 0; i < collectedSymbols.size(); i++) {
 
     Symbol* sym = collectedSymbols[i];
-    //printf("Working on symbol %i\n", sym->id);
 
     if (sym->id == breakOnId1 || sym->id == breakOnId2)
       gdbShouldBreakHere();
@@ -833,9 +780,6 @@ void cullOverReferences() {
             if (iterator->hasFlag(FLAG_CHPL__ITER) ||
                 iterator->type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
 
-//              printf("considering symbol %i\n", sym->id);
-//              printf("considering iterator %i\n", iterator->id);
-
               // Scroll through exprs until we find ForLoop
               Expr* e = move;
               while (e && !isForLoop(e)) {
@@ -843,14 +787,6 @@ void cullOverReferences() {
               }
 
               if (ForLoop* forLoop = toForLoop(e)) {
-                // mIndex seems to correspond to indexOfInterest
-                // in zippered for cases, this is a tuple of refs
-                // leader-follower case, this is chpl__leadIdx
-                //   ... in leader-follower case, there is a nested
-                //   ForLoop with mIndex as a tuple of refs
-//                printf("mIndex %i\n", forLoop->indexGet()->symbol()->id);
-//                printf("mIterator %i\n", forLoop->iteratorGet()->symbol()->id);
-
                 // Gather the loop details to understand the
                 // correspondence between what was iterated over
                 // and the index variables.
@@ -863,8 +799,6 @@ void cullOverReferences() {
                 gatherLoopDetails(forLoop, isForall, leaderDetails,
                                   followerForLoop, detailsVector);
 
-                // Now use the correspondence
-
                 bool handled = false;
 
                 for (size_t i = 0; i < detailsVector.size(); i++) {
@@ -874,16 +808,14 @@ void cullOverReferences() {
                   Symbol* index = detailsVector[i].index;
                   FnSymbol* iteratorFn  = detailsVector[i].iterator;
                   SymExpr* iterableSe = toSymExpr(iterable);
-//                  printf("iterator fn is %i\n", iteratorFn->id);
-//                  printf("iterable is %i\n", iterable->id);
-//                  printf("index is %i\n", index->id);
-//                  printf("sym is %i\n", sym->id);
-//                  printf("in fn %s\n\n", forLoop->parentSymbol->name);
 
                   // In the future this could be based upon ref-pair
                   // iterators.
                   // For now, the compiler makes this adjustment for
                   // any iterator methods on array implementation classes.
+                  // The goal here is that iterating over an array
+                  // and modifying the index variable should make us
+                  // consider the array to be "set".
                   if (iteratorFn->isMethod() &&
                       isArrayClass(iteratorFn->getFormal(1)->type))
                       iteratorYieldsConstWhenConstThis = true;
@@ -900,7 +832,6 @@ void cullOverReferences() {
                     // Now the const-ness of the array depends
                     // on whether or not the yielded value is set
 
-//                    printf("ADDING %i -> %i\n\n", index->id, sym->id);
                     collectedSymbols.push_back(index);
                     revisit = true;
                     revisitGraph[index].push_back(sym);
@@ -1014,78 +945,14 @@ void cullOverReferences() {
     }
   }
 
-    /* TODO -- do we need to move this logic here,
-       so that it doesn't apply to arrays?
-
-      else if (call->isPrimitive(PRIM_RETURN) ||
-                 call->isPrimitive(PRIM_YIELD)) {
-        FnSymbol* inFn = toFnSymbol(call->parentSymbol);
-        // It is not necessary to use the 'ref' version
-        // if the function result is returned by 'const ref'.
-        if (inFn->retTag == RET_CONST_REF) return false;
-        // MPF: it seems to cause problems to return false
-        // here when inFn->retTag is RET_VALUE.
-        // TODO: can we add
-        //if (inFn->retTag == RET_VALUE) return false;
-        return true;
-
-      } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-                 call->isPrimitive(PRIM_WIDE_GET_NODE)) {
-        // If we are extracting a field from the wide pointer,
-        // we need to keep it as a pointer.
-        // Dereferencing would be premature.
-
-        // MPF: This seems like a workaround to me
-        // How can this be right for a ref-pair returning const-ref/ref?
-        return true;
-      }
-     */
-
   // Handle the graph of revisits
   // Note this could be a cyclic graph when there are recursive
   // functions.
 
-  // This algorithm could be faster, O(n) instead of (n log n) if either:
-  //   * we had QUAL_REF_MAYBE_CONST, or
-  //   * it used Tarjan's SCC algorithm (which is conveniently available in LLVM
-  //     (even for graph node/edge types of our choosing).
-
+  // This algorithm could be naturally represented in terms of
+  // Strongly Connected Components analysis, but for now it's
+  // just doing it manually.
   {
-    /*
-    bool updated;
-
-    do {
-      updated = false;
-
-
-      for (revisitGraph_t::iterator it = revisitGraph.begin();
-           it != revisitGraph.end();
-           ++it) {
-
-        Symbol* sym = it->first;
-
-        if (sym->id == breakOnId1 || sym->id == breakOnId2)
-          gdbShouldBreakHere();
-
-        std::vector<Symbol*> & value = it->second;
-
-        if (unknownConstSyms.count(sym) == 0) {
-          // We know if sym should use setter or not.
-          // If it's a setter, propagate in graph
-          if (!sym->qualType().isConst()) {
-            for_vector(Symbol, setSym, value) {
-              if (unknownConstSyms.count(setSym) != 0) {
-                INT_ASSERT(!sym->qualType().isConst());
-                unknownConstSyms.erase(setSym);
-                updated = true;
-              }
-            }
-          }
-        }
-      }
-    } while (updated);
-    */
-
     // First, propagate non-const-ness through the graph
     for (revisitGraph_t::iterator it = revisitGraph.begin();
          it != revisitGraph.end();
@@ -1147,18 +1014,9 @@ void cullOverReferences() {
     lowerContextCall(cc, useSetter);
   }
 
-  // Now, lower ArgSymbol argument intent.
-  /*for_vector(Symbol, sym, collectedSymbols) {
-    if (ArgSymbol* arg = toArgSymbol(sym)) {
-      INT_ASSERT(arg->intent == INTENT_REF_MAYBE_CONST);
-      bool isConst = arg->qualType().isConst();
-      if (isConst) {
-        arg->intent = INTENT_CONST_REF;
-      } else {
-        arg->intent = INTENT_REF;
-      }
-    }
-  }*/
+  // We already changed INTENT_REF_MAYBE_CONST in
+  // markConst / markNotConst so there is nothing else to do
+  // here for ArgSymbols.
 
   lateConstCheck(reasonNotConst);
 }
@@ -1461,18 +1319,5 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 
     // For now, don't check primitives. Compiler can be loose
     // with const-ness on its own internal temporaries.
-    /*else {
-      // Primitives
-      Expr* dest = NULL;
-      Expr* src = NULL;
-      bool isSetting = getSettingPrimitiveDstSrc(call, &dest, &src);
-      if (isSetting) {
-        if (SymExpr* destSe = toSymExpr(dest)) {
-          if (destSe->symbol()->qualType().isConst()) {
-            USR_FATAL_CONT(call, "setting const variable");
-          }
-        }
-      }
-    }*/
   }
 }
