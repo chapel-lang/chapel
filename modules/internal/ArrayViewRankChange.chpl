@@ -106,14 +106,12 @@ class ArrayViewRankChangeArr: BaseArr {
     }
   }
 
+  // TODO: We seem to run into compile-time bugs when using multiple yields.
+  // For now, work around them by using an if-expr
   iter these(param tag: iterKind) ref where tag == iterKind.standalone {
     for i in privDom.these(tag) {
-      if shouldUseIndexCache() {
-        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
-        yield indexCache.shiftedDataElem(dataIdx);
-      } else {
-        yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
-      }
+      yield if shouldUseIndexCache() then indexCache.shiftedDataElem(indexCache.getBlockDataIndex(dom.stridable, i))
+            else arr.dsiAccess(chpl_rankChangeConvertIdx(i));
     }
   }
 
