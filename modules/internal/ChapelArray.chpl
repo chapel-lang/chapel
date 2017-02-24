@@ -1013,7 +1013,8 @@ module ChapelArray {
     pragma "no doc"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
       var ranges = _getRankChangeRanges(args);
-      param newRank = ranges.size, stridable = chpl__anyStridable(ranges);
+      param newRank = ranges.size,
+            stridable = chpl__anyStridable(ranges) || this.stridable;
       var newRanges: newRank*range(idxType=_value.idxType, stridable=stridable);
       var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
       var sameDist = (newDistVal == _value.dist);
@@ -2047,7 +2048,8 @@ module ChapelArray {
       if boundsChecking then
         checkRankChange(args);
       var ranges = _getRankChangeRanges(args);
-      param rank = ranges.size, stridable = chpl__anyStridable(ranges);
+      param rank = ranges.size,
+            stridable = chpl__anyStridable(ranges) || this._value.stridable;
       pragma "no auto destroy" var d = _dom((...args));
       d._value._free_when_no_arrs = true;
       var a = _value.dsiRankChange(d._value, rank, stridable, args);
@@ -2336,7 +2338,7 @@ module ChapelArray {
     // documentation. Don't document it for now.
     pragma "no doc"
     proc head(): this._value.eltType {
-      return this[this.domain.low];
+      return this[this.domain.alignedLow];
     }
 
     /* Return the last value in the array */
@@ -2344,7 +2346,7 @@ module ChapelArray {
     // documentation. Don't document it for now.
     pragma "no doc"
     proc tail(): this._value.eltType {
-      return this[this.domain.high];
+      return this[this.domain.alignedHigh];
     }
 
     /* Return a range that is grown or shrunk from r to accommodate 'r2' */
