@@ -21,7 +21,7 @@
 
 int qt_usleep(useconds_t useconds)
 {
-    if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+     if (qt_blockable()) {
         qtimer_t t       = qtimer_create();
         double   seconds = useconds * 1e-6;
         qtimer_start(t);
@@ -40,7 +40,7 @@ int qt_usleep(useconds_t useconds)
 #if HAVE_SYSCALL && HAVE_DECL_SYS_USLEEP
 int usleep(useconds_t useconds)
 {
-  if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+  if (qt_blockable()) {
     return qt_usleep(useconds);
   } else {
     return syscall(SYS_usleep, useconds);

@@ -44,7 +44,7 @@ int qt_nanosleep(const struct timespec *rqtp,
         if (rmtp) {
             *rmtp = *rqtp;
         }
-        return 0;
+        return -1;
     }
 }
 
