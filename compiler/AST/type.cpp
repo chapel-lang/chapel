@@ -33,6 +33,7 @@
 #include "iterator.h"
 #include "misc.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
