@@ -190,7 +190,8 @@ getInstantiationType(Type* actualType, Type* formalType);
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual);
+                   Vec<Symbol*>& formalIdxToActual,
+                   bool inInitRes);
 
 static void
 filterCandidate(Vec<ResolutionCandidate*>& candidates,
@@ -326,9 +327,9 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   return computeActualFormalAlignment(fn, formalIdxToActual, actualIdxToFormal, info);
 }
 
-void ResolutionCandidate::computeSubstitutions() {
+void ResolutionCandidate::computeSubstitutions(bool inInitRes) {
   if (substitutions.n != 0) substitutions.clear();
-  computeGenericSubs(substitutions, fn, formalIdxToActual);
+  computeGenericSubs(substitutions, fn, formalIdxToActual, inInitRes);
 }
 
 static bool hasRefField(Type *type) {
@@ -1853,7 +1854,8 @@ getInstantiationType(Type* actualType, Type* formalType) {
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual) {
+                   Vec<Symbol*>& formalIdxToActual,
+                   bool inInitRes) {
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
@@ -1888,7 +1890,16 @@ computeGenericSubs(SymbolMap &subs,
         USR_FATAL(formal, "invalid generic type specification on class field");
 
       if (formalIdxToActual.v[i]) {
-        if (Type* type = getInstantiationType(formalIdxToActual.v[i]->type, formal->type)) {
+        if (formal->hasFlag(FLAG_ARG_THIS) && inInitRes &&
+            formalIdxToActual.v[i]->type->symbol->hasFlag(FLAG_GENERIC)) {
+          // If the "this" arg is generic, we're resolving an initializer, and
+          // the actual being passed is also still generic, don't count this as
+          // a substitution.  Otherwise, we'll end up in an infinite loop if
+          // one of the later generic args has a defaultExpr, as we will always
+          // count the this arg as a substitution and so always approach the
+          // generic arg with a defaultExpr as though a substitution was going
+          // to take place.
+        } else if (Type* type = getInstantiationType(formalIdxToActual.v[i]->type, formal->type)) {
           // String literal actuals aligned with non-param generic formals of
           // type dtAny will result in an instantiation of dtStringC when the
           // function is extern. In other words, let us write:
@@ -5233,7 +5244,13 @@ static void resolveNew(CallExpr* call) {
     if (Type* ty = resolveTypeAlias(toReplace)) {
       if (AggregateType* ct = toAggregateType(ty)) {
         if (ct->initializerStyle == DEFINES_INITIALIZER) {
-          const char* name = (isClass(ct) == true) ? "_new" : "init";
+          bool useNew = true;
+          if (isClass(ct) == false || ct->symbol->hasFlag(FLAG_GENERIC)) {
+            useNew = false;
+          }
+          const char* name = useNew ? "_new" : "init";
+          // we haven't created the instantiated version of _new yet if the
+          // type is generic.  So resolve against init instead.
 
           toReplace->replace(new UnresolvedSymExpr(name));
 
@@ -5261,43 +5278,15 @@ static void resolveNew(CallExpr* call) {
     if (initCall) {
       // 4: insert the allocation for the instance and pass that in as an
       // argument if we're making a call to an initializer
-      Type*      typeToNew = toReplace->symbol()->typeInfo();
-      VarSymbol* newTmp    = newTemp("new_temp", typeToNew);
+      DefExpr* thisActDef = modAndResolveInitCall(call, toReplace);
+      if (thisActDef)
+        resolveExpr(thisActDef);
+    } else {
 
-      VarSymbol* newMT     = newTemp("_mt",      dtMethodToken);
-
-      if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
-        USR_FATAL(call,
-                  "Sorry, new style initializers don't work with "
-                  "generics yet.  Stay tuned!");
-      }
-
-      DefExpr* def            = new DefExpr(newTmp);
-      Expr*    insertBeforeMe = NULL;
-
-      if (isBlockStmt(call->parentExpr) == true) {
-        insertBeforeMe = call;
-
-      } else {
-        insertBeforeMe = call->parentExpr;
-      }
-
-      insertBeforeMe->insertBefore(def);
-
-      resolveExpr(def);
-
-      if (isClass(typeToNew) == true) {
-        // Invoking a type  method
-        call->insertAtHead(new SymExpr(typeToNew->symbol));
-
-      } else {
-        // Invoking an instance method
-        call->insertAtHead(new SymExpr(newTmp));
-        call->insertAtHead(new SymExpr(newMT));
-      }
+      // Now finish resolving it, since we are after all in
+      // resolveNew.
+      resolveExpr(call);
     }
-
-    resolveExpr(call);
   }
 
   // Do some error checking
@@ -8249,7 +8238,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
   }
 }
 
-static void resolveReturnType(FnSymbol* fn)
+void resolveReturnType(FnSymbol* fn)
 {
   // Resolve return type.
   Symbol* ret = fn->getReturnSymbol();
@@ -8430,19 +8419,6 @@ resolveFns(FnSymbol* fn) {
   }
 
   insertFormalTemps(fn);
-
-  if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "init") == 0) {
-    // Lydia NOTE: Quick fix to allow our new initializers to recursively call
-    // themselves.  We know their return type already, pretending we don't just
-    // leads to errors.  Ideally, we'll remove this code when we fix our
-    // compiler's handling of recursive calls when the function doesn't declare
-    // its return type.
-    for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_ARG_THIS)) {
-        fn->retType = formal->type;
-      }
-    }
-  }
 
   resolveBlockStmt(fn->body);
 

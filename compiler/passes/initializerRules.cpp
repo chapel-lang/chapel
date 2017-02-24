@@ -51,7 +51,7 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
   } else {
     InitBody bodyStyle = getInitCall(fn);
 
-    if (isClass(ct) == true) {
+    if (isClass(ct) == true && !ct->isGeneric()) {
       buildClassAllocator(fn, ct);
       fn->addFlag(FLAG_INLINE);
     }
@@ -623,14 +623,20 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
   ArgSymbol* type        = new ArgSymbol(INTENT_BLANK, "t", ct);
   VarSymbol* newInstance = newTemp("instance", ct);
   CallExpr*  allocCall   = callChplHereAlloc(ct);
-  CallExpr*  initCall    = new CallExpr("init", gMethodToken, newInstance);
+  CallExpr*  initCall    = NULL;
+
+  if (initMethod->hasFlag(FLAG_RESOLVED)) {
+    initCall = new CallExpr(initMethod, gMethodToken, newInstance);
+  } else {
+    initCall = new CallExpr("init", gMethodToken, newInstance);
+  }
 
   type->addFlag(FLAG_TYPE_VARIABLE);
 
   fn->addFlag(FLAG_METHOD);
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
-  fn->retExprType = new BlockStmt(new SymExpr(ct->symbol), BLOCK_SCOPELESS);
+  fn->retType = ct;
 
   // Add the formal that provides the type for the type method
   fn->insertFormalAtTail(type);
