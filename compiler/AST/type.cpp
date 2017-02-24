@@ -728,7 +728,7 @@ bool AggregateType::setNextGenericField() {
   for_fields(field, this) {
     if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_PARAM) ||
         (field->defPoint->init == NULL && field->defPoint->exprType == NULL
-         && field->type == NULL)) {
+         && field->type == dtUnknown)) {
       // TODO: do something special if the type of the field is known but
       // generic
       genericField = idx;
