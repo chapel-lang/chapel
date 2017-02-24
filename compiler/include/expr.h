@@ -251,6 +251,10 @@ public:
   // True if the callExpr has been emptied (aka dead)
   bool            isEmpty()                                              const;
 
+  bool            isCast();
+  Expr*           castFrom();
+  Expr*           castTo();
+
   bool            isPrimitive()                                          const;
   bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
   bool            isPrimitive(const char*  primitiveName)                const;
@@ -453,6 +457,8 @@ CallExpr* callChplHereFree(BaseAST* p);
        e = (e != last) ? getNextExpr(e) : NULL)
 
 Expr* getNextExpr(Expr* expr);
+
+CallExpr* createCast(BaseAST* src, BaseAST* toType);
 
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);

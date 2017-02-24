@@ -2464,7 +2464,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   VarSymbol* castTemp = newTemp("call_tmp");
   CallExpr *castCall = new CallExpr(PRIM_MOVE,
       castTemp,
-      new CallExpr("_cast", cptrTemp, new_CStringSymbol(str)));
+      createCast(new_CStringSymbol(str), cptrTemp));
 
   int strLength = unescapeString(str, castCall).length();
 

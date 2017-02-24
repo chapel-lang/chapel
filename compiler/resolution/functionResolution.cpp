@@ -3230,7 +3230,7 @@ printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
   bool needToReport = false;
   CallExpr* call = userCall(info->call);
 
-  if (!strcmp("_cast", info->name)) {
+  if (call->isCast()) {
     if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL_CONT(call, "illegal cast to non-type");
     } else {
@@ -5528,15 +5528,15 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
 static Expr* dropUnnecessaryCast(CallExpr* call) {
   // Check for and remove casts to the original type and size
   Expr* result = call;
-  if (!call->isNamed("_cast"))
-    INT_FATAL("dropUnnecessaryCasts called on non _cast call");
+  if (!call->isCast())
+    INT_FATAL("dropUnnecessaryCasts called on non cast call");
 
-  if (SymExpr* sym = toSymExpr(call->get(2))) {
+  if (SymExpr* sym = toSymExpr(call->castFrom())) {
     if (LcnSymbol* var = toLcnSymbol(sym->symbol())) {
       // Casts of type variables are always required
       // eg. foo.type:string
       if (!var->hasFlag(FLAG_TYPE_VARIABLE)) {
-        if (SymExpr* sym = toSymExpr(call->get(1))) {
+        if (SymExpr* sym = toSymExpr(call->castTo())) {
           Type* oldType = var->type->getValType();
           Type* newType = sym->symbol()->type->getValType();
 
@@ -5547,7 +5547,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
         }
       }
     } else if (EnumSymbol* e = toEnumSymbol(sym->symbol())) {
-      if (SymExpr* sym = toSymExpr(call->get(1))) {
+      if (SymExpr* sym = toSymExpr(call->castTo())) {
         EnumType* oldType = toEnumType(e->type);
         EnumType* newType = toEnumType(sym->symbol()->type);
         if (newType && oldType == newType) {
@@ -6533,14 +6533,14 @@ static Expr* preFold(Expr* expr) {
           }
         }
       }
-    } else if (call->isNamed("_cast")) {
+    } else if (call->isCast()) {
       result = dropUnnecessaryCast(call);
       if (result == call) {
         // The cast was not dropped.  Remove integer casts on immediate values.
-        if (SymExpr* sym = toSymExpr(call->get(2))) {
+        if (SymExpr* sym = toSymExpr(call->castFrom())) {
           if (VarSymbol* var = toVarSymbol(sym->symbol())) {
             if (var->immediate) {
-              if (SymExpr* sym = toSymExpr(call->get(1))) {
+              if (SymExpr* sym = toSymExpr(call->castTo())) {
                 Type* oldType = var->type;
                 Type* newType = sym->symbol()->type;
                 if ((is_int_type(oldType) || is_uint_type(oldType) ||
@@ -6568,7 +6568,7 @@ static Expr* preFold(Expr* expr) {
                   } else if (typeenum) {
                     int64_t value, count = 0;
                     bool replaced = false;
-                    if (!get_int(call->get(2), &value)) {
+                    if (!get_int(call->castFrom(), &value)) {
                       INT_FATAL("unexpected case in cast_fold");
                     }
                     for_enums(constant, typeenum) {
@@ -6583,7 +6583,7 @@ static Expr* preFold(Expr* expr) {
                       }
                     }
                     if (!replaced) {
-                      USR_FATAL(call->get(2), "enum cast out of bounds");
+                      USR_FATAL(call->castFrom(), "enum cast out of bounds");
                     }
                   } else {
                     INT_FATAL("unexpected case in cast_fold");
@@ -6599,7 +6599,7 @@ static Expr* preFold(Expr* expr) {
               }
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->symbol())) {
-            if (SymExpr* sym = toSymExpr(call->get(1))) {
+            if (SymExpr* sym = toSymExpr(call->castTo())) {
               Type* newType = sym->symbol()->type;
               if (newType == dtString) {
                 result = new SymExpr(new_StringSymbol(enumSym->name));
@@ -7649,7 +7649,7 @@ postFold(Expr* expr) {
       }
 
       if (sym->symbol()->type != dtUnknown && sym->symbol()->type != val->type) {
-        CallExpr* cast = new CallExpr("_cast", sym->symbol(), val);
+        CallExpr* cast = createCast(val, sym->symbol());
         sym->replace(cast);
 
         // see whether preFold will fold this _cast call
@@ -8037,7 +8037,7 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   call->insertBefore(new CallExpr(PRIM_MOVE, tmp, fromExpr));
                 }
 
-                CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
+                CallExpr* cast = createCast(tmp, lhsType->symbol);
                 call->insertAtTail(cast);
                 casts.add(cast);
               }
@@ -8071,7 +8071,7 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   call->insertAtTail(unref);
                   resolveExpr(unref);
                 } else {
-                  CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
+                  CallExpr* cast = createCast(tmp, lhsType->symbol);
                   call->insertAtTail(cast);
                   casts.add(cast);
                 }

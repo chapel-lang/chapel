@@ -594,7 +594,7 @@ instantiate_tuple_cast(FnSymbol* fn)
       element = new VarSymbol(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
 
-      CallExpr* cast = new CallExpr("_cast", toField->type->symbol, readF);
+      CallExpr* cast = createCast(readF, toField->type->symbol);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, cast));
     } else if (isReferenceType(toField->type)) {
       // fromField: ref(t)  toField : ref(t)
