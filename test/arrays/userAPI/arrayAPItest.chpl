@@ -101,8 +101,8 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln("is empty: ", X.isEmpty());
   writeln("head: ", X.head());
   writeln("tail: ", X.tail());
-  writeln("find 2.8: ", X.find(X[X.domain.high]));
-  writeln("count 2.8: ", X.count(X[X.domain.high]));
+  writeln("find last: ", X.find(X[X.domain.high]));
+  writeln("count last: ", X.count(X[X.domain.high]));
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;

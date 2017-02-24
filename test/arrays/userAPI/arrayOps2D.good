@@ -83,8 +83,8 @@ local subdomains:
 is empty: false
 head: 1.8
 tail: 16.8
-find 2.8: (true, (4, 4))
-count 2.8: 1
+find last: (true, (4, 4))
+count last: 1
 equals same: true
 equals diff: false
 
