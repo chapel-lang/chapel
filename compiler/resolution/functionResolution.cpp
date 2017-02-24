@@ -10069,6 +10069,12 @@ isUnusedClass(AggregateType *ct) {
   if (ct->defaultTypeConstructor && ct->defaultTypeConstructor->isResolved())
     return false;
 
+  // FALSE if the type defines an initializer and that initializer was
+  // resolved
+  if (ct->initializerStyle == DEFINES_INITIALIZER &&
+      ct->initializerResolved)
+    return false;
+
   bool allChildrenUnused = true;
   forv_Vec(Type, child, ct->dispatchChildren) {
     AggregateType* childClass = toAggregateType(child);

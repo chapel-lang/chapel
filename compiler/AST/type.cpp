@@ -492,6 +492,7 @@ AggregateType::AggregateType(AggregateTag initTag)
 
   aggregateTag       = initTag;
   initializerStyle   = DEFINES_NONE_USE_DEFAULT;
+  initializerResolved = false;
   outer              = NULL;
   iteratorInfo       = NULL;
   doc                = NULL;

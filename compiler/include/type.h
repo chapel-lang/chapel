@@ -366,6 +366,8 @@ public:
   AggregateTag          aggregateTag;
   InitializerStyle      initializerStyle;
 
+  bool                  initializerResolved;
+
   AList                 fields;
 
   // used from parsing, sets dispatchParents

@@ -542,6 +542,8 @@ void resolveMatch(FnSymbol* fn) {
 
   resolveReturnType(fn);
 
+  toAggregateType(fn->_this->type)->initializerResolved = true;
+
   //
   // insert casts as necessary
   //
