@@ -432,7 +432,6 @@ void findZipperedIndexVariables(Symbol* index, std::vector<IteratorDetails>&
 
 }
 
-
 // TODO -- move this and related code to ForLoop.cpp
 
 /* Gather important information about a loop.
@@ -459,6 +458,26 @@ void gatherLoopDetails(ForLoop*  forLoop,
                        std::vector<IteratorDetails>& detailsVector)
 {
   Symbol* index = forLoop->indexGet()->symbol();
+
+  // TODO -- can we use flags for these?
+  bool isFollower = (0 == strcmp(index->name, "chpl__followIdx") ||
+                     0 == strcmp(index->name, "chpl__fastFollowIdx"));
+  bool isLeader = (0 == strcmp(index->name, "chpl__leadIdx"));
+
+  if (isFollower) {
+    // Find the leader loop and run the analysis on that.
+
+    Expr* inExpr = forLoop->parentExpr;
+    while (inExpr && !isForLoop(inExpr)) {
+      inExpr = inExpr->parentExpr;
+    }
+    INT_ASSERT(inExpr); // couldn't find leader ForLoop
+    gatherLoopDetails(toForLoop(inExpr),
+                      isForall, leaderDetails, followerForLoop, detailsVector);
+    return;
+  }
+
+
   Symbol* iterator = forLoop->iteratorGet()->symbol();
   bool zippered = forLoop->zipperedGet() &&
                   iterator->type->symbol->hasFlag(FLAG_TUPLE);
@@ -605,10 +624,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
     // leader-follower loop that is not zippered
     // leader-follower loop that is zippered
 
-    // TODO -- use a flag here?
-    bool leaderFollower = (0 == strcmp(index->name, "chpl__leadIdx"));
-
-    if (!leaderFollower) {
+    if (!isLeader) {
       // parallel, non-zippered standalone
       // ie forall using standalone iterator
       // Find the PRIM_MOVE setting iterator
