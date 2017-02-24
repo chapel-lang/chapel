@@ -89,7 +89,7 @@
 module FFTW {
 
   // Define includes and libraries
-  config param FFTW_includes : string ="fftw/fftw3.h, fftw/fftw3_mkl.h";
+  config param FFTW_includes : string ="fftw3.h";
   config param FFTW_libraries : string ="-lfftw3";
 
   use SysCTypes;
