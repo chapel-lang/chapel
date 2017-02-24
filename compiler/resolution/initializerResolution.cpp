@@ -128,8 +128,6 @@ instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     newFn->getFormal(2)->type->methods.add(newFn);
   }
 
-  // Tell tag_generic that we are resolving an initializer call, so it
-  // shouldn't worry about the "this" argument still being generic right now.
   newFn->tagIfGeneric();
 
   if (newFn->hasFlag(FLAG_GENERIC) == false &&
