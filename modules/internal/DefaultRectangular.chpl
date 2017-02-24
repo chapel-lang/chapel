@@ -803,7 +803,11 @@ module DefaultRectangular {
 
     for param i in 1..rank {
       const shift = this.blk(i) * (newDom.dsiDim(i).low - this.off(i)) / abs(this.str(i)) : rad.idxType;
-      rad.origin += if this.str(i) > 0 then shift else -shift;
+      if this.str(i) > 0 {
+        rad.origin += shift;
+      } else {
+        rad.origin -= shift;
+      }
 
       const mult = (newDom.dsiDim(i).stride / this.str(i)) : rad.idxType;
       rad.blk(i) = this.blk(i) * mult;
