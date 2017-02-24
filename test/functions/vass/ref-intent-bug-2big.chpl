@@ -43,8 +43,8 @@ config const ldx=2, ldy=3;
 type elType = real;
 
 // for neighbor-cache pointers
-var auxArr: [1..1] elType;
-type cacheType = auxArr._value.type; // a class type, so it can be nil
+var auxArr: [1..1, 1..1] elType;
+type cacheType = auxArr[1,..]._value.type; // a class type, so it can be nil
 
 class LocalInfo {
   // our coordinates on the grid (perhaps not strictly needed)
