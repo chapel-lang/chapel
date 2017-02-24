@@ -2124,9 +2124,9 @@ proc file._style:iostyle {
    running out of storage space or power loss. See also
    :ref:`about-io-ensuring-successful-io`.
 
-   In the future, we hope to automatically close files when the file variable
-   goes out of scope and all channels using that file are closed. The ability
-   for a program to close a file will remain available.
+   Files are automatically closed when the file variable
+   goes out of scope and all channels using that file are closed. Programs
+   may also explicitly close a file using this method.
 
    :arg error: optional argument to capture an error code. If this argument
                is not provided and an error is encountered, this function
