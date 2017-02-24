@@ -371,10 +371,10 @@ module Math {
 
      :rtype: A complex number of the same type as `z`.
   */
-  inline proc conjg(z: ?t) where isComplex(z) {
+  inline proc conjg(z: complex(?w)) {
     extern proc conjf(z: complex(64)): complex(64);
     extern proc conj(z: complex(128)): complex(128);
-    if numBits(t) == 64 then
+    if w == 64 then
       return conjf(z);
     else
       return conj(z);
@@ -384,7 +384,7 @@ module Math {
 
      :rtype: An imaginary number of the same type as `z`.
   */
-  inline proc conjg(z) where isImag(z) {
+  inline proc conjg(z: imag(?w)) {
     return -z;
   }
 
@@ -392,10 +392,17 @@ module Math {
 
      :rtype: A number that is not complex or imaginary of the same type as `z`.
   */
-  inline proc conjg(z) where isIntegral(z) || isReal(z) {
+  inline proc conjg(z: int(?w)) {
     return z;
   }
 
+  inline proc conjg(z: uint(?w)) {
+    return z;
+  }
+
+  inline proc conjg(z: real(?w)) {
+    return z;
+  }
 
   /* Returns the projection of `z` on a Riemann sphere. */
   inline proc cproj(z: complex(?w)): real(w/2) {
