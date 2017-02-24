@@ -250,6 +250,62 @@ void transitivelyMarkNotConst(Symbol* sym,
 }
 
 static
+bool isChplIterOrLoopIterator(Symbol* sym)
+{
+  if (sym->hasFlag(FLAG_CHPL__ITER))
+    return true;
+
+  Symbol* checkSym = sym;
+  Symbol* nextSym = NULL;
+
+  while (checkSym) {
+    nextSym = NULL;
+
+    // Check if checkSym is used in a SymExpr in ForLoop
+    for_SymbolSymExprs(se, checkSym) {
+      if (ForLoop* forLoop = toForLoop(se->parentExpr))
+        if (forLoop->iteratorGet()->symbol() == checkSym)
+          return true;
+
+      if (checkSym->hasFlag(FLAG_EXPR_TEMP) &&
+          checkSym->type->symbol->hasFlag(FLAG_TUPLE)) {
+        // Check for normalized form of this code
+        //   sym = build_tuple(...)
+        //   _iterator = _getIteratorZip( sym )
+        // in that case, we want to consider sym to be like a
+        // variable marked with FLAG_CHPL__ITER.
+        if (CallExpr* parentCall = toCallExpr(se->parentExpr))
+          if (CallExpr* move = toCallExpr(parentCall->parentExpr))
+            if (move->isPrimitive(PRIM_MOVE))
+              if (SymExpr* lhs = toSymExpr(move->get(1)))
+                nextSym = lhs->symbol();
+      }
+    }
+    checkSym = nextSym;
+  }
+
+  return false;
+
+  // Alternative implementation
+  /*
+  if (iterator->hasFlag(FLAG_CHPL__ITER) ||
+      iterator->type->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+    return true;
+  if (iterator->type->symbol->hasFlag(FLAG_TUPLE)) {
+    int nIteratorClass = 0;
+    int nFields = 0;
+    for_fields(field, iterator->type) {
+      if (field->type->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+        nIteratorClass++;
+      nFields++;
+    }
+    if (nIteratorClass == nFields)
+      return true;
+  }
+  return false;*/
+}
+
+static
 bool inBuildTupleForChplIter(SymExpr* se)
 {
   if (CallExpr* maybeBuildTuple = toCallExpr(se->parentExpr))
@@ -258,7 +314,7 @@ bool inBuildTupleForChplIter(SymExpr* se)
         if (maybeBuildTupleFn->hasFlag(FLAG_BUILD_TUPLE))
           if (maybeMove->isPrimitive(PRIM_MOVE)) {
             SymExpr* lhs = toSymExpr(maybeMove->get(1));
-            if (lhs->symbol()->hasFlag(FLAG_CHPL__ITER))
+            if (isChplIterOrLoopIterator(lhs->symbol()))
               return true;
           }
   return false;
@@ -463,30 +519,71 @@ void gatherLoopDetails(ForLoop*  forLoop,
       // serial, zippered iteration
       // i.e. a zippered for loop
       // Find the call to _build_tuple
+
+      // zippered serial iteration has this pattern:
+      //   call_tmp1 = _getIterator(a)
+      //   call_tmp2 = _getIterator(b)
+      //   _iterator = _build_tuple(call_tmp1, call_tmp2)
+      //
+      // but promoted iteration sometimes has this pattern:
+      //   call_tmp = build_tuple(a,b)
+      //   _iterator = _getIteratorZip(call_tmp)
+      //
+
       SymExpr* def = iterator->getSingleDef();
       CallExpr* move = toCallExpr(def->parentExpr);
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-      CallExpr* buildTupleCall = toCallExpr(move->get(2));
-      INT_ASSERT(buildTupleCall);
+      CallExpr* call = toCallExpr(move->get(2));
+      INT_ASSERT(call);
+      FnSymbol* calledFn = call->isResolved();
+      if (!calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
+        SymExpr* otherSe = toSymExpr(call->get(1));
+        INT_ASSERT(otherSe);
+        SymExpr* otherDef = otherSe->symbol()->getSingleDef();
+        CallExpr* otherMove = toCallExpr(otherDef->parentExpr);
+        INT_ASSERT(otherMove && otherMove->isPrimitive(PRIM_MOVE));
+        call = toCallExpr(otherMove->get(2));
+      }
+      CallExpr* buildTupleCall = call;
+      FnSymbol* buildTupleFn = buildTupleCall->isResolved();
+      INT_ASSERT(buildTupleFn->hasFlag(FLAG_BUILD_TUPLE));
+
       // build up the detailsVector
       for_actuals(actual, buildTupleCall) {
         SymExpr* actualSe = toSymExpr(actual);
         INT_ASSERT(actualSe); // otherwise not normalized
         // Find the single definition of actualSe->var to find
         // the call to _getIterator.
-        Symbol* tmpStoringGetIterator = actualSe->symbol();
-        SymExpr* def = tmpStoringGetIterator->getSingleDef();
-        CallExpr* move = toCallExpr(def->parentExpr);
-        CallExpr* getIterator = toCallExpr(move->get(2));
-        // The argument to _getIterator is the iterable
-        Expr* iterable = getIterator->get(1);
+        Expr* iterable = NULL;
+        if (actualSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
+          Symbol* tmpStoringGetIterator = actualSe->symbol();
+          SymExpr* def = tmpStoringGetIterator->getSingleDef();
+          CallExpr* move = toCallExpr(def->parentExpr);
+          CallExpr* getIterator = toCallExpr(move->get(2));
+          // The argument to _getIterator is the iterable
+          iterable = getIterator->get(1);
+        } else {
+          iterable = actualSe;
+        }
         IteratorDetails details;
         details.iterable = iterable;
         details.index = NULL; // set below
-        details.iteratorClass = getIterator->typeInfo();
-        details.iterator = getTheIteratorFn(details.iteratorClass);
+        details.iteratorClass = NULL;
+        details.iterator = NULL;
 
         detailsVector.push_back(details);
+      }
+
+      // Figure out iterator class of zippered followers from
+      // the tuple type.
+      AggregateType* tupleType = toAggregateType(iterator->type);
+      int i = 0;
+      for_fields(field, tupleType) {
+        detailsVector[i].iteratorClass = field->type;
+        detailsVector[i].iterator =
+          getTheIteratorFn(detailsVector[i].iteratorClass);
+
+        i++;
       }
 
       // Now, in a zippered-for, the index is actually
@@ -777,8 +874,7 @@ void cullOverReferences() {
             Symbol* iterator = lhs->symbol();
 
             // marked with chpl__iter or with type iterator class?
-            if (iterator->hasFlag(FLAG_CHPL__ITER) ||
-                iterator->type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+            if (isChplIterOrLoopIterator(iterator)) {
 
               // Scroll through exprs until we find ForLoop
               Expr* e = move;
