@@ -100,23 +100,38 @@ IntentTag blankIntentForType(Type* t) {
 }
 
 IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
-  if (existingIntent == INTENT_BLANK) {
+  if (existingIntent == INTENT_BLANK || existingIntent == INTENT_CONST) {
     if (t->symbol->hasFlag(FLAG_REF)) {
-      // A formal with a ref type should always have the ref-intent. No other
-      // intent makes sense. This is will hopefully be a short-lived fix
+      // Handle REF type
+      // A formal with a ref type should always have some ref-intent.
+      // This is will hopefully be a short-lived fix
       // while converting entirely over to QualifiedType.
       //
       // TODO: Are there cases where we should handle const-ref intent? Should
       // a QualifiedType be used instead of a Type* ?
-      return INTENT_REF;
-    } else {
-      return blankIntentForType(t);
+
+      IntentTag baseIntent = INTENT_TYPE;
+      Type* valType = t->getValType();
+      if (existingIntent == INTENT_BLANK)
+        baseIntent = blankIntentForType(valType);
+      else if (existingIntent == INTENT_CONST)
+        baseIntent = constIntentForType(valType);
+      if ( (baseIntent & INTENT_FLAG_REF) )
+        return baseIntent; // it's already REF/CONST_REF/REF_MAYBE_CONST
+      else if (baseIntent == INTENT_CONST_IN)
+        return INTENT_CONST_REF;
+      else
+        INT_ASSERT(0); // unhandled case
     }
-  } else if (existingIntent == INTENT_CONST) {
-    return constIntentForType(t);
-  } else {
-    return existingIntent;
+
+    if (existingIntent == INTENT_BLANK) {
+      return blankIntentForType(t);
+    } else if (existingIntent == INTENT_CONST) {
+      return constIntentForType(t);
+    }
   }
+
+  return existingIntent;
 }
 
 static IntentTag constIntentForThisArg(Type* t) {
