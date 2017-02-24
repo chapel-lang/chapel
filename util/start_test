@@ -679,11 +679,16 @@ def set_up_environment():
         args.performance = True
         args.gen_graphs = True
         args.compopts += " --fast"
-        # Force static linking unless the target requires dynamic.
-        if (tgt_platform != 'darwin' and
-            not (chpl_compiler.get('target').startswith("cray-prgenv") and
-                 (os.getenv("CRAY_MEMKIND", "") != "" or
-                  chpl_locale_model.get() != 'flat'))):
+        # Force static linking except where that won't work:
+        # - MacOS (darwin) targets
+        # - large Cray systems (proxied by cray-prgenv compilers here)
+        #   when the memkind package is being used (KNL, e.g.)
+        # - any locale model other than 'flat' (because we'll need
+        #   libnuma which is only available as a .so)
+        if (not (tgt_platform == 'darwin' or
+                 (chpl_compiler.get('target').startswith("cray-prgenv") and
+                  os.getenv("CRAY_MEMKIND", "") != "") or
+                 chpl_locale_model.get() != 'flat')):
             args.compopts += " --static"
 
     if args.performance_configs:
