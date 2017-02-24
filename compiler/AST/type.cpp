@@ -748,6 +748,14 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
   if (index < genericField)
     return this;
 
+  if (index > genericField) {
+    // Internal error, because initializerRules should have ensured that we
+    // access the generic fields in order, and so we should never try to update
+    // a generic field after the current generic field when the current one
+    // hasn't been updated.
+    INT_FATAL(this, "trying to set a later generic field %d", index);
+  }
+
   // First, look to see if we have an instantiation with that value already
   for_vector(AggregateType, at, instantiations) {
     // TODO: test me
