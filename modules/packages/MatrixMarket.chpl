@@ -339,10 +339,10 @@ class MMReader {
      if finfo.mm_types == MMTypes.Pattern { assert(eltype == int, "expected int, data in file is not int"); }
 
      if finfo.mm_coordfmt == MMCoordFormat.Array {
-       read_dense_data(toret, toret.domain);
+       read_dense_data(toret, Dtoret);
      }
      else if finfo.mm_coordfmt == MMCoordFormat.Coordinate {
-       read_sparse_data(toret, toret.domain);
+       read_sparse_data(toret, Dtoret);
      }
 
      return toret;
