@@ -776,81 +776,76 @@ module DefaultRectangular {
       }
   }
 
+  proc _remoteAccessData.computeFactoredOffs() {
+    for param i in 1..rank do {
+      factoredOffs = factoredOffs + blk(i) * off(i);
+    }
+  }
+
+  proc _remoteAccessData.initShiftedData() {
+    if earlyShiftData && !stridable {
+      type idxSignedType = chpl__signedType(idxType);
+      const shiftDist = if isIntType(idxType) then origin - factoredOffs
+                        else origin:idxSignedType - factoredOffs:idxSignedType;
+      shiftedData = _ddata_shift(eltType, data, shiftDist);
+    }
+  }
+
   proc _remoteAccessData.toSlice(newDom) {
-    compilerAssert(defRectSimpleDData);
-    compilerAssert(this.rank == newDom.rank);
-    type idxSignedType = chpl__signedType(newDom.idxType);
-    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable, newDom.stridable || this.blkChanged);
+    compilerAssert(defRectSimpleDData && this.rank == newDom.rank);
+    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, newDom.stridable || this.blkChanged);
+
     rad.data        = this.data;
     rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
     rad.origin      = this.origin:newDom.idxType;
+    rad.off         = chpl__tuplify(newDom.dsiLow);
+    rad.str         = chpl__tuplify(newDom.dsiStride);
+
     for param i in 1..rank {
-      rad.off(i) = newDom.dsiDim(i).low;
-      rad.str(i) = newDom.dsiDim(i).stride;
-      const shift = this.blk(i) * (newDom.dsiDim(i).low - this.off(i)) / abs(this.str(i)) : newDom.idxType;
-      if this.str(i) > 0 {
-        rad.origin += shift;
-      } else {
-        rad.origin -= shift;
-      }
-      const mult = (newDom.dsiDim(i).stride / this.str(i)) : newDom.idxType;
+      const shift = this.blk(i) * (newDom.dsiDim(i).low - this.off(i)) / abs(this.str(i)) : rad.idxType;
+      rad.origin += if this.str(i) > 0 then shift else -shift;
+
+      const mult = (newDom.dsiDim(i).stride / this.str(i)) : rad.idxType;
       rad.blk(i) = this.blk(i) * mult;
     }
-    for param i in 1..rank do {
-      rad.factoredOffs = rad.factoredOffs + rad.blk(i) * rad.off(i);
-    }
-    if earlyShiftData && !newDom.stridable {
-      if newDom.dsiNumIndices > 0 {
-        const shiftDist = if isIntType(newDom.idxType) then rad.origin - rad.factoredOffs
-                          else rad.origin:idxSignedType - rad.factoredOffs:idxSignedType;
-        rad.shiftedData = _ddata_shift(eltType, rad.data, shiftDist);
-      }
-    }
+
+    rad.computeFactoredOffs();
+    rad.initShiftedData();
+
     return rad;
   }
 
   proc _remoteAccessData.toReindex(newDom) {
-    compilerAssert(defRectSimpleDData);
-    compilerAssert(this.rank == newDom.rank);
-    type idxSignedType = chpl__signedType(newDom.idxType);
-    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable, blkChanged);
+    compilerAssert(defRectSimpleDData && this.rank == newDom.rank);
+    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, blkChanged);
+
     rad.data        = this.data;
     rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
     rad.origin      = this.origin:newDom.idxType;
-    for param i in 1..rank {
-      rad.off(i) = newDom.dsiDim(i).low;
-      rad.blk(i) = this.blk(i);
-      rad.str(i) = newDom.dsiDim(i).stride;
-    }
+    rad.blk         = this.blk;
+    rad.off         = chpl__tuplify(newDom.dsiLow);
+    rad.str         = chpl__tuplify(newDom.dsiStride);
     rad.factoredOffs = 0:idxType;
-    for param i in 1..rank do {
-      rad.factoredOffs = rad.factoredOffs + rad.blk(i) * rad.off(i);
-    }
-    if earlyShiftData && !newDom.stridable {
-      if newDom.dsiNumIndices > 0 {
-        const shiftDist = if isIntType(newDom.idxType) then rad.origin - rad.factoredOffs
-                          else rad.origin:idxSignedType - rad.factoredOffs:idxSignedType;
-        rad.shiftedData = _ddata_shift(eltType, rad.data, shiftDist);
-      }
-    }
+
+    rad.computeFactoredOffs();
+    rad.initShiftedData();
+
     return rad;
   }
 
   proc _remoteAccessData.toRankChange(newDom, cd, idx) {
-    compilerAssert(defRectSimpleDData);
-    compilerAssert(this.rank == idx.size);
-    compilerAssert(this.rank != newDom.rank);
+    compilerAssert(defRectSimpleDData && this.rank == idx.size && this.rank != newDom.rank);
+    // TODO: If 'collapsedDims' were param, we would know if blk(rank) was 1 or not.
+    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, true);
     const collapsedDims = chpl__tuplify(cd);
-    var rad : _remoteAccessData(eltType, newDom.rank, idxType, newDom.stridable, true);
     rad.data        = this.data;
     rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
     rad.origin      = this.origin:newDom.idxType;
-    type idxSignedType = chpl__signedType(newDom.idxType);
     var curDim = 1;
     for param j in 1..idx.size {
       if !collapsedDims(j) {
         rad.off(curDim) = newDom.dsiDim(curDim).low;
-        rad.origin += this.blk(j) * (newDom.dsiDim(curDim).low - this.off(j)) / this.str(j);
+        rad.origin     += this.blk(j) * (rad.off(curDim) - this.off(j)) / this.str(j);
         rad.blk(curDim) = this.blk(j);
         rad.str(curDim) = this.str(j);
         curDim += 1;
@@ -858,17 +853,10 @@ module DefaultRectangular {
         rad.origin += this.blk(j) * (idx(j) - this.off(j)) / this.str(j);
       }
     }
-    rad.factoredOffs = 0:idxType;
-    for param i in 1..rad.rank do {
-      rad.factoredOffs = rad.factoredOffs + rad.blk(i) * rad.off(i);
-    }
-    if earlyShiftData && !newDom.stridable {
-      if newDom.dsiNumIndices > 0 {
-        const shiftDist = if isIntType(newDom.idxType) then rad.origin - rad.factoredOffs
-                          else rad.origin:idxSignedType - rad.factoredOffs:idxSignedType;
-        rad.shiftedData = _ddata_shift(eltType, rad.data, shiftDist);
-      }
-    }
+
+    rad.computeFactoredOffs();
+    rad.initShiftedData();
+
     return rad;
   }
 
