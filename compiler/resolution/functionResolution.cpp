@@ -1685,6 +1685,16 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
     *promotes = false;
   if (actualType == formalType)
     return true;
+  if (actualType->symbol->hasFlag(FLAG_GENERIC) &&
+      actualType == formalType->instantiatedFrom) {
+    // The actual should only be generic when we're resolving an initializer
+    // If either of these asserts fail, something is very, very wrong.
+    AggregateType* at = toAggregateType(actualType);
+    INT_ASSERT(at && at->initializerStyle == DEFINES_INITIALIZER);
+    INT_ASSERT(strcmp(fn->name, "init") == 0);
+
+    return true;
+  }
   //
   // The following check against FLAG_REF ensures that 'nil' can't be
   // passed to a by-ref argument (for example, an atomic type).  I
