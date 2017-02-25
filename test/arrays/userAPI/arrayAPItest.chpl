@@ -41,9 +41,9 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
 
   // Test read access via tuples and varargs
-  writeln("low element is: ", X[X.domain.low]);
+  writeln("low element is: ", X[X.domain.alignedLow]);
   if (X.rank > 1) then
-    writeln("high element is: ", X[(...X.domain.high)]);
+    writeln("high element is: ", X[(...X.domain.alignedHigh)]);
   writeln();
 
   // Test local write accesses via tuples and varargs
@@ -58,9 +58,9 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
 
   // Test read access via tuples and varargs
-  writeln("low element is: ", X.localAccess[X.domain.low]);
+  writeln("low element is: ", X.localAccess[X.domain.alignedLow]);
   if (X.rank > 1) then
-    writeln("high element is: ", X.localAccess[(...X.domain.high)]);
+    writeln("high element is: ", X.localAccess[(...X.domain.alignedHigh)]);
   writeln();
 
   // Test serial iteration
@@ -101,8 +101,8 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln("is empty: ", X.isEmpty());
   writeln("head: ", X.head());
   writeln("tail: ", X.tail());
-  writeln("find last: ", X.find(X[X.domain.high]));
-  writeln("count last: ", X.count(X[X.domain.high]));
+  writeln("find last: ", X.find(X[X.domain.alignedHigh]));
+  writeln("count last: ", X.count(X[X.domain.alignedHigh]));
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;
@@ -111,8 +111,8 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
 
   // Test views
   writeln("slice by ", sliceDom, ":\n", X[sliceDom]);
-  writeln("rank change 1: ", X[X.domain.low(1), ..]);
-  writeln("rank change 2: ", X[sliceDom.dim(1), X.domain.high(2)]);
+  writeln("rank change 1: ", X[X.domain.alignedLow(1), ..]);
+  writeln("rank change 2: ", X[sliceDom.dim(1), X.domain.alignedHigh(2)]);
   for (i,x) in zip(reindexDom, X.reindex(reindexDom)) do
     writeln("reindexed X[", i, "] = ", x);
   writeln();
