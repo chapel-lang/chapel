@@ -615,6 +615,16 @@ module DefaultRectangular {
     proc dsiLocalSlice(ranges) {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
+
+    proc dsiHasSingleLocalSubdomain() param return true;
+
+    proc dsiLocalSubdomain() {
+      return _newDomain(this);
+    }
+
+    iter dsiLocalSubdomains() {
+      yield _newDomain(this);
+    }
   }
 
   record _multiData {
@@ -1590,6 +1600,10 @@ module DefaultRectangular {
 
     proc dsiLocalSubdomain() {
       return _newDomain(dom);
+    }
+
+    iter dsiLocalSubdomains() {
+      yield _newDomain(dom);
     }
   }
 
