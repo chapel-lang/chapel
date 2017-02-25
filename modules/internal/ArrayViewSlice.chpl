@@ -32,6 +32,27 @@ class ArrayViewSliceArr: BaseArr {
   const _ArrPid;
   const _ArrInstance;
 
+  const indexCache = buildIndexCache();
+
+  proc shouldUseIndexCache() param {
+    return _ArrInstance.isDefaultRectangular() &&
+           defRectSimpleDData;
+  }
+
+  // No modification of the index cache is necessary or a slice because the
+  // index set and rank remain the same.
+  proc buildIndexCache() {
+    if shouldUseIndexCache() {
+      if (chpl__isArrayView(_ArrInstance)) {
+        return _ArrInstance.indexCache.toSlice(dom);
+      } else {
+        return _ArrInstance.dsiGetRAD().toSlice(dom);
+      }
+    } else {
+      return false;
+    }
+  }
+
   inline proc privDom {
     if _isPrivatized(dom) {
       return chpl_getPrivatizedCopy(dom.type, _DomPid);
@@ -143,19 +164,34 @@ class ArrayViewSliceArr: BaseArr {
 
   inline proc dsiAccess(i) ref {
     checkBounds(i);
-    return arr.dsiAccess(i);
+    if shouldUseIndexCache() {
+      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      return indexCache.shiftedDataElem(dataIdx);
+    } else {
+      return arr.dsiAccess(i);
+    }
   }
 
   inline proc dsiAccess(i)
   where !shouldReturnRvalueByConstRef(eltType) {
     checkBounds(i);
-    return arr.dsiAccess(i);
+    if shouldUseIndexCache() {
+      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      return indexCache.shiftedDataElem(dataIdx);
+    } else {
+      return arr.dsiAccess(i);
+    }
   }
 
   inline proc dsiAccess(i) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     checkBounds(i);
-    return arr.dsiAccess(i);
+    if shouldUseIndexCache() {
+      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      return indexCache.shiftedDataElem(dataIdx);
+    } else {
+      return arr.dsiAccess(i);
+    }
   }
 
   inline proc dsiLocalAccess(i) ref

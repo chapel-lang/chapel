@@ -34,6 +34,25 @@ class ArrayViewRankChangeArr: BaseArr {
 
   const collapsedDim;  // rank*bool    TODO: constrain this
   const idx;           // rank*idxType TODO: and this
+
+  const indexCache = buildIndexCache();
+
+  proc shouldUseIndexCache() param {
+    return _ArrInstance.isDefaultRectangular() &&
+           defRectSimpleDData;
+  }
+
+  proc buildIndexCache() {
+    if shouldUseIndexCache() {
+      if (chpl__isArrayView(_ArrInstance)) {
+        return _ArrInstance.indexCache.toRankChange(dom, collapsedDim, idx);
+      } else {
+        return _ArrInstance.dsiGetRAD().toRankChange(dom, collapsedDim, idx);
+      }
+    } else {
+      return false;
+    }
+  }
   
   inline proc privDom {
     if _isPrivatized(dom) {
@@ -77,13 +96,23 @@ class ArrayViewRankChangeArr: BaseArr {
   // standard iterators
   //
   iter these() ref {
-    for i in privDom do
-      yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    for i in privDom {
+      if shouldUseIndexCache() {
+        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        yield indexCache.shiftedDataElem(dataIdx);
+      } else {
+        yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+      }
+    }
   }
 
+  // TODO: We seem to run into compile-time bugs when using multiple yields.
+  // For now, work around them by using an if-expr
   iter these(param tag: iterKind) ref where tag == iterKind.standalone {
-    for i in privDom.these(tag) do
-      yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    for i in privDom.these(tag) {
+      yield if shouldUseIndexCache() then indexCache.shiftedDataElem(indexCache.getBlockDataIndex(dom.stridable, i))
+            else arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    }
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
@@ -96,7 +125,12 @@ class ArrayViewRankChangeArr: BaseArr {
   iter these(param tag: iterKind, followThis) ref
     where tag == iterKind.follower {
     for i in privDom.these(tag, followThis) {
-      yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+      if shouldUseIndexCache() {
+        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        yield indexCache.shiftedDataElem(dataIdx);
+      } else {
+        yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+      }
     }
   }
 
@@ -150,19 +184,34 @@ class ArrayViewRankChangeArr: BaseArr {
 
   inline proc dsiAccess(i) ref {
     checkBounds(i);
-    return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    if shouldUseIndexCache() {
+      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      return indexCache.shiftedDataElem(dataIdx);
+    } else {
+      return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    }
   }
 
   inline proc dsiAccess(i)
   where !shouldReturnRvalueByConstRef(eltType) {
     checkBounds(i);
-    return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    if shouldUseIndexCache() {
+      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      return indexCache.shiftedDataElem(dataIdx);
+    } else {
+      return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    }
   }
 
   inline proc dsiAccess(i) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     checkBounds(i);
-    return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    if shouldUseIndexCache() {
+      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      return indexCache.shiftedDataElem(dataIdx);
+    } else {
+      return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+    }
   }
 
   inline proc dsiLocalAccess(i) ref

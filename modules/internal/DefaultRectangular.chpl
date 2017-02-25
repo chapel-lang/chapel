@@ -651,6 +651,7 @@ module DefaultRectangular {
     param rank : int;
     type idxType;
     param stridable: bool;
+    param blkChanged : bool = false;
 
     var off: rank*idxType;
     var blk: rank*idxType;
@@ -713,6 +714,164 @@ module DefaultRectangular {
       else
         return (((ind - mdRLo) * mdBlk * mdNumChunks:idxType) / mdRLen):int;
     }
+  }
+
+  inline proc _remoteAccessData.getBlockDataIndex(param stridable, ind : idxType) {
+    return this.getBlockDataIndex(stridable, chpl__tuplify(ind));
+  }
+
+  inline proc _remoteAccessData.getBlockDataIndex(param stridable, ind: rank*idxType) {
+      param chunkify = !defRectSimpleDData;
+
+      if stridable {
+        inline proc chunked_dataIndex(sum, str) {
+          if mdNumChunks == 1 {
+            return (0, sum);
+          } else {
+            const chunk = mdInd2Chunk(ind(mdParDim));
+            return (chunk, sum - mData(chunk).dataOff);
+          }
+        }
+
+        var sum = origin;
+        for param i in 1..rank do
+          sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
+        if chunkify then
+          return chunked_dataIndex(sum, str=abs(str(mdParDim)):idxType);
+        else
+          return sum;
+      } else {
+        inline proc chunked_dataIndex(sum) {
+          if mdNumChunks == 1 {
+            return (0, sum);
+          } else {
+            const chunk = mdInd2Chunk(ind(mdParDim));
+            return (chunk, sum - mData(chunk).dataOff);
+          }
+        }
+
+        // optimize common case to get cleaner generated code
+        if (rank == 1 && earlyShiftData) {
+          if blkChanged {
+            if chunkify then
+              return chunked_dataIndex(ind(1) * blk(1));
+            else
+              return ind(1) * blk(1);
+          } else {
+            if chunkify then
+              return chunked_dataIndex(ind(1));
+            else
+              return ind(1);
+          }
+        } else {
+          var sum = if earlyShiftData then 0:idxType else origin;
+
+          if blkChanged {
+            for param i in 1..rank {
+              sum += ind(i) * blk(i);
+            }
+          } else {
+            for param i in 1..rank-1 {
+              sum += ind(i) * blk(i);
+            }
+            sum += ind(rank);
+          }
+
+          if !earlyShiftData then sum -= factoredOffs;
+          if chunkify then
+            return chunked_dataIndex(sum);
+          else
+            return sum;
+        }
+      }
+  }
+
+  proc _remoteAccessData.computeFactoredOffs() {
+    for param i in 1..rank do {
+      factoredOffs = factoredOffs + blk(i) * off(i);
+    }
+  }
+
+  proc _remoteAccessData.initShiftedData() {
+    if earlyShiftData && !stridable {
+      type idxSignedType = chpl__signedType(idxType);
+      const shiftDist = if isIntType(idxType) then origin - factoredOffs
+                        else origin:idxSignedType - factoredOffs:idxSignedType;
+      shiftedData = _ddata_shift(eltType, data, shiftDist);
+    }
+  }
+
+  proc _remoteAccessData.toSlice(newDom) {
+    compilerAssert(defRectSimpleDData && this.rank == newDom.rank);
+    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, newDom.stridable || this.blkChanged);
+
+    rad.data        = this.data;
+    rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
+    rad.origin      = this.origin:newDom.idxType;
+    rad.off         = chpl__tuplify(newDom.dsiLow);
+    rad.str         = chpl__tuplify(newDom.dsiStride);
+
+    for param i in 1..rank {
+      const shift = this.blk(i) * (newDom.dsiDim(i).low - this.off(i)) / abs(this.str(i)) : rad.idxType;
+      if this.str(i) > 0 {
+        rad.origin += shift;
+      } else {
+        rad.origin -= shift;
+      }
+
+      const mult = (newDom.dsiDim(i).stride / this.str(i)) : rad.idxType;
+      rad.blk(i) = this.blk(i) * mult;
+    }
+
+    rad.computeFactoredOffs();
+    rad.initShiftedData();
+
+    return rad;
+  }
+
+  proc _remoteAccessData.toReindex(newDom) {
+    compilerAssert(defRectSimpleDData && this.rank == newDom.rank);
+    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, blkChanged);
+
+    rad.data        = this.data;
+    rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
+    rad.origin      = this.origin:newDom.idxType;
+    rad.blk         = this.blk;
+    rad.off         = chpl__tuplify(newDom.dsiLow);
+    rad.str         = chpl__tuplify(newDom.dsiStride);
+    rad.factoredOffs = 0:idxType;
+
+    rad.computeFactoredOffs();
+    rad.initShiftedData();
+
+    return rad;
+  }
+
+  proc _remoteAccessData.toRankChange(newDom, cd, idx) {
+    compilerAssert(defRectSimpleDData && this.rank == idx.size && this.rank != newDom.rank);
+    // TODO: If 'collapsedDims' were param, we would know if blk(rank) was 1 or not.
+    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, true);
+    const collapsedDims = chpl__tuplify(cd);
+    rad.data        = this.data;
+    rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
+    rad.origin      = this.origin:newDom.idxType;
+    var curDim = 1;
+    for param j in 1..idx.size {
+      if !collapsedDims(j) {
+        rad.off(curDim) = newDom.dsiDim(curDim).low;
+        rad.origin     += this.blk(j) * (rad.off(curDim) - this.off(j)) / this.str(j);
+        rad.blk(curDim) = this.blk(j);
+        rad.str(curDim) = this.str(j);
+        curDim += 1;
+      } else {
+        rad.origin += this.blk(j) * (idx(j) - this.off(j)) / this.str(j);
+      }
+    }
+
+    rad.computeFactoredOffs();
+    rad.initShiftedData();
+
+    return rad;
   }
 
   //
