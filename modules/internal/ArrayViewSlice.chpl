@@ -104,6 +104,20 @@ class ArrayViewSliceArr: BaseArr {
     chpl_serialReadWriteRectangular(f, arr, privDom);
   }
 
+  proc dsiSerialRead(f) {
+    chpl_serialReadWriteRectangular(f, arr, privDom);
+  }
+
+  proc dsiDisplayRepresentation() {
+    writeln("Slice view");
+    writeln("----------");
+    writeln("of domain:");
+    privDom.dsiDisplayRepresentation();
+    writeln("on array:");
+    arr.dsiDisplayRepresentation();
+    writeln("----------");
+  }
+
   inline proc checkBounds(i) {
     if boundsChecking then
       if !privDom.dsiMember(i) then
@@ -143,6 +157,18 @@ class ArrayViewSliceArr: BaseArr {
     checkBounds(i);
     return arr.dsiAccess(i);
   }
+
+  inline proc dsiLocalAccess(i) ref
+    return arr.dsiLocalAccess(i);
+
+  inline proc dsiLocalAccess(i)
+    where !shouldReturnRvalueByConstRef(eltType)
+    return arr.dsiLocalAccess(i);
+
+  inline proc dsiLocalAccess(i) const ref
+    where shouldReturnRvalueByConstRef(eltType)
+    return arr.dsiLocalAccess(i);
+
 
   proc dsiTargetLocales() {
     return arr.dsiTargetLocales();

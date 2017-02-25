@@ -107,6 +107,24 @@ class ArrayViewRankChangeArr: BaseArr {
     chpl_serialReadWriteRectangular(f, this, privDom);
   }
 
+  proc dsiSerialRead(f) {
+    chpl_serialReadWriteRectangular(f, arr, privDom);
+  }
+
+  proc dsiDisplayRepresentation() {
+    writeln("Rank Change view");
+    writeln("----------");
+    writeln("of domain:");
+    privDom.dsiDisplayRepresentation();
+    writeln("on array:");
+    arr.dsiDisplayRepresentation();
+    writeln("where the dims are collapsed as follows:");
+    writeln(collapsedDim);
+    writeln("and the missing indices are:");
+    writeln(idx);
+    writeln("----------");
+  }
+
   inline proc checkBounds(i) {
     if boundsChecking then
       if !privDom.dsiMember(i) then
@@ -146,6 +164,17 @@ class ArrayViewRankChangeArr: BaseArr {
     checkBounds(i);
     return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
   }
+
+  inline proc dsiLocalAccess(i) ref
+    return arr.dsiLocalAccesschpl_rankChangeConvertIdx(i);
+
+  inline proc dsiLocalAccess(i)
+    where !shouldReturnRvalueByConstRef(eltType)
+    return arr.dsiLocalAccesschpl_rankChangeConvertIdx(i);
+
+  inline proc dsiLocalAccess(i) const ref
+    where shouldReturnRvalueByConstRef(eltType)
+    return arr.dsiLocalAccesschpl_rankChangeConvertIdx(i);
 
   proc dsiTargetLocales() {
     //

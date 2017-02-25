@@ -105,6 +105,20 @@ module ArrayViewReindex {
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
 
+    proc dsiSerialRead(f) {
+      chpl_serialReadWriteRectangular(f, arr, privDom);
+    }
+
+    proc dsiDisplayRepresentation() {
+      writeln("Reindex view");
+      writeln("------------");
+      writeln("of domain:");
+      privDom.dsiDisplayRepresentation();
+      writeln("on array:");
+      arr.dsiDisplayRepresentation();
+      writeln("------------");
+    }
+
     inline proc checkBounds(i) {
           if boundsChecking then
             if !privDom.dsiMember(i) then
@@ -150,6 +164,17 @@ module ArrayViewReindex {
       checkBounds(i);
       return arr.dsiAccess(chpl_reindexConvertIdx(i));
     }
+
+    inline proc dsiLocalAccess(i) ref
+      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
+
+    inline proc dsiLocalAccess(i)
+      where !shouldReturnRvalueByConstRef(eltType)
+      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
+
+    inline proc dsiLocalAccess(i) const ref
+      where shouldReturnRvalueByConstRef(eltType)
+      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
 
     proc dsiTargetLocales() {
       return arr.dsiTargetLocales();
