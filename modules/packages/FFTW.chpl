@@ -88,13 +88,15 @@
 
 module FFTW {
 
-  // Define includes and libraries
-  config param FFTW_includes : string ="fftw3.h";
-  config param FFTW_libraries : string ="-lfftw3";
+  // The MKL implementation of FFTW requires an additional
+  // include file
+  config param isFFTW_MKL=false;
 
   use SysCTypes;
-  require FFTW_includes, FFTW_libraries;
-
+  require "fftw3.h"; // This is common
+  if (isFFTW_MKL) {
+    require "fftw3_mkl.h";
+  }
 
   /*
     Controls execution-time array size checks in the FFTW
