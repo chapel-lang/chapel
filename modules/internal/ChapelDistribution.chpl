@@ -136,7 +136,7 @@ module ChapelDistribution {
   
     proc dsiDestroyDist() { }
   
-    proc dsiDisplayRepresentation() { }
+    proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
 
     // Does the distribution keep a list of domains? Can the domains
     // keep the distribution alive longer? false for DefaultDist.
@@ -315,7 +315,7 @@ module ChapelDistribution {
     //
     //proc dsiDestroyDom() { }
 
-    proc dsiDisplayRepresentation() { }
+    proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
   }
   
   class BaseRectangularDom : BaseDom {
@@ -698,7 +698,7 @@ module ChapelDistribution {
       halt("This array type does not support bulk transfer.");
     }
   
-    proc dsiDisplayRepresentation() { }
+    proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
     proc isDefaultRectangular() param return false;
     proc dsiSupportsBulkTransferInterface() param return false;
     proc doiCanBulkTransferStride(viewDom) param return false;
