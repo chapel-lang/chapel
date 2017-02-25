@@ -9,7 +9,5 @@ source $CWD/common-fast.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="fast"
 
-sed "s/void copyPropagation(void) {/void copyPropagation(void) {\n  return;/" $CHPL_HOME/compiler/optimizations/copyPropagation.cpp  > CP.tmp && mv CP.tmp $CHPL_HOME/compiler/optimizations/copyPropagation.cpp
-
 nightly_args="${nightly_args} -compperformance (--fast)"
 $CWD/nightly -cron ${nightly_args}

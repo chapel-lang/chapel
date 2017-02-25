@@ -8,7 +8,5 @@ source $CWD/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64"
 
-sed "s/void copyPropagation(void) {/void copyPropagation(void) {\n  return;/" $CHPL_HOME/compiler/optimizations/copyPropagation.cpp  > CP.tmp && mv CP.tmp $CHPL_HOME/compiler/optimizations/copyPropagation.cpp
-
 nightly_args="-compperformance (default)"
 $CWD/nightly -cron -futures ${nightly_args}
