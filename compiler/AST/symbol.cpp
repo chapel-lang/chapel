@@ -257,11 +257,6 @@ BlockStmt* Symbol::getDeclarationScope() const {
 }
 
 
-FnSymbol* Symbol::getFnSymbol() {
-  return NULL;
-}
-
-
 bool Symbol::hasFlag(Flag flag) const {
   CHECK_FLAG(flag);
   return flags[flag];
@@ -1040,11 +1035,6 @@ void FnSymbol::verify() {
   // Should those even persist between passes?
   verifyInTree(valueFunction, "FnSymbol::valueFunction");
   verifyInTree(retSymbol, "FnSymbol::retSymbol");
-}
-
-
-FnSymbol* FnSymbol::getFnSymbol(void) {
-  return this;
 }
 
 
