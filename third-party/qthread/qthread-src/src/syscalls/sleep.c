@@ -20,7 +20,6 @@
 #include "qthread_innards.h" /* for qlib */
 #include "qt_qthread_mgmt.h"
 
-#if 0
 unsigned int sleep(unsigned int seconds)
 {
     if (qt_blockable()) {
@@ -51,6 +50,5 @@ unsigned int sleep(unsigned int seconds)
 #endif  /* if HAVE_SYSCALL */
     }
 }
-#endif
 
 /* vim:set expandtab: */
