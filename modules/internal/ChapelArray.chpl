@@ -2332,9 +2332,13 @@ module ChapelArray {
       _value.dsiSerialRead(f);
     }
 
+    proc IRV where !isSparseArr(this) {
+      compilerError("only sparse arrays have an IRV");
+    }
+
     // sparse array interface
     /* Return the Implicitly Represented Value for sparse arrays */
-    proc IRV ref {
+    proc IRV ref where isSparseArr(this) {
       return _value.IRV;
     }
 
@@ -2425,7 +2429,7 @@ module ChapelArray {
     // documentation. Don't document it for now.
     pragma "no doc"
     proc head(): this._value.eltType {
-      return this[this.domain.low];
+      return this[this.domain.alignedLow];
     }
 
     /* Return the last value in the array */
@@ -2433,7 +2437,7 @@ module ChapelArray {
     // documentation. Don't document it for now.
     pragma "no doc"
     proc tail(): this._value.eltType {
-      return this[this.domain.high];
+      return this[this.domain.alignedHigh];
     }
 
     /* Return a range that is grown or shrunk from r to accommodate 'r2' */
@@ -2482,7 +2486,10 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc push_back(val: this.eltType) where chpl__isDense1DArray() {
+    proc push_back(val: this.eltType) {
+      if (!chpl__isDense1DArray()) then
+        compilerError("push_back() is only supported on dense 1D arrays");
+
       chpl__assertSingleArrayDomain("push_back");
       const lo = this.domain.low,
             hi = this.domain.high+1;
@@ -2518,7 +2525,10 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc pop_back() where chpl__isDense1DArray() {
+    proc pop_back() {
+      if (!chpl__isDense1DArray()) then
+        compilerError("pop_back() is only supported on dense 1D arrays");
+
       chpl__assertSingleArrayDomain("pop_back");
 
       if boundsChecking && isEmpty() then
@@ -2552,7 +2562,9 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc push_front(val: this.eltType) where chpl__isDense1DArray() {
+    proc push_front(val: this.eltType) {
+      if (!chpl__isDense1DArray()) then
+        compilerError("push_front() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("push_front");
       const lo = this.domain.low-1,
             hi = this.domain.high;
@@ -2583,7 +2595,9 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc pop_front() where chpl__isDense1DArray() {
+    proc pop_front() {
+      if (!chpl__isDense1DArray()) then
+        compilerError("pop_front() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("pop_front");
 
       if boundsChecking && isEmpty() then
@@ -2618,7 +2632,10 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc insert(pos: this.idxType, val: this.eltType) where chpl__isDense1DArray() {
+    proc insert(pos: this.idxType, val: this.eltType) {
+      if (!chpl__isDense1DArray()) then
+        compilerError("insert() is only supported on dense 1D arrays");
+
       chpl__assertSingleArrayDomain("insert");
       const lo = this.domain.low,
             hi = this.domain.high+1;
@@ -2650,7 +2667,9 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc remove(pos: this.idxType) where chpl__isDense1DArray() {
+    proc remove(pos: this.idxType) {
+      if (!chpl__isDense1DArray()) then
+        compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove");
 
       if boundsChecking && !this.domain.member(pos) then
@@ -2682,7 +2701,9 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc remove(pos: this.idxType, count: this.idxType) where chpl__isDense1DArray() {
+    proc remove(pos: this.idxType, count: this.idxType) {
+      if (!chpl__isDense1DArray()) then
+        compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove count");
       const lo = this.domain.low,
             hi = this.domain.high-count;
@@ -2718,13 +2739,17 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc remove(pos: range(this.idxType, stridable=false)) where chpl__isDense1DArray() {
+    proc remove(pos: range(this.idxType, stridable=false)) {
+      if (!chpl__isDense1DArray()) then
+        compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove range");
       remove(pos.low, pos.size);
     }
 
     /* Reverse the order of the values in the array. */
-    proc reverse() where chpl__isDense1DArray() {
+    proc reverse() {
+      if (!chpl__isDense1DArray()) then
+        compilerError("reverse() is only supported on dense 1D arrays");
       const lo = this.domain.low,
             mid = this.domain.size / 2,
             hi = this.domain.high;
@@ -2739,7 +2764,9 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc clear() where chpl__isDense1DArray() {
+    proc clear() {
+      if (!chpl__isDense1DArray()) then
+        compilerError("clear() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("clear");
       const lo = this.domain.low,
             hi = this.domain.low-1;
@@ -2756,11 +2783,12 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-    proc find(val: this.eltType): (bool, this.idxType) {
+    proc find(val: this.eltType): (bool, index(this.domain)) {
       for i in this.domain {
         if this[i] == val then return (true, i);
       }
-      return (false, 0);
+      var arbInd: index(this.domain);
+      return (false, arbInd);
     }
 
     /* Return the number of times ``val`` occurs in the array. */

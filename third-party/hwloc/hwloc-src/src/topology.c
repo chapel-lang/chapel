@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -1507,7 +1507,7 @@ add_default_object_sets(hwloc_obj_t obj, int parent_has_sets)
 }
 
 /* Setup object cpusets/nodesets by OR'ing its children. */
-HWLOC_DECLSPEC int
+int
 hwloc_fill_object_sets(hwloc_obj_t obj)
 {
   hwloc_obj_t child;
@@ -2557,6 +2557,13 @@ next_cpubackend:
   hwloc_debug("%s", "\nRestrict topology cpusets to existing PU and NODE objects\n");
   collect_proc_cpuset(topology->levels[0][0], NULL);
 
+  if (topology->binding_hooks.get_allowed_resources && topology->is_thissystem) {
+    const char *env = getenv("HWLOC_THISSYSTEM_ALLOWED_RESOURCES");
+    if ((env && atoi(env))
+	|| (topology->flags & HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES))
+      topology->binding_hooks.get_allowed_resources(topology);
+  }
+
   hwloc_debug("%s", "\nPropagate offline and disallowed cpus down and up\n");
   propagate_unused_cpuset(topology->levels[0][0], NULL);
 
@@ -2685,12 +2692,6 @@ next_noncpubackend:
     }
   }
 
-  /*
-   * Now set binding hooks according to topology->is_thissystem
-   * what the native OS backend offers.
-   */
-  hwloc_set_binding_hooks(topology);
-
   return 0;
 }
 
@@ -2723,7 +2724,7 @@ hwloc_topology_setup_defaults(struct hwloc_topology *topology)
   topology->first_pcidev = topology->last_pcidev = NULL;
   topology->first_osdev = topology->last_osdev = NULL;
   /* sane values to type_depth */
-  for (l = HWLOC_OBJ_SYSTEM; l < HWLOC_OBJ_MISC; l++)
+  for (l = HWLOC_OBJ_SYSTEM; l <= HWLOC_OBJ_MISC; l++)
     topology->type_depth[l] = HWLOC_TYPE_DEPTH_UNKNOWN;
   topology->type_depth[HWLOC_OBJ_BRIDGE] = HWLOC_TYPE_DEPTH_BRIDGE;
   topology->type_depth[HWLOC_OBJ_PCI_DEVICE] = HWLOC_TYPE_DEPTH_PCI_DEVICE;
@@ -3014,6 +3015,11 @@ hwloc_topology_load (struct hwloc_topology *topology)
   hwloc_disc_components_enable_others(topology);
   /* now that backends are enabled, update the thissystem flag */
   hwloc_backends_is_thissystem(topology);
+  /*
+   * Now set binding hooks according to topology->is_thissystem
+   * and what the native OS backend offers.
+   */
+  hwloc_set_binding_hooks(topology);
 
   /* get distance matrix from the environment are store them (as indexes) in the topology.
    * indexes will be converted into objects later once the tree will be filled
@@ -3264,11 +3270,13 @@ hwloc_topology_check(struct hwloc_topology *topology)
       /* check that PUs and NUMA nodes have cpuset/nodeset */
       if (obj->type == HWLOC_OBJ_PU) {
 	assert(obj->cpuset);
+	assert(obj->complete_cpuset);
 	assert(hwloc_bitmap_weight(obj->complete_cpuset) == 1);
 	assert(hwloc_bitmap_first(obj->complete_cpuset) == (int) obj->os_index);
       }
       if (obj->type == HWLOC_OBJ_NUMANODE) {
 	assert(obj->nodeset);
+	assert(obj->complete_nodeset);
 	assert(hwloc_bitmap_weight(obj->complete_nodeset) == 1);
 	assert(hwloc_bitmap_first(obj->complete_nodeset) == (int) obj->os_index);
       }

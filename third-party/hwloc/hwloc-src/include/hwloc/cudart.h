@@ -1,5 +1,5 @@
 /*
- * Copyright © 2010-2015 Inria.  All rights reserved.
+ * Copyright © 2010-2016 Inria.  All rights reserved.
  * Copyright © 2010-2011 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -109,8 +109,8 @@ hwloc_cudart_get_device_cpuset(hwloc_topology_t topology __hwloc_attribute_unuse
   if (!sysfile)
     return -1;
 
-  hwloc_linux_parse_cpumap_file(sysfile, set);
-  if (hwloc_bitmap_iszero(set))
+  if (hwloc_linux_parse_cpumap_file(sysfile, set) < 0
+      || hwloc_bitmap_iszero(set))
     hwloc_bitmap_copy(set, hwloc_topology_get_complete_cpuset(topology));
 
   fclose(sysfile);

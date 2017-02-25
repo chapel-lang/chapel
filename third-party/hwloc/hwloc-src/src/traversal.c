@@ -327,6 +327,7 @@ hwloc_pci_class_string(unsigned short class_id)
 	case 0x0205: return "WrdFip";
 	case 0x0206: return "PICMG";
 	case 0x0207: return "IB";
+	case 0x0208: return "FI";
       }
       return "Net";
     case 0x03:

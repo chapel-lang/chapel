@@ -633,7 +633,8 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
     } else if (var->hasFlag(FLAG_PARAM) == true) {
       mIsGeneric = true;
 
-    } else if (defExpr->exprType == NULL) {
+    } else if (defExpr->exprType == NULL &&
+               defExpr->init     == NULL) {
       mIsGeneric = true;
     }
 

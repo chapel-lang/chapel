@@ -33,6 +33,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "TransformLogicalShortCircuit.h"
+#include "typeSpecifier.h"
 
 #include <cctype>
 #include <set>
@@ -101,6 +102,10 @@ static void init_noinit_var(VarSymbol* var,
                             VarSymbol* constTemp);
 
 static bool moduleHonorsNoinit(Symbol* var, Expr* init);
+
+static bool isPrimitiveScalar(Type* type);
+static bool isNonGenericClass(Type* type);
+static bool isNonGenericRecordWithInit(Type* type);
 
 static void updateVariableAutoDestroy(DefExpr* defExpr);
 
@@ -494,103 +499,90 @@ static void normalize(BaseAST* base) {
   }
 }
 
-// We can't really do this before resolution, because we need to know
-// if symbols used as actual arguments are passed by ref, inout, or out
-// (all of which would be considered definitions).
-// The workaround for this has been early initialization --
-// which is redundant with guaranteed initialization, at least with respect
-// to class instances.
-// Given that it is not completely correct, and it forces unnecessary
-// initializations to be added to the AST, I recommend that the check be
-// removed from this pass (and perhaps reinserted in a later pass).
-static void
-checkUseBeforeDefs() {
+/************************************* | **************************************
+*                                                                             *
+* We can't really do this before resolution, because we need to know if       *
+* symbols used as actual arguments are passed by ref, inout, or out           *
+* (all of which would be considered definitions).                             *
+*                                                                             *
+* The workaround for this has been early initialization -- which is redundant *
+* with guaranteed initialization, at least with respect to class instances.   *
+*                                                                             *
+************************************** | *************************************/
+
+static Symbol* theDefinedSymbol(BaseAST* ast);
+
+static void checkUseBeforeDefs() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint->parentSymbol)
-    {
-      ModuleSymbol* mod = fn->getModule();
-      Vec<const char*> undeclared;
-      Vec<Symbol*> undefined;
+    if (fn->defPoint->parentSymbol) {
+      ModuleSymbol*         mod = fn->getModule();
+
+      std::set<Symbol*>     defined;
+
+      std::set<Symbol*>     undefined;
+      std::set<const char*> undeclared;
+
       std::vector<BaseAST*> asts;
-      Vec<Symbol*> defined;
 
-      // Walk the asts in this function.
       collect_asts_postorder(fn, asts);
+
       for_vector(BaseAST, ast, asts) {
-        // Adds definitions (this portion could probably be made into a
-        // separate function - see loopInvariantCodeMotion and copyPropagation)
-        if (CallExpr* call = toCallExpr(ast)) {
-          // A symbol gets defined when it appears on the LHS of a move or
-          // assignment.
-          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-            if (SymExpr* se = toSymExpr(call->get(1)))
-              defined.set_add(se->symbol());
-        } else if (DefExpr* def = toDefExpr(ast)) {
+        if (Symbol* sym = theDefinedSymbol(ast)) {
+          defined.insert(sym);
 
-          // All arg symbols are defined.
-          if (isArgSymbol(def->sym))
-            defined.set_add(def->sym);
+        } else if (SymExpr* se = toSymExpr(ast)) {
+          Symbol* sym = se->symbol();
 
-          if (VarSymbol* vs = toVarSymbol(def->sym))
-          {
-            // All type aliases are taken as defined.
-            if (vs->isType())
-              defined.set_add(def->sym);
-            // All variables of type 'void' are treated as defined.
-            if (vs->typeInfo() == dtVoid)
-              defined.set_add(vs);
-          }
+          if (isModuleSymbol(sym)                    == true  &&
+              isFnSymbol(fn->defPoint->parentSymbol) == false &&
+              isUseStmt(se->parentExpr)              == false) {
+            SymExpr* prev = toSymExpr(se->prev);
 
-        } else {
-          // The AST in question is not one of our methods of declaration so now
-          // we check if it is a (resolved/unresolved) symbol and make sure
-          // that symbol is not defined/declared before use
-          if (SymExpr* sym = toSymExpr(ast)) {
-            CallExpr* call = toCallExpr(sym->parentExpr);
-            if (call &&
-                (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
-                call->get(1) == sym)
-              continue; // We already handled this case above.
+            if (prev == NULL || prev->symbol() != gModuleToken) {
+              USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
+            }
 
-            if (toModuleSymbol(sym->symbol())) {
-              if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-                UseStmt* use = toUseStmt(sym->parentExpr);
-                if (!use) {
-                  SymExpr* prev = toSymExpr(sym->prev);
-                  if (!prev || prev->symbol() != gModuleToken)
-                    USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->symbol()->name);
-                }
-              }
-            } else if (isLcnSymbol(sym->symbol())) {
-              if (sym->symbol()->defPoint->parentExpr != rootModule->block &&
-                  (sym->symbol()->defPoint->parentSymbol == fn ||
-                   (sym->symbol()->defPoint->parentSymbol == mod && mod->initFn == fn))) {
-                if (!defined.set_in(sym->symbol()) && !undefined.set_in(sym->symbol())) {
-                  if (!sym->symbol()->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
-                      !sym->symbol()->hasFlag(FLAG_TEMP)) {
-                    USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->symbol()->name);
-                    undefined.set_add(sym->symbol());
+          } else if (isLcnSymbol(sym) == true) {
+            if (sym->defPoint->parentExpr != rootModule->block) {
+              Symbol* parent = sym->defPoint->parentSymbol;
+
+              if (parent == fn || (parent == mod && mod->initFn == fn)) {
+                if (defined.find(sym)           == defined.end() &&
+
+                    sym->hasFlag(FLAG_ARG_THIS) == false         &&
+                    sym->hasFlag(FLAG_EXTERN)   == false         &&
+                    sym->hasFlag(FLAG_TEMP)     == false) {
+
+                  // Only complain one time
+                  if (undefined.find(sym) == undefined.end()) {
+                    USR_FATAL_CONT(se,
+                                   "'%s' used before defined (first used here)",
+                                   sym->name);
+
+                    undefined.insert(sym);
                   }
                 }
               }
             }
-          } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
-            CallExpr* call = toCallExpr(sym->parentExpr);
-            if (call &&
-                (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
-                call->get(1) == sym)
-              continue; // We already handled this case above.
-            if ((!call ||
-                 (call->baseExpr != sym &&
-                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) &&
-                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) &&
-                sym->unresolved) {
-              if (!undeclared.set_in(sym->unresolved)) {
-                if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-                  USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
-                                 sym->unresolved);
-                  undeclared.set_add(sym->unresolved);
-                }
+          }
+
+        } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(ast)) {
+          CallExpr* call = toCallExpr(use->parentExpr);
+
+          if (call == NULL ||
+              (call->baseExpr                              != use   &&
+               call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) == false &&
+               call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)    == false)) {
+            if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
+              const char* name = use->unresolved;
+
+              // Only complain one time
+              if (undeclared.find(name) == undeclared.end()) {
+                USR_FATAL_CONT(use,
+                               "'%s' undeclared (first use this function)",
+                               name);
+
+                undeclared.insert(name);
               }
             }
           }
@@ -599,6 +591,65 @@ checkUseBeforeDefs() {
     }
   }
 }
+
+// If the AST node defines a symbol, then extract that symbol
+static Symbol* theDefinedSymbol(BaseAST* ast) {
+  Symbol* retval = NULL;
+
+  // 1) A symbol is "defined" defined if it is the LHS of a move or assign
+  if (CallExpr* call = toCallExpr(ast)) {
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        retval = se->symbol();
+      }
+    }
+
+  // 2) Another way to find the symbol that will be found by 1)
+  } else if (SymExpr* se = toSymExpr(ast)) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+        if (call->get(1) == se) {
+          retval = se->symbol();
+        }
+      }
+    }
+
+  } else if (DefExpr* def = toDefExpr(ast)) {
+    Symbol* sym = def->sym;
+
+    // All arg symbols are defined.
+    if (isArgSymbol(sym)) {
+      retval = sym;
+
+    } else if (VarSymbol* var = toVarSymbol(sym)) {
+      // All type aliases are taken as defined.
+      if (var->isType() == true) {
+        retval = var;
+      } else {
+        Type* type = var->typeInfo();
+
+        // All variables of type 'void' are treated as defined.
+        if (type == dtVoid) {
+          retval = var;
+
+        // non generic records with initializers are defined
+        } else if (AggregateType* at = toAggregateType(type)) {
+          if (isNonGenericRecordWithInit(at) == true) {
+            retval = var;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void
 moveGlobalDeclarationsToModuleScope() {
@@ -1594,6 +1645,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
 static void normVarTypeWoutInit(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
+  Type*   type     = typeForTypeSpecifier(typeExpr);
 
   // Noakes 2017/02/19
   //   This replicates some strange business logic that is currently
@@ -1619,6 +1671,22 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
     block->insertAtTail(new CallExpr(PRIM_MOVE, var, typeTemp));
 
     defExpr->insertAfter(block);
+
+  } else if (isPrimitiveScalar(type)          == true) {
+    CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
+
+    var->type = type;
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defVal));
+
+  } else if (isNonGenericClass(type)          == true) {
+    CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
+
+    var->type = type;
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defVal));
+
+  } else if (isNonGenericRecordWithInit(type) == true) {
+    var->type = type;
+    defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
@@ -1737,6 +1805,73 @@ static void normVarNoinit(DefExpr* defExpr) {
     // Ignore no-init expression and fall back on default init
     normVarTypeWoutInit(defExpr);
   }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isPrimitiveScalar(Type* type) {
+  bool retval = false;
+
+  if (type == dtBools[BOOL_SIZE_8]         ||
+      type == dtBools[BOOL_SIZE_16]        ||
+      type == dtBools[BOOL_SIZE_32]        ||
+      type == dtBools[BOOL_SIZE_64]        ||
+
+      type == dtInt[INT_SIZE_8]            ||
+      type == dtInt[INT_SIZE_16]           ||
+      type == dtInt[INT_SIZE_32]           ||
+      type == dtInt[INT_SIZE_64]           ||
+
+      type == dtUInt[INT_SIZE_8]           ||
+      type == dtUInt[INT_SIZE_16]          ||
+      type == dtUInt[INT_SIZE_32]          ||
+      type == dtUInt[INT_SIZE_64]          ||
+
+      type == dtReal[FLOAT_SIZE_32]        ||
+      type == dtReal[FLOAT_SIZE_64]        ||
+
+      type == dtImag[FLOAT_SIZE_32]        ||
+      type == dtImag[FLOAT_SIZE_64]) {
+
+    retval = true;
+
+  } else {
+    retval = false;
+  }
+
+  return retval;
+}
+
+static bool isNonGenericClass(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isGeneric()                  == false &&
+        at->isClass()                    ==  true &&
+        at->symbol->hasFlag(FLAG_EXTERN) == false) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+static bool isNonGenericRecordWithInit(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isGeneric()      == false &&
+        at->isRecord()       == true  &&
+        at->initializerStyle == DEFINES_INITIALIZER) {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
