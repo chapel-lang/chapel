@@ -108,7 +108,7 @@ class ArrayViewRankChangeArr: BaseArr {
   }
 
   proc dsiSerialRead(f) {
-    chpl_serialReadWriteRectangular(f, arr, privDom);
+    chpl_serialReadWriteRectangular(f, this, privDom);
   }
 
   proc dsiDisplayRepresentation() {
@@ -166,15 +166,15 @@ class ArrayViewRankChangeArr: BaseArr {
   }
 
   inline proc dsiLocalAccess(i) ref
-    return arr.dsiLocalAccesschpl_rankChangeConvertIdx(i);
+    return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i));
 
   inline proc dsiLocalAccess(i)
     where !shouldReturnRvalueByConstRef(eltType)
-    return arr.dsiLocalAccesschpl_rankChangeConvertIdx(i);
+    return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i));
 
   inline proc dsiLocalAccess(i) const ref
     where shouldReturnRvalueByConstRef(eltType)
-    return arr.dsiLocalAccesschpl_rankChangeConvertIdx(i);
+    return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i));
 
   proc dsiTargetLocales() {
     //

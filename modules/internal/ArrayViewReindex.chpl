@@ -106,7 +106,7 @@ module ArrayViewReindex {
     }
 
     proc dsiSerialRead(f) {
-      chpl_serialReadWriteRectangular(f, arr, privDom);
+      chpl_serialReadWriteRectangular(f, this, privDom);
     }
 
     proc dsiDisplayRepresentation() {
