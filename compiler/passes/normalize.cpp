@@ -1738,20 +1738,23 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   // e.g. const x : int     = 10;
   //      var   y : int(32) = 20;
   //
+  //      var   x : MyCls   = new MyCls(1, 2);
+  //
   // Noakes 2017/02/25
   //    Use a temp to compute the value for the init-expression and
   //    use PRIM_MOVE to initialize x.  This simplifies const checking
   //    for the first case and supports a current limitation for RVF
   //
-  } else if (isPrimitiveScalar(type) == true) {
-    var->type = type;
-
+  } else if (isPrimitiveScalar(type) == true ||
+             isNonGenericClass(type) == true) {
     VarSymbol* tmp = newTemp("tmp", type);
 
     defExpr->insertBefore(new DefExpr(tmp));
     defExpr->insertBefore(new CallExpr("=",      tmp, initExpr));
 
     defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+
+    var->type = type;
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
