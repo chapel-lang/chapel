@@ -27,14 +27,14 @@
 // handled, as we want to have the this argument for the type in the initializer
 // argument list, and want to utilize Phase 1 of the initializer body to
 // determine the generic instantiation of it.
+class AggregateType;
 class BlockStmt;
 class CallExpr;
 class DefExpr;
 class Expr;
 class Symbol;
-class SymExpr;
 
-void modAndResolveInitCall (CallExpr* call, SymExpr* typeSym);
+void modAndResolveInitCall (CallExpr* call, AggregateType* typeToNew);
 
 void temporaryInitializerFixup(CallExpr* call);
 

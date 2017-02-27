@@ -1523,6 +1523,7 @@ static void normVarTypeInference(DefExpr* expr);
 static void normVarTypeWoutInit(DefExpr* expr);
 static void normVarTypeWithInit(DefExpr* expr);
 static void normVarNoinit(DefExpr* defExpr);
+static bool isNewExpr(Expr* expr);
 
 static void normalizeVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
@@ -1679,18 +1680,21 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
   } else if (isPrimitiveScalar(type)          == true) {
     CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
 
-    var->type = type;
     defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defVal));
+
+    var->type = type;
 
   } else if (isNonGenericClass(type)          == true) {
     CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
 
-    var->type = type;
     defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defVal));
 
-  } else if (isNonGenericRecordWithInit(type) == true) {
     var->type = type;
+
+  } else if (isNonGenericRecordWithInit(type) == true) {
     defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
+
+    var->type = type;
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
@@ -1756,6 +1760,31 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
     var->type = type;
 
+  } else if (isNonGenericRecordWithInit(type) == true) {
+    if (isNewExpr(initExpr) == true) {
+      Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
+      CallExpr* argExpr = toCallExpr(arg);
+
+      // Insert the arg portion of the initExpr back into tree
+      defExpr->insertAfter(argExpr);
+
+      // Convert it in to a use of the init method
+      argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+
+      // Add _mt and _this (insert at head in reverse order)
+      argExpr->insertAtHead(var);
+      argExpr->insertAtHead(gMethodToken);
+
+    } else {
+      CallExpr* init   = new CallExpr("init", gMethodToken, var);
+      CallExpr* assign = new CallExpr("=",    var,          initExpr);
+
+      defExpr->insertAfter(init);
+      init->insertAfter(assign);
+    }
+
+    var->type = type;
+
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);
@@ -1782,6 +1811,16 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       assign->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
     }
   }
+}
+
+static bool isNewExpr(Expr* expr) {
+  bool retval = false;
+
+  if (CallExpr* callExpr = toCallExpr(expr)) {
+    retval = callExpr->isPrimitive(PRIM_NEW);
+  }
+
+  return retval;
 }
 
 // Internal and Standard modules always honor no-init
