@@ -42,7 +42,7 @@
    Symbols needing special attention and determining which
    of them can be marked as constant. (For a ContextCallExpr,
    the relevant Symbol is the temporary that stores the result
-   of the ContextCallExpr). Next, it determines which of thes
+   of the ContextCallExpr). Next, it determines which of these
    Symbols can be `const ref` and which must continue to be
    mutable `ref`. The general strategy there is to keep track
    of symbols of unknown const-ness.
