@@ -5116,31 +5116,8 @@ static void resolveNew(CallExpr* call) {
       if (AggregateType* at = toAggregateType(type)) {
         SET_LINENO(call);
 
-        bool initCall = false;
-
-        // Replace the type with the constructor call name
+        // Begin to support new-style initializers
         if (at->initializerStyle == DEFINES_INITIALIZER) {
-          if (isClass(at) == true) {
-            typeExpr->replace(new UnresolvedSymExpr("_new"));
-          } else {
-            typeExpr->replace(new UnresolvedSymExpr("init"));
-          }
-
-          initCall = true;
-
-        } else {
-          FnSymbol* ctInit = at->defaultInitializer;
-
-          typeExpr->replace(new UnresolvedSymExpr(ctInit->name));
-        }
-
-        // Convert the PRIM_NEW to a normal call
-        call->primitive = NULL;
-        call->baseExpr  = call->get(1)->remove();
-
-        parent_insert_help(call, call->baseExpr);
-
-        if (initCall) {
           if (at->symbol->hasFlag(FLAG_GENERIC)) {
             USR_FATAL(call,
                       "Sorry, new style initializers don't work with "
@@ -5148,6 +5125,18 @@ static void resolveNew(CallExpr* call) {
           } else {
             VarSymbol* newTmp = newTemp("new_temp", at);
             DefExpr*   def    = new DefExpr(newTmp);
+
+            if (isClass(at) == true) {
+              typeExpr->replace(new UnresolvedSymExpr("_new"));
+            } else {
+              typeExpr->replace(new UnresolvedSymExpr("init"));
+            }
+
+            // Convert the PRIM_NEW to a normal call
+            call->primitive = NULL;
+            call->baseExpr  = call->get(1)->remove();
+
+            parent_insert_help(call, call->baseExpr);
 
             if (isBlockStmt(call->parentExpr) == true) {
               call->insertBefore(def);
@@ -5164,10 +5153,24 @@ static void resolveNew(CallExpr* call) {
               call->insertAtHead(new SymExpr(newTmp));
               call->insertAtHead(new SymExpr(gMethodToken));
             }
-          }
-        }
 
-        resolveExpr(call);
+            resolveExpr(call);
+          }
+
+        // Continue to support old-style constructors
+        } else {
+          FnSymbol* ctInit = at->defaultInitializer;
+
+          typeExpr->replace(new UnresolvedSymExpr(ctInit->name));
+
+          // Convert the PRIM_NEW to a normal call
+          call->primitive = NULL;
+          call->baseExpr  = call->get(1)->remove();
+
+          parent_insert_help(call, call->baseExpr);
+
+          resolveExpr(call);
+        }
       }
     }
   }
