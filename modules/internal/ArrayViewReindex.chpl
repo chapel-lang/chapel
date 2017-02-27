@@ -110,7 +110,7 @@ module ArrayViewReindex {
     }
 
     iter these(param tag: iterKind) ref where tag == iterKind.standalone && !localeModelHasSublocales {
-      forall i in privDom {
+      for i in privDom.these(tag) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
           yield indexCache.shiftedDataElem(dataIdx);
