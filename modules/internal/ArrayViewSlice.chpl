@@ -36,6 +36,7 @@ class ArrayViewSliceArr: BaseArr {
 
   proc shouldUseIndexCache() param {
     return _ArrInstance.isDefaultRectangular() &&
+           _containsRCRE() &&
            defRectSimpleDData;
   }
 
