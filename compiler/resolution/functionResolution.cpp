@@ -5286,11 +5286,8 @@ static void resolveNew(CallExpr* call) {
     parent_insert_help(call, call->baseExpr);
 
     if (initCall) {
-      // 4: insert the allocation for the instance and pass that in as an
-      // argument if we're making a call to an initializer
-      DefExpr* thisActDef = modAndResolveInitCall(call, toReplace);
-      if (thisActDef)
-        resolveExpr(thisActDef);
+      // call special case function for initializers
+      modAndResolveInitCall(call, toReplace);
     } else {
 
       // Now finish resolving it, since we are after all in

@@ -314,20 +314,8 @@ gatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
 /* end of function resolution steal */
 
 
-DefExpr* modAndResolveInitCall (CallExpr* call, SymExpr* typeSym) {
+void modAndResolveInitCall (CallExpr* call, SymExpr* typeSym) {
   Type*      typeToNew = typeSym->symbol()->typeInfo();
-  VarSymbol* new_temp  = newTemp("new_temp", typeToNew);
-  DefExpr*   def       = new DefExpr(new_temp);
-  Expr* insertBeforeMe = NULL;
-
-  if(isBlockStmt(call->parentExpr) == true) {
-    insertBeforeMe = call;
-
-  } else {
-    insertBeforeMe = call->parentExpr;
-  }
-
-  insertBeforeMe->insertBefore(def);
 
   if (isClass(typeToNew) == true &&
       typeToNew->symbol->hasFlag(FLAG_GENERIC) == false) {
@@ -335,10 +323,17 @@ DefExpr* modAndResolveInitCall (CallExpr* call, SymExpr* typeSym) {
     call->insertAtHead(new SymExpr(typeToNew->symbol));
 
     resolveCall(call);
-
-    def->remove();
-    return NULL; // the def we created wasn't useful
   } else {
+    VarSymbol* new_temp  = newTemp("new_temp", typeToNew);
+    DefExpr*   def       = new DefExpr(new_temp);
+
+    if(isBlockStmt(call->parentExpr) == true) {
+      call->insertBefore(def);
+
+    } else {
+      call->parentExpr->insertBefore(def);
+    }
+
     // Invoking an instance method
     call->insertAtHead(new NamedExpr("this", new SymExpr(new_temp)));
     call->insertAtHead(new SymExpr(gMethodToken));
@@ -362,12 +357,7 @@ DefExpr* modAndResolveInitCall (CallExpr* call, SymExpr* typeSym) {
         resolveFns(call->isResolved());
 
         def->remove();
-        return NULL;
-      } else {
-        return def;
       }
-    } else {
-      return def;
     }
   }
 }

@@ -34,7 +34,7 @@ class Expr;
 class Symbol;
 class SymExpr;
 
-DefExpr* modAndResolveInitCall (CallExpr* call, SymExpr* typeSym);
+void modAndResolveInitCall (CallExpr* call, SymExpr* typeSym);
 
 void temporaryInitializerFixup(CallExpr* call);
 
