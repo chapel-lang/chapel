@@ -1,4 +1,0 @@
-Testing associative array of arrays...
-3
-0
-assoc-ref-return.chpl:26: error: halt reached - cannot implicitly add to an array's domain when the domain is used by more than one array: 2
