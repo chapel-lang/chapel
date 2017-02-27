@@ -5141,14 +5141,12 @@ static void resolveNew(CallExpr* call) {
         parent_insert_help(call, call->baseExpr);
 
         if (initCall) {
-          Type* typeToNew = typeExpr->symbol()->typeInfo();
-
-          if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
+          if (at->symbol->hasFlag(FLAG_GENERIC)) {
             USR_FATAL(call,
                       "Sorry, new style initializers don't work with "
                       "generics yet.  Stay tuned!");
           } else {
-            VarSymbol* newTmp = newTemp("new_temp", typeToNew);
+            VarSymbol* newTmp = newTemp("new_temp", at);
             DefExpr*   def    = new DefExpr(newTmp);
 
             if (isBlockStmt(call->parentExpr) == true) {
@@ -5157,9 +5155,9 @@ static void resolveNew(CallExpr* call) {
               call->parentExpr->insertBefore(def);
             }
 
-            if (isClass(typeToNew) == true) {
+            if (isClass(at) == true) {
               // Invoking a type  method
-              call->insertAtHead(new SymExpr(typeToNew->symbol));
+              call->insertAtHead(new SymExpr(at->symbol));
 
             } else {
               // Invoking an instance method
