@@ -45,7 +45,7 @@ module ArrayViewReindex {
           if _ArrInstance.isSliceArrayView() && !_ArrInstance._containsRCRE() {
             // Only slices below in the view stack, which won't have built up
             // an indexCache.
-            return _ArrInstance._getActualArray().dsiGetRAD().toReindex(dom);
+            return _ArrInstance._getActualArray().dsiGetRAD().toSlice(_ArrInstance.dom).toReindex(dom);
           } else {
             return _ArrInstance.indexCache.toReindex(dom);
           }

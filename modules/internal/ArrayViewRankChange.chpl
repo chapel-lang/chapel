@@ -48,7 +48,7 @@ class ArrayViewRankChangeArr: BaseArr {
         if _ArrInstance.isSliceArrayView() && !_ArrInstance._containsRCRE() {
           // Only slices below in the view stack, which won't have built up
           // an indexCache.
-          return _ArrInstance._getActualArray().dsiGetRAD().toRankChange(dom, collapsedDim, idx);
+          return _ArrInstance._getActualArray().dsiGetRAD().toSlice(_ArrInstance.dom).toRankChange(dom, collapsedDim, idx);
         } else {
           return _ArrInstance.indexCache.toRankChange(dom, collapsedDim, idx);
         }
