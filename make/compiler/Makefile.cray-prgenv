@@ -54,19 +54,15 @@ GEN_DYNAMIC_FLAG = -dynamic
 LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 
-# Determine whether we need libnuma.  No static version of it is available.
-# If memkind is loaded, we need libnuma, and linking defaults to dynamic.
-# Otherwise, if the locale model is not flat, we need libnuma, and
-# linking must be forced to dynamic.
-ifneq (,$(CRAY_MEMKIND))
-CHPL_HWLOC_MORE_CFG_OPTIONS += --enable-libnuma
-else ifneq ($(CHPL_MAKE_LOCALE_MODEL), flat)
-CHPL_HWLOC_MORE_CFG_OPTIONS += --enable-libnuma
+# With locale models other than 'flat' we will need libnuma.  That is
+# so far available only in .so form, but the PrgEnv compilers default
+# to forcing static linking.  So, override them in this case.
+ifneq ($(CHPL_MAKE_LOCALE_MODEL), flat)
 RUNTIME_LFLAGS += -dynamic
 endif
 
 # Don't throw e.g. -march with a PrgEnv compiler since the PrgEnv environment
-# will take care of that Since we want to be able to get other flags from e.g.
+# will take care of that. Since we want to be able to get other flags from e.g.
 # Makefile.intel, here we replace SPECIALIZE_CFLAGS with nothing.
 SPECIALIZE_CFLAGS =
 

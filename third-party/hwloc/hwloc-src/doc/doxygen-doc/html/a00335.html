@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.5</span>
+   &#160;<span id="projectnumber">1.11.6</span>
    </div>
   </td>
  </tr>
@@ -157,6 +157,7 @@ I do not want hwloc to rediscover my enormous machine topology every time I reru
 <p>Although the topology discovery is not expensive on common machines, its overhead may become significant when multiple processes repeat the discovery on large machines (for instance when starting one process per core in a parallel application). The machine topology usually does not vary much, except if some cores are stopped/restarted or if the administrator restrictions are modified. Thus rediscovering the whole topology again and again may look useless.</p>
 <p>For this purpose, hwloc offers XML import/export features. It lets you save the discovered topology to a file (for instance with the lstopo program) and reload it later by setting the HWLOC_XMLFILE environment variable. The HWLOC_THISSYSTEM environment variable should also be set to 1 to assert that loaded file is really the underlying system.</p>
 <p>Loading a XML topology is usually much faster than querying multiple files or calling multiple functions of the operating system. It is also possible to manipulate such XML files with the C programming interface, and the import/export may also be directed to memory buffer (that may for instance be transmitted between applications through a package). See also <a class="el" href="a00329.html">Importing and exporting topologies from/to XML files</a>.</p>
+<dl class="section note"><dt>Note</dt><dd>The environment variable HWLOC_THISSYSTEM_ALLOWED_RESOURCES may be used to load a XML topology that contains the entire machine and restrict it to the part that is actually available to the current process (e.g. when Linux Cgroup/Cpuset are used to restrict the set of resources). See <a class="el" href="a00323.html">Environment Variables</a>.</dd></dl>
 <h2><a class="anchor" id="faq_multitopo"></a>
 How many topologies may I use in my program?</h2>
 <p>hwloc lets you manipulate multiple topologies at the same time. However these topologies consume memory and system resources (for instance file descriptors) until they are destroyed. It is therefore discouraged to open the same topology multiple times.</p>
@@ -176,12 +177,12 @@ How do I annotate the topology with private notes?</h2>
 <h1><a class="anchor" id="faq3"></a>
 Caveats</h1>
 <h2><a class="anchor" id="faq_slow_lstopo"></a>
-Why is lstopo slow?</h2>
-<p>lstopo enables most hwloc discovery flags by default so that the output topology is as precise as possible (while hwloc disables many of them by default). This includes I/O device discovery through PCI libraries as well as external libraries such as NVML. To speed up lstopo, you may disable such features with command-line options such as <code>--no-io</code>.</p>
+Why is hwloc slow?</h2>
+<p>Building a hwloc topology on a large machine may be slow because the discovery of hundreds of hardware cores or threads takes time (especially when reading thousands of sysfs files on Linux). One should consider using XML (see <a class="el" href="a00335.html#faq_xml">I do not want hwloc to rediscover my enormous machine topology every time I rerun a process</a>) to work around such issues.</p>
+<p>Additionally, lstopo enables most hwloc objects and discovery flags by default so that the output topology is as precise as possible (while hwloc disables many of them by default). This includes I/O device discovery through PCI libraries as well as external libraries such as NVML. To speed up lstopo, you may disable such features with command-line options such as <code>--no-io</code>.</p>
 <p>When NVIDIA GPU probing is enabled with CUDA or NVML, one should make sure that the <em>Persistent</em> mode is enabled (with <code>nvidia-smi -pm 1</code>) to avoid significant GPU initialization overhead.</p>
 <p>When AMD GPU discovery is enabled with OpenCL and hwloc is used remotely over ssh, some spurious round-trips on the network may significantly increase the discovery time. Forcing the <code>DISPLAY</code> environment variable to the remote X server display (usually <code>:0</code>) instead of only setting the <code>COMPUTE</code> variable may avoid this.</p>
 <p>Also remember that these components may be disabled at build-time with configure flags such as <code>--disable-opencl</code>, <code>--disable-cuda</code> or <code>--disable-nvml</code>, and at runtime with the environment variable <code>HWLOC_COMPONENTS=-opencl,cuda,nvml</code>.</p>
-<p>If loading topologies is slow because the machine contains tons of processors, one should also consider using XML (see <a class="el" href="a00335.html#faq_xml">I do not want hwloc to rediscover my enormous machine topology every time I rerun a process</a>).</p>
 <h2><a class="anchor" id="faq_privileged"></a>
 Does hwloc require privileged access?</h2>
 <p>hwloc discovers the topology by querying the operating system. Some minor features may require privileged access to the operation system. For instance memory module and PCI link speed discovery on Linux is reserved to root, and the entire PCI discovery on Solaris and BSDs requires access to some special files that are usually restricted to root (/dev/pci* or /devices/pci*).</p>

@@ -1,4 +1,4 @@
-.TH "hwloc_obj" 3 "Thu Nov 10 2016" "Version 1.11.5" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_obj" 3 "Thu Feb 23 2017" "Version 1.11.6" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -151,7 +151,7 @@ Children, \fCchildren\fP[0 \&.\&. arity -1]\&.
 .SS "\fBhwloc_cpuset_t\fP hwloc_obj::complete_cpuset"
 
 .PP
-The complete CPU set of logical processors of this object,\&. This includes not only the same as the cpuset field, but also the CPUs for which topology information is unknown or incomplete, and the CPUs that are ignored when the \fBHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM\fP flag is not set\&. Thus no corresponding PU object may be found in the topology, because the precise position is undefined\&. It is however known that it would be somewhere under this object\&.
+The complete CPU set of logical processors of this object,\&. This includes not only the same as the cpuset field, but also some CPUs for which topology information is unknown or incomplete, and the CPUs that are ignored when the \fBHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM\fP flag is not set\&. Thus no corresponding PU object may be found in the topology, because the precise position is undefined\&. It is however known that it would be somewhere under this object\&.
 .PP
 \fBNote:\fP
 .RS 4
@@ -162,7 +162,7 @@ Its value must not be changed, \fBhwloc_bitmap_dup()\fP must be used instead\&.
 .SS "\fBhwloc_nodeset_t\fP hwloc_obj::complete_nodeset"
 
 .PP
-The complete NUMA node set of this object,\&. This includes not only the same as the nodeset field, but also the NUMA nodes for which topology information is unknown or incomplete, and the nodes that are ignored when the \fBHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM\fP flag is not set\&. Thus no corresponding NUMA node object may be found in the topology, because the precise position is undefined\&. It is however known that it would be somewhere under this object\&.
+The complete NUMA node set of this object,\&. This includes not only the same as the nodeset field, but also some NUMA nodes for which topology information is unknown or incomplete, and the nodes that are ignored when the \fBHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM\fP flag is not set\&. Thus no corresponding NUMA node object may be found in the topology, because the precise position is undefined\&. It is however known that it would be somewhere under this object\&.
 .PP
 If there are no NUMA nodes in the machine, all the memory is close to this object, so \fCcomplete_nodeset\fP is full\&.
 .PP

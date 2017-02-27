@@ -116,8 +116,6 @@ public:
   virtual void       replaceChild(BaseAST* oldAst,
                                   BaseAST* newAst)               = 0;
 
-  virtual FnSymbol*  getFnSymbol();
-
   virtual bool       isConstant()                              const;
   virtual bool       isConstValWillNotChange()                 const;
   virtual bool       isImmediate()                             const;
@@ -464,7 +462,6 @@ public:
   DECLARE_SYMBOL_COPY(FnSymbol);
 
   FnSymbol*                  copyInnerCore(SymbolMap* map);
-  FnSymbol*                  getFnSymbol();
   void                       replaceChild(BaseAST* oldAst, BaseAST* newAst);
 
   FnSymbol*                  partialCopy(SymbolMap* map);

@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.5</span>
+   &#160;<span id="projectnumber">1.11.6</span>
    </div>
   </td>
  </tr>
@@ -59,7 +59,11 @@ $(function() {
 <p class="enddd"></p>
 </dd>
 <dt>HWLOC_THISSYSTEM=1 </dt>
-<dd><p class="startdd">enforces the return value of <a class="el" href="a00166.html#ga68ffdcfd9175cdf40709801092f18017" title="Does the topology context come from this system? ">hwloc_topology_is_thissystem()</a>, as if <a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea6ecb6abc6a0bb75e81564f8bca85783b" title="Assume that the selected backend provides the topology for the system on which we are running...">HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM</a> was set with <a class="el" href="a00166.html#gaaeed4df656979e5f16befea9d29b814b" title="Set OR&#39;ed flags to non-yet-loaded topology. ">hwloc_topology_set_flags()</a>. It means that it makes hwloc assume that the selected backend provides the topology for the system on which we are running, even if it is not the OS-specific backend but the XML backend for instance. This means making the binding functions actually call the OS-specific system calls and really do binding, while the XML backend would otherwise provide empty hooks just returning success. This can be used for efficiency reasons to first detect the topology once, save it to an XML file, and quickly reload it later through the XML backend, but still having binding functions actually do bind. </p>
+<dd><p class="startdd">enforces the return value of <a class="el" href="a00166.html#ga68ffdcfd9175cdf40709801092f18017" title="Does the topology context come from this system? ">hwloc_topology_is_thissystem()</a>, as if <a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea6ecb6abc6a0bb75e81564f8bca85783b" title="Assume that the selected backend provides the topology for the system on which we are running...">HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM</a> was set with <a class="el" href="a00166.html#gaaeed4df656979e5f16befea9d29b814b" title="Set OR&#39;ed flags to non-yet-loaded topology. ">hwloc_topology_set_flags()</a>. It means that it makes hwloc assume that the selected backend provides the topology for the system on which we are running, even if it is not the OS-specific backend but the XML backend for instance. This means making the binding functions actually call the OS-specific system calls and really do binding, while the XML backend would otherwise provide empty hooks just returning success. This can be used for efficiency reasons to first detect the topology once, save it to an XML file, and quickly reload it later through the XML backend, but still having binding functions actually do bind. This also enables support for the variable HWLOC_THISSYSTEM_ALLOWED_RESOURCES. </p>
+<p class="enddd"></p>
+</dd>
+<dt>HWLOC_THISSYSTEM_ALLOWED_RESOURCES=1 </dt>
+<dd><p class="startdd">Get the set of allowed resources from the native operating system even if the topology was loaded from XML or synthetic description, as if <a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea1b66bbd66e900e5c837f71defb32ad89" title="Get the set of allowed resources from the local operating system even if the topology was loaded from...">HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES</a> was set with <a class="el" href="a00166.html#gaaeed4df656979e5f16befea9d29b814b" title="Set OR&#39;ed flags to non-yet-loaded topology. ">hwloc_topology_set_flags()</a>. This variable requires the topology to match the current system (see the variable HWLOC_THISSYSTEM). This is useful when the topology is not loaded directly from the local machine (e.g. for performance reason) and it comes with all resources, but the running process is restricted to only a part of the machine (for instance because of Linux Cgroup/Cpuset). </p>
 <p class="enddd"></p>
 </dd>
 <dt>HWLOC_HIDE_ERRORS=0 </dt>

@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.5</span>
+   &#160;<span id="projectnumber">1.11.6</span>
    </div>
   </td>
  </tr>
@@ -67,7 +67,8 @@ Enumerations</h2></td></tr>
 <a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea426b18c349f15d7046bb391d96fa947c">HWLOC_TOPOLOGY_FLAG_IO_BRIDGES</a>, 
 <br />
 &#160;&#160;<a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea4a41dc181649ef81c2dcd44a54e271b9">HWLOC_TOPOLOGY_FLAG_WHOLE_IO</a>, 
-<a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdeaae509a0bed4a7067e0116c75c661178d">HWLOC_TOPOLOGY_FLAG_ICACHES</a>
+<a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdeaae509a0bed4a7067e0116c75c661178d">HWLOC_TOPOLOGY_FLAG_ICACHES</a>, 
+<a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea1b66bbd66e900e5c837f71defb32ad89">HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES</a>
 <br />
  }</td></tr>
 <tr class="separator:gada025d3ec20b4b420f8038d23d6e7bde"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -129,7 +130,8 @@ Functions</h2></td></tr>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ggada025d3ec20b4b420f8038d23d6e7bdea129b4fea1300be22bbaf0bb0958994c8"></a>HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM&#160;</td><td class="fielddoc"><p>Detect the whole system, ignore reservations and offline settings. </p>
 <p>Gather all resources, even if some were disabled by the administrator. For instance, ignore Linux Cgroup/Cpusets and gather all processors and memory nodes, and ignore the fact that some resources may be offline.</p>
-<p>When this flag is not set, PUs that are disallowed are not added to the topology. Parent objects (package, core, cache, etc.) are added only if some of their children are allowed. NUMA nodes are always added but their available memory is set to 0 when disallowed. </p>
+<p>When this flag is not set, PUs that are disallowed are not added to the topology. Parent objects (package, core, cache, etc.) are added only if some of their children are allowed. NUMA nodes are always added but their available memory is set to 0 when disallowed.</p>
+<p>If the current topology is exported to XML and reimported later, this flag should be set again in the reimported topology so that disallowed resources are reimported as well. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="ggada025d3ec20b4b420f8038d23d6e7bdea6ecb6abc6a0bb75e81564f8bca85783b"></a>HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM&#160;</td><td class="fielddoc"><p>Assume that the selected backend provides the topology for the system on which we are running. </p>
 <p>This forces <a class="el" href="a00166.html#ga68ffdcfd9175cdf40709801092f18017" title="Does the topology context come from this system? ">hwloc_topology_is_thissystem()</a> to return 1, i.e. makes hwloc assume that the selected backend provides the topology for the system on which we are running, even if it is not the OS-specific backend but the XML backend for instance. This means making the binding functions actually call the OS-specific system calls and really do binding, while the XML backend would otherwise provide empty hooks just returning success.</p>
@@ -147,6 +149,12 @@ Functions</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="ggada025d3ec20b4b420f8038d23d6e7bdeaae509a0bed4a7067e0116c75c661178d"></a>HWLOC_TOPOLOGY_FLAG_ICACHES&#160;</td><td class="fielddoc"><p>Detect instruction caches. </p>
 <p>This flag enables detection of Instruction caches, instead of only Data and Unified caches. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ggada025d3ec20b4b420f8038d23d6e7bdea1b66bbd66e900e5c837f71defb32ad89"></a>HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES&#160;</td><td class="fielddoc"><p>Get the set of allowed resources from the local operating system even if the topology was loaded from XML or synthetic description. </p>
+<p>If the topology was loaded from XML or from a synthetic string, restrict it by applying the current process restrictions such as Linux Cgroup/Cpuset.</p>
+<p>This is useful when the topology is not loaded directly from the local machine (e.g. for performance reason) and it comes with all resources, while the running process is restricted to only parts of the machine.</p>
+<p>This flag is ignored unless <a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea6ecb6abc6a0bb75e81564f8bca85783b" title="Assume that the selected backend provides the topology for the system on which we are running...">HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM</a> is also set since the loaded topology must match the underlying machine where restrictions will be gathered from.</p>
+<p>Setting the environment variable HWLOC_THISSYSTEM_ALLOWED_RESOURCES would result in the same behavior. </p>
 </td></tr>
 </table>
 

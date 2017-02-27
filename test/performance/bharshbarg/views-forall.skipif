@@ -1,0 +1,5 @@
+# These configurations currently hit the timeout limit.
+# Not worth customizing the problem size
+CHPL_TEST_VGRND_EXE == on
+COMPOPTS <= --no-local
+CHPL_LOCALE_MODEL == numa

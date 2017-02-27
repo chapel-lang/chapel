@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -338,8 +338,11 @@ hwloc__xml_import_object_attr(struct hwloc_topology *topology __hwloc_attribute_
     }
   }
   else if (!strcmp(name, "subtype")) {
-    /* FIXME: should be "CoProcType" for osdev/coproc but we don't have that type-specific attribute yet */
     hwloc_obj_add_info(obj, "Type", value);
+    /* will be changed into CoProcType in the caller once we have osdev.type too */
+  }
+  else if (!strcmp(name, "gp_index")) {
+    /* doesn't exist in v1.x */
   }
 
 
@@ -685,6 +688,21 @@ hwloc__xml_import_object(hwloc_topology_t topology,
 	goto error_with_object;
       hwloc__xml_import_object_attr(topology, obj, attrname, attrvalue, state);
     }
+  }
+
+  /* obj->subtype is imported as "CoProcType" instead of "Type" for osdev/coproc.
+   * Cannot properly import earlier because osdev.type is imported after subtype.
+   * Don't do it later so that the actual infos array isn't imported yet,
+   * there's likely only "Type" in obj->infos[].
+   */
+  if (obj->type == HWLOC_OBJ_OS_DEVICE && obj->attr->osdev.type == HWLOC_OBJ_OSDEV_COPROC) {
+    unsigned i;
+    for(i=0; i<obj->infos_count; i++)
+      if (!strcmp(obj->infos[i].name, "Type")) {
+	/* HACK: we're not supposed to modify infos[].name from here */
+	free(obj->infos[i].name);
+	obj->infos[i].name = strdup("CoProcType");
+      }
   }
 
   if (parent) {

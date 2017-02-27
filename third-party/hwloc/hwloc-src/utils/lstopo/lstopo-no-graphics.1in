@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2009-2016 Inria.  All rights reserved.
+.\" Copyright © 2009-2017 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
@@ -122,6 +122,11 @@ Do not show Instruction caches, only Data and Unified caches are displayed.
 .TP
 \fB\-\-whole\-system\fR
 Do not consider administration limitations.
+.TP
+\fB\-\-flags\fR <flags>
+Enforce topology flags.
+The default is \fB0\fR.
+These flags are passed to \fIhwloc_topology_set_flags()\fR.
 .TP
 \fB\-\-merge\fR
 Do not show levels that do not have a hierarchical impact.
