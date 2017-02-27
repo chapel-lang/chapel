@@ -5146,30 +5146,31 @@ static void resolveNew(CallExpr* call) {
         if (initCall) {
           // 4: insert the allocation for the instance and pass that in
           // as an argument if we're making a call to an initializer
-          Type*      typeToNew = typeExpr->symbol()->typeInfo();
-          VarSymbol* newTmp    = newTemp("new_temp", typeToNew);
-          DefExpr*   def       = new DefExpr(newTmp);
+          Type* typeToNew = typeExpr->symbol()->typeInfo();
 
           if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
             USR_FATAL(call,
                       "Sorry, new style initializers don't work with "
                       "generics yet.  Stay tuned!");
-          }
-
-          if (isBlockStmt(call->parentExpr) == true) {
-            call->insertBefore(def);
           } else {
-            call->parentExpr->insertBefore(def);;
-          }
+            VarSymbol* newTmp = newTemp("new_temp", typeToNew);
+            DefExpr*   def    = new DefExpr(newTmp);
 
-          if (isClass(typeToNew) == true) {
-            // Invoking a type  method
-            call->insertAtHead(new SymExpr(typeToNew->symbol));
+            if (isBlockStmt(call->parentExpr) == true) {
+              call->insertBefore(def);
+            } else {
+              call->parentExpr->insertBefore(def);
+            }
 
-          } else {
-            // Invoking an instance method
-            call->insertAtHead(new SymExpr(newTmp));
-            call->insertAtHead(new SymExpr(gMethodToken));
+            if (isClass(typeToNew) == true) {
+              // Invoking a type  method
+              call->insertAtHead(new SymExpr(typeToNew->symbol));
+
+            } else {
+              // Invoking an instance method
+              call->insertAtHead(new SymExpr(newTmp));
+              call->insertAtHead(new SymExpr(gMethodToken));
+            }
           }
         }
 
