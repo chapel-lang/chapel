@@ -67,7 +67,9 @@ symExprIsSetByDef(SymExpr* def) {
     // to a function (typically = ) as ref, inout, or out argument.
     if (def->parentExpr) {
       if (CallExpr* parentCall = toCallExpr(def->parentExpr)) {
-        if (parentCall->isPrimitive(PRIM_MOVE)) {
+        if (parentCall->isPrimitive(PRIM_MOVE) &&
+            parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
+            parentCall->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
           // Ignore this def
           // We don't care about a PRIM_MOVE because it's setting
           // a reference
