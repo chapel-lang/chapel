@@ -5174,19 +5174,6 @@ static void resolveNew(CallExpr* call) {
         }
       }
     }
-  }
-
-  // Do some error checking
-  if (FnSymbol* fn = call->isResolved()) {
-    if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
-
-    } else if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "init") == 0) {
-
-    } else if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "_new") == 0) {
-
-    } else {
-      USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
-    }
 
   } else {
     if (Expr* arg = call->get(1)) {
