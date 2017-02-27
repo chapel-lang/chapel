@@ -632,6 +632,10 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
         if (type == dtVoid) {
           retval = var;
 
+        // The primitive scalars are treated as defined
+        } else if (isPrimitiveScalar(type) == true) {
+          retval = var;
+
         // non generic records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
           if (isNonGenericRecordWithInit(at) == true) {
@@ -1720,35 +1724,63 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
 }
 
 static void normVarTypeWithInit(DefExpr* defExpr) {
-  Symbol*    var      = defExpr->sym;
-  Expr*      type     = defExpr->exprType->remove();
-  Expr*      init     = defExpr->init->remove();
-
-  VarSymbol* typeTemp = newTemp("type_tmp");
-  DefExpr*   typeDefn = new DefExpr(typeTemp);
-  CallExpr*  initCall = new CallExpr(PRIM_INIT, type);
-  CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
-  CallExpr*  assign   = new CallExpr("=",       typeTemp,  init);
+  Symbol* var      = defExpr->sym;
+  Expr*   typeExpr = defExpr->exprType->remove();
+  Expr*   initExpr = defExpr->init->remove();
+  Type*   type     = typeForTypeSpecifier(typeExpr);
 
   INT_ASSERT(var->hasFlag(FLAG_NO_COPY) == false);
 
-  if (var->hasFlag(FLAG_CONST) == true) {
-    VarSymbol* tmp     = newTemp("const_tmp");
-    CallExpr*  varMove = new CallExpr(PRIM_MOVE, tmp, typeTemp);
+  if (false) {
+
+
+  //
+  // e.g. const x : int     = 10;
+  //      var   y : int(32) = 20;
+  //
+  //      var   x : MyCls   = new MyCls(1, 2);
+  //
+  // Noakes 2017/02/25
+  //    Use a temp to compute the value for the init-expression and
+  //    use PRIM_MOVE to initialize x.  This simplifies const checking
+  //    for the first case and supports a current limitation for RVF
+  //
+  } else if (isPrimitiveScalar(type) == true ||
+             isNonGenericClass(type) == true) {
+    VarSymbol* tmp = newTemp("tmp", type);
 
     defExpr->insertBefore(new DefExpr(tmp));
+    defExpr->insertBefore(new CallExpr("=",      tmp, initExpr));
 
-    defExpr->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(assign);
-    assign->insertAfter(varMove);
-    varMove->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+
+    var->type = type;
 
   } else {
-    defExpr->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(assign);
-    assign->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+    VarSymbol* typeTemp = newTemp("type_tmp");
+    DefExpr*   typeDefn = new DefExpr(typeTemp);
+    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
+    CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
+
+    if (var->hasFlag(FLAG_CONST) == true) {
+      VarSymbol* tmp     = newTemp("const_tmp");
+      CallExpr*  varMove = new CallExpr(PRIM_MOVE, tmp, typeTemp);
+
+      defExpr->insertBefore(new DefExpr(tmp));
+
+      defExpr->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+      initMove->insertAfter(assign);
+      assign->insertAfter(varMove);
+      varMove->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+
+    } else {
+      defExpr->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+      initMove->insertAfter(assign);
+      assign->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+    }
   }
 }
 

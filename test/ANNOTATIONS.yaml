@@ -218,6 +218,9 @@ all:
     - multi-ddata (#5047)
   01/11/17:
     - Move the multi-ddata metadata fields, checking cache effects for 'flat'. (#5145)
+  02/19/17:
+    - text: Turned hyperthreading on for our testing machine
+      config: chapcs
 
 
 AllCompTime:
@@ -701,6 +704,10 @@ ra:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
+
+RBC:
+  02/22/17:
+    - update logic for pruning unused module level variables (#5395)
 
 regexdna:
   10/07/14:

@@ -649,7 +649,8 @@ void createTaskFunctions(void) {
               // Do not add remote memory barriers.
               needsMemFence = false;
             } else {
-              FnSymbol* fnSymbol = parent->getFnSymbol();
+              FnSymbol* fnSymbol = toFnSymbol(parent);
+
               // For methods on atomic types, we do not add the memory
               // barriers, because these functions have an 'order'
               // argument, which needs to get passed to the memory barrier,
