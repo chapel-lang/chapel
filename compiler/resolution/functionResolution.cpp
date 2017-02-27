@@ -5118,7 +5118,7 @@ static void resolveNew(CallExpr* call) {
 
         bool initCall = false;
 
-        // 1: replace the type with the constructor call name
+        // Replace the type with the constructor call name
         if (at->initializerStyle == DEFINES_INITIALIZER) {
           if (isClass(at) == true) {
             typeExpr->replace(new UnresolvedSymExpr("_new"));
@@ -5134,18 +5134,13 @@ static void resolveNew(CallExpr* call) {
           typeExpr->replace(new UnresolvedSymExpr(ctInit->name));
         }
 
-        // 2: move the 1st argument into the baseExpr
-        // 3: make it a normal call and not a PRIM_NEW
-        Expr* arg = call->get(1)->remove();
-
+        // Convert the PRIM_NEW to a normal call
         call->primitive = NULL;
-        call->baseExpr  = arg;
+        call->baseExpr  = call->get(1)->remove();
 
         parent_insert_help(call, call->baseExpr);
 
         if (initCall) {
-          // 4: insert the allocation for the instance and pass that in
-          // as an argument if we're making a call to an initializer
           Type* typeToNew = typeExpr->symbol()->typeInfo();
 
           if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
