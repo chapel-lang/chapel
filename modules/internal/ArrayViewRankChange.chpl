@@ -114,8 +114,8 @@ class ArrayViewRankChangeArr: BaseArr {
 
   // TODO: We seem to run into compile-time bugs when using multiple yields.
   // For now, work around them by using an if-expr
-  iter these(param tag: iterKind) ref where tag == iterKind.standalone {
-    for i in privDom.these(tag) {
+  iter these(param tag: iterKind) ref where tag == iterKind.standalone && !localeModelHasSublocales {
+    forall i in privDom {
       yield if shouldUseIndexCache() then indexCache.shiftedDataElem(indexCache.getBlockDataIndex(dom.stridable, i))
             else arr.dsiAccess(chpl_rankChangeConvertIdx(i));
     }
