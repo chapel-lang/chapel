@@ -5118,79 +5118,79 @@ static void resolveNew(CallExpr* call) {
   // 3 make it a normal call rather than a PRIM_NEW
 
   if (SymExpr* typeExpr = primNewTypeExpr(call)) {
-    SET_LINENO(call);
-
-    bool initCall = false;
-
     // 1: replace the type with the constructor call name
-    if (Type* ty = resolveTypeAlias(typeExpr)) {
-      if (AggregateType* ct = toAggregateType(ty)) {
-        if (ct->initializerStyle == DEFINES_INITIALIZER) {
-          const char* name = (isClass(ct) == true) ? "_new" : "init";
+    if (Type* type = resolveTypeAlias(typeExpr)) {
+      if (AggregateType* at = toAggregateType(type)) {
+        SET_LINENO(call);
+
+        bool initCall = false;
+
+        if (at->initializerStyle == DEFINES_INITIALIZER) {
+          const char* name = (isClass(at) == true) ? "_new" : "init";
 
           typeExpr->replace(new UnresolvedSymExpr(name));
 
           initCall = true;
 
         } else {
-          FnSymbol* ctInit = ct->defaultInitializer;
+          FnSymbol* ctInit = at->defaultInitializer;
 
           typeExpr->replace(new UnresolvedSymExpr(ctInit->name));
         }
+
+        // 2: move the 1st argument into the baseExpr
+        // 3: make it a normal call and not a PRIM_NEW
+        Expr* arg = call->get(1);
+
+        arg->remove();
+
+        call->primitive = NULL;
+        call->baseExpr  = arg;
+
+        parent_insert_help(call, call->baseExpr);
+
+        if (initCall) {
+          // 4: insert the allocation for the instance and pass that in as an
+          // argument if we're making a call to an initializer
+          Type*      typeToNew = typeExpr->symbol()->typeInfo();
+          VarSymbol* newTmp    = newTemp("new_temp", typeToNew);
+
+          VarSymbol* newMT     = newTemp("_mt",      dtMethodToken);
+
+          if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
+            USR_FATAL(call,
+                      "Sorry, new style initializers don't work with "
+                      "generics yet.  Stay tuned!");
+          }
+
+          DefExpr* def            = new DefExpr(newTmp);
+          Expr*    insertBeforeMe = NULL;
+
+          if (isBlockStmt(call->parentExpr) == true) {
+            insertBeforeMe = call;
+
+          } else {
+            insertBeforeMe = call->parentExpr;
+          }
+
+          insertBeforeMe->insertBefore(def);
+
+          resolveExpr(def);
+
+          if (isClass(typeToNew) == true) {
+            // Invoking a type  method
+            call->insertAtHead(new SymExpr(typeToNew->symbol));
+
+          } else {
+            // Invoking an instance method
+            call->insertAtHead(new SymExpr(newTmp));
+            call->insertAtHead(new SymExpr(newMT));
+          }
+        }
+
+        resolveExpr(call);
       }
     }
-
-    // 2: move the 1st argument into the baseExpr
-    // 3: make it a normal call and not a PRIM_NEW
-    Expr* arg = call->get(1);
-
-    arg->remove();
-
-    call->primitive = NULL;
-    call->baseExpr  = arg;
-
-    parent_insert_help(call, call->baseExpr);
-
-    if (initCall) {
-      // 4: insert the allocation for the instance and pass that in as an
-      // argument if we're making a call to an initializer
-      Type*      typeToNew = typeExpr->symbol()->typeInfo();
-      VarSymbol* newTmp    = newTemp("new_temp", typeToNew);
-
-      VarSymbol* newMT     = newTemp("_mt",      dtMethodToken);
-
-      if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
-        USR_FATAL(call,
-                  "Sorry, new style initializers don't work with "
-                  "generics yet.  Stay tuned!");
-      }
-
-      DefExpr* def            = new DefExpr(newTmp);
-      Expr*    insertBeforeMe = NULL;
-
-      if (isBlockStmt(call->parentExpr) == true) {
-        insertBeforeMe = call;
-
-      } else {
-        insertBeforeMe = call->parentExpr;
-      }
-
-      insertBeforeMe->insertBefore(def);
-
-      resolveExpr(def);
-
-      if (isClass(typeToNew) == true) {
-        // Invoking a type  method
-        call->insertAtHead(new SymExpr(typeToNew->symbol));
-
-      } else {
-        // Invoking an instance method
-        call->insertAtHead(new SymExpr(newTmp));
-        call->insertAtHead(new SymExpr(newMT));
-      }
-    }
-
-    resolveExpr(call);
   }
 
   // Do some error checking
