@@ -5186,9 +5186,23 @@ resolveFieldInit(CallExpr* call) {
         fs = instantiate->getField(index);
       }
     } else if (fs->hasFlag(FLAG_PARAM)) {
-      // TODO: this part
-      USR_FATAL(call, "Sorry, new style initializers don't work with "
-                "param fields yet. Stay tuned!");
+      AggregateType* instantiate = ct->getInstantiation(rhs, index);
+      if (instantiate != ct) {
+        // TODO: make this set of operations a helper function I can call
+        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(parentFn);
+        INT_ASSERT(parentFn->_this);
+        parentFn->_this->type = instantiate;
+
+        SymbolMap fieldTranslate;
+        for (int i = 1; i <= instantiate->fields.length; i++) {
+          fieldTranslate.put(ct->getField(i), instantiate->getField(i));
+        }
+        update_symbols(parentFn, &fieldTranslate);
+
+        ct = instantiate;
+        fs = instantiate->getField(index);
+      }
     } else if (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) {
       // TODO: this part
       USR_FATAL(call, "Sorry, new style initializers don't work with "
