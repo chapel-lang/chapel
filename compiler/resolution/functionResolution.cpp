@@ -5118,11 +5118,7 @@ static void resolveNew(CallExpr* call) {
 
         // Begin to support new-style initializers
         if (at->initializerStyle == DEFINES_INITIALIZER) {
-          if (at->symbol->hasFlag(FLAG_GENERIC)) {
-            USR_FATAL(call,
-                      "Sorry, new style initializers don't work with "
-                      "generics yet.  Stay tuned!");
-          } else {
+          if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
             VarSymbol* newTmp = newTemp("new_temp", at);
             DefExpr*   def    = new DefExpr(newTmp);
 
@@ -5155,6 +5151,11 @@ static void resolveNew(CallExpr* call) {
             }
 
             resolveExpr(call);
+
+          } else {
+            USR_FATAL(call,
+                      "Sorry, new style initializers don't work with "
+                      "generics yet.  Stay tuned!");
           }
 
         // Continue to support old-style constructors
