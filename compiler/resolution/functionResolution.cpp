@@ -5162,8 +5162,6 @@ static void resolveNew(CallExpr* call) {
             call->parentExpr->insertBefore(def);;
           }
 
-          resolveExpr(def);
-
           if (isClass(typeToNew) == true) {
             // Invoking a type  method
             call->insertAtHead(new SymExpr(typeToNew->symbol));
