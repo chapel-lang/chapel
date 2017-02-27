@@ -5111,24 +5111,20 @@ static void resolveMove(CallExpr* call) {
 static SymExpr* primNewTypeExpr(CallExpr* call);
 
 static void resolveNew(CallExpr* call) {
-  // Perform three transformations on this PRIM_NEW
-  // 1 replace the type in the 1st argument with
-  //   an UnresolvedSymExpr to ct->defaultInitializer->name
-  // 2 move the 1st argument into the baseExpr
-  // 3 make it a normal call rather than a PRIM_NEW
-
   if (SymExpr* typeExpr = primNewTypeExpr(call)) {
-    // 1: replace the type with the constructor call name
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
         SET_LINENO(call);
 
         bool initCall = false;
 
+        // 1: replace the type with the constructor call name
         if (at->initializerStyle == DEFINES_INITIALIZER) {
-          const char* name = (isClass(at) == true) ? "_new" : "init";
-
-          typeExpr->replace(new UnresolvedSymExpr(name));
+          if (isClass(at) == true) {
+            typeExpr->replace(new UnresolvedSymExpr("_new"));
+          } else {
+            typeExpr->replace(new UnresolvedSymExpr("init"));
+          }
 
           initCall = true;
 
@@ -5140,9 +5136,7 @@ static void resolveNew(CallExpr* call) {
 
         // 2: move the 1st argument into the baseExpr
         // 3: make it a normal call and not a PRIM_NEW
-        Expr* arg = call->get(1);
-
-        arg->remove();
+        Expr* arg = call->get(1)->remove();
 
         call->primitive = NULL;
         call->baseExpr  = arg;
@@ -5150,12 +5144,11 @@ static void resolveNew(CallExpr* call) {
         parent_insert_help(call, call->baseExpr);
 
         if (initCall) {
-          // 4: insert the allocation for the instance and pass that in as an
-          // argument if we're making a call to an initializer
+          // 4: insert the allocation for the instance and pass that in
+          // as an argument if we're making a call to an initializer
           Type*      typeToNew = typeExpr->symbol()->typeInfo();
           VarSymbol* newTmp    = newTemp("new_temp", typeToNew);
-
-          VarSymbol* newMT     = newTemp("_mt",      dtMethodToken);
+          DefExpr*   def       = new DefExpr(newTmp);
 
           if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
             USR_FATAL(call,
@@ -5163,17 +5156,11 @@ static void resolveNew(CallExpr* call) {
                       "generics yet.  Stay tuned!");
           }
 
-          DefExpr* def            = new DefExpr(newTmp);
-          Expr*    insertBeforeMe = NULL;
-
           if (isBlockStmt(call->parentExpr) == true) {
-            insertBeforeMe = call;
-
+            call->insertBefore(def);
           } else {
-            insertBeforeMe = call->parentExpr;
+            call->parentExpr->insertBefore(def);;
           }
-
-          insertBeforeMe->insertBefore(def);
 
           resolveExpr(def);
 
@@ -5184,7 +5171,7 @@ static void resolveNew(CallExpr* call) {
           } else {
             // Invoking an instance method
             call->insertAtHead(new SymExpr(newTmp));
-            call->insertAtHead(new SymExpr(newMT));
+            call->insertAtHead(new SymExpr(gMethodToken));
           }
         }
 
