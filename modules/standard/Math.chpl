@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -103,7 +103,7 @@ module Math {
     return result;
   }
 
-  // 
+  //
   //////////////////////////////////////////////////////////////////////////
 
 
@@ -367,11 +367,11 @@ module Math {
   }
 
 
-  /* Returns the complex conjugate of the argument `z`.
+  /* Returns the complex conjugate of the complex argument `z`.
 
      :rtype: A complex number of the same type as `z`.
   */
-  inline proc conjg(z: complex(?w)): complex(w) {
+  inline proc conjg(z: complex(?w)) {
     extern proc conjf(z: complex(64)): complex(64);
     extern proc conj(z: complex(128)): complex(128);
     if w == 64 then
@@ -380,6 +380,29 @@ module Math {
       return conj(z);
   }
 
+  /* Returns the complex conjugate of the imaginary argument `z`.
+
+     :rtype: An imaginary number of the same type as `z`.
+  */
+  inline proc conjg(z: imag(?w)) {
+    return -z;
+  }
+
+  /* Returns the argument `z`.
+
+     :rtype: A number that is not complex or imaginary of the same type as `z`.
+  */
+  inline proc conjg(z: int(?w)) {
+    return z;
+  }
+
+  inline proc conjg(z: uint(?w)) {
+    return z;
+  }
+
+  inline proc conjg(z: real(?w)) {
+    return z;
+  }
 
   /* Returns the projection of `z` on a Riemann sphere. */
   inline proc cproj(z: complex(?w)): real(w/2) {
@@ -437,7 +460,7 @@ module Math {
 
 
   /* Returns :proc:`ceil`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded up to the nearest integer. 
+     i.e., the fraction `m`/`n` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
@@ -451,7 +474,7 @@ module Math {
       else                     (m + n + 1) / n;
 
   /* Returns :proc:`ceil`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded up to the nearest integer. 
+     i.e., the fraction `m`/`n` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
@@ -682,7 +705,7 @@ module Math {
   extern proc log10(x: real(64)): real(64);
 
   /* Returns the base 10 logarithm of the argument `x`.
-     
+
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log10(x : real(32)): real(32) {
@@ -760,7 +783,7 @@ module Math {
   }
 
   /* Returns the base 2 logarithm of the argument `x`.
-     
+
      :rtype: `int(64)`
 
      It is an error if `x` is less than or equal to zero.
@@ -814,7 +837,7 @@ module Math {
   }
 
   /* Computes the mod operator on the two numbers, defined as
-     ``mod(x,y) = x - y * floor(x / y)``. 
+     ``mod(x,y) = x - y * floor(x / y)``.
 
      The return value has the same type as `x`.
   */
@@ -940,7 +963,7 @@ module Math {
   }
 
 
-  /* Returns the square root of the argument `x`.  
+  /* Returns the square root of the argument `x`.
 
      It is an error if the `x` is less than zero.
   */
