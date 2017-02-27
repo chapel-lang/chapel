@@ -14,14 +14,6 @@ X is:
 9.0 10.0 11.0 12.0
 13.0 14.0 15.0 16.0
 
-X's representation:
-off=(1, 1)
-blk=(24, 4)
-str=(1, 1)
-origin=25
-factoredOffs=28
-noinit_data=true
-
 X is:
 1.1 2.1 3.1 4.1
 5.1 6.1 7.1 8.1
@@ -126,14 +118,6 @@ X is:
 9.0 10.0 11.0 12.0
 13.0 14.0 15.0 16.0
 
-X's representation:
-off=(1, 1)
-blk=(4, 1)
-str=(1, 1)
-origin=120
-factoredOffs=5
-noinit_data=true
-
 X is:
 1.1 2.1 3.1 4.1
 5.1 6.1 7.1 8.1
@@ -237,14 +221,6 @@ X is:
 5.0 6.0 7.0 8.0
 9.0 10.0 11.0 12.0
 13.0 14.0 15.0 16.0
-
-X's representation:
-off=(1, 1)
-blk=(24, 1)
-str=(1, 1)
-origin=32
-factoredOffs=25
-noinit_data=true
 
 X is:
 1.1 2.1 3.1 4.1
