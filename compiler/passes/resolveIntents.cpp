@@ -151,10 +151,10 @@ static IntentTag blankIntentForThisArg(Type* t) {
   if (isRecordWrappedType(t))  // domain / distribution
     // array, domain, distribution wrapper records are immutable
     return INTENT_CONST_REF;
-  else if (t->symbol->hasFlag(FLAG_REF))
+  else if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
+    // TODO - see issue #5266; also note workaround in resolveFormals
+    // makes all blank-intent _this arguments for records use INTENT_REF.
     return INTENT_REF;
-  else if (isRecord(t) || isUnion(t))
-    return INTENT_CONST_REF;
   else
     return INTENT_CONST_IN;
 }
