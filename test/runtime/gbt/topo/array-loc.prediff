@@ -1,0 +1,4 @@
+#! /usr/bin/env bash
+
+sed 's/0x[[:xdigit:]]*-0x[[:xdigit:]]*/startAddr-endAddr/' < $2 > $2.tmp.tmp \
+&& mv $2.tmp.tmp $2
