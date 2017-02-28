@@ -1791,6 +1791,10 @@ module DefaultRectangular {
   }
 
   proc chpl_serialReadWriteRectangular(f, arr, dom) {
+    chpl_serialReadWriteRectangularHelper(f, arr, dom);
+  }
+
+  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(idxType);

@@ -322,7 +322,7 @@ proc ReplicatedDom.dsiGetPrivatizeData() {
   return (dist.pid, domRep, localDoms);
 }
 
-proc ReplicatedDom.dsiPrivatize(privatizeData): this.type {
+proc ReplicatedDom.dsiPrivatize(privatizeData) {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiPrivatize on ", here);
 
   var privdist = chpl_getPrivatizedCopy(this.dist.type, privatizeData(1));
@@ -378,7 +378,6 @@ proc ReplicatedDom.dsiBuildRectangularDom(param rank: int,
                                           ranges: rank * range(idxType,
                                                 BoundedRangeType.bounded,
                                                                stridable))
-  : ReplicatedDom(rank, idxType, stridable, this.dist.type)
 {
   // could be made more efficient to avoid visiting each locale twice
   // but perhaps not a big deal, for now anyways
@@ -463,7 +462,11 @@ proc ReplicatedDom.dsiSerialWrite(f): void {
   redirectee()._value.dsiSerialWrite(f);
   if printReplicatedLocales {
     f.write(" replicated over ");
-    dist.targetLocales._value.dsiSerialWrite(f);
+    const temp : [1..0] locale;
+    for idx in dist.targetLocDom.sorted() {
+      temp.push_back(dist.targetLocales[idx]);
+    }
+    temp._value.dsiSerialWrite(f);
   }
 }
 
@@ -549,6 +552,14 @@ proc ReplicatedArr.stridable param {
   return dom.stridable;
 }
 
+proc ReplicatedArr.idxType type {
+  return dom.idxType;
+}
+
+proc ReplicatedArr.rank param {
+  return dom.rank;
+}
+
 // The same across all domain maps
 proc ReplicatedArr.dsiGetBaseDom() return dom;
 
@@ -607,6 +618,19 @@ proc ReplicatedArr.dsiSerialWrite(f): void {
   }
 }
 
+proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr) : ReplicatedArr {
+  var neednl = false;
+  const actual = chpl__getActualArray(arr);
+  for idx in actual.dom.dist.targetLocDom.sorted() {
+    on actual.localArrs[idx] {
+      if neednl then f.write("\n"); neednl = true;
+      if printReplicatedLocales then
+        f.write(actual.localArrs[idx].locale, ":\n");
+      chpl_serialReadWriteRectangularHelper(f, arr, dom);
+    }
+  }
+}
+
 proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) do
@@ -618,9 +642,9 @@ proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
 
 // completely serial
 iter ReplicatedArr.these() ref: eltType {
-  for locArr in localArrs do
+  for idx in dom.dist.targetLocDom.sorted() do
 //  on locArr do // compiler does not allow; see r16137 and nestedForall*
-      for a in locArr.arrLocalRep do
+      for a in localArrs[idx].arrLocalRep do
         yield a;
 }
 

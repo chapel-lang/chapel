@@ -616,6 +616,11 @@ module ChapelLocale {
     return blockedTasks;
   }
 
+  pragma "no doc"
+  proc <(a: locale, b: locale) {
+    return a.id < b.id;
+  }
+
 //########################################################################}
 
   //
