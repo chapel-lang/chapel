@@ -100,9 +100,8 @@ class ArrayViewSliceArr: BaseArr {
       yield arr.dsiAccess(i);
   }
 
-  iter these(param tag: iterKind) ref where tag == iterKind.standalone {
-    for i in privDom.these(tag) do
-      yield arr.dsiAccess(i);
+  iter these(param tag: iterKind) ref where tag == iterKind.standalone && !localeModelHasSublocales {
+    for i in privDom.these(tag) do yield arr.dsiAccess(i);
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {

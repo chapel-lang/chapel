@@ -1957,7 +1957,7 @@ module DefaultRectangular {
 
     } else if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
               _isSimpleIoType(arr.eltType) && f.binary() &&
-              isNative && arr.isDataContiguous(dom) {
+              isNative && arr.isDataContiguous(dom) && defRectSimpleDData {
       // If we can, we would like to read/write the array as a single write op
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the
@@ -2066,11 +2066,16 @@ module DefaultRectangular {
     // With multi-ddata, at least for now if the arrays aren't chunked
     // exactly the same way we don't do direct bulk transfer.
     //
-    if this.rank != B.rank then return false;
-    return (defRectSimpleDData
-            || (mdParDim == B._value.mdParDim
-                && mdNumChunks == B._value.mdNumChunks
-                && mdRLen == B._value.mdRLen));
+    if this.rank != B.rank {
+      return false;
+    } else if defRectSimpleDData {
+      return true;
+    } else {
+      const actual = chpl__getActualArray(B);
+      return mdParDim == actual.mdParDim
+      && mdNumChunks == actual.mdNumChunks
+      && mdRLen == actual.mdRLen;
+    }
   }
 
   proc DefaultRectangularArr.doiUseBulkTransferStride(B) {

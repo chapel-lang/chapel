@@ -1097,7 +1097,7 @@ proc CyclicArr.doiUseBulkTransferStride(B) {
   //
   if this.rank != B.rank then return false;
   return defRectSimpleDData
-         || (oneDData && B._value.oneDData);
+         || (oneDData && chpl__getActualArray(B).oneDData);
 }
 
 //For assignments of the form: "Cyclic = any" 

@@ -52,24 +52,24 @@ proc reportChunking(what, A) {
     writeln('----');
     A.displayRepresentation();
     writeln(' dom.dsiDims() ', A._value.dom.dsiDims(),
-            ', stridable ', A._value.stridable);
+            ', stridable ', chpl__getActualArray(A).stridable);
     writeln('----');
   }
 
-  for i in A.domain.dim(A._value.mdParDim) do
-    write(' ', A._value.mdInd2Chunk(i));
+  for i in A.domain.dim(chpl__getActualArray(A).mdParDim) do
+    write(' ', chpl__getActualArray(A).mdInd2Chunk(i));
   writeln();
 
-  for iChunk in 0..#A._value.mdNumChunks do
-    write(if iChunk == 0 then ' ' else ', ', A._value.mData(iChunk).pdr);
+  for iChunk in 0..#chpl__getActualArray(A).mdNumChunks do
+    write(if iChunk == 0 then ' ' else ', ', chpl__getActualArray(A).mData(iChunk).pdr);
   writeln();
 
   if verbose {
     write(' -->');
-    for iChunk in 0..#A._value.mdNumChunks do
+    for iChunk in 0..#chpl__getActualArray(A).mdNumChunks do
       write(' ',
-            _computeBlock(A._value.mdRLen, A._value.mdNumChunks, iChunk,
-                          (A._value.mdRHi - A._value.mdRLo) / A._value.mdRStr,
+            _computeBlock(chpl__getActualArray(A).mdRLen, chpl__getActualArray(A).mdNumChunks, iChunk,
+                          (chpl__getActualArray(A).mdRHi - chpl__getActualArray(A).mdRLo) / chpl__getActualArray(A).mdRStr,
                           0, 0));
     writeln();
   }
