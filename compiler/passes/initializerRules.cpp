@@ -517,8 +517,8 @@ static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
     Symbol*   _this      = toFnSymbol(next->parentSymbol)->_this;
 
     CallExpr* newInit = new CallExpr(PRIM_INITIALIZER_SET_FIELD,
-                                        new SymExpr(_this),
-                                        new_CStringSymbol(nextField));
+                                     new SymExpr(_this),
+                                     new_CStringSymbol(nextField));
 
     if (field->init) {
       newInit->insertAtTail(field->init->copy());

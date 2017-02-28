@@ -491,18 +491,18 @@ std::string EnumType::docsDirective() {
 AggregateType::AggregateType(AggregateTag initTag)
   : Type(E_AggregateType, NULL) {
 
-  aggregateTag       = initTag;
-  initializerStyle   = DEFINES_NONE_USE_DEFAULT;
+  aggregateTag        = initTag;
+  initializerStyle    = DEFINES_NONE_USE_DEFAULT;
   initializerResolved = false;
-  outer              = NULL;
-  iteratorInfo       = NULL;
-  doc                = NULL;
+  outer               = NULL;
+  iteratorInfo        = NULL;
+  doc                 = NULL;
 
-  fields.parent      = this;
-  inherits.parent    = this;
+  fields.parent       = this;
+  inherits.parent     = this;
 
-  genericField       = 0;
-  mIsGeneric         = false;
+  genericField        = 0;
+  mIsGeneric          = false;
 
   // set defaultValue to nil to keep it from being constructed
   if (aggregateTag == AGGREGATE_CLASS) {

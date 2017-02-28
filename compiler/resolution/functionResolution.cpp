@@ -4313,17 +4313,17 @@ resolveCall(CallExpr* call)
   {
     switch (call->primitive->tag)
     {
-     default:                       /* do nothing */                    break;
-     case PRIM_TUPLE_AND_EXPAND:    resolveTupleAndExpand(call);        break;
-     case PRIM_TUPLE_EXPAND:        resolveTupleExpand(call);           break;
-     case PRIM_SET_MEMBER:          resolveSetMember(call);             break;
-     case PRIM_MOVE:                resolveMove(call);                  break;
+     default:                         /* do nothing */                  break;
+     case PRIM_TUPLE_AND_EXPAND:      resolveTupleAndExpand(call);      break;
+     case PRIM_TUPLE_EXPAND:          resolveTupleExpand(call);         break;
+     case PRIM_SET_MEMBER:            resolveSetMember(call);           break;
+     case PRIM_MOVE:                  resolveMove(call);                break;
      case PRIM_INITIALIZER_SET_FIELD: resolveFieldInit(call);           break;
      case PRIM_TYPE_INIT:
-     case PRIM_INIT:                resolveDefaultGenericType(call);    break;
-     case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
-     case PRIM_COERCE:              resolveCoerce(call);                break;
-     case PRIM_NEW:                 resolveNew(call);                   break;
+     case PRIM_INIT:                  resolveDefaultGenericType(call);  break;
+     case PRIM_NO_INIT:               resolveDefaultGenericType(call);  break;
+     case PRIM_COERCE:                resolveCoerce(call);              break;
+     case PRIM_NEW:                   resolveNew(call);                 break;
     }
   }
   else

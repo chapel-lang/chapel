@@ -46,13 +46,13 @@ void resolveMatch(FnSymbol* fn);
 /* Stolen from function resolution */
 static void
 filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
-                ResolutionCandidate* currCandidate,
-                CallInfo& info);
+                    ResolutionCandidate* currCandidate,
+                    CallInfo& info);
 
 static void
 filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
-                FnSymbol* fn,
-                CallInfo& info);
+                    FnSymbol* fn,
+                    CallInfo& info);
 
 static FnSymbol*
 instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
@@ -153,8 +153,8 @@ instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
  */
 static void
 filterInitConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
-                        ResolutionCandidate* currCandidate,
-                        CallInfo& info) {
+                            ResolutionCandidate* currCandidate,
+                            CallInfo& info) {
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
 
   if (!currCandidate->fn) return;
@@ -182,8 +182,8 @@ filterInitConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
  */
 static void
 filterInitGenericCandidate(Vec<ResolutionCandidate*>& candidates,
-                       ResolutionCandidate* currCandidate,
-                       CallInfo& info) {
+                           ResolutionCandidate* currCandidate,
+                           CallInfo& info) {
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
 
   if (!currCandidate->fn) return;
@@ -228,8 +228,8 @@ filterInitGenericCandidate(Vec<ResolutionCandidate*>& candidates,
  */
 static void
 filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
-                ResolutionCandidate* currCandidate,
-                CallInfo& info) {
+                    ResolutionCandidate* currCandidate,
+                    CallInfo& info) {
 
   if (currCandidate->fn->hasFlag(FLAG_GENERIC)) {
     filterInitGenericCandidate(candidates, currCandidate, info);
@@ -251,7 +251,8 @@ filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
  * \param info          The CallInfo object for the call site.
  */
 static void
-filterInitCandidate(Vec<ResolutionCandidate*>& candidates, FnSymbol* fn, CallInfo& info) {
+filterInitCandidate(Vec<ResolutionCandidate*>& candidates, FnSymbol* fn,
+                    CallInfo& info) {
   ResolutionCandidate* currCandidate = new ResolutionCandidate(fn);
   filterInitCandidate(candidates, currCandidate, info);
 
@@ -263,9 +264,9 @@ filterInitCandidate(Vec<ResolutionCandidate*>& candidates, FnSymbol* fn, CallInf
 
 static void
 doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
-                 Vec<FnSymbol*>& visibleFns,
-                 CallInfo& info,
-                 bool compilerGenerated) {
+                       Vec<FnSymbol*>& visibleFns,
+                       CallInfo& info,
+                       bool compilerGenerated) {
 
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     // Only consider user functions or compiler-generated functions
@@ -301,8 +302,8 @@ doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
 
 static void
 gatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
-                 Vec<FnSymbol*>& visibleFns,
-                 CallInfo& info) {
+                     Vec<FnSymbol*>& visibleFns,
+                     CallInfo& info) {
 
   // Search user-defined (i.e. non-compiler-generated) functions first.
   doGatherInitCandidates(candidates, visibleFns, info, false);
