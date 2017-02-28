@@ -1588,12 +1588,12 @@ int FnSymbol::hasGenericFormals() const {
   bool hasGenericDefaults =  true;
   int  retval             =     0;
 
-  bool inInitRes = false;
+  bool resolveInit = false;
   if (this->hasFlag(FLAG_METHOD) && _this) {
     if (AggregateType* at = toAggregateType(_this->type)) {
       if (at->initializerStyle == DEFINES_INITIALIZER  &&
           strcmp(name, "init") == 0) {
-        inInitRes = true;
+        resolveInit = true;
       }
     }
   }
@@ -1609,7 +1609,7 @@ int FnSymbol::hasGenericFormals() const {
           formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
           formal                               == _this ||
           formal->hasFlag(FLAG_IS_MEME)        == true) {
-        if (!(formal == _this && inInitRes)) {
+        if (!(formal == _this && resolveInit)) {
           isGeneric = true;
         }
       }
