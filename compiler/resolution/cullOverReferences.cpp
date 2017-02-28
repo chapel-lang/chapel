@@ -808,6 +808,10 @@ void cullOverReferences() {
     if (arg->id == breakOnId1 || arg->id == breakOnId2)
       gdbShouldBreakHere();
 
+    // Don't try to delve into _build_tuple
+    if (arg->defPoint->parentSymbol->hasFlag(FLAG_BUILD_TUPLE))
+      continue;
+
     if (arg->intent == INTENT_REF_MAYBE_CONST) {
       collectedSymbols.push_back(arg);
     }
@@ -973,7 +977,8 @@ void cullOverReferences() {
           // array formal with blank intent. In that case,
           // it depends on the determination of the called function.
           ArgSymbol* formal = actual_to_formal(se);
-          if (formal->intent == INTENT_REF_MAYBE_CONST) {
+          if (formal->intent == INTENT_REF_MAYBE_CONST &&
+              !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
             // since it has INTENT_REF_MAYBE_CONST, it will
             // already be in the list of collectedSymbols.
             revisit = true;
