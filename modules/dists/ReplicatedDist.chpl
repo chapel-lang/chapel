@@ -545,6 +545,10 @@ proc ReplicatedArr.ReplicatedArr(type eltType, dom: ReplicatedDom) {
   // initializes the fields 'eltType', 'dom' by name
 }
 
+proc ReplicatedArr.stridable param {
+  return dom.stridable;
+}
+
 // The same across all domain maps
 proc ReplicatedArr.dsiGetBaseDom() return dom;
 

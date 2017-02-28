@@ -5097,127 +5097,84 @@ static void resolveMove(CallExpr* call) {
 
 /************************************* | **************************************
 *                                                                             *
-* Some new expressions are converted in normalize().  For example, a call to  *
-* a type function is resolved at this point.                                  *
-* The syntax supports calling the result of a type function as a constructor, *
+* Resolve a PRIM_NEW expression.                                              *
+* The 1st argument is a type or a partial call to get the type and the        *
+* remaining arguments are assumed to be arguments for the constructor or      *
+* initializer call                                                            *
+*                                                                             *
+* Some new expressions are converted in normalize().                          *
+*   For example, a call to  type function is resolved at this point.          *
+*                                                                             *
+* The syntax supports calling the result of a type function as a constructor  *
 * but this is not fully implemented.                                          *
 *                                                                             *
 ************************************** | *************************************/
 
+static SymExpr* primNewTypeExpr(CallExpr* call);
+
 static void resolveNew(CallExpr* call) {
-  // This is a 'new' primitive
-  // we expect the 1st argument to be a type
-  //   or a partial call to get the type
-  // and the remaining arguments to be arguments for the constructor call
+  if (SymExpr* typeExpr = primNewTypeExpr(call)) {
+    if (Type* type = resolveTypeAlias(typeExpr)) {
+      if (AggregateType* at = toAggregateType(type)) {
+        SET_LINENO(call);
 
-  SymExpr* toReplace = NULL;
+        // Begin to support new-style initializers
+        if (at->initializerStyle == DEFINES_INITIALIZER) {
+          if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
+            VarSymbol* newTmp = newTemp("new_temp", at);
+            DefExpr*   def    = new DefExpr(newTmp);
 
-  // Perform three transformations on this PRIM_NEW
-  // 1 replace the type in the 1st argument with
-  //   an UnresolvedSymExpr to ct->defaultInitializer->name
-  // 2 move the 1st argument into the baseExpr
-  // 3 make it a normal call rather than a PRIM_NEW
+            if (isClass(at) == true) {
+              typeExpr->replace(new UnresolvedSymExpr("_new"));
+            } else {
+              typeExpr->replace(new UnresolvedSymExpr("init"));
+            }
 
-  if (CallExpr* subCall = toCallExpr(call->get(1))) {
-    // Handle e.g. 'new' (call (partial) R2 _mt this) call_tmp
-    // which comes up with nested classes (e.g. R2 is a nested class type)
-    if (SymExpr* se = toSymExpr(subCall->baseExpr)) {
-      if (subCall->partialTag) {
-        toReplace = se;
-      }
-    }
+            // Convert the PRIM_NEW to a normal call
+            call->primitive = NULL;
+            call->baseExpr  = call->get(1)->remove();
 
-  } else if (SymExpr* se = toSymExpr(call->get(1))) {
-    // Handle e.g. 'new' C arg
-    toReplace = se;
-  }
+            parent_insert_help(call, call->baseExpr);
 
-  if (toReplace) {
-    SET_LINENO(call);
+            if (isBlockStmt(call->parentExpr) == true) {
+              call->insertBefore(def);
+            } else {
+              call->parentExpr->insertBefore(def);
+            }
 
-    bool initCall = false;
+            if (isClass(at) == true) {
+              // Invoking a type  method
+              call->insertAtHead(new SymExpr(at->symbol));
 
-    // 1: replace the type with the constructor call name
-    if (Type* ty = resolveTypeAlias(toReplace)) {
-      if (AggregateType* ct = toAggregateType(ty)) {
-        if (ct->initializerStyle == DEFINES_INITIALIZER) {
-          const char* name = (isClass(ct) == true) ? "_new" : "init";
+            } else {
+              // Invoking an instance method
+              call->insertAtHead(new SymExpr(newTmp));
+              call->insertAtHead(new SymExpr(gMethodToken));
+            }
 
-          toReplace->replace(new UnresolvedSymExpr(name));
+            resolveExpr(call);
 
-          initCall = true;
+          } else {
+            USR_FATAL(call,
+                      "Sorry, new style initializers don't work with "
+                      "generics yet.  Stay tuned!");
+          }
 
+        // Continue to support old-style constructors
         } else {
-          FnSymbol* ctInit = ct->defaultInitializer;
+          FnSymbol* ctInit = at->defaultInitializer;
 
-          toReplace->replace(new UnresolvedSymExpr(ctInit->name));
+          typeExpr->replace(new UnresolvedSymExpr(ctInit->name));
+
+          // Convert the PRIM_NEW to a normal call
+          call->primitive = NULL;
+          call->baseExpr  = call->get(1)->remove();
+
+          parent_insert_help(call, call->baseExpr);
+
+          resolveExpr(call);
         }
       }
-    }
-
-    // 2: move the 1st argument into the baseExpr
-    // 3: make it a normal call and not a PRIM_NEW
-    Expr* arg = call->get(1);
-
-    arg->remove();
-
-    call->primitive = NULL;
-    call->baseExpr  = arg;
-
-    parent_insert_help(call, call->baseExpr);
-
-    if (initCall) {
-      // 4: insert the allocation for the instance and pass that in as an
-      // argument if we're making a call to an initializer
-      Type*      typeToNew = toReplace->symbol()->typeInfo();
-      VarSymbol* newTmp    = newTemp("new_temp", typeToNew);
-
-      VarSymbol* newMT     = newTemp("_mt",      dtMethodToken);
-
-      if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
-        USR_FATAL(call,
-                  "Sorry, new style initializers don't work with "
-                  "generics yet.  Stay tuned!");
-      }
-
-      DefExpr* def            = new DefExpr(newTmp);
-      Expr*    insertBeforeMe = NULL;
-
-      if (isBlockStmt(call->parentExpr) == true) {
-        insertBeforeMe = call;
-
-      } else {
-        insertBeforeMe = call->parentExpr;
-      }
-
-      insertBeforeMe->insertBefore(def);
-
-      resolveExpr(def);
-
-      if (isClass(typeToNew) == true) {
-        // Invoking a type  method
-        call->insertAtHead(new SymExpr(typeToNew->symbol));
-
-      } else {
-        // Invoking an instance method
-        call->insertAtHead(new SymExpr(newTmp));
-        call->insertAtHead(new SymExpr(newMT));
-      }
-    }
-
-    resolveExpr(call);
-  }
-
-  // Do some error checking
-  if (FnSymbol* fn = call->isResolved()) {
-    if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
-
-    } else if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "init") == 0) {
-
-    } else if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "_new") == 0) {
-
-    } else {
-      USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
     }
 
   } else {
@@ -5237,6 +5194,32 @@ static void resolveNew(CallExpr* call) {
     USR_FATAL(call, "invalid use of 'new'");
   }
 }
+
+// Find the SymExpr that captures the type
+static SymExpr* primNewTypeExpr(CallExpr* call) {
+  Expr*    arg1   = call->get(1);
+  SymExpr* retval = NULL;
+
+  // The common case e.g new MyClass(1, 2, 3);
+  if (SymExpr* se = toSymExpr(arg1)) {
+    retval = se;
+
+  // 'new' (call (partial) R2 _mt this), call_tmp0, call_tmp1, ...
+  // due to nested classes (i.e. R2 is a nested class type)
+  } else if (CallExpr* subCall = toCallExpr(arg1)) {
+    if (SymExpr* se = toSymExpr(subCall->baseExpr)) {
+      retval = (subCall->partialTag) ? se : NULL;
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void
 resolveCoerce(CallExpr* call) {

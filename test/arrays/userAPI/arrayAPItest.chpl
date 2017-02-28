@@ -1,4 +1,4 @@
-config param testError = 0;
+config param testError = 0, testDisplayRepresentation = false;
 
 proc readArray(X) {
   open("realValues.txt", iomode.r).reader().read(X);
@@ -24,9 +24,9 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   // Test I/O
   readArray(X);
   writeln("X is:\n", X);
-  writeln();
-  writeln("X's representation:");
-  X.displayRepresentation();
+  if testDisplayRepresentation {
+    writeln("X's representation:"); X.displayRepresentation();
+  }
   writeln();
 
   // Test write accesses via tuples and varargs
