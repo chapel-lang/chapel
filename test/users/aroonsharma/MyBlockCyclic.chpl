@@ -863,6 +863,10 @@ proc MyBlockCyclicArr.dsiSlice(d: MyBlockCyclicDom) {
   return alias;
 }
 
+proc MyBlockCyclicArr.dsiReindex(dom) {
+  compilerError("reindexing not yet implemented for Block-Cyclic");
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // MyBlockCyclic Local Array Class
 //
