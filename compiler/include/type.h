@@ -335,6 +335,7 @@ public:
                                                     bool        nested,
                                                     const char* baseOffset);
 
+  // The following two methods are used for types which define initializers
   bool                        setNextGenericField();
   AggregateType*              getInstantiation(SymExpr* t, int index);
 
@@ -388,6 +389,11 @@ private:
   void                        addDeclaration(DefExpr* defExpr);
 
   std::vector<AggregateType*> instantiations;
+  // genericField stores the index of the first generic field in the
+  // AggregateType which does not have a substitution, but only if the
+  // AggregateType defines an initializer.  If the type has no generic
+  // fields without substitutions, or if setNextGenericField has not been called
+  // on the base AggregateType, this will be set to 0.
   int                         genericField;
 
   bool                        mIsGeneric;

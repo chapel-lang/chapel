@@ -718,7 +718,7 @@ void AggregateType::accept(AstVisitor* visitor) {
 }
 
 // Returns true if the type has generic fields, false otherwise.  If the index
-// of the generic field has not previously been set, set it.
+// of the first generic field has not previously been set, set it.
 bool AggregateType::setNextGenericField() {
   // Don't redo work
   if (genericField > 0)
@@ -742,6 +742,13 @@ bool AggregateType::setNextGenericField() {
     return false;
 }
 
+// Returns an instantiation of this AggregateType at the given index.  If the
+// index is earlier than this AggregateType's first unsubstituted generic field,
+// will just return itself.  Otherwise, this method will check the list of
+// instantiations for the first unsubstituted generic field to see if we have
+// previously made an instantiation for the provided argument and will return
+// that instantiation if we find one.  Otherwise, will create a new
+// instantiation with the given argument and will return that.
 AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
   // If the index of the field is prior to the index of the next generic field
   // then trivially return ourselves
