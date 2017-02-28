@@ -383,6 +383,7 @@ class TypeSymbol : public Symbol {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn);
+  void renameInstantiatedSingle(Symbol* sym);
 
   GenRet codegen();
   void codegenDef();

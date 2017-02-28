@@ -190,7 +190,8 @@ getInstantiationType(Type* actualType, Type* formalType);
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual);
+                   Vec<Symbol*>& formalIdxToActual,
+                   bool inInitRes);
 
 static void
 filterCandidate(Vec<ResolutionCandidate*>& candidates,
@@ -236,6 +237,7 @@ static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
                                         SymExpr* rhs);
 static void resolveSetMember(CallExpr* call);
 static void resolveMove(CallExpr* call);
+static void resolveFieldInit(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static bool formalRequiresTemp(ArgSymbol* formal);
@@ -325,9 +327,9 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   return computeActualFormalAlignment(fn, formalIdxToActual, actualIdxToFormal, info);
 }
 
-void ResolutionCandidate::computeSubstitutions() {
+void ResolutionCandidate::computeSubstitutions(bool inInitRes) {
   if (substitutions.n != 0) substitutions.clear();
-  computeGenericSubs(substitutions, fn, formalIdxToActual);
+  computeGenericSubs(substitutions, fn, formalIdxToActual, inInitRes);
 }
 
 static bool hasRefField(Type *type) {
@@ -1683,6 +1685,16 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
     *promotes = false;
   if (actualType == formalType)
     return true;
+  if (actualType->symbol->hasFlag(FLAG_GENERIC) &&
+      actualType == formalType->instantiatedFrom) {
+    // The actual should only be generic when we're resolving an initializer
+    // If either of these asserts fail, something is very, very wrong.
+    AggregateType* at = toAggregateType(actualType);
+    INT_ASSERT(at && at->initializerStyle == DEFINES_INITIALIZER);
+    INT_ASSERT(strcmp(fn->name, "init") == 0);
+
+    return true;
+  }
   //
   // The following check against FLAG_REF ensures that 'nil' can't be
   // passed to a by-ref argument (for example, an atomic type).  I
@@ -1852,7 +1864,8 @@ getInstantiationType(Type* actualType, Type* formalType) {
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual) {
+                   Vec<Symbol*>& formalIdxToActual,
+                   bool inInitRes) {
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
@@ -1887,7 +1900,16 @@ computeGenericSubs(SymbolMap &subs,
         USR_FATAL(formal, "invalid generic type specification on class field");
 
       if (formalIdxToActual.v[i]) {
-        if (Type* type = getInstantiationType(formalIdxToActual.v[i]->type, formal->type)) {
+        if (formal->hasFlag(FLAG_ARG_THIS) && inInitRes &&
+            formalIdxToActual.v[i]->type->symbol->hasFlag(FLAG_GENERIC)) {
+          // If the "this" arg is generic, we're resolving an initializer, and
+          // the actual being passed is also still generic, don't count this as
+          // a substitution.  Otherwise, we'll end up in an infinite loop if
+          // one of the later generic args has a defaultExpr, as we will always
+          // count the this arg as a substitution and so always approach the
+          // generic arg with a defaultExpr as though a substitution was going
+          // to take place.
+        } else if (Type* type = getInstantiationType(formalIdxToActual.v[i]->type, formal->type)) {
           // String literal actuals aligned with non-param generic formals of
           // type dtAny will result in an instantiation of dtStringC when the
           // function is extern. In other words, let us write:
@@ -4291,16 +4313,17 @@ resolveCall(CallExpr* call)
   {
     switch (call->primitive->tag)
     {
-     default:                       /* do nothing */                    break;
-     case PRIM_TUPLE_AND_EXPAND:    resolveTupleAndExpand(call);        break;
-     case PRIM_TUPLE_EXPAND:        resolveTupleExpand(call);           break;
-     case PRIM_SET_MEMBER:          resolveSetMember(call);             break;
-     case PRIM_MOVE:                resolveMove(call);                  break;
+     default:                         /* do nothing */                  break;
+     case PRIM_TUPLE_AND_EXPAND:      resolveTupleAndExpand(call);      break;
+     case PRIM_TUPLE_EXPAND:          resolveTupleExpand(call);         break;
+     case PRIM_SET_MEMBER:            resolveSetMember(call);           break;
+     case PRIM_MOVE:                  resolveMove(call);                break;
+     case PRIM_INITIALIZER_SET_FIELD: resolveFieldInit(call);           break;
      case PRIM_TYPE_INIT:
-     case PRIM_INIT:                resolveDefaultGenericType(call);    break;
-     case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
-     case PRIM_COERCE:              resolveCoerce(call);                break;
-     case PRIM_NEW:                 resolveNew(call);                   break;
+     case PRIM_INIT:                  resolveDefaultGenericType(call);  break;
+     case PRIM_NO_INIT:               resolveDefaultGenericType(call);  break;
+     case PRIM_COERCE:                resolveCoerce(call);              break;
+     case PRIM_NEW:                   resolveNew(call);                 break;
     }
   }
   else
@@ -5092,6 +5115,98 @@ static void resolveMove(CallExpr* call) {
   }
 }
 
+// Resolves calls inserted into initializers during Phase 1, to fully determine
+// the instantiated type
+//
+// This function is a combination of resolveMove and resolveSetMember
+static void
+resolveFieldInit(CallExpr* call) {
+  if (call->id == breakOnResolveID )
+    gdbShouldBreakHere();
+
+  INT_ASSERT(call->argList.length == 3);
+  // PRIM_INITIALIZER_SET_FIELD contains three args:
+  // fn->_this, the name of the field, and the value/type it is to be given
+
+  SymExpr* rhs = toSymExpr(call->get(3)); // the value/type to give the field
+
+  // Get the field name.
+  SymExpr* sym = toSymExpr(call->get(2));
+  if (!sym)
+    INT_FATAL(call, "bad initializer set field primitive");
+  VarSymbol* var = toVarSymbol(sym->symbol());
+  if (!var || !var->immediate)
+    INT_FATAL(call, "bad initializer set field primitive");
+  const char* name = var->immediate->v_string;
+
+  // Get the type
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
+  if (!ct)
+    INT_FATAL(call, "bad initializer set field primitive");
+
+  Symbol* fs = NULL;
+  int index = 1;
+  for_fields(field, ct) {
+    if (!strcmp(field->name, name)) {
+      fs = field; break;
+    }
+    index++;
+  }
+
+  if (!fs)
+    INT_FATAL(call, "bad initializer set field primitive");
+
+  Type* t = rhs->typeInfo();
+  // I think this never happens, so can be turned into an assert. <hilde>
+  if (t == dtUnknown)
+    INT_FATAL(call, "Unable to resolve field type");
+
+  if (t == dtNil && fs->type == dtUnknown)
+    USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
+  if (fs->type == dtUnknown) {
+    // Update the type of the field.  If necessary, update to a new
+    // instantiation of the overarching type (and replaces references to the
+    // fields from the old instantiation
+    if (fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) {
+      AggregateType* instantiate = ct->getInstantiation(rhs, index);
+      if (instantiate != ct) {
+        // TODO: make this set of operations a helper function I can call
+        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(parentFn);
+        INT_ASSERT(parentFn->_this);
+        parentFn->_this->type = instantiate;
+
+        SymbolMap fieldTranslate;
+        for (int i = 1; i <= instantiate->fields.length; i++) {
+          fieldTranslate.put(ct->getField(i), instantiate->getField(i));
+        }
+        update_symbols(parentFn, &fieldTranslate);
+
+        ct = instantiate;
+        fs = instantiate->getField(index);
+      }
+    } else if (fs->hasFlag(FLAG_PARAM)) {
+      // TODO: this part
+      USR_FATAL(call, "Sorry, new style initializers don't work with "
+                "param fields yet. Stay tuned!");
+    } else if (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) {
+      // TODO: this part
+      USR_FATAL(call, "Sorry, new style initializers don't work with "
+                "generic var/const fields yet.  Stay tuned!");
+    } else {
+      // The field is not generic.
+      if (fs->defPoint->exprType == NULL) {
+        fs->type = t;
+      } else if (fs->defPoint->exprType) {
+        fs->type = fs->defPoint->exprType->typeInfo();
+      }
+    }
+  }
+
+  handleSetMemberTypeMismatch(t, fs, call, rhs);
+
+  call->primitive = primitives[PRIM_SET_MEMBER];
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -5153,9 +5268,9 @@ static void resolveNew(CallExpr* call) {
             resolveExpr(call);
 
           } else {
-            USR_FATAL(call,
-                      "Sorry, new style initializers don't work with "
-                      "generics yet.  Stay tuned!");
+            typeExpr->replace(new UnresolvedSymExpr("init"));
+            // call special case function for generic initializers
+            modAndResolveInitCall(call, at);
           }
 
         // Continue to support old-style constructors
@@ -7858,7 +7973,8 @@ resolveExpr(Expr* expr) {
                                  sym->symbol()->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
             !ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-            !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+            !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
+            ct->defaultTypeConstructor) {
           resolveFormals(ct->defaultTypeConstructor);
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
             if (getPartialCopyInfo(ct->defaultTypeConstructor))
@@ -8128,7 +8244,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
   }
 }
 
-static void resolveReturnType(FnSymbol* fn)
+void resolveReturnType(FnSymbol* fn)
 {
   // Resolve return type.
   Symbol* ret = fn->getReturnSymbol();
@@ -8309,19 +8425,6 @@ resolveFns(FnSymbol* fn) {
   }
 
   insertFormalTemps(fn);
-
-  if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "init") == 0) {
-    // Lydia NOTE: Quick fix to allow our new initializers to recursively call
-    // themselves.  We know their return type already, pretending we don't just
-    // leads to errors.  Ideally, we'll remove this code when we fix our
-    // compiler's handling of recursive calls when the function doesn't declare
-    // its return type.
-    for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_ARG_THIS)) {
-        fn->retType = formal->type;
-      }
-    }
-  }
 
   resolveBlockStmt(fn->body);
 
@@ -9891,6 +9994,8 @@ pruneResolvedTree() {
   replaceTypeArgsWithFormalTypeTemps();
   removeParamArgs();
 
+  removeAggTypeFieldInfo();
+
   removeUnusedModuleVariables();
   removeUnusedTypes();
   removeActualNames();
@@ -9968,6 +10073,12 @@ isUnusedClass(AggregateType *ct) {
 
   // FALSE if the type constructor is used.
   if (ct->defaultTypeConstructor && ct->defaultTypeConstructor->isResolved())
+    return false;
+
+  // FALSE if the type defines an initializer and that initializer was
+  // resolved
+  if (ct->initializerStyle == DEFINES_INITIALIZER &&
+      ct->initializerResolved)
     return false;
 
   bool allChildrenUnused = true;

@@ -892,6 +892,16 @@ void TypeSymbol::renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn) {
   renameInstantiatedEnd();
 }
 
+void TypeSymbol::renameInstantiatedSingle(Symbol* sym) {
+  renameInstantiatedStart();
+  if (this->hasFlag(FLAG_TUPLE)) {
+    USR_FATAL(sym, "initializers don't handle tuples yet, sorry!");
+  } else {
+    renameInstantiatedIndividual(sym);
+  }
+  renameInstantiatedEnd();
+}
+
 void TypeSymbol::renameInstantiatedStart() {
   if (this->name[strlen(this->name)-1] == ')') {
     // avoid "strange" instantiated type names based on partial instantiation
@@ -1578,6 +1588,16 @@ int FnSymbol::hasGenericFormals() const {
   bool hasGenericDefaults =  true;
   int  retval             =     0;
 
+  bool resolveInit = false;
+  if (this->hasFlag(FLAG_METHOD) && _this) {
+    if (AggregateType* at = toAggregateType(_this->type)) {
+      if (at->initializerStyle == DEFINES_INITIALIZER  &&
+          strcmp(name, "init") == 0) {
+        resolveInit = true;
+      }
+    }
+  }
+
   for_formals(formal, this) {
     bool isGeneric = false;
 
@@ -1589,7 +1609,9 @@ int FnSymbol::hasGenericFormals() const {
           formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
           formal                               == _this ||
           formal->hasFlag(FLAG_IS_MEME)        == true) {
-        isGeneric = true;
+        if (!(formal == _this && resolveInit)) {
+          isGeneric = true;
+        }
       }
     }
 
