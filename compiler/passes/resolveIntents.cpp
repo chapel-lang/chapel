@@ -197,8 +197,16 @@ void resolveArgIntent(ArgSymbol* arg) {
       // Resolution already handled out/inout copying
       intent = INTENT_REF;
     } else if (intent == INTENT_IN) {
-      // Resolution already handled in copying
-      intent = constIntentForType(arg->type);
+      // Resolution already handled copying for INTENT_IN for
+      // records/unions.
+      bool addedTmp = (isRecord(arg->type) || isUnion(arg->type));
+      if (addedTmp) {
+        intent = constIntentForType(arg->type);
+      } else {
+        // In this case, C can copy for 'in' e.g. for ints
+        // There, we leave intent in (not const in) since
+        // the formal can still be modified in the body of the function.
+      }
     }
   }
 
