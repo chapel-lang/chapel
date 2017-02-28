@@ -54,7 +54,8 @@ filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
                 FnSymbol* fn,
                 CallInfo& info);
 
-FnSymbol* instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+static FnSymbol*
+instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 
 // Rewrite of instantiateSignature, for initializers.  Removed some bits,
 // modified others.
@@ -65,7 +66,7 @@ FnSymbol* instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
  * \param subs Type substitutions to be made during instantiation
  * \param call Call that is being resolved
  */
-FnSymbol*
+static FnSymbol*
 instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   //
   // Handle tuples explicitly
