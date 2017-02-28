@@ -1706,7 +1706,7 @@ proc StencilArr.doiUseBulkTransfer(B) {
   if this.rank != B.rank then return false;
   return defRectSimpleDData
          || dom == B._value.dom
-         || (oneDData && B._value.oneDData);
+         || (oneDData && chpl__getActualArray(B).oneDData);
 }
 
 proc StencilArr.doiUseBulkTransferStride(B) {
@@ -1723,7 +1723,7 @@ proc StencilArr.doiUseBulkTransferStride(B) {
   //
   if this.rank != B.rank then return false;
   return defRectSimpleDData
-         || (oneDData && B._value.oneDData);
+         || (oneDData && chpl__getActualArray(B).oneDData);
 }
 
 proc StencilArr.doiBulkTransfer(B, viewDom) {

@@ -1479,7 +1479,7 @@ proc BlockArr.doiUseBulkTransfer(B) {
   if this.rank != B.rank then return false;
   return defRectSimpleDData
          || dom == B._value.dom
-         || (oneDData && B._value.oneDData);
+         || (oneDData && chpl__getActualArray(B).oneDData);
 }
 
 proc BlockArr.doiUseBulkTransferStride(B) {
@@ -1496,7 +1496,7 @@ proc BlockArr.doiUseBulkTransferStride(B) {
   //
   if this.rank != B.rank then return false;
   return defRectSimpleDData
-         || (oneDData && B._value.oneDData);
+         || (oneDData && chpl__getActualArray(B).oneDData);
 }
 
 proc BlockArr.doiBulkTransfer(B, viewDom) {
