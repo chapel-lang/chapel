@@ -1344,7 +1344,7 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
       init_typed_var(var, type, insert, varTmp);
 
     } else if (var->hasFlag(FLAG_PARAM) == true) {
-      CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
+      CallExpr* cast = createCast(init->remove(), type->remove());
 
       insert->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
 
@@ -1544,7 +1544,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
 
   } else if (type != NULL && init != NULL) {
     if (var->hasFlag(FLAG_PARAM) == true) {
-      CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
+      CallExpr* cast = createCast(init->remove(), type->remove());
 
       defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
 
