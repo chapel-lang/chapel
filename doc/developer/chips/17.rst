@@ -40,7 +40,7 @@ Terminology
 | Local Data    | LDS          | Low latency memory that is    | shared     |
 | Store         |              | shared by WI's in a WG        | memory     | 
 +---------------+--------------+-------------------------------+------------+
-| Compute Unit  | CU           | A hardware unit where WGs     | streamming |
+| Compute Unit  | CU           | A hardware unit where WGs     | streaming  |
 |               |              | executed and contain shared   | multi-     | 
 |               |              | resources such as LDS         | processor  | 
 +---------------+--------------+-------------------------------+------------+
@@ -528,7 +528,7 @@ Not strictly necessary, but this would fill out some more of the basic GPU langu
 
 **2.) GPU Indexing Primitives**
 
-Do we need to use "kernel" in here.kernel.localID() and here.kernel.groupsize()? It may be sufficient if it is a property of the sub-locale to use here.localID() and here.groupsize(). However, these indices and sizes are not necessarily properties of the locale, but rather the program running on the locales. This might be abother argument for fixing these properties within a GPU forall loop construct that is itself running inside a GPU locale.
+Do we need to use "kernel" in here.kernel.localID() and here.kernel.groupsize()? It may be sufficient if it is a property of the sub-locale to use here.localID() and here.groupsize(). However, these indices and sizes are not necessarily properties of the locale, but rather the program running on the locales. This might be another argument for fixing these properties within a GPU forall loop construct that is itself running inside a GPU locale.
 
 **3.) Workgroup Synchronization**
 
