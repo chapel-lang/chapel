@@ -194,7 +194,6 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
 
   _DBG_P("hwloc_set_area_membind_nodeset(%p, %#zx, %d)\n", p, size,
          (int) hwloc_bitmap_first(nodeset));
-
   if (hwloc_set_area_membind_nodeset(topology, p, size,
                                      nodeset, HWLOC_MEMBIND_BIND, flags)) {
     report_error("hwloc_set_area_membind_nodeset()", errno);
