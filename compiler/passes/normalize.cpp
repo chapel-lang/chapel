@@ -1612,30 +1612,68 @@ static void normRefVar(DefExpr* defExpr) {
 // The type of <name> will be inferred from the type of <value>
 //
 static void normVarTypeInference(DefExpr* defExpr) {
-  Symbol* var  = defExpr->sym;
-  Expr*   init = defExpr->init->remove();
+  Symbol* var      = defExpr->sym;
+  Expr*   initExpr = defExpr->init->remove();
 
-  if (var->hasFlag(FLAG_NO_COPY) == true) {
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init));
+  // e.g.
+  //   var x = <immediate>;
+  //   var y = <identifier>;
+  if (SymExpr* initSym = toSymExpr(initExpr)) {
+    Type* type = initSym->symbol()->type;
+
+    if (isPrimitiveScalar(type) == true) {
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+
+      var->type = type;
+
+    } else if (var->hasFlag(FLAG_NO_COPY) == true)  {
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+
+    } else if (var->hasFlag(FLAG_CONST)   == false) {
+      CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
+
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, rhs));
+
+    } else {
+      Symbol*   tmp       = newTemp("tmp");
+      DefExpr*  defineTmp = new DefExpr(tmp);
+      CallExpr* rhs       = new CallExpr("chpl__initCopy", initExpr);
+      CallExpr* moveToTmp = new CallExpr(PRIM_MOVE, tmp, rhs);
+      CallExpr* moveToVar = new CallExpr(PRIM_MOVE, var, tmp);
+
+      defExpr  ->insertAfter(defineTmp);
+      defineTmp->insertAfter(moveToTmp);
+      moveToTmp->insertAfter(moveToVar);
+    }
+
+  // e.g.
+  //   var x = f(...);
+  //   var y = new MyRecord(...);
+  } else if (CallExpr* initCall = toCallExpr(initExpr)) {
+    if (var->hasFlag(FLAG_NO_COPY) == true) {
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+
+    } else {
+      Symbol* tmp = var;
+
+      if (var->hasFlag(FLAG_CONST) == true) {
+        tmp = newTemp("const_tmp");
+
+        defExpr->insertBefore(new DefExpr(tmp));
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+      }
+
+      if (initCall->isPrimitive(PRIM_NEW) == true) {
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, initExpr));
+      } else {
+        CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
+
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
+      }
+    }
 
   } else {
-    CallExpr* initCall = toCallExpr(init);
-    Symbol*   tmp      = var;
-
-    if (var->hasFlag(FLAG_CONST) == true) {
-      tmp = newTemp("const_tmp");
-
-      defExpr->insertBefore(new DefExpr(tmp));
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
-    }
-
-    if (initCall && initCall->isPrimitive(PRIM_NEW)) {
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, init));
-    } else {
-      CallExpr* rhs = new CallExpr("chpl__initCopy", init);
-
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
-    }
+    INT_ASSERT(false);
   }
 }
 
