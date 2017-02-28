@@ -1,6 +1,3 @@
-bug: out-of-order resolution
+bug: Failure to generate a good error message for use before definition
 
-This test shows an inadequacy in function resolution in which multiple
-functions cannot be resolved at the same time.  This should be fixed
-with a queue of calls that need to be resolved and the ability to skip
-over some of the calls.
+Please see the comment in test_module_mutual_use.chpl
