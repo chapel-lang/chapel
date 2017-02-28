@@ -211,11 +211,11 @@ void normalize() {
         INT_ASSERT(thisDef);
 
         // verify the name of the destructor
-        bool notTildaName = (fn->name[0] != '~') ||
+        bool notTildeName = (fn->name[0] != '~') ||
                              strcmp(fn->name + 1, ct->symbol->name);
         bool notDeinit = strcmp(fn->name, "deinit");
 
-        if (ct && notDeinit && notTildaName) {
+        if (ct && notDeinit && notTildeName) {
           USR_FATAL(fn,
             "destructor name must match class/record name or deinit()");
         } else {
@@ -1285,10 +1285,10 @@ static void normalizeArrayAlias(DefExpr* defExpr) {
 *                                                                             *
 * and such that the conditional arms of the if-stmt implement initialization  *
 * rather than assignment.  This requires additional care for config const and *
-* multi-locale in order to enable privitization to be implemented correctly.  *
+* multi-locale in order to enable privatization to be implemented correctly.  *
 *                                                                             *
 * Noakes Feb 17, 2017:                                                        *
-*   The comppiler has weaknesses with variable initialization which are a     *
+*   The compiler has weaknesses with variable initialization which are a      *
 * little more evident for config variables.  Configs have been split from     *
 * non-configs to enable them to evolve independently in the nearer term.      *
 *                                                                             *
