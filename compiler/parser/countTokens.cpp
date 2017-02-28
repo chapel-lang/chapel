@@ -20,6 +20,7 @@
 #include "countTokens.h"
 
 #include <cstring>
+#include <string>
 
 #include "bison-chapel.h"
 #include "misc.h"
@@ -29,7 +30,6 @@ bool printTokens = false;
 
 
 #define HIST_SIZE 4096
-#define LINE_SIZE 4096
 
 static int lineTokens = 0;
 static int fileTokens = 0;
@@ -41,7 +41,7 @@ static int codeLines = 0;
 
 static int lineBlank = false;
 static int lineComment = false;
-static char line[LINE_SIZE] = "";
+static std::string line;
 
 static int fileTokenHist[HIST_SIZE];
 static int totTokenHist[HIST_SIZE];
@@ -63,8 +63,10 @@ static void clearLine() {
   if (firstLineInFile) {
     firstLineInFile = 0;
   } else {
-    fileTokenHist[lineTokens]++;
-    totTokenHist[lineTokens]++;
+    if (lineTokens < HIST_SIZE) {
+      fileTokenHist[lineTokens]++;
+      totTokenHist[lineTokens]++;
+    }
   }
   if (lineTokens > maxTokensPerLineInFile) maxTokensPerLineInFile = lineTokens;
   if (lineTokens > maxTokensPerLineTot) maxTokensPerLineTot = lineTokens;
@@ -72,7 +74,7 @@ static void clearLine() {
   lineBlank = true;
   lineComment = true;
   if (printTokens) {
-    sprintf(line, "%s", "");
+    line.clear();
   }
 }
 
@@ -155,7 +157,7 @@ void stopCountingFileTokens(yyscan_t scanner) {
   tokenCountingOn = false;
 
   if (printTokens) {
-    if (strcmp(line, "") != 0) {
+    if (!line.empty()) {
       processNewline(scanner);
     }
 
@@ -178,15 +180,17 @@ void finishCountingTokens() {
   }
 }
 
-
-void countToken(const char* text) {
+void countToken(const char* toktext1,
+                const char* toktext2,
+                const char* toktext3) {
   if (tokenCountingOn && countTokens) {
     if (printTokens) {
-      int start = strlen(line);
-      int attempted = snprintf(&line[start], LINE_SIZE - start, " %s", text);
-      if (attempted >= LINE_SIZE - start) {
-        INT_FATAL("line length overflow");
-      }
+      line.push_back(' ');
+      line.append(toktext1);
+      if (toktext2 != NULL)
+        line.append(toktext2);
+      if (toktext3 != NULL)
+        line.append(toktext3);
     }
     lineTokens++;
     fileTokens++;
@@ -216,7 +220,7 @@ void countNewline() {
       } else {
         printf("    | ");
       }
-      printf("%s\n", line);
+      printf("%s\n", line.c_str());
     }
   }
   clearLine();
@@ -235,23 +239,16 @@ void countSingleLineComment(const char* comment) {
     if (!comment) {
       comment = "";
     }
-    int start = strlen(line);
-    int attempted =
-      snprintf(&line[strlen(line)], LINE_SIZE - start, " // %s", comment);
-    if (attempted >= LINE_SIZE - start) {
-      INT_FATAL("line length overflow: %s", line);
-    }
+    line.append(" // ");
+    line.append(comment);
   }
 }
 
 
 void countMultiLineComment(const char* comment) {
   if (printTokens) {
-    int start = strlen(line);
-    int attempted =
-      snprintf(&line[strlen(line)], LINE_SIZE - start, " /* %s */", comment);
-    if (attempted >= LINE_SIZE - start) {
-      INT_FATAL("line length overflow");
-    }
+    line.append(" /* ");
+    line.append(comment);
+    line.append(" */");
   }
 }
