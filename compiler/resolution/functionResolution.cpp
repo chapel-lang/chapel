@@ -5554,6 +5554,7 @@ resolveCoerce(CallExpr* call) {
 //
 static bool backendRequiresCopyForIn(Type* t) {
   return (isRecord(t) ||
+          isUnion(t) ||
           t->symbol->hasFlag(FLAG_ARRAY) ||
           t->symbol->hasFlag(FLAG_DOMAIN));
 }
@@ -5582,7 +5583,7 @@ formalRequiresTemp(ArgSymbol* formal) {
      // inlined.
      //
      ((formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) &&
-      (backendRequiresCopyForIn(formal->type) || !fn->hasFlag(FLAG_INLINE)))
+      (backendRequiresCopyForIn(formal->type)))
      );
 }
 
