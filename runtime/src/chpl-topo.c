@@ -55,6 +55,8 @@
 
 static hwloc_topology_t topology;
 
+static const struct hwloc_topology_support* topoSupport;
+
 static int topoDepth;
 
 static int numaLevel;
@@ -87,6 +89,11 @@ void chpl_topo_init(void) {
   if (hwloc_topology_load(topology)) {
     report_error("hwloc_topology_load()", errno);
   }
+
+  //
+  // What is supported?
+  //
+  topoSupport = hwloc_topology_get_support(topology);
 
   //
   // We need depth information.
@@ -182,8 +189,12 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
                                      hwloc_nodeset_t nodeset) {
   const int flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
 
+  if (!topoSupport->membind->set_area_membind)
+    return;
+
   _DBG_P("hwloc_set_area_membind_nodeset(%p, %#zx, %d)\n", p, size,
          (int) hwloc_bitmap_first(nodeset));
+
   if (hwloc_set_area_membind_nodeset(topology, p, size,
                                      nodeset, HWLOC_MEMBIND_BIND, flags)) {
     report_error("hwloc_set_area_membind_nodeset()", errno);
@@ -191,48 +202,30 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
 }
 
 
-void chpl_topo_showMemLocality(void* p, size_t size, int prefixLen) {
-  FILE* f = stdout;
-  unsigned char* pCh;
-  size_t pgSize;
-  unsigned char* pPgLo;
-  size_t sizePgs;
-  unsigned char* pPg;
-  hwloc_nodeset_t nodeset = hwloc_bitmap_alloc();
+c_sublocid_t chpl_topo_getMemLocality(void* p) {
   const int flags = HWLOC_MEMBIND_STRICT | HWLOC_MEMBIND_BYNODESET;
+  hwloc_nodeset_t nodeset;
   hwloc_membind_policy_t policy;
   int node;
-  int nodeLast;
-  unsigned char* pPgLast;
 
-  pCh = (unsigned char*) p;
-  pgSize = chpl_getHeapPageSize();
-  pPgLo = round_down_to_mask_ptr(pCh, pgSize - 1);
-  sizePgs = round_up_to_mask(size + (pCh - pPgLo), pgSize - 1);
+  if (!topoSupport->membind->get_area_membind) {
+    return c_sublocid_none;
+  }
 
-  pPgLast = pPgLo;
-  if (hwloc_get_area_membind_nodeset(topology, pPgLast, pgSize,
+  if ((nodeset = hwloc_bitmap_alloc()) == NULL) {
+    report_error("hwloc_bitmap_alloc()", errno);
+  }
+
+  if (hwloc_get_area_membind_nodeset(topology, p, 1,
                                      nodeset, &policy, flags)) {
     report_error("hwloc_get_area_membind_nodeset()", errno);
   }
-  nodeLast = hwloc_bitmap_first(nodeset);
 
-  for (pPg = pPgLo + pgSize; pPg < pPgLo + sizePgs; pPg += pgSize) {
-    if (hwloc_get_area_membind_nodeset(topology, pPg, pgSize,
-                                       nodeset, &policy, flags)) {
-      report_error("hwloc_get_area_membind_nodeset()", errno);
-    }
+  node = hwloc_bitmap_first(nodeset);
 
-    if ((node = hwloc_bitmap_first(nodeset)) != nodeLast) {
-      fprintf(f, "%*s%p-%p: %d\n", prefixLen, "",
-              pPgLast, pPg - 1, nodeLast);
-      nodeLast = node;
-      pPgLast = pPg;
-    }
-  }
+  hwloc_bitmap_free(nodeset);
 
-  fprintf(f, "%*s%p-%p: %d\n", prefixLen, "",
-          pPgLast, pPg - 1, nodeLast);
+  return node;
 }
 
 

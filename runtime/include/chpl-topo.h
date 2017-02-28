@@ -54,14 +54,12 @@ void chpl_topo_setMemLocality(void*, size_t, chpl_bool,
                               chpl_bool, c_sublocid_t);
 
 //
-// show memory locality (list of address ranges and NUMA nodes)
+// get memory locality of (the page containing) an address
 //
 // args:
-//   base address
-//   size (bytes)
-//   prefixLen: #blanks to indent all output
+//   address
 //
-void chpl_topo_showMemLocality(void*, size_t, int);
+c_sublocid_t chpl_topo_getMemLocality(void*);
 
 
 #ifdef __cplusplus
