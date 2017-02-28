@@ -36,16 +36,19 @@
 
   2. Add ``use FFTW;`` to your Chapel code.
 
-  3. Include the appropriate libraries in your compilation command. For
-     a standard FFTW installation, this may be as simple as including
-     ``-lfftw3`` when compiling. You may also need to use the ``-I`` and
-     ``-L`` flags to specify the locations of the header and library files.
+  3. Include the appropriate libraries in your compilation command.
 
-  .. note::
-   To use the MKL FFTW wrappers, compile with ``-sisFFTW_MKL`` to include
-   the ``fftw3_mkl.h`` header in addition to the usual ``fftw3.h`` header
-   file. You may also need to add ``-I${MKLROOT}/include/fftw`` to point the
-   compiler to the location of these header files.
+     a. For a standard FFTW installation, this may be as simple as including
+        ``-lfftw3`` when compiling. You may also need to use the ``-I`` and
+        ``-L`` flags to specify the locations of the header and library files
+        if these are in non-standard locations.
+
+     b. *Intel MKL* : To use the MKL FFTW wrappers, compile with ``-sisFFTW_MKL`` to include
+        the ``fftw3_mkl.h`` header in addition to the usual ``fftw3.h`` header
+        file. You may also need to add ``-I${MKLROOT}/include/fftw`` to point the
+        compiler to the location of these header files. Refer to the Intel MKL
+        documentation for the appropriate libraries to include.
+
 
   As in standard FFTW usage, the flow is to:
 
