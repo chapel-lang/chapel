@@ -920,6 +920,13 @@ void cullOverReferences() {
     bool revisit = false;
 
     for_SymbolSymExprs(se, sym) {
+
+      // Workaround for inaccurate tuple analysis: exclude the
+      // _build_tuple call with a LHS that is setting a chpl__iter variable.
+      if (inBuildTupleForChplIter(se)) {
+        continue;
+      }
+
       // Check several cases that might require other other
       // information to resolve. These can be added to the revisitGraph.
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
@@ -1085,16 +1092,12 @@ void cullOverReferences() {
 
       // Determine if se represents a "setting" or a "getting" mention of sym
       if (!setter && symExprIsSet(se)) {
-        // Workaround for inaccurate tuple analysis: exclude the
-        // _build_tuple call with a LHS that is setting a chpl__iter variable.
-        if (! inBuildTupleForChplIter(se)) {
-          setter = true;
-          reasonNotConst[sym] = se;
-          if (CallExpr* call = toCallExpr(se->parentExpr)) {
-            if (call->isResolved()) {
-              ArgSymbol* formal = actual_to_formal(se);
-              reasonNotConst[se] = formal;
-            }
+        setter = true;
+        reasonNotConst[sym] = se;
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          if (call->isResolved()) {
+            ArgSymbol* formal = actual_to_formal(se);
+            reasonNotConst[se] = formal;
           }
         }
       }
@@ -1436,6 +1439,10 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
               else
                 error = true; // l-value error
             }
+          // Or, if passing a 'const' thing into an 'in' formal,
+          // that's OK
+          } else if (formal->intent == INTENT_IN) {
+            // OK
           } else {
             error = true;
           }
