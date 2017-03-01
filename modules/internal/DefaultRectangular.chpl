@@ -2089,8 +2089,8 @@ module DefaultRectangular {
     } else {
       const actual = chpl__getActualArray(B);
       return mdParDim == actual.mdParDim
-      && mdNumChunks == actual.mdNumChunks
-      && mdRLen == actual.mdRLen;
+             && mdNumChunks == actual.mdNumChunks
+             && mdRLen == actual.mdRLen;
     }
   }
 
