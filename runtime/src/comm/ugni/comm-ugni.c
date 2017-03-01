@@ -4713,8 +4713,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                                              void* opnd1,               \
                                              void* opnd2,               \
                                              int32_t loc) {             \
-    fork_t rf_req = { .a.cmd = _c,                                      \
-                      .a.obj = obj };                                   \
+    fork_t rf_req = { .a={.cmd=_c, .obj=obj} };                         \
     if (opnd1 != NULL)                                                  \
       memcpy(&rf_req.a.opnd1, opnd1, sizeof(_t));                       \
     if (opnd2 != NULL)                                                  \
