@@ -1,0 +1,30 @@
+COMM_LAUNCHER_SRCS = \
+        comm-ugni-launch.c \
+        comm-ugni-locales.c \
+
+COMM_SRCS = \
+        comm-ugni.c \
+        comm-ugni-mem.c \
+        comm-ugni-locales.c \
+
+SVN_SRCS = \
+        comm-ugni.c \
+        comm-ugni-launch.c \
+        comm-ugni-locales.c \
+
+SRCS = $(SVN_SRCS)
+
+COMM_OBJS = \
+	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+
+COMM_LAUNCHER_OBJS = \
+	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
+
+# Get system headers...
+comm_ugni_CFLAGS = $(CHPL_MAKE_BASE_CFLAGS)
+
+# Building with IPA enabled results in execution time bugs. See JIRA issue 185
+# for more details: https://chapel.atlassian.net/browse/CHAPEL-185
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
+comm_ugni_CFLAGS += -hipa0
+endif
