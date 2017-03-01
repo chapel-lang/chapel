@@ -500,6 +500,8 @@ module ChapelArray {
   }
 
 
+  // BHARSH TODO: Is this 'no copy return' really necessary? Could we instead
+  // recognize that this is a 'convertValueToRuntimeType' function?
   pragma "no copy return"
   proc chpl__convertValueToRuntimeType(arr: []) type
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
