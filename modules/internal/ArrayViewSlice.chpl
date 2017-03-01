@@ -165,7 +165,7 @@ class ArrayViewSliceArr: BaseArr {
   inline proc dsiAccess(i) ref {
     checkBounds(i);
     if shouldUseIndexCache() {
-      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
       return indexCache.shiftedDataElem(dataIdx);
     } else {
       return arr.dsiAccess(i);
@@ -176,7 +176,7 @@ class ArrayViewSliceArr: BaseArr {
   where !shouldReturnRvalueByConstRef(eltType) {
     checkBounds(i);
     if shouldUseIndexCache() {
-      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
       return indexCache.shiftedDataElem(dataIdx);
     } else {
       return arr.dsiAccess(i);
@@ -187,7 +187,7 @@ class ArrayViewSliceArr: BaseArr {
   where shouldReturnRvalueByConstRef(eltType) {
     checkBounds(i);
     if shouldUseIndexCache() {
-      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
       return indexCache.shiftedDataElem(dataIdx);
     } else {
       return arr.dsiAccess(i);

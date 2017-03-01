@@ -628,11 +628,25 @@ module ChapelArray {
     return isSlice || isRankChange || isReindex;
   }
 
+  //
+  // Returns a domain with a rank equivalent to chpl__getActualArray(arr).rank.
+  // This domain is no larger than the innermost array's domain. It represents
+  // the 'active' indices that the top-level ArrayView works with. For example:
+  //
+  //   var A : [1..10, 1..10];
+  //   var B => A[1, 1..10];
+  //   writeln(chpl__getViewDom(B)); // {1..1, 1..10}
+  //
   proc chpl__getViewDom(arr: []) {
     if chpl__isArrayView(arr._value) then return arr._value._getViewDom();
     else return arr.domain;
   }
 
+  //
+  // Returns the innermost array class (e.g., a DefaultRectangular).
+  //
+  // 'arr' can be a full-fledged array or a BaseArr-inheriting class
+  //
   proc chpl__getActualArray(arr) {
     var value = if isArray(arr) then arr._value else arr;
     var ret = if chpl__isArrayView(value) then value._getActualArray() else value;

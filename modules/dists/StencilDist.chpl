@@ -1164,7 +1164,7 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
       if radata(rlocIdx).shiftedDataChunk(0) != nil {
-        var dataIdx = radata(rlocIdx).getBlockDataIndex(myLocArr.stridable, i);
+        var dataIdx = radata(rlocIdx).getRADDataIndex(myLocArr.stridable, i);
         return radata(rlocIdx).shiftedDataElem(dataIdx);
       }
     }
