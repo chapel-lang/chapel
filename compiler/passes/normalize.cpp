@@ -1631,10 +1631,21 @@ static void normVarTypeInference(DefExpr* defExpr) {
     } else if (var->hasFlag(FLAG_NO_COPY) == true)  {
       defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
 
-    } else {
+    } else if (var->hasFlag(FLAG_CONST)   == false) {
       CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
 
       defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, rhs));
+
+    } else {
+      Symbol*   tmp       = newTemp("tmp");
+      DefExpr*  defineTmp = new DefExpr(tmp);
+      CallExpr* rhs       = new CallExpr("chpl__initCopy", initExpr);
+      CallExpr* moveToTmp = new CallExpr(PRIM_MOVE, tmp, rhs);
+      CallExpr* moveToVar = new CallExpr(PRIM_MOVE, var, tmp);
+
+      defExpr  ->insertAfter(defineTmp);
+      defineTmp->insertAfter(moveToTmp);
+      moveToTmp->insertAfter(moveToVar);
     }
 
   // e.g.
@@ -1659,9 +1670,27 @@ static void normVarTypeInference(DefExpr* defExpr) {
         argExpr->insertAtHead(gMethodToken);
 
       } else {
-        INT_ASSERT(var->hasFlag(FLAG_NO_COPY) == false);
+        if (var->hasFlag(FLAG_NO_COPY) == true) {
+          defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
 
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+        } else {
+          Symbol* tmp = var;
+
+          if (var->hasFlag(FLAG_CONST) == true) {
+            tmp = newTemp("const_tmp");
+
+            defExpr->insertBefore(new DefExpr(tmp));
+            defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+          }
+
+          if (initCall->isPrimitive(PRIM_NEW) == true) {
+            defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, initExpr));
+          } else {
+            CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
+
+            defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
+          }
+        }
       }
 
       if (type != NULL && type->isGeneric() == false) {
@@ -1673,9 +1702,22 @@ static void normVarTypeInference(DefExpr* defExpr) {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
 
       } else {
-        CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
+        Symbol* tmp = var;
 
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, rhs));
+        if (var->hasFlag(FLAG_CONST) == true) {
+          tmp = newTemp("const_tmp");
+
+          defExpr->insertBefore(new DefExpr(tmp));
+          defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+        }
+
+        if (initCall->isPrimitive(PRIM_NEW) == true) {
+          defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, initExpr));
+        } else {
+          CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
+
+          defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
+        }
       }
     }
 
