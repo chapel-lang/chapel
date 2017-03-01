@@ -306,7 +306,7 @@ static bool isRefType(BaseAST* bs)
 }
 
 static bool isArrayRec(BaseAST* bs) {
-  return isRecord(bs->typeInfo()) && bs->typeInfo()->symbol->hasFlag(FLAG_ARRAY);
+  return isRecord(bs->typeInfo()) && bs->typeInfo()->symbol->hasFlag(FLAG_ARRAY) && !fNoInferLocalFields;
 }
 
 static bool isObj(BaseAST* bs) {
@@ -568,7 +568,7 @@ static void printCauses(Symbol* sym) {
 static void setWide(BaseAST* cause, Symbol* sym) {
   if (!typeCanBeWide(sym)) return;
   if (isArgSymbol(sym) && sym->defPoint->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) return;
-  if (isVarSymbol(sym) && sym->defPoint->parentSymbol->hasFlag(FLAG_ARRAY)) {
+  if (isVarSymbol(sym) && sym->defPoint->parentSymbol->hasFlag(FLAG_ARRAY) && !fNoInferLocalFields) {
     // Do not widen the '_instance' field of an _array record
     return;
   }
@@ -893,7 +893,7 @@ static void addKnownWides() {
         if (typeCanBeWide(var)) {
           setWide(fn, var);
         }
-        if (isRecord(var->type) && isArrayRec(var)) {
+        if (isRecord(var->type) && !isArrayRec(var)) {
           widenSubAggregateTypes(fn, var->type);
         }
       }
@@ -2480,7 +2480,9 @@ insertWideReferences(void) {
     }
   }
 
-  fixArrayTypes();
+  if (fNoInferLocalFields == false) {
+    fixArrayTypes();
+  }
 
   // IWR
   insertStringLiteralTemps();

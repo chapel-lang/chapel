@@ -62,6 +62,7 @@ extern bool fNoVectorize;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
+extern bool fNoInferLocalFields;
 extern bool fRemoveUnreachableBlocks;
 extern bool fReplaceArrayAccessesWithRefTemps;
 extern int  optimize_on_clause_limit;
