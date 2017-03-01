@@ -488,9 +488,15 @@ proc setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
 //
 proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
 {
-  assert(bView.rank == aView.rank);
-  const b = chpl__tuplify(ind);
+  if bView.rank != aView.rank {
+    compilerError("Invalid arguments passed to bulkCommConvertCoordinate - domain ranks must match: bView.rank = ", bView.rank:string, ", aView.rank = ", aView.rank:string);
+  }
   param rank = aView.rank;
+  const b = chpl__tuplify(ind);
+  if b.size != rank {
+    param plural = if b.size == 1 then " element" else " elements";
+    compilerError("Invalid arguments passed to bulkCommConvertCoordinate - expecting index with ", rank:string, " elements, got ", b.size:string, plural);
+  }
   type idxType = aView.idxType;
   const AD = aView.dims();
   const BD = bView.dims();
