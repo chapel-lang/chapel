@@ -1327,10 +1327,10 @@ static char* sprintf_rf_req(int loc, void* f_in)
       fork_small_call_info_t* pc = (fork_small_call_info_t*) f;
 
       snprintf(&buf[bufcnt], sizeof(buf) - bufcnt,
-	 "ftable[%d](%d bytes)%s%s",
-	 pc->fid, (int) pc->payload_size,
-	 pc->fast ? ", fast" : "",
-	 pc->blocking ? "" : ", nb");
+               "ftable[%d](%d bytes)%s%s",
+               pc->fid, (int) pc->payload_size,
+               pc->fast ? ", fast" : "",
+               pc->blocking ? "" : ", nb");
     }
     break;
 
