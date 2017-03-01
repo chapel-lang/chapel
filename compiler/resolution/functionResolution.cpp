@@ -8294,6 +8294,10 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           Expr* origRHS = call->get(2)->remove();
           VarSymbol* tmp = newTemp(arrayUnrefName, rhsType);
 
+          // Used by callDestructors to catch assignment from a ref to
+          // 'tmp' when we know we don't want to copy.
+          tmp->addFlag(FLAG_NO_COPY);
+
           call->insertBefore(new DefExpr(tmp));
           CallExpr* init_unref_tmp = new CallExpr(PRIM_MOVE, tmp, origRHS->copy());
           call->insertBefore(init_unref_tmp);
@@ -8312,12 +8316,6 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
             tmp->defPoint->remove();
             init_unref_tmp->remove();
             INT_ASSERT(unrefCall->inTree() == false);
-          } else {
-            // The array is an ArrayView
-            //
-            // Used by callDestructors to catch assignment from a ref to
-            // 'tmp' when we know we don't want to copy.
-            tmp->addFlag(FLAG_NO_COPY);
           }
         }
       }
