@@ -23,6 +23,7 @@
 #include "chplrt.h"
 
 #include "chpl-align.h"
+#include "chplcgfns.h"
 #include "chplsys.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
@@ -53,6 +54,8 @@
 #define _DBG_P(f, ...)
 #endif
 
+static chpl_bool haveTopology;
+
 static hwloc_topology_t topology;
 
 static const struct hwloc_topology_support* topoSupport;
@@ -70,17 +73,23 @@ static void report_error(const char*, int);
 
 void chpl_topo_init(void) {
   //
+  // For now we don't load topology information for locModel=flat, since
+  // we won't use it in that case and loading it is somewhat expensive.
+  // Eventually we will probably load it even for locModel=flat and use
+  // it as the information source for what's currently in chplsys, and
+  // also pass it to Qthreads when we use that (so it doesn't load it
+  // again), but that's work for the future.
+  //
+  haveTopology = (strcmp(CHPL_LOCALE_MODEL, "flat") != 0) ? true : false;
+  if (!haveTopology) {
+    return;
+  }
+
+  //
   // Allocate and initialize topology object.
   //
   if (hwloc_topology_init(&topology)) {
     report_error("hwloc_topology_init()", errno);
-  }
-
-  //
-  // Limit discovery.
-  //
-  if (hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM)) {
-    report_error("hwloc_topology_set_flags()", errno);
   }
 
   //
@@ -124,15 +133,19 @@ void chpl_topo_init(void) {
 
 
 void chpl_topo_exit(void) {
+  if (!haveTopology) {
+    return;
+  }
+
   hwloc_topology_destroy(topology);
 }
 
 
 void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
                               chpl_bool doSubchunks, c_sublocid_t subloc) {
-  unsigned char* pCh = (unsigned char*) p;
-  const size_t pgSize = chpl_getHeapPageSize();
-  const size_t pgMask = pgSize - 1;
+  unsigned char* pCh;
+  size_t pgSize;
+  size_t pgMask;
   unsigned char* pPgLo;
   size_t nPages;
   hwloc_obj_t numaObj;
@@ -140,6 +153,14 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
   _DBG_P("chpl_topo_setMemLocality(%p, %#zx, onlyIn=%s, doSub=%s, %d)\n",
          p, size,
          (onlyInside ? "T" : "F"), (doSubchunks ? "T" : "F"), (int) subloc);
+
+  if (!haveTopology) {
+    return;
+  }
+
+  pCh = (unsigned char*) p;
+  pgSize = chpl_getHeapPageSize();
+  pgMask = pgSize - 1;
 
   if (onlyInside) {
     pPgLo = round_up_to_mask_ptr(pCh, pgMask);
@@ -189,6 +210,10 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
                                      hwloc_nodeset_t nodeset) {
   const int flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
 
+  if (!haveTopology) {
+    return;
+  }
+
   if (!topoSupport->membind->set_area_membind)
     return;
 
@@ -207,8 +232,12 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
   hwloc_membind_policy_t policy;
   int node;
 
+  if (!haveTopology) {
+    return c_sublocid_any;
+  }
+
   if (!topoSupport->membind->get_area_membind) {
-    return c_sublocid_none;
+    return c_sublocid_any;
   }
 
   if ((nodeset = hwloc_bitmap_alloc()) == NULL) {
