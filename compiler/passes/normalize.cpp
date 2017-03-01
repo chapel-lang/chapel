@@ -105,7 +105,7 @@ static bool moduleHonorsNoinit(Symbol* var, Expr* init);
 
 static bool isPrimitiveScalar(Type* type);
 static bool isNonGenericClass(Type* type);
-static bool isNonGenericRecordWithInit(Type* type);
+static bool isNonGenericRecordWithInitializers(Type* type);
 
 static void updateVariableAutoDestroy(DefExpr* defExpr);
 
@@ -638,7 +638,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 
         // non generic records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
-          if (isNonGenericRecordWithInit(at) == true) {
+          if (isNonGenericRecordWithInitializers(at) == true) {
             retval = var;
           }
         }
@@ -1519,11 +1519,13 @@ static void init_noinit_var(VarSymbol* var,
 *                                                                             *
 ************************************** | *************************************/
 
-static void normVarTypeInference(DefExpr* expr);
-static void normVarTypeWoutInit(DefExpr* expr);
-static void normVarTypeWithInit(DefExpr* expr);
-static void normVarNoinit(DefExpr* defExpr);
-static bool isNewExpr(Expr* expr);
+static void           normVarTypeInference(DefExpr* expr);
+static void           normVarTypeWoutInit(DefExpr* expr);
+static void           normVarTypeWithInit(DefExpr* expr);
+static void           normVarNoinit(DefExpr* defExpr);
+
+static bool           isNewExpr(Expr* expr);
+static AggregateType* typeForNewExpr(CallExpr* expr);
 
 static void normalizeVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
@@ -1629,46 +1631,51 @@ static void normVarTypeInference(DefExpr* defExpr) {
     } else if (var->hasFlag(FLAG_NO_COPY) == true)  {
       defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
 
-    } else if (var->hasFlag(FLAG_CONST)   == false) {
+    } else {
       CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
 
       defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, rhs));
-
-    } else {
-      Symbol*   tmp       = newTemp("tmp");
-      DefExpr*  defineTmp = new DefExpr(tmp);
-      CallExpr* rhs       = new CallExpr("chpl__initCopy", initExpr);
-      CallExpr* moveToTmp = new CallExpr(PRIM_MOVE, tmp, rhs);
-      CallExpr* moveToVar = new CallExpr(PRIM_MOVE, var, tmp);
-
-      defExpr  ->insertAfter(defineTmp);
-      defineTmp->insertAfter(moveToTmp);
-      moveToTmp->insertAfter(moveToVar);
     }
 
   // e.g.
   //   var x = f(...);
   //   var y = new MyRecord(...);
   } else if (CallExpr* initCall = toCallExpr(initExpr)) {
-    if (var->hasFlag(FLAG_NO_COPY) == true) {
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+    if (initCall->isPrimitive(PRIM_NEW) == true) {
+      AggregateType* type = typeForNewExpr(initCall);
 
-    } else {
-      Symbol* tmp = var;
+      if (isNonGenericRecordWithInitializers(type) == true) {
+        Expr*     arg1    = initCall->get(1)->remove();
+        CallExpr* argExpr = toCallExpr(arg1);
 
-      if (var->hasFlag(FLAG_CONST) == true) {
-        tmp = newTemp("const_tmp");
+        // Insert the arg portion of the initExpr back into tree
+        defExpr->insertAfter(argExpr);
 
-        defExpr->insertBefore(new DefExpr(tmp));
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+        // Convert it in to a use of the init method
+        argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+
+        // Add _mt and _this (insert at head in reverse order)
+        argExpr->insertAtHead(var);
+        argExpr->insertAtHead(gMethodToken);
+
+      } else {
+        INT_ASSERT(var->hasFlag(FLAG_NO_COPY) == false);
+
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
       }
 
-      if (initCall->isPrimitive(PRIM_NEW) == true) {
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, initExpr));
+      if (type != NULL && type->isGeneric() == false) {
+        var->type = type;
+      }
+
+    } else {
+      if (var->hasFlag(FLAG_NO_COPY) == true) {
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+
       } else {
         CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
 
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, rhs));
       }
     }
 
@@ -1729,7 +1736,7 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
 
     var->type = type;
 
-  } else if (isNonGenericRecordWithInit(type) == true) {
+  } else if (isNonGenericRecordWithInitializers(type) == true) {
     defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
 
     var->type = type;
@@ -1798,7 +1805,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
     var->type = type;
 
-  } else if (isNonGenericRecordWithInit(type) == true) {
+  } else if (isNonGenericRecordWithInitializers(type) == true) {
     if (isNewExpr(initExpr) == true) {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);
@@ -1856,6 +1863,24 @@ static bool isNewExpr(Expr* expr) {
 
   if (CallExpr* callExpr = toCallExpr(expr)) {
     retval = callExpr->isPrimitive(PRIM_NEW);
+  }
+
+  return retval;
+}
+
+static AggregateType* typeForNewExpr(CallExpr* newExpr) {
+  AggregateType* retval = NULL;
+
+  if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+    if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
+      if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
+        if (AggregateType* type = toAggregateType(sym->type)) {
+          if (isClass(type) == true || isRecord(type) == true) {
+            retval = type;
+          }
+        }
+      }
+    }
   }
 
   return retval;
@@ -1969,7 +1994,7 @@ static bool isNonGenericClass(Type* type) {
   return retval;
 }
 
-static bool isNonGenericRecordWithInit(Type* type) {
+static bool isNonGenericRecordWithInitializers(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
