@@ -214,6 +214,8 @@ module ArrayViewSlice {
     }
 
     proc dsiNoFluffView() {
+      // For now avoid implementing 'noFluffView' on each class and use
+      // 'canResolve' to print a better error message.
       if canResolveMethod(arr, "dsiNoFluffView") {
         return arr.dsiNoFluffView();
       } else {
