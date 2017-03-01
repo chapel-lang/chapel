@@ -164,16 +164,9 @@ Building Chapel for a Cray System from Source
    For CS\ |trade| series systems, see :ref:`readme-infiniband` for
    information about using Chapel with InfiniBand.
 
-   Other configuration environment variables such as ``CHPL_MEM`` can also
-   be set, but this is more typical when doing internal development.
-   For production work the configuration scripts should always select an
-   appropriate default for these.
-
-   Note that the Cray-specific settings of ``muxed`` tasking and ``ugni``
-   communications cannot be selected when building Chapel from source,
-   because the corresponding runtime layers are not distributed in
-   source form.  These settings can only be selected when using the
-   pre-built Chapel module.
+   Note that the Cray-specific settings of ``muxed`` tasking cannot be
+   selected when building Chapel from source, because the corresponding
+   runtime layer is not distributed in source form.
 
 
 6) Make sure you're in the top-level chapel/ directory and make/re-make the
@@ -448,9 +441,8 @@ with either qthreads (the default) or muxed tasking.  On other kinds of
 Cray systems or when not using the pre-built module, the default is to
 use gasnet communications and qthreads tasking.
 
-Note that neither the ugni communication layer nor the muxed tasking
-layer can be built from sources, as they are not distributed in source
-form.
+Note that the muxed tasking cannnot be built from source, as it is not
+distributed in source form.
 
 The ugni communication layer interacts with the system's network
 interface very closely through a lightweight interface called uGNI (user
