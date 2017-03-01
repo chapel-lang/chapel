@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-la=$CHPL_HOME/third-party/hwloc/install/$(printchplenv --make \
+la=$CHPL_HOME/third-party/hwloc/install/$($CHPL_HOME/util/printchplenv --make \
                                           | grep HWLOC_UNIQ \
                                           | cut -d'=' -f2)/lib/libhwloc.la
 if grep -q '[-]lnuma' $la ; then
