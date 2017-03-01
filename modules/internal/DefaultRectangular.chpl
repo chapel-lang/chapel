@@ -1352,9 +1352,6 @@ module DefaultRectangular {
                              ignoreRunning,
                              minIndicesPerTask) {
           var dataInd: idxType;
-          // If we detect that blk is never changed then then blk(rank) == 1.
-          // Knowing this, we need not multiply the final ind(...) by anything.
-          // This relies on us marking every function that modifies blk
           if rank == 1 {
             dataInd = ind;
           } else {
@@ -1362,7 +1359,7 @@ module DefaultRectangular {
             for param i in 1..rank-1 {
               dataInd += ind(i) * blk(i);
             }
-            dataInd += ind(rank);
+            dataInd += ind(rank);  // blk(rank) == 1, so no need to multiply it
           }
           yield dd(dataInd);
         }
