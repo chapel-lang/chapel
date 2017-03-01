@@ -101,7 +101,7 @@ module ArrayViewReindex {
     iter these() ref {
       for i in privDom {
         if shouldUseIndexCache() {
-          const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+          const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
           yield indexCache.shiftedDataElem(dataIdx);
         } else {
           yield arr.dsiAccess(chpl_reindexConvertIdx(i));
@@ -112,7 +112,7 @@ module ArrayViewReindex {
     iter these(param tag: iterKind) ref where tag == iterKind.standalone && !localeModelHasSublocales {
       for i in privDom.these(tag) {
         if shouldUseIndexCache() {
-          const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+          const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
           yield indexCache.shiftedDataElem(dataIdx);
         } else {
           yield arr.dsiAccess(chpl_reindexConvertIdx(i));
@@ -131,7 +131,7 @@ module ArrayViewReindex {
       where tag == iterKind.follower {
       for i in privDom.these(tag, followThis) {
         if shouldUseIndexCache() {
-          const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+          const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
           yield indexCache.shiftedDataElem(dataIdx);
         } else {
           yield arr.dsiAccess(chpl_reindexConvertIdx(i));
@@ -189,7 +189,7 @@ module ArrayViewReindex {
       //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
         return indexCache.shiftedDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_reindexConvertIdx(i));
@@ -202,7 +202,7 @@ module ArrayViewReindex {
       //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
         return indexCache.shiftedDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_reindexConvertIdx(i));
@@ -215,7 +215,7 @@ module ArrayViewReindex {
       //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
         return indexCache.shiftedDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_reindexConvertIdx(i));

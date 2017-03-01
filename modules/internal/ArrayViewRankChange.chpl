@@ -104,7 +104,7 @@ class ArrayViewRankChangeArr: BaseArr {
   iter these() ref {
     for i in privDom {
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
         yield indexCache.shiftedDataElem(dataIdx);
       } else {
         yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
@@ -116,7 +116,7 @@ class ArrayViewRankChangeArr: BaseArr {
   // For now, work around them by using an if-expr
   iter these(param tag: iterKind) ref where tag == iterKind.standalone && !localeModelHasSublocales {
     for i in privDom.these(tag) {
-      yield if shouldUseIndexCache() then indexCache.shiftedDataElem(indexCache.getBlockDataIndex(dom.stridable, i))
+      yield if shouldUseIndexCache() then indexCache.shiftedDataElem(indexCache.getRADDataIndex(dom.stridable, i))
             else arr.dsiAccess(chpl_rankChangeConvertIdx(i));
     }
   }
@@ -132,7 +132,7 @@ class ArrayViewRankChangeArr: BaseArr {
     where tag == iterKind.follower {
     for i in privDom.these(tag, followThis) {
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
         yield indexCache.shiftedDataElem(dataIdx);
       } else {
         yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
@@ -191,7 +191,7 @@ class ArrayViewRankChangeArr: BaseArr {
   inline proc dsiAccess(i) ref {
     checkBounds(i);
     if shouldUseIndexCache() {
-      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
       return indexCache.shiftedDataElem(dataIdx);
     } else {
       return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
@@ -202,7 +202,7 @@ class ArrayViewRankChangeArr: BaseArr {
   where !shouldReturnRvalueByConstRef(eltType) {
     checkBounds(i);
     if shouldUseIndexCache() {
-      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
       return indexCache.shiftedDataElem(dataIdx);
     } else {
       return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
@@ -213,7 +213,7 @@ class ArrayViewRankChangeArr: BaseArr {
   where shouldReturnRvalueByConstRef(eltType) {
     checkBounds(i);
     if shouldUseIndexCache() {
-      const dataIdx = indexCache.getBlockDataIndex(dom.stridable, i);
+      const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
       return indexCache.shiftedDataElem(dataIdx);
     } else {
       return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
