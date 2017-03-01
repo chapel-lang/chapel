@@ -787,43 +787,6 @@ proc CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args)
   return alias;
 }
 
-proc CyclicArr.dsiReindex(d: CyclicDom) {
-  var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=d.idxType,
-                            stridable=d.stridable, dom=d);
-  const sameDom = d==dom;
-  var thisid = this.locale.id;
-  coforall i in dom.dist.targetLocDom {
-    on dom.dist.targetLocs(i) {
-      const locDom = d.getLocDom(i);
-      const locAlias: [locDom.myBlock] => locArr[i].myElems;
-      alias.locArr[i] = new LocCyclicArr(eltType=eltType, idxType=idxType,
-                                         locDom=locDom, stridable=d.stridable,
-                                         rank=rank, myElems=>locAlias);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-      if doRADOpt {
-        if sameDom {
-          // If we the reindex domain is the same as that of this array,
-          //  the RAD cache will be the same you can just copy the values
-          //  directly into the alias's RAD cache
-          if locArr[i].locRAD {
-            alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
-                                                     d.stridable,
-                                                     dom.dist.targetLocDom);
-            alias.locArr[i].locCyclicRAD = new LocCyclicRADCache(rank, idxType,
-                                                                 dom.dist.startIdx,
-                                                                 dom.dist.targetLocDom);
-            alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
-          }
-        }
-      }
-    }
-  }
-  if doRADOpt then
-    if !sameDom then alias.setupRADOpt();
-  return alias;
-}
-
 proc CyclicArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {

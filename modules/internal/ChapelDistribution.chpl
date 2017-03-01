@@ -307,7 +307,13 @@ module ChapelDistribution {
     proc dsiLinksDistribution() return true;
 
     // Overload to to customize domain destruction
-    proc dsiDestroyDom() { }
+    //
+    // BHARSH 2017-02-05: Making dsiDestroyDom a virtual method 'tricks' the
+    // compiler into thinking there's recursion for dsiDestroyDom when there is
+    // none. This can result in incorrect generated code if recursive iterators
+    // are inlined. See GitHub issue #5311 for more.
+    //
+    //proc dsiDestroyDom() { }
 
     proc dsiDisplayRepresentation() { }
   }
@@ -582,6 +588,10 @@ module ChapelDistribution {
     var _arrAlias: BaseArr;    // reference to base array if an alias
     var pid:int = nullPid; // privatized ID, if privatization is supported
   
+    proc isReindexArrayView() param {
+      return false;
+    }
+
     proc deinit() {
     }
 
@@ -785,8 +795,11 @@ module ChapelDistribution {
     delete dist;
   }
 
-  proc _delete_dom(dom:BaseDom, param privatized:bool) {
-    dom.dsiDestroyDom();
+  proc _delete_dom(dom, param privatized:bool) {
+    use Reflection;
+    if canResolveMethod(dom, "dsiDestroyDom") {
+      dom.dsiDestroyDom();
+    }
 
     if privatized {
       _freePrivatizedClass(dom.pid, dom);
@@ -798,7 +811,7 @@ module ChapelDistribution {
   // that arr.eltType is meaningful.
   proc _delete_arr(arr, param privatized:bool) {
     // decide whether or not the array is an alias
-    var isalias = (arr._arrAlias != nil);
+    var isalias = (arr._arrAlias != nil) || arr.isReindexArrayView();
 
     // array implementation can destroy data or other members
     arr.dsiDestroyArr(isalias);

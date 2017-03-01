@@ -136,6 +136,7 @@ module ChapelArray {
   use ChapelBase; // For opaque type.
   use ChapelTuple;
   use ChapelLocale;
+  use ArrayViewReindex;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -921,7 +922,7 @@ module ChapelArray {
             distToFree = distToRemove.remove();
           }
           if domToFree != nil then
-            _delete_dom(domToFree, _isPrivatized(_instance));
+            _delete_dom(_instance, _isPrivatized(_instance));
           if distToFree != nil then
             _delete_dist(distToFree, _isPrivatized(_instance.dist));
         }
@@ -1883,7 +1884,7 @@ module ChapelArray {
           if arrToFree != nil then
             _delete_arr(_instance, _isPrivatized(_instance));
           if domToFree != nil then
-            _delete_dom(domToFree, domIsPrivatized);
+            _delete_dom(_instance.dom, domIsPrivatized);
           if distToFree != nil then
             _delete_dist(distToFree, distIsPrivatized);
         }
@@ -2203,27 +2204,36 @@ module ChapelArray {
       // Optimization: Just return an alias of this array when
       // reindexing to the same domain. We skip same-ness test
       // if the domain descriptors' types are disjoint.
+      /*
       if isSubtype(_value.dom.type, d._value.type) ||
          isSubtype(d._value.type, _value.dom.type)
       then
         if _value.dom:object == d._value:object then
           return newAlias();
+      */
 
       for param i in 1..rank do
         if d.dim(i).length != _value.dom.dsiDim(i).length then
           halt("extent in dimension ", i, " does not match actual");
 
-      // dsiReindex takes ownership of newDist._value.
-      pragma "no auto destroy" var newDist = new dmap(_value.dom.dist.dsiCreateReindexDist(d.dims(),
-                                                                  _value.dom.dsiDims()));
       // dsiReindex takes ownership of newDom._value.
-      pragma "no auto destroy" var newDom = {(...d.dims())} dmapped newDist;
+      //      writeln("d is: ", d);
+      //      writeln("_dom is: ", _dom);
+      pragma "no auto destroy" var newDom = {(...d.dims())};
       newDom._value._free_when_no_arrs = true;
-      var x = _value.dsiReindex(newDom._value);
-      x._arrAlias = _value;
+      const (arr, arrpid)  = //if (_value.isSliceArrayView()) then (this._value.arr, this._value._ArrPid)
+        //        else
+        (this._value, this._pid);
+      //      writeln("newDom is: ", newDom);
+      var a = new ArrayViewReindexArr(eltType=this.eltType,
+                                      _DomPid = newDom._pid,
+                                      dom = newDom._instance,
+                                      _ArrPid=arrpid,
+                                      _ArrInstance=arr);
+      //      x._arrAlias = _value;
       // this doesn't need to lock since we just created the domain d
-      newDom._value.add_arr(x, locking=false);
-      return _newArray(x);
+      newDom._value.add_arr(a, locking=false);
+      return _newArray(a);
     }
 
     // reindex for all non-rectangular domain types.
@@ -3605,9 +3615,15 @@ module ChapelArray {
   // B would just be initialized to the result of the function call -
   // meaning that B would not refer to distinct array elements.
   pragma "unalias fn"
-  inline proc chpl__unalias(ref x: domain) {
+  inline proc chpl__unalias(x: domain) {
     if x._unowned {
-      chpl_replaceWithDeepCopy(x);
+      // We could add an autoDestroy here, but it wouldn't do anything for
+      // an unowned domain.
+      pragma "no auto destroy" var ret = x;
+      return ret;
+    } else {
+      pragma "no copy" var ret = x;
+      return ret;
     }
   }
 
@@ -3630,6 +3646,32 @@ module ChapelArray {
     return b;
   }
 
+  pragma "init copy fn"
+  proc chpl__initCopy(const ref a: [])
+    where a._value.isReindexArrayView() {
+    var b : [a._dom] a.eltType;
+
+    // Try bulk transfer.
+    if !chpl__serializeAssignment(b, a) {
+      chpl__bulkTransferArray(b, a);
+      return b;
+    }
+
+    chpl__transferArray(b, a);
+    return b;
+  }
+
+  pragma "auto copy fn" proc chpl__autoCopy(const ref x: [])
+    where x._value.isReindexArrayView() {
+    writeln("In array slice autocopy");
+    return _newArray(new ArrayViewReindexArr(eltType=x.eltType,
+                                             _DomPid=x._value._DomPid,
+                                             dom=x._value.dom,
+                                             _ArrPid=x._value._ArrPid,
+                                             _ArrInstance=x._value._ArrInstance));
+  }
+  
+  
   proc chpl_replaceWithDeepCopy(ref a:[]) {
     var b : [a._dom] a.eltType;
 
@@ -3654,14 +3696,35 @@ module ChapelArray {
 
   // see comment on chpl__unalias for domains
   pragma "unalias fn"
-  inline proc chpl__unalias(ref x: []) {
-    const isalias = (x._unowned) | (x._value._arrAlias != nil);
+  inline proc chpl__unalias(x: []) {
+    const isalias = (x._unowned) || (x._value._arrAlias != nil);
 
     if isalias {
-      chpl_replaceWithDeepCopy(x);
+      // Intended to call chpl__initCopy
+      pragma "no auto destroy" var ret = x;
+      chpl__autoDestroy(x);
+      return ret;
+    } else {
+      // Just return a bit-copy/shallow-copy of 'x'
+      pragma "no copy" var ret = x;
+      return ret;
     }
   }
 
+  pragma "unalias fn"
+  inline proc chpl__unalias(x: [])
+    where x._value.isReindexArrayView() {
+    // Intended to call chpl__initCopy
+    pragma "no auto destroy" var ret = x;
+    
+    // Since chpl__unalias replaces a initCopy(auto/initCopy()) the inner value
+    // needs to be auto-destroyed.
+    // TODO: Should this be inserted by the compiler?
+    chpl__autoDestroy(x);
+    
+    return ret;
+  }
+      
 
   //
   // Noakes 2015/11/05

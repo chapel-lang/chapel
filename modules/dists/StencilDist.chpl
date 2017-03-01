@@ -1590,45 +1590,6 @@ proc StencilArr.dsiUpdateFluff() {
   }
 }
 
-proc StencilArr.dsiReindex(d: StencilDom) {
-  var alias = new StencilArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
-                           stridable=d.stridable, dom=d);
-  const sameDom = d==dom;
-
-  var thisid = this.locale.id;
-  coforall i in d.dist.targetLocDom {
-    on d.dist.targetLocales(i) {
-      const locDom = d.getLocDom(i);
-      var locAlias: [locDom.myBlock] => locArr[i].myElems;
-      alias.locArr[i] = new LocStencilArr(eltType=eltType,
-                                        rank=rank, idxType=d.idxType,
-                                        stridable=d.stridable,
-                                        locDom=locDom,
-                                        myElems=>locAlias);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-      if doRADOpt {
-        if sameDom {
-          // If we the reindex domain is the same as that of this array,
-          //  the RAD cache will be the same you can just copy the values
-          //  directly into the alias's RAD cache
-          if locArr[i].locRAD {
-            alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
-                                                     d.stridable,
-                                                     dom.dist.targetLocDom);
-            alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
-          }
-        }
-      }
-    }
-  }
-
-  if doRADOpt then
-    if !sameDom then alias.setupRADOpt();
-
-  return alias;
-}
-
 proc StencilArr.dsiReallocate(d: domain) {
   //
   // For the default rectangular array, this function changes the data
