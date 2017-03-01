@@ -4372,7 +4372,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 
 
 //
-// Optional non-blocking get interface
+// Non-blocking get interface
 //
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, int32_t locale, void* raddr,
                                        size_t size, int32_t typeIndex,
@@ -4692,7 +4692,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 //
 
 //
-// Is this s 32-bit AMO on a Gemini NIC?
+// Is this a 32-bit AMO on a Gemini NIC?
 //
 // Note that the first clause can be evaluated at compile time, so the
 // whole expression turns into a check against the NIC type for 32-bit

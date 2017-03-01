@@ -441,8 +441,8 @@ with either qthreads (the default) or muxed tasking.  On other kinds of
 Cray systems or when not using the pre-built module, the default is to
 use gasnet communications and qthreads tasking.
 
-Note that the muxed tasking cannnot be built from source, as it is not
-distributed in source form.
+Note that the muxed tasking layer cannnot be built from source, as it is
+not distributed in source form.
 
 The ugni communication layer interacts with the system's network
 interface very closely through a lightweight interface called uGNI (user

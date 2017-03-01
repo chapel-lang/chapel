@@ -82,7 +82,7 @@ void chpl_comm_mem_reg_add_request(size_t size)
 {
   //
   // Add this size (aligned upward as we will do when the actual
-  // allocation is done, to the amount we'll be asked to provide
+  // allocation is done) to the amount we'll be asked to provide
   // later.
   //
   reg_mem_size += REG_MEM_ALIGN(size);
