@@ -19,65 +19,55 @@
 
 // ArrayViewSlice
 //
+// This module provides an array domain map class that is used to
+// represent slices of another array via a domain.
+//
 module ArrayViewSlice {
 
+  //
+  // The class representing a slice of an array.  Like other array
+  // class implementations, it supports the standard dsi interface.
+  //
   class ArrayViewSliceArr: BaseArr {
     type eltType;  // see note on commented-out proc eltType below...
 
+    // the representation of the slicing domain
+    //
     // TODO: Can we privatize upon creation of the array-view slice and cache
     // the results?
     const _DomPid;
     const dom; // Seems like the compiler requires a field called 'dom'...
 
+    // the representation of the sliced array
     const _ArrPid;
     const _ArrInstance;
 
+    // If this is an array view on a DefaultRectangular array
+    // (eventually...), the indexCache provides a mean of directly
+    // accessing the array's ddata to avoid indirection overheads
+    // through the array field above.
     const indexCache = buildIndexCache();
 
-    proc shouldUseIndexCache() param {
-      return (_ArrInstance.isDefaultRectangular() &&
-              _containsRCRE() &&
-              defRectSimpleDData);
-    }
 
-    // No modification of the index cache is necessary or a slice because the
-    // index set and rank remain the same.
-    proc buildIndexCache() {
-      if shouldUseIndexCache() {
-        if (chpl__isArrayView(_ArrInstance)) {
-          return _ArrInstance.indexCache.toSlice(dom);
-        } else {
-          return _ArrInstance.dsiGetRAD().toSlice(dom);
-        }
-      } else {
-        return false;
-      }
-    }
+    //
+    // standard generic aspects of arrays
+    //
 
-    inline proc privDom {
-      if _isPrivatized(dom) {
-        return chpl_getPrivatizedCopy(dom.type, _DomPid);
-      } else {
-        return dom;
-      }
-    }
-
-    inline proc arr {
-      if _isPrivatized(_ArrInstance) {
-        return chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid);
-      } else {
-        return _ArrInstance;
-      }
-    }
-
+    // these could be fields, but indirecting works just as well and
+    // makes the class less generic.
     proc idxType type return dom.idxType;
     proc rank param return arr.rank;
 
-    // This seems like it ought to work, but it causes an error in the
-    // compiler for non-devel mode...  presumably due to a direct
-    // query of eltType...
+    // The following seems like it ought to work, but it causes an
+    // error in the compiler for non-devel mode...  presumably due to
+    // a direct query of eltType in the compiler(?).  As a TODO we
+    // might want to hunt this down in the future...
+    //
     //  proc eltType type return arr.eltType;
 
+
+    //
+    // introspection routine used elsewhere to filter array views
     //
     // TODO: Could this be replaced with more type-based introspection?
     // I shied away from it since this is a generic class, but there
@@ -88,19 +78,18 @@ module ArrayViewSlice {
       return true;
     }
 
-    inline proc dsiGetBaseDom() {
-      return dom;
-    }
 
     //
     // standard iterators
     //
+
     iter these() ref {
       for i in privDom do
         yield arr.dsiAccess(i);
     }
 
-    iter these(param tag: iterKind) ref where tag == iterKind.standalone && !localeModelHasSublocales {
+    iter these(param tag: iterKind) ref
+    where tag == iterKind.standalone && !localeModelHasSublocales {
       for i in privDom.these(tag) do yield arr.dsiAccess(i);
     }
 
@@ -118,9 +107,11 @@ module ArrayViewSlice {
       }
     }
 
+
     //
-    // standard I/O stuff
+    // I/O
     //
+
     proc dsiSerialWrite(f) {
       chpl_serialReadWriteRectangular(f, arr, privDom);
     }
@@ -139,15 +130,11 @@ module ArrayViewSlice {
       writeln("----------");
     }
 
-    inline proc checkBounds(i) {
-      if boundsChecking then
-        if !privDom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
-    }
 
     //
-    // standard accessors
+    // accessors
     //
+
     inline proc dsiAccess(i: idxType ...rank) ref {
       return dsiAccess(i);
     }
@@ -205,15 +192,27 @@ module ArrayViewSlice {
     where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(i);
 
+    inline proc checkBounds(i) {
+      if boundsChecking then
+        if !privDom.dsiMember(i) then
+          halt("array index out of bounds: ", i);
+    }
+
+
+    //
+    // locality-oriented queries
+    //
 
     proc dsiTargetLocales() {
       return arr.dsiTargetLocales();
     }
-    /*  I don't think these should be needed...
-        proc dataChunk(x) ref {
-        return arr.dataChunk(x);
-        }
-    */
+
+    proc dsiHasSingleLocalSubdomain() param
+      return privDom.dsiHasSingleLocalSubdomain();
+
+    proc dsiLocalSubdomain() {
+      return privDom.dsiLocalSubdomain();
+    }
 
     proc dsiNoFluffView() {
       if canResolveMethod(arr, "dsiNoFluffView") {
@@ -223,18 +222,10 @@ module ArrayViewSlice {
       }
     }
 
-    //
-    // Local subdomain interface
-    //
-    proc dsiHasSingleLocalSubdomain() param
-      return privDom.dsiHasSingleLocalSubdomain();
 
     //
-    // TODO: Is this correct in distributed memory?
+    // privatization
     //
-    proc dsiLocalSubdomain() {
-      return privDom.dsiLocalSubdomain();
-    }
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
@@ -252,6 +243,11 @@ module ArrayViewSlice {
                                    _ArrPid=privatizeData(3),
                                    _ArrInstance=privatizeData(4));
     }
+
+
+    //
+    // bulk-transfer
+    //
 
     proc dsiSupportsBulkTransfer() param {
       return arr.dsiSupportsBulkTransfer();
@@ -312,6 +308,57 @@ module ArrayViewSlice {
 
     proc doiBulkTransferFrom(B, viewDom) {
       arr.doiBulkTransferFrom(B, viewDom);
+    }
+
+
+    //
+    // utility functions used to set up the index cache
+    //
+
+    proc shouldUseIndexCache() param {
+      return (_ArrInstance.isDefaultRectangular() &&
+              _containsRCRE() &&
+              defRectSimpleDData);
+    }
+
+    // No modification of the index cache is necessary for a slice
+    // because the index set and rank remain the same.
+    proc buildIndexCache() {
+      if shouldUseIndexCache() {
+        if (chpl__isArrayView(_ArrInstance)) {
+          return _ArrInstance.indexCache.toSlice(dom);
+        } else {
+          return _ArrInstance.dsiGetRAD().toSlice(dom);
+        }
+      } else {
+        return false;
+      }
+    }
+
+
+    //
+    // routines relating to the underlying domains and arrays
+    //
+
+    inline proc privDom {
+      if _isPrivatized(dom) {
+        return chpl_getPrivatizedCopy(dom.type, _DomPid);
+      } else {
+        return dom;
+      }
+    }
+
+    inline proc arr {
+      if _isPrivatized(_ArrInstance) {
+        return chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid);
+      } else {
+        return _ArrInstance;
+      }
+    }
+
+    // not sure what this is, but everyone seems to have one...
+    inline proc dsiGetBaseDom() {
+      return dom;
     }
 
     proc isDefaultRectangular() param return arr.isDefaultRectangular();

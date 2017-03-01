@@ -19,71 +19,64 @@
 
 // ArrayViewRankChange
 //
+// This module provides an array domain map class that is used to
+// represent rank change slices of another array via a domain.
+//
 module ArrayViewRankChange {
 
+  //
+  // The class representing a rank-change slice of an array.  Like
+  // other array class implementations, it supports the standard dsi
+  // interface.
+  //
   class ArrayViewRankChangeArr: BaseArr {
     type eltType;  // see note on commented-out proc eltType below...
 
+    // the representation of the slicing domain.  For a rank change
+    // like A[lo..hi, 3] this is the lower-dimensional domain {lo..hi}.
+    //
     // TODO: Can we privatize upon creation of the array-view slice and cache
     // the results?
     const _DomPid;
     const dom; // Seems like the compiler requires a field called 'dom'...
 
+    // the representation of the sliced array
     const _ArrPid;
     const _ArrInstance;
 
+    // These two fields represent whether or not each dimension was
+    // collapsed as part of the rank-change; and if so, what the
+    // index of that collapsed dimension was.  So for A[lo..hi, 3]
+    // these would be (false, true) and (?, 3) respectively.
     const collapsedDim;  // rank*bool    TODO: constrain this
     const idx;           // rank*idxType TODO: and this
 
+    // If this is an array view on a DefaultRectangular array
+    // (eventually...), the indexCache provides a mean of directly
+    // accessing the array's ddata to avoid indirection overheads
+    // through the array field above.
     const indexCache = buildIndexCache();
 
-    proc shouldUseIndexCache() param {
-      return (_ArrInstance.isDefaultRectangular() &&
-              defRectSimpleDData);
-    }
 
-    proc buildIndexCache() {
-      if shouldUseIndexCache() {
-        if (chpl__isArrayView(_ArrInstance)) {
-          if _ArrInstance.isSliceArrayView() && !_ArrInstance._containsRCRE() {
-            // Only slices below in the view stack, which won't have built up
-            // an indexCache.
-            return _ArrInstance._getActualArray().dsiGetRAD().toSlice(_ArrInstance.dom).toRankChange(dom, collapsedDim, idx);
-          } else {
-            return _ArrInstance.indexCache.toRankChange(dom, collapsedDim, idx);
-          }
-        } else {
-          return _ArrInstance.dsiGetRAD().toRankChange(dom, collapsedDim, idx);
-        }
-      } else {
-        return false;
-      }
-    }
+    //
+    // standard generic aspects of arrays
+    //
 
-    inline proc privDom {
-      if _isPrivatized(dom) {
-        return chpl_getPrivatizedCopy(dom.type, _DomPid);
-      } else {
-        return dom;
-      }
-    }
-
-    inline proc arr {
-      if _isPrivatized(_ArrInstance) {
-        return chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid);
-      } else {
-        return _ArrInstance;
-      }
-    }
-
+    // these could be fields, but indirecting works just as well and
+    // makes the class less generic.
     proc idxType type return dom.idxType;
     proc rank param return dom.rank;
 
-    // This seems like it ought to work, but it causes an error in the
-    // compiler for non-devel mode...  presumably due to a direct
-    // query of eltType...
+    // The following seems like it ought to work, but it causes an
+    // error in the compiler for non-devel mode...  presumably due to
+    // a direct query of eltType in the compiler(?).  As a TODO we
+    // might want to hunt this down in the future...
+    //
     //  proc eltType type return arr.eltType;
 
+
+    //
+    // introspection routine used elsewhere to filter array views
     //
     // TODO: Could this be replaced with more type-based introspection?
     // I shied away from it since this is a generic class, but there
@@ -94,13 +87,60 @@ module ArrayViewRankChange {
       return true;
     }
 
-    inline proc dsiGetBaseDom() {
-      return dom;
+
+    //
+    // Helper routines to convert incoming low-D indices/domains into
+    // their higher-D equivalents.
+    //
+
+    inline proc chpl_rankChangeConvertIdx(i: integral) {
+      var ind = idx;
+      var j = 1;
+      for param d in 1..arr.rank {
+        if !collapsedDim(d) {
+          ind(d) = i;
+          j += 1;
+        }
+      }
+      assert (j == 2);
+      return ind;
     }
+
+    inline proc chpl_rankChangeConvertIdx(i) {
+      var ind = idx;
+      var j = 1;
+      for param d in 1..arr.rank {
+        if !collapsedDim(d) {
+          ind(d) = i(j);
+          j += 1;
+        }
+      }
+      return ind;
+    }
+
+    inline proc chpl_rankChangeConvertDom(dims) {
+      if dom.rank != dims.size then
+        compilerError("Called chpl_rankChangeConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", dom.rank:string);
+
+      var ranges : arr.rank*dims(1).type;
+      var j = 1;
+      for param d in 1..arr.rank {
+        if !collapsedDim(d) {
+          ranges(d) = dims(j);
+          j += 1;
+        } else {
+          ranges(d) = idx(d)..idx(d);
+        }
+      }
+      return {(...ranges)};
+    }
+
+
 
     //
     // standard iterators
     //
+
     iter these() ref {
       for i in privDom {
         if shouldUseIndexCache() {
@@ -114,7 +154,8 @@ module ArrayViewRankChange {
 
     // TODO: We seem to run into compile-time bugs when using multiple yields.
     // For now, work around them by using an if-expr
-    iter these(param tag: iterKind) ref where tag == iterKind.standalone && !localeModelHasSublocales {
+    iter these(param tag: iterKind) ref
+    where tag == iterKind.standalone && !localeModelHasSublocales {
       for i in privDom.these(tag) {
         yield if shouldUseIndexCache()
                 then indexCache.shiftedDataElem(indexCache.getRADDataIndex(dom.stridable, i))
@@ -123,7 +164,6 @@ module ArrayViewRankChange {
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
-      //    writeln("In sliceview leader");
       for followThis in privDom.these(tag) do {
         yield followThis;
       }
@@ -141,9 +181,11 @@ module ArrayViewRankChange {
       }
     }
 
+
     //
-    // standard I/O stuff
+    // I/O
     //
+
     proc dsiSerialWrite(f) {
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
@@ -166,15 +208,10 @@ module ArrayViewRankChange {
       writeln("----------");
     }
 
-    inline proc checkBounds(i) {
-      if boundsChecking then
-        if !privDom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
-    }
+    //
+    // accessors
+    //
 
-    //
-    // standard accessors
-    //
     inline proc dsiAccess(i: idxType ...rank) ref {
       return dsiAccess(i);
     }
@@ -232,6 +269,17 @@ module ArrayViewRankChange {
     where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i));
 
+    inline proc checkBounds(i) {
+      if boundsChecking then
+        if !privDom.dsiMember(i) then
+          halt("array index out of bounds: ", i);
+    }
+
+
+    //
+    // locality-oriented queries
+    //
+
     proc dsiTargetLocales() {
       //
       // BLC: To tighten this up, we'd need to query the distribution to
@@ -242,64 +290,12 @@ module ArrayViewRankChange {
       return arr.dsiTargetLocales();
     }
 
-    //
-    // These helper routines convert incoming low-D indices/domains into
-    // their higher-D equivalents.
-    //
-    inline proc chpl_rankChangeConvertIdx(i: integral) {
-      var ind = idx;
-      var j = 1;
-      for param d in 1..arr.rank {
-        if !collapsedDim(d) {
-          ind(d) = i;
-          j += 1;
-        }
-      }
-      assert (j == 2);
-      return ind;
+    proc dsiHasSingleLocalSubdomain() param
+      return privDom.dsiHasSingleLocalSubdomain();
+
+    proc dsiLocalSubdomain() {
+      return privDom.dsiLocalSubdomain();
     }
-
-    inline proc chpl_rankChangeConvertIdx(i) {
-      var ind = idx;
-      var j = 1;
-      for param d in 1..arr.rank {
-        if !collapsedDim(d) {
-          ind(d) = i(j);
-          j += 1;
-        }
-      }
-      return ind;
-    }
-
-    inline proc chpl_rankChangeConvertDom(dims) {
-      if dom.rank != dims.size {
-        compilerError("Called chpl_rankChangeConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", dom.rank:string);
-      }
-      //
-      // TODO: I worry that I'm being too fast and loose with domain
-      // records and classes here
-      //
-      var ranges : arr.rank*dims(1).type;
-      //    writeln("*** dom was: ", dom);
-      var j = 1;
-      for param d in 1..arr.rank {
-        if !collapsedDim(d) {
-          ranges(d) = dims(j);
-          j += 1;
-        } else {
-          ranges(d) = idx(d)..idx(d);
-        }
-      }
-      return {(...ranges)};
-    }
-
-    // TODO: Haven't looked below here yet...
-
-    /*  I don't think these should be needed...
-  proc dataChunk(x) ref {
-    return arr.dataChunk(x);
-  }
-*/
 
     proc dsiNoFluffView() {
       if canResolveMethod(arr, "dsiNoFluffView") {
@@ -310,17 +306,8 @@ module ArrayViewRankChange {
     }
 
     //
-    // Local subdomain interface
+    // privatization
     //
-    proc dsiHasSingleLocalSubdomain() param
-      return privDom.dsiHasSingleLocalSubdomain();
-
-    //
-    // TODO: Is this correct in distributed memory?
-    //
-    proc dsiLocalSubdomain() {
-      return privDom.dsiLocalSubdomain();
-    }
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
@@ -340,6 +327,11 @@ module ArrayViewRankChange {
                                         collapsedDim=privatizeData(5),
                                         idx=privatizeData(6));
     }
+
+
+    //
+    // bulk-transfer
+    //
 
     proc dsiSupportsBulkTransfer() param {
       return arr.dsiSupportsBulkTransfer();
@@ -408,6 +400,60 @@ module ArrayViewRankChange {
       arr.doiBulkTransferFrom(B, viewDom);
     }
 
+
+    //
+    // utility functions used to set up the index cache
+    //
+
+    proc shouldUseIndexCache() param {
+      return (_ArrInstance.isDefaultRectangular() &&
+              defRectSimpleDData);
+    }
+
+    proc buildIndexCache() {
+      if shouldUseIndexCache() {
+        if (chpl__isArrayView(_ArrInstance)) {
+          if _ArrInstance.isSliceArrayView() && !_ArrInstance._containsRCRE() {
+            // Only slices below in the view stack, which won't have built up
+            // an indexCache.
+            return _ArrInstance._getActualArray().dsiGetRAD().toSlice(_ArrInstance.dom).toRankChange(dom, collapsedDim, idx);
+          } else {
+            return _ArrInstance.indexCache.toRankChange(dom, collapsedDim, idx);
+          }
+        } else {
+          return _ArrInstance.dsiGetRAD().toRankChange(dom, collapsedDim, idx);
+        }
+      } else {
+        return false;
+      }
+    }
+
+
+    //
+    // routines relating to the underlying domains and arrays
+    //
+
+    inline proc privDom {
+      if _isPrivatized(dom) {
+        return chpl_getPrivatizedCopy(dom.type, _DomPid);
+      } else {
+        return dom;
+      }
+    }
+
+    inline proc arr {
+      if _isPrivatized(_ArrInstance) {
+        return chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid);
+      } else {
+        return _ArrInstance;
+      }
+    }
+
+    // not sure what this is, but everyone seems to have one...
+    inline proc dsiGetBaseDom() {
+      return dom;
+    }
+
     proc isDefaultRectangular() param return arr.isDefaultRectangular();
 
     proc _getActualArray() {
@@ -420,9 +466,9 @@ module ArrayViewRankChange {
 
     proc _containsRCRE() param {
       if chpl__isArrayView(arr) {
-        return arr.isRankChangeArrayView() ||
-          arr.isReindexArrayView() ||
-          arr._containsRCRE();
+        return (arr.isRankChangeArrayView() ||
+                arr.isReindexArrayView() ||
+                arr._containsRCRE());
       } else {
         return false;
       }

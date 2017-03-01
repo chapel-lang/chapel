@@ -19,68 +19,55 @@
 
 // ArrayViewReindex
 //
+// This module provides an array domain map class that is used to
+// represent reindexings of another array via a domain.
+//
 module ArrayViewReindex {
 
+  //
+  // The class representing a slice of an array.  Like other array
+  // class implementations, it supports the standard dsi interface.
+  //
   class ArrayViewReindexArr: BaseArr {
     type eltType;  // see note on commented-out proc eltType below...
 
+    // the representation of the slicing domain
+    //
     // TODO: Can we privatize upon creation of the array-view slice and cache
     // the results?
     const _DomPid;
     const dom; // Seems like the compiler requires a field called 'dom'...
 
+    // the representation of the sliced array
     const _ArrPid;
     const _ArrInstance;
 
+    // If this is an array view on a DefaultRectangular array
+    // (eventually...), the indexCache provides a mean of directly
+    // accessing the array's ddata to avoid indirection overheads
+    // through the array field above.
     const indexCache = buildIndexCache();
 
-    proc shouldUseIndexCache() param {
-      return _ArrInstance.isDefaultRectangular() &&
-             defRectSimpleDData;
-    }
 
-    proc buildIndexCache() {
-      if shouldUseIndexCache() {
-        if (chpl__isArrayView(_ArrInstance)) {
-          if _ArrInstance.isSliceArrayView() && !_ArrInstance._containsRCRE() {
-            // Only slices below in the view stack, which won't have built up
-            // an indexCache.
-            return _ArrInstance._getActualArray().dsiGetRAD().toSlice(_ArrInstance.dom).toReindex(dom);
-          } else {
-            return _ArrInstance.indexCache.toReindex(dom);
-          }
-        } else {
-          return _ArrInstance.dsiGetRAD().toReindex(dom);
-        }
-      } else {
-        return false;
-      }
-    }
+    //
+    // standard generic aspects of arrays
+    //
 
-    inline proc privDom {
-      if _isPrivatized(dom) {
-        return chpl_getPrivatizedCopy(dom.type, _DomPid);
-      } else {
-        return dom;
-      }
-    }
-
-    inline proc arr {
-      if _isPrivatized(_ArrInstance) {
-        return chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid);
-      } else {
-        return _ArrInstance;
-      }
-    }
-
+    // these could be fields, but indirecting works just as well and
+    // makes the class less generic.
     proc idxType type return dom.idxType;
     proc rank param return dom.rank;
 
-    // This seems like it ought to work, but it causes an error in the
-    // compiler for non-devel mode...  presumably due to a direct
-    // query of eltType...
+    // The following seems like it ought to work, but it causes an
+    // error in the compiler for non-devel mode...  presumably due to
+    // a direct query of eltType in the compiler(?).  As a TODO we
+    // might want to hunt this down in the future...
+    //
     //  proc eltType type return arr.eltType;
 
+
+    //
+    // introspection routine used elsewhere to filter array views
     //
     // TODO: Could this be replaced with more type-based introspection?
     // I shied away from it since this is a generic class, but there
@@ -91,13 +78,50 @@ module ArrayViewReindex {
       return true;
     }
 
-    inline proc dsiGetBaseDom() {
-      return dom;
+
+    //
+    // Helper routines to convert incoming new/reindex
+    // indices/domains back into the original index set.
+    //
+
+    inline proc chpl_reindexConvertIdx(i: integral) {
+      compilerAssert(arr.rank == 1, arr.rank:string);
+      return arr.dom.dsiDim(1).orderToIndex(dom.dsiDim(1).indexOrder(i));
     }
+
+    inline proc chpl_reindexConvertIdx(i) {
+      var ind: arr.rank*arr.idxType;
+      for param d in 1..arr.rank {
+        ind(d) = arr.dom.dsiDim(d).orderToIndex(dom.dsiDim(d).indexOrder(i(d)));
+      }
+      return ind;
+    }
+
+    inline proc chpl_reindexConvertDom(dims) {
+      if dom.rank != dims.size {
+        compilerError("Called chpl_reindexConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", dom.rank:string);
+      }
+
+      var ranges : arr.dom.dsiDims().type;
+      var low , high : arr.rank*arr.idxType;
+      for param d in 1..dims.size do low(d) = dims(d).first;
+      for param d in 1..dims.size do high(d) = dims(d).last;
+
+      var actualLow = chpl_reindexConvertIdx(low);
+      var actualHigh = chpl_reindexConvertIdx(high);
+      for param d in 1..arr.rank {
+        var lowered = actualLow(d)..actualHigh(d);
+        // TODO: does it matter which range slices the other?
+        ranges(d) = arr.dom.dsiDim(d)[lowered];
+      }
+      return {(...ranges)};
+    }
+
 
     //
     // standard iterators
     //
+
     iter these() ref {
       for i in privDom {
         if shouldUseIndexCache() {
@@ -109,7 +133,8 @@ module ArrayViewReindex {
       }
     }
 
-    iter these(param tag: iterKind) ref where tag == iterKind.standalone && !localeModelHasSublocales {
+    iter these(param tag: iterKind) ref
+    where tag == iterKind.standalone && !localeModelHasSublocales {
       for i in privDom.these(tag) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -139,11 +164,12 @@ module ArrayViewReindex {
       }
     }
 
+
     //
-    // standard I/O stuff
+    // I/O
     //
+
     proc dsiSerialWrite(f) {
-      //      writeln("privDom is: ", privDom);
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
 
@@ -161,32 +187,26 @@ module ArrayViewReindex {
       writeln("------------");
     }
 
-    inline proc checkBounds(i) {
-          if boundsChecking then
-            if !privDom.dsiMember(i) then
-              halt("array index out of bounds: ", i);
-    }
 
     //
-    // standard accessors
+    // accessors
     //
+
     inline proc dsiAccess(i: idxType ...rank) ref {
       return dsiAccess(i);
     }
 
     inline proc dsiAccess(i: idxType ...rank)
-      where !shouldReturnRvalueByConstRef(eltType) {
+    where !shouldReturnRvalueByConstRef(eltType) {
       return dsiAccess(i);
     }
 
     inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    where shouldReturnRvalueByConstRef(eltType) {
       return dsiAccess(i);
     }
 
     inline proc dsiAccess(i) ref {
-      //      writeln("Got an access of ", i);
-      //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -197,9 +217,7 @@ module ArrayViewReindex {
     }
 
     inline proc dsiAccess(i)
-      where !shouldReturnRvalueByConstRef(eltType) {
-      //      writeln("Got an access of ", i);
-      //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
+    where !shouldReturnRvalueByConstRef(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -210,9 +228,7 @@ module ArrayViewReindex {
     }
 
     inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
-      //      writeln("Got an access of ", i);
-      //      writeln("Converted it to ", chpl_reindexConvertIdx(i));
+    where shouldReturnRvalueByConstRef(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -226,64 +242,34 @@ module ArrayViewReindex {
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
 
     inline proc dsiLocalAccess(i)
-      where !shouldReturnRvalueByConstRef(eltType)
+    where !shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
 
     inline proc dsiLocalAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType)
+    where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
+
+    inline proc checkBounds(i) {
+      if boundsChecking then
+        if !privDom.dsiMember(i) then
+          halt("array index out of bounds: ", i);
+    }
+
+
+    //
+    // locality-oriented queries
+    //
 
     proc dsiTargetLocales() {
       return arr.dsiTargetLocales();
     }
 
-    //
-    // These helper routines convert incoming new-domain
-    // indices/domains into their old-domain equivalents.
-    //
-    inline proc chpl_reindexConvertIdx(i: integral) {
-      compilerAssert(arr.rank == 1, arr.rank:string);
-      //      writeln("dom.dsiDim(1).indexOrder(", i, ") = ", dom.dsiDim(1).indexOrder(i));
-      return arr.dom.dsiDim(1).orderToIndex(dom.dsiDim(1).indexOrder(i));
+    proc dsiHasSingleLocalSubdomain() param
+      return privDom.dsiHasSingleLocalSubdomain();
+
+    proc dsiLocalSubdomain() {
+      return privDom.dsiLocalSubdomain();
     }
-
-    inline proc chpl_reindexConvertIdx(i) {
-      var ind: arr.rank*arr.idxType;
-      //      writeln("*** inside conversion routine: ", arr.dom.dsiDims());
-      for param d in 1..arr.rank {
-        //        writeln("dom.dsiDim(", d, ").indexOrder(", i(d), ") = ", dom.dsiDim(d).indexOrder(i(d)));
-        ind(d) = arr.dom.dsiDim(d).orderToIndex(dom.dsiDim(d).indexOrder(i(d)));
-      }
-      return ind;
-    }
-
-    inline proc chpl_reindexConvertDom(dims) {
-      if dom.rank != dims.size {
-        compilerError("Called chpl_reindexConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", dom.rank:string);
-      }
-
-      var ranges : arr.dom.dsiDims().type;
-      var low , high : arr.rank*arr.idxType;
-      for param d in 1..dims.size do low(d) = dims(d).first;
-      for param d in 1..dims.size do high(d) = dims(d).last;
-
-      var actualLow = chpl_reindexConvertIdx(low);
-      var actualHigh = chpl_reindexConvertIdx(high);
-      for param d in 1..arr.rank {
-        var lowered = actualLow(d)..actualHigh(d);
-        // TODO: does it matter which range slices the other?
-        ranges(d) = arr.dom.dsiDim(d)[lowered];
-      }
-      return {(...ranges)};
-    }
-
-    // TODO: Haven't looked below here yet...
-
-    /*  I don't think these should be needed...
-  proc dataChunk(x) ref {
-    return arr.dataChunk(x);
-  }
-    */
 
     proc dsiNoFluffView() {
       if canResolveMethod(arr, "dsiNoFluffView") {
@@ -293,22 +279,15 @@ module ArrayViewReindex {
       }
     }
 
-    //
-    // Local subdomain interface
-    //
-    proc dsiHasSingleLocalSubdomain() param
-      return privDom.dsiHasSingleLocalSubdomain();
 
     //
-    // TODO: Is this correct in distributed memory?
+    // privatization
     //
-    proc dsiLocalSubdomain() {
-      return privDom.dsiLocalSubdomain();
-    }
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param return _ArrInstance.dsiSupportsPrivatization();
+    proc dsiSupportsPrivatization() param
+      return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
       return (_DomPid, dom, _ArrPid, _ArrInstance);
@@ -321,6 +300,11 @@ module ArrayViewReindex {
                                      _ArrPid=privatizeData(3),
                                      _ArrInstance=privatizeData(4));
     }
+
+
+    //
+    // bulk-transfer
+    //
 
     proc dsiSupportsBulkTransfer() param {
       return arr.dsiSupportsBulkTransfer();
@@ -384,6 +368,60 @@ module ArrayViewReindex {
       arr.doiBulkTransferFrom(B, viewDom);
     }
 
+
+    //
+    // utility functions used to set up the index cache
+    //
+
+    proc shouldUseIndexCache() param {
+      return _ArrInstance.isDefaultRectangular() &&
+             defRectSimpleDData;
+    }
+
+    proc buildIndexCache() {
+      if shouldUseIndexCache() {
+        if (chpl__isArrayView(_ArrInstance)) {
+          if _ArrInstance.isSliceArrayView() && !_ArrInstance._containsRCRE() {
+            // Only slices below in the view stack, which won't have built up
+            // an indexCache.
+            return _ArrInstance._getActualArray().dsiGetRAD().toSlice(_ArrInstance.dom).toReindex(dom);
+          } else {
+            return _ArrInstance.indexCache.toReindex(dom);
+          }
+        } else {
+          return _ArrInstance.dsiGetRAD().toReindex(dom);
+        }
+      } else {
+        return false;
+      }
+    }
+
+
+    //
+    // routines relating to the underlying domains and arrays
+    //
+
+    inline proc privDom {
+      if _isPrivatized(dom) {
+        return chpl_getPrivatizedCopy(dom.type, _DomPid);
+      } else {
+        return dom;
+      }
+    }
+
+    inline proc arr {
+      if _isPrivatized(_ArrInstance) {
+        return chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid);
+      } else {
+        return _ArrInstance;
+      }
+    }
+
+    // not sure what this is, but everyone seems to have one...
+    inline proc dsiGetBaseDom() {
+      return dom;
+    }
+
     proc isDefaultRectangular() param return arr.isDefaultRectangular();
 
     proc _getActualArray() {
@@ -411,6 +449,5 @@ module ArrayViewReindex {
       return this;
     }
   }
-
 
 }
