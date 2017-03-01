@@ -155,7 +155,7 @@ module ArrayViewRankChange {
     // TODO: We seem to run into compile-time bugs when using multiple yields.
     // For now, work around them by using an if-expr
     iter these(param tag: iterKind) ref
-    where tag == iterKind.standalone && !localeModelHasSublocales {
+      where tag == iterKind.standalone && !localeModelHasSublocales {
       for i in privDom.these(tag) {
         yield if shouldUseIndexCache()
                 then indexCache.shiftedDataElem(indexCache.getRADDataIndex(dom.stridable, i))
@@ -170,7 +170,7 @@ module ArrayViewRankChange {
     }
 
     iter these(param tag: iterKind, followThis) ref
-    where tag == iterKind.follower {
+      where tag == iterKind.follower {
       for i in privDom.these(tag, followThis) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -217,12 +217,12 @@ module ArrayViewRankChange {
     }
 
     inline proc dsiAccess(i: idxType ...rank)
-    where !shouldReturnRvalueByConstRef(eltType) {
+      where !shouldReturnRvalueByConstRef(eltType) {
       return dsiAccess(i);
     }
 
     inline proc dsiAccess(i: idxType ...rank) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+      where shouldReturnRvalueByConstRef(eltType) {
       return dsiAccess(i);
     }
 
@@ -237,7 +237,7 @@ module ArrayViewRankChange {
     }
 
     inline proc dsiAccess(i)
-    where !shouldReturnRvalueByConstRef(eltType) {
+      where !shouldReturnRvalueByConstRef(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -248,7 +248,7 @@ module ArrayViewRankChange {
     }
 
     inline proc dsiAccess(i) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+      where shouldReturnRvalueByConstRef(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -262,11 +262,11 @@ module ArrayViewRankChange {
       return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i));
 
     inline proc dsiLocalAccess(i)
-    where !shouldReturnRvalueByConstRef(eltType)
+      where !shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i));
 
     inline proc dsiLocalAccess(i) const ref
-    where shouldReturnRvalueByConstRef(eltType)
+      where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i));
 
     inline proc checkBounds(i) {
