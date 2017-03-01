@@ -116,8 +116,8 @@ void chpl_topo_init(void) {
     int level;
 
     //
-    // Note: if there are multiple levels with NUMA nodes, this just finds
-    // the uppermost.
+    // Note: If there are multiple levels with NUMA nodes, this finds
+    //       only the uppermost.
     //
     for (level = 0, numaLevel = -1;
          level < topoDepth && numaLevel == -1;
@@ -128,6 +128,12 @@ void chpl_topo_init(void) {
     }
   }
 
+  //
+  // Note: This will find not only traditional CPU+memory NUMA nodes
+  //       but also memory-only nodes, so for example on KNL it may
+  //       not match chpl_task_getNumSublocales().  We will need to
+  //       revisit this in the future.
+  //
   numNumaDomains = hwloc_get_nbobjs_by_depth(topology, numaLevel);
 }
 
@@ -227,7 +233,7 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
 
 
 c_sublocid_t chpl_topo_getMemLocality(void* p) {
-  const int flags = HWLOC_MEMBIND_STRICT | HWLOC_MEMBIND_BYNODESET;
+  const int flags = HWLOC_MEMBIND_STRICT;
   hwloc_nodeset_t nodeset;
   hwloc_membind_policy_t policy;
   int node;
