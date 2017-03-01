@@ -49,9 +49,9 @@ class Function {
     const quad_w : [quadDom] real; // weights
 
     const quad_phiDom: domain(2);
-    const quad_phi   : [quad_phiDom] real; // phi[point,i]
-    const quad_phiT  : [quad_phiDom] real; // phi[point,i] transpose
-    const quad_phiw  : [quad_phiDom] real; // phi[point,i]*weight[point]
+    var   quad_phi   : [quad_phiDom] real; // phi[point,i]
+    var   quad_phiT  : [quad_phiDom] real; // phi[point,i] transpose
+    var   quad_phiw  : [quad_phiDom] real; // phi[point,i]*weight[point]
 
     // blocks of the block tridiagonal derivative operator
     const dcDom: domain(2);
