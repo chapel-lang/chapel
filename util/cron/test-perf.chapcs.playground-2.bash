@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground-2"
 
-# Test performance of disabling copy-prop
+# Test performance of jemalloc 4.5.0
 GITHUB_USER=ronawho
-GITHUB_BRANCH=disable-copy-prop
-SHORT_NAME=noCopyProp
-START_DATE=02/22/17
+GITHUB_BRANCH=upgrade-jemalloc-4.5.0
+SHORT_NAME=jemalloc-4.5.0
+START_DATE=02/28/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
