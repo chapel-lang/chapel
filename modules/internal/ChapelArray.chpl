@@ -620,10 +620,11 @@ module ChapelArray {
   // Array-view utility functions
   //
   proc chpl__isArrayView(arr) param {
-    use Reflection;
-    param isSlice = if canResolveMethod(arr, "isSliceArrayView") then arr.isSliceArrayView() else false;
-    param isRankChange = if canResolveMethod(arr, "isRankChangeArrayView") then arr.isRankChangeArrayView() else false;
-    param isReindex = if canResolveMethod(arr, "isReindexArrayView") then arr.isReindexArrayView() else false;
+    const value = if isArray(arr) then arr._value else arr;
+
+    param isSlice      = value.isSliceArrayView();
+    param isRankChange = value.isRankChangeArrayView();
+    param isReindex    = value.isReindexArrayView();
 
     return isSlice || isRankChange || isReindex;
   }
@@ -636,6 +637,8 @@ module ChapelArray {
   //   var A : [1..10, 1..10];
   //   var B => A[1, 1..10];
   //   writeln(chpl__getViewDom(B)); // {1..1, 1..10}
+  //
+  // TODO: Can this be written to accept a full-fledge array OR a BaseArr?
   //
   proc chpl__getViewDom(arr: []) {
     if chpl__isArrayView(arr._value) then return arr._value._getViewDom();
