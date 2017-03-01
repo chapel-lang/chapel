@@ -134,7 +134,7 @@ module ArrayViewReindex {
     }
 
     iter these(param tag: iterKind) ref
-    where tag == iterKind.standalone && !localeModelHasSublocales {
+      where tag == iterKind.standalone && !localeModelHasSublocales {
       for i in privDom.these(tag) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -196,12 +196,12 @@ module ArrayViewReindex {
     }
 
     inline proc dsiAccess(i: idxType ...rank)
-    where !shouldReturnRvalueByConstRef(eltType) {
+      where !shouldReturnRvalueByConstRef(eltType) {
       return dsiAccess(i);
     }
 
     inline proc dsiAccess(i: idxType ...rank) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+      where shouldReturnRvalueByConstRef(eltType) {
       return dsiAccess(i);
     }
 
@@ -216,7 +216,7 @@ module ArrayViewReindex {
     }
 
     inline proc dsiAccess(i)
-    where !shouldReturnRvalueByConstRef(eltType) {
+      where !shouldReturnRvalueByConstRef(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -227,7 +227,7 @@ module ArrayViewReindex {
     }
 
     inline proc dsiAccess(i) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+      where shouldReturnRvalueByConstRef(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -241,11 +241,11 @@ module ArrayViewReindex {
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
 
     inline proc dsiLocalAccess(i)
-    where !shouldReturnRvalueByConstRef(eltType)
+      where !shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
 
     inline proc dsiLocalAccess(i) const ref
-    where shouldReturnRvalueByConstRef(eltType)
+      where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
 
     inline proc checkBounds(i) {
