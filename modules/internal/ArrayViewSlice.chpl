@@ -94,7 +94,6 @@ module ArrayViewSlice {
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
-      //    writeln("In sliceview leader");
       for followThis in privDom.these(tag) do {
         yield followThis;
       }
