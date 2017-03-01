@@ -720,6 +720,9 @@ module DefaultRectangular {
     return this.getRADDataIndex(stridable, chpl__tuplify(ind));
   }
 
+  //
+  // Copied from DefaultRectangularArr.getDataIndex
+  //
   inline proc _remoteAccessData.getRADDataIndex(param stridable, ind: rank*idxType) {
       param chunkify = !defRectSimpleDData;
 
@@ -801,6 +804,9 @@ module DefaultRectangular {
     }
   }
 
+  //
+  // Based on the old 'dsiSlice' method
+  //
   proc _remoteAccessData.toSlice(newDom) {
     compilerAssert(defRectSimpleDData && this.rank == newDom.rank);
     var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, newDom.stridable || this.blkChanged);
@@ -829,6 +835,9 @@ module DefaultRectangular {
     return rad;
   }
 
+  //
+  // Based on the old 'dsiReindex' method
+  //
   proc _remoteAccessData.toReindex(newDom) {
     compilerAssert(defRectSimpleDData && this.rank == newDom.rank);
     var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, blkChanged);
@@ -847,6 +856,9 @@ module DefaultRectangular {
     return rad;
   }
 
+  //
+  // Based on the old 'dsiRankChange' method
+  //
   proc _remoteAccessData.toRankChange(newDom, cd, idx) {
     compilerAssert(defRectSimpleDData && this.rank == idx.size && this.rank != newDom.rank);
     // TODO: If 'collapsedDims' were param, we would know if blk(rank) was 1 or not.
