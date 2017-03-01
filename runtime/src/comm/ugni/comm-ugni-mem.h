@@ -1,22 +1,21 @@
-//
-// Copyright 2015 Cray Inc.  All Rights Reserved.
-//
-// U.S. GOVERNMENT RESTRICTED RIGHTS NOTICE
-//
-// The Computer Software is delivered as "Commercial Computer Software"
-// as defined in DFARS 48 CFR 252.227-7014.
-//
-// All Computer Software and Computer Software Documentation acquired by
-// or for the U.S. Government is provided with Restricted Rights.  Use,
-// duplication or disclosure by the U.S. Government is subject to the
-// restrictions described in FAR 48 CFR 52.227-14 or DFARS 48 CFR
-// 252.227-7014, as applicable.
-//
-// Technical Data acquired by or for the U.S. Government, if any, is
-// provided with Limited Rights.  Use, duplication or disclosure by the
-// U.S. Government is subject to the restrictions described in FAR 48
-// CFR 52.227-14 or DFARS 48 CFR 252.227-7013, as applicable.
-//
+/*
+ * Copyright 2004-2017 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 //
 // Memory management declarations for the ugni comm layer.
