@@ -960,3 +960,10 @@ implicitly for each ``GlobalDomain`` object and so will be local in any case.
       auxArrayED2 = privatizeData(5));
 
   }
+
+=================================
+Phase 4: Bulk-Transfer Interface
+=================================
+
+The bulk-transfer interface design is still in flux. Once finalized, it will
+be documented here.
