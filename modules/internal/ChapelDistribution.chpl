@@ -804,6 +804,11 @@ module ChapelDistribution {
   }
 
   proc _delete_dom(dom, param privatized:bool) {
+
+    // This is a workaround for the recursive iterator bug discussed in
+    // GitHub issue #5311. Implementing 'dsiDestroyDom' on 'BaseDom' leads
+    // the compiler into thinking there's recursion due to virtual methods,
+    // when in fact there is no recursion at all.
     use Reflection;
     if canResolveMethod(dom, "dsiDestroyDom") {
       dom.dsiDestroyDom();

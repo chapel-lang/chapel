@@ -720,6 +720,9 @@ module DefaultRectangular {
     return this.getRADDataIndex(stridable, chpl__tuplify(ind));
   }
 
+  //
+  // Copied from DefaultRectangularArr.getDataIndex
+  //
   inline proc _remoteAccessData.getRADDataIndex(param stridable, ind: rank*idxType) {
       param chunkify = !defRectSimpleDData;
 
@@ -801,8 +804,13 @@ module DefaultRectangular {
     }
   }
 
+  //
+  // Based on the old 'dsiSlice' method
+  //
   proc _remoteAccessData.toSlice(newDom) {
     compilerAssert(defRectSimpleDData && this.rank == newDom.rank);
+
+    // NB: Sets 'blkChanged' if the new domain is stridable.
     var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, newDom.stridable || this.blkChanged);
 
     rad.data        = this.data;
@@ -829,8 +837,13 @@ module DefaultRectangular {
     return rad;
   }
 
+  //
+  // Based on the old 'dsiReindex' method
+  //
   proc _remoteAccessData.toReindex(newDom) {
     compilerAssert(defRectSimpleDData && this.rank == newDom.rank);
+
+    // NB: Only sets 'blkChanged' if underlying RADs have it set
     var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, blkChanged);
 
     rad.data        = this.data;
@@ -847,10 +860,17 @@ module DefaultRectangular {
     return rad;
   }
 
+  //
+  // Based on the old 'dsiRankChange' method
+  //
   proc _remoteAccessData.toRankChange(newDom, cd, idx) {
     compilerAssert(defRectSimpleDData && this.rank == idx.size && this.rank != newDom.rank);
+
+    // Unconditionally sets 'blkChanged'
+    //
     // TODO: If 'collapsedDims' were param, we would know if blk(rank) was 1 or not.
     var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, true);
+
     const collapsedDims = chpl__tuplify(cd);
     rad.data        = this.data;
     rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
@@ -2074,8 +2094,8 @@ module DefaultRectangular {
     } else {
       const actual = chpl__getActualArray(B);
       return mdParDim == actual.mdParDim
-      && mdNumChunks == actual.mdNumChunks
-      && mdRLen == actual.mdRLen;
+             && mdNumChunks == actual.mdNumChunks
+             && mdRLen == actual.mdRLen;
     }
   }
 

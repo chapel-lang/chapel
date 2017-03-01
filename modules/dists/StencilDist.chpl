@@ -1464,6 +1464,9 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 //
 // Copies the range slice function in ChapelArray.
 //
+// TODO: Return an ArrayView instead of something that looks like a normal
+// array
+//
 pragma "no copy return"
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
