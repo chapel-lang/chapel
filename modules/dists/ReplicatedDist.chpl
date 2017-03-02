@@ -171,14 +171,16 @@ when the constructor encounters an error.
 * The array ``A`` is "consistent" if
   for each ``ix`` in ``A.domain``, this holds: ``A[ix].id == ix``.
 
-* Tip: if the domain of your ``targetLocales`` cannot be described
-  as a rectangular domain (whether strided, multi-dimensional,
-  and/or sparse), make the domain associative over the `int` type.
-
 */
 class ReplicatedDist : BaseDist {
   // the desired locales (an array of locales)
+  //
+  // Note, it might be possible to use an associative array of ints if
+  // the domain of your ``targetLocales`` cannot be described
+  // as a rectangular domain (whether strided, multi-dimensional,
+  // and/or sparse). However, that has not been tested.
   const targetLocales;
+
   // "IDs" are indices into targetLocales
   proc targetIds return targetLocales.domain;
 }
@@ -255,10 +257,6 @@ proc ReplicatedDist.dsiPrivatize(privatizeData: this.targetLocales.type)
 // global domain class
 //
 class ReplicatedDom : BaseRectangularDom {
-  // to support rectangular domains
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
@@ -351,7 +349,6 @@ proc ReplicatedDist.dsiClone(): this.type {
 proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
                                          type idxType,
                                          param stridable: bool)
-  : ReplicatedDom(rank, idxType, stridable, this.type)
 {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiNewRectangularDom ",
                                       (rank, idxType:string, stridable));
@@ -501,6 +498,11 @@ proc ReplicatedDom.dsiDestroyDom() {
   }
 }
 
+proc ReplicatedDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  // Don't do anything for the arrays (no dsiReallocate/dsiPostReallocate)
+  this.dsiSetIndices(rhs.getIndices());
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // arrays
 
@@ -645,10 +647,12 @@ prior to calling this.dom.dsiSetIndices().
 So this needs to adjust anything in the array that won't be taken care of
 in this.dom.dsiSetIndices(). In our case, that's nothing.
 */
+/* no longer called
 proc ReplicatedArr.dsiReallocate(d: domain): void {
   if traceReplicatedDist then
     writeln("ReplicatedArr.dsiReallocate ", dom.domRep, " -> ", d, " (no-op)");
 }
+*/
 
 // array slicing
 proc ReplicatedArr.dsiSlice(sliceDef: ReplicatedDom) {

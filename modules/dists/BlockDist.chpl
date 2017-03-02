@@ -338,9 +338,6 @@ class LocBlock {
 // whole:     a non-distributed domain that defines the domain's indices
 //
 class BlockDom: BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   type sparseLayoutType;
   const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
@@ -373,11 +370,7 @@ class LocBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class BlockArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class BlockArr: BaseRectangularArr {
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
@@ -526,7 +519,7 @@ proc Block.dsiDisplayRepresentation() {
 }
 
 proc Block.dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool) {
+                                param stridable: bool) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
@@ -948,6 +941,10 @@ proc BlockDom.dsiSetIndices(x) {
 
 proc BlockDom.dsiGetIndices() {
   return whole.getIndices();
+}
+
+proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 // dsiLocalSlice
@@ -1437,7 +1434,8 @@ proc BlockArr.dsiReindex(d: BlockDom) {
   return alias;
 }
 
-proc BlockArr.dsiReallocate(d: domain) {
+proc BlockArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+{
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default

@@ -1916,7 +1916,8 @@ GenRet codegenDynamicCastCheck(GenRet cid, Type* type)
 {
   GenRet ret = codegenEquals(cid, codegenUseCid(type));
   forv_Vec(Type, child, type->dispatchChildren) {
-    ret = codegenLogicalOr(ret, codegenDynamicCastCheck(cid, child));
+    if (child != NULL)
+      ret = codegenLogicalOr(ret, codegenDynamicCastCheck(cid, child));
   }
   return ret;
 }

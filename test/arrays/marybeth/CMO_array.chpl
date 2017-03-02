@@ -25,6 +25,10 @@ class CMODom: BaseRectangularDom {
     ranges = x;
   }
 
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    chpl_assignDomainWithGetSetIndices(this, rhs);
+  }
+
   proc dsiMyDist() return dist;
 
   iter these_help(param dim: int) {
@@ -322,6 +326,7 @@ class CMOArr:BaseArr {
     alias.computeFactoredOffs();
     return alias;
   }
+ 
 
 
   proc dsiReallocate(d: _domain) {
@@ -399,9 +404,9 @@ proc CMOArr.dsiSerialWrite(f) {
 }
 
 proc _intersect(a: CMODom, b: CMODom) {
-  var c = new CMODom(a.rank, a.idxType, stridable=a.stridable, dist=b.dist);
+  var c = new CMODom(rank=a.rank, idxType=a.idxType, stridable=a.stridable, dist=b.dist);
   for param i in 1..a.rank do
-    c.ranges(i) = a.dim(i)(b.dim(i));
+    c.ranges(i) = a.ranges(i)(b.ranges(i));
   return c;
 }
 

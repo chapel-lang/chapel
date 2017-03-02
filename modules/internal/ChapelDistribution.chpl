@@ -281,6 +281,7 @@ module ChapelDistribution {
     }
   
     // used for associative domains/arrays
+    // MPF:  why do these need to be in BaseDom at all?
     proc _backupArrays() {
       for arr in _arrs do
         arr._backupArray();
@@ -309,10 +310,44 @@ module ChapelDistribution {
     // Overload to to customize domain destruction
     proc dsiDestroyDom() { }
 
+    // proc dsiAssignDomain is a required overload to implement domain
+    // assignment. It is not declared here because we do not wish
+    // to use virtual dispatch to versions for all domain arguments.
+    //
+    // It should be declared like so:
+    //     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool)
+    //
+    // if lhsPrivate=true, the receiver is a private variable
+    // that:
+    //  hasn't yet been shared with other tasks
+    //  doesn't yet have any arrays declared over it
+    //
+    // Note that assigning to a domain typically causes arrays
+    // declared over that domain to be reallocated.
+    //
+    // Rectangular domains can implement this function with:
+    //   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    //     chpl_assignDomainWithGetSetIndices(this, rhs);
+    //   }
+    //
+    // Irregular domains can implement this function with:
+    //   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    //     chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    //   }
+
     proc dsiDisplayRepresentation() { }
   }
   
   class BaseRectangularDom : BaseDom {
+    param rank : int;
+    type idxType;
+    param stridable: bool;
+
+    proc getBaseArrType() type {
+      var tmp = new BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
+      return tmp.type;
+    }
+
     proc deinit() {
       // this is a bug workaround
     }
@@ -614,13 +649,6 @@ module ChapelDistribution {
   
     proc dsiDestroyArr(isalias:bool) { }
   
-    proc dsiReallocate(d: domain) {
-      halt("reallocating not supported for this array type");
-    }
-  
-    proc dsiPostReallocate() {
-    }
-  
     // This method is unsatisfactory -- see bradc's commit entries of
     // 01/02/08 around 14:30 for details
     proc _purge( ind: int) {
@@ -653,6 +681,7 @@ module ChapelDistribution {
     }
   
     // methods for associative arrays
+    // MPF:  why do these need to be in BaseDom at all?
     proc clearEntry(idx, haveLock:bool = false) {
       halt("clearEntry() not supported for non-associative arrays");
     }
@@ -685,11 +714,55 @@ module ChapelDistribution {
     proc dsiSupportsBulkTransferInterface() param return false;
     proc doiCanBulkTransferStride() param return false;
   }
+ 
+  /* BaseArrOverRectangularDom has this signature so that dsiReallocate
+     can be overriden with the right tuple size.
+
+     Note that eltType is not included here. eltType could be included
+     in a base class, but here we're looking for a way to narrow
+     overloaded functions to only those working with a particular
+     kind of bounding box. So if eltType is included, we should make
+     another base class.
+   */
+  pragma "base array"
+  class BaseArrOverRectangularDom: BaseArr {
+    param rank : int;
+    type idxType;
+    param stridable: bool;
+
+    // the dsiReallocate to overload only uses the argument with
+    // the matching tuple of ranges. 
+
+    // Q. Should this pass in a BaseRectangularDom or ranges?
+    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+      halt("reallocating not supported for this array type");
+    }
+
+    proc dsiPostReallocate() {
+    }
+    
+    proc ~BaseArrOverRectangularDom() {
+      // this is a bug workaround
+    }
+
+
+  }
+
+  pragma "base array"
+  class BaseRectangularArr: BaseArrOverRectangularDom {
+    /* rank, idxType, stidable are from BaseArrOverRectangularDom */
+    type eltType;
+
+    proc ~BaseRectangularArr() {
+      // this is a bug workaround
+    }
+  }
 
   /*
    * BaseSparseArr is very basic/generic so that we have some flexibility in
    * implementing sparse array classes.
    */
+  pragma "base array"
   class BaseSparseArr: BaseArr {
     type eltType;
     param rank : int;
@@ -712,6 +785,7 @@ module ChapelDistribution {
    * All the common helpers/methods in implementations of internal sparse arrays
    * go here.
    */
+  pragma "base array"
   class BaseSparseArrImpl: BaseSparseArr {
 
     proc deinit() {
@@ -819,5 +893,72 @@ module ChapelDistribution {
 
     // runs the array destructor
     delete arr;
+  }
+
+  // domain assignment helpers
+
+  // Implement simple reallocate/set indices/post reallocate
+  // for compatability.
+  // Domain implementations may supply their own dsiAssignDomain
+  // that does something else.
+  // lhs is a subclass of BaseRectangularDom
+  proc chpl_assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
+    where t:BaseRectangularDom
+  {
+    type arrType = lhs.getBaseArrType();
+    param rank = lhs.rank;
+    type idxType = lhs.idxType;
+    param stridable = lhs.stridable;
+
+    for e in lhs._arrs do {
+      on e {
+        var eCast = e:arrType;
+        if eCast == nil then
+          halt("internal error: ", t.type:string,
+               " contains an bad array type ", arrType:string);
+
+        var inds = rhs.getIndices();
+        var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
+
+        // set tmp = inds with some error checking
+        for param i in 1..rank {
+          var from = inds(i);
+          tmp(i) =
+            from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));
+        }
+
+        eCast.dsiReallocate(tmp);
+      }
+    }
+    lhs.dsiSetIndices(rhs.getIndices());
+    for e in lhs._arrs do {
+      var eCast = e:arrType;
+      on e do eCast.dsiPostReallocate();
+    }
+  }
+
+
+  proc chpl_assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
+    where t:BaseSparseDom || t:BaseAssociativeDom || t:BaseOpaqueDom
+  {
+    //
+    // BLC: It's tempting to do a clear + add here, but because
+    // we need to preserve array values that are in the intersection
+    // between the old and new index sets, we use the following
+    // instead.
+    //
+    // A domain implementation is free to write their own
+    // dsiAssignDomain instead of using this method.
+
+    for i in lhs.dsiIndsIterSafeForRemoving() {
+      if !rhs.member(i) {
+        lhs.dsiRemove(i);
+      }
+    }
+    for i in rhs {
+      if !lhs.dsiMember(i) {
+        lhs.dsiAdd(i);
+      }
+    }
   }
 }

@@ -97,6 +97,10 @@ module DefaultOpaque {
       adomain.dsiSetIndices(b);
     }
   
+    proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+      chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    }
+
     iter these() {
       for i in adomain do
         yield i;
@@ -111,7 +115,13 @@ module DefaultOpaque {
       for i in adomain.these(tag=iterKind.follower, followThis) do
         yield i;
     }
-  
+
+    iter dsiIndsIterSafeForRemoving() {
+      for i in adomain.dsiIndsIterSafeForRemoving() {
+        yield i;
+      }
+    }
+
     proc dsiMember(ind: idxType) {
       return adomain.dsiMember(ind);
     }

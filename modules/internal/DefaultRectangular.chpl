@@ -97,9 +97,6 @@ module DefaultRectangular {
   }
 
   class DefaultRectangularDom: BaseRectangularDom {
-    param rank : int;
-    type idxType;
-    param stridable: bool;
     var dist: DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
@@ -129,6 +126,10 @@ module DefaultRectangular {
 
     proc dsiSetIndices(x) {
       ranges = x;
+    }
+
+    proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+      chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
     iter these_help(param d: int) {
@@ -745,11 +746,11 @@ module DefaultRectangular {
     }
   }
 
-  class DefaultRectangularArr: BaseArr {
-    type eltType;
+  class DefaultRectangularArr: BaseRectangularArr {
+    /*type eltType;
     param rank : int;
     type idxType;
-    param stridable: bool;
+    param stridable: bool;*/
 
     type idxSignedType = chpl__signedType(idxType);
 
@@ -1760,13 +1761,18 @@ module DefaultRectangular {
       return alias;
     }
 
-    proc dsiReallocate(d: domain) {
-      if (d._value.type == dom.type) {
-        on this {
+    // TODO
+    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+      //if (d._value.type == dom.type) {
+
+      on this {
+        var d = {(...bounds)};
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
                                             dom=d._value);
+
+        // MPF: could this be parallel?
         for i in d((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);
         off = copy.off;
@@ -1806,10 +1812,13 @@ module DefaultRectangular {
         dataAllocRange = copy.dataAllocRange;
         //numelm = copy.numelm;
         delete copy;
-        }
-      } else {
-        halt("illegal reallocation");
       }
+      //} else {
+      //  halt("illegal reallocation");
+      //}
+    }
+    proc dsiPostReallocate() {
+      // No action necessary here
     }
 
     proc dsiLocalSlice(ranges) {
