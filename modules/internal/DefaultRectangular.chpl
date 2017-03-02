@@ -1306,8 +1306,8 @@ module DefaultRectangular {
           mData(0).data =
             _ddata_allocate(eltType, size,
                             locStyle = if here.maxTaskPar < 2
-                                       then localizationStyle_t.localizeNone
-                                       else localizationStyle_t.localizeParts);
+                                       then localizationStyle_t.locNone
+                                       else localizationStyle_t.locSubchunks);
         } else {
           var dataOff: idxType = 0;
           for i in 0..#mdNumChunks do local on here.getChild(i) {
@@ -1320,7 +1320,7 @@ module DefaultRectangular {
             const chunkSize = size / mdRLen * mData(i).pdr.length;
             mData(i).data =
               _ddata_allocate(eltType, chunkSize,
-                              locStyle = localizationStyle_t.localizeWhole,
+                              locStyle = localizationStyle_t.locWhole,
                               subloc = i:chpl_sublocID_t);
             dataOff += chunkSize;
           }
