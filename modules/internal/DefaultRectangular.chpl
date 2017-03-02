@@ -1769,7 +1769,7 @@ module DefaultRectangular {
     }
 
     proc dsiTargetLocales() {
-      compilerError("targetLocales is unsupported by default domains");
+      return [this.data.locale, ];
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
