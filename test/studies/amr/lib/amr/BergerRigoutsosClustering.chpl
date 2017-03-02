@@ -103,6 +103,31 @@ class CandidateDomain {
   const flags:      [D] bool;
   const min_width:  rank*int;
   var   signatures: rank*ArrayWrapper;
+
+  //
+  // TODO: At present, the compiler-generated constructor for classes
+  // with array fields like this requires the actual that's passed to
+  // it to be a default rectangular array.  This is stricter than if
+  // the user wrote the equivalent initializer in which the actual to
+  // have the same formal type because we treat formal array arguments
+  // as being flexible if they don't name an explicit domain map.
+  // This causes issues once array operations like slices are not
+  // stored in closed form.  See issue #5289 for details.
+  //
+  // Once this issue is resolved and the compiler is generating
+  // similarly generic initializers, the changes that introduced this
+  // comment can/should be reverted (the introduction of the
+  // CandidateDomain() constructor below).
+  //
+  proc CandidateDomain(param rank: int,
+                       initD,
+                       initFlags,
+                       initMin_width) {
+    D = initD;
+    flags = initFlags;
+    min_width = initMin_width;
+    initialize();
+  }
   
   
   class ArrayWrapper

@@ -4,8 +4,8 @@ class C {
 
 var GA: [1..5] int = [i in 1..5] i;
 
-var c1 = new C(A=GA[1..5]);
-var c2 = new C(A=>GA[1..5]);
+var c1 = new C(A=GA);
+var c2 = new C(A=>GA);
 
 writeln("global array:            ", GA);
 writeln("class w/ copied array:   ", c1);
