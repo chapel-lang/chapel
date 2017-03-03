@@ -554,7 +554,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoPrivatization = true;            // --no-privatization
   fNoOptimizeOnClauses = true;        // --no-optimize-on-clauses
   fIgnoreLocalClasses = true;         // --ignore-local-classes
-  fNoInferLocalFields = true;       // --local-field-inference
+  fNoInferLocalFields = true;         // --no-infer-local-fields
   //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
   fDenormalize = false;               // --no-denormalize
   fConditionalDynamicDispatchLimit = 0;
