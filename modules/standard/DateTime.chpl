@@ -89,17 +89,17 @@ module DateTime {
 
   pragma "no doc"
   extern "struct tm" record tm {
-    var tm_sec:   c_int;   // seconds [0,61]
-    var tm_min:   c_int;   // minutes [0,59]
-    var tm_hour:  c_int;   // hour [0,23]
-    var tm_mday:  c_int;   // day of month [1,31]
-    var tm_mon:   c_int;   // month of year [0,11]
-    var tm_year:  c_int;   // years since 1900
-    var tm_wday:  c_int;   // day of week [0,6] (Sunday = 0)
-    var tm_yday:  c_int;   // day of year [0,365]
-    var tm_isdst: c_int;   // daylight savings flag
-    var tm_gmtoff: c_long; // Seconds east of UTC
-    var tm_zone: c_ptr(c_char); // Timezone abbreviation
+    var tm_sec:    c_int;         // seconds [0,61]
+    var tm_min:    c_int;         // minutes [0,59]
+    var tm_hour:   c_int;         // hour [0,23]
+    var tm_mday:   c_int;         // day of month [1,31]
+    var tm_mon:    c_int;         // month of year [0,11]
+    var tm_year:   c_int;         // years since 1900
+    var tm_wday:   c_int;         // day of week [0,6] (Sunday = 0)
+    var tm_yday:   c_int;         // day of year [0,365]
+    var tm_isdst:  c_int;         // daylight savings flag
+    var tm_gmtoff: c_long;        // Seconds east of UTC
+    var tm_zone:   c_ptr(c_char); // Timezone abbreviation
   }
 
   private proc getLocalTime(t: 2*int) {
@@ -107,7 +107,7 @@ module DateTime {
 
     extern proc localtime_r(const ref t: time_t, ref resultp: tm): void;
 
-    const t1:time_t = __primitive("cast", time_t, t(1));
+    const t1: time_t = __primitive("cast", time_t, t(1));
     var breakDownTime: tm;
 
     localtime_r(t1, breakDownTime);
@@ -272,7 +272,7 @@ module DateTime {
   /* The date that is `timestamp` seconds from the epoch */
   proc type date.fromtimestamp(timestamp) {
     const sec = timestamp: int;
-    const us = ((timestamp-sec) * 1000000 + 0.5):int;
+    const us = ((timestamp-sec) * 1000000 + 0.5): int;
     const td = new timedelta(seconds=sec, microseconds=us);
     return unixEpoch.getdate() + td;
   }
@@ -306,12 +306,12 @@ module DateTime {
     timeStruct.tm_min = 0;
     timeStruct.tm_sec = 0;
 
-    timeStruct.tm_mday = day:int(32);
-    timeStruct.tm_mon = month:int(32);
-    timeStruct.tm_year = year:int(32);
-    timeStruct.tm_wday = weekday():int(32);
-    timeStruct.tm_yday = (toordinal() - (new date(year, 1, 1)).toordinal() + 1):int(32);
-    timeStruct.tm_isdst = -1:int(32);
+    timeStruct.tm_mday = day: int(32);
+    timeStruct.tm_mon = month: int(32);
+    timeStruct.tm_year = year: int(32);
+    timeStruct.tm_wday = weekday(): int(32);
+    timeStruct.tm_yday = (toordinal() - (new date(year, 1, 1)).toordinal() + 1): int(32);
+    timeStruct.tm_isdst = (-1): int(32);
     return timeStruct; 
   }
 
@@ -325,13 +325,13 @@ module DateTime {
    */
   proc date.weekday() {
     // January 1 0001 is a Monday
-    return ((toordinal() + 6) % 7):DayOfWeek;
+    return ((toordinal() + 6) % 7): DayOfWeek;
   }
 
   /* Return the day of the week as an `ISODayOfWeek`.
      `Monday` == 1, `Sunday` == 7 */
   proc date.isoweekday() {
-    return (weekday():int + 1): ISODayOfWeek;
+    return (weekday(): int + 1): ISODayOfWeek;
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
@@ -360,14 +360,14 @@ module DateTime {
     const firstDay = findFirstDayOfYear(y);
     const delta = this - firstDay;
 
-    return (y, 1+delta.days/7, isoweekday():int);
+    return (y, 1+delta.days/7, isoweekday(): int);
   }
 
   /* Return the date as a `string` in ISO 8601 format: "YYYY-MM-DD" */
   proc date.isoformat() {
-    var yearstr = year:string;
-    var monthstr = month:string;
-    var daystr = day:string;
+    var yearstr = year: string;
+    var monthstr = month: string;
+    var daystr = day: string;
 
     if year < 10 then
       yearstr = "000" + yearstr;
@@ -404,7 +404,7 @@ module DateTime {
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
-    timeStruct.tm_wday = (weekday():int(32) + 1) % 7; // shift Sunday to 0
+    timeStruct.tm_wday = (weekday(): int(32) + 1) % 7; // shift Sunday to 0
     timeStruct.tm_yday = (this - new date(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
@@ -510,7 +510,7 @@ module DateTime {
      `microsecond`, and `timezone`.  All arguments are optional
    */
   proc time.time(hour=0, minute=0, second=0, microsecond=0,
-                 tzinfo:TZInfo=nil) {
+                 tzinfo: TZInfo=nil) {
     if hour < 0 || hour >= 24 then
       halt("hour out of range");
     if minute < 0 || minute >= 60 then
@@ -549,7 +549,7 @@ module DateTime {
   /* Return a `string` representing the `time` in ISO format */
   proc time.isoformat() {
     proc makeNDigits(n, d) {
-      var ret = d:string;
+      var ret = d: string;
       while ret.length < n {
         ret = "0" + ret;
       }
@@ -621,7 +621,7 @@ module DateTime {
     if tzinfo != nil {
       timeStruct.tm_gmtoff = abs(utcoffset()).seconds;
       timeStruct.tm_zone = __primitive("cast", c_ptr(c_char), tzname().c_str());
-      timeStruct.tm_isdst = dst().seconds:int(32);
+      timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
       timeStruct.tm_gmtoff = 0;
       timeStruct.tm_zone = __primitive("cast", c_ptr(c_char), "".c_str());
@@ -814,7 +814,7 @@ module DateTime {
    */
   proc datetime.datetime(year, month, day,
                 hour=0, minute=0, second=0, microsecond=0,
-                tzinfo:TZInfo=nil) {
+                tzinfo: TZInfo=nil) {
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tzinfo);
   }
@@ -854,7 +854,7 @@ module DateTime {
   /* The `datetime` that is `timestamp` seconds from the epoch */
   proc type datetime.fromtimestamp(timestamp: real, tz: TZInfo = nil) {
     if tz == nil {
-      var t = (timestamp:int, ((timestamp-timestamp:int)*1000000):int);
+      var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
       const lt = getLocalTime(t);
       return new datetime(year=lt.tm_year+1900, month=lt.tm_mon+1,
                           day=lt.tm_mday,       hour=lt.tm_hour,
@@ -868,7 +868,7 @@ module DateTime {
 
   /* The `datetime` that is `timestamp` seconds from the epoch in UTC */
   proc type datetime.utcfromtimestamp(timestamp) {
-    return unixEpoch + new timedelta(seconds=timestamp:int, microseconds=((timestamp-timestamp:int)*1000000):int);
+    return unixEpoch + new timedelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
   }
 
   /* The `datetime` that is `ordinal` days from 1-1-0001 */
@@ -1024,7 +1024,7 @@ module DateTime {
   /* Return the `datetime` as a `string` in ISO format */
   proc datetime.isoformat(sep="T") {
     proc zeroPad(nDigits: int, i: int) {
-      var numStr = i:string;
+      var numStr = i: string;
       for i in 1..nDigits-numStr.length {
         numStr = "0" + numStr;
       }
@@ -1044,9 +1044,9 @@ module DateTime {
       var hours = utcoff.seconds / (60*60);
       var minutes = (utcoff.seconds % (60*60)) / 60;
       offset = sign +
-               (if hours < 10 then "0" + hours:string else hours:string) +
+               (if hours < 10 then "0" + hours: string else hours: string) +
                ":" +
-               (if minutes < 10 then "0" + minutes:string else minutes:string);
+               (if minutes < 10 then "0" + minutes: string else minutes: string);
     }
 
     return strftime("%Y-%m-%d" + sep + "%H:%M:%S" + micro + offset);
@@ -1078,14 +1078,14 @@ module DateTime {
     timeStruct.tm_sec = second: int(32);
 
     if tzinfo != nil then
-      timeStruct.tm_isdst = tzinfo.dst(this).seconds:int(32);
+      timeStruct.tm_isdst = tzinfo.dst(this).seconds: int(32);
     else
       timeStruct.tm_isdst = -1: int(32);
 
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
-    timeStruct.tm_wday = (weekday():int(32) + 1) % 7; // shift Sunday to 0
+    timeStruct.tm_wday = (weekday(): int(32) + 1) % 7; // shift Sunday to 0
     timeStruct.tm_yday = (this.replace(tzinfo=nil) - new datetime(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
@@ -1194,10 +1194,10 @@ module DateTime {
       halt("Cannot compare naive datetime to aware datetime");
     } else if dt1.tzinfo == dt2.tzinfo {
       // just ignore tzinfo
-      var d1:date = dt1.replace(tzinfo=nil).getdate(),
-          d2:date = dt2.replace(tzinfo=nil).getdate();
-      var t1:time = dt1.replace(tzinfo=nil).gettime(),
-          t2:time = dt2.replace(tzinfo=nil).gettime();
+      var d1: date = dt1.replace(tzinfo=nil).getdate(),
+          d2: date = dt2.replace(tzinfo=nil).getdate();
+      var t1: time = dt1.replace(tzinfo=nil).gettime(),
+          t2: time = dt2.replace(tzinfo=nil).gettime();
      
       return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day &&
                         t1.hour == t2.hour && t1.minute == t2.minute &&
@@ -1392,7 +1392,7 @@ module DateTime {
 
   /* Create a `timedelta` from a given number of seconds */
   proc timedelta.timedelta(timestamp: real) {
-    return new timedelta(seconds = timestamp:int, microseconds=((timestamp - timestamp:int)*1000000):int);
+    return new timedelta(seconds = timestamp: int, microseconds=((timestamp - timestamp: int)*1000000): int);
   }
 
 
@@ -1497,7 +1497,7 @@ module DateTime {
   proc _cast(type s, t: timedelta) where s == string {
     var str: string;
     if t.days != 0 {
-      str = t.days:string + " day";
+      str = t.days: string + " day";
       if t.days != 1 && t.days != -1 then
         str += "s";
       str += ", ";
@@ -1507,7 +1507,7 @@ module DateTime {
     const hours = t.seconds / (60*60);
     const microseconds = t.microseconds;
 
-    str += hours:string + ":";
+    str += hours: string + ":";
     if minutes < 10 then
       str += "0";
     str += minutes + ":";
@@ -1516,7 +1516,7 @@ module DateTime {
     str += seconds;
     if microseconds != 0 {
       str += ".";
-      const usLog10 = log10(microseconds):int;
+      const usLog10 = log10(microseconds): int;
       for i in 1..(5-usLog10) {
         str += "0";
       }
@@ -1531,19 +1531,19 @@ module DateTime {
      derived from it. */
   class TZInfo {
     /* The offset from UTC this class represents */
-    proc utcoffset(dt: datetime):timedelta {
+    proc utcoffset(dt: datetime): timedelta {
       halt("Abstract base method called");
       return new timedelta();
     }
 
     /* The `timedelta` for daylight saving time */
-    proc dst(dt: datetime):timedelta {
+    proc dst(dt: datetime): timedelta {
       halt("Abstract base method called");
       return new timedelta();
     }
 
     /* The name of this time zone */
-    proc tzname(dt: datetime):string {
+    proc tzname(dt: datetime): string {
       halt("Abstract base method called");
       return "";
     }
