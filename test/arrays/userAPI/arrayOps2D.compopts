@@ -1,5 +1,4 @@
                # arrayOps2D.good
--stestError=1  # arrayOps2D-targetLocales.good
 -stestError=2  # arrayOps2D-pushback.good
 -stestError=3  # arrayOps2D-popback.good
 -stestError=4  # arrayOps2D-pushfront.good
