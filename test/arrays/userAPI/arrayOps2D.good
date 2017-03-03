@@ -68,6 +68,7 @@ X is:
 9.8 10.8 11.8 12.8
 13.8 14.8 15.8 16.8
 
+target locales: LOCALE0
 local subdomain: {1..4, 1..4}
 local subdomains:
 {1..4, 1..4}
