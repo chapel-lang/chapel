@@ -105,7 +105,7 @@ static bool moduleHonorsNoinit(Symbol* var, Expr* init);
 
 static bool isPrimitiveScalar(Type* type);
 static bool isNonGenericClass(Type* type);
-static bool isNonGenericRecordWithInit(Type* type);
+static bool isNonGenericRecordWithInitializers(Type* type);
 
 static void updateVariableAutoDestroy(DefExpr* defExpr);
 
@@ -211,11 +211,11 @@ void normalize() {
         INT_ASSERT(thisDef);
 
         // verify the name of the destructor
-        bool notTildaName = (fn->name[0] != '~') ||
+        bool notTildeName = (fn->name[0] != '~') ||
                              strcmp(fn->name + 1, ct->symbol->name);
         bool notDeinit = strcmp(fn->name, "deinit");
 
-        if (ct && notDeinit && notTildaName) {
+        if (ct && notDeinit && notTildeName) {
           USR_FATAL(fn,
             "destructor name must match class/record name or deinit()");
         } else {
@@ -632,9 +632,13 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
         if (type == dtVoid) {
           retval = var;
 
+        // The primitive scalars are treated as defined
+        } else if (isPrimitiveScalar(type) == true) {
+          retval = var;
+
         // non generic records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
-          if (isNonGenericRecordWithInit(at) == true) {
+          if (isNonGenericRecordWithInitializers(at) == true) {
             retval = var;
           }
         }
@@ -1281,10 +1285,10 @@ static void normalizeArrayAlias(DefExpr* defExpr) {
 *                                                                             *
 * and such that the conditional arms of the if-stmt implement initialization  *
 * rather than assignment.  This requires additional care for config const and *
-* multi-locale in order to enable privitization to be implemented correctly.  *
+* multi-locale in order to enable privatization to be implemented correctly.  *
 *                                                                             *
 * Noakes Feb 17, 2017:                                                        *
-*   The comppiler has weaknesses with variable initialization which are a     *
+*   The compiler has weaknesses with variable initialization which are a      *
 * little more evident for config variables.  Configs have been split from     *
 * non-configs to enable them to evolve independently in the nearer term.      *
 *                                                                             *
@@ -1340,7 +1344,7 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
       init_typed_var(var, type, insert, varTmp);
 
     } else if (var->hasFlag(FLAG_PARAM) == true) {
-      CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
+      CallExpr* cast = createCast(init->remove(), type->remove());
 
       insert->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
 
@@ -1515,10 +1519,13 @@ static void init_noinit_var(VarSymbol* var,
 *                                                                             *
 ************************************** | *************************************/
 
-static void normVarTypeInference(DefExpr* expr);
-static void normVarTypeWoutInit(DefExpr* expr);
-static void normVarTypeWithInit(DefExpr* expr);
-static void normVarNoinit(DefExpr* defExpr);
+static void           normVarTypeInference(DefExpr* expr);
+static void           normVarTypeWoutInit(DefExpr* expr);
+static void           normVarTypeWithInit(DefExpr* expr);
+static void           normVarNoinit(DefExpr* defExpr);
+
+static bool           isNewExpr(Expr* expr);
+static AggregateType* typeForNewExpr(CallExpr* expr);
 
 static void normalizeVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
@@ -1539,7 +1546,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
 
   } else if (type != NULL && init != NULL) {
     if (var->hasFlag(FLAG_PARAM) == true) {
-      CallExpr* cast = new CallExpr("_cast", type->remove(), init->remove());
+      CallExpr* cast = createCast(init->remove(), type->remove());
 
       defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
 
@@ -1607,30 +1614,115 @@ static void normRefVar(DefExpr* defExpr) {
 // The type of <name> will be inferred from the type of <value>
 //
 static void normVarTypeInference(DefExpr* defExpr) {
-  Symbol* var  = defExpr->sym;
-  Expr*   init = defExpr->init->remove();
+  Symbol* var      = defExpr->sym;
+  Expr*   initExpr = defExpr->init->remove();
 
-  if (var->hasFlag(FLAG_NO_COPY) == true) {
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init));
+  // e.g.
+  //   var x = <immediate>;
+  //   var y = <identifier>;
+  if (SymExpr* initSym = toSymExpr(initExpr)) {
+    Type* type = initSym->symbol()->type;
+
+    if (isPrimitiveScalar(type) == true) {
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+
+      var->type = type;
+
+    } else if (var->hasFlag(FLAG_NO_COPY) == true)  {
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+
+    } else if (var->hasFlag(FLAG_CONST)   == false) {
+      CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
+
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, rhs));
+
+    } else {
+      Symbol*   tmp       = newTemp("tmp");
+      DefExpr*  defineTmp = new DefExpr(tmp);
+      CallExpr* rhs       = new CallExpr("chpl__initCopy", initExpr);
+      CallExpr* moveToTmp = new CallExpr(PRIM_MOVE, tmp, rhs);
+      CallExpr* moveToVar = new CallExpr(PRIM_MOVE, var, tmp);
+
+      defExpr  ->insertAfter(defineTmp);
+      defineTmp->insertAfter(moveToTmp);
+      moveToTmp->insertAfter(moveToVar);
+    }
+
+  // e.g.
+  //   var x = f(...);
+  //   var y = new MyRecord(...);
+  } else if (CallExpr* initCall = toCallExpr(initExpr)) {
+    if (initCall->isPrimitive(PRIM_NEW) == true) {
+      AggregateType* type = typeForNewExpr(initCall);
+
+      if (isNonGenericRecordWithInitializers(type) == true) {
+        Expr*     arg1    = initCall->get(1)->remove();
+        CallExpr* argExpr = toCallExpr(arg1);
+
+        // Insert the arg portion of the initExpr back into tree
+        defExpr->insertAfter(argExpr);
+
+        // Convert it in to a use of the init method
+        argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+
+        // Add _mt and _this (insert at head in reverse order)
+        argExpr->insertAtHead(var);
+        argExpr->insertAtHead(gMethodToken);
+
+      } else {
+        if (var->hasFlag(FLAG_NO_COPY) == true) {
+          defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+
+        } else {
+          Symbol* tmp = var;
+
+          if (var->hasFlag(FLAG_CONST) == true) {
+            tmp = newTemp("const_tmp");
+
+            defExpr->insertBefore(new DefExpr(tmp));
+            defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+          }
+
+          if (initCall->isPrimitive(PRIM_NEW) == true) {
+            defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, initExpr));
+          } else {
+            CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
+
+            defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
+          }
+        }
+      }
+
+      if (type != NULL && type->isGeneric() == false) {
+        var->type = type;
+      }
+
+    } else {
+      if (var->hasFlag(FLAG_NO_COPY) == true) {
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+
+      } else {
+        Symbol* tmp = var;
+
+        if (var->hasFlag(FLAG_CONST) == true) {
+          tmp = newTemp("const_tmp");
+
+          defExpr->insertBefore(new DefExpr(tmp));
+          defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+        }
+
+        if (initCall->isPrimitive(PRIM_NEW) == true) {
+          defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, initExpr));
+        } else {
+          CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
+
+          defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
+        }
+      }
+    }
 
   } else {
-    CallExpr* initCall = toCallExpr(init);
-    Symbol*   tmp      = var;
-
-    if (var->hasFlag(FLAG_CONST) == true) {
-      tmp = newTemp("const_tmp");
-
-      defExpr->insertBefore(new DefExpr(tmp));
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
-    }
-
-    if (initCall && initCall->isPrimitive(PRIM_NEW)) {
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, init));
-    } else {
-      CallExpr* rhs = new CallExpr("chpl__initCopy", init);
-
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
-    }
+    INT_ASSERT(false);
   }
 }
 
@@ -1675,18 +1767,21 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
   } else if (isPrimitiveScalar(type)          == true) {
     CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
 
-    var->type = type;
     defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defVal));
+
+    var->type = type;
 
   } else if (isNonGenericClass(type)          == true) {
     CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
 
-    var->type = type;
     defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defVal));
 
-  } else if (isNonGenericRecordWithInit(type) == true) {
     var->type = type;
+
+  } else if (isNonGenericRecordWithInitializers(type) == true) {
     defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
+
+    var->type = type;
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
@@ -1720,36 +1815,117 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
 }
 
 static void normVarTypeWithInit(DefExpr* defExpr) {
-  Symbol*    var      = defExpr->sym;
-  Expr*      type     = defExpr->exprType->remove();
-  Expr*      init     = defExpr->init->remove();
-
-  VarSymbol* typeTemp = newTemp("type_tmp");
-  DefExpr*   typeDefn = new DefExpr(typeTemp);
-  CallExpr*  initCall = new CallExpr(PRIM_INIT, type);
-  CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
-  CallExpr*  assign   = new CallExpr("=",       typeTemp,  init);
+  Symbol* var      = defExpr->sym;
+  Expr*   typeExpr = defExpr->exprType->remove();
+  Expr*   initExpr = defExpr->init->remove();
+  Type*   type     = typeForTypeSpecifier(typeExpr);
 
   INT_ASSERT(var->hasFlag(FLAG_NO_COPY) == false);
 
-  if (var->hasFlag(FLAG_CONST) == true) {
-    VarSymbol* tmp     = newTemp("const_tmp");
-    CallExpr*  varMove = new CallExpr(PRIM_MOVE, tmp, typeTemp);
+  if (false) {
+
+
+  //
+  // e.g. const x : int     = 10;
+  //      var   y : int(32) = 20;
+  //
+  //      var   x : MyCls   = new MyCls(1, 2);
+  //
+  // Noakes 2017/02/25
+  //    Use a temp to compute the value for the init-expression and
+  //    use PRIM_MOVE to initialize x.  This simplifies const checking
+  //    for the first case and supports a current limitation for RVF
+  //
+  } else if (isPrimitiveScalar(type) == true ||
+             isNonGenericClass(type) == true) {
+    VarSymbol* tmp = newTemp("tmp", type);
 
     defExpr->insertBefore(new DefExpr(tmp));
+    defExpr->insertBefore(new CallExpr("=",      tmp, initExpr));
 
-    defExpr->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(assign);
-    assign->insertAfter(varMove);
-    varMove->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+
+    var->type = type;
+
+  } else if (isNonGenericRecordWithInitializers(type) == true) {
+    if (isNewExpr(initExpr) == true) {
+      Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
+      CallExpr* argExpr = toCallExpr(arg);
+
+      // Insert the arg portion of the initExpr back into tree
+      defExpr->insertAfter(argExpr);
+
+      // Convert it in to a use of the init method
+      argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+
+      // Add _mt and _this (insert at head in reverse order)
+      argExpr->insertAtHead(var);
+      argExpr->insertAtHead(gMethodToken);
+
+    } else {
+      CallExpr* init   = new CallExpr("init", gMethodToken, var);
+      CallExpr* assign = new CallExpr("=",    var,          initExpr);
+
+      defExpr->insertAfter(init);
+      init->insertAfter(assign);
+    }
+
+    var->type = type;
 
   } else {
-    defExpr->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(assign);
-    assign->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+    VarSymbol* typeTemp = newTemp("type_tmp");
+    DefExpr*   typeDefn = new DefExpr(typeTemp);
+    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
+    CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
+
+    if (var->hasFlag(FLAG_CONST) == true) {
+      VarSymbol* tmp     = newTemp("const_tmp");
+      CallExpr*  varMove = new CallExpr(PRIM_MOVE, tmp, typeTemp);
+
+      defExpr->insertBefore(new DefExpr(tmp));
+
+      defExpr->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+      initMove->insertAfter(assign);
+      assign->insertAfter(varMove);
+      varMove->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+
+    } else {
+      defExpr->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+      initMove->insertAfter(assign);
+      assign->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+    }
   }
+}
+
+static bool isNewExpr(Expr* expr) {
+  bool retval = false;
+
+  if (CallExpr* callExpr = toCallExpr(expr)) {
+    retval = callExpr->isPrimitive(PRIM_NEW);
+  }
+
+  return retval;
+}
+
+static AggregateType* typeForNewExpr(CallExpr* newExpr) {
+  AggregateType* retval = NULL;
+
+  if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+    if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
+      if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
+        if (AggregateType* type = toAggregateType(sym->type)) {
+          if (isClass(type) == true || isRecord(type) == true) {
+            retval = type;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 
 // Internal and Standard modules always honor no-init
@@ -1860,7 +2036,7 @@ static bool isNonGenericClass(Type* type) {
   return retval;
 }
 
-static bool isNonGenericRecordWithInit(Type* type) {
+static bool isNonGenericRecordWithInitializers(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {

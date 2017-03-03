@@ -133,7 +133,7 @@ public:
   bool computeAlignment(CallInfo& info);
 
   /// Compute substitutions for wrapped function that is generic.
-  void computeSubstitutions();
+  void computeSubstitutions(bool inInitRes = false);
 };
 
 bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
@@ -210,6 +210,7 @@ FnSymbol* tryResolveCall(CallExpr* call);
 void resolveFns(FnSymbol* fn);
 void resolveDefaultGenericType(CallExpr* call);
 void resolveTypedefedArgTypes(FnSymbol* fn);
+void resolveReturnType(FnSymbol* fn);
 
 // FnSymbol changes
 extern bool tryFailure;

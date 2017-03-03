@@ -29,6 +29,7 @@
 
 #include <cstdio>
 #include <map>
+#include <vector>
 
 /*
   Things which must be changed if instance variables are added
@@ -352,74 +353,89 @@ public:
 
   DECLARE_COPY(AggregateType);
 
-  virtual void          replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  virtual void                replaceChild(BaseAST* oldAst, BaseAST* newAst);
 
-  virtual void          verify();
-  virtual void          accept(AstVisitor* visitor);
-  virtual void          printDocs(std::ostream* file, unsigned int tabs);
+  virtual void                verify();
+  virtual void                accept(AstVisitor* visitor);
+  virtual void                printDocs(std::ostream* file, unsigned int tabs);
 
-  void                  addDeclarations(Expr* expr);
+  void                        addDeclarations(Expr* expr);
 
-  void                  codegenDef();
+  void                        codegenDef();
 
-  void                  codegenPrototype();
+  void                        codegenPrototype();
 
-  GenRet                codegenClassStructType();
+  GenRet                      codegenClassStructType();
 
-  int                   codegenStructure(FILE*       outfile,
-                                         const char* baseoffset);
+  int                         codegenStructure(FILE*       outfile,
+                                               const char* baseoffset);
 
-  int                   codegenFieldStructure(FILE*       outfile,
-                                              bool        nested,
-                                              const char* baseOffset);
+  int                         codegenFieldStructure(FILE*       outfile,
+                                                    bool        nested,
+                                                    const char* baseOffset);
 
-  const char*           classStructName(bool standalone);
+  // The following two methods are used for types which define initializers
+  bool                        setNextGenericField();
+  AggregateType*              getInstantiation(SymExpr* t, int index);
 
-  int                   getMemberGEP(const char* name);
 
-  int                   getFieldPosition(const char* name,
-                                         bool        fatal = true);
+  const char*                 classStructName(bool standalone);
 
-  Symbol*               getField(const char* name, bool fatal = true);
-  Symbol*               getField(int i);
+  int                         getMemberGEP(const char* name);
+
+  int                         getFieldPosition(const char* name,
+                                               bool        fatal = true);
+
+  Symbol*                     getField(const char* name, bool fatal = true);
+  Symbol*                     getField(int i);
 
   // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
-  QualifiedType         getFieldType(Expr* e);
+  QualifiedType               getFieldType(Expr* e);
 
-  int                   numFields()                                      const;
+  int                         numFields()                                const;
 
-  bool                  isClass()                                        const;
-  bool                  isRecord()                                       const;
-  bool                  isUnion()                                        const;
+  bool                        isClass()                                  const;
+  bool                        isRecord()                                 const;
+  bool                        isUnion()                                  const;
 
-  bool                  isGeneric()                                      const;
-  void                  markAsGeneric();
+  bool                        isGeneric()                                const;
+  void                        markAsGeneric();
 
 
 
-  AggregateTag          aggregateTag;
-  InitializerStyle      initializerStyle;
+  AggregateTag                aggregateTag;
+  InitializerStyle            initializerStyle;
 
-  AList                 fields;
+  bool                        initializerResolved;
+
+  AList                       fields;
 
   // used from parsing, sets dispatchParents
-  AList                 inherits;
+  AList                       inherits;
 
   // pointer to an outer class if this is an inner class
-  Symbol*               outer;
+  Symbol*                     outer;
 
   // Attached only to iterator class/records
-  IteratorInfo*         iteratorInfo;
+  IteratorInfo*               iteratorInfo;
 
-  const char*           doc;
+  const char*                 doc;
 
 private:
-  virtual std::string   docsDirective();
+  virtual std::string         docsDirective();
 
-  std::string           docsSuperClass();
-  void                  addDeclaration(DefExpr* defExpr);
+  std::string                 docsSuperClass();
+  void                        addDeclaration(DefExpr* defExpr);
 
-  bool                  mIsGeneric;
+  std::vector<AggregateType*> instantiations;
+  // genericField stores the index of the first generic field in the
+  // AggregateType which does not have a substitution, but only if the
+  // AggregateType defines an initializer.  If the type has no generic
+  // fields without substitutions, or if setNextGenericField has not been called
+  // on the base AggregateType, this will be set to 0.
+  int                         genericField;
+
+  bool                        mIsGeneric;
 };
 
 /************************************* | **************************************

@@ -1573,6 +1573,12 @@
       <anchor>ggada025d3ec20b4b420f8038d23d6e7bdeaae509a0bed4a7067e0116c75c661178d</anchor>
       <arglist></arglist>
     </member>
+    <member kind="enumvalue">
+      <name>HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES</name>
+      <anchorfile>a00166.html</anchorfile>
+      <anchor>ggada025d3ec20b4b420f8038d23d6e7bdea1b66bbd66e900e5c837f71defb32ad89</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function">
       <type>int</type>
       <name>hwloc_topology_ignore_type</name>
@@ -3924,7 +3930,7 @@
     <docanchor file="a00335" title="How to avoid memory waste when manipulating multiple similar topologies?">faq_diff</docanchor>
     <docanchor file="a00335" title="How do I annotate the topology with private notes?">faq_annotate</docanchor>
     <docanchor file="a00335" title="Caveats">faq3</docanchor>
-    <docanchor file="a00335" title="Why is lstopo slow?">faq_slow_lstopo</docanchor>
+    <docanchor file="a00335" title="Why is hwloc slow?">faq_slow_lstopo</docanchor>
     <docanchor file="a00335" title="Does hwloc require privileged access?">faq_privileged</docanchor>
     <docanchor file="a00335" title="What should I do when hwloc reports &quot;operating system&quot; warnings?">faq_os_error</docanchor>
     <docanchor file="a00335" title="Why does Valgrind complain about hwloc memory leaks?">faq_valgrind</docanchor>

@@ -1032,6 +1032,7 @@ module ChapelBase {
     return if x != 0i then true else false;
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -1039,6 +1040,7 @@ module ChapelBase {
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, param init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -1046,6 +1048,7 @@ module ChapelBase {
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, init: _nilType) {
     pragma "no auto destroy" var x: t;
     return x;
@@ -1099,12 +1102,24 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "unalias fn"
-  inline proc chpl__unalias(ref x) { }
+  inline proc chpl__unalias(x) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
 
+  // Returns an array storing the result of the iterator
   pragma "unalias fn"
-  inline proc chpl__unalias(x:_iteratorClass) { }
+  inline proc chpl__unalias(x:_iteratorClass) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
+
+  // Returns an array storing the result of the iterator
   pragma "unalias fn"
-  inline proc chpl__unalias(const ref x:_iteratorRecord) { }
+  inline proc chpl__unalias(const ref x:_iteratorRecord) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
 
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;

@@ -20,20 +20,18 @@
 #ifndef _INITIALIZER_RESOLUTION_H_
 #define _INITIALIZER_RESOLUTION_H_
 
-#include "callInfo.h"
-
 // Defines the resolution strategy for initializers.  This is different than
 // how normal generic functions are handled and how generic constructors are
 // handled, as we want to have the this argument for the type in the initializer
 // argument list, and want to utilize Phase 1 of the initializer body to
 // determine the generic instantiation of it.
-class BlockStmt;
+class AggregateType;
 class CallExpr;
-class DefExpr;
-class Expr;
-class Symbol;
-class SymExpr;
+
+void modAndResolveInitCall (CallExpr* call, AggregateType* typeToNew);
 
 void temporaryInitializerFixup(CallExpr* call);
+
+void removeAggTypeFieldInfo();
 
 #endif

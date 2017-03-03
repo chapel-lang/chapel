@@ -1,0 +1,2 @@
+initArrFieldWithSlice.chpl:30: error: unresolved call 'C.init([domain(1,int(64),false)] real(64))'
+initArrFieldWithSlice.chpl:1: note: candidates are: C.init(X: [domain(1,int(64),false)] real(64))

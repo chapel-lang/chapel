@@ -118,8 +118,6 @@ public:
   virtual void       replaceChild(BaseAST* oldAst,
                                   BaseAST* newAst)               = 0;
 
-  virtual FnSymbol*  getFnSymbol();
-
   virtual bool       isConstant()                              const;
   virtual bool       isConstValWillNotChange()                 const;
   virtual bool       isImmediate()                             const;
@@ -387,6 +385,7 @@ class TypeSymbol : public Symbol {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn);
+  void renameInstantiatedSingle(Symbol* sym);
 
   GenRet codegen();
   void codegenDef();
@@ -465,7 +464,6 @@ public:
   DECLARE_SYMBOL_COPY(FnSymbol);
 
   FnSymbol*                  copyInnerCore(SymbolMap* map);
-  FnSymbol*                  getFnSymbol();
   void                       replaceChild(BaseAST* oldAst, BaseAST* newAst);
 
   FnSymbol*                  partialCopy(SymbolMap* map);

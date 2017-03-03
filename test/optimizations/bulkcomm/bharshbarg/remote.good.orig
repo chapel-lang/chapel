@@ -5,112 +5,118 @@ In DefaultRectangularArr.doiCanBulkTransfer()
 isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 In DefaultRectangularArr.doiUseBulkTransferStride()
+
 In DefaultRectangularArr.doiBulkTransferStride
-Dest = (1..10, 1..5)
-Src  = (1..10, 1..5)
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+LBlk = (10, 1)
+RBlk = (10, 1)
 BulkTransferStride with values:
 	Locale        = 0
 	Stride levels = 1
 	dstStride     = 10
 	srcStride     = 10
 	count         = 5 10
-	dstBlk        = (10, 1)
-	srcBlk        = (10, 1)
 BulkTransferStride: On LHS - GET from 0
 
 In DefaultRectangularArr.doiCanBulkTransfer()
 isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 In DefaultRectangularArr.doiUseBulkTransferStride()
+
 In DefaultRectangularArr.doiBulkTransferStride
-Dest = (1..10, 1..5)
-Src  = (1..10, 1..5)
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+LBlk = (10, 1)
+RBlk = (10, 1)
 BulkTransferStride with values:
 	Locale        = 0
 	Stride levels = 1
 	dstStride     = 10
 	srcStride     = 10
 	count         = 5 10
-	dstBlk        = (10, 1)
-	srcBlk        = (10, 1)
 BulkTransferStride: On LHS - GET from 0
 End of assignment
 
 
 B on different locale
 
+In DefaultRectangularArr.doiCanBulkTransfer()
+isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
+isDataContiguous return False
+In DefaultRectangularArr.doiUseBulkTransferStride()
 
+In DefaultRectangularArr.doiBulkTransferStride
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+LBlk = (10, 1)
+RBlk = (10, 1)
+BulkTransferStride with values:
+	Locale        = 1
+	Stride levels = 1
+	dstStride     = 10
+	srcStride     = 10
+	count         = 5 10
+BulkTransferStride: On RHS - PUT to 0
+
+In DefaultRectangularArr.doiCanBulkTransfer()
+isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
+isDataContiguous return False
+In DefaultRectangularArr.doiUseBulkTransferStride()
+
+In DefaultRectangularArr.doiBulkTransferStride
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+LBlk = (10, 1)
+RBlk = (10, 1)
+BulkTransferStride with values:
+	Locale        = 1
+	Stride levels = 1
+	dstStride     = 10
+	srcStride     = 10
+	count         = 5 10
+BulkTransferStride: On LHS - GET from 0
 End of assignment
 
 
 A and B on different locale
 
+In DefaultRectangularArr.doiCanBulkTransfer()
+isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
+isDataContiguous return False
+In DefaultRectangularArr.doiUseBulkTransferStride()
+
 In DefaultRectangularArr.doiBulkTransferStride
-Dest = (1..10, 1..5)
-Src  = (1..10, 1..5)
+BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE0
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+LBlk = (10, 1)
+RBlk = (10, 1)
 BulkTransferStride with values:
 	Locale        = 0
 	Stride levels = 1
 	dstStride     = 10
 	srcStride     = 10
 	count         = 5 10
-	dstBlk        = (10, 1)
-	srcBlk        = (10, 1)
 BulkTransferStride: On LHS - GET from 1
 
+In DefaultRectangularArr.doiCanBulkTransfer()
+isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
+isDataContiguous return False
+In DefaultRectangularArr.doiUseBulkTransferStride()
+
+In DefaultRectangularArr.doiBulkTransferStride
+BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE1
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+LBlk = (10, 1)
+RBlk = (10, 1)
+BulkTransferStride with values:
+	Locale        = 1
+	Stride levels = 1
+	dstStride     = 10
+	srcStride     = 10
+	count         = 5 10
+BulkTransferStride: On LHS - GET from 0
 End of assignment
 
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
-isDataContiguous return False
-In DefaultRectangularArr.doiUseBulkTransferStride()
-In DefaultRectangularArr.doiBulkTransferStride
-Dest = (1..10, 1..5)
-Src  = (1..10, 1..5)
-BulkTransferStride with values:
-	Locale        = 1
-	Stride levels = 1
-	dstStride     = 10
-	srcStride     = 10
-	count         = 5 10
-	dstBlk        = (10, 1)
-	srcBlk        = (10, 1)
-BulkTransferStride: On RHS - PUT to 0
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
-isDataContiguous return False
-In DefaultRectangularArr.doiUseBulkTransferStride()
-In DefaultRectangularArr.doiBulkTransferStride
-Dest = (1..10, 1..5)
-Src  = (1..10, 1..5)
-BulkTransferStride with values:
-	Locale        = 1
-	Stride levels = 1
-	dstStride     = 10
-	srcStride     = 10
-	count         = 5 10
-	dstBlk        = (10, 1)
-	srcBlk        = (10, 1)
-BulkTransferStride: On LHS - GET from 0
-In DefaultRectangularArr.doiBulkTransferStride
-Dest = (1..10, 1..5)
-Src  = (1..10, 1..5)
-BulkTransferStride with values:
-	Locale        = 1
-	Stride levels = 1
-	dstStride     = 10
-	srcStride     = 10
-	count         = 5 10
-	dstBlk        = (10, 1)
-	srcBlk        = (10, 1)
-BulkTransferStride: On LHS - GET from 0
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
-isDataContiguous return False
-In DefaultRectangularArr.doiUseBulkTransferStride()
-BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE0
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1, 1) blk=(10, 1)
-isDataContiguous return False
-In DefaultRectangularArr.doiUseBulkTransferStride()
-BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE1

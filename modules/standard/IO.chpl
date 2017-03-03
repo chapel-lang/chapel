@@ -289,14 +289,11 @@ that has been closed.
 It is an error to close a file when it has channels that
 have not been closed.
 
-In the future we plan to implement reference counting for files
-and channels. Each file and channel will be closed automatically
-when no references remain to it. For example, if only a local
-variable refers to a channel, the channel will be closed
-when that variable goes out of scope.
-
-The ability for the program to close a file or a channel
-explicitly will remain available.
+Files and channels are reference counted. Each file and channel is
+closed automatically when no references to it remain. For example, if
+a local variable is the only reference to a channel, the channel will
+be closed when that variable goes out of scope.  Programs may also
+close a file or channel explicitly.
 
 .. _about-io-style:
 
@@ -2127,9 +2124,9 @@ proc file._style:iostyle {
    running out of storage space or power loss. See also
    :ref:`about-io-ensuring-successful-io`.
 
-   In the future, we hope to automatically close files when the file variable
-   goes out of scope and all channels using that file are closed. The ability
-   for a program to close a file will remain available.
+   Files are automatically closed when the file variable
+   goes out of scope and all channels using that file are closed. Programs
+   may also explicitly close a file using this method.
 
    :arg error: optional argument to capture an error code. If this argument
                is not provided and an error is encountered, this function

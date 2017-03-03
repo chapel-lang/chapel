@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.5</span>
+   &#160;<span id="projectnumber">1.11.6</span>
    </div>
   </td>
  </tr>
@@ -214,7 +214,7 @@ Data Fields</h2></td></tr>
 </div><div class="memdoc">
 
 <p>The complete CPU set of logical processors of this object,. </p>
-<p>This includes not only the same as the cpuset field, but also the CPUs for which topology information is unknown or incomplete, and the CPUs that are ignored when the <a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea129b4fea1300be22bbaf0bb0958994c8" title="Detect the whole system, ignore reservations and offline settings. ">HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM</a> flag is not set. Thus no corresponding PU object may be found in the topology, because the precise position is undefined. It is however known that it would be somewhere under this object.</p>
+<p>This includes not only the same as the cpuset field, but also some CPUs for which topology information is unknown or incomplete, and the CPUs that are ignored when the <a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea129b4fea1300be22bbaf0bb0958994c8" title="Detect the whole system, ignore reservations and offline settings. ">HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM</a> flag is not set. Thus no corresponding PU object may be found in the topology, because the precise position is undefined. It is however known that it would be somewhere under this object.</p>
 <dl class="section note"><dt>Note</dt><dd>Its value must not be changed, <a class="el" href="a00186.html#gae679434c1a5f41d3560a8a7e2c1b0dee" title="Duplicate bitmap bitmap by allocating a new bitmap and copying bitmap contents. ">hwloc_bitmap_dup()</a> must be used instead. </dd></dl>
 
 </div>
@@ -232,7 +232,7 @@ Data Fields</h2></td></tr>
 </div><div class="memdoc">
 
 <p>The complete NUMA node set of this object,. </p>
-<p>This includes not only the same as the nodeset field, but also the NUMA nodes for which topology information is unknown or incomplete, and the nodes that are ignored when the <a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea129b4fea1300be22bbaf0bb0958994c8" title="Detect the whole system, ignore reservations and offline settings. ">HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM</a> flag is not set. Thus no corresponding NUMA node object may be found in the topology, because the precise position is undefined. It is however known that it would be somewhere under this object.</p>
+<p>This includes not only the same as the nodeset field, but also some NUMA nodes for which topology information is unknown or incomplete, and the nodes that are ignored when the <a class="el" href="a00166.html#ggada025d3ec20b4b420f8038d23d6e7bdea129b4fea1300be22bbaf0bb0958994c8" title="Detect the whole system, ignore reservations and offline settings. ">HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM</a> flag is not set. Thus no corresponding NUMA node object may be found in the topology, because the precise position is undefined. It is however known that it would be somewhere under this object.</p>
 <p>If there are no NUMA nodes in the machine, all the memory is close to this object, so <code>complete_nodeset</code> is full.</p>
 <dl class="section note"><dt>Note</dt><dd>Its value must not be changed, <a class="el" href="a00186.html#gae679434c1a5f41d3560a8a7e2c1b0dee" title="Duplicate bitmap bitmap by allocating a new bitmap and copying bitmap contents. ">hwloc_bitmap_dup()</a> must be used instead. </dd></dl>
 

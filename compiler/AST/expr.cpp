@@ -1200,6 +1200,28 @@ FnSymbol* CallExpr::findFnSymbol(void) {
   return fn;
 }
 
+bool CallExpr::isCast(void) {
+  return isNamed("_cast");
+}
+
+Expr* CallExpr::castFrom(void) {
+  INT_ASSERT(isCast());
+
+  return get(2);
+}
+
+Expr* CallExpr::castTo(void) {
+  INT_ASSERT(isCast());
+
+  return get(1);
+}
+
+CallExpr* createCast(BaseAST* src, BaseAST* toType)
+{
+  CallExpr* expr = new CallExpr("_cast", toType, src);
+  return expr;
+}
+
 
 QualifiedType CallExpr::qualType(void) {
   if (primitive)

@@ -263,11 +263,6 @@ BlockStmt* Symbol::getDeclarationScope() const {
 }
 
 
-FnSymbol* Symbol::getFnSymbol() {
-  return NULL;
-}
-
-
 bool Symbol::hasFlag(Flag flag) const {
   CHECK_FLAG(flag);
   return flags[flag];
@@ -905,6 +900,16 @@ void TypeSymbol::renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn) {
   renameInstantiatedEnd();
 }
 
+void TypeSymbol::renameInstantiatedSingle(Symbol* sym) {
+  renameInstantiatedStart();
+  if (this->hasFlag(FLAG_TUPLE)) {
+    USR_FATAL(sym, "initializers don't handle tuples yet, sorry!");
+  } else {
+    renameInstantiatedIndividual(sym);
+  }
+  renameInstantiatedEnd();
+}
+
 void TypeSymbol::renameInstantiatedStart() {
   if (this->name[strlen(this->name)-1] == ')') {
     // avoid "strange" instantiated type names based on partial instantiation
@@ -1048,11 +1053,6 @@ void FnSymbol::verify() {
   // Should those even persist between passes?
   verifyInTree(valueFunction, "FnSymbol::valueFunction");
   verifyInTree(retSymbol, "FnSymbol::retSymbol");
-}
-
-
-FnSymbol* FnSymbol::getFnSymbol(void) {
-  return this;
 }
 
 
@@ -1596,6 +1596,16 @@ int FnSymbol::hasGenericFormals() const {
   bool hasGenericDefaults =  true;
   int  retval             =     0;
 
+  bool resolveInit = false;
+  if (this->hasFlag(FLAG_METHOD) && _this) {
+    if (AggregateType* at = toAggregateType(_this->type)) {
+      if (at->initializerStyle == DEFINES_INITIALIZER  &&
+          strcmp(name, "init") == 0) {
+        resolveInit = true;
+      }
+    }
+  }
+
   for_formals(formal, this) {
     bool isGeneric = false;
 
@@ -1607,7 +1617,9 @@ int FnSymbol::hasGenericFormals() const {
           formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
           formal                               == _this ||
           formal->hasFlag(FLAG_IS_MEME)        == true) {
-        isGeneric = true;
+        if (!(formal == _this && resolveInit)) {
+          isGeneric = true;
+        }
       }
     }
 
@@ -2472,7 +2484,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   VarSymbol* castTemp = newTemp("call_tmp");
   CallExpr *castCall = new CallExpr(PRIM_MOVE,
       castTemp,
-      new CallExpr("_cast", cptrTemp, new_CStringSymbol(str)));
+      createCast(new_CStringSymbol(str), cptrTemp));
 
   int strLength = unescapeString(str, castCall).length();
 

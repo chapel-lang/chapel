@@ -24,13 +24,16 @@
 #include <string>
 
 const char* astr(const char* s1,
-                 const char* s2 = 0,
+                 const char* s2,
                  const char* s3 = 0,
                  const char* s4 = 0,
                  const char* s5 = 0,
                  const char* s6 = 0,
                  const char* s7 = 0,
                  const char* s8 = 0);
+
+const char* astr(const char* s1);
+const char* astr(const std::string& s);
 
 const char* istr(int i);
 
