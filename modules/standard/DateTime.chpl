@@ -301,7 +301,6 @@ module DateTime {
   proc date.timetuple() {
     var timeStruct: tm;
 
-    // no 0 init for extern records?
     timeStruct.tm_hour = 0;
     timeStruct.tm_min = 0;
     timeStruct.tm_sec = 0;
