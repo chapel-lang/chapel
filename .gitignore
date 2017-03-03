@@ -309,6 +309,8 @@ tags
 
 /test/npb/cg/bradc/latex
 
+/test/optimizations/bulkcomm/bharshbarg/remote.good
+
 /test/parallel/taskPar/taskIntents/src/*.d
 /test/parallel/taskPar/taskIntents/src/*.o
 
