@@ -55,6 +55,27 @@ static IntentTag constIntentForType(Type* t) {
   return INTENT_CONST;
 }
 
+// Detect tuples containing e.g. arrays by reference
+// These should be const / not const element-by-element.
+static
+bool isTupleContainingRefMaybeConst(Type* t)
+{
+  AggregateType* at = toAggregateType(t);
+  if (t->symbol->hasFlag(FLAG_TUPLE)) {
+    for_fields(field, at) {
+      Type* fieldType = field->getValType();
+      if (field->isRef()) {
+        if (fieldType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
+          return true;
+      }
+      if (isTupleContainingRefMaybeConst(fieldType))
+        return true;
+    }
+  }
+  return false;
+}
+
+
 IntentTag blankIntentForType(Type* t) {
   IntentTag retval = INTENT_BLANK;
 
@@ -66,7 +87,7 @@ IntentTag blankIntentForType(Type* t) {
     retval = INTENT_REF;
 
   } else if(t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
-            /* || t->symbol->hasFlag(FLAG_ARRAY) */) {
+            || isTupleContainingRefMaybeConst(t)) {
     retval = INTENT_REF_MAYBE_CONST;
 
   } else if (is_bool_type(t)                         ||
