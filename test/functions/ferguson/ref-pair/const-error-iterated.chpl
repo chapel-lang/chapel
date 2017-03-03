@@ -18,28 +18,12 @@ proc writeForallA(A) {
     writeit(a);
   }
 }
-proc writeForAZip(A, B) {
-  for (a,b) in zip(A, B) {
-    a = b;
-  }
-}
-proc writeForallAZip(A, B) {
-  forall (a,b) in zip(A, B) {
-    a = b;
-  }
-}
 proc promotedAssign(A, B) {
   A = B;
 }
 
 proc writeCoforallA(A) {
   coforall a in A {
-    writeit(a);
-  }
-}
-
-proc writeCoforallAZip(A, B) {
-  coforall (a, b) in (A, B) {
     writeit(a);
   }
 }
@@ -85,7 +69,6 @@ writeln("WRITES");
 writeForA((globalArray)); // error
 writeForallA((globalArray)); // error
 promotedAssign((globalArray), (globalArray)); // error
-writeForAZip((globalArray), (globalArray)); // error
-writeForallAZip((globalArray), (globalArray)); // error
 writeCoforallA((globalArray)); // error
-writeCoforallAZip((globalArray), (globalArray)); // error
+
+
