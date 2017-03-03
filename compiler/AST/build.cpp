@@ -209,6 +209,7 @@ Expr* buildNamedActual(const char* name, Expr* expr) {
 
 
 Expr* buildNamedAliasActual(const char* name, Expr* expr) {
+  USR_WARN(expr, "support for '=>' in constructor argument lists is deprecated as of version 1.15 of 'chpl'.  If you rely on this feature, please let the Chapel team know.");
   return new CallExpr(PRIM_ACTUALS_LIST,
            new NamedExpr(name, expr),
            // if we wanted to support expr being another variable,
