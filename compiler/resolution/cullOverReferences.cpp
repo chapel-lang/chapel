@@ -27,6 +27,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "view.h"
 
 /* This pass implements a backwards (uses to defs) analysis
    to determine if certain reference Symbols are constant.
@@ -52,6 +53,29 @@
    one call or the other (the ref-return version or
    the value/const-ref-return version).
  */
+
+
+// Used for debugging this pass.
+static const int breakOnId1 = 0;
+static const int breakOnId2 = 0;
+static const int breakOnId3 = 0;
+
+#define DEBUG_SYMBOL(sym) \
+  if (sym->id == breakOnId1 || sym->id == breakOnId2 || sym->id == breakOnId3) { \
+    gdbShouldBreakHere(); \
+  }
+
+static const int trace_all = 0;
+static const int trace_usr = 0;
+
+static bool shouldTrace(Symbol* sym)
+{
+  if (trace_all ||
+      (trace_usr && sym->defPoint->getModule()->modTag == MOD_USER))
+    return true;
+  else
+    return false;
+}
 
 //static bool symbolIsSetLocal(Symbol* sym);
 
@@ -263,20 +287,129 @@ bool contextCallItDepends(Symbol* sym, ContextCallExpr* cc) {
   return false;
 }
 
-typedef std::map<Symbol*, std::vector<Symbol*> > revisitGraph_t;
-typedef std::set<Symbol*> revisitUnknowns_t;
+// TODO
+// tuples
+//   Symbol* (ArgSymbol or VarSymbol)
+//   Vec<int> indexes
+//
+// index 0 means the entire tuple / svec?
+// Or linearize tuple?
+
+// index (1)(2) -> linearize into size1*1 + 2
+// index 0 means whole tuple
+//
+//  Symbol*
+//    -> std::vector<bool> of linearized indices
+//    -> tracks if that tuple element is const
+
+//typedef std::map<Symbol*, std::vector<bool> > tupleElementConst_t;
+struct GraphNode {
+  Symbol* variable; // a VarSymbol or ArgSymbol;
+  int     fieldIndex; // 0 for "any field" / not a tuple
+};
 
 static
-void markConst(Symbol* sym)
+GraphNode makeNode(Symbol* variable, int fieldIndex)
+{
+  GraphNode ret;
+  ret.variable = variable;
+  if (variable->getValType()->symbol->hasFlag(FLAG_TUPLE))
+    ret.fieldIndex = fieldIndex;
+  else
+    ret.fieldIndex = 0;
+  return ret;
+}
+
+static
+bool isConst(GraphNode node)
+{
+  if (node.variable->fieldQualifiers) {
+    Qualifier fieldQualifier = node.variable->fieldQualifiers[node.fieldIndex];
+    return QualifiedType::qualifierIsConst(fieldQualifier);
+  }
+
+  if (node.fieldIndex == 0)
+    return node.variable->qualType().isConst();
+
+  return false;
+}
+
+static
+bool operator<(const GraphNode & a, const GraphNode & b)
+{
+  return (a.variable->id < b.variable->id) ||
+         (a.variable->id == b.variable->id && a.fieldIndex < b.fieldIndex);
+}
+
+// Now use element_s instead of Symbol* below
+typedef std::map<GraphNode, std::vector<GraphNode> > revisitGraph_t;
+typedef std::set<GraphNode> revisitUnknowns_t;
+
+static
+void addDependency(revisitGraph_t & graph, GraphNode from, GraphNode to)
+{
+  DEBUG_SYMBOL(from.variable);
+  if (shouldTrace(from.variable)) {
+    printf("Adding a dependency from %i,%i to %i,%i\n",
+           from.variable->id, from.fieldIndex,
+           to.variable->id, to.fieldIndex);
+  }
+
+
+  graph[from].push_back(to);
+}
+
+static
+void createFieldQualifiersIfNeeded(Symbol* sym)
+{
+  AggregateType* at = toAggregateType(sym->type);
+  if (at && !sym->fieldQualifiers) {
+    int numFields = at->numFields();
+    sym->fieldQualifiers = new Qualifier[numFields+1]; // +1 for 1-base
+    sym->fieldQualifiers[0] = QUAL_UNKNOWN;
+    int i = 1;
+    for_fields(field, at) {
+      Qualifier q = QUAL_UNKNOWN;
+      if (field->isRef()) {
+        if (field->isConstant())
+          q = QUAL_CONST_REF;
+        else
+          q = QUAL_REF;
+      }
+      sym->fieldQualifiers[i] = q;
+      i++;
+    }
+  }
+}
+
+static
+bool containsReferenceFields(AggregateType* at)
+{
+  // This is an optimization for now, since only
+  // tuple types can contain reference fields.
+  if (! at->symbol->hasFlag(FLAG_TUPLE))
+    return false;
+
+  // Check if any fields are reference fields.
+  for_fields(field, at) {
+    if (field->isRef())
+      return true;
+  }
+
+  return false;
+}
+
+static
+void markSymbolConst(Symbol* sym)
 {
   ArgSymbol* arg = toArgSymbol(sym);
   // it is const, mark it so
-  INT_ASSERT(sym->qual == QUAL_REF || sym->qual == QUAL_UNKNOWN);
-  sym->qual = QUAL_CONST_REF;
-  if (arg) arg->intent = INTENT_CONST_REF;
+  sym->qual = QualifiedType::qualifierToConst(sym->qual);
+  if (arg && arg->intent == INTENT_REF_MAYBE_CONST)
+    arg->intent = INTENT_CONST_REF;
 }
 static
-void markNotConst(Symbol* sym)
+void markSymbolNotConst(Symbol* sym)
 {
   ArgSymbol* arg = toArgSymbol(sym);
 
@@ -285,9 +418,72 @@ void markNotConst(Symbol* sym)
   // ref-with-unknown-constness and ref-not-const,
   // so we can just leave it alone.
   INT_ASSERT(!sym->qualType().isConst());
-  if (arg) arg->intent = INTENT_REF;
+  if (arg && arg->intent == INTENT_REF_MAYBE_CONST)
+    arg->intent = INTENT_REF;
 }
 
+static
+void markConst(GraphNode node)
+{
+  if (shouldTrace(node.variable)) {
+    printf(" const %i,%i\n", node.variable->id, node.fieldIndex);
+    DEBUG_SYMBOL(node.variable);
+  }
+
+  Symbol* sym = node.variable;
+  int fieldIndex = node.fieldIndex;
+  AggregateType* at = toAggregateType(node.variable->getValType());
+
+  if (at && containsReferenceFields(at)) {
+    createFieldQualifiersIfNeeded(sym);
+
+    if (fieldIndex == 0) {
+      // mark all fields
+      int nFields = at->numFields();
+      for (int i = 0; i <= nFields; i++) {
+        if (sym->fieldQualifiers[i] == QUAL_REF)
+          sym->fieldQualifiers[i] = QUAL_CONST_REF;
+      }
+    } else {
+      // mark only fieldIndex
+      int i = node.fieldIndex;
+      if (sym->fieldQualifiers[i] == QUAL_REF)
+        sym->fieldQualifiers[i] = QUAL_CONST_REF;
+    }
+  } else {
+    markSymbolConst(sym);
+  }
+}
+static
+void markNotConst(GraphNode node)
+{
+  if (shouldTrace(node.variable)) {
+    printf(" not const %i,%i\n", node.variable->id, node.fieldIndex);
+    DEBUG_SYMBOL(node.variable);
+  }
+
+  Symbol* sym = node.variable;
+  int fieldIndex = node.fieldIndex;
+  AggregateType* at = toAggregateType(node.variable->getValType());
+
+  if (at && containsReferenceFields(at)) {
+    createFieldQualifiersIfNeeded(sym);
+
+    if (fieldIndex == 0) {
+      // mark all fields
+      int nFields = at->numFields();
+      for (int i = 0; i <= nFields; i++) {
+        INT_ASSERT(sym->fieldQualifiers[i] != QUAL_CONST_REF);
+      }
+    } else {
+      // mark only fieldIndex
+      int i = node.fieldIndex;
+      INT_ASSERT(sym->fieldQualifiers[i] != QUAL_CONST_REF);
+    }
+  } else {
+    markSymbolNotConst(sym);
+  }
+}
 
 
 /* Given a sym that we just decided should be considered non-const,
@@ -295,21 +491,22 @@ void markNotConst(Symbol* sym)
    symbols.
  */
 static
-void transitivelyMarkNotConst(Symbol* sym,
+void transitivelyMarkNotConst(GraphNode node, /* sym, index */
                               revisitGraph_t & graph,
                               revisitUnknowns_t & unknownConstSyms,
                               std::map<BaseAST*, BaseAST*> & reasonNotConst)
 {
-  std::vector<Symbol*> & dependentSymbols = graph[sym];
+  std::vector<GraphNode> & edges = graph[node];
 
-  for_vector(Symbol, otherSym, dependentSymbols) {
-    if (unknownConstSyms.count(otherSym) != 0) {
-      // otherSym still has unknown const-ness
+  for( size_t i = 0; i < edges.size(); i++ ) {
+    GraphNode otherNode = edges[i];
+    if (unknownConstSyms.count(otherNode) != 0) {
+      // otherNode still has unknown const-ness
       // mark it as not-const
-      markNotConst(otherSym);
-      reasonNotConst[otherSym] = sym;
-      unknownConstSyms.erase(otherSym);
-      transitivelyMarkNotConst(otherSym, graph, unknownConstSyms, reasonNotConst);
+      markNotConst(otherNode);
+      reasonNotConst[otherNode.variable] = node.variable;
+      unknownConstSyms.erase(otherNode);
+      transitivelyMarkNotConst(otherNode, graph, unknownConstSyms, reasonNotConst);
     }
   }
 }
@@ -802,7 +999,6 @@ void gatherLoopDetails(ForLoop*  forLoop,
   }
 }
 
-
 //
 // This function adjusts calls to functions that have both
 // a ref and non-ref version. These calls are represented with
@@ -825,9 +1021,6 @@ void gatherLoopDetails(ForLoop*  forLoop,
 //
 void cullOverReferences() {
 
-  int breakOnId1 = 0; // These are for debugging
-  int breakOnId2 = 0;
-
   /* A note about the structure of this pass:
 
      While it's interprocedural, it shouldn't present a big problem for
@@ -842,7 +1035,7 @@ void cullOverReferences() {
       argument intent leads to compilation error for ref-if-modified types
       like arrays).
 
-     Second, this pass works in a uses-to-defs manner and is an
+     Second, this pass works in a uses-to-symbols manner and is an
      interprocedural analysis. However, that does not mean that it can't
      fit into a Pass Manager concept. In particular, it could be
      what LLVM calls a CallGraphSCCPass.
@@ -858,9 +1051,9 @@ void cullOverReferences() {
   // case when the result is not saved.
 
   // First, collect Symbols that we need to determine the const-ness of
-  std::vector<Symbol*> collectedSymbols;
+  std::vector<GraphNode> collectedSymbols;
 
-  std::set<Symbol*> unknownConstSyms;
+  revisitUnknowns_t unknownConstSyms;
 
   std::map<BaseAST*, BaseAST*> reasonNotConst;
 
@@ -868,15 +1061,28 @@ void cullOverReferences() {
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
 
-    if (arg->id == breakOnId1 || arg->id == breakOnId2)
-      gdbShouldBreakHere();
+    DEBUG_SYMBOL(arg);
 
     // Don't try to delve into _build_tuple
     if (arg->defPoint->parentSymbol->hasFlag(FLAG_BUILD_TUPLE))
       continue;
+    if (arg->defPoint->parentSymbol->hasFlag(FLAG_TUPLE_CAST_FN))
+      continue;
+
 
     if (arg->intent == INTENT_REF_MAYBE_CONST) {
-      collectedSymbols.push_back(arg);
+      if (arg->type->symbol->hasFlag(FLAG_TUPLE)) {
+        AggregateType* tupleType = toAggregateType(arg->type);
+        int fieldIndex = 1;
+        for_fields(field, tupleType) {
+          if (field->isRef() ||
+              field->type->symbol->hasFlag(FLAG_TUPLE))
+            collectedSymbols.push_back(makeNode(arg,fieldIndex));
+          fieldIndex++;
+        }
+      } else {
+        collectedSymbols.push_back(makeNode(arg,0));
+      }
     }
   }
 
@@ -893,7 +1099,7 @@ void cullOverReferences() {
       // ContextCall removed, no further action required on it
     } else {
       // ContextCall needs more analysis, do this in 2nd step
-      collectedSymbols.push_back(lhs->symbol());
+      collectedSymbols.push_back(makeNode(lhs->symbol(), 0));
     }
   }
 
@@ -907,29 +1113,95 @@ void cullOverReferences() {
   //     This could be due to recursion with INTENT_REF_MAYBE_CONST ArgSymbols
   //     or due to nested calls with ContextCallExpr.
 
+  // We will set Qualifier or Intent to mark symbols const,
+  // except for tuple elements, we'll update constTupleElements.
+  //
   // Note: code in this loop can append to collectedSymbols.
+  // TODO: it could visit the same Symbol more than once
+  //       i.e. the same Symbol could be added to collectedSymbols multiple
+  //       times
+  // TODO: I think it would be nicer to structure this pass explicitly
+  //       as function-by-function followed by an interprocedural portion.
+  //       That might make the interactions clearer, but it would probably
+  //       be more complex code. But faster.
+  //       E.g. we could process build_tuple calls and consider the
+  //       arguments of interest at once, instead of looking through
+  //       build_tuple calls for each argument of interest as below.
+  //
   for(size_t i = 0; i < collectedSymbols.size(); i++) {
 
-    Symbol* sym = collectedSymbols[i];
+    GraphNode node = collectedSymbols[i];
+    Symbol* sym = node.variable;
 
-    if (sym->id == breakOnId1 || sym->id == breakOnId2)
-      gdbShouldBreakHere();
+    DEBUG_SYMBOL(sym);
 
     // If we already determined that a symbol is const, no need to
     // do additional work here.
     if (sym->qualType().isConst())
       continue;
 
+    // If it's a tuple, create the field qualifiers if needed
+    if (sym->type->symbol->hasFlag(FLAG_TUPLE))
+      createFieldQualifiersIfNeeded(sym);
+
     bool setter = false;
     bool revisit = false;
 
     for_SymbolSymExprs(se, sym) {
 
-      // Workaround for inaccurate tuple analysis: exclude the
-      // _build_tuple call with a LHS that is setting a chpl__iter variable.
-      if (inBuildTupleForChplIter(se)) {
-        continue;
+      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        if (FnSymbol* calledFn = call->isResolved()) {
+          if (calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
+            // Workaround for inaccurate tuple analysis: exclude the
+            // _build_tuple call with a LHS that is setting a
+            // chpl__iter variable.
+            if (inBuildTupleForChplIter(se)) {
+              continue;
+            }
+
+            if (CallExpr* move = toCallExpr(call->parentExpr)) {
+              if (move->isPrimitive(PRIM_MOVE) &&
+                  // workaround for compiler-introduced
+                  // _build_tuple_always_allow_ref calls
+                  ! calledFn->hasFlag(FLAG_ALLOW_REF)) {
+                SymExpr* lhs = toSymExpr(move->get(1));
+                Symbol* lhsSymbol = lhs->symbol();
+
+                // compute j - se is the j'th argument in build_tuple
+                int j = 1;
+                for_actuals(actual, call) {
+                  if (se == actual)
+                    break;
+                  j++;
+                }
+                INT_ASSERT(1 <= j && j <= call->numActuals());
+
+                // What is the field we are interested in?
+                Symbol* tupleField = NULL;
+                AggregateType* tupleType = toAggregateType(lhsSymbol->type);
+                int k = 1;
+                for_fields(field, tupleType) {
+                  if (j == k)
+                    tupleField = field;
+                  k++;
+                }
+
+                // Does the tuple store the field by reference?
+                if (tupleField->isRef()) {
+                  GraphNode srcNode = makeNode(lhsSymbol, j);
+                  collectedSymbols.push_back(srcNode);
+                  revisit = true;
+                  addDependency(revisitGraph, srcNode, node);
+
+                  //DEBUG_SYMBOL(lhsSymbol);
+                  continue;
+                }
+              }
+            }
+          }
+        }
       }
+
 
       // Check several cases that might require other other
       // information to resolve. These can be added to the revisitGraph.
@@ -944,10 +1216,12 @@ void cullOverReferences() {
             revisit = true;
             CallExpr* move = toCallExpr(cc->parentExpr);
             SymExpr* lhs = toSymExpr(move->get(1));
+            Symbol* lhsSymbol = lhs->symbol();
             // Make a note that determining how lhs->symbol()
             // is used (is it const or not?) will allow us to
             // resolve this ContextCallExpr.
-            revisitGraph[lhs->symbol()].push_back(sym);
+            GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+            addDependency(revisitGraph, srcNode, node);
             continue; // move on to the next iteration
           }
         }
@@ -1020,9 +1294,10 @@ void cullOverReferences() {
                     // Now the const-ness of the array depends
                     // on whether or not the yielded value is set
 
-                    collectedSymbols.push_back(index);
+                    GraphNode srcNode = makeNode(index, node.fieldIndex);
+                    collectedSymbols.push_back(srcNode);
                     revisit = true;
-                    revisitGraph[index].push_back(sym);
+		    addDependency(revisitGraph, srcNode, node);
                     handled = true;
                     break;
                   }
@@ -1036,20 +1311,25 @@ void cullOverReferences() {
         }
 
         if (FnSymbol* calledFn = call->isResolved()) {
-          // Check for the case that sym is passed to an
-          // array formal with blank intent. In that case,
-          // it depends on the determination of the called function.
           ArgSymbol* formal = actual_to_formal(se);
-          if (formal->intent == INTENT_REF_MAYBE_CONST &&
-              !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
-            // since it has INTENT_REF_MAYBE_CONST, it will
-            // already be in the list of collectedSymbols.
-            revisit = true;
-            // Make a note that determining how formal
-            // is used (const or not?) will allow us to resolve
-            // this Symbol's const-ness.
-            revisitGraph[formal].push_back(sym);
-            continue; // move on to the next iteration
+
+          // Check for the case that sym is the _this
+          // actual for a function marked with the flag
+          // FLAG_REF_TO_CONST_WHEN_CONST_THIS
+          // (which is used for field accessors among other things).
+          // In that event, it depends on how the returned
+          // value is used.
+          if (calledFn->hasFlag(FLAG_TUPLE_CAST_FN)) {
+            CallExpr* move = toCallExpr(call->parentExpr);
+            if (move && move->isPrimitive(PRIM_MOVE)) {
+              SymExpr* lhs = toSymExpr(move->get(1));
+              Symbol* lhsSymbol = lhs->symbol();
+              GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+              collectedSymbols.push_back(srcNode);
+              revisit = true;
+              addDependency(revisitGraph, srcNode, node);
+              continue; // move on to the next iteration
+            }
           }
 
           // Check for the case that sym is the _this
@@ -1059,21 +1339,79 @@ void cullOverReferences() {
           // In that event, it depends on how the returned
           // value is used.
           if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
-              formal->hasFlag(FLAG_ARG_THIS)) {
+               formal->hasFlag(FLAG_ARG_THIS)) {
             CallExpr* move = toCallExpr(call->parentExpr);
             if (move && move->isPrimitive(PRIM_MOVE)) {
               SymExpr* lhs = toSymExpr(move->get(1));
               Symbol* lhsSymbol = lhs->symbol();
               if (lhsSymbol->isRef() && lhsSymbol != sym) {
-                collectedSymbols.push_back(lhsSymbol);
+                GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+                collectedSymbols.push_back(srcNode);
                 revisit = true;
-                revisitGraph[lhsSymbol].push_back(sym);
+		addDependency(revisitGraph, srcNode, node);
                 continue; // move on to the next iteration
               }
             }
           }
 
+
+          // Check for the case that sym is passed to an
+          // array formal with blank intent. In that case,
+          // it depends on the determination of the called function.
+          if (formal->intent == INTENT_REF_MAYBE_CONST &&
+              !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
+            // since it has INTENT_REF_MAYBE_CONST, it will
+            // already be in the list of collectedSymbols.
+            revisit = true;
+            // Make a note that determining how formal
+            // is used (const or not?) will allow us to resolve
+            // this Symbol's const-ness.
+            GraphNode srcNode = makeNode(formal, node.fieldIndex);
+	    addDependency(revisitGraph, srcNode, node);
+            continue; // move on to the next iteration
+          }
+
         }
+
+        // Check for the case of extracting a reference field from
+        // a tuple into another Symbol
+        if (call->isPrimitive(PRIM_GET_MEMBER_VALUE))
+          if (CallExpr* parentCall = toCallExpr(call->parentExpr))
+            if (parentCall->isPrimitive(PRIM_MOVE)) {
+              SymExpr* lhs = toSymExpr(parentCall->get(1));
+              Symbol* lhsSymbol = lhs->symbol();
+              if (lhsSymbol->isRef()) {
+                SymExpr* fieldSe = toSymExpr(call->get(2));
+                Symbol* field = fieldSe->symbol();
+                AggregateType* tupleType =
+                  toAggregateType(call->get(1)->getValType());
+                // What is the field index?
+                int fieldIndex = 1;
+                for_fields(curField, tupleType) {
+                  if (curField == field)
+                    break;
+                  fieldIndex++;
+                }
+                INT_ASSERT(fieldIndex <= tupleType->numFields());
+
+                // ignore if the field set isn't
+                // the current field.
+                if (node.fieldIndex == 0 || node.fieldIndex == fieldIndex) {
+                  // add a dependency in the graph. Knowing
+                  // if lhsSymbol is set will tell us if
+                  // sym tuple element i is set.
+                  GraphNode srcNode = makeNode(lhsSymbol, 0);
+                  collectedSymbols.push_back(srcNode);
+                  revisit = true;
+                  addDependency(revisitGraph,
+                                srcNode,
+                                makeNode(sym, fieldIndex));
+                  continue;
+                }
+              }
+            }
+
+        // Check for the case of extracting a star tuple field?
 
         // Check for the case that sym is moved to a compiler-introduced
         // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
@@ -1087,9 +1425,10 @@ void cullOverReferences() {
           SymExpr* lhs = toSymExpr(call->get(1));
           Symbol* lhsSymbol = lhs->symbol();
           if (lhsSymbol != sym && lhsSymbol->isRef()) {
-            collectedSymbols.push_back(lhsSymbol);
+            GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+            collectedSymbols.push_back(srcNode);
             revisit = true;
-            revisitGraph[lhsSymbol].push_back(sym);
+	    addDependency(revisitGraph, srcNode, node);
             continue; // move on to the next iteration
           }
         }
@@ -1115,17 +1454,21 @@ void cullOverReferences() {
         revisit = false;
       } else {
         // We might still decide to use setter.
-        unknownConstSyms.insert(sym);
+        unknownConstSyms.insert(node);
+        if (shouldTrace(node.variable)) {
+          printf("Adding to unknownConstSyms %i,%i\n",
+                 node.variable->id, node.fieldIndex);
+        }
       }
     }
 
     if (!revisit) {
       if (setter) {
         // it's not CONST & it shouldn't be CONST
-        markNotConst(sym);
+        markNotConst(node);
       } else {
         // it is const, mark it so
-        markConst(sym);
+        markConst(node);
       }
     }
   }
@@ -1143,16 +1486,16 @@ void cullOverReferences() {
          it != revisitGraph.end();
          ++it) {
 
-      Symbol* sym = it->first;
+      GraphNode node = it->first;
+      Symbol* sym = node.variable;
 
-      if (sym->id == breakOnId1 || sym->id == breakOnId2)
-        gdbShouldBreakHere();
+      DEBUG_SYMBOL(sym);
 
-      if (unknownConstSyms.count(sym) == 0) {
-        if (!sym->qualType().isConst()) {
+      if (unknownConstSyms.count(node) == 0) {
+        if (!isConst(node)) {
           // If sym has known const-ness, and it's a setter,
           // propagate that information in the graph.
-          transitivelyMarkNotConst(sym, revisitGraph, unknownConstSyms,
+          transitivelyMarkNotConst(node, revisitGraph, unknownConstSyms,
               reasonNotConst);
         }
       }
@@ -1162,19 +1505,19 @@ void cullOverReferences() {
     // as const, since they are never set
     // (this accounts for cycles possibly due to recursive functions
     //  with blank-intent array formals)
-    for (std::set<Symbol*>::iterator it = unknownConstSyms.begin();
+    for (revisitUnknowns_t::iterator it = unknownConstSyms.begin();
          it != unknownConstSyms.end();
          ++it) {
 
-      Symbol* sym = *it;
+      GraphNode node = *it;
+      Symbol* sym = node.variable;
 
       // Anything we didn't remove from unknownConstSyms must be
       // in a cycle of const-ness
 
-      if (sym->id == breakOnId1 || sym->id == breakOnId2)
-        gdbShouldBreakHere();
+      DEBUG_SYMBOL(sym);
 
-      markConst(sym);
+      markConst(node);
     }
   }
 
@@ -1396,7 +1739,8 @@ static void printReason(BaseAST* reason)
       USR_PRINT(reason, "passed as ref here");
 
     // useful for debugging this pass
-    // USR_PRINT(reason, "id %i", reason->id);
+    if (developer)
+      USR_PRINT(reason, "id %i", reason->id);
   }
 
 }
@@ -1410,7 +1754,6 @@ static void printReason(BaseAST* reason)
  */
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 {
-  return; // TODO disabled for now
 
   forv_Vec(CallExpr, call, gCallExprs) {
 
@@ -1425,6 +1768,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
       // resolved calls
       for_formals_actuals(formal, actual, call) {
         bool error = false;
+
         if (actual->qualType().isConst() && ! formal->qualType().isConst()) {
 
           // But... it's OK if we're calling a function marked
@@ -1453,6 +1797,10 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
           }
         }
 
+        // TODO: check tuple const-ness:
+        //   make analysis above more complete
+        //   work with toSymExpr(actual)->symbol()->fieldQualifiers
+
         // For now, ignore errors with tuple construction/build_tuple
         if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
             (calledFn->hasFlag(FLAG_CONSTRUCTOR) &&
@@ -1464,8 +1812,6 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
           error = false;
 
         if (error) {
-          //gdbShouldBreakHere(); // Debug
-
           USR_FATAL_CONT(actual,
                         "const actual is passed to %s formal '%s'"
                         " of %s%s",
