@@ -1,2 +1,0 @@
-test_illegal_named_alias_argument.chpl:7: warning: support for '=>' in constructor argument lists is deprecated as of chpl version 1.15 and is unlikely to work as well as it used to.  If you rely on this feature, please let the Chapel team know.
-test_illegal_named_alias_argument.chpl:7: error: alias-named-argument passing can only be used in constructor calls
