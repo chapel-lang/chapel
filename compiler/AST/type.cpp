@@ -1708,7 +1708,7 @@ bool isString(Type* type) {
 }
 
 //
-// NOAKES 2016/02/29
+// Noakes 2016/02/29
 //
 // To support the merge of the string-as-rec branch we defined a
 // function, isString(), which is only true of the record that was
@@ -1726,8 +1726,13 @@ bool isString(Type* type) {
 // In the longer term we plan to further broaden the cases that the new
 // logic can handle and reduce the exceptions that are filtered out here.
 //
-// MPF 2016-09-15
+//
+//
+// MPF    2016/09/15
 // This function now includes tuples, distributions, domains, and arrays.
+//
+// Noakes 2017/03/02
+// This function now includes range and atomics
 //
 bool isUserDefinedRecord(Type* type) {
   bool retval = false;
@@ -1738,18 +1743,15 @@ bool isUserDefinedRecord(Type* type) {
 
     // Must be a record type
     if (aggr->aggregateTag != AGGREGATE_RECORD) {
-
-    // Not a range
-    } else if (sym->hasFlag(FLAG_RANGE)              == true) {
-
-    // Not an atomic type
-    } else if (sym->hasFlag(FLAG_ATOMIC_TYPE)        == true) {
+      retval = false;
 
     // Not a RUNTIME_type
     } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+      retval = false;
 
     // Not an iterator
     } else if (strncmp(name, "_ir_", 4)              ==    0) {
+      retval = false;
 
     } else {
       retval = true;
