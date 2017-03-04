@@ -516,12 +516,22 @@ knucleotide:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
 
-LCALSMain:
+LCALS-raw-short: &lcals-base
   10/20/16:
     - Clean up to HYDRO_2D kernel (#4757)
     - update to TRAP_INT serial kernel (#4756)
   12/10/16:
     - Throw --no-ieee-float for LCALS (#5001)
+LCALS-raw-medium:
+  <<: *lcals-base
+LCALS-raw-long:
+  <<: *lcals-base
+LCALS-parallel-short:
+  <<: *lcals-base
+LCALS-parallel-medium:
+  <<: *lcals-base
+LCALS-parallel-long:
+  <<: *lcals-base
 
 lulesh:
   03/15/14:
