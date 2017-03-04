@@ -1,3 +1,0 @@
-# This test fails only for multilocale.
-# Valgrind detects errors reliably I think, although not sure it terminates.
-CHPL_COMM==none
