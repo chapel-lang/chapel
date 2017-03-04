@@ -18,19 +18,37 @@
  */
 
 #include "TryStmt.h"
+
 #include "AstVisitor.h"
+#include "CatchStmt.h"
+
+BlockStmt* TryStmt::build(bool tryBang, Expr* expr) {
+  BlockStmt* body = new BlockStmt(expr);
+  return buildChplStmt(new TryStmt(tryBang, body, NULL));
+}
 
 BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body) {
-  return buildChplStmt(new TryStmt(tryBang, body));
+  return buildChplStmt(new TryStmt(tryBang, body, NULL));
+}
+
+BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body, BlockStmt* catches) {
+  return buildChplStmt(new TryStmt(tryBang, body, catches));
 }
 
 BlockStmt* TryStmt::buildChplStmt(Expr* expr) {
   return new BlockStmt(expr, BLOCK_SCOPELESS);
 }
 
-TryStmt::TryStmt(bool tryBang, BlockStmt* body) : Stmt(E_TryStmt) {
+TryStmt::TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches) : Stmt(E_TryStmt) {
   _tryBang = tryBang;
   _body    = body;
+
+  if (catches) {
+    for_alist(c, catches->body) {
+      INT_ASSERT(isCatchStmt(c));
+      _catches.insertAtTail(c->remove());
+    }
+  }
 
   gTryStmts.add(this);
 }
@@ -52,20 +70,30 @@ void TryStmt::accept(AstVisitor* visitor) {
     if (_body) {
       _body->accept(visitor);
     }
+
+    for_alist(c, _catches) {
+      CatchStmt* catchStmt = toCatchStmt(c);
+      catchStmt->accept(visitor);
+    }
+
     visitor->exitTryStmt(this);
   }
 }
 
-Expr* TryStmt::copy(SymbolMap* map, bool internal) {
-  return NULL;
-}
-
-Expr* TryStmt::copyInner(SymbolMap* map) {
-  return NULL;
+TryStmt* TryStmt::copyInner(SymbolMap* map) {
+  TryStmt* copy = new TryStmt(_tryBang, COPY_INT(_body), NULL);
+  for_alist(c, _catches) {
+    copy->_catches.insertAtTail(c->copy());
+  }
+  return copy;
 }
 
 void TryStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-
+  if (old_ast == _body) {
+    _body = toBlockStmt(new_ast);
+  } else if (old_ast->list == &_catches) {
+    old_ast->replace(new_ast);
+  }
 }
 
 Expr* TryStmt::getFirstChild() {
@@ -73,9 +101,30 @@ Expr* TryStmt::getFirstChild() {
 }
 
 Expr* TryStmt::getFirstExpr() {
-  return _body->getFirstExpr();
+  if (_body) {
+    return _body->getFirstExpr();
+  }
+  return NULL;
 }
 
 Expr* TryStmt::getNextExpr(Expr* expr) {
-  return this;
+  Expr* retVal = this;
+
+  if (expr == _body) {
+    if (Expr* firstCatch = _catches.first()) {
+      retVal = firstCatch->getFirstExpr();
+    }
+  } else if (expr->list == &_catches) {
+    if (Expr* nextCatch = expr->next) {
+      retVal = nextCatch->getFirstExpr();
+    }
+  }
+
+  return retVal;
+}
+
+GenRet TryStmt::codegen() {
+  codegenStmt(this);
+
+  return _body->codegen();
 }
