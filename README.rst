@@ -27,7 +27,7 @@ For more information about Chapel, please refer to the following resources:
 =====================  ========================================
 Project homepage:      http://chapel.cray.com
 Installing Chapel:     http://chapel.cray.com/download.html
-Building from source:  `QUICKSTART.rst <QUICKSTART.rst>`_ (in this directory)
+Building from source:  `QUICKSTART.rst <doc/usingchapel/QUICKSTART.rst>`_ 
 Sample computations:   http://chapel.cray.com/hellos.html
 Learning Chapel:       http://chapel.cray.com/learning.html
 Reporting bugs:        http://chapel.cray.com/bugs.html
