@@ -16,7 +16,7 @@ def get(flag='target'):
     if flag == 'network':
         atomics_val = overrides.get('CHPL_NETWORK_ATOMICS')
         if not atomics_val:
-            if chpl_comm.get() == 'ugni':
+            if chpl_comm.get() == 'ugni' and get('target') != 'locks':
                 atomics_val = 'ugni'
             else:
                 atomics_val = 'none'

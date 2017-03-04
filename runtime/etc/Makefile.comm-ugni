@@ -29,9 +29,4 @@ ifeq (,$(findstring HUGETLB,$(PE_PRODUCT_LIST)))
 GEN_LFLAGS += -lhugetlbfs
 endif
 
-#
-# CCE doesn't understand -pthread, and the cc wrapper already throws -lpthread
-#
-ifneq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
-GEN_LFLAGS += -pthread
-endif
+GEN_LFLAGS += -lpthread

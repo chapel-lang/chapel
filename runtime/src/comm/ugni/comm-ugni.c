@@ -4713,8 +4713,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                                              void* opnd1,               \
                                              void* opnd2,               \
                                              int32_t loc) {             \
-    fork_t rf_req = { .a.cmd = _c,                                      \
-                      .a.obj = obj };                                   \
+    fork_t rf_req = { .a={.cmd=_c, .obj=obj} };                         \
     if (opnd1 != NULL)                                                  \
       memcpy(&rf_req.a.opnd1, opnd1, sizeof(_t));                       \
     if (opnd2 != NULL)                                                  \
@@ -6222,16 +6221,16 @@ void chpl_resetCommDiagnosticsHere()
 
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd)
 {
-  cd->get = (uint64_t) comm_diagnostics.get;
-  cd->get_nb = (uint64_t) comm_diagnostics.get_nb;
-  cd->put = (uint64_t) comm_diagnostics.put;
-  cd->put_nb = (uint64_t) comm_diagnostics.put_nb;
-  cd->test_nb = (uint64_t) comm_diagnostics.test_nb;
-  cd->wait_nb = (uint64_t) comm_diagnostics.wait_nb;
-  cd->try_nb = (uint64_t) comm_diagnostics.try_nb;
-  cd->execute_on = (uint64_t) comm_diagnostics.execute_on;
-  cd->execute_on_fast = (uint64_t) comm_diagnostics.execute_on_fast;
-  cd->execute_on_nb = (uint64_t) comm_diagnostics.execute_on_nb;
+  cd->get             = atomic_load_uint_least64_t(&comm_diagnostics.get);
+  cd->get_nb          = atomic_load_uint_least64_t(&comm_diagnostics.get_nb);
+  cd->put             = atomic_load_uint_least64_t(&comm_diagnostics.put);
+  cd->put_nb          = atomic_load_uint_least64_t(&comm_diagnostics.put_nb);
+  cd->test_nb         = atomic_load_uint_least64_t(&comm_diagnostics.test_nb);
+  cd->wait_nb         = atomic_load_uint_least64_t(&comm_diagnostics.wait_nb);
+  cd->try_nb          = atomic_load_uint_least64_t(&comm_diagnostics.try_nb);
+  cd->execute_on      = atomic_load_uint_least64_t(&comm_diagnostics.execute_on);
+  cd->execute_on_fast = atomic_load_uint_least64_t(&comm_diagnostics.execute_on_fast);
+  cd->execute_on_nb   = atomic_load_uint_least64_t(&comm_diagnostics.execute_on_nb);
 }
 
 void chpl_comm_ugni_help_register_global_var(int i, wide_ptr_t wide)
