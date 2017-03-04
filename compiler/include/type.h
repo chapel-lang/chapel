@@ -213,13 +213,15 @@ public:
     return _qual;
   }
 
-  const char* qualStr() {
+  const char* qualStr() const {
     Qualifier q = _qual;
+
     if (isRefType()) {
       q = QUAL_REF;
     } else if (isWideRefType()) {
       q = QUAL_WIDE_REF;
     }
+
     switch (q) {
       case QUAL_UNKNOWN:
         return "unknown";
