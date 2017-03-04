@@ -305,6 +305,7 @@ void deadCodeElimination(FnSymbol* fn) {
 *      other portions of the compiler.                                        *
 *                                                                             *
 * The hardest part is determining when this code needs to be revisited.       *
+* 2017/03/04: Perform an "ad hoc" sanity check for now.                       *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -329,14 +330,23 @@ static void deadStringLiteralElimination() {
     }
   }
 
-  // Confirm that the analysis found some dead literals
-  // Ignore this test for --minimal-modules
-  if (numStmt > 500) {
-    INT_ASSERT((1.0 * numDeadLiteral) / numStmt > 0.2);
+  //
+  // Noakes 2017/03/04
+  //
+  // There is not currently a principled way to determine if other
+  // paseses have changed in a way that would confuse this pass.
+  //
+  // A quick review of a portion of test/release/examles shows that
+  // this pass removes 85 - 95% of the string literals.  Signal an
+  // error if this pass doesn't reclaim at least 10% of all string
+  // literals unless this is minimal modules
+  //
+  if (fMinimalModules == false) {
+    INT_ASSERT((1.0 * numDeadLiteral) / numStmt > 0.10);
   }
 }
 
-// 2017/03/03: All literals have 1 def. Dead literals have 0 uses.
+// Noakes 2017/03/04: All literals have 1 def. Dead literals have 0 uses.
 static bool isDeadStringLiteral(VarSymbol* string) {
   bool retval = false;
 
@@ -353,7 +363,7 @@ static bool isDeadStringLiteral(VarSymbol* string) {
 }
 
 //
-// Noakes 2017/03/03
+// Noakes 2017/03/04
 //
 // The current pattern to initialize a string literal is approximately
 //
@@ -368,12 +378,13 @@ static bool isDeadStringLiteral(VarSymbol* string) {
 //
 //   _construct_string(call_tmp, ... , ref_tmp);
 //
-//   move the_str,  ret_tmp
+//   move the_str,  ret_tmp       // This is the single def
 //
 
 static void removeDeadStringLiteral(DefExpr* defExpr) {
   SymExpr*   defn  = toVarSymbol(defExpr->sym)->getSingleDef();
 
+  // Step backwards from the def of 'the_str'
   Expr*      stmt7 = defn->getStmtExpr();         // move the_str, ret_tmp
   Expr*      stmt6 = stmt7 ? stmt7->prev : NULL;  // _construct_string
   Expr*      stmt5 = stmt6 ? stmt6->prev : NULL;  // move ref_tmp, addrOf(..)
