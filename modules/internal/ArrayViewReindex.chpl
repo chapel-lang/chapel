@@ -375,8 +375,7 @@ module ArrayViewReindex {
     //
 
     proc shouldUseIndexCache() param {
-      return _ArrInstance.isDefaultRectangular() &&
-             defRectSimpleDData;
+      return _ArrInstance.isDefaultRectangular();
     }
 
     proc buildIndexCache() {

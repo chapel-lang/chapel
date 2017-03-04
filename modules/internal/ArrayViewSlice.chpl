@@ -318,8 +318,7 @@ module ArrayViewSlice {
 
     proc shouldUseIndexCache() param {
       return (_ArrInstance.isDefaultRectangular() &&
-              _containsRCRE() &&
-              defRectSimpleDData);
+              _containsRCRE());
     }
 
     // No modification of the index cache is necessary for a slice
