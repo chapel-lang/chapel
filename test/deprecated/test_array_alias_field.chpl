@@ -24,5 +24,8 @@ writeln("global array:            ", GA);
 writeln("class w/ copied array:   ", c1);
 writeln("class w/ aliased array:  ", c2);
 
-delete c2;
-delete c1;
+// comment these out because failure to do so causes valgrind
+// problems as of PR #4762
+//
+// delete c2;
+// delete c1;

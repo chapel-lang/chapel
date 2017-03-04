@@ -477,8 +477,6 @@ Classes, Records, and Unions
   # classes/constructors/assign-param-segfault.future
 - Implicit casting of record parameters not implemented.
   # users/ferguson/recordEquivalence.future
-- Array alias arguments to constructors fail to compile.
-  # arrays/diten/constructorArrayAliasReindex.future
 - Atomic operations don't promote cleanly to whole arrays
   # types/atomic/albrecht/arrayatomics.future
 - Using a comparison operator with a record and 'nil' results in an
