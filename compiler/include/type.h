@@ -538,8 +538,11 @@ TYPE_EXTERN PrimitiveType* dtCFnPtr;   // a C function pointer (unowned)
 TYPE_EXTERN AggregateType* dtOnBundleRecord;
 TYPE_EXTERN AggregateType* dtTaskBundleRecord;
 
+TYPE_EXTERN AggregateType* dtError;
+
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
+
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
