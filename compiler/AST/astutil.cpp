@@ -19,6 +19,7 @@
 
 #include "astutil.h"
 #include "baseAST.h"
+#include "CatchStmt.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "expr.h"
