@@ -67,12 +67,6 @@
     }
   }
 }
-
-try {
-  try {
-
-  }
-}
 */
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
@@ -96,7 +90,8 @@ private:
 
   AList     tryHandler         (TryStmt*   tryStmt,  VarSymbol* errorVar);
   AList     setOutGotoEpilogue (VarSymbol* error);
-  AList     errorCond          (VarSymbol* errorVar, BlockStmt* thenBlock, BlockStmt* elseBlock = NULL);
+  AList     errorCond          (VarSymbol* errorVar, BlockStmt* thenBlock,
+                                BlockStmt* elseBlock = NULL);
   CallExpr* haltExpr           ();
 
   ErrorHandlingVisitor();
@@ -168,18 +163,23 @@ AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
       errorDef->remove();
       currHandler->insertAtTail(errorDef);
       currHandler->insertAtTail(moveError);
-      currHandler->insertAtTail(errorCond(toVarSymbol(errorDef->sym), catchBody));
+      currHandler->insertAtTail(errorCond(toVarSymbol(errorDef->sym),
+                                          catchBody));
 
     // specified catch
     } else {
-      CallExpr*  castError   = new CallExpr(PRIM_DYNAMIC_CAST, new SymExpr(errorType->symbol), errorVar);
-      CallExpr*  moveError   = new CallExpr(PRIM_MOVE, errorDef->sym, castError);
+      CallExpr*  castError   = new CallExpr(PRIM_DYNAMIC_CAST,
+                                            new SymExpr(errorType->symbol),
+                                            errorVar);
+      CallExpr*  moveError   = new CallExpr(PRIM_MOVE, errorDef->sym,
+                                            castError);
       BlockStmt* nextHandler = new BlockStmt();
 
       errorDef->remove();
       currHandler->insertAtTail(errorDef);
       currHandler->insertAtTail(moveError);
-      currHandler->insertAtTail(errorCond(toVarSymbol(errorDef->sym), catchBody, nextHandler));
+      currHandler->insertAtTail(errorCond(toVarSymbol(errorDef->sym),
+                                          catchBody, nextHandler));
 
       currHandler = nextHandler;
     }
