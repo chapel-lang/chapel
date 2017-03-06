@@ -263,6 +263,10 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
     return c_sublocid_any;
   }
 
+  if (p == NULL) {
+    return c_sublocid_any;
+  }
+
   if ((nodeset = hwloc_bitmap_alloc()) == NULL) {
     report_error("hwloc_bitmap_alloc()", errno);
   }
