@@ -426,6 +426,11 @@ hpl_performance:
     - text: Improvements to inferConstRefs (#4904)
       config: 16 node XC
 
+hpl.hpcc2012:
+  03/03/17:
+    - text: Rewrote test as part of array views (#5338)
+      config: 16 node XC
+
 init:
   05/03/16:
     - Fix ref-return intent bugs (#3795)
