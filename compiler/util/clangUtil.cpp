@@ -28,6 +28,7 @@
 #include <cctype>
 #include <cstring>
 #include <cstdio>
+#include <sstream>
 
 #include "astutil.h"
 #include "driver.h"
