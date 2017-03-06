@@ -456,10 +456,6 @@ isx-bucket-spmd:
   02/26/16:
     - ISx ref to array (#3365)
 
-isx-spmd:
-  02/26/16:
-    - ISx ref to array (#3365)
-
 isx-no-return:
   02/26/16:
     - ISx ref to array (#3365)
@@ -467,22 +463,6 @@ isx-no-return:
 isx.ml-time:
   02/26/16:
     - ISx ref to array (#3365)
-  04/23/16:
-    - Switched to PCG random number generator (#3764)
-
-isx-bucket-spmd.ml-time:
-  02/26/16:
-    - ISx ref to array (#3365)
-  04/23/16:
-    - Switched to PCG random number generator (#3764)
-
-isx-spmd.ml-time:
-  02/26/16:
-    - ISx ref to array (#3365)
-  04/23/16:
-    - Switched to PCG random number generator (#3764)
-
-isx-perf-task.ml-time:
   04/23/16:
     - Switched to PCG random number generator (#3764)
 
