@@ -238,6 +238,7 @@ static void resolveTupleExpand(CallExpr* call);
 static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
                                         SymExpr* rhs);
 static void resolveSetMember(CallExpr* call);
+static void resolveInitVar(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveFieldInit(CallExpr* call);
 static void resolveNew(CallExpr* call);
@@ -4308,28 +4309,52 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
 }
 
 
-void
-resolveCall(CallExpr* call)
-{
-  if (call->primitive)
-  {
-    switch (call->primitive->tag)
-    {
-     default:                         /* do nothing */                  break;
-     case PRIM_TUPLE_AND_EXPAND:      resolveTupleAndExpand(call);      break;
-     case PRIM_TUPLE_EXPAND:          resolveTupleExpand(call);         break;
-     case PRIM_SET_MEMBER:            resolveSetMember(call);           break;
-     case PRIM_MOVE:                  resolveMove(call);                break;
-     case PRIM_INITIALIZER_SET_FIELD: resolveFieldInit(call);           break;
-     case PRIM_TYPE_INIT:
-     case PRIM_INIT:                  resolveDefaultGenericType(call);  break;
-     case PRIM_NO_INIT:               resolveDefaultGenericType(call);  break;
-     case PRIM_COERCE:                resolveCoerce(call);              break;
-     case PRIM_NEW:                   resolveNew(call);                 break;
+void resolveCall(CallExpr* call) {
+  if (call->primitive) {
+    switch (call->primitive->tag) {
+    case PRIM_TUPLE_AND_EXPAND:
+      resolveTupleAndExpand(call);
+      break;
+
+    case PRIM_TUPLE_EXPAND:
+      resolveTupleExpand(call);
+      break;
+
+    case PRIM_SET_MEMBER:
+      resolveSetMember(call);
+      break;
+
+    case PRIM_INIT_VAR:
+      resolveInitVar(call);
+      break;
+
+    case PRIM_MOVE:
+      resolveMove(call);
+      break;
+
+    case PRIM_INITIALIZER_SET_FIELD:
+      resolveFieldInit(call);
+      break;
+
+    case PRIM_INIT:
+    case PRIM_NO_INIT:
+    case PRIM_TYPE_INIT:
+      resolveDefaultGenericType(call);
+      break;
+
+    case PRIM_COERCE:
+      resolveCoerce(call);
+      break;
+
+    case PRIM_NEW:
+      resolveNew(call);
+      break;
+
+    default:
+      break;
     }
-  }
-  else
-  {
+
+  } else {
     resolveNormalCall(call);
   }
 }
@@ -4901,6 +4926,49 @@ static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
 }
 
 
+
+/************************************* | **************************************
+*                                                                             *
+* This handles expressions of the form                                        *
+*      CallExpr(PRIM_INIT_VAR, dst, src)                                      *
+*                                                                             *
+* 2017/03/06: This initial, trivial, implementation converts this to either   *
+*                                                                             *
+*      CallExpr(PRIM_MOVE, dst, src)                                          *
+*                                                                             *
+* or                                                                          *
+*                                                                             *
+*      CallExpr(PRIM_MOVE, dst, CallExpr("init_copy", src))                   *
+*                                                                             *
+* and then resolves the PRIM_MOVE.                                            *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveInitVar(CallExpr* call) {
+  Expr*   varExpr = call->get(1);
+  Symbol* var     = toSymExpr(varExpr)->symbol();
+
+  if (var->hasFlag(FLAG_NO_COPY) == true)  {
+    call->primitive = primitives[PRIM_MOVE];
+    resolveMove(call);
+
+  } else {
+    Expr*     initExpr = call->get(2)->remove();
+    CallExpr* initCopy = new CallExpr("chpl__initCopy", initExpr);
+
+    call->insertAtTail(initCopy);
+    call->primitive = primitives[PRIM_MOVE];
+
+    resolveExpr(initCopy);
+    resolveMove(call);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void resolveMove(CallExpr* call) {
   if (call->id == breakOnResolveID )
@@ -7519,6 +7587,7 @@ postFold(Expr* expr) {
             }
           }
         }
+
         if (!set) {
           if (lhs->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
               !lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
@@ -9091,6 +9160,7 @@ void resolve() {
 
   resolveExternVarSymbols();
 
+
   // --ipe does not build a mainModule
   if (mainModule)
     resolveUses(mainModule);
@@ -9130,6 +9200,8 @@ void resolve() {
   // Resolve the string literal constructors after everything else since new
   // ones may be created during postFold
   ensureAndResolveInitStringLiterals();
+
+
 
   handleRuntimeTypes();
 

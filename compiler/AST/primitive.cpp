@@ -449,13 +449,15 @@ void
 initPrimitive() {
   primitives[PRIM_UNKNOWN] = NULL;
 
-
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);
-  prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
-  prim_def(PRIM_NO_INIT, "no init", returnInfoFirstDeref);
+
+  prim_def(PRIM_INIT,      "init",      returnInfoFirstDeref);
+  prim_def(PRIM_INIT_VAR,  "initVar",   returnInfoVoid);
+  prim_def(PRIM_NO_INIT,   "no init",   returnInfoFirstDeref);
   prim_def(PRIM_TYPE_INIT, "type init", returnInfoFirstDeref);
+
   prim_def(PRIM_INITIALIZER_SET_FIELD, "initializer set field", returnInfoVoid, false, true);
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
