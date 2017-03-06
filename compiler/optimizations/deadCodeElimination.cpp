@@ -95,10 +95,16 @@ void deadVariableElimination(FnSymbol* fn) {
     if (isDeadVariable(sym)) {
       for_SymbolDefs(se, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
-        INT_ASSERT(call &&
-                   (call->isPrimitive(PRIM_MOVE) ||
-                    call->isPrimitive(PRIM_ASSIGN)));
-        Expr* rhs = call->get(2)->remove();
+        //INT_ASSERT(call &&
+        //           (call->isPrimitive(PRIM_MOVE) ||
+        //            call->isPrimitive(PRIM_ASSIGN)));
+        //Expr* rhs = call->get(2)->remove();
+        INT_ASSERT(call);
+        Expr* dest = NULL;
+        Expr* rhs = NULL;
+        bool ok = getSettingPrimitiveDstSrc(call, &dest, &rhs);
+        INT_ASSERT(ok);
+        rhs->remove();
         if (!isSymExpr(rhs))
           call->replace(rhs);
         else

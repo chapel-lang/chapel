@@ -308,6 +308,10 @@ void AstToText::appendFormalIntent(ArgSymbol* arg)
       mText += "const ref ";
       break;
 
+    case INTENT_REF_MAYBE_CONST:
+      mText += "const? ref ";
+      break;
+
     case INTENT_PARAM:
       mText += "param ";
       break;

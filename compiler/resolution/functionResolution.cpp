@@ -1372,11 +1372,17 @@ static void ensureEnumTypeResolved(EnumType* etype) {
 // I.e. for an out/inout/ref formal.
 static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
+  Symbol* calledFn = formal->defPoint->parentSymbol;
   if (SymExpr* se = toSymExpr(actual))
     if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
         ((se->symbol()->hasFlag(FLAG_REF_TO_CONST) ||
           se->symbol()->isConstant()) && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->symbol()->isParameter())
+      // But ignore for now errors with this argument
+      // to functions marked with FLAG_REF_TO_CONST_WHEN_CONST_THIS.
+      // These will be checked for later, along with ref-pairs.
+      if (! (formal->hasFlag(FLAG_ARG_THIS) &&
+             calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
       return false;
   // Perhaps more checks are needed.
   return true;
@@ -3845,7 +3851,10 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
           formal->type = varActual->type;
         }
         if (varActual->isConstant()) {
-          formal->intent = (IntentTag)(formal->intent | INTENT_FLAG_CONST);
+          int newIntent = formal->intent | INTENT_FLAG_CONST;
+          // and clear INTENT_FLAG_MAYBE_CONST flag
+          newIntent &= ~ INTENT_FLAG_MAYBE_CONST;
+          formal->intent = (IntentTag)(newIntent);
         }
       }
     }
@@ -4602,6 +4611,7 @@ void lvalueCheck(CallExpr* call)
      case INTENT_CONST_IN:
      case INTENT_PARAM:
      case INTENT_TYPE:
+     case INTENT_REF_MAYBE_CONST:
       // not checking them here
       break;
 

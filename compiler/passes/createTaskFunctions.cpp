@@ -47,6 +47,7 @@ ArgSymbol* tiMarkForIntent(IntentTag intent) {
     case INTENT_REF:       return tiMarkRef;       break;
     case INTENT_PARAM:     return NULL;            break;
     case INTENT_TYPE:      return NULL;            break;
+    case INTENT_REF_MAYBE_CONST:      return NULL;            break;
   }
   INT_FATAL("unexpected intent in tiMarkForIntent()");
   return NULL; // dummy

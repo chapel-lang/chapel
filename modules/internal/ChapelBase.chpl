@@ -1068,7 +1068,7 @@ module ChapelBase {
   // Catch-all initCopy implementation:
   pragma "compiler generated"
   pragma "init copy fn"
-  inline proc chpl__initCopy(x) {
+  inline proc chpl__initCopy(const x) {
     // body adjusted during generic instantiation
     return x;
   }
@@ -1098,7 +1098,7 @@ module ChapelBase {
   pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(x) return chpl__initCopy(x);
+  inline proc chpl__autoCopy(const x) return chpl__initCopy(x);
 
   pragma "compiler generated"
   pragma "unalias fn"
