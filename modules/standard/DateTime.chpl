@@ -51,7 +51,7 @@ module DateTime {
   // This is here to work around issue #5267
   private const chpl_today = datetime.today();
 
-  /* Days in the week, starting with `Monday`=0 */
+  /* Days in the week, starting with `Monday` = 0 */
   enum DayOfWeek {
     Monday =    0,
     Tuesday =   1,
@@ -62,7 +62,7 @@ module DateTime {
     Sunday =    6
   }
 
-  /* Days in the week, starting with `Monday`=1 */
+  /* Days in the week, starting with `Monday` = 1 */
   enum ISODayOfWeek {
     Monday =    1,
     Tuesday =   2,
