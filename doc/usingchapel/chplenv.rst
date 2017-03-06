@@ -357,8 +357,8 @@ CHPL_COMM
         ugni    Cray-specific native communication layer
         ======= ============================================
 
-   If unset, ``CHPL_COMM`` defaults to ``none`` in most cases.  On Cray XC
-   and XE systems it defaults to ``ugni``.  On Cray CS systems it defaults
+   If unset, ``CHPL_COMM`` defaults to ``none`` in most cases.  On Cray XE
+   and XC systems it defaults to ``ugni``.  On Cray CS systems it defaults
    to ``gasnet``.  See :ref:`readme-multilocale` for more information on
    executing Chapel programs using multiple locales.  See :ref:`readme-cray`
    for more information about Cray-specific runtime layers.

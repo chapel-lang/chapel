@@ -434,10 +434,9 @@ performance for Chapel programs.  On Cray XC or XE systems the default
 is to use the ugni communication layer and qthreads tasking.
 
 When using the pre-built module, muxed tasking has traditionally been an
-option, but it will be retired for the 1.16 release, and it's
-performance usually lags behind qthreads.  Note that the muxed tasking
-layer cannot be built from source, as it is not distributed in source
-form.
+option, but it will be retired for the 1.16 release, and its performance
+usually lags behind qthreads.  Note that the muxed tasking layer cannot
+be built from source, as it is not distributed in source form.
 
 The ugni communication layer interacts with the system's network
 interface very closely through a lightweight interface called uGNI (user
