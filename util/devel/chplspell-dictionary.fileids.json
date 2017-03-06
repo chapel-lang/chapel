@@ -186,6 +186,12 @@
     "doc/developer/chips/15.rst",
     "doc/developer/chips/tmp/source/modules/15.rst"
   ],
+  "0cdb833a-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "doc/developer/chips/17.rst"
+  ],
+  "b000f2de-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "doc/developer/chips/18.rst"
+  ],
   "dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5": [
     "doc/developer/chips/2.rst",
     "doc/developer/chips/tmp/source/modules/2.rst"
@@ -387,6 +393,9 @@
   "f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/FFTW.chpl"
   ],
+  "cc606fa4-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "modules/packages/Futures.chpl"
+  ],
   "f8a06e7e-1f18-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/LinearAlgebraJama.chpl"
   ],
@@ -502,15 +511,6 @@
   ],
   "97a7d6e0-2952-11e6-a3a6-10ddb1d4c3d5": [
     "spec/chapel_testing.tex"
-  ],
-  "69c99d3e-2953-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/proposals/constructors/2012/Constructors.tex"
-  ],
-  "a72c6abc-2953-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/proposals/constructors/Constructors.tex"
-  ],
-  "baca8cd4-2953-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/proposals/constructors/Objects.tex"
   ],
   "b4520e6e-5076-11e6-b83e-bc5ff4765d0d": [
     "test/ANNOTATIONS.yaml"
@@ -722,5 +722,8 @@
   ],
   "5655c140-644c-11e6-90f0-10ddb1d4c3d5": [
     "test/studies/shootout/submitted/README.md"
+  ],
+  "44484c44-fd7f-11e6-980e-10ddb1d4c3d5": [
+    "test/studies/shootout/submitted/fasta2.chpl"
   ]
 }

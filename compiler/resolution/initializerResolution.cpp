@@ -339,7 +339,7 @@ void modAndResolveInitCall (CallExpr* call, AggregateType* typeToNew) {
 
   resolveInitializer(call);
 
-  // Because initializers determine the type they return based on the
+  // Because initializers determine the type they utilize based on the
   // execution of Phase 1, if the type is generic we will need to update the
   // type of the actual we are sending in for the this arg
   if (typeToNew->symbol->hasFlag(FLAG_GENERIC) == true) {

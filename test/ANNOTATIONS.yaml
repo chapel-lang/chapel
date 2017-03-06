@@ -516,12 +516,22 @@ knucleotide:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
 
-LCALSMain:
+LCALS-raw-short: &lcals-base
   10/20/16:
     - Clean up to HYDRO_2D kernel (#4757)
     - update to TRAP_INT serial kernel (#4756)
   12/10/16:
     - Throw --no-ieee-float for LCALS (#5001)
+LCALS-raw-medium:
+  <<: *lcals-base
+LCALS-raw-long:
+  <<: *lcals-base
+LCALS-parallel-short:
+  <<: *lcals-base
+LCALS-parallel-medium:
+  <<: *lcals-base
+LCALS-parallel-long:
+  <<: *lcals-base
 
 lulesh:
   03/15/14:
@@ -844,3 +854,33 @@ timeVectorArray:
     - increased array-as-vec problem size (#3422)
   05/28/16:
     - upgrade jemalloc to 4.2.0 (#3919)
+
+dynamic:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+distAdaptativeWSv1:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+distAdaptativeWSv2:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+guided:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+distAdaptativeWS:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)

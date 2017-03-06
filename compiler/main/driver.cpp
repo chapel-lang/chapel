@@ -114,6 +114,7 @@ bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
+bool fNoInferLocalFields = false;
 bool fReplaceArrayAccessesWithRefTemps = false;
 bool fUserSetStackChecks = false;
 bool fNoCastChecks = false;
@@ -506,6 +507,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoTupleCopyOpt = false;
   fNoPrivatization = false;
   fNoChecks = true;
+  fNoInferLocalFields = false;
   fIgnoreLocalClasses = false;
   fNoOptimizeOnClauses = false;
   //fReplaceArrayAccessesWithRefTemps = true; // don't tie this to --fast yet
@@ -552,6 +554,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoPrivatization = true;            // --no-privatization
   fNoOptimizeOnClauses = true;        // --no-optimize-on-clauses
   fIgnoreLocalClasses = true;         // --ignore-local-classes
+  fNoInferLocalFields = true;         // --no-infer-local-fields
   //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
   fDenormalize = false;               // --no-denormalize
   fConditionalDynamicDispatchLimit = 0;
@@ -666,6 +669,7 @@ static ArgumentDescription arg_desc[] = {
  {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
  {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
  {"use-noinit", ' ', NULL, "Enable [disable] ability to skip default initialization through the keyword noinit", "N", &fUseNoinit, NULL, NULL},
+ {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records (experimental)", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},

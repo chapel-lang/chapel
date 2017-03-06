@@ -47,8 +47,7 @@ writeln();
 // The second way to generate a sequence of random numbers is by creating a
 // :class:`RandomStream` class instance.  The first argument is the type
 // of the elements that the instance should generate. If a particular
-// seed is desired, it should be specifid specified upon creation of this
-// instance.
+// seed is desired, it should be specified upon creation of this instance.
 //
 var randStream:       RandomStream(real) = new RandomStream(real);
 var randStreamSeeded: RandomStream(real) = new RandomStream(real, seed);

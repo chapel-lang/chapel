@@ -158,6 +158,8 @@ Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotio
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
 std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
+static char arrayUnrefName[] = "array_unref_ret_tmp";
+
 //#
 //# Static Function Declarations
 //#
@@ -1370,11 +1372,17 @@ static void ensureEnumTypeResolved(EnumType* etype) {
 // I.e. for an out/inout/ref formal.
 static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
+  Symbol* calledFn = formal->defPoint->parentSymbol;
   if (SymExpr* se = toSymExpr(actual))
     if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
         ((se->symbol()->hasFlag(FLAG_REF_TO_CONST) ||
           se->symbol()->isConstant()) && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->symbol()->isParameter())
+      // But ignore for now errors with this argument
+      // to functions marked with FLAG_REF_TO_CONST_WHEN_CONST_THIS.
+      // These will be checked for later, along with ref-pairs.
+      if (! (formal->hasFlag(FLAG_ARG_THIS) &&
+             calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
       return false;
   // Perhaps more checks are needed.
   return true;
@@ -3843,7 +3851,10 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
           formal->type = varActual->type;
         }
         if (varActual->isConstant()) {
-          formal->intent = (IntentTag)(formal->intent | INTENT_FLAG_CONST);
+          int newIntent = formal->intent | INTENT_FLAG_CONST;
+          // and clear INTENT_FLAG_MAYBE_CONST flag
+          newIntent &= ~ INTENT_FLAG_MAYBE_CONST;
+          formal->intent = (IntentTag)(newIntent);
         }
       }
     }
@@ -4600,6 +4611,7 @@ void lvalueCheck(CallExpr* call)
      case INTENT_CONST_IN:
      case INTENT_PARAM:
      case INTENT_TYPE:
+     case INTENT_REF_MAYBE_CONST:
       // not checking them here
       break;
 
@@ -6526,7 +6538,10 @@ static Expr* preFold(Expr* expr) {
               // Should always be true, but just in case...
               if (SymExpr* holdsDest = toSymExpr(parent->get(1))) {
                 Symbol* dest = holdsDest->symbol();
-                if (dest->hasFlag(FLAG_TEMP) && !strcmp(dest->name, "ret")) {
+                // TODO: Surely there's a better way to test for this pattern
+                bool okName = strcmp(dest->name, "ret") == 0 ||
+                              strcmp(dest->name, arrayUnrefName) == 0;
+                if (dest->hasFlag(FLAG_TEMP) && okName) {
                   nowarn = true;
                 }
               }
@@ -8383,6 +8398,71 @@ static bool isVecIterator(FnSymbol* fn) {
   return false;
 }
 
+//
+// If the returnSymbol of 'fn' is assigned to from an _array record, insert
+// an autoCopy for that _array. If the autoCopy has not yet been resolved, this
+// function will call 'resolveAutoCopyEtc'.
+//
+// This supports the 'copy-out' rule for returning arrays.
+//
+static void insertUnrefForArrayReturn(FnSymbol* fn) {
+  Symbol* ret = fn->getReturnSymbol();
+
+  // BHARSH: Should this also check if fn->retTag != RET_TYPE?
+  //
+  // Do nothing for these kinds of functions:
+  if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
+      fn->hasFlag(FLAG_NO_COPY_RETURN) ||
+      fn->hasFlag(FLAG_UNALIAS_FN) ||
+      fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
+      fn->hasFlag(FLAG_INIT_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_IF_EXPR_FN) ||
+      fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
+    return;
+  }
+
+  for_SymbolSymExprs(se, ret) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      if (call->isPrimitive(PRIM_MOVE) && se == call->get(1)) {
+        Type* rhsType = call->get(2)->typeInfo();
+        // TODO: Should we check if the RHS is a symbol with 'no auto
+        // destroy' on it? If it is, then we'd be copying the RHS and it
+        // would never be destroyed...
+        if (rhsType->symbol->hasFlag(FLAG_ARRAY) &&
+            isTypeExpr(call->get(2)) == false) {
+          Expr* origRHS = call->get(2)->remove();
+          VarSymbol* tmp = newTemp(arrayUnrefName, rhsType);
+
+          // Used by callDestructors to catch assignment from a ref to
+          // 'tmp' when we know we don't want to copy.
+          tmp->addFlag(FLAG_NO_COPY);
+
+          call->insertBefore(new DefExpr(tmp));
+          CallExpr* init_unref_tmp = new CallExpr(PRIM_MOVE, tmp, origRHS->copy());
+          call->insertBefore(init_unref_tmp);
+
+          CallExpr* unrefCall = new CallExpr("chpl__unref", tmp);
+          call->insertAtTail(unrefCall);
+          FnSymbol* unrefFn = resolveNormalCall(unrefCall);
+          resolveFns(unrefFn);
+
+          if (unrefFn->retType == tmp->typeInfo()) {
+            // If the types are equal, we must be dealing with a non-view
+            // array, so we can remove the useless unref call.
+            unrefCall->replace(origRHS->copy());
+
+            // Remove now-useless AST
+            tmp->defPoint->remove();
+            init_unref_tmp->remove();
+            INT_ASSERT(unrefCall->inTree() == false);
+          }
+        }
+      }
+    }
+  }
+}
+
 void
 resolveFns(FnSymbol* fn) {
   if (fn->isResolved())
@@ -8461,6 +8541,8 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
+
+  insertUnrefForArrayReturn(fn);
   resolveReturnType(fn);
 
   //

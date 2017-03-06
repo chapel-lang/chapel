@@ -85,7 +85,7 @@ proc initVectors(B, C) {
   // TODO: should write a fillRandom() implementation that does this
   coforall loc in B.dom.dist.targetLocDom {
     on B.dom.dist.targetLocs(loc) {
-      var randlist = new NPBRandomStream(real, seed);
+      var randlist = new NPBRandomStream(eltType=real, seed=seed);
       // TODO: Need to clean this up to use more normal method names
       randlist.skipToNth(B.locArr(loc).locDom.low);
       randlist.fillRandom(B.locArr(loc).myElems);

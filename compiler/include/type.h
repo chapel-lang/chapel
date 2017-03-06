@@ -195,6 +195,15 @@ public:
   bool isRefOrWideRef() const {
     return isRef() || isWideRef();
   }
+  bool isConst() const {
+    return (_qual == QUAL_CONST ||
+            _qual == QUAL_CONST_REF ||
+            _qual == QUAL_CONST_VAL ||
+            _qual == QUAL_CONST_NARROW_REF ||
+            _qual == QUAL_CONST_WIDE_REF);
+  }
+  // TODO: isImmutable
+
   bool isRefType() const;
   bool isWideRefType() const;
 
@@ -206,6 +215,36 @@ public:
     return QualifiedType(QUAL_VAL, _type->getValType());
   }
 
+  static Qualifier qualifierToConst(Qualifier q)
+  {
+    switch (q) {
+      case QUAL_CONST:
+      case QUAL_CONST_REF:
+      case QUAL_CONST_NARROW_REF:
+      case QUAL_CONST_WIDE_REF:
+      case QUAL_CONST_VAL:
+      case QUAL_PARAM:
+        // already const
+        return q;
+      case QUAL_UNKNOWN:
+        return QUAL_CONST;
+      case QUAL_REF:
+        return QUAL_CONST_REF;
+      case QUAL_VAL:
+        return QUAL_CONST_VAL;
+      case QUAL_NARROW_REF:
+        return QUAL_CONST_NARROW_REF;
+      case QUAL_WIDE_REF:
+        return QUAL_CONST_WIDE_REF;
+      // no default: update as Qualifier is updated
+    }
+    return QUAL_UNKNOWN;
+  }
+
+  QualifiedType toConst() {
+    return QualifiedType(qualifierToConst(_qual), _type);
+  }
+
   Type* type() const {
     return _type;
   }
@@ -213,13 +252,15 @@ public:
     return _qual;
   }
 
-  const char* qualStr() {
+  const char* qualStr() const {
     Qualifier q = _qual;
+
     if (isRefType()) {
       q = QUAL_REF;
     } else if (isWideRefType()) {
       q = QUAL_WIDE_REF;
     }
+
     switch (q) {
       case QUAL_UNKNOWN:
         return "unknown";

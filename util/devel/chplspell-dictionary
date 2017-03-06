@@ -2071,6 +2071,7 @@ libevent
 limbn
 listdir
 listlinks
+literalinclude
 lnsub
 localeind
 localhost
@@ -3167,15 +3168,6 @@ seqcon
 sharedmemory
 viewdoc
 
-FILEID: 69c99d3e-2953-11e6-a3a6-10ddb1d4c3d5
-cconstructor
-
-FILEID: a72c6abc-2953-11e6-a3a6-10ddb1d4c3d5
-ness
-
-FILEID: baca8cd4-2953-11e6-a3a6-10ddb1d4c3d5
-setcid
-
 FILEID: e78c94ba-2953-11e6-a3a6-10ddb1d4c3d5
 alignmt
 
@@ -3331,6 +3323,9 @@ forloops
 
 FILEID: 71a525f2-43ff-11e6-907f-843835579daa
 adom
+amax
+asum
+axpy
 bdom
 caxpy
 cblas
@@ -3409,6 +3404,8 @@ izamax
 latlas
 lblas
 pblas
+rotm
+rotmg
 sasum
 saxpy
 scasum
@@ -4162,6 +4159,38 @@ xbase
 xvals
 yvals
 
+FILEID: 0cdb833a-fd7e-11e6-980e-10ddb1d4c3d5
+gemm
+getgrid
+gidx
+gidy
+gpugems
+griddim
+groupside
+idata
+kblock
+lidx
+lidy
+matmul
+matmulamp
+nmsu
+odata
+subcol
+subcols
+thid
+tidx
+wyeoh
+
+FILEID: b000f2de-fd7e-11e6-980e-10ddb1d4c3d5
+cyclicnuma
+ddatas
+
+FILEID: cc606fa4-fd7e-11e6-980e-10ddb1d4c3d5
+taskfn
+
+FILEID: 44484c44-fd7f-11e6-980e-10ddb1d4c3d5
+nucls
+
 NATURAL:
 abcd
 abcdefg
@@ -4205,6 +4234,7 @@ ansi
 antialias
 apache
 appletalk
+apps
 april
 aprun
 apsched
@@ -4227,6 +4257,7 @@ arpa
 arrayness
 asciiz
 asenjo
+ashwin
 asinh
 asprintf
 astfalk
@@ -4477,6 +4508,7 @@ cstdlib
 ctags
 ctor
 ctrunc
+cuda
 curdim
 curlfile
 customrequest
@@ -4520,6 +4552,9 @@ defn
 defs
 degli
 deinit
+deinitialization
+deinitialized
+deinitializers
 deitz
 delaney
 delims
@@ -4796,6 +4831,7 @@ filerator
 filesystems
 findfiles
 finfo
+fioretto
 firefox
 fishshell
 fixup
@@ -4909,6 +4945,7 @@ grepmod
 greprt
 greptestoutputs
 greyscale
+groupsize
 gssapi
 guckin
 gujarati
@@ -4944,12 +4981,14 @@ hexahedral
 hexdump
 hicklin
 hildebrandt
+hillis
 hipa
 hiragana
 histograph
 hoehrmann
 hoffswell
 hoistable
+holewinski
 holt
 homebrew
 hongwei
@@ -4976,6 +5015,7 @@ hwloc
 hwpar
 hwriter
 hyderabad
+hyperthreading
 hyperthreads
 ibarrier
 icfp
@@ -5146,6 +5186,7 @@ keypasswd
 keytype
 kharoshthi
 khmer
+khronos
 kieee
 kissinger
 klib
@@ -5243,6 +5284,7 @@ localeid
 localhost
 localport
 localportrange
+localtemp
 locid
 lockless
 locs
@@ -5257,6 +5299,7 @@ lookups
 lopez
 lossless
 lossy
+lowell
 lowlevel
 lseek
 lstat
@@ -5436,6 +5479,7 @@ ncols
 ncsa
 ndata
 ndebug
+ndefs
 ndim
 nearbyint
 nehalem
@@ -5528,6 +5572,8 @@ numrows
 numtrials
 numvals
 nupdate
+nuses
+nvidia
 nview
 october
 ogham
@@ -5542,6 +5588,7 @@ onlinedocs
 onlinepubs
 oopsla
 opcode
+opencl
 openfd
 openfile
 openfp
@@ -5614,6 +5661,7 @@ planckian
 plevyak
 pnnl
 pointee
+pontelli
 popcount
 portably
 poslast
@@ -5625,6 +5673,7 @@ postorder
 postprocess
 postquote
 postredir
+pouchet
 powerof
 powm
 pozo
@@ -5635,6 +5684,7 @@ precompiled
 precomputing
 prediff
 preexec
+prefixscan
 prepended
 prepending
 preprint
@@ -5667,6 +5717,7 @@ proxyusername
 proxyuserpwd
 przemys
 psahabu
+pseudocode
 pthread
 pthreads
 ptrans
@@ -5802,6 +5853,7 @@ rtype
 runcmd
 runtest
 rvalue
+sadayappan
 safecasts
 sahabu
 salem
@@ -6049,10 +6101,12 @@ syms
 symtab
 syncnt
 syncsingle
+syncthreads
 syncvar
 syntaxes
 syriac
 syscall
+syscalls
 syserr
 syspreexec
 sysroot
@@ -6236,6 +6290,7 @@ versioning
 vienna
 vinschen
 virtualenv
+vlsi
 vosteen
 vsnprintf
 vtables
@@ -6248,6 +6303,7 @@ wallace
 wallclock
 walltime
 washington
+wavefronts
 wayne
 waypoints
 webpage
@@ -6273,6 +6329,10 @@ workaround
 workarounds
 workerip
 workflow
+workgroup
+workgroups
+workitem
+workitems
 wrappee
 writeable
 writebacks
@@ -6302,6 +6362,7 @@ yacc
 yale
 yaml
 yates
+yeoh
 ylabel
 ytype
 yyyy

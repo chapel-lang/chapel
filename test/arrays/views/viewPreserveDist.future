@@ -1,0 +1,8 @@
+bug: domains of rank-change and reindex views no longer preserve locality
+
+With the new array views work, the domains of rank-change and reindex
+array views no longer preserve locality as they traditionally have /
+ought to.  This future is a placeholder to restore this capability in
+the future, probably by introducing domain/distribution view classes
+that similarly translate down to the original domain/distribution
+classes.

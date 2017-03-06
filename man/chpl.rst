@@ -257,6 +257,11 @@ OPTIONS
     Enable [disable] ability to skip default initialization through the
     keyword noinit
 
+**--[no-]infer-local-fields**
+
+    Enable [disable] analysis to infer local fields in classes and records
+    (experimental)
+
 *Run-time Semantic Check Options* 
 
 **--no-checks**

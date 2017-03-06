@@ -306,6 +306,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
               symRhs->type                      == symLhs->type)
           {
             if (symLhs->hasFlag(FLAG_ARG_THIS) == false &&
+                symLhs->hasFlag(FLAG_NO_COPY)  == false &&
                 (symRhs->intent == INTENT_REF ||
                  symRhs->intent == INTENT_CONST_REF))
             {
@@ -373,19 +374,23 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
             // `init_untyped_var` in the `normalize` pass may insert an
             // initCopy, which means that we should not insert an autocopy
             // for that same variable.
-            bool initCopied = false;
+            //
+            // A chpl__unref call may be inserted to implement copy-out
+            // semantics for the returning of arrays.
+            bool isCopied = false;
             for_SymbolUses(use, varLhs) {
               if (CallExpr* call = toCallExpr(use->parentExpr)) {
                 if (FnSymbol* parentFn = call->isResolved()) {
-                  if (parentFn->hasFlag(FLAG_INIT_COPY_FN)) {
-                    initCopied = true;
+                  if (parentFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                      parentFn->hasFlag(FLAG_UNREF_FN)) {
+                    isCopied = true;
                     break;
                   }
                 }
               }
             }
 
-            if (!initCopied) {
+            if (!isCopied) {
               SET_LINENO(move);
 
               SymExpr*  lhsCopy0 = symLhs->copy();
@@ -522,34 +527,59 @@ void ReturnByRef::transform()
 //
 // with
 //
+//     define tmp;
 //     define ref;
 //
-//     ref = &dst;
+//     ref = &tmp;
 //     func(a, b, c, ref);
+//     dst = tmp;
 //
-// In some cases the statement after the move is another move
-// with a RHS that performs a superfluous initCopy/autoCopy.
-// If so reduce to a simple move.  The called-function is responsible
-// for performing a copy when needed.
+// A tmp is created and then assigned to 'dst' to clarify that this is
+// a def of 'dst'.  It is currently less clear to the compiler that this
+// is also a def of 'tmp'.
+//
+// This is particularly important for replication of const module level
+// variables (findHeapVarsAndRefs() and for wide-pointer analysis
+//
+// In some cases the statement after the move is another move with a RHS
+// that performs a superfluous initCopy/autoCopy.  If so reduce to a simple
+// move.  The called-function is responsible for performing a copy when needed.
+//
+//
+//
+//
+// Noakes 2017/03/04: The implementation of deadStringLiteralElimination()
+// is currently coupled to the details of this transformation
+//
+//    a) Assigning variables by reference currently confuses def-use
+//       analysis.  This is one of the motivations for inserting a tmp
+//
+//    b) deadStringLiteralElimination is intended to remove the AST that
+//       is used to initialize a string.  That code is modified by this
+//       transformation.
 //
 
 void ReturnByRef::transformMove(CallExpr* moveExpr)
 {
   SET_LINENO(moveExpr);
 
-  Expr*     lhs      = moveExpr->get(1);
+  Expr*     lhs       = moveExpr->get(1);
 
-  CallExpr* callExpr = toCallExpr(moveExpr->get(2));
-  FnSymbol* fn       = callExpr->isResolved();
+  CallExpr* callExpr  = toCallExpr(moveExpr->get(2));
+  FnSymbol* fn        = callExpr->isResolved();
 
-  Expr*     nextExpr = moveExpr->next;
-  CallExpr* copyExpr = NULL;
+  Expr*     nextExpr  = moveExpr->next;
+  CallExpr* copyExpr  = NULL;
 
-  Symbol*   useLhs   = toSymExpr(lhs)->symbol();
-  Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
+  Symbol*   useLhs    = toSymExpr(lhs)->symbol();
 
-  // Make sure that we created a temp with a type
-  INT_ASSERT(useLhs->type->refType);
+  // Noakes 2017/03/04
+  // Cannot use the qualified-type here.  The formal may be still a _ref(type)
+  // and using a qualified-type generates yet another temp.
+  Symbol*   tmpVar    = newTemp("ret_tmp",             useLhs->type);
+  Symbol*   refVar    = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
+
+  FnSymbol* unaliasFn = NULL;
 
   // Determine if
   //   a) current call is not a PRIMOP
@@ -577,10 +607,16 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
             Type*      formalType = formalArg->type;
             Type*      actualType = rhsCall->get(1)->getValType();
             Type*      returnType = rhsFn->retType->getValType();
+
+            unaliasFn = getUnalias(useLhs->type);
+
             // Cannot reduce initCopy/autoCopy when types differ
+            //   (unless there is an unaliasFn available)
             // Cannot reduce initCopy/autoCopy for sync variables
-            if (actualType == returnType &&
-                isSyncType(formalType) == false &&
+            bool typesOK = unaliasFn != NULL || actualType == returnType;
+
+            if (typesOK                  == true  &&
+                isSyncType(formalType)   == false &&
                 isSingleType(formalType) == false)
             {
               copyExpr = rhsCall;
@@ -591,29 +627,42 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
     }
   }
 
-  // Introduce a reference to the return value
+  // Introduce a tmpVar and a reference to the tmpVar
+  CallExpr* addrOfTmp = new CallExpr(PRIM_ADDR_OF, tmpVar);
+
+  moveExpr->insertBefore(new DefExpr(tmpVar));
   moveExpr->insertBefore(new DefExpr(refVar));
-  moveExpr->insertBefore(new CallExpr(PRIM_MOVE,
-                                      refVar,
-                                      new CallExpr(PRIM_ADDR_OF, useLhs)));
+  moveExpr->insertBefore(new CallExpr(PRIM_MOVE, refVar, addrOfTmp));
 
   // Convert the by-value call to a void call with an additional formal
   moveExpr->replace(callExpr->remove());
+
   callExpr->insertAtTail(refVar);
+  callExpr->insertAfter(new CallExpr(PRIM_MOVE, useLhs, tmpVar));
 
   // Possibly reduce a copy operation to a simple move
   if (copyExpr) {
     FnSymbol* rhsFn = copyExpr->isResolved();
 
-    copyExpr->replace(copyExpr->get(1)->remove());
+    // If replacing an init copy, we got to a user variable.
+    // Use an unalias call if possible
+    if (rhsFn->hasFlag(FLAG_INIT_COPY_FN) && unaliasFn != NULL) {
+      // BHARSH: It seems important that there's a temporary to store the
+      // result of the unaliasFn call. Otherwise we'll move into a variable
+      // that has multiplie uses, which seems to cause a variety of problems.
+      //
+      // In particular, I noticed that `changeRetToArgAndClone` generates
+      // bad AST if I simply did this:
+      //   copyExpr->replace(new CallExpr(unaliasFn, refVar));
+      VarSymbol* unaliasTemp = newTemp("unaliasTemp", unaliasFn->retType);
+      CallExpr*  unaliasCall = new CallExpr(unaliasFn, refVar);
 
-    // But... if we're replacing an init copy, we got to a user
-    // variable, so add an unalias call if there is one
-    if (rhsFn->hasFlag(FLAG_INIT_COPY_FN)) {
-      FnSymbol* unaliasFn = getUnalias(useLhs->type);
-      if (unaliasFn) {
-        callExpr->insertAfter(new CallExpr(unaliasFn, refVar));
-      }
+      callExpr->insertBefore(new DefExpr(unaliasTemp));
+      callExpr->insertAfter(new CallExpr(PRIM_MOVE, unaliasTemp, unaliasCall));
+
+      copyExpr->replace(new SymExpr(unaliasTemp));
+    } else {
+      copyExpr->replace(copyExpr->get(1)->remove());
     }
   }
 }
@@ -1159,38 +1208,48 @@ static void insertYieldTemps()
   }
 }
 
-
-//
-// Insert reference temps for function arguments that expect them.
-//
-void insertReferenceTemps(CallExpr* call) {
-  for_formals_actuals(formal, actual, call) {
-    if (formal->type == actual->typeInfo()->refType) {
-      SET_LINENO(call);
-      Expr* stmt = call->getStmtExpr();
-      VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
-      tmp->addFlag(FLAG_REF_TEMP);
-      stmt->insertBefore(new DefExpr(tmp));
-      actual->replace(new SymExpr(tmp));
-      stmt->insertBefore(
-        new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
-    }
-  }
-}
-
+/************************************* | **************************************
+*                                                                             *
+* Insert reference temps for function arguments that expect them.             *
+*                                                                             *
+************************************** | *************************************/
 
 static void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
     // Is call in the tree?
     if (call->parentSymbol != NULL) {
-      if (call->isResolved() ||
-          call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      if (call->isResolved() || call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         insertReferenceTemps(call);
       }
     }
   }
 }
 
+void insertReferenceTemps(CallExpr* call) {
+  for_formals_actuals(formal, actual, call) {
+    if (formal->type == actual->typeInfo()->refType) {
+      SET_LINENO(call);
+
+      VarSymbol* tmp    = newTemp("_ref_tmp_", formal->qualType());
+
+      tmp->addFlag(FLAG_REF_TEMP);
+      actual->replace(new SymExpr(tmp));
+
+      Expr*      stmt   = call->getStmtExpr();
+      CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, actual);
+
+      stmt->insertBefore(new DefExpr(tmp));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, addrOf));
+    }
+  }
+}
+
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 // code like
 //    var x => GlobalArray[1..10]; // create a slice

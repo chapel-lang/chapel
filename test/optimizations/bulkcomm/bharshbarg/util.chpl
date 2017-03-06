@@ -43,11 +43,9 @@ proc stridedAssign(A : [], sa, B : [], sb, debug=false) {
 
     if debug then writeln(ldom, " = ", right.domain);
 
-    left._value.adjustBlkOffStrForNewDomain(left._value.dom, left._value);
-    right._value.adjustBlkOffStrForNewDomain(right._value.dom, right._value);
-    assert(left._value.oneDData); // fend off multi-ddata
-    assert(right._value.oneDData); // fend off multi-ddata
-    left._value.doiBulkTransferStride(right._value);
+    assert(chpl__getActualArray(left).oneDData);  // fend off multi-ddata
+    assert(chpl__getActualArray(right).oneDData); // fend off multi-ddata
+    left._value.doiBulkTransferStride(right, chpl__getViewDom(left));
 
     var failOut = false,
         failIn  = false;
@@ -60,7 +58,7 @@ proc stridedAssign(A : [], sa, B : [], sb, debug=false) {
     }
     if failOut || failIn {
       ret = -1;
-      writeln("FAILURE for ", ldom, " = ", right.domain);
+      writeln("FAILURE for ", sa, " = ", sb);
       if failOut then writeln("\twrote outside of destination");
       if failIn then writeln("\tincorrect value in destination");
     }
