@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground-2"
 
-# Test performance of jemalloc 4.5.0
+# Test performance of qthreads 1.12 RC
 GITHUB_USER=ronawho
-GITHUB_BRANCH=upgrade-jemalloc-4.5.0
-SHORT_NAME=jemalloc-4.5.0
-START_DATE=02/28/17
+GITHUB_BRANCH=use-chpl-alloc-for-qt-3
+SHORT_NAME=qthreads-1.12
+START_DATE=03/04/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

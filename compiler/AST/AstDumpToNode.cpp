@@ -1609,7 +1609,9 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       else
       {
         writeLongString("name: ", name);
-        len = writeType(sym->type);
+
+        len = 0   + writeQual(sym->qualType());
+        len = len + writeType(sym->type);
       }
 
       if (compact == false && var->depth() >= 0)
@@ -1817,6 +1819,15 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
 #endif
 
   mNeedSpace = true;
+}
+
+int AstDumpToNode::writeQual(QualifiedType qual) const
+{
+  const char* name = qual.qualStr();
+
+  fprintf(mFP, "qual: %s", name);
+
+  return 6 + ((int) strlen(name));
 }
 
 int AstDumpToNode::writeType(Type* type, bool announce) const

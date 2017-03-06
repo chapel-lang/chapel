@@ -616,6 +616,10 @@ module DefaultRectangular {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
 
+    proc dsiTargetLocales() {
+      return [this.locale, ];
+    }
+
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
@@ -1769,7 +1773,7 @@ module DefaultRectangular {
     }
 
     proc dsiTargetLocales() {
-      compilerError("targetLocales is unsupported by default domains");
+      return [this.data.locale, ];
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
