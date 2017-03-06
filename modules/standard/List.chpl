@@ -186,6 +186,13 @@ record list {
     length = 0;
   }
 
+  /*
+    Destructor
+   */
+  proc ~list(){
+    destroy();
+  }
+
   pragma "no doc"
   proc writeThis(f) {
     var binary = f.binary();
