@@ -783,7 +783,7 @@ STREAM_performance:
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
 
-steam-promoted.ml-perf:
+stream-promoted.ml-perf:
   12/02/16:
     - text: RVF reference fields with record-wrapped type (#4925)
       config: 16 node XC
