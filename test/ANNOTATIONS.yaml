@@ -221,6 +221,10 @@ all:
   02/19/17:
     - text: Turned hyperthreading on for our testing machine
       config: chapcs
+  03/03/17:
+    - Array views (#5338)
+  03/05/17:
+    - Wide-pointer optimization for arrays (#5487)
 
 
 AllCompTime:
@@ -420,6 +424,11 @@ hpl_performance:
     - Fixed string leak in DimensionalDist2D (#3013)
   11/30/16:
     - text: Improvements to inferConstRefs (#4904)
+      config: 16 node XC
+
+hpl.hpcc2012:
+  03/03/17:
+    - text: Rewrote test as part of array views (#5338)
       config: 16 node XC
 
 init:
