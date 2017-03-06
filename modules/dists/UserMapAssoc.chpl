@@ -42,6 +42,9 @@ record DefaultMapper {
 //
 // The distribution class
 //
+
+/* Documentation TODO
+ */
 class UserMapAssoc : BaseDist {
 
   // GENERICS:
