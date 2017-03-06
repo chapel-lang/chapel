@@ -460,11 +460,17 @@ isx-no-return:
   02/26/16:
     - ISx ref to array (#3365)
 
-isx.ml-time:
+isx.ml-time: &isx-ml-base
   02/26/16:
     - ISx ref to array (#3365)
   04/23/16:
     - Switched to PCG random number generator (#3764)
+  12/22/16:
+    - Increased isx problem size (internal #279)
+isx-hand-optimized.ml-time:
+  <<: *isx-ml-base
+isx-release.ml-time:
+  <<: *isx-ml-base
 
 jacobi:
   03/07/14:
