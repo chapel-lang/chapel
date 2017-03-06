@@ -287,6 +287,8 @@ binary-trees:
     - simplify init()-based implementation (#4609)
   10/10/16:
     - Brad's fix of off-by-one error in checksum (#4734)
+  01/31/17:
+    - upgrade jemalloc to 4.4.0 (#5278)
 
 binarytrees-submitted:
   09/21/16:
@@ -515,6 +517,8 @@ LCALS-raw-short: &lcals-base
   10/20/16:
     - Clean up to HYDRO_2D kernel (#4757)
     - update to TRAP_INT serial kernel (#4756)
+  11/30/16:
+    - Stop throwing --dataParMinGranularity=1000 (#4917)
   12/10/16:
     - Throw --no-ieee-float for LCALS (#5001)
 LCALS-raw-medium:
@@ -661,6 +665,10 @@ nbody:
   05/28/16:
     - upgrade jemalloc to 4.2.0 (#3919)
 
+no-op:
+  02/24/17:
+    - upgrade hwloc to 1.11.6 (#5411)
+
 parOpEquals:
   09/06/13:
     - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
@@ -701,9 +709,17 @@ prk-stencil.ml-perf:
   08/12/16:
     - Improve and enable strided bulk transfer optimization as default (#4318)
 
-ptrans:
+ptrans: &ptrans-base
   01/11/17:
     - Replace temporary array in BlockCycDist with tuple (#5139)
+  01/24/17:
+    - Make BlockCyclic more parallel (#5224)
+  01/27/17:
+    - Fix bug in BlockCyclic indexing, convert arrays to tuples(#5229)
+ptrans.ml-perf:
+  <<: *ptrans-base
+ptrans.ml-time:
+  <<: *ptrans-base
 
 ra:
   05/13/16:
