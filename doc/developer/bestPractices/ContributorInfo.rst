@@ -40,7 +40,7 @@ similar, though the specific people involved are likely to change and grow).
   `chapel-lang/chapel`_, send a request including your github username to
   chapel_admin _at_ cray.com.
 
-.. note::
+  .. note::
 
     You do not need commit/push access to the main repo in order to contribute
     code. Reviewers on the core team can pull, review, and merge your pull
