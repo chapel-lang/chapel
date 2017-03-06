@@ -109,7 +109,7 @@ export CHPL_CHECK_INSTALL_DIR=$CHPL_HOME
 # Compile chapel and make sure `make check` works. Compile first with parallel
 # execution, but call `make check` without it.
 make -j${num_procs} $chpl_make_args && \
-    make $chpl_make_args check || exit 2
+    CHPL_CHECK_DEBUG=1 make $chpl_make_args check || exit 2
 
 if [ "${TRAVIS}" != "true" ] ; then
     # Build chpldoc and make sure the chpldoc primer runs. Build chpldoc with
