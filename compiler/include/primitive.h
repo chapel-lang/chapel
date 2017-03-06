@@ -34,7 +34,9 @@ enum PrimitiveTag {
   PRIM_ACTUALS_LIST,
   PRIM_NOOP,
   PRIM_MOVE,
+
   PRIM_INIT,
+  PRIM_INIT_VAR,
   PRIM_NO_INIT,
   PRIM_TYPE_INIT,       // Used in a context where only a type is needed.
                         // Establishes the type of the result without
