@@ -535,6 +535,10 @@ static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
                                       new CallExpr(PRIM_INIT,
                                                    field->exprType->copy())));
 
+      if (field->sym->hasFlag(FLAG_PARAM) == true) {
+        tmp->addFlag(FLAG_PARAM);
+      }
+
       newInit->insertAtTail(new SymExpr(tmp));
     }
     next->insertBefore(newInit);
