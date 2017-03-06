@@ -1,4 +1,0 @@
-#!/bin/bash
-
-error=`head -n 1 $2`
-echo $error > $2
