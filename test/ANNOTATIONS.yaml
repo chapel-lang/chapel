@@ -221,6 +221,10 @@ all:
   02/19/17:
     - text: Turned hyperthreading on for our testing machine
       config: chapcs
+  03/03/17:
+    - Array views (#5338)
+  03/05/17:
+    - Wide-pointer optimization for arrays (#5487)
 
 
 AllCompTime:
