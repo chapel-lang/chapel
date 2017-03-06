@@ -464,25 +464,25 @@ isx-no-return:
   02/26/16:
     - ISx ref to array (#3365)
 
-isx.xc-time:
+isx.ml-time:
   02/26/16:
     - ISx ref to array (#3365)
   04/23/16:
     - Switched to PCG random number generator (#3764)
 
-isx-bucket-spmd.xc-time:
+isx-bucket-spmd.ml-time:
   02/26/16:
     - ISx ref to array (#3365)
   04/23/16:
     - Switched to PCG random number generator (#3764)
 
-isx-spmd.xc-time:
+isx-spmd.ml-time:
   02/26/16:
     - ISx ref to array (#3365)
   04/23/16:
     - Switched to PCG random number generator (#3764)
 
-isx-perf-task.xc-time:
+isx-perf-task.ml-time:
   04/23/16:
     - Switched to PCG random number generator (#3764)
 
@@ -705,7 +705,7 @@ prk-stencil:
   05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
 
-prk-stencil.xc-perf:
+prk-stencil.ml-perf:
   04/08/16:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
@@ -783,7 +783,7 @@ STREAM_performance:
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
 
-steam-promoted.xc-perf:
+steam-promoted.ml-perf:
   12/02/16:
     - text: RVF reference fields with record-wrapped type (#4925)
       config: 16 node XC
