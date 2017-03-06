@@ -696,6 +696,14 @@ module DefaultRectangular {
       }
     }
 
+    inline proc getDataElem(i) ref {
+      if stridable {
+        return dataElem(i);
+      } else {
+        return shiftedDataElem(i);
+      }
+    }
+
     inline proc dataElem(i) ref {
       if defRectSimpleDData then
         return data(i);
@@ -730,6 +738,10 @@ module DefaultRectangular {
       } else {
         return _computeBlock(mdRLen, mdNumChunks, chunk, mdRHi, mdRLo, mdRLo);
       }
+    }
+
+    proc deinit() {
+      _ddata_free(mData);
     }
   }
 
@@ -828,6 +840,13 @@ module DefaultRectangular {
     }
   }
 
+  proc _remoteAccessData.strideAlignUp(lo, r)
+    return r.low + (lo - r.low + abs(r.stride):idxType - 1)
+           / abs(r.stride):idxType * abs(r.stride):idxType;
+
+  proc _remoteAccessData.strideAlignDown(hi, r)
+    return hi - (hi - r.low) % abs(r.stride):idxType;
+
   proc _remoteAccessData.initDataFrom(other : _remoteAccessData) {
     if defRectSimpleDData {
       this.data = other.data;
@@ -885,7 +904,7 @@ module DefaultRectangular {
         high = if rad.stridable then strideAlignDown(high, newDom.dsiDim(mdParDim)) else high;
 
         const rng = low..high;
-        rad.mData(i).pdr = if rad.stridable then rng else rng by newDom.dsiDim(mdParDim).stride;
+        rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(mdParDim).stride;
       }
 
     }
@@ -921,9 +940,9 @@ module DefaultRectangular {
       const thisStr   = abs(this.str(mdParDim));
       const radStr    = abs(rad.str(mdParDim));
 
-      rad.mdRLo       = this.off(mdParDim) - (rad.off(mdParDim) - this.mdRLo) / thisStr * radStr;
-      rad.mdRHi       = this.off(mdParDim) + (this.mdRLen - 1) * radStr;
-      rad.mdRStr      = abs(this.str(mdParDim)):rad.idxType;
+      rad.mdRLo       = rad.off(mdParDim) - (this.off(mdParDim) - this.mdRLo) / thisStr * radStr;
+      rad.mdRHi       = rad.off(mdParDim) + (this.mdRLen - 1) * radStr;
+      rad.mdRStr      = abs(rad.str(mdParDim)):rad.idxType;
       rad.mdRLen      = this.mdRLen;
       rad.mdBlk       = thisStr / radStr;
 
@@ -1824,13 +1843,6 @@ module DefaultRectangular {
       }
     }
 
-    proc strideAlignUp(lo, r)
-      return r.low + (lo - r.low + abs(r.stride):idxType - 1)
-             / abs(r.stride):idxType * abs(r.stride):idxType;
-
-    proc strideAlignDown(hi, r)
-      return hi - (hi - r.low) % abs(r.stride):idxType;
-
     proc dsiReallocate(d: domain) {
       if (d._value.type == dom.type) {
         on this {
@@ -1913,6 +1925,7 @@ module DefaultRectangular {
           rad.mData(i).data = mData(i).data;
           rad.mData(i).shiftedData = mData(i).shiftedData;
           rad.mData(i).dataOff = mData(i).dataOff;
+          rad.mData(i).pdr = mData(i).pdr;
         }
       }
       return rad;
