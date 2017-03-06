@@ -100,12 +100,12 @@ fi
 
 # Tmp directory for compile output
 TMP_TEST_DIR="$(mktemp -d ${CHPL_DIR}/chapel-test-XXXXX)"
-if [ -z "$TMP_TEST_DIR" ] ; then
+if [ -z "${TMP_TEST_DIR}" ] ; then
     log_error "failed mktemp -d ${CHPL_DIR}/chapel-test-XXXXX"
     exit 1
 fi
 log_info "Temporary test job directory: ${TMP_TEST_DIR}"
-( cd $TMP_TEST_DIR ) || { log_error "failed cd $TMP_TEST_DIR" ; exit 1 ; }
+( cd ${TMP_TEST_DIR} ) || { log_error "failed cd ${TMP_TEST_DIR}" ; exit 1 ; }
 
 # Cleanup the tmp directory whenever exit is invoked
 function cleanup_tmp_dir()
@@ -208,7 +208,7 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
 
 # Run compiled binary with parsed execution options
 (
-    cd ${TMP_TEST_DIR} || { log_error "failed cd $TMP_TEST_DIR" ; exit 1 ; }
+    cd ${TMP_TEST_DIR} || { log_error "failed cd ${TMP_TEST_DIR}" ; exit 1 ; }
 
     EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
 
