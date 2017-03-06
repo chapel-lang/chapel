@@ -59,6 +59,7 @@ static chpl_bool haveTopology;
 static hwloc_topology_t topology;
 
 static const struct hwloc_topology_support* topoSupport;
+static chpl_bool do_set_area_membind;
 
 static int topoDepth;
 
@@ -103,6 +104,21 @@ void chpl_topo_init(void) {
   // What is supported?
   //
   topoSupport = hwloc_topology_get_support(topology);
+
+  //
+  // For now, don't support setting memory locality when comm=ugni or
+  // comm=gasnet, seg!=everything.  Those are the two configurations in
+  // which we use hugepages and/or memory registered with the comm
+  // interface, both of which may be a problem for the set-membind call.
+  // We will have other ways to achieve locality for these configs in
+  // the future.
+  //
+  do_set_area_membind = true;
+  if (strcmp(CHPL_COMM, "ugni") == 0
+      || (strcmp(CHPL_COMM, "gasnet") == 0
+          && strcmp(CHPL_GASNET_SEGMENT, "everything") != 0)) {
+      do_set_area_membind = false;
+  }
 
   //
   // We need depth information.
@@ -220,7 +236,8 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
     return;
   }
 
-  if (!topoSupport->membind->set_area_membind)
+  if (!topoSupport->membind->set_area_membind
+      || !do_set_area_membind)
     return;
 
   _DBG_P("hwloc_set_area_membind_nodeset(%p, %#zx, %d)\n", p, size,
