@@ -319,11 +319,16 @@ bool isDenormalizable(Symbol* sym,
                   // FnSymbol expects to return one symbol, so it's easier to
                   // just not denormalize the returned symbol.
                   //
-                  // shift-base-pointer: we do not want to denormalize this:
+                  // PRIM_ARRAY_SHIFT_BASE_POINTER sets its first argument, so
+                  // we should not denormalize if 'se' is the first actual in
+                  // case of AST like this:
                   //   var ret = (cast ddata(...) nil)
                   //   shift_base_pointer(ret, ...)
-                  // into this:
+                  // turning into this:
                   //   shift_base_pointer((cast ddata nil), ...)
+                  //
+                  // TODO: Have PRIM_ARRAY_SHIFT_BASE_POINTER return instead of
+                  // setting its first arg, then we can rely on PRIM_MOVE logic.
                   //
                   ce->isPrimitive(PRIM_ARRAY_GET) ||
                   ce->isPrimitive(PRIM_GET_MEMBER) ||
