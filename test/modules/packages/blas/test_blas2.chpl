@@ -4,6 +4,7 @@ use blas_helpers;
 
 
 proc main() {
+    // TODO -- band Matrices & packed Matrices
     //test_gbmv(); // bandMatrix
     test_gemv();
     test_ger();
@@ -179,10 +180,10 @@ proc test_trmv() {
 
 
 proc test_trsv() {
-    //test_trsv_helper(real(32));
+    test_trsv_helper(real(32));
     test_trsv_helper(real(64));
-    //test_trsv_helper(complex(64));
-    //test_trsv_helper(complex(128));
+    test_trsv_helper(complex(64));
+    test_trsv_helper(complex(128));
 }
 
 
@@ -197,10 +198,13 @@ proc test_gbmv_helper(type t){
   const errorThreshold = blasError(t);
   var name = "%sgbmv".format(blasPrefix(t));
 
-  // Simple test
-  {
-    const m = 3 : c_int,
-          n = 3 : c_int;
+const m = 6,
+      n = 6;
+
+// Simple test
+for kl in 0..#m {
+  for ku in 0..#n {
+    if kl + ku + 1 > n then break;
 
     // Square
     var A : [{0.. #m, 0.. #n}]t,
@@ -208,55 +212,36 @@ proc test_gbmv_helper(type t){
         Y : [{0.. #m}]t,
         R : [{0.. #m}]t; // Result
 
+    var alpha = 1: t;//rng.getNext();
+    var beta = 2: t;//rng.getNext();
     //var rngint = makeRandomStream(eltType=int,algorithm=RNG.PCG);
     //var kl = rng.getNext(0, min(m, n)) ,
     //    ku = rng.getNext(0, min(m, n)) ;
+    //const kl = 1,
+    //      ku = 2;
 
 
     var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
-    rng.fillRandom(X);
-    rng.fillRandom(Y);
+    //rng.fillRandom(A);
+    //rng.fillRandom(X);
+    //rng.fillRandom(Y);
+    X = 2: t;
+    Y = 2: t;
+    A = 2: t;
+    makeBand(A, kl, ku);
 
-    // Make A block-diagonal
-    for (i, j) in A.domain {
-      if i != j then A[i, j] = 0: t;
-    }
-
-
-    const kl = 0,
-          ku = 0;
-
-    // band-diagonal representation
-    var a = bandArray(A, kl, ku);
-    var b = transpose(a);
-
-    writeln(A);
-    writeln(a);
-    writeln(X);
-    writeln(Y);
-
-    const alpha = 1: t;//rng.getNext();
-    const beta = 1: t;//rng.getNext();
+    // Band-diagonal representation
+    var AB = bandArray(A, kl, ku, order=Order.Row);
 
     // Compute Result vector
-    for i in R.domain {
-      var tmp = 0: t;
-      for j in X.domain do tmp += A[i, j]*X[j];
-      R[i] = beta*Y[i] + alpha*tmp;
-    }
-
-    //R[i] = beta*Y[i] + alpha*(+ reduce (A[i,..]*X[..]));
-    writeln(R);
-
-    gbmv(b, X, Y, alpha, beta, order=Order.Col);
-
-    writeln(Y);
+    for i in R.domain do R[i] = beta*Y[i] + alpha*(+ reduce (A[i,..]*X[..]));
+    gbmv(AB, X, Y, alpha, beta, order=Order.Row, kl=kl, ku=ku);
 
     var err = max reduce abs(Y-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
+}
   printErrors(name, passed, failed, tests);
 }
 
@@ -835,9 +820,9 @@ proc test_tbmv_helper(type t){
       tests = 0;
   const errorThreshold = blasError(t);
   var name = "%stbmv".format(blasPrefix(t));
-  // TODO - try simple integers, and figure out what routine is doing differently
   // Simple test
   {
+    // TODO
     const m = 5 : c_int;
 
     var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
@@ -846,10 +831,8 @@ proc test_tbmv_helper(type t){
         X : [{0.. #m}] t,
         R : [X.domain] t; // Result
 
-    //rng.fillRandom(A);
-    A = 1 : t;
-    //rng.fillRandom(X);
-    X = 1 : t;
+    rng.fillRandom(A);
+    rng.fillRandom(X);
 
     const k = m-1: c_int;
 
@@ -858,22 +841,13 @@ proc test_tbmv_helper(type t){
 
     // Create band matrix
     var AB = bandArrayTriangular(A, k, uplo=Uplo.Upper);
-    //var AB = bandArray(A, k, 0);
-    //A = bandArrayDense(AB, k, 0, m, m);
 
     // Precompute result
     for i in R.domain {
       R[i] = + reduce (A[i,..]*X[..]);
     }
 
-    writeln('A:\n', A);
-    writeln('AB:\n', AB);
-    writeln('X input: ', X);
-
     tbmv(AB, X, k);
-
-    writeln('X output: ', X);
-    writeln('R output: ', R);
 
     var err = max reduce abs(X-R);
 
@@ -893,7 +867,7 @@ proc test_tbsv_helper(type t){
   var name = "%stbsv".format(blasPrefix(t));
   // Simple test
   {
-
+    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -947,6 +921,7 @@ proc test_trsv_helper(type t){
   var name = "%strsv".format(blasPrefix(t));
   // Simple test
   {
+    // TODO
     const m = 10 : c_int;
 
     var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);

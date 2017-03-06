@@ -125,7 +125,7 @@ module BLAS {
 
 
   /* Define row or column order */
-  enum Order {Row=101 : c_int, Col};
+  enum Order {Row=101: c_int, Col};
 
   /* Operation of matrix : none, transpose, or adjoint */
   enum Op {N=111 : c_int, T, H}; // NoTranspose, Transpose, Adjoint
@@ -709,7 +709,7 @@ module BLAS {
    */
   proc gbmv(A : [?Adom] ?eltType,
             X : [?Xdom] eltType, Y : [?Ydom] eltType,
-            alpha, beta,
+            ref alpha: eltType, ref beta: eltType,
             kl : int = 0, ku : int = 0,
             trans : Op =  Op.N,
             order : Order = Order.Row,
@@ -717,35 +717,51 @@ module BLAS {
             where (Adom.rank == 2) && (Xdom.rank==1) && (Ydom.rank == 1)
   {
     // Determine sizes
-    var m = Xdom.dim(1).size : c_int,
-        n = Ydom.dim(1).size : c_int;
+    var m = Ydom.dim(1).size : c_int,
+        n = Xdom.dim(1).size : c_int;
 
-    // Set strides if necessary
+    // Set strides if necessary, swapping order for banded matrix
+    // TODO -- Change to + 101, when enums are fixed
+    var swaporder = ((order % 2) + 1: c_int): Order;
+
+
     var _ldA = getLeadingDim(Adom, order, ldA);
 
     var _kl = kl : c_int,
         _ku = ku : c_int;
 
+    // Debug output
+    //writeln('order: ', order);
+    //writeln('trans: ', trans);
+    writeln('m: ', m);
+    writeln('n: ', n);
+    writeln('_kl: ', _kl);
+    writeln('_ku: ', _ku);
+    //writeln('alpha: ', alpha);
+    //writeln('A:\n', A);
+    writeln('_ldA: ', _ldA);
+    //writeln('X: ', X);
+    writeln('incx: ', incx);
+    //writeln('beta: ', beta);
+    //writeln('Y: ', Y);
+    writeln('incy: ', incy);
+
     select eltType {
       when real(32) {
-        C_BLAS.cblas_sgbmv (order, trans, m, n, _kl, _ku, alpha,
-            A, _ldA, X, incx , beta, Y, incy);
+        C_BLAS.cblas_sgbmv(order, trans, m, n, _kl, _ku, alpha,
+            A, _ldA, X, incx, beta, Y, incy);
       }
       when real(64) {
-        C_BLAS.cblas_dgbmv (order, trans, m, n, _kl, _ku, alpha,
-            A, _ldA, X, incx , beta, Y, incy);
+        C_BLAS.cblas_dgbmv(order, trans, m, n, _kl, _ku, alpha,
+            A, _ldA, X, incx, beta, Y, incy);
       }
       when complex(64) {
-        var alpha1 = alpha: complex(64),
-            beta1 = beta: complex(64);
-        C_BLAS.cblas_cgbmv (order, trans, m, n, _kl, _ku, alpha1,
-            A, _ldA, X, incx , beta1, Y, incy);
+        C_BLAS.cblas_cgbmv(order, trans, m, n, _kl, _ku, alpha,
+            A, _ldA, X, incx, beta, Y, incy);
       }
       when complex(128) {
-        var alpha1 = alpha: complex(128),
-            beta1 = beta: complex(128);
-        C_BLAS.cblas_zgbmv (order, trans, m, n, _kl, _ku, alpha1,
-            A, _ldA, X, incx , beta1, Y, incy);
+        C_BLAS.cblas_zgbmv(order, trans, m, n, _kl, _ku, alpha,
+            A, _ldA, X, incx, beta, Y, incy);
       }
       otherwise {
         compilerError("Unknown type in gbmv: ", eltType:string);

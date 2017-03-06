@@ -4,7 +4,7 @@ use Random;
 use BLAS;
 
 config const errorThresholdDouble = 1.e-10;
-config const errorThresholdSingle = 1.e-5;
+config const errorThresholdSingle = 1.e-4;
 
 proc printErrors(name: string, passed, failed, tests) {
   writef("%s : %i PASSED, %i FAILED\n".format(name, passed, failed));
@@ -57,6 +57,37 @@ proc makeHerm(A : [?Adom]) {
   }
 }
 
+
+// Make band-diagonal matrix
+proc makeBand(A:[?Adom] ?t, kl, ku)
+  where Adom.rank == 2 {
+  for i in Adom.dim(1) {
+    for j in Adom.dim(2) {
+      if (j < i - kl) || (j > i + ku) {
+        A[i,j] = (0):t;
+      }
+    }
+  }
+}
+
+// Make band-diagonal triangular matrix
+proc makeBandTriangular(A:[?Adom], k,  uplo:Uplo=Uplo.Upper)
+  where Adom.rank == 2 {
+
+}
+
+
+// Make a lower or upper triangular matrix
+proc makeTri(A:[?Adom], uplo:Uplo = Uplo.Upper)
+  where Adom.rank == 2 {
+  if uplo == Uplo.Upper {
+    zeroTri(A, zeroLow=true);
+  } else {
+    zeroTri(A, zeroLow=false);
+  }
+}
+
+
 // Zero out upper or lower triangular piece
 proc zeroTri(A:[?Adom], zeroLow:bool=true) where A.domain.rank == 2 {
   type t = A.eltType;
@@ -88,29 +119,46 @@ inline proc conjg(x : real(64)) {
 }
 
 
-// Band Array
-proc bandArray(A: [?Dom] ?eltType, l, u, uplo=Uplo.Upper) where A.rank == 2 {
+// Band Array -- experimental
+proc bandArray(A: [?Dom] ?eltType, ku, kl, order=Order.Row) where A.rank == 2 {
 
   const m = Dom.dim(1).size,
         n = Dom.dim(2).size;
 
-  const k = min(m, n),
-        rows = 1+l+u;
+  const bandDim = if order==Order.Row then m else n;
 
-  var a: [{0..#rows, 0..#k}] eltType;
+  var AB: [{0..#(kl+ku+1), 0..#n}] eltType;
 
-  for j in 1..k {
-    for i in max(1, j-u)..min(n, j+l) {
-      const idx = u+i-j;
-      a[idx, j-1] = A[i-1, j-1];
+  if order == Order.Row {
+    // RowMajor
+    for i in 0..#n{
+      const k = kl - i;
+      const jlo = max(0, i-kl),
+            jhi = min(n, i+ku+1)-1;
+      for j in jlo..jhi {
+        var tmp = A[j, i];
+        //AB[k+j, i] = A[j, i];
+        AB[k+j, i] = tmp;
+      }
+    }
+  } else {
+    // ColMajor
+    for j in 0..#n{
+      const k = ku - j;
+      const ilo = max(0, j-ku),
+            ihi = min(m, j+kl+1)-1;
+      for i in ilo..ihi {
+        AB[k+i, j] = A[i, j];
+      }
     }
   }
 
-  return a;
+  return AB;
 }
 
-// Triangular band array
-proc bandArrayTriangular(A: [?Dom] ?eltType, k, uplo=Uplo.Upper)
+
+// Triangular band array - experimental
+proc bandArrayTriangular(A: [?Dom] ?eltType, k, uplo=Uplo.Upper, order=Order.Row)
   where A.rank == 2 {
 
   // Must be square matrix
@@ -125,23 +173,28 @@ proc bandArrayTriangular(A: [?Dom] ?eltType, k, uplo=Uplo.Upper)
   var m = 0;
   var irange: range;
 
-  for j in 0..#n {
-    if uplo == Uplo.Upper {
-      m = k - j;
-      irange = max(0, j-k)..j;
-    } else {
-      m = -j;
-      irange = j..min(n, j+k+1)-1;
+  if order == order.Col {
+    for j in 0..#n {
+      if uplo == Uplo.Upper {
+        m = k - j;
+        irange = max(0, j-k)..j;
+      } else {
+        m = -j;
+        irange = j..min(n, j+k+1)-1;
+      }
+      for i in irange {
+        a[m+i, j] = A[i, j];
+      }
     }
-    for i in irange {
-      a[m+i, j] = A[i, j];
-    }
+  } else {
+    halt('order.Row not yet supported');
   }
+
   return a;
 }
 
 
-// Dense array from band array
+// Dense array from band array -- experimental
 proc bandArrayDense(a: [?Dom] ?eltType, l, u, m, n) where a.rank == 2 {
 
   const k = min(m, n),
