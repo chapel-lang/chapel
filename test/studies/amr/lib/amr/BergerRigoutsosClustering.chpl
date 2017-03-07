@@ -104,6 +104,18 @@ class CandidateDomain {
   const min_width:  rank*int;
   var   signatures: rank*ArrayWrapper;
 
+  
+  class ArrayWrapper
+  {
+    var Domain: domain(1,stridable=true);
+    var array: [Domain] int;
+  }
+  
+  
+  //|\''''''''''''''''''''|\
+  //| >    constructor    | >
+  //|/....................|/
+
   //
   // TODO: At present, the compiler-generated constructor for classes
   // with array fields like this requires the actual that's passed to
@@ -126,30 +138,6 @@ class CandidateDomain {
     D = initD;
     flags = initFlags;
     min_width = initMin_width;
-    initialize();
-  }
-  
-  
-  class ArrayWrapper
-  {
-    var Domain: domain(1,stridable=true);
-    var array: [Domain] int;
-  }
-  
-  
-  
-  //|\''''''''''''''''''''|\
-  //| >    constructor    | >
-  //|/....................|/
-
-  //------------------------------------------------------------------
-  // Currently forced to use initialize rather than a constructor, as
-  // this class is generic.
-  //------------------------------------------------------------------
-  
-  proc initialize ()
-  {
-    
     //---- Calculate signatures ----
     for d in 1..rank do
       signatures(d) = new ArrayWrapper( {D.dim(d)} );
