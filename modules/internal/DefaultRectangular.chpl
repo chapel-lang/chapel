@@ -41,6 +41,10 @@ module DefaultRectangular {
 
   config param defRectArrMultiDDataSizeThreshold = 2**20;
 
+  // Used for the size of 'mData' tuples. Hopefully one day this
+  // will be a query supported by the LocaleModel.
+  config param experimentalMaxSublocales = 4;
+
   inline proc defRectSimpleDData param return !localeModelHasSublocales;
 
   class DefaultDist: BaseDist {
@@ -677,14 +681,14 @@ module DefaultRectangular {
     var mdBlk: idxType;
     var mdAlias: bool;
 
-    var mData : _ddata(_multiData(eltType=eltType,
-                                  idxType=idxType));
+    var mData : experimentalMaxSublocales*_multiData(eltType=eltType,
+                                                     idxType=idxType);
 
     inline proc dataChunk(i) ref {
       if defRectSimpleDData then
         return data;
       else {
-        return mData(i).data;
+        return mData(i+1).data;
       }
     }
 
@@ -692,7 +696,7 @@ module DefaultRectangular {
       if defRectSimpleDData then
         return shiftedData;
       else {
-        return mData(i).shiftedData;
+        return mData(i+1).shiftedData;
       }
     }
 
@@ -707,15 +711,17 @@ module DefaultRectangular {
     inline proc dataElem(i) ref {
       if defRectSimpleDData then
         return data(i);
-      else
-        return mData(i(1)).data(i(2));
+      else {
+        return mData(i(1)+1).data(i(2));
+      }
     }
 
     inline proc shiftedDataElem(i) ref where defRectSimpleDData
       return shiftedData(i);
 
-    inline proc shiftedDataElem(i) ref where !defRectSimpleDData
-      return mData(i(1)).shiftedData(i(2));
+    inline proc shiftedDataElem(i) ref where !defRectSimpleDData {
+      return mData(i(1) + 1).shiftedData(i(2));
+    }
 
     // duplicates DefaultRectangularArr.mdInd2Chunk
     inline proc mdInd2Chunk(ind)
@@ -739,10 +745,6 @@ module DefaultRectangular {
         return _computeBlock(mdRLen, mdNumChunks, chunk, mdRHi, mdRLo, mdRLo);
       }
     }
-
-    proc deinit() {
-      _ddata_free(mData);
-    }
   }
 
   inline proc _remoteAccessData.getRADDataIndex(param stridable, ind : idxType) {
@@ -761,7 +763,7 @@ module DefaultRectangular {
             return (0, sum);
           } else {
             const chunk = mdInd2Chunk(ind(mdParDim));
-            return (chunk, sum - mData(chunk).dataOff);
+            return (chunk, sum - mData(chunk+1).dataOff);
           }
         }
 
@@ -778,7 +780,7 @@ module DefaultRectangular {
             return (0, sum);
           } else {
             const chunk = mdInd2Chunk(ind(mdParDim));
-            return (chunk, sum - mData(chunk).dataOff);
+            return (chunk, sum - mData(chunk+1).dataOff);
           }
         }
 
@@ -833,7 +835,7 @@ module DefaultRectangular {
       if defRectSimpleDData {
         shiftedData = _ddata_shift(eltType, data, shiftDist);
       } else {
-        for i in 0..#mdNumChunks {
+        for i in 1..#mdNumChunks {
           mData(i).shiftedData = _ddata_shift(eltType, mData(i).data, shiftDist);
         }
       }
@@ -851,8 +853,10 @@ module DefaultRectangular {
     if defRectSimpleDData {
       this.data = other.data;
     } else {
-      this.mData = _ddata_allocate(_multiData(eltType=eltType, idxType=this.idxType), other.mdNumChunks);
-      for i in 0..#other.mdNumChunks {
+      if other.mdNumChunks > experimentalMaxSublocales {
+        halt("mdNumChunks > experimentalMaxSublocales: ", mdNumChunks, " > ", experimentalMaxSublocales);
+      }
+      for i in 1..#other.mdNumChunks {
         this.mData(i).dataOff = other.mData(i).dataOff;
         this.mData(i).data    = other.mData(i).data;
       }
@@ -896,7 +900,7 @@ module DefaultRectangular {
       rad.mdRLen      = this.mdRLen;
       rad.mdBlk       = this.mdBlk;
 
-      for i in 0..#mdNumChunks {
+      for i in 1..#mdNumChunks {
         var low = max(this.mData(i).pdr.low, newDom.dsiDim(mdParDim).low);
         low = if rad.stridable then strideAlignUp(low, newDom.dsiDim(mdParDim)) else low;
 
@@ -948,7 +952,7 @@ module DefaultRectangular {
 
       const thisLo    = this.off(mdParDim);
       const radLo     = rad.off(mdParDim);
-      for i in 0..#mdNumChunks {
+      for i in 1..#mdNumChunks {
         var low = (this.mData(i).pdr.low - thisLo) / thisStr;
         low = if rad.stridable then low * radStr else low;
         low += radLo;
@@ -1024,7 +1028,7 @@ module DefaultRectangular {
         rad.mdRLen      = this.mdRLen;
         rad.mdBlk       = this.mdBlk;
 
-        for i in 0..#mdNumChunks {
+        for i in 1..#mdNumChunks {
           const rng = max(this.mData(i).pdr.low, newDom.dsiDim(rad.mdParDim).low)
                       ..min(this.mData(i).pdr.high, newDom.dsiDim(rad.mdParDim).high);
           rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(rad.mdParDim).stride;
@@ -1041,8 +1045,8 @@ module DefaultRectangular {
         rad.mdRHi       = rad.mdRLo + (rad.mdRLen - 1) * rad.mdRStr;
         rad.mdBlk       = 1;
 
-        for i in 0..#mdNumChunks {
-          const (lo, hi) = rad.mdChunk2Ind(i);
+        for i in 1..#mdNumChunks {
+          const (lo, hi) = rad.mdChunk2Ind(i-1);
           const rng = max(lo, newDom.dsiDim(1).low) .. min(hi, newDom.dsiDim(1).high);
           rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(1).stride;
         }
@@ -1073,15 +1077,6 @@ module DefaultRectangular {
                      param stridable: bool, newTargetLocDom: domain(rank)) {
       // This should resize the arrays
       targetLocDom=newTargetLocDom;
-    }
-
-    proc deinit() {
-      if !defRectSimpleDData {
-        for rad in RAD {
-          if rad.mData != nil then
-            _ddata_free(rad.mData);
-        }
-      }
     }
 
     // These functions must always be called locally, because the lock
@@ -1918,14 +1913,11 @@ module DefaultRectangular {
         rad.mdRStr = mdRStr;
         rad.mdRLen = mdRLen;
         rad.mdBlk = mdBlk;
-        rad.mData = _ddata_allocate(_multiData(eltType=eltType,
-                                               idxType=idxType),
-                                    rad.mdNumChunks);
-        for i in 0..#mdNumChunks {
-          rad.mData(i).data = mData(i).data;
-          rad.mData(i).shiftedData = mData(i).shiftedData;
-          rad.mData(i).dataOff = mData(i).dataOff;
-          rad.mData(i).pdr = mData(i).pdr;
+        for i in 1..#mdNumChunks {
+          rad.mData(i).data        = mData(i - 1).data;
+          rad.mData(i).shiftedData = mData(i - 1).shiftedData;
+          rad.mData(i).dataOff     = mData(i - 1).dataOff;
+          rad.mData(i).pdr         = mData(i - 1).pdr;
         }
       }
       return rad;
