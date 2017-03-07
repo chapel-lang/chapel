@@ -5247,7 +5247,8 @@ resolveFieldInit(CallExpr* call) {
     // Update the type of the field.  If necessary, update to a new
     // instantiation of the overarching type (and replaces references to the
     // fields from the old instantiation
-    if (fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) {
+    if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
+        fs->hasFlag(FLAG_PARAM)) {
       AggregateType* instantiate = ct->getInstantiation(rhs, index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
@@ -5265,10 +5266,6 @@ resolveFieldInit(CallExpr* call) {
         ct = instantiate;
         fs = instantiate->getField(index);
       }
-    } else if (fs->hasFlag(FLAG_PARAM)) {
-      // TODO: this part
-      USR_FATAL(call, "Sorry, new style initializers don't work with "
-                "param fields yet. Stay tuned!");
     } else if (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) {
       // TODO: this part
       USR_FATAL(call, "Sorry, new style initializers don't work with "

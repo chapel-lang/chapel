@@ -771,10 +771,8 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
       if (field->type == t->typeInfo())
         return at;
     }
-    if (field->defPoint->init == t) {
-      // TODO: isn't init a BlockStmt*?  Shouldn't I be comparing against the
-      // Symbol being used instead of its reference?
-      // If so, return it
+    if (field->hasFlag(FLAG_PARAM) &&
+        at->substitutions.get(field) == t->symbol()) {
       return at;
     }
   }
@@ -787,11 +785,6 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
 
   Symbol* field = newInstance->getField(genericField);
   if (field->hasFlag(FLAG_PARAM)) {
-    if (isArgSymbol(t->symbol())) {
-      FnSymbol* argsFn = toFnSymbol(t->symbol()->defPoint->parentSymbol);
-      INT_ASSERT(argsFn);
-      // TODO: I don't think this is going to work
-    }
     newInstance->substitutions.put(field, t->symbol());
     newInstance->symbol->renameInstantiatedSingle(t->symbol());
   } else {
@@ -802,10 +795,12 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
   if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
     field->type = t->typeInfo();
   } else {
-    if (!field->defPoint->exprType && !field->type)
+    if (!field->defPoint->exprType && field->type == dtUnknown)
       field->type = t->typeInfo();
     else if (field->defPoint->exprType->typeInfo() != t->typeInfo()) {
       // TODO: Something something, casts and coercions
+    } else {
+      field->type = t->typeInfo();
     }
   }
   instantiations.push_back(newInstance);
