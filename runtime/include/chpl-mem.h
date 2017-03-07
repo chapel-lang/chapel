@@ -27,7 +27,9 @@
 #include <string.h>
 #include <assert.h>
 #include "arg.h"
+#include "chpl-comm.h"
 #include "chpl-mem-hook.h"
+#include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-tasks.h"
 #include "error.h"
@@ -123,6 +125,44 @@ static inline
 void chpl_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   chpl_memhook_free_pre(memAlloc, lineno, filename);
   chpl_free(memAlloc);
+}
+
+static inline
+void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
+                           chpl_bool localizeSubchunks, c_sublocid_t subloc,
+                           int32_t lineno, int32_t filename) {
+  void* p = chpl_mem_allocMany(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                               lineno, filename);
+  if (localizeSubchunks || isActualSublocID(subloc)) {
+    chpl_topo_setMemLocality(p, nmemb * eltSize,
+                             true, localizeSubchunks, subloc);
+  }
+  return p;
+}
+
+static inline
+void* chpl_mem_wide_array_alloc(int32_t dstNode, size_t nmemb, size_t eltSize,
+                                chpl_bool localizeSubchunks,
+                                c_sublocid_t subloc,
+                                int32_t lineno, int32_t filename) {
+  if (dstNode != chpl_nodeID)
+    chpl_error("array vector data is not local", lineno, filename);
+  return chpl_mem_array_alloc(nmemb, eltSize, localizeSubchunks, subloc,
+                              lineno, filename);
+}
+
+static inline
+void chpl_mem_array_free(void* p,
+                         int32_t lineno, int32_t filename) {
+  chpl_mem_free(p, lineno, filename);
+}
+
+static inline
+void chpl_mem_wide_array_free(int32_t dstNode, void* p,
+                              int32_t lineno, int32_t filename) {
+  if (dstNode != chpl_nodeID)
+    chpl_error("array vector data is not local", lineno, filename);
+  chpl_mem_array_free(p, lineno, filename);
 }
 
 // Provide a handle to instrument Chapel calls to memcpy.

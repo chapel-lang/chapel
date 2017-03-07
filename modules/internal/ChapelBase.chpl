@@ -740,9 +740,14 @@ module ChapelBase {
     return ret;
   }
 
-  inline proc _ddata_allocate(type eltType, size: integral) {
+  enum localizationStyle_t { locNone, locWhole, locSubchunks };
+
+  inline proc _ddata_allocate(type eltType, size: integral,
+                              locStyle = localizationStyle_t.locNone,
+                              subloc = c_sublocid_none) {
     var ret:_ddata(eltType);
-    __primitive("array_alloc", ret, eltType, size);
+    __primitive("array_alloc", ret, eltType, size,
+                locStyle == localizationStyle_t.locSubchunks, subloc);
     init_elts(ret, size, eltType);
     return ret;
   }
