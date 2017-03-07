@@ -618,7 +618,7 @@ module DateTime {
     timeStruct.tm_mon = 1;
 
     if tzinfo != nil {
-      timeStruct.tm_gmtoff = abs(utcoffset()).seconds;
+      timeStruct.tm_gmtoff = abs(utcoffset()).seconds: c_long;
       timeStruct.tm_zone = __primitive("cast", c_ptr(c_char), tzname().c_str());
       timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
