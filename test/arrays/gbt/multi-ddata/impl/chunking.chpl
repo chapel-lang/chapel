@@ -63,8 +63,8 @@ proc reportChunking(what, A) {
     write(' ', cache.mdInd2Chunk(i));
   writeln();
 
-  for iChunk in 0..#cache.mdNumChunks do
-    write(if iChunk == 0 then ' ' else ', ', cache.mData(iChunk).pdr);
+  for iChunk in 1..#cache.mdNumChunks do
+    write(if iChunk == 1 then ' ' else ', ', cache.mData(iChunk).pdr);
   writeln();
 
   if myVerbose {
