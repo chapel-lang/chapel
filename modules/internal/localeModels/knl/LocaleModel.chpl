@@ -536,8 +536,8 @@ module LocaleModel {
   }
 
   export
-  proc chpl_addrIsInHbm(obj): bool {
-    return addrIsInHbm(c_ptrTo(obj));
+  proc chpl_addrIsInHbm(addr:c_void_ptr): bool {
+    return addrIsInHbm(addr);
   }
 
   private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
