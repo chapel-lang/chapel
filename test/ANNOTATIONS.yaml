@@ -28,8 +28,6 @@
 # date listed should be 11/12/11 (assuming testing ran successfully
 # that night, otherwise use the first day when testing runs again.)
 #
-# Groups are listed in case insensitive alphabetical order
-#
 
 all:
   10/14/13:
@@ -104,9 +102,9 @@ all:
       config: Single node XC
   12/09/15:
     - Added record-based strings (#2884)
-  12/16/15:
+  12/17/15:
     - Enable the Qthreads tasking shim (#3040)
-  01/06/16:
+  01/07/16:
     - Replace filenames with indices into a lookup table (#3049)
   02/14/16:
     - text: Default to jemalloc for gasnet configurations (#3287)
@@ -134,7 +132,7 @@ all:
     - KACE removed from systems.  Should see less noise after this day.
   05/31/16:
     - Enable jemalloc's decay-based purging (#3926)
-  06/06/16:
+  06/07/16:
     - Avoid allocating arg bundles for local on statements (#3890)
     - Upgrade target compiler versions (#218, internal)
   06/24/16:
@@ -236,9 +234,9 @@ AllCompTime:
     - disable function resolution optimization (#4476)
   09/14/16:
     - re-enable function resolution optimization (#4517)
-  02/02/17:
+  02/03/17:
     - Fix parse slowdown (#5257)
-  02/06/17:
+  02/07/17:
     - Loop over Defs and Uses with SymbolSymExprs (#5285)
 
 arrayPerformance-1d:
@@ -259,7 +257,7 @@ arr-forall:
     - with CCE, bug fix to avoid vectorizing when not valid
 
 assign.1024:
-  01/21/15:
+  01/22/15:
     - optimize range follower so it can be directly inlined (#1160)
 
 bfs:
@@ -271,7 +269,7 @@ bfs:
 binary-trees:
   12/05/14:
     - introduce "library mode"
-  01/25/16:
+  01/26/16:
     - Optimize iteration over anonymous low-bounded counted ranges (#3154)
   03/14/16:
     - upgrade jemalloc to 4.1.0 (#3447)
@@ -361,7 +359,7 @@ fannkuch-redux:
     - LICM no longer hoisting globals (bug fix related to hoisting wide things)
   03/10/15:
     - Allow LICM to hoist some global variable (#1524)
-  10/16/15:
+  10/17/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
   06/29/16:
@@ -403,9 +401,9 @@ fft-timecomp:
     - re-enable function resolution optimization (#4517)
 
 forall-dom-range:
-  01/21/15:
+  01/22/15:
     - optimize range follower so it can be directly inlined (#1160)
-  01/23/15:
+  01/24/15:
     - optimize range follower for non-strided ranges (#1164)
   03/10/15:
     - optimize range follower so it can be zippered inlined (#1530)
@@ -502,7 +500,7 @@ jacobi:
     - refactoring of rectangular IO (#5157)
 
 knucleotide:
-  10/16/15:
+  10/17/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
 
@@ -625,10 +623,6 @@ meteor:
   08/10/16:
     - Updated meteor's lock to yield less frequently (#4300)
 
-meteor-submitted:
-  10/26/16:
-    - Fix to avoid race condition after array memory management improvements will not be applied to submitted version (#4762)
-
 miniMD:
   12/21/13:
     - clean up of noRefCount related code in modules/internal (22473)
@@ -636,13 +630,12 @@ miniMD:
     - surprising regression from cast in DefaultRectangular (df8c3172cc9c)
   01/30/15:
     - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
-  03/17/15:
+  03/18/15:
     - Avoid shallow record copies in miniMD (#1643)
   03/19/16:
     - Increase parallelism, decrease comm (#3483)
   12/02/16:
     - RVF reference fields with record-wrapped type (#4925)
-
 
 nbody:
   03/17/14:
@@ -734,7 +727,7 @@ regexdna:
     - implemented good_alloc_size for jemalloc(#3446)
 
 revcomp:
-  05/11/15:
+  05/12/15:
     - various qio changes motivated by cygwin failures (#1943)
   10/29/15:
     - Difficult to consistently replicate
@@ -818,7 +811,7 @@ thread-ring:
 time_array_vs_ddata:
   05/31/14:
     - specializing binaries to target architectures
-  01/25/16:
+  01/26/16:
     - Optimize iteration over anonymous low-bounded counted ranges (#3154)
   03/01/16:
     - Extend early string-as-rec work to cover more sub-types of record (#3386)
