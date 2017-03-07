@@ -440,16 +440,6 @@ init:
   05/03/16:
     - Fix ref-return intent bugs (#3795)
 
-is:
-  09/05/14:
-    - switched uses of locale.numCores to locale.maxTaskPar
-  11/18/14:
-    - added -E to tests which would benefit from it
-  11/22/14:
-    - revert -E use for nightly on 21st (which failed, unrelatedly)
-  05/21/15:
-    - set dataParTasksPerLocale to 2 to avoid occasional validation failure
-
 isx:
   02/26/16:
     - ISx ref to array (#3365)
@@ -772,17 +762,13 @@ SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
 
-SSCA2_mem:
-  06/04/13:
-    - Add pre-shifted ddata pointer for DefaultRectangular (21457)
-
-STREAM_fragmented:
+STREAM_study_fragmented:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
 
-STREAM_performance:
+STREAM_study_performance:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
