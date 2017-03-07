@@ -32,6 +32,24 @@ module LocaleModel {
   use LocaleModelHelpMem;
 
   //
+  // The task layer calls these to convert between full sublocales and
+  // execution sublocales.  Full sublocales may contain more information
+  // in some locale models, but not in this one.
+  //
+  export
+  proc chpl_localeModel_sublocToExecutionSubloc(full_subloc:chpl_sublocID_t)
+  {
+    return full_subloc;  // execution sublocale is same as full sublocale
+  }
+
+  export
+  proc chpl_localeModel_sublocMerge(full_subloc:chpl_sublocID_t,
+                                    execution_subloc:chpl_sublocID_t)
+  {
+    return execution_subloc;  // no info needed from full sublocale
+  }
+
+  //
   // The NUMA sublocale model
   //
   class NumaDomain : AbstractLocaleModel {
@@ -41,7 +59,7 @@ module LocaleModel {
     proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
     proc chpl_localeid() {
       return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
-                                sid); 
+                                sid);
     }
     proc chpl_name() return name;
 
@@ -112,6 +130,29 @@ module LocaleModel {
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
     }
     proc chpl_name() return local_name;
+
+    //
+    // Support for different types of memory:
+    // large, random-access (low latency), and streaming (high bandwidth)
+    // Inspired by madvise()'s support for RANDOM and SEQUENTIAL access
+    //
+    // The numa memory model currently assumes only one memory.
+    //
+    proc defaultMemory() : locale {
+      return this;
+    }
+
+    proc largeMemory() : locale {
+      return this;
+    }
+
+    proc randomMemory() : locale {
+      return this;
+    }
+
+    proc streamingMemory() : locale {
+      return this;
+    }
 
 
     proc writeThis(f) {

@@ -21,13 +21,14 @@ multiple instances of memories and/or processors with differing
 characteristics.  They may also be hierarchical, with parent locales
 containing one or more child sublocales within them.
 
-There are currently two locale models available, flat and NUMA.  The
+There are currently three locale models available, flat, NUMA, and KNL.  The
 flat model is the default and maps closely to the view of locales
 implemented in the 1.7 release.  The NUMA locale model maps sublocales
 to NUMA domains.  The NUMA model is currently implemented at a prototype
 level. Performance has not yet been a focus in the NUMA locale model and
 will require additional effort in future releases.  We expect to add
-more locale models in future releases.
+more locale models in future releases.  The KNL locale model provides
+access to on-chip high-bandwidth DRAM.
 
 
 -----------------------------------
@@ -96,8 +97,8 @@ Qthreads thread scheduling
 
 When qthreads tasking is used, different Qthreads thread schedulers are
 selected depending upon the ``CHPL_LOCALE_MODEL`` setting.  For the flat
-locale model the "nemesis" thread scheduler is used, and for the NUMA
-locale model the "distrib" thread scheduler is used.  This selection is
+locale model the "nemesis" thread scheduler is used, and for the NUMA and KNL
+locale models the "distrib" thread scheduler is used.  This selection is
 done at the time the Qthreads third-party package is built, and cannot
 be adjusted later, either at user compile time or at execution time.
 

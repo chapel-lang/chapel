@@ -21,7 +21,7 @@
 //
 module DefaultRectangular {
   config const dataParTasksPerLocale = 0;
-  config const dataParIgnoreRunningTasks = if CHPL_LOCALE_MODEL=="numa" then true
+  config const dataParIgnoreRunningTasks = if CHPL_LOCALE_MODEL!="flat" then true
                                            else false;
   config const dataParMinGranularity: int = 1;
 

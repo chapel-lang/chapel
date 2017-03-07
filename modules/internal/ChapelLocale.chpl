@@ -247,6 +247,35 @@ module ChapelLocale {
       return "";
     }
 
+    //
+    // Support for different types of memory:
+    // large, random-access (low latency), and streaming (high bandwidth)
+    // Inspired by madvise()'s support for RANDOM and SEQUENTIAL access
+    //
+    pragma "no doc"
+    proc defaultMemory() : locale {
+      _throwPVFCError();
+      return this;
+    }
+
+    pragma "no doc"
+    proc largeMemory() : locale {
+      _throwPVFCError();
+      return this;
+    }
+
+    pragma "no doc"
+    proc randomMemory() : locale {
+      _throwPVFCError();
+      return this;
+    }
+
+    pragma "no doc"
+    proc streamingMemory() : locale {
+      _throwPVFCError();
+      return this;
+    }
+
     // A useful default definition is provided (not pure virtual).
     pragma "no doc"
     proc writeThis(f) {
@@ -544,7 +573,7 @@ module ChapelLocale {
   // Return the locale ID of the current locale
   pragma "no doc"
   inline proc here_id {
-     if localeModelHasSublocales then
+    if localeModelHasSublocales then
       return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
     else
       return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);
