@@ -772,10 +772,6 @@ SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
 
-SSCA2_mem:
-  06/04/13:
-    - Add pre-shifted ddata pointer for DefaultRectangular (21457)
-
 STREAM_study_fragmented:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
