@@ -167,9 +167,19 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
   else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
     return constIntentForThisArg(arg->type);
   else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN) &&
-           arg->intent == INTENT_BLANK) {
+           arg->intent == INTENT_BLANK)
     return INTENT_CONST_IN;
-  } else
+  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_ALLOW_REF) &&
+           arg->type->symbol->hasFlag(FLAG_REF))
+
+    // This is a workaround for an issue with RVF erroneously forwarding a
+    // reduce variable. The workaround adjusts the build_tuple_always_allow_ref
+    // call to take all _ref arguments by `ref` intent regardless of
+    // the type. It would be better to rely on task/forall intents
+    // to correctly mark const / not const / maybe const.
+    return INTENT_REF;
+
+  else
     return concreteIntent(arg->intent, arg->type);
 
 }
