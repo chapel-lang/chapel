@@ -79,6 +79,7 @@ proc main {
   }
   //<=== Generate output <===
   
-  
-
+  delete bc;
+  delete solution;
+  delete level;;
 } // end main
