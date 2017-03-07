@@ -107,6 +107,11 @@ ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
   SET_LINENO(node);
 
+  // TODO: nested try
+  if (!tryStack.empty()) {
+    INT_FATAL("nested try is not yet supported");
+  }
+
   VarSymbol*   errorVar     = newTemp("error", dtError);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
   TryInfo      info         = {errorVar, handlerLabel};
@@ -185,8 +190,6 @@ AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
     }
   }
 
-  // TODO: nested try
-
   if (!hasCatchAll) {
     if (tryStmt->tryBang()) {
       currHandler->insertAtTail(haltExpr());
@@ -206,7 +209,6 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
     if (calledFn->throwsError()) {
-      gdbShouldBreakHere();
       SET_LINENO(node);
 
       VarSymbol* errorVar;

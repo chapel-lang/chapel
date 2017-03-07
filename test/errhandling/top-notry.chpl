@@ -1,4 +1,4 @@
-use SomeError;
+use ThrowError;
 
 writeln("should not continue");
 

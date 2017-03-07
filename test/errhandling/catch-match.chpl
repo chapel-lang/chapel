@@ -6,7 +6,7 @@ proc throwAnError() throws {
   throw new Error();
 }
 
-proc throwOtherError throws {
+proc throwOtherError() throws {
   throw new OtherError;
 }
 

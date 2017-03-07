@@ -5,5 +5,5 @@ proc throwAnError() throws {
 try {
   throwAnError();
 } catch {
-  write("caught an error");
+  writeln("caught an error");
 }

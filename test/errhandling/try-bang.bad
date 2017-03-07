@@ -1,2 +1,0 @@
-try-bang.chpl:1: In function 'throwAnError':
-try-bang.chpl:2: error: unresolved call 'Error()'

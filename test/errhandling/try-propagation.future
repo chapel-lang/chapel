@@ -1,6 +1,0 @@
-unimplemented: propagating an error with try 
-
-If a statement that may throw an error is enclosed by
-a try block, but a resulting error does not match an
-associated catch block, the error will be propagated
-out of the procedure if it throws. 

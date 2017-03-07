@@ -2,8 +2,8 @@ proc throwAnError() throws {
   throw new Error();
 }
 
-write("should not continue");
+writeln("should not continue");
 
 try! throwAnError();
 
-write("continued");
+writeln("continued");

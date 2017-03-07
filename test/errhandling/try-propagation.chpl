@@ -11,5 +11,5 @@ proc throwAnErrorToo() throws {
 try {
   throwAnErrorToo();
 } catch {
-  write("caught an error");
+  writeln("caught an error");
 }
