@@ -406,6 +406,7 @@ class LocBlockArr {
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
+  var deferredSetup: bool;
 
   // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
@@ -441,12 +442,10 @@ proc Block.Block(boundingBox: domain,
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
-  const boundingBoxDims = this.boundingBox.dims();
-  const targetLocDomDims = targetLocDom.dims();
-  coforall locid in targetLocDom do
-    on this.targetLocales(locid) do
-      locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
-                                     targetLocDomDims);
+  if (boundingBox.size != 0) then
+    chpl__setupBoundingBoxLocalDescs();
+  else
+    deferredSetup = true;
 
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
@@ -461,6 +460,15 @@ proc Block.Block(boundingBox: domain,
     writeln("Creating new Block distribution:");
     dsiDisplayRepresentation();
   }
+}
+
+proc Block.chpl__setupBoundingBoxLocalDescs() {
+  const boundingBoxDims = this.boundingBox.dims();
+  const targetLocDomDims = targetLocDom.dims();
+  coforall locid in targetLocDom do
+    on this.targetLocales(locid) do
+      locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
+                                     targetLocDomDims);
 }
 
 proc Block.dsiAssign(other: this.type) {
@@ -531,6 +539,9 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Block domain rank does not match distribution's");
+
+  if deferredSetup then
+    halt("setup was deferred");
 
   var dom = new BlockDom(rank=rank, idxType=idxType, dist=this,
       stridable=stridable, sparseLayoutType=sparseLayoutType);
