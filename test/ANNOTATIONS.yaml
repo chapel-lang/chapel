@@ -776,13 +776,13 @@ SSCA2_mem:
   06/04/13:
     - Add pre-shifted ddata pointer for DefaultRectangular (21457)
 
-STREAM_fragmented:
+STREAM_study_fragmented:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
 
-STREAM_performance:
+STREAM_study_performance:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
