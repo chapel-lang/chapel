@@ -74,7 +74,7 @@ proc checkMemLocalityParts(p: c_ptr, size, type eltType) {
   const nSublocs = here.getChildCount();
   const nPagesPerSubloc = nPages:real / nSublocs:real;
 
-  if chpl_topo_getMemLocality(myP) == c_sublocid_none then
+  if chpl_topo_getMemLocality(myP) == c_sublocid_any then
     return localityUnknown;
 
   for subloc in 0..#nSublocs {
@@ -119,7 +119,7 @@ proc checkMemLocalityWhole(p: c_ptr, size, type eltType,
   const sublocFirst = chpl_topo_getMemLocality(myP);
   var locality: localityCheck_t;
 
-  if sublocFirst == c_sublocid_none then
+  if sublocFirst == c_sublocid_any then
     locality = localityUnknown;
   else if sublocFirst == subloc then
     locality =localityRight;
