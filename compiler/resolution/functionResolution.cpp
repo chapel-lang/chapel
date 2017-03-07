@@ -5179,25 +5179,8 @@ resolveFieldInit(CallExpr* call) {
     // Update the type of the field.  If necessary, update to a new
     // instantiation of the overarching type (and replaces references to the
     // fields from the old instantiation
-    if (fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) {
-      AggregateType* instantiate = ct->getInstantiation(rhs, index);
-      if (instantiate != ct) {
-        // TODO: make this set of operations a helper function I can call
-        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(parentFn);
-        INT_ASSERT(parentFn->_this);
-        parentFn->_this->type = instantiate;
-
-        SymbolMap fieldTranslate;
-        for (int i = 1; i <= instantiate->fields.length; i++) {
-          fieldTranslate.put(ct->getField(i), instantiate->getField(i));
-        }
-        update_symbols(parentFn, &fieldTranslate);
-
-        ct = instantiate;
-        fs = instantiate->getField(index);
-      }
-    } else if (fs->hasFlag(FLAG_PARAM)) {
+    if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
+        fs->hasFlag(FLAG_PARAM)) {
       AggregateType* instantiate = ct->getInstantiation(rhs, index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call

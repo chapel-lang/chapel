@@ -773,7 +773,6 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
     }
     if (field->hasFlag(FLAG_PARAM) &&
         at->substitutions.get(field) == t->symbol()) {
-      // Ought to work for params at least.
       return at;
     }
   }
