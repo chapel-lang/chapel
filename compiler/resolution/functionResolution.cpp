@@ -5248,7 +5248,8 @@ resolveFieldInit(CallExpr* call) {
     // instantiation of the overarching type (and replaces references to the
     // fields from the old instantiation
     if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
-        fs->hasFlag(FLAG_PARAM)) {
+        fs->hasFlag(FLAG_PARAM) ||
+        (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL)) {
       AggregateType* instantiate = ct->getInstantiation(rhs, index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
@@ -5266,10 +5267,6 @@ resolveFieldInit(CallExpr* call) {
         ct = instantiate;
         fs = instantiate->getField(index);
       }
-    } else if (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) {
-      // TODO: this part
-      USR_FATAL(call, "Sorry, new style initializers don't work with "
-                "generic var/const fields yet.  Stay tuned!");
     } else {
       // The field is not generic.
       if (fs->defPoint->exprType == NULL) {
