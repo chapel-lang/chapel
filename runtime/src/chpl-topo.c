@@ -300,6 +300,8 @@ void report_error(const char* what, int errnum) {
 
 void chpl_topo_init(void) { }
 void chpl_topo_exit(void) { }
-void chpl_topo_setMemLocality(c_sublocid_t, void*, size_t, chpl_bool) { }
+void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
+                              chpl_bool doSubchunks, c_sublocid_t subloc) { }
+c_sublocid_t chpl_topo_getMemLocality(void* p) { return c_sublocid_any; }
 
 #endif // if defined(CHPL_HAS_HWLOC)
