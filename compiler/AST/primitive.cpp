@@ -561,7 +561,6 @@ initPrimitive() {
   prim_def(PRIM_CHPL_COMM_GET_STRD, "chpl_comm_get_strd", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT_STRD, "chpl_comm_put_strd", returnInfoVoid, true, true);
 
-  prim_def(PRIM_OPTIMIZE_ARRAY_BLK_MULT, "optimize_array_blk_mult", returnInfoBool);
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);

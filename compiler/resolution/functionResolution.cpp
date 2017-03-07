@@ -10301,27 +10301,6 @@ static void removeUnusedModuleVariables() {
   }
 }
 
-static bool arrayBlkModified() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isResolved() && fn->defPoint && fn->defPoint->parentSymbol) {
-      if (fn->hasFlag(FLAG_MODIFIES_ARRAY_BLK)) {
-        if (fReportOptimizedArrayIndexing) {
-          printf("Unable to optimize array indexing\n");
-        }
-        return true;
-      }
-    }
-  }
-  if (fReportOptimizedArrayIndexing) {
-    printf("Optimized array indexing\n");
-  }
-  return false;
-}
-
-static bool canOptimizeArrayBlk() {
-  static bool canOptimize = !fNoOptimizeArrayIndexing && !arrayBlkModified();
-  return canOptimize;
-}
 
 static void removeRandomPrimitive(CallExpr* call)
 {
@@ -10345,17 +10324,6 @@ static void removeRandomPrimitive(CallExpr* call)
     case PRIM_NOOP:
       call->remove();
       break;
-
-    case PRIM_OPTIMIZE_ARRAY_BLK_MULT:
-    {
-      SET_LINENO(call);
-      if (canOptimizeArrayBlk()) {
-        call->replace(new SymExpr(gTrue));
-      } else {
-        call->replace(new SymExpr(gFalse));
-      }
-    }
-    break;
 
     case PRIM_TYPEOF:
     {
