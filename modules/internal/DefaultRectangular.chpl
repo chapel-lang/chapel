@@ -1655,7 +1655,6 @@ module DefaultRectangular {
     where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
 
-    pragma "modifies array blk"
     proc adjustBlkOffStrForNewDomain(d: DefaultRectangularDom,
                                      alias: DefaultRectangularArr)
     {

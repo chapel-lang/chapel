@@ -133,7 +133,6 @@ enum PrimitiveTag {
   PRIM_CHPL_COMM_GET_STRD,      // Direct calls to the Chapel comm layer for strided comm
   PRIM_CHPL_COMM_PUT_STRD,      //  may eventually add others (e.g., non-blocking)
 
-  PRIM_OPTIMIZE_ARRAY_BLK_MULT,
   PRIM_ARRAY_ALLOC,
   PRIM_ARRAY_FREE,
   PRIM_ARRAY_FREE_ELTS,
