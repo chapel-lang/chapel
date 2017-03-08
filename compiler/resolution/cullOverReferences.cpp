@@ -54,8 +54,15 @@
  */
 
 //static bool symbolIsSetLocal(Symbol* sym);
+
+typedef enum {
+  USE_REF = 1,
+  USE_CONST_REF = 2,
+  USE_VALUE = 3
+} choose_type_t;
+
 static bool symExprIsSet(SymExpr* sym);
-static void lowerContextCall(ContextCallExpr* cc, bool useSetter);
+static void lowerContextCall(ContextCallExpr* cc, choose_type_t which);
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst);
 
@@ -126,17 +133,42 @@ symExprIsSetByUse(SymExpr* use) {
 
       } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                  call->isPrimitive(PRIM_WIDE_GET_NODE)) {
-        // If we are extracting a field from the wide pointer,
-        // we need to keep it as a pointer.
-        // Dereferencing would be premature.
-
-        // MPF: This seems like a workaround to me
-        // How can this be right for a ref-pair returning const-ref/ref?
-        // TODO: can we disable this?
+        // TODO: update array accessors and remove
+        // this case.
         return true;
       }
     }
 
+    return false;
+}
+
+static
+bool symExprIsUsedAsConstRef(SymExpr* use) {
+  if (CallExpr* call = toCallExpr(use->parentExpr)) {
+      if (call->isResolved()) {
+        ArgSymbol* formal = actual_to_formal(use);
+
+        // use const-ref-return if passing to const ref formal
+        if (formal->intent == INTENT_CONST_REF)
+          return true;
+
+      } else if (call->isPrimitive(PRIM_RETURN) ||
+                 call->isPrimitive(PRIM_YIELD)) {
+        FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+
+        // use const-ref-return if returning by const ref intent
+        if (inFn->retTag == RET_CONST_REF)
+          return true;
+
+      } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+                 call->isPrimitive(PRIM_WIDE_GET_NODE)) {
+        // If we are extracting a field from the wide pointer,
+        // we need to keep it as a pointer.
+
+        // use const-ref-return if querying locale
+        return true;
+      }
+    }
     return false;
 }
 
@@ -190,10 +222,17 @@ bool callSetsSymbol(Symbol* sym, CallExpr* call)
 // about sym? If so, this function returns true.
 static
 bool contextCallItDepends(Symbol* sym, ContextCallExpr* cc) {
-  CallExpr* refCall = cc->getRefCall();
-  CallExpr* valueCall = cc->getRValueCall();
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
 
-  if (callSetsSymbol(sym, refCall) != callSetsSymbol(sym, valueCall) ) {
+  cc->getCalls(refCall, valueCall, constRefCall);
+
+  bool ref = refCall?callSetsSymbol(sym, refCall):false;
+  bool val = valueCall?callSetsSymbol(sym, valueCall):false;
+  bool cref = constRefCall?callSetsSymbol(sym, constRefCall):false;
+
+  if (ref != val || ref != cref) {
     return true;
   }
 
@@ -1107,7 +1146,7 @@ void cullOverReferences() {
     }
   }
 
-  // Now, lower ContextCalls and remove INTENT_REF_MAYBE_CONST.
+  // Now, lower ContextCalls
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
     // Some ContextCallExprs have already been removed above
     if (cc->parentExpr == NULL)
@@ -1115,17 +1154,33 @@ void cullOverReferences() {
 
     CallExpr* move = toCallExpr(cc->parentExpr);
 
-    bool useSetter = false;
+    choose_type_t which = USE_CONST_REF;
 
     if (move) {
       SymExpr* lhs = toSymExpr(move->get(1));
-      Qualifier qual = lhs->symbol()->qualType().getQual();
-      // Expecting only REF or CONST_REF at this point.
+      Symbol* lhsSymbol = lhs->symbol();
+      Qualifier qual = lhsSymbol->qualType().getQual();
+
       INT_ASSERT(qual == QUAL_REF || qual == QUAL_CONST_REF);
-      useSetter = (qual == QUAL_REF);
+      if (qual == QUAL_REF)
+        which = USE_REF;
+      else {
+        // Check: should we use the const-ref or value version?
+        // Use value version if it's never passed/returned as const ref
+        which = USE_VALUE;
+        for_SymbolSymExprs(se, lhsSymbol) {
+          // Ignore the LHS of the move we are considering.
+          if (se == lhs) continue;
+
+          if (symExprIsUsedAsConstRef(se)) {
+            which = USE_CONST_REF;
+            break;
+          }
+        }
+      }
     }
 
-    lowerContextCall(cc, useSetter);
+    lowerContextCall(cc, which);
   }
 
   // We already changed INTENT_REF_MAYBE_CONST in
@@ -1141,11 +1196,10 @@ void cullOverReferences() {
 static
 bool firstPassLowerContextCall(ContextCallExpr* cc)
 {
-    // Make sure that the context call only has 2 options.
-    INT_ASSERT(cc->options.length == 2);
-
     CallExpr* refCall = cc->getRefCall();
     CallExpr* valueCall = cc->getRValueCall();
+
+    INT_ASSERT(refCall && valueCall);
 
     FnSymbol* refFn = refCall->isResolved();
     INT_ASSERT(refFn);
@@ -1163,7 +1217,7 @@ bool firstPassLowerContextCall(ContextCallExpr* cc)
     //  is not the same as returning.)
     move = toCallExpr(cc->parentExpr);
     if (refFn->isIterator()) {
-      lowerContextCall(cc, true);
+      lowerContextCall(cc, USE_REF);
       return true;
     } else if (move) {
       INT_ASSERT(move->isPrimitive(PRIM_MOVE));
@@ -1177,28 +1231,27 @@ bool firstPassLowerContextCall(ContextCallExpr* cc)
       // should use 'getter'
       // MPF - note 2016-01: this code does not seem to be triggered
       // in the present compiler.
-      lowerContextCall(cc, false);
+      lowerContextCall(cc, USE_CONST_REF);
       return true;
     }
 }
 
 
 static
-void lowerContextCall(ContextCallExpr* cc, bool useSetter)
+void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
 {
-    // Make sure that the context call only has 2 options.
-    INT_ASSERT(cc->options.length == 2);
+    CallExpr* refCall = NULL;
+    CallExpr* valueCall = NULL;
+    CallExpr* constRefCall = NULL;
 
-    CallExpr* refCall = cc->getRefCall();
-    CallExpr* valueCall = cc->getRValueCall();
+    cc->getCalls(refCall, valueCall, constRefCall);
 
+    // For now, ref version is required for a ref-pair
+    INT_ASSERT(refCall);
     FnSymbol* refFn = refCall->isResolved();
     INT_ASSERT(refFn);
-    FnSymbol* valueFn = valueCall->isResolved();
-    INT_ASSERT(valueFn);
 
-    bool useValueCall = !useSetter;
-
+    bool useValueCall = (which == USE_VALUE || which == USE_CONST_REF);
     CallExpr* move = NULL; // set if the call is in a PRIM_MOVE
     SymExpr* lhs = NULL; // lhs if call is in a PRIM_MOVE
 
@@ -1223,12 +1276,27 @@ void lowerContextCall(ContextCallExpr* cc, bool useSetter)
       useValueCall = true;
     }
 
-    valueCall->remove();
     refCall->remove();
+    if (valueCall) valueCall->remove();
+    if (constRefCall) constRefCall->remove();
 
     if (useValueCall) {
-      // Replace the ContextCallExpr with the value call
-      cc->replace(valueCall);
+      // Use available value or const-ref return version if only
+      // one is available
+      CallExpr* useCall = valueCall?valueCall:constRefCall;
+
+      // If value version is selected and available, use that
+      if (which == USE_VALUE && valueCall)
+        useCall = valueCall;
+      // If const ref version is selected and available, use that
+      if (which == USE_CONST_REF && constRefCall)
+        useCall = constRefCall;
+
+      FnSymbol* useFn = useCall->isResolved();
+      INT_ASSERT(useFn);
+
+      // Replace the ContextCallExpr with the value/const ref call
+      cc->replace(useCall);
 
       // Adjust the AST around the value call to include
       // a temporary to receive the value.
@@ -1236,14 +1304,14 @@ void lowerContextCall(ContextCallExpr* cc, bool useSetter)
       // Adjust code to use value return version.
       // The other option is that retTag is RET_CONST_REF,
       // in which case no further adjustment is necessary.
-      if (move && valueFn->retTag == RET_VALUE) {
+      if (move && useFn->retTag == RET_VALUE) {
         SET_LINENO(move);
         // Generate a value temp to receive the value
-        VarSymbol* tmp  = newTemp(valueFn->retType);
+        VarSymbol* tmp  = newTemp(useFn->retType);
         move->insertBefore(new DefExpr(tmp));
 
-        if (requiresImplicitDestroy(valueCall)) {
-          if (isUserDefinedRecord(valueFn->retType) == false) {
+        if (requiresImplicitDestroy(useCall)) {
+          if (isUserDefinedRecord(useFn->retType) == false) {
             tmp->addFlag(FLAG_INSERT_AUTO_COPY);
             tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
           } else {
@@ -1265,7 +1333,7 @@ void lowerContextCall(ContextCallExpr* cc, bool useSetter)
                 if (SymExpr* useCallLHS = toSymExpr(useCall->get(1)))
                   if (useCallLHS->symbol() == retSymbol) {
                     USR_FATAL_CONT(move, "illegal expression to return by ref");
-                    USR_PRINT(valueCall->isResolved(), "called function returns a value not a reference");
+                    USR_PRINT(useFn, "called function returns a value not a reference");
                   }
           }
 

@@ -319,8 +319,10 @@ class ContextCallExpr : public Expr {
   virtual Expr*   getFirstExpr();
 
   void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
+  void            setRefValueConstRefOptions(CallExpr* refCall, CallExpr* valueCall, CallExpr* constRefCall);
   CallExpr*       getRefCall();
   CallExpr*       getRValueCall();
+  void            getCalls(CallExpr*& refCall, CallExpr*& valueCall, CallExpr*& constRefCall);
 };
 
 

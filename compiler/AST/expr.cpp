@@ -28,6 +28,7 @@
 #include "AstVisitor.h"
 #include "ForLoop.h"
 #include "insertLineNumbers.h"
+#include "iterator.h"
 #include "misc.h"
 #include "passes.h"
 #include "stmt.h"
@@ -1390,11 +1391,10 @@ ContextCallExpr::verify() {
     if (!isCallExpr(expr))
       INT_FATAL(this, "ContextCallExpr must contain only CallExpr");
   }
-  // At present, a ContextCallExpr is only used to handle
-  // ref/not-ref return intent functions. So there should always
-  // be exactly 2 options.
-  if (options.length != 2)
-    INT_FATAL(this, "ContextCallExpr with > 2 options");
+  // ContextCallExpr handles ref/value/const ref, so there should
+  // be 2 or 3 options.
+  if (options.length < 2 || options.length > 3)
+    INT_FATAL(this, "ContextCallExpr with < 2 or > 3 options");
 }
 
 void ContextCallExpr::accept(AstVisitor* visitor) {
@@ -1445,6 +1445,18 @@ void ContextCallExpr::setRefRValueOptions(CallExpr* refCall,
   parent_insert_help(this, refCall);
 }
 
+void ContextCallExpr::setRefValueConstRefOptions(CallExpr* refCall,
+                                                 CallExpr* valueCall,
+                                                 CallExpr* constRefCall) {
+
+  options.insertAtTail(constRefCall);
+  parent_insert_help(this, constRefCall);
+  options.insertAtTail(valueCall);
+  parent_insert_help(this, valueCall);
+  options.insertAtTail(refCall);
+  parent_insert_help(this, refCall);
+}
+
 CallExpr* ContextCallExpr::getRefCall() {
   // This used to check for the call with RET_REF, but
   // the return tag might change during resolution. So
@@ -1454,6 +1466,36 @@ CallExpr* ContextCallExpr::getRefCall() {
 
 CallExpr* ContextCallExpr::getRValueCall() {
   return toCallExpr(options.head);
+}
+
+void  ContextCallExpr::getCalls(CallExpr*& refCall,
+                                CallExpr*& valueCall,
+                                CallExpr*& constRefCall) {
+  refCall = NULL;
+  valueCall = NULL;
+  constRefCall = NULL;
+  for_alist(expr, options) {
+    CallExpr* call = toCallExpr(expr);
+    FnSymbol* fn = call->isResolved();
+    RetTag tag = fn->retTag;
+    // Iterators change from RET_REF to marking with FLAG_REF_ITERATOR_CLASS
+    if (fn && fn->iteratorInfo) {
+      //fn = fn->iteratorInfo->iterator;
+      if (fn->retType->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS))
+        tag = RET_REF;
+    }
+    INT_ASSERT(fn);
+    if (tag == RET_CONST_REF) {
+      INT_ASSERT(constRefCall == NULL);
+      constRefCall = call;
+    } else if (tag == RET_VALUE) {
+      INT_ASSERT(valueCall == NULL);
+      valueCall = call;
+    } else if (tag == RET_REF) {
+      INT_ASSERT(refCall == NULL);
+      refCall = call;
+    }
+  }
 }
 
 /************************************ | *************************************
