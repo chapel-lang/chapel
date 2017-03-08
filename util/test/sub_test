@@ -504,8 +504,18 @@ def get_exec_log_name(execname, comp_opts_count=None, exec_opts_count=None):
 # Use testEnv to process skipif files, it works for executable and
 # non-executable versions
 def runSkipIf(skipifName):
-    skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
-    return skiptest
+    p = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdout, stderr) = p.communicate()
+    status = p.returncode
+    stderr = stderr.strip()
+    if status:
+        if stderr:
+            sys.stdout.write(stderr+'\n')
+        Fatal('%s: exit status %d' % (skipifName, status))
+    elif stderr:
+        sys.stdout.write(stderr+'\n')
+        Fatal('%s: %s' % (skipifName, stderr.splitlines()[-1]))
+    return stdout
 
 # Start of sub_test proper
 #
