@@ -453,9 +453,10 @@ void resolveInitCall(CallExpr* call) {
     } else {
       printResolutionErrorUnresolved(visibleFns, &info);
     }
-  } else {
-    wrapAndCleanUpActuals(best, info, /*buildFastFollowerChecks=*/true);
   }
+  // removed the creation of wrappers and the lvalue check call, as resolving
+  // the _new call will handle all that stuff for us.
+  // NOTE: This is unlikely to work for generic records.
 
   FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
 
@@ -480,7 +481,6 @@ void resolveInitCall(CallExpr* call) {
     call->baseExpr->replace(new SymExpr(resolvedFn));
   }
 
-  lvalueCheck(call);
   checkForStoringIntoTuple(call, resolvedFn);
 
   resolveNormalCallCompilerWarningStuff(resolvedFn);
