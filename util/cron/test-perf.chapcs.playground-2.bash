@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground-2"
 
-# Test performance of qthreads 1.12 RC
+# Test performance of qthreads 1.12
 GITHUB_USER=ronawho
-GITHUB_BRANCH=use-chpl-alloc-for-qt-3
+GITHUB_BRANCH=upgrade-qthreads-1.12
 SHORT_NAME=qthreads-1.12
-START_DATE=03/04/17
+START_DATE=03/08/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
