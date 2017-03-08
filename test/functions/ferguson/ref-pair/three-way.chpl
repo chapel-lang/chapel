@@ -24,20 +24,42 @@ proc byIn(in x) {
 }
 
 
+proc retByRef() ref {
+  return getter();
+}
+
+proc retByConstRef() const ref {
+  return getter();
+}
+
+proc retByValue() {
+  return getter();
+}
+
+
 writeln("setting");
 getter() = 2;
 
 writeln("by ref");
 byRef(getter());
 
-writeln("getting");
-var x = getter();
+writeln("ret by ref");
+retByRef();
 
 writeln("by const ref");
 byConstRef(getter());
+
+writeln("ret by const ref");
+retByConstRef();
+
+writeln("getting");
+var x = getter();
 
 writeln("by const in");
 byConstIn(getter());
 
 writeln("by in");
 byIn(getter());
+
+writeln("ret by value");
+retByValue();
