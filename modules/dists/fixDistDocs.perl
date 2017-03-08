@@ -23,6 +23,7 @@ process("CyclicDist.rst");
 process("BlockCycDist.rst");
 process("ReplicatedDist.rst");
 process("StencilDist.rst");
+process("UserMapAssoc.rst");
 process("PrivateDist.rst");
 process("DimensionalDist2D.rst");
 process("dims/ReplicatedDim.rst");

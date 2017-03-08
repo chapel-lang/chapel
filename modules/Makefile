@@ -130,6 +130,7 @@ DISTS_TO_DOCUMENT = \
 	dists/PrivateDist.chpl \
 	dists/ReplicatedDist.chpl \
 	dists/StencilDist.chpl \
+	dists/UserMapAssoc.chpl \
 	dists/dims/BlockCycDim.chpl \
 	dists/dims/BlockDim.chpl \
 	dists/dims/ReplicatedDim.chpl \
