@@ -2702,8 +2702,8 @@ module ChapelArray {
 
     /* Return the number of times ``val`` occurs in the array. */
     proc count(val: this.eltType): int {
-      var total: int = 0;
-      for i in this do if i == val then total += 1;
+      var total: sync int = 0;
+      forall i in this do if i == val then total += 1;
       return total;
     }
 
