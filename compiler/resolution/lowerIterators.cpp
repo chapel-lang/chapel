@@ -2196,7 +2196,7 @@ static void removeUncalledIterators()
       continue;
 
     // This is a backup check to ensure PRIM_INT_ERROR is never executed.
-    if (maybeCalled(call->parentSymbol, 4))
+    if (fVerify && maybeCalled(call->parentSymbol, 4))
       INT_FATAL(call, "unexpected leftover PRIM_YIELD");
 
     // If this function contains a yield, it was never expanded, so the static
