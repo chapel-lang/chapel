@@ -41,6 +41,10 @@ module DefaultRectangular {
 
   config param defRectArrMultiDDataSizeThreshold = 2**20;
 
+  // Used for the size of 'mData' tuples. Hopefully one day this
+  // will be a query supported by the LocaleModel.
+  config param experimentalMaxSublocales = 4;
+
   inline proc defRectSimpleDData param return !localeModelHasSublocales;
 
   class DefaultDist: BaseDist {
@@ -677,14 +681,14 @@ module DefaultRectangular {
     var mdBlk: idxType;
     var mdAlias: bool;
 
-    var mData : _ddata(_multiData(eltType=eltType,
-                                  idxType=idxType));
+    var mData : experimentalMaxSublocales*_multiData(eltType=eltType,
+                                                     idxType=idxType);
 
     inline proc dataChunk(i) ref {
       if defRectSimpleDData then
         return data;
       else {
-        return mData(i).data;
+        return mData(i+1).data;
       }
     }
 
@@ -692,22 +696,32 @@ module DefaultRectangular {
       if defRectSimpleDData then
         return shiftedData;
       else {
-        return mData(i).shiftedData;
+        return mData(i+1).shiftedData;
+      }
+    }
+
+    inline proc getDataElem(i) ref {
+      if stridable {
+        return dataElem(i);
+      } else {
+        return shiftedDataElem(i);
       }
     }
 
     inline proc dataElem(i) ref {
       if defRectSimpleDData then
         return data(i);
-      else
-        return mData(i(1)).data(i(2));
+      else {
+        return mData(i(1)+1).data(i(2));
+      }
     }
 
     inline proc shiftedDataElem(i) ref where defRectSimpleDData
       return shiftedData(i);
 
-    inline proc shiftedDataElem(i) ref where !defRectSimpleDData
-      return mData(i(1)).shiftedData(i(2));
+    inline proc shiftedDataElem(i) ref where !defRectSimpleDData {
+      return mData(i(1) + 1).shiftedData(i(2));
+    }
 
     // duplicates DefaultRectangularArr.mdInd2Chunk
     inline proc mdInd2Chunk(ind)
@@ -717,6 +731,19 @@ module DefaultRectangular {
                 / mdRLen):int;
       else
         return (((ind - mdRLo) * mdBlk * mdNumChunks:idxType) / mdRLen):int;
+    }
+
+    inline proc mdChunk2Ind(chunk)
+      where !defRectSimpleDData {
+      if stridable {
+        var (lo, hi) = _computeBlock(mdRLen, mdNumChunks, chunk,
+                                     (mdRHi - mdRLo) / mdRStr, 0, 0);
+        lo = lo * mdRStr + mdRLo;
+        hi = hi * mdRStr + mdRLo;
+        return (lo, hi);
+      } else {
+        return _computeBlock(mdRLen, mdNumChunks, chunk, mdRHi, mdRLo, mdRLo);
+      }
     }
   }
 
@@ -736,7 +763,7 @@ module DefaultRectangular {
             return (0, sum);
           } else {
             const chunk = mdInd2Chunk(ind(mdParDim));
-            return (chunk, sum - mData(chunk).dataOff);
+            return (chunk, sum - mData(chunk+1).dataOff);
           }
         }
 
@@ -753,7 +780,7 @@ module DefaultRectangular {
             return (0, sum);
           } else {
             const chunk = mdInd2Chunk(ind(mdParDim));
-            return (chunk, sum - mData(chunk).dataOff);
+            return (chunk, sum - mData(chunk+1).dataOff);
           }
         }
 
@@ -794,6 +821,7 @@ module DefaultRectangular {
   }
 
   proc _remoteAccessData.computeFactoredOffs() {
+    factoredOffs = 0;
     for param i in 1..rank do {
       factoredOffs = factoredOffs + blk(i) * off(i);
     }
@@ -804,7 +832,34 @@ module DefaultRectangular {
       type idxSignedType = chpl__signedType(idxType);
       const shiftDist = if isIntType(idxType) then origin - factoredOffs
                         else origin:idxSignedType - factoredOffs:idxSignedType;
-      shiftedData = _ddata_shift(eltType, data, shiftDist);
+      if defRectSimpleDData {
+        shiftedData = _ddata_shift(eltType, data, shiftDist);
+      } else {
+        for i in 1..#mdNumChunks {
+          mData(i).shiftedData = _ddata_shift(eltType, mData(i).data, shiftDist);
+        }
+      }
+    }
+  }
+
+  proc _remoteAccessData.strideAlignUp(lo, r)
+    return r.low + (lo - r.low + abs(r.stride):idxType - 1)
+           / abs(r.stride):idxType * abs(r.stride):idxType;
+
+  proc _remoteAccessData.strideAlignDown(hi, r)
+    return hi - (hi - r.low) % abs(r.stride):idxType;
+
+  proc _remoteAccessData.initDataFrom(other : _remoteAccessData) {
+    if defRectSimpleDData {
+      this.data = other.data;
+    } else {
+      if other.mdNumChunks > experimentalMaxSublocales {
+        halt("mdNumChunks > experimentalMaxSublocales: ", mdNumChunks, " > ", experimentalMaxSublocales);
+      }
+      for i in 1..#other.mdNumChunks {
+        this.mData(i).dataOff = other.mData(i).dataOff;
+        this.mData(i).data    = other.mData(i).data;
+      }
     }
   }
 
@@ -812,12 +867,13 @@ module DefaultRectangular {
   // Based on the old 'dsiSlice' method
   //
   proc _remoteAccessData.toSlice(newDom) {
-    compilerAssert(defRectSimpleDData && this.rank == newDom.rank);
+    compilerAssert(this.rank == newDom.rank);
 
     // NB: Sets 'blkChanged' if the new domain is stridable.
     var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, newDom.stridable || this.blkChanged);
 
-    rad.data        = this.data;
+    rad.initDataFrom(this);
+
     rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
     rad.origin      = this.origin:newDom.idxType;
     rad.off         = chpl__tuplify(newDom.dsiLow);
@@ -835,6 +891,28 @@ module DefaultRectangular {
       rad.blk(i) = this.blk(i) * mult;
     }
 
+    if !defRectSimpleDData {
+      rad.mdParDim    = this.mdParDim;
+      rad.mdNumChunks = this.mdNumChunks;
+      rad.mdRLo       = this.mdRLo;
+      rad.mdRHi       = this.mdRHi;
+      rad.mdRStr      = this.mdRStr;
+      rad.mdRLen      = this.mdRLen;
+      rad.mdBlk       = this.mdBlk;
+
+      for i in 1..#mdNumChunks {
+        var low = max(this.mData(i).pdr.low, newDom.dsiDim(mdParDim).low);
+        low = if rad.stridable then strideAlignUp(low, newDom.dsiDim(mdParDim)) else low;
+
+        var high = min(this.mData(i).pdr.high, newDom.dsiDim(mdParDim).high);
+        high = if rad.stridable then strideAlignDown(high, newDom.dsiDim(mdParDim)) else high;
+
+        const rng = low..high;
+        rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(mdParDim).stride;
+      }
+
+    }
+
     rad.computeFactoredOffs();
     rad.initShiftedData();
 
@@ -845,18 +923,48 @@ module DefaultRectangular {
   // Based on the old 'dsiReindex' method
   //
   proc _remoteAccessData.toReindex(newDom) {
-    compilerAssert(defRectSimpleDData && this.rank == newDom.rank);
+    compilerAssert(this.rank == newDom.rank);
 
     // NB: Only sets 'blkChanged' if underlying RADs have it set
     var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, blkChanged);
 
-    rad.data        = this.data;
-    rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
-    rad.origin      = this.origin:newDom.idxType;
-    rad.blk         = this.blk;
-    rad.off         = chpl__tuplify(newDom.dsiLow);
-    rad.str         = chpl__tuplify(newDom.dsiStride);
+    rad.initDataFrom(this);
+
+    rad.shiftedData  = if newDom.stridable then this.data else this.shiftedData;
+    rad.origin       = this.origin:newDom.idxType;
+    rad.blk          = this.blk;
+    rad.off          = chpl__tuplify(newDom.dsiLow);
+    rad.str          = chpl__tuplify(newDom.dsiStride);
     rad.factoredOffs = 0:idxType;
+
+    if !defRectSimpleDData {
+      rad.mdParDim    = this.mdParDim;
+      rad.mdNumChunks = this.mdNumChunks;
+
+      const thisStr   = abs(this.str(mdParDim));
+      const radStr    = abs(rad.str(mdParDim));
+
+      rad.mdRLo       = rad.off(mdParDim) - (this.off(mdParDim) - this.mdRLo) / thisStr * radStr;
+      rad.mdRHi       = rad.off(mdParDim) + (this.mdRLen - 1) * radStr;
+      rad.mdRStr      = abs(rad.str(mdParDim)):rad.idxType;
+      rad.mdRLen      = this.mdRLen;
+      rad.mdBlk       = thisStr / radStr;
+
+      const thisLo    = this.off(mdParDim);
+      const radLo     = rad.off(mdParDim);
+      for i in 1..#mdNumChunks {
+        var low = (this.mData(i).pdr.low - thisLo) / thisStr;
+        low = if rad.stridable then low * radStr else low;
+        low += radLo;
+
+        var high = (this.mData(i).pdr.high - thisLo) /thisStr;
+        high = if rad.stridable then high * radStr else high;
+        high += radLo;
+
+        const rng = low..high;
+        rad.mData(i).pdr = if !rad.stridable then rng else rng by radStr;
+      }
+    }
 
     rad.computeFactoredOffs();
     rad.initShiftedData();
@@ -868,31 +976,84 @@ module DefaultRectangular {
   // Based on the old 'dsiRankChange' method
   //
   proc _remoteAccessData.toRankChange(newDom, cd, idx) {
-    compilerAssert(defRectSimpleDData && this.rank == idx.size && this.rank != newDom.rank);
+    compilerAssert(this.rank == idx.size && this.rank != newDom.rank);
 
     // Unconditionally sets 'blkChanged'
     //
     // TODO: If 'collapsedDims' were param, we would know if blk(rank) was 1 or not.
     var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, true);
-
     const collapsedDims = chpl__tuplify(cd);
-    rad.data        = this.data;
+
+    rad.initDataFrom(this);
+
     rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
     rad.origin      = this.origin:newDom.idxType;
-    var curDim = 1;
+
+    var mdpdIsRange : bool;
+    var mdpdJ       : this.idxType;
+    var mdpdJVal    : this.idxType;
+    var curDim      = 1;
     for param j in 1..idx.size {
       if !collapsedDims(j) {
         rad.off(curDim) = newDom.dsiDim(curDim).low;
         rad.origin     += this.blk(j) * (rad.off(curDim) - this.off(j)) / this.str(j);
         rad.blk(curDim) = this.blk(j);
         rad.str(curDim) = this.str(j);
+
+        if !defRectSimpleDData && j == mdParDim {
+          mdpdIsRange  = true;
+          rad.mdParDim = curDim;
+        }
+
         curDim += 1;
       } else {
         rad.origin += this.blk(j) * (idx(j) - this.off(j)) / this.str(j);
+
+        if !defRectSimpleDData && j == mdParDim {
+          mdpdIsRange = false;
+          mdpdJ       = j;
+          mdpdJVal    = idx(j);
+        }
       }
     }
 
     rad.computeFactoredOffs();
+
+    if !defRectSimpleDData {
+      if mdpdIsRange {
+        rad.mdNumChunks = this.mdNumChunks;
+        rad.mdRLo       = this.mdRLo;
+        rad.mdRHi       = this.mdRHi;
+        rad.mdRStr      = this.mdRStr;
+        rad.mdRLen      = this.mdRLen;
+        rad.mdBlk       = this.mdBlk;
+
+        for i in 1..#mdNumChunks {
+          const rng = max(this.mData(i).pdr.low, newDom.dsiDim(rad.mdParDim).low)
+                      ..min(this.mData(i).pdr.high, newDom.dsiDim(rad.mdParDim).high);
+          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(rad.mdParDim).stride;
+        }
+      } else {
+        // If the mdParDim'th dimension is removed, then we switch to
+        // a synthesized mdParDim==1.
+        const blkRatio  = this.blk(1) / rad.blk(1);
+        rad.mdParDim    = 1;
+        rad.mdNumChunks = this.mdNumChunks;
+        rad.mdRLen      = this.mdRLen * this.mdBlk * blkRatio;
+        rad.mdRStr      = abs(newDom.dsiDim(1).stride):rad.idxType;
+        rad.mdRLo       = newDom.dsiDim(1).alignedLow - (mdpdJVal - this.mdRLo) * blkRatio;
+        rad.mdRHi       = rad.mdRLo + (rad.mdRLen - 1) * rad.mdRStr;
+        rad.mdBlk       = 1;
+
+        for i in 1..#mdNumChunks {
+          const (lo, hi) = rad.mdChunk2Ind(i-1);
+          const rng = max(lo, newDom.dsiDim(1).low) .. min(hi, newDom.dsiDim(1).high);
+          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(1).stride;
+        }
+      }
+    }
+
+
     rad.initShiftedData();
 
     return rad;
@@ -916,15 +1077,6 @@ module DefaultRectangular {
                      param stridable: bool, newTargetLocDom: domain(rank)) {
       // This should resize the arrays
       targetLocDom=newTargetLocDom;
-    }
-
-    proc deinit() {
-      if !defRectSimpleDData {
-        for rad in RAD {
-          if rad.mData != nil then
-            _ddata_free(rad.mData);
-        }
-      }
     }
 
     // These functions must always be called locally, because the lock
@@ -1685,13 +1837,6 @@ module DefaultRectangular {
       }
     }
 
-    proc strideAlignUp(lo, r)
-      return r.low + (lo - r.low + abs(r.stride):idxType - 1)
-             / abs(r.stride):idxType * abs(r.stride):idxType;
-
-    proc strideAlignDown(hi, r)
-      return hi - (hi - r.low) % abs(r.stride):idxType;
-
     proc dsiReallocate(d: domain) {
       if (d._value.type == dom.type) {
         on this {
@@ -1767,12 +1912,11 @@ module DefaultRectangular {
         rad.mdRStr = mdRStr;
         rad.mdRLen = mdRLen;
         rad.mdBlk = mdBlk;
-        rad.mData = _ddata_allocate(_multiData(eltType=eltType,
-                                               idxType=idxType),
-                                    rad.mdNumChunks);
-        for i in 0..#mdNumChunks {
-          rad.mData(i).data = mData(i).data;
-          rad.mData(i).shiftedData = mData(i).shiftedData;
+        for i in 1..#mdNumChunks {
+          rad.mData(i).data        = mData(i - 1).data;
+          rad.mData(i).shiftedData = mData(i - 1).shiftedData;
+          rad.mData(i).dataOff     = mData(i - 1).dataOff;
+          rad.mData(i).pdr         = mData(i - 1).pdr;
         }
       }
       return rad;

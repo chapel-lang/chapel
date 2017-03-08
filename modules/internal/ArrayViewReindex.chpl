@@ -126,7 +126,7 @@ module ArrayViewReindex {
       for i in privDom {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-          yield indexCache.shiftedDataElem(dataIdx);
+          yield indexCache.getDataElem(dataIdx);
         } else {
           yield arr.dsiAccess(chpl_reindexConvertIdx(i));
         }
@@ -138,7 +138,7 @@ module ArrayViewReindex {
       for i in privDom.these(tag) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-          yield indexCache.shiftedDataElem(dataIdx);
+          yield indexCache.getDataElem(dataIdx);
         } else {
           yield arr.dsiAccess(chpl_reindexConvertIdx(i));
         }
@@ -156,7 +156,7 @@ module ArrayViewReindex {
       for i in privDom.these(tag, followThis) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-          yield indexCache.shiftedDataElem(dataIdx);
+          yield indexCache.getDataElem(dataIdx);
         } else {
           yield arr.dsiAccess(chpl_reindexConvertIdx(i));
         }
@@ -209,7 +209,7 @@ module ArrayViewReindex {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-        return indexCache.shiftedDataElem(dataIdx);
+        return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_reindexConvertIdx(i));
       }
@@ -220,7 +220,7 @@ module ArrayViewReindex {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-        return indexCache.shiftedDataElem(dataIdx);
+        return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_reindexConvertIdx(i));
       }
@@ -231,7 +231,7 @@ module ArrayViewReindex {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-        return indexCache.shiftedDataElem(dataIdx);
+        return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_reindexConvertIdx(i));
       }
@@ -375,8 +375,7 @@ module ArrayViewReindex {
     //
 
     proc shouldUseIndexCache() param {
-      return _ArrInstance.isDefaultRectangular() &&
-             defRectSimpleDData;
+      return _ArrInstance.isDefaultRectangular();
     }
 
     proc buildIndexCache() {
