@@ -26,9 +26,11 @@ flat model is the default and maps closely to the view of locales
 implemented in the 1.7 release.  The NUMA locale model maps sublocales
 to NUMA domains.  The NUMA model is currently implemented at a prototype
 level. Performance has not yet been a focus in the NUMA locale model and
-will require additional effort in future releases.  We expect to add
-more locale models in future releases.  The KNL locale model provides
-access to on-chip high-bandwidth DRAM.
+will require additional effort in future releases.  The KNL locale
+model provides support for self-hosting Xeon Phi (formerly Knight's
+Landing) processors and includes provision for access to
+tightly-coupled on-package high-bandwidth DRAM memory.  We expect to
+add more locale models in future releases.
 
 
 -----------------------------------
