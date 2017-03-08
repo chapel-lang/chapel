@@ -58,11 +58,11 @@ writeln("\tR2D32: ", checkRNG(R2D32, T2D32), " errors");
 
 
 writeln("fillRandom() aliased arrays");
-var aT1D => T1D;
-var aT2D => T2D;
-var aT3D => T3D;
-var aT4D => T4D;
-var aT2D32 => T2D32;
+ref aT1D = T1D;
+ref aT2D = T2D;
+ref aT3D = T3D;
+ref aT4D = T4D;
+ref aT2D32 = T2D32;
 resetTempArrays();
 fillRefArrays();
 trng.fillRandom(aT1D);
@@ -101,9 +101,9 @@ writeln("\tR2D32: ", checkRNG(R2D32, T2D32), " errors");
 
 
 writeln("fillRandom() rank changed arrays");
-var rcT1D => T2D(Dom2D.dim(1), n2/2);
-var rcT2D => T3D(Dom3D.dim(1), Dom3D.dim(2), n3/2);
-var rcT3D => T4D(Dom4D.dim(1), Dom4D.dim(2), Dom4D.dim(3), n4/2);
+ref rcT1D = T2D(Dom2D.dim(1), n2/2);
+ref rcT2D = T3D(Dom3D.dim(1), Dom3D.dim(2), n3/2);
+ref rcT3D = T4D(Dom4D.dim(1), Dom4D.dim(2), Dom4D.dim(3), n4/2);
 const rcDom1D: domain(1) dmapped Dist1D = Dom2D.dim(1);
 const rcDom2D: domain(2) dmapped Dist2D = {Dom3D.dim(1), Dom3D.dim(2)};
 const rcDom3D: domain(3) dmapped Dist3D = {Dom4D.dim(1), Dom4D.dim(2), Dom4D.dim(3)};

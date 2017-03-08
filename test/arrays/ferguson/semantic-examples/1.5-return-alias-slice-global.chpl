@@ -4,7 +4,7 @@ use samples;
 var A:[1..4] R;
 
 proc f() {
-  var slice => A[2..3];
+  ref slice = A[2..3];
   return slice;
 }
 

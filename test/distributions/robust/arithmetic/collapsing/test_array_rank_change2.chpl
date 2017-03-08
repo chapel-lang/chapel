@@ -12,7 +12,7 @@ proc checkMe(i1, i2, i3, i4, A, j1, j2, j3) {
 
 A4D = 1;
 
-var A31 => A4D(c, Dom4D.dim(2), Dom4D.dim(3), Dom4D.dim(4));
+ref A31 = A4D(c, Dom4D.dim(2), Dom4D.dim(3), Dom4D.dim(4));
 A31 += c;
 var errs = 0;
 for c2 in Dom4D.dim(2) {
@@ -24,7 +24,7 @@ for c2 in Dom4D.dim(2) {
 }
 writeln("A31: ", errs, " errors");
 
-var A32 => A4D(Dom4D.dim(1), c, Dom4D.dim(3), Dom4D.dim(4));
+ref A32 = A4D(Dom4D.dim(1), c, Dom4D.dim(3), Dom4D.dim(4));
 A32 += c;
 errs = 0;
 for c1 in Dom4D.dim(1) {
@@ -36,7 +36,7 @@ for c1 in Dom4D.dim(1) {
 }
 writeln("A32: ", errs, " errors");
 
-var A33 => A4D(Dom4D.dim(1), Dom4D.dim(2), c, Dom4D.dim(4));
+ref A33 = A4D(Dom4D.dim(1), Dom4D.dim(2), c, Dom4D.dim(4));
 A33 += c;
 errs = 0;
 for c1 in Dom4D.dim(1) {
@@ -48,7 +48,7 @@ for c1 in Dom4D.dim(1) {
 }
 writeln("A33: ", errs, " errors");
 
-var A34 => A4D(Dom4D.dim(1), Dom4D.dim(2), Dom4D.dim(3), c);
+ref A34 = A4D(Dom4D.dim(1), Dom4D.dim(2), Dom4D.dim(3), c);
 A34 += c;
 errs = 0;
 for c1 in Dom4D.dim(1) {

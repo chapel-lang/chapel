@@ -295,9 +295,9 @@ proc setupComms() {
       Grid[ijk] = MyChunk;
 
       // alias to save typing
-      var DestSlice => MyChunk.DestSlice;
-      var SrcSlice => MyChunk.SrcSlice;
-      var Neighs => MyChunk.Neighs;
+      ref DestSlice = MyChunk.DestSlice;
+      ref SrcSlice = MyChunk.SrcSlice;
+      ref Neighs = MyChunk.Neighs;
      
       // Create 3D slices representing an overlap
       for (Src, Dest, neigh) in zip(SrcSlice, DestSlice, NeighDom) {
