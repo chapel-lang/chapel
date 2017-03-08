@@ -213,7 +213,7 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
     EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
 
     log_info "Running test job."
-    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} | sort > ${TEST_EXEC_OUT}
+    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} 2>&1 | sort > ${TEST_EXEC_OUT}
     log_info "Test job complete."
 
     # Check result
