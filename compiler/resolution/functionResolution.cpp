@@ -6154,6 +6154,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     DefExpr* dExp = toDefExpr(formalExpr);
     ArgSymbol* fArg = toArgSymbol(dExp->sym);
 
+    if (fArg->type->symbol->hasFlag(FLAG_GENERIC)) {
+      USR_FATAL_CONT("Generic functions can't be captured as values");
+    }
+
     ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
     if (fArg->typeExpr)
       newFormal->typeExpr = fArg->typeExpr->copy();
