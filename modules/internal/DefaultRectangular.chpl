@@ -1603,7 +1603,7 @@ module DefaultRectangular {
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind: idxType ...1)
-    where rank == 1 && !shouldReturnRvalueByConstRef(eltType)
+    where rank == 1 && shouldReturnRvalueByValue(eltType)
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind: idxType ...1) const ref
@@ -1624,7 +1624,7 @@ module DefaultRectangular {
     }
 
     inline proc dsiAccess(ind : rank*idxType)
-    where !shouldReturnRvalueByConstRef(eltType) {
+    where shouldReturnRvalueByValue(eltType) {
       if boundsChecking then
         if !dom.dsiMember(ind) {
           halt("array index out of bounds: " + _stringify_tuple(ind));
@@ -1648,7 +1648,7 @@ module DefaultRectangular {
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i)
-    where !shouldReturnRvalueByConstRef(eltType)
+    where shouldReturnRvalueByValue(eltType)
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i) const ref

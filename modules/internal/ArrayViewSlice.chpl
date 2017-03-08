@@ -139,7 +139,7 @@ module ArrayViewSlice {
     }
 
     inline proc dsiAccess(i: idxType ...rank)
-      where !shouldReturnRvalueByConstRef(eltType) {
+      where shouldReturnRvalueByValue(eltType) {
       return dsiAccess(i);
     }
 
@@ -159,7 +159,7 @@ module ArrayViewSlice {
     }
 
     inline proc dsiAccess(i)
-      where !shouldReturnRvalueByConstRef(eltType) {
+      where shouldReturnRvalueByValue(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -184,7 +184,7 @@ module ArrayViewSlice {
       return arr.dsiLocalAccess(i);
 
     inline proc dsiLocalAccess(i)
-      where !shouldReturnRvalueByConstRef(eltType)
+      where shouldReturnRvalueByValue(eltType)
       return arr.dsiLocalAccess(i);
 
     inline proc dsiLocalAccess(i) const ref

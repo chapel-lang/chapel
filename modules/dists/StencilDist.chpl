@@ -1178,7 +1178,7 @@ inline proc StencilArr.dsiAccess(i: rank*idxType) ref {
 }
 // value version for POD types
 inline proc StencilArr.dsiAccess(i: rank*idxType)
-where !shouldReturnRvalueByConstRef(eltType) {
+where shouldReturnRvalueByValue(eltType) {
   return do_dsiAccess(false, i);
 }
 // const ref version for types with copy-ctor
@@ -1193,7 +1193,7 @@ inline proc StencilArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 // value version for POD types
 inline proc StencilArr.dsiAccess(i: idxType...rank)
-where !shouldReturnRvalueByConstRef(eltType)
+where shouldReturnRvalueByValue(eltType)
   return dsiAccess(i);
 // const ref version for types with copy-ctor
 inline proc StencilArr.dsiAccess(i: idxType...rank) const ref

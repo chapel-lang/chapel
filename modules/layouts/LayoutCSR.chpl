@@ -437,7 +437,7 @@ class CSRArr: BaseSparseArrImpl {
   }
   // value version for POD types
   proc dsiAccess(ind: rank*idxType)
-  where !shouldReturnRvalueByConstRef(eltType) {
+  where shouldReturnRvalueByValue(eltType) {
     // make sure we're in the dense bounding box
     dom.boundsCheck(ind);
 

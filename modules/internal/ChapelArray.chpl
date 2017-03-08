@@ -1889,10 +1889,15 @@ module ChapelArray {
 
   pragma "no doc"
   proc shouldReturnRvalueByConstRef(type t) param {
-    if !PODValAccess then return true;
-    if isPODType(t) then return false;
     return true;
   }
+  pragma "no doc"
+  proc shouldReturnRvalueByValue(type t) param {
+    if !PODValAccess then return false;
+    if isPODType(t) then return true;
+    return false;
+  }
+
 
   // Array wrapper record
   pragma "array"
@@ -1969,7 +1974,7 @@ module ChapelArray {
     }
     pragma "no doc" // value version, for POD types
     inline proc const this(i: rank*_value.dom.idxType)
-    where !shouldReturnRvalueByConstRef(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType)
     {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
@@ -1996,7 +2001,7 @@ module ChapelArray {
 
     pragma "no doc" // value version, for POD types
     inline proc const this(i: _value.dom.idxType ...rank)
-    where !shouldReturnRvalueByConstRef(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType)
       return this(i);
 
     pragma "no doc" // const ref version, for not-POD types
@@ -2016,7 +2021,7 @@ module ChapelArray {
     }
     pragma "no doc" // value version, for POD types
     inline proc const localAccess(i: rank*_value.dom.idxType)
-    where !shouldReturnRvalueByConstRef(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType)
     {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
@@ -2042,7 +2047,7 @@ module ChapelArray {
 
     pragma "no doc" // value version, for POD types
     inline proc localAccess(i: _value.dom.idxType ...rank)
-    where !shouldReturnRvalueByConstRef(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType)
       return localAccess(i);
 
     pragma "no doc" // const ref version, for not-POD types
