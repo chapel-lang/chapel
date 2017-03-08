@@ -62,6 +62,7 @@ typedef enum {
 } choose_type_t;
 
 static bool symExprIsSet(SymExpr* sym);
+static bool symbolIsUsedAsConstRef(Symbol* sym);
 static void lowerContextCall(ContextCallExpr* cc, choose_type_t which);
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst);
@@ -167,9 +168,38 @@ bool symExprIsUsedAsConstRef(SymExpr* use) {
 
         // use const-ref-return if querying locale
         return true;
+
+      } else {
+        // Check for the case that sym is moved to a compiler-introduced
+        // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
+        if (call->isPrimitive(PRIM_ADDR_OF) ||
+            call->isPrimitive(PRIM_SET_REFERENCE) ||
+            call->isPrimitive(PRIM_GET_MEMBER) ||
+            call->isPrimitive(PRIM_GET_SVEC_MEMBER))
+            call = toCallExpr(call->parentExpr);
+
+        if (call->isPrimitive(PRIM_MOVE)) {
+          SymExpr* lhs = toSymExpr(call->get(1));
+          Symbol* lhsSymbol = lhs->symbol();
+
+          if (lhs != use &&
+              lhsSymbol->isRef() &&
+              symbolIsUsedAsConstRef(lhsSymbol))
+            return true;
+        }
       }
     }
     return false;
+}
+
+static
+bool symbolIsUsedAsConstRef(Symbol* sym) {
+  for_SymbolSymExprs(se, sym) {
+    if (symExprIsUsedAsConstRef(se)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 static
@@ -1168,15 +1198,8 @@ void cullOverReferences() {
         // Check: should we use the const-ref or value version?
         // Use value version if it's never passed/returned as const ref
         which = USE_VALUE;
-        for_SymbolSymExprs(se, lhsSymbol) {
-          // Ignore the LHS of the move we are considering.
-          if (se == lhs) continue;
-
-          if (symExprIsUsedAsConstRef(se)) {
-            which = USE_CONST_REF;
-            break;
-          }
-        }
+        if (symbolIsUsedAsConstRef(lhsSymbol))
+          which = USE_CONST_REF;
       }
     }
 
