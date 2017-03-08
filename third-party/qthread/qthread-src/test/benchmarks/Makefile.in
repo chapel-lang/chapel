@@ -197,7 +197,8 @@ am__EXEEXT_2 = time_gcd$(EXEEXT) time_increments$(EXEEXT) \
 	time_stencil_bsp$(EXEEXT) time_stencil_feb$(EXEEXT) \
 	time_stencil_pre$(EXEEXT) time_halo_swap_all$(EXEEXT) \
 	time_prodcons_comm$(EXEEXT) time_qt_loops$(EXEEXT) \
-	time_qt_loopaccums$(EXEEXT) $(am__EXEEXT_1)
+	time_qt_loopaccums$(EXEEXT) time_thread_ring$(EXEEXT) \
+	time_chpl_spawn$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_LIBM_TRUE@am__EXEEXT_3 = time_uts_syncvar$(EXEEXT) \
 @HAVE_LIBM_TRUE@	time_uts_aligned$(EXEEXT) \
 @HAVE_LIBM_TRUE@	time_uts_sinc$(EXEEXT) \
@@ -372,6 +373,10 @@ time_chain_bench_pthread_OBJECTS =  \
 	$(am_time_chain_bench_pthread_OBJECTS)
 time_chain_bench_pthread_LDADD = $(LDADD)
 time_chain_bench_pthread_DEPENDENCIES = $(qthreadlib)
+am_time_chpl_spawn_OBJECTS = generic/time_chpl_spawn.$(OBJEXT)
+time_chpl_spawn_OBJECTS = $(am_time_chpl_spawn_OBJECTS)
+time_chpl_spawn_LDADD = $(LDADD)
+time_chpl_spawn_DEPENDENCIES = $(qthreadlib)
 am__time_cilk_eager_future_SOURCES_DIST = mt/time_cilk_eager_future.c
 @COMPILE_CILK_BENCHMARKS_TRUE@am_time_cilk_eager_future_OBJECTS = mt/time_cilk_eager_future.$(OBJEXT)
 time_cilk_eager_future_OBJECTS = $(am_time_cilk_eager_future_OBJECTS)
@@ -626,6 +631,10 @@ time_thrcrt_bench_pthread_OBJECTS =  \
 	$(am_time_thrcrt_bench_pthread_OBJECTS)
 time_thrcrt_bench_pthread_LDADD = $(LDADD)
 time_thrcrt_bench_pthread_DEPENDENCIES = $(qthreadlib)
+am_time_thread_ring_OBJECTS = generic/time_thread_ring.$(OBJEXT)
+time_thread_ring_OBJECTS = $(am_time_thread_ring_OBJECTS)
+time_thread_ring_LDADD = $(LDADD)
+time_thread_ring_DEPENDENCIES = $(qthreadlib)
 am_time_threading_OBJECTS = generic/time_threading.$(OBJEXT)
 time_threading_OBJECTS = $(am_time_threading_OBJECTS)
 time_threading_LDADD = $(LDADD)
@@ -791,7 +800,7 @@ SOURCES = $(fib_cilk_SOURCES) $(fib_omp_SOURCES) \
 	$(spawn_sequential_qthreads_SOURCES) \
 	$(spawn_sequential_tbb_SOURCES) $(time_allpairs_SOURCES) \
 	$(time_chain_bench_SOURCES) \
-	$(time_chain_bench_pthread_SOURCES) \
+	$(time_chain_bench_pthread_SOURCES) $(time_chpl_spawn_SOURCES) \
 	$(time_cilk_eager_future_SOURCES) $(time_cilk_fib_SOURCES) \
 	$(time_cilk_task_spawn_SOURCES) $(time_cncthr_bench_SOURCES) \
 	$(time_cncthr_bench_pthread_SOURCES) \
@@ -819,7 +828,8 @@ SOURCES = $(fib_cilk_SOURCES) $(fib_omp_SOURCES) \
 	$(time_tbb_fib_SOURCES) $(time_tbb_task_spawn_SOURCES) \
 	$(time_tbbq_SOURCES) $(time_tbbq_sizes_SOURCES) \
 	$(time_thrcrt_bench_SOURCES) \
-	$(time_thrcrt_bench_pthread_SOURCES) $(time_threading_SOURCES) \
+	$(time_thrcrt_bench_pthread_SOURCES) \
+	$(time_thread_ring_SOURCES) $(time_threading_SOURCES) \
 	$(time_threading_omp_SOURCES) $(time_uts_aligned_SOURCES) \
 	$(time_uts_cilk_SOURCES) $(time_uts_donecount_SOURCES) \
 	$(time_uts_donecount2_SOURCES) $(time_uts_donecount3_SOURCES) \
@@ -839,7 +849,7 @@ DIST_SOURCES = $(am__fib_cilk_SOURCES_DIST) \
 	$(spawn_sequential_qthreads_SOURCES) \
 	$(am__spawn_sequential_tbb_SOURCES_DIST) \
 	$(time_allpairs_SOURCES) $(time_chain_bench_SOURCES) \
-	$(time_chain_bench_pthread_SOURCES) \
+	$(time_chain_bench_pthread_SOURCES) $(time_chpl_spawn_SOURCES) \
 	$(am__time_cilk_eager_future_SOURCES_DIST) \
 	$(am__time_cilk_fib_SOURCES_DIST) \
 	$(am__time_cilk_task_spawn_SOURCES_DIST) \
@@ -874,7 +884,8 @@ DIST_SOURCES = $(am__fib_cilk_SOURCES_DIST) \
 	$(am__time_tbbq_SOURCES_DIST) \
 	$(am__time_tbbq_sizes_SOURCES_DIST) \
 	$(time_thrcrt_bench_SOURCES) \
-	$(time_thrcrt_bench_pthread_SOURCES) $(time_threading_SOURCES) \
+	$(time_thrcrt_bench_pthread_SOURCES) \
+	$(time_thread_ring_SOURCES) $(time_threading_SOURCES) \
 	$(am__time_threading_omp_SOURCES_DIST) \
 	$(am__time_uts_aligned_SOURCES_DIST) \
 	$(am__time_uts_cilk_SOURCES_DIST) \
@@ -1087,6 +1098,7 @@ timelimit_path = @timelimit_path@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+with_alloc = @with_alloc@
 with_barrier = @with_barrier@
 with_dict = @with_dict@
 with_scheduler = @with_scheduler@
@@ -1098,7 +1110,8 @@ generic_benchmarks = time_gcd time_increments time_febs \
 	time_producerconsumer time_syncvar_producerconsumer \
 	time_threading time_stencil_bsp time_stencil_feb \
 	time_stencil_pre time_halo_swap_all time_prodcons_comm \
-	time_qt_loops time_qt_loopaccums $(am__append_4)
+	time_qt_loops time_qt_loopaccums time_thread_ring \
+	time_chpl_spawn $(am__append_4)
 thesis_benchmarks = time_allpairs time_wavefront $(am__append_1)
 pmea09_benchmarks = time_qarray time_qarray_sizes time_qpool \
 	time_qlfqueue time_qdqueue time_qdqueue_sizes $(am__append_10)
@@ -1182,6 +1195,8 @@ time_fib2_SOURCES = mt/time_fib2.c
 time_producerconsumer_SOURCES = generic/time_producerconsumer.c
 time_syncvar_producerconsumer_SOURCES = generic/time_syncvar_producerconsumer.c
 time_threading_SOURCES = generic/time_threading.c
+time_thread_ring_SOURCES = generic/time_thread_ring.c
+time_chpl_spawn_SOURCES = generic/time_chpl_spawn.c
 @COMPILE_OMP_BENCHMARKS_TRUE@time_threading_omp_SOURCES = generic/time_threading.omp.c
 @COMPILE_OMP_BENCHMARKS_TRUE@time_threading_omp_CFLAGS = @OPENMP_CFLAGS@
 time_stencil_bsp_SOURCES = generic/time_stencil_bsp.c
@@ -1399,6 +1414,18 @@ mtaap08/time_chain_bench_pthread.$(OBJEXT): mtaap08/$(am__dirstamp) \
 time_chain_bench_pthread$(EXEEXT): $(time_chain_bench_pthread_OBJECTS) $(time_chain_bench_pthread_DEPENDENCIES) $(EXTRA_time_chain_bench_pthread_DEPENDENCIES) 
 	@rm -f time_chain_bench_pthread$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(time_chain_bench_pthread_OBJECTS) $(time_chain_bench_pthread_LDADD) $(LIBS)
+generic/$(am__dirstamp):
+	@$(MKDIR_P) generic
+	@: > generic/$(am__dirstamp)
+generic/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) generic/$(DEPDIR)
+	@: > generic/$(DEPDIR)/$(am__dirstamp)
+generic/time_chpl_spawn.$(OBJEXT): generic/$(am__dirstamp) \
+	generic/$(DEPDIR)/$(am__dirstamp)
+
+time_chpl_spawn$(EXEEXT): $(time_chpl_spawn_OBJECTS) $(time_chpl_spawn_DEPENDENCIES) $(EXTRA_time_chpl_spawn_DEPENDENCIES) 
+	@rm -f time_chpl_spawn$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(time_chpl_spawn_OBJECTS) $(time_chpl_spawn_LDADD) $(LIBS)
 mt/$(am__dirstamp):
 	@$(MKDIR_P) mt
 	@: > mt/$(am__dirstamp)
@@ -1441,12 +1468,6 @@ mt/time_eager_future.$(OBJEXT): mt/$(am__dirstamp) \
 time_eager_future$(EXEEXT): $(time_eager_future_OBJECTS) $(time_eager_future_DEPENDENCIES) $(EXTRA_time_eager_future_DEPENDENCIES) 
 	@rm -f time_eager_future$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(time_eager_future_OBJECTS) $(time_eager_future_LDADD) $(LIBS)
-generic/$(am__dirstamp):
-	@$(MKDIR_P) generic
-	@: > generic/$(am__dirstamp)
-generic/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) generic/$(DEPDIR)
-	@: > generic/$(DEPDIR)/$(am__dirstamp)
 generic/time_febs.$(OBJEXT): generic/$(am__dirstamp) \
 	generic/$(DEPDIR)/$(am__dirstamp)
 
@@ -1704,6 +1725,12 @@ mtaap08/time_thrcrt_bench_pthread.$(OBJEXT): mtaap08/$(am__dirstamp) \
 time_thrcrt_bench_pthread$(EXEEXT): $(time_thrcrt_bench_pthread_OBJECTS) $(time_thrcrt_bench_pthread_DEPENDENCIES) $(EXTRA_time_thrcrt_bench_pthread_DEPENDENCIES) 
 	@rm -f time_thrcrt_bench_pthread$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(time_thrcrt_bench_pthread_OBJECTS) $(time_thrcrt_bench_pthread_LDADD) $(LIBS)
+generic/time_thread_ring.$(OBJEXT): generic/$(am__dirstamp) \
+	generic/$(DEPDIR)/$(am__dirstamp)
+
+time_thread_ring$(EXEEXT): $(time_thread_ring_OBJECTS) $(time_thread_ring_DEPENDENCIES) $(EXTRA_time_thread_ring_DEPENDENCIES) 
+	@rm -f time_thread_ring$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(time_thread_ring_OBJECTS) $(time_thread_ring_LDADD) $(LIBS)
 generic/time_threading.$(OBJEXT): generic/$(am__dirstamp) \
 	generic/$(DEPDIR)/$(am__dirstamp)
 
@@ -1820,6 +1847,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@generic/$(DEPDIR)/time_chpl_spawn.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@generic/$(DEPDIR)/time_febs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@generic/$(DEPDIR)/time_febs_graph_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@generic/$(DEPDIR)/time_febs_stream_test.Po@am__quote@
@@ -1834,6 +1862,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@generic/$(DEPDIR)/time_stencil_feb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@generic/$(DEPDIR)/time_stencil_pre.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@generic/$(DEPDIR)/time_syncvar_producerconsumer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@generic/$(DEPDIR)/time_thread_ring.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@generic/$(DEPDIR)/time_threading.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@generic/$(DEPDIR)/time_threading_omp-time_threading.omp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mt/$(DEPDIR)/time_cilk_eager_future.Po@am__quote@

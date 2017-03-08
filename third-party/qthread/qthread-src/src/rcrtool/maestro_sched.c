@@ -30,7 +30,7 @@ static void ms_init(void){
   // even to max count if threads will be uneven on shepherds
   if ((parallelWidth * sheps) != workers) parallelWidth += 1;
 
-  allowed_workers = (int*) malloc(sheps*sizeof(int));
+  allowed_workers = (int*) qt_malloc(sheps * sizeof(int));
   for ( i = 0; i < sheps; i ++) {
     allowed_workers[i] = parallelWidth;
   }

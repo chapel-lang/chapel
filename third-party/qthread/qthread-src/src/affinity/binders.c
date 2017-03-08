@@ -121,7 +121,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
       sheps.num = 1;
     }
 
-    workers.binds = malloc(sizeof(hwloc_cpuset_t) * workers.num);
+    workers.binds = qt_malloc(sizeof(hwloc_cpuset_t) * workers.num);
     for (int i = 0; i< workers.num; i++) {
       workers.binds[i] = hwloc_bitmap_alloc();  
       workers.binds[i] = hwloc_bitmap_dup(allowed);
@@ -135,7 +135,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
     }
 
   } else {
-    char *bstr = malloc(strlen(bindstr));
+    char *bstr = qt_malloc(strlen(bindstr));
     strcpy(bstr,bindstr);
     int i,j;
     sheps.num = 1; 
@@ -146,7 +146,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
       }
       i++;
     }
-    char ** ranges = malloc(sizeof(char**) * sheps.num);
+    char ** ranges = qt_malloc(sizeof(char **) * sheps.num);
     j = 0;
     ranges[j++] = bstr; 
     for (i=0; bstr[i] != 0; i++) {
@@ -156,7 +156,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
       }
     }
 
-    sheps.binds = malloc(sizeof(hwloc_cpuset_t) * sheps.num);
+    sheps.binds = qt_malloc(sizeof(hwloc_cpuset_t) * sheps.num);
     workers.num = 0;
     for (i=0; i<sheps.num; i++) {
       char tmp[256];
@@ -167,7 +167,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
     }
     j = 0;
     int id;
-    workers.binds = malloc(sizeof(hwloc_cpuset_t) * workers.num);
+    workers.binds = qt_malloc(sizeof(hwloc_cpuset_t) * workers.num);
     for (i=0; i<sheps.num; i++) {
       char tmp[256];
       hwloc_bitmap_foreach_begin(id, sheps.binds[i])
@@ -201,8 +201,9 @@ int INTERNAL qt_affinity_gendists(qthread_shepherd_t   *sheps,
 
   for (size_t i = 0; i < nshepherds; ++i) {
       sheps[i].node            = i;
-      sheps[i].sorted_sheplist = calloc(nshepherds - 1, sizeof(qthread_shepherd_id_t));
-      sheps[i].shep_dists      = calloc(nshepherds, sizeof(unsigned int));
+      sheps[i].sorted_sheplist = qt_calloc(nshepherds - 1,
+                                           sizeof(qthread_shepherd_id_t));
+      sheps[i].shep_dists      = qt_calloc(nshepherds, sizeof(unsigned int));
   }
   for (size_t i = 0; i < nshepherds; ++i) {
     for (size_t j = 0, k = 0; j < nshepherds; ++j) {

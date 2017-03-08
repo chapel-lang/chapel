@@ -23,7 +23,7 @@ static void sort_sheps(unsigned int *restrict          dists,
 {   /*{{{*/
     assert(num > 1);
     size_t                 s_max    = num - 1;
-    qthread_shepherd_id_t *tmp      = calloc(sizeof(qthread_shepherd_id_t), (num - 1));
+    qthread_shepherd_id_t *tmp      = qt_calloc(sizeof(qthread_shepherd_id_t), (num - 1));
     size_t                 tmp_base = 0;
     size_t                 tmp_max  = 0;
 
@@ -65,7 +65,7 @@ static void sort_sheps(unsigned int *restrict          dists,
     printf("\n");
 #endif
     memcpy(s, tmp, sizeof(qthread_shepherd_id_t) * (num - 1));
-    free(tmp);
+    qt_free(tmp);
 } /*}}}*/
 #endif // ifndef QTHREAD_SRC_SHUFFLE_SHEPS_H
 /* vim:set expandtab: */

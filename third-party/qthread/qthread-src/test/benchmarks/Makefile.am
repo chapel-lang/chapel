@@ -19,7 +19,10 @@ generic_benchmarks = \
                      time_halo_swap_all \
                      time_prodcons_comm \
                      time_qt_loops \
-                     time_qt_loopaccums
+                     time_qt_loopaccums \
+                     time_thread_ring \
+                     time_chpl_spawn
+
 thesis_benchmarks = \
                     time_allpairs \
                     time_wavefront
@@ -253,6 +256,10 @@ time_producerconsumer_SOURCES = generic/time_producerconsumer.c
 time_syncvar_producerconsumer_SOURCES = generic/time_syncvar_producerconsumer.c
 
 time_threading_SOURCES = generic/time_threading.c
+
+time_thread_ring_SOURCES = generic/time_thread_ring.c
+
+time_chpl_spawn_SOURCES = generic/time_chpl_spawn.c
 
 if COMPILE_OMP_BENCHMARKS
 time_threading_omp_SOURCES = generic/time_threading.omp.c

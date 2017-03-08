@@ -607,6 +607,7 @@ timelimit_path = @timelimit_path@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+with_alloc = @with_alloc@
 with_barrier = @with_barrier@
 with_dict = @with_dict@
 with_scheduler = @with_scheduler@

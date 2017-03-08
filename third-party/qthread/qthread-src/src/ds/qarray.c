@@ -21,7 +21,7 @@
 #include "qt_asserts.h"
 #include "qt_shepherd_innards.h"           /* for shep_to_node */
 #include "qt_debug.h"
-#include "qt_aligned_alloc.h"
+#include "qt_alloc.h"
 #include "qt_gcd.h"                    /* for qt_lcm() */
 #include "qt_int_ceil.h"
 
@@ -165,7 +165,7 @@ static qarray *qarray_create_internal(const size_t         count,
     }
 
     if (chunk_distribution_tracker == NULL) {
-        aligned_t *tmp = calloc(qthread_num_shepherds(), sizeof(aligned_t));
+        aligned_t *tmp = qt_calloc(qthread_num_shepherds(), sizeof(aligned_t));
         qassert_ret((tmp != NULL), NULL);
         if (qthread_cas_ptr(&(chunk_distribution_tracker), NULL, tmp) != NULL) {
             FREE(tmp, qthread_num_shepherds() * sizeof(aligned_t));
@@ -173,7 +173,7 @@ static qarray *qarray_create_internal(const size_t         count,
             atexit(qarray_free_cdt);
         }
     }
-    ret = calloc(1, sizeof(qarray));
+    ret = qt_calloc(1, sizeof(qarray));
     qassert_goto((ret != NULL), badret_exit);
 
     ret->count = count;
@@ -357,7 +357,7 @@ static qarray *qarray_create_internal(const size_t         count,
     }
 #else /* ifdef QTHREAD_HAVE_MEM_AFFINITY */
       /* For speed, we want page-aligned memory, if we can get it */
-    ret->base_ptr = qthread_internal_aligned_alloc(segment_count * ret->segment_bytes, pagesize);
+    ret->base_ptr = qt_internal_aligned_alloc(segment_count * ret->segment_bytes, pagesize);
 #endif  /* ifdef QTHREAD_HAVE_MEM_AFFINITY */
     qassert_goto((ret->base_ptr != NULL), badret_exit);
 
@@ -453,7 +453,7 @@ static qarray *qarray_create_internal(const size_t         count,
     qgoto(badret_exit);
     if (ret) {
         if (ret->base_ptr) {
-            free(ret->base_ptr);
+            qt_free(ret->base_ptr);
         }
         FREE(ret, sizeof(qarray));
     }
@@ -540,7 +540,7 @@ void qarray_destroy(qarray *a)
                      a->segment_bytes * (a->count / a->segment_size +
                                          ((a->count % a->segment_size) ? 1 : 0)));
 #else
-    qthread_internal_aligned_free(a->base_ptr, pagesize);
+    qt_internal_aligned_free(a->base_ptr, pagesize);
 #endif
     FREE(a, sizeof(qarray));
 }                                      /*}}} */
@@ -1282,7 +1282,7 @@ void qarray_iter_loopaccum(qarray      *a,
             const qthread_shepherd_id_t           maxsheps = qthread_num_shepherds();
             struct qarray_accumfunc_wrapper_args *qfwa     =
                 MALLOC(sizeof(struct qarray_accumfunc_wrapper_args) * maxsheps);
-            char      *rets = calloc(maxsheps - 1, retsize);
+            char      *rets = qt_calloc(maxsheps - 1, retsize);
             aligned_t *rv   = MALLOC(sizeof(aligned_t) * maxsheps);
 
             assert(qfwa);
