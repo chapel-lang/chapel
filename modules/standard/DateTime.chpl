@@ -400,6 +400,13 @@ module DateTime {
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 
+    timeStruct.tm_sec = 0;
+    timeStruct.tm_min = 0;
+    timeStruct.tm_hour = 0;
+    timeStruct.tm_isdst = 0;
+    timeStruct.tm_gmtoff = 0;
+    timeStruct.tm_zone = nil;
+
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
@@ -613,12 +620,15 @@ module DateTime {
     timeStruct.tm_sec = second: int(32);
     timeStruct.tm_min = minute: int(32);
     timeStruct.tm_hour = hour: int(32);
-    timeStruct.tm_year = 1900;
+    timeStruct.tm_year = 0;
     timeStruct.tm_mday = 1;
     timeStruct.tm_mon = 1;
 
+    timeStruct.tm_wday = ((new date(1900, 1, 1)).weekday():int(32) + 1) % 7;
+    timeStruct.tm_yday = 0;
+
     if tzinfo != nil {
-      timeStruct.tm_gmtoff = abs(utcoffset()).seconds;
+      timeStruct.tm_gmtoff = abs(utcoffset()).seconds: c_long;
       timeStruct.tm_zone = __primitive("cast", c_ptr(c_char), tzname().c_str());
       timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
@@ -1076,10 +1086,15 @@ module DateTime {
     timeStruct.tm_min = minute: int(32);
     timeStruct.tm_sec = second: int(32);
 
-    if tzinfo != nil then
+    if tzinfo != nil {
       timeStruct.tm_isdst = tzinfo.dst(this).seconds: int(32);
-    else
+      timeStruct.tm_gmtoff = tzinfo.gmtoff(): c_long;
+      timeStruct.tm_zone = nil;
+    } else {
       timeStruct.tm_isdst = -1: int(32);
+      timeStruct.tm_gmtoff = 0;
+      timeStruct.tm_zone = nil;
+    }
 
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
