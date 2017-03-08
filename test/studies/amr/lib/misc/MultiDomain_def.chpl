@@ -153,6 +153,8 @@ class MultiDomain
         if node.right then q.enqueue( node.right );
       }
     }
+
+    delete q;
   }
   
   
@@ -173,6 +175,8 @@ class MultiDomain
       if node.left  then q.enqueue( node.left );
       if node.right then q.enqueue( node.right );
     }
+
+    delete q;
   }
     
 

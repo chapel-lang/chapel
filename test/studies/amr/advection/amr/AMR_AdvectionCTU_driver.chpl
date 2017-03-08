@@ -195,7 +195,7 @@ proc main {
 
   //<=== Generate output <===
   
-  
+  delete bc;
+  delete hierarchy;
+  delete flagger;
 }
-
-
