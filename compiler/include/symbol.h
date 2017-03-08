@@ -147,6 +147,10 @@ public:
   Qualifier          qual;
   Type*              type;
   FlagSet            flags;
+  // Tuples can contain ref fields. In that event, a VarSymbol/ArgSymbol
+  // needs to be able to track whether the ref field is ref or
+  // const ref. It can depend on the variable for ref to arrays.
+  Qualifier*         fieldQualifiers;
 
   const char*        name;
   const char*        cname;    // Name of symbol for C code
