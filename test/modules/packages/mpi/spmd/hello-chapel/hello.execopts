@@ -1,1 +1,1 @@
---mpi-num-ranks=4
+--spmd 4

@@ -1,0 +1,2 @@
+DestructorSubclassing3.chpl:19: error: unresolved call 'C.init(int(64), meme=D)'
+DestructorSubclassing3.chpl:10: note: candidates are: C.init(x: int(64))

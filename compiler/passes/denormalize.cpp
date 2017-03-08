@@ -41,8 +41,7 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
 inline bool requiresCast(Type* t);
 inline bool isIntegerPromotionPrimitive(PrimitiveTag tag);
 bool isDenormalizable(Symbol* sym,
-    Map<Symbol*,Vec<SymExpr*>*>& defMap,
-    Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr** useOut, Expr** defOut,
+    SymExpr** useOut, Expr** defOut,
     Type** castTo, SafeExprAnalysis& analysisData);
 void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& candidates,
     SafeExprAnalysis& analysisData);
@@ -170,11 +169,6 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
 void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
     UseDefCastMap& udcMap, SafeExprAnalysis& analysisData) {
 
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-
-  buildDefUseMaps(fn, defMap, useMap);
-
   bool cachedGlobalManip = analysisData.isRegisteredGlobalManip(fn);
   bool cachedExternManip = analysisData.isRegisteredExternManip(fn);
 
@@ -205,8 +199,7 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
 
     }
 
-    if(isDenormalizable(sym, defMap, useMap, &use, &def, &castTo,
-          analysisData)) {
+    if(isDenormalizable(sym, &use, &def, &castTo, analysisData)) {
 
       // Initially I used to defer denormalizing actuals and have
       // special treatment while denormalizing actuals of a function
@@ -243,20 +236,13 @@ void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap,
     SafeExprAnalysis& analysisData) {
 
   Vec<Symbol*> symSet;
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
 
   collectSymbolSet(fn, symSet);
-  buildDefUseMaps(symSet, defMap, useMap);
 
   findCandidatesInFuncOnlySym(fn, symSet, udcMap, analysisData);
-
-  freeDefUseMaps(defMap, useMap);
 }
 
 bool isDenormalizable(Symbol* sym,
-    Map<Symbol*,Vec<SymExpr*>*> & defMap,
-    Map<Symbol*,Vec<SymExpr*>*> & useMap,
     SymExpr** useOut, Expr** defOut, Type** castTo,
     SafeExprAnalysis& analysisData) {
 
@@ -267,11 +253,11 @@ bool isDenormalizable(Symbol* sym,
       Expr *def = NULL;
       Expr *defPar = NULL;
 
-      Vec<SymExpr*>* defs = defMap.get(sym);
-      Vec<SymExpr*>* uses = useMap.get(sym);
+      SymExpr* singleDef = sym->getSingleDef();
+      SymExpr* singleUse = sym->getSingleUse();
 
-      if(defs && defs->n == 1 && uses && uses->n == 1) { // check def-use counts
-        SymExpr* se = defs->first();
+      if(singleDef != NULL && singleUse != NULL) { // check def-use counts
+        SymExpr* se = singleDef;
         defPar = se->parentExpr;
 
         //defPar has to be a move without any coercion
@@ -321,7 +307,7 @@ bool isDenormalizable(Symbol* sym,
         if(def) {
           *defOut = def;
           // we have def now find where the value is used
-          SymExpr* se = uses->first();
+          SymExpr* se = singleUse;
           usePar = se->parentExpr;
           if(CallExpr* ce = toCallExpr(usePar)) {
             if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
@@ -333,11 +319,23 @@ bool isDenormalizable(Symbol* sym,
                   // FnSymbol expects to return one symbol, so it's easier to
                   // just not denormalize the returned symbol.
                   //
+                  // PRIM_ARRAY_SHIFT_BASE_POINTER sets its first argument, so
+                  // we should not denormalize if 'se' is the first actual in
+                  // case of AST like this:
+                  //   var ret = (cast ddata(...) nil)
+                  //   shift_base_pointer(ret, ...)
+                  // turning into this:
+                  //   shift_base_pointer((cast ddata nil), ...)
+                  //
+                  // TODO: Have PRIM_ARRAY_SHIFT_BASE_POINTER return instead of
+                  // setting its first arg, then we can rely on PRIM_MOVE logic.
+                  //
                   ce->isPrimitive(PRIM_ARRAY_GET) ||
                   ce->isPrimitive(PRIM_GET_MEMBER) ||
                   ce->isPrimitive(PRIM_DEREF) ||
                   ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   ce->isPrimitive(PRIM_RETURN) ||
+                  (ce->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER) && ce->get(1) == se) ||
                   (ce->isPrimitive(PRIM_MOVE) &&
                    ce->get(1)->typeInfo() !=
                    ce->get(2)->typeInfo()))) {

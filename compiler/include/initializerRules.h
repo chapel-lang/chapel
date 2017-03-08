@@ -20,13 +20,10 @@
 #ifndef _INITIALIZER_RULES_H_
 #define _INITIALIZER_RULES_H_
 
-class CallExpr;
 class FnSymbol;
 class AggregateType;
-class Expr;
-
-void temporaryInitializerFixup(CallExpr* call);
 
 void handleInitializerRules(FnSymbol* fn, AggregateType* t);
+FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct);
 
 #endif

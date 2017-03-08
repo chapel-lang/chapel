@@ -1,8 +1,8 @@
-proc foo(a:int) {
+proc foo(param a:int) {
   writeln("foo1");
 }
 
-proc foo(a:int) where a == 42 {
+proc foo(param a:int) where a == 42 {
   writeln("foo2");
 }
 

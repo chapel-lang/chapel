@@ -271,8 +271,9 @@ proc searchParallel(in board=0, in pos=0, used=0, placed=0, firstPiece=0) {
 
 
         begin with (in board, in pos) {
-          const currentSolution: [piecesDom] int =
+          var currentSolution: [piecesDom] int =
             [firstPiece, mask, 0, 0, 0, 0, 0, 0, 0, 0];
+
           searchLinear(board | (mask & maskBottom), pos,
                        used | (mask & maskUsed), placed+1,
                        currentSolution);

@@ -35,6 +35,7 @@ class GridVariable {
   // Provides an alias directly into the 'value' array.
   //----------------------------------------------------
 
+  pragma "no copy return"
   proc this(D: domain)
   {
     return value(D);
@@ -49,7 +50,7 @@ class GridVariable {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~GridVariable () {}
+  proc deinit () {}
   
   // /|'''''''''''''''''''/|
   //< |    destructor    < |

@@ -1,7 +1,7 @@
 dnl -*- Autoconf -*-
 dnl
 dnl Copyright © 2009-2016 Inria.  All rights reserved.
-dnl Copyright © 2009-2012, 2015-2016 Université Bordeaux
+dnl Copyright © 2009-2012, 2015-2017 Université Bordeaux
 dnl Copyright © 2004-2005 The Trustees of Indiana University and Indiana
 dnl                         University Research and Technology
 dnl                         Corporation.  All rights reserved.
@@ -9,7 +9,7 @@ dnl Copyright © 2004-2012 The Regents of the University of California.
 dnl                         All rights reserved.
 dnl Copyright © 2004-2008 High Performance Computing Center Stuttgart,
 dnl                         University of Stuttgart.  All rights reserved.
-dnl Copyright © 2006-2016 Cisco Systems, Inc.  All rights reserved.
+dnl Copyright © 2006-2017 Cisco Systems, Inc.  All rights reserved.
 dnl Copyright © 2012  Blue Brain Project, BBP/EPFL. All rights reserved.
 dnl Copyright © 2012       Oracle and/or its affiliates.  All rights reserved.
 dnl See COPYING in top-level directory.
@@ -263,7 +263,8 @@ EOF])
         AC_MSG_WARN([***********************************************************])
         AC_MSG_WARN([*** hwloc does not support this system.])
         AC_MSG_WARN([*** hwloc will *attempt* to build (but it may not work).])
-        AC_MSG_WARN([*** hwloc run-time results may be reduced to showing just one processor.])
+        AC_MSG_WARN([*** hwloc run-time results may be reduced to showing just one processor,])
+        AC_MSG_WARN([*** and binding will likely not be supported.])
         AC_MSG_WARN([*** You have been warned.])
         AC_MSG_WARN([*** Pausing to give you time to read this message...])
         AC_MSG_WARN([***********************************************************])
@@ -1314,8 +1315,8 @@ AC_DEFUN([_HWLOC_CHECK_DECL], [
     AC_MSG_CHECKING([whether function $1 has a complete prototype])
     AC_REQUIRE([AC_PROG_CC])
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-         [AC_INCLUDES_DEFAULT([$4])]
-         [$1(1,2,3,4,5,6,7,8,9,10);],
+         [AC_INCLUDES_DEFAULT([$4])],
+         [$1(1,2,3,4,5,6,7,8,9,10);]
       )],
       [AC_MSG_RESULT([no])
        $3],

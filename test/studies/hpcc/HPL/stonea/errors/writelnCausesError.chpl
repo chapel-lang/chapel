@@ -553,11 +553,11 @@ proc main() {
 
     var n = 10;
     var data : [{1..n, 1..n+1}] real = [(i,j) in {1..n, 1..n+1}](i*50)+(j*4)+i/j;
-    var A    : [1..n, 1..n] => data[1..n, 1..n];
-    var b    : [1..n] => data[1..n, n+1];
+    ref A    = data[1..n, 1..n];
+    ref b    = data[1..n, n+1];
     var dataHat : [1..n, 1..n+1] real = data;
-    var AHat : [1..n, 1..n] => dataHat[1..n, 1..n];
-    var bHat : [1..n] => dataHat[1..n, n+1];
+    ref AHat = dataHat[1..n, 1..n];
+    ref bHat = dataHat[1..n, n+1];
     var piv  : [1..n] int;
 
     piv = 1..10;

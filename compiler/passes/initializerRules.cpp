@@ -23,7 +23,6 @@
 #include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"
-#include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
 
@@ -37,43 +36,8 @@ enum InitBody {
 };
 
 
-static void     buildClassAllocator(FnSymbol* fn, AggregateType* ct);
 static InitBody getInitCall(FnSymbol* fn);
 static void     phase1Analysis(BlockStmt* body, AggregateType* t);
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void temporaryInitializerFixup(CallExpr* call) {
-  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
-    // Support super.init() calls (for instance) when the super type does not
-    // define either an initializer or a constructor.  Also ignores errors from
-    // improperly inserted .init() calls (so be sure to check here if something
-    // is behaving oddly - Lydia, 08/19/16)
-    if (strcmp(usym->unresolved, "init") == 0 &&
-        call->numActuals()               >= 2) {
-      SymExpr* _mt = toSymExpr(call->get(1));
-      SymExpr* sym = toSymExpr(call->get(2));
-
-      INT_ASSERT(sym != NULL);
-
-      if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
-        if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-
-          // This code should be removed when the compiler generates
-          // initializers as the default method of construction and
-          // initialization for a type (Lydia note, 08/19/16)
-          usym->unresolved = astr("_construct_", ct->symbol->name);
-
-          _mt->remove();
-        }
-      }
-    }
-  }
-}
 
 /************************************* | **************************************
 *                                                                             *
@@ -87,7 +51,7 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
   } else {
     InitBody bodyStyle = getInitCall(fn);
 
-    if (isClass(ct) == true) {
+    if (isClass(ct) == true && !ct->isGeneric()) {
       buildClassAllocator(fn, ct);
       fn->addFlag(FLAG_INLINE);
     }
@@ -272,6 +236,9 @@ static
 const char* getFieldName(Expr* curExpr);
 
 static
+Expr* modifyFieldAccess(Expr* fieldAccess, DefExpr* curField);
+
+static
 bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
 
 static
@@ -349,7 +316,10 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
 
       if (const char* fieldname = getFieldName(curExpr)) {
         if (!strcmp(fieldname, curField->sym->name)) {
-          // It's a match!  Advance both and move on
+          // It's a match! Change the assignment into a special primitive, in
+          // case generics are involved on this type
+          curExpr = modifyFieldAccess(curExpr, curField);
+          // Advance both and move on
           curField = toDefExpr(curField->next);
           curExpr = getNextStmt(curExpr, body, false);
           isInit = getInitCall(curExpr);
@@ -430,6 +400,38 @@ const char* getFieldName(Expr* curExpr) {
   return NULL;
 }
 
+// Transforms the assignments to fields we found in the initializer body into
+// a special form, that will allow function resolution to not complain when
+// they are encountered if we are still determining the generic instantiation
+// of the type
+static
+Expr* modifyFieldAccess(Expr* fieldAccess, DefExpr* curField) {
+  CallExpr* call = toCallExpr(fieldAccess);
+  INT_ASSERT(call);
+  CallExpr* inner = toCallExpr(call->get(1));
+  INT_ASSERT(inner);
+  SymExpr* argThis = toSymExpr(inner->get(1)->remove());
+  // Fair assumptions, since we just came from getFieldName giving us the
+  // appropriate set up.
+
+
+  SET_LINENO(fieldAccess);
+  CallExpr* replacement = new CallExpr(PRIM_INITIALIZER_SET_FIELD, argThis,
+                                       new_CStringSymbol(curField->sym->name));
+  for_actuals(actual, call) {
+    if (actual == call->get(1)) {
+      // The first arg is the this.field access, which we have already
+      // represented in the new call.
+      continue;
+    }
+    replacement->insertAtTail(actual->copy());
+    // Don't want to remove those as that will mess with the for loop traversal
+    // so insert a copy of them into the new call
+  }
+  call->replace(replacement);
+  return replacement;
+}
+
 static
 bool isLaterFieldAccess(DefExpr* curField, const char* fieldname) {
   DefExpr* next = curField;
@@ -495,39 +497,52 @@ bool isParentField(AggregateType* t, const char *name) {
   }
 }
 
-static
-void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
+static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
+  SET_LINENO(next);
+
   const char* nextField = field->sym->name;
 
-  SET_LINENO(next);
   // Do something appropriate with "super"
   if (field->sym->hasFlag(FLAG_SUPER_CLASS)) {
-    return;
-  }
 
   // For all other fields, insert an assignment into that field with the given
   // initialization, if we have one.
-  if (!field->init && !field->exprType) {
-    USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
-    return;
-  }
+  } else if (!field->init && !field->exprType) {
+    USR_FATAL_CONT(next,
+                   "can't omit initialization of field \"%s\", "
+                   "no type or default value provided",
+                   nextField);
 
-  Symbol* _this = toFnSymbol(next->parentSymbol)->_this;
-  CallExpr* thisAccess = new CallExpr(".", _this,
-                                      new_CStringSymbol(nextField));
-  CallExpr* newInit = NULL;
-  if (field->init) {
-    newInit = new CallExpr("=", thisAccess, field->init->copy());
   } else {
-    INT_ASSERT(field->exprType);
-    VarSymbol* tmp = newTemp("call_tmp");
-    next->insertBefore(new DefExpr(tmp));
-    next->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(tmp),
-                                    new CallExpr(PRIM_INIT,
-                                                 field->exprType->copy())));
-    newInit = new CallExpr("=", thisAccess, new SymExpr(tmp));
+    Symbol*   _this      = toFnSymbol(next->parentSymbol)->_this;
+
+    CallExpr* newInit = new CallExpr(PRIM_INITIALIZER_SET_FIELD,
+                                     new SymExpr(_this),
+                                     new_CStringSymbol(nextField));
+
+    if (field->init) {
+      newInit->insertAtTail(field->init->copy());
+
+    } else {
+      INT_ASSERT(field->exprType);
+
+      VarSymbol* tmp     = newTemp("call_tmp");
+
+      next->insertBefore(new DefExpr(tmp));
+
+      next->insertBefore(new CallExpr(PRIM_MOVE,
+                                      new SymExpr(tmp),
+                                      new CallExpr(PRIM_INIT,
+                                                   field->exprType->copy())));
+
+      if (field->sym->hasFlag(FLAG_PARAM) == true) {
+        tmp->addFlag(FLAG_PARAM);
+      }
+
+      newInit->insertAtTail(new SymExpr(tmp));
+    }
+    next->insertBefore(newInit);
   }
-  next->insertBefore(newInit);
 }
 
 // Takes in the current expr (which must be a loop), the current field
@@ -604,7 +619,7 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
 *                                                                             *
 ************************************** | *************************************/
 
-static void buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
+FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
   SET_LINENO(ct);
 
   FnSymbol*  fn          = new FnSymbol("_new");
@@ -612,14 +627,20 @@ static void buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
   ArgSymbol* type        = new ArgSymbol(INTENT_BLANK, "t", ct);
   VarSymbol* newInstance = newTemp("instance", ct);
   CallExpr*  allocCall   = callChplHereAlloc(ct);
-  CallExpr*  initCall    = new CallExpr("init", gMethodToken, newInstance);
+  CallExpr*  initCall    = NULL;
+
+  if (initMethod->hasFlag(FLAG_RESOLVED)) {
+    initCall = new CallExpr(initMethod, gMethodToken, newInstance);
+  } else {
+    initCall = new CallExpr("init", gMethodToken, newInstance);
+  }
 
   type->addFlag(FLAG_TYPE_VARIABLE);
 
   fn->addFlag(FLAG_METHOD);
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
-  fn->retExprType = new BlockStmt(new SymExpr(ct->symbol), BLOCK_SCOPELESS);
+  fn->retType = ct;
 
   // Add the formal that provides the type for the type method
   fn->insertFormalAtTail(type);
@@ -657,4 +678,6 @@ static void buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
 
   // Insert the definition in to the tree
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+  return fn;
 }

@@ -111,6 +111,12 @@ See :mod:`GMP` for more information on how to use GMP with Chapel.
 module BigInteger {
   use GMP;
 
+  enum Round {
+    DOWN = -1,
+    ZERO =  0,
+    UP   =  1
+  }
+
   pragma "ignore noinit"
   record bigint {
     /* The underlying GMP C structure */
@@ -186,7 +192,7 @@ module BigInteger {
     // copy.  The localeId points back the correct locale but the mpz field
     // is meaningless.
     pragma "no doc"
-    proc ~bigint() {
+    proc deinit() {
       if _local || this.localeId == chpl_nodeID {
         mpz_clear(this.mpz);
       }

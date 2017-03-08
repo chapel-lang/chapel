@@ -68,6 +68,9 @@ public:
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
 
+  void            insertBefore(AList exprs);
+  void            insertAfter(AList exprs);
+
   void            insertBefore(const char* format, ...);
   void            insertAfter(const char* format, ...);
   void            replace(const char* format, ...);
@@ -247,6 +250,10 @@ public:
 
   // True if the callExpr has been emptied (aka dead)
   bool            isEmpty()                                              const;
+
+  bool            isCast();
+  Expr*           castFrom();
+  Expr*           castTo();
 
   bool            isPrimitive()                                          const;
   bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
@@ -450,6 +457,8 @@ CallExpr* callChplHereFree(BaseAST* p);
        e = (e != last) ? getNextExpr(e) : NULL)
 
 Expr* getNextExpr(Expr* expr);
+
+CallExpr* createCast(BaseAST* src, BaseAST* toType);
 
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);

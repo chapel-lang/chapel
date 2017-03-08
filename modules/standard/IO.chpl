@@ -289,14 +289,11 @@ that has been closed.
 It is an error to close a file when it has channels that
 have not been closed.
 
-In the future we plan to implement reference counting for files
-and channels. Each file and channel will be closed automatically
-when no references remain to it. For example, if only a local
-variable refers to a channel, the channel will be closed
-when that variable goes out of scope.
-
-The ability for the program to close a file or a channel
-explicitly will remain available.
+Files and channels are reference counted. Each file and channel is
+closed automatically when no references to it remain. For example, if
+a local variable is the only reference to a channel, the channel will
+be closed when that variable goes out of scope.  Programs may also
+close a file or channel explicitly.
 
 .. _about-io-style:
 
@@ -2070,7 +2067,7 @@ proc file.check() {
 }
 
 pragma "no doc"
-proc ref file.~file() {
+proc ref file.deinit() {
   on this.home {
     qio_file_release(_file_internal);
     this._file_internal = QIO_FILE_PTR_NULL;
@@ -2127,9 +2124,9 @@ proc file._style:iostyle {
    running out of storage space or power loss. See also
    :ref:`about-io-ensuring-successful-io`.
 
-   In the future, we hope to automatically close files when the file variable
-   goes out of scope and all channels using that file are closed. The ability
-   for a program to close a file will remain available.
+   Files are automatically closed when the file variable
+   goes out of scope and all channels using that file are closed. Programs
+   may also explicitly close a file using this method.
 
    :arg error: optional argument to capture an error code. If this argument
                is not provided and an error is encountered, this function
@@ -2720,7 +2717,7 @@ proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, 
 }
 
 pragma "no doc"
-proc ref channel.~channel() {
+proc ref channel.deinit() {
   on this.home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
@@ -4077,8 +4074,7 @@ proc stringify(args ...?k):string {
 
 private var _arg_to_proto_names = ("a", "b", "c", "d", "e", "f");
 
-private proc _args_to_proto(args ...?k,
-                    preArg:string) {
+private proc _args_to_proto(const args ...?k, preArg:string) {
   // FIX ME: lot of potential leaking going on here with string concat
   // But this is used for error handling so maybe we don't care.
   var err_args: string;
@@ -4557,7 +4553,7 @@ proc channel.read(type t ...?numTypes) where numTypes > 1 {
 
 // documented in style= error= version
 pragma "no doc"
-inline proc channel.write(args ...?k, out error:syserr):bool {
+inline proc channel.write(const args ...?k, out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
   on this.home {
@@ -4574,7 +4570,7 @@ inline proc channel.write(args ...?k, out error:syserr):bool {
 
 // documented in style= error= version
 pragma "no doc"
-inline proc channel.write(args ...?k):bool {
+inline proc channel.write(const args ...?k):bool {
   var e:syserr = ENOERR;
   this.write((...args), error=e);
   if !e then return true;
@@ -4603,7 +4599,7 @@ inline proc channel.write(args ...?k):bool {
    :returns: `true` if the write succeeded
 
  */
-proc channel.write(args ...?k,
+proc channel.write(const args ...?k,
                    style:iostyle,
                    out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
@@ -4625,7 +4621,7 @@ proc channel.write(args ...?k,
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.write(args ...?k,
+proc channel.write(const args ...?k,
                    style:iostyle):bool {
   var e:syserr = ENOERR;
   this.write((...args), style=style, error=e);
@@ -4652,19 +4648,19 @@ proc channel.writeln():bool {
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.writeln(args ...?k, out error:syserr):bool {
+proc channel.writeln(const args ...?k, out error:syserr):bool {
   return this.write((...args), new ioNewline(), error=error);
 }
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.writeln(args ...?k):bool {
+proc channel.writeln(const args ...?k):bool {
   return this.write((...args), new ioNewline());
 }
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.writeln(args ...?k,
+proc channel.writeln(const args ...?k,
                      style:iostyle):bool {
   return this.write((...args), new ioNewline(), style=style);
 }
@@ -4689,7 +4685,7 @@ proc channel.writeln(args ...?k,
    :returns: `true` if the write succeeded
 
  */
-proc channel.writeln(args ...?k,
+proc channel.writeln(const args ...?k,
                      style:iostyle,
                      out error:syserr):bool {
   return this.write((...args), new ioNewline(), style=style, error=error);
@@ -4903,11 +4899,11 @@ const stdout:channel(true, iokind.dynamic, true) = openfp(chpl_cstdout()).writer
 const stderr:channel(true, iokind.dynamic, true) = openfp(chpl_cstderr()).writer();
 
 /* Equivalent to stdout.write. See :proc:`channel.write` */
-proc write(args ...?n) {
+proc write(const args ...?n) {
   stdout.write((...args));
 }
 /* Equivalent to stdout.writeln. See :proc:`channel.writeln` */
-proc writeln(args ...?n) {
+proc writeln(const args ...?n) {
   stdout.writeln((...args));
 }
 
@@ -5287,7 +5283,7 @@ class _channel_regexp_info {
     capArr = _ddata_allocate(string, ncaptures);
     capturei = 0;
   }
-  proc ~_channel_regexp_info() {
+  proc deinit() {
     clear();
   }
 }
@@ -5818,7 +5814,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
                is not provided and an error is encountered, this function
                will halt with an error message.
  */
-proc channel.writef(fmtStr:string, args ...?k, out error:syserr):bool {
+proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
   if !writing then compilerError("writef on read-only channel");
   error = ENOERR;
   on this.home {
@@ -6325,7 +6321,7 @@ proc channel.readf(fmtStr:string, out error:syserr):bool {
 
 // documented in string error= version
 pragma "no doc"
-proc channel.writef(fmt: string, args ...?k) {
+proc channel.writef(fmt: string, const args ...?k) {
   var e:syserr = ENOERR;
   this.writef(fmt, (...args), error=e);
   if !e then return true;
@@ -6375,7 +6371,7 @@ proc channel.readf(fmt:string) {
 }
 
 /* Call ``stdout.writef``; see :proc:`channel.writef`. */
-proc writef(fmt:string, args ...?k):bool {
+proc writef(fmt:string, const args ...?k):bool {
   return stdout.writef(fmt, (...args));
 }
 // documented in string version

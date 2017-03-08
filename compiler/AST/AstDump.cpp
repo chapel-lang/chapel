@@ -504,13 +504,14 @@ void AstDump::visitEblockStmt(ExternBlockStmt* node) {
 bool AstDump::enterGotoStmt(GotoStmt* node) {
   newline();
   switch (node->gotoTag) {
-    case GOTO_NORMAL:      write("goto");           break;
-    case GOTO_BREAK:       write("break");          break;
-    case GOTO_CONTINUE:    write("continue");       break;
-    case GOTO_RETURN:      write("gotoReturn");     break;
-    case GOTO_GETITER_END: write("gotoGetiterEnd"); break;
-    case GOTO_ITER_RESUME: write("gotoIterResume"); break;
-    case GOTO_ITER_END:    write("gotoIterEnd");    break;
+    case GOTO_NORMAL:         write("goto");              break;
+    case GOTO_BREAK:          write("break");             break;
+    case GOTO_CONTINUE:       write("continue");          break;
+    case GOTO_RETURN:         write("gotoReturn");        break;
+    case GOTO_GETITER_END:    write("gotoGetiterEnd");    break;
+    case GOTO_ITER_RESUME:    write("gotoIterResume");    break;
+    case GOTO_ITER_END:       write("gotoIterEnd");       break;
+    case GOTO_ERROR_HANDLING: write("gotoErrorHandling"); break;
   }
 
   if (SymExpr* label = toSymExpr(node->label)) {
@@ -638,15 +639,15 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
         case INTENT_OUT:       write("out arg");       break;
         case INTENT_CONST:     write("const arg");     break;
         case INTENT_CONST_IN:  write("const in arg");  break;
-        case INTENT_CONST_REF: {
-          if (arg->isWideRef()) {
-            write("const wide-ref arg");
-          } else {
-            write("const ref arg");
-          }
-          break;
-        }
-        case INTENT_REF: {
+
+        case INTENT_CONST_REF:
+        case INTENT_REF:
+        case INTENT_REF_MAYBE_CONST: {
+          if ( (arg->intent & INTENT_FLAG_CONST) )
+            write("const ");
+          else if ( (arg->intent & INTENT_FLAG_MAYBE_CONST) )
+            write("const? ");
+
           if (arg->isWideRef()) {
             write("wide-ref arg");
           } else {

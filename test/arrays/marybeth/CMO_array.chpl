@@ -27,6 +27,10 @@ class CMODom: BaseRectangularDom {
 
   proc dsiMyDist() return dist;
 
+  proc dsiDims() {
+    return ranges;
+  }
+
   iter these_help(param dim: int) {
     if dim == rank - 1 {
       for j in ranges(rank) do

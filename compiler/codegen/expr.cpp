@@ -88,8 +88,8 @@ static GenRet codegenCallExpr(const char* fnName);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
-static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4);
-static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
+static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
+static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6, GenRet a7);
 static void codegenCall(const char* fnName, std::vector<GenRet> & args, bool defaultToValues = true);
 static void codegenCall(const char* fnName, GenRet a1);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2);
@@ -2284,18 +2284,7 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3)
 }
 static
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-                       GenRet a4)
-{
-  std::vector<GenRet> args;
-  args.push_back(a1);
-  args.push_back(a2);
-  args.push_back(a3);
-  args.push_back(a4);
-  return codegenCallExpr(fnName, args);
-}
-static
-GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-                       GenRet a4, GenRet a5)
+                       GenRet a4, GenRet a5, GenRet a6)
 {
   std::vector<GenRet> args;
   args.push_back(a1);
@@ -2303,9 +2292,23 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a3);
   args.push_back(a4);
   args.push_back(a5);
+  args.push_back(a6);
   return codegenCallExpr(fnName, args);
 }
-
+static
+GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
+                       GenRet a4, GenRet a5, GenRet a6, GenRet a7)
+{
+  std::vector<GenRet> args;
+  args.push_back(a1);
+  args.push_back(a2);
+  args.push_back(a3);
+  args.push_back(a4);
+  args.push_back(a5);
+  args.push_back(a6);
+  args.push_back(a7);
+  return codegenCallExpr(fnName, args);
+}
 
 /* static
 void codegenCall(const char* fnName)
@@ -3281,6 +3284,8 @@ GenRet CallExpr::codegenPrimitive() {
     // get(1): return symbol
     // get(2): element type
     // get(3): number of elements
+    // get(4): localize subchunks?
+    // get(5): desired sublocale
     GenRet dst = get(1);
     GenRet alloced;
 
@@ -3290,12 +3295,14 @@ GenRet CallExpr::codegenPrimitive() {
       Symbol* addr    = get(1)->typeInfo()->getField("addr");
       Type*   eltType = getDataClassType(addr->type->symbol)->typeInfo();
       GenRet  locale  = codegenRlocale(dst);
-      GenRet  call    = codegenCallExpr("chpl_wide_array_alloc",
+      GenRet  call    = codegenCallExpr("chpl_mem_wide_array_alloc",
                                         codegenRnode(dst),
                                         codegenValue(get(3)),
                                         codegenSizeof(eltType),
                                         get(4),
-                                        get(5));
+                                        get(5),
+                                        get(6),
+                                        get(7));
 
       call.chplType = get(1)->typeInfo();
       alloced       = codegenAddrOf(codegenWideAddr(locale,
@@ -3305,11 +3312,13 @@ GenRet CallExpr::codegenPrimitive() {
     } else {
       Type* eltType = getDataClassType(get(1)->typeInfo()->symbol)->typeInfo();
 
-      alloced = codegenCallExpr("chpl_array_alloc",
+      alloced = codegenCallExpr("chpl_mem_array_alloc",
                                 codegenValue(get(3)),
                                 codegenSizeof(eltType),
                                 get(4),
-                                get(5));
+                                get(5),
+                                get(6),
+                                get(7));
     }
 
     codegenAssign(dst, alloced);
@@ -3325,9 +3334,9 @@ GenRet CallExpr::codegenPrimitive() {
         GenRet node = codegenRnode(data);
         GenRet ptr  = codegenRaddr(data);
 
-        codegenCall("chpl_wide_array_free", node, ptr, get(2), get(3));
+        codegenCall("chpl_mem_wide_array_free", node, ptr, get(2), get(3));
       } else {
-        codegenCall("chpl_array_free", data, get(2), get(3));
+        codegenCall("chpl_mem_array_free", data, get(2), get(3));
       }
     }
 

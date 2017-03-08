@@ -28,8 +28,6 @@
 # date listed should be 11/12/11 (assuming testing ran successfully
 # that night, otherwise use the first day when testing runs again.)
 #
-# Groups are listed in case insensitive alphabetical order
-#
 
 all:
   10/14/13:
@@ -104,9 +102,9 @@ all:
       config: Single node XC
   12/09/15:
     - Added record-based strings (#2884)
-  12/16/15:
+  12/17/15:
     - Enable the Qthreads tasking shim (#3040)
-  01/06/16:
+  01/07/16:
     - Replace filenames with indices into a lookup table (#3049)
   02/14/16:
     - text: Default to jemalloc for gasnet configurations (#3287)
@@ -134,7 +132,7 @@ all:
     - KACE removed from systems.  Should see less noise after this day.
   05/31/16:
     - Enable jemalloc's decay-based purging (#3926)
-  06/06/16:
+  06/07/16:
     - Avoid allocating arg bundles for local on statements (#3890)
     - Upgrade target compiler versions (#218, internal)
   06/24/16:
@@ -218,6 +216,13 @@ all:
     - multi-ddata (#5047)
   01/11/17:
     - Move the multi-ddata metadata fields, checking cache effects for 'flat'. (#5145)
+  02/19/17:
+    - text: Turned hyperthreading on for our testing machine
+      config: chapcs
+  03/03/17:
+    - Array views (#5338)
+  03/06/17:
+    - Wide-pointer optimization for arrays (#5487)
 
 
 AllCompTime:
@@ -229,6 +234,10 @@ AllCompTime:
     - disable function resolution optimization (#4476)
   09/14/16:
     - re-enable function resolution optimization (#4517)
+  02/03/17:
+    - Fix parse slowdown (#5257)
+  02/07/17:
+    - Loop over Defs and Uses with SymbolSymExprs (#5285)
 
 arrayPerformance-1d:
   03/19/15:
@@ -248,7 +257,7 @@ arr-forall:
     - with CCE, bug fix to avoid vectorizing when not valid
 
 assign.1024:
-  01/21/15:
+  01/22/15:
     - optimize range follower so it can be directly inlined (#1160)
 
 bfs:
@@ -260,7 +269,7 @@ bfs:
 binary-trees:
   12/05/14:
     - introduce "library mode"
-  01/25/16:
+  01/26/16:
     - Optimize iteration over anonymous low-bounded counted ranges (#3154)
   03/14/16:
     - upgrade jemalloc to 4.1.0 (#3447)
@@ -276,6 +285,8 @@ binary-trees:
     - simplify init()-based implementation (#4609)
   10/10/16:
     - Brad's fix of off-by-one error in checksum (#4734)
+  01/31/17:
+    - upgrade jemalloc to 4.4.0 (#5278)
 
 binarytrees-submitted:
   09/21/16:
@@ -348,7 +359,7 @@ fannkuch-redux:
     - LICM no longer hoisting globals (bug fix related to hoisting wide things)
   03/10/15:
     - Allow LICM to hoist some global variable (#1524)
-  10/16/15:
+  10/17/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
   06/29/16:
@@ -390,9 +401,9 @@ fft-timecomp:
     - re-enable function resolution optimization (#4517)
 
 forall-dom-range:
-  01/21/15:
+  01/22/15:
     - optimize range follower so it can be directly inlined (#1160)
-  01/23/15:
+  01/24/15:
     - optimize range follower for non-strided ranges (#1164)
   03/10/15:
     - optimize range follower so it can be zippered inlined (#1530)
@@ -415,19 +426,17 @@ hpl_performance:
     - text: Improvements to inferConstRefs (#4904)
       config: 16 node XC
 
+hpl.hpcc2012.ml-perf:
+  03/03/17:
+    - Modified test as part of array views (#5338)
+
+hpl.hpcc2012.ml-time:
+  03/03/17:
+    - Modified test as part of array views (#5338)
+
 init:
   05/03/16:
     - Fix ref-return intent bugs (#3795)
-
-is:
-  09/05/14:
-    - switched uses of locale.numCores to locale.maxTaskPar
-  11/18/14:
-    - added -E to tests which would benefit from it
-  11/22/14:
-    - revert -E use for nightly on 21st (which failed, unrelatedly)
-  05/21/15:
-    - set dataParTasksPerLocale to 2 to avoid occasional validation failure
 
 isx:
   02/26/16:
@@ -440,35 +449,21 @@ isx-bucket-spmd:
   02/26/16:
     - ISx ref to array (#3365)
 
-isx-spmd:
-  02/26/16:
-    - ISx ref to array (#3365)
-
 isx-no-return:
   02/26/16:
     - ISx ref to array (#3365)
 
-isx.xc-time:
+isx.ml-time: &isx-ml-base
   02/26/16:
     - ISx ref to array (#3365)
   04/23/16:
     - Switched to PCG random number generator (#3764)
-
-isx-bucket-spmd.xc-time:
-  02/26/16:
-    - ISx ref to array (#3365)
-  04/23/16:
-    - Switched to PCG random number generator (#3764)
-
-isx-spmd.xc-time:
-  02/26/16:
-    - ISx ref to array (#3365)
-  04/23/16:
-    - Switched to PCG random number generator (#3764)
-
-isx-perf-task.xc-time:
-  04/23/16:
-    - Switched to PCG random number generator (#3764)
+  12/22/16:
+    - Increased isx problem size (internal #279)
+isx-hand-optimized.ml-time:
+  <<: *isx-ml-base
+isx-release.ml-time:
+  <<: *isx-ml-base
 
 jacobi:
   03/07/14:
@@ -505,16 +500,28 @@ jacobi:
     - refactoring of rectangular IO (#5157)
 
 knucleotide:
-  10/16/15:
+  10/17/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
 
-LCALSMain:
+LCALS-raw-short: &lcals-base
   10/20/16:
     - Clean up to HYDRO_2D kernel (#4757)
     - update to TRAP_INT serial kernel (#4756)
+  11/30/16:
+    - Stop throwing --dataParMinGranularity=1000 (#4917)
   12/10/16:
     - Throw --no-ieee-float for LCALS (#5001)
+LCALS-raw-medium:
+  <<: *lcals-base
+LCALS-raw-long:
+  <<: *lcals-base
+LCALS-parallel-short:
+  <<: *lcals-base
+LCALS-parallel-medium:
+  <<: *lcals-base
+LCALS-parallel-long:
+  <<: *lcals-base
 
 lulesh:
   03/15/14:
@@ -607,16 +614,14 @@ memleaksfull:
     - Sync as record (#4309)
   08/23/16:
     - Fix gasnet config for recent memory leak updates (#4375)
+  02/08/17:
+    - Add Futures package module - lambda functions leaking (#5135)
 
 meteor:
   12/18/13:
     - Chapel level improvement by using implicit domains
   08/10/16:
     - Updated meteor's lock to yield less frequently (#4300)
-
-meteor-submitted:
-  10/26/16:
-    - Fix to avoid race condition after array memory management improvements will not be applied to submitted version (#4762)
 
 miniMD:
   12/21/13:
@@ -625,13 +630,12 @@ miniMD:
     - surprising regression from cast in DefaultRectangular (df8c3172cc9c)
   01/30/15:
     - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
-  03/17/15:
+  03/18/15:
     - Avoid shallow record copies in miniMD (#1643)
   03/19/16:
     - Increase parallelism, decrease comm (#3483)
   12/02/16:
     - RVF reference fields with record-wrapped type (#4925)
-
 
 nbody:
   03/17/14:
@@ -646,6 +650,10 @@ nbody:
     - revert jemalloc to 4.0.4 (#3477)
   05/28/16:
     - upgrade jemalloc to 4.2.0 (#3919)
+
+no-op:
+  02/24/17:
+    - upgrade hwloc to 1.11.6 (#5411)
 
 parOpEquals:
   09/06/13:
@@ -677,7 +685,7 @@ prk-stencil:
   05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
 
-prk-stencil.xc-perf:
+prk-stencil.ml-perf:
   04/08/16:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
@@ -687,14 +695,26 @@ prk-stencil.xc-perf:
   08/12/16:
     - Improve and enable strided bulk transfer optimization as default (#4318)
 
-ptrans:
+ptrans: &ptrans-base
   01/11/17:
     - Replace temporary array in BlockCycDist with tuple (#5139)
+  01/24/17:
+    - Make BlockCyclic more parallel (#5224)
+  01/27/17:
+    - Fix bug in BlockCyclic indexing, convert arrays to tuples(#5229)
+ptrans.ml-perf:
+  <<: *ptrans-base
+ptrans.ml-time:
+  <<: *ptrans-base
 
 ra:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
+
+RBC:
+  02/22/17:
+    - update logic for pruning unused module level variables (#5395)
 
 regexdna:
   10/07/14:
@@ -707,7 +727,7 @@ regexdna:
     - implemented good_alloc_size for jemalloc(#3446)
 
 revcomp:
-  05/11/15:
+  05/12/15:
     - various qio changes motivated by cygwin failures (#1943)
   10/29/15:
     - Difficult to consistently replicate
@@ -735,23 +755,19 @@ SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
 
-SSCA2_mem:
-  06/04/13:
-    - Add pre-shifted ddata pointer for DefaultRectangular (21457)
-
-STREAM_fragmented:
+STREAM_study_fragmented:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
 
-STREAM_performance:
+STREAM_study_performance:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
 
-steam-promoted.xc-perf:
+stream-promoted.ml-perf:
   12/02/16:
     - text: RVF reference fields with record-wrapped type (#4925)
       config: 16 node XC
@@ -795,7 +811,7 @@ thread-ring:
 time_array_vs_ddata:
   05/31/14:
     - specializing binaries to target architectures
-  01/25/16:
+  01/26/16:
     - Optimize iteration over anonymous low-bounded counted ranges (#3154)
   03/01/16:
     - Extend early string-as-rec work to cover more sub-types of record (#3386)
@@ -831,3 +847,33 @@ timeVectorArray:
     - increased array-as-vec problem size (#3422)
   05/28/16:
     - upgrade jemalloc to 4.2.0 (#3919)
+
+dynamic:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+distAdaptativeWSv1:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+distAdaptativeWSv2:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+guided:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+distAdaptativeWS:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)

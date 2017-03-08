@@ -35,7 +35,7 @@ record Handle
 //  ctor Handle(ref h: Handle) { _impl = h._impl; _impl.retain(); }
 
 // Destructor
-  proc ~Handle() { this.release_helper(); }
+  proc deinit() { this.release_helper(); }
   inline proc release_helper()
   {
     if _impl != nil && _impl.release() == 0

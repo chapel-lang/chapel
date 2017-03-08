@@ -506,10 +506,11 @@ static void check_afterLowerErrorHandling()
 {
   if (fVerify)
   {
-    // check no more TryStmt
+    // check that TryStmt is not in the tree
     forv_Vec(TryStmt, stmt, gTryStmts)
     {
-      INT_FATAL(stmt, "TryStmt should no longer exist");
+      if (stmt->inTree())
+        INT_FATAL(stmt, "TryStmt should no longer be in the tree");
     }
 
     // TODO: check no more CatchStmt
@@ -517,7 +518,7 @@ static void check_afterLowerErrorHandling()
     // check no more PRIM_THROW
     forv_Vec(CallExpr, call, gCallExprs)
     {
-      if (call->isPrimitive(PRIM_THROW))
+      if (call->isPrimitive(PRIM_THROW) && call->inTree())
         INT_FATAL(call, "PRIM_THROW should no longer exist");
     }
   }
@@ -572,8 +573,10 @@ static void checkAggregateTypes()
   {
     if (! at->defaultInitializer && at->initializerStyle != DEFINES_INITIALIZER)
       INT_FATAL(at, "aggregate type did not define an initializer and has no default constructor");
-    if (! at->defaultTypeConstructor)
-      INT_FATAL(at, "aggregate type has no default type constructor");
+    if (! at->defaultTypeConstructor &&
+        at->initializerStyle != DEFINES_INITIALIZER)
+      INT_FATAL(at, "aggregate type did not define an initializer and "
+                "has no default type constructor");
   }
 }
 
@@ -590,6 +593,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_INIT:
         case PRIM_NO_INIT:
         case PRIM_TYPE_INIT:
+        case PRIM_INITIALIZER_SET_FIELD:
         case PRIM_LOGICAL_FOLDER:
         case PRIM_TYPEOF:
         case PRIM_TYPE_TO_STRING:

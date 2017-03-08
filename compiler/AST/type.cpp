@@ -23,21 +23,20 @@
 
 #include "AstToText.h"
 #include "astutil.h"
+#include "AstVisitor.h"
 #include "build.h"
 #include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
 #include "ipe.h"
+#include "iterator.h"
 #include "misc.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
-
-#include "iterator.h"
-
-#include "AstVisitor.h"
 
 static bool isDerivedType(Type* type, Flag flag);
 
@@ -483,26 +482,33 @@ std::string EnumType::docsDirective() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-AggregateType::AggregateType(AggregateTag initTag) :
-  Type(E_AggregateType, NULL),
-  aggregateTag(initTag),
-  initializerStyle(DEFINES_NONE_USE_DEFAULT),
-  fields(),
-  inherits(),
-  outer(NULL),
-  iteratorInfo(NULL),
-  delegates(),
-  doc(NULL)
-{
-  if (aggregateTag == AGGREGATE_CLASS) { // set defaultValue to nil to keep it
-                                 // from being constructed
+AggregateType::AggregateType(AggregateTag initTag)
+  : Type(E_AggregateType, NULL) {
+
+  aggregateTag        = initTag;
+  initializerStyle    = DEFINES_NONE_USE_DEFAULT;
+  initializerResolved = false;
+  outer               = NULL;
+  iteratorInfo        = NULL;
+  doc                 = NULL;
+
+  fields.parent       = this;
+  inherits.parent     = this;
+
+  genericField        = 0;
+  mIsGeneric          = false;
+
+  // set defaultValue to nil to keep it from being constructed
+  if (aggregateTag == AGGREGATE_CLASS) {
     defaultValue = gNil;
   }
-  methods.clear();
-  fields.parent = this;
-  inherits.parent = this;
-  delegates.parent = this;
+
   gAggregateTypes.add(this);
 }
 
@@ -510,53 +516,37 @@ AggregateType::AggregateType(AggregateTag initTag) :
 AggregateType::~AggregateType() {
   // Delete references to this in iteratorInfo when destroyed.
   if (iteratorInfo) {
-    if (iteratorInfo->iclass == this)
+    if (iteratorInfo->iclass == this) {
       iteratorInfo->iclass = NULL;
-    if (iteratorInfo->irecord == this)
+    }
+
+    if (iteratorInfo->irecord == this) {
       iteratorInfo->irecord = NULL;
+    }
   }
 }
 
 
-void AggregateType::verify() {
-  Type::verify();
-  if (astTag != E_AggregateType) {
-    INT_FATAL(this, "Bad AggregateType::astTag");
-  }
-  if (aggregateTag != AGGREGATE_CLASS &&
-      aggregateTag != AGGREGATE_RECORD &&
-      aggregateTag != AGGREGATE_UNION)
-    INT_FATAL(this, "Bad AggregateType::aggregateTag");
-  if (fields.parent != this || inherits.parent != this)
-    INT_FATAL(this, "Bad AList::parent in AggregateType");
-  for_alist(expr, fields) {
-    if (expr->parentSymbol != symbol)
-      INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
-  }
-  for_alist(expr, inherits) {
-    if (expr->parentSymbol != symbol)
-      INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
-  }
-  for_alist(expr, delegates) {
-    if (expr->parentSymbol != symbol)
-      INT_FATAL(this, "Bad AggregateType::delegates::parentSymbol");
-  }
-}
-
-
-AggregateType*
-AggregateType::copyInner(SymbolMap* map) {
+AggregateType* AggregateType::copyInner(SymbolMap* map) {
   AggregateType* copy_type = new AggregateType(aggregateTag);
+
   copy_type->initializerStyle = initializerStyle;
-  copy_type->outer = outer;
-  for_alist(expr, fields)
+  copy_type->outer            = outer;
+
+  for_alist(expr, fields) {
     copy_type->fields.insertAtTail(COPY_INT(expr));
-  for_alist(expr, inherits)
-    copy_type->inherits.insertAtTail(COPY_INT(expr));
-  for_fields(field, copy_type) {
-    if (FnSymbol* fn = toFnSymbol(field))
-      copy_type->methods.add(fn);
   }
+
+  for_alist(expr, inherits) {
+    copy_type->inherits.insertAtTail(COPY_INT(expr));
+  }
+
+  for_fields(field, copy_type) {
+    if (FnSymbol* fn = toFnSymbol(field)) {
+      copy_type->methods.add(fn);
+    }
+  }
+
   for_alist(delegate, delegates) {
     copy_type->delegates.insertAtTail(COPY_INT(delegate));
   }
@@ -565,15 +555,109 @@ AggregateType::copyInner(SymbolMap* map) {
 }
 
 
-static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
-  if (def->sym->hasFlag(FLAG_REF_VAR)) {
-      USR_FATAL_CONT(def,
+void AggregateType::verify() {
+  Type::verify();
+
+  if (astTag != E_AggregateType) {
+    INT_FATAL(this, "Bad AggregateType::astTag");
+  }
+
+  if (aggregateTag != AGGREGATE_CLASS &&
+      aggregateTag != AGGREGATE_RECORD &&
+      aggregateTag != AGGREGATE_UNION) {
+    INT_FATAL(this, "Bad AggregateType::aggregateTag");
+  }
+
+  if (fields.parent != this || inherits.parent != this) {
+    INT_FATAL(this, "Bad AList::parent in AggregateType");
+  }
+
+  for_alist(expr, fields) {
+    if (expr->parentSymbol != symbol) {
+      INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
+    }
+  }
+
+  for_alist(expr, inherits) {
+    if (expr->parentSymbol != symbol) {
+      INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
+    }
+  }
+  for_alist(expr, delegates) {
+    if (expr->parentSymbol != symbol)
+      INT_FATAL(this, "Bad AggregateType::delegates::parentSymbol");
+  }
+}
+
+
+int AggregateType::numFields() const {
+  return fields.length;
+}
+
+bool AggregateType::isClass() const {
+  return aggregateTag == AGGREGATE_CLASS;
+}
+
+bool AggregateType::isRecord() const {
+  return aggregateTag == AGGREGATE_RECORD;
+}
+
+bool AggregateType::isUnion() const {
+  return aggregateTag == AGGREGATE_UNION;
+}
+
+bool AggregateType::isGeneric() const {
+  return mIsGeneric;
+}
+
+void AggregateType::markAsGeneric() {
+  mIsGeneric = true;
+}
+
+void AggregateType::addDeclarations(Expr* expr) {
+  if (DefExpr* defExpr = toDefExpr(expr)) {
+    addDeclaration(defExpr);
+
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    for_alist(stmt, block->body) {
+      addDeclarations(stmt);
+    }
+  } else if (DelegateStmt* delegate = toDelegateStmt(expr)) {
+    // delegate expr is a def expr for a function that we should handle.
+    DefExpr* def = toDefExpr(delegate->toFnDef);
+    // Handle the function defining what we delegate to
+    this->addDeclaration(def);
+    // Add the DelegateStmt to the AST
+    delegate->toFnDef = NULL;
+    this->delegates.insertAtTail(delegate);
+  } else {
+    INT_FATAL(expr, "unexpected case");
+  }
+}
+
+void AggregateType::addDeclaration(DefExpr* defExpr) {
+  if (defExpr->sym->hasFlag(FLAG_REF_VAR)) {
+      USR_FATAL_CONT(defExpr,
                      "References cannot be members of classes "
                      "or records yet.");
   }
 
-  if (FnSymbol* fn = toFnSymbol(def->sym)) {
-    ct->methods.add(fn);
+  if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+    var->makeField();
+
+    if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      mIsGeneric = true;
+
+    } else if (var->hasFlag(FLAG_PARAM) == true) {
+      mIsGeneric = true;
+
+    } else if (defExpr->exprType == NULL &&
+               defExpr->init     == NULL) {
+      mIsGeneric = true;
+    }
+
+  } else if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
+    methods.add(fn);
 
     if (fn->_this) {
       // get the name used in the type binding clause
@@ -589,10 +673,8 @@ static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
       Expr* firstexpr = bs->body.first();
       INT_ASSERT(firstexpr);
 
-      UnresolvedSymExpr* sym = toUnresolvedSymExpr(firstexpr);
-      INT_ASSERT(sym);
-
-      const char* name = sym->unresolved;
+      UnresolvedSymExpr* sym  = toUnresolvedSymExpr(firstexpr);
+      const char*        name = sym->unresolved;
 
       // ... then report it to the user
       USR_FATAL_CONT(fn->_this,
@@ -601,7 +683,7 @@ static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
                      "or union",
                      name);
     } else {
-      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", ct);
+      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
 
       fn->_this = arg;
 
@@ -622,49 +704,15 @@ static void addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
     }
   }
 
-  if (VarSymbol* var = toVarSymbol(def->sym)) {
-    // Identify VarSymbol as class/record member.
-    var->makeField();
+  if (defExpr->parentSymbol != NULL || defExpr->list != NULL) {
+    defExpr->remove();
   }
 
-  if (def->parentSymbol || def->list) {
-    def->remove();
-  }
-
-  // Lydia note (Sept 2, 2016): Based on control flow, this adds even the
-  // function symbols we just handled into the fields alist for the type.
-  // Shouldn't placing them in ct->methods be sufficient?
-  if (tail) {
-    ct->fields.insertAtTail(def);
-  } else {
-    ct->fields.insertAtHead(def);
-  }
+  fields.insertAtTail(defExpr);
 }
 
 
-void AggregateType::addDeclarations(Expr* expr, bool tail) {
-  if (DefExpr* def = toDefExpr(expr)) {
-    addDeclaration(this, def, tail);
-
-  } else if (BlockStmt* block = toBlockStmt(expr)) {
-    for_alist(stmt, block->body) {
-      addDeclarations(stmt, tail);
-    }
-  } else if (DelegateStmt* delegate = toDelegateStmt(expr)) {
-    // delegate expr is a def expr for a function that we should handle.
-    DefExpr* def = toDefExpr(delegate->toFnDef);
-    // Handle the function defining what we delegate to
-    addDeclaration(this, def, tail);
-    // Add the DelegateStmt to the AST
-    delegate->toFnDef = NULL;
-    this->delegates.insertAtTail(delegate);
-  } else {
-    INT_FATAL(expr, "unexpected case");
-  }
-}
-
-
-void AggregateType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void AggregateType::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
   INT_FATAL(this, "Unexpected case in AggregateType::replaceChild");
 }
 
@@ -686,6 +734,126 @@ void AggregateType::accept(AstVisitor* visitor) {
 
     visitor->exitAggrType(this);
   }
+}
+
+// Returns true if the type has generic fields, false otherwise.  If the index
+// of the first generic field has not previously been set, set it.
+bool AggregateType::setNextGenericField() {
+  // Don't redo work
+  if (genericField > 0)
+    return true;
+
+  int idx = 1;
+  for_fields(field, this) {
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_PARAM) ||
+        (field->defPoint->init == NULL && field->defPoint->exprType == NULL
+         && field->type == dtUnknown)) {
+      // TODO: do something special if the type of the field is known but
+      // generic
+      genericField = idx;
+      break;
+    }
+    idx++;
+  }
+  if (genericField != 0)
+    return true;
+  else
+    return false;
+}
+
+// Returns an instantiation of this AggregateType at the given index.  If the
+// index is earlier than this AggregateType's first unsubstituted generic field,
+// will just return itself.  Otherwise, this method will check the list of
+// instantiations for the first unsubstituted generic field to see if we have
+// previously made an instantiation for the provided argument and will return
+// that instantiation if we find one.  Otherwise, will create a new
+// instantiation with the given argument and will return that.
+AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
+  // If the index of the field is prior to the index of the next generic field
+  // then trivially return ourselves
+  if (index < genericField)
+    return this;
+
+  if (index > genericField) {
+    // Internal error, because initializerRules should have ensured that we
+    // access the generic fields in order, and so we should never try to update
+    // a generic field after the current generic field when the current one
+    // hasn't been updated.
+    INT_FATAL(this, "trying to set a later generic field %d", index);
+  }
+
+  // First, look to see if we have an instantiation with that value already
+  for_vector(AggregateType, at, instantiations) {
+    // TODO: test me
+    Symbol* field = at->getField(genericField);
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
+      if (field->type == t->typeInfo())
+        return at;
+    }
+    if (field->hasFlag(FLAG_PARAM) &&
+        at->substitutions.get(field) == t->symbol()) {
+      return at;
+    }
+  }
+  // Otherwise, we need to create an instantiation for that type
+  AggregateType* newInstance = toAggregateType(this->symbol->copy()->type);
+  this->symbol->defPoint->insertBefore(new DefExpr(newInstance->symbol));
+  newInstance->symbol->copyFlags(this->symbol);
+
+  newInstance->substitutions.copy(this->substitutions);
+
+  Symbol* field = newInstance->getField(genericField);
+  if (field->hasFlag(FLAG_PARAM)) {
+    newInstance->substitutions.put(field, t->symbol());
+    newInstance->symbol->renameInstantiatedSingle(t->symbol());
+  } else {
+    newInstance->substitutions.put(field, t->typeInfo()->symbol);
+    newInstance->symbol->renameInstantiatedSingle(t->typeInfo()->symbol);
+  }
+
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
+    field->type = t->typeInfo();
+  } else {
+    if (!field->defPoint->exprType && field->type == dtUnknown)
+      field->type = t->typeInfo();
+    else if (field->defPoint->exprType->typeInfo() != t->typeInfo()) {
+      // TODO: Something something, casts and coercions
+    } else {
+      field->type = t->typeInfo();
+    }
+  }
+  instantiations.push_back(newInstance);
+  newInstance->instantiatedFrom = this;
+
+  // Handle dispatch parents (because it totally makes sense for this to have
+  // been done outside of the AggregateType by
+  // instantiateTypeForTypeConstructor.  Totally)
+  forv_Vec(Type, t, this->dispatchParents) {
+    newInstance->dispatchParents.add(t);
+    bool inserted = t->dispatchChildren.add_exclusive(newInstance);
+    INT_ASSERT(inserted);
+  }
+
+  DefExpr* next = toDefExpr(field->defPoint->next);
+  newInstance->genericField = this->genericField + 1;
+  while (next) {
+    if (next->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+        next->sym->hasFlag(FLAG_PARAM) ||
+        (next->init == NULL && next->exprType == NULL)) {
+      // This is the next value for genericField
+      break;
+    } else {
+      newInstance->genericField = newInstance->genericField + 1;
+      next = toDefExpr(next->next);
+    }
+  }
+
+  if (newInstance->genericField > newInstance->fields.length) {
+    newInstance->genericField = 0;
+    newInstance->symbol->removeFlag(FLAG_GENERIC);
+  }
+
+  return newInstance;
 }
 
 
@@ -862,7 +1030,9 @@ std::string AggregateType::docsSuperClass() {
       if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
         superClassNames.push_back(use->unresolved);
       } else {
-        INT_FATAL(expr, "Expected UnresolvedSymExpr for all members of inherits alist.");
+        INT_FATAL(expr,
+                  "Expected UnresolvedSymExpr for all members "
+                  "of inherits alist.");
       }
     }
 
@@ -897,9 +1067,16 @@ std::string AggregateType::docsDirective() {
       return ".. record:: ";
     }
   }
+
   return "";
 }
 
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 void initRootModule() {
   rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
@@ -912,11 +1089,11 @@ void initStringLiteralModule() {
   theProgram->block->insertAtTail(new DefExpr(stringLiteralModule));
 }
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname);
 static PrimitiveType* createInternalType (const char* name, const char* cname);
@@ -1170,11 +1347,11 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
   return retval;
 }
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 DefExpr* defineObjectClass() {
   DefExpr* retval = 0;
@@ -1545,7 +1722,7 @@ bool isString(Type* type) {
 }
 
 //
-// NOAKES 2016/02/29
+// Noakes 2016/02/29
 //
 // To support the merge of the string-as-rec branch we defined a
 // function, isString(), which is only true of the record that was
@@ -1563,8 +1740,13 @@ bool isString(Type* type) {
 // In the longer term we plan to further broaden the cases that the new
 // logic can handle and reduce the exceptions that are filtered out here.
 //
-// MPF 2016-09-15
+//
+//
+// MPF    2016/09/15
 // This function now includes tuples, distributions, domains, and arrays.
+//
+// Noakes 2017/03/02
+// This function now includes range and atomics
 //
 bool isUserDefinedRecord(Type* type) {
   bool retval = false;
@@ -1575,18 +1757,15 @@ bool isUserDefinedRecord(Type* type) {
 
     // Must be a record type
     if (aggr->aggregateTag != AGGREGATE_RECORD) {
-
-    // Not a range
-    } else if (sym->hasFlag(FLAG_RANGE)              == true) {
-
-    // Not an atomic type
-    } else if (sym->hasFlag(FLAG_ATOMIC_TYPE)        == true) {
+      retval = false;
 
     // Not a RUNTIME_type
     } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+      retval = false;
 
     // Not an iterator
     } else if (strncmp(name, "_ir_", 4)              ==    0) {
+      retval = false;
 
     } else {
       retval = true;

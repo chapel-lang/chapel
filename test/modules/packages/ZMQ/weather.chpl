@@ -43,8 +43,6 @@ iter zipcodes(num: int) {
 }
 
 proc Launcher(exec: string) {
-  writeln("Launcher: ", exec);
-
   var master = spawn(["master", "--mode=Master",
                       "--memLeaks=" + memLeaks:string],
                      env=env, executable=exec);
@@ -63,7 +61,7 @@ proc Launcher(exec: string) {
 }
 
 proc Master(exec: string) {
-  var rand = new RandomStream(13); rand.getNext();
+  var rand = new RandomStream(real,13); rand.getNext();
   var ctxt: Context;
   var sock = ctxt.socket(ZMQ.PUB);
   sock.bind("tcp://*:5556");

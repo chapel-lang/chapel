@@ -7,14 +7,14 @@ module iters {
     }
   }
 
-  // for loop in standalone should NOT get vector pragma because loop can't be
-  // inlined (2 yields), and will result in a 'reentrant' advance function
+  // for loop in standalone should get vector pragma because standalone iters
+  // are force inlined
   iter myiter(nn: int, nt: int, param tag: iterKind) where tag == iterKind.standalone {
     coforall i in 0..#nt {
       for j in i*nn..#nn-1 {
         yield j;
       }
-      yield i*nn..#nn.last;
+      yield (i*nn..#nn).last;
     }
   }
 
@@ -24,8 +24,8 @@ module iters {
     }
   }
 
-  // for loop in follower should NOT get vector pragma because loop can't be
-  // inlined (2 yields), and will result in a 'reentrant' advance function
+  // for loop in follower should NOT get vector pragma because iter can't be
+  // inlined (2 yields), and will result in a `advance` function
   iter myiter(nn:int, nt: int, followThis, param tag: iterKind) where tag == iterKind.follower {
       for j in followThis # (followThis.size - 1) {
         yield j;

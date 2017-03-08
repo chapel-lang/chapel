@@ -9,8 +9,8 @@ const ProblemSpace = {1..n} dmapped Block(boundingBox={1..n});
 var A: [ProblemSpace] real;
 var B: [ProblemSpace] real;
 
-var randStr1 = new RandomStream(314159265);
-var randStr2 = new RandomStream(314159265);
+var randStr1 = new RandomStream(real, 314159265);
+var randStr2 = new RandomStream(real, 314159265);
 
 forall (i,r) in zip(A.domain, randStr1) {
   writeln("Doing iteration ##### on locale %i\n", i, here.id);

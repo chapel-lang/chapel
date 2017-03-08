@@ -42,7 +42,7 @@ class array2d {
 			  return data((i - 1) * 2 + j);
 			}
 
-  proc ~array2d() {
+  proc deinit() {
     delete data;
   }
 }

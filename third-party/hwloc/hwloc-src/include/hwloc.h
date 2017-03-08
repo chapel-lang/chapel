@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -410,7 +410,7 @@ struct hwloc_obj {
                                           */
   hwloc_cpuset_t complete_cpuset;       /**< \brief The complete CPU set of logical processors of this object,
                                           *
-                                          * This includes not only the same as the cpuset field, but also the CPUs for
+                                          * This includes not only the same as the cpuset field, but also some CPUs for
                                           * which topology information is unknown or incomplete, and the CPUs that are
                                           * ignored when the ::HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM flag is not set.
                                           * Thus no corresponding PU object may be found in the topology, because the
@@ -457,7 +457,7 @@ struct hwloc_obj {
                                           */
   hwloc_nodeset_t complete_nodeset;     /**< \brief The complete NUMA node set of this object,
                                           *
-                                          * This includes not only the same as the nodeset field, but also the NUMA
+                                          * This includes not only the same as the nodeset field, but also some NUMA
                                           * nodes for which topology information is unknown or incomplete, and the nodes
                                           * that are ignored when the ::HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM flag is not set.
                                           * Thus no corresponding NUMA node object may be found in the topology, because the
@@ -740,6 +740,10 @@ enum hwloc_topology_flags_e {
    * When this flag is not set, PUs that are disallowed are not added to the topology.
    * Parent objects (package, core, cache, etc.) are added only if some of their children are allowed.
    * NUMA nodes are always added but their available memory is set to 0 when disallowed.
+   *
+   * If the current topology is exported to XML and reimported later, this flag
+   * should be set again in the reimported topology so that disallowed resources
+   * are reimported as well.
    * \hideinitializer
    */
   HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM = (1UL<<0),
@@ -802,7 +806,28 @@ enum hwloc_topology_flags_e {
    * instead of only Data and Unified caches.
    * \hideinitializer
    */
-  HWLOC_TOPOLOGY_FLAG_ICACHES = (1UL<<5)
+  HWLOC_TOPOLOGY_FLAG_ICACHES = (1UL<<5),
+
+  /** \brief Get the set of allowed resources from the local operating system even if the topology was loaded from XML or synthetic description.
+   *
+   * If the topology was loaded from XML or from a synthetic string,
+   * restrict it by applying the current process restrictions such as
+   * Linux Cgroup/Cpuset.
+   *
+   * This is useful when the topology is not loaded directly from
+   * the local machine (e.g. for performance reason) and it comes
+   * with all resources, while the running process is restricted
+   * to only parts of the machine.
+   *
+   * This flag is ignored unless ::HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM is
+   * also set since the loaded topology must match the underlying machine
+   * where restrictions will be gathered from.
+   *
+   * Setting the environment variable HWLOC_THISSYSTEM_ALLOWED_RESOURCES
+   * would result in the same behavior.
+   * \hideinitializer
+   */
+  HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES = (1UL<<6)
 };
 
 /** \brief Set OR'ed flags to non-yet-loaded topology.
@@ -1139,6 +1164,9 @@ HWLOC_DECLSPEC void * hwloc_topology_get_userdata(hwloc_topology_t topology);
 /** \brief Get the depth of the hierarchical tree of objects.
  *
  * This is the depth of ::HWLOC_OBJ_PU objects plus one.
+ *
+ * \note I/O and Misc objects are ignored when computing the depth
+ * of the tree (they are placed on special levels, or none).
  */
 HWLOC_DECLSPEC unsigned hwloc_topology_get_depth(hwloc_topology_t __hwloc_restrict topology) __hwloc_attribute_pure;
 
@@ -1163,6 +1191,8 @@ HWLOC_DECLSPEC unsigned hwloc_topology_get_depth(hwloc_topology_t __hwloc_restri
  * hwloc_get_obj_by_depth() but it should not be considered as an actual
  * depth by the application. In particular, it should not be compared with
  * any other object depth or with the entire topology depth.
+ *
+ * If ::HWLOC_OBJ_MISC is given, the function returns ::HWLOC_TYPE_DEPTH_UNKNOWN.
  */
 HWLOC_DECLSPEC int hwloc_get_type_depth (hwloc_topology_t topology, hwloc_obj_type_t type);
 

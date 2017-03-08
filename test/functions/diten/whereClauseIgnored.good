@@ -1,1 +1,2 @@
-whereClauseIgnored.chpl:1: error: illegal where clause on non-generic function
+whereClauseIgnored.chpl:8: error: unresolved call 'f(3)'
+whereClauseIgnored.chpl:1: note: candidates are: f(x: int)

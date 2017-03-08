@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.5</span>
+   &#160;<span id="projectnumber">1.11.6</span>
    </div>
   </td>
  </tr>
@@ -447,7 +447,8 @@ Functions</h2></td></tr>
 <p>If no object of this type is present on the underlying architecture, or if the OS doesn't provide this kind of information, the function returns <a class="el" href="a00167.html#ggaf4e663cf42bbe20756b849c6293ef575a0565ab92ab72cb0cec91e23003294aad" title="No object of given type exists in the topology. ">HWLOC_TYPE_DEPTH_UNKNOWN</a>.</p>
 <p>If type is absent but a similar type is acceptable, see also <a class="el" href="a00167.html#ga8125328e69eba709c33ea8055c12589b" title="Returns the depth of objects of type type or below. ">hwloc_get_type_or_below_depth()</a> and <a class="el" href="a00167.html#ga8a9ee573b7d2190272095d10712a7cca" title="Returns the depth of objects of type type or above. ">hwloc_get_type_or_above_depth()</a>.</p>
 <p>If some objects of the given type exist in different levels, for instance L1 and L2 caches, or L1i and L1d caches, the function returns <a class="el" href="a00167.html#ggaf4e663cf42bbe20756b849c6293ef575ae99465995cacde6c210d5fc2e409798c" title="Objects of given type exist at different depth in the topology. ">HWLOC_TYPE_DEPTH_MULTIPLE</a>. See <a class="el" href="a00179.html#gad108a09ce400222fe45545257d575489" title="Find the depth of cache objects matching cache depth and type. ">hwloc_get_cache_type_depth()</a> in <a class="el" href="a00116_source.html" title="High-level hwloc traversal helpers. ">hwloc/helper.h</a> to better handle this case.</p>
-<p>If an I/O object type is given, the function returns a virtual value because I/O objects are stored in special levels that are not CPU-related. This virtual depth may be passed to other hwloc functions such as <a class="el" href="a00167.html#gabf8a98ad085460a4982cc7b74c344b71" title="Returns the topology object at logical index idx from depth depth. ">hwloc_get_obj_by_depth()</a> but it should not be considered as an actual depth by the application. In particular, it should not be compared with any other object depth or with the entire topology depth. </p>
+<p>If an I/O object type is given, the function returns a virtual value because I/O objects are stored in special levels that are not CPU-related. This virtual depth may be passed to other hwloc functions such as <a class="el" href="a00167.html#gabf8a98ad085460a4982cc7b74c344b71" title="Returns the topology object at logical index idx from depth depth. ">hwloc_get_obj_by_depth()</a> but it should not be considered as an actual depth by the application. In particular, it should not be compared with any other object depth or with the entire topology depth.</p>
+<p>If <a class="el" href="a00163.html#ggacd37bb612667dc437d66bfb175a8dc55a19f8a6953fa91efc76bcbcdf2d22de4d" title="Miscellaneous objects. Objects without particular meaning, that can e.g. be added by the application ...">HWLOC_OBJ_MISC</a> is given, the function returns <a class="el" href="a00167.html#ggaf4e663cf42bbe20756b849c6293ef575a0565ab92ab72cb0cec91e23003294aad" title="No object of given type exists in the topology. ">HWLOC_TYPE_DEPTH_UNKNOWN</a>. </p>
 
 </div>
 </div>
@@ -548,7 +549,8 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Get the depth of the hierarchical tree of objects. </p>
-<p>This is the depth of <a class="el" href="a00163.html#ggacd37bb612667dc437d66bfb175a8dc55abca6887e80cb291353b0a0c1da83f661" title="Processing Unit, or (Logical) Processor. An execution unit (may share a core with some other logical ...">HWLOC_OBJ_PU</a> objects plus one. </p>
+<p>This is the depth of <a class="el" href="a00163.html#ggacd37bb612667dc437d66bfb175a8dc55abca6887e80cb291353b0a0c1da83f661" title="Processing Unit, or (Logical) Processor. An execution unit (may share a core with some other logical ...">HWLOC_OBJ_PU</a> objects plus one.</p>
+<dl class="section note"><dt>Note</dt><dd>I/O and Misc objects are ignored when computing the depth of the tree (they are placed on special levels, or none). </dd></dl>
 
 </div>
 </div>

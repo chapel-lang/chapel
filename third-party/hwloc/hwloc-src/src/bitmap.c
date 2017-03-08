@@ -771,31 +771,45 @@ void hwloc_bitmap_set_range(struct hwloc_bitmap_s * set, unsigned begincpu, int 
 
 	HWLOC__BITMAP_CHECK(set);
 
-	if (_endcpu == -1) {
-		set->infinite = 1;
-		/* keep endcpu == -1 since this unsigned is actually larger than anything else */
-	}
-
-	if (set->infinite) {
-		/* truncate the range according to the infinite part of the bitmap */
-		if (endcpu >= set->ulongs_count * HWLOC_BITS_PER_LONG)
-			endcpu = set->ulongs_count * HWLOC_BITS_PER_LONG - 1;
-		if (begincpu >= set->ulongs_count * HWLOC_BITS_PER_LONG)
-			return;
-	}
 	if (endcpu < begincpu)
 		return;
-	hwloc_bitmap_realloc_by_cpu_index(set, endcpu);
+	if (set->infinite && begincpu >= set->ulongs_count * HWLOC_BITS_PER_LONG)
+		/* setting only in the already-set infinite part, nothing to do */
+		return;
 
-	beginset = HWLOC_SUBBITMAP_INDEX(begincpu);
-	endset = HWLOC_SUBBITMAP_INDEX(endcpu);
-	for(i=beginset+1; i<endset; i++)
-		set->ulongs[i] = HWLOC_SUBBITMAP_FULL;
-	if (beginset == endset) {
-		set->ulongs[beginset] |= HWLOC_SUBBITMAP_ULBIT_FROMTO(HWLOC_SUBBITMAP_CPU_ULBIT(begincpu), HWLOC_SUBBITMAP_CPU_ULBIT(endcpu));
-	} else {
+	if (_endcpu == -1) {
+		/* infinite range */
+
+		/* make sure we can play with the ulong that contains begincpu */
+		hwloc_bitmap_realloc_by_cpu_index(set, begincpu);
+		/* update the ulong that contains begincpu */
+		beginset = HWLOC_SUBBITMAP_INDEX(begincpu);
 		set->ulongs[beginset] |= HWLOC_SUBBITMAP_ULBIT_FROM(HWLOC_SUBBITMAP_CPU_ULBIT(begincpu));
-		set->ulongs[endset] |= HWLOC_SUBBITMAP_ULBIT_TO(HWLOC_SUBBITMAP_CPU_ULBIT(endcpu));
+		/* set ulongs after begincpu if any already allocated */
+		for(i=beginset+1; i<set->ulongs_count; i++)
+			set->ulongs[i] = HWLOC_SUBBITMAP_FULL;
+		/* mark the infinity as set */
+		set->infinite = 1;
+	} else {
+		/* finite range */
+
+		/* ignore the part of the range that overlaps with the already-set infinite part */
+		if (set->infinite && endcpu >= set->ulongs_count * HWLOC_BITS_PER_LONG)
+			endcpu = set->ulongs_count * HWLOC_BITS_PER_LONG - 1;
+		/* make sure we can play with the ulongs that contain begincpu and endcpu */
+		hwloc_bitmap_realloc_by_cpu_index(set, endcpu);
+		/* update first and last ulongs */
+		beginset = HWLOC_SUBBITMAP_INDEX(begincpu);
+		endset = HWLOC_SUBBITMAP_INDEX(endcpu);
+		if (beginset == endset) {
+			set->ulongs[beginset] |= HWLOC_SUBBITMAP_ULBIT_FROMTO(HWLOC_SUBBITMAP_CPU_ULBIT(begincpu), HWLOC_SUBBITMAP_CPU_ULBIT(endcpu));
+		} else {
+			set->ulongs[beginset] |= HWLOC_SUBBITMAP_ULBIT_FROM(HWLOC_SUBBITMAP_CPU_ULBIT(begincpu));
+			set->ulongs[endset] |= HWLOC_SUBBITMAP_ULBIT_TO(HWLOC_SUBBITMAP_CPU_ULBIT(endcpu));
+		}
+		/* set ulongs in the middle of the range */
+		for(i=beginset+1; i<endset; i++)
+			set->ulongs[i] = HWLOC_SUBBITMAP_FULL;
 	}
 }
 
@@ -829,31 +843,46 @@ void hwloc_bitmap_clr_range(struct hwloc_bitmap_s * set, unsigned begincpu, int 
 
 	HWLOC__BITMAP_CHECK(set);
 
-	if (_endcpu == -1) {
-		set->infinite = 0;
-		/* keep endcpu == -1 since this unsigned is actually larger than anything else */
-	}
-
-	if (!set->infinite) {
-		/* truncate the range according to the infinitely-unset part of the bitmap */
-		if (endcpu >= set->ulongs_count * HWLOC_BITS_PER_LONG)
-			endcpu = set->ulongs_count * HWLOC_BITS_PER_LONG - 1;
-		if (begincpu >= set->ulongs_count * HWLOC_BITS_PER_LONG)
-			return;
-	}
 	if (endcpu < begincpu)
 		return;
-	hwloc_bitmap_realloc_by_cpu_index(set, endcpu);
 
-	beginset = HWLOC_SUBBITMAP_INDEX(begincpu);
-	endset = HWLOC_SUBBITMAP_INDEX(endcpu);
-	for(i=beginset+1; i<endset; i++)
-		set->ulongs[i] = HWLOC_SUBBITMAP_ZERO;
-	if (beginset == endset) {
-		set->ulongs[beginset] &= ~HWLOC_SUBBITMAP_ULBIT_FROMTO(HWLOC_SUBBITMAP_CPU_ULBIT(begincpu), HWLOC_SUBBITMAP_CPU_ULBIT(endcpu));
-	} else {
+	if (!set->infinite && begincpu >= set->ulongs_count * HWLOC_BITS_PER_LONG)
+		/* clearing only in the already-unset infinite part, nothing to do */
+		return;
+
+	if (_endcpu == -1) {
+		/* infinite range */
+
+		/* make sure we can play with the ulong that contains begincpu */
+		hwloc_bitmap_realloc_by_cpu_index(set, begincpu);
+		/* update the ulong that contains begincpu */
+		beginset = HWLOC_SUBBITMAP_INDEX(begincpu);
 		set->ulongs[beginset] &= ~HWLOC_SUBBITMAP_ULBIT_FROM(HWLOC_SUBBITMAP_CPU_ULBIT(begincpu));
-		set->ulongs[endset] &= ~HWLOC_SUBBITMAP_ULBIT_TO(HWLOC_SUBBITMAP_CPU_ULBIT(endcpu));
+		/* clear ulong after begincpu if any already allocated */
+		for(i=beginset+1; i<set->ulongs_count; i++)
+			set->ulongs[i] = HWLOC_SUBBITMAP_ZERO;
+		/* mark the infinity as unset */
+		set->infinite = 0;
+	} else {
+		/* finite range */
+
+		/* ignore the part of the range that overlaps with the already-unset infinite part */
+		if (!set->infinite && endcpu >= set->ulongs_count * HWLOC_BITS_PER_LONG)
+			endcpu = set->ulongs_count * HWLOC_BITS_PER_LONG - 1;
+		/* make sure we can play with the ulongs that contain begincpu and endcpu */
+		hwloc_bitmap_realloc_by_cpu_index(set, endcpu);
+		/* update first and last ulongs */
+		beginset = HWLOC_SUBBITMAP_INDEX(begincpu);
+		endset = HWLOC_SUBBITMAP_INDEX(endcpu);
+		if (beginset == endset) {
+			set->ulongs[beginset] &= ~HWLOC_SUBBITMAP_ULBIT_FROMTO(HWLOC_SUBBITMAP_CPU_ULBIT(begincpu), HWLOC_SUBBITMAP_CPU_ULBIT(endcpu));
+		} else {
+			set->ulongs[beginset] &= ~HWLOC_SUBBITMAP_ULBIT_FROM(HWLOC_SUBBITMAP_CPU_ULBIT(begincpu));
+			set->ulongs[endset] &= ~HWLOC_SUBBITMAP_ULBIT_TO(HWLOC_SUBBITMAP_CPU_ULBIT(endcpu));
+		}
+		/* clear ulongs in the middle of the range */
+		for(i=beginset+1; i<endset; i++)
+			set->ulongs[i] = HWLOC_SUBBITMAP_ZERO;
 	}
 }
 

@@ -27,9 +27,14 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-cairo \
                           --disable-libxml2 \
                           --disable-libudev \
-                          --disable-libnuma \
                           --disable-opencl \
                           --disable-pci
+
+# Libnuma requires dynamic linking, so for the flat locale model where
+# we have no need for NUMA info, disable it so we can link statically.
+ifeq ($(CHPL_MAKE_LOCALE_MODEL),flat)
+CHPL_HWLOC_CFG_OPTIONS += --disable-libnuma
+endif
 
 CHPL_HWLOC_CFG_OPTIONS += $(CHPL_HWLOC_MORE_CFG_OPTIONS)
 

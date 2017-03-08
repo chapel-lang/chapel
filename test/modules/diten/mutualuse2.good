@@ -1,2 +1,1 @@
-{ field = 1 }
-nil
+This should be a useful error message about module init order.

@@ -104,7 +104,7 @@ module Barrier {
     }
 
     pragma "no doc"
-    proc ~Barrier() {
+    proc deinit() {
       if owned && bar != nil {
         delete bar;
       }

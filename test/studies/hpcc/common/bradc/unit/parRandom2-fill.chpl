@@ -10,8 +10,8 @@ const ProblemSpace: domain(1, int(64)) dmapped(ProblemDist) = {1..n};
 var A: [ProblemSpace] real;
 var B: [ProblemSpace] real;
 
-var randStr1 = new NPBRandomStream(314159265);
-var randStr2 = new NPBRandomStream(314159265);
+var randStr1 = new NPBRandomStream(real, 314159265);
+var randStr2 = new NPBRandomStream(real, 314159265);
 
 randStr1.fillRandom(A);
 

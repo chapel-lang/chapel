@@ -414,7 +414,6 @@ void Expr::insertBefore(Expr* new_ast) {
   list->length++;
 }
 
-
 void Expr::insertAfter(Expr* new_ast) {
   if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::insertAfter");
@@ -433,6 +432,26 @@ void Expr::insertAfter(Expr* new_ast) {
   if (parentSymbol)
     sibling_insert_help(this, new_ast);
   list->length++;
+}
+
+
+void Expr::insertBefore(AList exprs) {
+  Expr* curr = this;
+  for_alist_backward(prev, exprs) {
+    prev->remove();
+    curr->insertBefore(prev);
+    curr = prev;
+  }
+}
+
+
+void Expr::insertAfter(AList exprs) {
+  Expr* prev = this;
+  for_alist(curr, exprs) {
+    curr->remove();
+    prev->insertAfter(curr);
+    prev = curr;
+  }
 }
 
 
@@ -1179,6 +1198,28 @@ FnSymbol* CallExpr::findFnSymbol(void) {
     INT_FATAL(this, "Cannot find FnSymbol in CallExpr");
 
   return fn;
+}
+
+bool CallExpr::isCast(void) {
+  return isNamed("_cast");
+}
+
+Expr* CallExpr::castFrom(void) {
+  INT_ASSERT(isCast());
+
+  return get(2);
+}
+
+Expr* CallExpr::castTo(void) {
+  INT_ASSERT(isCast());
+
+  return get(1);
+}
+
+CallExpr* createCast(BaseAST* src, BaseAST* toType)
+{
+  CallExpr* expr = new CallExpr("_cast", toType, src);
+  return expr;
 }
 
 

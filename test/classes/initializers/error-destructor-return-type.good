@@ -1,1 +1,1 @@
-error-destructor-return-type.chpl:2: error: destructors may not declare a return type
+error-destructor-return-type.chpl:4: error: destructors may not declare a return type

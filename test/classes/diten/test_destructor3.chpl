@@ -10,7 +10,7 @@ record R {
     c = new C(a, b);
     c2 = new C(a, b);
   }
-  proc ~R() {
+  proc deinit() {
     delete c;
     delete c2;
   }

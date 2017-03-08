@@ -10,6 +10,7 @@ For example:
                      generated from compiling with '--html' flag
   receive_patch    : two scripts useful for moving patches between trees
   send_patch
+  chplspell        : helper script for spell checking the Chapel repo
   test/
     cat_futures    : prints all the futures to the console with name/lineno
                      (Sung says could be written much more efficiently)

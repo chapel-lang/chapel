@@ -1,0 +1,10 @@
+test_array_alias_field.chpl:8: warning: support for '=>' in constructor argument lists is deprecated as of chpl version 1.15 and is unlikely to work as well as it used to.  If you rely on this feature, please let the Chapel team know.
+global array:            1 2 3 4 5
+class w/ copied array:   {A = 1 2 3 4 5}
+class w/ aliased array:  {A = 1 2 3 4 5}
+global array:            1 2 0 4 5
+class w/ copied array:   {A = 1 2 3 4 5}
+class w/ aliased array:  {A = 1 2 0 4 5}
+global array:            1 2 -2 4 5
+class w/ copied array:   {A = 1 2 -1 4 5}
+class w/ aliased array:  {A = 1 2 -2 4 5}

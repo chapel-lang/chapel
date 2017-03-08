@@ -18,7 +18,7 @@ config const treeHeight: uint = 4;
 class node {
   var id: int;
   var left, right: node;
-  proc ~node() {
+  proc deinit() {
     if left then delete left;
     if right then delete right;
   }

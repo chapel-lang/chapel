@@ -56,7 +56,7 @@ class List
   }
   
   
-  proc ~List () { clear(); }
+  proc deinit () { clear(); }
   
   
   iter these ()
@@ -117,7 +117,7 @@ class Stack
   }
 
 
-  proc ~Stack ()
+  proc deinit ()
   {
     while top do pop();
   }
@@ -175,7 +175,7 @@ class Queue
 
 
 
-  proc ~Queue ()
+  proc deinit ()
   {
     while head do dequeue();
   }

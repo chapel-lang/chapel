@@ -164,7 +164,7 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
 
 enum dim { X = 3, Y = 2, Z = 1 };
 
-inline proc initSyms(Sym, dir) {
+inline proc initSyms(ref Sym, dir) {
   if (initFromFile) {
     readNodeset(Sym);
   } else {
@@ -181,22 +181,22 @@ inline proc initSyms(Sym, dir) {
   return (Sym.numIndices, Sym);
 }
 
-inline proc initXSyms(XSym) {
+inline proc initXSyms(ref XSym) {
   initSyms(XSym, dim.X);
 }
 
-inline proc initYSyms(YSym) {
+inline proc initYSyms(ref YSym) {
   initSyms(YSym, dim.Y);
 }
 
-inline proc initZSyms(ZSym) {
+inline proc initZSyms(ref ZSym) {
   initSyms(ZSym, dim.Z);
 }
 
 
 // read/compute the free surface
 
-inline proc initFreeSurface(freeSurface) {
+inline proc initFreeSurface(ref freeSurface) {
   if (initFromFile) {
     readNodeset(freeSurface);
     reader.assertEOF("Input file format error (extra data at EOF)");
@@ -235,7 +235,7 @@ inline proc initFreeSurface(freeSurface) {
 /* This is a helper routine to read a size and array from a file and
    return it */
 
-proc readNodeset(nodeset) {
+proc readNodeset(ref nodeset) {
   if (nodeset.rank == 1) {
     const arrSize = reader.read(int);
 

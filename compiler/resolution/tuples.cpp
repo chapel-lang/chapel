@@ -271,7 +271,7 @@ FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
 {
   Type *newType = newTypeSymbol->type;
 
-  FnSymbol *dtor = new FnSymbol("chpl__deinit");
+  FnSymbol *dtor = new FnSymbol("deinit");
 
   dtor->cname = astr("chpl__auto_destroy_", newType->symbol->cname);
 
@@ -594,7 +594,7 @@ instantiate_tuple_cast(FnSymbol* fn)
       element = new VarSymbol(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
 
-      CallExpr* cast = new CallExpr("_cast", toField->type->symbol, readF);
+      CallExpr* cast = createCast(readF, toField->type->symbol);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, cast));
     } else if (isReferenceType(toField->type)) {
       // fromField: ref(t)  toField : ref(t)
@@ -790,7 +790,7 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
           // of the tuple is a type where blank-intent-means-ref,
           // then the tuple should include a ref field
           // rather than a value field.
-          if (intent == INTENT_BLANK) {
+          if (intent == INTENT_BLANK || intent == INTENT_CONST) {
             IntentTag concrete = concreteIntent(intent, useType);
             if ( (concrete & INTENT_FLAG_REF) ) {
               useType = useType->getRefType();
