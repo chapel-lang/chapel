@@ -1229,6 +1229,7 @@ var_decl_stmt_inner:
     {
       VarSymbol* var = new VarSymbol($1);
       var->addFlag(FLAG_ARRAY_ALIAS);
+      USR_WARN("support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.");
       $$ = buildChapelStmt(new DefExpr(var, $4, $2));
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
