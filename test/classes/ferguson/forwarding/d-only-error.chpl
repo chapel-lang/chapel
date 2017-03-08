@@ -1,6 +1,6 @@
 record Wrapper {
   var instance; // e.g. some class
-  delegate instance only bar;
+  forwarding instance only bar;
 }
 
 class C {

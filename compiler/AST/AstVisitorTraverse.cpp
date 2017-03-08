@@ -253,12 +253,12 @@ void AstVisitorTraverse::exitGotoStmt(GotoStmt* node)
 
 }
 
-bool AstVisitorTraverse::enterDelegateStmt(DelegateStmt* node)
+bool AstVisitorTraverse::enterForwardingStmt(ForwardingStmt* node)
 {
   return true;
 }
 
-void AstVisitorTraverse::exitDelegateStmt(DelegateStmt* node)
+void AstVisitorTraverse::exitForwardingStmt(ForwardingStmt* node)
 {
 
 }

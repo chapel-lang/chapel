@@ -287,7 +287,7 @@
 //
 %token TALIGN TAS TATOMIC TBEGIN TBREAK TBY
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDELEGATE TDELETE TDMAPPED TDO TDOMAIN
+%token TFORWARDING TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
@@ -378,7 +378,7 @@
 %type <pblockstmt> if_stmt loop_stmt
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
 %type <pblockstmt> private_decl
-%type <pblockstmt> delegate_stmt
+%type <pblockstmt> forwarding_stmt
 %type <pblockstmt> extern_block_stmt
 %type <pblockstmt> return_stmt
 %type <pblockstmt> try_stmt
@@ -615,7 +615,7 @@ class_level_stmt:
 | enum_decl_stmt
 | type_alias_decl_stmt
 | class_decl_stmt
-| delegate_stmt
+| forwarding_stmt
 ;
 
 private_decl:
@@ -623,11 +623,11 @@ private_decl:
 | var_decl_stmt
 ;
 
-delegate_stmt:
-  TDELEGATE expr TSEMI  { $$ = buildDelegateStmt($2); }
-| TDELEGATE expr TEXCEPT except_ls TSEMI  { $$ = buildDelegateStmt($2, $4, true); }
-| TDELEGATE expr TONLY opt_only_ls TSEMI  { $$ = buildDelegateStmt($2, $4, false); }
-| TDELEGATE var_decl_stmt { $$ = buildDelegateDeclStmt($2); }
+forwarding_stmt:
+  TFORWARDING expr TSEMI  { $$ = buildForwardingStmt($2); }
+| TFORWARDING expr TEXCEPT except_ls TSEMI  { $$ = buildForwardingStmt($2, $4, true); }
+| TFORWARDING expr TONLY opt_only_ls TSEMI  { $$ = buildForwardingStmt($2, $4, false); }
+| TFORWARDING var_decl_stmt { $$ = buildForwardingDeclStmt($2); }
 ;
 
 extern_block_stmt:

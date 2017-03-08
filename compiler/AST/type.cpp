@@ -622,12 +622,12 @@ void AggregateType::addDeclarations(Expr* expr) {
     for_alist(stmt, block->body) {
       addDeclarations(stmt);
     }
-  } else if (DelegateStmt* delegate = toDelegateStmt(expr)) {
+  } else if (ForwardingStmt* delegate = toForwardingStmt(expr)) {
     // delegate expr is a def expr for a function that we should handle.
     DefExpr* def = toDefExpr(delegate->toFnDef);
     // Handle the function defining what we delegate to
     this->addDeclaration(def);
-    // Add the DelegateStmt to the AST
+    // Add the ForwardingStmt to the AST
     delegate->toFnDef = NULL;
     this->delegates.insertAtTail(delegate);
   } else {

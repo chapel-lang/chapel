@@ -1,7 +1,7 @@
 
 record Wrapper {
   var instance; // e.g. some class
-  delegate instance;
+  forwarding instance;
   proc foo() { writeln("in Wrapper.foo()"); }
 }
 

@@ -524,14 +524,14 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
 }
 
 //
-// DelegateStmt
+// ForwardingStmt
 //
-bool AstDump::enterDelegateStmt(DelegateStmt* node) {
+bool AstDump::enterForwardingStmt(ForwardingStmt* node) {
   write("delegate (");
   return true;
 }
 
-void AstDump::exitDelegateStmt(DelegateStmt* node) {
+void AstDump::exitForwardingStmt(ForwardingStmt* node) {
   write(")");
 }
 

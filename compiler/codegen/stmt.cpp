@@ -319,10 +319,10 @@ GenRet GotoStmt::codegen() {
 *                                                                   *
 ********************************* | ********************************/
 
-GenRet DelegateStmt::codegen() {
+GenRet ForwardingStmt::codegen() {
   GenRet ret;
   // Should be lowered in resolution
-  INT_FATAL(this, "DelegateStmt codegen called");
+  INT_FATAL(this, "ForwardingStmt codegen called");
   return ret;
 }
 

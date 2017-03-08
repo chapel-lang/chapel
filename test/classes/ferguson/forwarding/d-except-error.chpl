@@ -1,6 +1,6 @@
 record Wrapper {
   var instance; // e.g. some class
-  delegate instance only bar as f;
+  forwarding instance except bar;
 }
 
 class C {
@@ -10,4 +10,5 @@ class C {
 }
 
 var r = new Wrapper(new C());
-r.f(); // 'bar' was renamed to 'f'
+r.foo(); // OK
+r.bar(); // error: in except list

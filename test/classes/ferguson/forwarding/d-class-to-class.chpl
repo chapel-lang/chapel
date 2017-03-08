@@ -1,8 +1,7 @@
 
-record Wrapper {
-  type t;
-  var Array:[1..1] t;
-  delegate Array[1];
+class Wrapper {
+  var instance; // e.g. some class
+  forwarding instance;
   proc foo() { writeln("in Wrapper.foo()"); }
 }
 
@@ -13,9 +12,8 @@ class C {
   proc baz() { field = 1; }
 }
 
-var r:Wrapper(C);
-r.Array[1] = new C();
-r.foo(); // prints "in Wrapper.foo()"
+var r = new Wrapper(new C());
+r.foo(); // direct method shadows forwarding method
 r.bar(); // same as r.instance.bar(), prints "in C.foo()"
 
 

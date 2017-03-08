@@ -50,7 +50,7 @@ class ParamForLoop;
 class ExternBlockStmt;
 class CondStmt;
 class GotoStmt;
-class DelegateStmt;
+class ForwardingStmt;
 class TryStmt;
 
 class AstVisitor
@@ -147,8 +147,8 @@ public:
   virtual bool   enterCondStmt       (CondStmt*          node) = 0;
   virtual void   exitCondStmt        (CondStmt*          node) = 0;
 
-  virtual bool   enterDelegateStmt   (DelegateStmt*      node) = 0;
-  virtual void   exitDelegateStmt    (DelegateStmt*      node) = 0;
+  virtual bool   enterForwardingStmt (ForwardingStmt*    node) = 0;
+  virtual void   exitForwardingStmt  (ForwardingStmt*    node) = 0;
 
   virtual void   visitEblockStmt     (ExternBlockStmt*   node) = 0;
 

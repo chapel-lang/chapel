@@ -8,13 +8,13 @@ class C {
 
 record WrapperOne {
   var instance; // e.g. some class
-  delegate instance only foo as bar;
+  forwarding instance only foo as bar;
   proc foo() { writeln("in WrapperOne.foo()"); }
 }
 
 record WrapperTwo {
   var instance; // WrapperOne
-  delegate instance only bar as baz;
+  forwarding instance only bar as baz;
   proc foo() { writeln("in WrapperTwo.foo()"); }
 }
 

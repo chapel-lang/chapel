@@ -1,11 +1,9 @@
-
 record Wrapper {
-  var instance; // e.g. some class
-  delegate instance;
+  forwarding var instance; // e.g. some class
   proc foo() { writeln("in Wrapper.foo()"); }
 }
 
-record C {
+class C {
   var field:int;
   proc foo() { writeln("in C.foo()"); }
   proc bar() { writeln("in C.bar()"); }
@@ -13,5 +11,5 @@ record C {
 }
 
 var r = new Wrapper(new C());
-r.foo(); // direct method shadows delegated method
+r.foo(); // direct method shadows forwarding method
 r.bar(); // same as r.instance.bar(), prints "in C.foo()"

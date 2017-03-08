@@ -4264,9 +4264,9 @@ resolveDefaultGenericType(CallExpr* call) {
 }
 
 static bool
-typeUsesDelegation(Type* t) {
+typeUsesForwarding(Type* t) {
   if (AggregateType* at = toAggregateType(t)) {
-    if (toDelegateStmt(at->delegates.head)) {
+    if (toForwardingStmt(at->delegates.head)) {
       return true;
     }
   }
@@ -4274,7 +4274,7 @@ typeUsesDelegation(Type* t) {
 }
 
 static bool
-populateDelegatedMethods(Type* t, const char* calledName, CallExpr* forCall)
+populateForwardingMethods(Type* t, const char* calledName, CallExpr* forCall)
 {
   AggregateType* at = toAggregateType(t);
   bool addedAny = false;
@@ -4284,10 +4284,10 @@ populateDelegatedMethods(Type* t, const char* calledName, CallExpr* forCall)
 
   // copy methods from the delegates into at
   for_alist(expr, at->delegates) {
-    DelegateStmt* delegate = toDelegateStmt(expr);
+    ForwardingStmt* delegate = toForwardingStmt(expr);
     INT_ASSERT(delegate);
 
-    const char* fnGetTgt = delegate->fnReturningDelegate;
+    const char* fnGetTgt = delegate->fnReturningForwarding;
     const char* methodName = calledName;
 
     if (!delegate->type) {
@@ -4601,8 +4601,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     if (call->numActuals() >= 1 &&
         call->get(1)->typeInfo() == dtMethodToken) {
       Type* receiverType = call->get(2)->typeInfo()->getValType();
-      if (typeUsesDelegation(receiverType)) {
-        retry_find = populateDelegatedMethods(receiverType, info.name, info.call);
+      if (typeUsesForwarding(receiverType)) {
+        retry_find = populateForwardingMethods(receiverType, info.name, info.call);
       }
     }
   }

@@ -1177,36 +1177,36 @@ Expr* ExternBlockStmt::getFirstExpr() {
 *                                                                   *
 ********************************* | ********************************/
 
-DelegateStmt::DelegateStmt(DefExpr* toFnDef) :
-  Stmt(E_DelegateStmt),
+ForwardingStmt::ForwardingStmt(DefExpr* toFnDef) :
+  Stmt(E_ForwardingStmt),
   toFnDef(toFnDef),
-  fnReturningDelegate(NULL),
+  fnReturningForwarding(NULL),
   type(NULL),
   named(),
   renamed(),
   except(false)
 {
-  gDelegateStmts.add(this);
+  gForwardingStmts.add(this);
 
   if (toFnDef)
     if (FnSymbol* fn = toFnSymbol(toFnDef->sym))
-      fnReturningDelegate = fn->name;
+      fnReturningForwarding = fn->name;
 }
 
-DelegateStmt::DelegateStmt(DefExpr* toFnDef, std::set<const char*>* args, bool exclude, std::map<const char*, const char*>* renames) :
-  Stmt(E_DelegateStmt),
+ForwardingStmt::ForwardingStmt(DefExpr* toFnDef, std::set<const char*>* args, bool exclude, std::map<const char*, const char*>* renames) :
+  Stmt(E_ForwardingStmt),
   toFnDef(toFnDef),
-  fnReturningDelegate(NULL),
+  fnReturningForwarding(NULL),
   type(NULL),
   named(),
   renamed(),
   except(exclude)
 {
-  gDelegateStmts.add(this);
+  gForwardingStmts.add(this);
 
   if (toFnDef)
     if (FnSymbol* fn = toFnSymbol(toFnDef->sym))
-      fnReturningDelegate = fn->name;
+      fnReturningForwarding = fn->name;
 
   if (args->size() > 0) {
     // Symbols to search when going through this module's scope from an outside
@@ -1227,51 +1227,51 @@ DelegateStmt::DelegateStmt(DefExpr* toFnDef, std::set<const char*>* args, bool e
 }
 
 
-void DelegateStmt::verify() {
+void ForwardingStmt::verify() {
   Expr::verify();
-  if (astTag != E_DelegateStmt) {
-    INT_FATAL(this, "Bad DelegateStmt::astTag");
+  if (astTag != E_ForwardingStmt) {
+    INT_FATAL(this, "Bad ForwardingStmt::astTag");
   }
-  if (!toFnDef && !fnReturningDelegate && !type) {
-    INT_FATAL(this, "DelegateStmt is empty");
+  if (!toFnDef && !fnReturningForwarding && !type) {
+    INT_FATAL(this, "ForwardingStmt is empty");
   }
 }
 
-void DelegateStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
+void ForwardingStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == toFnDef) {
     toFnDef = toDefExpr(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in DelegateStmt::replaceChild");
+    INT_FATAL(this, "Unexpected case in ForwardingStmt::replaceChild");
   }
 }
 
-DelegateStmt* DelegateStmt::copyInner(SymbolMap* map) {
-  DelegateStmt* ret = NULL;
+ForwardingStmt* ForwardingStmt::copyInner(SymbolMap* map) {
+  ForwardingStmt* ret = NULL;
 
   if (named.size() > 0 || renamed.size() > 0) {
-    ret = new DelegateStmt(COPY_INT(toFnDef), &named, except, &renamed);
+    ret = new ForwardingStmt(COPY_INT(toFnDef), &named, except, &renamed);
   } else {
-    ret = new DelegateStmt(COPY_INT(toFnDef));
+    ret = new ForwardingStmt(COPY_INT(toFnDef));
   }
-  ret->fnReturningDelegate = fnReturningDelegate;
+  ret->fnReturningForwarding = fnReturningForwarding;
 
   return ret;
 }
 
-void DelegateStmt::accept(AstVisitor* visitor) {
-  if (visitor->enterDelegateStmt(this) == true) {
+void ForwardingStmt::accept(AstVisitor* visitor) {
+  if (visitor->enterForwardingStmt(this) == true) {
 
     if (toFnDef)
       toFnDef->accept(visitor);
 
-    visitor->exitDelegateStmt(this);
+    visitor->exitForwardingStmt(this);
   }
 }
 
-Expr* DelegateStmt::getFirstChild() {
+Expr* ForwardingStmt::getFirstChild() {
   return toFnDef;
 }
 
-Expr* DelegateStmt::getFirstExpr() {
+Expr* ForwardingStmt::getFirstExpr() {
   return (toFnDef != NULL) ? toFnDef->getFirstExpr() : this;
 }

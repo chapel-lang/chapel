@@ -27,7 +27,7 @@ record RefCounted {
   var pn:ReferenceCount; // reference counter
 
   // forward method invocations to p.
-  delegate p;
+  forwarding p;
 
   proc RefCounted(p) {
 

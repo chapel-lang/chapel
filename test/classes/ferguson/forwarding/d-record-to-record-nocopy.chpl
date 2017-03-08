@@ -1,7 +1,7 @@
 
 record Wrapper {
   var c; // e.g. some class
-  delegate c;
+  forwarding c;
 }
 
 record C {

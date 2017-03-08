@@ -308,10 +308,10 @@ public:
 *                                                                           *
 ************************************* | ************************************/
 
-class DelegateStmt : public Stmt {
+class ForwardingStmt : public Stmt {
 public:
-                      DelegateStmt(DefExpr* toFnDef);
-                      DelegateStmt(DefExpr* toFnDef,
+                      ForwardingStmt(DefExpr* toFnDef);
+                      ForwardingStmt(DefExpr* toFnDef,
                                    std::set<const char*>* args,
                                    bool exclude,
                                    std::map<const char*, const char*>* renames);
@@ -321,7 +321,7 @@ public:
   virtual void        verify();
   virtual void        accept(AstVisitor* visitor);
 
-  DECLARE_COPY(DelegateStmt);
+  DECLARE_COPY(ForwardingStmt);
 
   // Interface to Expr
   virtual void        replaceChild(Expr* oldAst, Expr* newAst);
@@ -332,7 +332,7 @@ public:
   // used during parsing
   DefExpr*            toFnDef;
   // used before, during resolution
-  const char*         fnReturningDelegate;
+  const char*         fnReturningForwarding;
   // used during resolution
   Type*               type;
 

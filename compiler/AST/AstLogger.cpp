@@ -182,11 +182,11 @@ bool AstLogger::enterGotoStmt(GotoStmt* node) {
 void AstLogger::exitGotoStmt(GotoStmt* node) {
 }
 
-bool AstLogger::enterDelegateStmt(DelegateStmt* node) {
+bool AstLogger::enterForwardingStmt(ForwardingStmt* node) {
   return true;
 }
 
-void AstLogger::exitDelegateStmt(DelegateStmt* node) {
+void AstLogger::exitForwardingStmt(ForwardingStmt* node) {
 }
 
 bool AstLogger::enterTryStmt(TryStmt* node) {

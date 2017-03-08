@@ -2526,7 +2526,7 @@ void applyPrivateToBlock(BlockStmt* block) {
 }
 
 static
-DefExpr* buildDelegateExprFnDef(Expr* expr) {
+DefExpr* buildForwardingExprFnDef(Expr* expr) {
   // Instead of just storing expr directly, put it into a method
   // and store a call to that method.
   // This way, we can work with the rest of the compiler that
@@ -2549,14 +2549,14 @@ DefExpr* buildDelegateExprFnDef(Expr* expr) {
 // handle syntax like
 //    var instance:someType;
 //    delegate instance;
-BlockStmt* buildDelegateStmt(Expr* expr) {
-  return buildChapelStmt(new DelegateStmt(buildDelegateExprFnDef(expr)));
+BlockStmt* buildForwardingStmt(Expr* expr) {
+  return buildChapelStmt(new ForwardingStmt(buildForwardingExprFnDef(expr)));
 }
 
 // handle syntax like
 //    var instance:someType;
 //    delegate instance only foo;
-BlockStmt* buildDelegateStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except) {
+BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except) {
   std::set<const char*> namesSet;
   std::map<const char*, const char*> renameMap;
 
@@ -2600,8 +2600,8 @@ BlockStmt* buildDelegateStmt(Expr* expr, std::vector<OnlyRename*>* names, bool e
 
   }
 
-  DefExpr* fnDef = buildDelegateExprFnDef(expr);
-  DelegateStmt* ret = new DelegateStmt(fnDef,
+  DefExpr* fnDef = buildForwardingExprFnDef(expr);
+  ForwardingStmt* ret = new ForwardingStmt(fnDef,
                                        &namesSet,
                                        except,
                                        &renameMap);
@@ -2614,17 +2614,17 @@ BlockStmt* buildDelegateStmt(Expr* expr, std::vector<OnlyRename*>* names, bool e
 // by translating it into
 //    var instance:someType;
 //    delegate instance;
-BlockStmt* buildDelegateDeclStmt(BlockStmt* stmts) {
+BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        // Append a DelegateStmt
-        BlockStmt* toAppend = buildDelegateStmt(new UnresolvedSymExpr(var->name));
+        // Append a ForwardingStmt
+        BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
         for_alist(tmp, toAppend->body) {
           stmts->insertAtTail(tmp->remove());
         }
       } else {
-        INT_FATAL("case not handled in buildDelegateDeclStmt");
+        INT_FATAL("case not handled in buildForwardingDeclStmt");
       }
     }
   }

@@ -77,7 +77,7 @@ void printStatistics(const char* pass) {
   foreach_ast(decl_counters);
 
   int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt + nTryStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kTryStmt + kDelegateStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kTryStmt + kForwardingStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
     nContextCallExpr + nForallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
@@ -453,8 +453,8 @@ const char* BaseAST::astTagAsString() const {
       retval = "GotoStmt";
       break;
 
-    case E_DelegateStmt:
-      retval = "DelegateStmt";
+    case E_ForwardingStmt:
+      retval = "ForwardingStmt";
       break;
 
     case E_ExternBlockStmt:

@@ -382,12 +382,12 @@ void CollapseBlocks::exitGotoStmt(GotoStmt* node)
 
 }
 
-bool CollapseBlocks::enterDelegateStmt(DelegateStmt* node)
+bool CollapseBlocks::enterForwardingStmt(ForwardingStmt* node)
 {
   return true;
 }
 
-void CollapseBlocks::exitDelegateStmt(DelegateStmt* node)
+void CollapseBlocks::exitForwardingStmt(ForwardingStmt* node)
 {
 
 }

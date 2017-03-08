@@ -1,6 +1,6 @@
 record Wrapper {
   var instance; // e.g. some class
-  delegate instance only bar;
+  forwarding instance only bar as f;
 }
 
 class C {
@@ -10,4 +10,4 @@ class C {
 }
 
 var r = new Wrapper(new C());
-r.bar(); // in only list
+r.foo(); // error: foo not included in only statement
