@@ -131,12 +131,6 @@ symExprIsSetByUse(SymExpr* use) {
         // TODO: can we add
         //if (inFn->retTag == RET_VALUE) return false;
         return true;
-
-      } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-                 call->isPrimitive(PRIM_WIDE_GET_NODE)) {
-        // TODO: update array accessors and remove
-        // this case.
-        return true;
       }
     }
 
