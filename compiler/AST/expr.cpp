@@ -1449,6 +1449,7 @@ void ContextCallExpr::setRefValueConstRefOptions(CallExpr* refCall,
                                                  CallExpr* valueCall,
                                                  CallExpr* constRefCall) {
 
+  // ContextCallExpr::getCalls depends on this order
   options.insertAtTail(constRefCall);
   parent_insert_help(this, constRefCall);
   options.insertAtTail(valueCall);
@@ -1474,27 +1475,26 @@ void  ContextCallExpr::getCalls(CallExpr*& refCall,
   refCall = NULL;
   valueCall = NULL;
   constRefCall = NULL;
-  for_alist(expr, options) {
-    CallExpr* call = toCallExpr(expr);
-    FnSymbol* fn = call->isResolved();
-    RetTag tag = fn->retTag;
-    // Iterators change from RET_REF to marking with FLAG_REF_ITERATOR_CLASS
-    if (fn && fn->iteratorInfo) {
-      //fn = fn->iteratorInfo->iterator;
-      if (fn->retType->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS))
-        tag = RET_REF;
-    }
+
+  if (options.length == 2) {
+    refCall = getRefCall();
+    CallExpr* rvalueCall = getRValueCall();
+    FnSymbol* fn = rvalueCall->isResolved();
     INT_ASSERT(fn);
-    if (tag == RET_CONST_REF) {
-      INT_ASSERT(constRefCall == NULL);
-      constRefCall = call;
-    } else if (tag == RET_VALUE) {
-      INT_ASSERT(valueCall == NULL);
-      valueCall = call;
-    } else if (tag == RET_REF) {
-      INT_ASSERT(refCall == NULL);
-      refCall = call;
-    }
+    if (fn->retTag == RET_CONST_REF)
+      constRefCall = rvalueCall;
+    else
+      valueCall = rvalueCall;
+  } else if (options.length == 3) {
+    // Note: it would be nicer to check retTag to decide between
+    // ref / value versions. However, doing so is challenging because
+    // of the way that iterator functions no longer have the original
+    // retTag.
+    constRefCall = toCallExpr(options.get(1));
+    valueCall = toCallExpr(options.get(2));
+    refCall = toCallExpr(options.get(3));
+  } else {
+    INT_ASSERT(0 && "Bad ContextCallExpr options");
   }
 }
 
