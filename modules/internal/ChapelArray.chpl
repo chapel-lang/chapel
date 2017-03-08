@@ -1566,9 +1566,12 @@ module ChapelArray {
     pragma "no doc"
     proc setIndices(x) {
       _value.dsiSetIndices(x);
+      extern proc printf(x...);
+      printf("Privatizing\n");
       if _isPrivatized(_instance) {
         _reprivatize(_value);
       }
+      printf("Done privatizing\n");
     }
 
     pragma "no doc"

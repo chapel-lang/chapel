@@ -311,6 +311,7 @@ class Block : BaseDist {
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
+  var deferredSetup: bool;
   type sparseLayoutType = DefaultDist;
 }
 
@@ -406,7 +407,6 @@ class LocBlockArr {
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
-  var deferredSetup: bool;
 
   // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
@@ -423,6 +423,37 @@ class LocBlockArr {
 //
 // Block constructor for clients of the Block distribution
 //
+proc Block.Block(param rank = 1,
+                 type idxType = int,
+                 type sparseLayoutType = DefaultDist) {
+  
+  this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
+
+  setupTargetLocalesArray(targetLocDom, this.targetLocales, Locales);
+
+  writeln("bounding box size = ", boundingBox.size);
+  if (boundingBox.size != 0) then
+    chpl__setupBoundingBoxLocalDescs();
+  else {
+    writeln("deferring setup");
+    deferredSetup = true;
+  }
+
+  // NOTE: When these knobs stop using the global defaults, we will need
+  // to add checks to make sure dataParTasksPerLocale<0 and
+  // dataParMinGranularity<0
+  this.dataParTasksPerLocale = if dataParTasksPerLocale==0
+                               then here.maxTaskPar
+                               else dataParTasksPerLocale;
+  this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
+  this.dataParMinGranularity = dataParMinGranularity;
+
+  if debugBlockDist {
+    writeln("Creating new Block distribution:");
+    dsiDisplayRepresentation();
+  }
+}
+
 proc Block.Block(boundingBox: domain,
                 targetLocales: [] locale = Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -442,10 +473,13 @@ proc Block.Block(boundingBox: domain,
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
+  writeln("bounding box size = ", boundingBox.size);
   if (boundingBox.size != 0) then
     chpl__setupBoundingBoxLocalDescs();
-  else
+  else {
+    writeln("deferring setup");
     deferredSetup = true;
+  }
 
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
@@ -472,22 +506,28 @@ proc Block.chpl__setupBoundingBoxLocalDescs() {
 }
 
 proc Block.dsiAssign(other: this.type) {
-  coforall locid in targetLocDom do
-    on targetLocales(locid) do
-      delete locDist(locid);
-  boundingBox = other.boundingBox;
-  targetLocDom = other.targetLocDom;
-  targetLocales = other.targetLocales;
-  dataParTasksPerLocale = other.dataParTasksPerLocale;
-  dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
-  dataParMinGranularity = other.dataParMinGranularity;
-  const boundingBoxDims = boundingBox.dims();
-  const targetLocDomDims = targetLocDom.dims();
-
-  coforall locid in targetLocDom do
-    on targetLocales(locid) do
-      locDist(locid) = new LocBlock(rank, idxType, locid, boundingBoxDims,
-                                    targetLocDomDims);
+  if (deferredSetup) {
+    this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
+    chpl__setupBoundingBoxLocalDescs();
+    deferredSetup=false;
+  } else {
+    coforall locid in targetLocDom do
+      on targetLocales(locid) do
+        delete locDist(locid);
+    boundingBox = other.boundingBox;
+    targetLocDom = other.targetLocDom;
+    targetLocales = other.targetLocales;
+    dataParTasksPerLocale = other.dataParTasksPerLocale;
+    dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
+    dataParMinGranularity = other.dataParMinGranularity;
+    const boundingBoxDims = boundingBox.dims();
+    const targetLocDomDims = targetLocDom.dims();
+    
+    coforall locid in targetLocDom do
+      on targetLocales(locid) do
+        locDist(locid) = new LocBlock(rank, idxType, locid, boundingBoxDims,
+                                      targetLocDomDims);
+  }
 }
 
 //
@@ -529,8 +569,9 @@ proc Block.dsiDisplayRepresentation() {
   writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
   writeln("dataParIgnoreRunningTasks = ", dataParIgnoreRunningTasks);
   writeln("dataParMinGranularity = ", dataParMinGranularity);
-  for tli in targetLocDom do
-    writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
+  if (!deferredSetup) then
+    for tli in targetLocDom do
+      writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
 proc Block.dsiNewRectangularDom(param rank: int, type idxType,
@@ -540,16 +581,15 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("Block domain rank does not match distribution's");
 
-  if deferredSetup then
-    halt("setup was deferred");
-
   var dom = new BlockDom(rank=rank, idxType=idxType, dist=this,
       stridable=stridable, sparseLayoutType=sparseLayoutType);
-  dom.setup();
-  if debugBlockDist {
-    writeln("Creating new Block domain:");
-    dom.dsiDisplayRepresentation();
-  }
+  if !deferredSetup {
+    dom.setup();
+    if debugBlockDist {
+      writeln("Creating new Block domain:");
+      dom.dsiDisplayRepresentation();
+    }
+  } 
   return dom;
 }
 
@@ -933,6 +973,12 @@ proc BlockDom.dsiSetIndices(x: domain) {
     compilerError("rank mismatch in domain assignment");
   if x._value.idxType != idxType then
     compilerError("index type mismatch in domain assignment");
+  if (dist.deferredSetup) {
+    writeln("Doing deferred setup A");
+    this.boundingBox = x: domain(rank, idxType, stridable=false);
+    chpl__setupBoundingBoxLocalDescs();
+    dist.deferredSetup=false;
+  }
   whole = x;
   setup();
   if debugBlockDist {
@@ -950,11 +996,19 @@ proc BlockDom.dsiSetIndices(x) {
   // TODO: This seems weird:
   //
   whole.setIndices(x);
+  if (dist.deferredSetup) {
+    writeln("Doing deferred setup B");
+    dist.boundingBox = whole: domain(rank, idxType, stridable=false);
+    dist.chpl__setupBoundingBoxLocalDescs();
+    dist.deferredSetup=false;
+  }
+  writeln(dist.targetLocDom);
   setup();
   if debugBlockDist {
     writeln("Setting indices of Block domain:");
     dsiDisplayRepresentation();
   }
+  writeln("Returning from dsiSetIndices");
 }
 
 proc BlockDom.dsiGetIndices() {
