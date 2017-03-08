@@ -35,7 +35,7 @@ reset(R1D);
 checkSearch(found, foundIdx, R1D, "binarySearch");
 
 writeln("Search aliased array");
-var aR1D => R1D;
+ref aR1D = R1D;
 reset(R1D);
 (found, foundIdx) = linearSearch(aR1D, elem);
 checkSearch(found, foundIdx, R1D, "linearSearch");
@@ -60,7 +60,7 @@ checkSearch(found, foundIdx+o5, R1D, "binarySearch");
 
 
 writeln("Search rank changed array (2D->1D)");
-var rc2DR1D =>  R2D(Dom2D.dim(1), n2-1);
+ref rc2DR1D =  R2D(Dom2D.dim(1), n2-1);
 idx = Dom2D.dim(1).length/2+1;
 reset(rc2DR1D);
 (found, foundIdx) = linearSearch(rc2DR1D, elem);
@@ -70,7 +70,7 @@ reset(rc2DR1D);
 checkSearch(found, foundIdx, rc2DR1D, "binarySearch");
 
 writeln("Search rank changed array (3D->1D)");
-var rc3DR1D =>  R3D(Dom3D.dim(1), n3-1, n3-1);
+ref rc3DR1D =  R3D(Dom3D.dim(1), n3-1, n3-1);
 idx = Dom3D.dim(1).length/2+1;
 reset(rc3DR1D);
 (found, foundIdx) = linearSearch(rc3DR1D, elem);
@@ -80,7 +80,7 @@ reset(rc3DR1D);
 checkSearch(found, foundIdx, rc3DR1D, "binarySearch");
 
 writeln("Search rank changed array (4D->1D)");
-var rc4DR1D =>  R4D(Dom4D.dim(1), n4-1, n4-1, n4-1);
+ref rc4DR1D =  R4D(Dom4D.dim(1), n4-1, n4-1, n4-1);
 idx = Dom4D.dim(1).length/2+1;
 reset(rc4DR1D);
 (found, foundIdx) = linearSearch(rc4DR1D, elem);

@@ -96,7 +96,7 @@ class Vector {
   }
 
   proc getslice(lo,hi) {
-    var aslice => a(lo..hi);
+    ref aslice = a(lo..hi);
     return new Vector(aslice.numElements,aslice);
   }
 

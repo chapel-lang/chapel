@@ -180,7 +180,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   // (B) If we allocated replX separately from replK, we need to
   // replicate X where backwardSub currently invokes replicateK().
   // 
-  var replX => replK;
+  ref replX = replK;
 
   // Allocate these arrays just once.
   // Partial sums local to each node.
@@ -216,7 +216,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   // Note: store result of backwardSub in xtemp instead of
   // returning a slice of a local variable (which is not supported).
   var xTemp = backwardSub(n); // perform the back substitution
-  var x => xTemp[0, 1..n];
+  ref x = xTemp[0, 1..n];
 
   if printArrays then
     writeln("after backwardSub, Ab=\n", Ab, "\nx=\n", x);
@@ -342,11 +342,11 @@ proc schurComplement(blk, AD, BD, Rest) {
             const blkRange = 1..blkSize;
             forall j1 in myStarts1 {
               const outerRange = j1..min(j1+blkSize-1, n);
-              var h2 => replA._value.dsiLocalSlice1((outerRange, blkRange));
+              ref h2 = replA._value.dsiLocalSlice1((outerRange, blkRange));
               forall j2 in myStarts2 {
                 const innerRange = j2..min(j2+blkSize-1, n+1);
-                var h1 => Ab._value.dsiLocalSlice1((outerRange, innerRange)),
-                    h3 => replB._value.dsiLocalSlice1((blkRange, innerRange));
+                ref h1 = Ab._value.dsiLocalSlice1((outerRange, innerRange)),
+                    h3 = replB._value.dsiLocalSlice1((blkRange, innerRange));
                 for a in outerRange {
                   for w in blkRange  {
                     const h2aw = h2[a,w];
@@ -404,9 +404,9 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
       if origScalar(2) then (sliceDim1,)
       else (sliceDim1, sliceDim2);
   pragma "no auto destroy"
-  var slice => locAdesc.myStorageArr[r1, r2];
+  ref slice = locAdesc.myStorageArr[r1, r2];
   pragma "no auto destroy"
-  var result: [(...reindexExpr)] => slice;
+    ref result = slice.reindex({(...reindexExpr)});
   return result;
 }
 
@@ -500,7 +500,7 @@ proc psReduce(blk, k) {
             const iRange = max(iStart, k)..min(iStart + blkSize - 1, n);
             var myResult: psRedResultT;
             myResult.initResult();
-            var locAB => Ab._value.dsiLocalSlice1((iRange, k));
+            ref locAB = Ab._value.dsiLocalSlice1((iRange, k));
             for i in iRange do myResult.updateE(i, locAB[i]);
             if myResult.absmx > maxRes.read() { // only lock if we might update
               upd$ = true;  // lock
@@ -550,8 +550,8 @@ proc psCompute(panel, blk, k, pivotVal) {
 
         // TODO: move this 'local' right after 'on'
         local {
-          var locAB => Ab._value.dsiLocalSlice1((iStart..iEnd, k..dim2end));
-          var locK => replK._value.dsiLocalSlice1((0, k..dim2end));
+          ref locAB = Ab._value.dsiLocalSlice1((iStart..iEnd, k..dim2end));
+          ref locK = replK._value.dsiLocalSlice1((0, k..dim2end));
           for i in iStart..iEnd {
             // Ab[k+1.., k..k] /= pivotVal;
             locAB[i, k] /= pivotVal;
@@ -585,33 +585,33 @@ proc psSwap(k, pr, out wasLocal) {
         if lidk1 == lidpr1 {
           // sweet, can swap locally
           local {
-            var locABk => Ab._value.dsiLocalSlice1((k, mycol));
-            var locABpr => Ab._value.dsiLocalSlice1((pr, mycol));
+            ref locABk = Ab._value.dsiLocalSlice1((k, mycol));
+            ref locABpr = Ab._value.dsiLocalSlice1((pr, mycol));
             for j in mycol do locABk[j] <=> locABpr[j];
           }
         } else {
           // need to copy the two sub-rows between two locales
-          var locABk => Ab._value.dsiLocalSlice1((k, mycol));
+          ref locABk = Ab._value.dsiLocalSlice1((k, mycol));
 
           // using a tuple for more efficient data transfer
           var tt: maxBlkSize*elemType;
           for j in mycol do tt[j-js+1] = locABk[j];
 
           // or:
-          //var locKk  => K._value.dsiLocalSlice1((0, mycol));
+          //ref locKk  = K._value.dsiLocalSlice1((0, mycol));
           //for j in mycol do locKk[j] = locABk;
 
           on targetLocalesRepl[lidpr1, lid2] {
             var pp = tt;
             local {
               const myStart = mycol.low;
-              var locABpr => Ab._value.dsiLocalSlice1((pr, mycol));
+              ref locABpr = Ab._value.dsiLocalSlice1((pr, mycol));
               for j in mycol do pp[j-myStart+1] <=> locABpr[j];
             }
             tt = pp;
 
             // or: replK is available for temp storate
-            //var locKpr  => replK._value.dsiLocalSlice1((0, mycol));
+            //ref locKpr  = replK._value.dsiLocalSlice1((0, mycol));
             //locKpr = locABk; // TODO: bulkify, unless it is already
             //for j in mycol do locABpr[j] <=> locKpr[j];
             //locABk = locKpr; // TODO: bulkify, unless it is already
@@ -667,8 +667,8 @@ proc updateBlockRow(
 
     local {
       const dim2 = js..min(js+blkSize-1,n+1);
-      var locAB  => Ab._value.dsiLocalSlice1((dim1, dim2));
-      var locU   => replU._value.localArrs[here.id].arrLocalRep;
+      ref locAB  = Ab._value.dsiLocalSlice1((dim1, dim2));
+      ref locU   = replU._value.localArrs[here.id].arrLocalRep;
 
       for row in dim1 {
         const i = row, iRel = i-blk;
@@ -761,7 +761,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
   if onDiag {
     // NB the following picks locId2-th element from the current
     // replicand of bsOthersPartSums.
-    var myPartSums => bsOthersPartSums[locId2].values;
+    ref myPartSums = bsOthersPartSums[locId2].values;
     ensureDR(myPartSums._value, "bsR myPartSums");
 
     var gotBlocks: bool; // ignored
@@ -783,7 +783,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
   } else {
     // off the diagonal
 
-    var myPartSums => bsLocalPartSums._value.localArrs[here.id].arrLocalRep;
+    ref myPartSums = bsLocalPartSums._value.localArrs[here.id].arrLocalRep;
     ensureDR(myPartSums._value, "bsR myPartSums");
 
     var gotBlocks: bool;
@@ -800,8 +800,8 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
 
 proc bsComputeMyXs(diaFrom, diaTo, locId1, locId2, zeroOutX) {
   const diaSlice = diaFrom..diaTo;
-  var locAB => Ab._value.dsiLocalSlice1((diaSlice, diaSlice));
-  var locX => replX._value.dsiLocalSlice1((0, diaSlice));
+  ref locAB = Ab._value.dsiLocalSlice1((diaSlice, diaSlice));
+  ref locX = replX._value.dsiLocalSlice1((0, diaSlice));
 
   // because we are reusing replK for replX
   if zeroOutX then
@@ -810,12 +810,12 @@ proc bsComputeMyXs(diaFrom, diaTo, locId1, locId2, zeroOutX) {
   if targetLocaleReplForAbIndex(diaFrom, n+1) == here {
     // Ab[diaSlice, n+1] is local
     local {
-      var locB => Ab._value.dsiLocalSlice1((diaSlice, n+1));
+      ref locB = Ab._value.dsiLocalSlice1((diaSlice, n+1));
       bsComputeMyXsWithB(diaFrom, diaTo, locAB, locX, locB);
     }
   } else {
     // 'locB' is the local replicand, we use it as a temp array
-    var locB => replB._value.dsiLocalSlice1((1, diaSlice));
+    ref locB = replB._value.dsiLocalSlice1((1, diaSlice));
     // get the remote Ab[diaSlice, n+1] into locB
     on targetLocaleReplForAbIndex(diaFrom, n+1) {
       // TODO: bulkify, unless it is already
@@ -838,8 +838,8 @@ proc bsComputeMyXsWithB(diaFrom, diaTo, locAB, locX, locB) {
 
 proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
   // Apart from asserts and writeln(), everything here should be local.
-  var partSums => bsOthersPartSums._value.localArrs[here.id].arrLocalRep;
-  var locX     => replX._value.dsiLocalSlice1((0, diaFrom..diaTo));
+  ref partSums = bsOthersPartSums._value.localArrs[here.id].arrLocalRep;
+  ref locX     = replX._value.dsiLocalSlice1((0, diaFrom..diaTo));
   ensureDR(partSums._value, "bsI partSums");
   ensureDR(locX._value, "bsI locX");
 
@@ -911,8 +911,8 @@ proc bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
     for pstart in startsToProcess {
       gotBlocks = true;
       const psSlice = pstart..min(pstart+blkSize-1,n);  // iterate in dim 2
-      var pX  => replX._value.dsiLocalSlice1((0, psSlice));
-      var pAB => Ab._value.dsiLocalSlice1((diaSlice, psSlice));
+      ref pX  = replX._value.dsiLocalSlice1((0, psSlice));
+      ref pAB = Ab._value.dsiLocalSlice1((diaSlice, psSlice));
       ensureDR(pX._value, "bsCPS pX");
       ensureDR(pAB._value, "bsCPS pAB");
 
@@ -965,7 +965,7 @@ proc verifyResults(x) {
   initAB();
 
   // make the rest of the code operate locally without changing it
-  var Ab => makeLocalCopyOfAb();
+  ref Ab = makeLocalCopyOfAb();
   
   const axmbNorm = norm(gaxpyMinus(Ab[.., 1..n], x, Ab[.., n+1..n+1]), normType.normInf);
 
@@ -995,7 +995,7 @@ proc replicateA(abIx, dim2) {
     coforall lid1 in 0..#tl1 do
       on targetLocales(lid1, fromLocId2) {
 
-        var locReplA =>
+        ref locReplA =
           replA._value.localAdescs[lid1,fromLocId2].myStorageArr;
 
         // (A) copy from the local portion of A[1..n, dim2] into replA[..,..]
@@ -1005,7 +1005,7 @@ proc replicateA(abIx, dim2) {
           forall iStart in myStarts {
             const iEnd = min(iStart + blkSize - 1, n),
                   iRange = iStart..iEnd;
-            var locAB => Ab._value.dsiLocalSlice1((iRange, dim2));
+            ref locAB = Ab._value.dsiLocalSlice1((iRange, dim2));
 
             // locReplA[iRange,..] = locAB[iRange, dim2];
             const jStart = dim2.alignedLow,
@@ -1030,7 +1030,7 @@ proc replicateB(abIx, dim1) {
     coforall lid2 in 0..#tl2 do
       on targetLocales(fromLocId1, lid2) {
 
-        var locReplB =>
+        ref locReplB =
           replB._value.localAdescs[fromLocId1,lid2].myStorageArr;
 
         // (A) copy from the local portion of A[dim1, 1..n+1] into replB[..,..]
@@ -1040,7 +1040,7 @@ proc replicateB(abIx, dim1) {
           forall jStart in myStarts {
             const jEnd = min(jStart + blkSize - 1, n+1),
                   jRange = jStart..jEnd;
-            var locAB => Ab._value.dsiLocalSlice1((dim1, jRange));
+            ref locAB = Ab._value.dsiLocalSlice1((dim1, jRange));
 
             // locReplB[..,jRange] = locAB[dim1, jRange];
             const iStart = dim1.alignedLow,
@@ -1077,7 +1077,7 @@ proc replicateU(abIx) {
     const fromLocId1 = targetLocalesIndexForAbIndex(1, abIx);
     const fromLocId2 = targetLocalesIndexForAbIndex(2, abIx);
     // verify that we are on a good locale, optionally
-    var myLocalArr => replU._value.localArrs[here.id].arrLocalRep;
+    ref myLocalArr = replU._value.localArrs[here.id].arrLocalRep;
     coforall targloc in targetLocales[fromLocId1, ..] do
       if targloc != here then
         replU._value.localArrs[targloc.id].arrLocalRep = myLocalArr;

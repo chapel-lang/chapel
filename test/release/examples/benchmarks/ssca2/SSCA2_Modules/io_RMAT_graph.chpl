@@ -158,7 +158,7 @@ module io_RMAT_graph
     if vCount != graphNumVertices(G) then
       reportNumVerticesError(G, snapshot_prefix, vCount);
     
-    var GRow => G.Row;
+    ref GRow = G.Row;
     const uxIDs = GRow.domain.dim(1);
     type VType = uxIDs.idxType;
     compilerAssert(!uxIDs.stridable); // for efficiency
@@ -309,7 +309,7 @@ module io_RMAT_graph
     //writeln("loc ", here.id, "  myIDs ", v1, "..", v2, "  of ", uxIDs);
 
     // These indices better be all local, so take advantage of that.
-    var GRowLocal => GRow.localSlice(myIDs);
+    ref GRowLocal = GRow.localSlice(myIDs);
 
     // Returns the offset of edgeStart[v] in staf, 1 <= v <= numVertices+2.
     proc staOffsetForVID(v: int) return (v-1) * numBytes(IONumType);
@@ -391,7 +391,7 @@ module io_RMAT_graph
     // we know how many neighbors we have for this vertex
     // 
     GRow(u).ndom = 1..numEdges;
-    var neighborList => GRow(u).neighborList;
+    ref neighborList = GRow(u).neighborList;
 
     for ix in 1..numEdges {
       const curStart = readNum(sv)+1,
