@@ -1411,6 +1411,10 @@ void initCompilerGlobals() {
   gCastChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gCastChecking, !fNoCastChecks);
 
+  gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
+  gDivZeroChecking->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gDivZeroChecking, !fNoDivZeroChecks);
+
   gPrivatization = new VarSymbol("_privatization", dtBool);
   gPrivatization->addFlag(FLAG_PARAM);
   setupBoolGlobal(gPrivatization, !(fNoPrivatization || fLocal));
