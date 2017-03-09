@@ -173,7 +173,6 @@ record list {
   /*
     Delete every node in the list.
    */
-  // TODO: call from a destructor?
   proc destroy() {
     var current = first;
     while (current != nil) {
@@ -189,7 +188,7 @@ record list {
   /*
     Destructor
    */
-  proc ~list(){
+  proc deinit(){
     destroy();
   }
 
