@@ -421,23 +421,24 @@ class LocBlockArr {
 }
 
 //
-// Block constructor for clients of the Block distribution
+// Block constructor for clients of the Block distribution.  The first
+// takes no bounding box and will grab it from the first domain
+// declared over this distribution; the second takes a bounding box.
 //
-proc Block.Block(param rank = 1,
+proc Block.Block(param rank,
                  type idxType = int,
+                 targetLocales: [] locale = Locales,
+                 dataParTasksPerLocale=getDataParTasksPerLocale(),
+                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                 dataParMinGranularity=getDataParMinGranularity(),
                  type sparseLayoutType = DefaultDist) {
-  
-  this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
-  setupTargetLocalesArray(targetLocDom, this.targetLocales, Locales);
+  if rank != 2 && sparseLayoutType == CSR then 
+    compilerError("CSR layout is only supported for 2 dimensional domains");
 
-  //  writeln("bounding box size = ", boundingBox.size);
-  if (boundingBox.size != 0) then
-    chpl__setupBoundingBoxLocalDescs();
-  else {
-    //    writeln("deferring setup");
-    deferredSetup = true;
-  }
+  setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
+
+  deferredSetup = true;
 
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
@@ -454,6 +455,10 @@ proc Block.Block(param rank = 1,
   }
 }
 
+//
+// Todo: Once we have initializers, this one should really forward to
+// the one with no bounding box above...
+//
 proc Block.Block(boundingBox: domain,
                 targetLocales: [] locale = Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -473,13 +478,7 @@ proc Block.Block(boundingBox: domain,
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
-  //  writeln("bounding box size = ", boundingBox.size);
-  if (boundingBox.size != 0) then
-    chpl__setupBoundingBoxLocalDescs();
-  else {
-    //    writeln("deferring setup");
-    deferredSetup = true;
-  }
+  chpl__setupBoundingBoxLocalDescs();
 
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
@@ -506,28 +505,22 @@ proc Block.chpl__setupBoundingBoxLocalDescs() {
 }
 
 proc Block.dsiAssign(other: this.type) {
-  if (deferredSetup) {
-    this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
-    chpl__setupBoundingBoxLocalDescs();
-    deferredSetup=false;
-  } else {
-    coforall locid in targetLocDom do
-      on targetLocales(locid) do
-        delete locDist(locid);
-    boundingBox = other.boundingBox;
-    targetLocDom = other.targetLocDom;
-    targetLocales = other.targetLocales;
-    dataParTasksPerLocale = other.dataParTasksPerLocale;
-    dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
-    dataParMinGranularity = other.dataParMinGranularity;
-    const boundingBoxDims = boundingBox.dims();
-    const targetLocDomDims = targetLocDom.dims();
-    
-    coforall locid in targetLocDom do
-      on targetLocales(locid) do
-        locDist(locid) = new LocBlock(rank, idxType, locid, boundingBoxDims,
-                                      targetLocDomDims);
-  }
+  coforall locid in targetLocDom do
+    on targetLocales(locid) do
+      delete locDist(locid);
+  boundingBox = other.boundingBox;
+  targetLocDom = other.targetLocDom;
+  targetLocales = other.targetLocales;
+  dataParTasksPerLocale = other.dataParTasksPerLocale;
+  dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
+  dataParMinGranularity = other.dataParMinGranularity;
+  const boundingBoxDims = boundingBox.dims();
+  const targetLocDomDims = targetLocDom.dims();
+
+  coforall locid in targetLocDom do
+    on targetLocales(locid) do
+      locDist(locid) = new LocBlock(rank, idxType, locid, boundingBoxDims,
+                                    targetLocDomDims);
 }
 
 //
@@ -569,8 +562,8 @@ proc Block.dsiDisplayRepresentation() {
   writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
   writeln("dataParIgnoreRunningTasks = ", dataParIgnoreRunningTasks);
   writeln("dataParMinGranularity = ", dataParMinGranularity);
-  if (!deferredSetup) then
-    for tli in targetLocDom do
+  for tli in targetLocDom do
+    if locDist[tli] != nil then
       writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
@@ -589,7 +582,7 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
       writeln("Creating new Block domain:");
       dom.dsiDisplayRepresentation();
     }
-  } 
+  }
   return dom;
 }
 
@@ -973,14 +966,13 @@ proc BlockDom.dsiSetIndices(x: domain) {
     compilerError("rank mismatch in domain assignment");
   if x._value.idxType != idxType then
     compilerError("index type mismatch in domain assignment");
+  whole = x;
   if (dist.deferredSetup) {
-    //    writeln("Doing deferred setup A");
-    this.boundingBox = x: domain(rank, idxType, stridable=false);
-    chpl__setupBoundingBoxLocalDescs();
-    this.setup();
+    dist.boundingBox = whole: domain(rank, idxType, stridable=false);
+    dist.chpl__setupBoundingBoxLocalDescs();
+    _reprivatize(dist);
     dist.deferredSetup=false;
   }
-  whole = x;
   setup();
   if debugBlockDist {
     writeln("Setting indices of Block domain:");
@@ -998,19 +990,16 @@ proc BlockDom.dsiSetIndices(x) {
   //
   whole.setIndices(x);
   if (dist.deferredSetup) {
-    //    writeln("Doing deferred setup B");
     dist.boundingBox = whole: domain(rank, idxType, stridable=false);
     dist.chpl__setupBoundingBoxLocalDescs();
     _reprivatize(dist);
     dist.deferredSetup=false;
   }
-  //  writeln(dist.targetLocDom);
   setup();
   if debugBlockDist {
     writeln("Setting indices of Block domain:");
     dsiDisplayRepresentation();
   }
-  //  writeln("Returning from dsiSetIndices");
 }
 
 proc BlockDom.dsiGetIndices() {
