@@ -271,6 +271,16 @@ OPTIONS
     Enable [disable] run-time bounds checking, e.g. during slicing and array
     indexing.
 
+**--[no-]cast-checks**
+
+    Enable [disable] run-time checks in safeCast calls for casts that
+    wouldn't preserve the logical value being cast.
+
+**--[no-]div-by-zero-checks**
+
+    Enable [disable] run-time checks in integer division routines to
+    guard against dividing by zero.
+
 **--[no-]formal-domain-checks**
 
     Enable [disable] run-time checks to ensure that an actual array
@@ -290,11 +300,6 @@ OPTIONS
 **--[no-]stack-checks**
 
     Enable [disable] run-time checking for stack overflow.
-
-**--[no-]cast-checks**
-
-    Enable [disable] run-time checks in safeCast calls for casts that
-    wouldn't preserve the logical value being cast.
 
 *C Code Generation Options* 
 
