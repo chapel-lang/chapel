@@ -108,6 +108,9 @@ Submit pull request
 Test changes
 ~~~~~~~~~~~~
 
+It may be helpful to read the documentation on Chapel's `Test System`_ before
+writing or modifying tests.
+
 * Testing your patch:
 
   * Any addition/change to the Chapel test system should pass testing when that
@@ -145,6 +148,8 @@ Test changes
     system across a large number of workstations.  If you have limited testing
     resources available to you, you can request that a member of the core
     Chapel team help.
+
+.. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/developer/bestPractices/TestSystem.rst
 
 .. _Mail chapel-developers@ for review and merge:
 
