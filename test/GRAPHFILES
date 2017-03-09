@@ -290,5 +290,4 @@ users/npadmana/twopt/twopt-paircount.graph
 studies/elegance/elegance.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
-#suite: Pimality test
 patterns/prime_generator/prime.graph
