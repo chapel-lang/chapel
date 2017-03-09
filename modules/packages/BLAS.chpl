@@ -21,22 +21,12 @@
 
 Support for Basic Linear Algebra Subprograms (BLAS) kernel routines.
 
-The `netlib documentation <http://www.netlib.org/blas/#_documentation>`_
-describes BLAS as the following::
-
-   The BLAS (Basic Linear Algebra Subprograms) are routines that provide
-   standard building blocks for performing basic vector and matrix operations.
-   The Level 1 BLAS perform scalar, vector and vector-vector operations, the
-   Level 2 BLAS perform matrix-vector operations, and the Level 3 BLAS perform
-   matrix-matrix operations. Because the BLAS are efficient, portable, and
-   widely available, they are commonly used in the development of high quality
-   linear algebra software, LAPACK for example.
-
-This module wraps the functionality of BLAS routines,
-supporting the array element types, ``real(32)`` (single), ``real`` (double),
-``complex`` (complex), and ``complex(128)`` (complex double) under a single
-interface.
-
+BLAS (Basic Linear Algebra Subprograms) are the de facto standard routines for
+low-level matrix, vector, and scalar operations. While `netlib
+<http://www.netlib.org/blas/#_documentation>`_ provides the official
+reference version of BLAS, this documentation refers to the
+`MKL BLAS <https://software.intel.com/en-us/node/520725>`_ documentation, due
+to quality and interface similarities.
 
 Compiling with BLAS
 -------------------
@@ -94,10 +84,11 @@ Cray Systems:
   compiler, which implicitly links against the libsci library. Therefore, no
   additional steps are required of the user.
 
-BLAS API
---------
+Chapel's BLAS API
+-----------------
 
-For convenience, this module provides wrappers around the BLAS functions. These
+This module provides higher-level wrappers around the BLAS functions. These
+provide reasonable default values for many less commonly used arguments and
 determine the appropriate functions to call, based on the array element types,
 as well as the array dimensions. The other functionality is identical to the
 corresponding BLAS functions.
@@ -105,6 +96,9 @@ corresponding BLAS functions.
 The names of these routines are identical to the corresponding BLAS functions,
 except that the type prefix is dropped. For instance, ``gemm`` is the
 wrapper for the ``[sdcz]gemm`` routines.
+
+The native BLAS interface can still be accessed by calling routines from the
+``C_BLAS`` submodule.
 
 .. note::
  Chapel determines the dimensions of the matrices from the arrays that are
@@ -114,6 +108,59 @@ wrapper for the ``[sdcz]gemm`` routines.
  would in C. These default to 0, in which case Chapel determines the appropriate
  values based on the array passed in.
 
+.. MKL Documentation References
+
+.. _GEMM:   https://software.intel.com/en-us/node/ae8380b9-cac8-4c57-9af3-2eaac6acfc1b
+.. _HEMM:   https://software.intel.com/en-us/node/ecdcb863-3cb8-40ce-84f6-4cbc66cfc659
+.. _HERK:   https://software.intel.com/en-us/node/4ee4425c-42b6-4cc0-b2f0-6cfaa2117cb8
+.. _HER2K:  https://software.intel.com/en-us/node/5c17da7b-d8f9-44ec-921e-d6285238d48e
+.. _SYMM:   https://software.intel.com/en-us/node/8273eec0-2663-4843-90cd-12fd7a1baa6c
+.. _SYRK:   https://software.intel.com/en-us/node/04ca14b7-ec46-4836-8693-c4c7de26048e
+.. _SYR2K:  https://software.intel.com/en-us/node/d2a17c66-4265-4c56-84b9-2817ded7ee29
+.. _TRMM:   https://software.intel.com/en-us/node/60775edf-9a2b-4ad4-a627-dabbd24dcc80
+.. _TRSM:   https://software.intel.com/en-us/node/fc848297-8a33-42e6-826f-f4ae361c1800
+.. _GBMV:   https://software.intel.com/en-us/node/181e3c0c-e04a-4464-b87c-7e5d085f38a8
+.. _GEMV:   https://software.intel.com/en-us/node/78589c78-9c40-4846-b698-2c36e04b8869
+.. _GER:    https://software.intel.com/en-us/node/94156ede-4add-4830-940e-1ca5688abe88
+.. _GERC:   https://software.intel.com/en-us/node/f0469e83-40cc-40a0-9cd7-eeb8ea718aae
+.. _GERU:   https://software.intel.com/en-us/node/e62ae6d4-ba79-4034-96cc-46753ad0ec63
+.. _HBMV:   https://software.intel.com/en-us/node/02ca78c6-cad1-4c31-a6eb-5c645e862a52
+.. _HEMV:   https://software.intel.com/en-us/node/5c5972fb-d88f-4e32-8c4c-66f004945097
+.. _HER:    https://software.intel.com/en-us/node/c47a886b-8816-4cb6-be84-124b7ac70259
+.. _HER2:   https://software.intel.com/en-us/node/e2ddc00b-d8a5-4cc7-96f7-d08882151431
+.. _HPMV:   https://software.intel.com/en-us/node/fc602a99-7cb3-44f7-a22e-a89de255181a
+.. _HPR:    https://software.intel.com/en-us/node/60392a82-4400-4c9c-9c14-7a2e0cea4025
+.. _HPR2:   https://software.intel.com/en-us/node/163c6278-762f-40d7-8214-788d46ca4ea9
+.. _SBMV:   https://software.intel.com/en-us/node/9a02d0da-7aa4-4c5d-be91-78d4ce4a42e9
+.. _SPMV:   https://software.intel.com/en-us/node/fcd03a47-3896-4ad9-b0f9-1600c67deaa8
+.. _SPR:    https://software.intel.com/en-us/node/3a77ea66-38a4-42cd-ac6b-68c34c9f7e13
+.. _SPR2:   https://software.intel.com/en-us/node/9e17a098-ccbb-4cd4-9695-72c60a69904b
+.. _SYMV:   https://software.intel.com/en-us/node/687edc3e-fe76-4635-a425-40aab089cefc
+.. _SYR:    https://software.intel.com/en-us/node/08ab04b6-7aa7-4ce0-a69c-d4a4bc326ebe
+.. _SYR2:   https://software.intel.com/en-us/node/c2c54a2e-98d0-466a-a6b3-ae5f8cada666
+.. _TBMV:   https://software.intel.com/en-us/node/ae4b8c9d-8af2-4c5c-9e30-a8075cfef635
+.. _TBSV:   https://software.intel.com/en-us/node/f66b8633-aa82-4a54-ba5f-7aeaa40fc4f0
+.. _TPMV:   https://software.intel.com/en-us/node/00b446f2-5adb-4c7d-a4f5-3a63fee8f20d
+.. _TPSV:   https://software.intel.com/en-us/node/daea8c6c-7e29-461a-86d9-1ad01ae82cd6
+.. _TRMV:   https://software.intel.com/en-us/node/ce930002-ce05-4c38-a613-62931e024078
+.. _TRSV:   https://software.intel.com/en-us/node/4a450630-f24a-442e-94e2-e8f4e4ae4819
+.. _ASUM:   https://software.intel.com/en-us/node/ae455054-52b2-460a-8887-12192e01d899
+.. _AXPY:   https://software.intel.com/en-us/node/c8cbb256-eab7-4629-80ff-14029038e6b7
+.. _COPY:   https://software.intel.com/en-us/node/7e841640-7c31-4cd1-bc44-34f7d2343215
+.. _DOT:    https://software.intel.com/en-us/node/961a869b-14d9-4e4e-98fd-9ca13802c671
+.. _SDOT:   https://software.intel.com/en-us/node/7eaa9448-1ef0-404d-b8fb-c233a6b0142f
+.. _DOTC:   https://software.intel.com/en-us/node/a2c46a8c-343b-401d-88b6-9a6b88a4fa47
+.. _DOTU:   https://software.intel.com/en-us/node/e81ff20a-c401-4a15-a64f-cc0daa2bd65d
+.. _NRM2:   https://software.intel.com/en-us/node/aca1a6dc-60a0-4689-becc-2e0f4662c093
+.. _ROT:    https://software.intel.com/en-us/node/d8e66614-3ad9-4a37-90e8-3ef59e559ad6
+.. _ROTG:   https://software.intel.com/en-us/node/1a7e7c3a-e209-4c7a-b8ea-00c60e103e1f
+.. _ROTM:   https://software.intel.com/en-us/node/104aa6a5-5eef-4a3b-badf-78534ee1dee4
+.. _ROTMG:  https://software.intel.com/en-us/node/9ea3f8dd-fe3f-4a8a-ba12-ec25fabda6e6
+.. _SCAL:   https://software.intel.com/en-us/node/54f97254-4ed4-46ce-90f9-aa3c745ad840
+.. _SWAP:   https://software.intel.com/en-us/node/54a2904f-b8ed-4a5f-a0f2-a2be10d61495
+.. _AMAX:   https://software.intel.com/en-us/node/acb0d496-e032-4cf3-82f9-92b2e0bfc6d1
+.. _AMIN:   https://software.intel.com/en-us/node/50dceaa5-3463-402f-8065-a48bc68e0888
+.. _CABS1:  https://software.intel.com/en-us/node/64961e94-92d0-4671-90e6-86995e259a85
 
 */
 module BLAS {
@@ -142,9 +189,7 @@ module BLAS {
   /* Level 3 BLAS */
 
   /*
-    Wrapper for the `GEMM routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gac4e11e8e8a4b0c802d2229b08da341f6.html#gac4e11e8e8a4b0c802d2229b08da341f6>`_
-
-    Performs the matrix-matrix operation::
+    Wrapper for the `GEMM`_ routines::
 
       C := alpha * op(A) * op(B) + beta * C
 
@@ -204,9 +249,7 @@ module BLAS {
   }
 
   /*
-   Wrapper for the `SYMM routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_ga2490eea9e962fd69b9902e22aaa3a634.html#ga2490eea9e962fd69b9902e22aaa3a634>`_
-
-    Performs the matrix-matrix operation::
+   Wrapper for the `SYMM`_ routines::
 
       C := alpha * A * B + beta * C
 
@@ -268,9 +311,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for the `HEMM routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gad2d1853a142397404eae974b6574ece3.html#gad2d1853a142397404eae974b6574ece3>`_
-
-    Performs the matrix-matrix operation::
+    Wrapper for the `HEMM`_ routines::
 
       C := alpha * A * B + beta * C
 
@@ -322,9 +363,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for the `SYRK routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_ga1b4f63daf04fdf3061bd25dfec0d3e84.html#ga1b4f63daf04fdf3061bd25dfec0d3e84>`_
-
-    Performs the matrix-matrix operation::
+    Wrapper for the `SYRK`_ routines::
 
       C := alpha * A * A**T + beta * C
 
@@ -388,9 +427,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for the `HERK routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gade9f14cf41f0cefea7918d716f3e1c20.html#gade9f14cf41f0cefea7918d716f3e1c20>`_
-
-    Performs the matrix-matrix operation::
+    Wrapper for the `HERK`_ routines::
 
       C := alpha * A * A**H + beta * C
 
@@ -445,9 +482,7 @@ module BLAS {
 
 
   /*
-    Wrapper for the `SYR2K routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gaa8320d51ded07cd3038db237fd400547.html#gaa8320d51ded07cd3038db237fd400547>`_
-
-    Performs the matrix-matrix operation::
+    Wrapper for the `SYR2K`_ routines::
 
       C := alpha * A * B**T + alpha * B * A**T +  beta * C
 
@@ -512,9 +547,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for the `HER2K routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gaf5266b622e0fbbd972cfc2df3061984f.html#gaf5266b622e0fbbd972cfc2df3061984f>`_
-
-    Performs the matrix-matrix operation::
+    Wrapper for the `HER2K`_ routines::
 
       C := alpha * A * B**H + conjg(alpha) * B * A**H +  beta * C
 
@@ -567,9 +600,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for the `TRMM routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gad7c297c05b482699b6d60a29c8d4a165.html#gad7c297c05b482699b6d60a29c8d4a165>`_
-
-    Performs the matrix-matrix operation::
+    Wrapper for the `TRMM`_ routines::
 
       B := alpha * op(A) * B
 
@@ -625,9 +656,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for the `TRSM routines <http://www.netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_gaf33844c7fd27e5434496d2ce0c1fc9d4.html#gaf33844c7fd27e5434496d2ce0c1fc9d4>`_
-
-    Solves the matrix equation::
+    Wrapper for the `TRSM`_ routines::
 
       op(A) * X = alpha * B
 
@@ -698,14 +727,16 @@ module BLAS {
 
   /* Level 2 BLAS */
 
-  //TODO -- currently not working as expected.. needs fixing
+  pragma "no doc"
   /*
-    Wrapper for the GBMV routines::
+    Wrapper for the `GBMV`_ routines::
 
       y := alpha*op(A)*x + beta*y,
 
     where ``A`` is an ``m``x``n`` band matrix, with ``kl`` sub-diagonals and
     ``ku`` super-diagonals.
+
+    TODO -- Get banded array routines working
    */
   proc gbmv(A : [?Adom] ?eltType,
             X : [?Xdom] eltType, Y : [?Ydom] eltType,
@@ -770,7 +801,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for the GEMV routines::
+    Wrapper for the `GEMV`_ routines::
 
       y := alpha*op(A)*x + beta*y,
 
@@ -819,7 +850,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for GER routines, which perform the following operation::
+    Wrapper for `GER`_ routines::
 
       A := alpha*x*y'+ A
 
@@ -852,7 +883,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for GERC routines, which perform the following operation::
+    Wrapper for `GERC`_ routines::
 
       A := alpha*x*conjg(y') + A
 
@@ -884,7 +915,7 @@ module BLAS {
   }
 
   /*
-    Wrapper for the GERU routines::
+    Wrapper for the `GERU`_ routines::
 
       A := alpha*x*y' + A
 
@@ -916,11 +947,13 @@ module BLAS {
   }
 
 
+  pragma "no doc"
   /*
-    Wrapper for the HBMV routines::
+    Wrapper for the `HBMV`_ routines::
 
       y := alpha*A*x + beta*y,
 
+    TODO -- Get banded array routines working
   */
   proc hbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             ref alpha: eltType, ref beta: eltType,
@@ -933,7 +966,8 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- check if m == n
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to hbmv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
@@ -954,11 +988,10 @@ module BLAS {
   }
 
   /*
-    Wrapper for the HEMV routines::
+    Wrapper for the `HEMV`_ routines::
 
       y := alpha*A*x + beta*y
 
-    https://software.intel.com/en-us/node/520755
   */
   proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             ref alpha: eltType, ref beta: eltType,
@@ -970,7 +1003,8 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to hemv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
@@ -989,11 +1023,10 @@ module BLAS {
   }
 
   /*
-    Wrapper for the HER routines::
+    Wrapper for the `HER`_ routines::
 
       A := alpha*x*conjg(x') + A
 
-    https://software.intel.com/en-us/node/520756
   */
   proc her(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
             order : Order = Order.Row,
@@ -1024,10 +1057,9 @@ module BLAS {
     }
   }
   /*
-    Wrapper for HER2 routines::
+    Wrapper for `HER2`_ routines::
 
       A := alpha *x*conjg(y') + conjg(alpha)*y *conjg(x') + A
-
 
   */
   proc her2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1059,12 +1091,13 @@ module BLAS {
   }
 
 
+  pragma "no doc"
   /*
-    Wrapper for the HPMV routines::
+    Wrapper for the `HPMV`_ routines::
 
       y := alpha*A*x + beta*y
 
-    https://software.intel.com/en-us/node/520765
+    TODO -- Get packed array routines working
 
   */
   proc hpmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1093,11 +1126,13 @@ module BLAS {
   }
 
 
+  pragma "no doc"
   /*
-    Wrapper for the HPR routines::
+    Wrapper for the `HPR`_ routines::
 
       A := alpha*x*conjg(x') + A
 
+    TODO -- Get packed array routines working
 
   */
   proc hpr(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
@@ -1128,10 +1163,13 @@ module BLAS {
   }
 
 
+  pragma "no doc"
   /*
-    Wrapper for the HPR2 routines::
+    Wrapper for the `HPR2`_ routines::
 
       A := alpha*x*conjg(y') + conjg(alpha)*y*conjg(x') + A
+
+    TODO -- Get packed array routines working
 
   */
   proc hpr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1160,10 +1198,13 @@ module BLAS {
   }
 
 
+  pragma "no doc"
   /*
-    Wrapper for the SBMV routines::
+    Wrapper for the `SBMV`_ routines::
 
       y := alpha*A*x + beta*y
+
+    TODO -- Get banded array routines working
 
   */
   proc sbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1197,7 +1238,13 @@ module BLAS {
     }
   }
 
+  pragma "no doc"
   /*
+    Wrapper for `SPMV`_ routines::
+
+      y := alpha*A*x + beta*y
+
+    TODO -- Get packed array routines working
 
   */
   proc spmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1225,8 +1272,13 @@ module BLAS {
     }
   }
 
+  pragma "no doc"
   /*
+    Wrapper for `SPR`_ routines::
 
+      a:= alpha*x*x'+ A
+
+    TODO -- Get packed array routines working
   */
   proc spr(A: [?Adom] ?eltType, X: [?vDom] eltType,
            alpha,
@@ -1254,8 +1306,13 @@ module BLAS {
     }
   }
 
+  pragma "no doc"
   /*
+    Wrapper for `SPR2`_ routines::
 
+      A:= alpha*x*y'+ alpha*y*x' + A
+
+    TODO -- Get packed array routines working
   */
   proc spr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             alpha,
@@ -1283,11 +1340,10 @@ module BLAS {
   }
 
   /*
-    Wrapper for the SYMV routines::
+    Wrapper for the `SYMV`_ routines::
 
       y := alpha*A*x + beta*y
 
-    https://software.intel.com/en-us/node/520765
   */
   proc symv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             alpha, beta,
@@ -1317,11 +1373,10 @@ module BLAS {
   }
 
   /*
-    Wrapper for SYR routines::
+    Wrapper for `SYR`_ routines::
 
       A := alpha*x*x' + A
 
-    https://software.intel.com/en-us/node/520766
   */
   proc syr(A: [?Adom] ?eltType, X: [?vDom] eltType,
            alpha,
@@ -1352,11 +1407,9 @@ module BLAS {
   }
 
   /*
-    Wrapper for SYR2 routines::
+    Wrapper for `SYR2`_ routines::
 
       A := alpha*x*y'+ alpha*y*x' + A
-
-    https://software.intel.com/en-us/node/520767
 
   */
   proc syr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1387,13 +1440,15 @@ module BLAS {
     }
   }
 
+  pragma "no doc"
   /*
-    Wrapper for the TMBV routines::
+    Wrapper for the `TBMV`_ routines::
 
       x := A*x,         when trans = Op.N
       x := A'*x,        when trans = Op.T
       x := conjg(A')*x, when trans = Op.H
 
+    TODO -- Get banded array routines working
 
   */
   proc tbmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
@@ -1432,13 +1487,15 @@ module BLAS {
     }
   }
 
+  pragma "no doc"
   /*
-   Wrapper for the TBSV routines::
+   Wrapper for the `TBSV`_ routines::
 
     A*x = b,         when trans = Op.N
     A'*x = b,        when trans = Op.T
     conjg(A')*x = b, when trans = Op.H
 
+   TODO -- Get banded array routines working
 
   */
   proc tbsv(A: [?Adom] ?eltType, X: [?vDom] eltType,
@@ -1481,12 +1538,15 @@ module BLAS {
     }
   }
 
+  pragma "no doc"
   /*
-   Wrapper for TPMV routines::
+   Wrapper for `TPMV`_ routines::
 
     x := A*x,         when trans = Op.N
     x := A'*x,        when trans = Op.T
     x := conjg(A')*x, when trans = Op.H
+
+   TODO -- Get banded array routines working
 
   */
   proc tpmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
@@ -1522,8 +1582,13 @@ module BLAS {
     }
   }
 
+  pragma "no doc"
   /*
+    Wrapper for `TPSV`_ routines::
 
+      A*x = b, or A'*x = b, or conjg(A')*x = b
+
+    TODO -- Get packed array routines working
   */
   proc tpsv(A: [?Adom] ?eltType, X: [?vDom] eltType,
             trans : Op = Op.N,
@@ -1559,11 +1624,10 @@ module BLAS {
   }
 
   /*
-    Wrapper for TRMV routines::
+    Wrapper for `TRMV`_ routines::
 
       x := op(A)*x
 
-    https://software.intel.com/en-us/node/520772
   */
   proc trmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
             trans : Op = Op.N,
@@ -1602,11 +1666,10 @@ module BLAS {
   }
 
   /*
-    Wrapper for the TRSV routines::
+    Wrapper for the `TRSV`_ routines::
 
       A*op(x) = b
 
-    https://software.intel.com/en-us/node/520773
   */
   proc trsv(A: [?Adom] ?eltType, B: [?vDom] eltType,
             trans : Op = Op.N,
@@ -1620,7 +1683,9 @@ module BLAS {
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
-    // TODO -- check if m == n
+
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to trsv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
@@ -1649,7 +1714,7 @@ module BLAS {
   /* Level 1 BLAS */
 
 /*
-    Wrapper for the `ROTG routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga2f65d66137ddaeb7ae93fcc4902de3fc.html#ga2f65d66137ddaeb7ae93fcc4902de3fc>`_
+    Wrapper for the `ROTG`_ routines
 
     Construct `Givens plane rotation <https://en.wikipedia.org/wiki/Givens_rotation>`_
     of point ``p`` defined by Cartesian coordinates ``(a, b)``::
@@ -1692,7 +1757,7 @@ proc rotg(ref a : ?eltType, ref b : eltType, ref c : eltType, ref s : eltType){
 }
 
 /*
-    Wrapper for the `ROTMG routines  <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga97ce4e31b77723a3b60fb3f479f61316.html#ga97ce4e31b77723a3b60fb3f479f61316>`_
+    Wrapper for the `ROTMG`_ routines
 
     Generate Givens rotation of points::
 
@@ -1753,7 +1818,7 @@ proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: [
 }
 
 /*
-    Wrapper for the `ROT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga0ce1ab4726eb7ad925cbd89f100d5ce0.html#ga0ce1ab4726eb7ad925cbd89f100d5ce0>`_
+    Wrapper for the `ROT`_ routines
 
     Replaces the value elements of two vectors ``X`` and ``Y`` using the equation::
 
@@ -1794,7 +1859,7 @@ where D.rank == 1 {
   }
 }
 /*
-    Wrapper for the `ROTM routines  <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga5633344a5729b4f0167aa441dcf95a9c.html#ga5633344a5729b4f0167aa441dcf95a9c>`_
+    Wrapper for the `ROTM`_ routines
 
     Executes the modified `Givens rotations <https://en.wikipedia.org/wiki/Givens_rotation>`_ with element wise  substitution::
 
@@ -1856,7 +1921,7 @@ proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX:
 
 
 /*
-    Wrapper for the `SWAP routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga0a2eaca94b4941dbc351157126cbb0f6.html#ga0a2eaca94b4941dbc351157126cbb0f6>`_
+    Wrapper for the `SWAP`_ routines
 
     Exchanges elements of two vectors.
 
@@ -1898,7 +1963,7 @@ proc swap(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
 }
 
 /*
-    Wrapper for the `SCAL routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga3252f1f70b29d59941e9bc65a6aefc0a.html#ga3252f1f70b29d59941e9bc65a6aefc0a>`_
+    Wrapper for the `SCAL`_ routines
 
     Calculates the product of a vector ``X`` with scalar alpha::
 
@@ -1939,7 +2004,7 @@ where D.rank == 1 {
 }
 
 /*
-    Wrapper for the `COPY routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga24785e467bd921df5a2b7300da57c469.html#ga24785e467bd921df5a2b7300da57c469>`_
+    Wrapper for the `COPY`_ routines
 
     Copies one vector (``X`` the source) to another (``Y`` the destination)::
 
@@ -1982,7 +2047,7 @@ proc copy(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
 }
 
 /*
-    Wrapper for the `AXPY routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gad2a52de0e32a6fc111931ece9b39726c.html#gad2a52de0e32a6fc111931ece9b39726c>`_
+    Wrapper for the `AXPY`_ routines
 
     Computes the vector-scalar product of apha and ``X`` and adds the result to
     ``Y``::
@@ -2026,7 +2091,7 @@ proc axpy(X: [?D]?eltType, Y: [D]eltType, ref alpha:eltType, incY: c_int = 1, in
 }
 
 /*
-    Wrapper for `DOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga37a14d8598319955b711af0d64a6f56e.html#ga37a14d8598319955b711af0d64a6f56e>`_
+    Wrapper for `DOT`_ routines
 
     Returns  the dot product of two vectors::
 
@@ -2061,7 +2126,7 @@ where D.rank == 1 {
 }
 
 /*
-    Wrapper for  `DOTU_SUB routines <http://www.netlib.org/lapack/explore-html/d2/df9/group__complex16__blas__level1_ga25e3992c589a478c5affcc975c6c7b08.html#ga25e3992c589a478c5affcc975c6c7b08>`_
+    Wrapper for  `DOTU`_ routines (``DOTU_SUB``)
 
     Obtains the dot product of two complex vectors::
 
@@ -2103,7 +2168,7 @@ where D.rank == 1 {
 
 
 /*
-    Wrapper for `DOTC_SUB routines <http://www.netlib.org/lapack/explore-html/da/df6/group__complex__blas__level1_gadd72f1b633553acc77250e32bc704a78.html#gadd72f1b633553acc77250e32bc704a78>`_
+    Wrapper for `DOTC`_ routines (``DOTC_SUB``)
 
     Obtains the dot product of conjugated X vector with Y vector::
 
@@ -2142,7 +2207,7 @@ proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
 }
 
 /*
-    Wrapper for `DSDOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>`_
+    Wrapper for `SDOT`_ routines (``DSDOT`` variant)
 
     Returns the dot product of two ``real(32)`` vectors as a ``real(64)``,
     using ``real(64)`` precision internally::
@@ -2169,10 +2234,10 @@ proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): 
 
 
 /*
-    Wrapper for `SDSDOT routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gaddc89585ced76065053abffb322c5a22.html#gaddc89585ced76065053abffb322c5a22>`_
+    Wrapper for `SDOT`_ routines (``SDSDOT`` variant)
 
-    Returns the dot product of two ``real(32)`` vectors as a ``real(32)``, using
-    ``real(64)`` precision internally::
+    Returns the dot product of two ``real(32)`` vectors as a ``real(32)``,
+    using ``real(64)`` precision internally::
 
        X*Y
 
@@ -2197,7 +2262,7 @@ proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1):
 }
 
 /*
-    Wrapper for `NRM2 routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_ga35c2ec0e9bfdaa545320c2a134fcc471.html#ga35c2ec0e9bfdaa545320c2a134fcc471>`_
+    Wrapper for `NRM2`_ routines
 
     Returns the  Euclidean norm of vector ``X``::
 
@@ -2236,7 +2301,7 @@ where D.rank == 1 {
 }
 
 /*
-    Wrapper for the `ASUM routines <http://www.netlib.org/lapack/explore-html/df/d28/group__single__blas__level1_gafc5e1e8d9f26907c0a7cf878107f08cf.html#gafc5e1e8d9f26907c0a7cf878107f08cf>`_
+    Wrapper for the `ASUM`_ routines
 
     Returns the sum of the magnitude values of X elements::
 
@@ -2275,7 +2340,7 @@ where D.rank == 1 {
 }
 
 /*
-    Wrapper for `AMAX routines <http://www.netlib.org/lapack/explore-html/dc/dfc/cblas__isamax_8c_a7ecf33f60f99f563254ffb4f79e3fb80.html#a7ecf33f60f99f563254ffb4f79e3fb80>`_
+    Wrapper for `AMAX`_ routines
 
     Returns the index of element in the vector with maximum absolute value.
 
