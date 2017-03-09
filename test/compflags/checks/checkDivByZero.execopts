@@ -1,0 +1,2 @@
+--testExecCases=0  # checkDivByZero-intvar.good
+--testExecCases=1  # checkDivByZero-uintvar.good
