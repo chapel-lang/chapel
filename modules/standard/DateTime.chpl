@@ -1205,7 +1205,7 @@ module DateTime {
        (dt1.tzinfo == nil && dt2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
     }
-    if dt1.tzinfo == nil || dt1.tzinfo == dt2.tzinfo {
+    if dt1.tzinfo == dt2.tzinfo {
       const newmicro = dt1.microsecond - dt2.microsecond,
             newsec = dt1.second - dt2.second,
             newmin = dt1.minute - dt2.minute,
@@ -1272,7 +1272,7 @@ module DateTime {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == nil || dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.tzinfo == dt2.tzinfo {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 < date2 then return true;
@@ -1291,7 +1291,7 @@ module DateTime {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == nil || dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.tzinfo == dt2.tzinfo {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 > date2 then return true;
@@ -1310,7 +1310,7 @@ module DateTime {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == nil || dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.tzinfo == dt2.tzinfo {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 > date2 then return true;
