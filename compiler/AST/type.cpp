@@ -83,8 +83,12 @@ QualifiedType Type::qualType() {
 bool Type::isDefaultIntentConst() const {
   bool retval = true;
 
-  if (this == dtUnknown ||
-      symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
+  // MPF 2017-03-09
+  // It seems wrong to me that this returns true
+  // for dtUnknown. However some parts of the compiler
+  // currently rely on that behavior.
+
+  if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
       isReferenceType(this)                       == true ||
       isRecordWrappedType(this)                   == true)
     retval = false;
