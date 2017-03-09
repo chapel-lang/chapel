@@ -1,0 +1,13 @@
+bug: coercion in delegated methods
+
+When forwarded methods include two overloads for the same function, the
+behavior can depend on the order of resolution. In particular, in this
+example, the int(8) version is never selected because the int(64) version
+is created first and int(8) can coerce to int(64), so that version seems
+suitable.
+
+A possible workaround might be to populate all forwarding wrappers
+for a given name at once.
+
+Another possibility might be to enable forwarding methods to participate
+with other methods in the regular overload resolution process.

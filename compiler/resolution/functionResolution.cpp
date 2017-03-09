@@ -2687,6 +2687,7 @@ getParentBlock(Expr* expr) {
 
 //
 // helper routine for isMoreVisible (below);
+// returns true if fn1 is more visible than fn2
 //
 static bool
 isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
@@ -4274,7 +4275,9 @@ typeUsesForwarding(Type* t) {
 }
 
 static bool
-populateForwardingMethods(Type* t, const char* calledName, CallExpr* forCall)
+populateForwardingMethods(Type* t,
+                          const char* calledName,
+                          CallExpr* forCall)
 {
   AggregateType* at = toAggregateType(t);
   bool addedAny = false;
@@ -4282,7 +4285,14 @@ populateForwardingMethods(Type* t, const char* calledName, CallExpr* forCall)
   // Currently, only AggregateTypes can delegate
   if (!at) return false;
 
-  // copy methods from the delegates into at
+  // If the type has not yet been resolved, stop,
+  // since otherwise computing the delegate fn won't go well.
+  for_fields(field, at) {
+    if (field->type == dtUnknown)
+      return false;
+  }
+
+  // try resolving the call on the delegate expressions
   for_alist(expr, at->delegates) {
     ForwardingStmt* delegate = toForwardingStmt(expr);
     INT_ASSERT(delegate);
@@ -4371,7 +4381,47 @@ populateForwardingMethods(Type* t, const char* calledName, CallExpr* forCall)
       block->remove();
     }
 
-    // If the delegate type method resolved, add a wrapper method to call it.
+    // Get ready to add the forwarding method.
+    // But first, rule out some special cases.
+
+    // Rule out constructors, destructors, and initializers
+    if (method != NULL) {
+      if (method->hasFlag(FLAG_DESTRUCTOR) ||
+          method->hasFlag(FLAG_CONSTRUCTOR) ||
+          0 == strcmp(method->name, "init"))
+        method = NULL;
+      else {
+        // Does the list of methods already
+        // include a function marked with FLAG_FORWARDING_FN that
+        // calls the same?  If so, stop.
+        forv_Vec(FnSymbol, fn, t->methods) {
+          if (fn->hasFlag(FLAG_FORWARDING_FN)) {
+            // Check: is it calling the same method we just resolved?
+
+            Symbol* ret = fn->getReturnSymbol();
+            SymExpr* def = ret->getSingleDef();
+            INT_ASSERT(def);
+            CallExpr* move = toCallExpr(def->parentExpr);
+            INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+            CallExpr* call = toCallExpr(move->get(2));
+            INT_ASSERT(call);
+            FnSymbol* calledFn = call->isResolved();
+            INT_ASSERT(calledFn);
+            if (calledFn == method) {
+              // We already have the appropriate delegated function
+              // in the methods list. Let the regular overload
+              // resolution in disambiguateByMatch handle it.
+              method = NULL;
+            }
+          }
+        }
+      }
+    }
+
+
+    // If the forwarded-to method resolved and we havn't already created
+    // a wrapper method for it, add a wrapper method to call it.
+    //
     // This wrapper method will be added to the type at and so will be found
     // through normal resolution processes if this comes up agin.
     if (method) {
@@ -4386,7 +4436,7 @@ populateForwardingMethods(Type* t, const char* calledName, CallExpr* forCall)
 
       fn->addFlag(FLAG_METHOD);
       fn->addFlag(FLAG_INLINE);
-      fn->addFlag(FLAG_DELEGATE_FN);
+      fn->addFlag(FLAG_FORWARDING_FN);
       fn->addFlag(FLAG_COMPILER_GENERATED);
       fn->retTag = method->retTag;
 

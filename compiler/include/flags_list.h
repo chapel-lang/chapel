@@ -93,7 +93,6 @@ symbolFlag( FLAG_DEFAULT_INTENT_IS_REF, ypr, "default intent is ref", "The defau
 symbolFlag( FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr, "default intent is ref if modified", "The default intent for this type is ref if modified const ref otherwise")
 
 symbolFlag( FLAG_DEFAULT_CONSTRUCTOR , npr, "default constructor" , ncm )
-symbolFlag( FLAG_DELEGATE_FN , npr, "delegate forwarding function" , ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
@@ -114,6 +113,7 @@ symbolFlag( FLAG_FIELD_ACCESSOR , npr, "field accessor" , "field setter/getter f
 symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function invocation" , "proxy for first-class function invocation" )
 symbolFlag( FLAG_FN_RETARG, npr, "fn returns via _retArg", ncm )
 symbolFlag( FLAG_FORMAL_TEMP,     npr, "formal temp", "a formal temp to back an in, out, or inout argument" )
+symbolFlag( FLAG_FORWARDING_FN , npr, "forwarding function" , ncm )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
 // When applied to an argument, this flag means that the arg accepts a value
 // but has unspecified type.
