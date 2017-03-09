@@ -625,6 +625,9 @@ module BLAS {
     var m = Bdom.dim(1).size : c_int,
         n = Bdom.dim(2).size : c_int;
 
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to XXXX".format(m, n));
+
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA),
         _ldB = getLeadingDim(Bdom, order, ldB);
@@ -681,6 +684,9 @@ module BLAS {
     var m = Bdom.dim(1).size : c_int,
         n = Bdom.dim(2).size : c_int;
 
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to TRSM".format(m, n));
+
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA),
         _ldB = getLeadingDim(Bdom, order, ldB);
@@ -712,19 +718,6 @@ module BLAS {
   }
 
 
-  // Helper function
-  pragma "no doc"
-  private inline proc getLeadingDim(Adom : domain(2), order : Order, ldA : int) : c_int {
-    var _ldA = ldA : c_int;
-    if ldA==0 {
-      if order==Order.Row
-                  then _ldA = Adom.dim(2).size : c_int;
-                  else _ldA = Adom.dim(1).size : c_int;
-    }
-    return _ldA;
-  }
-
-
   /* Level 2 BLAS */
 
   pragma "no doc"
@@ -751,31 +744,11 @@ module BLAS {
     var m = Ydom.dim(1).size : c_int,
         n = Xdom.dim(1).size : c_int;
 
-    // Set strides if necessary, swapping order for banded matrix
-    // TODO -- Change to + 101, when enums are fixed
-    var swaporder = ((order % 2) + 1: c_int): Order;
-
-
+    // TODO -- 'order' may need to be swapped for banded matrices
     var _ldA = getLeadingDim(Adom, order, ldA);
 
     var _kl = kl : c_int,
         _ku = ku : c_int;
-
-    // Debug output
-    //writeln('order: ', order);
-    //writeln('trans: ', trans);
-    writeln('m: ', m);
-    writeln('n: ', n);
-    writeln('_kl: ', _kl);
-    writeln('_ku: ', _ku);
-    //writeln('alpha: ', alpha);
-    //writeln('A:\n', A);
-    writeln('_ldA: ', _ldA);
-    //writeln('X: ', X);
-    writeln('incx: ', incx);
-    //writeln('beta: ', beta);
-    //writeln('Y: ', Y);
-    writeln('incy: ', incy);
 
     select eltType {
       when real(32) {
@@ -846,7 +819,6 @@ module BLAS {
         compilerError("Unknown type in gemv: ", eltType:string);
       }
     }
-
   }
 
   /*
@@ -966,9 +938,6 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    if m != n then
-      halt("Non-square array of dimensions %ix%i passed to hbmv".format(m, n));
-
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
 
@@ -1037,7 +1006,8 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to her".format(m, n));
 
     // TODO -- Assert alpha is real
 
@@ -1072,7 +1042,9 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to her2".format(m, n));
+
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
@@ -1110,8 +1082,6 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
-
     select eltType {
       when complex(64) {
         C_BLAS.cblas_chpmv(order, uplo, n, alpha, A, X, incx, beta, Y, incy);
@@ -1143,9 +1113,6 @@ module BLAS {
   {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
-
-    // TODO -- assert m == n
-
 
     select eltType {
       when complex(64) {
@@ -1182,8 +1149,6 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
-
     select eltType {
       when complex(64) {
         C_BLAS.cblas_chpr2(order, uplo, n, alpha, X, incx, Y, incy, A);
@@ -1217,8 +1182,6 @@ module BLAS {
   {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
-
-    // TODO -- assert m == n
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
@@ -1257,8 +1220,6 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
-
     select eltType {
       when real(32) {
         C_BLAS.cblas_sspmv(order, uplo, n, alpha, A, X, incx, beta, Y, incy);
@@ -1291,8 +1252,6 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
-
     select eltType {
       when real(32) {
         C_BLAS.cblas_sspr(order, uplo, n, alpha, X, incx, A);
@@ -1324,8 +1283,6 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
-
     select eltType {
       when real(32) {
         C_BLAS.cblas_dspr2(order, uplo, n, alpha, X, incx, Y, incy, A);
@@ -1355,7 +1312,8 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to symv".format(m, n));
 
     var _ldA = getLeadingDim(Adom, order, ldA);
 
@@ -1389,7 +1347,8 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to syr".format(m, n));
 
     var _ldA = getLeadingDim(Adom, order, ldA);
 
@@ -1423,7 +1382,8 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
-    // TODO -- assert m == n
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to syr2".format(m, n));
 
     var _ldA = getLeadingDim(Adom, order, ldA);
 
@@ -1463,7 +1423,6 @@ module BLAS {
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
-    // TODO -- check if m == n
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
@@ -1511,7 +1470,6 @@ module BLAS {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int,
         k : c_int;
-    // TODO -- check if m == n
 
     if trans > Op.N then k = Adom.dim(2).size : c_int;
                     else k = Adom.dim(1).size : c_int;
@@ -1561,7 +1519,6 @@ module BLAS {
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
-    // TODO -- check if m == n
 
     select eltType {
       when real(32) {
@@ -1641,7 +1598,9 @@ module BLAS {
     // Determine sizes
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
-    // TODO -- check if m == n
+
+    if m != n then
+      halt("Non-square array of dimensions %ix%i passed to trmv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
@@ -1713,672 +1672,687 @@ module BLAS {
 
   /* Level 1 BLAS */
 
-/*
-    Wrapper for the `ROTG`_ routines
+  /*
+      Wrapper for the `ROTG`_ routines
 
-    Construct `Givens plane rotation <https://en.wikipedia.org/wiki/Givens_rotation>`_
-    of point ``p`` defined by Cartesian coordinates ``(a, b)``::
+      Construct `Givens plane rotation <https://en.wikipedia.org/wiki/Givens_rotation>`_
+      of point ``p`` defined by Cartesian coordinates ``(a, b)``::
 
-      | c  s |   |a|   |r|
-      |      | . | | = | |
-      |-s  c |   |b|   |0|
+        | c  s |   |a|   |r|
+        |      | . | | = | |
+        |-s  c |   |b|   |0|
 
-    **Input:**
+      **Input:**
 
-    - ``a``: x-coordinate of point ``p``
-    - ``b``: y-coordinate of point ``p``
+      - ``a``: x-coordinate of point ``p``
+      - ``b``: y-coordinate of point ``p``
 
-    **Output:**
+      **Output:**
 
-    - ``a``: stores length vector (``r``) of inputs ``(a, b)``
-    - ``b``: stores ``z`` parameter that is defined below
-    - ``c``: stores value of ``c`` element defined above
-    - ``s``: stores value of ``s`` element defined above
+      - ``a``: stores length vector (``r``) of inputs ``(a, b)``
+      - ``b``: stores ``z`` parameter that is defined below
+      - ``c``: stores value of ``c`` element defined above
+      - ``s``: stores value of ``s`` element defined above
 
-    The ``z`` parameter (stored in ``b``) is defined such that::
+      The ``z`` parameter (stored in ``b``) is defined such that::
 
-      if |a| > |b| then z = s;
-      else if c != 0 then z = 1/c;
-      else z = 1
+        if |a| > |b| then z = s;
+        else if c != 0 then z = 1/c;
+        else z = 1
 
-*/
-proc rotg(ref a : ?eltType, ref b : eltType, ref c : eltType, ref s : eltType){
-  select eltType {
-    when real(32) do{
-      cblas_srotg (a, b, c, s);
-    }
-    when real(64) do{
-      cblas_drotg (a, b, c, s);
-    }
-    otherwise {
-        compilerError("Unknown type in rotg: ", eltType:string);
-    }
-  }
-}
-
-/*
-    Wrapper for the `ROTMG`_ routines
-
-    Generate Givens rotation of points::
-
-       |b1|     |b1*sqrt(d1)|
-       |  | = H.|           |
-       |0 |     |b2*sqrt(d2)|
-
-    **Input:**
-
-    - ``d1``: Scaling factor for ``b1`` (x-axis)
-    - ``d2``: Scaling factor for ``b2`` (y-axis)
-    - ``b1``: x-coordinate of input vector
-    - ``b2``: y-coordinate of input vector
-
-    **Output:**
-
-    - ``d1``: Provides the first element the diagonal matrix
-    - ``d2``: Provides the second element the diagonal matrix
-    - ``b1``: Provides the ``b1`` rotated (rotated x coordination) of the vector
-    - ``P``: Parameter array of 5 elements, detailed below::
-
-
-                               |P[1] P[3]|
-       if P[0] == -1 then  H = |         |
-                               |P[2] P[4]|
-
-                               |1.0  P[3]|
-       if P[0] ==  0 then  H = |         |
-                               |P[2]  1.0|
-
-                               |P[1]  1.0|
-       if P[0] == 1 then   H = |         |
-                               |-1.0 P[4]|
-
-                               |1   0|
-       if P[0] == -2 then  H = |     |
-                               |0   1|
-
-
-
-*/
-proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType) {
-
-  if P.size != 5 then
-    halt("P parameter must consist of 5 elements");
-
-  select eltType {
-    when real(32) do{
-      cblas_srotmg(d1,d2,b1,b2,P);
-    }
-    when real(64) do{
-      cblas_drotmg(d1,d2,b1,b2,P);
-    }
-    otherwise {
-        compilerError("Unknown type in rotmg: ", eltType:string);
+  */
+  proc rotg(ref a : ?eltType, ref b : eltType, ref c : eltType, ref s : eltType){
+    select eltType {
+      when real(32) do{
+        cblas_srotg (a, b, c, s);
+      }
+      when real(64) do{
+        cblas_drotg (a, b, c, s);
+      }
+      otherwise {
+          compilerError("Unknown type in rotg: ", eltType:string);
+      }
     }
   }
-}
 
-/*
-    Wrapper for the `ROT`_ routines
+  /*
+      Wrapper for the `ROTMG`_ routines
 
-    Replaces the value elements of two vectors ``X`` and ``Y`` using the equation::
+      Generate Givens rotation of points::
 
-      X[i] = c*X[i] + s*X[i]
-      Y[i] = c*Y[i] - s*X[i]
+         |b1|     |b1*sqrt(d1)|
+         |  | = H.|           |
+         |0 |     |b2*sqrt(d2)|
 
-    **Input:**
+      **Input:**
 
-    - ``X``: Input vector
-    - ``Y``: Input vector
-    - ``c``: Scalar parameter
-    - ``s``: Scalar parameter
-    - ``incY``: Defines the increment for the vector ``Y``
-    - ``incX``: Defines the increment for the vector ``X``
+      - ``d1``: Scaling factor for ``b1`` (x-axis)
+      - ``d2``: Scaling factor for ``b2`` (y-axis)
+      - ``b1``: x-coordinate of input vector
+      - ``b2``: y-coordinate of input vector
 
-    **Output:**
+      **Output:**
 
-    - ``X``: Vector with updated elements
-    - ``Y``: Vector with updated elements
-
-
-*/
-proc rot(X: [?D] ?eltType, Y: [D] eltType, c: eltType, s: eltType,  incY: c_int = 1, incX: c_int = 1)
-where D.rank == 1 {
-
-  const N = D.size: c_int;
-
-  select eltType {
-    when real(32) do{
-      cblas_srot(N, X, incX, Y, incY, c, s);
-    }
-    when real(64) do{
-      cblas_drot(N, X, incX, Y, incY, c, s);
-    }
-    otherwise {
-        compilerError("Unknown type in rot: ", eltType:string);
-    }
-  }
-}
-/*
-    Wrapper for the `ROTM`_ routines
-
-    Executes the modified `Givens rotations <https://en.wikipedia.org/wiki/Givens_rotation>`_ with element wise  substitution::
-
-       |X[i]|     |X[i]|
-       |    | = H.|    |
-       |Y[i]|     |Y[i]|
-
-    **Input:**
-
-    - ``X``: Input vector
-    - ``Y``: Input vector
-    - ``incY``: Defines the increment for the vector ``Y``
-    - ``incX``: Defines the increment for the vector ``X``
-    - ``P``: Parameter array of 5 elements, detailed below::
+      - ``d1``: Provides the first element the diagonal matrix
+      - ``d2``: Provides the second element the diagonal matrix
+      - ``b1``: Provides the ``b1`` rotated (rotated x coordination) of the vector
+      - ``P``: Parameter array of 5 elements, detailed below::
 
 
-                               |P[1] P[3]|
-       if P[0] == -1 then  H = |         |
-                               |P[2] P[4]|
+                                 |P[1] P[3]|
+         if P[0] == -1 then  H = |         |
+                                 |P[2] P[4]|
 
-                               |1.0  P[3]|
-       if P[0] ==  0 then  H = |         |
-                               |P[2]  1.0|
+                                 |1.0  P[3]|
+         if P[0] ==  0 then  H = |         |
+                                 |P[2]  1.0|
 
-                               |P[1]  1.0|
-       if P[0] == 1 then   H = |         |
-                               |-1.0 P[4]|
+                                 |P[1]  1.0|
+         if P[0] == 1 then   H = |         |
+                                 |-1.0 P[4]|
 
-                               |1   0|
-       if P[0] == -2 then  H = |     |
-                               |0   1|
+                                 |1   0|
+         if P[0] == -2 then  H = |     |
+                                 |0   1|
 
-    **Output:**
 
-    - ``X``: Vector with updated elements
-    - ``Y``: Vector with updated elements
 
-*/
-proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1)
- where D.rank == 1 {
+  */
+  proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType) {
 
-  if P.size != 5 then
-    halt("P parameter must consist of 5 elements");
+    if P.size != 5 then
+      halt("P parameter must consist of 5 elements");
 
-  const N = D.size: c_int;
-
-  select eltType {
-    when real(32) do{
-      cblas_srotm(N, X, incX, Y, incY,  P);
-    }
-    when real(64) do{
-      cblas_drotm(N, X, incX, Y, incY, P);
-    }
-    otherwise {
-        compilerError("Unknown type in rotm: ", eltType:string);
+    select eltType {
+      when real(32) do{
+        cblas_srotmg(d1,d2,b1,b2,P);
+      }
+      when real(64) do{
+        cblas_drotmg(d1,d2,b1,b2,P);
+      }
+      otherwise {
+          compilerError("Unknown type in rotmg: ", eltType:string);
+      }
     }
   }
-}
+
+  /*
+      Wrapper for the `ROT`_ routines
+
+      Replaces the value elements of two vectors ``X`` and ``Y`` using the equation::
+
+        X[i] = c*X[i] + s*X[i]
+        Y[i] = c*Y[i] - s*X[i]
+
+      **Input:**
+
+      - ``X``: Input vector
+      - ``Y``: Input vector
+      - ``c``: Scalar parameter
+      - ``s``: Scalar parameter
+      - ``incY``: Defines the increment for the vector ``Y``
+      - ``incX``: Defines the increment for the vector ``X``
+
+      **Output:**
+
+      - ``X``: Vector with updated elements
+      - ``Y``: Vector with updated elements
 
 
-/*
-    Wrapper for the `SWAP`_ routines
-
-    Exchanges elements of two vectors.
-
-    **Input:**
-
-    - ``X``: Input vector
-    - ``Y``: Input vector
-    - ``incY``: Defines the increment for the vector ``Y``
-    - ``incX``: Defines the increment for the vector ``X``
-
-    **Output:**
-
-    - ``X``: Contains input ``Y`` elements
-    - ``Y``: Contains input ``X`` elements
-
-*/
-proc swap(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
- where D.rank == 1 {
-
-  const N = D.size: c_int;
-
-  select eltType {
-    when real(32) do{
-      cblas_sswap (N, X, incX, Y, incY);
-    }
-    when real(64) do{
-      cblas_dswap (N, X, incX, Y, incY);
-    }
-    when complex(64) do{
-      cblas_cswap (N, X, incX, Y, incY);
-    }
-    when complex(128) do{
-      cblas_zswap (N, X, incX, Y, incY);
-    }
-    otherwise {
-        compilerError("Unknown type in swap: ", eltType:string);
-    }
-  }
-}
-
-/*
-    Wrapper for the `SCAL`_ routines
-
-    Calculates the product of a vector ``X`` with scalar alpha::
-
-      X' = alpha*X
-
-    **Input:**
-
-    - ``X``: Input vector
-    - ``alpha``: Scalar parameter
-
-    **Output:**
-
-    - ``X``: Vector updated by the equation: ``X[i] = alpha*X[i]``
-
-*/
-proc scal(X: [?D]?eltType, ref alpha:eltType, incX: c_int = 1)
-where D.rank == 1 {
-
-  const N = D.size: c_int;
-
-  select eltType {
-    when real(32) do{
-      cblas_sscal (N, alpha, X, incX);
-    }
-    when real(64) do{
-      cblas_dscal (N, alpha, X, incX);
-    }
-    when complex(64) do{
-      cblas_cscal (N, alpha, X, incX);
-    }
-    when complex(128) do{
-      cblas_zscal (N, alpha, X, incX);
-    }
-    otherwise {
-        compilerError("Unknown type in scal: ", eltType:string);
-    }
-  }
-}
-
-/*
-    Wrapper for the `COPY`_ routines
-
-    Copies one vector (``X`` the source) to another (``Y`` the destination)::
-
-      Y = X
-
-    **Input:**
-
-    - ``X``: Input vector
-    - ``Y``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``
-    - ``incY``: Defines the increment for the vector ``Y``
-
-    **Output:**
-
-    ``Y``: Contains the values copied from ``X`` vector
-
- */
-proc copy(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+  */
+  proc rot(X: [?D] ?eltType, Y: [D] eltType, c: eltType, s: eltType,  incY: c_int = 1, incX: c_int = 1)
   where D.rank == 1 {
 
-  const N = D.size: c_int;
+    const N = D.size: c_int;
 
-  select eltType {
-    when real(32) do{
-      cblas_scopy (N, X, incX, Y, incY);
-    }
-    when real(64) do{
-      cblas_dcopy (N, X, incX, Y, incY);
-    }
-    when complex(64) do{
-      cblas_ccopy (N, X, incX, Y, incY);
-    }
-    when complex(128) do{
-      cblas_zcopy (N, X, incX, Y, incY);
-    }
-    otherwise {
-        compilerError("Unknown type in copy: ", eltType:string);
+    select eltType {
+      when real(32) do{
+        cblas_srot(N, X, incX, Y, incY, c, s);
+      }
+      when real(64) do{
+        cblas_drot(N, X, incX, Y, incY, c, s);
+      }
+      otherwise {
+          compilerError("Unknown type in rot: ", eltType:string);
+      }
     }
   }
-}
+  /*
+      Wrapper for the `ROTM`_ routines
 
-/*
-    Wrapper for the `AXPY`_ routines
+      Executes the modified `Givens rotations <https://en.wikipedia.org/wiki/Givens_rotation>`_ with element wise  substitution::
 
-    Computes the vector-scalar product of apha and ``X`` and adds the result to
-    ``Y``::
+         |X[i]|     |X[i]|
+         |    | = H.|    |
+         |Y[i]|     |Y[i]|
 
-      Y = alpha*X + Y
+      **Input:**
 
-    **Input:**
+      - ``X``: Input vector
+      - ``Y``: Input vector
+      - ``incY``: Defines the increment for the vector ``Y``
+      - ``incX``: Defines the increment for the vector ``X``
+      - ``P``: Parameter array of 5 elements, detailed below::
 
-    - ``X``: Input vector
-    - ``alpha``: Scalar parameter
-    - ``incX``: Defines the increment for the vector ``X``
-    - ``incY``: Defines the increment for the vector ``Y``
 
-    **Output:**
+                                 |P[1] P[3]|
+         if P[0] == -1 then  H = |         |
+                                 |P[2] P[4]|
 
-    - ``Y``: Vector updated by the equation: ``Y[i] = alpha*X[i]+Y[i]``
+                                 |1.0  P[3]|
+         if P[0] ==  0 then  H = |         |
+                                 |P[2]  1.0|
 
-*/
+                                 |P[1]  1.0|
+         if P[0] == 1 then   H = |         |
+                                 |-1.0 P[4]|
 
-proc axpy(X: [?D]?eltType, Y: [D]eltType, ref alpha:eltType, incY: c_int = 1, incX: c_int = 1)
- where D.rank == 1 {
+                                 |1   0|
+         if P[0] == -2 then  H = |     |
+                                 |0   1|
 
-  const N = D.size: c_int;
-  select eltType {
-    when real(32) do{
-      cblas_saxpy (N, alpha, X, incX, Y, incY);
-    }
-    when real(64) do{
-      cblas_daxpy (N, alpha, X, incX, Y, incY);
-    }
-    when complex(64) do{
-      cblas_caxpy (N, alpha, X, incX, Y, incY);
-    }
-    when complex(128) do{
-      cblas_zaxpy (N, alpha, X, incX, Y, incY);
-    }
-    otherwise {
-        compilerError("Unknown type in axpy: ", eltType:string);
-    }
-  }
-}
+      **Output:**
 
-/*
-    Wrapper for `DOT`_ routines
+      - ``X``: Vector with updated elements
+      - ``Y``: Vector with updated elements
 
-    Returns  the dot product of two vectors::
+  */
+  proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1)
+   where D.rank == 1 {
 
-       X*Y
+    if P.size != 5 then
+      halt("P parameter must consist of 5 elements");
 
-    **Input:**
+    const N = D.size: c_int;
 
-    - ``X``: Input vector
-    - ``Y``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``
-    - ``incY``: Defines the increment for the vector ``Y``
-
-    :returns: Scalar value of dot product
-*/
-proc dot(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1):eltType
-where D.rank == 1 {
-
-  const N = D.size: c_int;
-
-  select eltType {
-    when real(32) do{
-      return cblas_sdot (N, X, incX, Y, incY);
-    }
-    when real(64) do{
-     return cblas_ddot (N,X, incX, Y, incY);
-    }
-    otherwise {
-        compilerError("Unknown type in dot: ", eltType:string);
+    select eltType {
+      when real(32) do{
+        cblas_srotm(N, X, incX, Y, incY,  P);
+      }
+      when real(64) do{
+        cblas_drotm(N, X, incX, Y, incY, P);
+      }
+      otherwise {
+          compilerError("Unknown type in rotm: ", eltType:string);
+      }
     }
   }
 
-}
 
-/*
-    Wrapper for  `DOTU`_ routines (``DOTU_SUB``)
+  /*
+      Wrapper for the `SWAP`_ routines
 
-    Obtains the dot product of two complex vectors::
+      Exchanges elements of two vectors.
 
-       X*Y
+      **Input:**
 
-    **Input:**
+      - ``X``: Input vector
+      - ``Y``: Input vector
+      - ``incY``: Defines the increment for the vector ``Y``
+      - ``incX``: Defines the increment for the vector ``X``
 
-    - ``X``: Input vector
-    - ``Y``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``
-    - ``incY``: Defines the increment for the vector ``Y``
+      **Output:**
 
-  :returns: The complex dot product
+      - ``X``: Contains input ``Y`` elements
+      - ``Y``: Contains input ``X`` elements
 
+  */
+  proc swap(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+   where D.rank == 1 {
 
-*/
-proc dotu(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
-where D.rank == 1 {
+    const N = D.size: c_int;
 
-  const N = D.size: c_int;
-
-  var res: eltType;
-
-  select eltType {
-    when complex(64) do{
-      cblas_cdotu_sub (N, X, incX, Y, incY, res);
-    }
-    when complex(128) do{
-      cblas_zdotu_sub (N, X, incX, Y, incY, res);
-    }
-    otherwise {
-        compilerError("Unknown type in dotu_sub: ", eltType:string);
+    select eltType {
+      when real(32) do{
+        cblas_sswap (N, X, incX, Y, incY);
+      }
+      when real(64) do{
+        cblas_dswap (N, X, incX, Y, incY);
+      }
+      when complex(64) do{
+        cblas_cswap (N, X, incX, Y, incY);
+      }
+      when complex(128) do{
+        cblas_zswap (N, X, incX, Y, incY);
+      }
+      otherwise {
+          compilerError("Unknown type in swap: ", eltType:string);
+      }
     }
   }
 
-  return res;
+  /*
+      Wrapper for the `SCAL`_ routines
 
-}
+      Calculates the product of a vector ``X`` with scalar alpha::
 
+        X' = alpha*X
 
-/*
-    Wrapper for `DOTC`_ routines (``DOTC_SUB``)
+      **Input:**
 
-    Obtains the dot product of conjugated X vector with Y vector::
+      - ``X``: Input vector
+      - ``alpha``: Scalar parameter
 
-       conj(X)*Y
+      **Output:**
 
-    **Input:**
+      - ``X``: Vector updated by the equation: ``X[i] = alpha*X[i]``
 
-    - ``X``: Conjugated input vector
-    - ``Y``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``
-    - ``incY``: Defines the increment for the vector ``Y``
+  */
+  proc scal(X: [?D]?eltType, ref alpha:eltType, incX: c_int = 1)
+  where D.rank == 1 {
+
+    const N = D.size: c_int;
+
+    select eltType {
+      when real(32) do{
+        cblas_sscal (N, alpha, X, incX);
+      }
+      when real(64) do{
+        cblas_dscal (N, alpha, X, incX);
+      }
+      when complex(64) do{
+        cblas_cscal (N, alpha, X, incX);
+      }
+      when complex(128) do{
+        cblas_zscal (N, alpha, X, incX);
+      }
+      otherwise {
+          compilerError("Unknown type in scal: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+      Wrapper for the `COPY`_ routines
+
+      Copies one vector (``X`` the source) to another (``Y`` the destination)::
+
+        Y = X
+
+      **Input:**
+
+      - ``X``: Input vector
+      - ``Y``: Input vector
+      - ``incX``: Defines the increment for the vector ``X``
+      - ``incY``: Defines the increment for the vector ``Y``
+
+      **Output:**
+
+      ``Y``: Contains the values copied from ``X`` vector
+
+   */
+  proc copy(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+    where D.rank == 1 {
+
+    const N = D.size: c_int;
+
+    select eltType {
+      when real(32) do{
+        cblas_scopy (N, X, incX, Y, incY);
+      }
+      when real(64) do{
+        cblas_dcopy (N, X, incX, Y, incY);
+      }
+      when complex(64) do{
+        cblas_ccopy (N, X, incX, Y, incY);
+      }
+      when complex(128) do{
+        cblas_zcopy (N, X, incX, Y, incY);
+      }
+      otherwise {
+          compilerError("Unknown type in copy: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+      Wrapper for the `AXPY`_ routines
+
+      Computes the vector-scalar product of apha and ``X`` and adds the result to
+      ``Y``::
+
+        Y = alpha*X + Y
+
+      **Input:**
+
+      - ``X``: Input vector
+      - ``alpha``: Scalar parameter
+      - ``incX``: Defines the increment for the vector ``X``
+      - ``incY``: Defines the increment for the vector ``Y``
+
+      **Output:**
+
+      - ``Y``: Vector updated by the equation: ``Y[i] = alpha*X[i]+Y[i]``
+
+  */
+
+  proc axpy(X: [?D]?eltType, Y: [D]eltType, ref alpha:eltType, incY: c_int = 1, incX: c_int = 1)
+   where D.rank == 1 {
+
+    const N = D.size: c_int;
+    select eltType {
+      when real(32) do{
+        cblas_saxpy (N, alpha, X, incX, Y, incY);
+      }
+      when real(64) do{
+        cblas_daxpy (N, alpha, X, incX, Y, incY);
+      }
+      when complex(64) do{
+        cblas_caxpy (N, alpha, X, incX, Y, incY);
+      }
+      when complex(128) do{
+        cblas_zaxpy (N, alpha, X, incX, Y, incY);
+      }
+      otherwise {
+          compilerError("Unknown type in axpy: ", eltType:string);
+      }
+    }
+  }
+
+  /*
+      Wrapper for `DOT`_ routines
+
+      Returns  the dot product of two vectors::
+
+         X*Y
+
+      **Input:**
+
+      - ``X``: Input vector
+      - ``Y``: Input vector
+      - ``incX``: Defines the increment for the vector ``X``
+      - ``incY``: Defines the increment for the vector ``Y``
+
+      :returns: Scalar value of dot product
+  */
+  proc dot(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1):eltType
+  where D.rank == 1 {
+
+    const N = D.size: c_int;
+
+    select eltType {
+      when real(32) do{
+        return cblas_sdot (N, X, incX, Y, incY);
+      }
+      when real(64) do{
+       return cblas_ddot (N,X, incX, Y, incY);
+      }
+      otherwise {
+          compilerError("Unknown type in dot: ", eltType:string);
+      }
+    }
+
+  }
+
+  /*
+      Wrapper for  `DOTU`_ routines (``DOTU_SUB``)
+
+      Obtains the dot product of two complex vectors::
+
+         X*Y
+
+      **Input:**
+
+      - ``X``: Input vector
+      - ``Y``: Input vector
+      - ``incX``: Defines the increment for the vector ``X``
+      - ``incY``: Defines the increment for the vector ``Y``
 
     :returns: The complex dot product
 
 
-*/
-proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
- where D.rank == 1 {
+  */
+  proc dotu(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+  where D.rank == 1 {
 
-  const N = D.size: c_int;
+    const N = D.size: c_int;
 
-  var res: eltType;
+    var res: eltType;
 
-  select eltType {
-    when complex(64) do{
-      cblas_cdotc_sub (N, X, incX, Y, incY, res);
+    select eltType {
+      when complex(64) do{
+        cblas_cdotu_sub (N, X, incX, Y, incY, res);
+      }
+      when complex(128) do{
+        cblas_zdotu_sub (N, X, incX, Y, incY, res);
+      }
+      otherwise {
+          compilerError("Unknown type in dotu_sub: ", eltType:string);
+      }
     }
-    when complex(128) do{
-      cblas_zdotc_sub (N, X, incX, Y, incY, res);
+
+    return res;
+
+  }
+
+
+  /*
+      Wrapper for `DOTC`_ routines (``DOTC_SUB``)
+
+      Obtains the dot product of conjugated X vector with Y vector::
+
+         conj(X)*Y
+
+      **Input:**
+
+      - ``X``: Conjugated input vector
+      - ``Y``: Input vector
+      - ``incX``: Defines the increment for the vector ``X``
+      - ``incY``: Defines the increment for the vector ``Y``
+
+      :returns: The complex dot product
+
+
+  */
+  proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+   where D.rank == 1 {
+
+    const N = D.size: c_int;
+
+    var res: eltType;
+
+    select eltType {
+      when complex(64) do{
+        cblas_cdotc_sub (N, X, incX, Y, incY, res);
+      }
+      when complex(128) do{
+        cblas_zdotc_sub (N, X, incX, Y, incY, res);
+      }
+      otherwise {
+          compilerError("Unknown type in dotc_sub: ", eltType:string);
+      }
     }
-    otherwise {
-        compilerError("Unknown type in dotc_sub: ", eltType:string);
+    return res;
+  }
+
+  /*
+      Wrapper for `SDOT`_ routines (``DSDOT`` variant)
+
+      Returns the dot product of two ``real(32)`` vectors as a ``real(64)``,
+      using ``real(64)`` precision internally::
+
+         X*Y
+
+      **Input:**
+
+      - ``X``: Input vector
+      - ``Y``: Input vector
+      - ``incX``: Defines the increment for the vector ``X``
+      - ``incY``: Defines the increment for the vector ``Y``
+
+      :returns: Scalar value of dot product
+
+
+  */
+  proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(64)
+   where D.rank == 1 {
+
+    const N = D.size: c_int;
+    return cblas_dsdot (N, X, incX, Y, incY);
+  }
+
+
+  /*
+      Wrapper for `SDOT`_ routines (``SDSDOT`` variant)
+
+      Returns the dot product of two ``real(32)`` vectors as a ``real(32)``,
+      using ``real(64)`` precision internally::
+
+         X*Y
+
+      **Input:**
+
+      - ``X``: Input vector
+      - ``Y``: Input vector
+      - ``incX``: Defines the increment for the vector ``X``
+      - ``incY``: Defines the increment for the vector ``Y``
+
+      :returns: Scalar value of dot product
+
+
+  */
+  proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(32)
+   where D.rank == 1 {
+
+    var alpha = 0: real(32);
+    const N = D.size: c_int;
+
+    return cblas_sdsdot (N, alpha, X, incX, Y, incY);
+  }
+
+  /*
+      Wrapper for `NRM2`_ routines
+
+      Returns the  Euclidean norm of vector ``X``::
+
+        ||X||
+
+      **Input:**
+
+      - ``X``: Input vector
+      - ``incX``: Defines the increment for the vector ``X``
+
+      :returns: The 2-norm of ``X`` vector
+
+  */
+  proc nrm2(X: [?D]?eltType, incX: c_int = 1)
+  where D.rank == 1 {
+
+    const N = D.size: c_int;
+
+    select eltType {
+     when real(32) do{
+        return cblas_snrm2 (N,  X, incX);
+      }
+      when real(64) do{
+        return cblas_dnrm2 (N, X, incX);
+      }
+      when complex(64) do{
+        return cblas_scnrm2 (N, X, incX);
+      }
+      when complex(128) do{
+        return cblas_dznrm2 (N, X, incX);
+      }
+      otherwise {
+          compilerError("Unknown type in nrm2: ", eltType:string);
+      }
     }
   }
-  return res;
-}
 
-/*
-    Wrapper for `SDOT`_ routines (``DSDOT`` variant)
+  /*
+      Wrapper for the `ASUM`_ routines
 
-    Returns the dot product of two ``real(32)`` vectors as a ``real(64)``,
-    using ``real(64)`` precision internally::
+      Returns the sum of the magnitude values of X elements::
 
-       X*Y
+        |Re X[1]| + |Im X[1]| + |Re  X[2]| + |Im  X[2]|+ ... + |Re  X[N]| + |Im X[N]|.
 
-    **Input:**
+      **Input:**
 
-    - ``X``: Input vector
-    - ``Y``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``
-    - ``incY``: Defines the increment for the vector ``Y``
+      - ``X``: Input vector
+      - ``incX``: Defines the increment for the vector ``X``
 
-    :returns: Scalar value of dot product
+      :returns: The 1-norm of ``X`` vector
 
+  */
+  proc asum(X: [?D]?eltType, incX: c_int = 1)
+  where D.rank == 1 {
 
-*/
-proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(64)
- where D.rank == 1 {
+    const N = D.size: c_int;
 
-  const N = D.size: c_int;
-  return cblas_dsdot (N, X, incX, Y, incY);
-}
-
-
-/*
-    Wrapper for `SDOT`_ routines (``SDSDOT`` variant)
-
-    Returns the dot product of two ``real(32)`` vectors as a ``real(32)``,
-    using ``real(64)`` precision internally::
-
-       X*Y
-
-    **Input:**
-
-    - ``X``: Input vector
-    - ``Y``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``
-    - ``incY``: Defines the increment for the vector ``Y``
-
-    :returns: Scalar value of dot product
-
-
-*/
-proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(32)
- where D.rank == 1 {
-
-  var alpha = 0: real(32);
-  const N = D.size: c_int;
-
-  return cblas_sdsdot (N, alpha, X, incX, Y, incY);
-}
-
-/*
-    Wrapper for `NRM2`_ routines
-
-    Returns the  Euclidean norm of vector ``X``::
-
-      ||X||
-
-    **Input:**
-
-    - ``X``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``
-
-    :returns: The 2-norm of ``X`` vector
-
-*/
-proc nrm2(X: [?D]?eltType, incX: c_int = 1)
-where D.rank == 1 {
-
-  const N = D.size: c_int;
-
-  select eltType {
-   when real(32) do{
-      return cblas_snrm2 (N,  X, incX);
-    }
-    when real(64) do{
-      return cblas_dnrm2 (N, X, incX);
-    }
-    when complex(64) do{
-      return cblas_scnrm2 (N, X, incX);
-    }
-    when complex(128) do{
-      return cblas_dznrm2 (N, X, incX);
-    }
-    otherwise {
-        compilerError("Unknown type in nrm2: ", eltType:string);
+    select eltType {
+     when real(32) do{
+        return cblas_sasum(N, X, incX);
+      }
+     when real(64) do{
+        return cblas_dasum(N, X, incX);
+      }
+     when complex(64) do{
+        return cblas_scasum(N, X, incX);
+      }
+      when complex(128) do{
+        return cblas_dzasum(N, X, incX);
+      }
+      otherwise {
+          compilerError("Unknown type in asum: ", eltType:string);
+      }
     }
   }
-}
 
-/*
-    Wrapper for the `ASUM`_ routines
+  /*
+      Wrapper for `AMAX`_ routines
 
-    Returns the sum of the magnitude values of X elements::
+      Returns the index of element in the vector with maximum absolute value.
 
-      |Re X[1]| + |Im X[1]| + |Re  X[2]| + |Im  X[2]|+ ... + |Re  X[N]| + |Im X[N]|.
+      **Input:**
 
-    **Input:**
+      - ``X``: Input vector
+      - ``incX``: Defines the increment for the vector ``X``
 
-    - ``X``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``
+      :returns: The index of maximum absolute value
 
-    :returns: The 1-norm of ``X`` vector
+  */
+  proc amax(X: [?D]?eltType, incX: c_int = 1)
+  where D.rank == 1: D.idxType {
 
-*/
-proc asum(X: [?D]?eltType, incX: c_int = 1)
-where D.rank == 1 {
+    const N = D.size: c_int;
 
-  const N = D.size: c_int;
+    const r = D.dim(1);
 
-  select eltType {
-   when real(32) do{
-      return cblas_sasum(N, X, incX);
-    }
-   when real(64) do{
-      return cblas_dasum(N, X, incX);
-    }
-   when complex(64) do{
-      return cblas_scasum(N, X, incX);
-    }
-    when complex(128) do{
-      return cblas_dzasum(N, X, incX);
-    }
-    otherwise {
-        compilerError("Unknown type in asum: ", eltType:string);
-    }
-  }
-}
-
-/*
-    Wrapper for `AMAX`_ routines
-
-    Returns the index of element in the vector with maximum absolute value.
-
-    **Input:**
-
-    - ``X``: Input vector
-    - ``incX``: Defines the increment for the vector ``X``
-
-    :returns: The index of maximum absolute value
-
-*/
-proc amax(X: [?D]?eltType, incX: c_int = 1)
-where D.rank == 1: D.idxType {
-
-  const N = D.size: c_int;
-
-  const r = D.dim(1);
-
-  select eltType {
-   when real(32) do{
-      return r.orderToIndex(cblas_isamax(N, X, incX));
-    }
-   when real(64) do{
-      return r.orderToIndex(cblas_idamax(N, X, incX));
-    }
-   when complex(64) do{
-      return r.orderToIndex(cblas_icamax(N, X, incX));
-    }
-    when complex(128) do{
-      return r.orderToIndex(cblas_izamax(N, X, incX));
-    }
-    otherwise {
-        compilerError("Unknown type in amax: ", eltType:string);
+    select eltType {
+     when real(32) do{
+        return r.orderToIndex(cblas_isamax(N, X, incX));
+      }
+     when real(64) do{
+        return r.orderToIndex(cblas_idamax(N, X, incX));
+      }
+     when complex(64) do{
+        return r.orderToIndex(cblas_icamax(N, X, incX));
+      }
+      when complex(128) do{
+        return r.orderToIndex(cblas_izamax(N, X, incX));
+      }
+      otherwise {
+          compilerError("Unknown type in amax: ", eltType:string);
+      }
     }
   }
-}
 
-/*
+  //
+  // Helper functions
+  //
+
+  pragma "no doc"
+  private inline proc getLeadingDim(Adom : domain(2), order : Order, ldA : int) : c_int {
+    var _ldA = ldA : c_int;
+    if ldA==0 {
+      if order==Order.Row
+                  then _ldA = Adom.dim(2).size : c_int;
+                  else _ldA = Adom.dim(1).size : c_int;
+    }
+    return _ldA;
+  }
+
+  /*
 
     Support for low-level native C_BLAS bindings.
 
