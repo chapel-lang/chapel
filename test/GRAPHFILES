@@ -288,6 +288,7 @@ users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
 # suite: Elegance
 studies/elegance/elegance.graph
+# suite: Math operations
+patterns/prime_generator/prime.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
-patterns/prime_generator/prime.graph
