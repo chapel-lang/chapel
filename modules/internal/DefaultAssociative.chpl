@@ -589,7 +589,7 @@ module DefaultAssociative {
 
     // value version for POD types
     proc dsiAccess(idx : idxType, haveLock = false)
-    where !shouldReturnRvalueByConstRef(eltType) {
+    where shouldReturnRvalueByValue(eltType) {
       const shouldLock = dom.parSafe && !haveLock;
       if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
