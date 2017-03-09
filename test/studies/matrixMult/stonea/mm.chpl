@@ -139,9 +139,9 @@ proc matrixMult_tensored_no_indices(
     const calcRange = 1..(B.domain.dim(1).high - B.domain.dim(1).low)+1;
 
     // reindexed versions of A, B, and C
-    ref Aprime : [rowRange,  calcRange] = A;
-    ref Bprime : [calcRange, colRange]  = B;
-    ref Cprime : [rowRange,  colRange]  = C;
+    ref Aprime = A.reindex({rowRange,  calcRange});
+    ref Bprime = B.reindex({calcRange, colRange});
+    ref Cprime = C.reindex({rowRange,  colRange});
 
     C = 0;
 
