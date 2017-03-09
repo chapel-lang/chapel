@@ -1,5 +1,5 @@
 record Wrapper {
-  forwarding var instance; // e.g. some class
+  forwarding var instance:C;
   proc foo() { writeln("in Wrapper.foo()"); }
 }
 
@@ -12,4 +12,6 @@ class C {
 
 var r = new Wrapper(new C());
 r.foo(); // direct method shadows forwarding method
+r.foo();
 r.bar(); // same as r.instance.bar(), prints "in C.foo()"
+r.bar();

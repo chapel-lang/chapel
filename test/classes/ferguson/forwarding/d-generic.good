@@ -1,7 +1,7 @@
 int
 in Wrapper.foo int (1)
-real
-in C.foo where real (2.0)
+real(32)
+in C.foo where real(32) (2.0)
 uint
 in C.foo uint (3)
 complex

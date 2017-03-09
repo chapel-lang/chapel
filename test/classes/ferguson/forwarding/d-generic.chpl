@@ -6,7 +6,7 @@ record Wrapper {
 class C {
   var field:int;
   proc foo(x) { writeln("in C.foo(", x, ")"); }
-  proc foo(x) where x.type == real { writeln("in C.foo where real (", x, ")"); }
+  proc foo(x) where x.type == real(32) { writeln("in C.foo where real(32) (", x, ")"); }
   proc foo(x:uint) { writeln("in C.foo uint (", x, ")"); }
 }
 
@@ -14,8 +14,8 @@ var r = new Wrapper(new C());
 
 writeln("int");
 r.foo(1:int);
-writeln("real");
-r.foo(2:real);
+writeln("real(32)");
+r.foo(2:real(32));
 writeln("uint");
 r.foo(3:uint);
 writeln("complex");
