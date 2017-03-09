@@ -249,8 +249,7 @@ module ChapelLocale {
 
     //
     // Support for different types of memory:
-    // large, random-access (low latency), and streaming (high bandwidth)
-    // Inspired by madvise()'s support for RANDOM and SEQUENTIAL access
+    // large, low latency, and high bandwidth
     //
     pragma "no doc"
     proc defaultMemory() : locale {
@@ -265,13 +264,13 @@ module ChapelLocale {
     }
 
     pragma "no doc"
-    proc randomMemory() : locale {
+    proc lowLatencyMemory() : locale {
       _throwPVFCError();
       return this;
     }
 
     pragma "no doc"
-    proc streamingMemory() : locale {
+    proc highBandwidthMemory() : locale {
       _throwPVFCError();
       return this;
     }

@@ -133,8 +133,7 @@ module LocaleModel {
 
     //
     // Support for different types of memory:
-    // large, random-access (low latency), and streaming (high bandwidth)
-    // Inspired by madvise()'s support for RANDOM and SEQUENTIAL access
+    // large, low latency, and high bandwidth
     //
     // The numa memory model currently assumes only one memory.
     //
@@ -146,11 +145,11 @@ module LocaleModel {
       return this;
     }
 
-    proc randomMemory() : locale {
+    proc lowLatencyMemory() : locale {
       return this;
     }
 
-    proc streamingMemory() : locale {
+    proc highBandwidthMemory() : locale {
       return this;
     }
 

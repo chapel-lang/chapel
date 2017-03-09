@@ -183,8 +183,7 @@ module LocaleModel {
 
     //
     // Support for different types of memory:
-    // large, random-access (low latency), and streaming (high bandwidth)
-    // Inspired by madvise()'s support for RANDOM and SEQUENTIAL access
+    // large, low latency, and high bandwidth
     //
     proc defaultMemory() : locale {
       return parent.defaultMemory();
@@ -194,12 +193,12 @@ module LocaleModel {
       return parent.largeMemory();
     }
 
-    proc randomMemory() : locale {
-      return parent.randomMemory();
+    proc lowLatencyMemory() : locale {
+      return parent.lowLatencyMemory();
     }
 
-    proc streamingMemory() : locale {
-      return parent.streamingMemory();
+    proc highBandwidthMemory() : locale {
+      return parent.highBandwidthMemory();
     }
 
     proc MemoryLocale() {
@@ -245,8 +244,7 @@ module LocaleModel {
 
     //
     // Support for different types of memory:
-    // large, random-access (low latency), and streaming (high bandwidth)
-    // Inspired by madvise()'s support for RANDOM and SEQUENTIAL access
+    // large, low latency, and high bandwidth
     //
     proc defaultMemory() : locale {
       return ddr;
@@ -256,11 +254,11 @@ module LocaleModel {
       return ddr;
     }
 
-    proc randomMemory() : locale {
+    proc lowLatencyMemory() : locale {
       return ddr;
     }
 
-    proc streamingMemory() : locale {
+    proc highBandwidthMemory() : locale {
       return hbm;
     }
 
@@ -355,8 +353,7 @@ module LocaleModel {
 
     //
     // Support for different types of memory:
-    // large, random-access (low latency), and streaming (high bandwidth)
-    // Inspired by madvise()'s support for RANDOM and SEQUENTIAL access
+    // large, low latency, and high bandwidth
     //
     proc defaultMemory() : locale {
       return ddr;
@@ -366,11 +363,11 @@ module LocaleModel {
       return ddr;
     }
 
-    proc randomMemory() : locale {
+    proc lowLatencyMemory() : locale {
       return ddr;
     }
 
-    proc streamingMemory() : locale {
+    proc highBandwidthMemory() : locale {
       return hbm;
     }
 

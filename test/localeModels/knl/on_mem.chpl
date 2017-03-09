@@ -4,14 +4,14 @@ class myClass {
 
 var default0: myClass;
 var large1: myClass;
-var random2: myClass;
-var streaming3: myClass;
+var lowlat2: myClass;
+var highbw3: myClass;
 var default4: myClass;
 var large5: myClass;
-var random6: myClass;
-var streaming7: myClass;
+var lowlat6: myClass;
+var highbw7: myClass;
 var default8: myClass;
-var streaming9: myClass;
+var highbw9: myClass;
 var defaultA: myClass;
 
 on here.defaultMemory() {
@@ -24,18 +24,18 @@ on here.largeMemory() {
   large1.x = 1;
 }
 
-on here.randomMemory() {
-  random2 = new myClass();
-  random2.x = 2;
+on here.lowLatencyMemory() {
+  lowlat2 = new myClass();
+  lowlat2.x = 2;
 }
 
 writeln("here = ", here);
 
-on here.streamingMemory() {
-  streaming3 = new myClass();
-  streaming3.x = 3;
-  on streaming3.locale.defaultMemory() {
-    writeln("streaming3.locale.defaultMemory() = ", here);
+on here.highBandwidthMemory() {
+  highbw3 = new myClass();
+  highbw3.x = 3;
+  on highbw3.locale.defaultMemory() {
+    writeln("highbw3.locale.defaultMemory() = ", here);
     default4 = new myClass();
     default4.x = 4;
   }
@@ -45,29 +45,29 @@ on here.streamingMemory() {
   }
 }
 
-on here.streamingMemory().defaultMemory() {
-  random6 = new myClass();
-  random6.x = 6;
+on here.highBandwidthMemory().lowLatencyMemory() {
+  lowlat6 = new myClass();
+  lowlat6.x = 6;
 }
 
-writeln("here.streamingMemory().defaultMemory() = ",
-        here.streamingMemory().defaultMemory());
+writeln("here.highBandwidthMemory().defaultMemory() = ",
+        here.highBandwidthMemory().defaultMemory());
 
 on Locales(0).largeMemory() {
-  on here.streamingMemory() {
-    streaming7 = new myClass();
-    streaming7.x = 7;
+  on here.highBandwidthMemory() {
+    highbw7 = new myClass();
+    highbw7.x = 7;
   }
 }
 
-on (here:LocaleModel).hbm.defaultMemory() {
+on here.highBandwidthMemory().defaultMemory() {
   default8 = new myClass();
   default8.x = 8;
 }
 
-on (here:LocaleModel).getChild(0).streamingMemory() {
-  streaming9 = new myClass();
-  streaming9.x = 9;
+on here.getChild(0).highBandwidthMemory() {
+  highbw9 = new myClass();
+  highbw9.x = 9;
   on here.defaultMemory() {
     defaultA = new myClass();
     defaultA.x = 10;
@@ -75,20 +75,20 @@ on (here:LocaleModel).getChild(0).streamingMemory() {
 }
 
 writeln("default0: ", default0.x, ", large1: ", large1.x,
-	", random2: ", random2.x, ", streaming3: ", streaming3.x,
+	", lowlat2: ", lowlat2.x, ", highbw3: ", highbw3.x,
 	", default4: ", default4.x, ", large5: ", large5.x, ",");
-writeln("  random6: ", random6.x, ", streaming7: ", streaming7.x,
-        ", default8: ", default8.x, ", streaming9: ", streaming9.x,
+writeln("  lowlat6: ", lowlat6.x, ", highbw7: ", highbw7.x,
+        ", default8: ", default8.x, ", highbw9: ", highbw9.x,
         ", defaultA: ", defaultA.x);
 
 writeln("default0 in hbm = ", chpl_addrIsInHbm(c_ptrTo(default0.x)));
 writeln("large1 in hbm = ", chpl_addrIsInHbm(c_ptrTo(large1.x)));
-writeln("random2 in hbm = ", chpl_addrIsInHbm(c_ptrTo(random2.x)));
-writeln("streaming3 in hbm = ", chpl_addrIsInHbm(c_ptrTo(streaming3.x)));
+writeln("lowlat2 in hbm = ", chpl_addrIsInHbm(c_ptrTo(lowlat2.x)));
+writeln("highbw3 in hbm = ", chpl_addrIsInHbm(c_ptrTo(highbw3.x)));
 writeln("default4 in hbm = ", chpl_addrIsInHbm(c_ptrTo(default4.x)));
 writeln("large5 in hbm = ", chpl_addrIsInHbm(c_ptrTo(large5.x)));
-writeln("random6 in hbm = ", chpl_addrIsInHbm(c_ptrTo(random6.x)));
-writeln("streaming7 in hbm = ", chpl_addrIsInHbm(c_ptrTo(streaming7.x)));
+writeln("lowlat6 in hbm = ", chpl_addrIsInHbm(c_ptrTo(lowlat6.x)));
+writeln("highbw7 in hbm = ", chpl_addrIsInHbm(c_ptrTo(highbw7.x)));
 writeln("default8 in hbm = ", chpl_addrIsInHbm(c_ptrTo(default8.x)));
-writeln("streaming9 in hbm = ", chpl_addrIsInHbm(c_ptrTo(streaming9.x)));
+writeln("highbw9 in hbm = ", chpl_addrIsInHbm(c_ptrTo(highbw9.x)));
 writeln("defaultA in hbm = ", chpl_addrIsInHbm(c_ptrTo(defaultA.x)));
