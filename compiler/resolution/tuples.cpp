@@ -493,47 +493,71 @@ instantiate_tuple_hash( FnSymbol* fn) {
   normalize(fn);
 }
 
-static void
-instantiate_tuple_init(FnSymbol* fn) {
-  ArgSymbol* arg;
-  AggregateType* ct;
+/************************************* | **************************************
+*                                                                             *
+* Consider a declaration statements of the form:                              *
+*                                                                             *
+*     var foo : 2 * int;                                                      *
+*     var bar : (real, int, bool);                                            *
+*                                                                             *
+* 'foo' should be default initialized to (0, 0)                               *
+* 'bar' should be default initialized to (0.0, 0, false)                      *
+*                                                                             *
+* This function receives a skeleton FnSymbol for _defaultOf() and updates it  *
+* so that it implements the required specialized default initialization.      *
+*                                                                             *
+* Noakes 2017/03/08: This function should be revisited when records with      *
+* initializers are complete to avoid unncessary copying i.e. it should be     *
+* possible to invoke the initializer directly on the appropriate element.     *
+*                                                                             *
+************************************** | *************************************/
+
+static void instantiate_tuple_init(FnSymbol* fn) {
+  ArgSymbol*     arg = NULL;
+  AggregateType* ct  = NULL;
+
   getTupleArgAndType(fn, arg, ct);
 
-  if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
+  if (arg->hasFlag(FLAG_TYPE_VARIABLE) == false) {
     INT_FATAL(fn, "_defaultOf function not provided a type argument");
+  }
 
-  // To avoid a memory leak of the default values,
-  // this method calls PRIM_SET_MEMBER instead of invoking the
-  // constructor.
-  BlockStmt* block = new BlockStmt();
-  VarSymbol* tup = newTemp("tup", ct);
+  VarSymbol*     tup = newTemp("tup", ct);
 
-  block->insertAtTail(new DefExpr(tup));
+  fn->body->insertAtTail(new DefExpr(tup));
+
   for_fields(field, ct) {
-    const char* name = field->name;
     Type* type = field->type;
+
     if (isReferenceType(type)) {
       INT_FATAL(fn, "_defaultOf with reference field");
     }
-    Symbol* element = new VarSymbol(astr("elt_", name), type);
-    CallExpr* init = new CallExpr(PRIM_INIT, type->symbol);
-    // This move is transferring ownership of the element
-    // to the tuple.
-    CallExpr* move = new CallExpr(PRIM_MOVE, element, init);
-    CallExpr* set = new CallExpr(PRIM_SET_MEMBER,
-                                 tup,
-                                 new_CStringSymbol(name),
-                                 element);
-
-    block->insertAtTail(new DefExpr(element));
-    block->insertAtTail(move);
-    block->insertAtTail(set);
   }
 
-  block->insertAtTail(new CallExpr(PRIM_RETURN, tup));
-  fn->body->replace(block);
+  for_fields(field, ct) {
+    const char* name    = field->name;
+    Type*       type    = field->type;
+
+    Symbol*     elem    = new VarSymbol(astr("elt_", name), type);
+    Symbol*     symName = new_CStringSymbol(name);
+
+    // Ensure normalize doensn't try to auto destroy this
+    elem->addFlag(FLAG_NO_AUTO_DESTROY);
+
+    fn->body->insertAtTail(new DefExpr(elem, NULL, type->symbol));
+    fn->body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, tup, symName, elem));
+  }
+
+  fn->body->insertAtTail(new CallExpr(PRIM_RETURN, tup));
+
   normalize(fn);
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void
 instantiate_tuple_cast(FnSymbol* fn)
