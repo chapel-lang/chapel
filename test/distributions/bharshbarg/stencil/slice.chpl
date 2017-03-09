@@ -91,7 +91,7 @@ proc test(dom : domain) {
         var temp = if isTuple(idx) then idx else (idx,);
         // Look at indices that should be in the cache, but are not in the
         // periodic region.
-        if !sub.member(idx) && Space.member(idx) {
+        if !sub.member(idx) && dom.member(idx) {
           var m = 1;
           for i in temp do m *= i;
           assert(Actual[idx] == m);

@@ -47,6 +47,7 @@ ArgSymbol* tiMarkForIntent(IntentTag intent) {
     case INTENT_REF:       return tiMarkRef;       break;
     case INTENT_PARAM:     return NULL;            break;
     case INTENT_TYPE:      return NULL;            break;
+    case INTENT_REF_MAYBE_CONST:      return NULL;            break;
   }
   INT_FATAL("unexpected intent in tiMarkForIntent()");
   return NULL; // dummy
@@ -452,6 +453,10 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
               newFormal->addFlag(FLAG_MARKED_GENERIC);
           newActual = e->key;
           symReplace = newFormal;
+          // MPF 2017-03-09
+          // I don't think this check should be here; it depends
+          // on the type and in my experiments type is usually dtUnknown
+          // at this point.
           if (!newActual->isConstant() && newFormal->isConstant())
             newFormal->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }

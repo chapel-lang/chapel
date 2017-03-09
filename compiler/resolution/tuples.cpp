@@ -790,7 +790,7 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
           // of the tuple is a type where blank-intent-means-ref,
           // then the tuple should include a ref field
           // rather than a value field.
-          if (intent == INTENT_BLANK) {
+          if (intent == INTENT_BLANK || intent == INTENT_CONST) {
             IntentTag concrete = concreteIntent(intent, useType);
             if ( (concrete & INTENT_FLAG_REF) ) {
               useType = useType->getRefType();

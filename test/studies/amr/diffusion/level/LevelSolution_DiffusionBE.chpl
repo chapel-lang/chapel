@@ -78,7 +78,7 @@ proc LevelSolution.step_DiffusionBE(
   old_time = current_time;
   current_time += dt;
   
-
+  delete rhs;
 }
 // /|""""""""""""""""""""""""""""""""""""""""""""""/|
 //< |    LevelSolution.step_DiffusionBE method    < |

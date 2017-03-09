@@ -66,5 +66,7 @@ proc main {
   }
   //<=== Generate output <===
   
-
+  delete bc;
+  delete solution;
+  delete grid;
 } // end main

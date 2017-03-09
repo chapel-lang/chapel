@@ -51,6 +51,7 @@ function log_debug()
     fi
 }
 
+log_debug "Starting \"make check\" script."
 log_debug "Debug output is turned on, because \$CHPL_CHECK_DEBUG == 1"
 
 # Base name for test job in examples
@@ -75,7 +76,7 @@ else
 fi
 
 # Verify CHPL_HOME is correctly set.
-if [ -z "${CHPL_HOME+x}" ] ; then
+if [ -z "${CHPL_HOME}" ] ; then
     log_error "CHPL_HOME is not set in environment."
     exit 1
 elif [ ! -d ${CHPL_HOME} ] ; then
@@ -95,10 +96,16 @@ else
     log_info "${CHPL_DIR} already exists. Using it."
     CHPL_DIR_REMOVE=0
 fi
+( cd "${CHPL_DIR}" ) || { log_error "failed cd $CHPL_DIR" ; exit 1 ; }
 
 # Tmp directory for compile output
 TMP_TEST_DIR="$(mktemp -d ${CHPL_DIR}/chapel-test-XXXXX)"
+if [ -z "${TMP_TEST_DIR}" ] ; then
+    log_error "failed mktemp -d ${CHPL_DIR}/chapel-test-XXXXX"
+    exit 1
+fi
 log_info "Temporary test job directory: ${TMP_TEST_DIR}"
+( cd ${TMP_TEST_DIR} ) || { log_error "failed cd ${TMP_TEST_DIR}" ; exit 1 ; }
 
 # Cleanup the tmp directory whenever exit is invoked
 function cleanup_tmp_dir()
@@ -154,18 +161,22 @@ COMP_FLAGS="--cc-warnings"
 # Compile test job into temporary directory
 log_info "Compiling \$CHPL_HOME/${REL_TEST_DIR}/${TEST_JOB}.chpl"
 ${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/${TEST_COMP_OUT} 2>&1
+COMPILE_STATUS=$?
 
 # Check that compile was successful
-COMPILE_STATUS=$?
+log_debug "Compilation exit status was ${COMPILE_STATUS}"
+
 if [ ${COMPILE_STATUS} -ne 0 ]; then
     log_error "Test job failed to compile - Chapel is not installed correctly"
     log_error "Compilation output:"
     cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
+    log_debug "Exit \"make check\" script with status code 1"
     exit 1
 elif [ -s ${TMP_TEST_DIR}/${TEST_COMP_OUT} ]; then
     log_error "Test job compiled with output - Chapel is not installed correctly"
     log_error "Compilation output:"
     cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
+    log_debug "Exit \"make check\" script with status code 1"
     exit 1
 else
     log_info "Test job compiled into ${TMP_TEST_DIR}/${TEST_JOB}"
@@ -189,6 +200,7 @@ else
     log_warning "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
     # This exit code should be recognized as a failure to complete check, but
     # not necessarily failure of build
+    log_debug "Exit \"make check\" script with status code 10"
     exit 10
 fi
 
@@ -196,33 +208,55 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
 
 # Run compiled binary with parsed execution options
 (
-    cd ${TMP_TEST_DIR}
+    cd ${TMP_TEST_DIR} || { log_error "failed cd ${TMP_TEST_DIR}" ; exit 1 ; }
 
     EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
 
     log_info "Running test job."
-    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} | sort > ${TEST_EXEC_OUT} 2>&1
+    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} 2>&1 | sort > ${TEST_EXEC_OUT}
     log_info "Test job complete."
 
     # Check result
-    DIFF_OUTPUT=$(diff -q ${TEST_EXEC_OUT} ${GOOD})
+    DIFF_OUTPUT=$(diff -q ${GOOD} ${TEST_EXEC_OUT})
 
     # Return success code (0) if diff is good
     if [ -z "${DIFF_OUTPUT}" ]; then
-    echo "SUCCESS: 'make check' passed!"
-    exit 0
+        echo "SUCCESS: 'make check' passed!"
+        log_debug "Exit \"make check\" script with status code 0"
+        exit 0
     else
         # Rerun test job with -v flag to help user identify discrepancy
         log_error "There was an issue with the installation, test job output incorrect."
+        if [ "${CHPL_CHECK_DEBUG}" == 1 ] ; then
+            log_debug "Full test output is turned on, because \$CHPL_CHECK_DEBUG == 1"
+            echo ""
+            echo "== Reference Test output $( basename $GOOD ) =="
+            echo ""
+            head -100 $GOOD
+            echo ""
+            echo "== Actual Test Output (sorted to compare v. reference) =="
+            echo ""
+            head -100 ${TEST_EXEC_OUT}
+            echo ""
+            echo "== Difference =="
+            echo ""
+            diff ${GOOD} ${TEST_EXEC_OUT} | head -100
+            echo ""
+        else
+            log_info "To see the test outputs, export CHPL_CHECK_DEBUG=1 and re-run \"make check\""
+        fi
+
         echo ""
-        echo "== Verbose Test Job Execution Output =="
+        echo "== Actual Test Output (raw, with verbose) =="
+
         ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} -v
-        echo ""
-        echo "== Diff Log =="
-        echo "$(diff ${TEST_EXEC_OUT} ${GOOD})"
+        JOB_STATUS=$?
+
+        log_debug "Test job exit status was ${JOB_STATUS}"
+
         # This exit code should be recognized as successfully building, but
         # with some errors
+        log_debug "Exit \"make check\" script with status code 20"
         exit 20
     fi
 )
-

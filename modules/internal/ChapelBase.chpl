@@ -740,9 +740,14 @@ module ChapelBase {
     return ret;
   }
 
-  inline proc _ddata_allocate(type eltType, size: integral) {
+  enum localizationStyle_t { locNone, locWhole, locSubchunks };
+
+  inline proc _ddata_allocate(type eltType, size: integral,
+                              locStyle = localizationStyle_t.locNone,
+                              subloc = c_sublocid_none) {
     var ret:_ddata(eltType);
-    __primitive("array_alloc", ret, eltType, size);
+    __primitive("array_alloc", ret, eltType, size,
+                locStyle == localizationStyle_t.locSubchunks, subloc);
     init_elts(ret, size, eltType);
     return ret;
   }
@@ -1032,6 +1037,7 @@ module ChapelBase {
     return if x != 0i then true else false;
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -1039,6 +1045,7 @@ module ChapelBase {
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, param init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -1046,6 +1053,7 @@ module ChapelBase {
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, init: _nilType) {
     pragma "no auto destroy" var x: t;
     return x;
@@ -1065,7 +1073,7 @@ module ChapelBase {
   // Catch-all initCopy implementation:
   pragma "compiler generated"
   pragma "init copy fn"
-  inline proc chpl__initCopy(x) {
+  inline proc chpl__initCopy(const x) {
     // body adjusted during generic instantiation
     return x;
   }
@@ -1095,16 +1103,28 @@ module ChapelBase {
   pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(x) return chpl__initCopy(x);
+  inline proc chpl__autoCopy(const x) return chpl__initCopy(x);
 
   pragma "compiler generated"
   pragma "unalias fn"
-  inline proc chpl__unalias(ref x) { }
+  inline proc chpl__unalias(x) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
 
+  // Returns an array storing the result of the iterator
   pragma "unalias fn"
-  inline proc chpl__unalias(x:_iteratorClass) { }
+  inline proc chpl__unalias(x:_iteratorClass) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
+
+  // Returns an array storing the result of the iterator
   pragma "unalias fn"
-  inline proc chpl__unalias(const ref x:_iteratorRecord) { }
+  inline proc chpl__unalias(const ref x:_iteratorRecord) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
 
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;

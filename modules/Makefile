@@ -72,6 +72,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
+	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/Error.chpl \
 	standard/FileSystem.chpl \

@@ -357,17 +357,14 @@ module ChapelLocale {
     // LocaleSpace -- an array of locales and its corresponding domain
     // which are used as the default set of targetLocales in many
     // distributions.
-    proc getDefaultLocaleSpace() {
+    proc getDefaultLocaleSpace() const ref {
       _throwPVFCError();
-      const emptyLocaleSpace: domain(1) = {1..0};
-      return emptyLocaleSpace;
+      return chpl_emptyLocaleSpace;
     }
 
-    proc getDefaultLocaleArray() {
+    proc getDefaultLocaleArray() const ref {
       _throwPVFCError();
-      const emptyLocaleSpace: domain(1) = {1..0};
-      const emptyLocales: [emptyLocaleSpace] locale;
-      return emptyLocales;
+      return chpl_emptyLocales;
     }
 
     proc localeIDtoLocale(id : chpl_localeID_t) : locale {

@@ -58,12 +58,16 @@ static IntentTag constIntentForType(Type* t) {
 IntentTag blankIntentForType(Type* t) {
   IntentTag retval = INTENT_BLANK;
 
-  if (isSyncType(t)                                  ||
+  if (/*isSyncType(t)                                  ||
       isSingleType(t)                                ||
+        these should have FLAG_DEFAULT_INTENT_IS_REF) */
       isAtomicType(t)                                ||
-      t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) ||
-      t->symbol->hasFlag(FLAG_ARRAY)) {
+      t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)) {
     retval = INTENT_REF;
+
+  } else if(t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
+            /* || t->symbol->hasFlag(FLAG_ARRAY) */) {
+    retval = INTENT_REF_MAYBE_CONST;
 
   } else if (is_bool_type(t)                         ||
              is_int_type(t)                          ||
@@ -96,42 +100,85 @@ IntentTag blankIntentForType(Type* t) {
 }
 
 IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
-  if (existingIntent == INTENT_BLANK) {
+  if (existingIntent == INTENT_BLANK || existingIntent == INTENT_CONST) {
     if (t->symbol->hasFlag(FLAG_REF)) {
-      // A formal with a ref type should always have the ref-intent. No other
-      // intent makes sense. This is will hopefully be a short-lived fix
+      // Handle REF type
+      // A formal with a ref type should always have some ref-intent.
+      // This is will hopefully be a short-lived fix
       // while converting entirely over to QualifiedType.
       //
       // TODO: Are there cases where we should handle const-ref intent? Should
       // a QualifiedType be used instead of a Type* ?
-      return INTENT_REF;
-    } else {
-      return blankIntentForType(t);
+
+      IntentTag baseIntent = INTENT_TYPE;
+      Type* valType = t->getValType();
+      if (existingIntent == INTENT_BLANK)
+        baseIntent = blankIntentForType(valType);
+      else if (existingIntent == INTENT_CONST)
+        baseIntent = constIntentForType(valType);
+      if ( (baseIntent & INTENT_FLAG_REF) )
+        return baseIntent; // it's already REF/CONST_REF/REF_MAYBE_CONST
+      else if (baseIntent == INTENT_CONST_IN)
+        return INTENT_CONST_REF;
+      else
+        INT_ASSERT(0); // unhandled case
     }
-  } else if (existingIntent == INTENT_CONST) {
-    return constIntentForType(t);
-  } else {
-    return existingIntent;
+
+    if (existingIntent == INTENT_BLANK) {
+      return blankIntentForType(t);
+    } else if (existingIntent == INTENT_CONST) {
+      return constIntentForType(t);
+    }
   }
+
+  return existingIntent;
+}
+
+static IntentTag constIntentForThisArg(Type* t) {
+  if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
+    return INTENT_CONST_REF;
+  else
+    return INTENT_CONST_IN;
 }
 
 static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
 
-  if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
+  // This applies to both arguments of type _ref(t) and t
+  if (t->getValType()->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
+    return INTENT_REF_MAYBE_CONST;
+
+  if (isRecordWrappedType(t))  // domain / distribution
+    // array, domain, distribution wrapper records are immutable
+    return INTENT_CONST_REF;
+  else if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
+    // TODO - see issue #5266; also note workaround in resolveFormals
+    // makes all blank-intent _this arguments for records use INTENT_REF.
     return INTENT_REF;
   else
     return INTENT_CONST_IN;
 }
 
+
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
   if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
     return blankIntentForThisArg(arg->type);
+  else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
+    return constIntentForThisArg(arg->type);
   else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN) &&
-           arg->intent == INTENT_BLANK) {
+           arg->intent == INTENT_BLANK)
     return INTENT_CONST_IN;
-  }
+  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_ALLOW_REF) &&
+           arg->type->symbol->hasFlag(FLAG_REF))
+
+    // This is a workaround for an issue with RVF erroneously forwarding a
+    // reduce variable. The workaround adjusts the build_tuple_always_allow_ref
+    // call to take all _ref arguments by `ref` intent regardless of
+    // the type. It would be better to rely on task/forall intents
+    // to correctly mark const / not const / maybe const.
+    return INTENT_REF;
+
   else
     return concreteIntent(arg->intent, arg->type);
 

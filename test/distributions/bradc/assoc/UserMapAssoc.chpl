@@ -678,7 +678,7 @@ class UserMapAssocArr: BaseArr {
     return locArr[i];
   }
   proc dsiAccess(i: idxType)
-  where !shouldReturnRvalueByConstRef(eltType) {
+  where shouldReturnRvalueByValue(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
     const locArr = locArrs[localeIndex];
     if locArr.locale == here {
@@ -825,7 +825,7 @@ class LocUserMapAssocArr {
     return myElems(i);
   }
   proc this(i: idxType)
-  where !shouldReturnRvalueByConstRef(eltType) {
+  where shouldReturnRvalueByValue(eltType) {
     return myElems(i);
   }
   proc this(i: idxType) const ref

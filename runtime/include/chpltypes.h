@@ -117,6 +117,10 @@ typedef int64_t c_localeid_t;
 static const c_sublocid_t c_sublocid_none = c_sublocid_none_val;
 static const c_sublocid_t c_sublocid_any  = c_sublocid_any_val;
 
+static inline int isActualSublocID(c_sublocid_t subloc) {
+  return subloc >= 0;
+}
+
 #ifndef LAUNCHER
 
 // The type for wide-pointer-to-void. This is used in the runtime in order to

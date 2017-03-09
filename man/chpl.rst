@@ -187,11 +187,6 @@ OPTIONS
     Enable [disable] live variable analysis, which is currently only used to
     optimize iterators that are not inlined.
 
-**--[no-]optimize-array-indexing**
-
-    Enable [disable] an optimization that removes an extra multiply in array
-    indexing when it's provably unnecessary. By default this is enabled.
-
 **--[no-]optimize-loop-iterators**
 
     Enable [disable] optimizations to aggressively optimize iterators that
@@ -256,6 +251,11 @@ OPTIONS
 
     Enable [disable] ability to skip default initialization through the
     keyword noinit
+
+**--[no-]infer-local-fields**
+
+    Enable [disable] analysis to infer local fields in classes and records
+    (experimental)
 
 *Run-time Semantic Check Options* 
 

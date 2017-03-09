@@ -156,6 +156,11 @@ proc GridSolution.step_DiffusionBE(
 
   old_time = current_time;
   current_time += dt;
+
+  delete residual_update;
+  delete search_dir;
+  delete residual;
+  delete rhs;
 }
 //<=== Grid.step_DiffusionBE method <===
 //<========================================

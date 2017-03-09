@@ -80,7 +80,7 @@ findtestsretry () {
 }
 
 findtests () {
-  IGNORE=".svn Logs Samples Share perfdat Bin OUTPUT RCS"
+  IGNORE=".svn Logs Samples perfdat Bin OUTPUT RCS"
   IGNORES=""
   for dir in $IGNORE
   do

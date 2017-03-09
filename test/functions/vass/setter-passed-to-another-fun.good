@@ -10,7 +10,7 @@ int by const ref false
 
 arr drop result  false
 arr assign to    true
-arr by blank     true
+arr by blank     false
 arr by in        false
 arr by inout     true
 arr by out       true

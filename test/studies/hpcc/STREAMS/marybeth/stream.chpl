@@ -71,7 +71,7 @@ proc main() {
 }
 
 proc initStreamVectors() {
-  var randlist = new NPBRandomStream(real, seed);
+  var randlist = new NPBRandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(A);
   randlist.fillRandom(B);

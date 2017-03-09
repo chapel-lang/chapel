@@ -83,6 +83,11 @@ QualifiedType Type::qualType() {
 bool Type::isDefaultIntentConst() const {
   bool retval = true;
 
+  // MPF 2017-03-09
+  // It seems wrong to me that this returns true
+  // for dtUnknown. However some parts of the compiler
+  // currently rely on that behavior.
+
   if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
       isReferenceType(this)                       == true ||
       isRecordWrappedType(this)                   == true)
@@ -771,10 +776,8 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
       if (field->type == t->typeInfo())
         return at;
     }
-    if (field->defPoint->init == t) {
-      // TODO: isn't init a BlockStmt*?  Shouldn't I be comparing against the
-      // Symbol being used instead of its reference?
-      // If so, return it
+    if (field->hasFlag(FLAG_PARAM) &&
+        at->substitutions.get(field) == t->symbol()) {
       return at;
     }
   }
@@ -787,11 +790,6 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
 
   Symbol* field = newInstance->getField(genericField);
   if (field->hasFlag(FLAG_PARAM)) {
-    if (isArgSymbol(t->symbol())) {
-      FnSymbol* argsFn = toFnSymbol(t->symbol()->defPoint->parentSymbol);
-      INT_ASSERT(argsFn);
-      // TODO: I don't think this is going to work
-    }
     newInstance->substitutions.put(field, t->symbol());
     newInstance->symbol->renameInstantiatedSingle(t->symbol());
   } else {
@@ -802,10 +800,12 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
   if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
     field->type = t->typeInfo();
   } else {
-    if (!field->defPoint->exprType && !field->type)
+    if (!field->defPoint->exprType && field->type == dtUnknown)
       field->type = t->typeInfo();
     else if (field->defPoint->exprType->typeInfo() != t->typeInfo()) {
       // TODO: Something something, casts and coercions
+    } else {
+      field->type = t->typeInfo();
     }
   }
   instantiations.push_back(newInstance);
@@ -1708,7 +1708,7 @@ bool isString(Type* type) {
 }
 
 //
-// NOAKES 2016/02/29
+// Noakes 2016/02/29
 //
 // To support the merge of the string-as-rec branch we defined a
 // function, isString(), which is only true of the record that was
@@ -1726,8 +1726,13 @@ bool isString(Type* type) {
 // In the longer term we plan to further broaden the cases that the new
 // logic can handle and reduce the exceptions that are filtered out here.
 //
-// MPF 2016-09-15
+//
+//
+// MPF    2016/09/15
 // This function now includes tuples, distributions, domains, and arrays.
+//
+// Noakes 2017/03/02
+// This function now includes range and atomics
 //
 bool isUserDefinedRecord(Type* type) {
   bool retval = false;
@@ -1738,18 +1743,15 @@ bool isUserDefinedRecord(Type* type) {
 
     // Must be a record type
     if (aggr->aggregateTag != AGGREGATE_RECORD) {
-
-    // Not a range
-    } else if (sym->hasFlag(FLAG_RANGE)              == true) {
-
-    // Not an atomic type
-    } else if (sym->hasFlag(FLAG_ATOMIC_TYPE)        == true) {
+      retval = false;
 
     // Not a RUNTIME_type
     } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+      retval = false;
 
     // Not an iterator
     } else if (strncmp(name, "_ir_", 4)              ==    0) {
+      retval = false;
 
     } else {
       retval = true;

@@ -71,8 +71,10 @@ proc main {
     sol.clawOutput(frame_number);
   }
   //<=== Generate output <===
-  
 
+  delete sol;
+  delete bc;
+  delete grid;
 } // end main
 
 

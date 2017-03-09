@@ -146,7 +146,8 @@ void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
 typedef enum {
   FIND_EITHER = 0,
   FIND_REF,
-  FIND_NOT_REF
+  FIND_CONST_REF,
+  FIND_NOT_REF_OR_CONST_REF, // !(ref || const_ref)
 } disambiguate_kind_t;
 
 

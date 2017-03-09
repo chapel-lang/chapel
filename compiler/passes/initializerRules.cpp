@@ -148,13 +148,19 @@ InitBody getInitCall (Expr* expr) {
           if (CallExpr* subject = toCallExpr(inner->get(1))) {
             if (storesThisTop(subject->get(1))) {
               if (storesSpecificName(subject->get(2), "super")) {
-                // The expr is a "(this.)super.init()" call
+                // The expr is a "this.super.init()" call
                 return FOUND_SUPER_INIT;
               }
             }
           } else if (storesThisTop(inner->get(1))) {
             // The expr is a "this.init()" call
             return FOUND_THIS_INIT;
+          } else if (UnresolvedSymExpr* us = toUnresolvedSymExpr(inner->get(1))) {
+            if (strcmp(us->unresolved, "super") == 0) {
+              // The expr is a "super.init()" call, likely on a record as
+              // records don't recognize "super".
+              return FOUND_SUPER_INIT;
+            }
           }
         }
       }
@@ -534,6 +540,10 @@ static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
                                       new SymExpr(tmp),
                                       new CallExpr(PRIM_INIT,
                                                    field->exprType->copy())));
+
+      if (field->sym->hasFlag(FLAG_PARAM) == true) {
+        tmp->addFlag(FLAG_PARAM);
+      }
 
       newInit->insertAtTail(new SymExpr(tmp));
     }

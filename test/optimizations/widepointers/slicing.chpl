@@ -7,7 +7,7 @@ proc main() {
   // type to be a wide pointer.
   for a in A[1..n/2] do a = 2;
 
-  writeln("A is wide pointer? ", __primitive("is wide pointer", A));
+  writeln("A is wide pointer? ", __primitive("is wide pointer", A._value));
 
   writeln("SUCCESS");
 }
