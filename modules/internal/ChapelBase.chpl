@@ -286,11 +286,11 @@ module ChapelBase {
   inline proc *(param a: uint(?w), param b: uint(w)) param return __primitive("*", a, b);
 
   inline proc /(param a: int(?w), param b: int(w)) param {
-    if b == 0 then compilerError("param divide by zero");
+    if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
   inline proc /(param a: uint(?w), param b: uint(w)) param {
-    if b == 0 then compilerError("param divide by zero");
+    if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
 
@@ -1264,9 +1264,15 @@ module ChapelBase {
   }
 
   inline proc /=(ref lhs:int(?w), rhs:int(w)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
   inline proc /=(ref lhs:uint(?w), rhs:uint(w)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
   inline proc /=(ref lhs:real(?w), rhs:real(w)) {
@@ -1440,6 +1446,12 @@ module ChapelBase {
   }
   inline proc /(a: uint(64), param b: uint(64)) {
     if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline proc /(param a: uint(64), b: uint(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
 
