@@ -274,7 +274,7 @@ users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
 # suite: Elegance
 studies/elegance/elegance.graph
-# suite: Scalar Performance
+# suite: Serial Performance
 patterns/prime_generator/prime.graph
 statements/lydia/forCompare.graph
 statements/lydia/whileCompare.graph
@@ -305,6 +305,5 @@ statements/lydia/ifVersusSelect.alternates.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
-
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
