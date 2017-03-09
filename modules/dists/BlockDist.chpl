@@ -431,11 +431,11 @@ proc Block.Block(param rank = 1,
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, Locales);
 
-  writeln("bounding box size = ", boundingBox.size);
+  //  writeln("bounding box size = ", boundingBox.size);
   if (boundingBox.size != 0) then
     chpl__setupBoundingBoxLocalDescs();
   else {
-    writeln("deferring setup");
+    //    writeln("deferring setup");
     deferredSetup = true;
   }
 
@@ -473,11 +473,11 @@ proc Block.Block(boundingBox: domain,
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
-  writeln("bounding box size = ", boundingBox.size);
+  //  writeln("bounding box size = ", boundingBox.size);
   if (boundingBox.size != 0) then
     chpl__setupBoundingBoxLocalDescs();
   else {
-    writeln("deferring setup");
+    //    writeln("deferring setup");
     deferredSetup = true;
   }
 
@@ -974,7 +974,7 @@ proc BlockDom.dsiSetIndices(x: domain) {
   if x._value.idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   if (dist.deferredSetup) {
-    writeln("Doing deferred setup A");
+    //    writeln("Doing deferred setup A");
     this.boundingBox = x: domain(rank, idxType, stridable=false);
     chpl__setupBoundingBoxLocalDescs();
     this.setup();
@@ -998,19 +998,19 @@ proc BlockDom.dsiSetIndices(x) {
   //
   whole.setIndices(x);
   if (dist.deferredSetup) {
-    writeln("Doing deferred setup B");
+    //    writeln("Doing deferred setup B");
     dist.boundingBox = whole: domain(rank, idxType, stridable=false);
     dist.chpl__setupBoundingBoxLocalDescs();
     _reprivatize(dist);
     dist.deferredSetup=false;
   }
-  writeln(dist.targetLocDom);
+  //  writeln(dist.targetLocDom);
   setup();
   if debugBlockDist {
     writeln("Setting indices of Block domain:");
     dsiDisplayRepresentation();
   }
-  writeln("Returning from dsiSetIndices");
+  //  writeln("Returning from dsiSetIndices");
 }
 
 proc BlockDom.dsiGetIndices() {
