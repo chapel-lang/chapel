@@ -1,8 +1,8 @@
 config param testParamCases = 0;
-config const num = 10,
-             unum = 10: uint,
-             denom = 0,
-             udenom = 0: uint;
+config var num = 10,
+           unum = 10: uint,
+           denom = 0,
+           udenom = 0: uint;
 
 config const testExecCases = 0;
 
@@ -23,3 +23,9 @@ if testExecCases == 0 then
 
 if testExecCases == 1 then
   writeln(unum/udenom);
+
+if testExecCases == 2 then
+  num /= denom;
+
+if testExecCases == 3 then
+  unum /= udenom;

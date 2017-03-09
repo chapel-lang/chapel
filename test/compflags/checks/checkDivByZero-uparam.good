@@ -1,1 +1,1 @@
-checkDivByZero.chpl:19: error: param divide by zero
+checkDivByZero.chpl:19: error: Attempt to divide by zero
