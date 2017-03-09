@@ -1494,7 +1494,7 @@ void  ContextCallExpr::getCalls(CallExpr*& refCall,
     valueCall = toCallExpr(options.get(2));
     refCall = toCallExpr(options.get(3));
   } else {
-    INT_ASSERT(0 && "Bad ContextCallExpr options");
+    INT_FATAL("Bad ContextCallExpr options");
   }
 }
 
