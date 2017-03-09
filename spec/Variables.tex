@@ -35,7 +35,6 @@ variable-declaration-list:
 variable-declaration:
   identifier-list type-part[OPT] initialization-part
   identifier-list type-part no-initialization-part[OPT]
-  array-alias-declaration
 
 type-part:
   : type-specifier
@@ -106,9 +105,6 @@ and/or \sntx{type-part} is defined in~\rsec{Multiple_Variable_Declarations}.
 
 Multiple variables can be grouped together using a tuple notation as
 described in~\rsec{Variable_Declarations_in_a_Tuple}.
-
-The \sntx{array-alias-declaration} is defined
-in~\rsec{Array_Aliases}.
 
 \subsection{Default Initialization}
 \label{Default_Values_For_Types}
