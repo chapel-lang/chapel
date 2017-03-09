@@ -977,6 +977,7 @@ proc BlockDom.dsiSetIndices(x: domain) {
     writeln("Doing deferred setup A");
     this.boundingBox = x: domain(rank, idxType, stridable=false);
     chpl__setupBoundingBoxLocalDescs();
+    this.setup();
     dist.deferredSetup=false;
   }
   whole = x;
@@ -1000,6 +1001,7 @@ proc BlockDom.dsiSetIndices(x) {
     writeln("Doing deferred setup B");
     dist.boundingBox = whole: domain(rank, idxType, stridable=false);
     dist.chpl__setupBoundingBoxLocalDescs();
+    _reprivatize(dist);
     dist.deferredSetup=false;
   }
   writeln(dist.targetLocDom);
