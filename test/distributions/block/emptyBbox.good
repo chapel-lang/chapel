@@ -1,1 +1,1 @@
-emptyBbox.chpl:4: error: halt reached - The boundingBox argument to Block() must be non-empty
+emptyBbox.chpl:4: error: halt reached - Block() requires a non-empty boundingBox

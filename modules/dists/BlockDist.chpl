@@ -438,7 +438,7 @@ proc Block.Block(boundingBox: domain,
     compilerError("CSR layout is only supported for 2 dimensional domains");
 
   if boundingBox.size == 0 then
-    halt("The boundingBox argument to Block() must be non-empty");
+    halt("Block() requires a non-empty boundingBox");
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
