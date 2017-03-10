@@ -164,12 +164,19 @@ symExprIsSetByUse(SymExpr* use) {
 static
 bool symExprIsUsedAsConstRef(SymExpr* use) {
   if (CallExpr* call = toCallExpr(use->parentExpr)) {
-      if (call->isResolved()) {
+      if (FnSymbol* calledFn = call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
 
-        // use const-ref-return if passing to const ref formal
-        if (formal->intent == INTENT_CONST_REF)
+        // generally, use const-ref-return if passing to const ref formal
+        if (formal->intent == INTENT_CONST_REF) {
+          // but make an exception for initCopy calls
+          if (calledFn->hasFlag(FLAG_INIT_COPY_FN))
+            return false;
+
+          // TODO: tuples of types with blank intent
+          // being 'in' should perhaps use the value version.
           return true;
+        }
 
       } else if (call->isPrimitive(PRIM_RETURN) ||
                  call->isPrimitive(PRIM_YIELD)) {
@@ -512,7 +519,7 @@ void transitivelyMarkNotConst(GraphNode node, /* sym, index */
 }
 
 static
-bool isChplIterOrLoopIterator(Symbol* sym)
+bool isChplIterOrLoopIterator(Symbol* sym, ForLoop*& loop)
 {
   if (sym->hasFlag(FLAG_CHPL__ITER))
     return true;
@@ -526,16 +533,23 @@ bool isChplIterOrLoopIterator(Symbol* sym)
     // Check if checkSym is used in a SymExpr in ForLoop
     for_SymbolSymExprs(se, checkSym) {
       if (ForLoop* forLoop = toForLoop(se->parentExpr))
-        if (forLoop->iteratorGet()->symbol() == checkSym)
+        if (forLoop->iteratorGet()->symbol() == checkSym) {
+          loop = forLoop;
           return true;
+        }
 
-      if (checkSym->hasFlag(FLAG_EXPR_TEMP) &&
-          checkSym->type->symbol->hasFlag(FLAG_TUPLE)) {
+      if ((checkSym->hasFlag(FLAG_EXPR_TEMP) &&
+           checkSym->type->symbol->hasFlag(FLAG_TUPLE))
+          || checkSym->type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
         // Check for normalized form of this code
         //   sym = build_tuple(...)
         //   _iterator = _getIteratorZip( sym )
-        // in that case, we want to consider sym to be like a
-        // variable marked with FLAG_CHPL__ITER.
+        // or
+        //   sym = _getIterator(...)
+        //   _iterator = build_tuple( ... sym ... )
+        //
+        // in that case, we want to continue until we find the
+        // iterator variable.
         if (CallExpr* parentCall = toCallExpr(se->parentExpr))
           if (CallExpr* move = toCallExpr(parentCall->parentExpr))
             if (move->isPrimitive(PRIM_MOVE))
@@ -567,20 +581,23 @@ bool isChplIterOrLoopIterator(Symbol* sym)
   return false;*/
 }
 
+/*
 static
 bool inBuildTupleForChplIter(SymExpr* se)
 {
+  ForLoop* loop = NULL;
   if (CallExpr* maybeBuildTuple = toCallExpr(se->parentExpr))
     if (CallExpr* maybeMove = toCallExpr(maybeBuildTuple->parentExpr))
       if (FnSymbol* maybeBuildTupleFn = maybeBuildTuple->isResolved())
         if (maybeBuildTupleFn->hasFlag(FLAG_BUILD_TUPLE))
           if (maybeMove->isPrimitive(PRIM_MOVE)) {
             SymExpr* lhs = toSymExpr(maybeMove->get(1));
-            if (isChplIterOrLoopIterator(lhs->symbol()))
+            if (isChplIterOrLoopIterator(lhs->symbol(), loop))
               return true;
           }
   return false;
 }
+*/
 
 // Get the non-fast-follower Follower
 static
@@ -609,12 +626,16 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
 
 struct IteratorDetails {
   Expr*     iterable;
+  int       iterableTupleElement; // if != 0, iterable(idx) is the iterable
   Symbol*   index;
+  int       indexTupleElement; // if != 0, index(idx) is the index
   Type*     iteratorClass;
   FnSymbol* iterator;
 
   IteratorDetails()
-    : iterable(NULL), index(NULL), iteratorClass(NULL), iterator(NULL)
+    : iterable(NULL), iterableTupleElement(0),
+      index(NULL), indexTupleElement(0),
+      iteratorClass(NULL), iterator(NULL)
   {
   }
 };
@@ -692,6 +713,16 @@ void findZipperedIndexVariables(Symbol* index, std::vector<IteratorDetails>&
     }
   }
 
+  // Set any detailsVector[i].index we didn't figure out to
+  // the index variable's tuple element.
+  if (index->type->symbol->hasFlag(FLAG_TUPLE)) {
+    for(size_t i = 0; i < detailsVector.size(); i++) {
+      if (detailsVector[i].index == NULL) {
+        detailsVector[i].index = index;
+        detailsVector[i].indexTupleElement = i+1;
+      }
+    }
+  }
 }
 
 // TODO -- move this and related code to ForLoop.cpp
@@ -706,7 +737,7 @@ When considering zippered iteration, detailsVector contains details of
 the individually zippered iterations.
 
 When considering non-zippered iteration, detailsVector contains exactly
-one element. It storesinformation
+one element. It stores information
 about the loop. In leader/follower loops, it contains information about
 the follower loop.
 
@@ -741,8 +772,6 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
 
   Symbol* iterator = forLoop->iteratorGet()->symbol();
-  bool zippered = forLoop->zipperedGet() &&
-                  iterator->type->symbol->hasFlag(FLAG_TUPLE);
 
   // find the variable marked with "chpl__iter" variable
   // in the loop header.
@@ -762,6 +791,10 @@ void gatherLoopDetails(ForLoop*  forLoop,
   }
 
   bool forall = (chpl_iter != NULL);
+  bool zippered = forLoop->zipperedGet() &&
+                  (iterator->type->symbol->hasFlag(FLAG_TUPLE) ||
+                   (chpl_iter != NULL &&
+                    chpl_iter->type->symbol->hasFlag(FLAG_TUPLE)));
 
   isForall = forall;
   detailsVector.clear();
@@ -811,6 +844,22 @@ void gatherLoopDetails(ForLoop*  forLoop,
       //   _iterator = _getIteratorZip(call_tmp)
       //
 
+      // This case doesn't correctly handle
+      //
+      // for (a,b) in zip( (...tup) )
+
+      // which looks like
+      //   _iterator = _getIteratorZip(tup)
+      //
+      // in which case we can't find the _build_tuple call.
+
+      // TODO --
+      // what does
+      //   for (a,b) in zip(tup) actually do?
+      //     it seems to be accessing array fields vs. tuple elements
+      //     -> it doesn't seem to actually work correctly
+
+      SymExpr* tupleIterator = NULL;
       SymExpr* def = iterator->getSingleDef();
       CallExpr* move = toCallExpr(def->parentExpr);
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
@@ -818,41 +867,63 @@ void gatherLoopDetails(ForLoop*  forLoop,
       INT_ASSERT(call);
       FnSymbol* calledFn = call->isResolved();
       if (!calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
+        // expecting call is e.g. _getIteratorZip
         SymExpr* otherSe = toSymExpr(call->get(1));
         INT_ASSERT(otherSe);
         SymExpr* otherDef = otherSe->symbol()->getSingleDef();
-        CallExpr* otherMove = toCallExpr(otherDef->parentExpr);
-        INT_ASSERT(otherMove && otherMove->isPrimitive(PRIM_MOVE));
-        call = toCallExpr(otherMove->get(2));
+        if (otherDef) {
+          CallExpr* otherMove = toCallExpr(otherDef->parentExpr);
+          INT_ASSERT(otherMove && otherMove->isPrimitive(PRIM_MOVE));
+          call = toCallExpr(otherMove->get(2));
+        } else {
+          call = NULL;
+          tupleIterator = otherSe;
+        }
       }
       CallExpr* buildTupleCall = call;
-      FnSymbol* buildTupleFn = buildTupleCall->isResolved();
-      INT_ASSERT(buildTupleFn->hasFlag(FLAG_BUILD_TUPLE));
+      FnSymbol* buildTupleFn = NULL;
+      if (buildTupleCall)
+        buildTupleFn = buildTupleCall->isResolved();
 
-      // build up the detailsVector
-      for_actuals(actual, buildTupleCall) {
-        SymExpr* actualSe = toSymExpr(actual);
-        INT_ASSERT(actualSe); // otherwise not normalized
-        // Find the single definition of actualSe->var to find
-        // the call to _getIterator.
-        Expr* iterable = NULL;
-        if (actualSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
-          Symbol* tmpStoringGetIterator = actualSe->symbol();
-          SymExpr* def = tmpStoringGetIterator->getSingleDef();
-          CallExpr* move = toCallExpr(def->parentExpr);
-          CallExpr* getIterator = toCallExpr(move->get(2));
-          // The argument to _getIterator is the iterable
-          iterable = getIterator->get(1);
-        } else {
-          iterable = actualSe;
+      if (buildTupleFn && buildTupleFn->hasFlag(FLAG_BUILD_TUPLE)) {
+
+        // build up the detailsVector
+        for_actuals(actual, buildTupleCall) {
+          SymExpr* actualSe = toSymExpr(actual);
+          INT_ASSERT(actualSe); // otherwise not normalized
+          // Find the single definition of actualSe->var to find
+          // the call to _getIterator.
+          Expr* iterable = NULL;
+          if (actualSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
+            Symbol* tmpStoringGetIterator = actualSe->symbol();
+            SymExpr* def = tmpStoringGetIterator->getSingleDef();
+            CallExpr* move = toCallExpr(def->parentExpr);
+            CallExpr* getIterator = toCallExpr(move->get(2));
+            // The argument to _getIterator is the iterable
+            iterable = getIterator->get(1);
+          } else {
+            iterable = actualSe;
+          }
+          IteratorDetails details;
+          details.iterable = iterable;
+
+          detailsVector.push_back(details);
         }
-        IteratorDetails details;
-        details.iterable = iterable;
-        details.index = NULL; // set below
-        details.iteratorClass = NULL;
-        details.iterator = NULL;
+      } else {
+        // Can't find build_tuple call, so fall back on
+        // storing tuple elements in iterator details.
+        AggregateType* tupleItType = toAggregateType(tupleIterator->typeInfo());
+        if (tupleItType->symbol->hasFlag(FLAG_TUPLE)) {
+          int i = 0;
+          for_fields(field, tupleItType) {
+            IteratorDetails details;
+            details.iterable = tupleIterator;
+            details.iterableTupleElement = i+1;
+            detailsVector.push_back(details);
 
-        detailsVector.push_back(details);
+            i++;
+          }
+        }
       }
 
       // Figure out iterator class of zippered followers from
@@ -997,6 +1068,23 @@ void gatherLoopDetails(ForLoop*  forLoop,
       return;
     }
   }
+}
+
+
+static
+bool isRefOrTupleWithRef(Symbol* index, int tupleElement)
+{
+  if (index->isRef()) return true;
+
+  if (tupleElement > 0 &&
+      index->type->symbol->hasFlag(FLAG_TUPLE)) {
+    AggregateType* at = toAggregateType(index->type);
+    Symbol* field = at->getField(tupleElement);
+    if (field->isRef())
+      return true;
+  }
+
+  return false;
 }
 
 //
@@ -1149,15 +1237,129 @@ void cullOverReferences() {
 
     for_SymbolSymExprs(se, sym) {
 
+      // Check several cases that might require other other
+      // information to resolve. These can be added to the revisitGraph.
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
+
+        // Check if sym is iterated over. In that case, what's the
+        // index variable?
+        //
+        // It's important that this case run before the check
+        // for build_tuple.
+        {
+          // Find enclosing PRIM_MOVE
+          CallExpr* move = toCallExpr(se->parentExpr->getStmtExpr());
+          if (!move->isPrimitive(PRIM_MOVE))
+            move = NULL;
+
+          if (move != NULL) {
+            // Now, LHS of PRIM_MOVE is iterator variable
+            SymExpr* lhs = toSymExpr(move->get(1));
+            Symbol* iterator = lhs->symbol();
+            ForLoop* forLoop = NULL;
+
+            // marked with chpl__iter or with type iterator class?
+            if (isChplIterOrLoopIterator(iterator, forLoop)) {
+
+              // Scroll through exprs until we find ForLoop
+
+              if (!forLoop) {
+                Expr* e = move;
+                while (e && !isForLoop(e)) {
+                  e = e->next;
+                }
+                forLoop = toForLoop(e);
+              }
+
+              if (forLoop) {
+                // Gather the loop details to understand the
+                // correspondence between what was iterated over
+                // and the index variables.
+
+                bool isForall = false;
+                IteratorDetails leaderDetails;
+                ForLoop* followerForLoop = NULL;
+                std::vector<IteratorDetails> detailsVector;
+
+                /*
+                printf("print working on node %i %i\n",
+                       node.variable->id, node.fieldIndex);
+                
+                printf("for iterator %i\n", iterator->id);
+
+                */
+
+                gatherLoopDetails(forLoop, isForall, leaderDetails,
+                                  followerForLoop, detailsVector);
+
+                bool handled = false;
+
+                for (size_t i = 0; i < detailsVector.size(); i++) {
+                  bool iteratorYieldsConstWhenConstThis = false;
+
+                  Expr* iterable = detailsVector[i].iterable;
+                  int iterableTupleElement = detailsVector[i].iterableTupleElement;
+                  Symbol* index = detailsVector[i].index;
+                  int indexTupleElement = detailsVector[i].indexTupleElement;
+                  FnSymbol* iteratorFn  = detailsVector[i].iterator;
+                  SymExpr* iterableSe = toSymExpr(iterable);
+
+                  /*
+                  printf("  i %i\n", (int) i);
+                  printf("  iterable %i %i\n", iterableSe->symbol()->id, iterableTupleElement);
+                  printf("  index %i %i\n", index->id, indexTupleElement);
+                   */
+
+
+                  // In the future this could be based upon ref-pair
+                  // iterators.
+                  // For now, the compiler makes this adjustment for
+                  // any iterator methods on array implementation classes.
+                  // The goal here is that iterating over an array
+                  // and modifying the index variable should make us
+                  // consider the array to be "set".
+                  if (iteratorFn->isMethod() &&
+                      isArrayClass(iteratorFn->getFormal(1)->type))
+                      iteratorYieldsConstWhenConstThis = true;
+
+                  // Note, if we wanted to use the return intent
+                  // of the iterator, it is overwritten in protoIteratorClass.
+
+                  // This flag should be set for array iteration
+                  if (iterableSe &&
+                      iterableSe->symbol() == sym &&
+                      (iterableTupleElement == 0 || iterableTupleElement ==
+                        node.fieldIndex) &&
+                      iteratorYieldsConstWhenConstThis &&
+                      index &&
+                      isRefOrTupleWithRef(index, indexTupleElement)) {
+                    // Now the const-ness of the array depends
+                    // on whether or not the yielded value is set
+
+                    GraphNode srcNode = makeNode(index, indexTupleElement);
+                    collectedSymbols.push_back(srcNode);
+                    revisit = true;
+		    addDependency(revisitGraph, srcNode, node);
+                    handled = true;
+                    //break;
+                  }
+                }
+
+                if (handled)
+                  continue; // continue outer loop
+              }
+            }
+          }
+        }
+
         if (FnSymbol* calledFn = call->isResolved()) {
           if (calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
             // Workaround for inaccurate tuple analysis: exclude the
             // _build_tuple call with a LHS that is setting a
             // chpl__iter variable.
-            if (inBuildTupleForChplIter(se)) {
-              continue;
-            }
+            //if (inBuildTupleForChplIter(se)) {
+            //  continue;
+            //}
 
             if (CallExpr* move = toCallExpr(call->parentExpr)) {
               if (move->isPrimitive(PRIM_MOVE) &&
@@ -1200,12 +1402,7 @@ void cullOverReferences() {
             }
           }
         }
-      }
 
-
-      // Check several cases that might require other other
-      // information to resolve. These can be added to the revisitGraph.
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
         // check for the case that sym is passed a ContextCall
         // and the determination depends on which branch is chosen.
         if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
@@ -1223,90 +1420,6 @@ void cullOverReferences() {
             GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
             addDependency(revisitGraph, srcNode, node);
             continue; // move on to the next iteration
-          }
-        }
-
-        // Check if sym is iterated over. In that case, what's the
-        // index variable?
-        {
-          // Find enclosing PRIM_MOVE
-          CallExpr* move = toCallExpr(se->parentExpr->getStmtExpr());
-          if (!move->isPrimitive(PRIM_MOVE))
-            move = NULL;
-
-          if (move != NULL) {
-            // Now, LHS of PRIM_MOVE is iterator variable
-            SymExpr* lhs = toSymExpr(move->get(1));
-            Symbol* iterator = lhs->symbol();
-
-            // marked with chpl__iter or with type iterator class?
-            if (isChplIterOrLoopIterator(iterator)) {
-
-              // Scroll through exprs until we find ForLoop
-              Expr* e = move;
-              while (e && !isForLoop(e)) {
-                e = e->next;
-              }
-
-              if (ForLoop* forLoop = toForLoop(e)) {
-                // Gather the loop details to understand the
-                // correspondence between what was iterated over
-                // and the index variables.
-
-                bool isForall = false;
-                IteratorDetails leaderDetails;
-                ForLoop* followerForLoop = NULL;
-                std::vector<IteratorDetails> detailsVector;
-
-                gatherLoopDetails(forLoop, isForall, leaderDetails,
-                                  followerForLoop, detailsVector);
-
-                bool handled = false;
-
-                for (size_t i = 0; i < detailsVector.size(); i++) {
-                  bool iteratorYieldsConstWhenConstThis = false;
-
-                  Expr* iterable = detailsVector[i].iterable;
-                  Symbol* index = detailsVector[i].index;
-                  FnSymbol* iteratorFn  = detailsVector[i].iterator;
-                  SymExpr* iterableSe = toSymExpr(iterable);
-
-                  // In the future this could be based upon ref-pair
-                  // iterators.
-                  // For now, the compiler makes this adjustment for
-                  // any iterator methods on array implementation classes.
-                  // The goal here is that iterating over an array
-                  // and modifying the index variable should make us
-                  // consider the array to be "set".
-                  if (iteratorFn->isMethod() &&
-                      isArrayClass(iteratorFn->getFormal(1)->type))
-                      iteratorYieldsConstWhenConstThis = true;
-
-                  // Note, if we wanted to use the return intent
-                  // of the iterator, it is overwritten in protoIteratorClass.
-
-                  // This flag should be set for array iteration
-                  if (iterableSe &&
-                      iterableSe->symbol() == sym &&
-                      iteratorYieldsConstWhenConstThis &&
-                      index &&
-                      index->isRef()) {
-                    // Now the const-ness of the array depends
-                    // on whether or not the yielded value is set
-
-                    GraphNode srcNode = makeNode(index, node.fieldIndex);
-                    collectedSymbols.push_back(srcNode);
-                    revisit = true;
-		    addDependency(revisitGraph, srcNode, node);
-                    handled = true;
-                    break;
-                  }
-                }
-
-                if (handled)
-                  continue; // continue outer loop
-              }
-            }
           }
         }
 
@@ -1424,7 +1537,8 @@ void cullOverReferences() {
         if (call->isPrimitive(PRIM_MOVE)) {
           SymExpr* lhs = toSymExpr(call->get(1));
           Symbol* lhsSymbol = lhs->symbol();
-          if (lhsSymbol != sym && lhsSymbol->isRef()) {
+          if (lhsSymbol != sym &&
+              isRefOrTupleWithRef(lhsSymbol, node.fieldIndex)) {
             GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
             collectedSymbols.push_back(srcNode);
             revisit = true;

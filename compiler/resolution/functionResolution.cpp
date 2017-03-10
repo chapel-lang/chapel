@@ -1043,7 +1043,6 @@ isTupleContainingOnlyReferences(Type* t)
   if(t->symbol->hasFlag(FLAG_TUPLE)) {
     bool allRef = true;
     AggregateType* at = toAggregateType(t);
-    std::vector<TypeSymbol*> args;
     int i = 0;
     for_fields(field, at) {
       if (i != 0) { // skip size field
@@ -1057,6 +1056,31 @@ isTupleContainingOnlyReferences(Type* t)
 
   return false;
 }
+
+static bool
+isTupleContainingAnyReferences(Type* t)
+{
+  if(t->symbol->hasFlag(FLAG_TUPLE)) {
+    bool anyRef = false;
+    AggregateType* at = toAggregateType(t);
+    int i = 0;
+    for_fields(field, at) {
+      if (i != 0) { // skip size field
+        if (isReferenceType(field->type))
+          anyRef = true;
+        if (field->type->symbol->hasFlag(FLAG_TUPLE) &&
+            isTupleContainingAnyReferences(field->type))
+          anyRef = true;
+
+      }
+      i++;
+    }
+    return anyRef;
+  }
+
+  return false;
+}
+
 
 static Type*
 getReturnedTupleType(FnSymbol* fn, Type* retType)
@@ -4802,10 +4826,11 @@ static void setConstFlagsAndCheckUponMove(Symbol* lhs, Expr* rhs) {
     // If RHS is this special variable...
     if (rhsSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST)) {
       INT_ASSERT(lhs->hasFlag(FLAG_INDEX_VAR));
+      Type* rhsType = rhsSE->symbol()->type;
       // ... and not of a reference type
       // todo: differentiate based on ref-ness, not _ref type
       // todo: not all const if it is zippered and one of iterators is var
-      if (!isReferenceType(rhsSE->symbol()->type))
+      if (!isReferenceType(rhsType) && !isTupleContainingAnyReferences(rhsType))
        // ... and not an array (arrays are always yielded by reference)
        if (!rhsSE->symbol()->type->symbol->hasFlag(FLAG_ARRAY))
         // ... then mark LHS constant.
