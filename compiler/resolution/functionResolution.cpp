@@ -323,6 +323,7 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
                            std::set<FnSymbol*>* alreadyCalled = NULL);
 
+
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   if (formalIdxToActual.n != 0) formalIdxToActual.clear();
   if (actualIdxToFormal.n != 0) actualIdxToFormal.clear();
@@ -5011,15 +5012,31 @@ static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
 ************************************** | *************************************/
 
 static void resolveInitVar(CallExpr* call) {
-  Expr*   varExpr = call->get(1);
-  Symbol* var     = toSymExpr(varExpr)->symbol();
+  SymExpr* dstExpr = toSymExpr(call->get(1));
+  Symbol*  dst     = dstExpr->symbol();
 
-  if (var->hasFlag(FLAG_NO_COPY) == true)  {
+  SymExpr* srcExpr = toSymExpr(call->get(2));
+  Symbol*  src     = srcExpr->symbol();
+  Type*    srcType = src->type;
+
+  if (dst->hasFlag(FLAG_NO_COPY)                         == true) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
+  } else if (isPrimitiveScalar(srcType)                  == true) {
+    call->primitive = primitives[PRIM_MOVE];
+    resolveMove(call);
+
+  } else if (isNonGenericRecordWithInitializers(srcType) == true) {
+    dst->type = src->type;
+
+    call->setUnresolvedFunction("init");
+    call->insertAtHead(gMethodToken);
+
+    resolveCall(call);
+
   } else {
-    Expr*     initExpr = call->get(2)->remove();
+    Expr*     initExpr = srcExpr->remove();
     CallExpr* initCopy = new CallExpr("chpl__initCopy", initExpr);
 
     call->insertAtTail(initCopy);
@@ -5091,20 +5108,19 @@ static void resolveMove(CallExpr* call) {
   }
 
   if (rhsType == dtVoid) {
-    if (isReturn && (lhs->type == dtVoid || lhs->type == dtUnknown))
-    {
+    if (isReturn && (lhs->type == dtVoid || lhs->type == dtUnknown)) {
       // It is OK to assign void to the return value variable as long as its
       // type is void or is not yet established.
-    }
-    else
-    {
+    } else {
       if (CallExpr* rhsFn = toCallExpr(rhs)) {
         if (FnSymbol* rhsFnSym = rhsFn->isResolved()) {
           USR_FATAL(userCall(call),
-                    "illegal use of function that does not return a value: '%s'",
+                    "illegal use of function that does not "
+                    "return a value: '%s'",
                     rhsFnSym->name);
         }
       }
+
       USR_FATAL(userCall(call),
                 "illegal use of function that does not return a value");
     }
