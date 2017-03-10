@@ -27,8 +27,8 @@ class Child : Parent {
   proc name4 const ref return childName;
 
   // ref + value
-  proc name5 ref return parentName;
-  proc name6 return parentName;
+  proc name5 ref return childName;
+  proc name6 return childName;
 }
 
 
