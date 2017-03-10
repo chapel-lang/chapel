@@ -303,16 +303,17 @@ def _get_test_time(test_case_lines):
             raise ValueError(msg)
     time_line = test_case_lines[time_line_idx]
 
-    pattern = re.compile(' - (?P<time>\d+\.\d+) seconds\]$')
+    pattern = re.compile(' - (?P<time>-?\d+\.\d+) seconds\]$')
     match = pattern.search(time_line)
-    if match is None:
+    if match:
+        time = match.group('time')
+    else:
+        time = '0.0'
         msg = 'Could not find time in: {0}'.format(time_line)
         logging.warn(msg)
         if DEBUG:
             raise ValueError(msg)
-
-    time = match.group('time')
-    return float(time)
+    return max(float(time),0.0)
 
 
 def _get_test_error(test_case_lines):
