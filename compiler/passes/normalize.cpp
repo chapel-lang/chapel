@@ -1600,7 +1600,18 @@ static void normRefVar(DefExpr* defExpr) {
   }
 
   if (SymExpr* sym = toSymExpr(varLocation)) {
-    if (!var->hasFlag(FLAG_CONST) && sym->symbol()->isConstant()) {
+    Symbol* symbol = sym->symbol();
+
+    bool error = (!var->hasFlag(FLAG_CONST) && symbol->isConstant());
+
+    // This is a workaround for the fact tha isConstant for an ArgSymbol with
+    // blank intent and type dtUnknown returns true, but blank intent isn't
+    // necessarily const.
+    if (ArgSymbol* arg = toArgSymbol(symbol))
+      if (arg->intent == INTENT_BLANK && arg->type == dtUnknown)
+        error = false;
+
+    if (error) {
       USR_FATAL_CONT(sym,
                      "Cannot set a non-const reference to a const variable.");
     }

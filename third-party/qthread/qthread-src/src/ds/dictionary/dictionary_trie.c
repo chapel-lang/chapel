@@ -105,7 +105,8 @@ static inline qt_hash qt_hash_create(qt_dict_key_equals_f eq,
 
     assert(tmp);
     tmp->maxspines = getpagesize() / sizeof(spine_element_t *);
-    tmp->spines    = (spine_t **)calloc(tmp->maxspines, sizeof(spine_element_t *));
+    tmp->spines    = (spine_t **) qt_calloc(tmp->maxspines,
+                                            sizeof(spine_element_t *));
 
     return tmp;
 }
@@ -167,7 +168,7 @@ qt_dictionary *qt_dictionary_create(qt_dict_key_equals_f eq,
 static void deallocate_spine(qt_hash h,
                              size_t  id)
 {
-    free((void *)(h->spines[id])); // XXX should be to a memory pool
+    qt_free((void *)(h->spines[id])); // XXX should be to a memory pool
     h->spines[id] = NULL;
     INCR(&h->numspines, -1);
 }
@@ -182,7 +183,7 @@ static size_t allocate_spine(qt_hash   h,
 
     if (newspine_ct >= maxspines) {
         // Need to make more room in the spine-idx array
-        spine_t **spines    = calloc(maxspines * 2, sizeof(spine_t *));
+        spine_t **spines    = qt_calloc(maxspines * 2, sizeof(spine_t *));
         spine_t **oldspines = h->spines;
         spine_t **tmp;
         assert(spines);
@@ -195,7 +196,7 @@ static size_t allocate_spine(qt_hash   h,
         }
         maxspines *= 2;
     }
-    newspine = calloc(1, sizeof(spine_t)); // XXX should be from a memory pool
+    newspine = qt_calloc(1, sizeof(spine_t)); // XXX should be from a memory pool
     assert(newspine);
     for(id = 0; id < maxspines; ++id) {
         if (h->spines[id] == NULL) {
@@ -256,7 +257,7 @@ void qt_dictionary_destroy(qt_hash h)
         for (size_t i = 0; i < h->maxspines; ++i) {
             if (h->spines[i] != NULL) {
                 h->numspines--;
-                free((void *)(h->spines[i])); // XXX should be into a memory pool
+                qt_free((void *)(h->spines[i])); // XXX should be into a memory pool
                 if (h->numspines == 0) { break; }
             }
         }
@@ -310,7 +311,7 @@ void *qt_hash_put_helper(qt_dictionary *h,
     assert(h);
 
     unsigned         bucket    = BASE_SPINE_BUCKET(lkey);
-    hash_entry      *e         = malloc(sizeof(hash_entry));   // XXX: should be from a memory pool
+    hash_entry      *e         = qt_malloc(sizeof(hash_entry));   // XXX: should be from a memory pool
     spine_element_t *child_id  = &(h->base[bucket]);
     spine_element_t  child_val = h->base[bucket];
     spine_element_t *cur_id    = NULL;
@@ -473,7 +474,7 @@ int qt_dictionary_remove(qt_dictionary *h,
                         if (h->op_cleanup != NULL) {
                             h->op_cleanup(child_val.e->key, NULL);
                         }
-                        free(child_val.e);                         // XXX should be into a mempool
+                        qt_free(child_val.e);                         // XXX should be into a mempool
                         // Second, walk back up the parent pointers, removing empty spines (if any)
                         // cur_id is the current spine pointer's location (if its null, we're in the base spine)
                         while (cur_id) {

@@ -21,7 +21,7 @@
 //
 module DefaultRectangular {
   config const dataParTasksPerLocale = 0;
-  config const dataParIgnoreRunningTasks = if CHPL_LOCALE_MODEL=="numa" then true
+  config const dataParIgnoreRunningTasks = if CHPL_LOCALE_MODEL!="flat" then true
                                            else false;
   config const dataParMinGranularity: int = 1;
 
@@ -1755,7 +1755,7 @@ module DefaultRectangular {
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind: idxType ...1)
-    where rank == 1 && !shouldReturnRvalueByConstRef(eltType)
+    where rank == 1 && shouldReturnRvalueByValue(eltType)
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind: idxType ...1) const ref
@@ -1776,7 +1776,7 @@ module DefaultRectangular {
     }
 
     inline proc dsiAccess(ind : rank*idxType)
-    where !shouldReturnRvalueByConstRef(eltType) {
+    where shouldReturnRvalueByValue(eltType) {
       if boundsChecking then
         if !dom.dsiMember(ind) {
           halt("array index out of bounds: " + _stringify_tuple(ind));
@@ -1800,7 +1800,7 @@ module DefaultRectangular {
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i)
-    where !shouldReturnRvalueByConstRef(eltType)
+    where shouldReturnRvalueByValue(eltType)
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i) const ref
@@ -2132,7 +2132,7 @@ module DefaultRectangular {
 
     } else if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
               _isSimpleIoType(arr.eltType) && f.binary() &&
-              isNative && arr.isDataContiguous(dom) && defRectSimpleDData {
+              isNative && arr.isDataContiguous(dom) {
       // If we can, we would like to read/write the array as a single write op
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the
@@ -2160,15 +2160,16 @@ module DefaultRectangular {
         for chunk in 0..#arr.mdNumChunks {
           if arr.mData(chunk).pdr.length >= 0 {
             const src = arr.theDataChunk(chunk);
+            const newLow = max(arr.mData(chunk).pdr.low, indLo);
             if isTuple(indLo) then
-              indLo(arr.mdParDim) = arr.mData(chunk).pdr.low;
+              indLo(arr.mdParDim) = newLow;
             else
-              indLo = arr.mData(chunk).pdr.low;
+              indLo = newLow;
             const (_, idx) = arr.getDataIndex(indLo);
             const blkLen = if arr.mdParDim == arr.rank
                            then 1
                            else arr.blk(arr.mdParDim) / arr.blk(arr.mdParDim+1);
-            const len = arr.mData(chunk).pdr.length * blkLen;
+            const len = dom.dsiDim(arr.mdParDim)[arr.mData(chunk).pdr].length * blkLen;
             const size = len:ssize_t*elemSize:ssize_t;
             if f.writing {
               f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);

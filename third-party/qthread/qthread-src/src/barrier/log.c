@@ -76,18 +76,18 @@ void API_FUNC qt_barrier_destroy(qt_barrier_t *b)
     assert(qthread_library_initialized);
     assert(b);
     if (b->upLock) {
-        free((void *)(b->upLock));
+        qt_free((void *)(b->upLock));
     }
     if (b->downLock) {
-        free((void *)(b->downLock));
+        qt_free((void *)(b->downLock));
     }
-    free(b);
+    qt_free(b);
 }                                      /*}}} */
 
 qt_barrier_t API_FUNC *qt_barrier_create(size_t           size,
                                          qt_barrier_btype type)
 {                                      /*{{{ */
-    qt_barrier_t *b = calloc(1, sizeof(qt_barrier_t));
+    qt_barrier_t *b = qt_calloc(1, sizeof(qt_barrier_t));
 
     qthread_debug(BARRIER_CALLS, "size(%i), type(%i), debug(%i): begin\n", size,
                   (int)type, debug);
@@ -141,10 +141,10 @@ static void qtb_internal_initialize_fixed(qt_barrier_t *b,
     b->allocatedSize = (2 << depth);
 
     // allocate and init upLock and downLock arrays
-    b->upLock   = calloc(b->allocatedSize, sizeof(syncvar_t));
-    b->downLock = calloc(b->allocatedSize, sizeof(syncvar_t));
-    //    b->upLock = calloc(b->allocatedSize, sizeof(int64_t));
-    //    b->downLock = calloc(b->allocatedSize, sizeof(int64_t));
+    b->upLock   = qt_calloc(b->allocatedSize, sizeof(syncvar_t));
+    b->downLock = qt_calloc(b->allocatedSize, sizeof(syncvar_t));
+    //    b->upLock = qt_calloc(b->allocatedSize, sizeof(int64_t));
+    //    b->downLock = qt_calloc(b->allocatedSize, sizeof(int64_t));
 
     for (size_t i = 0; i < b->activeSize; i++) {
         b->upLock[i] = SYNCVAR_EMPTY_INITIALIZER;

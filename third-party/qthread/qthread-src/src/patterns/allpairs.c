@@ -242,7 +242,7 @@ static void qt_allpairs_internal(const qarray             *array1,
     assert(array2);
 
 #ifdef QTHREAD_TRACK_DISTANCES
-    distances = calloc(max_i, sizeof(struct cacheline_s));
+    distances = qt_calloc(max_i, sizeof(struct cacheline_s));
     assert(distances != NULL);
 #endif
 #ifdef QTHREAD_USE_HALFWAYARRAY
@@ -251,12 +251,12 @@ static void qt_allpairs_internal(const qarray             *array1,
     // stolen_work = 0;
     // stealing_penalty = 0;
     if (halfway == NULL) {
-        qthread_shepherd_id_t *equivs = calloc(max_i, sizeof(qthread_shepherd_id_t));
-        halfway = calloc(max_i, sizeof(qthread_shepherd_id_t *));
-        // halfway_dist = calloc(max_i, sizeof(unsigned int*));
+        qthread_shepherd_id_t *equivs = qt_calloc(max_i, sizeof(qthread_shepherd_id_t));
+        halfway = qt_calloc(max_i, sizeof(qthread_shepherd_id_t *));
+        // halfway_dist = qt_calloc(max_i, sizeof(unsigned int*));
         for (int s = 0; s < max_i; s++) {
-            halfway[s] = calloc(max_i, sizeof(qthread_shepherd_id_t));
-            // halfway_dist[s] = calloc(max_i, sizeof(unsigned int));
+            halfway[s] = qt_calloc(max_i, sizeof(qthread_shepherd_id_t));
+            // halfway_dist[s] = qt_calloc(max_i, sizeof(unsigned int));
             for (int d = 0; d < max_i; d++) {
                 /* halfway[s][d] is the shep id with the lowest total distance to both */
                 unsigned int equiv_cnt = 0;

@@ -104,10 +104,14 @@ third-party-try-gmp: FORCE
 	fi
 
 third-party-test-venv: FORCE
-	cd third-party && $(MAKE) test-venv
+	-@if [ -z "$$CHPL_TEST_VENV_DIR" ]; then \
+	cd third-party && $(MAKE) test-venv; \
+	fi
 
 third-party-chpldoc-venv: FORCE
-	cd third-party && $(MAKE) chpldoc-venv
+	-@if [ -z "$$CHPL_TEST_VENV_DIR" ]; then \
+	cd third-party && $(MAKE) chpldoc-venv; \
+	fi
 
 test-venv: third-party-test-venv
 

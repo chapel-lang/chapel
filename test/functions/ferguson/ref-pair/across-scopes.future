@@ -1,0 +1,18 @@
+semantic: should ref-pairs be allowed across scopes?
+
+After PR #5561, the behavior of this program changed, because const ref
+vs value return is now included in ref-pair calculations in
+resolveNormalCall. However, the issue started with the first versions of
+ref-pair support in the compiler.
+
+The question is - if normal resolution rules would select the ref/const
+ref/value version in preference to the other version, should that always
+be used? Should ref-pair behavior only be triggered if there would
+otherwise be an ambiguity? It's not currently the case as this test
+demonstrates.
+
+One reason the answer to this question isn't entirely obvious is that
+generic functions with a matching `where` clause are normally selected in
+favor of generic functions without a `where` clause. That pattern comes
+up in the array accessor methods, where the `ref` return version does not
+have a `where` clause but the value or const ref return versions do.

@@ -27,6 +27,7 @@
 #ifndef _tasks_qthreads_h_
 #define _tasks_qthreads_h_
 
+#include "chpl-locale-model.h"
 #include "chpl-tasks-prvdata.h"
 #include "chpltypes.h"
 
@@ -155,6 +156,21 @@ static inline chpl_task_prvData_t* chpl_task_getPrvData(void)
 //
 // Sublocale support
 //
+#ifdef CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL
+#error "CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL 1
+#endif
+static inline
+c_sublocid_t chpl_task_getRequestedSubloc(void)
+{
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
+    if (data) {
+        return data->bundle->requestedSubloc;
+    }
+    return c_sublocid_any;
+}
+
 #ifdef CHPL_TASK_GETSUBLOC_IMPL_DECL
 #error "CHPL_TASK_GETSUBLOC_IMPL_DECL is already defined!"
 #else
@@ -163,7 +179,8 @@ static inline chpl_task_prvData_t* chpl_task_getPrvData(void)
 static inline
 c_sublocid_t chpl_task_getSubloc(void)
 {
-    return (c_sublocid_t) qthread_shep();
+    return chpl_localeModel_sublocMerge(chpl_task_getRequestedSubloc(),
+                                        (c_sublocid_t) qthread_shep());
 }
 
 #ifdef CHPL_TASK_SETSUBLOC_IMPL_DECL
@@ -172,11 +189,11 @@ c_sublocid_t chpl_task_getSubloc(void)
 #define CHPL_TASK_SETSUBLOC_IMPL_DECL 1
 #endif
 static inline
-void chpl_task_setSubloc(c_sublocid_t subloc)
+void chpl_task_setSubloc(c_sublocid_t full_subloc)
 {
     qthread_shepherd_id_t curr_shep;
 
-    assert(subloc != c_sublocid_none);
+    assert(full_subloc != c_sublocid_none);
 
     // Only change sublocales if the caller asked for a particular one,
     // which is not the current one, and we're a (movable) task.
@@ -191,30 +208,17 @@ void chpl_task_setSubloc(c_sublocid_t subloc)
     //       The code below wouldn't work in that situation.
     if ((curr_shep = qthread_shep()) != NO_SHEPHERD) {
         chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
+        c_sublocid_t execution_subloc =
+          chpl_localeModel_sublocToExecutionSubloc(full_subloc);
         if (data) {
-            data->bundle->requestedSubloc = subloc;
+            data->bundle->requestedSubloc = full_subloc;
         }
 
-        if (subloc != c_sublocid_any &&
-            (qthread_shepherd_id_t) subloc != curr_shep) {
-            qthread_migrate_to((qthread_shepherd_id_t) subloc);
+        if (execution_subloc != c_sublocid_any &&
+            (qthread_shepherd_id_t) execution_subloc != curr_shep) {
+            qthread_migrate_to((qthread_shepherd_id_t) execution_subloc);
         }
     }
-}
-
-#ifdef CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL
-#error "CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL is already defined!"
-#else
-#define CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL 1
-#endif
-static inline
-c_sublocid_t chpl_task_getRequestedSubloc(void)
-{
-    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-    if (data) {
-        return data->bundle->requestedSubloc;
-    }
-    return c_sublocid_any;
 }
 
 //

@@ -296,6 +296,10 @@ CHPL_LOCALE_MODEL
         flat     top-level locales are not further subdivided
         numa     top-level locales are further subdivided into
                  sublocales, each one a NUMA domain
+        knl      a processor-specific locale model for the
+                 self-hosted Xeon Phi (Knight's Landing) which
+                 includes NUMA support and access to the
+                 tightly-coupled high-bandwidth memory
         ======== =============================================
 
    If unset, ``CHPL_LOCALE_MODEL`` defaults to ``flat``.

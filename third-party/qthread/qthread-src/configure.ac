@@ -373,6 +373,11 @@ AC_ARG_WITH([sinc],
                             [Specify the sinc implementation. Options are
                              'donecount' (default), 'donecount_cas', 'snzi', and 'original'.])])
 
+AC_ARG_WITH([alloc],
+          [AS_HELP_STRING([--with-alloc=[[type]]],
+                             [Specify the memory allocator. The only
+                             option is 'base' for now.])])
+
 AC_ARG_WITH([dict],
             [AS_HELP_STRING([--with-dict=[[type]]],
                             [Specify the dictionary implementation. Options are
@@ -702,6 +707,11 @@ AS_IF([test "x$enable_guard_pages" = "xyes"],
       [AC_DEFINE([QTHREAD_GUARD_PAGES], [1], [Use guard pages to detect stack overruns])],
       [enable_guard_pages="no"])
 
+AS_IF([test "x$enable_precache_guard_pages" = "xyes"],
+      [AC_DEFINE([QTHREAD_PRECACHE_GUARD_PAGES], [1], [Precache guard pages in pooled stacks])],
+      [enable_precache_guard_pages="no"])
+
+
 AC_CACHE_SAVE
 
 ## --------------------------- ##
@@ -844,6 +854,14 @@ AS_IF([test "x$with_sinc" = "x"],
 case "$with_sinc" in
  donecount|donecount_cas|snzi|original) ;;
  *) AC_MSG_ERROR([Unknown sinc option]) ;;
+esac
+
+AS_IF([test "x$with_alloc" = "x"],
+      [with_alloc="base"],
+      [])
+case "$with_alloc" in
+ base|chapel) ;;
+ *) AC_MSG_ERROR([Unknown alloc option]) ;;
 esac
 
 AS_IF([test "x$with_barrier" = "x"],
@@ -1053,6 +1071,7 @@ AC_SUBST(EXTRA_DISTCHECK_OPTIONS)
 AC_SUBST(qthread_topo)
 AC_SUBST(with_scheduler)
 AC_SUBST(with_sinc)
+AC_SUBST(with_alloc)
 AC_SUBST(with_dict)
 AC_SUBST(with_barrier)
 AC_SUBST(OPENMP_CFLAGS)
@@ -1071,6 +1090,7 @@ AM_CONDITIONAL([COMPILE_RCRTOOL], [test "x$enable_rcrtool" = "xyes"])
 AM_CONDITIONAL([COMPILE_COMPAT_ATOMIC], [test "x$compile_compat_atomic" = "xyes"])
 AM_CONDITIONAL([COMPILE_SPAWNCACHE], [test "x$enable_spawn_cache" = "xyes"])
 AM_CONDITIONAL([COMPILE_EUREKAS], [test "x$enable_eurekas" = "xyes"])
+AM_CONDITIONAL([HAVE_GUARD_PAGES], [test "x$enable_guard_pages" = "xyes"])
 AM_CONDITIONAL([HAVE_PROG_TIMELIMIT], [test "x$timelimit_path" != "x"])
 AM_CONDITIONAL([COMPILE_MULTINODE], [test "$enable_multinode" = "yes"])
 AM_CONDITIONAL([WANT_SINGLE_WORKER_SCHEDULER], [test "x$with_scheduler" = "xnemesis" -o "x$with_scheduler" = "xlifo" -o "x$with_scheduler" = "xmutexfifo" -o "x$with_scheduler" = "xmtsfifo" -o "x$with_scheduler" = "xmdlifo"])
@@ -1084,7 +1104,8 @@ AC_CONFIG_HEADERS([include/config.h include/qthread/common.h])
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  man/Makefile
-                 man/man3/Makefile
+                
+ man/man3/Makefile
                  include/Makefile
                  include/qthread/Makefile
                  test/Makefile
@@ -1140,6 +1161,7 @@ echo    "    Check alignment: $enable_aligncheck"
 echo    "          Profiling: $enable_profiling"
 echo    "   Debugging Output: $enable_debug"
 echo    "        Guard Pages: $enable_guard_pages"
+echo    "          Precaching: $enable_precache_guard_pages"
 echo    ""
 AS_IF([test "x$enable_pooled_memory" = "xyes"],
       [pool_string="memory"],
@@ -1168,6 +1190,7 @@ AS_IF([test "x$using_mdlifo" = "xyes"],
 echo    "Speed:"
 echo    "          Scheduler: $with_scheduler"
 echo    "         Sinc Style: $with_sinc"
+echo    "        Alloc Style: $with_alloc"
 echo    "      Barrier Style: $with_barrier"
 echo    "   Dictionary Style: $with_dict"
 echo    "    Lazy Thread IDs: $enable_lazy_threadids"
