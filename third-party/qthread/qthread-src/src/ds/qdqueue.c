@@ -5,6 +5,7 @@
 #include <qthread/qthread.h>
 #include <qthread/qlfqueue.h>
 #include <qthread/qdqueue.h>
+#include "qt_alloc.h"
 #include "qt_asserts.h"
 #ifdef HAVE_SYS_LGRP_USER_H
 # include <sys/lgrp_user.h>
@@ -302,7 +303,7 @@ qdqueue_t *qdqueue_create(void)
         maxsheps = qthread_num_shepherds();
     }
     assert(maxsheps > 0);
-    ret = calloc(1, sizeof(struct qdqueue_s));
+    ret = qt_calloc(1, sizeof(struct qdqueue_s));
     qassert_goto((ret != NULL), erralloc_killq);
     ret->Qs = MALLOC(maxsheps * sizeof(struct qdsubqueue_s));
 
@@ -322,7 +323,7 @@ qdqueue_t *qdqueue_create(void)
             ret->Qs[curshep].allsheps     = NULL;
         } else {
             ret->Qs[curshep].allsheps     =
-                calloc((maxsheps - 1), sizeof(struct qdsubqueue_s *));
+                qt_calloc((maxsheps - 1), sizeof(struct qdsubqueue_s *));
         }
         /* yes, I could get this information from qthreads, but I'm adding a
          * little bit of randomnes to the list when the distances are equal */
@@ -333,7 +334,7 @@ qdqueue_t *qdqueue_create(void)
                                           &(ret->Qs[curshep].nNeighbors),
                                           sheparray[curshep]);
         ret->Qs[curshep].ads.heap =
-            calloc(maxsheps, sizeof(struct qdqueue_adheap_elem_s));
+            qt_calloc(maxsheps, sizeof(struct qdqueue_adheap_elem_s));
         ret->Qs[curshep].ads.heap[0].ad.shep = &(ret->Qs[curshep]);
         for (qthread_shepherd_id_t i = 0; i < (maxsheps - 1); i++) {
             ret->Qs[curshep].ads.heap[i + 1].ad.shep =

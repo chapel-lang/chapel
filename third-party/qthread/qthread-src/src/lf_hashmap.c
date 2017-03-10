@@ -338,7 +338,7 @@ qt_hash INTERNAL qt_hash_create(int needSync)
     if (hard_max_buckets == 0) {
         hard_max_buckets = getpagesize() / sizeof(marked_ptr_t);
     }
-    tmp->B = calloc(hard_max_buckets, sizeof(marked_ptr_t));
+    tmp->B = qt_calloc(hard_max_buckets, sizeof(marked_ptr_t));
     assert(tmp->B);
     tmp->size  = 2;
     tmp->count = 0;

@@ -18,7 +18,7 @@
 #include "qt_threadqueues.h"
 #include "qt_debug.h"
 #if defined(UNPOOLED_QUEUES) || defined(UNPOOLED)
-# include "qt_aligned_alloc.h"
+#include "qt_alloc.h"
 #endif
 #ifdef QTHREAD_USE_EUREKAS
 #include "qt_eurekas.h"
@@ -49,7 +49,7 @@ struct _qt_threadqueue {
 # define FREE_THREADQUEUE(t) FREE(t, sizeof(qt_threadqueue_t))
 static QINLINE void ALLOC_TQNODE(qt_threadqueue_node_t **ret)
 {                                      /*{{{ */
-    *ret = (qt_threadqueue_node_t *)qthread_internal_aligned_alloc(sizeof(qt_threadqueue_node_t), 16);
+    *ret = (qt_threadqueue_node_t *) qt_internal_aligned_alloc(sizeof(qt_threadqueue_node_t), 16);
     if (*ret != NULL) {
         memset(*ret, 0, sizeof(qt_threadqueue_node_t));
     }
@@ -58,7 +58,7 @@ static QINLINE void ALLOC_TQNODE(qt_threadqueue_node_t **ret)
 static void FREE_TQNODE(void *p)
 {
     FREE_SCRIBBLE(p, sizeof(qt_threadqueue_node_t));
-    qthread_internal_aligned_free(p, 16);
+    qt_internal_aligned_free(p, 16);
 }
 
 void INTERNAL qt_threadqueue_subsystem_init(void) {}
