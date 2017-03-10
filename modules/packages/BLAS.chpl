@@ -827,15 +827,15 @@ module BLAS {
       A := alpha*x*y'+ A
 
   */
-  proc ger(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType, alpha,
+  proc ger(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType, alpha,
            order : Order = Order.Row,
            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
-           where (Adom.rank == 2) && (vDom.rank == 1)
+           where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
 
     // Determine sizes
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Xdom.dim(1).size : c_int,
+        n = Ydom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);

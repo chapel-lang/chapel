@@ -7,7 +7,7 @@ config const errorThresholdDouble = 1.e-10;
 config const errorThresholdSingle = 1.e-4;
 
 proc printErrors(name: string, passed, failed, tests) {
-  writef("%s : %i PASSED, %i FAILED\n".format(name, passed, failed));
+  writef("%5s : %i PASSED, %i FAILED\n".format(name, passed, failed));
 }
 
 proc trackErrors(name, err, errorThreshold, ref passed, ref failed, ref tests) {

@@ -156,10 +156,10 @@ proc test_syr2() {
 
 
 proc test_tbmv() {
-    //test_tbmv_helper(real(32));
+    test_tbmv_helper(real(32));
     test_tbmv_helper(real(64));
-    //test_tbmv_helper(complex(64));
-    //test_tbmv_helper(complex(128));
+    test_tbmv_helper(complex(64));
+    test_tbmv_helper(complex(128));
 }
 
 
@@ -198,30 +198,27 @@ proc test_gbmv_helper(type t){
   const errorThreshold = blasError(t);
   var name = "%sgbmv".format(blasPrefix(t));
 
-const m = 6,
-      n = 6;
-
-// Simple test
-for kl in 0..#m {
-  for ku in 0..#n {
-    if kl + ku + 1 > n then break;
-
+  // Simple test
+  {
+    // TODO -- work in progress
+    const m = 6,
+          n = 6;
     // Square
     var A : [{0.. #m, 0.. #n}]t,
         X : [{0.. #n}]t,
         Y : [{0.. #m}]t,
         R : [{0.. #m}]t; // Result
 
-    var alpha = 1: t;//rng.getNext();
-    var beta = 2: t;//rng.getNext();
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var alpha = 1: t, //rng.getNext();
+        beta = 2: t;//rng.getNext();
     //var rngint = makeRandomStream(eltType=int,algorithm=RNG.PCG);
     //var kl = rng.getNext(0, min(m, n)) ,
     //    ku = rng.getNext(0, min(m, n)) ;
-    //const kl = 1,
-    //      ku = 2;
+    var kl = 3,
+        ku = 3;
 
-
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
     //rng.fillRandom(A);
     //rng.fillRandom(X);
     //rng.fillRandom(Y);
@@ -241,7 +238,6 @@ for kl in 0..#m {
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
-}
   printErrors(name, passed, failed, tests);
 }
 
@@ -252,6 +248,7 @@ proc test_gemv_helper(type t){
       tests = 0;
   const errorThreshold = blasError(t);
   var name = "%sgemv".format(blasPrefix(t));
+
   // Simple test
   {
     const m = 10 : c_int;
@@ -282,6 +279,104 @@ proc test_gemv_helper(type t){
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
+
+  // Try transposing A
+  {
+    const m = 10 : c_int;
+
+    // Square
+    var A : [{0.. #m, 0.. #m}]t,
+        X : [{0.. #m}]t,
+        Y : [{0.. #m}]t,
+        R : [{0.. #m}]t; // Result
+
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    const alpha = rng.getNext();
+    const beta = rng.getNext();
+
+    // Compute Result vector
+    for i in R.domain {
+      R[i] = beta*Y[i] + alpha*(+ reduce (A[..,i]*X[..]));
+    }
+
+    gemv(A, X, Y, alpha, beta, opA=Op.T);
+
+    var err = max reduce abs(Y-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+  }
+  // Try Hermitian conjugate of A
+  {
+    const m = 10 : c_int;
+
+    // Square
+    var A : [{0.. #m, 0.. #m}]t,
+        X : [{0.. #m}]t,
+        Y : [{0.. #m}]t,
+        R : [{0.. #m}]t; // Result
+
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    const alpha = rng.getNext();
+    const beta = rng.getNext();
+
+    // Compute Result vector
+    for i in R.domain {
+      R[i] = beta*Y[i] + alpha*(+ reduce (conjg(A[..,i])*X[..]));
+    }
+
+    gemv(A, X, Y, alpha, beta, opA=Op.H);
+
+    var err = max reduce abs(Y-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+  }
+
+  // Test leading dimension of array
+  {
+    const m = 10 : c_int,
+          n = 7 : c_int,
+          ld = 20 : c_int;
+
+    // non-square matrix
+    var A : [{0.. #m, 0.. #ld}]t,
+        X : [{0.. #n}]t,
+        Y : [{0.. #m}]t,
+        R : [{0.. #m}]t; // Result
+
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    const alpha = rng.getNext();
+    const beta = rng.getNext();
+
+    // Compute Result vector
+    for i in R.domain {
+      R[i] = beta*Y[i] + alpha*(+ reduce (A[i,0.. #n]*X[..]));
+    }
+
+    gemv(A[.., 0.. #n] , X, Y, alpha, beta, ldA=ld);
+
+    var err = max reduce abs(Y-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+ }
+
   printErrors(name, passed, failed, tests);
 }
 
@@ -314,12 +409,8 @@ proc test_ger_helper(type t){
     const alpha = rng.getNext();
 
     // Precompute result
-    for i in R.domain.dims()[1] {
-      for j in R.domain.dims()[2] {
-        R[i, j] = alpha*X[i]*Y[j];
-      }
-    }
-    R += A;
+    for (i,j) in R.domain do
+      R[i, j] = alpha*X[i]*Y[j] + A[i, j];
 
     ger(A, X, Y, alpha);
 
@@ -327,6 +418,40 @@ proc test_ger_helper(type t){
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
+
+  // Test leading dimension of array
+  {
+
+    const m = 10 : c_int,
+          n = 7 : c_int,
+          ld = 20 : c_int;
+
+    // non-square matrix
+    var A : [{0.. #m, 0.. #ld}]t,
+        X : [{0.. #m}]t,
+        Y : [{0.. #n}]t,
+        R : [{0.. #m, 0..#n}] t; // Result
+
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    const alpha = rng.getNext();
+    const beta = rng.getNext();
+
+    for (i,j) in R.domain do
+      R[i, j] = alpha*X[i]*Y[j] + A[i, j];
+
+    ger(A[.., 0.. #n], X, Y, alpha, ldA=ld);
+
+    var err = max reduce abs(A[.., 0..#n]-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+ }
+
   printErrors(name, passed, failed, tests);
 }
 
@@ -358,18 +483,19 @@ proc test_gerc_helper(type t){
     var alpha = rng.getNext();
 
     // Precompute result
-    for i in R.domain.dims()[1] {
-      for j in R.domain.dims()[2] {
-        R[i, j] = alpha*X[i]*conjg(Y[j]);
-      }
-    }
-    R += A;
+    for (i,j) in R.domain do
+      R[i, j] = alpha*X[i]*conjg(Y[j]) + A[i, j];
 
     gerc(A, X, Y, alpha);
 
     var err = max reduce abs(A-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+  }
+
+  // Test leading dimension of array
+  {
 
   }
   printErrors(name, passed, failed, tests);
@@ -417,6 +543,11 @@ proc test_geru_helper(type t){
 
   }
 
+  // Test leading dimension of array
+  {
+
+  }
+
   printErrors(name, passed, failed, tests);
 }
 
@@ -429,7 +560,7 @@ proc test_hbmv_helper(type t){
   var name = "%shbmv".format(blasPrefix(t));
   // Simple test
   {
-
+    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -480,6 +611,16 @@ proc test_hemv_helper(type t){
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
   }
+
+  // Try Uplo.Lower
+  {
+
+  }
+
+  // Test leading dimension of array
+  {
+
+  }
   printErrors(name, passed, failed, tests);
 }
 
@@ -524,6 +665,16 @@ proc test_her_helper(type t){
     var err = max reduce abs(A-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+  }
+
+  // Try Uplo.Lower
+  {
+
+  }
+
+  // Test leading dimension of array
+  {
 
   }
   printErrors(name, passed, failed, tests);
@@ -572,6 +723,16 @@ proc test_her2_helper(type t){
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
   }
+
+  // Try Uplo.Lower
+  {
+
+  }
+
+  // Test leading dimension of array
+  {
+
+  }
   printErrors(name, passed, failed, tests);
 }
 
@@ -584,7 +745,7 @@ proc test_hpmv_helper(type t){
   var name = "%shpmv".format(blasPrefix(t));
   // Simple test
   {
-
+    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -598,7 +759,7 @@ proc test_hpr_helper(type t){
   var name = "%shpr".format(blasPrefix(t));
   // Simple test
   {
-
+    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -612,7 +773,7 @@ proc test_hpr2_helper(type t){
   var name = "%shpr2".format(blasPrefix(t));
   // Simple test
   {
-
+    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -626,7 +787,7 @@ proc test_sbmv_helper(type t){
   var name = "%ssbmv".format(blasPrefix(t));
   // Simple test
   {
-
+    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -640,7 +801,7 @@ proc test_spmv_helper(type t){
   var name = "%sspmv".format(blasPrefix(t));
   // Simple test
   {
-
+    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -654,7 +815,7 @@ proc test_spr_helper(type t){
   var name = "%sspr".format(blasPrefix(t));
   // Simple test
   {
-
+    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -715,6 +876,16 @@ proc test_symv_helper(type t){
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
   }
+
+  // Try Uplo.Lower
+  {
+
+  }
+
+  // Test leading dimension of array
+  {
+
+  }
   printErrors(name, passed, failed, tests);
 }
 
@@ -759,6 +930,16 @@ proc test_syr_helper(type t){
     var err = max reduce abs(A-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+  }
+
+  // Try Uplo.Lower
+  {
+
+  }
+
+  // Test leading dimension of array
+  {
 
   }
   printErrors(name, passed, failed, tests);
@@ -808,6 +989,16 @@ proc test_syr2_helper(type t){
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
+
+  }
+
+  // Try Uplo.Lower
+  {
+
+  }
+
+  // Test leading dimension of array
+  {
 
   }
   printErrors(name, passed, failed, tests);
@@ -909,6 +1100,27 @@ proc test_trmv_helper(type t){
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
   }
+
+  // Try trans=Op.T
+  {
+
+  }
+
+  // Try uplo=Uplo.Lower
+  {
+
+  }
+
+  // Try diag=Diag.Unit
+  {
+
+  }
+
+  // Test leading dimension of array
+  {
+
+  }
+
   printErrors(name, passed, failed, tests);
 }
 
@@ -921,7 +1133,6 @@ proc test_trsv_helper(type t){
   var name = "%strsv".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
     const m = 10 : c_int;
 
     var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
@@ -953,5 +1164,26 @@ proc test_trsv_helper(type t){
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
   }
+
+  // Try trans=Op.T
+  {
+
+  }
+
+  // Try uplo=Uplo.Lower
+  {
+
+  }
+
+  // Try diag=Diag.Unit
+  {
+
+  }
+
+  // Test leading dimension of array
+  {
+
+  }
+
   printErrors(name, passed, failed, tests);
 }
