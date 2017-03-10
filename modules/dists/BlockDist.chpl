@@ -437,6 +437,9 @@ proc Block.Block(boundingBox: domain,
   if rank != 2 && sparseLayoutType == CSR then 
     compilerError("CSR layout is only supported for 2 dimensional domains");
 
+  if boundingBox.size == 0 then
+    halt("Block() requires a non-empty boundingBox");
+
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
