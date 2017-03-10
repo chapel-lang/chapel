@@ -4431,6 +4431,12 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (bestRef && bestConstRef && isBetterMatch(bestConstRef, bestRef, DC, true)) {
     bestRef = NULL; // Don't consider the ref function.
   }
+  if (bestConstRef && bestValue && isBetterMatch(bestConstRef, bestValue, DC, true)) {
+    bestValue = NULL; // Don't consider the value function.
+  }
+  if (bestConstRef && bestValue && isBetterMatch(bestValue, bestConstRef, DC, true)) {
+    bestConstRef = NULL; // Don't consider the const ref function.
+  }
 
   ResolutionCandidate* best = bestRef;
   if (!best && bestValue) best = bestValue;
