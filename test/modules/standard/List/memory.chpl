@@ -16,4 +16,4 @@ proc output()
 memTrack;
 writeln(memoryUsed());
 output();
-writeln(mem-memoryUsed());
+writeln(memoryUsed()-mem);
