@@ -103,10 +103,6 @@ static void init_noinit_var(VarSymbol* var,
 
 static bool moduleHonorsNoinit(Symbol* var, Expr* init);
 
-static bool isPrimitiveScalar(Type* type);
-static bool isNonGenericClass(Type* type);
-static bool isNonGenericRecordWithInitializers(Type* type);
-
 static void updateVariableAutoDestroy(DefExpr* defExpr);
 
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
@@ -1889,73 +1885,6 @@ static void normVarNoinit(DefExpr* defExpr) {
     // Ignore no-init expression and fall back on default init
     normVarTypeWoutInit(defExpr);
   }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isPrimitiveScalar(Type* type) {
-  bool retval = false;
-
-  if (type == dtBools[BOOL_SIZE_8]         ||
-      type == dtBools[BOOL_SIZE_16]        ||
-      type == dtBools[BOOL_SIZE_32]        ||
-      type == dtBools[BOOL_SIZE_64]        ||
-
-      type == dtInt[INT_SIZE_8]            ||
-      type == dtInt[INT_SIZE_16]           ||
-      type == dtInt[INT_SIZE_32]           ||
-      type == dtInt[INT_SIZE_64]           ||
-
-      type == dtUInt[INT_SIZE_8]           ||
-      type == dtUInt[INT_SIZE_16]          ||
-      type == dtUInt[INT_SIZE_32]          ||
-      type == dtUInt[INT_SIZE_64]          ||
-
-      type == dtReal[FLOAT_SIZE_32]        ||
-      type == dtReal[FLOAT_SIZE_64]        ||
-
-      type == dtImag[FLOAT_SIZE_32]        ||
-      type == dtImag[FLOAT_SIZE_64]) {
-
-    retval = true;
-
-  } else {
-    retval = false;
-  }
-
-  return retval;
-}
-
-static bool isNonGenericClass(Type* type) {
-  bool retval = false;
-
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->isGeneric()                  == false &&
-        at->isClass()                    ==  true &&
-        at->symbol->hasFlag(FLAG_EXTERN) == false) {
-      retval = true;
-    }
-  }
-
-  return retval;
-}
-
-static bool isNonGenericRecordWithInitializers(Type* type) {
-  bool retval = false;
-
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->isGeneric()      == false &&
-        at->isRecord()       == true  &&
-        at->initializerStyle == DEFINES_INITIALIZER) {
-      retval = true;
-    }
-  }
-
-  return retval;
 }
 
 /************************************* | **************************************

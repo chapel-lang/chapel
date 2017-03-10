@@ -574,6 +574,10 @@ bool isArrayClass(Type* type);
 bool isString(Type* type);
 bool isUserDefinedRecord(Type* type);
 
+bool isPrimitiveScalar(Type* type);
+bool isNonGenericClass(Type* type);
+bool isNonGenericRecordWithInitializers(Type* type);
+
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);
 void codegenTypeStructures(FILE* hdrfile);
