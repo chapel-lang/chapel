@@ -223,6 +223,8 @@ all:
     - Array views (#5338)
   03/06/17:
     - Wide-pointer optimization for arrays (#5487)
+  03/07/17:
+    - make blank intent for arrays "ref-if-modified" (#5134)
 
 
 AllCompTime:
@@ -725,6 +727,14 @@ regexdna:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
   03/12/16:
     - implemented good_alloc_size for jemalloc(#3446)
+
+return-array-8: &return-array-base
+  03/04/17:
+    - remove unnecessary return from array-return tests (#5486)
+return-array-20000000:
+  <<: *return-array-base
+return-array-40000000:
+  <<: *return-array-base
 
 revcomp:
   05/12/15:
