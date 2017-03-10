@@ -35,7 +35,7 @@ libqthread_la_SOURCES = \
 	touch.c \
 	teams.c
 
-EXTRA_DIST = 
+EXTRA_DIST = alloc/
 
 if COMPILE_LF_HASH
 libqthread_la_SOURCES += lf_hashmap.c
