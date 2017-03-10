@@ -111,7 +111,8 @@ Building Chapel for a Cray System from Source
    On Cray CS systems, ``CHPL_LAUNCHER`` defaults to ``gasnetrun_ibv``.
 
    On Cray X-Series systems, ``CHPL_LAUNCHER`` defaults to ``aprun`` if
-   it is in your path; ``none`` otherwise.
+   ``aprun`` is in your path, ``slurm-srun`` if ``srun`` is in your path
+   and ``none`` otherwise.
 
    For more information on Chapel's launcher capabilities and options,
    refer to :ref:`readme-launcher`.
@@ -159,7 +160,8 @@ Building Chapel for a Cray System from Source
    :ref:`readme-chplenv`.
 
      :``CHPL_TASKS``: tasking implementation, default ``qthreads``
-     :``CHPL_COMM``: communication implementation, default ``gasnet``
+     :``CHPL_COMM``: communication implementation, default ``ugni`` on
+                     XC/XE systems, ``gasnet`` on CS systems
 
    For CS\ |trade| series systems, see :ref:`readme-infiniband` for
    information about using Chapel with InfiniBand.
@@ -212,15 +214,10 @@ Using Chapel on a Cray System
 
      :``CHPL_TASKS``: tasking implementation, default ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``ugni`` on Cray
-                     XC/XE with pre-built module, else ``gasnet``
+                     XC/XE, ``gasnet`` on Cray CS
 
    For CS\ |trade| series systems, see :ref:`readme-infiniband` for
    information about using Chapel with InfiniBand.
-
-   Other configuration environment variables such as ``CHPL_MEM`` can also
-   be set, but this is more typical when doing internal development.
-   For production work the configuration scripts should always select an
-   appropriate default for these.
 
    The configuration selected must be one that is present in the Chapel
    installation being used, whether that is a source distribution or the
@@ -428,21 +425,18 @@ Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is synonymous with
 Native Runtime Layers
 ~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`readme-multilocale` and :ref:`readme-tasks` pages
-describe a variety of
-communication and tasking layers that can be used by Chapel programs.
-In addition to the standard runtime layers available in any Chapel
-release, the pre-built Chapel module for Cray XC and XE series systems
-supports Cray-specific communication and tasking layers.  These make use
+The :ref:`readme-multilocale` and :ref:`readme-tasks` pages describe a
+variety of communication and tasking layers that can be used by Chapel
+programs.  In addition to the standard runtime layers available, Chapel
+supports Cray-specific communication and tasking layers. These make use
 of the Cray systems' hardware and/or software to produce enhanced
-performance for Chapel programs.  When using the pre-built module on
-Cray XC or XE systems the allowed combinations are ugni communications
-with either qthreads (the default) or muxed tasking.  On other kinds of
-Cray systems or when not using the pre-built module, the default is to
-use gasnet communications and qthreads tasking.
+performance for Chapel programs.  On Cray XC or XE systems the default
+is to use the ugni communication layer and qthreads tasking.
 
-Note that the muxed tasking layer cannnot be built from source, as it is
-not distributed in source form.
+When using the pre-built module, muxed tasking has traditionally been an
+option, but it will be retired for the 1.16 release, and its performance
+usually lags behind qthreads.  Note that the muxed tasking layer cannot
+be built from source, as it is not distributed in source form.
 
 The ugni communication layer interacts with the system's network
 interface very closely through a lightweight interface called uGNI (user
@@ -460,24 +454,7 @@ Using the ugni Communications Layer
 
 To use ugni communications:
 
-1) Make sure that you are using either the GNU, Intel, or Cray target
-   compiler::
-
-     module load PrgEnv-gnu
-
-   or::
-
-     module load PrgEnv-intel
-
-   or::
-
-     module load PrgEnv-cray
-
-   (If you have a different PrgEnv module loaded, you will have to
-   unload it first, or do a swap instead of a load.)
-
-
-2) Set your CHPL_COMM environment variable to ``ugni``:
+1) Set your CHPL_COMM environment variable to ``ugni`` (the default):
 
    .. code-block:: sh
 
@@ -487,7 +464,7 @@ To use ugni communications:
    layer.
 
 
-3) Set your CHPL_TASKS environment variable to ``qthreads`` (the
+2) Set your CHPL_TASKS environment variable to ``qthreads`` (the
    default), ``muxed``, or ``fifo``:
 
    .. code-block:: sh
@@ -513,7 +490,7 @@ To use ugni communications:
    with those to be selected automatically.
 
 
-4) *(Optional)* Load an appropriate craype-hugepages module.  For example::
+3) *(Optional)* Load an appropriate craype-hugepages module.  For example::
 
      module load craype-hugepages16M
 
@@ -828,14 +805,6 @@ Known Constraints and Bugs
   mpi conduit, you may see a GASNet warning message at program start
   up.  To squelch this message, you can set the environment variable
   ``GASNET_QUIET=yes``.
-
-* There is a known GASNet build issue when using the gemini or aries
-  conduits with hugepage support that results in link errors due to
-  multiply defined symbols in the hugetlbfs library.  The workaround
-  is to make sure that you do not have any ``craype-hugepages*`` module
-  loaded when you compile and link a Chapel program while using the
-  GASNet communication layer.  You may load a hugepage module when
-  running the Chapel program.
 
 * For X-series systems, there is a known issue with the Cray MPI
   release that causes some programs to assert and then hang during

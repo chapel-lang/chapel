@@ -86,6 +86,7 @@ VarSymbol *gFalse = NULL;
 VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol *gCastChecking = NULL;
+VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gNodeID = NULL;
@@ -198,6 +199,9 @@ static Qualifier qualifierForArgIntent(IntentTag intent)
     case INTENT_PARAM:     return QUAL_PARAM; // TODO
     case INTENT_TYPE:      return QUAL_UNKNOWN; // TODO
     case INTENT_BLANK:     return QUAL_UNKNOWN;
+    case INTENT_REF_MAYBE_CONST:
+           return QUAL_REF; // a white lie until cullOverReferences
+
     // no default to get compiler warning if other intents are added
   }
   return QUAL_UNKNOWN;
@@ -210,10 +214,13 @@ QualifiedType Symbol::qualType() {
     Qualifier q = qualifierForArgIntent(arg->intent);
     if (qual == QUAL_WIDE_REF && (q == QUAL_REF || q == QUAL_CONST_REF)) {
       q = QUAL_WIDE_REF;
+      // MPF: Should this be CONST_WIDE_REF in some cases?
     }
     ret = QualifiedType(type, q);
   } else {
     ret = QualifiedType(type, qual);
+    if (hasFlag(FLAG_CONST))
+      ret = ret.toConst();
   }
 
   return ret;
@@ -764,6 +771,7 @@ const char* ArgSymbol::intentDescrString(void) {
     case INTENT_CONST: return "'const'";
     case INTENT_CONST_IN: return "'const in'";
     case INTENT_CONST_REF: return "'const ref'";
+    case INTENT_REF_MAYBE_CONST: return "'const? ref'";
     case INTENT_REF: return "'ref'";
     case INTENT_PARAM: return "'param'";
     case INTENT_TYPE: return "'type'";
@@ -783,6 +791,7 @@ const char* intentDescrString(IntentTag intent) {
     case INTENT_CONST:     return "'const' intent";
     case INTENT_CONST_IN:  return "'const in' intent";
     case INTENT_CONST_REF: return "'const ref' intent";
+    case INTENT_REF_MAYBE_CONST: return "'const? ref' intent";
     case INTENT_REF:       return "'ref' intent";
     case INTENT_PARAM:     return "'param' intent";
     case INTENT_TYPE:      return "'type' intent";

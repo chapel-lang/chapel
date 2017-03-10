@@ -31,6 +31,24 @@ module LocaleModel {
   use LocaleModelHelpFlat;
   use LocaleModelHelpMem;
 
+  //
+  // The task layer calls these to convert between full sublocales and
+  // execution sublocales.  Full sublocales may contain more information
+  // in some locale models, but not in this one.
+  //
+  export
+  proc chpl_localeModel_sublocToExecutionSubloc(full_subloc:chpl_sublocID_t)
+  {
+    return full_subloc;  // execution sublocale is same as full sublocale
+  }
+
+  export
+  proc chpl_localeModel_sublocMerge(full_subloc:chpl_sublocID_t,
+                                    execution_subloc:chpl_sublocID_t)
+  {
+    return execution_subloc;  // no info needed from full sublocale
+  }
+
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
@@ -65,6 +83,28 @@ module LocaleModel {
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
     }
     proc chpl_name() return local_name;
+
+    //
+    // Support for different types of memory:
+    // large, low latency, and high bandwidth
+    //
+    // The flat memory model assumes only one memory.
+    //
+    proc defaultMemory() : locale {
+      return this;
+    }
+
+    proc largeMemory() : locale {
+      return this;
+    }
+
+    proc lowLatencyMemory() : locale {
+      return this;
+    }
+
+    proc highBandwidthMemory() : locale {
+      return this;
+    }
 
 
     proc writeThis(f) {

@@ -17,6 +17,7 @@
 #include <string.h>                    /* for memset() */
 #include <errno.h>
 
+#include "qt_alloc.h"
 #include "qt_asserts.h"
 #include "qt_int_ceil.h"
 
@@ -191,7 +192,7 @@ void *qalloc_makestatmap(const off_t  filesize,
         void           ***strms;
         struct mapinfo_s *mi;
 
-        mi          = (struct mapinfo_s *)malloc(sizeof(struct mapinfo_s));
+        mi          = (struct mapinfo_s *) qt_malloc(sizeof(struct mapinfo_s));
         mi->dynflag = 0;
         /* never mmapped anything before */
         mi->map = ptr[0] = ret;
@@ -199,7 +200,7 @@ void *qalloc_makestatmap(const off_t  filesize,
         itemsize         = (((itemsize - 1) / 4) + 1) * 4;
         ptr[1]           = (void *)itemsize;
         ptr[2]           = (void *)streams;
-        strms            = (void ***)malloc(sizeof(void **) * streams);
+        strms            = (void ***) qt_malloc(sizeof(void **) * streams);
         mi->size         = (size_t)filesize;
         mi->streams      = (void ***)(ptr + 3);
         mi->stream_locks = (pthread_mutex_t *)(ptr + 3 + streams);
@@ -228,7 +229,7 @@ void *qalloc_makestatmap(const off_t  filesize,
             *strms[i] = base + (itemsize * i);
             strms[i]  = (void **)(base + (itemsize * i));
         }
-        free(strms);
+        qt_free(strms);
         /* and just for safety's sake, let's sync it to disk */
         if (msync(ret, (size_t)filesize, MS_INVALIDATE | MS_SYNC) != 0) {
             perror("msync");
@@ -243,7 +244,7 @@ void *qalloc_makestatmap(const off_t  filesize,
     } else {
         /* reloading an existing file in the correct place */
         struct mapinfo_s *m;
-        m               = (struct mapinfo_s *)malloc(sizeof(struct mapinfo_s));
+        m               = (struct mapinfo_s *) qt_malloc(sizeof(struct mapinfo_s));
         m->dynflag      = 0;
         m->map          = ret;
         m->size         = (size_t)filesize;
@@ -273,7 +274,7 @@ void *qalloc_makedynmap(const off_t  filesize,
         size_t               i;
         struct dynmapinfo_s *mi;
 
-        mi          = (struct dynmapinfo_s *)malloc(sizeof(struct dynmapinfo_s));
+        mi          = (struct dynmapinfo_s *) qt_malloc(sizeof(struct dynmapinfo_s));
         mi->dynflag = 1;
         /* save the base address, so relocation can be detected (or corrected) */
         ptr[0]           = mi->map = ret;
@@ -308,7 +309,7 @@ void *qalloc_makedynmap(const off_t  filesize,
     } else {
         /* reloading an existing file in the correct place */
         struct dynmapinfo_s *m;
-        m               = (struct dynmapinfo_s *)malloc(sizeof(struct dynmapinfo_s));
+        m               = (struct dynmapinfo_s *) qt_malloc(sizeof(struct dynmapinfo_s));
         m->dynflag      = 1;
         m->map          = ret;
         m->size         = (size_t)filesize;
@@ -376,7 +377,7 @@ void qalloc_cleanup(void)
         }
         m     = mmaps;
         mmaps = mmaps->next;
-        free(m);
+        qt_free(m);
     }
     while (dynmmaps) {
         struct dynmapinfo_s *m;
@@ -387,7 +388,7 @@ void qalloc_cleanup(void)
         }
         m        = dynmmaps;
         dynmmaps = dynmmaps->next;
-        free(m);
+        qt_free(m);
     }
 }                                      /*}}} */
 

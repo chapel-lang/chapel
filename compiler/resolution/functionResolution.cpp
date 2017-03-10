@@ -238,6 +238,7 @@ static void resolveTupleExpand(CallExpr* call);
 static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
                                         SymExpr* rhs);
 static void resolveSetMember(CallExpr* call);
+static void resolveInitVar(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveFieldInit(CallExpr* call);
 static void resolveNew(CallExpr* call);
@@ -1372,11 +1373,17 @@ static void ensureEnumTypeResolved(EnumType* etype) {
 // I.e. for an out/inout/ref formal.
 static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
+  Symbol* calledFn = formal->defPoint->parentSymbol;
   if (SymExpr* se = toSymExpr(actual))
     if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
         ((se->symbol()->hasFlag(FLAG_REF_TO_CONST) ||
           se->symbol()->isConstant()) && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->symbol()->isParameter())
+      // But ignore for now errors with this argument
+      // to functions marked with FLAG_REF_TO_CONST_WHEN_CONST_THIS.
+      // These will be checked for later, along with ref-pairs.
+      if (! (formal->hasFlag(FLAG_ARG_THIS) &&
+             calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
       return false;
   // Perhaps more checks are needed.
   return true;
@@ -3127,7 +3134,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
     // Only consider ref return fns in ref return part
     if (kind == FIND_REF && (candidate1->fn->retTag != RET_REF)) continue;
-    if (kind == FIND_NOT_REF && (candidate1->fn->retTag == RET_REF)) continue;
+    if (kind == FIND_CONST_REF && (candidate1->fn->retTag != RET_CONST_REF)) continue;
+    if (kind == FIND_NOT_REF_OR_CONST_REF && (candidate1->fn->retTag == RET_REF || candidate1->fn->retTag == RET_CONST_REF)) continue;
 
     TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
 
@@ -3146,7 +3154,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
       // Only consider ref return fns in ref return part
       if (kind == FIND_REF && (candidate2->fn->retTag != RET_REF)) continue;
-      if (kind == FIND_NOT_REF && (candidate2->fn->retTag == RET_REF)) continue;
+      if (kind == FIND_CONST_REF && (candidate2->fn->retTag != RET_CONST_REF)) continue;
+      if (kind == FIND_NOT_REF_OR_CONST_REF && (candidate2->fn->retTag == RET_REF || candidate2->fn->retTag == RET_CONST_REF)) continue;
 
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
 
@@ -3845,7 +3854,10 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
           formal->type = varActual->type;
         }
         if (varActual->isConstant()) {
-          formal->intent = (IntentTag)(formal->intent | INTENT_FLAG_CONST);
+          int newIntent = formal->intent | INTENT_FLAG_CONST;
+          // and clear INTENT_FLAG_MAYBE_CONST flag
+          newIntent &= ~ INTENT_FLAG_MAYBE_CONST;
+          formal->intent = (IntentTag)(newIntent);
         }
       }
     }
@@ -4308,28 +4320,52 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
 }
 
 
-void
-resolveCall(CallExpr* call)
-{
-  if (call->primitive)
-  {
-    switch (call->primitive->tag)
-    {
-     default:                         /* do nothing */                  break;
-     case PRIM_TUPLE_AND_EXPAND:      resolveTupleAndExpand(call);      break;
-     case PRIM_TUPLE_EXPAND:          resolveTupleExpand(call);         break;
-     case PRIM_SET_MEMBER:            resolveSetMember(call);           break;
-     case PRIM_MOVE:                  resolveMove(call);                break;
-     case PRIM_INITIALIZER_SET_FIELD: resolveFieldInit(call);           break;
-     case PRIM_TYPE_INIT:
-     case PRIM_INIT:                  resolveDefaultGenericType(call);  break;
-     case PRIM_NO_INIT:               resolveDefaultGenericType(call);  break;
-     case PRIM_COERCE:                resolveCoerce(call);              break;
-     case PRIM_NEW:                   resolveNew(call);                 break;
+void resolveCall(CallExpr* call) {
+  if (call->primitive) {
+    switch (call->primitive->tag) {
+    case PRIM_TUPLE_AND_EXPAND:
+      resolveTupleAndExpand(call);
+      break;
+
+    case PRIM_TUPLE_EXPAND:
+      resolveTupleExpand(call);
+      break;
+
+    case PRIM_SET_MEMBER:
+      resolveSetMember(call);
+      break;
+
+    case PRIM_INIT_VAR:
+      resolveInitVar(call);
+      break;
+
+    case PRIM_MOVE:
+      resolveMove(call);
+      break;
+
+    case PRIM_INITIALIZER_SET_FIELD:
+      resolveFieldInit(call);
+      break;
+
+    case PRIM_INIT:
+    case PRIM_NO_INIT:
+    case PRIM_TYPE_INIT:
+      resolveDefaultGenericType(call);
+      break;
+
+    case PRIM_COERCE:
+      resolveCoerce(call);
+      break;
+
+    case PRIM_NEW:
+      resolveNew(call);
+      break;
+
+    default:
+      break;
     }
-  }
-  else
-  {
+
+  } else {
     resolveNormalCall(call);
   }
 }
@@ -4379,7 +4415,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   DisambiguationContext DC(&info.actuals, scope, explain);
 
   ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, FIND_REF);
-  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, FIND_NOT_REF);
+  ResolutionCandidate* bestConstRef = disambiguateByMatch(candidates, DC, FIND_CONST_REF);
+  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, FIND_NOT_REF_OR_CONST_REF);
 
   // If one requires more promotion than the other, this is not a ref-pair.
   if (bestRef && bestValue && isBetterMatch(bestRef, bestValue, DC, true)) {
@@ -4388,21 +4425,37 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (bestRef && bestValue && isBetterMatch(bestValue, bestRef, DC, true)) {
     bestRef = NULL; // Don't consider the ref function.
   }
+  if (bestRef && bestConstRef && isBetterMatch(bestRef, bestConstRef, DC, true)) {
+    bestConstRef = NULL; // Don't consider the const ref function.
+  }
+  if (bestRef && bestConstRef && isBetterMatch(bestConstRef, bestRef, DC, true)) {
+    bestRef = NULL; // Don't consider the ref function.
+  }
 
   ResolutionCandidate* best = bestRef;
-  if (!best) best = bestValue;
+  if (!best && bestValue) best = bestValue;
+  if (!best && bestConstRef) best = bestConstRef;
+
+  bool refPair = (bestRef && (bestValue || bestConstRef));
 
   // If we have both ref and value matches:
   //  'call' will invoke the ref function best->fn
   //  'valueCall' will invoke the value function bestValue->fn
-  //  we will manipulate these two side by side.
+  //  'constRefCall' will invoke the value function bestConstRef->fn
+  //  we will manipulate these three side by side.
   //  valueCall is always NULL if there aren't ref and value matches.
   CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
 
-  if (bestRef && bestValue) {
+  if (refPair && bestValue) {
     valueCall = call->copy();
     call->insertAfter(valueCall);
   }
+  if (refPair && bestConstRef) {
+    constRefCall = call->copy();
+    call->insertAfter(constRefCall);
+  }
+
 
   if (best && best->fn) {
     /*
@@ -4416,6 +4469,12 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       // also instantiate the value version. best is the ref version.
       INT_ASSERT(bestValue->fn);
       instantiateBody(bestValue->fn);
+    }
+    if (constRefCall) {
+      // If we're resolving a ref and non-ref pair,
+      // also instantiate the const-ref version. best is the ref version.
+      INT_ASSERT(bestConstRef->fn);
+      instantiateBody(bestConstRef->fn);
     }
 
     if (explainCallLine && explainCallMatch(call)) {
@@ -4465,10 +4524,24 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
       wrapAndCleanUpActuals(bestValue, valueInfo, false);
     }
+    if (constRefCall) {
+      // If we're resolving a ref and non-ref pair,
+      // also handle the const ref version. best is the ref version.
+      CallInfo constRefInfo(constRefCall, checkonly);
+
+      wrapAndCleanUpActuals(bestConstRef, constRefInfo, false);
+    }
   }
 
   FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
+  FnSymbol* resolvedRefFn = bestRef != NULL ? bestRef->fn : NULL;
   FnSymbol* resolvedValueFn = bestValue != NULL ? bestValue->fn : NULL;
+  FnSymbol* resolvedConstRefFn = bestConstRef != NULL ? bestConstRef->fn : NULL;
+
+  // Only keep it a ref-pair if a ref version is present and
+  // we have options that resolved.
+  if (refPair)
+    refPair = resolvedRefFn && (resolvedValueFn || resolvedConstRefFn);
 
   forv_Vec(ResolutionCandidate*, candidate, candidates) {
     delete candidate;
@@ -4477,6 +4550,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (call->partialTag) {
     if (!resolvedFn) {
       if (valueCall) valueCall->remove();
+      if (constRefCall) constRefCall->remove();
       return NULL;
     }
     call->partialTag = false;
@@ -4500,20 +4574,36 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (resolvedFn && call->parentSymbol) {
     SET_LINENO(call);
     call->baseExpr->replace(new SymExpr(resolvedFn));
-    if (valueCall && resolvedValueFn) {
-      valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
+    if (refPair) {
+      if (valueCall && resolvedValueFn)
+        valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
+      if (constRefCall && resolvedConstRefFn)
+        constRefCall->baseExpr->replace(new SymExpr(resolvedConstRefFn));
 
-      // Replace the call with a new ContextCallExpr containing two
+      // Replace the call with a new ContextCallExpr containing 2 or 3
       // calls, where the first returns ref and the 2nd does not.
+      // The 3 calls might be:
+      //  ref version
+      //  value version
+      //  const ref version
       ContextCallExpr* contextCall = new ContextCallExpr();
       call->insertAfter(contextCall);
 
       call->remove();
-      valueCall->remove();
-      contextCall->setRefRValueOptions(call, valueCall);
+      if (valueCall) valueCall->remove();
+      if (constRefCall) constRefCall->remove();
+
+      if (valueCall && constRefCall)
+        contextCall->setRefValueConstRefOptions(call, valueCall, constRefCall);
+      else
+        contextCall->setRefRValueOptions(call, valueCall?valueCall:constRefCall);
+
     } else if (valueCall) {
       // value call was added but didn't resolve right. Remove it.
       valueCall->remove();
+    } else if (constRefCall) {
+      // const ref call was added but didn't resolve right. Remove it.
+      constRefCall->remove();
     } else {
       // If we aren't working with a ref not-ref return intent pair,
       // adjust the returned value to have flag FLAG_REF_TO_CONST,
@@ -4602,6 +4692,7 @@ void lvalueCheck(CallExpr* call)
      case INTENT_CONST_IN:
      case INTENT_PARAM:
      case INTENT_TYPE:
+     case INTENT_REF_MAYBE_CONST:
       // not checking them here
       break;
 
@@ -4902,6 +4993,49 @@ static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
 
 
 
+/************************************* | **************************************
+*                                                                             *
+* This handles expressions of the form                                        *
+*      CallExpr(PRIM_INIT_VAR, dst, src)                                      *
+*                                                                             *
+* 2017/03/06: This initial, trivial, implementation converts this to either   *
+*                                                                             *
+*      CallExpr(PRIM_MOVE, dst, src)                                          *
+*                                                                             *
+* or                                                                          *
+*                                                                             *
+*      CallExpr(PRIM_MOVE, dst, CallExpr("init_copy", src))                   *
+*                                                                             *
+* and then resolves the PRIM_MOVE.                                            *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveInitVar(CallExpr* call) {
+  Expr*   varExpr = call->get(1);
+  Symbol* var     = toSymExpr(varExpr)->symbol();
+
+  if (var->hasFlag(FLAG_NO_COPY) == true)  {
+    call->primitive = primitives[PRIM_MOVE];
+    resolveMove(call);
+
+  } else {
+    Expr*     initExpr = call->get(2)->remove();
+    CallExpr* initCopy = new CallExpr("chpl__initCopy", initExpr);
+
+    call->insertAtTail(initCopy);
+    call->primitive = primitives[PRIM_MOVE];
+
+    resolveExpr(initCopy);
+    resolveMove(call);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveMove(CallExpr* call) {
   if (call->id == breakOnResolveID )
     gdbShouldBreakHere();
@@ -5169,7 +5303,9 @@ resolveFieldInit(CallExpr* call) {
     // Update the type of the field.  If necessary, update to a new
     // instantiation of the overarching type (and replaces references to the
     // fields from the old instantiation
-    if (fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) {
+    if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
+        fs->hasFlag(FLAG_PARAM) ||
+        (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL)) {
       AggregateType* instantiate = ct->getInstantiation(rhs, index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
@@ -5187,14 +5323,6 @@ resolveFieldInit(CallExpr* call) {
         ct = instantiate;
         fs = instantiate->getField(index);
       }
-    } else if (fs->hasFlag(FLAG_PARAM)) {
-      // TODO: this part
-      USR_FATAL(call, "Sorry, new style initializers don't work with "
-                "param fields yet. Stay tuned!");
-    } else if (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) {
-      // TODO: this part
-      USR_FATAL(call, "Sorry, new style initializers don't work with "
-                "generic var/const fields yet.  Stay tuned!");
     } else {
       // The field is not generic.
       if (fs->defPoint->exprType == NULL) {
@@ -6081,6 +6209,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
     DefExpr* dExp = toDefExpr(formalExpr);
     ArgSymbol* fArg = toArgSymbol(dExp->sym);
+
+    if (fArg->type->symbol->hasFlag(FLAG_GENERIC)) {
+      USR_FATAL_CONT("Generic functions can't be captured as values");
+    }
 
     ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
     if (fArg->typeExpr)
@@ -7519,6 +7651,7 @@ postFold(Expr* expr) {
             }
           }
         }
+
         if (!set) {
           if (lhs->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
               !lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
@@ -7896,27 +8029,47 @@ resolveExpr(Expr* expr) {
       // For ContextCallExprs, be sure to resolve all of the
       // functions that could be called.
       if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
-        CallExpr* refCall = cc->getRefCall();
-        CallExpr* valueCall = cc->getRValueCall();
-        FnSymbol* refFn = refCall->isResolved();
-        FnSymbol* valueFn = valueCall->isResolved();
+        CallExpr* refCall = NULL;
+        CallExpr* valueCall = NULL;
+        CallExpr* constRefCall = NULL;
 
-        INT_ASSERT(refFn && valueFn);
+        cc->getCalls(refCall, valueCall, constRefCall);
+
+        FnSymbol* refFn = refCall->isResolved();
+        FnSymbol* valueFn = valueCall?valueCall->isResolved():NULL;
+        FnSymbol* constRefFn = constRefCall?constRefCall->isResolved():NULL;
+
+        INT_ASSERT(refFn && (valueFn || constRefFn));
         resolveFns(refFn);
-        resolveFns(valueFn);
+
+        if (valueFn)
+          resolveFns(valueFn);
+        if (constRefFn)
+          resolveFns(constRefFn);
 
         // Produce an error if the return types do not match.
         // This error is skipped for iterators because
         // the return type of an iterator is e.g. an iterator record
         // which is not the same as the yielded type.
-        if (!refFn->isIterator() &&
-            refFn->retType->getValType() != valueFn->retType->getValType()) {
-          USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
-          USR_FATAL_CONT(valueFn, "function returns %s",
-                         toString(valueFn->retType));
-          USR_FATAL_CONT(refFn, "function returns %s",
-                         toString(refFn->retType));
-          USR_STOP();
+        if (!refFn->isIterator()) {
+          if (valueFn &&
+              refFn->retType->getValType() != valueFn->retType->getValType()) {
+            USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
+            USR_FATAL_CONT(valueFn, "function returns %s",
+                           toString(valueFn->retType));
+            USR_FATAL_CONT(refFn, "function returns %s",
+                           toString(refFn->retType));
+            USR_STOP();
+          }
+          if (constRefFn &&
+              refFn->retType->getValType() != constRefFn->retType->getValType()) {
+            USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
+            USR_FATAL_CONT(constRefFn, "function returns %s",
+                           toString(constRefFn->retType));
+            USR_FATAL_CONT(refFn, "function returns %s",
+                           toString(refFn->retType));
+            USR_STOP();
+          }
         }
 
         // Proceed using the designated call option
@@ -9091,6 +9244,7 @@ void resolve() {
 
   resolveExternVarSymbols();
 
+
   // --ipe does not build a mainModule
   if (mainModule)
     resolveUses(mainModule);
@@ -9130,6 +9284,8 @@ void resolve() {
   // Resolve the string literal constructors after everything else since new
   // ones may be created during postFold
   ensureAndResolveInitStringLiterals();
+
+
 
   handleRuntimeTypes();
 
@@ -10222,27 +10378,6 @@ static void removeUnusedModuleVariables() {
   }
 }
 
-static bool arrayBlkModified() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isResolved() && fn->defPoint && fn->defPoint->parentSymbol) {
-      if (fn->hasFlag(FLAG_MODIFIES_ARRAY_BLK)) {
-        if (fReportOptimizedArrayIndexing) {
-          printf("Unable to optimize array indexing\n");
-        }
-        return true;
-      }
-    }
-  }
-  if (fReportOptimizedArrayIndexing) {
-    printf("Optimized array indexing\n");
-  }
-  return false;
-}
-
-static bool canOptimizeArrayBlk() {
-  static bool canOptimize = !fNoOptimizeArrayIndexing && !arrayBlkModified();
-  return canOptimize;
-}
 
 static void removeRandomPrimitive(CallExpr* call)
 {
@@ -10266,17 +10401,6 @@ static void removeRandomPrimitive(CallExpr* call)
     case PRIM_NOOP:
       call->remove();
       break;
-
-    case PRIM_OPTIMIZE_ARRAY_BLK_MULT:
-    {
-      SET_LINENO(call);
-      if (canOptimizeArrayBlk()) {
-        call->replace(new SymExpr(gTrue));
-      } else {
-        call->replace(new SymExpr(gFalse));
-      }
-    }
-    break;
 
     case PRIM_TYPEOF:
     {

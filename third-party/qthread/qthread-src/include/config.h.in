@@ -562,6 +562,9 @@
 /* Constant for an unknown PPC ABI */
 #undef QTHREAD_PPC_ABI_UNKNOWN
 
+/* Precache guard pages in pooled stacks */
+#undef QTHREAD_PRECACHE_GUARD_PAGES
+
 /* Define for BSD-style qsort_r */
 #undef QTHREAD_QSORT_BSD
 

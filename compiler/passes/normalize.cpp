@@ -596,18 +596,16 @@ static void checkUseBeforeDefs() {
 static Symbol* theDefinedSymbol(BaseAST* ast) {
   Symbol* retval = NULL;
 
-  // 1) A symbol is "defined" defined if it is the LHS of a move or assign
-  if (CallExpr* call = toCallExpr(ast)) {
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-      if (SymExpr* se = toSymExpr(call->get(1))) {
-        retval = se->symbol();
-      }
-    }
-
-  // 2) Another way to find the symbol that will be found by 1)
-  } else if (SymExpr* se = toSymExpr(ast)) {
+  // A symbol is "defined" if it is the LHS of a move, an assign,
+  // or a variable initialization.
+  //
+  // The caller performs a post-order traversal and so we find the
+  // symExpr before we see the callExpr
+  if (SymExpr* se = toSymExpr(ast)) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+      if (call->isPrimitive(PRIM_MOVE)     == true  ||
+          call->isPrimitive(PRIM_ASSIGN)   == true  ||
+          call->isPrimitive(PRIM_INIT_VAR) == true)  {
         if (call->get(1) == se) {
           retval = se->symbol();
         }
@@ -1154,8 +1152,15 @@ static void insert_call_temps(CallExpr* call)
 
   VarSymbol* tmp = newTemp("call_tmp");
 
-  if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
+
+  // Add FLAG_EXPR_TEMP unless this tmp is being used
+  // as a sub-expression for a variable initialization.
+  // This flag triggers autoCopy/autoDestroy behavior.
+  if (parentCall == NULL ||
+      (parentCall->isNamed("chpl__initCopy")  == false &&
+       parentCall->isPrimitive(PRIM_INIT_VAR) == false)) {
     tmp->addFlag(FLAG_EXPR_TEMP);
+  }
 
   if (call->isPrimitive(PRIM_NEW))
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
@@ -1595,7 +1600,18 @@ static void normRefVar(DefExpr* defExpr) {
   }
 
   if (SymExpr* sym = toSymExpr(varLocation)) {
-    if (!var->hasFlag(FLAG_CONST) && sym->symbol()->isConstant()) {
+    Symbol* symbol = sym->symbol();
+
+    bool error = (!var->hasFlag(FLAG_CONST) && symbol->isConstant());
+
+    // This is a workaround for the fact tha isConstant for an ArgSymbol with
+    // blank intent and type dtUnknown returns true, but blank intent isn't
+    // necessarily const.
+    if (ArgSymbol* arg = toArgSymbol(symbol))
+      if (arg->intent == INTENT_BLANK && arg->type == dtUnknown)
+        error = false;
+
+    if (error) {
       USR_FATAL_CONT(sym,
                      "Cannot set a non-const reference to a const variable.");
     }
@@ -1624,28 +1640,11 @@ static void normVarTypeInference(DefExpr* defExpr) {
     Type* type = initSym->symbol()->type;
 
     if (isPrimitiveScalar(type) == true) {
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE,     var, initExpr));
 
       var->type = type;
-
-    } else if (var->hasFlag(FLAG_NO_COPY) == true)  {
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
-
-    } else if (var->hasFlag(FLAG_CONST)   == false) {
-      CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
-
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, rhs));
-
     } else {
-      Symbol*   tmp       = newTemp("tmp");
-      DefExpr*  defineTmp = new DefExpr(tmp);
-      CallExpr* rhs       = new CallExpr("chpl__initCopy", initExpr);
-      CallExpr* moveToTmp = new CallExpr(PRIM_MOVE, tmp, rhs);
-      CallExpr* moveToVar = new CallExpr(PRIM_MOVE, var, tmp);
-
-      defExpr  ->insertAfter(defineTmp);
-      defineTmp->insertAfter(moveToTmp);
-      moveToTmp->insertAfter(moveToVar);
+      defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
     }
 
   // e.g.
@@ -1670,27 +1669,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
         argExpr->insertAtHead(gMethodToken);
 
       } else {
-        if (var->hasFlag(FLAG_NO_COPY) == true) {
-          defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
-
-        } else {
-          Symbol* tmp = var;
-
-          if (var->hasFlag(FLAG_CONST) == true) {
-            tmp = newTemp("const_tmp");
-
-            defExpr->insertBefore(new DefExpr(tmp));
-            defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
-          }
-
-          if (initCall->isPrimitive(PRIM_NEW) == true) {
-            defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, initExpr));
-          } else {
-            CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
-
-            defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
-          }
-        }
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
       }
 
       if (type != NULL && type->isGeneric() == false) {
@@ -1698,27 +1677,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
       }
 
     } else {
-      if (var->hasFlag(FLAG_NO_COPY) == true) {
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
-
-      } else {
-        Symbol* tmp = var;
-
-        if (var->hasFlag(FLAG_CONST) == true) {
-          tmp = newTemp("const_tmp");
-
-          defExpr->insertBefore(new DefExpr(tmp));
-          defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
-        }
-
-        if (initCall->isPrimitive(PRIM_NEW) == true) {
-          defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, initExpr));
-        } else {
-          CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
-
-          defExpr->insertAfter(new CallExpr(PRIM_MOVE, tmp, rhs));
-        }
-      }
+      defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
     }
 
   } else {
@@ -1738,11 +1697,6 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
   Type*   type     = typeForTypeSpecifier(typeExpr);
-
-  // Noakes 2017/02/19
-  //   This replicates some strange business logic that is currently
-  //   locked in by futures in test/trivial/sungeun/pragmas
-  INT_ASSERT(var->hasFlag(FLAG_NO_COPY) == false);
 
   // Noakes 2016/02/02
   // The code for resolving the type of an extern variable
@@ -1764,14 +1718,14 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
 
     defExpr->insertAfter(block);
 
-  } else if (isPrimitiveScalar(type)          == true) {
+  } else if (isPrimitiveScalar(type) == true) {
     CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
 
     defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defVal));
 
     var->type = type;
 
-  } else if (isNonGenericClass(type)          == true) {
+  } else if (isNonGenericClass(type) == true) {
     CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
 
     defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defVal));
@@ -1789,28 +1743,13 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
     CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
     CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
 
-    if (var->hasFlag(FLAG_CONST)   ==  true &&
-        var->hasFlag(FLAG_NO_COPY) == false) {
-      Symbol*   tmp     = newTemp("tmp");
-      CallExpr* tmpMove = new CallExpr(PRIM_MOVE, tmp, typeTemp);
-      CallExpr* varMove = new CallExpr(PRIM_MOVE, var, tmp);
-
-      defExpr->insertBefore(new DefExpr(tmp));
-
-      defExpr->insertAfter(typeDefn);
-      typeDefn->insertAfter(initMove);
-      initMove->insertAfter(tmpMove);
-      tmpMove->insertAfter(varMove);
-
-    } else {
-      if (var->hasFlag(FLAG_PARAM) == true) {
-        typeTemp->addFlag(FLAG_PARAM);
-      }
-
-      defExpr->insertAfter(typeDefn);
-      typeDefn->insertAfter(initMove);
-      initMove->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+    if (var->hasFlag(FLAG_PARAM) == true) {
+      typeTemp->addFlag(FLAG_PARAM);
     }
+
+    defExpr ->insertAfter(typeDefn);
+    typeDefn->insertAfter(initMove);
+    initMove->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
   }
 }
 
@@ -1819,11 +1758,6 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   Expr*   typeExpr = defExpr->exprType->remove();
   Expr*   initExpr = defExpr->init->remove();
   Type*   type     = typeForTypeSpecifier(typeExpr);
-
-  INT_ASSERT(var->hasFlag(FLAG_NO_COPY) == false);
-
-  if (false) {
-
 
   //
   // e.g. const x : int     = 10;
@@ -1836,8 +1770,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   //    use PRIM_MOVE to initialize x.  This simplifies const checking
   //    for the first case and supports a current limitation for RVF
   //
-  } else if (isPrimitiveScalar(type) == true ||
-             isNonGenericClass(type) == true) {
+  if (isPrimitiveScalar(type) == true ||
+      isNonGenericClass(type) == true) {
     VarSymbol* tmp = newTemp("tmp", type);
 
     defExpr->insertBefore(new DefExpr(tmp));
@@ -1879,24 +1813,10 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
     CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
 
-    if (var->hasFlag(FLAG_CONST) == true) {
-      VarSymbol* tmp     = newTemp("const_tmp");
-      CallExpr*  varMove = new CallExpr(PRIM_MOVE, tmp, typeTemp);
-
-      defExpr->insertBefore(new DefExpr(tmp));
-
-      defExpr->insertAfter(typeDefn);
-      typeDefn->insertAfter(initMove);
-      initMove->insertAfter(assign);
-      assign->insertAfter(varMove);
-      varMove->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
-
-    } else {
-      defExpr->insertAfter(typeDefn);
-      typeDefn->insertAfter(initMove);
-      initMove->insertAfter(assign);
-      assign->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
-    }
+    defExpr ->insertAfter(typeDefn);
+    typeDefn->insertAfter(initMove);
+    initMove->insertAfter(assign);
+    assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
   }
 }
 
@@ -1961,22 +1881,10 @@ static void normVarNoinit(DefExpr* defExpr) {
   init->remove();
 
   if (fUseNoinit == true || moduleHonorsNoinit(var, init) == true) {
-    Expr*      type   = defExpr->exprType;
-    CallExpr*  noinit = new CallExpr(PRIM_NO_INIT, type->remove());
+    Expr*     type   = defExpr->exprType;
+    CallExpr* noinit = new CallExpr(PRIM_NO_INIT, type->remove());
 
-    INT_ASSERT(var->hasFlag(FLAG_NO_COPY) == false);
-
-    if (var->hasFlag(FLAG_CONST)  ==  true) {
-      VarSymbol* tmp = newTemp("const_tmp");
-
-      defExpr->insertBefore(new DefExpr(tmp));
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, noinit));
-
-    } else {
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, noinit));
-    }
-
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, noinit));
   } else {
     // Ignore no-init expression and fall back on default init
     normVarTypeWoutInit(defExpr);

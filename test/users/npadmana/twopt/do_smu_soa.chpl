@@ -55,7 +55,7 @@ class Particle3D {
     Darr = {ParticleAttrib, 0.. #npart};
     Dpart = {0.. #npart};
     if random {
-      var rng = new RandomStream(real);
+      var rng = new RandomStream(eltType=real);
       var x, y, z : real;
       for ii in Dpart {
         x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z = rng.getNext()*1000.0;

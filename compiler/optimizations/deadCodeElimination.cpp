@@ -95,10 +95,16 @@ void deadVariableElimination(FnSymbol* fn) {
     if (isDeadVariable(sym)) {
       for_SymbolDefs(se, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
-        INT_ASSERT(call &&
-                   (call->isPrimitive(PRIM_MOVE) ||
-                    call->isPrimitive(PRIM_ASSIGN)));
-        Expr* rhs = call->get(2)->remove();
+        //INT_ASSERT(call &&
+        //           (call->isPrimitive(PRIM_MOVE) ||
+        //            call->isPrimitive(PRIM_ASSIGN)));
+        //Expr* rhs = call->get(2)->remove();
+        INT_ASSERT(call);
+        Expr* dest = NULL;
+        Expr* rhs = NULL;
+        bool ok = getSettingPrimitiveDstSrc(call, &dest, &rhs);
+        INT_ASSERT(ok);
+        rhs->remove();
         if (!isSymExpr(rhs))
           call->replace(rhs);
         else
@@ -302,10 +308,12 @@ void deadCodeElimination(FnSymbol* fn) {
 *   3) Remove the code that initializes the literal.                          *
 *                                                                             *
 *      This is fragile as it currently depends on implementation details in   *
-*      other portions of the compiler.                                        *
+*      other portions of the compiler.  It is believed that this will be      *
+*      easier to manage when record initializers are in production.           *
 *                                                                             *
 * The hardest part is determining when this code needs to be revisited.       *
 * 2017/03/04: Perform an "ad hoc" sanity check for now.                       *
+* 2017/03/09: Disable this pass if flags might alter the pattern.             *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -313,36 +321,44 @@ static bool isDeadStringLiteral(VarSymbol* string);
 static void removeDeadStringLiteral(DefExpr* defExpr);
 
 static void deadStringLiteralElimination() {
-  int numStmt        = 0;
-  int numDeadLiteral = 0;
+  // Noakes 2017/03/09
+  //   These two flags are known to alter the pattern we are looking for.
+  //   Rather than handle the variations we simply leak if these flags are
+  //   on.  We anticipate that this will be easier to handle when record
+  //   initializers are in production and have been applied to strings.
+  if (fNoCopyPropagation == false &&
+      fNoInline          == false) {
+    int numStmt        = 0;
+    int numDeadLiteral = 0;
 
-  for_alist(stmt, stringLiteralModule->block->body) {
-    numStmt = numStmt + 1;
+    for_alist(stmt, stringLiteralModule->block->body) {
+      numStmt = numStmt + 1;
 
-    if (DefExpr* defExpr = toDefExpr(stmt)) {
-      if (VarSymbol* symbol = toVarSymbol(defExpr->sym)) {
-        if (isDeadStringLiteral(symbol) == true) {
-          removeDeadStringLiteral(defExpr);
+      if (DefExpr* defExpr = toDefExpr(stmt)) {
+        if (VarSymbol* symbol = toVarSymbol(defExpr->sym)) {
+          if (isDeadStringLiteral(symbol) == true) {
+            removeDeadStringLiteral(defExpr);
 
-          numDeadLiteral = numDeadLiteral + 1;
+            numDeadLiteral = numDeadLiteral + 1;
+          }
         }
       }
     }
-  }
 
-  //
-  // Noakes 2017/03/04
-  //
-  // There is not currently a principled way to determine if other
-  // paseses have changed in a way that would confuse this pass.
-  //
-  // A quick review of a portion of test/release/examles shows that
-  // this pass removes 85 - 95% of the string literals.  Signal an
-  // error if this pass doesn't reclaim at least 10% of all string
-  // literals unless this is minimal modules
-  //
-  if (fMinimalModules == false) {
-    INT_ASSERT((1.0 * numDeadLiteral) / numStmt > 0.10);
+    //
+    // Noakes 2017/03/04
+    //
+    // There is not a principled way to determine if other passes
+    // have changed in a way that would confuse this pass.
+    //
+    // A quick review of a portion of test/release/examles shows that
+    // this pass removes 85 - 95% of the string literals.  Signal an
+    // error if this pass doesn't reclaim at least 10% of all string
+    // literals unless this is minimal modules
+    //
+    if (fMinimalModules == false) {
+      INT_ASSERT((1.0 * numDeadLiteral) / numStmt > 0.10);
+    }
   }
 }
 

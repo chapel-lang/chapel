@@ -386,7 +386,7 @@ class SparseBlockArr: BaseSparseArr {
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType)
-  where !shouldReturnRvalueByConstRef(eltType) {
+  where shouldReturnRvalueByValue(eltType) {
     //    local { // TODO: Turn back on once privatization is on
       if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
         return myLocArr.dsiAccess(i);
@@ -410,7 +410,7 @@ class SparseBlockArr: BaseSparseArr {
   proc dsiAccess(i: idxType...rank) ref
     return dsiAccess(i);
   proc dsiAccess(i: idxType...rank)
-  where !shouldReturnRvalueByConstRef(eltType)
+  where shouldReturnRvalueByValue(eltType)
     return dsiAccess(i);
   proc dsiAccess(i: idxType...rank) const ref
   where shouldReturnRvalueByConstRef(eltType)
@@ -445,7 +445,7 @@ class LocSparseBlockArr {
     return myElems[i];
   }
   proc dsiAccess(i)
-  where !shouldReturnRvalueByConstRef(eltType) {
+  where shouldReturnRvalueByValue(eltType) {
     return myElems[i];
   }
   proc dsiAccess(i) const ref

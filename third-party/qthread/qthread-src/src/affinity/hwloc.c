@@ -5,6 +5,7 @@
 #include <hwloc.h>
 
 #include "qt_subsystems.h"
+#include "qt_alloc.h"
 #include "qt_asserts.h" /* for qassert() */
 #include "qt_affinity.h"
 #include "qt_debug.h"
@@ -589,8 +590,9 @@ int INTERNAL qt_affinity_gendists(qthread_shepherd_t   *sheps,
 
     for (size_t i = 0; i < nshepherds; ++i) {
         sheps[i].node            = i % num_extant_objs;
-        sheps[i].sorted_sheplist = calloc(nshepherds - 1, sizeof(qthread_shepherd_id_t));
-        sheps[i].shep_dists      = calloc(nshepherds, sizeof(unsigned int));
+        sheps[i].sorted_sheplist = qt_calloc(nshepherds - 1,
+                                             sizeof(qthread_shepherd_id_t));
+        sheps[i].shep_dists      = qt_calloc(nshepherds, sizeof(unsigned int));
     }
 #ifdef QTHREAD_HAVE_HWLOC_DISTS
     const struct hwloc_distances_s *matrix = hwloc_get_whole_distance_matrix_by_type(topology, HWLOC_OBJ_NODE);

@@ -626,15 +626,15 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
         case INTENT_OUT:       write("out arg");       break;
         case INTENT_CONST:     write("const arg");     break;
         case INTENT_CONST_IN:  write("const in arg");  break;
-        case INTENT_CONST_REF: {
-          if (arg->isWideRef()) {
-            write("const wide-ref arg");
-          } else {
-            write("const ref arg");
-          }
-          break;
-        }
-        case INTENT_REF: {
+
+        case INTENT_CONST_REF:
+        case INTENT_REF:
+        case INTENT_REF_MAYBE_CONST: {
+          if ( (arg->intent & INTENT_FLAG_CONST) )
+            write("const ");
+          else if ( (arg->intent & INTENT_FLAG_MAYBE_CONST) )
+            write("const? ");
+
           if (arg->isWideRef()) {
             write("wide-ref arg");
           } else {

@@ -1,0 +1,4 @@
+--testExecCases=0  # checkDivByZero-intvar.good
+--testExecCases=1  # checkDivByZero-uintvar.good
+--testExecCases=2  # checkDivByZero-intDivEquals.good
+--testExecCases=3  # checkDivByZero-uintDivEquals.good

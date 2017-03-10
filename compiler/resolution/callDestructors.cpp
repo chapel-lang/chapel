@@ -305,8 +305,9 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
           if (isUserDefinedRecord(symLhs->type) == true &&
               symRhs->type                      == symLhs->type)
           {
-            if (symLhs->hasFlag(FLAG_ARG_THIS) == false &&
-                symLhs->hasFlag(FLAG_NO_COPY)  == false &&
+            if (symLhs->hasFlag(FLAG_ARG_THIS)   == false &&
+                symLhs->hasFlag(FLAG_NO_COPY)    == false &&
+                symLhs->hasFlag(FLAG_CHPL__ITER) == false &&
                 (symRhs->intent == INTENT_REF ||
                  symRhs->intent == INTENT_CONST_REF))
             {

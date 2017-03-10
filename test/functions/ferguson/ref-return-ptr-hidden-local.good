@@ -1,3 +1,0 @@
-ref-return-ptr-hidden-local.chpl:16: In function 'access_access':
-ref-return-ptr-hidden-local.chpl:17: error: illegal expression to return by ref
-ref-return-ptr-hidden-local.chpl:17: note: called function returns a value not a reference

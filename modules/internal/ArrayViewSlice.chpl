@@ -139,7 +139,7 @@ module ArrayViewSlice {
     }
 
     inline proc dsiAccess(i: idxType ...rank)
-      where !shouldReturnRvalueByConstRef(eltType) {
+      where shouldReturnRvalueByValue(eltType) {
       return dsiAccess(i);
     }
 
@@ -152,18 +152,18 @@ module ArrayViewSlice {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-        return indexCache.shiftedDataElem(dataIdx);
+        return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(i);
       }
     }
 
     inline proc dsiAccess(i)
-      where !shouldReturnRvalueByConstRef(eltType) {
+      where shouldReturnRvalueByValue(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-        return indexCache.shiftedDataElem(dataIdx);
+        return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(i);
       }
@@ -174,7 +174,7 @@ module ArrayViewSlice {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-        return indexCache.shiftedDataElem(dataIdx);
+        return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(i);
       }
@@ -184,7 +184,7 @@ module ArrayViewSlice {
       return arr.dsiLocalAccess(i);
 
     inline proc dsiLocalAccess(i)
-      where !shouldReturnRvalueByConstRef(eltType)
+      where shouldReturnRvalueByValue(eltType)
       return arr.dsiLocalAccess(i);
 
     inline proc dsiLocalAccess(i) const ref
@@ -318,8 +318,7 @@ module ArrayViewSlice {
 
     proc shouldUseIndexCache() param {
       return (_ArrInstance.isDefaultRectangular() &&
-              _containsRCRE() &&
-              defRectSimpleDData);
+              _containsRCRE());
     }
 
     // No modification of the index cache is necessary for a slice

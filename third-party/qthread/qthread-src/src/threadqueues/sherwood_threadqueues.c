@@ -12,6 +12,7 @@
 #include "qthread/cacheline.h"
 
 /* Internal Headers */
+#include "qt_alloc.h"
 #include "qt_visibility.h"
 #include "qthread_innards.h"           /* for qlib */
 #include "qt_shepherd_innards.h"
@@ -105,8 +106,8 @@ void qt_spin_exclusive_unlock(qt_spin_exclusive_t *l)
 #endif /* if AKP_DEBUG */
 
 /*FIXME: Cannot use pools for allcations of variable size */
-#define ALLOC_EXTRA(size) malloc(size)
-#define FREE_EXTRA(t)     free(t)
+#define ALLOC_EXTRA(size) qt_malloc(size)
+#define FREE_EXTRA(t)     qt_free(t)
 #define DIV_FACTOR  4
 #define MAX_ABS_AGG 64
 static void      **agged_tasks_arg = NULL;

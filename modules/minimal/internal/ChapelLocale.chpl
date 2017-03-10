@@ -20,6 +20,27 @@
 // ChapelLocale.chpl
 //
 module ChapelLocale {
+  pragma "no doc"
+  type chpl_sublocID_t = int(32);
+
+  //
+  // The task layer calls these to convert between full sublocales and
+  // execution sublocales.  Full sublocales may contain more information
+  // in some locale models, but not here.
+  //
+  export
+  proc chpl_localeModel_sublocToExecutionSubloc(full_subloc:chpl_sublocID_t)
+  {
+    return full_subloc;  // execution sublocale is same as full sublocale
+  }
+
+  export
+  proc chpl_localeModel_sublocMerge(full_subloc:chpl_sublocID_t,
+                                    execution_subloc:chpl_sublocID_t)
+  {
+    return execution_subloc;  // no info needed from full sublocale
+  }
+
   //
   // The runtime calls these to adjust the running task count.
   //

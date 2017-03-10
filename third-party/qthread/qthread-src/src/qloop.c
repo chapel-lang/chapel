@@ -18,7 +18,7 @@
 #include "qt_expect.h"
 #include "qt_asserts.h"
 #include "qt_debug.h"
-#include "qt_aligned_alloc.h"
+#include "qt_alloc.h"
 #include "qt_barrier.h"
 
 #ifdef QTHREAD_USE_ROSE_EXTENSIONS
@@ -296,7 +296,7 @@ static void qt_loop_spawner(const size_t start,
             assert(sync.sinc);
             break;
         case ALIGNED:
-            retptr = sync.aligned = qthread_internal_aligned_alloc(steps * sizeof(aligned_t), QTHREAD_ALIGNMENT_ALIGNED_T);
+            retptr = sync.aligned = qt_internal_aligned_alloc(steps * sizeof(aligned_t), QTHREAD_ALIGNMENT_ALIGNED_T);
             ALLOC_SCRIBBLE(retptr, steps * sizeof(aligned_t));
             assert(sync.aligned);
             for (i = 0; i < (stop - start); ++i) {
@@ -348,7 +348,7 @@ static void qt_loop_spawner(const size_t start,
                 qthread_readFF(NULL, sync.aligned + i);
             }
             FREE_SCRIBBLE(sync.aligned, steps * sizeof(aligned_t));
-            qthread_internal_aligned_free(sync.aligned, QTHREAD_ALIGNMENT_ALIGNED_T);
+            qt_internal_aligned_free(sync.aligned, QTHREAD_ALIGNMENT_ALIGNED_T);
             break;
         case SINC_T:
             qt_sinc_wait(sync.sinc, NULL);
@@ -537,7 +537,7 @@ static QINLINE void qt_loop_balance_inner(const size_t       start,
             internal_flags |= QTHREAD_SPAWN_RET_SYNCVAR_T;
             break;
         case ALIGNED:
-            sync.aligned = qthread_internal_aligned_alloc(maxworkers * sizeof(aligned_t), QTHREAD_ALIGNMENT_ALIGNED_T);
+            sync.aligned = qt_internal_aligned_alloc(maxworkers * sizeof(aligned_t), QTHREAD_ALIGNMENT_ALIGNED_T);
             assert(sync.aligned);
             ALLOC_SCRIBBLE(sync.aligned, maxworkers * sizeof(aligned_t));
             break;
@@ -623,7 +623,7 @@ static QINLINE void qt_loop_balance_inner(const size_t       start,
                 qthread_readFF(NULL, sync.aligned + i);
             }
             FREE_SCRIBBLE(sync.aligned, maxworkers * sizeof(aligned_t));
-            qthread_internal_aligned_free(sync.aligned, QTHREAD_ALIGNMENT_ALIGNED_T);
+            qt_internal_aligned_free(sync.aligned, QTHREAD_ALIGNMENT_ALIGNED_T);
             break;
         case SINC_T:
             qt_sinc_wait(sync.sinc, NULL);
@@ -891,7 +891,7 @@ static QINLINE void qt_loopaccum_balance_inner(const size_t       start,
                     acc(out, realrets + ((i - 1) * size));
                 }
             }
-            qthread_internal_aligned_free(sync.aligned, QTHREAD_ALIGNMENT_ALIGNED_T);
+            qt_internal_aligned_free(sync.aligned, QTHREAD_ALIGNMENT_ALIGNED_T);
             break;
         case ALIGNED:
         case NO_SYNC:
@@ -1637,7 +1637,7 @@ static qt_qsort_iprets_t qt_qsort_inner_partitioner(double      *array,
     struct qt_qsort_args *args;
     size_t                i;
 
-    rets = (syncvar_t *)calloc(numthreads, sizeof(syncvar_t));
+    rets = (syncvar_t *) qt_calloc(numthreads, sizeof(syncvar_t));
     args = (struct qt_qsort_args *)MALLOC(sizeof(struct qt_qsort_args) * numthreads);
     /* spawn threads to do the partitioning */
     for (i = 0; i < numthreads; i++) {
