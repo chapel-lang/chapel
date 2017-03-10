@@ -19,7 +19,7 @@ noinst_HEADERS = \
 	qt_prefetch.h \
 	qt_addrstat.h \
 	qt_affinity.h \
-	qt_aligned_alloc.h \
+	qt_alloc.h \
 	qt_arrive_first.h \
 	qt_atomics.h \
 	qt_barrier.h \

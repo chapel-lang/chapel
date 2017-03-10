@@ -136,7 +136,7 @@ Dimensions = [
     ),
     Dimension(
         'localeModel', 'CHPL_LOCALE_MODEL',
-        values=['flat', 'numa'],
+        values=['flat', 'knl', 'numa'],
         default=chpl_locale_model.get(),
         help_text='Locale model ({var_name}) values to build.',
     ),

@@ -33,7 +33,7 @@
 #include "qt_gcd.h"                    /* for qt_lcm() */
 #include "qt_macros.h"
 #include "qt_visibility.h"
-#include "qt_aligned_alloc.h"
+#include "qt_alloc.h"
 #include "qt_subsystems.h"
 
 /* Seems SLIGHTLY faster without TLS, and a whole lot safer and cleaner */
@@ -93,7 +93,7 @@ static void qt_mpool_subsystem_shutdown(void)
     TLS_DELETE(pool_cache_count);
     for (int i = 0; i < qthread_readstate(TOTAL_WORKERS); ++i) {
         if (pool_cache_array[i]) {
-            free(pool_cache_array[i]);
+            qt_free(pool_cache_array[i]);
         }
     }
     FREE(pool_cache_array, sizeof(void *) * qthread_readstate(TOTAL_WORKERS));
@@ -105,7 +105,8 @@ void INTERNAL qt_mpool_subsystem_init(void)
 #ifdef TLS
     assert(TLS_GET(pool_caches) == NULL);
     assert(TLS_GET(pool_cache_count) == 0);
-    pool_cache_array = calloc(sizeof(void *), qthread_readstate(TOTAL_WORKERS));
+    pool_cache_array = qt_calloc(sizeof(void *),
+                                 qthread_readstate(TOTAL_WORKERS));
     qthread_internal_cleanup_late(qt_mpool_subsystem_shutdown);
 #endif
 }
@@ -114,7 +115,7 @@ void INTERNAL qt_mpool_subsystem_init(void)
 static QINLINE void *qt_mpool_internal_aligned_alloc(size_t alloc_size,
                                                      size_t alignment)
 {                                      /*{{{ */
-    void *ret = qthread_internal_aligned_alloc(alloc_size, alignment);
+    void *ret = qt_internal_aligned_alloc(alloc_size, alignment);
 
     VALGRIND_MAKE_MEM_NOACCESS(ret, alloc_size);
     return ret;
@@ -123,7 +124,7 @@ static QINLINE void *qt_mpool_internal_aligned_alloc(size_t alloc_size,
 static QINLINE void qt_mpool_internal_aligned_free(void  *freeme,
                                                    size_t alignment)
 {                                      /*{{{ */
-    qthread_internal_aligned_free(freeme, alignment);
+    qt_internal_aligned_free(freeme, alignment);
 }                                      /*}}} */
 
 // sync means lock-protected
@@ -208,7 +209,7 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
 #endif
     /* this assumes that pagesize is a multiple of sizeof(void*) */
     assert(pagesize % sizeof(void *) == 0);
-    pool->alloc_list = qthread_internal_aligned_alloc(pagesize, pagesize);
+    pool->alloc_list = qt_internal_aligned_alloc(pagesize, pagesize);
     qassert_goto((pool->alloc_list != NULL), errexit);
     memset(pool->alloc_list, 0, pagesize);
     pool->alloc_list_pos = 0;
@@ -249,7 +250,8 @@ static qt_mpool_threadlocal_cache_t *qt_mpool_internal_getcache(qt_mpool pool)
                         }
                         )
             qthread_debug(MPOOL_DETAILS, "%u -> realloc-ing the tc (%p)\n", wkr, tc);
-            qt_mpool_threadlocal_cache_t *newtc = realloc(tc, sizeof(qt_mpool_threadlocal_cache_t) * pool->offset);
+            qt_mpool_threadlocal_cache_t *newtc = qt_realloc(tc,
+                                                             sizeof(qt_mpool_threadlocal_cache_t) * pool->offset);
             qthread_debug(MPOOL_DETAILS, "%u ->     new tc (%p)\n", wkr, newtc);
             assert(newtc);
             if (tc != newtc) {
@@ -290,7 +292,7 @@ static qt_mpool_threadlocal_cache_t *qt_mpool_internal_getcache(qt_mpool pool)
 #else /* ifdef TLS */
     tc = pthread_getspecific(pool->threadlocal_cache);
     if (NULL == tc) {
-        tc = qthread_internal_aligned_alloc(sizeof(qt_mpool_threadlocal_cache_t), CACHELINE_WIDTH);
+        tc = qt_internal_aligned_alloc(sizeof(qt_mpool_threadlocal_cache_t), CACHELINE_WIDTH);
         assert(tc);
         tc->cache = NULL;
         tc->count = 0;
@@ -361,7 +363,7 @@ void INTERNAL *qt_mpool_alloc(qt_mpool pool)
                    (((uintptr_t)p) & (pool->alignment - 1)) == 0);
             QTHREAD_FASTLOCK_LOCK(&pool->pool_lock);
             if (pool->alloc_list_pos == (pagesize / sizeof(void *) - 1)) {
-                void **tmp = qthread_internal_aligned_alloc(pagesize, pagesize);
+                void **tmp = qt_internal_aligned_alloc(pagesize, pagesize);
                 qassert_ret((tmp != NULL), NULL);
                 memset(tmp, 0, pagesize);
                 tmp[pagesize / sizeof(void *) - 1] = pool->alloc_list;
@@ -458,13 +460,13 @@ void INTERNAL qt_mpool_destroy(qt_mpool pool)
         p                = pool->alloc_list;
         pool->alloc_list = pool->alloc_list[pagesize / sizeof(void *) - 1];
         FREE_SCRIBBLE(p, pagesize);
-        qthread_internal_aligned_free(p, pagesize);
+        qt_internal_aligned_free(p, pagesize);
     }
     qthread_debug(MPOOL_DETAILS, "begin free TLS caches\n");
     while (pool->caches) {
         qt_mpool_threadlocal_cache_t *freeme = pool->caches;
         pool->caches = freeme->next;
-        qthread_internal_aligned_free(freeme, CACHELINE_WIDTH);
+        qt_internal_aligned_free(freeme, CACHELINE_WIDTH);
     }
     qthread_debug(MPOOL_DETAILS, "done freeing TLS caches\n");
 #ifndef TLS

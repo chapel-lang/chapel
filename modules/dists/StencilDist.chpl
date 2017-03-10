@@ -1165,7 +1165,7 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
       if radata(rlocIdx).shiftedDataChunk(0) != nil {
         var dataIdx = radata(rlocIdx).getRADDataIndex(myLocArr.stridable, i);
-        return radata(rlocIdx).shiftedDataElem(dataIdx);
+        return radata(rlocIdx).getDataElem(dataIdx);
       }
     }
   }
@@ -1178,7 +1178,7 @@ inline proc StencilArr.dsiAccess(i: rank*idxType) ref {
 }
 // value version for POD types
 inline proc StencilArr.dsiAccess(i: rank*idxType)
-where !shouldReturnRvalueByConstRef(eltType) {
+where shouldReturnRvalueByValue(eltType) {
   return do_dsiAccess(false, i);
 }
 // const ref version for types with copy-ctor
@@ -1193,7 +1193,7 @@ inline proc StencilArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 // value version for POD types
 inline proc StencilArr.dsiAccess(i: idxType...rank)
-where !shouldReturnRvalueByConstRef(eltType)
+where shouldReturnRvalueByValue(eltType)
   return dsiAccess(i);
 // const ref version for types with copy-ctor
 inline proc StencilArr.dsiAccess(i: idxType...rank) const ref

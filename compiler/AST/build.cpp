@@ -1592,6 +1592,8 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     BlockStmt* nonVectorCoforallBlk = new BlockStmt();
 
     VarSymbol* tmpIter = newTemp("tmpIter");
+    tmpIter->addFlag(FLAG_EXPR_TEMP);
+    tmpIter->addFlag(FLAG_MAYBE_REF);
     coforallBlk->insertAtTail(new DefExpr(tmpIter));
     coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, tmpIter, iterator));
     {

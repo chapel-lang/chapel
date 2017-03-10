@@ -1,7 +1,0 @@
-bug: ref return semantics always invoke `ref` case if returning an array, even if that array is only read.
-
-This issue was initially encountered while working on miniMD's StencilDist.
-StencilDist was initially written to rely on the `setter` param variable to
-know when a write to an element occurred. It seems that `setter` logic had been
-flawed long before Michael's ref return change (#3232). This appears to occur
-for both arrays-of-arrays and simple arrays of other types.

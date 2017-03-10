@@ -596,18 +596,16 @@ static void checkUseBeforeDefs() {
 static Symbol* theDefinedSymbol(BaseAST* ast) {
   Symbol* retval = NULL;
 
-  // 1) A symbol is "defined" if it is the LHS of a move or assign
-  if (CallExpr* call = toCallExpr(ast)) {
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-      if (SymExpr* se = toSymExpr(call->get(1))) {
-        retval = se->symbol();
-      }
-    }
-
-  // 2) Another way to find the symbol that will be found by 1)
-  } else if (SymExpr* se = toSymExpr(ast)) {
+  // A symbol is "defined" if it is the LHS of a move, an assign,
+  // or a variable initialization.
+  //
+  // The caller performs a post-order traversal and so we find the
+  // symExpr before we see the callExpr
+  if (SymExpr* se = toSymExpr(ast)) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+      if (call->isPrimitive(PRIM_MOVE)     == true  ||
+          call->isPrimitive(PRIM_ASSIGN)   == true  ||
+          call->isPrimitive(PRIM_INIT_VAR) == true)  {
         if (call->get(1) == se) {
           retval = se->symbol();
         }
@@ -1154,8 +1152,15 @@ static void insert_call_temps(CallExpr* call)
 
   VarSymbol* tmp = newTemp("call_tmp");
 
-  if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
+
+  // Add FLAG_EXPR_TEMP unless this tmp is being used
+  // as a sub-expression for a variable initialization.
+  // This flag triggers autoCopy/autoDestroy behavior.
+  if (parentCall == NULL ||
+      (parentCall->isNamed("chpl__initCopy")  == false &&
+       parentCall->isPrimitive(PRIM_INIT_VAR) == false)) {
     tmp->addFlag(FLAG_EXPR_TEMP);
+  }
 
   if (call->isPrimitive(PRIM_NEW))
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
@@ -1595,7 +1600,18 @@ static void normRefVar(DefExpr* defExpr) {
   }
 
   if (SymExpr* sym = toSymExpr(varLocation)) {
-    if (!var->hasFlag(FLAG_CONST) && sym->symbol()->isConstant()) {
+    Symbol* symbol = sym->symbol();
+
+    bool error = (!var->hasFlag(FLAG_CONST) && symbol->isConstant());
+
+    // This is a workaround for the fact tha isConstant for an ArgSymbol with
+    // blank intent and type dtUnknown returns true, but blank intent isn't
+    // necessarily const.
+    if (ArgSymbol* arg = toArgSymbol(symbol))
+      if (arg->intent == INTENT_BLANK && arg->type == dtUnknown)
+        error = false;
+
+    if (error) {
       USR_FATAL_CONT(sym,
                      "Cannot set a non-const reference to a const variable.");
     }
@@ -1624,17 +1640,11 @@ static void normVarTypeInference(DefExpr* defExpr) {
     Type* type = initSym->symbol()->type;
 
     if (isPrimitiveScalar(type) == true) {
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE,     var, initExpr));
 
       var->type = type;
-
-    } else if (var->hasFlag(FLAG_NO_COPY) == true)  {
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
-
     } else {
-      CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
-
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, rhs));
+      defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
     }
 
   // e.g.
@@ -1667,14 +1677,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
       }
 
     } else {
-      if (var->hasFlag(FLAG_NO_COPY) == true) {
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
-
-      } else {
-        CallExpr* rhs = new CallExpr("chpl__initCopy", initExpr);
-
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, rhs));
-      }
+      defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
     }
 
   } else {

@@ -30,7 +30,7 @@ proc main {
   q.enqueue("b");
   q.enqueue("c");
   while !q.isEmpty() do writeln(q.dequeue());
-  
+  delete q;
 }
 
 

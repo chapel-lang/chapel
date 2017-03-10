@@ -59,6 +59,7 @@
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpltimers.h"
+#include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-vector-macros.h"
 #include "chpl-visual-debug.h"

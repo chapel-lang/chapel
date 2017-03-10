@@ -175,19 +175,19 @@ am__noinst_HEADERS_DIST = 56reader-rwlock.h fastcontext/taskimpl.h \
 	fastcontext/power-ucontext.h fastcontext/386-ucontext.h \
 	fastcontext/tile-ucontext.h net/net.h qthread_innards.h \
 	qloop_innards.h qt_asserts.h qt_expect.h qt_prefetch.h \
-	qt_addrstat.h qt_affinity.h qt_aligned_alloc.h \
-	qt_arrive_first.h qt_atomics.h qt_barrier.h \
-	qt_blocking_structs.h qt_context.h qt_debug.h qt_envariables.h \
-	qt_filters.h qt_gcd.h qt_hash.h qt_hazardptrs.h \
-	qt_initialized.h qt_int_ceil.h qt_int_log.h qt_io.h qt_feb.h \
-	qt_syncvar.h qt_macros.h qt_mpool.h qt_output_macros.h \
-	qt_profiling.h qt_qthread_mgmt.h qt_qthread_struct.h \
-	qt_qthread_t.h qt_queue.h qt_shepherd_innards.h \
-	qt_spawn_macros.h qt_spawncache.h qt_subsystems.h qt_teams.h \
-	qt_threadqueues.h qt_threadqueue_scheduler.h qt_threadstate.h \
-	qt_touch.h qt_visibility.h rose_extensions.h \
-	rose_log_arrivaldetector.h rose_sinc_barrier.h rose_xomp.h \
-	spr_innards.h qt_eurekas.h qt_multinode_innards.h
+	qt_addrstat.h qt_affinity.h qt_alloc.h qt_arrive_first.h \
+	qt_atomics.h qt_barrier.h qt_blocking_structs.h qt_context.h \
+	qt_debug.h qt_envariables.h qt_filters.h qt_gcd.h qt_hash.h \
+	qt_hazardptrs.h qt_initialized.h qt_int_ceil.h qt_int_log.h \
+	qt_io.h qt_feb.h qt_syncvar.h qt_macros.h qt_mpool.h \
+	qt_output_macros.h qt_profiling.h qt_qthread_mgmt.h \
+	qt_qthread_struct.h qt_qthread_t.h qt_queue.h \
+	qt_shepherd_innards.h qt_spawn_macros.h qt_spawncache.h \
+	qt_subsystems.h qt_teams.h qt_threadqueues.h \
+	qt_threadqueue_scheduler.h qt_threadstate.h qt_touch.h \
+	qt_visibility.h rose_extensions.h rose_log_arrivaldetector.h \
+	rose_sinc_barrier.h rose_xomp.h spr_innards.h qt_eurekas.h \
+	qt_multinode_innards.h
 HEADERS = $(noinst_HEADERS)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
@@ -378,6 +378,7 @@ timelimit_path = @timelimit_path@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+with_alloc = @with_alloc@
 with_barrier = @with_barrier@
 with_dict = @with_dict@
 with_scheduler = @with_scheduler@
@@ -387,19 +388,19 @@ noinst_HEADERS = 56reader-rwlock.h fastcontext/taskimpl.h \
 	fastcontext/power-ucontext.h fastcontext/386-ucontext.h \
 	fastcontext/tile-ucontext.h net/net.h qthread_innards.h \
 	qloop_innards.h qt_asserts.h qt_expect.h qt_prefetch.h \
-	qt_addrstat.h qt_affinity.h qt_aligned_alloc.h \
-	qt_arrive_first.h qt_atomics.h qt_barrier.h \
-	qt_blocking_structs.h qt_context.h qt_debug.h qt_envariables.h \
-	qt_filters.h qt_gcd.h qt_hash.h qt_hazardptrs.h \
-	qt_initialized.h qt_int_ceil.h qt_int_log.h qt_io.h qt_feb.h \
-	qt_syncvar.h qt_macros.h qt_mpool.h qt_output_macros.h \
-	qt_profiling.h qt_qthread_mgmt.h qt_qthread_struct.h \
-	qt_qthread_t.h qt_queue.h qt_shepherd_innards.h \
-	qt_spawn_macros.h qt_spawncache.h qt_subsystems.h qt_teams.h \
-	qt_threadqueues.h qt_threadqueue_scheduler.h qt_threadstate.h \
-	qt_touch.h qt_visibility.h rose_extensions.h \
-	rose_log_arrivaldetector.h rose_sinc_barrier.h rose_xomp.h \
-	spr_innards.h $(am__append_1) $(am__append_2)
+	qt_addrstat.h qt_affinity.h qt_alloc.h qt_arrive_first.h \
+	qt_atomics.h qt_barrier.h qt_blocking_structs.h qt_context.h \
+	qt_debug.h qt_envariables.h qt_filters.h qt_gcd.h qt_hash.h \
+	qt_hazardptrs.h qt_initialized.h qt_int_ceil.h qt_int_log.h \
+	qt_io.h qt_feb.h qt_syncvar.h qt_macros.h qt_mpool.h \
+	qt_output_macros.h qt_profiling.h qt_qthread_mgmt.h \
+	qt_qthread_struct.h qt_qthread_t.h qt_queue.h \
+	qt_shepherd_innards.h qt_spawn_macros.h qt_spawncache.h \
+	qt_subsystems.h qt_teams.h qt_threadqueues.h \
+	qt_threadqueue_scheduler.h qt_threadstate.h qt_touch.h \
+	qt_visibility.h rose_extensions.h rose_log_arrivaldetector.h \
+	rose_sinc_barrier.h rose_xomp.h spr_innards.h $(am__append_1) \
+	$(am__append_2)
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

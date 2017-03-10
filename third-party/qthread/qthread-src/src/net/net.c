@@ -438,7 +438,7 @@ int qthread_fork_remote(qthread_f   f,
         struct fork_long_msg_t * long_msg;
 
         size_t long_msg_size = sizeof(struct fork_long_msg_t) + arg_len;
-        long_msg = malloc(long_msg_size);
+        long_msg = qt_malloc(long_msg_size);
         assert(NULL != long_msg);
 
         long_msg->uid         = uid;
@@ -451,7 +451,7 @@ int qthread_fork_remote(qthread_f   f,
                       my_rank, rank, long_msg->uid, long_msg->return_addr, long_msg->arg_len);
         int const rc = qthread_internal_net_driver_send(rank, LONG_MSG_TAG, long_msg, long_msg_size);
 
-        free(long_msg);
+        qt_free(long_msg);
 
         return rc;
     }

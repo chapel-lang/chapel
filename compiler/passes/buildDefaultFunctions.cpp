@@ -301,8 +301,12 @@ static void build_accessor(AggregateType* ct, Symbol* field, bool setter) {
   } else {
     if (fieldIsConst || !setter)
       fn->retTag = RET_CONST_REF;
-    else
+    else {
       fn->retTag = RET_REF;
+      if (recordLike) {
+        _this->intent = INTENT_REF;
+      }
+    }
   }
 
   if (isUnion(ct)) {
@@ -1069,7 +1073,7 @@ static void build_record_copy_function(AggregateType* ct) {
 
   // if no copy-init function existed...
   FnSymbol*  fn  = new FnSymbol("chpl__initCopy");
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  ArgSymbol* arg = new ArgSymbol(INTENT_CONST, "x", ct);
 
   fn->addFlag(FLAG_INIT_COPY_FN);
   fn->addFlag(FLAG_COMPILER_GENERATED);

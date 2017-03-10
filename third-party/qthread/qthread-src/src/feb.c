@@ -16,6 +16,7 @@
 /* Internal Headers */
 #include "qt_subsystems.h"
 #include "qt_hash.h"
+#include "qt_alloc.h"
 #include "qt_asserts.h"
 #include "qthread_innards.h" /* for qlib */
 #include "qt_initialized.h"  // for qthread_library_initialized
@@ -1658,7 +1659,7 @@ int INTERNAL qthread_check_feb_preconds(qthread_t *t)
 
     // All input preconds are full
     t->thread_state = QTHREAD_STATE_NEW;
-    free(t->preconds);
+    qt_free(t->preconds);
     t->preconds = NULL;
 #ifdef QTHREAD_COUNT_THREADS
     QTHREAD_FASTLOCK_LOCK(&concurrentthreads_lock);

@@ -16,7 +16,7 @@
 #include "qt_asserts.h"
 #include "qt_debug.h"
 #include "qt_atomics.h"
-#include "qt_aligned_alloc.h"
+#include "qt_alloc.h"
 
 /*
  * The hash table in this file is based on the work by Ori Shalev and Nir Shavit
@@ -460,7 +460,7 @@ static inline qt_hash qt_hash_create(qt_dict_key_equals_f eq,
     if (hard_max_buckets == 0) {
         hard_max_buckets = pagesize / sizeof(marked_ptr_t);
     }
-    tmp->B = calloc(hard_max_buckets, sizeof(marked_ptr_t));
+    tmp->B = qt_calloc(hard_max_buckets, sizeof(marked_ptr_t));
     assert(tmp->B);
     tmp->size  = 2;
     tmp->count = 0;

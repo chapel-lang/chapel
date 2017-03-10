@@ -40,7 +40,7 @@ similar, though the specific people involved are likely to change and grow).
   `chapel-lang/chapel`_, send a request including your github username to
   chapel_admin _at_ cray.com.
 
-.. note::
+  .. note::
 
     You do not need commit/push access to the main repo in order to contribute
     code. Reviewers on the core team can pull, review, and merge your pull
@@ -108,6 +108,9 @@ Submit pull request
 Test changes
 ~~~~~~~~~~~~
 
+It may be helpful to read the documentation on Chapel's `Test System`_ before
+writing or modifying tests.
+
 * Testing your patch:
 
   * Any addition/change to the Chapel test system should pass testing when that
@@ -146,6 +149,8 @@ Test changes
     resources available to you, you can request that a member of the core
     Chapel team help.
 
+.. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/developer/bestPractices/TestSystem.rst
+
 .. _Mail chapel-developers@ for review and merge:
 
 Mail chapel-developers@ for review and merge
@@ -158,7 +163,7 @@ Mail chapel-developers@ for review and merge
   who have been given write access can merge trivial changes (e.g. small bug
   fixes, documentation changes) without review.
 
-.. note::
+  .. note::
 
     Ideally, someone should volunteer to review your pull request within a day
     or two. If this doesn't happen, feel free to make some noise. Ideally the
@@ -176,7 +181,7 @@ Mail chapel-developers@ for review and merge
   either the reviewer or developer (given sufficient permissions), as decided
   between the two of them.
 
-.. note::
+  .. note::
 
     Recall that while git history can be rewritten, it is both difficult and
     does not remove any local copies that have been pulled down. So be very

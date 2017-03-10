@@ -134,7 +134,7 @@ static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
   type value; \
   size_t sz; \
   sz = sizeof(value); \
-  if (je_mallctl(mallctl_string, &value, &sz, NULL, 0) != 0) { \
+  if (chpl_je_mallctl(mallctl_string, &value, &sz, NULL, 0) != 0) { \
     char error_msg[256]; \
     snprintf(error_msg, sizeof(error_msg), "could not get mallctl value for %s", mallctl_string); \
     chpl_internal_error(error_msg); \
@@ -164,14 +164,14 @@ static void initialize_arenas(void) {
   //   calling this interface."
   narenas = get_num_arenas();
   for (arena=1; arena<narenas; arena++) {
-    if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
+    if (chpl_je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena");
     }
   }
 
   // then set the current thread back to using arena 0
   arena = 0;
-  if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
+  if (chpl_je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena back to 0");
   }
 }
@@ -198,7 +198,7 @@ static void replaceChunkHooks(void) {
   for (arena=0; arena<narenas; arena++) {
     char path[128];
     snprintf(path, sizeof(path), "arena.%u.chunk_hooks", arena);
-    if (je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
+    if (chpl_je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
       chpl_internal_error("could not update the chunk hooks");
     }
   }
@@ -275,11 +275,11 @@ static void useUpMemNotInHeap(void) {
     size_t alloc_size;
     alloc_size = classes[class];
     do {
-      if ((p = je_malloc(alloc_size)) == NULL) {
+      if ((p = chpl_je_malloc(alloc_size)) == NULL) {
         chpl_internal_error("could not use up memory outside of shared heap");
       }
     } while (addressNotInHeap(p));
-    je_free(p);
+    chpl_je_free(p);
   }
 }
 
@@ -319,10 +319,10 @@ void chpl_mem_layerInit(void) {
     initializeSharedHeap();
   } else {
     void* p;
-    if ((p = je_malloc(1)) == NULL) {
-      chpl_internal_error("cannot init heap: je_malloc() failed");
+    if ((p = chpl_je_malloc(1)) == NULL) {
+      chpl_internal_error("cannot init heap: chpl_je_malloc() failed");
     }
-    je_free(p);
+    chpl_je_free(p);
   }
 }
 

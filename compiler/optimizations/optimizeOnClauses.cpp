@@ -240,6 +240,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_REDUCE_ASSIGN:
   case PRIM_NEW:
   case PRIM_INIT:
+  case PRIM_INIT_VAR:
   case PRIM_NO_INIT:
   case PRIM_TYPE_INIT:
   case PRIM_INITIALIZER_SET_FIELD:
@@ -261,8 +262,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_QUERY_TYPE_FIELD:
   case PRIM_ERROR:
   case PRIM_WARNING:
-
-  case PRIM_OPTIMIZE_ARRAY_BLK_MULT:
 
   case PRIM_BLOCK_PARAM_LOOP:
   case PRIM_BLOCK_BEGIN:

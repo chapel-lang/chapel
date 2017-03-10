@@ -30,32 +30,32 @@
 #define MALLOCX_NO_FLAGS 0
 
 static inline void* chpl_calloc(size_t n, size_t size) {
-  return je_calloc(n,size);
+  return chpl_je_calloc(n,size);
 }
 
 static inline void* chpl_malloc(size_t size) {
-  return je_malloc(size);
+  return chpl_je_malloc(size);
 }
 
 static inline void* chpl_memalign(size_t boundary, size_t size) {
   void* ret = NULL;
   int rc;
-  rc = je_posix_memalign(&ret, boundary, size);
+  rc = chpl_je_posix_memalign(&ret, boundary, size);
   if( rc == 0 ) return ret;
   else return NULL;
 }
 
 static inline void* chpl_realloc(void* ptr, size_t size) {
-  return je_realloc(ptr, size);
+  return chpl_je_realloc(ptr, size);
 }
 
 static inline void chpl_free(void* ptr) {
-  je_free(ptr);
+  chpl_je_free(ptr);
 }
 
 static inline size_t chpl_good_alloc_size(size_t minSize) {
   if (minSize == 0) { return 0; }
-  return je_nallocx(minSize, MALLOCX_NO_FLAGS);
+  return chpl_je_nallocx(minSize, MALLOCX_NO_FLAGS);
 }
 
 // TODO (EJR 03/11/16): Can/should we consider using the extended API? See JIRA

@@ -161,8 +161,9 @@ int INTERNAL qt_affinity_gendists(qthread_shepherd_t   *sheps,
 	qthread_debug(AFFINITY_DETAILS, "i = %u < %u...\n", i, nshepherds);
         const unsigned int node_i = sheps[i].node;
         size_t             j, k;
-        sheps[i].shep_dists      = calloc(nshepherds, sizeof(unsigned int));
-        sheps[i].sorted_sheplist = calloc(nshepherds - 1, sizeof(qthread_shepherd_id_t));
+        sheps[i].shep_dists      = qt_calloc(nshepherds, sizeof(unsigned int));
+        sheps[i].sorted_sheplist = qt_calloc(nshepherds - 1,
+                                             sizeof(qthread_shepherd_id_t));
 	qthread_debug(AFFINITY_DETAILS, "allocs %p %p\n", sheps[i].shep_dists, sheps[i].sorted_sheplist);
         assert(sheps[i].shep_dists);
         assert(sheps[i].sorted_sheplist);

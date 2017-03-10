@@ -151,6 +151,23 @@ class AMRHierarchy {
   //< |    constructor    < |
   // \|....................\|
 
+  //|\''''''''''''''''''''|\
+  //| >     destructor    | >
+  //|/....................|/
+
+  proc deinit() {
+    for lvl in levels do if lvl then delete lvl;
+    for reg in invalid_regions do if reg then delete reg;
+    for cgr in cf_ghost_regions do if cgr then delete cgr;
+    for pb in physical_boundaries do if pb then delete pb;
+    for lvl in level_solutions do if lvl then delete lvl;
+    for cgs in cf_ghost_solutions do if cgs then delete cgs;
+  }
+
+  // /|''''''''''''''''''''/|
+  //< |     destructor    < |
+  // \|....................\|
+
 
 }
 // /|"""""""""""""""""""""""""""/|
@@ -433,7 +450,7 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
     
   }
 
-    
+  delete coarse_exterior;
   delete cluster_domains;
 
   //<=== Ensure proper nesting <===
@@ -676,10 +693,9 @@ proc AMRHierarchy.AMRHierarchy (
   parameter_file.readln( target_efficiency );
   parameter_file.close();
 
-  
-
   //==== Create and return hierarchy ====
-  return new AMRHierarchy(x_low,
+  delete this;
+  this = new AMRHierarchy(x_low,
                           x_high,
 			  n_coarsest_cells,
 			  n_ghost_cells,
@@ -1032,5 +1048,6 @@ proc main {
 				     elevatedSquare);
   
   hierarchy.clawOutput(0);
-  
+
+  delete hierarchy;
 }

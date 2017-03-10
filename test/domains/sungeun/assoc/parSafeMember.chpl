@@ -5,7 +5,7 @@ config const n = 80;
 var D: domain(real);
 
 for i in 1..trials {
-  coforall t in 1..n {
+  coforall t in 1..n with (ref D) {
     const b = if t & 1 then -1 else 1;
     var r = 1..iters by b;
     for j in r do

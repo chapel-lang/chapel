@@ -116,7 +116,7 @@ module ChapelSyncvar {
       isOwned = true;
     }
 
-    proc _syncvar(type valType, other : _syncvar(valType)) {
+    proc _syncvar(type valType, const other : _syncvar(valType)) {
       ensureFEType(valType);
 
       wrapped = other.wrapped;
@@ -618,7 +618,7 @@ module ChapelSyncvar {
       isOwned = true;
     }
 
-    proc _singlevar(type valType, other : _singlevar(valType)) {
+    proc _singlevar(type valType, const other : _singlevar(valType)) {
       ensureFEType(valType);
 
       wrapped = other.wrapped;

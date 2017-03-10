@@ -81,8 +81,9 @@ void buildTriggerMap(const char *fileName){
     while (fgets(line, BUFSIZ, triggerFile) != NULL) {
 
         // Allocate memory for the next trigger entry
-        triggerMap = (Trigger **) realloc(triggerMap, (triggerCount + 1) * sizeof(Trigger *));
-        triggerMap[triggerCount] = (Trigger *) malloc(sizeof(Trigger));
+        triggerMap = (Trigger **) qt_realloc(triggerMap,
+                                             (triggerCount + 1) * sizeof(Trigger *));
+        triggerMap[triggerCount] = (Trigger *) qt_malloc(sizeof(Trigger));
 
         // Parsing type
         nextField = (char *) strtok(line, ",");
@@ -114,7 +115,7 @@ void buildTriggerMap(const char *fileName){
         // Parsing meterName
         nextField = (char *) strtok(NULL, ",");
         nextField = trim(nextField);
-        triggerMap[triggerCount]->meterName = (char *) malloc((1+strlen(nextField))*sizeof(char));
+        triggerMap[triggerCount]->meterName = (char *) qt_malloc((1 + strlen(nextField)) * sizeof(char));
         strcpy(triggerMap[triggerCount]->meterName , nextField);
 
         // Parsing threshold lower bound
