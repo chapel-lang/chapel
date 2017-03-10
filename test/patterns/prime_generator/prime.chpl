@@ -32,15 +32,11 @@ proc main()
 
 	while(t <= test)
 	{
-		var m = read(int);
 		var n = read(int);
 		T.clear();
 		T.start();
-		for i in m..n
-		{
-			if(isPrime(i) == true) then
-				writeln(i);
-		}
+		if isPrime(n) then writeln("yes");
+		else writeln("no");
 		t+=1;
 		totalTime = totalTime + T.elapsed();
 		T.stop();
