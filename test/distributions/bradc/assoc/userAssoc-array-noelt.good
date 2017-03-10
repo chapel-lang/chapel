@@ -1,1 +1,1 @@
-./UserMapAssoc.chpl:nnnn: error: halt reached - array index out of bounds: 22.0
+userAssoc-array-noelt.chpl:21: error: halt reached - array index out of bounds: 22.0
