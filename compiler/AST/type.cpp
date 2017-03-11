@@ -1853,3 +1853,69 @@ bool isPOD(Type* t)
   return false;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool isPrimitiveScalar(Type* type) {
+  bool retval = false;
+
+  if (type == dtBools[BOOL_SIZE_8]         ||
+      type == dtBools[BOOL_SIZE_16]        ||
+      type == dtBools[BOOL_SIZE_32]        ||
+      type == dtBools[BOOL_SIZE_64]        ||
+
+      type == dtInt[INT_SIZE_8]            ||
+      type == dtInt[INT_SIZE_16]           ||
+      type == dtInt[INT_SIZE_32]           ||
+      type == dtInt[INT_SIZE_64]           ||
+
+      type == dtUInt[INT_SIZE_8]           ||
+      type == dtUInt[INT_SIZE_16]          ||
+      type == dtUInt[INT_SIZE_32]          ||
+      type == dtUInt[INT_SIZE_64]          ||
+
+      type == dtReal[FLOAT_SIZE_32]        ||
+      type == dtReal[FLOAT_SIZE_64]        ||
+
+      type == dtImag[FLOAT_SIZE_32]        ||
+      type == dtImag[FLOAT_SIZE_64]) {
+
+    retval = true;
+
+  } else {
+    retval = false;
+  }
+
+  return retval;
+}
+
+bool isNonGenericClass(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isGeneric()                  == false &&
+        at->isClass()                    ==  true &&
+        at->symbol->hasFlag(FLAG_EXTERN) == false) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+bool isNonGenericRecordWithInitializers(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isGeneric()      == false &&
+        at->isRecord()       == true  &&
+        at->initializerStyle == DEFINES_INITIALIZER) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
