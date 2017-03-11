@@ -1060,51 +1060,14 @@ module ChapelArray {
       return _newDomain(d);
     }
 
-    // domain rank change
-    pragma "no doc"
-    proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
-      var ranges = _getRankChangeRanges(args);
-      param newRank = ranges.size,
-            stridable = chpl__anyStridable(ranges) || this.stridable;
-      var newRanges: newRank*range(idxType=_value.idxType, stridable=stridable);
-      var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
-      var sameDist = (newDistVal == _value.dist);
-      var newDist = if sameDist then
-                       _getDistribution(newDistVal)
-                    else
-                       _newDistribution(newDistVal);
-      if ! sameDist && ! _value.dist.trackDomains() {
-        // Otherwise, we don't have a way for the var d below
-        // to extend the lifetime of the distribution...
-        halt("Distribution must use trackDomains or be singleton");
-      }
-      var j = 1;
-      var makeEmpty = false;
-
-      for param i in 1..rank {
-        if !isCollapsedDimension(args(i)) {
-          newRanges(j) = dim(i)(args(i));
-          j += 1;
-        } else {
-          if !dim(i).member(args(i)) then
-            makeEmpty = true;
-        }
-      }
-      if makeEmpty {
-        for param i in 1..newRank {
-          newRanges(i) = 1..0;
-        }
-      }
-      var d = {(...newRanges)} dmapped newDist;
-      return d;
-    }
-
+    // TODO: Dead-code eliminate things that were only needed for domain
+    // rank changes... (dsiRankChangeDist...?)
+    
     // anything that is not covered by the above
     pragma "no doc"
     proc this(args ...?numArgs) {
       if numArgs == rank {
         // Doing this just to get a better compiler error
-        var ranges = _getRankChangeRanges(args);
         compilerError("invalid argument types for domain slicing");
       } else
         compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
@@ -2119,17 +2082,6 @@ module ChapelArray {
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
       if boundsChecking then
         checkRankChange(args);
-      var newD = _dom((...args));
-      var ranges = _getRankChangeRanges(newD.dims());
-      //
-      // TODO: Currently, the domain created to represent the
-      // rank-change domain is non-distributed.  Ultimately, we need
-      // to create a domain view class that supports a rank-change
-      // view on a higher-dimensional domain as in the original array
-      // view attempt.
-      //
-      pragma "no auto destroy" var d = {(...ranges)};
-      d._value._free_when_no_arrs = true;
 
       //
       // Compute which dimensions are collapsed and what the index
@@ -2147,6 +2099,18 @@ module ChapelArray {
           idx(i) = args(i);
         }
       }
+
+      const ranges = _getRankChangeRanges(args, _value.dom);
+      const domClass = new ArrayViewRankChangeDom(upinds=ranges,
+                                                downdom = _value.dom,
+                                                collapsedDim=collapsedDim,
+                                                idx = idx);
+      //
+      // TODO: The following won't result in a privatized domain... do
+      // we want one?
+      pragma "no auto destroy" const d = new _domain(nullPid, domClass);
+      //      pragma "no auto destroy" const d = _newDomain(domClass);
+      d._value._free_when_no_arrs = true;
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what
@@ -3148,36 +3112,38 @@ module ChapelArray {
     //return help(1);
   }
 
-  proc _getRankChangeRanges(args) {
-    proc _tupleize(x) {
-      var y: 1*x.type;
-      y(1) = x;
-      return y;
-    }
+  proc _getRankChangeRanges(args, downdom) {
+    return collectRanges(1);
+
     proc collectRanges(param dim: int) {
       if dim > args.size then
         compilerError("domain slice requires a range in at least one dimension");
-      if isRange(args(dim)) then
-        return collectRanges(dim+1, _tupleize(args(dim)));
-      else
+      if isRange(args(dim)) {
+        const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
+        return collectRanges(dim+1, (newRange,));
+      } else
         return collectRanges(dim+1);
     }
+
     proc collectRanges(param dim: int, x: _tuple) {
       if dim > args.size {
         return x;
       } else if dim < args.size {
-        if isRange(args(dim)) then
-          return collectRanges(dim+1, ((...x), args(dim)));
-        else
+        if isRange(args(dim)) {
+          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
+          return collectRanges(dim+1, ((...x), newRange));
+        } else {
           return collectRanges(dim+1, x);
+        }
       } else {
-        if isRange(args(dim)) then
-          return ((...x), args(dim));
-        else
+        if isRange(args(dim)) {
+          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
+          return ((...x), newRange);
+        } else {
           return x;
+        }
       }
     }
-    return collectRanges(1);
   }
 
   //

@@ -24,6 +24,159 @@
 //
 module ArrayViewRankChange {
 
+  class ArrayViewRankChangeDist: BaseDist {
+    const upinds;
+    const downdom;
+    const collapsedDim;
+    const idx;
+    
+    proc dsiNewRectangularDom(param rank, type idxType, param stridable) {
+      //      compilerWarning("rank arg = " + rank);
+      //      compilerWarning("downrank = " + downrank);
+      return new ArrayViewRankChangeDom(upinds=upinds,
+                                        downdom=downdom,
+                                        collapsedDim=collapsedDim,
+                                        idx=idx);
+    }
+
+    //
+    // TODO: Is this OK?  Probably not
+    //
+    proc dsiClone() return new ArrayViewRankChangeDist(upinds=upinds,
+                                                       downdom=downdom,
+                                                       collapsedDim=collapsedDim,
+                                                       idx=idx);
+  }
+  
+  //
+  // This class represents the domain of a rank-change slice of an
+  // array.  Like other domain class implementations, it supports the
+  // standard dsi interface.  Note that rank changes only make sense
+  // for rectangular domains so this is a subclass of
+  // BaseRectangularDom.
+  //
+  class ArrayViewRankChangeDom: BaseRectangularDom {
+    const upinds;
+
+    // the domain for the sliced array
+    const downdom;
+
+    const collapsedDim;
+    const idx;
+
+    const dist = new ArrayViewRankChangeDist(upinds=upinds,
+                                             downdom=downdom,
+                                             collapsedDim=collapsedDim,
+                                             idx=idx);
+
+    // TODO: This is overly simplistic and should be improved; maybe
+    // this is what calling _getRankChangeRanges() on upinds would
+    // help with?
+    proc idxType type {
+      if isRange(upinds(1)) then
+        return upinds(1).idxType;
+      else
+        return upinds(1);
+    }
+
+    proc rank param {
+      return upinds.size;
+    }
+
+    proc downrank param {
+      return collapsedDim.size;
+    }
+
+    proc stridable param {
+      for param d in 1..upinds.size do
+        if isRange(upinds(d)) && upinds(d).stridable then
+          return true;
+      return false;
+    }
+
+    proc dsiBuildArray(type eltType) {
+      const arr = downdom.dsiBuildArray(eltType);
+      // TODO: Update once we start privatizing
+      return new ArrayViewRankChangeArr(eltType  =eltType,
+                                        _DomPid = nullPid,
+                                        dom = downdom,
+                                        _ArrPid=nullPid,
+                                        _ArrInstance=arr,
+                                        collapsedDim=collapsedDim,
+                                        idx=idx);
+    }
+
+    proc dsiDim(upDim: int) {
+      var downDim = 1;
+      for d in 1..downrank {
+        if collapsedDim(d) then
+          downDim += 1;
+        else
+          if (downDim == upDim) then
+            return downdom.dsiDim(downDim);
+      }
+      halt("Fell out of loop in dsiDim():", (upDim, downDim));
+    }
+
+    proc dsiDims() {
+      var upDims: rank*range(idxType, stridable=stridable);
+      var upDim = 1;
+      for param downDim in 1..downrank {
+        if !collapsedDim(downDim) {
+          upDims(upDim) = downdom.dsiDim(downDim);
+          upDim += 1;
+        }
+      }
+      return upDims;
+    }
+    
+    proc dsiGetIndices() {
+      return upinds;
+    }
+
+    proc dsiSetIndices(inds) {
+      if (inds != upinds) then
+        halt("Can only support matching indices so far");
+    }
+
+    proc dsiMember(i) {
+      return downdom.dsiMember(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
+    }
+
+    iter these() {
+      // TODO: cache this as a lazily-computed field and reuse?
+      const downslice = downdom.dist.dsiNewRectangularDom(rank=downrank,
+                                                          idxType=idxType,
+                                                          stridable=stridable);
+      downslice.dsiSetIndices(chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
+      for i in downslice do
+        yield downIdxToUpIdx(i);
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.standalone {
+      // TODO: cache this as a lazily-computed field and reuse?
+      const downslice = downdom.dist.dsiNewRectangularDom(rank=downrank,
+                                                          idxType=idxType,
+                                                          stridable=stridable);
+      downslice.dsiSetIndices(chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
+      forall i in downslice do
+        yield downIdxToUpIdx(i);
+    }
+
+
+    proc downIdxToUpIdx(downIdx) {
+      var upIdx: rank*idxType;
+      var upDim = 1;
+      for param downDim in 1..downrank {
+        if !collapsedDim(downDim) {
+          upIdx(upDim) = downIdx(downDim);
+          upDim += 1;
+        }
+      }
+      return upIdx;
+    }
+  }
+  
   //
   // The class representing a rank-change slice of an array.  Like
   // other array class implementations, it supports the standard dsi
@@ -48,6 +201,9 @@ module ArrayViewRankChange {
     // collapsed as part of the rank-change; and if so, what the
     // index of that collapsed dimension was.  So for A[lo..hi, 3]
     // these would be (false, true) and (?, 3) respectively.
+
+    // TODO: Use copies in domain rather than replicating these here
+    
     const collapsedDim;  // rank*bool    TODO: constrain this
     const idx;           // rank*idxType TODO: and this
 
@@ -93,47 +249,6 @@ module ArrayViewRankChange {
     // their higher-D equivalents.
     //
 
-    inline proc chpl_rankChangeConvertIdx(i: integral) {
-      var ind = idx;
-      var j = 1;
-      for param d in 1..arr.rank {
-        if !collapsedDim(d) {
-          ind(d) = i;
-          j += 1;
-        }
-      }
-      assert (j == 2);
-      return ind;
-    }
-
-    inline proc chpl_rankChangeConvertIdx(i) {
-      var ind = idx;
-      var j = 1;
-      for param d in 1..arr.rank {
-        if !collapsedDim(d) {
-          ind(d) = i(j);
-          j += 1;
-        }
-      }
-      return ind;
-    }
-
-    inline proc chpl_rankChangeConvertDom(dims) {
-      if dom.rank != dims.size then
-        compilerError("Called chpl_rankChangeConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", dom.rank:string);
-
-      var ranges : arr.rank*dims(1).type;
-      var j = 1;
-      for param d in 1..arr.rank {
-        if !collapsedDim(d) {
-          ranges(d) = dims(j);
-          j += 1;
-        } else {
-          ranges(d) = idx(d)..idx(d);
-        }
-      }
-      return {(...ranges)};
-    }
 
 
 
@@ -147,7 +262,7 @@ module ArrayViewRankChange {
           const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
           yield indexCache.getDataElem(dataIdx);
         } else {
-          yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+          yield arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
         }
       }
     }
@@ -159,7 +274,7 @@ module ArrayViewRankChange {
       for i in privDom.these(tag) {
         yield if shouldUseIndexCache()
                 then indexCache.getDataElem(indexCache.getRADDataIndex(dom.stridable, i))
-                else arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+                else arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
       }
     }
 
@@ -176,7 +291,7 @@ module ArrayViewRankChange {
           const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
           yield indexCache.getDataElem(dataIdx);
         } else {
-          yield arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+          yield arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
         }
       }
     }
@@ -232,7 +347,7 @@ module ArrayViewRankChange {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
         return indexCache.getDataElem(dataIdx);
       } else {
-        return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+        return arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
       }
     }
 
@@ -243,7 +358,7 @@ module ArrayViewRankChange {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
         return indexCache.getDataElem(dataIdx);
       } else {
-        return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+        return arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
       }
     }
 
@@ -254,20 +369,20 @@ module ArrayViewRankChange {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
         return indexCache.getDataElem(dataIdx);
       } else {
-        return arr.dsiAccess(chpl_rankChangeConvertIdx(i));
+        return arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
       }
     }
 
     inline proc dsiLocalAccess(i) ref
-      return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i));
+      return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
 
     inline proc dsiLocalAccess(i)
       where shouldReturnRvalueByValue(eltType)
-      return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i));
+      return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
 
     inline proc dsiLocalAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType)
-      return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i));
+      return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
 
     inline proc checkBounds(i) {
       if boundsChecking then
@@ -347,7 +462,8 @@ module ArrayViewRankChange {
     proc _viewHelper(dims) {
       // If 'dims.size != arr.rank', assume that we still need to do the
       // conversion for the current rank-change.
-      var goodDims = if dims.size != arr.rank then chpl_rankChangeConvertDom(dims).dims() else dims;
+      var goodDims = if dims.size != arr.rank
+        then chpl_rankChangeConvertDom(dims, rank, collapsedDim, idx).dims() else dims;
       if goodDims.size != arr.rank {
         compilerError("Error while composing view domain for rank-change view.");
       }
@@ -479,5 +595,53 @@ module ArrayViewRankChange {
       return this;
     }
   }
+
+  // TODO: Move these into domain
+  
+  inline proc chpl_rankChangeConvertIdx(i: integral, collapsedDim, idx) {
+    param downrank = collapsedDim.size;
+    var ind = idx;
+    var j = 1;
+    for param d in 1..downrank {
+      if !collapsedDim(d) {
+        ind(d) = i;
+        j += 1;
+      }
+    }
+    assert (j == 2);
+    return ind;
+  }
+
+  inline proc chpl_rankChangeConvertIdx(i, collapsedDim, idx) {
+    param downrank = collapsedDim.size;
+    var ind = idx;
+    var j = 1;
+    for param d in 1..downrank {
+      if !collapsedDim(d) {
+        ind(d) = i(j);
+        j += 1;
+      }
+    }
+    return ind;
+  }
+
+    inline proc chpl_rankChangeConvertDom(dims, param uprank, collapsedDim, idx) {
+    param downrank = collapsedDim.size;
+    if uprank != dims.size then
+      compilerError("Called chpl_rankChangeConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", uprank:string);
+    
+    var ranges : downrank*dims(1).type;
+    var j = 1;
+    for param d in 1..downrank {
+      if !collapsedDim(d) {
+        ranges(d) = dims(j);
+        j += 1;
+      } else {
+        ranges(d) = idx(d)..idx(d);
+      }
+    }
+    return {(...ranges)};
+  }
+
 
 }
