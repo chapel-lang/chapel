@@ -1041,17 +1041,17 @@ static void build_union_assignment_function(AggregateType* ct) {
   normalize(fn);
 }
 
-
 static void build_record_copy_function(AggregateType* ct) {
   if (function_exists("chpl__initCopy", 1, ct) != NULL) {
     return;
   }
 
-  if (isNonGenericClassWithInitializers(ct)  == true) {
-    return;
-  }
+  if (isNonGenericClassWithInitializers(ct)  == true ||
+      isNonGenericRecordWithInitializers(ct) == true) {
+    if (function_exists("init", 3, dtMethodToken, ct, ct) != NULL) {
+      ct->symbol->addFlag(FLAG_NOT_POD);
+    }
 
-  if (isNonGenericRecordWithInitializers(ct) == true) {
     return;
   }
 
