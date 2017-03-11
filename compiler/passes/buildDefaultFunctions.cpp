@@ -1047,6 +1047,14 @@ static void build_record_copy_function(AggregateType* ct) {
     return;
   }
 
+  if (isNonGenericClassWithInitializers(ct)  == true) {
+    return;
+  }
+
+  if (isNonGenericRecordWithInitializers(ct) == true) {
+    return;
+  }
+
   // if there is a copy-initializer for this record type, use that.
   const char* copyCtorName         = astr("_construct_", ct->symbol->name);
   bool        foundUserDefinedCopy = false;
@@ -1234,9 +1242,15 @@ static void buildRecordQuery(AggregateType* ct,
                              PrimitiveTag   tag);
 
 static void buildDefaultOfFunction(AggregateType* ct) {
-  if (function_exists("_defaultOf", 1, ct)     == NULL  &&
-      ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
-      ct->defaultValue                         != gNil) {
+  if        (isNonGenericClassWithInitializers(ct)  == true) {
+
+
+  } else if (isNonGenericRecordWithInitializers(ct) == true) {
+
+
+  } else if (function_exists("_defaultOf", 1, ct)     == NULL  &&
+             ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
+             ct->defaultValue                         != gNil) {
 
     FnSymbol*  fn  = new FnSymbol("_defaultOf");
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", ct);
