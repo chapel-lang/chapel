@@ -100,13 +100,9 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
 
     // Insert phase 2 analysis here
 
-    if (isClass(ct) == false) {
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
-    } else {
-      Symbol* voidType = dtVoid->symbol;
+    Symbol* voidType = dtVoid->symbol;
 
-      fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
-    }
+    fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
   }
 }
 

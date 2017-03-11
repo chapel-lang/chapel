@@ -576,6 +576,8 @@ bool isUserDefinedRecord(Type* type);
 
 bool isPrimitiveScalar(Type* type);
 bool isNonGenericClass(Type* type);
+
+bool isNonGenericClassWithInitializers (Type* type);
 bool isNonGenericRecordWithInitializers(Type* type);
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
