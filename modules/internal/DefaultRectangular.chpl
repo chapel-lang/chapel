@@ -2160,7 +2160,8 @@ module DefaultRectangular {
         for chunk in 0..#arr.mdNumChunks {
           if arr.mData(chunk).pdr.length >= 0 {
             const src = arr.theDataChunk(chunk);
-            const newLow = max(arr.mData(chunk).pdr.low, indLo);
+            const cmp = if isTuple(indLo) then indLo(arr.mdParDim) else indLo;
+            const newLow = max(arr.mData(chunk).pdr.low, cmp);
             if isTuple(indLo) then
               indLo(arr.mdParDim) = newLow;
             else
