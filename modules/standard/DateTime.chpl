@@ -533,7 +533,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc time.~time() {
+  proc time.deinit() {
     // delete tzinfo if needed
   }
 
