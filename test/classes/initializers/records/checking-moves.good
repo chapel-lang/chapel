@@ -1,1 +1,2 @@
-(x = 15, y = true)
+checking-moves.chpl:19: In function 'main':
+checking-moves.chpl:20: error: No copy constructor for initializer
