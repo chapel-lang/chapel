@@ -405,6 +405,7 @@ class TypeSymbol : public Symbol {
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
+*                                                                             *
 ************************************** | *************************************/
 
 class FnSymbol : public Symbol {
@@ -491,7 +492,8 @@ public:
 
   void                       insertBeforeEpilogue(Expr* ast);
 
-  // insertIntoEpilogue adds an Expr before the final return, but after the epilogue label
+  // insertIntoEpilogue adds an Expr before the final return,
+  // but after the epilogue label
   void                       insertIntoEpilogue(Expr* ast);
 
   LabelSymbol*               getEpilogueLabel();
@@ -523,6 +525,8 @@ public:
   void                       throwsErrorInit();
   bool                       throwsError()                               const;
 
+  bool                       retExprDefinesNonVoid()                     const;
+
 private:
   virtual std::string        docsDirective();
 
@@ -531,10 +535,11 @@ private:
   bool                       _throwsError;
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class EnumSymbol : public Symbol {
  public:
