@@ -13,6 +13,8 @@ static QINLINE int getpagesize()
 }
 #endif
 
+#include <qthread/qthread-int.h> /* for uint_fast16_t */
+
 #include "chpl-mem-impl.h"
 
 void *qt_malloc(size_t size){
