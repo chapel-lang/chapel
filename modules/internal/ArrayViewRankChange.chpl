@@ -106,14 +106,18 @@ module ArrayViewRankChange {
                                         idx=idx);
     }
 
-    proc dsiDim(upDim: int) {
+    proc dsiDim(in upDim: int) {
+      //      writeln("Call to dsiDim(", upDim, ")");
+      //      writeln("collapsedDim = ", collapsedDim);
       var downDim = 1;
       for d in 1..downrank {
         if collapsedDim(d) then
           downDim += 1;
-        else
-          if (downDim == upDim) then
+        else {
+          upDim -= 1;
+          if (upDim == 0) then
             return downdom.dsiDim(downDim);
+        }
       }
       halt("Fell out of loop in dsiDim():", (upDim, downDim));
     }
@@ -148,9 +152,22 @@ module ArrayViewRankChange {
       const downslice = downdom.dist.dsiNewRectangularDom(rank=downrank,
                                                           idxType=idxType,
                                                           stridable=stridable);
+      writeln("Setting downslice indices to: ", chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
       downslice.dsiSetIndices(chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
-      for i in downslice do
+      downslice.dsiDisplayRepresentation();
+      if _isPrivatized(downslice) {
+        _reprivatize(downslice);
+      }
+      writeln("downSlice is: ");
+      downslice.dsiSerialWrite(stdout);
+      writeln();
+      //      writeln("downSlice.dist is: ", downslice.dist);
+      writeln("downslice.whole is: ", downslice.whole);
+      for i in downslice.these() do {
+        writeln("down: ", i);
+        writeln("=up : ", downIdxToUpIdx(i));
         yield downIdxToUpIdx(i);
+      }
     }
 
     iter these(param tag: iterKind) where tag == iterKind.standalone {
@@ -328,11 +345,13 @@ module ArrayViewRankChange {
     //
 
     inline proc dsiAccess(i: idxType ...rank) ref {
+      writeln("In dsiAccess A");
       return dsiAccess(i);
     }
 
     inline proc dsiAccess(i: idxType ...rank)
       where shouldReturnRvalueByValue(eltType) {
+      writeln("In dsiAccess B");
       return dsiAccess(i);
     }
 
@@ -342,6 +361,7 @@ module ArrayViewRankChange {
     }
 
     inline proc dsiAccess(i) ref {
+      writeln("In dsiAccess C");
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -353,6 +373,7 @@ module ArrayViewRankChange {
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
+      writeln("In dsiAccess D");
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -364,6 +385,7 @@ module ArrayViewRankChange {
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType) {
+      writeln("In dsiAccess E");
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);

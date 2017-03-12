@@ -541,6 +541,7 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   if debugBlockDist {
     writeln("Creating new Block domain:");
     dom.dsiDisplayRepresentation();
+    writeln("-----");
   }
   return dom;
 }
@@ -810,8 +811,13 @@ proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
 }
 
 iter BlockDom.these() {
-  for i in whole do
+  writeln("In BlockDom.these");
+  this.dsiDisplayRepresentation();
+  writeln("whole is: ", whole);
+  for i in whole do {
+    writeln("yielding", i);
     yield i;
+  }
 }
 
 iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
