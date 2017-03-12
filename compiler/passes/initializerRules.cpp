@@ -35,7 +35,7 @@ enum InitBody {
   FOUND_BOTH
 };
 
-
+static bool     isReturnVoid(FnSymbol* fn);
 static InitBody getInitCall(FnSymbol* fn);
 static void     phase1Analysis(BlockStmt* body, AggregateType* t);
 
@@ -48,6 +48,9 @@ static void     phase1Analysis(BlockStmt* body, AggregateType* t);
 void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
   if (fn->hasFlag(FLAG_NO_PARENS)) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
+
+  } else if (isReturnVoid(fn) == false) {
+
   } else {
     InitBody bodyStyle = getInitCall(fn);
 
@@ -601,6 +604,45 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
   // encountered
 
   return false;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Initializers cannot                                                         *
+*                                                                             *
+*   1) Declare a return type other than void                                  *
+*                                                                             *
+*   2) Contain a return expression with a value                               *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isReturnVoid(FnSymbol* fn) {
+  bool retval = true;
+
+  if (fn->retExprDefinesNonVoid() == true) {
+    USR_FATAL(fn, "initializers cannot declare a return type");
+    retval = false;
+
+  } else {
+    std::vector<CallExpr*> calls;
+
+    collectCallExprs(fn->body, calls);
+
+    for (size_t i = 0; i < calls.size() && retval == true; i++) {
+      if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
+        SymExpr* value = toSymExpr(calls[i]->get(1));
+
+        if (value == NULL || value->symbol()->type != dtVoid) {
+          USR_FATAL(calls[i], "initializers cannot return a value");
+          retval = false;
+        }
+      }
+    }
+  }
+
+  fn->retType = dtVoid;
+
+  return retval;
 }
 
 /************************************* | **************************************
