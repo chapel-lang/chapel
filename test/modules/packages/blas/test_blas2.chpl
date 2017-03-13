@@ -269,9 +269,7 @@ proc test_gemv_helper(type t){
     const beta = rng.getNext();
 
     // Compute Result vector
-    for i in R.domain {
-      R[i] = beta*Y[i] + alpha*(+ reduce (A[i,..]*X[..]));
-    }
+    for i in R.domain do R[i] = beta*Y[i] + alpha*(+ reduce (A[i,..]*X[..]));
 
     gemv(A, X, Y, alpha, beta);
 
@@ -300,16 +298,13 @@ proc test_gemv_helper(type t){
     const beta = rng.getNext();
 
     // Compute Result vector
-    for i in R.domain {
-      R[i] = beta*Y[i] + alpha*(+ reduce (A[..,i]*X[..]));
-    }
+    for i in R.domain do R[i] = beta*Y[i] + alpha*(+ reduce (A[..,i]*X[..]));
 
     gemv(A, X, Y, alpha, beta, opA=Op.T);
 
     var err = max reduce abs(Y-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
   }
   // Try Hermitian conjugate of A
   {
@@ -340,7 +335,6 @@ proc test_gemv_helper(type t){
     var err = max reduce abs(Y-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
   }
 
   // Test leading dimension of array
@@ -365,16 +359,13 @@ proc test_gemv_helper(type t){
     const beta = rng.getNext();
 
     // Compute Result vector
-    for i in R.domain {
-      R[i] = beta*Y[i] + alpha*(+ reduce (A[i,0.. #n]*X[..]));
-    }
+    for i in R.domain do R[i] = beta*Y[i] + alpha*(+ reduce (A[i,0.. #n]*X[..]));
 
     gemv(A[.., 0.. #n] , X, Y, alpha, beta, ldA=ld);
 
     var err = max reduce abs(Y-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
  }
 
   printErrors(name, passed, failed, tests);
@@ -409,8 +400,7 @@ proc test_ger_helper(type t){
     const alpha = rng.getNext();
 
     // Precompute result
-    for (i,j) in R.domain do
-      R[i, j] = alpha*X[i]*Y[j] + A[i, j];
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*Y[j] + A[i, j];
 
     ger(A, X, Y, alpha);
 
@@ -439,17 +429,14 @@ proc test_ger_helper(type t){
     rng.fillRandom(Y);
 
     const alpha = rng.getNext();
-    const beta = rng.getNext();
 
-    for (i,j) in R.domain do
-      R[i, j] = alpha*X[i]*Y[j] + A[i, j];
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*Y[j] + A[i, j];
 
     ger(A[.., 0.. #n], X, Y, alpha, ldA=ld);
 
     var err = max reduce abs(A[.., 0..#n]-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
  }
 
   printErrors(name, passed, failed, tests);
@@ -483,20 +470,45 @@ proc test_gerc_helper(type t){
     var alpha = rng.getNext();
 
     // Precompute result
-    for (i,j) in R.domain do
-      R[i, j] = alpha*X[i]*conjg(Y[j]) + A[i, j];
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(Y[j]) + A[i, j];
 
     gerc(A, X, Y, alpha);
 
     var err = max reduce abs(A-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
   }
 
   // Test leading dimension of array
   {
 
+    const m = 10 : c_int,
+          n = 7 : c_int,
+          ld = 20 : c_int;
+
+    // non-square matrix
+    var A : [{0.. #m, 0.. #ld}]t,
+        X : [{0.. #m}]t,
+        Y : [{0.. #n}]t,
+        R : [{0.. #m, 0..#n}] t; // Result
+
+
+    // Populate values
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    var alpha = rng.getNext();
+
+    // Precompute result
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(Y[j]) + A[i, j];
+
+    gerc(A[.., 0.. #n], X, Y, alpha, ldA=ld);
+
+    var err = max reduce abs(A[.., 0.. #n] - R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
   printErrors(name, passed, failed, tests);
 }
@@ -528,24 +540,44 @@ proc test_geru_helper(type t){
     var alpha = rng.getNext();
 
     // Precompute result
-    for i in R.domain.dims()[1] {
-      for j in R.domain.dims()[2] {
-        R[i, j] = alpha*X[i]*Y[j];
-      }
-    }
-    R += A;
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*Y[j] + A[i, j];
 
     geru(A, X, Y, alpha);
 
     var err = max reduce abs(A-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
   }
 
   // Test leading dimension of array
   {
+    const m = 10 : c_int,
+          n = 7 : c_int,
+          ld = 20 : c_int;
 
+    // non-square matrix
+    var A : [{0.. #m, 0.. #ld}]t,
+        X : [{0.. #m}]t,
+        Y : [{0.. #n}]t,
+        R : [{0.. #m, 0..#n}] t; // Result
+
+
+    // Populate values
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    var alpha = rng.getNext();
+
+    // Precompute result
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*Y[j] + A[i, j];
+
+    geru(A[.., 0.. #n], X, Y, alpha, ldA=ld);
+
+    var err = max reduce abs(A[.., 0.. #n] - R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   printErrors(name, passed, failed, tests);
@@ -574,6 +606,38 @@ proc test_hemv_helper(type t){
   var name = "%shemv".format(blasPrefix(t));
   // Simple test
   {
+    const m = 10 : c_int;
+
+    var A : [0.. #m, 0.. #m] t,
+        X : [0.. #m] t,
+        Y : [0.. #m] t,
+        R : [0.. #m] t; // Result
+
+
+    // Populate values
+    var rng = makeRandomStream(eltType=t, algorithm=RNG.PCG);
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    var alpha = rng.getNext(),
+        beta = rng.getNext();
+
+    makeHerm(A);
+
+    // Precompute result
+    for i in R.domain do R[i] = + reduce(alpha*A[i,..]*X[..]) + beta*Y[i];
+
+    hemv(A, X, Y, alpha, beta);
+
+    var err = max reduce abs(Y-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+
+  // Try Uplo.Lower
+  {
     //const m = 10 : c_int;
     const m = 2 : c_int;
 
@@ -596,30 +660,47 @@ proc test_hemv_helper(type t){
     makeHerm(A);
 
     // Precompute result
-    for i in A.domain.dims()[2] {
-      for j in A.domain.dims()[1] {
-        R[i] += alpha*A[i, j]*X[j];
-      }
-    }
+    for i in R.domain do R[i] = + reduce(alpha*A[i,..]*X[..]) + beta*Y[i];
 
-    R += beta*Y;
-
-    hemv(A, X, Y, alpha, beta);
+    hemv(A, X, Y, alpha, beta, uplo=Uplo.Lower);
 
     var err = max reduce abs(Y-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
-  }
-
-  // Try Uplo.Lower
-  {
-
   }
 
   // Test leading dimension of array
   {
+    const m = 10 : c_int;
+    const ld = 12;
 
+    var A : [0.. #m, 0.. #ld] t,
+        X : [0.. #m] t,
+        Y : [0.. #m] t,
+        R : [0.. #m] t; // Result
+
+
+    // Populate values
+    var rng = makeRandomStream(eltType=t, algorithm=RNG.PCG);
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    var alpha = rng.getNext(),
+        beta = rng.getNext();
+
+    makeHerm(A[.., 0..#m]);
+
+    // Precompute result
+
+    for i in R.domain do R[i] = + reduce(alpha*A[i,0..#m]*X[..]) + beta*Y[i];
+
+    hemv(A[.., 0..#m], X, Y, alpha, beta, ldA=ld);
+
+    var err = max reduce abs(Y-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
   printErrors(name, passed, failed, tests);
 }
@@ -649,12 +730,7 @@ proc test_her_helper(type t){
     makeHerm(A);
 
     // Precompute result
-    for i in R.domain.dims()[1] {
-      for j in R.domain.dims()[2] {
-        R[i, j] = alpha*X[i]*conjg(X[j]);
-      }
-    }
-    R += A;
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
 
     // Resulting 'A' is only stored in upper triangular array
     zeroTri(A);
@@ -665,17 +741,69 @@ proc test_her_helper(type t){
     var err = max reduce abs(A-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
   }
 
   // Try Uplo.Lower
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}]t,
+        R : [{0.. #m, 0..#m}] t; // Result
+
+    var alphacomplex = rng.getNext(),
+        alpha = alphacomplex.re;
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    makeHerm(A);
+
+    // Precompute result
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
+
+    // Resulting 'A' is only stored in upper triangular array
+    zeroTri(A, uplo=Uplo.Lower);
+    zeroTri(R, uplo=Uplo.Lower);
+
+    her(A, X, alpha, uplo=Uplo.Lower);
+
+    var err = max reduce abs(A-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Test leading dimension of array
   {
+    const m = 10 : c_int;
+    const ld = 20;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #ld}] t,
+        X : [{0.. #m}]t,
+        R : [{0.. #m, 0..#m}] t; // Result
+
+    var alphacomplex = rng.getNext(),
+        alpha = alphacomplex.re;
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    makeHerm(A[.., 0..#m]);
+
+    // Precompute result
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
+
+    // Resulting 'A' is only stored in upper triangular array
+    zeroTri(A[.., 0..#m]);
+    zeroTri(R);
+
+    her(A[.., 0..#m], X, alpha, ldA=ld);
+
+    var err = max reduce abs(A[.., 0..#m]-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
   printErrors(name, passed, failed, tests);
 }
@@ -705,12 +833,8 @@ proc test_her2_helper(type t){
     makeHerm(A);
 
     // Precompute result
-    for i in R.domain.dims()[1] {
-      for j in R.domain.dims()[2] {
-        R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(Y[j]);
-      }
-    }
-    R += A;
+    for (i, j) in R.domain do
+      R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(Y[j]) + A[i, j];
 
     // A result is only stored in upper triangular array
     zeroTri(A);
@@ -721,17 +845,71 @@ proc test_her2_helper(type t){
     var err = max reduce abs(A-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
   }
 
   // Try Uplo.Lower
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}] t,
+        Y : [{0.. #m}] t,
+        R : [{0.. #m, 0..#m}] t; // Result
+
+    var alpha = rng.getNext();
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    makeHerm(A);
+
+    // Precompute result
+    for (i, j) in R.domain do
+      R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(Y[j]) + A[i, j];
+
+    // A result is only stored in upper triangular array
+    zeroTri(A, uplo=Uplo.Lower);
+    zeroTri(R, uplo=Uplo.Lower);
+
+    her2(A, X, Y, alpha, uplo=Uplo.Lower);
+
+    var err = max reduce abs(A-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Test leading dimension of array
   {
+    const m = 10 : c_int;
+    const ld = 20;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0..#m, 0..#ld}] t,
+        X : [{0..#m}] t,
+        Y : [{0..#m}] t,
+        R : [{0..#m, 0..#m}] t; // Result
+
+    var alpha = rng.getNext();
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    makeHerm(A[.., 0..#m]);
+
+    // Precompute result
+    for (i, j) in R.domain do
+      R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(Y[j]) + A[i, j];
+
+    // A result is only stored in upper triangular array
+    zeroTri(A[.., 0..#m]);
+    zeroTri(R);
+
+    her2(A[.., 0..#m], X, Y, alpha, ldA=ld);
+
+    var err = max reduce abs(A[.., 0..#m]-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
   printErrors(name, passed, failed, tests);
 }
@@ -829,7 +1007,7 @@ proc test_spr2_helper(type t){
   var name = "%sspr2".format(blasPrefix(t));
   // Simple test
   {
-
+    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -874,17 +1052,73 @@ proc test_symv_helper(type t){
     var err = max reduce abs(Y-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
   }
 
   // Try Uplo.Lower
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}] t,
+        Y : [{0.. #m}] t,
+        R : [{0.. #m}] t; // Result
+
+    var alpha = rng.getNext(),
+        beta = rng.getNext();
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    makeSymm(A);
+
+    // Precompute result
+    for i in R.domain do R[i] = beta*Y[i] + alpha*(+ reduce (A[i,..]*X[..]));
+
+    // A result is only stored in upper triangular array
+    zeroTri(A, Uplo.Lower);
+
+    symv(A, X, Y, alpha, beta, uplo=Uplo.Lower);
+
+    var err = max reduce abs(Y-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Test leading dimension of array
   {
+    const m = 10 : c_int;
+    const ld = 20: c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #ld}] t,
+        X : [{0.. #m}] t,
+        Y : [{0.. #m}] t,
+        R : [{0.. #m}] t; // Result
+
+    var alpha = rng.getNext(),
+        beta = rng.getNext();
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    makeSymm(A[.., 0..#m]);
+
+    // Precompute result
+    for i in R.domain do R[i] = beta*Y[i] + alpha*(+ reduce (A[i,0..#m]*X[..]));
+
+    // A result is only stored in upper triangular array
+    zeroTri(A[.., 0..#m]);
+
+    symv(A[.., 0..#m], X, Y, alpha, beta, ldA=ld);
+
+    var err = max reduce abs(Y-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
   printErrors(name, passed, failed, tests);
 }
@@ -913,13 +1147,7 @@ proc test_syr_helper(type t){
 
     makeSymm(A);
 
-    for i in R.domain.dims()[1] {
-      for j in R.domain.dims()[2] {
-        R[i, j] = alpha*X[i]*conjg(X[j]);
-      }
-    }
-
-    R += A;
+    for (i, j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
 
     // A result is only stored in upper triangular array
     zeroTri(R);
@@ -930,17 +1158,67 @@ proc test_syr_helper(type t){
     var err = max reduce abs(A-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
   }
 
   // Try Uplo.Lower
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}] t,
+        R : [A.domain] t; // Result
+
+    var alpha = rng.getNext();
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    makeSymm(A);
+
+    for (i, j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
+
+    // A result is only stored in upper triangular array
+    zeroTri(R, Uplo.Lower);
+    zeroTri(A, Uplo.Lower);
+
+    syr(A, X, alpha, uplo=Uplo.Lower);
+
+    var err = max reduce abs(A-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Test leading dimension of array
   {
+    const m = 10 : c_int;
+    const ld = 20;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0..#m, 0..#ld}] t,
+        X : [{0.. #m}] t,
+        R : [0..#m, 0..#m] t; // Result
+
+    var alpha = rng.getNext();
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    makeSymm(A[.., 0..#m]);
+
+    for (i, j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
+
+    // A result is only stored in upper triangular array
+    zeroTri(R);
+    zeroTri(A[.., 0..#m]);
+
+    syr(A[.., 0..#m], X, alpha, ldA=ld);
+
+    var err = max reduce abs(A[.., 0..#m]-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
   printErrors(name, passed, failed, tests);
 }
@@ -961,7 +1239,7 @@ proc test_syr2_helper(type t){
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
         Y : [{0.. #m}] t,
-        R : [A.domain] t; // Result
+        R : [{0..#m, 0..#m}] t; // Result
 
     var alpha = rng.getNext();
 
@@ -971,13 +1249,8 @@ proc test_syr2_helper(type t){
 
     makeSymm(A);
 
-    for i in R.domain.dims()[1] {
-      for j in R.domain.dims()[2] {
-        R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(X[j]);
-      }
-    }
-
-    R += A;
+    for (i, j) in R.domain do
+        R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(X[j]) + A[i,j];
 
     // A result is only stored in upper triangular array
     zeroTri(R);
@@ -988,18 +1261,73 @@ proc test_syr2_helper(type t){
     var err = max reduce abs(A-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
-
   }
 
   // Try Uplo.Lower
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}] t,
+        Y : [{0.. #m}] t,
+        R : [{0..#m, 0..#m}] t; // Result
+
+    var alpha = rng.getNext();
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    makeSymm(A);
+
+    for (i, j) in R.domain do
+        R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(X[j]) + A[i,j];
+
+    // A result is only stored in upper triangular array
+    zeroTri(R, Uplo.Lower);
+    zeroTri(A, Uplo.Lower);
+
+    syr2(A, X, Y, alpha, uplo=Uplo.Lower);
+
+    var err = max reduce abs(A-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Test leading dimension of array
   {
+    const m = 10 : c_int;
+    const ld = 20;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #ld}] t,
+        X : [{0.. #m}] t,
+        Y : [{0.. #m}] t,
+        R : [{0..#m, 0..#m}] t; // Result
+
+    var alpha = rng.getNext();
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+
+    makeSymm(A[.., 0..#m]);
+
+    for (i, j) in R.domain do
+        R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(X[j]) + A[i,j];
+
+    // A result is only stored in upper triangular array
+    zeroTri(R);
+    zeroTri(A[.., 0..#m]);
+
+    syr2(A[.., 0..#m], X, Y, alpha, ldA=ld);
+
+    var err = max reduce abs(A[.., 0..#m]-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
   printErrors(name, passed, failed, tests);
 }
@@ -1043,8 +1371,6 @@ proc test_tbmv_helper(type t){
     var err = max reduce abs(X-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
-
   }
   printErrors(name, passed, failed, tests);
 }
@@ -1086,39 +1412,118 @@ proc test_trmv_helper(type t){
     // A result is only stored in upper triangular array
     zeroTri(A);
 
-    for i in A.domain.dims()[2] {
-      for j in A.domain.dims()[1] {
-        R[i] += A[i, j]*X[j];
-      }
-    }
-
+    for i in R.domain do R[i] = + reduce (A[i, ..]*X[..]);
 
     trmv(A, X);
 
     var err = max reduce abs(X-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
   }
 
   // Try trans=Op.T
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}] t,
+        R : [X.domain] t; // Result
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    // A result is only stored in upper triangular array
+    zeroTri(A);
+
+    for i in R.domain do R[i] = + reduce (A[.., i]*X[..]);
+
+    trmv(A, X, trans=Op.T);
+
+    var err = max reduce abs(X-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Try uplo=Uplo.Lower
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}] t,
+        R : [X.domain] t; // Result
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    // A result is only stored in upper triangular array
+    zeroTri(A, Uplo.Lower);
+
+    for i in R.domain do R[i] = + reduce (A[i, ..]*X[..]);
+
+    trmv(A, X, uplo=Uplo.Lower);
+
+    var err = max reduce abs(X-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Try diag=Diag.Unit
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}] t,
+        R : [X.domain] t; // Result
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    // A result is only stored in upper triangular array
+    zeroTri(A);
+
+    // Make unit triangular
+    for (i, j) in A.domain do
+      if i == j then A[i, j] = 1 :t;
+
+    for i in R.domain do R[i] = + reduce (A[i, ..]*X[..]);
+
+    trmv(A, X, diag=Diag.Unit);
+
+    var err = max reduce abs(X-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Test leading dimension of array
   {
+    const m = 10 : c_int;
+    const ld = 20;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #ld}] t,
+        X : [{0.. #m}] t,
+        R : [X.domain] t; // Result
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    // A result is only stored in upper triangular array
+    zeroTri(A[.., 0..#m]);
+
+    for i in R.domain do R[i] = + reduce (A[i, 0..#m]*X[..]);
+
+    trmv(A[.., 0..#m], X, ldA=ld);
+
+    var err = max reduce abs(X-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   printErrors(name, passed, failed, tests);
@@ -1153,37 +1558,133 @@ proc test_trsv_helper(type t){
 
     trsv(A, X);
 
-    for i in A.domain.dims()[2] {
-      for j in A.domain.dims()[1] {
-        R[i] += A[i, j]*X[j];
-      }
-    }
+    for i in R.domain do R[i] = + reduce(A[i, ..]*X[..]);
 
     var err = max reduce abs(Xsave-R);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
-
   }
 
   // Try trans=Op.T
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}] t,
+        R : [X.domain] t; // Result
+
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    // Make A a triangular matrix
+    zeroTri(A);
+
+    // Store X
+    const Xsave = X;
+
+    trsv(A, X, trans=Op.T);
+
+    for i in R.domain do R[i] = + reduce(A[.., i]*X[..]);
+
+    var err = max reduce abs(Xsave-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Try uplo=Uplo.Lower
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}] t,
+        R : [X.domain] t; // Result
+
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    // Make A a triangular matrix
+    zeroTri(A, Uplo.Lower);
+
+    // Store X
+    const Xsave = X;
+
+    trsv(A, X, uplo=Uplo.Lower);
+
+    for i in R.domain do R[i] = + reduce(A[i, ..]*X[..]);
+
+    var err = max reduce abs(Xsave-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Try diag=Diag.Unit
   {
+    const m = 10 : c_int;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #m}] t,
+        X : [{0.. #m}] t,
+        R : [X.domain] t; // Result
+
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    // Make A a triangular matrix
+    zeroTri(A);
+    // Make A unit triangular
+    for (i, j) in A.domain do
+      if i == j then A[i, j] = 1 :t;
+
+    // Store X
+    const Xsave = X;
+
+    trsv(A, X, diag=Diag.Unit);
+
+    for i in R.domain do R[i] = + reduce(A[i, ..]*X[..]);
+
+    var err = max reduce abs(Xsave-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   // Test leading dimension of array
   {
+    const m = 10 : c_int;
+    const ld = 20;
 
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+
+    var A : [{0.. #m, 0.. #ld}] t,
+        X : [{0.. #m}] t,
+        R : [X.domain] t; // Result
+
+
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+
+    // Make A a triangular matrix
+    zeroTri(A[.., 0..#m]);
+
+    // Store X
+    const Xsave = X;
+
+    trsv(A[.., 0..#m], X, ldA=ld);
+
+    for i in R.domain do R[i] = + reduce(A[i, 0..#m]*X[..]);
+
+    var err = max reduce abs(Xsave-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   printErrors(name, passed, failed, tests);
 }
+

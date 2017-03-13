@@ -249,7 +249,7 @@ module BLAS {
   }
 
   /*
-   Wrapper for the `SYMM`_ routines::
+    Wrapper for the `SYMM`_ routines::
 
       C := alpha * A * B + beta * C
 
@@ -860,14 +860,14 @@ module BLAS {
       A := alpha*x*conjg(y') + A
 
   */
-  proc gerc(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc gerc(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
             ref alpha: eltType,
             order : Order = Order.Row,
             ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
-            where (Adom.rank == 2) && (vDom.rank == 1)
+            where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Xdom.dim(1).size : c_int,
+        n = Ydom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);
@@ -892,14 +892,14 @@ module BLAS {
       A := alpha*x*y' + A
 
   */
-  proc geru(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc geru(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
             ref alpha: eltType,
             order : Order = Order.Row,
             ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
-            where (Adom.rank == 2) && (vDom.rank == 1)
+            where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Xdom.dim(1).size : c_int,
+        n = Ydom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA);

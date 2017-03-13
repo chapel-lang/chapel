@@ -87,9 +87,13 @@ proc makeTri(A:[?Adom], uplo:Uplo = Uplo.Upper)
   }
 }
 
+proc zeroTri(A:[?Adom], uplo:Uplo) where Adom.rank == 2 {
+  const zeroLow = if uplo==Uplo.Upper then true else false;
+  zeroTri(A, zeroLow);
+}
 
 // Zero out upper or lower triangular piece
-proc zeroTri(A:[?Adom], zeroLow:bool=true) where A.domain.rank == 2 {
+proc zeroTri(A:[?Adom], zeroLow:bool=true) where Adom.rank == 2 {
   type t = A.eltType;
   const zero = 0 : t;
   forall (i,j) in Adom {
