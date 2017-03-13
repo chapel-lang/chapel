@@ -899,7 +899,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   
     return new range(resultType, b, s,
                      r._low - i, r._high - i,
-           r._stride : strType, r._alignment - i : resultType, r._aligned);
+           r.stride : strType, r._alignment - i : resultType, r._aligned);
   }
   
   inline proc chpl_check_step_integral(step) {
