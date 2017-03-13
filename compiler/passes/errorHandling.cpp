@@ -295,6 +295,9 @@ CallExpr* ErrorHandlingVisitor::haltExpr() {
 }
 
 void lowerErrorHandling() {
+  INT_ASSERT(dtError->inTree());
+  INT_ASSERT(dtError->getRefType());
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     ArgSymbol*   outError = NULL;
     LabelSymbol* epilogue = NULL;
