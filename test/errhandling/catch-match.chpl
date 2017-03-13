@@ -1,13 +1,11 @@
+use ThrowError;
+
 class OtherError: Error {
 
 }
 
-proc throwAnError() throws {
-  throw new Error();
-}
-
 proc throwOtherError() throws {
-  throw new OtherError;
+  throw new OtherError();
 }
 
 try {
