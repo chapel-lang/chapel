@@ -843,21 +843,11 @@ void gatherLoopDetails(ForLoop*  forLoop,
       //   call_tmp = build_tuple(a,b)
       //   _iterator = _getIteratorZip(call_tmp)
       //
-
-      // This case doesn't correctly handle
+      // or
       //
-      // for (a,b) in zip( (...tup) )
-
-      // which looks like
-      //   _iterator = _getIteratorZip(tup)
-      //
-      // in which case we can't find the _build_tuple call.
-
-      // TODO --
-      // what does
-      //   for (a,b) in zip(tup) actually do?
-      //     it seems to be accessing array fields vs. tuple elements
-      //     -> it doesn't seem to actually work correctly
+      //   call_tmp = build_tuple(a, b)
+      //   p_followerIterator = _toFollowerZip(call_tmp)
+      //   _iterator = _getIteratorZip(p_followerIterator)
 
       SymExpr* tupleIterator = NULL;
       SymExpr* def = iterator->getSingleDef();
@@ -875,11 +865,28 @@ void gatherLoopDetails(ForLoop*  forLoop,
           CallExpr* otherMove = toCallExpr(otherDef->parentExpr);
           INT_ASSERT(otherMove && otherMove->isPrimitive(PRIM_MOVE));
           call = toCallExpr(otherMove->get(2));
+
+          calledFn = call->isResolved();
+          if (calledFn && !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
+            // expecting call is e.g. _toFollowerZip
+            SymExpr* anotherSe = toSymExpr(call->get(1));
+            INT_ASSERT(anotherSe);
+            SymExpr* anotherDef = anotherSe->symbol()->getSingleDef();
+            if (anotherDef) {
+              CallExpr* anotherMove = toCallExpr(anotherDef->parentExpr);
+              INT_ASSERT(anotherMove && anotherMove->isPrimitive(PRIM_MOVE));
+              call = toCallExpr(anotherMove->get(2));
+            } else {
+              call = NULL;
+              tupleIterator = otherSe;
+            }
+          }
         } else {
           call = NULL;
           tupleIterator = otherSe;
         }
       }
+
       CallExpr* buildTupleCall = call;
       FnSymbol* buildTupleFn = NULL;
       if (buildTupleCall)
@@ -910,6 +917,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
           detailsVector.push_back(details);
         }
       } else {
+        INT_ASSERT(tupleIterator);
         // Can't find build_tuple call, so fall back on
         // storing tuple elements in iterator details.
         AggregateType* tupleItType = toAggregateType(tupleIterator->typeInfo());
