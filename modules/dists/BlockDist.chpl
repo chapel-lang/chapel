@@ -1122,7 +1122,7 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
       if radata(rlocIdx).shiftedDataChunk(0) != nil {
-        var dataIdx = radata(rlocIdx).getRADDataIndex(myLocArr.stridable, i);
+        var dataIdx = radata(rlocIdx).getDataIndex(i);
         return radata(rlocIdx).getDataElem(dataIdx);
       }
     }

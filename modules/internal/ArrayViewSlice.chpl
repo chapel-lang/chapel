@@ -84,8 +84,9 @@ module ArrayViewSlice {
     //
 
     iter these() ref {
-      for i in privDom do
-        yield arr.dsiAccess(i);
+      const info = if shouldUseIndexCache() then this else arr;
+      for elem in chpl__serialViewIter(info, privDom) do
+        yield elem;
     }
 
     iter these(param tag: iterKind) ref
@@ -151,7 +152,7 @@ module ArrayViewSlice {
     inline proc dsiAccess(i) ref {
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(i);
@@ -162,7 +163,7 @@ module ArrayViewSlice {
       where shouldReturnRvalueByValue(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(i);
@@ -173,7 +174,7 @@ module ArrayViewSlice {
       where shouldReturnRvalueByConstRef(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(i);
