@@ -64,8 +64,12 @@ THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs)
 # NOTE: If any of these builds fail, we won't stop building
 third-party-pkgs:
 ifneq (, $(THIRD_PARTY_PKGS))
+# Qthreads may use hwloc and/or jemalloc. Ensure they are built first
 ifneq (, $(filter $(THIRD_PARTY_PKGS),hwloc))
 	$(MAKE) -C $(THIRD_PARTY_DIR) hwloc
+endif
+ifneq (, $(filter $(THIRD_PARTY_PKGS),jemalloc))
+	$(MAKE) -C $(THIRD_PARTY_DIR) jemalloc
 endif
 	$(MAKE) -C $(THIRD_PARTY_DIR) $(THIRD_PARTY_PKGS)
 endif
