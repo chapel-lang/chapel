@@ -11,15 +11,15 @@ proc throwOtherError() throws {
 try {
   throwAnError();
 } catch e: OtherError {
-  write("should not catch here");
+  writeln("should not catch here");
 } catch {
-  write("caught Error");
+  writeln("caught Error");
 }
 
 try {
   throwOtherError();
 } catch e: OtherError {
-  write("caught OtherError");
+  writeln("caught OtherError");
 } catch {
-  write("should not catch here");
+  writeln("should not catch here");
 }
