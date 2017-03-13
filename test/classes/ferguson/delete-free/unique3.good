@@ -1,2 +1,2 @@
-unique3.chpl:16: In function 'test':
-unique3.chpl:25: error: copy-initialization invoked for a type that does not have a copy initializer
+unique3.chpl:9: In function 'foo':
+unique3.chpl:13: error: Owned may not be assigned. Use lhs.reset(rhs.release()).
