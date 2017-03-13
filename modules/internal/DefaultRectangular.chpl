@@ -1874,7 +1874,7 @@ module DefaultRectangular {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
     var info = if useCache then arr.indexCache else arr;
 
-    if arr.rank == 1 && !viewDom.stridable {
+    if arr.rank == 1 && !viewDom.stridable && useCache {
       const first  = info.getDataIndex(viewDom.dsiLow, getChunked=false);
       const second = info.getDataIndex(viewDom.dsiLow+1, getChunked=false);
       const step   = (second-first);
@@ -1908,7 +1908,7 @@ module DefaultRectangular {
     where arr.isDefaultRectangular() && defRectSimpleDData {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
     var info = if useCache then arr.indexCache else arr;
-    if arr.rank == 1 {
+    if arr.rank == 1 && useCache {
       // This is specialized to avoid overheads of calling dsiAccess()
       if !viewDom.stridable {
         // Ideally we would like to be able to do something like
@@ -1961,7 +1961,8 @@ module DefaultRectangular {
       const dataIdx = if arr.isReindexArrayView() then arr.chpl_reindexConvertIdx(i)
                       else if arr.isRankChangeArrayView() then arr.chpl_rankChangeConvertIdx(i)
                       else i;
-      yield arr.dsiAccess(dataIdx);
+      const info = if chpl__isArrayView(arr) then arr.arr else arr;
+      yield info.dsiAccess(dataIdx);
     }
   }
 

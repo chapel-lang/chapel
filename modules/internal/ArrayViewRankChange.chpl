@@ -142,8 +142,7 @@ module ArrayViewRankChange {
     //
 
     iter these() ref {
-      const info = if shouldUseIndexCache() then this else arr;
-      for elem in chpl__serialViewIter(info, privDom) do
+      for elem in chpl__serialViewIter(this, privDom) do
         yield elem;
     }
 
