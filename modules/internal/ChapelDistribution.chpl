@@ -22,6 +22,7 @@ module ChapelDistribution {
   use List;
 
   extern proc chpl_task_yield();
+  extern proc printf(x...);
 
   //
   // Abstract distribution class
@@ -184,6 +185,9 @@ module ChapelDistribution {
       // TODO -- remove dsiLinksDistribution
       assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
 
+      if print_arr_trace then
+        printf("calling BaseDom.remove()\n");
+
       var ret_dom:BaseDom = nil;
       var ret_dist:BaseDist = nil;
       var dist = dsiMyDist();
@@ -197,6 +201,8 @@ module ChapelDistribution {
           _lock_arrs();
           arr_count = _arrs.size;
           arr_count += _arrs_containing_dom;
+          if print_arr_trace then
+            printf("arr_count = %lld + %lld\n", _arrs.size, _arrs_containing_dom);
           _free_when_no_arrs = true;
           _unlock_arrs();
         }
@@ -220,6 +226,8 @@ module ChapelDistribution {
 
     // returns true if the domain should be removed
     inline proc remove_arr(x:BaseArr): bool {
+      if print_arr_trace then
+        printf("In BaseDom.remove_arr()\n");
       var count = -1;
       on this {
         var cnt = -1;
@@ -228,6 +236,9 @@ module ChapelDistribution {
           _arrs.remove(x);
           cnt = _arrs.size;
           cnt += _arrs_containing_dom;
+          if print_arr_trace then
+            printf("arr_count = %lld + %lld + %lld\n", _arrs.size, 
+                   _arrs_containing_dom, if _free_when_no_arrs then 1 else 0);
           // add one for the main domain record
           if !_free_when_no_arrs then
             cnt += 1;
@@ -239,6 +250,8 @@ module ChapelDistribution {
     }
   
     inline proc add_arr(x:BaseArr, param locking=true) {
+      if print_arr_trace then
+        printf("add_arr called\n");
       on this {
         if locking then
           _lock_arrs();
@@ -249,18 +262,24 @@ module ChapelDistribution {
     }
   
     inline proc remove_containing_arr(x:BaseArr): int {
+      if print_arr_trace then
+        printf("remove_containing_arr called\n");
       var count = -1;
       on this {
         _lock_arrs();
         _arrs_containing_dom -= 1;
         count = _arrs.size;
         count += _arrs_containing_dom;
+        if print_arr_trace then
+          printf("arr_count = %lld + %lld\n", _arrs.size, _arrs_containing_dom);
         _unlock_arrs();
       }
       return count;
     }
 
     inline proc add_containing_arr(x:BaseArr) {
+      if print_arr_trace then
+        printf("add_containing_arr called\n");
       on this {
         _lock_arrs();
         _arrs_containing_dom += 1;
