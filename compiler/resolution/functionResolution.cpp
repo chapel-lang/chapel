@@ -4344,17 +4344,17 @@ populateForwardingMethods(Type* t,
     if (methodName == NULL)
       continue;
 
+    // Make sure methodName is a blessed string
+    methodName = astr(methodName);
+
     // There are 2 ways that more methods can be added to
     // delegate->type during resolution:
     //   1) delegate->type itself use a 'delegate'
     //   2) delegate->type is a generic instantiation
     //      and the method in question hasn't been instantiated yet
     //
-    // The code below attempts to resolve a call to
-    // delegate->type to make sure that both are resolved.
-    // Additionally, it will choose the proper version of
-    // method in the event that overload resolution is necessary.
-    FnSymbol* method = NULL;
+    // We handle 1 by resolving a call here to the method in question.
+    // We handle 2 below by creating a generic wrapper for a generic function.
     {
       BlockStmt* block = new BlockStmt();
       Type* testType = delegate->type;
@@ -4377,58 +4377,59 @@ populateForwardingMethods(Type* t,
       block->insertAtTail(test);
 
       forCall->getStmtExpr()->insertAfter(block);
-      method = tryResolveCall(test);
+      tryResolveCall(test);
       block->remove();
     }
 
-    // Get ready to add the forwarding method.
-    // But first, rule out some special cases.
+    // Now, forward all methods named 'methodName' as 'calledName'.
+    // Forward generic functions as generic functions.
+    forv_Vec(FnSymbol, method, delegate->type->methods) {
+      // Skip any methods with a different name
+      // TODO: this could be more efficient if methods were a map
+      if (method->name != methodName)
+        continue;
 
-    // Rule out constructors, destructors, and initializers
-    if (method != NULL) {
+      // Skip any methods that don't match parentheses-less
+      // vs parentheses-ful vs the call.
+      if (method->hasFlag(FLAG_NO_PARENS) != forCall->methodTag)
+        continue;
+
+      // Skip any methods that are init/ctor/dtor
+      // These cannot yet be forwarded.
       if (method->hasFlag(FLAG_DESTRUCTOR) ||
           method->hasFlag(FLAG_CONSTRUCTOR) ||
-          0 == strcmp(method->name, "init"))
-        method = NULL;
-      else {
-        // Does the list of methods already
-        // include a function marked with FLAG_FORWARDING_FN that
-        // calls the same?  If so, stop.
-        forv_Vec(FnSymbol, fn, t->methods) {
-          if (fn->hasFlag(FLAG_FORWARDING_FN)) {
-            // Check: is it calling the same method we just resolved?
+          0 == strcmp(methodName, "init"))
+        continue;
 
-            Symbol* ret = fn->getReturnSymbol();
-            SymExpr* def = ret->getSingleDef();
-            INT_ASSERT(def);
-            CallExpr* move = toCallExpr(def->parentExpr);
-            INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-            CallExpr* call = toCallExpr(move->get(2));
-            INT_ASSERT(call);
-            FnSymbol* calledFn = call->isResolved();
-            INT_ASSERT(calledFn);
-            if (calledFn == method) {
-              // We already have the appropriate delegated function
-              // in the methods list. Let the regular overload
-              // resolution in disambiguateByMatch handle it.
-              method = NULL;
-            }
+      // Skip any instantiations of functions with
+      // with generic arguments (but not counting the this argument,
+      // since a method can be instantiated just for a generic this,
+      // but that should count as concrete for us here.
+      if (method->instantiatedFrom != NULL) {
+        bool skip = false;
+
+        int i = 0;
+        for_formals(formal, method->instantiatedFrom) {
+          // skip method token
+          // skip `this` argument
+          if (i >= 2) {
+            if (formal->type->symbol->hasFlag(FLAG_GENERIC))
+              skip = true;
           }
+          i++;
         }
+
+        if (skip)
+          continue;
       }
-    }
 
-
-    // If the forwarded-to method resolved and we havn't already created
-    // a wrapper method for it, add a wrapper method to call it.
-    //
-    // This wrapper method will be added to the type at and so will be found
-    // through normal resolution processes if this comes up agin.
-    if (method) {
+      // This wrapper method will be added to the type at and so will be found
+      // through normal resolution processes if this comes up agin.
       addedAny = true;
 
       // Create a "wrapper" method that forwards to the delegate
       FnSymbol* fn = new FnSymbol(calledName);
+
       fn->copyFlags(method);
       // but we need to resolve the wrapper method again
       fn->removeFlag(FLAG_RESOLVED);
@@ -4465,6 +4466,20 @@ populateForwardingMethods(Type* t,
           wrapCall->insertAtTail(new SymExpr(arg));
         }
         i++;
+      }
+
+      // Copy the where clause, if any
+      // TODO: replace this.type with the delegate expression.type
+      if (method->where != NULL) {
+        SymbolMap map;
+
+        int nFormals = method->numFormals();
+        for (int i = 1; i <= nFormals; i++) {
+          Symbol* from = method->getFormal(i);
+          Symbol* to = fn->getFormal(i);
+          map.put(from, to);
+        }
+        fn->where = method->where->copy(&map);
       }
 
       // at this point, we don't know the return type for
