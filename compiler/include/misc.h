@@ -32,9 +32,12 @@
 // results in something like:
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
 
-#define INT_FATAL      setupError(__FILE__, __LINE__, 1), handleError
-#define USR_FATAL      setupError(__FILE__, __LINE__, 2), handleError
-#define USR_FATAL_CONT setupError(__FILE__, __LINE__, 3), handleError
+#define INT_FATAL      gdbShouldBreakHere(), \
+                       setupError(__FILE__, __LINE__, 1), handleError
+#define USR_FATAL      gdbShouldBreakHere(), \
+                       setupError(__FILE__, __LINE__, 2), handleError
+#define USR_FATAL_CONT gdbShouldBreakHere(), \
+                       setupError(__FILE__, __LINE__, 3), handleError
 #define USR_WARN       setupError(__FILE__, __LINE__, 4), handleError
 #define USR_PRINT      setupError(__FILE__, __LINE__, 5), handleError
 
