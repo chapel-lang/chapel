@@ -50,7 +50,7 @@ typedef struct shared_heap {
 static shared_heap_t heaps[MAX_HEAPS];
 static int num_heaps;
 
-chpl_bool chpl_mem_impl_allocLocalizes = false;
+bool chpl_mem_impl_allocLocalizes = false;
 
 
 // compute aligned index into our shared heap, alignment must be a power of 2

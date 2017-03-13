@@ -234,7 +234,7 @@ void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
 // where chpl_mem_doLocalization is true, above.)
 //
 static inline
-chpl_bool chpl_mem_allocLocalizes(void) {
+bool chpl_mem_allocLocalizes(void) {
 #ifdef CHPL_MEM_IMPL_ALLOCLOCALIZES
     return CHPL_MEM_IMPL_ALLOCLOCALIZES;
 #else
