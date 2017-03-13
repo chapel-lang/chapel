@@ -1339,7 +1339,7 @@ void cullOverReferences() {
                     GraphNode srcNode = makeNode(index, indexTupleElement);
                     collectedSymbols.push_back(srcNode);
                     revisit = true;
-		    addDependency(revisitGraph, srcNode, node);
+                    addDependency(revisitGraph, srcNode, node);
                     handled = true;
                     //break;
                   }
@@ -1461,7 +1461,7 @@ void cullOverReferences() {
                 GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
                 collectedSymbols.push_back(srcNode);
                 revisit = true;
-		addDependency(revisitGraph, srcNode, node);
+                addDependency(revisitGraph, srcNode, node);
                 continue; // move on to the next iteration
               }
             }
@@ -1480,7 +1480,7 @@ void cullOverReferences() {
             // is used (const or not?) will allow us to resolve
             // this Symbol's const-ness.
             GraphNode srcNode = makeNode(formal, node.fieldIndex);
-	    addDependency(revisitGraph, srcNode, node);
+            addDependency(revisitGraph, srcNode, node);
             continue; // move on to the next iteration
           }
 
@@ -1542,7 +1542,7 @@ void cullOverReferences() {
             GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
             collectedSymbols.push_back(srcNode);
             revisit = true;
-	    addDependency(revisitGraph, srcNode, node);
+            addDependency(revisitGraph, srcNode, node);
             continue; // move on to the next iteration
           }
         }
