@@ -15,7 +15,8 @@ record Owned {
   // no copy may be made
 
   proc ~Owned() {
-    delete p;
+    if p then
+      delete p;
   }
 
   proc ref reset(newPtr:p.type) {
@@ -37,10 +38,11 @@ record Owned {
 }
 
 proc =(ref lhs:Owned, ref rhs: Owned) {
-  lhs.reset(rhs.release());
+  compilerError("Owned may not be assigned. Use lhs.reset(rhs.release()).");
+  //lhs.reset(rhs.release());
 }
 
-// workaround
+// workaround for problems with generic initializers
 pragma "init copy fn"
 pragma "no doc"
 pragma "erroneous initcopy"
