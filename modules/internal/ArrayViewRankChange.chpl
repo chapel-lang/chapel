@@ -95,13 +95,16 @@ module ArrayViewRankChange {
     }
 
     proc dsiBuildArray(type eltType) {
-      const arr = downdom.dsiBuildArray(eltType);
+      writeln("in dsiBuildArray for rank change array views");
+      pragma "no auto destroy"
+      const arr = _newArray(downdom.dsiBuildArray(eltType));
+      writeln("In build array, pid = ", arr._pid);
       // TODO: Update once we start privatizing
       return new ArrayViewRankChangeArr(eltType  =eltType,
-                                        _DomPid = nullPid,
+                                        _DomPid = downdom.pid,
                                         dom = downdom,
-                                        _ArrPid=nullPid,
-                                        _ArrInstance=arr,
+                                        _ArrPid=arr._pid,
+                                        _ArrInstance=arr._instance,
                                         collapsedDim=collapsedDim,
                                         idx=idx);
     }
@@ -149,21 +152,17 @@ module ArrayViewRankChange {
 
     iter these() {
       // TODO: cache this as a lazily-computed field and reuse?
-      const downslice = downdom.dist.dsiNewRectangularDom(rank=downrank,
-                                                          idxType=idxType,
-                                                          stridable=stridable);
+      var downsliceDom = _newDomain(downdom.dist.dsiNewRectangularDom(rank=downrank,
+                                                                        idxType=idxType,
+                                                                        stridable=stridable));
       writeln("Setting downslice indices to: ", chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
-      downslice.dsiSetIndices(chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
-      downslice.dsiDisplayRepresentation();
-      if _isPrivatized(downslice) {
-        _reprivatize(downslice);
-      }
+      downsliceDom = chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx);
       writeln("downSlice is: ");
-      downslice.dsiSerialWrite(stdout);
+      write(downsliceDom);
       writeln();
       //      writeln("downSlice.dist is: ", downslice.dist);
-      writeln("downslice.whole is: ", downslice.whole);
-      for i in downslice.these() do {
+      //      writeln("downslice.whole is: ", downslice.whole);
+      for i in downsliceDom.these() do {
         writeln("down: ", i);
         writeln("=up : ", downIdxToUpIdx(i));
         yield downIdxToUpIdx(i);
@@ -279,6 +278,12 @@ module ArrayViewRankChange {
           const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
           yield indexCache.getDataElem(dataIdx);
         } else {
+          writeln("Trying to access using ", chpl_rankChangeConvertIdx(i, collapsedDim, idx));
+          if (arr == nil) then
+            writeln("arr is nil");
+          else
+            writeln("arr is non-nil");
+          //          writeln("arr = ", arr);
           yield arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
         }
       }
@@ -582,6 +587,7 @@ module ArrayViewRankChange {
 
     inline proc arr {
       if _isPrivatized(_ArrInstance) {
+        writeln("in arr, _ArrPid is", _ArrPid);
         return chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid);
       } else {
         return _ArrInstance;

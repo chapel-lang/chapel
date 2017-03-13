@@ -811,6 +811,9 @@ proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
 }
 
 iter BlockDom.these() {
+  if this == nil then
+    writeln("this is nil in BlockDom iterator");
+  writeln("pid is: ", this.pid);
   writeln("In BlockDom.these");
   this.dsiDisplayRepresentation();
   writeln("whole is: ", whole);
@@ -908,9 +911,11 @@ proc BlockDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc BlockDom.dsiBuildArray(type eltType) {
+  writeln("In BlockDom.dsiBuildArray()");
   var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
       stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
   arr.setup();
+  writeln("Returning from BlockDom.dsiBuildArray()");
   return arr;
 }
 

@@ -415,8 +415,11 @@ module ChapelArray {
   // Support for array types
   //
   pragma "runtime type init fn"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType)
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
+    extern proc printf(x...);
+    printf("In buildArrayRuntimeType\n");
     return dom.buildArray(eltType);
+  }
 
   proc _getLiteralType(type t) type {
     if t != c_string then return t;
@@ -1119,6 +1122,8 @@ module ChapelArray {
     pragma "no doc"
     pragma "no copy return"
     proc buildArray(type eltType) {
+      extern proc printf(x...);
+      printf("In buildArray\n");
       var x = _value.dsiBuildArray(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {
