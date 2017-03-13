@@ -29,9 +29,14 @@
 
 static int heapInitialized = 0;
 
+size_t chpl_mem_localizationThreshold;
+
+
 void chpl_mem_init(void) {
   chpl_mem_layerInit();
   heapInitialized = 1;
+  chpl_mem_localizationThreshold =
+      chpl_topo_getNumNumaDomains() * 2 * chpl_getHeapPageSize();
 }
 
 
