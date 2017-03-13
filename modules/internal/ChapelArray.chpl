@@ -417,7 +417,7 @@ module ChapelArray {
   pragma "runtime type init fn"
   proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
     extern proc printf(x...);
-    printf("In buildArrayRuntimeType\n");
+    //    printf("In buildArrayRuntimeType\n");
     return dom.buildArray(eltType);
   }
 
@@ -1123,7 +1123,7 @@ module ChapelArray {
     pragma "no copy return"
     proc buildArray(type eltType) {
       extern proc printf(x...);
-      printf("In buildArray\n");
+      //      printf("In buildArray\n");
       var x = _value.dsiBuildArray(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {

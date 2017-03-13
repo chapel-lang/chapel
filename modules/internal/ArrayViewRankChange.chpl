@@ -155,28 +155,41 @@ module ArrayViewRankChange {
       var downsliceDom = _newDomain(downdom.dist.dsiNewRectangularDom(rank=downrank,
                                                                         idxType=idxType,
                                                                         stridable=stridable));
-      writeln("Setting downslice indices to: ", chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
+      //      writeln("Setting downslice indices to: ", chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
       downsliceDom = chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx);
+      /*
       writeln("downSlice is: ");
       write(downsliceDom);
       writeln();
+      */
       //      writeln("downSlice.dist is: ", downslice.dist);
       //      writeln("downslice.whole is: ", downslice.whole);
-      for i in downsliceDom.these() do {
-        writeln("down: ", i);
-        writeln("=up : ", downIdxToUpIdx(i));
+      for i in downsliceDom do {
+        //        writeln("down: ", i);
+        //        writeln("=up : ", downIdxToUpIdx(i));
         yield downIdxToUpIdx(i);
       }
     }
 
     iter these(param tag: iterKind) where tag == iterKind.standalone {
       // TODO: cache this as a lazily-computed field and reuse?
-      const downslice = downdom.dist.dsiNewRectangularDom(rank=downrank,
-                                                          idxType=idxType,
-                                                          stridable=stridable);
-      downslice.dsiSetIndices(chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
-      forall i in downslice do
+      var downsliceDom = _newDomain(downdom.dist.dsiNewRectangularDom(rank=downrank,
+                                                                        idxType=idxType,
+                                                                        stridable=stridable));
+      //      writeln("Setting downslice indices to: ", chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
+      downsliceDom = chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx);
+      /*
+      writeln("downSlice is: ");
+      write(downsliceDom);
+      writeln();
+      */
+      //      writeln("downSlice.dist is: ", downslice.dist);
+      //      writeln("downslice.whole is: ", downslice.whole);
+      forall i in downsliceDom do {
+        //        writeln("down: ", i);
+        //        writeln("=up : ", downIdxToUpIdx(i));
         yield downIdxToUpIdx(i);
+      }
     }
 
 
@@ -278,11 +291,13 @@ module ArrayViewRankChange {
           const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
           yield indexCache.getDataElem(dataIdx);
         } else {
-          writeln("Trying to access using ", chpl_rankChangeConvertIdx(i, collapsedDim, idx));
+          //          writeln("Trying to access using ", chpl_rankChangeConvertIdx(i, collapsedDim, idx));
+          /*
           if (arr == nil) then
             writeln("arr is nil");
           else
-            writeln("arr is non-nil");
+                        writeln("arr is non-nil");
+          */
           //          writeln("arr = ", arr);
           yield arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
         }
@@ -350,13 +365,13 @@ module ArrayViewRankChange {
     //
 
     inline proc dsiAccess(i: idxType ...rank) ref {
-      writeln("In dsiAccess A");
+      //      writeln("In dsiAccess A");
       return dsiAccess(i);
     }
 
     inline proc dsiAccess(i: idxType ...rank)
       where shouldReturnRvalueByValue(eltType) {
-      writeln("In dsiAccess B");
+      //      writeln("In dsiAccess B");
       return dsiAccess(i);
     }
 
@@ -366,7 +381,7 @@ module ArrayViewRankChange {
     }
 
     inline proc dsiAccess(i) ref {
-      writeln("In dsiAccess C");
+      //      writeln("In dsiAccess C");
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -378,7 +393,7 @@ module ArrayViewRankChange {
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
-      writeln("In dsiAccess D");
+      //      writeln("In dsiAccess D");
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -390,7 +405,7 @@ module ArrayViewRankChange {
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType) {
-      writeln("In dsiAccess E");
+      //      writeln("In dsiAccess E");
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
@@ -587,7 +602,7 @@ module ArrayViewRankChange {
 
     inline proc arr {
       if _isPrivatized(_ArrInstance) {
-        writeln("in arr, _ArrPid is", _ArrPid);
+        //        writeln("in arr, _ArrPid is", _ArrPid);
         return chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid);
       } else {
         return _ArrInstance;
