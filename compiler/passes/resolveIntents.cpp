@@ -144,8 +144,14 @@ static IntentTag constIntentForThisArg(Type* t) {
 static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
 
+  Type* valType = t->getValType();
+
+  // For user records or types with FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST,
+  // the intent for this is INTENT_REF_MAYBE_CONST
+  //
   // This applies to both arguments of type _ref(t) and t
-  if (t->getValType()->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
+  if (isRecord(valType) ||
+      valType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
     return INTENT_REF_MAYBE_CONST;
 
   if (isRecordWrappedType(t))  // domain / distribution

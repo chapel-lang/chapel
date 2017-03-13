@@ -1906,6 +1906,19 @@ bool isNonGenericClass(Type* type) {
   return retval;
 }
 
+bool isNonGenericClassWithInitializers(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isGeneric()      == false &&
+        at->isClass()        == true  &&
+        at->initializerStyle == DEFINES_INITIALIZER) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
 bool isNonGenericRecordWithInitializers(Type* type) {
   bool retval = false;
 

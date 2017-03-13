@@ -4432,6 +4432,12 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (bestRef && bestConstRef && isBetterMatch(bestConstRef, bestRef, DC, true)) {
     bestRef = NULL; // Don't consider the ref function.
   }
+  if (bestConstRef && bestValue && isBetterMatch(bestConstRef, bestValue, DC, true)) {
+    bestValue = NULL; // Don't consider the value function.
+  }
+  if (bestConstRef && bestValue && isBetterMatch(bestValue, bestConstRef, DC, true)) {
+    bestConstRef = NULL; // Don't consider the const ref function.
+  }
 
   ResolutionCandidate* best = bestRef;
   if (!best && bestValue) best = bestValue;
@@ -5011,6 +5017,8 @@ static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
 *                                                                             *
 ************************************** | *************************************/
 
+static bool hasCopyConstructor(AggregateType* ct);
+
 static void resolveInitVar(CallExpr* call) {
   SymExpr* dstExpr = toSymExpr(call->get(1));
   Symbol*  dst     = dstExpr->symbol();
@@ -5028,12 +5036,18 @@ static void resolveInitVar(CallExpr* call) {
     resolveMove(call);
 
   } else if (isNonGenericRecordWithInitializers(srcType) == true) {
-    dst->type = src->type;
+    AggregateType* ct = toAggregateType(srcType);
 
-    call->setUnresolvedFunction("init");
-    call->insertAtHead(gMethodToken);
+    if (hasCopyConstructor(ct) == true) {
+      dst->type = src->type;
 
-    resolveCall(call);
+      call->setUnresolvedFunction("init");
+      call->insertAtHead(gMethodToken);
+
+      resolveCall(call);
+    } else {
+      USR_FATAL(call, "No copy constructor for initializer");
+    }
 
   } else {
     Expr*     initExpr = srcExpr->remove();
@@ -5045,6 +5059,27 @@ static void resolveInitVar(CallExpr* call) {
     resolveExpr(initCopy);
     resolveMove(call);
   }
+}
+
+// A simplifed version of functions_exists().
+// It seems unfortunate to export that function in its current state
+static bool hasCopyConstructor(AggregateType* ct) {
+  bool retval = false;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->numFormals() == 3 && strcmp(fn->name, "init") == 0) {
+      ArgSymbol* _this  = fn->getFormal(2);
+      ArgSymbol* _other = fn->getFormal(3);
+
+      if ((_this->type == ct || _this->type == ct->refType) &&
+          _other->type == ct) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************

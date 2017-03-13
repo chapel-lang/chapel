@@ -2160,7 +2160,8 @@ module DefaultRectangular {
         for chunk in 0..#arr.mdNumChunks {
           if arr.mData(chunk).pdr.length >= 0 {
             const src = arr.theDataChunk(chunk);
-            const newLow = max(arr.mData(chunk).pdr.low, indLo);
+            const cmp = if isTuple(indLo) then indLo(arr.mdParDim) else indLo;
+            const newLow = max(arr.mData(chunk).pdr.low, cmp);
             if isTuple(indLo) then
               indLo(arr.mdParDim) = newLow;
             else
@@ -2169,7 +2170,9 @@ module DefaultRectangular {
             const blkLen = if arr.mdParDim == arr.rank
                            then 1
                            else arr.blk(arr.mdParDim) / arr.blk(arr.mdParDim+1);
-            const len = dom.dsiDim(arr.mdParDim)[arr.mData(chunk).pdr].length * blkLen;
+            const outer = dom.dsiDim(arr.mdParDim);
+            const inner = arr.mData(chunk).pdr;
+            const len = outer[inner].length * blkLen;
             const size = len:ssize_t*elemSize:ssize_t;
             if f.writing {
               f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
