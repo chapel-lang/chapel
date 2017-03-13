@@ -524,14 +524,17 @@ module ChapelArray {
   // test/users/bugzilla/bug794133/ for more details and examples.
   //
   proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
+    /*
     if (isArrayType(eltType)) {
       var ev: eltType;
       ev.domain._value.add_containing_arr(arr);
       chpl_incRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
     }
+*/
   }
 
   proc chpl_decRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
+    /*
     if (isArrayType(eltType)) {
       var ev: eltType;
       const refcount = ev.domain._value.remove_containing_arr(arr);
@@ -539,6 +542,7 @@ module ChapelArray {
         _delete_dom(ev.domain._value, _isPrivatized(ev.domain._value));
       chpl_decRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
     }
+*/
   }
 
   //
@@ -1163,7 +1167,7 @@ module ChapelArray {
       }
       help();
 
-      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+      //      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
 
       return _newArray(x);
     }
