@@ -193,7 +193,8 @@ module ChapelIO {
     private
     proc isIoField(x, param i) param {
       if isType(__primitive("field by num", x, i)) ||
-         isParam(__primitive("field by num", x, i)) {
+         isParam(__primitive("field by num", x, i)) ||
+         __primitive("field by num", x, i).type == void {
         // I/O should ignore type or param fields
         return false;
       } else {
@@ -695,7 +696,11 @@ module ChapelIO {
     f.read(tmp);
     this = tmp : chpl_taskID_t;
   }
-  
+
+  pragma "no doc"
+  proc void.writeThis(f) {
+  }
+
   //
   // Catch all
   //

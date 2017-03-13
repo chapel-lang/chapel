@@ -103,7 +103,25 @@ module ChapelBase {
     __primitive("=", a, nil);
   }
 
+  inline proc =(ref a: void, b: ?t) where t != void {
+    compilerError("a void variable cannot be assigned");
+  }
 
+  inline proc =(ref a: ?t, b: void) where t != void {
+    compilerError("cannot assign void to a variable of non-void type");
+  }
+
+  inline proc =(ref a: void, b: void) param {
+    return _void;
+  }
+
+/*
+  // TMacD suggested possibly wanting to be able to cast a non-void to void
+  // This should do that.
+  inline proc _cast(type t, a) where t == void {
+    return _void;
+  }
+*/
   //
   // equality comparison on primitive types
   //

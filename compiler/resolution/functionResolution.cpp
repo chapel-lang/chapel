@@ -4931,25 +4931,6 @@ static void resolveMove(CallExpr* call) {
     rhsType = resolveTypeAlias(toSymExpr(rhs));
   }
 
-  if (rhsType == dtVoid) {
-    if (isReturn && (lhs->type == dtVoid || lhs->type == dtUnknown))
-    {
-      // It is OK to assign void to the return value variable as long as its
-      // type is void or is not yet established.
-    }
-    else
-    {
-      if (CallExpr* rhsFn = toCallExpr(rhs)) {
-        if (FnSymbol* rhsFnSym = rhsFn->isResolved()) {
-          USR_FATAL(userCall(call),
-                    "illegal use of function that does not return a value: '%s'",
-                    rhsFnSym->name);
-        }
-      }
-      USR_FATAL(userCall(call),
-                "illegal use of function that does not return a value");
-    }
-  }
 
   // This is a workaround for problems where the _iterator
   // in buildForLoopExpr would be an _array instead of a ref(_array)
@@ -7267,6 +7248,9 @@ postFold(Expr* expr) {
           expr->replace(result);
         } else if (EnumSymbol* es = toEnumSymbol(fn->getReturnSymbol())) {
           result = new SymExpr(es);
+          expr->replace(result);
+        } else if (ret == gVoid) {
+          result = new SymExpr(gVoid);
           expr->replace(result);
         }
       }
@@ -9876,6 +9860,88 @@ static FnSymbol* findGenMainFn() {
   return NULL;
 }
 
+static void cleanupVoidVarsAndFields() {
+  // remove most uses of void variables and fields
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->inTree()) {
+      if (call->isPrimitive(PRIM_MOVE)) {
+        if (call->get(2)->typeInfo() == dtVoid ||
+            call->get(2)->typeInfo() == dtVoid->refType) {
+          INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
+          if (CallExpr* rhs = toCallExpr(call->get(2))) {
+            if (rhs->isPrimitive(PRIM_DEREF) ||
+                rhs->isPrimitive(PRIM_GET_MEMBER) ||
+                rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+              call->remove();
+            } else {
+              Expr* rmRhs = rhs->remove();
+              call->insertBefore(rmRhs);
+              call->remove();
+            }
+          } else if (isSymExpr(call->get(2))) {
+            call->remove();
+          }
+        }
+      } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+        if (call->get(3)->typeInfo() == dtVoid) {
+          INT_ASSERT(call->get(2)->typeInfo() == dtVoid);
+          if (CallExpr* rhs = toCallExpr(call->get(2))) {
+            Expr* rmRhs = rhs->remove();
+            call->insertBefore(rmRhs);
+            call->remove();
+          } else if (isSymExpr(call->get(2))) {
+            call->remove();
+          }
+        }
+      } else if (call->isPrimitive(PRIM_RETURN)) {
+        if (call->get(1)->typeInfo() == dtVoid ||
+            call->get(1)->typeInfo() == dtVoid->refType) {
+          if (SymExpr* ret = toSymExpr(call->get(1))) {
+            if (ret->symbol() != gVoid) {
+              SET_LINENO(call);
+              call->replace(new CallExpr(PRIM_RETURN, gVoid));
+            }
+          }
+        }
+      }
+      if (call->isResolved()) {
+        for_actuals(actual, call) {
+          if (actual->typeInfo() == dtVoid) {
+            actual->remove();
+          }
+        }
+      }
+    }
+  }
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->defPoint->inTree()) {
+      for_formals(formal, fn) {
+        if (formal->type == dtVoid) {
+          if (formal == fn->_this) {
+            fn->_this = NULL;
+          }
+          formal->defPoint->remove();
+        }
+      }
+      if (fn->retType == dtVoid->refType) {
+        fn->retType = dtVoid;
+      }
+    }
+  }
+  forv_Vec(DefExpr, def, gDefExprs) {
+    if (def->inTree()) {
+      if (def->sym->type == dtVoid || def->sym->type == dtVoid->refType) {
+        if (VarSymbol* var = toVarSymbol(def->sym)) {
+          if (def->parentSymbol != dtVoid->refType->symbol) {
+            if (var != gVoid) {
+              def->remove();
+            }
+          }
+        }
+      }
+    }
+  }
+}
 
 
 //
@@ -9901,6 +9967,7 @@ pruneResolvedTree() {
   removeMootFields();
   expandInitFieldPrims();
   cleanupAfterRemoves();
+  cleanupVoidVarsAndFields();
 }
 
 static void clearDefaultInitFns(FnSymbol* unusedFn) {

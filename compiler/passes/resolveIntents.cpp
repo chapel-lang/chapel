@@ -47,6 +47,7 @@ static IntentTag constIntentForType(Type* t) {
              t == dtStringCopy ||
              t == dtCVoidPtr ||
              t == dtCFnPtr ||
+             t == dtVoid ||
              // TODO: t->symbol->hasFlag(FLAG_RANGE) ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
     return INTENT_CONST_IN;
@@ -83,6 +84,7 @@ IntentTag blankIntentForType(Type* t) {
              t == dtFile                             ||
              t == dtNil                              ||
              t == dtOpaque                           ||
+             t == dtVoid                             ||
              t->symbol->hasFlag(FLAG_DOMAIN)         ||
              t->symbol->hasFlag(FLAG_DISTRIBUTION)   ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
