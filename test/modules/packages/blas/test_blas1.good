@@ -2,8 +2,8 @@ srotg : 4 PASSED, 0 FAILED
 drotg : 4 PASSED, 0 FAILED
 srotmg : 2 PASSED, 0 FAILED
 drotmg : 2 PASSED, 0 FAILED
-srot : 4 PASSED, 0 FAILED
-drot : 4 PASSED, 0 FAILED
+ srot : 4 PASSED, 0 FAILED
+ drot : 4 PASSED, 0 FAILED
 srotm : 4 PASSED, 0 FAILED
 drotm : 4 PASSED, 0 FAILED
 sswap : 6 PASSED, 0 FAILED
@@ -22,8 +22,8 @@ saxpy : 3 PASSED, 0 FAILED
 daxpy : 3 PASSED, 0 FAILED
 caxpy : 3 PASSED, 0 FAILED
 zaxpy : 3 PASSED, 0 FAILED
-sdot : 1 PASSED, 0 FAILED
-ddot : 1 PASSED, 0 FAILED
+ sdot : 1 PASSED, 0 FAILED
+ ddot : 1 PASSED, 0 FAILED
 cdotu : 1 PASSED, 0 FAILED
 zdotu : 1 PASSED, 0 FAILED
 cdotc : 1 PASSED, 0 FAILED
