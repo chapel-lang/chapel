@@ -830,10 +830,7 @@ module ChapelArray {
           // that should be freed.
           var distToFree = _instance.remove();
           if distToFree != nil {
-            //            printf("We can free the dist");
             _delete_dist(distToFree, _isPrivatized(_instance));
-          } else {
-            //            printf("We got a nil distToFree back\n");
           }
         }
       }
@@ -972,21 +969,10 @@ module ChapelArray {
           var (domToFree, distToRemove) = inst.remove();
           var distToFree:BaseDist = nil;
           if distToRemove != nil {
-            if print_arr_trace then
-              printf("[%p] got a non-nil distToRemove\n", inst);
             distToFree = distToRemove.remove();
-          } else {
-            if print_arr_trace then
-              printf("[%p] got a nil distToRemove\n");
           }
-          if domToFree != nil then {
-            if print_arr_trace then
-              printf("[%p:%p] got a non-nil domToFree\n", inst, domToFree);
+          if domToFree != nil then
             _delete_dom(inst, _isPrivatized(inst));
-          } else {
-            if print_arr_trace then
-              printf("[%p] got a nil domToFree\n", inst);
-          }
           if distToFree != nil then
             _delete_dist(distToFree, _isPrivatized(inst.dist));
         }
@@ -1948,14 +1934,7 @@ module ChapelArray {
           const instanceDom = _instance.dom;
           if domToRemove != nil {
             // remove that domain
-            if print_arr_trace then
-              printf("[%p:%p] in array's do_destroy got non-nil domToRemove\n",
-                     this, domToRemove);
             (domToFree, distToRemove) = domToRemove.remove();
-          } else {
-            if print_arr_trace then
-              printf("[%p] in array's do_destroy got nil domToRemove\n",
-                     this);
           }
           if distToRemove != nil {
             distToFree = distToRemove.remove();

@@ -22,7 +22,6 @@
 
 module ChapelBase {
 
-
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
@@ -1694,8 +1693,5 @@ module ChapelBase {
 
   // There used to be a catch-all _defaultOf that return nil:t, but that
   // was the nexus of several tricky resolution bugs.
-
-  config var print_arr_trace = 0;
-
 
 }
