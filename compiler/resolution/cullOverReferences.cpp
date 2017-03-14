@@ -1349,7 +1349,6 @@ void cullOverReferences() {
                     revisit = true;
                     addDependency(revisitGraph, srcNode, node);
                     handled = true;
-                    //break;
                   }
                 }
 
