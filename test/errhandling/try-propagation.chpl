@@ -1,6 +1,4 @@
-proc throwAnError() throws {
-  throw new Error();
-}
+use ThrowError;
 
 proc throwAnErrorToo() throws {
   try {

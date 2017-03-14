@@ -1,2 +1,2 @@
-strict-try.chpl:4: error: throwing call without try (strict mode)
+strict-try.chpl:4: error: throwing call without try or try! (strict mode)
 Note: This source location is a guess.

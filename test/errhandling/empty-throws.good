@@ -1,2 +1,4 @@
-did not throw
-normal control flow
+trying noActualThrow
+success: did not throw
+trying writeln
+success: normal control flow

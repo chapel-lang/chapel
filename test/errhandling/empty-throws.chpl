@@ -1,7 +1,10 @@
 proc noActualThrow() throws {
-  writeln("did not throw");
+  writeln("success: did not throw");
 }
 
+writeln("trying noActualThrow");
 try! noActualThrow();
 
-writeln("normal control flow");
+try! writeln("trying writeln");
+
+writeln("success: normal control flow");

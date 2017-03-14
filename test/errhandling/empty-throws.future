@@ -1,4 +1,0 @@
-unimplemented: try/throws with functions that don't raise errors
-
-Functions should be able to throw and be wrapped by try, even if they
-do not raise an error in any of their codepaths.
