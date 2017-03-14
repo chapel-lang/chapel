@@ -349,19 +349,12 @@ size_t chpl_getHeapPageSize(void) {
     if (pthread_once(&onceCtl, computeHeapPageSize) != 0) {
       chpl_internal_error("pthread_once() failed");
     }
-  }
-#elif defined __CYGWIN__
-  return chpl_getSysPageSize();
-#else
-  //
-  // Note: no single-threaded initialization for non-POSIX OS.
-  //
-  if (heapPageSize == 0) {
-    computeHeapPageSize();
-  }
-#endif
 
-  return heapPageSize;
+    return heapPageSize;
+  }
+#else
+  return chpl_getSysPageSize();
+#endif
 }
 
 
