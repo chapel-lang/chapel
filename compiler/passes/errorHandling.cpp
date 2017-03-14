@@ -109,7 +109,7 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
 
   // TODO: nested try
   if (!tryStack.empty()) {
-    INT_FATAL("nested try is not yet supported");
+    USR_FATAL("nested try is not yet supported");
   }
 
   VarSymbol*   errorVar     = newTemp("error", dtError);
@@ -144,7 +144,7 @@ AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
 
   for_alist(c, tryStmt->_catches) {
     if (hasCatchAll) {
-      INT_FATAL("catchall placed before the end of a catch list");
+      USR_FATAL("catchall placed before the end of a catch list");
     }
     SET_LINENO(c);
 
@@ -197,7 +197,7 @@ AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
       currHandler->insertAtTail(setOutGotoEpilogue(errorVar));
     } else {
       SET_LINENO(tryStmt);
-      INT_FATAL("try without a catchall in a non-throwing function");
+      USR_FATAL("try without a catchall in a non-throwing function");
     }
   }
 
@@ -211,7 +211,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     if (calledFn->throwsError()) {
       SET_LINENO(node);
 
-      VarSymbol* errorVar;
+      VarSymbol* errorVar    = NULL;
       BlockStmt* errorPolicy = new BlockStmt();
 
       if (insideTry) {
@@ -220,19 +220,17 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
         errorPolicy->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
                                                info.handlerLabel));
+      } else if (fStrictErrorHandling) {
+        USR_FATAL("throwing call without try or try! (strict mode)");
       } else {
         // without try, need an error variable
         errorVar = newTemp("error", dtError);
         node->getStmtExpr()->insertBefore(new DefExpr(errorVar));
 
-        // TODO: strict mode, missing try
-        if (outError) {
+        if (outError)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
-
-        // TODO: strict mode, missing try!
-        } else {
+        else
           errorPolicy->insertAtTail(haltExpr());
-        }
       }
 
       node->insertAtTail(errorVar);
@@ -258,7 +256,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     } else if (outError) {
       throwBlock->insertAtTail(setOutGotoEpilogue(thrownError));
     } else {
-      INT_FATAL("cannot throw in a non-throwing function");
+      USR_FATAL("cannot throw in a non-throwing function");
     }
   }
   return true;
