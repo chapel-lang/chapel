@@ -1883,14 +1883,17 @@ module DefaultRectangular {
       const lo     = viewDom.dsiDim(info.mdParDim).low;
       const hi     = viewDom.dsiDim(info.mdParDim).high;
 
+      param chunkOffset = if useCache then 1 else 0;
       var (chunk, idx) = info.getDataIndex(viewDom.dsiLow);
       var dd           = info.theDataChunk(chunk);
+      chunk += chunkOffset;
       var lastChunkInd = info.mData(chunk).pdr.high;
 
       for ind in chpl_direct_pos_stride_range_iter(lo, hi, 1:viewDom.idxType) {
         if ind > lastChunkInd { // traverse to next chunk
           (chunk, idx) = info.getDataIndex(ind);
           dd           = info.theDataChunk(chunk);
+          chunk += chunkOffset;
           lastChunkInd = info.mData(chunk).pdr.high;
         }
         yield dd(idx);
