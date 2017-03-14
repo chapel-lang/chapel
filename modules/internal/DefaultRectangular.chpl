@@ -1872,9 +1872,11 @@ module DefaultRectangular {
   iter chpl__serialViewIter(arr, viewDom) ref
     where arr.isDefaultRectangular() && !defRectSimpleDData {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
-    var info = if useCache then arr.indexCache else arr;
+    var info = if useCache then arr.indexCache
+               else if arr.isSliceArrayView() then arr.arr
+               else arr;
 
-    if arr.rank == 1 && !viewDom.stridable && useCache {
+    if arr.rank == 1 && !viewDom.stridable {
       const first  = info.getDataIndex(viewDom.dsiLow, getChunked=false);
       const second = info.getDataIndex(viewDom.dsiLow+1, getChunked=false);
       const step   = (second-first);
@@ -1907,8 +1909,10 @@ module DefaultRectangular {
   iter chpl__serialViewIter(arr, viewDom) ref
     where arr.isDefaultRectangular() && defRectSimpleDData {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
-    var info = if useCache then arr.indexCache else arr;
-    if arr.rank == 1 && useCache {
+    var info = if useCache then arr.indexCache
+               else if arr.isSliceArrayView() then arr.arr
+               else arr;
+    if arr.rank == 1 {
       // This is specialized to avoid overheads of calling dsiAccess()
       if !viewDom.stridable {
         // Ideally we would like to be able to do something like
