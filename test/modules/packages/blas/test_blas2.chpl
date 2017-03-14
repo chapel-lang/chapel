@@ -2,9 +2,15 @@ use Random;
 use BLAS;
 use blas_helpers;
 
+/* BLAS 2 Testing TODO:
+    - [ ] Banded matrices (commented out)
+      - [ ] blas_helpers functions (commented out in blas_helpers.chpl)
+    - [ ] Packed matrices (commented out)
+      - [ ] blas_helpers functions (commented out in blas_helpers.chpl)
+ */
+
 
 proc main() {
-    // TODO -- band Matrices & packed Matrices
     //test_gbmv(); // bandMatrix
     test_gemv();
     test_ger();
@@ -191,6 +197,7 @@ proc test_trsv() {
 // Helpers
 //
 
+// TODO -- work in progress
 proc test_gbmv_helper(type t){
   var passed = 0,
       failed = 0,
@@ -200,7 +207,6 @@ proc test_gbmv_helper(type t){
 
   // Simple test
   {
-    // TODO -- work in progress
     const m = 6,
           n = 6;
     // Square
@@ -326,9 +332,8 @@ proc test_gemv_helper(type t){
     const beta = rng.getNext();
 
     // Compute Result vector
-    for i in R.domain {
+    for i in R.domain do
       R[i] = beta*Y[i] + alpha*(+ reduce (conjg(A[..,i])*X[..]));
-    }
 
     gemv(A, X, Y, alpha, beta, opA=Op.H);
 
@@ -344,7 +349,7 @@ proc test_gemv_helper(type t){
           ld = 20 : c_int;
 
     // non-square matrix
-    var A : [{0.. #m, 0.. #ld}]t,
+    var A : [{0.. #ld, 0.. #ld}]t,
         X : [{0.. #n}]t,
         Y : [{0.. #m}]t,
         R : [{0.. #m}]t; // Result
@@ -359,9 +364,9 @@ proc test_gemv_helper(type t){
     const beta = rng.getNext();
 
     // Compute Result vector
-    for i in R.domain do R[i] = beta*Y[i] + alpha*(+ reduce (A[i,0.. #n]*X[..]));
+    for i in R.domain do R[i] = beta*Y[i] + alpha*(+ reduce (A[i+2 ,0.. #n]*X[..]));
 
-    gemv(A[.., 0.. #n] , X, Y, alpha, beta, ldA=ld);
+    gemv(A[2..#m, 0.. #n] , X, Y, alpha, beta);
 
     var err = max reduce abs(Y-R);
 
@@ -432,7 +437,7 @@ proc test_ger_helper(type t){
 
     for (i,j) in R.domain do R[i, j] = alpha*X[i]*Y[j] + A[i, j];
 
-    ger(A[.., 0.. #n], X, Y, alpha, ldA=ld);
+    ger(A[.., 0.. #n], X, Y, alpha);
 
     var err = max reduce abs(A[.., 0..#n]-R);
 
@@ -504,7 +509,7 @@ proc test_gerc_helper(type t){
     // Precompute result
     for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(Y[j]) + A[i, j];
 
-    gerc(A[.., 0.. #n], X, Y, alpha, ldA=ld);
+    gerc(A[.., 0.. #n], X, Y, alpha);
 
     var err = max reduce abs(A[.., 0.. #n] - R);
 
@@ -573,7 +578,7 @@ proc test_geru_helper(type t){
     // Precompute result
     for (i,j) in R.domain do R[i, j] = alpha*X[i]*Y[j] + A[i, j];
 
-    geru(A[.., 0.. #n], X, Y, alpha, ldA=ld);
+    geru(A[.., 0.. #n], X, Y, alpha);
 
     var err = max reduce abs(A[.., 0.. #n] - R);
 
@@ -584,6 +589,7 @@ proc test_geru_helper(type t){
 }
 
 
+// TODO
 proc test_hbmv_helper(type t){
   var passed = 0,
       failed = 0,
@@ -592,7 +598,6 @@ proc test_hbmv_helper(type t){
   var name = "%shbmv".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -696,7 +701,7 @@ proc test_hemv_helper(type t){
 
     for i in R.domain do R[i] = + reduce(alpha*A[i,0..#m]*X[..]) + beta*Y[i];
 
-    hemv(A[.., 0..#m], X, Y, alpha, beta, ldA=ld);
+    hemv(A[.., 0..#m], X, Y, alpha, beta);
 
     var err = max reduce abs(Y-R);
 
@@ -799,7 +804,7 @@ proc test_her_helper(type t){
     zeroTri(A[.., 0..#m]);
     zeroTri(R);
 
-    her(A[.., 0..#m], X, alpha, ldA=ld);
+    her(A[.., 0..#m], X, alpha);
 
     var err = max reduce abs(A[.., 0..#m]-R);
 
@@ -905,7 +910,7 @@ proc test_her2_helper(type t){
     zeroTri(A[.., 0..#m]);
     zeroTri(R);
 
-    her2(A[.., 0..#m], X, Y, alpha, ldA=ld);
+    her2(A[.., 0..#m], X, Y, alpha);
 
     var err = max reduce abs(A[.., 0..#m]-R);
 
@@ -915,6 +920,7 @@ proc test_her2_helper(type t){
 }
 
 
+// TODO
 proc test_hpmv_helper(type t){
   var passed = 0,
       failed = 0,
@@ -923,12 +929,12 @@ proc test_hpmv_helper(type t){
   var name = "%shpmv".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
 
 
+// TODO
 proc test_hpr_helper(type t){
   var passed = 0,
       failed = 0,
@@ -937,12 +943,12 @@ proc test_hpr_helper(type t){
   var name = "%shpr".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
 
 
+// TODO
 proc test_hpr2_helper(type t){
   var passed = 0,
       failed = 0,
@@ -951,12 +957,12 @@ proc test_hpr2_helper(type t){
   var name = "%shpr2".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
 
 
+// TODO
 proc test_sbmv_helper(type t){
   var passed = 0,
       failed = 0,
@@ -965,12 +971,12 @@ proc test_sbmv_helper(type t){
   var name = "%ssbmv".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
 
 
+// TODO
 proc test_spmv_helper(type t){
   var passed = 0,
       failed = 0,
@@ -979,12 +985,12 @@ proc test_spmv_helper(type t){
   var name = "%sspmv".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
 
 
+// TODO
 proc test_spr_helper(type t){
   var passed = 0,
       failed = 0,
@@ -993,12 +999,12 @@ proc test_spr_helper(type t){
   var name = "%sspr".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
 
 
+// TODO
 proc test_spr2_helper(type t){
   var passed = 0,
       failed = 0,
@@ -1007,7 +1013,6 @@ proc test_spr2_helper(type t){
   var name = "%sspr2".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -1114,7 +1119,7 @@ proc test_symv_helper(type t){
     // A result is only stored in upper triangular array
     zeroTri(A[.., 0..#m]);
 
-    symv(A[.., 0..#m], X, Y, alpha, beta, ldA=ld);
+    symv(A[.., 0..#m], X, Y, alpha, beta);
 
     var err = max reduce abs(Y-R);
 
@@ -1214,7 +1219,7 @@ proc test_syr_helper(type t){
     zeroTri(R);
     zeroTri(A[.., 0..#m]);
 
-    syr(A[.., 0..#m], X, alpha, ldA=ld);
+    syr(A[.., 0..#m], X, alpha);
 
     var err = max reduce abs(A[.., 0..#m]-R);
 
@@ -1323,7 +1328,7 @@ proc test_syr2_helper(type t){
     zeroTri(R);
     zeroTri(A[.., 0..#m]);
 
-    syr2(A[.., 0..#m], X, Y, alpha, ldA=ld);
+    syr2(A[.., 0..#m], X, Y, alpha);
 
     var err = max reduce abs(A[.., 0..#m]-R);
 
@@ -1333,6 +1338,7 @@ proc test_syr2_helper(type t){
 }
 
 
+// TODO
 proc test_tbmv_helper(type t){
   var passed = 0,
       failed = 0,
@@ -1341,7 +1347,6 @@ proc test_tbmv_helper(type t){
   var name = "%stbmv".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
     const m = 5 : c_int;
 
     var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
@@ -1376,6 +1381,7 @@ proc test_tbmv_helper(type t){
 }
 
 
+// TODO
 proc test_tbsv_helper(type t){
   var passed = 0,
       failed = 0,
@@ -1384,7 +1390,6 @@ proc test_tbsv_helper(type t){
   var name = "%stbsv".format(blasPrefix(t));
   // Simple test
   {
-    // TODO
   }
   printErrors(name, passed, failed, tests);
 }
@@ -1519,7 +1524,7 @@ proc test_trmv_helper(type t){
 
     for i in R.domain do R[i] = + reduce (A[i, 0..#m]*X[..]);
 
-    trmv(A[.., 0..#m], X, ldA=ld);
+    trmv(A[.., 0..#m], X);
 
     var err = max reduce abs(X-R);
 
@@ -1676,7 +1681,7 @@ proc test_trsv_helper(type t){
     // Store X
     const Xsave = X;
 
-    trsv(A[.., 0..#m], X, ldA=ld);
+    trsv(A[.., 0..#m], X);
 
     for i in R.domain do R[i] = + reduce(A[i, 0..#m]*X[..]);
 

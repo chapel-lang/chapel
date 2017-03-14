@@ -162,6 +162,12 @@ The native BLAS interface can still be accessed by calling routines from the
 .. _AMIN:   https://software.intel.com/en-us/node/50dceaa5-3463-402f-8065-a48bc68e0888
 .. _CABS1:  https://software.intel.com/en-us/node/64961e94-92d0-4671-90e6-86995e259a85
 
+.. BLAS Module TODO:
+  - [ ] Cleaner error checking instead of where-clauses
+  - [ ] Support for other BLAS distributions using config params, e.g. MKL
+  - [ ] Update getLeadingDim to take arrays instead of domains
+      - [ ] Support array views
+
 */
 module BLAS {
 
@@ -197,8 +203,7 @@ module BLAS {
   proc gemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
     opA : Op = Op.N, opB : Op = Op.N,
-    order : Order = Order.Row,
-    ldA : int = 0, ldB : int = 0, ldC : int = 0)
+    order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
     // Types
@@ -212,9 +217,9 @@ module BLAS {
                   else k = Adom.dim(2).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA),
-        _ldB = getLeadingDim(Bdom, order, ldB),
-        _ldC = getLeadingDim(Cdom, order, ldC);
+    var _ldA = getLeadingDim(A, order),
+        _ldB = getLeadingDim(B, order),
+        _ldC = getLeadingDim(C, order);
 
     select eltType {
       when real(32) {
@@ -262,8 +267,7 @@ module BLAS {
   proc symm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
-    order : Order = Order.Row,
-    ldA : int = 0, ldB : int = 0, ldC : int = 0)
+    order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
     // Types
@@ -274,9 +278,9 @@ module BLAS {
         n = Cdom.dim(2).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA),
-        _ldB = getLeadingDim(Bdom, order, ldB),
-        _ldC = getLeadingDim(Cdom, order, ldC);
+    var _ldA = getLeadingDim(A, order),
+        _ldB = getLeadingDim(B, order),
+        _ldC = getLeadingDim(C, order);
 
     select eltType {
       when real(32) {
@@ -324,8 +328,7 @@ module BLAS {
   proc hemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
-    order : Order = Order.Row,
-    ldA : int = 0, ldB : int = 0, ldC : int = 0)
+    order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
     // Types
@@ -336,9 +339,9 @@ module BLAS {
         n = Cdom.dim(2).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA),
-        _ldB = getLeadingDim(Bdom, order, ldB),
-        _ldC = getLeadingDim(Cdom, order, ldC);
+    var _ldA = getLeadingDim(A, order),
+        _ldB = getLeadingDim(B, order),
+        _ldC = getLeadingDim(C, order);
 
     select eltType {
       when complex(64) {
@@ -377,8 +380,7 @@ module BLAS {
   proc syrk(A : [?Adom],  C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
-    order : Order = Order.Row,
-    ldA : int = 0,  ldC : int = 0)
+    order : Order = Order.Row)
     where (Adom.rank == 2) && (Cdom.rank==2)
   {
     // Types
@@ -391,8 +393,8 @@ module BLAS {
                      else k = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA),
-        _ldC = getLeadingDim(Cdom, order, ldC);
+    var _ldA = getLeadingDim(A, order),
+        _ldC = getLeadingDim(C, order);
 
     select eltType {
       when real(32) {
@@ -441,8 +443,7 @@ module BLAS {
   proc herk(A : [?Adom],  C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
-    order : Order = Order.Row,
-    ldA : int = 0,  ldC : int = 0)
+    order : Order = Order.Row)
     where (Adom.rank == 2) && (Cdom.rank==2)
   {
     // Types
@@ -455,8 +456,8 @@ module BLAS {
                      else k = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA),
-        _ldC = getLeadingDim(Cdom, order, ldC);
+    var _ldA = getLeadingDim(A, order),
+        _ldC = getLeadingDim(C, order);
 
     select eltType {
       when complex(64) {
@@ -496,8 +497,7 @@ module BLAS {
   proc syr2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
-    order : Order = Order.Row,
-    ldA : int = 0,  ldB : int = 0, ldC : int = 0)
+    order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
     // Types
@@ -510,9 +510,9 @@ module BLAS {
                      else k = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA),
-        _ldB = getLeadingDim(Bdom, order, ldB),
-        _ldC = getLeadingDim(Cdom, order, ldC);
+    var _ldA = getLeadingDim(A, order),
+        _ldB = getLeadingDim(B, order),
+        _ldC = getLeadingDim(C, order);
 
     select eltType {
       when real(32) {
@@ -561,8 +561,7 @@ module BLAS {
   proc her2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
-    order : Order = Order.Row,
-    ldA : int = 0,  ldB : int = 0, ldC : int = 0)
+    order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
     // Types
@@ -575,9 +574,9 @@ module BLAS {
                      else k = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA),
-        _ldB = getLeadingDim(Bdom, order, ldB),
-        _ldC = getLeadingDim(Cdom, order, ldC);
+    var _ldA = getLeadingDim(A, order),
+        _ldB = getLeadingDim(B, order),
+        _ldC = getLeadingDim(C, order);
 
     select eltType {
       when complex(64) {
@@ -610,27 +609,25 @@ module BLAS {
 
     where ``A`` is a triangular matrix.
   */
-  proc trmm(A : [?Adom],  B : [?Bdom],
+  proc trmm(A : [?Adom] ?eltType,  B : [?Bdom] eltType,
     alpha,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     side : Side = Side.Left, diag : Diag = Diag.NonUnit,
-    order : Order = Order.Row,
-    ldA : int = 0,  ldB : int = 0)
+    order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2)
   {
-    // Types
-    type eltType = A.eltType;
+
 
     // Determine sizes
     var m = Bdom.dim(1).size : c_int,
         n = Bdom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to XXXX".format(m, n));
+      halt("Non-square array of dimensions %ix%i passed to trmm".format(m, n));
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA),
-        _ldB = getLeadingDim(Bdom, order, ldB);
+    var _ldA = getLeadingDim(A, order),
+        _ldB = getLeadingDim(B, order);
 
     select eltType {
       when real(32) {
@@ -673,8 +670,7 @@ module BLAS {
     alpha,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     side : Side = Side.Left, diag : Diag = Diag.NonUnit,
-    order : Order = Order.Row,
-    ldA : int = 0,  ldB : int = 0)
+    order : Order = Order.Row)
     where (Adom.rank == 2) && (Bdom.rank==2)
   {
     // Types
@@ -688,8 +684,8 @@ module BLAS {
       halt("Non-square array of dimensions %ix%i passed to TRSM".format(m, n));
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA),
-        _ldB = getLeadingDim(Bdom, order, ldB);
+    var _ldA = getLeadingDim(A, order),
+        _ldB = getLeadingDim(B, order);
 
     select eltType {
       when real(32) {
@@ -736,8 +732,7 @@ module BLAS {
             ref alpha: eltType, ref beta: eltType,
             kl : int = 0, ku : int = 0,
             trans : Op =  Op.N,
-            order : Order = Order.Row,
-            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (Xdom.rank==1) && (Ydom.rank == 1)
   {
     // Determine sizes
@@ -745,7 +740,7 @@ module BLAS {
         n = Xdom.dim(1).size : c_int;
 
     // TODO -- 'order' may need to be swapped for banded matrices
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     var _kl = kl : c_int,
         _ku = ku : c_int;
@@ -784,7 +779,7 @@ module BLAS {
             alpha, beta,
             opA : Op = Op.N,
             order : Order = Order.Row,
-            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (xdom.rank == 1) && (ydom.rank == 1)
   {
     // Determine sizes
@@ -792,7 +787,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when real(32) {
@@ -828,8 +823,7 @@ module BLAS {
 
   */
   proc ger(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType, alpha,
-           order : Order = Order.Row,
-           ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+           order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
            where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
 
@@ -838,7 +832,7 @@ module BLAS {
         n = Ydom.dim(1).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when real(32) {
@@ -862,15 +856,14 @@ module BLAS {
   */
   proc gerc(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
             ref alpha: eltType,
-            order : Order = Order.Row,
-            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
     var m = Xdom.dim(1).size : c_int,
         n = Ydom.dim(1).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when complex(64) {
@@ -894,15 +887,14 @@ module BLAS {
   */
   proc geru(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
             ref alpha: eltType,
-            order : Order = Order.Row,
-            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
     var m = Xdom.dim(1).size : c_int,
         n = Ydom.dim(1).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when complex(64) {
@@ -931,15 +923,14 @@ module BLAS {
             ref alpha: eltType, ref beta: eltType,
             k: int = 0,
             order : Order = Order.Row,
-            uplo : Uplo = Uplo.Upper,
-            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     var _k = k : c_int;
 
@@ -965,8 +956,7 @@ module BLAS {
   proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             ref alpha: eltType, ref beta: eltType,
             order : Order = Order.Row,
-            uplo : Uplo = Uplo.Upper,
-            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
     {
     var m = Adom.dim(1).size : c_int,
@@ -976,7 +966,7 @@ module BLAS {
       halt("Non-square array of dimensions %ix%i passed to hemv".format(m, n));
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when complex(64) {
@@ -999,8 +989,7 @@ module BLAS {
   */
   proc her(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
             order : Order = Order.Row,
-            uplo : Uplo = Uplo.Upper,
-            ldA : int = 0, incx : c_int = 1)
+            uplo : Uplo = Uplo.Upper, incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     var m = Adom.dim(1).size : c_int,
@@ -1012,7 +1001,7 @@ module BLAS {
     // TODO -- Assert alpha is real
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when complex(64) {
@@ -1035,8 +1024,7 @@ module BLAS {
   proc her2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             ref alpha: eltType,
             order : Order = Order.Row,
-            uplo : Uplo = Uplo.Upper,
-            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
     {
     var m = Adom.dim(1).size : c_int,
@@ -1047,7 +1035,7 @@ module BLAS {
 
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when complex(64) {
@@ -1177,14 +1165,14 @@ module BLAS {
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
             k : int = 0,
-            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     var m = Adom.dim(1).size : c_int,
         n = Adom.dim(2).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     var _k = k: c_int;
 
@@ -1306,7 +1294,7 @@ module BLAS {
             alpha, beta,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
-            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     var m = Adom.dim(1).size : c_int,
@@ -1315,7 +1303,7 @@ module BLAS {
     if m != n then
       halt("Non-square array of dimensions %ix%i passed to symv".format(m, n));
 
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when real(32) {
@@ -1340,7 +1328,7 @@ module BLAS {
            alpha,
            order : Order = Order.Row,
            uplo : Uplo = Uplo.Upper,
-           ldA : int = 0, incx : c_int = 1)
+           incx : c_int = 1)
            where (Adom.rank == 2) && (vDom.rank == 1)
   {
 
@@ -1350,7 +1338,7 @@ module BLAS {
     if m != n then
       halt("Non-square array of dimensions %ix%i passed to syr".format(m, n));
 
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when real(32) {
@@ -1375,7 +1363,7 @@ module BLAS {
             alpha,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
-            ldA : int = 0, incx : c_int = 1, incy : c_int = 1)
+            incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
 
@@ -1385,7 +1373,7 @@ module BLAS {
     if m != n then
       halt("Non-square array of dimensions %ix%i passed to syr2".format(m, n));
 
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when real(32) {
@@ -1417,7 +1405,7 @@ module BLAS {
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
             diag : Diag = Diag.NonUnit,
-            ldA : int = 0, incx : c_int = 1)
+            incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     // Determine sizes
@@ -1425,7 +1413,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when real(32) {
@@ -1462,7 +1450,7 @@ module BLAS {
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
             diag : Diag = Diag.NonUnit,
-            ldA : int = 0, incx : c_int = 1)
+            incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
 
@@ -1475,7 +1463,7 @@ module BLAS {
                     else k = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when real(32) {
@@ -1591,7 +1579,7 @@ module BLAS {
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
             diag : Diag = Diag.NonUnit,
-            ldA : int = 0, incx : c_int = 1)
+            incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
 
@@ -1603,7 +1591,7 @@ module BLAS {
       halt("Non-square array of dimensions %ix%i passed to trmv".format(m, n));
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when real(32) {
@@ -1647,7 +1635,7 @@ module BLAS {
       halt("Non-square array of dimensions %ix%i passed to trsv".format(m, n));
 
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, order, ldA);
+    var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when real(32) {
@@ -2342,15 +2330,36 @@ module BLAS {
   //
 
   pragma "no doc"
-  private inline proc getLeadingDim(Adom : domain(2), order : Order, ldA : int) : c_int {
-    var _ldA = ldA : c_int;
-    if ldA==0 {
-      if order==Order.Row
-                  then _ldA = Adom.dim(2).size : c_int;
-                  else _ldA = Adom.dim(1).size : c_int;
-    }
-    return _ldA;
+  private inline proc assertIsVector(D: domain, func: string) param {
+    if D.rank != 1 then
+      compilerError("Expected 1-D array in %s, but received %i-D array".format(func, D.rank));
   }
+
+  pragma "no doc"
+  private inline proc assertIsMatrix(D: domain, param func: string) param {
+    if D.rank != 2 then
+      compilerError("Expected 2-D array in %s, but received %i-D array".format(func, D.rank));
+  }
+
+  pragma "no doc"
+  private inline proc getLeadingDim(A: [?Adom], order : Order) : c_int {
+    if order==Order.Row then
+      return Adom.dim(2).size : c_int;
+    else
+      return Adom.dim(1).size : c_int;
+  }
+
+  pragma "no doc"
+  private inline proc getLeadingDim(Arr: [], order : Order) : c_int
+  where chpl__isArrayView(Arr)
+  {
+    const dims = chpl__getActualArray(Arr).dom.dsiDims();
+    if order==Order.Row then
+      return dims(2).size : c_int;
+    else
+      return dims(1).size : c_int;
+  }
+
 
   /*
 
