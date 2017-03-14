@@ -5027,24 +5027,34 @@ static void resolveInitVar(CallExpr* call) {
   Symbol*  src     = srcExpr->symbol();
   Type*    srcType = src->type;
 
-  if (dst->hasFlag(FLAG_NO_COPY)                         == true) {
+  if (dst->hasFlag(FLAG_NO_COPY)                         == true)  {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isPrimitiveScalar(srcType)                  == true) {
+  } else if (isPrimitiveScalar(srcType)                  == true)  {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isNonGenericRecordWithInitializers(srcType) == true) {
-    AggregateType* ct = toAggregateType(srcType);
+  } else if (isNonGenericRecordWithInitializers(srcType) == true)  {
+    AggregateType* ct  = toAggregateType(srcType);
+    SymExpr*       rhs = toSymExpr(call->get(2));
 
-    if (hasCopyConstructor(ct) == true) {
+    // The LHS will "own" the record
+    if (rhs->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false) {
+      dst->type       = src->type;
+
+      call->primitive = primitives[PRIM_MOVE];
+
+      resolveMove(call);
+
+    } else if (hasCopyConstructor(ct) == true) {
       dst->type = src->type;
 
       call->setUnresolvedFunction("init");
       call->insertAtHead(gMethodToken);
 
       resolveCall(call);
+
     } else {
       USR_FATAL(call, "No copy constructor for initializer");
     }
@@ -5061,7 +5071,7 @@ static void resolveInitVar(CallExpr* call) {
   }
 }
 
-// A simplifed version of functions_exists().
+// A simplified version of functions_exists().
 // It seems unfortunate to export that function in its current state
 static bool hasCopyConstructor(AggregateType* ct) {
   bool retval = false;
