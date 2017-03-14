@@ -1930,6 +1930,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
           error = false;
 
         // For now, ignore errors with `this` formal
+        // TODO: remove this limitation
         if (formal->hasFlag(FLAG_ARG_THIS))
           error = false;
 
