@@ -369,7 +369,7 @@ void addDependency(revisitGraph_t & graph, GraphNode from, GraphNode to)
 static
 void createFieldQualifiersIfNeeded(Symbol* sym)
 {
-  AggregateType* at = toAggregateType(sym->type);
+  AggregateType* at = toAggregateType(sym->getValType());
   if (at && !sym->fieldQualifiers) {
     int numFields = at->numFields();
     sym->fieldQualifiers = new Qualifier[numFields+1]; // +1 for 1-base
