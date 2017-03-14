@@ -4298,6 +4298,12 @@ module ChapelArray {
 
     }
   }
+
+  proc chpl_checkCopyInit(lhs:domain, rhs:domain) param {
+    if lhs.dist._value.dsiIsLayout() && !rhs.dist._value.dsiIsLayout() then
+      compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
+  }
+
   /* ================================================
      Set Operations on Associative Domains and Arrays
      ================================================

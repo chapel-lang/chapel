@@ -2022,4 +2022,6 @@ module ChapelBase {
   inline proc _removed_cast(in x) {
     return x;
   }
+
+  proc chpl_checkCopyInit(lhs, rhs) param { }
 }

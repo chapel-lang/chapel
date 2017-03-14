@@ -101,6 +101,8 @@ module DefaultRectangular {
     override proc dsiTrackDomains()    return false;
 
     proc singleton() param return true;
+
+    proc dsiIsLayout() param return true;
   }
 
   //

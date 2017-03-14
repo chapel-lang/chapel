@@ -160,6 +160,10 @@ module ChapelDistribution {
     // effort to free it. DefaultDist is a singleton.
     proc singleton() param return false;
     // We could add dsiSingleton as a dynamically-dispatched counterpart
+
+    // indicates if this distribution is a layout. This helps
+    // with certain warnings.
+    proc dsiIsLayout() param return false;
   }
 
   //

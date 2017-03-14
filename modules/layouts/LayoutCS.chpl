@@ -90,6 +90,10 @@ class CS: BaseDist {
   proc dsiEqualDMaps(that) param {
     return false;
   }
+
+  proc dsiIsLayout() param {
+    return true;
+  }
 } // CS
 
 
