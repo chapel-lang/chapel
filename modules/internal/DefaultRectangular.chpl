@@ -183,7 +183,7 @@ module DefaultRectangular {
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
                offset=createTuple(rank, idxType, 0:idxType))
-      where tag == iterKind.standalone && !localeModelHasSublocales {
+      where tag == iterKind.standalone && defRectSimpleDData {
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain standalone invoked on ", ranges);
       if debugDefaultDist then
@@ -1390,20 +1390,6 @@ module DefaultRectangular {
       else {
         for i in dom do
           yield dsiAccess(i);
-      }
-    }
-
-    iter these(param tag: iterKind,
-               tasksPerLocale = dataParTasksPerLocale,
-               ignoreRunning = dataParIgnoreRunningTasks,
-               minIndicesPerTask = dataParMinGranularity)
-      ref where tag == iterKind.standalone && !defRectSimpleDData {
-      if debugDefaultDist {
-        chpl_debug_writeln("*** In defRectArr multi-dd standalone iterator");
-      }
-      for i in dom.these(tag, tasksPerLocale,
-                         ignoreRunning, minIndicesPerTask) {
-        yield dsiAccess(i);
       }
     }
 
