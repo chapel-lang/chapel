@@ -270,6 +270,10 @@ module ChapelDistribution {
         _arrs_containing_dom -= 1;
         count = _arrs.size;
         count += _arrs_containing_dom;
+        //
+        // added this, but am not confident in it
+        //
+        _free_when_no_arrs = true;
         if print_arr_trace then
           printf("[%p:%p] arr_count = %lld + %lld\n", this, x, _arrs.size, _arrs_containing_dom);
         _unlock_arrs();
@@ -644,7 +648,8 @@ module ChapelDistribution {
       rm_dom = dom.remove_arr(this);
 
       if rm_dom then {
-        printf("[%p] We can delete the array\n", this);
+        if print_arr_trace then
+          printf("[%p] We can delete the array\n", this);
         ret_dom = dom;
       }
 
