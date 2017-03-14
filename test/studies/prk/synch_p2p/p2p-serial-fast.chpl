@@ -31,7 +31,7 @@ const mrange = 0 .. # m,
       outerDom = {mrange, nrange},
       innerDom = outerDom(1.., 1..);
 
-var vector : [outerDom] real = 0.0;
+var vector : [outerDom] real;
 
 //
 // Print information before main loop
@@ -44,8 +44,8 @@ if (!validate) {
 }
 
 // Set boundary values (top and left side of grid)
-[j in nrange] vector[0,j] = j;
-[i in mrange] vector[i,0] = i;
+for j in nrange do vector[0,j] = j;
+for i in mrange do vector[i,0] = i;
 
 //
 // Main loop

@@ -35,7 +35,7 @@ libqthread_la_SOURCES = \
 	touch.c \
 	teams.c
 
-EXTRA_DIST = alloc/
+EXTRA_DIST = 
 
 if COMPILE_LF_HASH
 libqthread_la_SOURCES += lf_hashmap.c
@@ -106,6 +106,8 @@ EXTRA_DIST += \
 			 barrier/array.c \
 			 barrier/log.c \
 			 barrier/sinc.c \
+			 alloc/base.c \
+			 alloc/chapel.c \
 			 affinity/common.c \
 			 affinity/hwloc.c \
 			 affinity/binders.c \
