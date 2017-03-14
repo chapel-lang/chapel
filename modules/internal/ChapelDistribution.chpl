@@ -200,7 +200,7 @@ module ChapelDistribution {
         local {
           _lock_arrs();
           arr_count = _arrs.size;
-          //          arr_count += _arrs_containing_dom;
+          arr_count += _arrs_containing_dom;
           if print_arr_trace then
             printf("[%p] In BaseDom.remove(), arr_count = %lld + %lld\n", this, _arrs.size, _arrs_containing_dom);
           _free_when_no_arrs = true;
