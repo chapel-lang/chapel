@@ -456,6 +456,45 @@ checkBadAddrOf(CallExpr* call)
   }
 }
 
+// looks for a flag in a _domain/_array/_distribution _instance
+// field's type.
+static bool
+fieldContainsFlag(Type* t, Flag flag)
+{
+  bool ret = false;
+  AggregateType* at = toAggregateType(t);
+  if (at) {
+    for_fields(field, at) {
+      if (field->type->symbol->hasFlag(flag))
+        ret = true;
+    }
+  }
+  return ret;
+}
+
+static void
+warnInitAssignLocalFromDistributed(CallExpr* call)
+{
+  if (call->isNamed("=") && call->numActuals() == 2) {
+    SymExpr* lhsSe = toSymExpr(call->get(1));
+    SymExpr* rhsSe = toSymExpr(call->get(2));
+    if (lhsSe && rhsSe) {
+      Symbol* lhs = lhsSe->symbol();
+      Symbol* rhs = rhsSe->symbol();
+      Type* lhsType = lhs->type;
+      Type* rhsType = rhs->type;
+      if (!lhs->isRef() &&
+          lhs->hasFlag(FLAG_TEMP) &&
+          isRecordWrappedType(lhsType) &&
+          isRecordWrappedType(rhsType) &&
+          fieldContainsFlag(lhsType, FLAG_DSI_NOT_DISTRIBUTED) &&
+          fieldContainsFlag(rhsType, FLAG_DSI_DISTRIBUTED)) {
+        USR_WARN(call, "initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
+      }
+    }
+  }
+}
+
 
 static void
 checkCalls()
@@ -464,6 +503,7 @@ checkCalls()
   {
     checkNoRecordDeletes(call);
     checkBadAddrOf(call);
+    warnInitAssignLocalFromDistributed(call);
   }
 }
 

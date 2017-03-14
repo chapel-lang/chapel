@@ -163,6 +163,7 @@ where the updates are made.
 
 This distribution has not been tuned for performance.
 */
+pragma "distributed dsi implementation"
 class Cyclic: BaseDist {
   param rank: int;
   type idxType = int;
@@ -485,6 +486,7 @@ class LocCyclic {
 }
 
 
+pragma "distributed dsi implementation"
 class CyclicDom : BaseRectangularDom {
   param rank: int;
   type idxType;
@@ -712,6 +714,7 @@ class LocCyclicDom {
 proc LocCyclicDom.member(i) return myBlock.member(i);
 
 
+pragma "distributed dsi implementation"
 class CyclicArr: BaseArr {
   type eltType;
   param rank: int;
