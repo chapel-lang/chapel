@@ -850,11 +850,9 @@ static void normalizeReturns(FnSymbol* fn) {
       retval->addFlag(FLAG_MAYBE_TYPE);
     }
 
-    if (fn->retExprType != NULL && fn->retTag != RET_REF) {
-      BlockStmt* retExprType = fn->retExprType->copy();
-
-      if (isIterator == true) {
-        if (SymExpr* lastRTE = toSymExpr(retExprType->body.tail)) {
+    if (isIterator == true) {
+      if (fn->retExprType != NULL && fn->retTag != RET_REF) {
+        if (SymExpr* lastRTE = toSymExpr(fn->retExprType->body.tail)) {
           if (TypeSymbol* retSym = toTypeSymbol(lastRTE->symbol())) {
             if (retSym->type == dtVoid) {
               USR_FATAL_CONT(fn,
