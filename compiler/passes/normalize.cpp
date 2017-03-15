@@ -1131,9 +1131,10 @@ static void applyGetterTransform(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool shouldInsertCallTemps(CallExpr* call);
-static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
-static bool moveMakesTypeAlias(CallExpr* call);
+static bool  shouldInsertCallTemps(CallExpr* call);
+static void  evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
+static bool  moveMakesTypeAlias(CallExpr* call);
+static Type* typeForNewNonGenericRecord(CallExpr* call);
 
 static void insertCallTemps(CallExpr* call) {
   if (shouldInsertCallTemps(call) == true) {
@@ -1178,8 +1179,30 @@ static void insertCallTemps(CallExpr* call) {
 
     call->replace(new SymExpr(tmp));
 
+    // Define the tmp
     stmt->insertBefore(new DefExpr(tmp));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
+
+    // Is this a new-expression for a record with an initializer?
+    if (Type* type = typeForNewNonGenericRecord(call)) {
+      // 2017/03/14: call has the form prim_new(MyRec(a, b, c))
+      CallExpr* initCall = toCallExpr(call->get(1));
+
+      // Define the type for the tmp
+      tmp->type = type;
+
+      // Convert the new-expression into an init call
+      initCall->setUnresolvedFunction("init");
+
+      // Add _mt and _this (insert at head in reverse order)
+      initCall->insertAtHead(tmp);
+      initCall->insertAtHead(gMethodToken);
+
+      stmt->insertBefore(initCall->remove());
+
+    // No.  The simple case
+    } else {
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
+    }
   }
 }
 
@@ -1284,6 +1307,42 @@ static bool moveMakesTypeAlias(CallExpr* call) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (VarSymbol* var = toVarSymbol(se->symbol())) {
         retval = var->isType();
+      }
+    }
+  }
+
+  return retval;
+}
+
+//
+// If this is a new-expression for a non-generic record with an initializer
+// then return the type for the initializer
+//
+// 2017/03/14 This currently runs before new expressions have been
+// normalized.
+//
+// Before normalization, a new expression is ususally
+//
+//    prim_new(MyRec(a, b, c))
+//
+// and this is the form that is currently recognized
+//
+//
+// After normalization, it will generally be
+//
+//    prim_new(MyRec, a, b, c);
+
+static Type* typeForNewNonGenericRecord(CallExpr* call) {
+  Type* retval = NULL;
+
+  if (call->isPrimitive(PRIM_NEW) == true && call->numActuals() == 1) {
+    if (CallExpr* arg1 = toCallExpr(call->get(1))) {
+      if (SymExpr* base = toSymExpr(arg1->baseExpr)) {
+        if (TypeSymbol* sym = toTypeSymbol(base->symbol())) {
+          if (isNonGenericRecordWithInitializers(sym->type) == true) {
+            retval = sym->type;
+          }
+        }
       }
     }
   }
