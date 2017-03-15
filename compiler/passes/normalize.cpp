@@ -779,87 +779,92 @@ static void normalizeReturns(FnSymbol* fn) {
   collectMyCallExprs(fn, calls, fn);
 
   for_vector(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_RETURN)) {
+    if (call->isPrimitive(PRIM_RETURN) == true) {
       rets.push_back(call);
 
       theRet = call;
 
-      if (isVoidReturn(call))
-          numVoidReturns++;
-    }
-    else if (call->isPrimitive(PRIM_YIELD)) {
+      if (isVoidReturn(call) == true) {
+        numVoidReturns++;
+      }
+
+    } else if (call->isPrimitive(PRIM_YIELD)) {
       rets.push_back(call);
-      ++numYields;
+
+      numYields++;
     }
   }
 
   // If an iterator, then there is at least one nonvoid return-or-yield.
-  INT_ASSERT(!isIterator || rets.size() > numVoidReturns);
+  INT_ASSERT(isIterator == false || rets.size() > numVoidReturns);
 
   // Check if this function's returns are already normal.
-  if (rets.size() == numYields + 1) {
-    if (theRet == fn->body->body.last()) {
-      if (SymExpr* se = toSymExpr(theRet->get(1))) {
-        if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
-            fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
-            !strncmp("_if_fn", fn->name, 6) ||
-            !strcmp("=", fn->name) ||
-            !strcmp("_init", fn->name) ||
-            !strcmp("_ret", se->symbol()->name)) {
-          return;
-        }
+  if (rets.size() == numYields + 1 && theRet == fn->body->body.last()) {
+    if (SymExpr* se = toSymExpr(theRet->get(1))) {
+      if (fn->hasFlag(FLAG_CONSTRUCTOR)         == true ||
+          fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true ||
+          strncmp("_if_fn", fn->name, 6)        ==    0 ||
+          strcmp ("=",      fn->name)           ==    0 ||
+          strcmp ("_init",  fn->name)           ==    0||
+          strcmp ("_ret",   se->symbol()->name) ==    0) {
+        return;
       }
     }
   }
 
   // Add a void return if needed.
-  if (rets.size() == 0) {
-    if (fn->retExprType == NULL) {
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-      return;
-    }
+  if (rets.size() == 0 && fn->retExprType == NULL) {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    return;
   }
 
-  LabelSymbol* label  = new LabelSymbol(astr("_end_", fn->name));
-  VarSymbol*   retval = NULL;
+  LabelSymbol* label       = new LabelSymbol(astr("_end_", fn->name));
+  bool         labelIsUsed = false;
+  VarSymbol*   retval      = NULL;
 
   label->addFlag(FLAG_EPILOGUE_LABEL);
+
   fn->insertAtTail(new DefExpr(label));
 
   // If a proc has a void return, do not return any values ever.
   // (Types are not resolved yet, so we judge by presence of "void returns"
   // i.e. returns with no expr. See also a related check in semanticChecks.)
-  if (!isIterator && (numVoidReturns != 0)) {
+  if (isIterator == false && numVoidReturns != 0) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
   } else {
     // Handle declared return type.
     retval = newTemp("ret", fn->retType);
 
     retval->addFlag(FLAG_RVV);
 
-    if (fn->retTag == RET_PARAM)
+    if (fn->retTag == RET_PARAM) {
       retval->addFlag(FLAG_PARAM);
+    }
 
-    if (fn->retTag == RET_TYPE)
+    if (fn->retTag == RET_TYPE) {
       retval->addFlag(FLAG_TYPE_VARIABLE);
+    }
 
-    if (fn->hasFlag(FLAG_MAYBE_TYPE))
+    if (fn->hasFlag(FLAG_MAYBE_TYPE)) {
       retval->addFlag(FLAG_MAYBE_TYPE);
+    }
 
-    // If the function has a specified return type (and is not a var function),
-    // declare and initialize the return value up front,
-    // and set the specified_return_type flag.
-    if (fn->retExprType && fn->retTag != RET_REF) {
+    if (fn->retExprType != NULL && fn->retTag != RET_REF) {
       BlockStmt* retExprType = fn->retExprType->copy();
 
-      if (isIterator)
-        if (SymExpr* lastRTE = toSymExpr(retExprType->body.tail))
-          if (TypeSymbol* retSym = toTypeSymbol(lastRTE->symbol()))
-            if (retSym->type == dtVoid)
+      if (isIterator == true) {
+        if (SymExpr* lastRTE = toSymExpr(retExprType->body.tail)) {
+          if (TypeSymbol* retSym = toTypeSymbol(lastRTE->symbol())) {
+            if (retSym->type == dtVoid) {
               USR_FATAL_CONT(fn,
                              "an iterator's return type cannot be 'void'; "
                              "if specified, it must be the type of the "
                              "expressions the iterator yields");
+            }
+          }
+        }
+      }
     }
 
     fn->insertAtHead(new DefExpr(retval));
@@ -868,57 +873,56 @@ static void normalizeReturns(FnSymbol* fn) {
 
   // Now, for each return statement appearing in the function body,
   // move the value of its body into the declared return value.
-  bool label_is_used = false;
-
   for_vector(CallExpr, ret, rets) {
     SET_LINENO(ret);
 
-    if (isIterator) {
-      INT_ASSERT(!!retval);
+    if (isIterator == true) {
+      INT_ASSERT(retval != NULL);
 
       // Three cases:
       // (1) yield expr; => mov _ret expr; yield _ret;
       // (2) return; => goto end_label;
       // (3) return expr; -> mov _ret expr; yield _ret; goto end_label;
       // Notice how (3) is the composition of (1) and (2).
-      if (!isVoidReturn(ret)) { // Cases 1 and 3
-        // insert MOVE(retval,ret_expr)
+      if (isVoidReturn(ret) == false) { // Cases 1 and 3
         insertRetMove(fn, retval, ret);
-
-        // insert YIELD(retval)
         ret->insertBefore(new CallExpr(PRIM_YIELD, retval));
       }
 
-      if (ret->isPrimitive(PRIM_YIELD)) // Case 1 only.
-          // it's a yield => no goto; need to remove the original node
-          ret->remove();
-      else {    // Cases 2 and 3.
+      if (ret->isPrimitive(PRIM_YIELD) == true) { // Case 1 only.
+        // it's a yield => no goto; need to remove the original node
+        ret->remove();
+      } else {    // Cases 2 and 3.
         if (ret->next != label->defPoint) {
           ret->replace(new GotoStmt(GOTO_RETURN, label));
-          label_is_used = true;
+
+          labelIsUsed = true;
         } else {
           ret->remove();
         }
       }
+
+
+    // Not an iterator
     } else {
-      // Not an iterator
-      if (retval) {
-        // insert MOVE(retval,ret_expr)
+      if (retval != NULL) {
         insertRetMove(fn, retval, ret);
       }
 
       // replace with GOTO(label)
       if (ret->next != label->defPoint) {
         ret->replace(new GotoStmt(GOTO_RETURN, label));
-        label_is_used = true;
+
+        labelIsUsed = true;
       } else {
         ret->remove();
       }
     }
   }
 
-  if (!label_is_used)
+  if (labelIsUsed == false) {
     label->defPoint->remove();
+  }
 }
 
 static bool isVoidReturn(CallExpr* call) {
