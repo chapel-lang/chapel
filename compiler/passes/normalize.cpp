@@ -769,18 +769,18 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret);
 static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
 
-  CallExpr* theRet = NULL; // Contains the return if it is unique.
-  Vec<CallExpr*> rets;
+  std::vector<CallExpr*> rets;
   std::vector<CallExpr*> calls;
-  int numVoidReturns = 0;
-  int numYields = 0;
-  bool isIterator = fn->isIterator();
+  size_t                 numVoidReturns = 0;
+  size_t                 numYields      = 0;
+  CallExpr*              theRet         = NULL;
+  bool                   isIterator     = fn->isIterator();
 
-  collectMyCallExprs(fn, calls, fn); // calls not in a nested function
+  collectMyCallExprs(fn, calls, fn);
 
   for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_RETURN)) {
-      rets.add(call);
+      rets.push_back(call);
 
       theRet = call;
 
@@ -788,16 +788,16 @@ static void normalizeReturns(FnSymbol* fn) {
           numVoidReturns++;
     }
     else if (call->isPrimitive(PRIM_YIELD)) {
-      rets.add(call);
+      rets.push_back(call);
       ++numYields;
     }
   }
 
   // If an iterator, then there is at least one nonvoid return-or-yield.
-  INT_ASSERT(!isIterator || rets.n > numVoidReturns);
+  INT_ASSERT(!isIterator || rets.size() > numVoidReturns);
 
   // Check if this function's returns are already normal.
-  if (rets.n - numYields == 1) {
+  if (rets.size() == numYields + 1) {
     if (theRet == fn->body->body.last()) {
       if (SymExpr* se = toSymExpr(theRet->get(1))) {
         if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
@@ -813,7 +813,7 @@ static void normalizeReturns(FnSymbol* fn) {
   }
 
   // Add a void return if needed.
-  if (rets.n == 0) {
+  if (rets.size() == 0) {
     if (fn->retExprType == NULL) {
       fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
       return;
@@ -870,7 +870,7 @@ static void normalizeReturns(FnSymbol* fn) {
   // move the value of its body into the declared return value.
   bool label_is_used = false;
 
-  forv_Vec(CallExpr, ret, rets) {
+  for_vector(CallExpr, ret, rets) {
     SET_LINENO(ret);
 
     if (isIterator) {
