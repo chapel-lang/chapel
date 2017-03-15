@@ -139,16 +139,19 @@ module SharedObject {
      */
     proc ref reset(newPtr:p.type) {
       release();
-      this.p = p;
-      this.pn = new ReferenceCount();
+      this.p = newPtr;
+      if newPtr != nil {
+        this.pn = new ReferenceCount();
+      }
     }
 
     /*
        Empty this :record:`Shared` so that it stores `nil`.
-       In the process, the currently managed object may be deleted.
+       Deletes the managed object if this :record:`Shared` is the
+       last :record:`Shared` managing that object.
        Does not return a value.
 
-       Equivalent to :proc:`Shared.reset()`.
+       Equivalent to :proc:`Shared.reset(nil)`.
      */
     proc ref release() {
       if p != nil && pn != nil {
