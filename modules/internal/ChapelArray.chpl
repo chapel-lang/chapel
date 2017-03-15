@@ -2112,6 +2112,7 @@ module ChapelArray {
       // downdom would be {3..3, 2..n} Block-distributed in a way that
       // aligned it with the original array ('this').
       const downranges = _getRankChangeDownRanges(args, _value.dom);
+      //      writeln("downranges is: ", downranges);
       const downdist = this.domain.dist;
       const downdomclass = downdist.newRectangularDom(rank=this.rank,
                                                       idxType=this.idxType,
@@ -2123,6 +2124,7 @@ module ChapelArray {
       var downdom = _newDomain(downdomclass);
       downdom = {(...downranges)};
       downdom._value._free_when_no_arrs = true;
+      //      writeln("downdom is: ", downdom);
 
       // Create distribution, domain, and array objects representing
       // the array view
@@ -2147,9 +2149,12 @@ module ChapelArray {
       // we do for slices.
       const (arr, arrpid)  = (this._value, this._pid);
 
+      //      writeln("updom is: ", updom);
       var a = new ArrayViewRankChangeArr(eltType=this.eltType,
                                          _DomPid = updom._pid,
                                          dom = updom._instance,
+                                         downdomPid = downdom._pid,
+                                         downdomInst = downdom._instance,
                                          _ArrPid=arrpid,
                                          _ArrInstance=arr,
                                          collapsedDim=collapsedDim,

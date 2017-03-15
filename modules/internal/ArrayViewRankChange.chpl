@@ -22,6 +22,19 @@
 // This module provides an array domain map class that is used to
 // represent rank change slices of another array via a domain.
 //
+// Throughout this file, 'down*' refers to the higher-dimensional
+// array/domain/distribution that's been rank-changed in this view,
+// while 'up*' refers to the lower-dimensional, user-facing view.
+//
+// TODOs for this file:
+//
+// * the dist, dom, and arr classes store a certain amount of
+//   duplicated information -- should these be focused in the higher
+//   classes (dist/dom) and referenced by lower ones (dom/dist)?
+//
+// * I don't think I've done anything to privatize the dist or dom
+//   classes... should I?
+//
 module ArrayViewRankChange {
 
   class ArrayViewRankChangeDist: BaseDist {
@@ -44,7 +57,8 @@ module ArrayViewRankChange {
                                         downdomPid=downdomPid,
                                         downdomInst=downdomInst,
                                         collapsedDim=collapsedDim,
-                                        idx=idx);
+                                        idx=idx,
+                                        dist=this);
     }
 
     //
@@ -74,11 +88,7 @@ module ArrayViewRankChange {
     const collapsedDim;
     const idx;
 
-    const dist = new ArrayViewRankChangeDist(upinds=upinds,
-                                             downdomPid=downdomPid,
-                                             downdomInst=downdomInst,
-                                             collapsedDim=collapsedDim,
-                                             idx=idx);
+    const dist;
 
     // TODO: This is overly simplistic and should be improved; maybe
     // this is what calling _getRankChangeRanges() on upinds would
@@ -98,7 +108,7 @@ module ArrayViewRankChange {
       return collapsedDim.size;
     }
 
-    proc downdom {
+    inline proc downdom {
       if _isPrivatized(downdomInst) then
         return chpl_getPrivatizedCopy(downdomInst.type, downdomPid);
       else
@@ -113,14 +123,14 @@ module ArrayViewRankChange {
     }
 
     proc dsiBuildArray(type eltType) {
-      writeln("in dsiBuildArray for rank change array views");
       pragma "no auto destroy"
       const arr = _newArray(downdom.dsiBuildArray(eltType));
-      writeln("In build array, pid = ", arr._pid);
       // TODO: Update once we start privatizing
       return new ArrayViewRankChangeArr(eltType  =eltType,
-                                        _DomPid = downdomPid,
-                                        dom = downdomInst,
+                                        _DomPid = nullPid,
+                                        dom = this,
+                                        downdomPid = downdomPid,
+                                        downdomInst = downdomInst,
                                         _ArrPid=arr._pid,
                                         _ArrInstance=arr._instance,
                                         collapsedDim=collapsedDim,
@@ -169,45 +179,15 @@ module ArrayViewRankChange {
     }
 
     iter these() {
-      // TODO: cache this as a lazily-computed field and reuse?
-      var downsliceDom = _newDomain(downdom.dist.dsiNewRectangularDom(rank=downrank,
-                                                                        idxType=idxType,
-                                                                        stridable=stridable));
-      //      writeln("Setting downslice indices to: ", chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
-      downsliceDom = chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx);
-      /*
-      writeln("downSlice is: ");
-      write(downsliceDom);
-      writeln();
-      */
-      //      writeln("downSlice.dist is: ", downslice.dist);
-      //      writeln("downslice.whole is: ", downslice.whole);
-      for i in downsliceDom do {
-        //        writeln("down: ", i);
-        //        writeln("=up : ", downIdxToUpIdx(i));
+      for i in downdom do
         yield downIdxToUpIdx(i);
-      }
     }
 
     iter these(param tag: iterKind) where tag == iterKind.standalone {
-      // TODO: cache this as a lazily-computed field and reuse?
-      var downsliceDom = _newDomain(downdom.dist.dsiNewRectangularDom(rank=downrank,
-                                                                        idxType=idxType,
-                                                                        stridable=stridable));
-      //      writeln("Setting downslice indices to: ", chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx));
-      downsliceDom = chpl_rankChangeConvertDom(upinds, rank, collapsedDim, idx);
-      /*
-      writeln("downSlice is: ");
-      write(downsliceDom);
-      writeln();
-      */
-      //      writeln("downSlice.dist is: ", downslice.dist);
-      //      writeln("downslice.whole is: ", downslice.whole);
-      forall i in downsliceDom do {
-        //        writeln("down: ", i);
-        //        writeln("=up : ", downIdxToUpIdx(i));
+      //      writeln("About to do a forall loop over ");
+      //      downdom.dsiSerialWrite(stdout);
+      forall i in downdom do
         yield downIdxToUpIdx(i);
-      }
     }
 
 
@@ -222,7 +202,27 @@ module ArrayViewRankChange {
       }
       return upIdx;
     }
-  }
+
+    // TODO: Is there something we can re-use here?
+    proc dsiSerialWrite(f) {
+      var first = true;
+      for d in 1..downrank do
+        if !collapsedDim(d) {
+          if first {
+            write("{");
+            first = false;
+          } else
+            write(", ");
+          write(downdom.dsiDim(d));
+        }
+      write("}");
+    }
+
+    proc dsiMyDist() {
+      return dist;
+    }
+        
+  } // ArrayViewRankChangeDom
   
   //
   // The class representing a rank-change slice of an array.  Like
@@ -239,6 +239,9 @@ module ArrayViewRankChange {
     // the results?
     const _DomPid;
     const dom; // Seems like the compiler requires a field called 'dom'...
+
+    const downdomPid;
+    const downdomInst;
 
     // the representation of the sliced array
     const _ArrPid;
@@ -357,6 +360,9 @@ module ArrayViewRankChange {
     //
 
     proc dsiSerialWrite(f) {
+      //      writeln("Writing array over ");
+      //      privDom.dsiSerialWrite(f);
+      //      writeln();
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
 
@@ -492,17 +498,19 @@ module ArrayViewRankChange {
       return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
-      return (_DomPid, dom, _ArrPid, _ArrInstance, collapsedDim, idx);
+      return (_DomPid, dom, downdomPid, downdomInst, _ArrPid, _ArrInstance, collapsedDim, idx);
     }
 
     proc dsiPrivatize(privatizeData) {
       return new ArrayViewRankChangeArr(eltType=this.eltType,
                                         _DomPid=privatizeData(1),
                                         dom=privatizeData(2),
-                                        _ArrPid=privatizeData(3),
-                                        _ArrInstance=privatizeData(4),
-                                        collapsedDim=privatizeData(5),
-                                        idx=privatizeData(6));
+                                        downdomPid=privatizeData(3),
+                                        downdomInst=privatizeData(4),
+                                        _ArrPid=privatizeData(5),
+                                        _ArrInstance=privatizeData(6),
+                                        collapsedDim=privatizeData(7),
+                                        idx=privatizeData(8));
     }
 
 
@@ -617,6 +625,14 @@ module ArrayViewRankChange {
         return dom;
       }
     }
+
+    inline proc downdom {
+      if _isPrivatized(downdomInst) then
+        return chpl_getPrivatizedCopy(downdomInst.type, downdomPid);
+      else
+        return downdomInst;
+    }
+
 
     inline proc arr {
       if _isPrivatized(_ArrInstance) {
