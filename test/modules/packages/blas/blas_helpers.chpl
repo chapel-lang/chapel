@@ -4,6 +4,7 @@ use Random;
 use BLAS;
 
 config const errorThresholdDouble = 1.e-10;
+// note: sporadically failures occur with 1.e-5
 config const errorThresholdSingle = 1.e-4;
 
 proc printErrors(name: string, passed, failed, tests) {
@@ -70,10 +71,11 @@ proc makeBand(A:[?Adom] ?t, kl, ku)
   }
 }
 
-// Make band-diagonal triangular matrix
+/* TODO -- Make band-diagonal triangular matrix */
 proc makeBandTriangular(A:[?Adom], k,  uplo:Uplo=Uplo.Upper)
-  where Adom.rank == 2 {
-
+  where Adom.rank == 2
+{
+  compilerError('Not yet implemented');
 }
 
 
@@ -111,15 +113,6 @@ proc makeUnit(A : [?Adom], val:real = 1.0) {
     if (i!=j) then A[i,j] = zero;
               else A[i,i] = diag;
   }
-}
-
-// No-ops when conjugating real numbers...
-inline proc conjg(x : real(32)) {
-  return x;
-}
-
-inline proc conjg(x : real(64)) {
-  return x;
 }
 
 
@@ -216,9 +209,9 @@ proc bandArrayDense(a: [?Dom] ?eltType, l, u, m, n) where a.rank == 2 {
   return A;
 }
 
-/* Create packed array from dense array, assume 0-based domain*/
+/* TODO -- Create packed array from dense array, assume 0-based domain*/
 proc packedArray(A: [?Dom] ?elType) where A.rank == 2 {
-  // TODO
+  compilerError('Not yet implemented');
 }
 
 
