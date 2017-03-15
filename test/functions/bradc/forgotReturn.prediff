@@ -1,0 +1,5 @@
+#!/bin/bash
+
+outfile=$2
+grep -v '^\$CHPL_HOME.*:[0-9][0-9]*: note:' $outfile > $outfile.tmp
+mv $outfile.tmp $outfile
