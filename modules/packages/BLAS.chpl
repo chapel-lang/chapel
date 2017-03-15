@@ -163,10 +163,9 @@ The native BLAS interface can still be accessed by calling routines from the
 .. _CABS1:  https://software.intel.com/en-us/node/64961e94-92d0-4671-90e6-86995e259a85
 
 .. BLAS Module TODO:
-  - [ ] Cleaner error checking instead of where-clauses
-  - [ ] Support for other BLAS distributions using config params, e.g. MKL
-  - [ ] Update getLeadingDim to take arrays instead of domains
-      - [ ] Support array views
+  - Clearer compiler errors instead of using where-clauses
+  - Modular implementations using config param-wrapped require statements
+  - More consistent documentation
 
 */
 module BLAS {
@@ -2328,18 +2327,6 @@ module BLAS {
   //
   // Helper functions
   //
-
-  pragma "no doc"
-  private inline proc assertIsVector(D: domain, func: string) param {
-    if D.rank != 1 then
-      compilerError("Expected 1-D array in %s, but received %i-D array".format(func, D.rank));
-  }
-
-  pragma "no doc"
-  private inline proc assertIsMatrix(D: domain, param func: string) param {
-    if D.rank != 2 then
-      compilerError("Expected 2-D array in %s, but received %i-D array".format(func, D.rank));
-  }
 
   pragma "no doc"
   private inline proc getLeadingDim(A: [?Adom], order : Order) : c_int {
