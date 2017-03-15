@@ -69,7 +69,7 @@ CHPL_GASNET_CFG_OPTIONS += --disable-portals
 endif
 else
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),aarch64)
-CHPL_GASNET_CFG_OPTIONS += --host=aarch64-unknown-linux-gnu --enable-pthreads
+CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
 CHPL_GASNET_CFG_SCRIPT=cross-configure-aarch64-linux
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)

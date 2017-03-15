@@ -39,7 +39,7 @@ EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --enable-backtrace-execinfo"
 
 # 2. Fill in the canonical target machine type. You can usually obtain this
 #   by running config-aux/config.guess on the target machine
-TARGET_ID='x86_64-cnl-linux-gnu'
+TARGET_ID='aarch64-unknown-linux-gnu'
 
 # 3. Review the automatically-detected settings below and make corrections as necessary.
 
@@ -92,10 +92,10 @@ if test ! -f "$SRCDIR/configure" ; then
   echo "ERROR: The $0 script should be placed in the same directory as the configure script before execution"
   exit 1
 fi
-# Detect the build host machine type
-HOST_ARG=`echo "$@" | grep -e --host`
-HOST_APPEND=
-if test "$HOST_ARG" = ""; then
+# Detect the build machine type
+BUILD_ARG=`echo "$@" | grep -e --build`
+BUILD_APPEND=
+if test "$BUILD_ARG" = ""; then
   oldCC_FOR_BUILD="$CC_FOR_BUILD"
   oldHOST_CC="$HOST_CC"
   oldCC="$CC"
@@ -106,14 +106,14 @@ if test "$HOST_ARG" = ""; then
     HOST_ID=`$SRCDIR/config-aux/config.guess`
   fi
   if test "$HOST_ID" = ""; then
-    echo 'ERROR: failed to auto-detect build host. Please run with --host=machineid to identify the host machine running this script'
+    echo 'ERROR: failed to auto-detect build machine. Please run with --build=machineid to identify the build machine running this script'
     exit 1
   else
-    HOST_APPEND="--host=$HOST_ID"
+    BUILD_APPEND="--build=$HOST_ID"
   fi
   CC_FOR_BUILD="$oldCC_FOR_BUILD"
   HOST_CC="$oldHOST_CC"
   CC="$oldCC"
 fi
 # Now that everything is setup, run the actual configure script
-$SRCDIR/configure --enable-cross-compile $HOST_APPEND --build=$TARGET_ID --target=$TARGET_ID --program-prefix='' $EXTRA_CONFIGURE_ARGS "$@"
+$SRCDIR/configure --enable-cross-compile $BUILD_APPEND --host=$TARGET_ID --target=$TARGET_ID --program-prefix='' $EXTRA_CONFIGURE_ARGS "$@"
