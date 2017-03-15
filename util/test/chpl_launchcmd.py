@@ -34,6 +34,7 @@ import logging
 import os
 import os.path
 import re
+import select
 import shlex
 import shutil
 import subprocess
@@ -971,9 +972,11 @@ class SlurmJob(AbstractJob):
         env = os.environ.copy()
         env['CHPL_LAUNCHER_USE_SBATCH'] = 'true'
         env['CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME'] = output_file
-        with open(input_file, 'w') as fp:
-            fp.write(sys.stdin.read())
-        env['SLURM_STDINMODE'] = input_file
+
+        if select.select([sys.stdin,],[],[],0.0)[0]: 
+            with open(input_file, 'w') as fp:
+                fp.write(sys.stdin.read())
+            env['SLURM_STDINMODE'] = input_file
 
         # We could use stdout buffering for other configurations too, but I
         # don't think there's any need. Currently, single locale perf testing
