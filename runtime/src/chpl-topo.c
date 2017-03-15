@@ -386,6 +386,9 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
   }
 
   node = hwloc_bitmap_first(nodeset);
+  if (!isActualSublocID(node)) {
+    node = c_sublocid_any;
+  }
 
   hwloc_bitmap_free(nodeset);
 

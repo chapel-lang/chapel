@@ -345,7 +345,16 @@ void chpl_mem_layerInit(void) {
   if (heap_base != NULL) {
     int hpi;
 
-    if ((num_heaps = chpl_topo_getNumNumaDomains()) <= 1) {
+    //
+    // For now, we only NUMA-localize the comm layer desired shared heap
+    // if we're using the ugni comm layer.  ugni is the simpler case
+    // because it's only used on Cray X* compute blades which are a
+    // real-memory architecture.  We'll tackle comm=gasnet later; that's
+    // more complicated because GASNet is used on all sorts of systems,
+    // some virtual-memory, and we can't just go touching all the pages.
+    //
+    if (strcmp(CHPL_COMM, "ugni") != 0
+        || (num_heaps = chpl_topo_getNumNumaDomains()) <= 1) {
       num_heaps = 1;
       hpi = 0;
       heaps[hpi].base = heap_base;
@@ -376,16 +385,11 @@ void chpl_mem_layerInit(void) {
         subchunk_base += heaps[hpi].size;
 
         //
-        // For reasons currently unknown (maybe having to do with the
-        // hugepages?) comm=ugni heaps don't seem to have physical,
-        // localized pages created for them as a result of the above
-        // chpl_topo_setMemSubchunkLocality() call.  If we let NIC
-        // registration create them the pages all end up on sublocale
-        // (NUMA domain) 0, and the same happens if we just touch the
-        // pages here.  It's almost as if the setLocality call has no
-        // effect but also doesn't return an error.  In any case, if
-        // we touch them into existence while executing on the desired
-        // NUMA domain here, we get the locality we want.
+        // The chpl_topo_setMemSubchunkLocality() call above isn't
+        // having the effect we desire, for reasons that are mostly but
+        // not completely understood.  So for now, to get the locality
+        // we want, touch the pages into existence while executing on
+        // the desired NUMA domains here.
         //
         {
           c_sublocid_t sublocWas = chpl_topo_getThreadLocality();
