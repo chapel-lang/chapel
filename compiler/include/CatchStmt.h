@@ -41,8 +41,8 @@ public:
   DECLARE_COPY(CatchStmt);
 
   // this BlockStmt contains two parts:
-  // 1. an (optional) filter expression.
-  // 2. a BlockStmt with the catch body.
+  // 1. filter expression.
+  // 2. BlockStmt with the catch body.
   // This strategy enables other parts of the compiler to have the correct
   // scoping rules without needing to know about CatchStmt
 

@@ -39,6 +39,7 @@ BlockStmt* TryStmt::buildChplStmt(Expr* expr) {
   return new BlockStmt(expr, BLOCK_SCOPELESS);
 }
 
+// catches are stored in a BlockStmt for convenient parsing
 TryStmt::TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches) : Stmt(E_TryStmt) {
   _tryBang = tryBang;
   _body    = body;
@@ -83,7 +84,7 @@ void TryStmt::accept(AstVisitor* visitor) {
 TryStmt* TryStmt::copyInner(SymbolMap* map) {
   TryStmt* copy = new TryStmt(_tryBang, COPY_INT(_body), NULL);
   for_alist(c, _catches) {
-    copy->_catches.insertAtTail(c->copy());
+    copy->_catches.insertAtTail(COPY_INT(c));
   }
   return copy;
 }
@@ -91,9 +92,8 @@ TryStmt* TryStmt::copyInner(SymbolMap* map) {
 void TryStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == _body) {
     _body = toBlockStmt(new_ast);
-  } else if (old_ast->list == &_catches) {
-    old_ast->replace(new_ast);
   }
+  // catches are handled automatically (AList)
 }
 
 Expr* TryStmt::getFirstChild() {
@@ -124,7 +124,6 @@ Expr* TryStmt::getNextExpr(Expr* expr) {
 }
 
 GenRet TryStmt::codegen() {
-  codegenStmt(this);
-
-  return _body->codegen();
+  INT_FATAL("CatchStmt should be removed before codegen");
+  return GenRet(-1);
 }

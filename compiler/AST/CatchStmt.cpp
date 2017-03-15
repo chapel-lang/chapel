@@ -20,7 +20,6 @@
 #include "CatchStmt.h"
 #include "AstVisitor.h"
 
-// TODO: do we need this build?
 CatchStmt* CatchStmt::build(Expr* expr, BlockStmt* body) {
   return new CatchStmt(expr, body);
 }
@@ -47,15 +46,18 @@ BlockStmt* CatchStmt::body() const {
 
 void CatchStmt::accept(AstVisitor* visitor) {
   if (visitor->enterCatchStmt(this)) {
-    _body->accept(visitor);
+    if (DefExpr* e = expr())
+      e->accept(visitor);
+
+    if (BlockStmt* b = body())
+      b->accept(visitor);
+
     visitor->exitCatchStmt(this);
   }
 }
 
 CatchStmt* CatchStmt::copyInner(SymbolMap* map) {
-  DefExpr* expr = toDefExpr(_body->body.first());
-  BlockStmt* body = toBlockStmt(_body->body.last());
-  return new CatchStmt(COPY_INT(expr), COPY_INT(body));
+  return new CatchStmt(COPY_INT(expr()), COPY_INT(body()));
 }
 
 void CatchStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
@@ -76,7 +78,6 @@ Expr* CatchStmt::getFirstExpr() {
 }
 
 GenRet CatchStmt::codegen() {
-  codegenStmt(this);
-
-  return _body->codegen();
+  INT_FATAL("CatchStmt should be removed before codegen");
+  return GenRet(-1);
 }

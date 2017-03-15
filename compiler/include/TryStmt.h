@@ -44,9 +44,8 @@ public:
   GenRet              codegen();
   DECLARE_COPY(TryStmt);
 
+  // intended to be private, but astutil.h macros need public access
   BlockStmt*          _body;
-
-  // contains catch clauses
   AList               _catches;
 
 private:

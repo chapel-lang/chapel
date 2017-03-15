@@ -29,39 +29,45 @@
 #include <vector>
 
 /*
-  a(); // throws
-  b(); // does not throw
-  c(); // throws
-} catch e: SubError {
-  f();
-} catch e: AnotherSubError {
-  g();
-} // propagates
+This is a pseudo-code example of what this pass is supposed to do with a
+throwing function, transforming error handling constructs.
 
-// suppose this is in a throwing fn
-// out _e_out: Error
-{
-  var _e: Error;
-  a(_e);
-  if _e then
+// given code
+proc propagate() throws {
+  try {
+    a(); // throws
+    b(); // does not throw
+    c(); // throws
+  } catch e: SubError {
+    f();
+  } catch e: AnotherSubError {
+    g();
+  }
+}
+
+// after this pass
+proc propagate(out error_out: Error) {
+  var error: Error;
+  a(error);
+  if error then
     goto handler;
   b();
-  c(_e);
-  if _e then
+  c(error);
+  if error then
     goto handler;
 
   label handler:
-  if _e {
-    var _cast = _e: SubError;
+  if error {
+    var e = error: SubError;
     if _cast {
       f();
     } else {
-      var _cast = _e: AnotherSubError;
-      if _cast {
+      var e = error: AnotherSubError;
+      if e {
         g();
       } else {
         // set and return
-        _e_out = _e;
+        error_out = error;
         goto epilogue_label;
       }
     }
@@ -74,11 +80,11 @@ class ErrorHandlingVisitor : public AstVisitorTraverse {
 public:
   ErrorHandlingVisitor      (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
 
-  virtual bool enterTryStmt (TryStmt*   node);
-  virtual void exitTryStmt  (TryStmt*   node);
+  virtual bool enterTryStmt  (TryStmt*   node);
+  virtual void exitTryStmt   (TryStmt*   node);
   virtual bool enterCatchStmt(CatchStmt*   node);
   virtual void exitCatchStmt (CatchStmt*   node);
-  virtual bool enterCallExpr(CallExpr*  node);
+  virtual bool enterCallExpr (CallExpr*  node);
 
 private:
   struct TryInfo {
@@ -305,7 +311,6 @@ CallExpr* ErrorHandlingVisitor::haltExpr() {
 
 void lowerErrorHandling() {
   INT_ASSERT(dtError->inTree());
-  INT_ASSERT(dtError->getRefType());
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     ArgSymbol*   outError = NULL;
