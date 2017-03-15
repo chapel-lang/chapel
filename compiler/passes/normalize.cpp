@@ -750,30 +750,6 @@ processSyntacticDistributions(CallExpr* call) {
                 new CallExpr(PRIM_NEW, distCall->remove())));
 }
 
-static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
-  Expr* ret_expr = ret->get(1);
-  ret_expr->remove();
-  if (fn->returnsRefOrConstRef())
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
-  else if (fn->retExprType)
-  {
-    // This is the case for a declared return type.
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval,
-                      new CallExpr(PRIM_COERCE, ret_expr,
-                        fn->retExprType->body.tail->copy())));
-  }
-  else if (fn->hasFlag(FLAG_IF_EXPR_FN))
-  {
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
-  }
-  else if (!fn->hasFlag(FLAG_WRAPPER) &&
-           strcmp(fn->name, "iteratorIndex") &&
-           strcmp(fn->name, "iteratorIndexHelp"))
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_DEREF, ret_expr)));
-  else
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
-}
-
 /************************************* | **************************************
 *                                                                             *
 * Following normalization, each function contains only one return statement   *
@@ -788,6 +764,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 ************************************** | *************************************/
 
 static bool isVoidReturn(CallExpr* call);
+static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret);
 
 static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
@@ -954,6 +931,35 @@ static bool isVoidReturn(CallExpr* call) {
   }
 
   return retval;
+}
+
+static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
+  Expr* retExpr = ret->get(1)->remove();
+
+  if (fn->returnsRefOrConstRef() == true) {
+    CallExpr* addrOf = new CallExpr(PRIM_ADDR_OF, retExpr);
+
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, addrOf));
+
+  } else if (fn->retExprType != NULL) {
+    Expr*     tail   = fn->retExprType->body.tail;
+    CallExpr* coerce = new CallExpr(PRIM_COERCE, retExpr, tail->copy());
+
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, coerce));
+
+  } else if (fn->hasFlag(FLAG_IF_EXPR_FN) == true) {
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
+
+  } else if (fn->hasFlag(FLAG_WRAPPER)             == false &&
+             strcmp(fn->name, "iteratorIndex")     !=     0 &&
+             strcmp(fn->name, "iteratorIndexHelp") !=     0) {
+    CallExpr* deref = new CallExpr(PRIM_DEREF, retExpr);
+
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, deref));
+
+  } else {
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
+  }
 }
 
 /************************************* | **************************************
