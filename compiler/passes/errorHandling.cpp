@@ -76,6 +76,8 @@ public:
 
   virtual bool enterTryStmt (TryStmt*   node);
   virtual void exitTryStmt  (TryStmt*   node);
+  virtual bool enterCatchStmt(CatchStmt*   node);
+  virtual void exitCatchStmt (CatchStmt*   node);
   virtual bool enterCallExpr(CallExpr*  node);
 
 private:
@@ -87,6 +89,7 @@ private:
   std::stack<TryInfo> tryStack;
   ArgSymbol*          outError;
   LabelSymbol*        epilogue;
+  bool                insideCatch;
 
   AList     tryHandler         (TryStmt*   tryStmt,  VarSymbol* errorVar);
   AList     setOutGotoEpilogue (VarSymbol* error);
@@ -99,7 +102,6 @@ private:
 
 ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
                                            LabelSymbol* _epilogue) {
-
   outError = _outError;
   epilogue = _epilogue;
 }
@@ -204,6 +206,15 @@ AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
   return errorCond(errorVar, handlers);
 }
 
+bool ErrorHandlingVisitor::enterCatchStmt(CatchStmt* node) {
+  insideCatch = true;
+  return true;
+}
+
+void ErrorHandlingVisitor::exitCatchStmt(CatchStmt* node) {
+  insideCatch = false;
+}
+
 bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = !tryStack.empty();
 
@@ -245,7 +256,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     SymExpr*   thrownExpr  = toSymExpr(node->get(1)->remove());
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
-    if (insideTry) {
+    if (insideTry && !insideCatch) {
       TryInfo   info      = tryStack.top();
       CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol,
                                          thrownError);
