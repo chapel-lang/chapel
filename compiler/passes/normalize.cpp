@@ -65,9 +65,8 @@ static void hack_resolve_types(ArgSymbol* arg);
 static void find_printModuleInit_stuff();
 
 static void processSyntacticDistributions(CallExpr* call);
-static bool is_void_return(CallExpr* call);
 static void normalize(BaseAST* base);
-static void normalize_returns(FnSymbol* fn);
+static void normalizeReturns(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insertCallTemps(CallExpr* call);
@@ -439,8 +438,9 @@ static void normalize(BaseAST* base) {
   collectSymbols(base, symbols);
 
   for_vector(Symbol, symbol, symbols) {
-    if (FnSymbol* fn = toFnSymbol(symbol))
-      normalize_returns(fn);
+    if (FnSymbol* fn = toFnSymbol(symbol)) {
+      normalizeReturns(fn);
+    }
   }
 
   //
@@ -750,141 +750,119 @@ processSyntacticDistributions(CallExpr* call) {
                 new CallExpr(PRIM_NEW, distCall->remove())));
 }
 
-static bool is_void_return(CallExpr* call) {
-  if (call->isPrimitive(PRIM_RETURN)) {
-    SymExpr* arg = toSymExpr(call->argList.first());
-    if (arg)
-      // NB false for 'return void' in type functions, as it should be
-      if (arg->symbol() == gVoid)
-        return true;
-  }
-  return false;
-}
+/************************************* | **************************************
+*                                                                             *
+* Following normalization, each function contains only one return statement   *
+* preceded by a label.  The first half of the function counts the total       *
+* number of returns and the number of void returns.                           *
+*                                                                             *
+* The big IF beginning with if (rets.n == 1) determines if the function is    *
+* already normal.                                                             *
+*                                                                             *
+* The last half of the function performs the normalization steps.             *
+*                                                                             *
+************************************** | *************************************/
 
-static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
-  Expr* ret_expr = ret->get(1);
-  ret_expr->remove();
-  if (fn->returnsRefOrConstRef())
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
-  else if (fn->retExprType)
-  {
-    // This is the case for a declared return type.
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval,
-                      new CallExpr(PRIM_COERCE, ret_expr,
-                        fn->retExprType->body.tail->copy())));
-  }
-  else if (fn->hasFlag(FLAG_IF_EXPR_FN))
-  {
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
-  }
-  else if (!fn->hasFlag(FLAG_WRAPPER) &&
-           strcmp(fn->name, "iteratorIndex") &&
-           strcmp(fn->name, "iteratorIndexHelp"))
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_DEREF, ret_expr)));
-  else
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
-}
+static bool isVoidReturn(CallExpr* call);
+static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret);
 
-// Following normalization, each function contains only one return statement
-// preceded by a label.  The first half of the function counts the
-// total number of returns and the number of void returns.
-// The big IF beginning with if (rets.n == 1) determines if the function
-// is already normal.
-// The last half of the function performs the normalization steps.
-static void normalize_returns(FnSymbol* fn) {
+static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
 
-  CallExpr* theRet = NULL; // Contains the return if it is unique.
-  Vec<CallExpr*> rets;
+  std::vector<CallExpr*> rets;
   std::vector<CallExpr*> calls;
-  int numVoidReturns = 0;
-  int numYields = 0;
-  bool isIterator = fn->isIterator();
+  size_t                 numVoidReturns = 0;
+  size_t                 numYields      = 0;
+  CallExpr*              theRet         = NULL;
+  bool                   isIterator     = fn->isIterator();
 
-  collectMyCallExprs(fn, calls, fn); // calls not in a nested function
+  collectMyCallExprs(fn, calls, fn);
 
   for_vector(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_RETURN)) {
-      rets.add(call);
+    if (call->isPrimitive(PRIM_RETURN) == true) {
+      rets.push_back(call);
 
       theRet = call;
 
-      if (is_void_return(call))
-          numVoidReturns++;
-    }
-    else if (call->isPrimitive(PRIM_YIELD)) {
-      rets.add(call);
-      ++numYields;
+      if (isVoidReturn(call) == true) {
+        numVoidReturns++;
+      }
+
+    } else if (call->isPrimitive(PRIM_YIELD)) {
+      rets.push_back(call);
+
+      numYields++;
     }
   }
 
   // If an iterator, then there is at least one nonvoid return-or-yield.
-  INT_ASSERT(!isIterator || rets.n > numVoidReturns);
+  INT_ASSERT(isIterator == false || rets.size() > numVoidReturns);
 
   // Check if this function's returns are already normal.
-  if (rets.n - numYields == 1) {
-    if (theRet == fn->body->body.last()) {
-      if (SymExpr* se = toSymExpr(theRet->get(1))) {
-        if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
-            fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
-            !strncmp("_if_fn", fn->name, 6) ||
-            !strcmp("=", fn->name) ||
-            !strcmp("_init", fn->name) ||
-            !strcmp("_ret", se->symbol()->name)) {
-          return;
-        }
+  if (rets.size() == numYields + 1 && theRet == fn->body->body.last()) {
+    if (SymExpr* se = toSymExpr(theRet->get(1))) {
+      if (fn->hasFlag(FLAG_CONSTRUCTOR)         == true ||
+          fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true ||
+          strncmp("_if_fn", fn->name, 6)        ==    0 ||
+          strcmp ("=",      fn->name)           ==    0 ||
+          strcmp ("_init",  fn->name)           ==    0||
+          strcmp ("_ret",   se->symbol()->name) ==    0) {
+        return;
       }
     }
   }
 
   // Add a void return if needed.
-  if (rets.n == 0) {
-    if (fn->retExprType == NULL) {
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-      return;
-    }
+  if (rets.size() == 0 && fn->retExprType == NULL) {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    return;
   }
 
-  LabelSymbol* label  = new LabelSymbol(astr("_end_", fn->name));
-  VarSymbol*   retval = NULL;
+  LabelSymbol* label       = new LabelSymbol(astr("_end_", fn->name));
+  bool         labelIsUsed = false;
+  VarSymbol*   retval      = NULL;
 
   label->addFlag(FLAG_EPILOGUE_LABEL);
+
   fn->insertAtTail(new DefExpr(label));
 
   // If a proc has a void return, do not return any values ever.
   // (Types are not resolved yet, so we judge by presence of "void returns"
   // i.e. returns with no expr. See also a related check in semanticChecks.)
-  if (!isIterator && (numVoidReturns != 0)) {
+  if (isIterator == false && numVoidReturns != 0) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
   } else {
     // Handle declared return type.
     retval = newTemp("ret", fn->retType);
 
     retval->addFlag(FLAG_RVV);
 
-    if (fn->retTag == RET_PARAM)
+    if (fn->retTag == RET_PARAM) {
       retval->addFlag(FLAG_PARAM);
+    }
 
-    if (fn->retTag == RET_TYPE)
+    if (fn->retTag == RET_TYPE) {
       retval->addFlag(FLAG_TYPE_VARIABLE);
+    }
 
-    if (fn->hasFlag(FLAG_MAYBE_TYPE))
+    if (fn->hasFlag(FLAG_MAYBE_TYPE)) {
       retval->addFlag(FLAG_MAYBE_TYPE);
+    }
 
-    // If the function has a specified return type (and is not a var function),
-    // declare and initialize the return value up front,
-    // and set the specified_return_type flag.
-    if (fn->retExprType && fn->retTag != RET_REF) {
-      BlockStmt* retExprType = fn->retExprType->copy();
-
-      if (isIterator)
-        if (SymExpr* lastRTE = toSymExpr(retExprType->body.tail))
-          if (TypeSymbol* retSym = toTypeSymbol(lastRTE->symbol()))
-            if (retSym->type == dtVoid)
+    if (isIterator == true) {
+      if (fn->retExprType != NULL && fn->retTag != RET_REF) {
+        if (SymExpr* lastRTE = toSymExpr(fn->retExprType->body.tail)) {
+          if (TypeSymbol* retSym = toTypeSymbol(lastRTE->symbol())) {
+            if (retSym->type == dtVoid) {
               USR_FATAL_CONT(fn,
                              "an iterator's return type cannot be 'void'; "
                              "if specified, it must be the type of the "
                              "expressions the iterator yields");
+            }
+          }
+        }
+      }
     }
 
     fn->insertAtHead(new DefExpr(retval));
@@ -893,61 +871,105 @@ static void normalize_returns(FnSymbol* fn) {
 
   // Now, for each return statement appearing in the function body,
   // move the value of its body into the declared return value.
-  bool label_is_used = false;
-
-  forv_Vec(CallExpr, ret, rets) {
+  for_vector(CallExpr, ret, rets) {
     SET_LINENO(ret);
 
-    if (isIterator) {
-      INT_ASSERT(!!retval);
+    if (isIterator == true) {
+      INT_ASSERT(retval != NULL);
 
       // Three cases:
       // (1) yield expr; => mov _ret expr; yield _ret;
       // (2) return; => goto end_label;
       // (3) return expr; -> mov _ret expr; yield _ret; goto end_label;
       // Notice how (3) is the composition of (1) and (2).
-      if (!is_void_return(ret)) { // Cases 1 and 3
-        // insert MOVE(retval,ret_expr)
+      if (isVoidReturn(ret) == false) { // Cases 1 and 3
         insertRetMove(fn, retval, ret);
-
-        // insert YIELD(retval)
         ret->insertBefore(new CallExpr(PRIM_YIELD, retval));
       }
 
-      if (ret->isPrimitive(PRIM_YIELD)) // Case 1 only.
-          // it's a yield => no goto; need to remove the original node
-          ret->remove();
-      else {    // Cases 2 and 3.
+      if (ret->isPrimitive(PRIM_YIELD) == true) { // Case 1 only.
+        // it's a yield => no goto; need to remove the original node
+        ret->remove();
+      } else {    // Cases 2 and 3.
         if (ret->next != label->defPoint) {
           ret->replace(new GotoStmt(GOTO_RETURN, label));
-          label_is_used = true;
+
+          labelIsUsed = true;
         } else {
           ret->remove();
         }
       }
+
+
+    // Not an iterator
     } else {
-      // Not an iterator
-      if (retval) {
-        // insert MOVE(retval,ret_expr)
+      if (retval != NULL) {
         insertRetMove(fn, retval, ret);
       }
 
       // replace with GOTO(label)
       if (ret->next != label->defPoint) {
         ret->replace(new GotoStmt(GOTO_RETURN, label));
-        label_is_used = true;
+
+        labelIsUsed = true;
       } else {
         ret->remove();
       }
     }
   }
 
-  if (!label_is_used)
+  if (labelIsUsed == false) {
     label->defPoint->remove();
+  }
 }
 
+static bool isVoidReturn(CallExpr* call) {
+  bool retval = false;
 
-// If se is a type alias, resolves it recursively, or fails and returns NULL.
+  if (call->isPrimitive(PRIM_RETURN) == true) {
+    if (SymExpr* arg = toSymExpr(call->get(1))) {
+      retval = (arg->symbol() == gVoid) ? true : false;
+    }
+  }
+
+  return retval;
+}
+
+static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
+  Expr* retExpr = ret->get(1)->remove();
+
+  if (fn->returnsRefOrConstRef() == true) {
+    CallExpr* addrOf = new CallExpr(PRIM_ADDR_OF, retExpr);
+
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, addrOf));
+
+  } else if (fn->retExprType != NULL) {
+    Expr*     tail   = fn->retExprType->body.tail;
+    CallExpr* coerce = new CallExpr(PRIM_COERCE, retExpr, tail->copy());
+
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, coerce));
+
+  } else if (fn->hasFlag(FLAG_IF_EXPR_FN) == true) {
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
+
+  } else if (fn->hasFlag(FLAG_WRAPPER)             == false &&
+             strcmp(fn->name, "iteratorIndex")     !=     0 &&
+             strcmp(fn->name, "iteratorIndexHelp") !=     0) {
+    CallExpr* deref = new CallExpr(PRIM_DEREF, retExpr);
+
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, deref));
+
+  } else {
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* If se is a type alias, resolves it recursively, or fails and returns NULL.  *
+*                                                                             *
+************************************** | *************************************/
+
 static TypeSymbol* resolveTypeAlias(SymExpr* se)
 {
   while (se)
@@ -1149,7 +1171,7 @@ static void insertCallTemps(CallExpr* call) {
         parentCall->isNamed(".") == true &&
         parentCall->get(1)       == call) {
       // We've got an access to a method or field on the super type.
-      // This means qe should preserve that knowledge for when we
+      // This means we should preserve that knowledge for when we
       // attempt to access the method on the super type.
       tmp->addFlag(FLAG_SUPER_TEMP);
     }
