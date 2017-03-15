@@ -31,8 +31,8 @@
 
      var mySharedObject = new Shared(new MyClass(...));
 
-   now, when mySharedObject goes out of scope, the class instance
-   it refers to will be deleted.
+   now, when mySharedObject and any copies of it go out of scope, the class
+   instance it refers to will be deleted.
 
    Now, copy initializing or assigning from mySharedObject will make
    other variables refer to the same class instance. The class instance
@@ -77,12 +77,28 @@ module SharedObject {
   }
 
 
+  /*
+
+     The :record:`Shared` manages the deletion of a class instance in a way
+     that supports multiple owners of the class instance.
+
+     This is currently implemented with task-safe reference counting.
+
+   */
   record Shared {
     pragma "no doc"
     var p;                 // contained pointer (class type)
     pragma "no doc"
     var pn:ReferenceCount; // reference counter
 
+    /*
+       Initialize a :record:`Shared` with a class instance.
+       This :record:`Shared` will take over the deletion of the class
+       instance. It is an error to directly delete the class instance
+       while it is managed by :record:`Shared`.
+
+       :arg p: the class instance to manage. Must be of class type.
+     */
     proc Shared(p) {
 
       // Boost version default-initializes px and pn
@@ -102,23 +118,56 @@ module SharedObject {
       // since it would refer to `this` as a whole here.
     }
 
+    /*
+       The deinitializer for :record:`Shared` will destroy the class
+       instance once there are no longer any copies of this
+       :record:`Shared` that refer to it.
+     */
     proc ~Shared() {
       release();
     }
 
-
+    pragma "no doc"
     proc retain() {
       pn.retain();
     }
 
-    proc release() {
-      var count = pn.release();
-      if count == 0 {
-        delete p;
-        delete pn;
-      }
+    /*
+       Change the instance managed by this class to `newPtr`.
+       If this class was the last :record:`Shared` managing a
+       non-nil instance, that instance will be deleted.
+     */
+    proc ref reset(newPtr:p.type) {
+      release();
+      this.p = p;
+      this.pn = new ReferenceCount();
     }
 
+    /*
+       Empty this :record:`Shared` so that it stores `nil`.
+       In the process, the currently managed object may be deleted.
+       Does not return a value.
+
+       Equivalent to :proc:`Shared.reset()`.
+     */
+    proc ref release() {
+      if p != nil && pn != nil {
+        var count = pn.release();
+        if count == 0 {
+          delete p;
+          delete pn;
+        }
+      }
+      p = nil;
+      pn = nil;
+    }
+
+    /*
+       Return the object managed by this :record:`Shared` without
+       impacting its lifetime at all. It is an error to use the
+       value returned by this function after the :record:`Shared`
+       goes out of scope.
+     */
     proc /*const*/ borrow() {
       return p;
     }
@@ -152,6 +201,12 @@ module SharedObject {
     return ret;
   }
 
+  /*
+     Assign one :record:`Shared` to another.
+     Deletes the object managed by `lhs` if there are
+     no other :record:`Shared` referring to it. On return,
+     `lhs` will refer to the same object as `rhs`.
+   */
   proc =(ref lhs:Shared, rhs: Shared) {
     // retain-release
     rhs.retain();

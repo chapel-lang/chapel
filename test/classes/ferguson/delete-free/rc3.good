@@ -1,5 +1,4 @@
 in Impl.init
-in Impl.~Impl
 {field = 1}
 {field = 1}
 in Impl.~Impl
