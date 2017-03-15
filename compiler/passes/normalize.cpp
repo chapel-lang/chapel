@@ -65,7 +65,6 @@ static void hack_resolve_types(ArgSymbol* arg);
 static void find_printModuleInit_stuff();
 
 static void processSyntacticDistributions(CallExpr* call);
-static bool is_void_return(CallExpr* call);
 static void normalize(BaseAST* base);
 static void normalizeReturns(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
@@ -751,17 +750,6 @@ processSyntacticDistributions(CallExpr* call) {
                 new CallExpr(PRIM_NEW, distCall->remove())));
 }
 
-static bool is_void_return(CallExpr* call) {
-  if (call->isPrimitive(PRIM_RETURN)) {
-    SymExpr* arg = toSymExpr(call->argList.first());
-    if (arg)
-      // NB false for 'return void' in type functions, as it should be
-      if (arg->symbol() == gVoid)
-        return true;
-  }
-  return false;
-}
-
 static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
   Expr* ret_expr = ret->get(1);
   ret_expr->remove();
@@ -799,6 +787,8 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool isVoidReturn(CallExpr* call);
+
 static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
 
@@ -817,7 +807,7 @@ static void normalizeReturns(FnSymbol* fn) {
 
       theRet = call;
 
-      if (is_void_return(call))
+      if (isVoidReturn(call))
           numVoidReturns++;
     }
     else if (call->isPrimitive(PRIM_YIELD)) {
@@ -914,7 +904,7 @@ static void normalizeReturns(FnSymbol* fn) {
       // (2) return; => goto end_label;
       // (3) return expr; -> mov _ret expr; yield _ret; goto end_label;
       // Notice how (3) is the composition of (1) and (2).
-      if (!is_void_return(ret)) { // Cases 1 and 3
+      if (!isVoidReturn(ret)) { // Cases 1 and 3
         // insert MOVE(retval,ret_expr)
         insertRetMove(fn, retval, ret);
 
@@ -954,6 +944,17 @@ static void normalizeReturns(FnSymbol* fn) {
     label->defPoint->remove();
 }
 
+static bool isVoidReturn(CallExpr* call) {
+  bool retval = false;
+
+  if (call->isPrimitive(PRIM_RETURN) == true) {
+    if (SymExpr* arg = toSymExpr(call->get(1))) {
+      retval = (arg->symbol() == gVoid) ? true : false;
+    }
+  }
+
+  return retval;
+}
 
 /************************************* | **************************************
 *                                                                             *
