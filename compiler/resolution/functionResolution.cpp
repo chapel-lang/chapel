@@ -158,6 +158,8 @@ Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotio
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
 std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
+static char arrayUnrefName[] = "array_unref_ret_tmp";
+
 //#
 //# Static Function Declarations
 //#
@@ -190,7 +192,8 @@ getInstantiationType(Type* actualType, Type* formalType);
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual);
+                   Vec<Symbol*>& formalIdxToActual,
+                   bool inInitRes);
 
 static void
 filterCandidate(Vec<ResolutionCandidate*>& candidates,
@@ -235,7 +238,9 @@ static void resolveTupleExpand(CallExpr* call);
 static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
                                         SymExpr* rhs);
 static void resolveSetMember(CallExpr* call);
+static void resolveInitVar(CallExpr* call);
 static void resolveMove(CallExpr* call);
+static void resolveFieldInit(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static bool formalRequiresTemp(ArgSymbol* formal);
@@ -318,6 +323,7 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
                            std::set<FnSymbol*>* alreadyCalled = NULL);
 
+
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   if (formalIdxToActual.n != 0) formalIdxToActual.clear();
   if (actualIdxToFormal.n != 0) actualIdxToFormal.clear();
@@ -325,9 +331,9 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   return computeActualFormalAlignment(fn, formalIdxToActual, actualIdxToFormal, info);
 }
 
-void ResolutionCandidate::computeSubstitutions() {
+void ResolutionCandidate::computeSubstitutions(bool inInitRes) {
   if (substitutions.n != 0) substitutions.clear();
-  computeGenericSubs(substitutions, fn, formalIdxToActual);
+  computeGenericSubs(substitutions, fn, formalIdxToActual, inInitRes);
 }
 
 static bool hasRefField(Type *type) {
@@ -1368,11 +1374,17 @@ static void ensureEnumTypeResolved(EnumType* etype) {
 // I.e. for an out/inout/ref formal.
 static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
+  Symbol* calledFn = formal->defPoint->parentSymbol;
   if (SymExpr* se = toSymExpr(actual))
     if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
         ((se->symbol()->hasFlag(FLAG_REF_TO_CONST) ||
           se->symbol()->isConstant()) && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->symbol()->isParameter())
+      // But ignore for now errors with this argument
+      // to functions marked with FLAG_REF_TO_CONST_WHEN_CONST_THIS.
+      // These will be checked for later, along with ref-pairs.
+      if (! (formal->hasFlag(FLAG_ARG_THIS) &&
+             calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
       return false;
   // Perhaps more checks are needed.
   return true;
@@ -1683,6 +1695,16 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
     *promotes = false;
   if (actualType == formalType)
     return true;
+  if (actualType->symbol->hasFlag(FLAG_GENERIC) &&
+      actualType == formalType->instantiatedFrom) {
+    // The actual should only be generic when we're resolving an initializer
+    // If either of these asserts fail, something is very, very wrong.
+    AggregateType* at = toAggregateType(actualType);
+    INT_ASSERT(at && at->initializerStyle == DEFINES_INITIALIZER);
+    INT_ASSERT(strcmp(fn->name, "init") == 0);
+
+    return true;
+  }
   //
   // The following check against FLAG_REF ensures that 'nil' can't be
   // passed to a by-ref argument (for example, an atomic type).  I
@@ -1852,7 +1874,8 @@ getInstantiationType(Type* actualType, Type* formalType) {
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual) {
+                   Vec<Symbol*>& formalIdxToActual,
+                   bool inInitRes) {
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
@@ -1887,7 +1910,16 @@ computeGenericSubs(SymbolMap &subs,
         USR_FATAL(formal, "invalid generic type specification on class field");
 
       if (formalIdxToActual.v[i]) {
-        if (Type* type = getInstantiationType(formalIdxToActual.v[i]->type, formal->type)) {
+        if (formal->hasFlag(FLAG_ARG_THIS) && inInitRes &&
+            formalIdxToActual.v[i]->type->symbol->hasFlag(FLAG_GENERIC)) {
+          // If the "this" arg is generic, we're resolving an initializer, and
+          // the actual being passed is also still generic, don't count this as
+          // a substitution.  Otherwise, we'll end up in an infinite loop if
+          // one of the later generic args has a defaultExpr, as we will always
+          // count the this arg as a substitution and so always approach the
+          // generic arg with a defaultExpr as though a substitution was going
+          // to take place.
+        } else if (Type* type = getInstantiationType(formalIdxToActual.v[i]->type, formal->type)) {
           // String literal actuals aligned with non-param generic formals of
           // type dtAny will result in an instantiation of dtStringC when the
           // function is extern. In other words, let us write:
@@ -3103,7 +3135,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
     // Only consider ref return fns in ref return part
     if (kind == FIND_REF && (candidate1->fn->retTag != RET_REF)) continue;
-    if (kind == FIND_NOT_REF && (candidate1->fn->retTag == RET_REF)) continue;
+    if (kind == FIND_CONST_REF && (candidate1->fn->retTag != RET_CONST_REF)) continue;
+    if (kind == FIND_NOT_REF_OR_CONST_REF && (candidate1->fn->retTag == RET_REF || candidate1->fn->retTag == RET_CONST_REF)) continue;
 
     TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
 
@@ -3122,7 +3155,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
       // Only consider ref return fns in ref return part
       if (kind == FIND_REF && (candidate2->fn->retTag != RET_REF)) continue;
-      if (kind == FIND_NOT_REF && (candidate2->fn->retTag == RET_REF)) continue;
+      if (kind == FIND_CONST_REF && (candidate2->fn->retTag != RET_CONST_REF)) continue;
+      if (kind == FIND_NOT_REF_OR_CONST_REF && (candidate2->fn->retTag == RET_REF || candidate2->fn->retTag == RET_CONST_REF)) continue;
 
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
 
@@ -3821,7 +3855,10 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
           formal->type = varActual->type;
         }
         if (varActual->isConstant()) {
-          formal->intent = (IntentTag)(formal->intent | INTENT_FLAG_CONST);
+          int newIntent = formal->intent | INTENT_FLAG_CONST;
+          // and clear INTENT_FLAG_MAYBE_CONST flag
+          newIntent &= ~ INTENT_FLAG_MAYBE_CONST;
+          formal->intent = (IntentTag)(newIntent);
         }
       }
     }
@@ -4284,27 +4321,52 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
 }
 
 
-void
-resolveCall(CallExpr* call)
-{
-  if (call->primitive)
-  {
-    switch (call->primitive->tag)
-    {
-     default:                       /* do nothing */                    break;
-     case PRIM_TUPLE_AND_EXPAND:    resolveTupleAndExpand(call);        break;
-     case PRIM_TUPLE_EXPAND:        resolveTupleExpand(call);           break;
-     case PRIM_SET_MEMBER:          resolveSetMember(call);             break;
-     case PRIM_MOVE:                resolveMove(call);                  break;
-     case PRIM_TYPE_INIT:
-     case PRIM_INIT:                resolveDefaultGenericType(call);    break;
-     case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
-     case PRIM_COERCE:              resolveCoerce(call);                break;
-     case PRIM_NEW:                 resolveNew(call);                   break;
+void resolveCall(CallExpr* call) {
+  if (call->primitive) {
+    switch (call->primitive->tag) {
+    case PRIM_TUPLE_AND_EXPAND:
+      resolveTupleAndExpand(call);
+      break;
+
+    case PRIM_TUPLE_EXPAND:
+      resolveTupleExpand(call);
+      break;
+
+    case PRIM_SET_MEMBER:
+      resolveSetMember(call);
+      break;
+
+    case PRIM_INIT_VAR:
+      resolveInitVar(call);
+      break;
+
+    case PRIM_MOVE:
+      resolveMove(call);
+      break;
+
+    case PRIM_INITIALIZER_SET_FIELD:
+      resolveFieldInit(call);
+      break;
+
+    case PRIM_INIT:
+    case PRIM_NO_INIT:
+    case PRIM_TYPE_INIT:
+      resolveDefaultGenericType(call);
+      break;
+
+    case PRIM_COERCE:
+      resolveCoerce(call);
+      break;
+
+    case PRIM_NEW:
+      resolveNew(call);
+      break;
+
+    default:
+      break;
     }
-  }
-  else
-  {
+
+  } else {
     resolveNormalCall(call);
   }
 }
@@ -4354,7 +4416,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   DisambiguationContext DC(&info.actuals, scope, explain);
 
   ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, FIND_REF);
-  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, FIND_NOT_REF);
+  ResolutionCandidate* bestConstRef = disambiguateByMatch(candidates, DC, FIND_CONST_REF);
+  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, FIND_NOT_REF_OR_CONST_REF);
 
   // If one requires more promotion than the other, this is not a ref-pair.
   if (bestRef && bestValue && isBetterMatch(bestRef, bestValue, DC, true)) {
@@ -4363,21 +4426,43 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (bestRef && bestValue && isBetterMatch(bestValue, bestRef, DC, true)) {
     bestRef = NULL; // Don't consider the ref function.
   }
+  if (bestRef && bestConstRef && isBetterMatch(bestRef, bestConstRef, DC, true)) {
+    bestConstRef = NULL; // Don't consider the const ref function.
+  }
+  if (bestRef && bestConstRef && isBetterMatch(bestConstRef, bestRef, DC, true)) {
+    bestRef = NULL; // Don't consider the ref function.
+  }
+  if (bestConstRef && bestValue && isBetterMatch(bestConstRef, bestValue, DC, true)) {
+    bestValue = NULL; // Don't consider the value function.
+  }
+  if (bestConstRef && bestValue && isBetterMatch(bestValue, bestConstRef, DC, true)) {
+    bestConstRef = NULL; // Don't consider the const ref function.
+  }
 
   ResolutionCandidate* best = bestRef;
-  if (!best) best = bestValue;
+  if (!best && bestValue) best = bestValue;
+  if (!best && bestConstRef) best = bestConstRef;
+
+  bool refPair = (bestRef && (bestValue || bestConstRef));
 
   // If we have both ref and value matches:
   //  'call' will invoke the ref function best->fn
   //  'valueCall' will invoke the value function bestValue->fn
-  //  we will manipulate these two side by side.
+  //  'constRefCall' will invoke the value function bestConstRef->fn
+  //  we will manipulate these three side by side.
   //  valueCall is always NULL if there aren't ref and value matches.
   CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
 
-  if (bestRef && bestValue) {
+  if (refPair && bestValue) {
     valueCall = call->copy();
     call->insertAfter(valueCall);
   }
+  if (refPair && bestConstRef) {
+    constRefCall = call->copy();
+    call->insertAfter(constRefCall);
+  }
+
 
   if (best && best->fn) {
     /*
@@ -4391,6 +4476,12 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       // also instantiate the value version. best is the ref version.
       INT_ASSERT(bestValue->fn);
       instantiateBody(bestValue->fn);
+    }
+    if (constRefCall) {
+      // If we're resolving a ref and non-ref pair,
+      // also instantiate the const-ref version. best is the ref version.
+      INT_ASSERT(bestConstRef->fn);
+      instantiateBody(bestConstRef->fn);
     }
 
     if (explainCallLine && explainCallMatch(call)) {
@@ -4440,10 +4531,24 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
       wrapAndCleanUpActuals(bestValue, valueInfo, false);
     }
+    if (constRefCall) {
+      // If we're resolving a ref and non-ref pair,
+      // also handle the const ref version. best is the ref version.
+      CallInfo constRefInfo(constRefCall, checkonly);
+
+      wrapAndCleanUpActuals(bestConstRef, constRefInfo, false);
+    }
   }
 
   FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
+  FnSymbol* resolvedRefFn = bestRef != NULL ? bestRef->fn : NULL;
   FnSymbol* resolvedValueFn = bestValue != NULL ? bestValue->fn : NULL;
+  FnSymbol* resolvedConstRefFn = bestConstRef != NULL ? bestConstRef->fn : NULL;
+
+  // Only keep it a ref-pair if a ref version is present and
+  // we have options that resolved.
+  if (refPair)
+    refPair = resolvedRefFn && (resolvedValueFn || resolvedConstRefFn);
 
   forv_Vec(ResolutionCandidate*, candidate, candidates) {
     delete candidate;
@@ -4452,6 +4557,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (call->partialTag) {
     if (!resolvedFn) {
       if (valueCall) valueCall->remove();
+      if (constRefCall) constRefCall->remove();
       return NULL;
     }
     call->partialTag = false;
@@ -4475,20 +4581,36 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (resolvedFn && call->parentSymbol) {
     SET_LINENO(call);
     call->baseExpr->replace(new SymExpr(resolvedFn));
-    if (valueCall && resolvedValueFn) {
-      valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
+    if (refPair) {
+      if (valueCall && resolvedValueFn)
+        valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
+      if (constRefCall && resolvedConstRefFn)
+        constRefCall->baseExpr->replace(new SymExpr(resolvedConstRefFn));
 
-      // Replace the call with a new ContextCallExpr containing two
+      // Replace the call with a new ContextCallExpr containing 2 or 3
       // calls, where the first returns ref and the 2nd does not.
+      // The 3 calls might be:
+      //  ref version
+      //  value version
+      //  const ref version
       ContextCallExpr* contextCall = new ContextCallExpr();
       call->insertAfter(contextCall);
 
       call->remove();
-      valueCall->remove();
-      contextCall->setRefRValueOptions(call, valueCall);
+      if (valueCall) valueCall->remove();
+      if (constRefCall) constRefCall->remove();
+
+      if (valueCall && constRefCall)
+        contextCall->setRefValueConstRefOptions(call, valueCall, constRefCall);
+      else
+        contextCall->setRefRValueOptions(call, valueCall?valueCall:constRefCall);
+
     } else if (valueCall) {
       // value call was added but didn't resolve right. Remove it.
       valueCall->remove();
+    } else if (constRefCall) {
+      // const ref call was added but didn't resolve right. Remove it.
+      constRefCall->remove();
     } else {
       // If we aren't working with a ref not-ref return intent pair,
       // adjust the returned value to have flag FLAG_REF_TO_CONST,
@@ -4577,6 +4699,7 @@ void lvalueCheck(CallExpr* call)
      case INTENT_CONST_IN:
      case INTENT_PARAM:
      case INTENT_TYPE:
+     case INTENT_REF_MAYBE_CONST:
       // not checking them here
       break;
 
@@ -4877,6 +5000,104 @@ static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
 
 
 
+/************************************* | **************************************
+*                                                                             *
+* This handles expressions of the form                                        *
+*      CallExpr(PRIM_INIT_VAR, dst, src)                                      *
+*                                                                             *
+* 2017/03/06: This initial, trivial, implementation converts this to either   *
+*                                                                             *
+*      CallExpr(PRIM_MOVE, dst, src)                                          *
+*                                                                             *
+* or                                                                          *
+*                                                                             *
+*      CallExpr(PRIM_MOVE, dst, CallExpr("init_copy", src))                   *
+*                                                                             *
+* and then resolves the PRIM_MOVE.                                            *
+*                                                                             *
+************************************** | *************************************/
+
+static bool hasCopyConstructor(AggregateType* ct);
+
+static void resolveInitVar(CallExpr* call) {
+  SymExpr* dstExpr = toSymExpr(call->get(1));
+  Symbol*  dst     = dstExpr->symbol();
+
+  SymExpr* srcExpr = toSymExpr(call->get(2));
+  Symbol*  src     = srcExpr->symbol();
+  Type*    srcType = src->type;
+
+  if (dst->hasFlag(FLAG_NO_COPY)                         == true)  {
+    call->primitive = primitives[PRIM_MOVE];
+    resolveMove(call);
+
+  } else if (isPrimitiveScalar(srcType)                  == true)  {
+    call->primitive = primitives[PRIM_MOVE];
+    resolveMove(call);
+
+  } else if (isNonGenericRecordWithInitializers(srcType) == true)  {
+    AggregateType* ct  = toAggregateType(srcType);
+    SymExpr*       rhs = toSymExpr(call->get(2));
+
+    // The LHS will "own" the record
+    if (rhs->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false) {
+      dst->type       = src->type;
+
+      call->primitive = primitives[PRIM_MOVE];
+
+      resolveMove(call);
+
+    } else if (hasCopyConstructor(ct) == true) {
+      dst->type = src->type;
+
+      call->setUnresolvedFunction("init");
+      call->insertAtHead(gMethodToken);
+
+      resolveCall(call);
+
+    } else {
+      USR_FATAL(call, "No copy constructor for initializer");
+    }
+
+  } else {
+    Expr*     initExpr = srcExpr->remove();
+    CallExpr* initCopy = new CallExpr("chpl__initCopy", initExpr);
+
+    call->insertAtTail(initCopy);
+    call->primitive = primitives[PRIM_MOVE];
+
+    resolveExpr(initCopy);
+    resolveMove(call);
+  }
+}
+
+// A simplified version of functions_exists().
+// It seems unfortunate to export that function in its current state
+static bool hasCopyConstructor(AggregateType* ct) {
+  bool retval = false;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->numFormals() == 3 && strcmp(fn->name, "init") == 0) {
+      ArgSymbol* _this  = fn->getFormal(2);
+      ArgSymbol* _other = fn->getFormal(3);
+
+      if ((_this->type == ct || _this->type == ct->refType) &&
+          _other->type == ct) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveMove(CallExpr* call) {
   if (call->id == breakOnResolveID )
     gdbShouldBreakHere();
@@ -4930,7 +5151,6 @@ static void resolveMove(CallExpr* call) {
     // Try resolving type aliases now.
     rhsType = resolveTypeAlias(toSymExpr(rhs));
   }
-
 
   // This is a workaround for problems where the _iterator
   // in buildForLoopExpr would be an _array instead of a ref(_array)
@@ -5073,6 +5293,92 @@ static void resolveMove(CallExpr* call) {
   }
 }
 
+// Resolves calls inserted into initializers during Phase 1, to fully determine
+// the instantiated type
+//
+// This function is a combination of resolveMove and resolveSetMember
+static void
+resolveFieldInit(CallExpr* call) {
+  if (call->id == breakOnResolveID )
+    gdbShouldBreakHere();
+
+  INT_ASSERT(call->argList.length == 3);
+  // PRIM_INITIALIZER_SET_FIELD contains three args:
+  // fn->_this, the name of the field, and the value/type it is to be given
+
+  SymExpr* rhs = toSymExpr(call->get(3)); // the value/type to give the field
+
+  // Get the field name.
+  SymExpr* sym = toSymExpr(call->get(2));
+  if (!sym)
+    INT_FATAL(call, "bad initializer set field primitive");
+  VarSymbol* var = toVarSymbol(sym->symbol());
+  if (!var || !var->immediate)
+    INT_FATAL(call, "bad initializer set field primitive");
+  const char* name = var->immediate->v_string;
+
+  // Get the type
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
+  if (!ct)
+    INT_FATAL(call, "bad initializer set field primitive");
+
+  Symbol* fs = NULL;
+  int index = 1;
+  for_fields(field, ct) {
+    if (!strcmp(field->name, name)) {
+      fs = field; break;
+    }
+    index++;
+  }
+
+  if (!fs)
+    INT_FATAL(call, "bad initializer set field primitive");
+
+  Type* t = rhs->typeInfo();
+  // I think this never happens, so can be turned into an assert. <hilde>
+  if (t == dtUnknown)
+    INT_FATAL(call, "Unable to resolve field type");
+
+  if (t == dtNil && fs->type == dtUnknown)
+    USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
+  if (fs->type == dtUnknown) {
+    // Update the type of the field.  If necessary, update to a new
+    // instantiation of the overarching type (and replaces references to the
+    // fields from the old instantiation
+    if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
+        fs->hasFlag(FLAG_PARAM) ||
+        (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL)) {
+      AggregateType* instantiate = ct->getInstantiation(rhs, index);
+      if (instantiate != ct) {
+        // TODO: make this set of operations a helper function I can call
+        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(parentFn);
+        INT_ASSERT(parentFn->_this);
+        parentFn->_this->type = instantiate;
+
+        SymbolMap fieldTranslate;
+        for (int i = 1; i <= instantiate->fields.length; i++) {
+          fieldTranslate.put(ct->getField(i), instantiate->getField(i));
+        }
+        update_symbols(parentFn, &fieldTranslate);
+
+        ct = instantiate;
+        fs = instantiate->getField(index);
+      }
+    } else {
+      // The field is not generic.
+      if (fs->defPoint->exprType == NULL) {
+        fs->type = t;
+      } else if (fs->defPoint->exprType) {
+        fs->type = fs->defPoint->exprType->typeInfo();
+      }
+    }
+  }
+
+  handleSetMemberTypeMismatch(t, fs, call, rhs);
+
+  call->primitive = primitives[PRIM_SET_MEMBER];
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -5134,9 +5440,9 @@ static void resolveNew(CallExpr* call) {
             resolveExpr(call);
 
           } else {
-            USR_FATAL(call,
-                      "Sorry, new style initializers don't work with "
-                      "generics yet.  Stay tuned!");
+            typeExpr->replace(new UnresolvedSymExpr("init"));
+            // call special case function for generic initializers
+            modAndResolveInitCall(call, at);
           }
 
         // Continue to support old-style constructors
@@ -5946,6 +6252,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     DefExpr* dExp = toDefExpr(formalExpr);
     ArgSymbol* fArg = toArgSymbol(dExp->sym);
 
+    if (fArg->type->symbol->hasFlag(FLAG_GENERIC)) {
+      USR_FATAL_CONT("Generic functions can't be captured as values");
+    }
+
     ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
     if (fArg->typeExpr)
       newFormal->typeExpr = fArg->typeExpr->copy();
@@ -6378,7 +6688,10 @@ static Expr* preFold(Expr* expr) {
               // Should always be true, but just in case...
               if (SymExpr* holdsDest = toSymExpr(parent->get(1))) {
                 Symbol* dest = holdsDest->symbol();
-                if (dest->hasFlag(FLAG_TEMP) && !strcmp(dest->name, "ret")) {
+                // TODO: Surely there's a better way to test for this pattern
+                bool okName = strcmp(dest->name, "ret") == 0 ||
+                              strcmp(dest->name, arrayUnrefName) == 0;
+                if (dest->hasFlag(FLAG_TEMP) && okName) {
                   nowarn = true;
                 }
               }
@@ -7383,6 +7696,7 @@ postFold(Expr* expr) {
             }
           }
         }
+
         if (!set) {
           if (lhs->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
               !lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
@@ -7760,27 +8074,47 @@ resolveExpr(Expr* expr) {
       // For ContextCallExprs, be sure to resolve all of the
       // functions that could be called.
       if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
-        CallExpr* refCall = cc->getRefCall();
-        CallExpr* valueCall = cc->getRValueCall();
-        FnSymbol* refFn = refCall->isResolved();
-        FnSymbol* valueFn = valueCall->isResolved();
+        CallExpr* refCall = NULL;
+        CallExpr* valueCall = NULL;
+        CallExpr* constRefCall = NULL;
 
-        INT_ASSERT(refFn && valueFn);
+        cc->getCalls(refCall, valueCall, constRefCall);
+
+        FnSymbol* refFn = refCall->isResolved();
+        FnSymbol* valueFn = valueCall?valueCall->isResolved():NULL;
+        FnSymbol* constRefFn = constRefCall?constRefCall->isResolved():NULL;
+
+        INT_ASSERT(refFn && (valueFn || constRefFn));
         resolveFns(refFn);
-        resolveFns(valueFn);
+
+        if (valueFn)
+          resolveFns(valueFn);
+        if (constRefFn)
+          resolveFns(constRefFn);
 
         // Produce an error if the return types do not match.
         // This error is skipped for iterators because
         // the return type of an iterator is e.g. an iterator record
         // which is not the same as the yielded type.
-        if (!refFn->isIterator() &&
-            refFn->retType->getValType() != valueFn->retType->getValType()) {
-          USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
-          USR_FATAL_CONT(valueFn, "function returns %s",
-                         toString(valueFn->retType));
-          USR_FATAL_CONT(refFn, "function returns %s",
-                         toString(refFn->retType));
-          USR_STOP();
+        if (!refFn->isIterator()) {
+          if (valueFn &&
+              refFn->retType->getValType() != valueFn->retType->getValType()) {
+            USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
+            USR_FATAL_CONT(valueFn, "function returns %s",
+                           toString(valueFn->retType));
+            USR_FATAL_CONT(refFn, "function returns %s",
+                           toString(refFn->retType));
+            USR_STOP();
+          }
+          if (constRefFn &&
+              refFn->retType->getValType() != constRefFn->retType->getValType()) {
+            USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
+            USR_FATAL_CONT(constRefFn, "function returns %s",
+                           toString(constRefFn->retType));
+            USR_FATAL_CONT(refFn, "function returns %s",
+                           toString(refFn->retType));
+            USR_STOP();
+          }
         }
 
         // Proceed using the designated call option
@@ -7842,7 +8176,8 @@ resolveExpr(Expr* expr) {
                                  sym->symbol()->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
             !ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-            !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+            !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
+            ct->defaultTypeConstructor) {
           resolveFormals(ct->defaultTypeConstructor);
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
             if (getPartialCopyInfo(ct->defaultTypeConstructor))
@@ -8112,7 +8447,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
   }
 }
 
-static void resolveReturnType(FnSymbol* fn)
+void resolveReturnType(FnSymbol* fn)
 {
   // Resolve return type.
   Symbol* ret = fn->getReturnSymbol();
@@ -8237,6 +8572,71 @@ static bool isVecIterator(FnSymbol* fn) {
   return false;
 }
 
+//
+// If the returnSymbol of 'fn' is assigned to from an _array record, insert
+// an autoCopy for that _array. If the autoCopy has not yet been resolved, this
+// function will call 'resolveAutoCopyEtc'.
+//
+// This supports the 'copy-out' rule for returning arrays.
+//
+static void insertUnrefForArrayReturn(FnSymbol* fn) {
+  Symbol* ret = fn->getReturnSymbol();
+
+  // BHARSH: Should this also check if fn->retTag != RET_TYPE?
+  //
+  // Do nothing for these kinds of functions:
+  if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
+      fn->hasFlag(FLAG_NO_COPY_RETURN) ||
+      fn->hasFlag(FLAG_UNALIAS_FN) ||
+      fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
+      fn->hasFlag(FLAG_INIT_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_IF_EXPR_FN) ||
+      fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
+    return;
+  }
+
+  for_SymbolSymExprs(se, ret) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      if (call->isPrimitive(PRIM_MOVE) && se == call->get(1)) {
+        Type* rhsType = call->get(2)->typeInfo();
+        // TODO: Should we check if the RHS is a symbol with 'no auto
+        // destroy' on it? If it is, then we'd be copying the RHS and it
+        // would never be destroyed...
+        if (rhsType->symbol->hasFlag(FLAG_ARRAY) &&
+            isTypeExpr(call->get(2)) == false) {
+          Expr* origRHS = call->get(2)->remove();
+          VarSymbol* tmp = newTemp(arrayUnrefName, rhsType);
+
+          // Used by callDestructors to catch assignment from a ref to
+          // 'tmp' when we know we don't want to copy.
+          tmp->addFlag(FLAG_NO_COPY);
+
+          call->insertBefore(new DefExpr(tmp));
+          CallExpr* init_unref_tmp = new CallExpr(PRIM_MOVE, tmp, origRHS->copy());
+          call->insertBefore(init_unref_tmp);
+
+          CallExpr* unrefCall = new CallExpr("chpl__unref", tmp);
+          call->insertAtTail(unrefCall);
+          FnSymbol* unrefFn = resolveNormalCall(unrefCall);
+          resolveFns(unrefFn);
+
+          if (unrefFn->retType == tmp->typeInfo()) {
+            // If the types are equal, we must be dealing with a non-view
+            // array, so we can remove the useless unref call.
+            unrefCall->replace(origRHS->copy());
+
+            // Remove now-useless AST
+            tmp->defPoint->remove();
+            init_unref_tmp->remove();
+            INT_ASSERT(unrefCall->inTree() == false);
+          }
+        }
+      }
+    }
+  }
+}
+
 void
 resolveFns(FnSymbol* fn) {
   if (fn->isResolved())
@@ -8294,19 +8694,6 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
-  if (fn->hasFlag(FLAG_METHOD) && strcmp(fn->name, "init") == 0) {
-    // Lydia NOTE: Quick fix to allow our new initializers to recursively call
-    // themselves.  We know their return type already, pretending we don't just
-    // leads to errors.  Ideally, we'll remove this code when we fix our
-    // compiler's handling of recursive calls when the function doesn't declare
-    // its return type.
-    for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_ARG_THIS)) {
-        fn->retType = formal->type;
-      }
-    }
-  }
-
   resolveBlockStmt(fn->body);
 
   if (tryFailure) {
@@ -8328,6 +8715,8 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
+
+  insertUnrefForArrayReturn(fn);
   resolveReturnType(fn);
 
   //
@@ -8900,6 +9289,7 @@ void resolve() {
 
   resolveExternVarSymbols();
 
+
   // --ipe does not build a mainModule
   if (mainModule)
     resolveUses(mainModule);
@@ -8939,6 +9329,8 @@ void resolve() {
   // Resolve the string literal constructors after everything else since new
   // ones may be created during postFold
   ensureAndResolveInitStringLiterals();
+
+
 
   handleRuntimeTypes();
 
@@ -9957,6 +10349,8 @@ pruneResolvedTree() {
   replaceTypeArgsWithFormalTypeTemps();
   removeParamArgs();
 
+  removeAggTypeFieldInfo();
+
   removeUnusedModuleVariables();
   removeUnusedTypes();
   removeActualNames();
@@ -10037,6 +10431,12 @@ isUnusedClass(AggregateType *ct) {
   if (ct->defaultTypeConstructor && ct->defaultTypeConstructor->isResolved())
     return false;
 
+  // FALSE if the type defines an initializer and that initializer was
+  // resolved
+  if (ct->initializerStyle == DEFINES_INITIALIZER &&
+      ct->initializerResolved)
+    return false;
+
   bool allChildrenUnused = true;
   forv_Vec(Type, child, ct->dispatchChildren) {
     AggregateType* childClass = toAggregateType(child);
@@ -10106,27 +10506,6 @@ static void removeUnusedModuleVariables() {
   }
 }
 
-static bool arrayBlkModified() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isResolved() && fn->defPoint && fn->defPoint->parentSymbol) {
-      if (fn->hasFlag(FLAG_MODIFIES_ARRAY_BLK)) {
-        if (fReportOptimizedArrayIndexing) {
-          printf("Unable to optimize array indexing\n");
-        }
-        return true;
-      }
-    }
-  }
-  if (fReportOptimizedArrayIndexing) {
-    printf("Optimized array indexing\n");
-  }
-  return false;
-}
-
-static bool canOptimizeArrayBlk() {
-  static bool canOptimize = !fNoOptimizeArrayIndexing && !arrayBlkModified();
-  return canOptimize;
-}
 
 static void removeRandomPrimitive(CallExpr* call)
 {
@@ -10150,17 +10529,6 @@ static void removeRandomPrimitive(CallExpr* call)
     case PRIM_NOOP:
       call->remove();
       break;
-
-    case PRIM_OPTIMIZE_ARRAY_BLK_MULT:
-    {
-      SET_LINENO(call);
-      if (canOptimizeArrayBlk()) {
-        call->replace(new SymExpr(gTrue));
-      } else {
-        call->replace(new SymExpr(gFalse));
-      }
-    }
-    break;
 
     case PRIM_TYPEOF:
     {

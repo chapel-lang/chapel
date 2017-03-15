@@ -737,7 +737,7 @@ if ($runtests == 0) {
 
     # Confirm Chapel built correctly before start_test / paratest
     if ($buildcheck == 1) {
-        $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && make check";
+        $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
         mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
     }
 
@@ -793,7 +793,8 @@ if ($runtests == 0) {
 
             #delete the previous spliced data (from yesterday) and make a fresh directory
             $tmpDatDir = "/tmp/releaseOverReleaseDats/";
-            `rm -rf $tmpDatDir && mkdir $tmpDatDir`;
+            $tmpNightlyDatDir = "$tmpDatDir/nightly";
+            `rm -rf $tmpDatDir && mkdir $tmpDatDir && mkdir $tmpNightlyDatDir`;
 
             # for each .dat file, splice the historical data with the nightly
             # data. Do not send a message on failiure because you could end up
@@ -812,13 +813,14 @@ if ($runtests == 0) {
                 $spliceCommand = "$splice -from_a $today -to_a $today $svnPerfDir/$datName $historicalFile> $tmpDatDir/$datName";
                 $spliceDatMessage = "Attempting to splice historical data $historicalFile with nightly data $svnPerfDir/$datName";
                 mysystem($spliceCommand, $spliceMessage, 0, 0, 1);
+                `cp $svnPerfDir/$datName $tmpNightlyDatDir/$datName`;
             }
 
             # create the performance graphs from the newly spliced .dat files
             $altTitle = "Chapel Release Over Release Performance Graphs";
-            $startdate = "04/10/12"; # earliest date that we generate historical data for
+            $startdate = "09/22/14"; # start at 1.10
             $genGraphs = "$utildir/test/genGraphs";
-            $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chplhomedir/test/ -a \"$altTitle\" -n $perfConfigName  -g $chplhomedir/test/GRAPHFILES -s $startdate";
+            $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chplhomedir/test/ -a \"$altTitle\" -n $perfConfigName  -g $chplhomedir/test/GRAPHFILES -s $startdate -m default:v,nightly";
             $genGraphsMessage = "Generating release over release performance graphs";
             mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
 

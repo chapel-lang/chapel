@@ -91,7 +91,10 @@ proc LevelVariable.storeCGSolution(
   // /::::::::::::::::::::/
   //<=== CG iteration <===
   // \::::::::::::::::::::\
-  
+
+  delete residual_update;
+  delete search_dir;
+  delete residual;
 }
 // /""""""""""""""""""""""""""""""""""/
 //<=== LevelVariable.storeCGSolution <==<

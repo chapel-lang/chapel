@@ -95,10 +95,16 @@ void deadVariableElimination(FnSymbol* fn) {
     if (isDeadVariable(sym)) {
       for_SymbolDefs(se, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
-        INT_ASSERT(call &&
-                   (call->isPrimitive(PRIM_MOVE) ||
-                    call->isPrimitive(PRIM_ASSIGN)));
-        Expr* rhs = call->get(2)->remove();
+        //INT_ASSERT(call &&
+        //           (call->isPrimitive(PRIM_MOVE) ||
+        //            call->isPrimitive(PRIM_ASSIGN)));
+        //Expr* rhs = call->get(2)->remove();
+        INT_ASSERT(call);
+        Expr* dest = NULL;
+        Expr* rhs = NULL;
+        bool ok = getSettingPrimitiveDstSrc(call, &dest, &rhs);
+        INT_ASSERT(ok);
+        rhs->remove();
         if (!isSymExpr(rhs))
           call->replace(rhs);
         else
@@ -274,77 +280,160 @@ void deadCodeElimination(FnSymbol* fn) {
   freeDefUseChains(DU, UD);
 }
 
-// Eliminate dead string literals. Any string literals that are introduced get
-// created by the `new_StringSymbol()` function. This includes strings used
-// internally by the compiler (such as "boundedNone" for BoundedRangeType) and
-// param string used for things like compiler error messages as well as strings
-// that may actually be used at runtime. `new_StringSymbol()` adds all strings
-// to the stringLiteralModule, but strings that are only used for compilation
-// or whose runtime path was param folded away are never removed because the
-// code paths that are removed don't include the string literal initialization.
-// This code removes dead string literals and all the support code that turns
-// them into Chapel level strings.
-//
-// Essentially we're looking for code of the form:
-//
-//     var _str_literal_id:string;                                         // string
-//
-//     var call_tmp:c_ptr(uint(8));                                        // call_tmp 
-//     call_tmp = (c_ptr_uint8_t)"string literal";                         // call_tmp_assign
-//     var ret_to_arg_ref_tmp: _ref(string);                               // ret_to_arg
-//     ret_to_arg_ref_tmp = &_str_literal_id                               // ret_to_arg_assign
-//     string(call_tmp, len, size, false, false, ret_to_arg_ref_tmp);      // stringCtor
-//
-//  where there is only one use of the global "str_literal_id" (the rhs of
-//  ret_to_arg_ref_tmp = &str_literal_id) and just removing all the code to
-//  init the Chapel string from the string literal.
-//
-// TODO See if this can be made into a more general dead record elimination.
-// (EJR 01/12/15)
+/************************************* | **************************************
+*                                                                             *
+*                      Eliminate dead string literals.                        *
+*                                                                             *
+* String literals are created by new_StringSymbol().  This includes strings   *
+* used internally by the compiler (e.g. "boundedNone" for BoundedRangeType)   *
+* and param string used for things like compiler error messages as well as    *
+* strings that may be used at runtime.                                        *
+*                                                                             *
+* new_StringSymbol() adds all strings to stringLiteralModule, but strings     *
+* that are only used for compilation or whose runtime path was param folded   *
+* away are never removed because the code paths that are removed don't        *
+* include the string literal initialization.                                  *
+*                                                                             *
+* There are three components to removing a dead string literal                *
+*                                                                             *
+*   1) Identifying that a literal is dead.                                    *
+*                                                                             *
+*      This relies on details of def-use analysis and of the code that        *
+*      initializes string literals.  Both of these may change.                *
+*                                                                             *
+*   2) Remove the module level DefExpr.                                       *
+*                                                                             *
+*      This is easy.                                                          *
+*                                                                             *
+*   3) Remove the code that initializes the literal.                          *
+*                                                                             *
+*      This is fragile as it currently depends on implementation details in   *
+*      other portions of the compiler.  It is believed that this will be      *
+*      easier to manage when record initializers are in production.           *
+*                                                                             *
+* The hardest part is determining when this code needs to be revisited.       *
+* 2017/03/04: Perform an "ad hoc" sanity check for now.                       *
+* 2017/03/09: Disable this pass if flags might alter the pattern.             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isDeadStringLiteral(VarSymbol* string);
+static void removeDeadStringLiteral(DefExpr* defExpr);
+
 static void deadStringLiteralElimination() {
+  // Noakes 2017/03/09
+  //   These two flags are known to alter the pattern we are looking for.
+  //   Rather than handle the variations we simply leak if these flags are
+  //   on.  We anticipate that this will be easier to handle when record
+  //   initializers are in production and have been applied to strings.
+  if (fNoCopyPropagation == false &&
+      fNoInline          == false) {
+    int numStmt        = 0;
+    int numDeadLiteral = 0;
 
-  // find all the symExprs in the string literal module
-  std::vector<SymExpr*> symExprs;
-  collectSymExprs(stringLiteralModule, symExprs);
+    for_alist(stmt, stringLiteralModule->block->body) {
+      numStmt = numStmt + 1;
 
-  for_vector(SymExpr, stringUse, symExprs) {
-    Symbol* stringSym = stringUse->symbol();
-    // if we're looking at a Chapel string created from a string literal
-    if (stringSym->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
-      // and there's only a single use of it
-      int nuses = stringSym->countUses(/*max*/ 2);
-      if (nuses == 1) {
-        // then that use is the RHS of `ret_to_arg_ref_tmp = &str_literal_id`,
-        // which is only used in the string constructor so the string is dead. 
-        for_SymbolUses(use, stringSym) {
-          // this loop should only run once
-          assert(use == stringUse);
+      if (DefExpr* defExpr = toDefExpr(stmt)) {
+        if (VarSymbol* symbol = toVarSymbol(defExpr->sym)) {
+          if (isDeadStringLiteral(symbol) == true) {
+            removeDeadStringLiteral(defExpr);
+
+            numDeadLiteral = numDeadLiteral + 1;
+          }
         }
-
-        // gather the AST used to create a Chapel string from the literal,
-        // using variable names that mimic the current generated code
-        CallExpr*      ret_to_arg_assign = toCallExpr(stringUse->getStmtExpr());
-        SymExpr*       ret_to_arg        = toSymExpr(ret_to_arg_assign->get(1));
-        SymExpr*       ret_to_arg_use    = ret_to_arg->symbol()->getSingleUse();
-        INT_ASSERT(ret_to_arg_use != NULL);
-        CallExpr*      stringCtor        = toCallExpr(ret_to_arg_use->parentExpr);
-        SymExpr*       call_tmp          = toSymExpr(stringCtor->get(1));
-        SymExpr*       call_tmp_def      = call_tmp->symbol()->getSingleDef();
-        INT_ASSERT(call_tmp_def != NULL);
-        CallExpr*      call_tmp_assign   = toCallExpr(call_tmp_def->parentExpr);
-
-        // remove all the AST, in the order listed in the function comment
-        stringUse->symbol()->defPoint->remove();
-        call_tmp->symbol()->defPoint->remove();
-        call_tmp_assign->remove();
-        ret_to_arg->remove();
-        ret_to_arg_assign->remove();
-        stringCtor->remove();
       }
+    }
+
+    //
+    // Noakes 2017/03/04
+    //
+    // There is not a principled way to determine if other passes
+    // have changed in a way that would confuse this pass.
+    //
+    // A quick review of a portion of test/release/examles shows that
+    // this pass removes 85 - 95% of the string literals.  Signal an
+    // error if this pass doesn't reclaim at least 10% of all string
+    // literals unless this is minimal modules
+    //
+    if (fMinimalModules == false) {
+      INT_ASSERT((1.0 * numDeadLiteral) / numStmt > 0.10);
     }
   }
 }
 
+// Noakes 2017/03/04: All literals have 1 def. Dead literals have 0 uses.
+static bool isDeadStringLiteral(VarSymbol* string) {
+  bool retval = false;
+
+  if (string->hasFlag(FLAG_CHAPEL_STRING_LITERAL) == true) {
+    int numDefs = string->countDefs();
+    int numUses = string->countUses();
+
+    retval = numDefs == 1 && numUses == 0;
+
+    INT_ASSERT(numDefs == 1);
+  }
+
+  return retval;
+}
+
+//
+// Noakes 2017/03/04
+//
+// The current pattern to initialize a string literal is approximately
+//
+//   var  call_tmp : c_ptr;
+//
+//   move call_tmp, cast(c_ptr(uint(8)), c"literal string")
+//
+//   var  ret_tmp  : string;
+//   ref  ref_tmp  : string;
+//
+//   move ref_tmp,  addrOf(ret_tmp);
+//
+//   _construct_string(call_tmp, ... , ref_tmp);
+//
+//   move the_str,  ret_tmp       // This is the single def
+//
+
+static void removeDeadStringLiteral(DefExpr* defExpr) {
+  SymExpr*   defn  = toVarSymbol(defExpr->sym)->getSingleDef();
+
+  // Step backwards from the def of 'the_str'
+  Expr*      stmt7 = defn->getStmtExpr();         // move the_str, ret_tmp
+  Expr*      stmt6 = stmt7 ? stmt7->prev : NULL;  // _construct_string
+  Expr*      stmt5 = stmt6 ? stmt6->prev : NULL;  // move ref_tmp, addrOf(..)
+  Expr*      stmt4 = stmt5 ? stmt5->prev : NULL;  // ref  ref_tmp
+  Expr*      stmt3 = stmt4 ? stmt4->prev : NULL;  // var  ret_tmp
+  Expr*      stmt2 = stmt3 ? stmt3->prev : NULL;  // move call_tmp, cast(..)
+  Expr*      stmt1 = stmt2 ? stmt2->prev : NULL;  // var  call_tmp
+
+  // Simple sanity checks
+  INT_ASSERT(isDefExpr (stmt1));
+  INT_ASSERT(isCallExpr(stmt2));
+  INT_ASSERT(isDefExpr (stmt3));
+  INT_ASSERT(isDefExpr (stmt4));
+  INT_ASSERT(isCallExpr(stmt5));
+  INT_ASSERT(isCallExpr(stmt6));
+  INT_ASSERT(isCallExpr(stmt7));
+
+  stmt7->remove();
+  stmt6->remove();
+  stmt5->remove();
+  stmt4->remove();
+  stmt3->remove();
+  stmt2->remove();
+  stmt1->remove();
+
+  defExpr->remove();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 // Determines if a module is dead. A module is dead if the module's init
 // function can only be called from module code, and the init function

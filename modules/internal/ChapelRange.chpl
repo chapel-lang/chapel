@@ -1110,7 +1110,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   
     if this.stride != other.stride && this.stride != -other.stride {
   
-      (g, x) = chpl__extendedEuclid(st1, st2);
+      const (tg, tx) = chpl__extendedEuclid(st1, st2);
+      (g, x) = (tg.safeCast(strType), tx.safeCast(strType));
       lcm = st1 / g * st2;        // The LCM of the two strides.
     // The division must be done first to prevent overflow.
   

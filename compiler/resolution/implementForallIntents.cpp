@@ -230,7 +230,7 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
       // See if we want to prune it.
       bool pruneit = false;
 
-      if (tiIntent == INTENT_REF) {
+      if (tiIntent == INTENT_REF || tiIntent == INTENT_REF_MAYBE_CONST) {
         // for efficiency
         pruneit = true;
 

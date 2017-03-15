@@ -33,6 +33,7 @@
 #include "iterator.h"
 #include "misc.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
@@ -81,6 +82,11 @@ QualifiedType Type::qualType() {
 // Are actuals of this type passed with const intent by default?
 bool Type::isDefaultIntentConst() const {
   bool retval = true;
+
+  // MPF 2017-03-09
+  // It seems wrong to me that this returns true
+  // for dtUnknown. However some parts of the compiler
+  // currently rely on that behavior.
 
   if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
       isReferenceType(this)                       == true ||
@@ -490,16 +496,18 @@ std::string EnumType::docsDirective() {
 AggregateType::AggregateType(AggregateTag initTag)
   : Type(E_AggregateType, NULL) {
 
-  aggregateTag       = initTag;
-  initializerStyle   = DEFINES_NONE_USE_DEFAULT;
-  outer              = NULL;
-  iteratorInfo       = NULL;
-  doc                = NULL;
+  aggregateTag        = initTag;
+  initializerStyle    = DEFINES_NONE_USE_DEFAULT;
+  initializerResolved = false;
+  outer               = NULL;
+  iteratorInfo        = NULL;
+  doc                 = NULL;
 
-  fields.parent      = this;
-  inherits.parent    = this;
+  fields.parent       = this;
+  inherits.parent     = this;
 
-  mIsGeneric         = false;
+  genericField        = 0;
+  mIsGeneric          = false;
 
   // set defaultValue to nil to keep it from being constructed
   if (aggregateTag == AGGREGATE_CLASS) {
@@ -712,6 +720,126 @@ void AggregateType::accept(AstVisitor* visitor) {
 
     visitor->exitAggrType(this);
   }
+}
+
+// Returns true if the type has generic fields, false otherwise.  If the index
+// of the first generic field has not previously been set, set it.
+bool AggregateType::setNextGenericField() {
+  // Don't redo work
+  if (genericField > 0)
+    return true;
+
+  int idx = 1;
+  for_fields(field, this) {
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_PARAM) ||
+        (field->defPoint->init == NULL && field->defPoint->exprType == NULL
+         && field->type == dtUnknown)) {
+      // TODO: do something special if the type of the field is known but
+      // generic
+      genericField = idx;
+      break;
+    }
+    idx++;
+  }
+  if (genericField != 0)
+    return true;
+  else
+    return false;
+}
+
+// Returns an instantiation of this AggregateType at the given index.  If the
+// index is earlier than this AggregateType's first unsubstituted generic field,
+// will just return itself.  Otherwise, this method will check the list of
+// instantiations for the first unsubstituted generic field to see if we have
+// previously made an instantiation for the provided argument and will return
+// that instantiation if we find one.  Otherwise, will create a new
+// instantiation with the given argument and will return that.
+AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
+  // If the index of the field is prior to the index of the next generic field
+  // then trivially return ourselves
+  if (index < genericField)
+    return this;
+
+  if (index > genericField) {
+    // Internal error, because initializerRules should have ensured that we
+    // access the generic fields in order, and so we should never try to update
+    // a generic field after the current generic field when the current one
+    // hasn't been updated.
+    INT_FATAL(this, "trying to set a later generic field %d", index);
+  }
+
+  // First, look to see if we have an instantiation with that value already
+  for_vector(AggregateType, at, instantiations) {
+    // TODO: test me
+    Symbol* field = at->getField(genericField);
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
+      if (field->type == t->typeInfo())
+        return at;
+    }
+    if (field->hasFlag(FLAG_PARAM) &&
+        at->substitutions.get(field) == t->symbol()) {
+      return at;
+    }
+  }
+  // Otherwise, we need to create an instantiation for that type
+  AggregateType* newInstance = toAggregateType(this->symbol->copy()->type);
+  this->symbol->defPoint->insertBefore(new DefExpr(newInstance->symbol));
+  newInstance->symbol->copyFlags(this->symbol);
+
+  newInstance->substitutions.copy(this->substitutions);
+
+  Symbol* field = newInstance->getField(genericField);
+  if (field->hasFlag(FLAG_PARAM)) {
+    newInstance->substitutions.put(field, t->symbol());
+    newInstance->symbol->renameInstantiatedSingle(t->symbol());
+  } else {
+    newInstance->substitutions.put(field, t->typeInfo()->symbol);
+    newInstance->symbol->renameInstantiatedSingle(t->typeInfo()->symbol);
+  }
+
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
+    field->type = t->typeInfo();
+  } else {
+    if (!field->defPoint->exprType && field->type == dtUnknown)
+      field->type = t->typeInfo();
+    else if (field->defPoint->exprType->typeInfo() != t->typeInfo()) {
+      // TODO: Something something, casts and coercions
+    } else {
+      field->type = t->typeInfo();
+    }
+  }
+  instantiations.push_back(newInstance);
+  newInstance->instantiatedFrom = this;
+
+  // Handle dispatch parents (because it totally makes sense for this to have
+  // been done outside of the AggregateType by
+  // instantiateTypeForTypeConstructor.  Totally)
+  forv_Vec(Type, t, this->dispatchParents) {
+    newInstance->dispatchParents.add(t);
+    bool inserted = t->dispatchChildren.add_exclusive(newInstance);
+    INT_ASSERT(inserted);
+  }
+
+  DefExpr* next = toDefExpr(field->defPoint->next);
+  newInstance->genericField = this->genericField + 1;
+  while (next) {
+    if (next->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+        next->sym->hasFlag(FLAG_PARAM) ||
+        (next->init == NULL && next->exprType == NULL)) {
+      // This is the next value for genericField
+      break;
+    } else {
+      newInstance->genericField = newInstance->genericField + 1;
+      next = toDefExpr(next->next);
+    }
+  }
+
+  if (newInstance->genericField > newInstance->fields.length) {
+    newInstance->genericField = 0;
+    newInstance->symbol->removeFlag(FLAG_GENERIC);
+  }
+
+  return newInstance;
 }
 
 
@@ -1288,6 +1416,10 @@ void initCompilerGlobals() {
   gCastChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gCastChecking, !fNoCastChecks);
 
+  gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
+  gDivZeroChecking->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gDivZeroChecking, !fNoDivZeroChecks);
+
   gPrivatization = new VarSymbol("_privatization", dtBool);
   gPrivatization->addFlag(FLAG_PARAM);
   setupBoolGlobal(gPrivatization, !(fNoPrivatization || fLocal));
@@ -1580,7 +1712,7 @@ bool isString(Type* type) {
 }
 
 //
-// NOAKES 2016/02/29
+// Noakes 2016/02/29
 //
 // To support the merge of the string-as-rec branch we defined a
 // function, isString(), which is only true of the record that was
@@ -1598,8 +1730,13 @@ bool isString(Type* type) {
 // In the longer term we plan to further broaden the cases that the new
 // logic can handle and reduce the exceptions that are filtered out here.
 //
-// MPF 2016-09-15
+//
+//
+// MPF    2016/09/15
 // This function now includes tuples, distributions, domains, and arrays.
+//
+// Noakes 2017/03/02
+// This function now includes range and atomics
 //
 bool isUserDefinedRecord(Type* type) {
   bool retval = false;
@@ -1610,18 +1747,15 @@ bool isUserDefinedRecord(Type* type) {
 
     // Must be a record type
     if (aggr->aggregateTag != AGGREGATE_RECORD) {
-
-    // Not a range
-    } else if (sym->hasFlag(FLAG_RANGE)              == true) {
-
-    // Not an atomic type
-    } else if (sym->hasFlag(FLAG_ATOMIC_TYPE)        == true) {
+      retval = false;
 
     // Not a RUNTIME_type
     } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+      retval = false;
 
     // Not an iterator
     } else if (strncmp(name, "_ir_", 4)              ==    0) {
+      retval = false;
 
     } else {
       retval = true;
@@ -1719,3 +1853,82 @@ bool isPOD(Type* t)
   return false;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool isPrimitiveScalar(Type* type) {
+  bool retval = false;
+
+  if (type == dtBools[BOOL_SIZE_8]         ||
+      type == dtBools[BOOL_SIZE_16]        ||
+      type == dtBools[BOOL_SIZE_32]        ||
+      type == dtBools[BOOL_SIZE_64]        ||
+
+      type == dtInt[INT_SIZE_8]            ||
+      type == dtInt[INT_SIZE_16]           ||
+      type == dtInt[INT_SIZE_32]           ||
+      type == dtInt[INT_SIZE_64]           ||
+
+      type == dtUInt[INT_SIZE_8]           ||
+      type == dtUInt[INT_SIZE_16]          ||
+      type == dtUInt[INT_SIZE_32]          ||
+      type == dtUInt[INT_SIZE_64]          ||
+
+      type == dtReal[FLOAT_SIZE_32]        ||
+      type == dtReal[FLOAT_SIZE_64]        ||
+
+      type == dtImag[FLOAT_SIZE_32]        ||
+      type == dtImag[FLOAT_SIZE_64]) {
+
+    retval = true;
+
+  } else {
+    retval = false;
+  }
+
+  return retval;
+}
+
+bool isNonGenericClass(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isGeneric()                  == false &&
+        at->isClass()                    ==  true &&
+        at->symbol->hasFlag(FLAG_EXTERN) == false) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+bool isNonGenericClassWithInitializers(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isGeneric()      == false &&
+        at->isClass()        == true  &&
+        at->initializerStyle == DEFINES_INITIALIZER) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+bool isNonGenericRecordWithInitializers(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isGeneric()      == false &&
+        at->isRecord()       == true  &&
+        at->initializerStyle == DEFINES_INITIALIZER) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}

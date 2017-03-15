@@ -35,7 +35,7 @@ enum InitBody {
   FOUND_BOTH
 };
 
-
+static bool     isReturnVoid(FnSymbol* fn);
 static InitBody getInitCall(FnSymbol* fn);
 static void     phase1Analysis(BlockStmt* body, AggregateType* t);
 
@@ -48,10 +48,13 @@ static void     phase1Analysis(BlockStmt* body, AggregateType* t);
 void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
   if (fn->hasFlag(FLAG_NO_PARENS)) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
+
+  } else if (isReturnVoid(fn) == false) {
+
   } else {
     InitBody bodyStyle = getInitCall(fn);
 
-    if (isClass(ct) == true) {
+    if (isClass(ct) == true && !ct->isGeneric()) {
       buildClassAllocator(fn, ct);
       fn->addFlag(FLAG_INLINE);
     }
@@ -100,13 +103,9 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
 
     // Insert phase 2 analysis here
 
-    if (isClass(ct) == false) {
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
-    } else {
-      Symbol* voidType = dtVoid->symbol;
+    Symbol* voidType = dtVoid->symbol;
 
-      fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
-    }
+    fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
   }
 }
 
@@ -148,13 +147,19 @@ InitBody getInitCall (Expr* expr) {
           if (CallExpr* subject = toCallExpr(inner->get(1))) {
             if (storesThisTop(subject->get(1))) {
               if (storesSpecificName(subject->get(2), "super")) {
-                // The expr is a "(this.)super.init()" call
+                // The expr is a "this.super.init()" call
                 return FOUND_SUPER_INIT;
               }
             }
           } else if (storesThisTop(inner->get(1))) {
             // The expr is a "this.init()" call
             return FOUND_THIS_INIT;
+          } else if (UnresolvedSymExpr* us = toUnresolvedSymExpr(inner->get(1))) {
+            if (strcmp(us->unresolved, "super") == 0) {
+              // The expr is a "super.init()" call, likely on a record as
+              // records don't recognize "super".
+              return FOUND_SUPER_INIT;
+            }
           }
         }
       }
@@ -236,6 +241,9 @@ static
 const char* getFieldName(Expr* curExpr);
 
 static
+Expr* modifyFieldAccess(Expr* fieldAccess, DefExpr* curField);
+
+static
 bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
 
 static
@@ -313,7 +321,10 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
 
       if (const char* fieldname = getFieldName(curExpr)) {
         if (!strcmp(fieldname, curField->sym->name)) {
-          // It's a match!  Advance both and move on
+          // It's a match! Change the assignment into a special primitive, in
+          // case generics are involved on this type
+          curExpr = modifyFieldAccess(curExpr, curField);
+          // Advance both and move on
           curField = toDefExpr(curField->next);
           curExpr = getNextStmt(curExpr, body, false);
           isInit = getInitCall(curExpr);
@@ -392,6 +403,38 @@ const char* getFieldName(Expr* curExpr) {
     }
   }
   return NULL;
+}
+
+// Transforms the assignments to fields we found in the initializer body into
+// a special form, that will allow function resolution to not complain when
+// they are encountered if we are still determining the generic instantiation
+// of the type
+static
+Expr* modifyFieldAccess(Expr* fieldAccess, DefExpr* curField) {
+  CallExpr* call = toCallExpr(fieldAccess);
+  INT_ASSERT(call);
+  CallExpr* inner = toCallExpr(call->get(1));
+  INT_ASSERT(inner);
+  SymExpr* argThis = toSymExpr(inner->get(1)->remove());
+  // Fair assumptions, since we just came from getFieldName giving us the
+  // appropriate set up.
+
+
+  SET_LINENO(fieldAccess);
+  CallExpr* replacement = new CallExpr(PRIM_INITIALIZER_SET_FIELD, argThis,
+                                       new_CStringSymbol(curField->sym->name));
+  for_actuals(actual, call) {
+    if (actual == call->get(1)) {
+      // The first arg is the this.field access, which we have already
+      // represented in the new call.
+      continue;
+    }
+    replacement->insertAtTail(actual->copy());
+    // Don't want to remove those as that will mess with the for loop traversal
+    // so insert a copy of them into the new call
+  }
+  call->replace(replacement);
+  return replacement;
 }
 
 static
@@ -478,19 +521,17 @@ static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
   } else {
     Symbol*   _this      = toFnSymbol(next->parentSymbol)->_this;
 
-    CallExpr* thisAccess = new CallExpr(".",
-                                        _this,
-                                        new_CStringSymbol(nextField));
+    CallExpr* newInit = new CallExpr(PRIM_INITIALIZER_SET_FIELD,
+                                     new SymExpr(_this),
+                                     new_CStringSymbol(nextField));
 
     if (field->init) {
-      CallExpr* newInit = new CallExpr("=", thisAccess, field->init->copy());
+      newInit->insertAtTail(field->init->copy());
 
-      next->insertBefore(newInit);
     } else {
       INT_ASSERT(field->exprType);
 
       VarSymbol* tmp     = newTemp("call_tmp");
-      VarSymbol* refTmp  = newTemp("ref_tmp");
 
       next->insertBefore(new DefExpr(tmp));
 
@@ -499,11 +540,13 @@ static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
                                       new CallExpr(PRIM_INIT,
                                                    field->exprType->copy())));
 
+      if (field->sym->hasFlag(FLAG_PARAM) == true) {
+        tmp->addFlag(FLAG_PARAM);
+      }
 
-      next->insertBefore(new DefExpr(refTmp));
-      next->insertBefore(new CallExpr(PRIM_MOVE, refTmp, thisAccess));
-      next->insertBefore(new CallExpr(PRIM_MOVE, refTmp, new SymExpr(tmp)));
+      newInit->insertAtTail(new SymExpr(tmp));
     }
+    next->insertBefore(newInit);
   }
 }
 
@@ -565,6 +608,45 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
 
 /************************************* | **************************************
 *                                                                             *
+* Initializers cannot                                                         *
+*                                                                             *
+*   1) Declare a return type other than void                                  *
+*                                                                             *
+*   2) Contain a return expression with a value                               *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isReturnVoid(FnSymbol* fn) {
+  bool retval = true;
+
+  if (fn->retExprDefinesNonVoid() == true) {
+    USR_FATAL(fn, "initializers cannot declare a return type");
+    retval = false;
+
+  } else {
+    std::vector<CallExpr*> calls;
+
+    collectCallExprs(fn->body, calls);
+
+    for (size_t i = 0; i < calls.size() && retval == true; i++) {
+      if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
+        SymExpr* value = toSymExpr(calls[i]->get(1));
+
+        if (value == NULL || value->symbol()->type != dtVoid) {
+          USR_FATAL(calls[i], "initializers cannot return a value");
+          retval = false;
+        }
+      }
+    }
+  }
+
+  fn->retType = dtVoid;
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
 * Consider                                                                    *
 *                                                                             *
 *   var x = new MyClass(10, 20, 30);                                          *
@@ -589,14 +671,20 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
   ArgSymbol* type        = new ArgSymbol(INTENT_BLANK, "t", ct);
   VarSymbol* newInstance = newTemp("instance", ct);
   CallExpr*  allocCall   = callChplHereAlloc(ct);
-  CallExpr*  initCall    = new CallExpr("init", gMethodToken, newInstance);
+  CallExpr*  initCall    = NULL;
+
+  if (initMethod->hasFlag(FLAG_RESOLVED)) {
+    initCall = new CallExpr(initMethod, gMethodToken, newInstance);
+  } else {
+    initCall = new CallExpr("init", gMethodToken, newInstance);
+  }
 
   type->addFlag(FLAG_TYPE_VARIABLE);
 
   fn->addFlag(FLAG_METHOD);
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
-  fn->retExprType = new BlockStmt(new SymExpr(ct->symbol), BLOCK_SCOPELESS);
+  fn->retType = ct;
 
   // Add the formal that provides the type for the type method
   fn->insertFormalAtTail(type);

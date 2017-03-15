@@ -28,6 +28,7 @@
 #include "AstVisitor.h"
 #include "ForLoop.h"
 #include "insertLineNumbers.h"
+#include "iterator.h"
 #include "misc.h"
 #include "passes.h"
 #include "stmt.h"
@@ -1080,7 +1081,7 @@ void CallExpr::replaceChild(Expr* oldAst, Expr* newAst) {
 
 
 void CallExpr::insertAtHead(BaseAST* ast) {
-  Expr *toInsert;
+  Expr* toInsert = NULL;
 
   if (Symbol* a = toSymbol(ast))
     toInsert = new SymExpr(a);
@@ -1094,7 +1095,7 @@ void CallExpr::insertAtHead(BaseAST* ast) {
 
 
 void CallExpr::insertAtTail(BaseAST* ast) {
-  Expr *toInsert;
+  Expr* toInsert = NULL;
 
   if (Symbol* a = toSymbol(ast))
     toInsert = new SymExpr(a);
@@ -1106,11 +1107,26 @@ void CallExpr::insertAtTail(BaseAST* ast) {
   parent_insert_help(this, toInsert);
 }
 
+void CallExpr::setUnresolvedFunction(const char* name) {
+  // Currently a PRIM_OP
+  if (primitive != NULL) {
+    primitive = NULL;
+    baseExpr  = new UnresolvedSymExpr(astr(name));
+
+    parent_insert_help(this, baseExpr);
+
+  } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(baseExpr)) {
+    use->unresolved = astr(name);
+
+  } else {
+    INT_ASSERT(false);
+  }
+}
+
 // MDN 2016/01/29: This will become a predicate
 FnSymbol* CallExpr::isResolved() const {
   return resolvedFunction();
 }
-
 
 FnSymbol* CallExpr::resolvedFunction() const {
   FnSymbol* retval = NULL;
@@ -1154,6 +1170,24 @@ FnSymbol* CallExpr::resolvedFunction() const {
   return retval;
 }
 
+void CallExpr::setResolvedFunction(FnSymbol* fn) {
+  // Currently a PRIM_OP
+  if (primitive != NULL) {
+    primitive = NULL;
+    baseExpr  = new SymExpr(fn);
+
+    parent_insert_help(this, baseExpr);
+
+  } else if (isUnresolvedSymExpr(baseExpr) == true) {
+    baseExpr->replace(new SymExpr(fn));
+
+  } else if (SymExpr* se = toSymExpr(baseExpr)) {
+    se->setSymbol(fn);
+
+  } else {
+    INT_ASSERT(false);
+  }
+}
 
 FnSymbol* CallExpr::theFnSymbol() const {
   FnSymbol* retval = NULL;
@@ -1390,11 +1424,10 @@ ContextCallExpr::verify() {
     if (!isCallExpr(expr))
       INT_FATAL(this, "ContextCallExpr must contain only CallExpr");
   }
-  // At present, a ContextCallExpr is only used to handle
-  // ref/not-ref return intent functions. So there should always
-  // be exactly 2 options.
-  if (options.length != 2)
-    INT_FATAL(this, "ContextCallExpr with > 2 options");
+  // ContextCallExpr handles ref/value/const ref, so there should
+  // be 2 or 3 options.
+  if (options.length < 2 || options.length > 3)
+    INT_FATAL(this, "ContextCallExpr with < 2 or > 3 options");
 }
 
 void ContextCallExpr::accept(AstVisitor* visitor) {
@@ -1445,6 +1478,19 @@ void ContextCallExpr::setRefRValueOptions(CallExpr* refCall,
   parent_insert_help(this, refCall);
 }
 
+void ContextCallExpr::setRefValueConstRefOptions(CallExpr* refCall,
+                                                 CallExpr* valueCall,
+                                                 CallExpr* constRefCall) {
+
+  // ContextCallExpr::getCalls depends on this order
+  options.insertAtTail(constRefCall);
+  parent_insert_help(this, constRefCall);
+  options.insertAtTail(valueCall);
+  parent_insert_help(this, valueCall);
+  options.insertAtTail(refCall);
+  parent_insert_help(this, refCall);
+}
+
 CallExpr* ContextCallExpr::getRefCall() {
   // This used to check for the call with RET_REF, but
   // the return tag might change during resolution. So
@@ -1454,6 +1500,35 @@ CallExpr* ContextCallExpr::getRefCall() {
 
 CallExpr* ContextCallExpr::getRValueCall() {
   return toCallExpr(options.head);
+}
+
+void  ContextCallExpr::getCalls(CallExpr*& refCall,
+                                CallExpr*& valueCall,
+                                CallExpr*& constRefCall) {
+  refCall = NULL;
+  valueCall = NULL;
+  constRefCall = NULL;
+
+  if (options.length == 2) {
+    refCall = getRefCall();
+    CallExpr* rvalueCall = getRValueCall();
+    FnSymbol* fn = rvalueCall->isResolved();
+    INT_ASSERT(fn);
+    if (fn->retTag == RET_CONST_REF)
+      constRefCall = rvalueCall;
+    else
+      valueCall = rvalueCall;
+  } else if (options.length == 3) {
+    // Note: it would be nicer to check retTag to decide between
+    // ref / value versions. However, doing so is challenging because
+    // of the way that iterator functions no longer have the original
+    // retTag.
+    constRefCall = toCallExpr(options.get(1));
+    valueCall = toCallExpr(options.get(2));
+    refCall = toCallExpr(options.get(3));
+  } else {
+    INT_FATAL("Bad ContextCallExpr options");
+  }
 }
 
 /************************************ | *************************************

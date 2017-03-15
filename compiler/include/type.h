@@ -29,6 +29,7 @@
 
 #include <cstdio>
 #include <map>
+#include <vector>
 
 /*
   Things which must be changed if instance variables are added
@@ -194,6 +195,15 @@ public:
   bool isRefOrWideRef() const {
     return isRef() || isWideRef();
   }
+  bool isConst() const {
+    return (_qual == QUAL_CONST ||
+            _qual == QUAL_CONST_REF ||
+            _qual == QUAL_CONST_VAL ||
+            _qual == QUAL_CONST_NARROW_REF ||
+            _qual == QUAL_CONST_WIDE_REF);
+  }
+  // TODO: isImmutable
+
   bool isRefType() const;
   bool isWideRefType() const;
 
@@ -205,6 +215,36 @@ public:
     return QualifiedType(QUAL_VAL, _type->getValType());
   }
 
+  static Qualifier qualifierToConst(Qualifier q)
+  {
+    switch (q) {
+      case QUAL_CONST:
+      case QUAL_CONST_REF:
+      case QUAL_CONST_NARROW_REF:
+      case QUAL_CONST_WIDE_REF:
+      case QUAL_CONST_VAL:
+      case QUAL_PARAM:
+        // already const
+        return q;
+      case QUAL_UNKNOWN:
+        return QUAL_CONST;
+      case QUAL_REF:
+        return QUAL_CONST_REF;
+      case QUAL_VAL:
+        return QUAL_CONST_VAL;
+      case QUAL_NARROW_REF:
+        return QUAL_CONST_NARROW_REF;
+      case QUAL_WIDE_REF:
+        return QUAL_CONST_WIDE_REF;
+      // no default: update as Qualifier is updated
+    }
+    return QUAL_UNKNOWN;
+  }
+
+  QualifiedType toConst() {
+    return QualifiedType(qualifierToConst(_qual), _type);
+  }
+
   Type* type() const {
     return _type;
   }
@@ -212,13 +252,15 @@ public:
     return _qual;
   }
 
-  const char* qualStr() {
+  const char* qualStr() const {
     Qualifier q = _qual;
+
     if (isRefType()) {
       q = QUAL_REF;
     } else if (isWideRefType()) {
       q = QUAL_WIDE_REF;
     }
+
     switch (q) {
       case QUAL_UNKNOWN:
         return "unknown";
@@ -313,74 +355,89 @@ public:
 
   DECLARE_COPY(AggregateType);
 
-  virtual void          replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  virtual void                replaceChild(BaseAST* oldAst, BaseAST* newAst);
 
-  virtual void          verify();
-  virtual void          accept(AstVisitor* visitor);
-  virtual void          printDocs(std::ostream* file, unsigned int tabs);
+  virtual void                verify();
+  virtual void                accept(AstVisitor* visitor);
+  virtual void                printDocs(std::ostream* file, unsigned int tabs);
 
-  void                  addDeclarations(Expr* expr);
+  void                        addDeclarations(Expr* expr);
 
-  void                  codegenDef();
+  void                        codegenDef();
 
-  void                  codegenPrototype();
+  void                        codegenPrototype();
 
-  GenRet                codegenClassStructType();
+  GenRet                      codegenClassStructType();
 
-  int                   codegenStructure(FILE*       outfile,
-                                         const char* baseoffset);
+  int                         codegenStructure(FILE*       outfile,
+                                               const char* baseoffset);
 
-  int                   codegenFieldStructure(FILE*       outfile,
-                                              bool        nested,
-                                              const char* baseOffset);
+  int                         codegenFieldStructure(FILE*       outfile,
+                                                    bool        nested,
+                                                    const char* baseOffset);
 
-  const char*           classStructName(bool standalone);
+  // The following two methods are used for types which define initializers
+  bool                        setNextGenericField();
+  AggregateType*              getInstantiation(SymExpr* t, int index);
 
-  int                   getMemberGEP(const char* name);
 
-  int                   getFieldPosition(const char* name,
-                                         bool        fatal = true);
+  const char*                 classStructName(bool standalone);
 
-  Symbol*               getField(const char* name, bool fatal = true);
-  Symbol*               getField(int i);
+  int                         getMemberGEP(const char* name);
+
+  int                         getFieldPosition(const char* name,
+                                               bool        fatal = true);
+
+  Symbol*                     getField(const char* name, bool fatal = true);
+  Symbol*                     getField(int i);
 
   // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
-  QualifiedType         getFieldType(Expr* e);
+  QualifiedType               getFieldType(Expr* e);
 
-  int                   numFields()                                      const;
+  int                         numFields()                                const;
 
-  bool                  isClass()                                        const;
-  bool                  isRecord()                                       const;
-  bool                  isUnion()                                        const;
+  bool                        isClass()                                  const;
+  bool                        isRecord()                                 const;
+  bool                        isUnion()                                  const;
 
-  bool                  isGeneric()                                      const;
-  void                  markAsGeneric();
+  bool                        isGeneric()                                const;
+  void                        markAsGeneric();
 
 
 
-  AggregateTag          aggregateTag;
-  InitializerStyle      initializerStyle;
+  AggregateTag                aggregateTag;
+  InitializerStyle            initializerStyle;
 
-  AList                 fields;
+  bool                        initializerResolved;
+
+  AList                       fields;
 
   // used from parsing, sets dispatchParents
-  AList                 inherits;
+  AList                       inherits;
 
   // pointer to an outer class if this is an inner class
-  Symbol*               outer;
+  Symbol*                     outer;
 
   // Attached only to iterator class/records
-  IteratorInfo*         iteratorInfo;
+  IteratorInfo*               iteratorInfo;
 
-  const char*           doc;
+  const char*                 doc;
 
 private:
-  virtual std::string   docsDirective();
+  virtual std::string         docsDirective();
 
-  std::string           docsSuperClass();
-  void                  addDeclaration(DefExpr* defExpr);
+  std::string                 docsSuperClass();
+  void                        addDeclaration(DefExpr* defExpr);
 
-  bool                  mIsGeneric;
+  std::vector<AggregateType*> instantiations;
+  // genericField stores the index of the first generic field in the
+  // AggregateType which does not have a substitution, but only if the
+  // AggregateType defines an initializer.  If the type has no generic
+  // fields without substitutions, or if setNextGenericField has not been called
+  // on the base AggregateType, this will be set to 0.
+  int                         genericField;
+
+  bool                        mIsGeneric;
 };
 
 /************************************* | **************************************
@@ -516,6 +573,12 @@ bool isArrayClass(Type* type);
 
 bool isString(Type* type);
 bool isUserDefinedRecord(Type* type);
+
+bool isPrimitiveScalar(Type* type);
+bool isNonGenericClass(Type* type);
+
+bool isNonGenericClassWithInitializers (Type* type);
+bool isNonGenericRecordWithInitializers(Type* type);
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);

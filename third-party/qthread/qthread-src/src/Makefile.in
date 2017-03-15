@@ -245,12 +245,12 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-am__libqthread_la_SOURCES_DIST = aligned_alloc.c cacheline.c \
-	envariables.c feb.c hazardptrs.c io.c locks.c qalloc.c qloop.c \
-	queue.c barrier/@with_barrier@.c qutil.c syncvar.c qthread.c \
-	mpool.c shepherds.c workers.c \
+am__libqthread_la_SOURCES_DIST = cacheline.c envariables.c feb.c \
+	hazardptrs.c io.c locks.c qalloc.c qloop.c queue.c \
+	barrier/@with_barrier@.c qutil.c syncvar.c qthread.c mpool.c \
+	shepherds.c workers.c \
 	threadqueues/@with_scheduler@_threadqueues.c \
-	sincs/@with_sinc@.c affinity/common.c \
+	sincs/@with_sinc@.c alloc/@with_alloc@.c affinity/common.c \
 	affinity/@qthread_topo@.c touch.c teams.c lf_hashmap.c \
 	hashmap.c spawncache.c eurekas.c compat_atomics.c \
 	qtimer/mach.c qtimer/gethrtime.c qtimer/gettimeofday.c \
@@ -289,12 +289,12 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @QTHREAD_NEED_OWN_MAKECONTEXT_TRUE@am__objects_13 =  \
 @QTHREAD_NEED_OWN_MAKECONTEXT_TRUE@	fastcontext/asm.lo \
 @QTHREAD_NEED_OWN_MAKECONTEXT_TRUE@	fastcontext/context.lo
-am_libqthread_la_OBJECTS = aligned_alloc.lo cacheline.lo \
-	envariables.lo feb.lo hazardptrs.lo io.lo locks.lo qalloc.lo \
-	qloop.lo queue.lo barrier/@with_barrier@.lo qutil.lo \
-	syncvar.lo qthread.lo mpool.lo shepherds.lo workers.lo \
+am_libqthread_la_OBJECTS = cacheline.lo envariables.lo feb.lo \
+	hazardptrs.lo io.lo locks.lo qalloc.lo qloop.lo queue.lo \
+	barrier/@with_barrier@.lo qutil.lo syncvar.lo qthread.lo \
+	mpool.lo shepherds.lo workers.lo \
 	threadqueues/@with_scheduler@_threadqueues.lo \
-	sincs/@with_sinc@.lo affinity/common.lo \
+	sincs/@with_sinc@.lo alloc/@with_alloc@.lo affinity/common.lo \
 	affinity/@qthread_topo@.lo touch.lo teams.lo $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3) $(am__objects_4) \
 	$(am__objects_5) $(am__objects_6) $(am__objects_7) \
@@ -569,6 +569,7 @@ timelimit_path = @timelimit_path@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+with_alloc = @with_alloc@
 with_barrier = @with_barrier@
 with_dict = @with_dict@
 with_scheduler = @with_scheduler@
@@ -578,12 +579,11 @@ AM_CCASFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -DHAVE_CONFIG_H
 lib_LTLIBRARIES = libqthread.la
 SUBDIRS = 
 noinst_HEADERS = affinity/shufflesheps.h
-libqthread_la_SOURCES = aligned_alloc.c cacheline.c envariables.c \
-	feb.c hazardptrs.c io.c locks.c qalloc.c qloop.c queue.c \
-	barrier/@with_barrier@.c qutil.c syncvar.c qthread.c mpool.c \
-	shepherds.c workers.c \
+libqthread_la_SOURCES = cacheline.c envariables.c feb.c hazardptrs.c \
+	io.c locks.c qalloc.c qloop.c queue.c barrier/@with_barrier@.c \
+	qutil.c syncvar.c qthread.c mpool.c shepherds.c workers.c \
 	threadqueues/@with_scheduler@_threadqueues.c \
-	sincs/@with_sinc@.c affinity/common.c \
+	sincs/@with_sinc@.c alloc/@with_alloc@.c affinity/common.c \
 	affinity/@qthread_topo@.c touch.c teams.c $(am__append_1) \
 	$(am__append_2) $(am__append_3) $(am__append_4) \
 	$(am__append_5) $(am__append_6) $(am__append_7) \
@@ -608,11 +608,12 @@ EXTRA_DIST = ds/dictionary/dictionary_shavit.c \
 	threadqueues/sherwood_threadqueues.c \
 	threadqueues/nottingham_threadqueues.c sincs/donecount.c \
 	sincs/donecount_cas.c sincs/original.c barrier/feb.c \
-	barrier/array.c barrier/log.c barrier/sinc.c affinity/common.c \
-	affinity/hwloc.c affinity/binders.c affinity/hwloc_v2.c \
-	affinity/sys.c affinity/libnuma.c affinity/libnumaV2.c \
-	affinity/mach.c affinity/tilera.c affinity/plpa.c \
-	affinity/lgrp.c affinity/shepcomp.h
+	barrier/array.c barrier/log.c barrier/sinc.c alloc/base.c \
+	alloc/chapel.c affinity/common.c affinity/hwloc.c \
+	affinity/binders.c affinity/hwloc_v2.c affinity/sys.c \
+	affinity/libnuma.c affinity/libnumaV2.c affinity/mach.c \
+	affinity/tilera.c affinity/plpa.c affinity/lgrp.c \
+	affinity/shepcomp.h
 
 # version-info fields are:
 # 1. the current interface revision number (i.e. whenever arguments of existing
@@ -725,6 +726,14 @@ sincs/$(DEPDIR)/$(am__dirstamp):
 	@: > sincs/$(DEPDIR)/$(am__dirstamp)
 sincs/@with_sinc@.lo: sincs/$(am__dirstamp) \
 	sincs/$(DEPDIR)/$(am__dirstamp)
+alloc/$(am__dirstamp):
+	@$(MKDIR_P) alloc
+	@: > alloc/$(am__dirstamp)
+alloc/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) alloc/$(DEPDIR)
+	@: > alloc/$(DEPDIR)/$(am__dirstamp)
+alloc/@with_alloc@.lo: alloc/$(am__dirstamp) \
+	alloc/$(DEPDIR)/$(am__dirstamp)
 affinity/$(am__dirstamp):
 	@$(MKDIR_P) affinity
 	@: > affinity/$(am__dirstamp)
@@ -868,6 +877,8 @@ mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f affinity/*.$(OBJEXT)
 	-rm -f affinity/*.lo
+	-rm -f alloc/*.$(OBJEXT)
+	-rm -f alloc/*.lo
 	-rm -f barrier/*.$(OBJEXT)
 	-rm -f barrier/*.lo
 	-rm -f ds/*.$(OBJEXT)
@@ -896,7 +907,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/aligned_alloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cacheline.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/compat_atomics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/envariables.Plo@am__quote@
@@ -922,6 +932,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/workers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@affinity/$(DEPDIR)/@qthread_topo@.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@affinity/$(DEPDIR)/common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@alloc/$(DEPDIR)/@with_alloc@.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@barrier/$(DEPDIR)/@with_barrier@.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ds/$(DEPDIR)/qarray.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ds/$(DEPDIR)/qdqueue.Plo@am__quote@
@@ -1018,6 +1029,7 @@ mostlyclean-libtool:
 clean-libtool:
 	-rm -rf .libs _libs
 	-rm -rf affinity/.libs affinity/_libs
+	-rm -rf alloc/.libs alloc/_libs
 	-rm -rf barrier/.libs barrier/_libs
 	-rm -rf ds/.libs ds/_libs
 	-rm -rf ds/dictionary/.libs ds/dictionary/_libs
@@ -1222,6 +1234,8 @@ distclean-generic:
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f affinity/$(DEPDIR)/$(am__dirstamp)
 	-rm -f affinity/$(am__dirstamp)
+	-rm -f alloc/$(DEPDIR)/$(am__dirstamp)
+	-rm -f alloc/$(am__dirstamp)
 	-rm -f barrier/$(DEPDIR)/$(am__dirstamp)
 	-rm -f barrier/$(am__dirstamp)
 	-rm -f ds/$(DEPDIR)/$(am__dirstamp)
@@ -1256,7 +1270,7 @@ clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
 	mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) affinity/$(DEPDIR) barrier/$(DEPDIR) ds/$(DEPDIR) ds/dictionary/$(DEPDIR) fastcontext/$(DEPDIR) net/$(DEPDIR) net/portals4/$(DEPDIR) patterns/$(DEPDIR) qtimer/$(DEPDIR) rcrtool/$(DEPDIR) sincs/$(DEPDIR) syscalls/$(DEPDIR) threadqueues/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) affinity/$(DEPDIR) alloc/$(DEPDIR) barrier/$(DEPDIR) ds/$(DEPDIR) ds/dictionary/$(DEPDIR) fastcontext/$(DEPDIR) net/$(DEPDIR) net/portals4/$(DEPDIR) patterns/$(DEPDIR) qtimer/$(DEPDIR) rcrtool/$(DEPDIR) sincs/$(DEPDIR) syscalls/$(DEPDIR) threadqueues/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1302,7 +1316,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) affinity/$(DEPDIR) barrier/$(DEPDIR) ds/$(DEPDIR) ds/dictionary/$(DEPDIR) fastcontext/$(DEPDIR) net/$(DEPDIR) net/portals4/$(DEPDIR) patterns/$(DEPDIR) qtimer/$(DEPDIR) rcrtool/$(DEPDIR) sincs/$(DEPDIR) syscalls/$(DEPDIR) threadqueues/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) affinity/$(DEPDIR) alloc/$(DEPDIR) barrier/$(DEPDIR) ds/$(DEPDIR) ds/dictionary/$(DEPDIR) fastcontext/$(DEPDIR) net/$(DEPDIR) net/portals4/$(DEPDIR) patterns/$(DEPDIR) qtimer/$(DEPDIR) rcrtool/$(DEPDIR) sincs/$(DEPDIR) syscalls/$(DEPDIR) threadqueues/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

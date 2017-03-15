@@ -370,7 +370,7 @@ module DefaultSparse {
     }
     // value version for POD types
     proc dsiAccess(ind: rank*idxType)
-    where !shouldReturnRvalueByConstRef(eltType) {
+    where shouldReturnRvalueByValue(eltType) {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.member(ind)) then

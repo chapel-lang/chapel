@@ -4,4 +4,4 @@ Block-Distributed Array
 (0, 5) (0, 6) (1, 7) (1, 8)
 (2, 9) (2, 10) (3, 11) (3, 12)
 (2, 13) (2, 14) (3, 15) (3, 16)
-$CHPL_HOME/modules/internal/ChapelArray.chpl:781: error: attempt to dereference nil
+$CHPL_HOME/modules/internal/ChapelArray.chpl:n: error: attempt to dereference nil

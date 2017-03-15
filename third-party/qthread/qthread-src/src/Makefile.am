@@ -11,7 +11,6 @@ SUBDIRS =
 noinst_HEADERS = affinity/shufflesheps.h
 
 libqthread_la_SOURCES = \
-	aligned_alloc.c \
 	cacheline.c \
 	envariables.c \
 	feb.c \
@@ -30,6 +29,7 @@ libqthread_la_SOURCES = \
 	workers.c \
 	threadqueues/@with_scheduler@_threadqueues.c \
 	sincs/@with_sinc@.c \
+	alloc/@with_alloc@.c \
 	affinity/common.c \
 	affinity/@qthread_topo@.c \
 	touch.c \
@@ -106,6 +106,8 @@ EXTRA_DIST += \
 			 barrier/array.c \
 			 barrier/log.c \
 			 barrier/sinc.c \
+			 alloc/base.c \
+			 alloc/chapel.c \
 			 affinity/common.c \
 			 affinity/hwloc.c \
 			 affinity/binders.c \

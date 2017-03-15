@@ -1,9 +1,6 @@
 use BLAS;
 use blas_helpers;
 
-config const errorThresholdDouble = 1.e-10;
-config const errorThresholdSingle = 1.e-5;
-
 proc main() {
   test_rotg();
   test_rotmg();

@@ -260,6 +260,22 @@ static void computeRecursiveIteratorSet() {
 }
 
 
+static bool containsYield(Expr* arg) {
+  std::vector<CallExpr*> calls;
+  collectCallExprs(arg, calls);
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive()) {
+      if (call->isPrimitive(PRIM_YIELD))
+        return true;
+    } else if (FnSymbol* tfn = resolvedToTaskFun(call)) { // vass need this?
+      if (containsYield(tfn->body))
+        return true;
+    }
+  }
+  return false;
+}
+
+
 //
 // If a local block has no yields, returns, gotos or labels
 // then it can safely be left unfragmented.
@@ -1186,6 +1202,11 @@ expandIteratorInline(ForLoop* forLoop) {
     // vass: ditto for task functions called from recursive iterators
     } else if (taskFunInRecursiveIteratorSet.set_in(forLoop->parentSymbol)) {
       return false;
+    } else if (containsYield(forLoop)) {
+      // Inlining a recursive iterator into a loop with a 'yield' pushes
+      // that 'yield' into one of _rec_ functions, where it dangles. Ex.:
+      // test/modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+      return false;
     } else {
       expandRecursiveIteratorInline(forLoop);
       INT_ASSERT(!forLoop->inTree());
@@ -1740,7 +1761,7 @@ expandForLoop(ForLoop* forLoop) {
 
 
 // Find all iterator constructs
-// Select those whose _getIterator() functions have the FLAG_ITERATOR_INLINE.
+// Select those whose _getIterator() functions have the FLAG_INLINE_ITERATOR.
 // Inline the selected iterators at their call sites.
 static void
 inlineIterators() {
@@ -2121,6 +2142,34 @@ static void cleanupTemporaryVectors() {
 }
 
 
+// 'depth' is a heuristic to avoid the risk of unbounded recursion.
+// Ex. what if 'parentSym' is a recursive function?
+static bool maybeCalled(Symbol* parentSym, int depth) {
+  if (!parentSym || !parentSym->inTree())
+    return false;
+
+  FnSymbol* fn = toFnSymbol(parentSym);
+  if (!fn)
+    return true; // conservative
+
+  if (ftableMap.count(fn))
+    return true;
+
+  if (!fn->calledBy || fn->calledBy->n == 0)
+    return false;
+
+  if (depth <= 0)
+    return true; // conservative
+
+  depth--;
+
+  forv_Vec(CallExpr, call, *fn->calledBy)
+    if (maybeCalled(call->parentSymbol, depth))
+      return true;
+
+  return false;
+}
+
 // WORKAROUND:
 // When the body of a for loop is moved into the loop body function, yield
 // primitives remain in it (if the for loop itself appears in an iterator
@@ -2145,6 +2194,10 @@ static void removeUncalledIterators()
     // We only care about yields.
     if (! call->isPrimitive(PRIM_YIELD))
       continue;
+
+    // This is a backup check to ensure PRIM_INT_ERROR is never executed.
+    if (fVerify && maybeCalled(call->parentSymbol, 4))
+      INT_FATAL(call, "unexpected leftover PRIM_YIELD");
 
     // If this function contains a yield, it was never expanded, so the static
     // analysis used in lowerIterators says it was never invoked through a for

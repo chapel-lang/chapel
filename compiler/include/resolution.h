@@ -133,7 +133,7 @@ public:
   bool computeAlignment(CallInfo& info);
 
   /// Compute substitutions for wrapped function that is generic.
-  void computeSubstitutions();
+  void computeSubstitutions(bool inInitRes = false);
 };
 
 bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
@@ -146,7 +146,8 @@ void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
 typedef enum {
   FIND_EITHER = 0,
   FIND_REF,
-  FIND_NOT_REF
+  FIND_CONST_REF,
+  FIND_NOT_REF_OR_CONST_REF, // !(ref || const_ref)
 } disambiguate_kind_t;
 
 
@@ -210,6 +211,7 @@ FnSymbol* tryResolveCall(CallExpr* call);
 void resolveFns(FnSymbol* fn);
 void resolveDefaultGenericType(CallExpr* call);
 void resolveTypedefedArgTypes(FnSymbol* fn);
+void resolveReturnType(FnSymbol* fn);
 
 // FnSymbol changes
 extern bool tryFailure;

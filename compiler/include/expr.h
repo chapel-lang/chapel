@@ -259,8 +259,11 @@ public:
   bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
   bool            isPrimitive(const char*  primitiveName)                const;
 
+  void            setUnresolvedFunction(const char* name);
+
   FnSymbol*       isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
+  void            setResolvedFunction(FnSymbol* fn);
 
   FnSymbol*       theFnSymbol()                                          const;
 
@@ -269,7 +272,6 @@ public:
   int             numActuals()                                           const;
   Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
-
 
 private:
   GenRet          codegenPrimitive();
@@ -319,8 +321,10 @@ class ContextCallExpr : public Expr {
   virtual Expr*   getFirstExpr();
 
   void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
+  void            setRefValueConstRefOptions(CallExpr* refCall, CallExpr* valueCall, CallExpr* constRefCall);
   CallExpr*       getRefCall();
   CallExpr*       getRValueCall();
+  void            getCalls(CallExpr*& refCall, CallExpr*& valueCall, CallExpr*& constRefCall);
 };
 
 

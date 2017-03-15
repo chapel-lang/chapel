@@ -1,1 +1,0 @@
-sparse-ref-return.chpl:7: error: halt reached - attempting to assign a 'zero' value in a sparse array: (3)

@@ -85,9 +85,12 @@ Tuple Argument Behavior
 
 A tuple argument to a function with blank intent will not make a copy of
 the tuple elements but can accept a tuple expression. A tuple argument
-with ref intent requires an `lvalue` argument - a variable or returned
+with `ref` intent requires an `lvalue` argument - a variable or returned
 tuple. In neither case does passing a tuple argument to a function create
 a copy of the tuple.
+
+A tuple argument declared with `const` intent will work similarly to one
+with a `blank` intent, but contain `const` elements.
 
 Tuple Expression Behavior
 -------------------------

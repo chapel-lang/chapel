@@ -1,2 +1,0 @@
-4-consume-return-slice-local.chpl:2: In function 'f':
-4-consume-return-slice-local.chpl:4: error: illegal return of array aliasing a local array

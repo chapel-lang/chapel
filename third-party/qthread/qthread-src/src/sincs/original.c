@@ -56,7 +56,7 @@ qt_sinc_t *qt_sinc_create(const size_t sizeof_value,
                           qt_sinc_op_f op,
                           const size_t will_spawn)
 {
-    qt_sinc_t *sinc = malloc(sizeof(qt_sinc_t));
+    qt_sinc_t *sinc = qt_malloc(sizeof(qt_sinc_t));
 
     assert(sinc);
 
@@ -80,13 +80,13 @@ qt_sinc_t *qt_sinc_create(const size_t sizeof_value,
         const size_t num_lines              = num_sheps * num_lines_per_shep;
         const size_t sizeof_shep_value_part = num_lines_per_shep * cacheline;
 
-        sinc->initial_value = malloc(sizeof_value);
+        sinc->initial_value = qt_malloc(sizeof_value);
         assert(sinc->initial_value);
         memcpy(sinc->initial_value, initial_value, sizeof_value);
 
         sinc->sizeof_shep_value_part = sizeof_shep_value_part;
 
-        sinc->values = qthread_internal_aligned_alloc(num_lines * cacheline, cacheline);
+        sinc->values = qt_internal_aligned_alloc(num_lines * cacheline, cacheline);
         assert(sinc->values);
 
         // Initialize values
@@ -99,7 +99,7 @@ qt_sinc_t *qt_sinc_create(const size_t sizeof_value,
                        sizeof_value);
             }
         }
-        sinc->result = malloc(sinc->sizeof_value);
+        sinc->result = qt_malloc(sinc->sizeof_value);
         assert(sinc->result);
     } else {
         sinc->initial_value          = NULL;
@@ -116,33 +116,33 @@ qt_sinc_t *qt_sinc_create(const size_t sizeof_value,
     const size_t num_count_array_lines  = num_sheps * num_lines_per_shep;
 
     sinc->sizeof_shep_count_part = sizeof_shep_count_part;
-    sinc->counts                 = qthread_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
+    sinc->counts                 = qt_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
     assert(sinc->counts);
     memset(sinc->counts, 0, num_count_array_lines * cacheline);
 
 #if defined(SINCS_PROFILE)
-    sinc->count_incrs = qthread_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
+    sinc->count_incrs = qt_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
     assert(sinc->count_incrs);
     memset(sinc->count_incrs, 0, num_count_array_lines * cacheline);
-    sinc->count_locals = qthread_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
+    sinc->count_locals = qt_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
     assert(sinc->count_locals);
     memset(sinc->count_locals, 0, num_count_array_lines * cacheline);
-    sinc->count_decrs = qthread_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
+    sinc->count_decrs = qt_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
     assert(sinc->count_decrs);
     memset(sinc->count_decrs, 0, num_count_array_lines * cacheline);
     sinc->count_remaining = qthreaad_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
     assert(sinc->count_remaining);
     memset(sinc->count_remaining, 0, num_count_array_lines * cacheline);
-    sinc->count_spawns = qthread_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
+    sinc->count_spawns = qt_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
     assert(sinc->count_spawns);
     memset(sinc->count_spawns, 0, num_count_array_lines * cacheline);
-    sinc->dist_max = qthread_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
+    sinc->dist_max = qt_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
     assert(sinc->dist_max);
     memset(sinc->dist_max, 0, num_count_array_lines * cacheline);
-    sinc->dist_ttl = qthread_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
+    sinc->dist_ttl = qt_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
     assert(sinc->dist_ttl);
     memset(sinc->dist_ttl, 0, num_count_array_lines * cacheline);
-    sinc->dist_cnt = qthread_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
+    sinc->dist_cnt = qt_internal_aligned_alloc(num_count_array_lines * cacheline, cacheline);
     assert(sinc->dist_cnt);
     memset(sinc->dist_cnt, 0, num_count_array_lines * cacheline);
 #endif /* defined(SINCS_PROFILE) */
@@ -256,26 +256,26 @@ void qt_sinc_destroy(qt_sinc_t *sinc)
         }
     }
 
-    qthread_internal_aligned_free(sinc->count_incrs, cacheline);
-    qthread_internal_aligned_free(sinc->count_locals, cacheline);
-    qthread_internal_aligned_free(sinc->count_decrs, cacheline);
-    qthread_internal_aligned_free(sinc->count_remaining, cacheline);
-    qthread_internal_aligned_free(sinc->count_spawns, cacheline);
-    qthread_internal_aligned_free(sinc->dist_max, cacheline);
-    qthread_internal_aligned_free(sinc->dist_ttl, cacheline);
-    qthread_internal_aligned_free(sinc->dist_cnt, cacheline);
+    qt_internal_aligned_free(sinc->count_incrs, cacheline);
+    qt_internal_aligned_free(sinc->count_locals, cacheline);
+    qt_internal_aligned_free(sinc->count_decrs, cacheline);
+    qt_internal_aligned_free(sinc->count_remaining, cacheline);
+    qt_internal_aligned_free(sinc->count_spawns, cacheline);
+    qt_internal_aligned_free(sinc->dist_max, cacheline);
+    qt_internal_aligned_free(sinc->dist_ttl, cacheline);
+    qt_internal_aligned_free(sinc->dist_cnt, cacheline);
 #endif /* defined(SINCS_PROFILE) */
 
     assert(sinc);
     assert(sinc->counts);
-    qthread_internal_aligned_free(sinc->counts, cacheline);
+    qt_internal_aligned_free(sinc->counts, cacheline);
     if (sinc->result || sinc->values) {
         assert(sinc->result);
-        free(sinc->result);
+        qt_free(sinc->result);
         assert(sinc->values);
-        qthread_internal_aligned_free(sinc->values, cacheline);
+        qt_internal_aligned_free(sinc->values, cacheline);
     }
-    free(sinc);
+    qt_free(sinc);
 }
 
 /* Adds a new participant to the sinc.

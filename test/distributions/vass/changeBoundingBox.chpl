@@ -6,7 +6,7 @@ on an instance of a Block distribution.
 
 use BlockDist;
 
-const dummyBB: domain(1); // or whatever bounding box type you want eventually
+const dummyBB: domain(1) = {1..1}; // or whatever bounding box type you want eventually
 
 // Create a distribution without knowing its bounding box dimensions.
 const dist = new Block(dummyBB);

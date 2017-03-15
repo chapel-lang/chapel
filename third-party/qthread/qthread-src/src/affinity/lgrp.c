@@ -202,9 +202,9 @@ int INTERNAL qt_affinity_gendists(qthread_shepherd_t   *sheps,
                           max_lgrps);
             return QTHREAD_THIRD_PARTY_ERROR;
         }
-        cpus = calloc(max_lgrps, sizeof(processorid_t *));
+        cpus = qt_calloc(max_lgrps, sizeof(processorid_t *));
         assert(cpus);
-        lgrp_ids = calloc(max_lgrps, sizeof(lgrp_id_t));
+        lgrp_ids = qt_calloc(max_lgrps, sizeof(lgrp_id_t));
         assert(lgrp_ids);
     }
     lgrp_count_grps = lgrp_walk(lgrp_root(lgrp_cookie), cpus, lgrp_ids, 0);
@@ -246,7 +246,7 @@ int INTERNAL qt_affinity_gendists(qthread_shepherd_t   *sheps,
     for (qthread_shepherd_id_t i = 0; i < nshepherds; i++) {
         const unsigned int node_i = sheps[i].lgrp;
         size_t             j;
-        sheps[i].shep_dists = calloc(nshepherds, sizeof(unsigned int));
+        sheps[i].shep_dists = qt_calloc(nshepherds, sizeof(unsigned int));
         assert(sheps[i].shep_dists);
         for (j = 0; j < nshepherds; j++) {
             const unsigned int node_j = sheps[j].lgrp;
@@ -274,7 +274,8 @@ int INTERNAL qt_affinity_gendists(qthread_shepherd_t   *sheps,
     for (qthread_shepherd_id_t i = 0; i < nshepherds; i++) {
         size_t j, k = 0;
 
-        sheps[i].sorted_sheplist = calloc(nshepherds - 1, sizeof(qthread_shepherd_id_t));
+        sheps[i].sorted_sheplist = qt_calloc(nshepherds - 1,
+                                             sizeof(qthread_shepherd_id_t));
         assert(sheps[i].sorted_sheplist);
         for (j = 0; j < nshepherds; j++) {
             if (j != i) {
@@ -287,12 +288,12 @@ int INTERNAL qt_affinity_gendists(qthread_shepherd_t   *sheps,
     }
     if (cpus) {
         for (int i = 0; i < lgrp_count_grps; i++) {
-            free(cpus[i]);
+            qt_free(cpus[i]);
         }
-        free(cpus);
+        qt_free(cpus);
     }
     if (lgrp_ids) {
-        free(lgrp_ids);
+        qt_free(lgrp_ids);
     }
     return QTHREAD_SUCCESS;
 }                                      /*}}} */

@@ -301,8 +301,12 @@ static void build_accessor(AggregateType* ct, Symbol* field, bool setter) {
   } else {
     if (fieldIsConst || !setter)
       fn->retTag = RET_CONST_REF;
-    else
+    else {
       fn->retTag = RET_REF;
+      if (recordLike) {
+        _this->intent = INTENT_REF;
+      }
+    }
   }
 
   if (isUnion(ct)) {
@@ -1037,9 +1041,17 @@ static void build_union_assignment_function(AggregateType* ct) {
   normalize(fn);
 }
 
-
 static void build_record_copy_function(AggregateType* ct) {
   if (function_exists("chpl__initCopy", 1, ct) != NULL) {
+    return;
+  }
+
+  if (isNonGenericClassWithInitializers(ct)  == true ||
+      isNonGenericRecordWithInitializers(ct) == true) {
+    if (function_exists("init", 3, dtMethodToken, ct, ct) != NULL) {
+      ct->symbol->addFlag(FLAG_NOT_POD);
+    }
+
     return;
   }
 
@@ -1069,7 +1081,7 @@ static void build_record_copy_function(AggregateType* ct) {
 
   // if no copy-init function existed...
   FnSymbol*  fn  = new FnSymbol("chpl__initCopy");
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  ArgSymbol* arg = new ArgSymbol(INTENT_CONST, "x", ct);
 
   fn->addFlag(FLAG_INIT_COPY_FN);
   fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -1230,9 +1242,15 @@ static void buildRecordQuery(AggregateType* ct,
                              PrimitiveTag   tag);
 
 static void buildDefaultOfFunction(AggregateType* ct) {
-  if (function_exists("_defaultOf", 1, ct)     == NULL  &&
-      ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
-      ct->defaultValue                         != gNil) {
+  if        (isNonGenericClassWithInitializers(ct)  == true) {
+
+
+  } else if (isNonGenericRecordWithInitializers(ct) == true) {
+
+
+  } else if (function_exists("_defaultOf", 1, ct)     == NULL  &&
+             ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
+             ct->defaultValue                         != gNil) {
 
     FnSymbol*  fn  = new FnSymbol("_defaultOf");
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", ct);

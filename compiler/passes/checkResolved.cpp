@@ -222,7 +222,8 @@ returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
       IntentTag intent = formal->intent;
       if (fn->retTag == RET_CONST_REF && (intent & INTENT_FLAG_REF))
         return true;
-      else if(fn->retTag == RET_REF && intent == INTENT_REF)
+      else if(fn->retTag == RET_REF &&
+              (intent == INTENT_REF || intent == INTENT_REF_MAYBE_CONST))
         return true;
     }
   }
@@ -446,8 +447,7 @@ checkBadAddrOf(CallExpr* call)
             if (rhs->symbol()->isImmediate()) {
               USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
             } else {
-              // This case should be handled elsewhere in the compiler
-              INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
+              USR_FATAL_CONT(call, "Cannot set a non-const reference to a const variable.");
             }
           }
         }

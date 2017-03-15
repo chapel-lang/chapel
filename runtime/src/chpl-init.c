@@ -31,6 +31,7 @@
 #include "chplmemtrack.h"
 #include "chpl-privatization.h"
 #include "chpl-tasks.h"
+#include "chpl-topo.h"
 #include "chpl-linefile-support.h"
 #include "chplsys.h"
 #include "config.h"
@@ -145,6 +146,7 @@ void chpl_rt_init(int argc, char* argv[]) {
   parseArgs(false, parse_dash_E, &argc, argv);
 
   chpl_error_init();  // This does local-only initialization
+  chpl_topo_init();
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
   chpl_comm_post_mem_init();

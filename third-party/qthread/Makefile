@@ -28,6 +28,19 @@ ifeq ($(CHPL_MAKE_HWLOC),hwloc)
 CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc --with-hwloc=$(HWLOC_INSTALL_DIR)
 endif
 
+# Have qthreads use Chapel's allocator, unless directed not to
+ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
+CHPL_QTHREAD_CFG_OPTIONS += --with-alloc=chapel
+CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/mem/$(CHPL_MAKE_MEM)/
+CFLAGS += -I$(CHPL_MAKE_HOME)/runtime/include/
+ifeq ($(CHPL_MAKE_MEM),jemalloc)
+CFLAGS += -I$(JEMALLOC_INCLUDE_DIR)
+RUNTIME_LFLAGS += -L$(JEMALLOC_LIB_DIR)
+RUNTIME_LFLAGS += -ljemalloc
+RUNTIME_LFLAGS += $(shell $(JEMALLOC_BIN_DIR)/jemalloc-config --libs)
+endif
+endif
+
 # enable oversubscription for testing
 ifneq (, $(CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION))
 CHPL_QTHREAD_CFG_OPTIONS += --enable-oversubscription
@@ -49,7 +62,7 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 # determine which scheduler to use. Default to nemesis, except for numa where
 # we want distrib. Override with a user provided option if they requested one
 SCHEDULER = nemesis
-ifeq ($(CHPL_MAKE_LOCALE_MODEL),numa)
+ifneq ($(CHPL_MAKE_LOCALE_MODEL),flat)
 SCHEDULER = distrib
 endif
 ifneq (, $(CHPL_QTHREAD_SCHEDULER))
