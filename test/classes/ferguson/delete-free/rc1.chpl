@@ -14,7 +14,7 @@ class Impl {
 
 proc run() {
   var x = new Shared(new Impl(1));
-  writeln(x.get());
+  writeln(x.borrow());
 }
 
 run();

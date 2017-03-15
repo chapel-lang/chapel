@@ -105,9 +105,12 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LAPACK.chpl \
 	packages/MPI.chpl \
 	packages/Norm.chpl \
+	packages/OwnedObject.chpl \
+	packages/SharedObject.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/Search.chpl \
+	packages/SharedObject.chpl \
 	packages/Sort.chpl \
 	packages/VisualDebug.chpl \
 	packages/ZMQ.chpl
