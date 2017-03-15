@@ -60,7 +60,7 @@ static void normalize_nested_function_expressions(DefExpr* def) {
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
         if (AggregateType* ct = toAggregateType(ts->type)) {
           def->replace(new UnresolvedSymExpr(def->sym->name));
-          ct->addDeclarations(def, true);
+          ct->addDeclarations(def);
           return;
         }
       }
@@ -77,7 +77,7 @@ static void normalize_nested_function_expressions(DefExpr* def) {
     if (TypeSymbol* ts = toTypeSymbol(parent->defPoint->parentSymbol)) {
       AggregateType* ct = toAggregateType(ts->type);
       INT_ASSERT(ct);
-      ct->addDeclarations(def->remove(), true);
+      ct->addDeclarations(def->remove());
     } else {
       parent->defPoint->insertBefore(def->remove());
     }
@@ -187,9 +187,17 @@ static void change_cast_in_where(FnSymbol* fn) {
     collect_asts(fn->where, asts);
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
-        if (call->isNamed("_cast")) {
-          call->primitive = primitives[PRIM_IS_SUBTYPE];
-          call->baseExpr->remove();
+        if (call->isCast()) {
+          CallExpr* isSubtype;
+          Expr* to = call->castTo();
+          Expr* from = call->castFrom();
+          // now remove to and from so we can add them
+          // again as arguments. Don't interleave the
+          // remove with the calls to castTo and castFrom.
+          to->remove();
+          from->remove();
+          isSubtype = new CallExpr(PRIM_IS_SUBTYPE, to, from);
+          call->replace(isSubtype);
         }
       }
     }
@@ -200,7 +208,7 @@ static void change_cast_in_where(FnSymbol* fn) {
 static void add_parens_to_deinit_fns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_DESTRUCTOR))
     // Make paren-less decls act as paren-ful. Otherwise
-    // "arg.chpl__deinit()" in proc chpl__delete(arg)
+    // "arg.deinit()" in proc chpl__delete(arg)
     // would not resolve.
     fn->removeFlag(FLAG_NO_PARENS);
 }

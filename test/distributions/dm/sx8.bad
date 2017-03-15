@@ -1,1 +1,0 @@
-sx8.chpl:78: error: slicing a Dimensional array with a domain of a different type than the array's domain is currently not available

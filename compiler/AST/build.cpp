@@ -209,6 +209,10 @@ Expr* buildNamedActual(const char* name, Expr* expr) {
 
 
 Expr* buildNamedAliasActual(const char* name, Expr* expr) {
+  USR_WARN(expr, "support for '=>' in constructor argument lists is deprecated"
+           " as of chpl version 1.15 and is unlikely to work as well as it "
+           "used to.  If you rely on this feature, please let the Chapel team "
+           "know.");
   return new CallExpr(PRIM_ACTUALS_LIST,
            new NamedExpr(name, expr),
            // if we wanted to support expr being another variable,
@@ -1588,6 +1592,8 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     BlockStmt* nonVectorCoforallBlk = new BlockStmt();
 
     VarSymbol* tmpIter = newTemp("tmpIter");
+    tmpIter->addFlag(FLAG_EXPR_TEMP);
+    tmpIter->addFlag(FLAG_MAYBE_REF);
     coforallBlk->insertAtTail(new DefExpr(tmpIter));
     coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, tmpIter, iterator));
     {
@@ -2394,7 +2400,8 @@ buildFunctionSymbol(FnSymbol*   fn,
   fn->cname   = fn->name = astr(name);
   fn->thisTag = thisTag;
 
-  if (fn->name[0] == '~' && fn->name[1] != '\0')
+  if ((fn->name[0] == '~' && fn->name[1] != '\0') ||
+      (strcmp(fn->name, "deinit") == 0))
     fn->addFlag(FLAG_DESTRUCTOR);
 
   if (receiver)

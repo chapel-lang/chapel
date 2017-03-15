@@ -1,0 +1,2 @@
+subclass-to-ref-formal.chpl:14: error: unresolved call 'test(D)'
+subclass-to-ref-formal.chpl:8: note: candidates are: test(ref lhs: C)

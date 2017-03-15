@@ -1,7 +1,7 @@
 record MyRecord {
   var numbers:list(int); // could it be [1..0] int ?
 
-  proc ~MyRecord() {
+  proc deinit() {
     numbers.destroy();
   }
 }

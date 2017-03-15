@@ -522,6 +522,22 @@ BlockStmt::insertAtTail(Expr* ast) {
   body.insertAtTail(ast);
 }
 
+void
+BlockStmt::insertAtHead(AList exprs) {
+  for_alist_backward(expr, exprs) {
+    expr->remove();
+    insertAtHead(expr);
+  }
+}
+
+
+void
+BlockStmt::insertAtTail(AList exprs) {
+  for_alist(expr, exprs) {
+    expr->remove();
+    insertAtTail(expr);
+  }
+}
 
 void
 BlockStmt::insertAtHead(const char* format, ...) {

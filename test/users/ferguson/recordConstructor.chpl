@@ -9,7 +9,7 @@ record R {
     writeln("R constructor");
     x = 15;
   }
-  proc ~R() {
+  proc deinit() {
     writeln("R destructor");
   }
 }

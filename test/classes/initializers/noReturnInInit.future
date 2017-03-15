@@ -1,6 +1,0 @@
-bug: returns should not be allowed in inits (right?)
-
-This test shows that while you can return from within an init(), we
-probably shouldn't allow it.  The error messages in the .good are just
-a proposed placeholder.  I'm open to other wordings and only printing
-out the first such occurrence if the developer has other ideas.

@@ -1867,7 +1867,7 @@ GenInfo::GenInfo(
            FPM_postgen(NULL)
 {
   std::string home(CHPL_HOME);
-  std::string rtmain = home + "/runtime/include/rtmain.c";
+  std::string rtmain = home + "/runtime/etc/rtmain.c";
 
   setupClang(this, rtmain);
 

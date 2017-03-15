@@ -31,7 +31,7 @@
 $debug = 0;                            # turn on debug output
 $verbose = 0;                          # more verbose output
 
-$dirs_to_ignore = "Bin|Logs|Samples|Share|OUTPUT|RCS";
+$dirs_to_ignore = "Bin|Logs|Samples|OUTPUT|RCS";
 
 $logdir = "Logs";                      # dir under test to store logs
 $synchdir = "$logdir/.synch";          # where to store temporary metadata
@@ -495,10 +495,11 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -dirs     d: d is a space separated list of directories to recursively search for directories to test\n";
+    print "    -env s     : s is a string of space separated env vars forwarded to each client\n";
     print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
     print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
     print "    -futures   : include .future tests (default is none).\n";
@@ -541,6 +542,14 @@ sub main {
                 $execopts = "$execopts $ARGV[0]";
             } else {
                 print "missing -execopts arg\n";
+                exit (8);
+            }
+        } elsif (/^-env/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $extra_env = "$extra_env $ARGV[0]";
+            } else {
+                print "missing -env arg\n";
                 exit (8);
             }
         } elsif (/^-filedist/) {
@@ -673,7 +682,8 @@ sub main {
             }
         }
     } else { # else, just current node
-        if( defined $ENV{'SLURM_JOB_NODELIST'} ) {
+        if( (defined $ENV{'SLURM_JOB_NODELIST'}) &&
+            ($platform !~ /^cray-x/) ) {
             my $SLURM_NODELIST = $ENV{'SLURM_JOB_NODELIST'};
             my $SLURM_NODES = `scontrol show hostnames $SLURM_NODELIST`;
             my @SLURM_NODES = split(' ', $SLURM_NODES);
@@ -755,6 +765,7 @@ sub main {
         }
         $chplenv .= "$key=$value ";
     }
+    $chplenv="$chplenv$extra_env";
 
     nodes_free ();         # signal that all nodes free
     feed_nodes ($chplenv); # parallel testing

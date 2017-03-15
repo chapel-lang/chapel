@@ -339,6 +339,10 @@ void                              qt_set_unstealable(void);
 void *   qthread_get_tasklocal(unsigned int);
 unsigned qthread_size_tasklocal(void);
 
+
+void* qthread_tos(void);
+void* qthread_bos(void);
+
 size_t     qthread_stackleft(void);
 aligned_t *qthread_retloc(void);
 int        qthread_shep_ok(void);

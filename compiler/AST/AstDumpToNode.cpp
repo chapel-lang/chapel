@@ -1181,6 +1181,10 @@ bool AstDumpToNode::enterGotoStmt(GotoStmt* node)
     case GOTO_ITER_END:
       fprintf(mFP, "tag:   gotoIterEnd");
       break;
+
+    case GOTO_ERROR_HANDLING:
+      fprintf(mFP, "tag:   gotoErrorHandling");
+      break;
   }
 
   if (SymExpr* label = toSymExpr(node->label))
@@ -1605,7 +1609,9 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       else
       {
         writeLongString("name: ", name);
-        len = writeType(sym->type);
+
+        len = 0   + writeQual(sym->qualType());
+        len = len + writeType(sym->type);
       }
 
       if (compact == false && var->depth() >= 0)
@@ -1752,6 +1758,11 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
           newline();
           break;
 
+        case INTENT_REF_MAYBE_CONST:
+          fprintf(mFP, "intent:       const? ref");
+          newline();
+          break;
+
         case INTENT_PARAM:
           fprintf(mFP, "intent:       param");
           newline();
@@ -1808,6 +1819,15 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
 #endif
 
   mNeedSpace = true;
+}
+
+int AstDumpToNode::writeQual(QualifiedType qual) const
+{
+  const char* name = qual.qualStr();
+
+  fprintf(mFP, "qual: %s", name);
+
+  return 6 + ((int) strlen(name));
 }
 
 int AstDumpToNode::writeType(Type* type, bool announce) const

@@ -68,6 +68,9 @@ public:
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
 
+  void            insertBefore(AList exprs);
+  void            insertAfter(AList exprs);
+
   void            insertBefore(const char* format, ...);
   void            insertAfter(const char* format, ...);
   void            replace(const char* format, ...);
@@ -248,12 +251,19 @@ public:
   // True if the callExpr has been emptied (aka dead)
   bool            isEmpty()                                              const;
 
+  bool            isCast();
+  Expr*           castFrom();
+  Expr*           castTo();
+
   bool            isPrimitive()                                          const;
   bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
   bool            isPrimitive(const char*  primitiveName)                const;
 
+  void            setUnresolvedFunction(const char* name);
+
   FnSymbol*       isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
+  void            setResolvedFunction(FnSymbol* fn);
 
   FnSymbol*       theFnSymbol()                                          const;
 
@@ -262,7 +272,6 @@ public:
   int             numActuals()                                           const;
   Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
-
 
 private:
   GenRet          codegenPrimitive();
@@ -312,8 +321,10 @@ class ContextCallExpr : public Expr {
   virtual Expr*   getFirstExpr();
 
   void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
+  void            setRefValueConstRefOptions(CallExpr* refCall, CallExpr* valueCall, CallExpr* constRefCall);
   CallExpr*       getRefCall();
   CallExpr*       getRValueCall();
+  void            getCalls(CallExpr*& refCall, CallExpr*& valueCall, CallExpr*& constRefCall);
 };
 
 
@@ -450,6 +461,8 @@ CallExpr* callChplHereFree(BaseAST* p);
        e = (e != last) ? getNextExpr(e) : NULL)
 
 Expr* getNextExpr(Expr* expr);
+
+CallExpr* createCast(BaseAST* src, BaseAST* toType);
 
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);

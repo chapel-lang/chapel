@@ -8,7 +8,7 @@ class ll {
     proc bar() { writeln(a); }
   }
 
-  proc ~ll() {
+  proc deinit() {
     var l = list;
 
     while l != nil {

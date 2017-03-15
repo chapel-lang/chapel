@@ -1,0 +1,7 @@
+# pgi
+#
+# When PGI is the host compiler, the lowering of TryStmt fails for no clear
+# reason. noakes and psahabu are strongly suspicious of the PGI compiler
+# itself, so suppressing the output makes sense for now.
+
+CHPL_HOST_COMPILER==pgi

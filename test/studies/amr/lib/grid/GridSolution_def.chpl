@@ -43,7 +43,7 @@ class GridSolution {
   //| >    destructor    | >
   //|/...................|/
   
-  proc ~GridSolution () 
+  proc deinit () 
   {
     delete old_data;
     delete current_data;

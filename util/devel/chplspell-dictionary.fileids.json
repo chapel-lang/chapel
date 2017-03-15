@@ -1,0 +1,729 @@
+{
+  "20acc50e-2ad9-11e6-a3a6-10ddb1d4c3d5": [
+    "ACKNOWLEDGEMENTS.md"
+  ],
+  "515baeda-2ada-11e6-a3a6-10ddb1d4c3d5": [
+    "CHANGES.md"
+  ],
+  "f91458ec-2adb-11e6-a3a6-10ddb1d4c3d5": [
+    "CONTRIBUTORS.md"
+  ],
+  "06bdda1e-bb86-11e6-9740-843835579daa": [
+    "LICENSE"
+  ],
+  "02edde22-1d0a-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/AstDumpToHtml.cpp"
+  ],
+  "3f2e197e-1d0a-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/AstToText.cpp"
+  ],
+  "77ab2706-1d0a-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/baseAST.cpp"
+  ],
+  "ce578c98-1d0a-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/bb.cpp"
+  ],
+  "f4c93d2c-1d0a-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/build.cpp"
+  ],
+  "7db5465c-ad3f-11e6-91b8-10ddb1d4c3d5": [
+    "compiler/AST/expr.cpp",
+    "compiler/codegen/expr.cpp"
+  ],
+  "e2d7df7c-1d0c-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/iterator.cpp"
+  ],
+  "0846cc78-1d0d-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/stmt.cpp"
+  ],
+  "80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5": [
+    "compiler/AST/symbol.cpp",
+    "compiler/codegen/symbol.cpp"
+  ],
+  "9fb63076-1d80-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/DIRS"
+  ],
+  "9e24069c-1d09-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/adt/bitVec.cpp"
+  ],
+  "b5dc0974-1d09-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/adt/vec.cpp"
+  ],
+  "661b62ac-1d7e-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/backend/beautify.cpp"
+  ],
+  "75f1ecaa-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/codegen/codegen.cpp"
+  ],
+  "d20c5afc-1d7e-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/ifa/num.cpp"
+  ],
+  "57076cb0-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/codegen.h"
+  ],
+  "b9f0367c-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/list.h"
+  ],
+  "59041530-69c5-11e6-90f0-10ddb1d4c3d5": [
+    "compiler/include/llvmDebug.h",
+    "compiler/util/llvmDebug.cpp"
+  ],
+  "dab54cf8-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/log.h"
+  ],
+  "e4db0dbc-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/map.h"
+  ],
+  "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/parser.h"
+  ],
+  "5a669f74-1d80-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/main/arg.cpp"
+  ],
+  "613bf236-1d80-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/main/commonFlags.cpp",
+    "compiler/main/commonFlags.h",
+    "compiler/main/driver.cpp"
+  ],
+  "4171383e-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/copyPropagation.cpp"
+  ],
+  "fcd32732-b78b-11e6-9740-843835579daa": [
+    "compiler/optimizations/inferConstRefs.cpp"
+  ],
+  "753d1002-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/liveVariableAnalysis.cpp"
+  ],
+  "86988e94-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/loopInvariantCodeMotion.cpp"
+  ],
+  "93e7af94-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/remoteValueForwarding.cpp"
+  ],
+  "965c5d6a-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/removeUnnecessaryAutoCopyCalls.cpp"
+  ],
+  "2b3e60a0-7ee3-11e6-ab60-00a0cc3ee663": [
+    "compiler/optimizations/replaceArrayAccessesWithRefTemps.cpp"
+  ],
+  "2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/parser/parser.cpp"
+  ],
+  "6379ee24-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/addInitGuards.cpp"
+  ],
+  "732b6fa0-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/cleanup.cpp"
+  ],
+  "98c778e4-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/docs.cpp"
+  ],
+  "9c85c382-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/expandExternArrayCalls.cpp"
+  ],
+  "a4542298-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/externCResolve.cpp"
+  ],
+  "34a911f8-3901-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/filesToAST.cpp"
+  ],
+  "e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/normalize.cpp"
+  ],
+  "0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/scopeResolve.cpp"
+  ],
+  "7e73d6b2-1d84-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/callDestructors.cpp"
+  ],
+  "8983f3ac-1d84-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/functionResolution.cpp"
+  ],
+  "4f065520-1d85-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/implementForallIntents.cpp"
+  ],
+  "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/lowerIterators.cpp"
+  ],
+  "c6d25ce8-a183-11e6-91b8-10ddb1d4c3d5": [
+    "compiler/resolution/wrappers.cpp"
+  ],
+  "fe909ee2-1d85-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/util/clangUtil.cpp"
+  ],
+  "390fbcc4-4e3c-11e6-907f-843835579daa": [
+    "compiler/util/files.cpp"
+  ],
+  "4f8f1724-1d86-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/util/llvmGlobalToWide.cpp"
+  ],
+  "606babf2-1d86-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/util/llvmUtil.cpp"
+  ],
+  "0c6ba076-814e-11e6-b915-843835579daa": [
+    "doc/builtins/internal/ChapelArray.rst"
+  ],
+  "97641a68-1e44-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/bestPractices/CompilerDebugging.txt"
+  ],
+  "21b197c2-1e45-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/bestPractices/GitCheatsheet.rst"
+  ],
+  "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/bestPractices/Potpourri.txt"
+  ],
+  "7b9a1e46-8ab8-11e6-b915-843835579daa": [
+    "doc/developer/bestPractices/README"
+  ],
+  "b557a264-8ab5-11e6-b915-843835579daa": [
+    "doc/developer/bestPractices/SpellChecking.rst"
+  ],
+  "8ac11bda-2ac4-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/chips/11.rst",
+    "doc/developer/chips/tmp/source/modules/11.rst"
+  ],
+  "72774460-69c5-11e6-90f0-10ddb1d4c3d5": [
+    "doc/developer/chips/15.rst",
+    "doc/developer/chips/tmp/source/modules/15.rst"
+  ],
+  "0cdb833a-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "doc/developer/chips/17.rst"
+  ],
+  "b000f2de-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "doc/developer/chips/18.rst"
+  ],
+  "dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/chips/2.rst",
+    "doc/developer/chips/tmp/source/modules/2.rst"
+  ],
+  "1a4b12ba-2ac5-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/chips/3.rst",
+    "doc/developer/chips/tmp/source/modules/3.rst"
+  ],
+  "2ae96310-2ac5-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/chips/4.rst",
+    "doc/developer/chips/tmp/source/modules/4.rst"
+  ],
+  "5ee74a88-2ac5-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/chips/5.rst",
+    "doc/developer/chips/tmp/source/modules/5.rst"
+  ],
+  "e13e71b8-2ac6-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/chips/9.rst",
+    "doc/developer/chips/tmp/source/modules/9.rst"
+  ],
+  "6eb99dbc-1e45-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/compilerOverview/compiler.tex"
+  ],
+  "396f9ef0-1e44-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/contributorAgreements/README.md"
+  ],
+  "63b96a22-1e46-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/hdfs_and_chapel/API.tex",
+    "doc/developer/hdfs_and_chapel/examples.tex",
+    "modules/packages/HDFSiterator.chpl"
+  ],
+  "d819ca0c-1e45-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/developer/hdfs_and_chapel/intro.tex"
+  ],
+  "610c0354-1f11-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/modules/dists/BlockCycDist.rst",
+    "modules/dists/BlockCycDist.chpl",
+    "modules/dists/DSIUtil.chpl"
+  ],
+  "854734a2-1f0f-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/modules/dists/DimensionalDist2D.rst",
+    "modules/dists/DimensionalDist2D.chpl"
+  ],
+  "3efba760-1f11-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/modules/dists/ReplicatedDist.rst",
+    "modules/dists/ReplicatedDist.chpl"
+  ],
+  "347ba0d8-1f11-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/modules/dists/dims/ReplicatedDim.rst",
+    "modules/dists/dims/ReplicatedDim.chpl"
+  ],
+  "71a525f2-43ff-11e6-907f-843835579daa": [
+    "doc/modules/packages/BLAS.rst",
+    "doc/modules/packages/BLAS/C_BLAS.rst",
+    "modules/packages/BLAS.chpl"
+  ],
+  "2127a88e-1f1a-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/modules/packages/Curl.rst",
+    "modules/packages/Curl.chpl"
+  ],
+  "7e50173a-814e-11e6-b915-843835579daa": [
+    "doc/modules/packages/FFTW.rst"
+  ],
+  "6cd27e0c-7b82-11e6-ab60-00a0cc3ee663": [
+    "doc/modules/packages/HDFS.rst",
+    "modules/packages/HDFS.chpl"
+  ],
+  "69fe0f48-1f2a-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/modules/packages/MPI.rst",
+    "doc/modules/packages/MPI/C_MPI.rst",
+    "modules/packages/MPI.chpl"
+  ],
+  "058f379e-814f-11e6-b915-843835579daa": [
+    "doc/modules/packages/RecordParser.rst"
+  ],
+  "24a5f32a-792f-11e6-807a-843835579daa": [
+    "doc/modules/packages/ZMQ.rst",
+    "modules/packages/ZMQ.chpl"
+  ],
+  "fbc85e3e-1f2e-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/modules/standard/FileSystem.rst",
+    "modules/standard/FileSystem.chpl"
+  ],
+  "55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/modules/standard/IO.rst",
+    "modules/standard/IO.chpl"
+  ],
+  "e296667a-8222-11e6-b915-843835579daa": [
+    "doc/modules/standard/Random/NPBRandom.rst"
+  ],
+  "9f42cc46-8223-11e6-b915-843835579daa": [
+    "doc/modules/standard/Random/PCGRandom.rst"
+  ],
+  "f8d11ee0-1f2f-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/modules/standard/Regexp.rst",
+    "modules/standard/Regexp.chpl"
+  ],
+  "d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/modules/standard/SysBasic.rst",
+    "modules/standard/SysBasic.chpl"
+  ],
+  "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
+    "doc/platforms/aws.rst"
+  ],
+  "8c00fe52-31db-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/primers/primers/LAPACKlib.rst",
+    "test/release/examples/primers/LAPACKlib.chpl"
+  ],
+  "57dcb2ce-31db-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/primers/primers/distributions.rst",
+    "test/release/examples/primers/distributions.chpl"
+  ],
+  "5d456562-31db-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/primers/primers/domains.rst",
+    "test/release/examples/primers/domains.chpl"
+  ],
+  "9b2d18d4-31db-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/primers/primers/learnChapelInYMinutes.rst",
+    "test/release/examples/primers/learnChapelInYMinutes.chpl"
+  ],
+  "c573f558-1e4a-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/studies/hpcc/RA.tex"
+  ],
+  "d76e2698-1e4a-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/studies/hpcc/appendix.tex"
+  ],
+  "a78ba0d8-8220-11e6-b915-843835579daa": [
+    "doc/technotes/auxIO.rst"
+  ],
+  "e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/technotes/dsi.rst"
+  ],
+  "8a9f313e-1e47-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/technotes/extern.rst"
+  ],
+  "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/technotes/libraries.rst"
+  ],
+  "a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/tools/chpldoc/chpldoc.rst"
+  ],
+  "7ada2798-4027-11e6-907f-843835579daa": [
+    "doc/users-guide/base/forloops.rst"
+  ],
+  "7e15c372-4027-11e6-907f-843835579daa": [
+    "doc/users-guide/index.rst"
+  ],
+  "55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/usingchapel/executing.rst"
+  ],
+  "c32754ea-8068-11e6-ab60-00a0cc3ee663": [
+    "doc/usingchapel/multilocale.rst"
+  ],
+  "d634896c-70c9-11e6-8028-843835579daa": [
+    "doc/usingchapel/usingchapel.rst"
+  ],
+  "1c692a6a-2add-11e6-a3a6-10ddb1d4c3d5": [
+    "man/chpldoc.rst"
+  ],
+  "2c94c1ec-2add-11e6-a3a6-10ddb1d4c3d5": [
+    "man/confchpl.rst"
+  ],
+  "28bf43b2-2add-11e6-a3a6-10ddb1d4c3d5": [
+    "man/confchpldoc.rst"
+  ],
+  "f705d2b6-1f0e-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/CyclicDist.chpl"
+  ],
+  "6c8e8208-1f0f-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/SparseBlockDist.chpl"
+  ],
+  "ab3bbeb6-1f10-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/dims/BlockCycDim.chpl"
+  ],
+  "37795eb0-1f11-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/dims/BlockDim.chpl"
+  ],
+  "c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/internal/AtomicsCommon.chpl"
+  ],
+  "47cb0e3c-1f14-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/internal/ChapelRange.chpl"
+  ],
+  "101dbad0-1f18-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/internal/ChapelReduce.chpl"
+  ],
+  "b4905dc4-5f88-11e6-90f0-10ddb1d4c3d5": [
+    "modules/internal/ChapelSyncvar.chpl"
+  ],
+  "810b7fd2-1f15-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/internal/DefaultAssociative.chpl"
+  ],
+  "c3b7f950-1f15-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/internal/DefaultRectangular.chpl"
+  ],
+  "9c75ae66-1f18-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/layouts/LayoutCSR.chpl"
+  ],
+  "f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/packages/FFTW.chpl"
+  ],
+  "cc606fa4-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "modules/packages/Futures.chpl"
+  ],
+  "f8a06e7e-1f18-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/packages/LinearAlgebraJama.chpl"
+  ],
+  "3a59da00-3376-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/packages/MatrixMarket.chpl"
+  ],
+  "ac12c756-4d89-11e6-907f-843835579daa": [
+    "modules/packages/VisualDebug.chpl",
+    "runtime/include/chpl-visual-debug.h",
+    "runtime/src/chpl-visual-debug.c"
+  ],
+  "ebcca246-1f2f-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/standard/Buffers.chpl"
+  ],
+  "7de3ce6c-3f64-11e6-907f-843835579daa": [
+    "modules/standard/Math.chpl"
+  ],
+  "6ba10a44-1f2f-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/standard/Random.chpl"
+  ],
+  "e9347814-1f30-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/standard/Types.chpl"
+  ],
+  "011204e0-1fb5-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/include/chpl-bitops.h"
+  ],
+  "1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/include/chpl-wide-ptr-fns.h"
+  ],
+  "cedb8f86-1fb5-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/include/qio/sys.h"
+  ],
+  "0ebaef5a-2409-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/chpl-cache.c"
+  ],
+  "8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/chpl-timers.c"
+  ],
+  "726887c4-bc39-11e6-9740-843835579daa": [
+    "runtime/src/chplsys.c"
+  ],
+  "847163aa-bc39-11e6-9740-843835579daa": [
+    "runtime/src/comm/gasnet/comm-gasnet.c"
+  ],
+  "b7c60ac2-2403-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/launch/mpirun/launch-mpirun.c"
+  ],
+  "af6e03d4-2403-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/launch/pbs-aprun/launch-pbs-aprun.c"
+  ],
+  "a2b5a7e0-2404-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/qio/auxFilesys/curl/qio_plugin_curl.c"
+  ],
+  "c04de3c6-2404-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/qio/auxFilesys/hdfs/qio_plugin_hdfs.c"
+  ],
+  "3d6b3228-2405-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/qio/qio.c"
+  ],
+  "eafb2e70-2405-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/qio/qio_formatted.c"
+  ],
+  "74ec0768-2405-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/qio/sys.c"
+  ],
+  "e2b2b296-8068-11e6-ab60-00a0cc3ee663": [
+    "runtime/src/tasks/massivethreads/tasks-massivethreads.c"
+  ],
+  "c9f78ff4-2403-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/threads/pthreads/threads-pthreads.c"
+  ],
+  "6d1ff4ac-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Arrays.tex"
+  ],
+  "3277f5dc-4e3e-11e6-907f-843835579daa": [
+    "spec/Classes.tex"
+  ],
+  "b74a5b44-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Domains.tex"
+  ],
+  "cd92e998-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Expressions.tex"
+  ],
+  "cffdd350-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Functions.tex"
+  ],
+  "e1d71c80-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Interoperation.tex"
+  ],
+  "f72f3d38-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Memory_Consistency.tex"
+  ],
+  "185b17ce-2954-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Modules.tex"
+  ],
+  "5dfff152-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/README"
+  ],
+  "e78c94ba-2953-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Ranges.tex"
+  ],
+  "ec772e36-2953-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Statements.tex"
+  ],
+  "22f875dc-4e3e-11e6-907f-843835579daa": [
+    "spec/Syntax.tex"
+  ],
+  "ef5af4e8-2953-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Task_Parallelism_and_Synchronization.tex"
+  ],
+  "f233cdf2-2953-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Tuples.tex"
+  ],
+  "97a7d6e0-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/chapel_testing.tex"
+  ],
+  "b4520e6e-5076-11e6-b83e-bc5ff4765d0d": [
+    "test/ANNOTATIONS.yaml"
+  ],
+  "27c712aa-a8a0-11e6-91b8-10ddb1d4c3d5": [
+    "test/exercises/Mandelbrot/MPlot.chpl",
+    "test/exercises/Mandelbrot/mandelbrot.chpl",
+    "test/exercises/Mandelbrot/solutions/mandelbrot1-seq.chpl",
+    "test/exercises/Mandelbrot/solutions/mandelbrot2-datapar.chpl",
+    "test/exercises/Mandelbrot/solutions/mandelbrot3-datapar-dist.chpl",
+    "test/exercises/Mandelbrot/solutions/mandelbrot4-taskpar.chpl",
+    "test/exercises/Mandelbrot/solutions/mandelbrot5-taskpar-dist.chpl",
+    "test/exercises/Mandelbrot/unit/mandelbrot-zero-bug.chpl"
+  ],
+  "f60e4ad6-a966-11e6-91b8-10ddb1d4c3d5": [
+    "test/exercises/boundedBuffer/boundedBuffer.chpl",
+    "test/exercises/boundedBuffer/solutions/boundedBuffer-atomic.chpl",
+    "test/exercises/boundedBuffer/solutions/boundedBuffer-sync.chpl"
+  ],
+  "0738cf48-a89f-11e6-91b8-10ddb1d4c3d5": [
+    "test/exercises/c-ray/c-ray.chpl",
+    "test/exercises/c-ray/forStudents/Image.chpl",
+    "test/exercises/c-ray/forStudents/c-ray.chpl"
+  ],
+  "b321068e-a888-11e6-91b8-10ddb1d4c3d5": [
+    "test/exercises/c-ray/forStudents/README"
+  ],
+  "2409dd7e-b858-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/hpcc/fft.chpl"
+  ],
+  "6877b508-b858-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/hpcc/hpl.chpl"
+  ],
+  "2fa429f4-b859-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/isx/README",
+    "test/release/examples/benchmarks/lcals/LCALSChecksums.chpl",
+    "test/release/examples/benchmarks/lcals/LCALSConfiguration.chpl",
+    "test/release/examples/benchmarks/lcals/LCALSDataTypes.chpl",
+    "test/release/examples/benchmarks/lcals/LCALSEnums.chpl",
+    "test/release/examples/benchmarks/lcals/LCALSLoops.chpl",
+    "test/release/examples/benchmarks/lcals/LCALSMain.chpl",
+    "test/release/examples/benchmarks/lcals/RunARawLoops.chpl",
+    "test/release/examples/benchmarks/lcals/RunBRawLoops.chpl",
+    "test/release/examples/benchmarks/lcals/RunCRawLoops.chpl",
+    "test/release/examples/benchmarks/lcals/RunParallelRawLoops.chpl",
+    "test/release/examples/benchmarks/lcals/RunSPMDRawLoops.chpl",
+    "test/release/examples/benchmarks/lcals/RunVectorizeOnlyRawLoops.chpl"
+  ],
+  "a5d0ed60-b859-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lcals/LongDouble.chpl",
+    "test/release/examples/benchmarks/lcals/README",
+    "test/release/examples/benchmarks/lcals/longdouble.h"
+  ],
+  "b5a0f3a2-b859-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lcals/README-LCALS_license.txt"
+  ],
+  "8137d9ea-b85a-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lcals/Timer.chpl"
+  ],
+  "53e029b4-b85c-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lulesh/README"
+  ],
+  "5ff41798-b85b-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lulesh/lmeshes/README"
+  ],
+  "04d69f54-b85e-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lulesh/lulesh.chpl",
+    "test/release/examples/benchmarks/lulesh/luleshInit.chpl",
+    "test/studies/lulesh/bradc/lulesh-dense.chpl",
+    "test/studies/lulesh/bradc/tests/lulesh-eof.chpl",
+    "test/studies/lulesh/bradc/tests/lulesh-eof2.chpl",
+    "test/studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple.chpl",
+    "test/studies/lulesh/bradc/xyztuple/luleshInit3.chpl",
+    "test/studies/lulesh/intelVectBug/lulesh.chpl"
+  ],
+  "d522708e-b85e-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/miniMD/README"
+  ],
+  "d0d2e0ae-b85e-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/miniMD/explicit/helpers/forces.chpl",
+    "test/release/examples/benchmarks/miniMD/explicit/helpers/initMD.chpl",
+    "test/release/examples/benchmarks/miniMD/explicit/helpers/neighbor.chpl",
+    "test/release/examples/benchmarks/miniMD/explicit/helpers/thermo.chpl",
+    "test/release/examples/benchmarks/miniMD/explicit/miniMD.chpl",
+    "test/release/examples/benchmarks/miniMD/helpers/forces.chpl",
+    "test/release/examples/benchmarks/miniMD/helpers/initMD.chpl",
+    "test/release/examples/benchmarks/miniMD/helpers/neighbor.chpl",
+    "test/release/examples/benchmarks/miniMD/helpers/thermo.chpl",
+    "test/release/examples/benchmarks/miniMD/miniMD.chpl"
+  ],
+  "e3aa346c-1d8a-11e6-a3a6-10ddb1d4c3d5": [
+    "test/release/examples/benchmarks/shootout/README"
+  ],
+  "b53f219e-718d-11e6-8e91-843835579daa": [
+    "test/release/examples/benchmarks/shootout/fasta.chpl",
+    "test/studies/shootout/fasta/bradc/fasta-blc-numa.chpl",
+    "test/studies/shootout/fasta/bradc/fasta-blc.chpl",
+    "test/studies/shootout/fasta/psahabu/fasta-plain.chpl",
+    "test/studies/shootout/submitted/fasta.chpl"
+  ],
+  "c6909e2e-4400-11e6-907f-843835579daa": [
+    "test/release/examples/benchmarks/shootout/knucleotide.chpl",
+    "test/studies/shootout/k-nucleotide/bharshbarg/knucleotide-associative.chpl",
+    "test/studies/shootout/k-nucleotide/bharshbarg/knucleotide-chaining.chpl",
+    "test/studies/shootout/k-nucleotide/bharshbarg/knucleotide-elegant.chpl",
+    "test/studies/shootout/k-nucleotide/bharshbarg/knucleotide-strings.chpl",
+    "test/studies/shootout/k-nucleotide/bradc/knucleotide-blc.chpl",
+    "test/studies/shootout/submitted/knucleotide.chpl"
+  ],
+  "4bfc193a-4401-11e6-907f-843835579daa": [
+    "test/release/examples/benchmarks/shootout/regexdna.chpl",
+    "test/studies/shootout/regex-dna/bharshbarg/regexdna.chpl",
+    "test/studies/shootout/submitted/regexdna.chpl"
+  ],
+  "560979a4-4401-11e6-907f-843835579daa": [
+    "test/release/examples/benchmarks/shootout/revcomp.chpl",
+    "test/studies/shootout/reverse-complement/bharshbarg/revcomp-begin.chpl",
+    "test/studies/shootout/reverse-complement/bradc/revcomp-blc.chpl",
+    "test/studies/shootout/submitted/revcomp.chpl"
+  ],
+  "7fcc0bd0-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/README"
+  ],
+  "0bb8ad60-b860-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_RMAT_graph_generator.chpl"
+  ],
+  "e79be4f6-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_compilation_config_params.chpl"
+  ],
+  "ebd0997c-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_execution_config_consts.chpl"
+  ],
+  "fe33d4c6-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_kernels.chpl"
+  ],
+  "87dec826-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/analyze_RMAT_graph_associative_array.chpl"
+  ],
+  "baca0444-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/io_RMAT_graph.chpl"
+  ],
+  "83dc1ce2-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_main.chpl"
+  ],
+  "d86303d0-4d88-11e6-907f-843835579daa": [
+    "test/release/examples/hello4-datapar-dist.chpl"
+  ],
+  "03dbf2b0-31dc-11e6-a3a6-10ddb1d4c3d5": [
+    "test/release/examples/primers/README"
+  ],
+  "e8974bb8-8068-11e6-ab60-00a0cc3ee663": [
+    "test/release/examples/primers/ranges.chpl"
+  ],
+  "5094b6c0-8220-11e6-b915-843835579daa": [
+    "test/release/examples/primers/syncsingle.chpl"
+  ],
+  "eb31abc0-8068-11e6-ab60-00a0cc3ee663": [
+    "test/release/examples/primers/taskParallel.chpl"
+  ],
+  "d72609f8-b850-11e6-9740-843835579daa": [
+    "test/release/examples/programs/beer.chpl"
+  ],
+  "eb249ff0-b850-11e6-9740-843835579daa": [
+    "test/release/examples/programs/quicksort.chpl"
+  ],
+  "a717e780-d45d-11e6-b38c-acbc32c4f96b": [
+    "test/release/examples/users-guide/base/typeAliases.chpl"
+  ],
+  "329ba602-b6bd-11e6-9740-843835579daa": [
+    "test/studies/dedup/dedup-distributed-ints.chpl",
+    "test/studies/dedup/dedup-distributed-strings.chpl",
+    "test/studies/dedup/dedup-extern.chpl",
+    "test/studies/dedup/dedup-externblock.chpl",
+    "test/studies/dedup/dedup-local.chpl",
+    "test/studies/dedup/dedup-spawn-sort.chpl"
+  ],
+  "86ba5826-4400-11e6-907f-843835579daa": [
+    "test/studies/shootout/fannkuch-redux/bharshbarg/fannkuch-redux-coforall.chpl"
+  ],
+  "a88fa2a8-4400-11e6-907f-843835579daa": [
+    "test/studies/shootout/fasta/caseyb/fasta.chpl",
+    "test/studies/shootout/fasta/kbrady/fasta-lines.chpl"
+  ],
+  "a70ca160-4400-11e6-907f-843835579daa": [
+    "test/studies/shootout/fasta/kbrady/fasta-enum.chpl"
+  ],
+  "617a3c5c-dfc3-11e6-93be-10ddb1d4c3d5": [
+    "test/studies/shootout/mandelbrot/bradc/mandelbrot-blc.chpl"
+  ],
+  "dfd55fc8-4400-11e6-907f-843835579daa": [
+    "test/studies/shootout/mandelbrot/jacobnelson/mandelbrot-fancy.chpl"
+  ],
+  "e19084d2-4400-11e6-907f-843835579daa": [
+    "test/studies/shootout/mandelbrot/lydia/mandelbrot-no-dist.chpl"
+  ],
+  "e28376ba-4400-11e6-907f-843835579daa": [
+    "test/studies/shootout/mandelbrot/lydia/mandelbrot-unzipped.chpl"
+  ],
+  "07b07cbc-4401-11e6-907f-843835579daa": [
+    "test/studies/shootout/meteor/lydchels/README"
+  ],
+  "262b888a-4401-11e6-907f-843835579daa": [
+    "test/studies/shootout/meteor/lydchels/tests/piececell_test.chpl",
+    "test/studies/shootout/meteor/lydchels/tests/piecelist_test.chpl",
+    "test/studies/shootout/meteor/lydchels/tests/run_tests.chpl"
+  ],
+  "73d37e6c-4401-11e6-907f-843835579daa": [
+    "test/studies/shootout/spectral-norm/README"
+  ],
+  "5655c140-644c-11e6-90f0-10ddb1d4c3d5": [
+    "test/studies/shootout/submitted/README.md"
+  ],
+  "44484c44-fd7f-11e6-980e-10ddb1d4c3d5": [
+    "test/studies/shootout/submitted/fasta2.chpl"
+  ]
+}

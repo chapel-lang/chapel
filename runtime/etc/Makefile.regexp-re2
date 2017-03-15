@@ -16,4 +16,3 @@
 # limitations under the License.
 
 GEN_LFLAGS += -L$(RE2_LIB_DIR) -Wl,-rpath,$(RE2_LIB_DIR)
-LD=$(CXX)

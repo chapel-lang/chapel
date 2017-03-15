@@ -35,7 +35,7 @@ class CallInfo {
   Vec<Symbol*>     actuals;     // actual symbols
   Vec<const char*> actualNames; // named arguments
   bool             badcall;     // the call is an error but checkonly set
-  CallInfo(CallExpr* icall, bool checkonly);
+  CallInfo(CallExpr* icall, bool checkonly, bool initOkay = false);
 };
 
 #endif

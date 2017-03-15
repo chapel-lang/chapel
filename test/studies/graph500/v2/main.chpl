@@ -105,7 +105,7 @@ module Graph500_main
 
     // Generate a list of valid starting roots
     // Valid starting roots have at least one edge to another node
-    var Rand_Gen = new RandomStream (seed = 9);
+    var Rand_Gen = new RandomStream (real, seed = 9);
     var Unif_Random: [1..NUM_CANDIDATES] real;
     Rand_Gen.fillRandom ( Unif_Random );
     var runID: int = 1;

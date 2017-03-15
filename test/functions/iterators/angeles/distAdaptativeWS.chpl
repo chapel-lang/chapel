@@ -8,7 +8,6 @@
 
 // Contributed by Angeles Navarro 
 use DynamicIters;
-extern proc usleep(val:uint);
 config const nTasks:int=4; // number of cores; should be here.maxTaskPar?
 writeln("Working with ", nTasks, " Threads");
 
@@ -69,7 +68,7 @@ proc CheckCorrectness(grainsize:string)
 	writeln();
 	t.start();
 	forall c in adaptive(r,nTasks) do {
-	  usleep(delay);
+	  sleep(delay, TimeUnits.microseconds);
 	  A[c]=A[c]+1;
 	}
 	t.stop();
@@ -104,7 +103,7 @@ proc CheckCorrectness(grainsize:string)
 	writeln();
 	t.start();
 	forall c in adaptive(r,nTasks) do {
-	  usleep(delay);
+	  sleep(delay, TimeUnits.microseconds);
 	  B[c]=B[c]+1;
 	}
 	t.stop();
@@ -143,7 +142,7 @@ proc CheckCorrectness(grainsize:string)
       t.start();
       forall c in adaptive(r,nTasks) do {
 	for j in c..n do{
-	  usleep(delay);
+	  sleep(delay, TimeUnits.microseconds);
 	  C[c,j]=C[c,j]+1;
 	}
       }
@@ -194,7 +193,7 @@ proc CheckCorrectness(grainsize:string)
   
       t.start();
       forall c in  adaptive(r,nTasks) do {
-	usleep(delayran(c));
+	sleep(delayran(c), TimeUnits.microseconds);
 	D[c]=D[c]+1;
       }
       t.stop();

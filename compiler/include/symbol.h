@@ -67,6 +67,7 @@ const int INTENT_FLAG_REF   = 0x08;
 const int INTENT_FLAG_PARAM = 0x10;
 const int INTENT_FLAG_TYPE  = 0x20;
 const int INTENT_FLAG_BLANK = 0x40;
+const int INTENT_FLAG_MAYBE_CONST = 0x80;
 
 // If this enum is modified, ArgSymbol::intentDescrString()
 // and intentDescrString(IntentTag) should also be updated to match
@@ -78,6 +79,7 @@ enum IntentTag {
   INTENT_CONST_IN  = INTENT_FLAG_CONST | INTENT_FLAG_IN,
   INTENT_REF       = INTENT_FLAG_REF,
   INTENT_CONST_REF = INTENT_FLAG_CONST | INTENT_FLAG_REF,
+  INTENT_REF_MAYBE_CONST = INTENT_FLAG_MAYBE_CONST | INTENT_FLAG_REF,
   INTENT_PARAM     = INTENT_FLAG_PARAM,
   INTENT_TYPE      = INTENT_FLAG_TYPE,
   INTENT_BLANK     = INTENT_FLAG_BLANK
@@ -116,8 +118,6 @@ public:
   virtual void       replaceChild(BaseAST* oldAst,
                                   BaseAST* newAst)               = 0;
 
-  virtual FnSymbol*  getFnSymbol();
-
   virtual bool       isConstant()                              const;
   virtual bool       isConstValWillNotChange()                 const;
   virtual bool       isImmediate()                             const;
@@ -154,11 +154,23 @@ public:
   DefExpr*           defPoint; // Point of definition
 
   // Managing the list of SymExprs that refer to this Symbol
+  // use for_SymbolSymExprs, for_SymbolDefs, for_SymbolUses
+  // to traverse these.
   void               addSymExpr(SymExpr* se);
   void               removeSymExpr(SymExpr* se);
   SymExpr*           firstSymExpr()                            const;
   SymExpr*           lastSymExpr()                             const;
-
+  // Get the number of Defs or Uses up to the maximum number
+  int                countDefs(int max=INT_MAX)                const;
+  int                countUses(int max=INT_MAX)                const;
+  // Does the Symbol have any Uses? same as countUses() > 0
+  // but may be faster.
+  bool               isUsed()                                  const;
+  bool               isDefined()                               const;
+  // Return the single use of this Symbol, or NULL if there are 0 or >= 2
+  SymExpr*           getSingleUse()                            const;
+  // Return the single def of this Symbol, or NULL if there are 0 or >= 2
+  SymExpr*           getSingleDef()                            const;
 protected:
                      Symbol(AstTag      astTag,
                             const char* init_name,
@@ -183,6 +195,14 @@ private:
        se;                                                              \
        se = _se_next,                                                   \
          _se_next = se ? se->symbolSymExprsNext : NULL)
+
+#define for_SymbolDefs(def, symbol)                                      \
+  for_SymbolSymExprs(def, symbol)                                        \
+    if ((isDefAndOrUse(def) & 1))
+
+#define for_SymbolUses(use, symbol)                                      \
+  for_SymbolSymExprs(use, symbol)                                        \
+    if ((isDefAndOrUse(use) & 2))
 
 
 bool isString(Symbol* symbol);
@@ -363,6 +383,10 @@ class TypeSymbol : public Symbol {
   virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(TypeSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+
+  void renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn);
+  void renameInstantiatedSingle(Symbol* sym);
+
   GenRet codegen();
   void codegenDef();
   void codegenPrototype();
@@ -371,9 +395,15 @@ class TypeSymbol : public Symbol {
   void codegenMetadata();
 
   const char* doc;
+
+ private:
+  void renameInstantiatedStart();
+  void renameInstantiatedIndividual(Symbol* sym);
+  void renameInstantiatedEnd();
 };
 
 /************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -435,7 +465,6 @@ public:
   DECLARE_SYMBOL_COPY(FnSymbol);
 
   FnSymbol*                  copyInnerCore(SymbolMap* map);
-  FnSymbol*                  getFnSymbol();
   void                       replaceChild(BaseAST* oldAst, BaseAST* newAst);
 
   FnSymbol*                  partialCopy(SymbolMap* map);
@@ -463,7 +492,8 @@ public:
 
   void                       insertBeforeEpilogue(Expr* ast);
 
-  // insertIntoEpilogue adds an Expr before the final return, but after the epilogue label
+  // insertIntoEpilogue adds an Expr before the final return,
+  // but after the epilogue label
   void                       insertIntoEpilogue(Expr* ast);
 
   LabelSymbol*               getEpilogueLabel();
@@ -495,6 +525,8 @@ public:
   void                       throwsErrorInit();
   bool                       throwsError()                               const;
 
+  bool                       retExprDefinesNonVoid()                     const;
+
 private:
   virtual std::string        docsDirective();
 
@@ -503,10 +535,11 @@ private:
   bool                       _throwsError;
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class EnumSymbol : public Symbol {
  public:
@@ -737,6 +770,7 @@ extern VarSymbol *gFalse;
 extern VarSymbol *gTryToken; // try token for conditional function resolution
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gCastChecking;
+extern VarSymbol *gDivZeroChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;

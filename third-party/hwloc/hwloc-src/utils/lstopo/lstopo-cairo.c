@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2014 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -387,12 +387,15 @@ output_x11(struct lstopo_output *loutput, const char *filename)
 	float wscale, hscale;
 	disp->screen_width = e.xconfigure.width;
 	disp->screen_height = e.xconfigure.height;
-	wscale = disp->screen_width / (float)disp->width;
-	hscale = disp->screen_height / (float)disp->height;
-	disp->scale *= wscale > hscale ? hscale : wscale;
-	if (disp->scale < 1.0f)
-	  disp->scale = 1.0f;
-	move_x11(disp);
+	if (disp->screen_width != disp->last_screen_width
+	    || disp->screen_height != disp->last_screen_height) {
+	  wscale = disp->screen_width / (float)disp->width;
+	  hscale = disp->screen_height / (float)disp->height;
+	  disp->scale *= wscale > hscale ? hscale : wscale;
+	  if (disp->scale < 1.0f)
+	    disp->scale = 1.0f;
+	  move_x11(disp);
+	}
 	if (disp->x != lastx || disp->y != lasty)
 	  XMoveWindow(disp->dpy, disp->win, -disp->x, -disp->y);
 	break;

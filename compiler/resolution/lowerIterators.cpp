@@ -260,6 +260,22 @@ static void computeRecursiveIteratorSet() {
 }
 
 
+static bool containsYield(Expr* arg) {
+  std::vector<CallExpr*> calls;
+  collectCallExprs(arg, calls);
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive()) {
+      if (call->isPrimitive(PRIM_YIELD))
+        return true;
+    } else if (FnSymbol* tfn = resolvedToTaskFun(call)) { // vass need this?
+      if (containsYield(tfn->body))
+        return true;
+    }
+  }
+  return false;
+}
+
+
 //
 // If a local block has no yields, returns, gotos or labels
 // then it can safely be left unfragmented.
@@ -1186,6 +1202,11 @@ expandIteratorInline(ForLoop* forLoop) {
     // vass: ditto for task functions called from recursive iterators
     } else if (taskFunInRecursiveIteratorSet.set_in(forLoop->parentSymbol)) {
       return false;
+    } else if (containsYield(forLoop)) {
+      // Inlining a recursive iterator into a loop with a 'yield' pushes
+      // that 'yield' into one of _rec_ functions, where it dangles. Ex.:
+      // test/modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+      return false;
     } else {
       expandRecursiveIteratorInline(forLoop);
       INT_ASSERT(!forLoop->inTree());
@@ -1411,69 +1432,6 @@ canInlineIterator(FnSymbol* iterator) {
   return (count == 1) ? true : false;
 }
 
-
-static void
-getRecursiveIterators(Symbol* iter, std::vector<Symbol*>& iterators) {
-  if (iter->type->symbol->hasFlag(FLAG_TUPLE)) {
-    AggregateType* iteratorType = toAggregateType(iter->type);
-
-    for (int i = 1; i <= iteratorType->fields.length; i++) {
-      if (Symbol* field = toSymbol(iteratorType->getField(i))) {
-        getRecursiveIterators(field, iterators);
-      }
-    }
-
-  } else {
-    iterators.push_back(iter);
-  }
-}
-
-
-static bool
-canInlineSingleYieldIterator(Symbol* iter) {
-  std::vector<Symbol*> iterators;
-
-  getRecursiveIterators(iter, iterators);
-
-  for (size_t i = 0; i < iterators.size(); i++) {
-    FnSymbol*              fn       = getTheIteratorFn(iterators[i]);
-    BlockStmt*             block    = fn->body;
-    std::vector<CallExpr*> calls;
-    int                    numYields = 0;
-
-    INT_ASSERT(block);
-
-    collectCallExprs(block, calls);
-
-    // NB: The body of this loop may extend calls[]
-    for (size_t j = 0; j < calls.size(); j++) {
-      CallExpr* call = calls[j];
-
-      if (call && call->isPrimitive(PRIM_YIELD)) {
-        numYields++;
-
-        if (fn->body != call->parentExpr)
-          return false;
-      }
-
-      if (call) {
-        if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
-          // Need to descend into 'taskFn' - append to 'asts'.
-          // If there are any yields there, they will trigger
-          // 'return false' above.
-          collectCallExprs(taskFn->body, calls);
-        }
-      }
-    }
-
-    if (numYields != 1)
-      return false;
-  }
-
-  return true;
-}
-
-
 static void
 setupSimultaneousIterators(Vec<Symbol*>& iterators,
                            Vec<Symbol*>& indices,
@@ -1599,90 +1557,6 @@ buildIteratorCall(Symbol* ret, int fnid, Symbol* iterator, Vec<Type*>& children)
   return outerBlock;
 }
 
-
-static void
-inlineSingleYieldIterator(ForLoop* forLoop) {
-  SET_LINENO(forLoop);
-
-  SymExpr*     se1      = forLoop->indexGet();
-  VarSymbol*   index    = toVarSymbol(se1->symbol());
-
-  SymExpr*     se2      = forLoop->iteratorGet();
-  VarSymbol*   iterator = toVarSymbol(se2->symbol());
-
-  CallExpr*    noop     = new CallExpr(PRIM_NOOP);
-
-  Vec<Symbol*> iterators;
-  Vec<Symbol*> indices;
-
-  setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
-
-  forLoop->insertAtHead(noop);
-
-  for (int i = 0; i < iterators.n; i++) {
-    FnSymbol*     iterator   = getTheIteratorFn(iterators.v[i]);
-    BlockStmt*    ibody      = iterator->body->copy();
-    bool          afterYield = false;
-    int           count      = 1;
-    std::vector<BaseAST*> asts;
-
-    collect_asts(ibody, asts);
-
-    for_alist(expr, ibody->body) {
-      if (CallExpr* curr_expr = toCallExpr(expr)) {
-        if (curr_expr->isPrimitive(PRIM_YIELD)) {
-          afterYield = true;
-          noop->insertAfter(new CallExpr(PRIM_MOVE, indices.v[i], curr_expr->get(1)->remove()));
-        } else if (!curr_expr->isPrimitive(PRIM_RETURN)) {
-          if (resolvedToTaskFun(curr_expr))
-            // what should we do in this case?
-            INT_FATAL(curr_expr, "inlineSingleYieldIterator is not implemented for outlined coforall/cobegin/begin blocks");
-
-          else if (!afterYield)
-            noop->insertBefore(curr_expr->remove());
-
-          else
-            forLoop->insertAtTail(curr_expr->remove());
-        }
-      } else {
-        if (!afterYield)
-          noop->insertBefore(expr->remove());
-        else
-          forLoop->insertAtTail(expr->remove());
-      }
-    }
-
-    for_formals(formal, iterator) {
-      for_vector(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (se->symbol() == formal) {
-            //if ((se->symbol()->type == formal->type) && (!strcmp(se->symbol()->name, formal->name))) {
-            // count is used to get the nth field out of the iterator class;
-            // it is replaced by the field once the iterator class is created
-            Expr*      stmt = se->getStmtExpr();
-            VarSymbol* tmp  = newTemp(formal->name, formal->type);
-
-            stmt->insertBefore(new DefExpr(tmp));
-            stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterators.v[i], new_IntSymbol(count))));
-
-            se->setSymbol(tmp);
-          }
-        }
-      }
-
-      count++;
-    }
-  }
-
-  noop->remove();
-
-  // Create a true BlockStmt for the body of the ForLoop
-  BlockStmt* body = forLoop->copyBody();
-
-  forLoop->replace(body);
-}
-
-
 // Replace a ForLoop with its inline equivalent, if possible.
 // Otherwise, convert it into a C-style for loop.
 // The given forLoop is converted unconditionally.
@@ -1700,20 +1574,6 @@ expandForLoop(ForLoop* forLoop) {
          (iterator->type->dispatchChildren.n == 1 &&
           iterator->type->dispatchChildren.v[0] == dtObject))) {
       converted = expandIteratorInline(forLoop);
-    }
-    // Conversion fails above if there is a recursive iterator call in a
-    // recursive iterator, or if there is a task function call in a recursive
-    // iterator.  In either case, it seems like a bad idea to try to perform
-    // inlineSingleYieldIterator() on the same forLoop.  That is the reason for
-    // the unequivocal "else".
-    // To try the other alternative, replace the following line with:
-    // if (!converted && canInlineSingleYieldIterator(iterator) &&
-    else if (canInlineSingleYieldIterator(iterator) &&
-            (iterator->type->dispatchChildren.n == 0 ||
-             (iterator->type->dispatchChildren.n == 1 &&
-              iterator->type->dispatchChildren.v[0] == dtObject))) {
-      inlineSingleYieldIterator(forLoop);
-      converted = true;
     }
   }
 
@@ -1901,7 +1761,7 @@ expandForLoop(ForLoop* forLoop) {
 
 
 // Find all iterator constructs
-// Select those whose _getIterator() functions have the FLAG_ITERATOR_INLINE.
+// Select those whose _getIterator() functions have the FLAG_INLINE_ITERATOR.
 // Inline the selected iterators at their call sites.
 static void
 inlineIterators() {
@@ -2282,6 +2142,34 @@ static void cleanupTemporaryVectors() {
 }
 
 
+// 'depth' is a heuristic to avoid the risk of unbounded recursion.
+// Ex. what if 'parentSym' is a recursive function?
+static bool maybeCalled(Symbol* parentSym, int depth) {
+  if (!parentSym || !parentSym->inTree())
+    return false;
+
+  FnSymbol* fn = toFnSymbol(parentSym);
+  if (!fn)
+    return true; // conservative
+
+  if (ftableMap.count(fn))
+    return true;
+
+  if (!fn->calledBy || fn->calledBy->n == 0)
+    return false;
+
+  if (depth <= 0)
+    return true; // conservative
+
+  depth--;
+
+  forv_Vec(CallExpr, call, *fn->calledBy)
+    if (maybeCalled(call->parentSymbol, depth))
+      return true;
+
+  return false;
+}
+
 // WORKAROUND:
 // When the body of a for loop is moved into the loop body function, yield
 // primitives remain in it (if the for loop itself appears in an iterator
@@ -2306,6 +2194,10 @@ static void removeUncalledIterators()
     // We only care about yields.
     if (! call->isPrimitive(PRIM_YIELD))
       continue;
+
+    // This is a backup check to ensure PRIM_INT_ERROR is never executed.
+    if (fVerify && maybeCalled(call->parentSymbol, 4))
+      INT_FATAL(call, "unexpected leftover PRIM_YIELD");
 
     // If this function contains a yield, it was never expanded, so the static
     // analysis used in lowerIterators says it was never invoked through a for

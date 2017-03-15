@@ -24,6 +24,9 @@
 /* Define to 1 if the system has the type `CACHE_RELATIONSHIP'. */
 #undef HAVE_CACHE_RELATIONSHIP
 
+/* Define to 1 if you have the `clock_gettime' function. */
+#undef HAVE_CLOCK_GETTIME
+
 /* Define to 1 if you have the `clz' function. */
 #undef HAVE_CLZ
 
@@ -355,6 +358,9 @@
 
 /* Define to 1 if you have the <sys/utsname.h> header file. */
 #undef HAVE_SYS_UTSNAME_H
+
+/* Define to 1 if you have the <time.h> header file. */
+#undef HAVE_TIME_H
 
 /* Define to 1 if you have the `uname' function. */
 #undef HAVE_UNAME

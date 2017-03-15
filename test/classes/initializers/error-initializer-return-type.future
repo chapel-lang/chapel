@@ -1,6 +1,0 @@
-bug: Fails to report an error that an init method is returning a value
-
-Currently the implementation of init methods return a value and the error
-does not get generated.  Work is underway to make the implementation match
-the specification.  Unclear if the error message will be acceptable once
-that happens.

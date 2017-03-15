@@ -72,6 +72,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
+	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/Error.chpl \
 	standard/FileSystem.chpl \
@@ -98,6 +99,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Curl.chpl \
 	packages/FFTW.chpl \
 	packages/FFTW_MT.chpl \
+	packages/Futures.chpl \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \

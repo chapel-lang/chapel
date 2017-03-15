@@ -28,7 +28,7 @@ module ChapelUtil {
   }
 
   // required by resolveAutoCopies()
-  proc chpl__autoCopy(arg: chpl_main_argument) return arg;
+  proc chpl__initCopy(arg: chpl_main_argument) return arg;
   proc chpl__autoDestroy(arg: chpl_main_argument) {}
   
 

@@ -1,6 +1,0 @@
-bug: Reading from a sparse array of dense arrays results in a runtime error when the index was not added
-
-It seems that reading from a sparse array of dense arrays will always enter the
-'ref' return case. If the index we're reading from is was not added to the
-sparse domain, then the 'ref' case will halt. I think the correct behavior
-is to enter the 'const ref' case which ought to return the IRV.

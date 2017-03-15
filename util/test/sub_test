@@ -1197,7 +1197,7 @@ for testname in testsrc:
     else:
         if maxLocalesAvailable is not None:
             if numlocales > maxLocalesAvailable:
-                sys.stdout.write('[Warning: skipping {0} because it requires '
+                sys.stdout.write('[Skipping test {0} because it requires '
                                  '{1} locales but only {2} are available]\n'
                                  .format(os.path.join(localdir, test_filename),
                                          numlocales, maxLocalesAvailable))
@@ -2064,6 +2064,12 @@ for testname in testsrc:
                                 if re.search(s, output, re.IGNORECASE) != None:
                                     extra_msg = '(possible JIRA 154) '
                                     DiffBinaryFiles(execgoodfile, execlog)
+                                    break
+
+                            err_strings = ['Master got an xSocket: error in sendAll']
+                            for s in err_strings:
+                                if re.search(s, output, re.IGNORECASE) != None:
+                                    extra_msg = '(possible JIRA 274) '
                                     break
 
                             sys.stdout.write('%s[Error %s'%(futuretest, extra_msg))

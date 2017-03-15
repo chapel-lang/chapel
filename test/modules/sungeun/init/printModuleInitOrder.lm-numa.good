@@ -41,7 +41,6 @@ Initializing Modules:
     ChapelUtil
     ChapelDynDispHack
     Assert
-    CommDiagnostics
     AlignedTSupport
     RangeChunk
    printModuleInitOrder

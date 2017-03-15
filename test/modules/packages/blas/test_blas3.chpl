@@ -173,7 +173,7 @@ proc test_gemm_helper(type t) {
     const alpha = rng.getNext(),
           beta = rng.getNext();
 
-    gemm(A[..,0.. #k],B[..,0.. #n],C[..,0.. #n],alpha,beta, ldA=ld, ldB=ld,ldC=ld);
+    gemm(A[..,0.. #k], B[..,0.. #n], C[..,0.. #n], alpha,beta);
     forall (i,j) in {0.. #m, 0.. #n} do
       D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,0.. #k]*B[..,j]));
     var err = max reduce abs(C-D);

@@ -145,8 +145,8 @@ static void fini_type_options(void)
 {
     qthread_debug(AFFINITY_CALLS, "destroying type options\n");
 
-    free(topo_types);
-    free(topo_type_names);
+    qt_free(topo_types);
+    qt_free(topo_type_names);
 }
 
 static void init_type_options(void)
@@ -166,8 +166,8 @@ static void init_type_options(void)
         obj = obj->first_child;
     }
 
-    topo_types = malloc(num_types * sizeof(hwloc_obj_type_t));
-    topo_type_names = malloc(num_types * HIERARCHY_NAME_LEN * sizeof(char));
+    topo_types = qt_malloc(num_types * sizeof(hwloc_obj_type_t));
+    topo_type_names = qt_malloc(num_types * HIERARCHY_NAME_LEN * sizeof(char));
     assert(NULL != topo_types);
     assert(NULL != topo_type_names);
 
@@ -225,7 +225,7 @@ static void qt_affinity_internal_hwloc_teardown(void)
     hwloc_set_cpubind(sys_topo, mccoy_thread_bindings, HWLOC_CPUBIND_THREAD);
     hwloc_bitmap_free(mccoy_thread_bindings);
 
-    free(qt_topo.worker_map);
+    qt_free(qt_topo.worker_map);
     hwloc_topology_destroy(sys_topo);
     initialized = 0;
 } /*}}}*/
@@ -543,7 +543,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
     }
 
     /* Construct worker map */
-    qt_topo.worker_map = malloc(qt_topo.num_workers * sizeof(topo_worker_t));
+    qt_topo.worker_map = qt_malloc(qt_topo.num_workers * sizeof(topo_worker_t));
     assert(qt_topo.worker_map);
 
     for (int i = 0; i < qt_topo.num_sheps; i++) {
@@ -610,10 +610,10 @@ int INTERNAL qt_affinity_gendists(qthread_shepherd_t   *sheps,
 
     for (size_t i = 0; i < qt_topo.num_sheps; i++) {
         sheps[i].node            = i % qt_topo.num_sheps;
-        sheps[i].sorted_sheplist = calloc(qt_topo.num_sheps - 1,
-                                          sizeof(qthread_shepherd_id_t));
-        sheps[i].shep_dists      = calloc(qt_topo.num_sheps,
-                                          sizeof(unsigned int));
+        sheps[i].sorted_sheplist = qt_calloc(qt_topo.num_sheps - 1,
+                                             sizeof(qthread_shepherd_id_t));
+        sheps[i].shep_dists      = qt_calloc(qt_topo.num_sheps,
+                                             sizeof(unsigned int));
     }
 
 #ifdef QTHREAD_HAVE_HWLOC_DISTS

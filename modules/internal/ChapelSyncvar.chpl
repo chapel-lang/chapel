@@ -116,14 +116,14 @@ module ChapelSyncvar {
       isOwned = true;
     }
 
-    proc _syncvar(type valType, other : _syncvar(valType)) {
+    proc _syncvar(type valType, const other : _syncvar(valType)) {
       ensureFEType(valType);
 
       wrapped = other.wrapped;
       isOwned = false;
     }
 
-    proc ~_syncvar() {
+    proc deinit() {
       if isOwned == true then
         delete wrapped;
     }
@@ -347,7 +347,7 @@ module ChapelSyncvar {
       chpl_sync_initAux(syncAux);
     }
 
-    proc ~_synccls() {
+    proc deinit() {
       chpl_sync_destroyAux(syncAux);
     }
 
@@ -484,7 +484,7 @@ module ChapelSyncvar {
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
     }
 
-    proc ~_qthreads_synccls() {
+    proc deinit() {
       // There's no explicit destroy function, but qthreads reclaims memory
       // for full variables that have no pending operations
       qthread_fill(alignedValue);
@@ -618,14 +618,14 @@ module ChapelSyncvar {
       isOwned = true;
     }
 
-    proc _singlevar(type valType, other : _singlevar(valType)) {
+    proc _singlevar(type valType, const other : _singlevar(valType)) {
       ensureFEType(valType);
 
       wrapped = other.wrapped;
       isOwned = false;
     }
 
-    proc ~_singlevar() {
+    proc deinit() {
       if isOwned == true then
         delete wrapped;
     }
@@ -748,7 +748,7 @@ module ChapelSyncvar {
       chpl_single_initAux(singleAux);
     }
 
-    proc ~_singlecls() {
+    proc deinit() {
       chpl_single_destroyAux(singleAux);
     }
 

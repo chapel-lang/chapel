@@ -7,8 +7,9 @@ class Circle {
   param rank: int = 1;
   type idxType = int;
   const r : rank*idxType;
-  proc init(h,param rank=h.size)
+  proc init(h,param myRank=h.size)
   {
+    this.rank = myRank;
     this.r=h;
     super.init();
   }
@@ -20,9 +21,9 @@ proc Circle.area() return 3.14159*2**2;
 
 class Oval: Circle{
   var r2: real;
-  proc init(h1,h2,param rank=h1.size) {
+  proc init(h1,h2,param myRank=h1.size) {
     r2=h2;
-    super.init(h1, h1.size);
+    super.init(h1, myRank);
   }
 }
 

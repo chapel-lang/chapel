@@ -329,7 +329,7 @@ class CSRDom: BaseSparseDomImpl {
     nnz += actualAddCnt;
 
     //grow nnzDom if necessary
-    _bulkGrow(nnz);
+    _bulkGrow();
 
     //linearly fill the new colIdx from backwards
     var newIndIdx = indsDom.high; //index into new indices
@@ -473,7 +473,7 @@ class CSRArr: BaseSparseArrImpl {
   }
   // value version for POD types
   proc dsiAccess(ind: rank*idxType)
-  where !shouldReturnRvalueByConstRef(eltType) {
+  where shouldReturnRvalueByValue(eltType) {
     // make sure we're in the dense bounding box
     dom.boundsCheck(ind);
 

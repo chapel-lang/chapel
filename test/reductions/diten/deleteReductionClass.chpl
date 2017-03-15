@@ -6,7 +6,7 @@ class LastOp: ReduceScanOp {
   proc LastOp(type eltType) {
     count$ += 1;
   }
-  proc ~LastOp() {
+  proc deinit() {
     count$ -= 1;
   }
   proc accumulate(x) {

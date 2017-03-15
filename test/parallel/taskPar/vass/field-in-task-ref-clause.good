@@ -1,8 +1,8 @@
-field-in-task-ref-clause.chpl:7: error: myField: cannot reference a field or function in a 'with' clause of a begin block
-field-in-task-ref-clause.chpl:13: error: myField: cannot reference a field or function in a 'with' clause of a cobegin block
-field-in-task-ref-clause.chpl:19: error: myField: cannot reference a field or function in a 'with' clause of a coforall loop
-field-in-task-ref-clause.chpl:24: error: myField: cannot reference a field or function in a 'with' clause of a forall loop
-field-in-task-ref-clause.chpl:45: error: myField: cannot reference a field or function in a 'with' clause of a begin block
-field-in-task-ref-clause.chpl:51: error: myField: cannot reference a field or function in a 'with' clause of a cobegin block
-field-in-task-ref-clause.chpl:57: error: myField: cannot reference a field or function in a 'with' clause of a coforall loop
-field-in-task-ref-clause.chpl:62: error: myField: cannot reference a field or function in a 'with' clause of a forall loop
+field-in-task-ref-clause.chpl:7: error: cannot reference a field or function 'myField' in a with-clause of this begin block
+field-in-task-ref-clause.chpl:13: error: cannot reference a field or function 'myField' in a with-clause of this cobegin block
+field-in-task-ref-clause.chpl:19: error: cannot reference a field or function 'myField' in a with-clause of this coforall loop
+field-in-task-ref-clause.chpl:24: error: cannot reference a field or function 'myField' in a with-clause of this forall loop
+field-in-task-ref-clause.chpl:45: error: cannot reference a field or function 'myField' in a with-clause of this begin block
+field-in-task-ref-clause.chpl:51: error: cannot reference a field or function 'myField' in a with-clause of this cobegin block
+field-in-task-ref-clause.chpl:57: error: cannot reference a field or function 'myField' in a with-clause of this coforall loop
+field-in-task-ref-clause.chpl:62: error: cannot reference a field or function 'myField' in a with-clause of this forall loop

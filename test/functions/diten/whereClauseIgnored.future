@@ -1,4 +1,0 @@
-semantic: what should a where clause do on a non-generic function?
-
-Currently it is mostly ignored. Should this get an error? Should where clauses
-be evaluated even if the function is not generic?

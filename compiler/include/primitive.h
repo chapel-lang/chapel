@@ -23,6 +23,7 @@
 #include "chpl.h"
 
 class CallExpr;
+class Expr;
 class Type;
 class VarSymbol;
 class QualifiedType;
@@ -33,11 +34,14 @@ enum PrimitiveTag {
   PRIM_ACTUALS_LIST,
   PRIM_NOOP,
   PRIM_MOVE,
+
   PRIM_INIT,
+  PRIM_INIT_VAR,
   PRIM_NO_INIT,
   PRIM_TYPE_INIT,       // Used in a context where only a type is needed.
                         // Establishes the type of the result without
                         // generating code.
+  PRIM_INITIALIZER_SET_FIELD,
   PRIM_REF_TO_STRING,
   PRIM_RETURN,
   PRIM_THROW,
@@ -129,7 +133,6 @@ enum PrimitiveTag {
   PRIM_CHPL_COMM_GET_STRD,      // Direct calls to the Chapel comm layer for strided comm
   PRIM_CHPL_COMM_PUT_STRD,      //  may eventually add others (e.g., non-blocking)
 
-  PRIM_OPTIMIZE_ARRAY_BLK_MULT,
   PRIM_ARRAY_ALLOC,
   PRIM_ARRAY_FREE,
   PRIM_ARRAY_FREE_ELTS,
@@ -269,5 +272,8 @@ void initPrimitive();
 extern Vec<const char*> memDescsVec;
 VarSymbol* newMemDesc(const char* str);
 VarSymbol* newMemDesc(Type* type);
+
+
+bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src);
 
 #endif

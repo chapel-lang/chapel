@@ -244,7 +244,7 @@ proc createRandomGraph() {
   // Uses the NPB random number generator for historical reasons.
   //
   use Random;
-  var myRandNums = makeRandomStream(seed=314159265,algorithm=RNG.NPB);
+  var myRandNums = makeRandomStream(real, seed=314159265,algorithm=RNG.NPB);
 
   //
   // allocate all the vertices and assign them labels and random weights

@@ -451,7 +451,7 @@ proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
 //
 // setupTargetLocalesArray
 //
-proc setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
+proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
   param rank = targetLocDom.rank;
   if rank != 1 && specifiedLocArr.rank == 1 {
     const factors = _factor(rank, specifiedLocArr.numElements);
@@ -469,4 +469,42 @@ proc setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
     targetLocDom = {(...ranges)};
     targetLocArr = specifiedLocArr;
   }
+}
+
+//
+// bulkCommConvertCoordinate() converts
+//   point 'ind' within 'bView'
+// to
+//   a point within 'aView'
+// that has the same indexOrder in each dimension.
+//
+// This function was contributed by Juan Lopez and later improved by Alberto.
+// In the SBAC'12 paper it is called m(). Later modified by Ben Harshbarger
+// in support of ArrayViews.
+//
+// TODO: assert that bView and aView are rectangular?
+// TODO: If we wanted to be more general, the domain args could turn into
+//       tuples of ranges
+//
+proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
+{
+  if bView.rank != aView.rank {
+    compilerError("Invalid arguments passed to bulkCommConvertCoordinate - domain ranks must match: bView.rank = ", bView.rank:string, ", aView.rank = ", aView.rank:string);
+  }
+  param rank = aView.rank;
+  const b = chpl__tuplify(ind);
+  if b.size != rank {
+    param plural = if b.size == 1 then " element" else " elements";
+    compilerError("Invalid arguments passed to bulkCommConvertCoordinate - expecting index with ", rank:string, " elements, got ", b.size:string, plural);
+  }
+  type idxType = aView.idxType;
+  const AD = aView.dims();
+  const BD = bView.dims();
+  var result: rank * idxType;
+  for param i in 1..rank {
+    const ar = AD(i), br = BD(i);
+    if boundsChecking then assert(br.member(b(i)));
+    result(i) = ar.orderToIndex(br.indexOrder(b(i)));
+  }
+  return result;
 }

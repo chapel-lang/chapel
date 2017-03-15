@@ -55,7 +55,7 @@ class Particle3D {
     Darr = {ParticleAttrib, 0.. #npart};
     Dpart = {0.. #npart};
     if random {
-      var rng = new RandomStream();
+      var rng = new RandomStream(eltType=real);
       var x, y, z : real;
       for ii in Dpart {
         x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z = rng.getNext()*1000.0;
@@ -96,7 +96,7 @@ class Particle3D {
     }
 
     // Set the random number generator
-    var rng = new RandomStream(41);
+    var rng = new RandomStream(real, 41);
     var jj : int;
     for ii in 0..(npart-2) {
       jj = (rng.getNext()*(npart-ii)):int + ii;
@@ -176,7 +176,7 @@ class KDNode {
     return (left==nil) && (right==nil);
   }
 
-  proc ~KDNode() {
+  proc deinit() {
     if left then delete left;
     if right then delete right;
   }

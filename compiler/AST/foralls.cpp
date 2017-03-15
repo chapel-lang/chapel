@@ -19,7 +19,6 @@
 
 // foralls.h, foralls.cpp - support for forall loops
 
-#include "expr.h"
 #include "foralls.h"
 #include "astutil.h"
 #include "stlUtil.h"
@@ -193,6 +192,7 @@ static TFITag it2tfi(Expr* ref, IntentTag intent) {
   case INTENT_INOUT:
   case INTENT_PARAM:
   case INTENT_TYPE:
+  case INTENT_REF_MAYBE_CONST:
     USR_FATAL_CONT(ref, "%s is not supported in a 'with' clause",
                         intentDescrString(intent));
     return TFI_DEFAULT;

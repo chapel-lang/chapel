@@ -190,7 +190,7 @@ module String {
     }
 
     pragma "no doc"
-    proc ref ~string() {
+    proc ref deinit() {
       if owned && !this.isEmptyString() {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {

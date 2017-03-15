@@ -114,14 +114,16 @@ class UseStmt : public Stmt {
 ************************************* | ************************************/
 
 enum BlockTag {
-// Bits:
+  // Bits:
   BLOCK_NORMAL      = 0,
   BLOCK_SCOPELESS   = 1<<0, ///< does not introduce a new scope
   BLOCK_TYPE_ONLY   = 1<<1, ///< deleted after type resolution
   BLOCK_EXTERN      = 1<<2, ///< init block for an extern var
   BLOCK_C_FOR_LOOP  = 1<<3, ///< init/test/incr block for a CForLoop
-// Bit masks:
+
+  // Bit masks:
   BLOCK_TYPE        = BLOCK_SCOPELESS | BLOCK_TYPE_ONLY,
+  BLOCK_EXTERN_TYPE = BLOCK_EXTERN    | BLOCK_TYPE
 };
 
 class BlockStmt : public Stmt {
@@ -165,6 +167,9 @@ public:
   void                insertAtHead(Expr* ast);
   void                insertAtTail(Expr* ast);
   void                insertAtTailBeforeFlow(Expr* ast);
+
+  void                insertAtHead(AList exprs);
+  void                insertAtTail(AList exprs);
 
   void                insertAtHead(const char* format, ...);
   void                insertAtTail(const char* format, ...);
@@ -239,7 +244,8 @@ enum GotoTag {
   GOTO_RETURN,
   GOTO_GETITER_END,
   GOTO_ITER_RESUME,
-  GOTO_ITER_END
+  GOTO_ITER_END,
+  GOTO_ERROR_HANDLING
 };
 
 

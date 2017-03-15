@@ -14,7 +14,6 @@ proc main() {
   A.updateFluff();
 
   ref first = A[1,..];
-  writeln("Fluff = ", first._value.dom.dist.fluff);
   first = 0;
   A.updateFluff();
 

@@ -858,19 +858,22 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     // Note that not all things that are passed by ref will have the ref intent
     // flag, and may just be ref variables. This is a known bug, see comments
     // in addVarsToFormals(): flattenFunctions.cpp.
-    if(ArgSymbol* argSymbol = toArgSymbol(symExpr->symbol())) {
-      if(argSymbol->intent == INTENT_REF ||
-         argSymbol->intent == INTENT_CONST_REF ||
-         isReferenceType(argSymbol->type)) {
-        mightHaveBeenDeffedElseWhere = true;
-      }
-    }
-    for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
-      if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
+    if (isArgSymbol(symExpr->symbol()) &&
+        symExpr->getValType()->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false) {
+      if(ArgSymbol* argSymbol = toArgSymbol(symExpr->symbol())) {
         if(argSymbol->intent == INTENT_REF ||
            argSymbol->intent == INTENT_CONST_REF ||
            isReferenceType(argSymbol->type)) {
           mightHaveBeenDeffedElseWhere = true;
+        }
+      }
+      for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
+        if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
+          if(argSymbol->intent == INTENT_REF ||
+             argSymbol->intent == INTENT_CONST_REF ||
+             isReferenceType(argSymbol->type)) {
+            mightHaveBeenDeffedElseWhere = true;
+          }
         }
       }
     }
@@ -940,18 +943,18 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
   printf("\n");
   printf("HOISTABLE Invariants\n");
   for_set(SymExpr, loopInvariant, loopInvariantInstructions) {
-    printf("Symbol %s with id %d is a hoistable loop invariant\n", loopInvariant->var->name, loopInvariant->var->id);
+    printf("Symbol %s with id %d is a hoistable loop invariant\n", loopInvariant->symbol()->name, loopInvariant->symbol()->id);
   }
   
   printf("\n\n\n");
   printf("Invariant OPERANDS\n");
   for_set(SymExpr, symExpr2, loopInvariantOperands) {
-    printf("%s %d is invariant\n", symExpr2->var->name, symExpr2->id);
+    printf("%s %d is invariant\n", symExpr2->symbol()->name, symExpr2->id);
   }
   
   printf("\n\n\n");
   for_vector(SymExpr, symExpr3, loopSymExprs) {
-    printf("%s %dis used/ defed\n", symExpr3->var->name, symExpr3->var->id);
+    printf("%s %d is used/ defed\n", symExpr3->symbol()->name, symExpr3->symbol()->id);
   } 
 #endif  
  

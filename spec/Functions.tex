@@ -221,8 +221,8 @@ iterators are currently not supported.
 The \sntx{return-type} is optional and is discussed in~\rsec{Return_Types}.
 A type function may not specify a return type.
 
-The optional \sntx{where-clause} is only applicable if the function is
-generic.  It is discussed in~\rsec{Where_Expressions}.
+The \sntx{where-clause} is optional and is discussed
+in~\rsec{Where_Expressions}.
 
 Function and operator overloading is supported in Chapel and is
 discussed in~\rsec{Function_Overloading}.
@@ -1040,6 +1040,37 @@ Otherwise, there must exist exactly one type such that an implicit conversion
 is allowed between every other type and that type, and that type becomes the
 inferred return type.
 If the above requirements are not satisfied, it is an error.
+
+\section{Where Expressions}
+\label{Where_Expressions}
+\index{where@\chpl{where}}
+\index{expressions!where@\chpl{where}}
+\index{functions!where@\chpl{where}}
+
+The list of function candidates can be constrained by {\em where clauses}.  A
+where clause is specified in the definition of a
+function~(\rsec{Function_Definitions}).  The expression in the where clause
+must be a boolean parameter expression that evaluates to either \chpl{true} or
+\chpl{false}. If it evaluates to \chpl{false}, the function is rejected and
+thus is not a possible candidate for function resolution.
+
+\begin{chapelexample}{whereClause.chpl}
+Given two overloaded function definitions
+\begin{chapel}
+proc foo(x) where x.type == int { writeln("int"); }
+proc foo(x) where x.type == real { writeln("real"); }
+\end{chapel}
+\begin{chapelpost}
+foo(3);
+foo(3.14);
+\end{chapelpost}
+\begin{chapeloutput}
+int
+real
+\end{chapeloutput}
+the call foo(3) resolves to the first definition because the where clause on
+the second function evaluates to false.
+\end{chapelexample}
 
 \section{Nested Functions}
 \label{Nested_Functions}

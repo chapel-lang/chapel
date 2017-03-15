@@ -12,7 +12,7 @@ module foo {
       this.x = new helper(x);
     }
 
-    proc ~Zed() {
+    proc deinit() {
       writeln("in ~Zed(",x,")");
       delete this.x;
     }
