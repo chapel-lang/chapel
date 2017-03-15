@@ -26,7 +26,7 @@ low-level matrix, vector, and scalar operations. While `netlib
 <http://www.netlib.org/blas/#_documentation>`_ provides the official
 reference version of BLAS, this documentation refers to the
 `MKL BLAS <https://software.intel.com/en-us/node/520725>`_ documentation, due
-to quality and interface similarities.
+to interface similarities.
 
 This module is intended to work with non-distributed dense rectangular arrays.
 
@@ -65,11 +65,7 @@ BLAS Implementations:
 
   * **MKL**
 
-    * The BLAS module assumes that the C_BLAS functions are defined in the
-      header named ``cblas.h``.
-      MKL defines these in ``mkl_cblas.h``. This can be worked around by
-      creating a symbolic link to the correct header file name:
-      ``ln -s mkl_cblas.h cblas.h``
+    * Compile with :param:`-sisBLAS_MKL` if using MKL BLAS.
 
   * **OpenBLAS**
 
@@ -110,7 +106,8 @@ in memory.
 
 .. warning::
 
-  The ``CHPL_LOCALE_MODEL=numa`` configuration is not supported by this module.
+  The ``CHPL_LOCALE_MODEL=numa`` configuration is currently not supported by
+  this module.
 
 .. MKL Documentation References
 
@@ -168,17 +165,29 @@ in memory.
 
 .. BLAS Module TODO:
   - Clearer compiler errors instead of using where-clauses
-  - Modular implementations using config param-wrapped require statements
+  - Support more implementations using config param-wrapped require statements
+    - related: general RequireMKL module
   - More consistent documentation
   - Support banded/packed matrix routines
 
 */
 module BLAS {
 
+  /*
+    Tells the BLAS module to look for ``mkl_cblas.h`` instead of ``cblas.h``.
+    Set this to `true` if you are using the Intel MKL BLAS implementation.
+  */
+  config param isBLAS_MKL=false;
+
   use C_BLAS;
 
   use SysCTypes;
-  require "cblas.h";
+
+  if (isBLAS_MKL) {
+    require "mkl_cblas.h";
+  } else {
+    require "cblas.h";
+  }
 
 
   /* Define row or column order */
