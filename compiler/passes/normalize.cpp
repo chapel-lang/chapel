@@ -70,7 +70,7 @@ static void normalize(BaseAST* base);
 static void normalize_returns(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
-static void insert_call_temps(CallExpr* call);
+static void insertCallTemps(CallExpr* call);
 
 static void normalizeTypeAlias(DefExpr* defExpr);
 static void normalizeArrayAlias(DefExpr* defExpr);
@@ -431,8 +431,6 @@ static void normalize(BaseAST* base) {
     processSyntacticDistributions(call);
   }
 
-
-
   //
   // Phase 2
   //
@@ -487,7 +485,7 @@ static void normalize(BaseAST* base) {
 
   for_vector(CallExpr, call, calls2) {
     applyGetterTransform(call);
-    insert_call_temps(call);
+    insertCallTemps(call);
   }
 
   for_vector(CallExpr, call, calls2) {
@@ -1105,119 +1103,170 @@ static void applyGetterTransform(CallExpr* call) {
   }
 }
 
-static bool moveMakesTypeAlias(CallExpr* call)
-{
-  if (call->isPrimitive(PRIM_MOVE)) {
-    if (SymExpr* se = toSymExpr(call->get(1)))
-      if (VarSymbol* var = toVarSymbol(se->symbol()))
-        if (var->isType()) return true;
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool shouldInsertCallTemps(CallExpr* call);
+static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
+static bool moveMakesTypeAlias(CallExpr* call);
+
+static void insertCallTemps(CallExpr* call) {
+  if (shouldInsertCallTemps(call) == true) {
+    SET_LINENO(call);
+
+    CallExpr*  parentCall = toCallExpr(call->parentExpr);
+    Expr*      stmt       = call->getStmtExpr();
+    VarSymbol* tmp        = newTemp("call_tmp");
+
+    // Add FLAG_EXPR_TEMP unless this tmp is being used
+    // as a sub-expression for a variable initialization.
+    // This flag triggers autoCopy/autoDestroy behavior.
+    if (parentCall == NULL ||
+        (parentCall->isNamed("chpl__initCopy")  == false &&
+         parentCall->isPrimitive(PRIM_INIT_VAR) == false)) {
+      tmp->addFlag(FLAG_EXPR_TEMP);
+    }
+
+    if (call->isPrimitive(PRIM_NEW)    == true) {
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+    }
+
+    if (call->isPrimitive(PRIM_TYPEOF) == true) {
+      tmp->addFlag(FLAG_TYPE_VARIABLE);
+    }
+
+    evaluateAutoDestroy(call, tmp);
+
+    tmp->addFlag(FLAG_MAYBE_PARAM);
+    tmp->addFlag(FLAG_MAYBE_TYPE);
+
+    if (call->isNamed("super")   == true &&
+
+        parentCall               != NULL &&
+        parentCall->isNamed(".") == true &&
+        parentCall->get(1)       == call) {
+      // We've got an access to a method or field on the super type.
+      // This means qe should preserve that knowledge for when we
+      // attempt to access the method on the super type.
+      tmp->addFlag(FLAG_SUPER_TEMP);
+    }
+
+    call->replace(new SymExpr(tmp));
+
+    stmt->insertBefore(new DefExpr(tmp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
   }
-  return false;
 }
 
-static void insert_call_temps(CallExpr* call)
-{
-  Expr* stmt = call->getStmtExpr();
+static bool shouldInsertCallTemps(CallExpr* call) {
+  Expr*     parentExpr = call->parentExpr;
+  CallExpr* parentCall = toCallExpr(parentExpr);
+  Expr*     stmt       = call->getStmtExpr();
+  bool      retval     = false;
 
-  // Ignore call if it is not in the tree.
-  if (call->parentExpr == NULL || stmt == NULL)
-    return;
+  if        (parentExpr                               == NULL) {
+    retval = false;
 
-  // Call is already at statement level, so no need to flatten.
-  if (call == stmt)
-    return;
+  } else if (isDefExpr(parentExpr)                    == true) {
+    retval = false;
 
-  if (toDefExpr(call->parentExpr))
-    return;
+  } else if (stmt                                     == NULL) {
+    retval = false;
 
-  if (call->partialTag)
-    return;
+  } else if (call                                     == stmt) {
+    retval = false;
 
-  if (call->isPrimitive(PRIM_TUPLE_EXPAND) ||
-      call->isPrimitive(PRIM_GET_MEMBER_VALUE))
-    return;
+  } else if (call->partialTag                         == true) {
+    retval = false;
 
-  // TODO: Check if we need a call temp for PRIM_ASSIGN.
-  CallExpr* parentCall = toCallExpr(call->parentExpr);
+  } else if (call->isPrimitive(PRIM_TUPLE_EXPAND)     == true) {
+    retval = false;
 
-  if (parentCall && (parentCall->isPrimitive(PRIM_MOVE) ||
-                     parentCall->isPrimitive(PRIM_NEW)))
-    return;
+  } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
+    retval = false;
 
-  SET_LINENO(call);
+  } else if (parentCall && parentCall->isPrimitive(PRIM_MOVE)) {
+    retval = false;
 
-  VarSymbol* tmp = newTemp("call_tmp");
+  } else if (parentCall && parentCall->isPrimitive(PRIM_NEW))  {
+    retval = false;
 
-
-  // Add FLAG_EXPR_TEMP unless this tmp is being used
-  // as a sub-expression for a variable initialization.
-  // This flag triggers autoCopy/autoDestroy behavior.
-  if (parentCall == NULL ||
-      (parentCall->isNamed("chpl__initCopy")  == false &&
-       parentCall->isPrimitive(PRIM_INIT_VAR) == false)) {
-    tmp->addFlag(FLAG_EXPR_TEMP);
+  } else {
+    retval =  true;
   }
 
-  if (call->isPrimitive(PRIM_NEW))
-    tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+  return retval;
+}
 
-  if (call->isPrimitive(PRIM_TYPEOF))
-    tmp->addFlag(FLAG_TYPE_VARIABLE);
+static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
+  Expr*     parentExpr = call->parentExpr;
+  CallExpr* parentCall = toCallExpr(parentExpr);
+  FnSymbol* fn         = call->getFunction();
 
-  // NOAKES 2015/11/02
+  // Noakes 2015/11/02
   //   The expansion of _build_tuple() creates temps that need to be
   //   autoDestroyed.  This is a short-cut to arrange for that to occur.
   //   A better long term solution would be preferred
-  if (call->isNamed("chpl__initCopy")       == true &&
-      parentCall                            != NULL &&
-      parentCall->isNamed("_build_tuple")   == true)
+  if (call->isNamed("chpl__initCopy")     == true &&
+      parentCall                          != NULL &&
+      parentCall->isNamed("_build_tuple") == true) {
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  }
 
   // MPF 2016-10-20
-  //   This is a workaround for a problem in
-  //     types/typedefs/bradc/arrayTypedef
-  //   I'm sure that there is a better way to handle this
-  {
-    // either in module init fn or in a sequence of parloopexpr fns
-    // computing an array type than are in a module init fn
-    FnSymbol* fn = call->getFunction();
-    while( fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) ) {
-      fn = fn->defPoint->getFunction();
-    }
-    if (fn == fn->getModule()->initFn) {
-      CallExpr* cur = parentCall;
-      CallExpr* sub = call;
-      // Look for a parent call that is either:
-      //  * making an array type alias, or
-      //  * passing the result into the 2nd argument of buildArrayRuntimeType.
-      while (cur != NULL) {
-        if (moveMakesTypeAlias(cur) ||
-            (cur->isNamed("chpl__buildArrayRuntimeType") && cur->get(2) == sub))
-          break;
+  // This is a workaround for a problem in
+  //   types/typedefs/bradc/arrayTypedef
+  //
+  // I'm sure that there is a better way to handle this either in the
+  // module init function or in a sequence of parloopexpr functions
+  // computing an array type that are in a module init fn
+
+  while (fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) == true) {
+    fn = fn->defPoint->getFunction();
+  }
+
+  if (fn == fn->getModule()->initFn) {
+    CallExpr* cur = parentCall;
+    CallExpr* sub = call;
+
+    // Look for a parent call that is either:
+    //  making an array type alias, or
+    //  passing the result into the 2nd argument of buildArrayRuntimeType.
+    while (cur != NULL) {
+      if (moveMakesTypeAlias(cur) == true) {
+        break;
+
+      } else if (cur->isNamed("chpl__buildArrayRuntimeType") == true &&
+                 cur->get(2)                                 == sub) {
+        break;
+
+      } else {
         sub = cur;
         cur = toCallExpr(cur->parentExpr);
       }
-      if (cur) {
-        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+    }
+
+    if (cur) {
+      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+    }
+  }
+}
+
+static bool moveMakesTypeAlias(CallExpr* call) {
+  bool retval = false;
+
+  if (call->isPrimitive(PRIM_MOVE)) {
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      if (VarSymbol* var = toVarSymbol(se->symbol())) {
+        retval = var->isType();
       }
     }
   }
 
-  tmp->addFlag(FLAG_MAYBE_PARAM);
-  tmp->addFlag(FLAG_MAYBE_TYPE);
-
-  if (call->isNamed("super") && parentCall && parentCall->isNamed(".") &&
-      parentCall->get(1) == call) {
-    // We've got an access to a method or field on the super type.  This means
-    // we should preserve that knowledge for when we attempt to access the
-    // method on the super type.
-    tmp->addFlag(FLAG_SUPER_TEMP);
-  }
-
-  call->replace(new SymExpr(tmp));
-
-  stmt->insertBefore(new DefExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
+  return retval;
 }
 
 /************************************* | **************************************
