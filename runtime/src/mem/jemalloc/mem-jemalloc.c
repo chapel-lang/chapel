@@ -326,36 +326,6 @@ static void initializeSharedHeap(void) {
   useUpMemNotInHeap();
 }
 
-static void showDesiredSharedHeapLocality(c_string);
-static void showDesiredSharedHeapLocality(c_string hdr) {
-  void* heap_base;
-  size_t heap_size;
-  char* hbc;
-  size_t i;
-  size_t ps = chpl_getHeapPageSize();
-  c_sublocid_t sublocLast;
-  size_t iLast = 0;
-
-  printf("--------------------\n");
-  printf("%s\n", hdr);
-
-  chpl_comm_desired_shared_heap(&heap_base, &heap_size);
-  hbc = (char*) heap_base;
-  sublocLast = chpl_topo_getMemLocality(hbc);
-  for (i = ps; i < heap_size; i += ps) {
-    c_sublocid_t subloc = chpl_topo_getMemLocality(hbc + i);
-    if (subloc != sublocLast) {
-      if (sublocLast != c_sublocid_none)
-        printf("%p-%p %d\n", hbc + iLast, hbc + i - 1, (int) sublocLast);
-      sublocLast = subloc;
-      iLast = i;
-    }
-  }
-  printf("%p-%p %d\n", hbc + iLast, hbc + i - 1, (int) sublocLast);
-
-  printf("--------------------\n");
-}
-
 
 void chpl_mem_layerInit(void) {
   void* heap_base;
@@ -430,16 +400,6 @@ void chpl_mem_layerInit(void) {
       }
 
       chpl_mem_impl_allocLocalizes = true;
-
-      if (chpl_nodeID == 0) {
-        printf("Multiple shared heaps:\n");
-        for (hpi = 0; hpi < num_heaps; hpi++) {
-          printf("%d: base %p, size %#zx\n",
-                 hpi, heaps[hpi].base, heaps[hpi].size);
-        }
-        printf("--------------------\n");
-        showDesiredSharedHeapLocality("Shared heap locality");
-      }
     }
 
     initializeSharedHeap();
