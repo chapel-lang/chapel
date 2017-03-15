@@ -2105,17 +2105,42 @@ module ChapelArray {
         }
       }
 
-      const ranges = _getRankChangeRanges(args, _value.dom);
-      const domClass = new ArrayViewRankChangeDom(upinds=ranges,
-                                                downdom = _value.dom,
-                                                collapsedDim=collapsedDim,
-                                                idx = idx);
-      //
-      // TODO: The following won't result in a privatized domain... do
-      // we want one?
-      pragma "no auto destroy" const d = new _domain(nullPid, domClass);
-      //      pragma "no auto destroy" const d = _newDomain(domClass);
-      d._value._free_when_no_arrs = true;
+      // Create a domain of the current array's rank which represents
+      // the domain indicated by the rank-change slicing arguments
+      // distributed according to the original distribution.  Thus,
+      // for a slice of {3, 2..n} on a Block-distributed array,
+      // downdom would be {3..3, 2..n} Block-distributed in a way that
+      // aligned it with the original array ('this').
+      const downranges = _getRankChangeDownRanges(args, _value.dom);
+      const downdist = this.domain.dist;
+      const downdomclass = downdist.newRectangularDom(rank=this.rank,
+                                                      idxType=this.idxType,
+                                                      stridable=downranges(1).stridable);
+
+      // TODO: When can we destroy this downdom?  Probably when the
+      // distribution 'dist' below is done with it?
+      pragma "no auto destroy"
+      var downdom = _newDomain(downdomclass);
+      downdom = {(...downranges)};
+      downdom._value._free_when_no_arrs = true;
+
+      // Create distribution, domain, and array objects representing
+      // the array view
+      const upranges = _getRankChangeUpRanges(args, _value.dom);
+      
+      const dist = new ArrayViewRankChangeDist(upinds=upranges,
+                                               downdomPid = downdom._pid,
+                                               downdomInst = downdom._instance,
+                                               collapsedDim=collapsedDim,
+                                               idx = idx);
+
+      const updomclass = dist.dsiNewRectangularDom(rank = upranges.size,
+                                                   idxType = upranges(1).idxType,
+                                                   stridable = upranges(1).stridable);
+      pragma "no auto destroy"
+      var updom = _newDomain(updomclass);
+      updom = {(...upranges)};
+      updom._value._free_when_no_arrs = true;
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what
@@ -2123,15 +2148,15 @@ module ChapelArray {
       const (arr, arrpid)  = (this._value, this._pid);
 
       var a = new ArrayViewRankChangeArr(eltType=this.eltType,
-                                         _DomPid = d._pid,
-                                         dom = d._instance,
+                                         _DomPid = updom._pid,
+                                         dom = updom._instance,
                                          _ArrPid=arrpid,
                                          _ArrInstance=arr,
                                          collapsedDim=collapsedDim,
                                          idx=idx);
 
       // this doesn't need to lock since we just created the domain d
-      d._value.add_arr(a, locking=false);
+      updom._value.add_arr(a, locking=false);
       return _newArray(a);
     }
 
@@ -3117,7 +3142,7 @@ module ChapelArray {
     //return help(1);
   }
 
-  proc _getRankChangeRanges(args, downdom) {
+  proc _getRankChangeUpRanges(args, downdom) {
     return collectRanges(1);
 
     proc collectRanges(param dim: int) {
@@ -3146,6 +3171,40 @@ module ChapelArray {
           return ((...x), newRange);
         } else {
           return x;
+        }
+      }
+    }
+  }
+
+  proc _getRankChangeDownRanges(args, downdom) {
+    return collectRanges(1);
+
+    proc collectRanges(param dim: int) {
+      if dim > args.size then
+        compilerError("domain slice requires a range in at least one dimension");
+      if isRange(args(dim)) {
+        const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
+        return collectRanges(dim+1, (newRange,));
+      } else
+        return collectRanges(dim+1, (args(dim)..args(dim),));
+    }
+
+    proc collectRanges(param dim: int, x: _tuple) {
+      if dim > args.size {
+        return x;
+      } else if dim < args.size {
+        if isRange(args(dim)) {
+          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
+          return collectRanges(dim+1, ((...x), newRange));
+        } else {
+          return collectRanges(dim+1, ((...x), args(dim)..args(dim)));
+        }
+      } else {
+        if isRange(args(dim)) {
+          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
+          return ((...x), newRange);
+        } else {
+          return ((...x), args(dim)..args(dim));
         }
       }
     }

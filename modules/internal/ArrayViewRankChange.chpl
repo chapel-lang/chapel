@@ -26,15 +26,23 @@ module ArrayViewRankChange {
 
   class ArrayViewRankChangeDist: BaseDist {
     const upinds;
-    const downdom;
+    const downdomPid;
+    const downdomInst;
     const collapsedDim;
     const idx;
+
+    proc deinit() {
+      // This distribution "owns" downdom, so should destroy it when
+      // it's being destroyed.
+      _delete_dom(downdomInst, _isPrivatized(downdomInst));
+    }
     
     proc dsiNewRectangularDom(param rank, type idxType, param stridable) {
       //      compilerWarning("rank arg = " + rank);
       //      compilerWarning("downrank = " + downrank);
       return new ArrayViewRankChangeDom(upinds=upinds,
-                                        downdom=downdom,
+                                        downdomPid=downdomPid,
+                                        downdomInst=downdomInst,
                                         collapsedDim=collapsedDim,
                                         idx=idx);
     }
@@ -43,7 +51,8 @@ module ArrayViewRankChange {
     // TODO: Is this OK?  Probably not
     //
     proc dsiClone() return new ArrayViewRankChangeDist(upinds=upinds,
-                                                       downdom=downdom,
+                                                       downdomPid=downdomPid,
+                                                       downdomInst=downdomInst,
                                                        collapsedDim=collapsedDim,
                                                        idx=idx);
   }
@@ -59,13 +68,15 @@ module ArrayViewRankChange {
     const upinds;
 
     // the domain for the sliced array
-    const downdom;
+    const downdomPid;
+    const downdomInst;
 
     const collapsedDim;
     const idx;
 
     const dist = new ArrayViewRankChangeDist(upinds=upinds,
-                                             downdom=downdom,
+                                             downdomPid=downdomPid,
+                                             downdomInst=downdomInst,
                                              collapsedDim=collapsedDim,
                                              idx=idx);
 
@@ -87,6 +98,13 @@ module ArrayViewRankChange {
       return collapsedDim.size;
     }
 
+    proc downdom {
+      if _isPrivatized(downdomInst) then
+        return chpl_getPrivatizedCopy(downdomInst.type, downdomPid);
+      else
+        return downdomInst;
+    }
+
     proc stridable param {
       for param d in 1..upinds.size do
         if isRange(upinds(d)) && upinds(d).stridable then
@@ -101,8 +119,8 @@ module ArrayViewRankChange {
       writeln("In build array, pid = ", arr._pid);
       // TODO: Update once we start privatizing
       return new ArrayViewRankChangeArr(eltType  =eltType,
-                                        _DomPid = downdom.pid,
-                                        dom = downdom,
+                                        _DomPid = downdomPid,
+                                        dom = downdomInst,
                                         _ArrPid=arr._pid,
                                         _ArrInstance=arr._instance,
                                         collapsedDim=collapsedDim,
