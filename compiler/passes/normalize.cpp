@@ -67,7 +67,7 @@ static void find_printModuleInit_stuff();
 static void processSyntacticDistributions(CallExpr* call);
 static bool is_void_return(CallExpr* call);
 static void normalize(BaseAST* base);
-static void normalize_returns(FnSymbol* fn);
+static void normalizeReturns(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insertCallTemps(CallExpr* call);
@@ -439,8 +439,9 @@ static void normalize(BaseAST* base) {
   collectSymbols(base, symbols);
 
   for_vector(Symbol, symbol, symbols) {
-    if (FnSymbol* fn = toFnSymbol(symbol))
-      normalize_returns(fn);
+    if (FnSymbol* fn = toFnSymbol(symbol)) {
+      normalizeReturns(fn);
+    }
   }
 
   //
@@ -785,13 +786,20 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
 }
 
-// Following normalization, each function contains only one return statement
-// preceded by a label.  The first half of the function counts the
-// total number of returns and the number of void returns.
-// The big IF beginning with if (rets.n == 1) determines if the function
-// is already normal.
-// The last half of the function performs the normalization steps.
-static void normalize_returns(FnSymbol* fn) {
+/************************************* | **************************************
+*                                                                             *
+* Following normalization, each function contains only one return statement   *
+* preceded by a label.  The first half of the function counts the total       *
+* number of returns and the number of void returns.                           *
+*                                                                             *
+* The big IF beginning with if (rets.n == 1) determines if the function is    *
+* already normal.                                                             *
+*                                                                             *
+* The last half of the function performs the normalization steps.             *
+*                                                                             *
+************************************** | *************************************/
+
+static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
 
   CallExpr* theRet = NULL; // Contains the return if it is unique.
@@ -947,7 +955,12 @@ static void normalize_returns(FnSymbol* fn) {
 }
 
 
-// If se is a type alias, resolves it recursively, or fails and returns NULL.
+/************************************* | **************************************
+*                                                                             *
+* If se is a type alias, resolves it recursively, or fails and returns NULL.  *
+*                                                                             *
+************************************** | *************************************/
+
 static TypeSymbol* resolveTypeAlias(SymExpr* se)
 {
   while (se)
@@ -1149,7 +1162,7 @@ static void insertCallTemps(CallExpr* call) {
         parentCall->isNamed(".") == true &&
         parentCall->get(1)       == call) {
       // We've got an access to a method or field on the super type.
-      // This means qe should preserve that knowledge for when we
+      // This means we should preserve that knowledge for when we
       // attempt to access the method on the super type.
       tmp->addFlag(FLAG_SUPER_TEMP);
     }
