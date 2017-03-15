@@ -1,4 +1,4 @@
-use UniquePtr;
+use OwnedObject;
 
 class C {
   proc ~C() {
