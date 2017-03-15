@@ -28,6 +28,9 @@ reference version of BLAS, this documentation refers to the
 `MKL BLAS <https://software.intel.com/en-us/node/520725>`_ documentation, due
 to quality and interface similarities.
 
+This module is intended to work with non-distributed dense rectangular arrays.
+
+
 Compiling with BLAS
 -------------------
 
@@ -105,6 +108,10 @@ dimensions of the matrices from the arrays that are passed in, even when one is
 passing in a sub-array such that the array elements are not contiguously stored
 in memory.
 
+.. warning::
+
+  The ``CHPL_LOCALE_MODEL=numa`` configuration is not supported by this module.
+
 .. MKL Documentation References
 
 .. _GEMM:   https://software.intel.com/en-us/node/ae8380b9-cac8-4c57-9af3-2eaac6acfc1b
@@ -163,6 +170,7 @@ in memory.
   - Clearer compiler errors instead of using where-clauses
   - Modular implementations using config param-wrapped require statements
   - More consistent documentation
+  - Support banded/packed matrix routines
 
 */
 module BLAS {
