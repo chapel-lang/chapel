@@ -857,6 +857,8 @@ timeVectorArray:
     - increased array-as-vec problem size (#3422)
   05/28/16:
     - upgrade jemalloc to 4.2.0 (#3919)
+  01/31/17:
+    - upgrade jemalloc to 4.4.0 (#5278)
 
 dynamic:
   02/28/17:
