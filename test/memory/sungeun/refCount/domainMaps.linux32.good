@@ -65,10 +65,10 @@ total:
 Replicated Dist
 ===============
 Copy of domain map:
-	188 bytes leaked
+	180 bytes leaked
 	0 private objects leaked
 Return domain map:
-	188 bytes leaked
+	180 bytes leaked
 	0 private objects leaked
 Create domain:
 	0 bytes leaked
@@ -77,4 +77,4 @@ Create domain and array:
 	0 bytes leaked
 	0 private objects leaked
 total:
-	564 bytes leaked
+	540 bytes leaked
