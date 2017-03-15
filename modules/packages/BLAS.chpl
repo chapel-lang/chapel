@@ -84,8 +84,8 @@ Cray Systems:
   compiler, which implicitly links against the libsci library. Therefore, no
   additional steps are required of the user.
 
-Chapel's BLAS API
------------------
+Chapel BLAS API
+---------------
 
 This module provides higher-level wrappers around the BLAS functions. These
 provide reasonable default values for many less commonly used arguments and
@@ -100,13 +100,10 @@ wrapper for the ``[sdcz]gemm`` routines.
 The native BLAS interface can still be accessed by calling routines from the
 ``C_BLAS`` submodule.
 
-.. note::
- Chapel determines the dimensions of the matrices from the arrays that are
- passed in. However, if one is passing in a sub-array such that the array
- elements are not contiguously stored in memory, then the user needs to
- pass in the leading dimension (```lda``` etc) to the array, just as they
- would in C. These default to 0, in which case Chapel determines the appropriate
- values based on the array passed in.
+The ``ldA`` argument is omitted from the Chapel BLAS API. Chapel determines the
+dimensions of the matrices from the arrays that are passed in, even when one is
+passing in a sub-array such that the array elements are not contiguously stored
+in memory.
 
 .. MKL Documentation References
 
@@ -1622,7 +1619,7 @@ module BLAS {
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
             diag : Diag = Diag.NonUnit,
-            ldA: int = 0, incx : c_int = 1)
+            incx : c_int = 1)
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
 
