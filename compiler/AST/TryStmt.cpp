@@ -125,6 +125,7 @@ Expr* TryStmt::getNextExpr(Expr* expr) {
 }
 
 GenRet TryStmt::codegen() {
-  INT_FATAL("CatchStmt should be removed before codegen");
-  return GenRet(-1);
+  INT_FATAL("TryStmt should be removed before codegen");
+  GenRet ret;
+  return ret;
 }

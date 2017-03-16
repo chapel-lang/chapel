@@ -79,5 +79,6 @@ Expr* CatchStmt::getFirstExpr() {
 
 GenRet CatchStmt::codegen() {
   INT_FATAL("CatchStmt should be removed before codegen");
-  return GenRet(-1);
+  GenRet ret;
+  return ret;
 }
