@@ -858,14 +858,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     if !s1 && s2 then
       compilerError("type mismatch in assignment of ranges with different stridable parameters"); 
-
-    r1._low = r2._low;
-    r1._high = r2._high;
-
-    if s1 && s2 then
+    else if s1 && s2 then
       r1._stride = r2.stride;
     else if s1 then
       r1._stride = 1;
+
+    r1._low = r2._low;
+    r1._high = r2._high;
 
     r1._alignment = r2._alignment;
     r1._aligned = r2._aligned;

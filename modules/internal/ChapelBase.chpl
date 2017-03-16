@@ -111,9 +111,7 @@ module ChapelBase {
     compilerError("cannot assign void to a variable of non-void type");
   }
 
-  inline proc =(ref a: void, b: void) param {
-    return _void;
-  }
+  inline proc =(ref a: void, b: void) { }
 
 /*
   // TMacD suggested possibly wanting to be able to cast a non-void to void
