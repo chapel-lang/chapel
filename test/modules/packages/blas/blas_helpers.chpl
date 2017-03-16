@@ -158,9 +158,7 @@ proc bandArrayTriangular(A: [?Dom] ?eltType, k, uplo=Uplo.Upper, order=Order.Row
   where A.rank == 2 {
 
   // Must be square matrix
-
-  if !isSquare(A) then
-    halt('non-square array passed to bandArrayTriangular. Aborting');
+  assert(Dom.dim(1).size == Dom.dim(2).size);
 
   // Matrix order
   const n = Dom.dim(1).size;
