@@ -45,9 +45,32 @@ typedef struct shared_heap {
 } shared_heap_t;
 
 static shared_heap_t* heaps;
-static int num_heaps;
 
-static inline int get_num_heaps(void) {
+static int get_num_heaps(void) {
+  static int num_heaps = -1;
+
+  if (num_heaps < 0) {
+    //
+    // Initialize: without multiple NUMA domains we definitely don't
+    // need multiple heaps.  Even with multiple NUMA domains we might
+    // not need multiple heaps, if other constraints aren't satisfied.
+    //
+    void* heap_base;
+    size_t heap_size;
+
+    chpl_comm_desired_shared_heap(&heap_base, &heap_size);
+    if (heap_base == NULL) {
+      num_heaps = 0;
+    } else {
+      num_heaps = chpl_topo_getNumNumaDomains();
+      if (num_heaps < 1) {
+        num_heaps = 1;
+      } else if (!chpl_mem_impl_alloc_localizes()) {
+        num_heaps = 1;
+      }
+    }
+  }
+
   return num_heaps;
 }
 
@@ -60,6 +83,69 @@ static inline int get_heap(void) {
       chpl_internal_error("unexpected heap index");
     }
     return hpi;
+  }
+}
+
+
+// helper routine to initialize the table of heaps
+static void setupLocalizedHeaps(void* heap_base, size_t heap_size) {
+  const int num_heaps = get_num_heaps();
+  int hpi;
+  char* subchunk_base;
+  size_t* subchunk_sizes;
+
+  heaps = (shared_heap_t*) chpl_je_malloc(num_heaps * sizeof(*heaps));
+  if (heaps == NULL) {
+    chpl_internal_error("cannot allocate heaps");
+  }
+
+  if (num_heaps <= 1) {
+    heaps[0].base = heap_base;
+    heaps[0].size = heap_size;
+    heaps[0].cur_offset = 0;
+    if (pthread_mutex_init(&heaps[0].alloc_lock, NULL) != 0) {
+      chpl_internal_error("cannot init chunk_alloc lock");
+    }
+
+    return;
+  }
+
+  subchunk_sizes =
+    (size_t*) chpl_je_malloc(num_heaps * sizeof(*subchunk_sizes));
+  if (subchunk_sizes == NULL) {
+    chpl_internal_error("cannot allocate subchunk_sizes");
+  }
+
+  chpl_topo_setMemSubchunkLocality(heap_base, heap_size, true,
+                                   subchunk_sizes);
+
+  subchunk_base = (char*) heap_base;
+  for (hpi = 0; hpi < num_heaps; hpi++) {
+    heaps[hpi].base = subchunk_base;
+    heaps[hpi].size = subchunk_sizes[hpi];
+    heaps[hpi].cur_offset = 0;
+    if (pthread_mutex_init(&heaps[hpi].alloc_lock, NULL) != 0) {
+      chpl_internal_error("cannot init chunk_alloc lock");
+    }
+    subchunk_base += heaps[hpi].size;
+
+    //
+    // The chpl_topo_setMemSubchunkLocality() call above isn't
+    // having the effect we desire, for reasons that are mostly but
+    // not completely understood.  So for now, to get the locality
+    // we want, touch the pages into existence while executing on
+    // the desired NUMA domains here.
+    //
+    {
+      c_sublocid_t sublocWas = chpl_topo_getThreadLocality();
+      size_t off;
+      const size_t pgSize = chpl_getHeapPageSize();
+      chpl_topo_setThreadLocality(hpi);
+      for (off = 0; off < heaps[hpi].size; off += pgSize) {
+        ((char*) (heaps[hpi].base))[off] = 0;
+      }
+      chpl_topo_setThreadLocality(sublocWas);
+    }
   }
 }
 
@@ -270,9 +356,10 @@ static void get_small_and_large_class_sizes(size_t* classes) {
 
 // helper routine to determine if an address is not part of any shared heap
 static bool addressNotInAnyHeap(void* ptr) {
+  const int num_heaps = get_num_heaps();
   uintptr_t u_ptr = (uintptr_t)ptr;
   int hpi;
-  for (hpi = 0; hpi < get_num_heaps(); hpi++) {
+  for (hpi = 0; hpi < num_heaps; hpi++) {
     uintptr_t u_base = (uintptr_t)heaps[hpi].base;
     uintptr_t u_top =  u_base + heaps[hpi].size;
     if (u_ptr >= u_base && u_ptr < u_top) {
@@ -319,94 +406,18 @@ static void useUpMemNotInHeap(void) {
   }
 }
 
-// Have jemalloc use our shared heap. Initialize all the arenas, then replace
-// the chunk hooks with our custom ones, and finally use up any memory jemalloc
-// got from the system that's not in our shared heap.
-static void initializeSharedHeap(void) {
+// Have jemalloc use our shared heap. Localize the shared heap, initialize all
+// the arenas, then replace the chunk hooks with our custom ones, and finally
+// use up any memory jemalloc got from the system that's not in our shared
+// heap.
+static void initializeSharedHeap(void* heap_base, size_t heap_size) {
+  setupLocalizedHeaps(heap_base, heap_size);
+
   initialize_arenas();
 
   replaceChunkHooks();
 
   useUpMemNotInHeap();
-}
-
-
-// helper routine to initialize the table of heaps
-static void layerInitHelper(void* heap_base, size_t heap_size) {
-  const int numaDomCount = chpl_topo_getNumNumaDomains();
-  int hpi;
-  char* subchunk_base;
-  size_t* subchunk_sizes;
-
-  //
-  // Without multiple NUMA domains we definitely don't need multiple
-  // heaps.  Even with multiple NUMA domains we might not need multiple
-  // heaps, if other constraints aren't satisfied.
-  //
-  if (numaDomCount == 1) {
-    num_heaps = 1;
-  } else {
-    num_heaps = numaDomCount;
-    if (!chpl_mem_impl_alloc_localizes()) {
-      num_heaps = 1;
-    }
-  }
-
-  heaps = (shared_heap_t*) chpl_je_malloc(get_num_heaps() * sizeof(*heaps));
-  if (heaps == NULL) {
-    chpl_internal_error("cannot allocate heaps");
-  }
-
-  if (!chpl_mem_impl_alloc_localizes()) {
-    heaps[0].base = heap_base;
-    heaps[0].size = heap_size;
-    heaps[0].cur_offset = 0;
-    if (pthread_mutex_init(&heaps[0].alloc_lock, NULL) != 0) {
-      chpl_internal_error("cannot init chunk_alloc lock");
-    }
-
-    return;
-  }
-
-  subchunk_sizes =
-    (size_t*) chpl_je_malloc(get_num_heaps() * sizeof(*subchunk_sizes));
-  if (subchunk_sizes == NULL) {
-    chpl_internal_error("cannot allocate subchunk_sizes");
-  }
-
-  chpl_topo_setMemSubchunkLocality(heap_base, heap_size, true,
-                                   subchunk_sizes);
-
-  subchunk_base = (char*) heap_base;
-  for (hpi = 0; hpi < get_num_heaps(); hpi++) {
-    fflush(stdout);
-    heaps[hpi].base = subchunk_base;
-    heaps[hpi].size = subchunk_sizes[hpi];
-    heaps[hpi].cur_offset = 0;
-    if (pthread_mutex_init(&heaps[hpi].alloc_lock, NULL) != 0) {
-      chpl_internal_error("cannot init chunk_alloc lock");
-    }
-    subchunk_base += heaps[hpi].size;
-
-    //
-    // The chpl_topo_setMemSubchunkLocality() call above isn't
-    // having the effect we desire, for reasons that are mostly but
-    // not completely understood.  So for now, to get the locality
-    // we want, touch the pages into existence while executing on
-    // the desired NUMA domains here.
-    //
-    fflush(stdout);
-    {
-      c_sublocid_t sublocWas = chpl_topo_getThreadLocality();
-      size_t off;
-      const size_t pgSize = chpl_getHeapPageSize();
-      chpl_topo_setThreadLocality(hpi);
-      for (off = 0; off < heaps[hpi].size; off += pgSize) {
-        ((char*) (heaps[hpi].base))[off] = 0;
-      }
-      chpl_topo_setThreadLocality(sublocWas);
-    }
-  }
 }
 
 
@@ -426,8 +437,7 @@ void chpl_mem_layerInit(void) {
   //   jemalloc 4.5.0 man: "Once, when the first call is made to one of the
   //   memory allocation routines, the allocator initializes its internals"
   if (heap_base != NULL) {
-    layerInitHelper(heap_base, heap_size);
-    initializeSharedHeap();
+    initializeSharedHeap(heap_base, heap_size);
   } else {
     void* p;
     if ((p = chpl_je_malloc(1)) == NULL) {
@@ -439,9 +449,10 @@ void chpl_mem_layerInit(void) {
 
 
 void chpl_mem_layerExit(void) {
+  const int num_heaps = get_num_heaps();
   int hpi;
 
-  for (hpi = 0; hpi < get_num_heaps(); hpi++) {
+  for (hpi = 0; hpi < num_heaps; hpi++) {
     if (heaps[hpi].base != NULL) {
       // ignore errors, we're exiting anyways
       (void) pthread_mutex_destroy(&heaps[hpi].alloc_lock);
