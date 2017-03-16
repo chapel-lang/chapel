@@ -38,7 +38,7 @@
 module ArrayViewRankChange {
 
   class ArrayViewRankChangeDist: BaseDist {
-    const upinds;
+    const updom;
     const downdomPid;
     const downdomInst;
     const collapsedDim;
@@ -62,15 +62,18 @@ module ArrayViewRankChange {
                                               idx=idx,
                                               dist=this);
       // Assign in case there are stridability differences
+      newarr.updom = updom;
+      /*
       for d in 1..rank do
         newarr.upinds(d) = upinds(d);
+      */
       return newarr;
     }
 
     //
     // TODO: Is this OK?  Probably not
     //
-    proc dsiClone() return new ArrayViewRankChangeDist(upinds=upinds,
+    proc dsiClone() return new ArrayViewRankChangeDist(updom=updom,
                                                        downdomPid=downdomPid,
                                                        downdomInst=downdomInst,
                                                        collapsedDim=collapsedDim,
@@ -89,7 +92,7 @@ module ArrayViewRankChange {
     type idxType;
     param stridable;
     
-    var upinds: rank*range(idxType, stridable=stridable);
+    var updom: DefaultRectangularDom(rank, idxType, stridable);  // always a default rectangular -- is that OK?
 
     // the domain for the sliced array
     const downdomPid;
@@ -99,22 +102,6 @@ module ArrayViewRankChange {
     const idx;
 
     const dist;
-
-    // TODO: This is overly simplistic and should be improved; maybe
-    // this is what calling _getRankChangeRanges() on upinds would
-    // help with?
-    /*
-    proc idxType type {
-      if isRange(upinds(1)) then
-        return upinds(1).idxType;
-      else
-        return upinds(1);
-    }
-
-    proc rank param {
-      return upinds.size;
-    }
-    */
 
     proc downrank param {
       return collapsedDim.size;
@@ -126,15 +113,6 @@ module ArrayViewRankChange {
       else
         return downdomInst;
     }
-
-    /*
-    proc stridable param {
-      for param d in 1..upinds.size do
-        if isRange(upinds(d)) && upinds(d).stridable then
-          return true;
-      return false;
-    }
-    */
 
     proc dsiBuildArray(type eltType) {
       pragma "no auto destroy"
@@ -151,9 +129,46 @@ module ArrayViewRankChange {
                                         idx=idx);
     }
 
+    // TODO: Use delegation feature for these?
+    // TODO: Can't all these be implemented in ChapelArray given dsiDim()?
+    
     proc dsiNumIndices {
-      return downdom.dsiNumIndices;
+      return updom.dsiNumIndices;
     }
+
+    proc dsiLow {
+      return updom.dsiLow;
+    }
+
+    proc dsiHigh {
+      return updom.dsiHigh;
+    }
+
+    proc dsiAlignedLow {
+      return updom.dsiAlignedLow;
+    }
+
+    proc dsiAlignedHigh {
+      return updom.dsiAlignedHigh;
+    }
+
+    proc dsiStride {
+      return updom.dsiStride;
+    }
+
+    proc dsiAlignment {
+      return updom.dsiAlignment;
+    }
+
+    proc dsiFirst {
+      return updom.dsiFirst;
+    }
+
+    proc dsiLast {
+      return updom.dsiLast;
+    }
+    
+
 
     proc dsiDim(upDim: int) {
       //      writeln("Call to dsiDim(", upDim, ")");
@@ -182,14 +197,15 @@ module ArrayViewRankChange {
       }
       return upDims;
     }
-    
+
     proc dsiGetIndices() {
-      return upinds;
+      return updom.dsiGetIndices();
     }
 
     proc dsiSetIndices(inds) {
-      if (inds != upinds) then
-        halt("Can only support matching indices so far");
+      for d in 1..rank do
+        if (inds(d) != updom.dsiDim(d)) then
+          halt("Can only support matching indices so far");
     }
 
     proc dsiMember(i) {
@@ -283,7 +299,25 @@ module ArrayViewRankChange {
     proc dsiMyDist() {
       return dist;
     }
-        
+
+    proc dsiTargetLocales() {
+      //
+      // BLC: To tighten this up, we'd need to query the distribution to
+      // see what subset of target locales the rank-change slice hit vs.
+      // not.
+      //
+      //      compilerWarning("Calls to .targetLocales() on rank-change slices may currently return a superset of the locales targeted.");
+      return downdom.dsiTargetLocales();
+    }
+
+    proc dsiHasSingleLocalSubdomain() param
+      return downdom.dsiHasSingleLocalSubdomain();
+
+    proc dsiLocalSubdomain() {
+      return downdom.dsiLocalSubdomain();
+    }
+
+
   } // ArrayViewRankChangeDom
   
   //
@@ -532,7 +566,7 @@ module ArrayViewRankChange {
       // see what subset of target locales the rank-change slice hit vs.
       // not.
       //
-      compilerWarning("Calls to .targetLocales() on rank-change slices may currently return a superset of the locales targeted.");
+      //      compilerWarning("Calls to .targetLocales() on rank-change slices may currently return a superset of the locales targeted.");
       return arr.dsiTargetLocales();
     }
 

@@ -2103,32 +2103,34 @@ module ChapelArray {
       // Create distribution, domain, and array objects representing
       // the array view
       const upranges = _getRankChangeUpRanges(args, _value.dom);
+      pragma "no auto destroy"
+      var updom = {(...upranges)};
       
-      const dist = new ArrayViewRankChangeDist(upinds=upranges,
+      const dist = new ArrayViewRankChangeDist(updom=updom._instance,
                                                downdomPid = downdom._pid,
                                                downdomInst = downdom._instance,
                                                collapsedDim=collapsedDim,
                                                idx = idx);
 
-      const updomclass = dist.dsiNewRectangularDom(rank = upranges.size,
+      const rcdomclass = dist.dsiNewRectangularDom(rank = upranges.size,
                                                    idxType = upranges(1).idxType,
                                                    stridable = upranges(1).stridable);
       pragma "no auto destroy"
-      var updom = _newDomain(updomclass);
-      updom = {(...upranges)};
-      updom._value._free_when_no_arrs = true;
-      //      compilerWarning("updom.type is: " + updom.type:string);
-      //      compilerWarning("updom.stridable is: " + updom.stridable:string);
+      var rcdom = _newDomain(rcdomclass);
+      rcdom = updom;  // TODO: Does this actually do something?
+      rcdom._value._free_when_no_arrs = true;
+      //      compilerWarning("rcdom.type is: " + rcdom.type:string);
+      //      compilerWarning("rcdom.stridable is: " + rcdom.stridable:string);
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what
       // we do for slices.
       const (arr, arrpid)  = (this._value, this._pid);
 
-      //      writeln("updom is: ", updom);
+      //      writeln("rcdom is: ", rcdom);
       var a = new ArrayViewRankChangeArr(eltType=this.eltType,
-                                         _DomPid = updom._pid,
-                                         dom = updom._instance,
+                                         _DomPid = rcdom._pid,
+                                         dom = rcdom._instance,
                                          downdomPid = downdom._pid,
                                          downdomInst = downdom._instance,
                                          _ArrPid=arrpid,
@@ -2137,7 +2139,7 @@ module ChapelArray {
                                          idx=idx);
 
       // this doesn't need to lock since we just created the domain d
-      updom._value.add_arr(a, locking=false);
+      rcdom._value.add_arr(a, locking=false);
       return _newArray(a);
     }
 
