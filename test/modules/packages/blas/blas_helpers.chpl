@@ -3,7 +3,6 @@
 use Random;
 use BLAS;
 
-// TODO -- compute these thresholds in a principled way
 config const errorThresholdDouble = 1.e-10;
 config const errorThresholdSingle = 1.e-5;
 
@@ -243,12 +242,12 @@ proc determinant(A: [?Adom] ?eltType, i=0): eltType {
     halt('non-square array passed to determinant. Aborting');
 
   const n = Adom.dim(1).size;
-
   if n == 1 then return A[0, 0];
 
   var d = 0: eltType;
   for j in 0..#n do
     d += (((-1)**(i+j))*(A[i,j])*determinant(minor(i, j, A))): eltType;
+
   return d;
 
 }
@@ -259,28 +258,23 @@ proc minor(i, j, A: [?Adom] ?eltType) {
   if (i >= n || j >= n) then
     halt('Out of bounds index passed to minor()');
 
-
   var a : [0..#n-1, 0..#n-1] eltType;
   var K = 0,
       L = 0;
 
   for k in 0..#n {
     for l in 0..#n  {
-
       // K
       if k == i || l == j then continue;
       if k < i then K = k;
       else K = k-1;
-
       // L
       if l < j then L = l;
       else L = l-1;
-
       // a[K, L]
       a[K,L] = A[k,l];
     }
   }
-
   return a;
 }
 
@@ -290,11 +284,13 @@ proc isSquare(A: [?Adom]) {
   return m == n;
 }
 
-/* Make A a random non-singular matrix, currently just uses I */
+/* Make A a random non-singular matrix, currently just uses I
+   TODO - generate a truly random non-singular matrix */
 proc makeRandomNonSingularRandom(ref A: [] ?t) {
-  // TODO -- Actually generate a random matrix...
+  // Use identity matrix
+  makeUnit(A);
 
-  // This takes too long..
+  // This takes too long...
   /*
     const errorThreshold = blasError(t);
     var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
@@ -304,11 +300,4 @@ proc makeRandomNonSingularRandom(ref A: [] ?t) {
       d = determinant(A);
     }
   */
-
-  // Hack -- just use an identity matrix (works for now)
-  for (i, j) in A.domain {
-    if i != j then A[i,j] = 0: t;
-    else A[i, j] = 1: t;
-  }
-
 }
