@@ -573,7 +573,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_AggregateType:                                                 \
     AST_CALL_LIST(_a, AggregateType, fields, call, __VA_ARGS__);        \
     AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);      \
-    AST_CALL_LIST(_a, AggregateType, delegates, call, __VA_ARGS__);     \
+    AST_CALL_LIST(_a, AggregateType, forwardingTo, call, __VA_ARGS__);  \
     break;                                                              \
   default:                                                              \
     break;                                                              \

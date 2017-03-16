@@ -2532,7 +2532,9 @@ DefExpr* buildForwardingExprFnDef(Expr* expr) {
   // This way, we can work with the rest of the compiler that
   // assumes that 'this' is an ArgSymbol.
   static int delegate_counter = 0;
-  const char* name = astr("delegate_expr", istr(++delegate_counter));
+  const char* name = astr("forwarding_expr", istr(++delegate_counter));
+  if (UnresolvedSymExpr* usex = toUnresolvedSymExpr(expr))
+    name = astr(name, "_", usex->unresolved);
   FnSymbol* fn = new FnSymbol(name);
 
   fn->addFlag(FLAG_INLINE);
@@ -2548,14 +2550,14 @@ DefExpr* buildForwardingExprFnDef(Expr* expr) {
 
 // handle syntax like
 //    var instance:someType;
-//    delegate instance;
+//    forwarding instance;
 BlockStmt* buildForwardingStmt(Expr* expr) {
   return buildChapelStmt(new ForwardingStmt(buildForwardingExprFnDef(expr)));
 }
 
 // handle syntax like
 //    var instance:someType;
-//    delegate instance only foo;
+//    forwarding instance only foo;
 BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except) {
   std::set<const char*> namesSet;
   std::map<const char*, const char*> renameMap;
@@ -2610,10 +2612,10 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool
 
 
 // handle syntax like
-//    delegate var instance:someType;
+//    forwarding var instance:someType;
 // by translating it into
 //    var instance:someType;
-//    delegate instance;
+//    forwarding instance;
 BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {

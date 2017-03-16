@@ -329,16 +329,18 @@ public:
   virtual Expr*       getFirstChild();
   virtual Expr*       getFirstExpr();
 
-  // used during parsing
+  // forwarding function - contains forwarding expression; used during parsing
   DefExpr*            toFnDef;
-  // used before, during resolution
+  // name of forwarding function; used before, during resolution
   const char*         fnReturningForwarding;
   // used during resolution
   Type*               type;
 
-  std::set<const char *> named; // The names of symbols from an 'except' or
-  // 'only' list
-  std::map<const char*, const char*> renamed; // Map of newName: oldName
+  // The names of symbols from an 'except' or 'only' list
+  std::set<const char *> named;
+  // Map of newName: oldName
+  std::map<const char*, const char*> renamed;
+  // Is 'named' an 'except' list? (vs. 'only' list)
   bool except;
 };
 
