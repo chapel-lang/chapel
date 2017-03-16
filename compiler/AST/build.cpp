@@ -2527,8 +2527,7 @@ void applyPrivateToBlock(BlockStmt* block) {
 
 static
 DefExpr* buildForwardingExprFnDef(Expr* expr) {
-  // Instead of just storing expr directly, put it into a method
-  // and store a call to that method.
+  // Put expr into a method and return the DefExpr for that method.
   // This way, we can work with the rest of the compiler that
   // assumes that 'this' is an ArgSymbol.
   static int delegate_counter = 0;
