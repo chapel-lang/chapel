@@ -2088,7 +2088,8 @@ module ChapelArray {
       const downdist = this.domain.dist;
       const downdomclass = downdist.newRectangularDom(rank=this.rank,
                                                       idxType=this.idxType,
-                                                      stridable=downranges(1).stridable);
+                                                      stridable=chpl__anyStridable(downranges));
+      //      compilerWarning("downdomclass.type is: " + downdomclass.type:string);
 
       // TODO: When can we destroy this downdom?  Probably when the
       // distribution 'dist' below is done with it?
@@ -2097,6 +2098,7 @@ module ChapelArray {
       downdom = {(...downranges)};
       downdom._value._free_when_no_arrs = true;
       //      writeln("downdom is: ", downdom);
+      //      compilerWarning("downdom.type is: " + downdom.type:string);
 
       // Create distribution, domain, and array objects representing
       // the array view
@@ -2115,6 +2117,8 @@ module ChapelArray {
       var updom = _newDomain(updomclass);
       updom = {(...upranges)};
       updom._value._free_when_no_arrs = true;
+      //      compilerWarning("updom.type is: " + updom.type:string);
+      //      compilerWarning("updom.stridable is: " + updom.stridable:string);
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what

@@ -212,11 +212,13 @@ module ArrayViewRankChange {
     }
 
     proc chpl_rankChangeConvertLoDTupleToHiD(tup) {
+      //      compilerWarning("tuple type: ", tup.type:string);
       var tupHiD: downrank*tup(1).type;
+      //      compilerWarning("tupHiD type: ", tupHiD.type:string);
       var i = 1;
       for param d in 1..downrank do
         if collapsedDim(d) then
-          tupHiD(d) = downdom.dsiDim(d);
+          tupHiD(d) = 0..0;  // TODO: This seems bogus/arbitrary... or is it?
         else {
           tupHiD(d) = tup(i);
           i += 1;
