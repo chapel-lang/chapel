@@ -1,4 +1,4 @@
-use ReferenceCounting;
+use SharedObject;
 
 class Impl {
   var field: int;
@@ -10,17 +10,16 @@ class Impl {
   proc ~Impl() {
     writeln("in Impl.~Impl");
   }
+
+  proc foo() {
+    writeln("in Impl.foo()");
+  }
 }
 
 proc run() {
-  var x = new RefCounted(new Impl(1));
-  var y: x.type;
-
-  // check assignment
-  y = x;
-
+  var x = new Shared(new Impl(1));
+  x.foo(); // calls x.p.foo()
   writeln(x.p);
-  writeln(y.p);
 }
 
 run();
