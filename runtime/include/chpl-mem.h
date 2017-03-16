@@ -29,6 +29,7 @@
 #include "arg.h"
 #include "chpl-comm.h"
 #include "chpl-mem-hook.h"
+#include "chplsys.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-tasks.h"
@@ -59,16 +60,15 @@ int chpl_posix_memalign_check_valid(size_t alignment);
 // and no additional error checking.
 #include "chpl-mem-impl.h"
 
-size_t chpl_mem_localizationThreshold;
-
 void chpl_mem_init(void);
 void chpl_mem_exit(void);
 
 int chpl_mem_inited(void);
 
-// predeclared here because we need it below; actual definition is
-// near the end
-static chpl_bool chpl_mem_allocLocalizes(void);
+// predeclared here because we need them below; actual definitions
+// are near the end
+static chpl_bool chpl_mem_alloc_localizes(void);
+static size_t chpl_mem_localizationThreshold(void);
 
 static inline
 void* chpl_mem_allocMany(size_t number, size_t size,
@@ -139,14 +139,14 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
   void* p = chpl_mem_allocMany(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                                lineno, filename);
   if (isActualSublocID(subloc)) {
-    if (!chpl_mem_allocLocalizes()
-        && nmemb * eltSize >= chpl_mem_localizationThreshold) {
+    if (!chpl_mem_alloc_localizes()
+        && nmemb * eltSize >= chpl_mem_localizationThreshold()) {
       chpl_topo_setMemLocality(p, nmemb * eltSize, true, subloc);
     }
   }
   else if (localizeSubchunks) {
-    if (!chpl_mem_allocLocalizes()
-        && nmemb * eltSize >= chpl_mem_localizationThreshold) {
+    if (!chpl_mem_alloc_localizes()
+        && nmemb * eltSize >= chpl_mem_localizationThreshold()) {
       chpl_topo_setMemSubchunkLocality(p, nmemb * eltSize, true, NULL);
     }
   }
@@ -233,13 +233,18 @@ void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
 // for allocations large enough that we'll try to force localization
 // where chpl_mem_doLocalization is true, above.)
 //
-static inline
-bool chpl_mem_allocLocalizes(void) {
-#ifdef CHPL_MEM_IMPL_ALLOCLOCALIZES
-    return CHPL_MEM_IMPL_ALLOCLOCALIZES;
-#else
-    return false;
+#ifndef CHPL_MEM_IMPL_ALLOC_LOCALIZES
+  #define CHPL_MEM_IMPL_ALLOC_LOCALIZES() false
 #endif
+
+static inline
+bool chpl_mem_alloc_localizes(void) {
+  return CHPL_MEM_IMPL_ALLOC_LOCALIZES();
+}
+
+static inline
+size_t chpl_mem_localizationThreshold(void) {
+  return chpl_topo_getNumNumaDomains() * 2 * chpl_getHeapPageSize();
 }
 
 #else // LAUNCHER

@@ -30,10 +30,6 @@
 #define MALLOCX_NO_FLAGS 0
 
 
-extern bool chpl_mem_impl_allocLocalizes;
-#define CHPL_MEM_IMPL_ALLOCLOCALIZES chpl_mem_impl_allocLocalizes
-
-
 static inline void* chpl_calloc(size_t n, size_t size) {
   return chpl_je_calloc(n,size);
 }
@@ -62,6 +58,12 @@ static inline size_t chpl_good_alloc_size(size_t minSize) {
   if (minSize == 0) { return 0; }
   return chpl_je_nallocx(minSize, MALLOCX_NO_FLAGS);
 }
+
+
+bool chpl_mem_impl_alloc_localizes(void);
+
+#define CHPL_MEM_IMPL_ALLOC_LOCALIZES() chpl_mem_impl_alloc_localizes()
+
 
 // TODO (EJR 03/11/16): Can/should we consider using the extended API? See JIRA
 // issue 190 (https://chapel.atlassian.net/browse/CHAPEL-190) for more info.
