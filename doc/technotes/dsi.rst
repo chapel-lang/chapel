@@ -606,31 +606,6 @@ as an indication of what procedure(s) need to be defined.
   ``dsiDims()`` and ``dsiGetIndices()`` have the same specification
   and so may be implemented in terms of one another.
 
-.. method:: proc GlobalDomain.dsiBuildRectangularDom(param rank: int, type idxType, param stridable: bool, ranges: rank * range(idxType, BoundedRangeType.bounded, stridable))
-
-  This method is similar to ``dsiNewRectangularDom()``, except it is used
-  in the cases where a new Chapel domain is created from an existing
-  Chapel domain (represented by `this`) and the index set of the desired
-  domain is known (it is defined by the ``ranges`` argument). For example,
-  it is invoked upon domain slicing and when applying domain operations
-  such as expand, exterior, interior, translate.
-  The ``GlobalDistribution`` of the result is the same as that of `this`.
-
-  This method returns a new instance of
-  ``GlobalDomain(rank, idxType, stridable)``
-  that will be the runtime representation of a Chapel domain whose index set
-  is initialized as defined by ``ranges``. Other than that, this instance must
-  satisfy the same constraints as the result of ``dsiNewRectangularDom()``.
-
-  This method can be implemented as follows,
-  unless a more efficient implementation is desired:
-
-   .. code-block:: chapel
-
-    const result = dist.dsiNewRectangularDom(rank, idxType, stridable);
-    result.dsiSetIndices(ranges);
-    return result;
-
 .. [TODO: the following seems correct. The returned object can be an instance
   of a different class than the receiver, at the implementor's discretion.
   That class must satisfy the requirements on ``GlobalDomain`` defined in this

@@ -328,28 +328,6 @@ proc WrapperRectDom.dsiSetIndices(newRanges): void where isTuple(newRanges) {
   origDom.dsiSetIndices(origIx(newRanges));
 }
 
-proc WrapperRectDom.dsiBuildRectangularDom(param rank: int,
-                                           type idxType,
-                                           param stridable: bool,
-                                           ranges: rank * range(idxType,
-                                                 BoundedRangeType.bounded,
-                                                                stridable))
-{
-  const origdom = origDom.dsiBuildRectangularDom(this.dist.origRank,
-                                                 idxType, stridable,
-                                                 origIx(ranges));
-  ensureHasBeenPrivatized(this.dist);
-  ensureHasBeenPrivatized(origdom);
-
-  // 'kind' is determined by this.dist.kind and affects initialData()
-  const result = new WrapperRectDom(rank=rank, idxType=idxType,
-                                    stridable=stridable,
-                            dist=this.dist, origDom = origdom,
-                            whole = {(...ranges)});
-  reportNewDom("dsiBuildRectangularDom", result);
-  return result;
-}
-
 proc WrapperRectDom.dsiBuildArray(type eltType) {
   const origarr = origDom.dsiBuildArray(eltType);
 
