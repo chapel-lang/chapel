@@ -333,7 +333,9 @@ public:
   DefExpr*            toFnDef;
   // name of forwarding function; used before, during resolution
   const char*         fnReturningForwarding;
-  // used during resolution
+  // stores the type returned by the forwarding function
+  // (i.e. the type of the expression to forward to).
+  // Used during resolution to avoid repeated work.
   Type*               type;
 
   // The names of symbols from an 'except' or 'only' list
