@@ -3,9 +3,9 @@
 use Random;
 use BLAS;
 
+// TODO -- compute these thresholds in a principled way
 config const errorThresholdDouble = 1.e-10;
-// note: sporadically failures occur with 1.e-5
-config const errorThresholdSingle = 1.e-4;
+config const errorThresholdSingle = 1.e-3;
 
 proc printErrors(name: string, passed, failed, tests) {
   writef("%5s : %i PASSED, %i FAILED\n".format(name, passed, failed));
