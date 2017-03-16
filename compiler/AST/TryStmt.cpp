@@ -44,6 +44,7 @@ TryStmt::TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches) : Stmt(E_Try
   _tryBang = tryBang;
   _body    = body;
 
+  _catches.parent = this;
   if (catches) {
     for_alist(c, catches->body) {
       INT_ASSERT(isCatchStmt(c));
