@@ -656,6 +656,20 @@ module ChapelArray {
     var ret = if chpl__isArrayView(value) then value._getActualArray() else value;
     return ret;
   }
+
+  //
+  // Returns true if 'arr' is a DefaultRectangular array or is an ArrayView
+  // over a DefaultRetangular array.
+  //
+  // 'arr' can be a full-fledged array type or a class that inherits from
+  // BaseArr
+  //
+  proc chpl__isDROrDRView(arr) param {
+    const value = if isArray(arr) then arr._value else arr;
+    param isDR = value.isDefaultRectangular();
+    param isDRView = chpl__isArrayView(value) && chpl__getActualArray(value).isDefaultRectangular();
+    return isDR || isDRView;
+  }
   //
   // End of array-view utility functions
   //
@@ -3389,8 +3403,8 @@ module ChapelArray {
   }
 
   inline proc chpl__bulkTransferHelper(a, b) {
-    if a._value.isDefaultRectangular() {
-      if b._value.isDefaultRectangular() {
+    if chpl__isDROrDRView(a) {
+      if chpl__isDROrDRView(b) {
         // implemented in DefaultRectangular
         a._value.doiBulkTransferStride(b, chpl__getViewDom(a));
       }
@@ -3398,7 +3412,7 @@ module ChapelArray {
         // b's domain map must implement this
         b._value.doiBulkTransferToDR(a, chpl__getViewDom(b));
     } else {
-      if b._value.isDefaultRectangular() then
+      if chpl__isDROrDRView(b) then
         // a's domain map must implement this
         a._value.doiBulkTransferFromDR(b, chpl__getViewDom(a));
       else

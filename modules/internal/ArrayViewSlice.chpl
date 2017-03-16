@@ -317,7 +317,7 @@ module ArrayViewSlice {
     //
 
     proc shouldUseIndexCache() param {
-      return (_ArrInstance.isDefaultRectangular() &&
+      return (chpl__isDROrDRView(_ArrInstance) &&
               _containsRCRE());
     }
 
@@ -360,8 +360,6 @@ module ArrayViewSlice {
     inline proc dsiGetBaseDom() {
       return dom;
     }
-
-    proc isDefaultRectangular() param return arr.isDefaultRectangular();
 
     proc _getActualArray() {
       if chpl__isArrayView(arr) {

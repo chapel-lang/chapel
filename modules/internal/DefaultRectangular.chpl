@@ -1870,7 +1870,7 @@ module DefaultRectangular {
   }
 
   iter chpl__serialViewIter(arr, viewDom) ref
-    where arr.isDefaultRectangular() && !defRectSimpleDData {
+    where chpl__isDROrDRView(arr) && !defRectSimpleDData {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
     var info = if useCache then arr.indexCache
                else if arr.isSliceArrayView() then arr.arr
@@ -1910,7 +1910,7 @@ module DefaultRectangular {
   }
 
   iter chpl__serialViewIter(arr, viewDom) ref
-    where arr.isDefaultRectangular() && defRectSimpleDData {
+    where chpl__isDROrDRView(arr) && defRectSimpleDData {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
     var info = if useCache then arr.indexCache
                else if arr.isSliceArrayView() then arr.arr

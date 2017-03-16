@@ -223,13 +223,13 @@ module CPtr {
     :arg arr: the array for which we should retrieve a pointer
     :returns: a pointer to the array data
   */
-  inline proc c_ptrTo(arr: []) where isRectangularArr(arr) && !arr._value.isDefaultRectangular() {
+  inline proc c_ptrTo(arr: []) where isRectangularArr(arr) && !chpl__isDROrDRView(arr) {
     if !chpl__getActualArray(arr).oneDData then halt("error: c_ptrTo(multi_ddata array");
     return c_pointer_return(arr[arr.domain.low]);
   }
 
   pragma "no doc"
-  inline proc c_ptrTo(arr: []) where arr._value.isDefaultRectangular() {
+  inline proc c_ptrTo(arr: []) where chpl__isDROrDRView(arr) {
     const val = arr._value;
     if chpl__isArrayView(val) {
       // BHARSH TODO: there *has* to be a cleaner way to do this sort of thing...
