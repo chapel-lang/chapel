@@ -26,7 +26,6 @@
 #include "TryStmt.h"
 
 #include <stack>
-#include <vector>
 
 /*
 This is a pseudo-code example of what this pass is supposed to do with a
@@ -165,12 +164,12 @@ AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
     CatchStmt* catchStmt = toCatchStmt(c);
     BlockStmt* catchBody = catchStmt->body();
     DefExpr*   errorDef  = catchStmt->expr();
-    Type*      errorType = errorDef->sym->type;
+    Type*      errorType = errorDef ? errorDef->sym->type : NULL;
 
     catchBody->remove();
 
     // catchall
-    if (errorType == dtVoid) {
+    if (errorType == NULL) {
       hasCatchAll = true;
       currHandler->insertAtTail(catchBody);
 

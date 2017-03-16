@@ -36,6 +36,7 @@ CatchStmt::~CatchStmt() {
 
 }
 
+// returns null if this is a catch-all
 DefExpr* CatchStmt::expr() const {
   return toDefExpr(_body->body.first());
 }
@@ -86,10 +87,6 @@ void CatchStmt::verify() {
 
   if (!_body) {
     INT_FATAL(this, "CatchStmt::verify. _body is missing");
-  }
-
-  if (!expr()) {
-    INT_FATAL(this, "CatchStmt::verify. Invalid catch expr");
   }
 
   if (!body()) {
