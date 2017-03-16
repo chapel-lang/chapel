@@ -147,6 +147,10 @@ public:
   Qualifier          qual;
   Type*              type;
   FlagSet            flags;
+  // Tuples can contain ref fields. In that event, a VarSymbol/ArgSymbol
+  // needs to be able to track whether the ref field is ref or
+  // const ref. It can depend on the variable for ref to arrays.
+  Qualifier*         fieldQualifiers;
 
   const char*        name;
   const char*        cname;    // Name of symbol for C code
@@ -405,6 +409,7 @@ class TypeSymbol : public Symbol {
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
+*                                                                             *
 ************************************** | *************************************/
 
 class FnSymbol : public Symbol {
@@ -491,7 +496,8 @@ public:
 
   void                       insertBeforeEpilogue(Expr* ast);
 
-  // insertIntoEpilogue adds an Expr before the final return, but after the epilogue label
+  // insertIntoEpilogue adds an Expr before the final return,
+  // but after the epilogue label
   void                       insertIntoEpilogue(Expr* ast);
 
   LabelSymbol*               getEpilogueLabel();
@@ -523,6 +529,8 @@ public:
   void                       throwsErrorInit();
   bool                       throwsError()                               const;
 
+  bool                       retExprDefinesNonVoid()                     const;
+
 private:
   virtual std::string        docsDirective();
 
@@ -531,10 +539,11 @@ private:
   bool                       _throwsError;
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class EnumSymbol : public Symbol {
  public:
@@ -765,6 +774,7 @@ extern VarSymbol *gFalse;
 extern VarSymbol *gTryToken; // try token for conditional function resolution
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gCastChecking;
+extern VarSymbol *gDivZeroChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;

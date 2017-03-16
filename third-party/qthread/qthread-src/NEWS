@@ -1,3 +1,10 @@
+--- 1.12 ---
+New Features:
+ - Pluggable allocators: use --with-alloc={base,chapel} to choose
+Improvements:
+ - Do condwait/backoff in nemesis when getting threads to improve task spawning performance.
+Bugfixes:
+ - Change sleep() and nanosleep() implementation to qt_sleep() and qt_nanosleep() to avoid confusing PMI. 
 --- 1.11 ---
 New Features:
  - Distib scheduler: lower contention numa-aware scheduling

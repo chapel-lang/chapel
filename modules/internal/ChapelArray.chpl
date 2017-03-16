@@ -594,6 +594,8 @@ module ChapelArray {
     return x;
   }
 
+  // pragma is a workaround for ref-pair vs generic/specific overload resolution
+  pragma "compiler generated"
   proc chpl__ensureDomainExpr(x...) {
     return chpl__buildDomainExpr((...x));
   }
@@ -1887,10 +1889,15 @@ module ChapelArray {
 
   pragma "no doc"
   proc shouldReturnRvalueByConstRef(type t) param {
-    if !PODValAccess then return true;
-    if isPODType(t) then return false;
     return true;
   }
+  pragma "no doc"
+  proc shouldReturnRvalueByValue(type t) param {
+    if !PODValAccess then return false;
+    if isPODType(t) then return true;
+    return false;
+  }
+
 
   // Array wrapper record
   pragma "array"
@@ -1967,7 +1974,7 @@ module ChapelArray {
     }
     pragma "no doc" // value version, for POD types
     inline proc const this(i: rank*_value.dom.idxType)
-    where !shouldReturnRvalueByConstRef(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType)
     {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
@@ -1994,7 +2001,7 @@ module ChapelArray {
 
     pragma "no doc" // value version, for POD types
     inline proc const this(i: _value.dom.idxType ...rank)
-    where !shouldReturnRvalueByConstRef(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType)
       return this(i);
 
     pragma "no doc" // const ref version, for not-POD types
@@ -2014,7 +2021,7 @@ module ChapelArray {
     }
     pragma "no doc" // value version, for POD types
     inline proc const localAccess(i: rank*_value.dom.idxType)
-    where !shouldReturnRvalueByConstRef(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType)
     {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
@@ -2040,7 +2047,7 @@ module ChapelArray {
 
     pragma "no doc" // value version, for POD types
     inline proc localAccess(i: _value.dom.idxType ...rank)
-    where !shouldReturnRvalueByConstRef(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType)
       return localAccess(i);
 
     pragma "no doc" // const ref version, for not-POD types
@@ -2809,9 +2816,7 @@ module ChapelArray {
 
     /* Return the number of times ``val`` occurs in the array. */
     proc count(val: this.eltType): int {
-      var total: int = 0;
-      for i in this do if i == val then total += 1;
-      return total;
+      return + reduce (this == val);
     }
 
    /* Returns a tuple of integers describing the size of each dimension.

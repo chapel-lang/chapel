@@ -217,25 +217,11 @@ functions/iterators/angeles/distAdaptativeWSv1.graph
 functions/iterators/angeles/distAdaptativeWSv2.graph
 functions/iterators/angeles/guided.graph
 functions/iterators/angeles/distAdaptativeWS.graph
-# suite: Chapel versus C comparisons
-statements/lydia/forCompare.graph
-statements/lydia/whileCompare.graph
-io/vass/time-write.graph
-arrays/diten/time_iterate.graph
-arrays/lydia/time_access.graph
-statements/lydia/externMethodCallPerf.graph
-# suite: Statement comparisons
-statements/lydia/forVersusWhilePerf.graph
-statements/lydia/ifVersusSelect.graph
-statements/lydia/ifVersusSelect.random.graph
-statements/lydia/ifVersusSelect.alternates.graph
+# suite: Parallel Statement Comparisons
 parallel/taskCompare/lydia/forBeginCompare.graph
 parallel/taskCompare/lydia/coforallCompare.graph
 parallel/taskCompare/lydia/coforallBeginCompare.graph
 parallel/taskCompare/lydia/loopCompare.graph
-statements/lydia/moduleVersusFunctionBaseline.graph
-statements/lydia/moduleVersusFunctionDifAccess.graph
-statements/lydia/moduleVersusFunction.graph
 # suite: Task Spawning
 parallel/taskCompare/elliot/taskSpawn.graph
 parallel/taskCompare/elliot/serialTaskSpawn.graph
@@ -288,5 +274,36 @@ users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
 # suite: Elegance
 studies/elegance/elegance.graph
+# suite: Serial Performance
+patterns/primality/prime.graph
+statements/lydia/forCompare.graph
+statements/lydia/whileCompare.graph
+io/vass/time-write.graph
+arrays/diten/time_iterate.graph
+arrays/lydia/time_access.graph
+statements/lydia/externMethodCallPerf.graph
+statements/lydia/forVersusWhilePerf.graph
+statements/lydia/ifVersusSelect.graph
+statements/lydia/ifVersusSelect.random.graph
+statements/lydia/ifVersusSelect.alternates.graph
+statements/lydia/moduleVersusFunctionBaseline.graph
+statements/lydia/moduleVersusFunctionDifAccess.graph
+statements/lydia/moduleVersusFunction.graph
+# suite: - Chapel versus C Comparisons
+patterns/primality/prime.graph
+statements/lydia/forCompare.graph
+statements/lydia/whileCompare.graph
+io/vass/time-write.graph
+arrays/diten/time_iterate.graph
+arrays/lydia/time_access.graph
+statements/lydia/externMethodCallPerf.graph
+# suite: - Statement Comparisons
+statements/lydia/forVersusWhilePerf.graph
+statements/lydia/ifVersusSelect.graph
+statements/lydia/ifVersusSelect.random.graph
+statements/lydia/ifVersusSelect.alternates.graph
+statements/lydia/moduleVersusFunctionBaseline.graph
+statements/lydia/moduleVersusFunctionDifAccess.graph
+statements/lydia/moduleVersusFunction.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph

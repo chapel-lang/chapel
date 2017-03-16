@@ -400,6 +400,13 @@ module DateTime {
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 
+    timeStruct.tm_sec = 0;
+    timeStruct.tm_min = 0;
+    timeStruct.tm_hour = 0;
+    timeStruct.tm_isdst = 0;
+    timeStruct.tm_gmtoff = 0;
+    timeStruct.tm_zone = nil;
+
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
@@ -526,7 +533,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc time.~time() {
+  proc time.deinit() {
     // delete tzinfo if needed
   }
 
@@ -613,12 +620,15 @@ module DateTime {
     timeStruct.tm_sec = second: int(32);
     timeStruct.tm_min = minute: int(32);
     timeStruct.tm_hour = hour: int(32);
-    timeStruct.tm_year = 1900;
+    timeStruct.tm_year = 0;
     timeStruct.tm_mday = 1;
     timeStruct.tm_mon = 1;
 
+    timeStruct.tm_wday = ((new date(1900, 1, 1)).weekday():int(32) + 1) % 7;
+    timeStruct.tm_yday = 0;
+
     if tzinfo != nil {
-      timeStruct.tm_gmtoff = abs(utcoffset()).seconds;
+      timeStruct.tm_gmtoff = abs(utcoffset()).seconds: c_long;
       timeStruct.tm_zone = __primitive("cast", c_ptr(c_char), tzname().c_str());
       timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
@@ -653,11 +663,16 @@ module DateTime {
         (t1.tzinfo == nil && t2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
     } else if t1.tzinfo == t2.tzinfo {
-      const sec1 = t1.hour*3600 + t1.minute*60 +
-                   t1.second + t1.microsecond/1000000.0;
-      const sec2 = t2.hour*3600 + t2.minute*60 +
-                   t2.second + t2.microsecond/1000000.0;
-      return sec1 < sec2;
+      const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
+      const usec1 = t1.microsecond;
+      const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
+      const usec2 = t2.microsecond;
+      if sec1 < sec2 then
+        return true;
+      else if sec1 == sec2 then
+        return usec1 < usec2;
+      else
+        return false;
     } else {
       // As far as I can tell, python's datetime.time() comparisons don't
       // pay attention to the timezones.
@@ -688,11 +703,16 @@ module DateTime {
         (t1.tzinfo == nil && t2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
     } else if t1.tzinfo == t2.tzinfo {
-      const sec1 = t1.hour*3600 + t1.minute*60 +
-                   t1.second + t1.microsecond/1000000.0;
-      const sec2 = t2.hour*3600 + t2.minute*60 +
-                   t2.second + t2.microsecond/1000000.0;
-      return sec1 <= sec2;
+      const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
+      const usec1 = t1.microsecond;
+      const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
+      const usec2 = t2.microsecond;
+      if sec1 < sec2 then
+        return true;
+      else if sec1 == sec2 then
+        return usec1 <= usec2;
+      else
+        return false;
     } else {
       const dt1 = datetime.combine(new date(1900, 1, 1), t1);
       const dt2 = datetime.combine(new date(1900, 1, 1), t2);
@@ -708,11 +728,16 @@ module DateTime {
         (t1.tzinfo == nil && t2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
     } else if t1.tzinfo == t2.tzinfo {
-      const sec1 = t1.hour*3600 + t1.minute*60 +
-                   t1.second + t1.microsecond/1000000.0;
-      const sec2 = t2.hour*3600 + t2.minute*60 +
-                   t2.second + t2.microsecond/1000000.0;
-      return sec1 > sec2;
+      const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
+      const usec1 = t1.microsecond;
+      const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
+      const usec2 = t2.microsecond;
+      if sec1 > sec2 then
+        return true;
+      else if sec1 == sec2 then
+        return usec1 > usec2;
+      else
+        return false;
     } else {
       const dt1 = datetime.combine(new date(1900, 1, 1), t1);
       const dt2 = datetime.combine(new date(1900, 1, 1), t2);
@@ -728,11 +753,16 @@ module DateTime {
         (t1.tzinfo == nil && t2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
     } else if t1.tzinfo == t2.tzinfo {
-      const sec1 = t1.hour*3600 + t1.minute*60 +
-                   t1.second + t1.microsecond/1000000.0;
-      const sec2 = t2.hour*3600 + t2.minute*60 +
-                   t2.second + t2.microsecond/1000000.0;
-      return sec1 >= sec2;
+      const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
+      const usec1 = t1.microsecond;
+      const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
+      const usec2 = t2.microsecond;
+      if sec1 > sec2 then
+        return true;
+      else if sec1 == sec2 then
+        return usec1 >= usec2;
+      else
+        return false;
     } else {
       const dt1 = datetime.combine(new date(1900, 1, 1), t1);
       const dt2 = datetime.combine(new date(1900, 1, 1), t2);
@@ -1076,10 +1106,15 @@ module DateTime {
     timeStruct.tm_min = minute: int(32);
     timeStruct.tm_sec = second: int(32);
 
-    if tzinfo != nil then
+    if tzinfo != nil {
       timeStruct.tm_isdst = tzinfo.dst(this).seconds: int(32);
-    else
+      timeStruct.tm_gmtoff = tzinfo.gmtoff(): c_long;
+      timeStruct.tm_zone = nil;
+    } else {
       timeStruct.tm_isdst = -1: int(32);
+      timeStruct.tm_gmtoff = 0;
+      timeStruct.tm_zone = nil;
+    }
 
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
@@ -1170,7 +1205,7 @@ module DateTime {
        (dt1.tzinfo == nil && dt2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
     }
-    if dt1.tzinfo == nil || dt1.tzinfo == dt2.tzinfo {
+    if dt1.tzinfo == dt2.tzinfo {
       const newmicro = dt1.microsecond - dt2.microsecond,
             newsec = dt1.second - dt2.second,
             newmin = dt1.minute - dt2.minute,
@@ -1197,7 +1232,7 @@ module DateTime {
           d2: date = dt2.replace(tzinfo=nil).getdate();
       var t1: time = dt1.replace(tzinfo=nil).gettime(),
           t2: time = dt2.replace(tzinfo=nil).gettime();
-     
+
       return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day &&
                         t1.hour == t2.hour && t1.minute == t2.minute &&
                         t1.second == t2.second &&
@@ -1218,7 +1253,7 @@ module DateTime {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == nil || dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.tzinfo == dt2.tzinfo {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 < date2 then return true;
@@ -1237,7 +1272,7 @@ module DateTime {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == nil || dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.tzinfo == dt2.tzinfo {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 < date2 then return true;
@@ -1256,7 +1291,7 @@ module DateTime {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == nil || dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.tzinfo == dt2.tzinfo {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 > date2 then return true;
@@ -1275,7 +1310,7 @@ module DateTime {
     if (dt1.tzinfo != nil && dt2.tzinfo == nil) ||
         (dt1.tzinfo == nil && dt2.tzinfo != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == nil || dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.tzinfo == dt2.tzinfo {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 > date2 then return true;

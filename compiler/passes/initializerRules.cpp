@@ -35,7 +35,7 @@ enum InitBody {
   FOUND_BOTH
 };
 
-
+static bool     isReturnVoid(FnSymbol* fn);
 static InitBody getInitCall(FnSymbol* fn);
 static void     phase1Analysis(BlockStmt* body, AggregateType* t);
 
@@ -48,6 +48,9 @@ static void     phase1Analysis(BlockStmt* body, AggregateType* t);
 void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
   if (fn->hasFlag(FLAG_NO_PARENS)) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
+
+  } else if (isReturnVoid(fn) == false) {
+
   } else {
     InitBody bodyStyle = getInitCall(fn);
 
@@ -100,13 +103,9 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
 
     // Insert phase 2 analysis here
 
-    if (isClass(ct) == false) {
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
-    } else {
-      Symbol* voidType = dtVoid->symbol;
+    Symbol* voidType = dtVoid->symbol;
 
-      fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
-    }
+    fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
   }
 }
 
@@ -148,13 +147,19 @@ InitBody getInitCall (Expr* expr) {
           if (CallExpr* subject = toCallExpr(inner->get(1))) {
             if (storesThisTop(subject->get(1))) {
               if (storesSpecificName(subject->get(2), "super")) {
-                // The expr is a "(this.)super.init()" call
+                // The expr is a "this.super.init()" call
                 return FOUND_SUPER_INIT;
               }
             }
           } else if (storesThisTop(inner->get(1))) {
             // The expr is a "this.init()" call
             return FOUND_THIS_INIT;
+          } else if (UnresolvedSymExpr* us = toUnresolvedSymExpr(inner->get(1))) {
+            if (strcmp(us->unresolved, "super") == 0) {
+              // The expr is a "super.init()" call, likely on a record as
+              // records don't recognize "super".
+              return FOUND_SUPER_INIT;
+            }
           }
         }
       }
@@ -599,6 +604,45 @@ bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
   // encountered
 
   return false;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Initializers cannot                                                         *
+*                                                                             *
+*   1) Declare a return type other than void                                  *
+*                                                                             *
+*   2) Contain a return expression with a value                               *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isReturnVoid(FnSymbol* fn) {
+  bool retval = true;
+
+  if (fn->retExprDefinesNonVoid() == true) {
+    USR_FATAL(fn, "initializers cannot declare a return type");
+    retval = false;
+
+  } else {
+    std::vector<CallExpr*> calls;
+
+    collectCallExprs(fn->body, calls);
+
+    for (size_t i = 0; i < calls.size() && retval == true; i++) {
+      if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
+        SymExpr* value = toSymExpr(calls[i]->get(1));
+
+        if (value == NULL || value->symbol()->type != dtVoid) {
+          USR_FATAL(calls[i], "initializers cannot return a value");
+          retval = false;
+        }
+      }
+    }
+  }
+
+  fn->retType = dtVoid;
+
+  return retval;
 }
 
 /************************************* | **************************************
