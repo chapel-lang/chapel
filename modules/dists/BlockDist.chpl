@@ -541,7 +541,6 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   if debugBlockDist {
     writeln("Creating new Block domain:");
     dom.dsiDisplayRepresentation();
-    writeln("-----");
   }
   return dom;
 }

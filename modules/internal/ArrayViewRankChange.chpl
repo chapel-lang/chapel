@@ -204,7 +204,7 @@ module ArrayViewRankChange {
     iter these(param tag: iterKind) where tag == iterKind.standalone {
       //      writeln("About to do a forall loop over ");
       //      downdom.dsiSerialWrite(stdout);
-      forall i in downdom do
+      for i in downdom.these(tag) do
         yield downIdxToUpIdx(i);
     }
 
