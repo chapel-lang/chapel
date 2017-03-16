@@ -245,7 +245,7 @@ module DefaultSparse {
         const dupCount = if isUnique then 0 else _countDuplicates(inds);
 
         nnz += inds.size-dupCount;
-        _bulkGrow(nnz);
+        _bulkGrow();
 
         var indIdx = indices.domain.low;
         var prevIdx = parentDom.low - 1;

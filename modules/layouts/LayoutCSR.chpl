@@ -293,7 +293,7 @@ class CSRDom: BaseSparseDomImpl {
       const dupCount = if isUnique then 0 else _countDuplicates(inds);
 
       nnz += inds.size-dupCount;
-      _bulkGrow(nnz);
+      _bulkGrow();
 
       var colIdxIdx = 1;
       var currentRow = parentDom.dim(1).low;
