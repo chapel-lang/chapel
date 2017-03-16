@@ -1,0 +1,6 @@
+semantic: interaction of coercion and delegation
+
+I think that delegated methods should participate in the
+usual overload resolution process. The problem here is that
+a regular method called with coercion takes priority over
+a delegated method that would not require coercion.

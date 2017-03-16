@@ -183,7 +183,7 @@ module DefaultRectangular {
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
                offset=createTuple(rank, idxType, 0:idxType))
-      where tag == iterKind.standalone && !localeModelHasSublocales {
+      where tag == iterKind.standalone && defRectSimpleDData {
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain standalone invoked on ", ranges);
       if debugDefaultDist then
@@ -690,6 +690,14 @@ module DefaultRectangular {
       }
     }
 
+    inline proc theDataChunk(i) ref {
+      if stridable {
+        return dataChunk(i);
+      } else {
+        return shiftedDataChunk(i);
+      }
+    }
+
     inline proc getDataElem(i) ref {
       if stridable {
         return dataElem(i);
@@ -737,15 +745,17 @@ module DefaultRectangular {
     }
   }
 
-  inline proc _remoteAccessData.getRADDataIndex(param stridable, ind : idxType) {
-    return this.getRADDataIndex(stridable, chpl__tuplify(ind));
+  inline proc _remoteAccessData.getDataIndex(ind : idxType,
+                                             param getChunked=!defRectSimpleDData) {
+    return this.getDataIndex(chpl__tuplify(ind), getChunked);
   }
 
   //
   // Copied from DefaultRectangularArr.getDataIndex
   //
-  inline proc _remoteAccessData.getRADDataIndex(param stridable, ind: rank*idxType) {
-      param chunkify = !defRectSimpleDData;
+  inline proc _remoteAccessData.getDataIndex(ind: rank*idxType,
+                                             param getChunked=!defRectSimpleDData) {
+      param chunkify = !defRectSimpleDData && getChunked;
 
       if stridable {
         inline proc chunked_dataIndex(sum, str) {
@@ -1257,44 +1267,7 @@ module DefaultRectangular {
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr simple-dd serial iterator");
       }
-      if rank == 1 {
-        // This is specialized to avoid overheads of calling dsiAccess()
-        if !dom.stridable {
-          // Ideally we would like to be able to do something like
-          // "for i in first..last by step". However, right now that would
-          // result in a strided iterator which isn't as optimized. It would
-          // also add a range constructor, which in tight loops is pretty
-          // expensive. Instead we use a direct range iterator that is
-          // optimized for positively strided ranges. It should be just as fast
-          // as directly using a "c for loop", but it contains code check for
-          // overflow and invalid strides as well as the ability to use a less
-          // optimized iteration method if users are concerned about range
-          // overflow.
-          const first = getDataIndex(dom.dsiLow);
-          const second = getDataIndex(dom.dsiLow+1);
-          const step = (second-first);
-          const last = first + (dom.dsiNumIndices-1) * step;
-          for i in chpl_direct_pos_stride_range_iter(first, last, step) {
-            yield theData(i);
-          }
-        } else {
-          const stride = dom.ranges(1).stride: idxType,
-                start  = dom.ranges(1).first,
-                first  = getDataIndex(start),
-                second = getDataIndex(start + stride),
-                step   = (second-first):idxSignedType,
-                last   = first + (dom.ranges(1).length-1) * step:idxType;
-          if step > 0 then
-            for i in first..last by step do
-              yield data(i);
-          else
-            for i in last..first by step do
-              yield data(i);
-        }
-      } else {
-        for i in dom do
-          yield dsiAccess(i);
-      }
+      for elem in chpl__serialViewIter(this, dom) do yield elem;
     }
 
     iter these(param tag: iterKind,
@@ -1353,48 +1326,7 @@ module DefaultRectangular {
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr multi-dd serial iterator");
       }
-      if rank == 1 {
-        if !dom.stridable {
-          const first = getDataIndex(dom.dsiLow, getChunked=false);
-          const second = getDataIndex(dom.dsiLow+1, getChunked=false);
-          const step = (second-first);
-          const lo = dom.dsiDim(mdParDim).low;
-          const hi = dom.dsiDim(mdParDim).high;
-          var (chunk, idx) = getDataIndex(dom.dsiLow);
-          var dd = theDataChunk(chunk);
-          var lastChunkInd = mData(chunk).pdr.high;
-          for ind in chpl_direct_pos_stride_range_iter(lo, hi, 1:idxType) {
-            if ind > lastChunkInd { // traverse to next chunk
-              (chunk, idx) = getDataIndex(ind);
-              dd = theDataChunk(chunk);
-              lastChunkInd = mData(chunk).pdr.high;
-            }
-            yield dd(idx);
-            idx += step;
-          }
-        } else {
-          for i in dom do
-            yield dsiAccess(i);
-        }
-      } // if rank == 1 ...
-      else {
-        for i in dom do
-          yield dsiAccess(i);
-      }
-    }
-
-    iter these(param tag: iterKind,
-               tasksPerLocale = dataParTasksPerLocale,
-               ignoreRunning = dataParIgnoreRunningTasks,
-               minIndicesPerTask = dataParMinGranularity)
-      ref where tag == iterKind.standalone && !defRectSimpleDData {
-      if debugDefaultDist {
-        chpl_debug_writeln("*** In defRectArr multi-dd standalone iterator");
-      }
-      for i in dom.these(tag, tasksPerLocale,
-                         ignoreRunning, minIndicesPerTask) {
-        yield dsiAccess(i);
-      }
+      for elem in chpl__serialViewIter(this, dom) do yield elem;
     }
 
     iter these(param tag: iterKind,
@@ -1927,6 +1859,110 @@ module DefaultRectangular {
     }
   }
 
+  iter chpl__serialViewIter(arr, viewDom) ref
+    where arr.isDefaultRectangular() && !defRectSimpleDData {
+    param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
+    var info = if useCache then arr.indexCache
+               else if arr.isSliceArrayView() then arr.arr
+               else arr;
+
+    if arr.rank == 1 && !viewDom.stridable {
+      const first  = info.getDataIndex(viewDom.dsiLow, getChunked=false);
+      const second = info.getDataIndex(viewDom.dsiLow+1, getChunked=false);
+      const step   = (second-first);
+      const lo     = viewDom.dsiDim(info.mdParDim).low;
+      const hi     = viewDom.dsiDim(info.mdParDim).high;
+
+      param chunkOffset = if useCache then 1 else 0;
+      var (chunk, idx) = info.getDataIndex(viewDom.dsiLow);
+      var dd           = info.theDataChunk(chunk);
+      chunk += chunkOffset;
+      var lastChunkInd = info.mData(chunk).pdr.high;
+
+      for ind in chpl_direct_pos_stride_range_iter(lo, hi, 1:viewDom.idxType) {
+        if ind > lastChunkInd { // traverse to next chunk
+          (chunk, idx) = info.getDataIndex(ind);
+          dd           = info.theDataChunk(chunk);
+          chunk += chunkOffset;
+          lastChunkInd = info.mData(chunk).pdr.high;
+        }
+        yield dd(idx);
+        idx += step;
+      }
+    } else if useCache {
+      for i in viewDom {
+        const dataIdx = info.getDataIndex(i);
+        yield info.getDataElem(dataIdx);
+      }
+    } else {
+      for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+    }
+  }
+
+  iter chpl__serialViewIter(arr, viewDom) ref
+    where arr.isDefaultRectangular() && defRectSimpleDData {
+    param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
+    var info = if useCache then arr.indexCache
+               else if arr.isSliceArrayView() then arr.arr
+               else arr;
+    if arr.rank == 1 {
+      // This is specialized to avoid overheads of calling dsiAccess()
+      if !viewDom.stridable {
+        // Ideally we would like to be able to do something like
+        // "for i in first..last by step". However, right now that would
+        // result in a strided iterator which isn't as optimized. It would
+        // also add a range constructor, which in tight loops is pretty
+        // expensive. Instead we use a direct range iterator that is
+        // optimized for positively strided ranges. It should be just as fast
+        // as directly using a "c for loop", but it contains code check for
+        // overflow and invalid strides as well as the ability to use a less
+        // optimized iteration method if users are concerned about range
+        // overflow.
+        const first  = info.getDataIndex(viewDom.dsiLow);
+        const second = info.getDataIndex(viewDom.dsiLow+1);
+        const step   = (second-first);
+        const last   = first + (viewDom.dsiNumIndices-1) * step;
+        for i in chpl_direct_pos_stride_range_iter(first, last, step) {
+          yield info.theDataChunk(0)(i);
+        }
+      } else {
+        const stride = viewDom.ranges(1).stride: viewDom.idxType,
+              start  = viewDom.ranges(1).first,
+              first  = info.getDataIndex(start),
+              second = info.getDataIndex(start + stride),
+              step   = (second-first):chpl__signedType(viewDom.idxType),
+              last   = first + (viewDom.ranges(1).length-1) * step:viewDom.idxType;
+        if step > 0 then
+          for i in first..last by step do
+            yield info.data(i);
+        else
+          for i in last..first by step do
+            yield info.data(i);
+      }
+    } else if useCache {
+      for i in viewDom {
+        const dataIdx = info.getDataIndex(i);
+        yield info.getDataElem(dataIdx);
+      }
+    } else {
+      for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+    }
+  }
+
+  iter chpl__serialViewIter(arr, viewDom) ref {
+    for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+  }
+
+  iter chpl__serialViewIterHelper(arr, viewDom) ref {
+    for i in viewDom {
+      const dataIdx = if arr.isReindexArrayView() then arr.chpl_reindexConvertIdx(i)
+                      else if arr.isRankChangeArrayView() then arr.chpl_rankChangeConvertIdx(i)
+                      else i;
+      const info = if chpl__isArrayView(arr) then arr.arr else arr;
+      yield info.dsiAccess(dataIdx);
+    }
+  }
+
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
     f <~> new ioLiteral("{") <~> ranges(1);
     for i in 2..rank do
@@ -2150,7 +2186,8 @@ module DefaultRectangular {
         for chunk in 0..#arr.mdNumChunks {
           if arr.mData(chunk).pdr.length >= 0 {
             const src = arr.theDataChunk(chunk);
-            const newLow = max(arr.mData(chunk).pdr.low, indLo);
+            const cmp = if isTuple(indLo) then indLo(arr.mdParDim) else indLo;
+            const newLow = max(arr.mData(chunk).pdr.low, cmp);
             if isTuple(indLo) then
               indLo(arr.mdParDim) = newLow;
             else
@@ -2159,7 +2196,9 @@ module DefaultRectangular {
             const blkLen = if arr.mdParDim == arr.rank
                            then 1
                            else arr.blk(arr.mdParDim) / arr.blk(arr.mdParDim+1);
-            const len = dom.dsiDim(arr.mdParDim)[arr.mData(chunk).pdr].length * blkLen;
+            const outer = dom.dsiDim(arr.mdParDim);
+            const inner = arr.mData(chunk).pdr;
+            const len = outer[inner].length * blkLen;
             const size = len:ssize_t*elemSize:ssize_t;
             if f.writing {
               f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);

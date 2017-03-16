@@ -1,1 +1,0 @@
-refArray2.chpl:5: error: Cannot set a non-const reference to a const variable.

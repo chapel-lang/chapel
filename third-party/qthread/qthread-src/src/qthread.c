@@ -1881,7 +1881,7 @@ unsigned API_FUNC qthread_size_tasklocal(void)
     return f->rdata->tasklocal_size ? f->rdata->tasklocal_size : qlib->qthread_tasklocal_size;
 } /*}}}*/
 
-void* API_FUNC qthread_tos(void)
+API_FUNC void* qthread_tos(void)
 {
     const qthread_t *f = qthread_internal_self();
 
@@ -1889,7 +1889,7 @@ void* API_FUNC qthread_tos(void)
 }
 
 
-void* API_FUNC qthread_bos(void)
+API_FUNC void* qthread_bos(void)
 {
     const qthread_t *f = qthread_internal_self();
 
