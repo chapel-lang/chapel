@@ -342,11 +342,8 @@ def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
 def_is_ast(TryStmt)
-<<<<<<< HEAD
 def_is_ast(ForwardingStmt)
-=======
 def_is_ast(CatchStmt)
->>>>>>> added CatchStmt
 def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
 def_is_ast(VarSymbol)
@@ -389,11 +386,8 @@ def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
 def_to_ast(TryStmt)
-<<<<<<< HEAD
 def_to_ast(ForwardingStmt)
-=======
 def_to_ast(CatchStmt)
->>>>>>> added CatchStmt
 def_to_ast(ExternBlockStmt)
 def_to_ast(Expr)
 def_to_ast(ModuleSymbol)
