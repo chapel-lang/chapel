@@ -4267,7 +4267,7 @@ resolveDefaultGenericType(CallExpr* call) {
 static bool
 typeUsesForwarding(Type* t) {
   if (AggregateType* at = toAggregateType(t)) {
-    if (toForwardingStmt(at->delegates.head)) {
+    if (toForwardingStmt(at->forwardingTo.head)) {
       return true;
     }
   }
@@ -4282,18 +4282,18 @@ populateForwardingMethods(Type* t,
   AggregateType* at = toAggregateType(t);
   bool addedAny = false;
 
-  // Currently, only AggregateTypes can delegate
+  // Currently, only AggregateTypes can forward
   if (!at) return false;
 
   // If the type has not yet been resolved, stop,
-  // since otherwise computing the delegate fn won't go well.
+  // since otherwise computing the forwarding fn won't go well.
   for_fields(field, at) {
     if (field->type == dtUnknown)
       return false;
   }
 
-  // try resolving the call on the delegate expressions
-  for_alist(expr, at->delegates) {
+  // try resolving the call on the forwarding expressions
+  for_alist(expr, at->forwardingTo) {
     ForwardingStmt* delegate = toForwardingStmt(expr);
     INT_ASSERT(delegate);
 
@@ -4680,7 +4680,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     }
     candidates.clear();
 
-    // try again to include delegated functions
+    // try again to include forwarded functions
     findVisibleCandidates(info, visibleFns, candidates);
   }
 

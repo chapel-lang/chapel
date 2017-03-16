@@ -527,7 +527,7 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
 // ForwardingStmt
 //
 bool AstDump::enterForwardingStmt(ForwardingStmt* node) {
-  write("delegate (");
+  write("forwarding (");
   return true;
 }
 

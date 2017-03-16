@@ -422,7 +422,7 @@ public:
   IteratorInfo*               iteratorInfo;
 
   // What to delegate to with 'forwarding'
-  AList                       delegates;
+  AList                       forwardingTo;
 
   const char*                 doc;
 

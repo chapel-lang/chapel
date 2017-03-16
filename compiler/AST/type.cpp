@@ -547,8 +547,8 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
     }
   }
 
-  for_alist(delegate, delegates) {
-    copy_type->delegates.insertAtTail(COPY_INT(delegate));
+  for_alist(delegate, forwardingTo) {
+    copy_type->forwardingTo.insertAtTail(COPY_INT(delegate));
   }
 
   return copy_type;
@@ -583,9 +583,9 @@ void AggregateType::verify() {
       INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
     }
   }
-  for_alist(expr, delegates) {
+  for_alist(expr, forwardingTo) {
     if (expr->parentSymbol != symbol)
-      INT_FATAL(this, "Bad AggregateType::delegates::parentSymbol");
+      INT_FATAL(this, "Bad AggregateType::forwardingTo::parentSymbol");
   }
 }
 
@@ -622,14 +622,14 @@ void AggregateType::addDeclarations(Expr* expr) {
     for_alist(stmt, block->body) {
       addDeclarations(stmt);
     }
-  } else if (ForwardingStmt* delegate = toForwardingStmt(expr)) {
-    // delegate expr is a def expr for a function that we should handle.
-    DefExpr* def = toDefExpr(delegate->toFnDef);
-    // Handle the function defining what we delegate to
+  } else if (ForwardingStmt* forwarding = toForwardingStmt(expr)) {
+    // forwarding expr is a def expr for a function that we should handle.
+    DefExpr* def = forwarding->toFnDef;
+    // Handle the function defining what we forwarding to
     this->addDeclaration(def);
     // Add the ForwardingStmt to the AST
-    delegate->toFnDef = NULL;
-    this->delegates.insertAtTail(delegate);
+    forwarding->toFnDef = NULL;
+    this->forwardingTo.insertAtTail(forwarding);
   } else {
     INT_FATAL(expr, "unexpected case");
   }
@@ -728,7 +728,7 @@ void AggregateType::accept(AstVisitor* visitor) {
       next_ast->accept(visitor);
     }
 
-    for_alist(next_ast, delegates) {
+    for_alist(next_ast, forwardingTo) {
       next_ast->accept(visitor);
     }
 
