@@ -5,7 +5,7 @@ use BLAS;
 
 // TODO -- compute these thresholds in a principled way
 config const errorThresholdDouble = 1.e-10;
-config const errorThresholdSingle = 1.e-3;
+config const errorThresholdSingle = 1.e-5;
 
 proc printErrors(name: string, passed, failed, tests) {
   writef("%5s : %i PASSED, %i FAILED\n".format(name, passed, failed));
@@ -159,7 +159,9 @@ proc bandArrayTriangular(A: [?Dom] ?eltType, k, uplo=Uplo.Upper, order=Order.Row
   where A.rank == 2 {
 
   // Must be square matrix
-  assert(Dom.dim(1).size == Dom.dim(2).size);
+
+  if !isSquare(A) then
+    halt('non-square array passed to bandArrayTriangular. Aborting');
 
   // Matrix order
   const n = Dom.dim(1).size;
@@ -228,9 +230,85 @@ proc transpose(A: [?D] ?t) where A.rank == 2 {
   return B;
 }
 
-/* Adjoint = transpose, then complex conjugate */
+/* Adjoint = transpose, then complex conjugate (Hermitian)*/
 proc adjoint(A: [?D] ?t) where A.rank == 2 {
   var B = transpose(A);
   B = conjg(A);
   return B;
+}
+
+/* Compute determinant, assume 0-based indexing */
+proc determinant(A: [?Adom] ?eltType, i=0): eltType {
+  if !isSquare(A) then
+    halt('non-square array passed to determinant. Aborting');
+
+  const n = Adom.dim(1).size;
+
+  if n == 1 then return A[0, 0];
+
+  var d = 0: eltType;
+  for j in 0..#n do
+    d += (((-1)**(i+j))*(A[i,j])*determinant(minor(i, j, A))): eltType;
+  return d;
+
+}
+
+/* Helper function for determinant */
+proc minor(i, j, A: [?Adom] ?eltType) {
+  const n = Adom.dim(1).size;
+  if (i >= n || j >= n) then
+    halt('Out of bounds index passed to minor()');
+
+
+  var a : [0..#n-1, 0..#n-1] eltType;
+  var K = 0,
+      L = 0;
+
+  for k in 0..#n {
+    for l in 0..#n  {
+
+      // K
+      if k == i || l == j then continue;
+      if k < i then K = k;
+      else K = k-1;
+
+      // L
+      if l < j then L = l;
+      else L = l-1;
+
+      // a[K, L]
+      a[K,L] = A[k,l];
+    }
+  }
+
+  return a;
+}
+
+/* Return true if square matrix */
+proc isSquare(A: [?Adom]) {
+  const (m, n) = A.shape;
+  return m == n;
+}
+
+/* Make A a random non-singular matrix, currently just uses I */
+proc makeRandomNonSingularRandom(ref A: [] ?t) {
+  // TODO -- Actually generate a random matrix...
+
+  // This takes too long..
+  /*
+    const errorThreshold = blasError(t);
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var d = 0: t;
+    while (abs(d) < errorThreshold) {
+      rng.fillRandom(A);
+      d = determinant(A);
+    }
+  */
+
+  // Hack -- just use an identity matrix (works for now)
+  for (i, j) in A.domain {
+    if i != j then A[i,j] = 0: t;
+    else A[i, j] = 1: t;
+  }
+
 }
