@@ -144,8 +144,7 @@ module ChapelRange {
   
     var _low: idxType = 1;                         // lower bound
     var _high: idxType = 0;                        // upper bound
-    var _stride: if stridable then strType else void =
-                   if stridable then 1 else _void; // signed stride of range
+    var _stride = if stridable then 1:strType else _void; // signed stride
     var _alignment: idxType = 0;                   // alignment
     var _aligned : bool = false;
 
