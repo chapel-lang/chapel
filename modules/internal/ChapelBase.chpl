@@ -113,13 +113,6 @@ module ChapelBase {
 
   inline proc =(ref a: void, b: void) { }
 
-/*
-  // TMacD suggested possibly wanting to be able to cast a non-void to void
-  // This should do that.
-  inline proc _cast(type t, a) where t == void {
-    return _void;
-  }
-*/
   //
   // equality comparison on primitive types
   //
