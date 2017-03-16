@@ -22,6 +22,27 @@
 
 #include "stmt.h"
 
+/*
+try {
+  maybeError();
+} catch e: OtherError {
+  handleGracefully();
+}
+
+CatchStmt is implemented using a BlockStmt, which contains two parts:
+  1. filter expression
+    - e: OtherError
+    - the variable name following catch and the type following the colon
+    - DefExpr*
+  2. catch body
+    - { handleGracefully() }
+    - the code inside the block
+    - BlockStmt*
+
+This strategy enables other parts of the compiler to use the same
+scoping rules without needing to know about CatchStmt
+*/
+
 class CatchStmt : public Stmt {
 
 public:
@@ -37,14 +58,9 @@ public:
   void                replaceChild(Expr* old_ast, Expr* new_ast);
   Expr*               getFirstChild();
   Expr*               getFirstExpr();
+  void                verify();
   GenRet              codegen();
   DECLARE_COPY(CatchStmt);
-
-  // this BlockStmt contains two parts:
-  // 1. filter expression.
-  // 2. BlockStmt with the catch body.
-  // This strategy enables other parts of the compiler to have the correct
-  // scoping rules without needing to know about CatchStmt
 
   BlockStmt* _body;
 

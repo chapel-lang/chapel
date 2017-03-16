@@ -77,6 +77,26 @@ Expr* CatchStmt::getFirstExpr() {
   return NULL;
 }
 
+void CatchStmt::verify() {
+  Stmt::verify();
+
+  if (astTag != E_CatchStmt) {
+    INT_FATAL(this, "CatchStmt::verify. Bad astTag");
+  }
+
+  if (!_body) {
+    INT_FATAL(this, "CatchStmt::verify. _body is missing");
+  }
+
+  if (!expr()) {
+    INT_FATAL(this, "CatchStmt::verify. Invalid catch expr");
+  }
+
+  if (!body()) {
+    INT_FATAL(this, "CatchStmt::verify. Invalid catch body");
+  }
+}
+
 GenRet CatchStmt::codegen() {
   INT_FATAL("CatchStmt should be removed before codegen");
   GenRet ret;

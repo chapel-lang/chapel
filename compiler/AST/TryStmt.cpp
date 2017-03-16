@@ -124,6 +124,23 @@ Expr* TryStmt::getNextExpr(Expr* expr) {
   return retVal;
 }
 
+void TryStmt::verify() {
+  Stmt::verify();
+
+  if (astTag != E_TryStmt) {
+    INT_FATAL(this, "TryStmt::verify. Bad astTag");
+  }
+
+  if (!_body) {
+    INT_FATAL(this, "TryStmt::verify. _body is missing");
+  }
+
+  for_alist(c, _catches) {
+    if (!isCatchStmt(c))
+      INT_FATAL(this, "TryStmt::verify. _catches contains a non-CatchStmt");
+  }
+}
+
 GenRet TryStmt::codegen() {
   INT_FATAL("TryStmt should be removed before codegen");
   GenRet ret;

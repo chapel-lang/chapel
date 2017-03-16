@@ -1,2 +1,0 @@
-early-catchall.chpl:3: error: catchall placed before the end of a catch list
-Note: This source location is a guess.

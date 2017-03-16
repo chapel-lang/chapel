@@ -1,2 +1,1 @@
 illegal-throw.chpl:2: error: cannot throw in a non-throwing function
-Note: This source location is a guess.

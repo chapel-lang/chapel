@@ -41,6 +41,7 @@ public:
   Expr*               getFirstChild();
   Expr*               getFirstExpr();
   Expr*               getNextExpr(Expr* expr);
+  void                verify();
   GenRet              codegen();
   DECLARE_COPY(TryStmt);
 
