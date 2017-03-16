@@ -1956,7 +1956,7 @@ module DefaultRectangular {
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
     for i in viewDom {
       const dataIdx = if arr.isReindexArrayView() then arr.chpl_reindexConvertIdx(i)
-                      else if arr.isRankChangeArrayView() then arr.chpl_rankChangeConvertIdx(i)
+                      else if arr.isRankChangeArrayView() then chpl_rankChangeConvertIdx(i, arr.collapsedDim, arr.idx)
                       else i;
       const info = if chpl__isArrayView(arr) then arr.arr else arr;
       yield info.dsiAccess(dataIdx);
