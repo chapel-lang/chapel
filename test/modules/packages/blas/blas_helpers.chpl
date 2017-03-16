@@ -236,68 +236,18 @@ proc adjoint(A: [?D] ?t) where A.rank == 2 {
   return B;
 }
 
-/* Compute determinant, assume 0-based indexing */
-proc determinant(A: [?Adom] ?eltType, i=0): eltType {
-  if !isSquare(A) then
-    halt('non-square array passed to determinant. Aborting');
+/* Pseudo-random nonsingular matrix ((1/n**2)*A**2 + I) */
+proc makeRandomInvertible (A: [?Adom] ?t) {
+  var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+  rng.fillRandom(A);
 
-  const n = Adom.dim(1).size;
-  if n == 1 then return A[0, 0];
+  var I: [Adom] t;
+  makeUnit(I);
 
-  var d = 0: eltType;
-  for j in 0..#n do
-    d += (((-1)**(i+j))*(A[i,j])*determinant(minor(i, j, A))): eltType;
+  var A2: [Adom] t;
+  forall (i,j) in A.domain do A2[i,j] = + reduce (A[i,..]*conjg(A[..,j]));
 
-  return d;
-
-}
-
-/* Helper function for determinant */
-proc minor(i, j, A: [?Adom] ?eltType) {
-  const n = Adom.dim(1).size;
-  if (i >= n || j >= n) then
-    halt('Out of bounds index passed to minor()');
-
-  var a : [0..#n-1, 0..#n-1] eltType;
-  var K = 0,
-      L = 0;
-
-  for k in 0..#n {
-    for l in 0..#n  {
-      // K
-      if k == i || l == j then continue;
-      if k < i then K = k;
-      else K = k-1;
-      // L
-      if l < j then L = l;
-      else L = l-1;
-      // a[K, L]
-      a[K,L] = A[k,l];
-    }
-  }
-  return a;
-}
-
-/* Return true if square matrix */
-proc isSquare(A: [?Adom]) {
-  const (m, n) = A.shape;
-  return m == n;
-}
-
-/* Make A a random non-singular matrix, currently just uses I
-   TODO - generate a truly random non-singular matrix */
-proc makeRandomNonSingularRandom(ref A: [] ?t) {
-  // Use identity matrix
-  makeUnit(A);
-
-  // This takes too long...
-  /*
-    const errorThreshold = blasError(t);
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
-    var d = 0: t;
-    while (abs(d) < errorThreshold) {
-      rng.fillRandom(A);
-      d = determinant(A);
-    }
-  */
+  const n = Adom.shape(1);
+  const scale = (1/n**2) : t;
+  A = scale*A2 + I;
 }
