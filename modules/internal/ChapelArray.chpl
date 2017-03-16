@@ -1055,12 +1055,9 @@ module ChapelArray {
       for param i in 1..rank {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType, stridable, r);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
+      d = {(...r)};
+      return d;
     }
 
     // TODO: Dead-code eliminate things that were only needed for domain
@@ -1347,14 +1344,9 @@ module ChapelArray {
         }
       }
 
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-
-      return _newDomain(d);
+      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
+      d = {(...ranges)};
+      return d;
     }
 
     /* Returns a new domain that is the current domain expanded by
@@ -1364,13 +1356,9 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).expand(off);
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
+      d = {(...ranges)};
+      return d;
     }
 
     pragma "no doc"
@@ -1397,13 +1385,9 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).exterior(off(i));
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
+      d = {(...ranges)};
+      return d;
     }
 
     /* Returns a new domain that is the exterior portion of the
@@ -1447,13 +1431,9 @@ module ChapelArray {
         }
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
+      d = {(...ranges)};
+      return d;
     }
 
     /* Returns a new domain that is the interior portion of the
@@ -1498,13 +1478,9 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = _value.dsiDim(i).translate(off(i));
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
+      d = {(...ranges)};
+      return d;
      }
 
     /* Returns a new domain that is the current domain translated by
@@ -1524,13 +1500,9 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
+      d = {(...ranges)};
+      return d;
     }
 
     pragma "no doc"
@@ -3616,10 +3588,9 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
-    var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
-    if d.linksDistribution() then
-      d.dist.add_dom(d);
-    return _newDomain(d);
+    var d = _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, true));
+    d = {(...r)};
+    return d;
   }
 
   /*
@@ -3636,10 +3607,9 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) align t(i);
-    var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, a.stridable, r);
-    if d.linksDistribution() then
-      d.dist.add_dom(d);
-    return _newDomain(d);
+    var d = _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, a.stridable));
+    d = {(...r)};
+    return d;
   }
 
   //
