@@ -194,7 +194,47 @@ module ArrayViewRankChange {
         yield downIdxToUpIdx(i);
     }
 
-    // TODO: Need to do leader/follower iterators still...
+    iter these(param tag: iterKind) where tag == iterKind.leader {
+      for followThis in downdom.these(tag) do {
+        //        writeln("Leader wants to lead ", followThis);
+        const followThisLoD = chpl_rankChangeConvertHiDTupleToLoD(followThis);
+        //        writeln("Changed it to ", followThisLoD);
+        yield followThisLoD;
+      }
+    }
+
+    iter these(param tag: iterKind, followThis)
+      where tag == iterKind.follower {
+      const followThisHiD = chpl_rankChangeConvertLoDTupleToHiD(followThis);
+      for i in downdom.these(tag, followThisHiD) {
+        yield chpl_rankChangeConvertIdxHiDToLoD(i, collapsedDim, idx, rank);
+      }
+    }
+
+    proc chpl_rankChangeConvertLoDTupleToHiD(tup) {
+      var tupHiD: downrank*tup(1).type;
+      var i = 1;
+      for param d in 1..downrank do
+        if collapsedDim(d) then
+          tupHiD(d) = downdom.dsiDim(d);
+        else {
+          tupHiD(d) = tup(i);
+          i += 1;
+        }
+      return tupHiD;
+    }
+
+    proc chpl_rankChangeConvertHiDTupleToLoD(tup) {
+      //      compilerWarning("tup type: ", tup.type:string);
+      var tupLoD: rank*tup(1).type;
+      var i = 1;
+      for param d in 1..downrank do
+        if !collapsedDim(d) {
+          tupLoD(i) = tup(d);
+          i += 1;
+        }
+      return tupLoD;
+    }
 
 
     proc downIdxToUpIdx(downIdx) {
@@ -343,7 +383,9 @@ module ArrayViewRankChange {
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
+      //o      compilerWarning("in array leader, rank is " + rank);
       for followThis in privDom.these(tag) do {
+        //        writeln("leader yielding: ", followThis);
         yield followThis;
       }
     }
@@ -703,6 +745,19 @@ module ArrayViewRankChange {
     for param d in 1..downrank {
       if !collapsedDim(d) {
         ind(d) = i(j);
+        j += 1;
+      }
+    }
+    return ind;
+  }
+
+  inline proc chpl_rankChangeConvertIdxHiDToLoD(i, collapsedDim, idx, param rank) {
+    param downrank = collapsedDim.size;
+    var ind: rank*i(1).type;
+    var j = 1;
+    for param d in 1..downrank {
+      if !collapsedDim(d) {
+        ind(j) = i(d);
         j += 1;
       }
     }
