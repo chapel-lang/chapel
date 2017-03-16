@@ -74,7 +74,7 @@ static int get_num_heaps(void) {
   return num_heaps;
 }
 
-static inline int get_heap(void) {
+static inline int get_nearby_heap(void) {
   if (get_num_heaps() == 1) {
     return 0;
   } else {
@@ -173,7 +173,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
   size_t cur_heap_size;
 
   // which heap?
-  hpi = get_heap();
+  hpi = get_nearby_heap();
 
   // this function can be called concurrently and it looks like jemalloc
   // doesn't call it inside a lock, so we need to protect it ourselves
