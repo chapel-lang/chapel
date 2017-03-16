@@ -1156,6 +1156,9 @@ module ChapelArray {
     pragma "no doc"
     pragma "no copy return"
     proc buildArray(type eltType) {
+      if eltType == void {
+        compilerError("array element type cannot be void");
+      }
       var x = _value.dsiBuildArray(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {

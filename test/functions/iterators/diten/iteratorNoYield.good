@@ -1,1 +1,1 @@
-iteratorNoYield.chpl:9: error: illegal use of function that does not return a value: 'itr'
+iteratorNoYield.chpl:9: error: cannot iterate over values of type void
