@@ -88,6 +88,9 @@ module SharedObject {
   record Shared {
     pragma "no doc"
     var p;                 // contained pointer (class type)
+
+    forwarding p;
+
     pragma "no doc"
     var pn:ReferenceCount; // reference counter
 

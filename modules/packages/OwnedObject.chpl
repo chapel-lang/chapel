@@ -50,6 +50,8 @@ module OwnedObject {
     pragma "no doc"
     var p;                 // contained pointer (class type)
 
+    forwarding p;
+
     /*
        Initialize a :record:`Owned` with a class instance.
        When this :record:`Owned` goes out of scope, it will
