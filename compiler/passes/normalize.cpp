@@ -670,8 +670,31 @@ moveGlobalDeclarationsToModuleScope() {
           // Ignore compiler-inserted temporaries.
           // Only non-compiler-generated variables in the module init
           // function are moved out to module scope.
-          if (vs->hasFlag(FLAG_TEMP))
-            continue;
+          //
+          // Make an exception for references to array slices.
+          if (vs->hasFlag(FLAG_TEMP)) {
+            // is this a call_tmp that is later stored in a ref variable?
+            // if so, move the call_tmp to global scope as well. E.g.
+            //   var MyArray:[1..20] int;
+            //   ref MySlice = MyArray[1..10];
+
+            // Look for global = PRIM_ADDR_OF var
+            //          global with flag FLAG_REF_VAR.
+            bool refToTempInGlobal = false;
+            for_SymbolSymExprs(se, vs) {
+              if (CallExpr* addrOf = toCallExpr(se->parentExpr))
+                if (addrOf->isPrimitive(PRIM_ADDR_OF))
+                  if (CallExpr* move = toCallExpr(addrOf->parentExpr))
+                    if (move->isPrimitive(PRIM_MOVE)) {
+                      SymExpr* lhs = toSymExpr(move->get(1));
+                      if (lhs->symbol()->hasFlag(FLAG_REF_VAR))
+                        refToTempInGlobal = true;
+                    }
+            }
+
+            if (refToTempInGlobal == false)
+              continue;
+          }
 
           // If the var declaration is an extern, we want to move its
           // initializer block with it.
