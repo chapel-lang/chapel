@@ -24,7 +24,7 @@
    of a class instance. :record:`Owned` is meant to be used when only
    one reference to an object needs to manage that object's storage.
 
-   To use :record:`Shared`, allocate a class instance following this
+   To use :record:`Owned`, allocate a class instance following this
    pattern:
 
    .. code-block:: chapel
