@@ -949,7 +949,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, coerce));
 
-  } else if (fn->hasFlag(FLAG_IF_EXPR_FN) == true) {
+  } else if (fn->hasFlag(FLAG_MAYBE_REF) == true) {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
 
   } else if (fn->hasFlag(FLAG_WRAPPER)             == false &&

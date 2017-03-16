@@ -552,6 +552,10 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
     }
   }
 
+  for_alist(delegate, forwardingTo) {
+    copy_type->forwardingTo.insertAtTail(COPY_INT(delegate));
+  }
+
   return copy_type;
 }
 
@@ -583,6 +587,10 @@ void AggregateType::verify() {
     if (expr->parentSymbol != symbol) {
       INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
     }
+  }
+  for_alist(expr, forwardingTo) {
+    if (expr->parentSymbol != symbol)
+      INT_FATAL(this, "Bad AggregateType::forwardingTo::parentSymbol");
   }
 }
 
@@ -619,7 +627,14 @@ void AggregateType::addDeclarations(Expr* expr) {
     for_alist(stmt, block->body) {
       addDeclarations(stmt);
     }
-
+  } else if (ForwardingStmt* forwarding = toForwardingStmt(expr)) {
+    // forwarding expr is a def expr for a function that we should handle.
+    DefExpr* def = forwarding->toFnDef;
+    // Handle the function defining what we forwarding to
+    this->addDeclaration(def);
+    // Add the ForwardingStmt to the AST
+    forwarding->toFnDef = NULL;
+    this->forwardingTo.insertAtTail(forwarding);
   } else {
     INT_FATAL(expr, "unexpected case");
   }
@@ -715,6 +730,10 @@ void AggregateType::accept(AstVisitor* visitor) {
     }
 
     for_alist(next_ast, inherits) {
+      next_ast->accept(visitor);
+    }
+
+    for_alist(next_ast, forwardingTo) {
       next_ast->accept(visitor);
     }
 

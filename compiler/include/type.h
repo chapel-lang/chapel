@@ -431,6 +431,9 @@ public:
   // Attached only to iterator class/records
   IteratorInfo*               iteratorInfo;
 
+  // What to delegate to with 'forwarding'
+  AList                       forwardingTo;
+
   const char*                 doc;
 
 private:

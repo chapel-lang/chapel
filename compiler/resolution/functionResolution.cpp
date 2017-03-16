@@ -2712,6 +2712,7 @@ getParentBlock(Expr* expr) {
 
 //
 // helper routine for isMoreVisible (below);
+// returns true if fn1 is more visible than fn2
 //
 static bool
 isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
@@ -4290,6 +4291,249 @@ resolveDefaultGenericType(CallExpr* call) {
   }
 }
 
+static bool
+typeUsesForwarding(Type* t) {
+  if (AggregateType* at = toAggregateType(t)) {
+    if (toForwardingStmt(at->forwardingTo.head)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool
+populateForwardingMethods(Type* t,
+                          const char* calledName,
+                          CallExpr* forCall)
+{
+  AggregateType* at = toAggregateType(t);
+  bool addedAny = false;
+
+  // Currently, only AggregateTypes can forward
+  if (!at) return false;
+
+  // If the type has not yet been resolved, stop,
+  // since otherwise computing the forwarding fn won't go well.
+  for_fields(field, at) {
+    if (field->type == dtUnknown)
+      return false;
+  }
+
+  // try resolving the call on the forwarding expressions
+  for_alist(expr, at->forwardingTo) {
+    ForwardingStmt* delegate = toForwardingStmt(expr);
+    INT_ASSERT(delegate);
+
+    const char* fnGetTgt = delegate->fnReturningForwarding;
+    const char* methodName = calledName;
+
+    if (!delegate->type) {
+      delegate->type = dtUnknown; // avoiding loop from recursion
+
+      // First, figure out the type of the delegate
+      SET_LINENO(at->symbol);
+      Symbol* tmp = newTemp(at);
+      at->symbol->defPoint->insertBefore(new DefExpr(tmp));
+      CallExpr* getTgtCall = new CallExpr(fnGetTgt, gMethodToken, tmp);
+      FnSymbol* fn = resolveUninsertedCall(at, getTgtCall);
+      resolveFns(fn);
+      Type* delegateType = fn->retType->getValType();
+      tmp->defPoint->remove();
+
+      INT_ASSERT(delegateType != dtUnknown);
+      delegate->type = delegateType;
+    }
+
+    // Adjust methodName for rename processing.
+    if (delegate->renamed.count(calledName) > 0) {
+      methodName = delegate->renamed[calledName];
+    } else if (delegate->named.count(calledName)) {
+      if (delegate->except) {
+        // don't handle this symbol
+        methodName = NULL;
+      } else {
+        // OK, calledName is in the only list.
+      }
+    } else {
+      // It's not a specifically mentioned symbol.
+      // It's OK if:
+      //  - there was no list at all, or
+      //  - the list was an 'except' list
+      if ((delegate->renamed.size() == 0 && delegate->named.size() == 0) ||
+          delegate->except) {
+        // OK
+      } else {
+        methodName = NULL;
+      }
+    }
+
+    // Stop processing this delegate if we've ruled out this name.
+    if (methodName == NULL)
+      continue;
+
+    // Make sure methodName is a blessed string
+    methodName = astr(methodName);
+
+    // There are 2 ways that more methods can be added to
+    // delegate->type during resolution:
+    //   1) delegate->type itself use a 'delegate'
+    //   2) delegate->type is a generic instantiation
+    //      and the method in question hasn't been instantiated yet
+    //
+    // We handle 1 by resolving a call here to the method in question.
+    // We handle 2 below by creating a generic wrapper for a generic function.
+    {
+      BlockStmt* block = new BlockStmt();
+      Type* testType = delegate->type;
+      Symbol* tmp = newTemp(testType);
+
+      CallExpr* test = new CallExpr(new UnresolvedSymExpr(methodName),
+                                    gMethodToken,
+                                    tmp);
+
+
+      int i = 0;
+      for_actuals(actual, forCall) {
+        if (i > 1) { // skip method token, object
+          test->insertAtTail(actual->copy());
+        }
+        i++;
+      }
+
+      block->insertAtTail(new DefExpr(tmp));
+      block->insertAtTail(test);
+
+      forCall->getStmtExpr()->insertAfter(block);
+      tryResolveCall(test);
+      block->remove();
+    }
+
+    // Now, forward all methods named 'methodName' as 'calledName'.
+    // Forward generic functions as generic functions.
+    forv_Vec(FnSymbol, method, delegate->type->methods) {
+      // Skip any methods with a different name
+      // TODO: this could be more efficient if methods were a map
+      if (method->name != methodName)
+        continue;
+
+      // Skip any methods that don't match parentheses-less
+      // vs parentheses-ful vs the call.
+      if (method->hasFlag(FLAG_NO_PARENS) != forCall->methodTag)
+        continue;
+
+      // Skip any methods that are init/ctor/dtor
+      // These cannot yet be forwarded.
+      if (method->hasFlag(FLAG_DESTRUCTOR) ||
+          method->hasFlag(FLAG_CONSTRUCTOR) ||
+          0 == strcmp(methodName, "init"))
+        continue;
+
+      // Skip any instantiations of functions with
+      // with generic arguments (but not counting the this argument,
+      // since a method can be instantiated just for a generic this,
+      // but that should count as concrete for us here.
+      if (method->instantiatedFrom != NULL) {
+        bool skip = false;
+
+        int i = 0;
+        for_formals(formal, method->instantiatedFrom) {
+          // skip method token
+          // skip `this` argument
+          if (i >= 2) {
+            if (formal->type->symbol->hasFlag(FLAG_GENERIC))
+              skip = true;
+          }
+          i++;
+        }
+
+        if (skip)
+          continue;
+      }
+
+      // This wrapper method will be added to the type at and so will be found
+      // through normal resolution processes if this comes up agin.
+      addedAny = true;
+
+      // Create a "wrapper" method that forwards to the delegate
+      FnSymbol* fn = new FnSymbol(calledName);
+
+      fn->copyFlags(method);
+      // but we need to resolve the wrapper method again
+      fn->removeFlag(FLAG_RESOLVED);
+      fn->removeFlag(FLAG_INVISIBLE_FN);
+
+      fn->addFlag(FLAG_METHOD);
+      fn->addFlag(FLAG_INLINE);
+      fn->addFlag(FLAG_FORWARDING_FN);
+      fn->addFlag(FLAG_COMPILER_GENERATED);
+      fn->retTag = method->retTag;
+
+      ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+      ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", at);
+      _this->addFlag(FLAG_ARG_THIS);
+
+      fn->insertFormalAtTail(mt);
+      fn->insertFormalAtTail(_this);
+      fn->_this = _this;
+
+      // Add a call to the original function
+      VarSymbol* tgt = newTemp("tgt");
+      tgt->addFlag(FLAG_MAYBE_REF);
+      CallExpr* getTgt = new CallExpr(fnGetTgt, gMethodToken, _this);
+      CallExpr* setTgt = new CallExpr(PRIM_MOVE, tgt, getTgt);
+      CallExpr* wrapCall = new CallExpr(method, gMethodToken, tgt);
+
+      // Add the arguments to the wrapper function
+      // Add the arguments to the call
+      int i = 0;
+      for_formals(formal, method) {
+        if (i > 1) { // skip method token, target - added above
+          ArgSymbol* arg = formal->copy();
+          fn->insertFormalAtTail(arg);
+          wrapCall->insertAtTail(new SymExpr(arg));
+        }
+        i++;
+      }
+
+      // Copy the where clause, if any
+      // TODO: replace this.type with the delegate expression.type
+      if (method->where != NULL) {
+        SymbolMap map;
+
+        int nFormals = method->numFormals();
+        for (int i = 1; i <= nFormals; i++) {
+          Symbol* from = method->getFormal(i);
+          Symbol* to = fn->getFormal(i);
+          map.put(from, to);
+        }
+        fn->where = method->where->copy(&map);
+      }
+
+      // at this point, we don't know the return type for
+      // wrapCall, and we don't want to resolve it yet.
+      // to work with other code in resolution that tolerates
+      // "returning" a dtVoid, we take some steps to "normalize"
+      // here. Calling normalize directly would result in a PRIM_DEREF
+      // that interferes with accepting void returns.
+      VarSymbol* retval = newTemp("ret", dtUnknown);
+      retval->addFlag(FLAG_RVV);
+
+      fn->body->insertAtTail(new DefExpr(retval));
+      fn->body->insertAtTail(new DefExpr(tgt));
+      fn->body->insertAtTail(setTgt);
+      fn->body->insertAtTail(new CallExpr(PRIM_MOVE, retval, wrapCall));
+      fn->body->insertAtTail(new CallExpr(PRIM_RETURN, retval));
+      at->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+      // Add the new function as a method.
+      at->methods.add(fn);
+    }
+  }
+
+  return addedAny;
+}
+
+
 
 static void
 doGatherCandidates(Vec<ResolutionCandidate*>& candidates,
@@ -4401,6 +4645,18 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 }
 
 
+static void findVisibleCandidates(CallInfo& info,
+                                  Vec<FnSymbol*>& visibleFns,
+                                  Vec<ResolutionCandidate*>& candidates) {
+
+
+  CallExpr* call = info.call;
+
+  fillVisibleFuncVec(call, info, visibleFns);
+
+  gatherCandidates(candidates, visibleFns, info);
+}
+
 // if checkonly is provided, don't print any errors; just check
 // to see if the particular function could be resolved.
 // returns the result of resolving - or NULL if we couldn't do it.
@@ -4424,11 +4680,36 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if( checkonly && info.badcall ) return NULL;
 
   Vec<FnSymbol*> visibleFns; // visible functions
-
-  fillVisibleFuncVec(call, info, visibleFns);
-
   Vec<ResolutionCandidate*> candidates;
-  gatherCandidates(candidates, visibleFns, info);
+
+  // First, try finding candidates without delegation
+  findVisibleCandidates(info, visibleFns, candidates);
+
+  bool retry_find = false;
+
+  // if no candidate was found, try it with delegation
+  if (candidates.n == 0) {
+    // if it's a method, try delegating
+    if (call->numActuals() >= 1 &&
+        call->get(1)->typeInfo() == dtMethodToken) {
+      Type* receiverType = call->get(2)->typeInfo()->getValType();
+      if (typeUsesForwarding(receiverType)) {
+        retry_find = populateForwardingMethods(receiverType, info.name, info.call);
+      }
+    }
+  }
+
+  if (retry_find) {
+    // clear out visibleFns, candidates
+    visibleFns.clear();
+    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      delete candidate;
+    }
+    candidates.clear();
+
+    // try again to include forwarded functions
+    findVisibleCandidates(info, visibleFns, candidates);
+  }
 
   explainGatherCandidate(candidates, info, call);
 
