@@ -141,17 +141,17 @@ module ArrayViewRankChange {
       return downdom.dsiNumIndices;
     }
 
-    proc dsiDim(in upDim: int) {
+    proc dsiDim(upDim: int) {
       //      writeln("Call to dsiDim(", upDim, ")");
       //      writeln("collapsedDim = ", collapsedDim);
-      var downDim = 1;
+      var downDim = 0;
       for d in 1..downrank {
-        if collapsedDim(d) then
+        if !collapsedDim(d) {
           downDim += 1;
-        else {
-          upDim -= 1;
-          if (upDim == 0) then
-            return downdom.dsiDim(downDim);
+          if (upDim == downDim) then {
+            //            writeln("returning dim ", d, ": ", downdom.dsiDim(d));
+            return downdom.dsiDim(d);
+          }
         }
       }
       halt("Fell out of loop in dsiDim():", (upDim, downDim));
@@ -369,6 +369,7 @@ module ArrayViewRankChange {
       //      writeln("Writing array over ");
       //      privDom.dsiSerialWrite(f);
       //      writeln();
+
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
 
