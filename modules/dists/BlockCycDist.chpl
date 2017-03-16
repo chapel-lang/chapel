@@ -668,22 +668,6 @@ proc BlockCyclicDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 
-proc BlockCyclicDom.dsiBuildRectangularDom(param rank: int, type idxType,
-                                         param stridable: bool,
-                                         ranges: rank*range(idxType,
-                                                            BoundedRangeType.bounded,
-                                                            stridable)) {
-  if idxType != dist.idxType then
-    compilerError("BlockCyclic domain index type does not match distribution's");
-  if rank != dist.rank then
-    compilerError("BlockCyclic domain rank does not match distribution's");
-
-  var dom = new BlockCyclicDom(rank=rank, idxType=idxType,
-                               dist=dist, stridable=stridable);
-  dom.dsiSetIndices(ranges);
-  return dom;
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Domain Class

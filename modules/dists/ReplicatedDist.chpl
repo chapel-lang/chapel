@@ -371,21 +371,6 @@ proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
   return result;
 }
 
-// create a new domain mapped with this distribution representing 'ranges'
-proc ReplicatedDom.dsiBuildRectangularDom(param rank: int,
-                                          type idxType,
-                                          param stridable: bool,
-                                          ranges: rank * range(idxType,
-                                                BoundedRangeType.bounded,
-                                                               stridable))
-{
-  // could be made more efficient to avoid visiting each locale twice
-  // but perhaps not a big deal, for now anyways
-  var result = dist.dsiNewRectangularDom(rank, idxType, stridable);
-  result.dsiSetIndices(ranges);
-  return result;
-}
-
 // Given an index, this should return the locale that owns that index.
 // (This is the implementation of dmap.idxToLocale().)
 // For ReplicatedDist, we point it to the current locale.

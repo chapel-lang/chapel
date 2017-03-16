@@ -676,23 +676,6 @@ proc CyclicDom.dsiReprivatize(other, reprivatizeData) {
   whole = other.whole;
 }
 
-proc CyclicDom.dsiBuildRectangularDom(param rank, type idxType,
-                                    param stridable: bool,
-                                    ranges: rank*range(idxType,
-                                                       BoundedRangeType.bounded,
-                                                       stridable)) {
-  if idxType != dist.idxType then
-    compilerError("Cyclic domain index type does not match distribution's");
-  if rank != dist.rank then
-    compilerError("Cyclic domain rank does not match distribution's");
-
-  var dom = new CyclicDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable);
-  dom.dsiSetIndices(ranges);
-  return dom;
-
-}
-
 proc CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }

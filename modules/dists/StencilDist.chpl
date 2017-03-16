@@ -1015,26 +1015,6 @@ proc StencilDom.dsiIndexOrder(i) {
 }
 
 //
-// build a new rectangular domain using the given range
-//
-proc StencilDom.dsiBuildRectangularDom(param rank: int, type idxType,
-                                   param stridable: bool,
-                                   ranges: rank*range(idxType,
-                                                      BoundedRangeType.bounded,
-                                                      stridable)) {
-  if idxType != dist.idxType then
-    compilerError("Stencil domain index type does not match distribution's");
-  if rank != dist.rank then
-    compilerError("Stencil domain rank does not match distribution's");
-
-  var dom = new StencilDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable, fluff=fluff,
-                         periodic=periodic, ignoreFluff=this.ignoreFluff);
-  dom.dsiSetIndices(ranges);
-  return dom;
-}
-
-//
 // Added as a performance stopgap to avoid returning a domain
 //
 proc LocStencilDom.member(i) return myBlock.member(i);

@@ -579,25 +579,6 @@ proc SparseBlockDom.dsiIndexOrder(i) {
 }
 
 //
-// build a new rectangular domain using the given range
-//
-proc SparseBlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
-                                   param stridable: bool,
-                                   ranges: rank*range(idxType,
-                                                      BoundedRangeType.bounded,
-                                                      stridable)) {
-  if idxType != dist.idxType then
-    compilerError("SparseBlock domain index type does not match distribution's");
-  if rank != dist.rank then
-    compilerError("SparseBlock domain rank does not match distribution's");
-
-  var dom = new SparseBlockDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable);
-  dom.dsiSetIndices(ranges);
-  return dom;
-}
-
-//
 // Added as a performance stopgap to avoid returning a domain
 //
 proc LocSparseBlockDom.member(i) return mySparseBlock.member(i);

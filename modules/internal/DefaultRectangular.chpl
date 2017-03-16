@@ -606,16 +606,6 @@ module DefaultRectangular {
                                       stridable=stridable, dom=this);
     }
 
-    proc dsiBuildRectangularDom(param rank: int, type idxType, param stridable: bool,
-                              ranges: rank*range(idxType,
-                                                 BoundedRangeType.bounded,
-                                                 stridable)) {
-      var dom = new DefaultRectangularDom(rank, idxType, stridable, dist);
-      for i in 1..rank do
-        dom.ranges(i) = ranges(i);
-      return dom;
-    }
-
     proc dsiLocalSlice(ranges) {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
