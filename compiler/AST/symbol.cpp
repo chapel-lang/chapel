@@ -123,6 +123,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   qual(QUAL_UNKNOWN),
   type(init_type),
   flags(),
+  fieldQualifiers(NULL),
   defPoint(NULL),
   symExprsHead(NULL),
   symExprsTail(NULL)
@@ -137,6 +138,8 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
 
 
 Symbol::~Symbol() {
+  if (fieldQualifiers)
+    delete [] fieldQualifiers;
 }
 
 static inline void verifyInTree(BaseAST* ast, const char* msg) {
