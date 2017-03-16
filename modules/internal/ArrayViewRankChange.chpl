@@ -53,12 +53,18 @@ module ArrayViewRankChange {
     proc dsiNewRectangularDom(param rank, type idxType, param stridable) {
       //      compilerWarning("rank arg = " + rank);
       //      compilerWarning("downrank = " + downrank);
-      return new ArrayViewRankChangeDom(upinds=upinds,
-                                        downdomPid=downdomPid,
-                                        downdomInst=downdomInst,
-                                        collapsedDim=collapsedDim,
-                                        idx=idx,
-                                        dist=this);
+      var newarr = new ArrayViewRankChangeDom(rank=rank,
+                                              idxType=idxType,
+                                              stridable=stridable,
+                                              downdomPid=downdomPid,
+                                              downdomInst=downdomInst,
+                                              collapsedDim=collapsedDim,
+                                              idx=idx,
+                                              dist=this);
+      // Assign in case there are stridability differences
+      for d in 1..rank do
+        newarr.upinds(d) = upinds(d);
+      return newarr;
     }
 
     //
@@ -79,7 +85,11 @@ module ArrayViewRankChange {
   // BaseRectangularDom.
   //
   class ArrayViewRankChangeDom: BaseRectangularDom {
-    const upinds;
+    param rank;
+    type idxType;
+    param stridable;
+    
+    var upinds: rank*range(idxType, stridable=stridable);
 
     // the domain for the sliced array
     const downdomPid;
@@ -93,6 +103,7 @@ module ArrayViewRankChange {
     // TODO: This is overly simplistic and should be improved; maybe
     // this is what calling _getRankChangeRanges() on upinds would
     // help with?
+    /*
     proc idxType type {
       if isRange(upinds(1)) then
         return upinds(1).idxType;
@@ -103,6 +114,7 @@ module ArrayViewRankChange {
     proc rank param {
       return upinds.size;
     }
+    */
 
     proc downrank param {
       return collapsedDim.size;
@@ -115,12 +127,14 @@ module ArrayViewRankChange {
         return downdomInst;
     }
 
+    /*
     proc stridable param {
       for param d in 1..upinds.size do
         if isRange(upinds(d)) && upinds(d).stridable then
           return true;
       return false;
     }
+    */
 
     proc dsiBuildArray(type eltType) {
       pragma "no auto destroy"

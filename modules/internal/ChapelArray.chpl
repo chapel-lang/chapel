@@ -3592,7 +3592,9 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
+    compilerWarning("a.dist.type is ", a.dist.type:string);
     var d = _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, true));
+    compilerWarning("d.type is: " + d.type:string);
     d = {(...r)};
     return d;
   }
