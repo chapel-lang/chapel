@@ -137,6 +137,10 @@ module ArrayViewRankChange {
                                         idx=idx);
     }
 
+    proc dsiNumIndices {
+      return downdom.dsiNumIndices;
+    }
+
     proc dsiDim(in upDim: int) {
       //      writeln("Call to dsiDim(", upDim, ")");
       //      writeln("collapsedDim = ", collapsedDim);
@@ -189,6 +193,8 @@ module ArrayViewRankChange {
       forall i in downdom do
         yield downIdxToUpIdx(i);
     }
+
+    // TODO: Need to do leader/follower iterators still...
 
 
     proc downIdxToUpIdx(downIdx) {
