@@ -93,7 +93,7 @@ try {
   handleSomehow();
 }
 
-{FFFFF
+{
   var _e1: Error;
   {
     var _e2: Error;
@@ -220,8 +220,8 @@ AList ErrorHandlingVisitor::handler(TryStmt* tryStmt, VarSymbol* errorVar,
       hasCatchAll = true;
       currHandler->insertAtTail(catchBody);
     } else {
-      Symbol* errSym  = catchDef->sym;
-      Type*   errType = errSym->type;
+      VarSymbol* errSym  = toVarSymbol(catchDef->sym);
+      Type*      errType = errSym->type;
 
       catchDef->remove();
       currHandler->insertAtTail(catchDef);
@@ -230,7 +230,7 @@ AList ErrorHandlingVisitor::handler(TryStmt* tryStmt, VarSymbol* errorVar,
       if (errType == dtError) {
         hasCatchAll = true;
         currHandler->insertAtTail(new CallExpr(PRIM_MOVE, errSym, errorVar));
-        currHandler->insertAtTail(errorCond(toVarSymbol(errSym), catchBody));
+        currHandler->insertAtTail(errorCond(errSym, catchBody));
 
       // specified catch
       } else {
@@ -240,8 +240,7 @@ AList ErrorHandlingVisitor::handler(TryStmt* tryStmt, VarSymbol* errorVar,
         BlockStmt* nextHandler = new BlockStmt();
 
         currHandler->insertAtTail(new CallExpr(PRIM_MOVE, errSym, castError));
-        currHandler->insertAtTail(errorCond(toVarSymbol(errSym), catchBody,
-                                            nextHandler));
+        currHandler->insertAtTail(errorCond(errSym, catchBody, nextHandler));
 
         currHandler = nextHandler;
       }
