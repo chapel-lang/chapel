@@ -65,7 +65,7 @@ var myUint: uint = 1234; // Unsigned ints
 var myReal: real = 9.876; // Floating point numbers
 var myImag: imag = 5.0i; // Imaginary numbers
 var myCplx: complex = 10 + 9i; // Complex numbers
-myCplx = myInt + myImag ; // Another way to form complex numbers
+myCplx = myInt + myImag; // Another way to form complex numbers
 var myBool: bool = false; // Booleans
 var myStr: string = "Some string..."; // Strings
 
@@ -93,16 +93,16 @@ Constants and Parameters
 // A ``const`` is a constant, and cannot be changed after set in runtime.
 const almostPi: real = 22.0/7.0;
 
-// A ``param`` is a constant whose value must be known statically at compile-time.
-// Their value also cannot be changed.
+// A ``param`` is a constant whose value must be known statically at
+// compile-time.
 param compileTimeConst: int = 16;
 
 // The ``config`` modifier allows values to be set at the command line.
-// Set with ``--VarName=Value`` or ``--VarName Value`` at runtime.
+// Set with ``--varCmdLineArg=Value`` or ``--varCmdLineArg Value`` at runtime.
 config var varCmdLineArg: int = -123;
 config const constCmdLineArg: int = 777;
 
-// ``config param`` can be set/changed at compile-time.
+// ``config param`` can be set at compile-time.
 // Set with ``--set paramCmdLineArg=value`` at compile-time.
 config param paramCmdLineArg: bool = false;
 writeln(varCmdLineArg, ", ", constCmdLineArg, ", ", paramCmdLineArg);
@@ -114,7 +114,8 @@ References
 ----------
 */
 
-// ``ref`` operates much like a reference in C++.
+// ``ref`` operates much like a reference in C++. In Chapel, a ``ref`` cannot
+// be made to alias a variable other than the variable it is initialized with.
 // Here, ``refToActual`` refers to ``actual``.
 var actual = 10;
 ref refToActual = actual; 
@@ -186,17 +187,18 @@ Tuples
 */
 
 // Tuples can be of the same type or different types.
-var sameTup: 2*int = (10,-1);
+var sameTup: 2*int = (10, -1);
 var sameTup2 = (11, -6);
 var diffTup: (int,real,complex) = (5, 1.928, myCplx);
 var diffTupe2 = (7, 5.64, 6.0+1.5i);
 
-// They are accessed using array bracket notation but are 1-indexed.
-writeln("(", sameTup[1], ",", sameTup[2], ")");
+// Tuples can be accessed using square brackets or parentheses, and are
+// 1-indexed.
+writeln("(", sameTup[1], ",", sameTup(2), ")");
 writeln(diffTup);
 
 // Tuples can also be written into.
-diffTup[1] = -1;
+diffTup(1) = -1;
 
 // Tuple values can be expanded into their own variables.
 var (tupInt, tupReal, tupCplx) = diffTup;
@@ -245,7 +247,7 @@ var maximum = if (thisInt < thatInt) then thatInt else thisInt;
 // ``select`` statements are much like switch statements in other languages.
 // However, ``select`` statements don't cascade like in C or Java.
 var inputOption = "anOption";
-select(inputOption) {
+select inputOption {
   when "anOption" do writeln("Chose 'anOption'");
   when "otherOption" {
     writeln("Chose 'otherOption'");
@@ -257,7 +259,7 @@ select(inputOption) {
   }
 }
 
-// ``while`` and ``do``-``while`` loops are basically the same as well.
+// ``while`` and ``do``-``while`` loops also behave like their C counterparts.
 var j: int = 1;
 var jSum: int = 0;
 while (j <= 1000) {
@@ -272,9 +274,10 @@ do {
 } while (j <= 10000);
 writeln(jSum);
 
-// ``for`` loops are much like those in python in that they iterate over a range.
-// Ranges themselves are types, and can be stuffed into variables.
-for i in 1..10 do write(i , ", ") ;
+// ``for`` loops are much like those in python in that they iterate over a
+// range. Ranges (like the ``1..10`` expression below) are a first-class object
+// in Chapel, and as such can be stored in variables.
+for i in 1..10 do write(i, ", ");
 writeln();
 
 var iSum: int = 0;
@@ -305,7 +308,7 @@ Ranges and Domains
 var range1to10: range = 1..10;  // 1, 2, 3, ..., 10
 var range2to11 = 2..11; // 2, 3, 4, ..., 11
 var rangeThisToThat: range = thisInt..thatInt; // using variables
-var rangeEmpty: range = 100..-100 ; // this is valid but contains no indices
+var rangeEmpty: range = 100..-100; // this is valid but contains no indices
 
 // Ranges can be unbounded.
 var range1toInf: range(boundedType=BoundedRangeType.boundedLow) = 1.. ; // 1, 2, 3, 4, 5, ...
@@ -344,7 +347,7 @@ var threeDims: domain(3) = {thirdDim, 1..10, 5..10}; // using a range variable
 
 // Indices can be iterated over as tuples.
 for idx in twoDimensions do
-  write(idx , ", ");
+  write(idx, ", ");
 writeln();
 
 // These tuples can also be deconstructed.
