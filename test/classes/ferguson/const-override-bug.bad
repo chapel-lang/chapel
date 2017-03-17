@@ -1,2 +1,0 @@
-const-override-bug.chpl:19: In initializer 'myNumaDomain':
-const-override-bug.chpl:20: error: illegal lvalue in assignment

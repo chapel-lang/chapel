@@ -13,7 +13,7 @@ blas1:
 	chpl test_blas1.chpl ${LAPACKFLAGS} ${CHPLFLAGS} -o test_blas1
 
 blas2:
-	echo "Error: blas2 not yet supported"
+	chpl test_blas2.chpl ${LAPACKFLAGS} ${CHPLFLAGS} -o test_blas2
 
 blas3:
 	chpl test_blas3.chpl ${LAPACKFLAGS} ${CHPLFLAGS} -o test_blas3

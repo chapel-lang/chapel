@@ -403,22 +403,8 @@ module ArrayViewRankChange {
     //
 
     iter these() ref {
-      for i in privDom {
-        if shouldUseIndexCache() {
-          const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-          yield indexCache.getDataElem(dataIdx);
-        } else {
-          //          writeln("Trying to access using ", chpl_rankChangeConvertIdx(i, collapsedDim, idx));
-          /*
-          if (arr == nil) then
-            writeln("arr is nil");
-          else
-                        writeln("arr is non-nil");
-          */
-          //          writeln("arr = ", arr);
-          yield arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
-        }
-      }
+      for elem in chpl__serialViewIter(this, privDom) do
+        yield elem;
     }
 
     // TODO: We seem to run into compile-time bugs when using multiple yields.
@@ -427,8 +413,8 @@ module ArrayViewRankChange {
       where tag == iterKind.standalone && !localeModelHasSublocales {
       for i in privDom.these(tag) {
         yield if shouldUseIndexCache()
-                then indexCache.getDataElem(indexCache.getRADDataIndex(dom.stridable, i))
-                else arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
+              then indexCache.getDataElem(indexCache.getDataIndex(i))
+              else arr.dsiAccess(chpl_rankChangeConvertIdx(i));
       }
     }
 
@@ -444,7 +430,7 @@ module ArrayViewRankChange {
       where tag == iterKind.follower {
       for i in privDom.these(tag, followThis) {
         if shouldUseIndexCache() {
-          const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
+          const dataIdx = indexCache.getDataIndex(i);
           yield indexCache.getDataElem(dataIdx);
         } else {
           yield arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
@@ -507,7 +493,7 @@ module ArrayViewRankChange {
       //      writeln("In dsiAccess C");
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
@@ -519,7 +505,7 @@ module ArrayViewRankChange {
       //      writeln("In dsiAccess D");
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
@@ -531,7 +517,7 @@ module ArrayViewRankChange {
       //      writeln("In dsiAccess E");
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));

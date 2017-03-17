@@ -104,12 +104,12 @@ third-party-try-gmp: FORCE
 	fi
 
 third-party-test-venv: FORCE
-	-@if [ -z "$$CHPL_TEST_VENV_DIR" ]; then \
+	-@if [ -z "$$CHPL_DONT_BUILD_TEST_VENV" ]; then \
 	cd third-party && $(MAKE) test-venv; \
 	fi
 
 third-party-chpldoc-venv: FORCE
-	-@if [ -z "$$CHPL_TEST_VENV_DIR" ]; then \
+	-@if [ -z "$$CHPL_DONT_BUILD_CHPLDOC_VENV" ]; then \
 	cd third-party && $(MAKE) chpldoc-venv; \
 	fi
 
@@ -141,7 +141,7 @@ clean: FORCE
 	cd modules && $(MAKE) clean
 	cd runtime && $(MAKE) clean
 	cd third-party && $(MAKE) clean
-	if [ -a doc/Makefile ]; then cd doc && $(MAKE) clean; fi
+	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clean; fi
 	rm -f util/chplenv/*.pyc
 
 cleanall: FORCE
@@ -149,7 +149,7 @@ cleanall: FORCE
 	cd modules && $(MAKE) cleanall
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
-	if [ -a doc/Makefile ]; then cd doc && $(MAKE) cleanall; fi
+	if [ -e doc/Makefile ]; then cd doc && $(MAKE) cleanall; fi
 	rm -f util/chplenv/*.pyc
 	rm -rf build
 
@@ -163,7 +163,7 @@ clobber: FORCE
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
-	if [ -a doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
+	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin
 	rm -rf lib
 	rm -rf build

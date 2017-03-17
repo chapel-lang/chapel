@@ -1,0 +1,3 @@
+d-duplicate.chpl:15: error: ambiguous call 'Wrapper.foo()'
+d-duplicate.chpl:15: note: candidates are: Wrapper.foo()
+d-duplicate.chpl:15: note:                 Wrapper.foo()

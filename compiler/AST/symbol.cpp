@@ -123,6 +123,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   qual(QUAL_UNKNOWN),
   type(init_type),
   flags(),
+  fieldQualifiers(NULL),
   defPoint(NULL),
   symExprsHead(NULL),
   symExprsTail(NULL)
@@ -137,6 +138,8 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
 
 
 Symbol::~Symbol() {
+  if (fieldQualifiers)
+    delete [] fieldQualifiers;
 }
 
 static inline void verifyInTree(BaseAST* ast, const char* msg) {
@@ -1828,6 +1831,24 @@ bool FnSymbol::throwsError() const {
   return _throwsError;
 }
 
+bool FnSymbol::retExprDefinesNonVoid() const {
+  bool retval = true;
+
+  if (retExprType == NULL) {
+    retval = false;
+
+  } else if (retExprType->length() != 1) {
+    retval = true;
+
+  } else if (SymExpr* expr = toSymExpr(retExprType->body.get(1))) {
+    retval = expr->symbol()->type != dtVoid ? true : false;
+
+  } else {
+    retval = true;
+  }
+
+  return retval;
+}
 
 /******************************** | *********************************
 *                                                                   *

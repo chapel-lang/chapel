@@ -1081,7 +1081,7 @@ void CallExpr::replaceChild(Expr* oldAst, Expr* newAst) {
 
 
 void CallExpr::insertAtHead(BaseAST* ast) {
-  Expr *toInsert;
+  Expr* toInsert = NULL;
 
   if (Symbol* a = toSymbol(ast))
     toInsert = new SymExpr(a);
@@ -1095,7 +1095,7 @@ void CallExpr::insertAtHead(BaseAST* ast) {
 
 
 void CallExpr::insertAtTail(BaseAST* ast) {
-  Expr *toInsert;
+  Expr* toInsert = NULL;
 
   if (Symbol* a = toSymbol(ast))
     toInsert = new SymExpr(a);
@@ -1107,11 +1107,26 @@ void CallExpr::insertAtTail(BaseAST* ast) {
   parent_insert_help(this, toInsert);
 }
 
+void CallExpr::setUnresolvedFunction(const char* name) {
+  // Currently a PRIM_OP
+  if (primitive != NULL) {
+    primitive = NULL;
+    baseExpr  = new UnresolvedSymExpr(astr(name));
+
+    parent_insert_help(this, baseExpr);
+
+  } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(baseExpr)) {
+    use->unresolved = astr(name);
+
+  } else {
+    INT_ASSERT(false);
+  }
+}
+
 // MDN 2016/01/29: This will become a predicate
 FnSymbol* CallExpr::isResolved() const {
   return resolvedFunction();
 }
-
 
 FnSymbol* CallExpr::resolvedFunction() const {
   FnSymbol* retval = NULL;
@@ -1155,6 +1170,24 @@ FnSymbol* CallExpr::resolvedFunction() const {
   return retval;
 }
 
+void CallExpr::setResolvedFunction(FnSymbol* fn) {
+  // Currently a PRIM_OP
+  if (primitive != NULL) {
+    primitive = NULL;
+    baseExpr  = new SymExpr(fn);
+
+    parent_insert_help(this, baseExpr);
+
+  } else if (isUnresolvedSymExpr(baseExpr) == true) {
+    baseExpr->replace(new SymExpr(fn));
+
+  } else if (SymExpr* se = toSymExpr(baseExpr)) {
+    se->setSymbol(fn);
+
+  } else {
+    INT_ASSERT(false);
+  }
+}
 
 FnSymbol* CallExpr::theFnSymbol() const {
   FnSymbol* retval = NULL;
