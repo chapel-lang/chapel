@@ -1077,8 +1077,44 @@ module ChapelArray {
       return d;
     }
 
-    // TODO: Dead-code eliminate things that were only needed for domain
-    // rank changes... (dsiRankChangeDist...?)
+    // domain rank change
+    pragma "no doc"
+    proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
+      //
+      // Compute which dimensions are collapsed and what the index
+      // (idx) is in the event that it is.  These will be stored in
+      // the array view to convert from lower-D indices to higher-.
+      //
+      var collapsedDim: rank*bool;
+      var idx: rank*idxType;
+
+      for param i in 1..rank {
+        if (isRange(args(i))) {
+          collapsedDim(i) = false;
+        } else {
+          collapsedDim(i) = true;
+          idx(i) = args(i);
+        }
+      }
+      
+      // Create distribution, domain, and array objects representing
+      // the array view
+      const upranges = _getRankChangeUpRanges(args, this._value);
+      
+      const rcdist = new ArrayViewRankChangeDist(downdist = dist,
+                                                 collapsedDim=collapsedDim,
+                                                 idx = idx);
+
+      const rcdomclass = rcdist.dsiNewRectangularDom(rank = upranges.size,
+                                                     idxType = upranges(1).idxType,
+                                                     stridable = upranges(1).stridable);
+      pragma "no auto destroy"
+      var rcdom = _newDomain(rcdomclass);
+      rcdom = {(...upranges)};
+      rcdom._value._free_when_no_arrs = true;
+
+      return rcdom;
+    }
     
     // anything that is not covered by the above
     pragma "no doc"
