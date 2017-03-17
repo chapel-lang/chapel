@@ -148,7 +148,7 @@ private:
   bool                insideCatch;
 
   AList     handler           (TryStmt*   tryStmt,  VarSymbol* errorVar,
-                               TryInfo* outerTry);
+                               TryInfo*   outerTry);
   AList     setOutGotoEpilogue(VarSymbol* error);
   AList     errorCond         (VarSymbol* errorVar, BlockStmt* thenBlock,
                                BlockStmt* elseBlock = NULL);
