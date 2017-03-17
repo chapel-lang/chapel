@@ -110,6 +110,8 @@ module DefaultRectangular {
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
 
+    proc isDefaultRectangular() param return true;
+
     proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
       this.dist = dist;
     }

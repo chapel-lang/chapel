@@ -316,6 +316,12 @@ module ChapelDistribution {
     //proc dsiDestroyDom() { }
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
+
+    proc isDefaultRectangular() param return false;
+
+    proc isSliceDomainView() param return false; // likely unnecessary?
+    proc isRankChangeDomainView() param return false;
+    proc isReindexDomainView() param return false;
   }
   
   class BaseRectangularDom : BaseDom {
