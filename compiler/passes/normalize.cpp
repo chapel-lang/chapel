@@ -2491,12 +2491,10 @@ static void updateConstructor(FnSymbol* fn) {
 }
 
 static void updateInitMethod(FnSymbol* fn) {
-  Symbol* _this = fn->getFormal(2);
+  if (isAggregateType(fn->_this->type) == true) {
+    initMethodPreNormalize(fn);
 
-  if (AggregateType* ct = toAggregateType(_this->type)) {
-    handleInitializerRules(fn, ct);
-
-  } else if (_this->type == dtUnknown) {
+  } else if (fn->_this->type == dtUnknown) {
     INT_FATAL(fn, "'this' argument has unknown type");
 
   } else {

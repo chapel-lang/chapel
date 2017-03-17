@@ -45,25 +45,27 @@ static void     phase1Analysis(BlockStmt* body, AggregateType* t);
 *                                                                             *
 ************************************** | *************************************/
 
-void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
+void initMethodPreNormalize(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_PARENS)) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
 
   } else if (isReturnVoid(fn) == false) {
+    USR_FATAL(fn, "an initializer cannot return a non-void result");
 
   } else {
-    InitBody bodyStyle = getInitCall(fn);
+    AggregateType* at        = toAggregateType(fn->_this->type);
+    InitBody       bodyStyle = getInitCall(fn);
 
-    if (isClass(ct) == true && !ct->isGeneric()) {
-      buildClassAllocator(fn, ct);
+    if (isClass(at) == true && at->isGeneric() == false) {
+      buildClassAllocator(fn);
       fn->addFlag(FLAG_INLINE);
     }
 
     if (bodyStyle != DID_NOT_FIND_INIT) {
-      phase1Analysis(fn->body, ct);
+      phase1Analysis(fn->body, at);
 
       // Insert analysis of initCall here
-      if (bodyStyle == FOUND_SUPER_INIT && isRecord(ct)) {
+      if (bodyStyle == FOUND_SUPER_INIT && isRecord(at)) {
         // Need to find and remove any and all super.init() statements
         // if the type is a record, as they will not resolve (inheritance
         // and records is still being ironed out).
@@ -91,9 +93,9 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* ct) {
 
       fn->body->insertAtHead(superCall);
 
-      phase1Analysis(fn->body, ct);
+      phase1Analysis(fn->body, at);
 
-      if (isRecord(ct)) {
+      if (isRecord(at)) {
         // We haven't finalized what inheritance means for records yet.
         // Until we do, this call (while necessary for the divide between
         // the phases), won't resolve.
@@ -663,15 +665,18 @@ static bool isReturnVoid(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
-  SET_LINENO(ct);
+FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
+  Symbol*        _this       = initMethod->_this;
+  AggregateType* at          = toAggregateType(_this->type);
 
-  FnSymbol*  fn          = new FnSymbol("_new");
-  BlockStmt* body        = fn->body;
-  ArgSymbol* type        = new ArgSymbol(INTENT_BLANK, "t", ct);
-  VarSymbol* newInstance = newTemp("instance", ct);
-  CallExpr*  allocCall   = callChplHereAlloc(ct);
-  CallExpr*  initCall    = NULL;
+  SET_LINENO(at);
+
+  FnSymbol*      fn          = new FnSymbol("_new");
+  BlockStmt*     body        = fn->body;
+  ArgSymbol*     type        = new ArgSymbol(INTENT_BLANK, "t", at);
+  VarSymbol*     newInstance = newTemp("instance", at);
+  CallExpr*      allocCall   = callChplHereAlloc(at);
+  CallExpr*      initCall    = NULL;
 
   if (initMethod->hasFlag(FLAG_RESOLVED)) {
     initCall = new CallExpr(initMethod, gMethodToken, newInstance);
@@ -684,7 +689,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
   fn->addFlag(FLAG_METHOD);
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
-  fn->retType = ct;
+  fn->retType = at;
 
   // Add the formal that provides the type for the type method
   fn->insertFormalAtTail(type);
@@ -721,7 +726,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct) {
 
 
   // Insert the definition in to the tree
-  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+  at->symbol->defPoint->insertBefore(new DefExpr(fn));
 
   return fn;
 }

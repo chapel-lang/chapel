@@ -513,12 +513,10 @@ void resolveMatch(FnSymbol* fn) {
 
   resolveBlockStmt(fn->body);
 
-  if (wasGeneric) {
-    if (isClass(fn->_this->type) == true) {
-      FnSymbol* classAlloc = buildClassAllocator(fn,
-                                                 toAggregateType(fn->_this->type));
-      normalize(classAlloc);
-    }
+  if (wasGeneric == true && isClass(fn->_this->type) == true) {
+    FnSymbol* classAlloc = buildClassAllocator(fn);
+
+    normalize(classAlloc);
   }
 
   if (tryFailure) {
