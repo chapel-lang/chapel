@@ -541,6 +541,10 @@ OPTIONS
     Enable [disable] the printing of compiler warnings. Defaults to printing
     warnings.
 
+**--strict-errors**
+
+    Enable strict mode for error handling.
+
 *Compiler Configuration Options*
 
 **--home <path>**

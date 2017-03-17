@@ -69,7 +69,6 @@ Run-time Semantic Check Options:
       --[no-]stack-checks             Enable [disable] stack overflow checking
       --[no-]cast-checks              Enable [disable] checks in safeCast
                                       calls
-      --strict-errors                 Enable strict mode for error handling
 
 C Code Generation Options:
       --[no-]codegen                  [Don't] Do code generation
@@ -130,6 +129,7 @@ Miscellaneous Options:
       --[no-]warn-tuple-iteration     Enable [disable] warnings for tuple
                                       iteration
       --[no-]warnings                 Enable [disable] output of warnings
+      --strict-errors                 Enable strict mode for error handling
 
 Compiler Configuration Options:
       --home <path>                   Path to Chapel's home directory
