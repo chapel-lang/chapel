@@ -1,1 +1,0 @@
-void_extern_proc_array.chpl:3: error: illegal use of function that does not return a value: 'chpl__extern_array_voidArrayFunction'
