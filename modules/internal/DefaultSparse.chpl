@@ -24,6 +24,7 @@ module DefaultSparse {
 
   config param debugDefaultSparse = false;
 
+  pragma "non-distributed dsi implementation"
   class DefaultSparseDom: BaseSparseDomImpl {
     var dist: DefaultDist;
 
@@ -309,6 +310,7 @@ module DefaultSparse {
   }
 
 
+  pragma "non-distributed dsi implementation"
   class DefaultSparseArr: BaseSparseArrImpl {
 
     /*proc DefaultSparseArr(type eltType, param rank, type idxType, dom) {*/

@@ -47,6 +47,7 @@ module DefaultRectangular {
 
   inline proc defRectSimpleDData param return !localeModelHasSublocales;
 
+  pragma "non-distributed dsi implementation"
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
       return new DefaultRectangularDom(rank, idxType, stridable, this);
@@ -100,6 +101,7 @@ module DefaultRectangular {
     }
   }
 
+  pragma "non-distributed dsi implementation"
   class DefaultRectangularDom: BaseRectangularDom {
     param rank : int;
     type idxType;
@@ -1100,6 +1102,7 @@ module DefaultRectangular {
     }
   }
 
+  pragma "non-distributed dsi implementation"
   class DefaultRectangularArr: BaseArr {
     type eltType;
     param rank : int;

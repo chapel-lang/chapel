@@ -235,6 +235,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
     compile if the array element is not an array or a class.
 
 */
+pragma "distributed dsi implementation"
 class Stencil : BaseDist {
   param rank: int;
   type idxType = int;
@@ -273,6 +274,7 @@ class LocStencil {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
+pragma "distributed dsi implementation"
 class StencilDom: BaseRectangularDom {
   param rank: int;
   type idxType;
@@ -315,6 +317,7 @@ class LocStencilDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
+pragma "distributed dsi implementation"
 class StencilArr: BaseArr {
   type eltType;
   param rank: int;

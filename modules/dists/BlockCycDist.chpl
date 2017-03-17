@@ -177,6 +177,7 @@ executes each iteration on the locale where that iteration's index
 is mapped to.
 
 */
+pragma "distributed dsi implementation"
 class BlockCyclic : BaseDist {
   param rank: int;
   type idxType = int;
@@ -470,6 +471,7 @@ proc LocBlockCyclic.writeThis(x) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
+pragma "distributed dsi implementation"
 class BlockCyclicDom: BaseRectangularDom {
   param rank: int;
   type idxType;
@@ -790,6 +792,7 @@ proc LocBlockCyclicDom._sizes {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
+pragma "distributed dsi implementation"
 class BlockCyclicArr: BaseArr {
   type eltType;
   param rank: int;

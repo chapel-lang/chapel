@@ -301,6 +301,7 @@ This example demonstrates a Block-distributed sparse domain and array:
 
 
 */
+pragma "distributed dsi implementation"
 class Block : BaseDist {
   param rank: int;
   type idxType = int;
@@ -337,6 +338,7 @@ class LocBlock {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
+pragma "distributed dsi implementation"
 class BlockDom: BaseRectangularDom {
   param rank: int;
   type idxType;
@@ -373,6 +375,7 @@ class LocBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
+pragma "distributed dsi implementation"
 class BlockArr: BaseArr {
   type eltType;
   param rank: int;

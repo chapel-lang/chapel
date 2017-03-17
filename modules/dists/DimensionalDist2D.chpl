@@ -242,6 +242,7 @@ Only 2D domains and arrays are supported.
 
 There may be performance issues when scaling to a large number of locales.
 */
+pragma "distributed dsi implementation"
 class DimensionalDist2D : BaseDist {
   // the desired locales to distribute things over;
   // must be a [domain(2, locIdT, false)] locale
@@ -276,6 +277,7 @@ class DimensionalDist2D : BaseDist {
 
 // class LocDimensionalDist - no local distribution descriptor - for now
 
+pragma "distributed dsi implementation"
 class DimensionalDom : BaseRectangularDom {
   // required
   param rank: int;
@@ -341,6 +343,7 @@ class LocDimensionalDom {
   var doml1, doml2;
 }
 
+pragma "distributed dsi implementation"
 class DimensionalArr : BaseArr {
   // required
   type eltType;

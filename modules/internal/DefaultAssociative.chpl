@@ -51,6 +51,7 @@ module DefaultAssociative {
    27021597764222939, 54043195528445869, 108086391056891903, 216172782113783773,
    432345564227567561, 864691128455135207);
 
+  pragma "non-distributed dsi implementation"
   class DefaultAssociativeDom: BaseAssociativeDom {
     type idxType;
     param parSafe: bool;
@@ -542,6 +543,7 @@ module DefaultAssociative {
     }
   }
   
+  pragma "non-distributed dsi implementation"
   class DefaultAssociativeArr: BaseArr {
     type eltType;
     type idxType;

@@ -56,6 +56,7 @@ config param debugSparseBlockDistBulkTransfer = false;
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
+pragma "distributed dsi implementation"
 class SparseBlockDom: BaseSparseDomImpl {
   type sparseLayoutType;
   param stridable: bool = false;  // TODO: remove default value eventually
@@ -310,6 +311,7 @@ class LocSparseBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
+pragma "distributed dsi implementation"
 class SparseBlockArr: BaseSparseArr {
   param stridable: bool;
   type sparseLayoutType = DefaultDist;
