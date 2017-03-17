@@ -674,4 +674,3 @@ proc ReplicatedArr.dsiLocalSubdomain() {
 
 // todo? these two seem to work (written by analogy with DefaultRectangular)
 proc ReplicatedDist.dsiCreateReindexDist(newSpace, oldSpace) return this;
-proc ReplicatedDist.dsiCreateRankChangeDist(param newRank, args) return this;

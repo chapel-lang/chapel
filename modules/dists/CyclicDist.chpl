@@ -389,34 +389,6 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(1);
 }
 
-proc Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
-  var collapsedDimInds: rank*idxType;
-  var collapsedLocs: _cyclic_matchArgsShape(range(int), int, args);
-  var newLow: newRank*idxType;
-
-  var j: int = 1;
-  for param i in 1..args.size {
-    if isCollapsedDimension(args(i)) then
-      collapsedDimInds(i) = args(i);
-    else {
-      newLow(j) = startIdx(i);
-      j += 1;
-    }
-  }
-  const partialLocIdx = targetLocsIdx(collapsedDimInds);
-
-
-  for param i in 1..args.size {
-    if isCollapsedDimension(args(i)) {
-      collapsedLocs(i) = partialLocIdx(i);
-} else {
-      collapsedLocs(i) = targetLocDom.dim(i);
-    }
-  }
-  var newTargetLocales = targetLocs[(...collapsedLocs)];
-  return new Cyclic(rank=newRank, idxType=idxType, startIdx=newLow, targetLocales=newTargetLocales);
-}
-
 proc Cyclic.writeThis(x) {
   x.writeln(this.type:string);
   x.writeln("------");

@@ -1025,10 +1025,6 @@ proc DimensionalDist2D.dsiCreateReindexDist(newSpace, oldSpace) {
   return genericDsiCreateReindexDist(this, this.rank, newSpace, oldSpace);
 }
 
-proc DimensionalDist2D.dsiCreateRankChangeDist(param newRank: int, args) {
-  return genericDsiCreateRankChangeDist(this, newRank, args);
-}
-
 */
 /* do not use the above comment for chpldoc */
 
