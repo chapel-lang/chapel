@@ -2,7 +2,7 @@ use OwnedObject;
 
 class C {
   var x = 1;
-  proc ~C() {
+  proc deinit() {
     writeln("Destroying C ", x);
   }
 }

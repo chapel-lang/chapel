@@ -7,7 +7,7 @@ class Impl {
     writeln("in Impl.init ", field);
   }
 
-  proc ~Impl() {
+  proc deinit() {
     writeln("in Impl.~Impl ", field);
   }
 }

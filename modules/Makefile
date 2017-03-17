@@ -106,7 +106,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/MPI.chpl \
 	packages/Norm.chpl \
 	packages/OwnedObject.chpl \
-	packages/SharedObject.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/Search.chpl \

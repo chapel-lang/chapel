@@ -2,7 +2,7 @@ use SharedObject;
 
 class C {
   var x:int;
-  proc ~C() {
+  proc deinit() {
     writeln("Destroying C x=", x);
   }
 }

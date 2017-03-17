@@ -31,7 +31,7 @@
 
      var myOwnedObject = new Owned(new MyClass(...));
 
-   now, when myOwnedObject goes out of scope, the class instance
+   When myOwnedObject goes out of scope, the class instance
    it refers to will be deleted.
 
    It is an error to copy initialize from myOwnedObject or to assign

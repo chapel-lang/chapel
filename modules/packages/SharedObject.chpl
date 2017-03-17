@@ -31,10 +31,10 @@
 
      var mySharedObject = new Shared(new MyClass(...));
 
-   now, when mySharedObject and any copies of it go out of scope, the class
+   When mySharedObject and any copies of it go out of scope, the class
    instance it refers to will be deleted.
 
-   Now, copy initializing or assigning from mySharedObject will make
+   Copy initializing or assigning from mySharedObject will make
    other variables refer to the same class instance. The class instance
    will be deleted after all of these references go out of scope.
 

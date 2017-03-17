@@ -1,7 +1,7 @@
 use OwnedObject;
 
 class C {
-  proc ~C() {
+  proc deinit() {
     writeln("Destroying C");
   }
 }
