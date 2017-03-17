@@ -56,8 +56,8 @@ module ArrayViewRankChange {
       var newarr = new ArrayViewRankChangeDom(rank=rank,
                                               idxType=idxType,
                                               stridable=stridable,
-                                              downdomPid=downdomPid,
-                                              downdomInst=downdomInst,
+                                              //                                              downdomPid=downdomPid,
+                                              //                                              downdomInst=downdomInst,
                                               collapsedDim=collapsedDim,
                                               idx=idx,
                                               dist=this);
@@ -95,13 +95,16 @@ module ArrayViewRankChange {
     var updom: DefaultRectangularDom(rank, idxType, stridable);  // always a default rectangular -- is that OK?
 
     // the domain for the sliced array
-    var downdomPid;
-    var downdomInst;
 
     const collapsedDim;
     const idx;
 
     const dist;
+
+    var downdomPid:int;
+    var downdomInst: (dist.downdist.newRectangularDom(rank=downrank,
+                                                      idxType=idxType,
+                                                      stridable=stridable)).type;
 
     proc downrank param {
       return collapsedDim.size;
