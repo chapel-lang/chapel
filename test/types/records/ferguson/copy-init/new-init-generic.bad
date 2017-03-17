@@ -1,2 +1,0 @@
-new-init-generic.chpl:6: In initializer:
-new-init-generic.chpl:9: error: 'super' undeclared (first use this function)
