@@ -670,7 +670,7 @@ module ChapelArray {
   // 'arr' can be a full-fledged array type or a class that inherits from
   // BaseArr
   //
-  proc chpl__isDROrDRView(arr) param {
+  proc chpl__isDROrDRView(arr) param where isArray(arr) || arr : BaseArr {
     const value = if isArray(arr) then arr._value else arr;
     param isDR = value.isDefaultRectangular();
     param isDRView = chpl__isArrayView(value) && chpl__getActualArray(value).isDefaultRectangular();
@@ -678,6 +678,36 @@ module ChapelArray {
   }
   //
   // End of array-view utility functions
+  //
+
+  //
+  // DomainView utility functions
+  //
+  proc chpl__isDomainView(dom) param {
+    const value = if isDomain(dom) then dom._value else dom;
+
+    param isSlice      = value.isSliceDomainView();
+    param isRankChange = value.isRankChangeDomainView();
+    param isReindex    = value.isReindexDomainView();
+
+    return isSlice || isRankChange || isReindex;
+  }
+
+  proc chpl__getActualDomain(dom) {
+    var value = if isDomain(dom) then dom._value else dom;
+    var ret = if chpl__isDomainView(value) then value._getActualDomain() else value;
+    return ret;
+  }
+
+  proc chpl__isDROrDRView(dom) param where isDomain(dom) || dom : BaseDom {
+    const value = if isDomain(dom) then dom._value else dom;
+    param isDR  = value.isDefaultRectangular();
+    param isDRView = chpl__isDomainView(value) && chpl__getActualDomain(value).isDefaultRectangular();
+    return isDR || isDRView;
+  }
+
+  //
+  // End of DomainView utility functions
   //
 
   proc chpl__isRectangularDomType(type domainType) param {
