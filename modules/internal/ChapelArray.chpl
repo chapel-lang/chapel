@@ -1077,6 +1077,10 @@ module ChapelArray {
       return d;
     }
 
+    proc this(i: integral ... rank) {
+      compilerError("domain slice requires a range in at least one dimension");
+    }
+    
     // domain rank change
     pragma "no doc"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
@@ -1091,21 +1095,34 @@ module ChapelArray {
       for param i in 1..rank {
         if (isRange(args(i))) {
           collapsedDim(i) = false;
+          idx(i) = dim(i).alignedLow;
         } else {
           collapsedDim(i) = true;
           idx(i) = args(i);
         }
       }
+
+      //      writeln("will test membership of ", idx, " at ", this);
       
       // Create distribution, domain, and array objects representing
       // the array view
-      const upranges = _getRankChangeUpRanges(args, this._value);
-      
+      var upranges = _getRankChangeUpRanges(args, this._value);
+      const emptyrange: upranges(1).type;
+      param uprank = upranges.size;
+      //
+      // If idx isn't in the original domain, we need to generate an
+      // empty upward facing domain (intersection is empty)
+      //
+      if !member(idx) {
+        for param d in 1..uprank do
+          upranges(d) = emptyrange;
+      }
+        
       const rcdist = new ArrayViewRankChangeDist(downdist = dist,
                                                  collapsedDim=collapsedDim,
                                                  idx = idx);
 
-      const rcdomclass = rcdist.dsiNewRectangularDom(rank = upranges.size,
+      const rcdomclass = rcdist.dsiNewRectangularDom(rank = uprank,
                                                      idxType = upranges(1).idxType,
                                                      stridable = upranges(1).stridable);
       pragma "no auto destroy"
@@ -2116,6 +2133,9 @@ module ChapelArray {
       if boundsChecking then
         checkRankChange(args);
 
+      // TODO: Have the redundant code below use the domain rank change
+      // code above.
+      
       //
       // Compute which dimensions are collapsed and what the index
       // (idx) is in the event that it is.  These will be stored in
@@ -3186,8 +3206,6 @@ module ChapelArray {
     return collectRanges(1);
 
     proc collectRanges(param dim: int) {
-      if dim > args.size then
-        compilerError("domain slice requires a range in at least one dimension");
       if isRange(args(dim)) {
         const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
         return collectRanges(dim+1, (newRange,));
