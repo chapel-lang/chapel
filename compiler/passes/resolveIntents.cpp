@@ -233,16 +233,24 @@ void resolveArgIntent(ArgSymbol* arg) {
         intent == INTENT_INOUT) {
       // Resolution already handled out/inout copying
       intent = INTENT_REF;
-    } else if (intent == INTENT_IN) {
+    } else if (intent == INTENT_IN || intent == INTENT_CONST_IN) {
       // Resolution already handled copying for INTENT_IN for
       // records/unions.
       bool addedTmp = (isRecord(arg->type) || isUnion(arg->type));
+      if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN))
+        // Q - should this check arg->type->symbol->hasFlag(FLAG_EXTERN)?
+        addedTmp = false;
+
       if (addedTmp) {
-        intent = constIntentForType(arg->type);
+        if (arg->type->symbol->hasFlag(FLAG_COPY_MUTATES))
+          intent = INTENT_REF;
+        else
+          intent = constIntentForType(arg->type);
       } else {
         // In this case, C can copy for 'in' e.g. for ints
-        // There, we leave intent in (not const in) since
-        // the formal can still be modified in the body of the function.
+        // There, we leave the intent alone rather than making it 'const in',
+        // since an 'in' formal can still be modified in the body of the
+        // function.
       }
     }
   }

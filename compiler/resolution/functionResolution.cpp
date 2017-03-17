@@ -612,8 +612,9 @@ resolveAutoCopyEtc(Type* type) {
     if (isUserDefinedRecord(type) &&
         !type->symbol->hasFlag(FLAG_TUPLE) &&
         !isRecordWrappedType(type) &&
-        !isSyncType(type) &
-        !isSingleType(type)) {
+        !isSyncType(type) &&
+        !isSingleType(type) &&
+        !type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
       // Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
       // for user-defined records. This way, if the type does not
       // support copying, the autoCopyMap will store a function
@@ -4999,13 +5000,20 @@ void lvalueCheck(CallExpr* call)
     bool errorMsg = false;
     switch (formal->intent) {
      case INTENT_BLANK:
-     case INTENT_IN:
      case INTENT_CONST:
-     case INTENT_CONST_IN:
      case INTENT_PARAM:
      case INTENT_TYPE:
      case INTENT_REF_MAYBE_CONST:
       // not checking them here
+      break;
+
+     case INTENT_IN:
+     case INTENT_CONST_IN:
+      // generally, not checking them here
+      // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
+      if (formal->type->symbol->hasFlag(FLAG_COPY_MUTATES))
+        if (!isLegalLvalueActualArg(formal, actual))
+          errorMsg = true;
       break;
 
      case INTENT_INOUT:
