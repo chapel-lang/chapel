@@ -1356,6 +1356,13 @@ void checkForErroneousInitCopies() {
                            " that does not have a copy initializer");
       }
     }
+    if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
+      // Error on each call site
+      for_SymbolSymExprs(se, fn) {
+        USR_FATAL_CONT(se, "implicit copy-initialization invoked for a type"
+                           " that does allow it");
+      }
+    }
   }
 }
 
