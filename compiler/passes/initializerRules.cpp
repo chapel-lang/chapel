@@ -35,9 +35,44 @@ enum InitStyle {
   FOUND_BOTH
 };
 
-static bool      isReturnVoid(FnSymbol* fn);
-static InitStyle getInitCall(FnSymbol* fn);
-static void      phase1Analysis(FnSymbol* fn);
+static void        phase1Analysis(FnSymbol* fn);
+
+
+static bool        isReturnVoid(FnSymbol* fn);
+
+static InitStyle   findInitStyle(FnSymbol* fn);
+static InitStyle   findInitStyle(Expr* expr);
+
+static void        errorCases(AggregateType* at,
+                            DefExpr*       curField,
+                            const char*    fieldName,
+                            bool           seenField[],
+                            Expr*          call);
+
+static const char* getFieldName(Expr* curExpr);
+
+static Expr*       modifyFieldAccess(Expr*    fieldAccess,
+                                     DefExpr* curField);
+
+static bool        isLaterFieldAccess(DefExpr*    curField,
+                                      const char* fieldName);
+
+static bool        loopAnalysis(BlockStmt*     loop,
+                                DefExpr*       curField,
+                                bool           seenField[],
+                                int*           index,
+                                AggregateType* at);
+
+static void        insertOmittedField(Expr*          next,
+                                      DefExpr*       field,
+                                      AggregateType* at);
+
+static bool        isParentField(AggregateType* at,
+                                 const char*    name);
+
+static Expr*       getNextStmt(Expr*      curExpr,
+                               BlockStmt* body,
+                               bool       enterLoops);
 
 /************************************* | **************************************
 *                                                                             *
@@ -54,7 +89,7 @@ void initMethodPreNormalize(FnSymbol* fn) {
 
   } else {
     AggregateType* at        = toAggregateType(fn->_this->type);
-    InitStyle      bodyStyle = getInitCall(fn);
+    InitStyle      bodyStyle = findInitStyle(fn);
 
     if (isClass(at) == true && at->isGeneric() == false) {
       buildClassAllocator(fn);
@@ -111,99 +146,12 @@ void initMethodPreNormalize(FnSymbol* fn) {
   }
 }
 
-// Returns true only if what was provided was a SymExpr whose symbol is "this"
-static
-bool storesThisTop (Expr* expr) {
-  if (SymExpr* stores = toSymExpr(expr)) {
-    return stores->symbol()->hasFlag(FLAG_ARG_THIS);
-  }
-  return false;
-}
+/************************************* | **************************************
+*                                                                             *
+* Finds the appropriate next statement to examine                             *
+*                                                                             *
+************************************** | *************************************/
 
-static
-bool storesSpecificName (Expr* expr, const char* name) {
-  if (SymExpr* sym = toSymExpr(expr)) {
-    if (VarSymbol* var = toVarSymbol(sym->symbol())) {
-      if (var->immediate->const_kind == CONST_KIND_STRING) {
-        if (!strcmp(var->immediate->v_string, name)) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-static InitStyle getInitCall (Expr* expr) {
-  // The following set of nested if statements is looking for a CallExpr
-  // representing this.init(args) or super.init(args), which at this point
-  // in compilation will be represented by:
-  // call (call ("." [ super | this ] "init") args)
-  //
-  // If we match, return the InitStyle enum which represents whether
-  // the call is a super.init() or this.init() call
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (CallExpr* inner = toCallExpr(call->baseExpr)) {
-      if (inner->isNamed(".")) {
-        if (storesSpecificName(inner->get(2), "init")) {
-          if (CallExpr* subject = toCallExpr(inner->get(1))) {
-            if (storesThisTop(subject->get(1))) {
-              if (storesSpecificName(subject->get(2), "super")) {
-                // The expr is a "this.super.init()" call
-                return FOUND_SUPER_INIT;
-              }
-            }
-          } else if (storesThisTop(inner->get(1))) {
-            // The expr is a "this.init()" call
-            return FOUND_THIS_INIT;
-          } else if (UnresolvedSymExpr* us = toUnresolvedSymExpr(inner->get(1))) {
-            if (strcmp(us->unresolved, "super") == 0) {
-              // The expr is a "super.init()" call, likely on a record as
-              // records don't recognize "super".
-              return FOUND_SUPER_INIT;
-            }
-          }
-        }
-      }
-    }
-  }
-  return FOUND_NONE;
-}
-
-static
-Expr* getNextStmt(Expr* curExpr, BlockStmt* body, bool enterLoops);
-
-// This function traverses the body of the initializer until it finds a
-// super.init(...) or this.init(...) call, or it reaches the end of the
-// initializer's body, whichever comes first.  It will return the enum
-// description of that call, or FOUND_NONE if it didn't find a call
-// matching that description.
-static InitStyle getInitCall(FnSymbol* fn) {
-  // Behavior is not yet correct for super/this.init() calls within
-  // if statements.  TODO: fix this
-  Expr*      curExpr = fn->body->body.head;
-  BlockStmt* block   = toBlockStmt(curExpr);
-  InitStyle  body    = FOUND_NONE;
-
-  while (block && !block->isLoopStmt()) {
-    curExpr = block->body.head;
-    block = toBlockStmt(curExpr);
-  }
-
-  while (curExpr != NULL) {
-    body = getInitCall(curExpr);
-
-    if (body != FOUND_NONE) {
-      return body;
-    }
-
-    curExpr = getNextStmt(curExpr, fn->body, true);
-  }
-
-  return body;
-}
-
-// Finds the appropriate next statement to examine
 static
 Expr* getNextStmt(Expr* curExpr, BlockStmt* body, bool enterLoops) {
   Expr* toReturn = NULL;
@@ -237,30 +185,6 @@ Expr* getNextStmt(Expr* curExpr, BlockStmt* body, bool enterLoops) {
   return toReturn;
 }
 
-static
-void errorCases(AggregateType* t, DefExpr* curField, const char* fieldname,
-                bool seenField[], Expr* call);
-
-static
-const char* getFieldName(Expr* curExpr);
-
-static
-Expr* modifyFieldAccess(Expr* fieldAccess, DefExpr* curField);
-
-static
-bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
-
-static
-bool loopAnalysis(BlockStmt* loop, DefExpr* curField, bool* seenField,
-                       int* index, AggregateType* t);
-
-static
-void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t);
-
-
-static
-bool isParentField(AggregateType* t, const char* name);
-
 static void phase1Analysis(FnSymbol* fn) {
   Symbol*        _this     = fn->_this;
   AggregateType* at        = toAggregateType(_this->type);
@@ -271,7 +195,7 @@ static void phase1Analysis(FnSymbol* fn) {
 
   BlockStmt*     body      = fn->body;
   Expr*          curExpr   = body->body.head;
-  InitStyle      isInit    = getInitCall(curExpr);
+  InitStyle      isInit    = findInitStyle(curExpr);
 
   int            index     = 0;
 
@@ -328,7 +252,7 @@ static void phase1Analysis(FnSymbol* fn) {
             break;
           }
           curExpr = getNextStmt(curExpr, body, false);
-          isInit = getInitCall(curExpr);
+          isInit = findInitStyle(curExpr);
           continue;
         }
       }
@@ -341,7 +265,7 @@ static void phase1Analysis(FnSymbol* fn) {
           // Advance both and move on
           curField = toDefExpr(curField->next);
           curExpr = getNextStmt(curExpr, body, false);
-          isInit = getInitCall(curExpr);
+          isInit = findInitStyle(curExpr);
           seenField[index] = true;
           index++;
 
@@ -354,13 +278,13 @@ static void phase1Analysis(FnSymbol* fn) {
           // It's not a valid field access at all.  Error cases!
           errorCases(at, curField, fieldname, seenField, curExpr);
           curExpr = getNextStmt(curExpr, body, false);
-          isInit = getInitCall(curExpr);
+          isInit = findInitStyle(curExpr);
         }
 
       } else {
         // Wasn't a field access, only update curExpr;
         curExpr = getNextStmt(curExpr, body, false);
-        isInit = getInitCall(curExpr);
+        isInit = findInitStyle(curExpr);
       }
 
     } else if (curField != NULL) {
@@ -397,7 +321,7 @@ static void phase1Analysis(FnSymbol* fn) {
       }
 
       curExpr = getNextStmt(curExpr, body, false);
-      isInit = getInitCall(curExpr);
+      isInit = findInitStyle(curExpr);
     }
   }
 
@@ -591,7 +515,7 @@ static bool loopAnalysis(BlockStmt*     loop,
                          int*           index,
                          AggregateType* t) {
   Expr*     stmt   = loop->body.head;
-  InitStyle isInit = getInitCall(stmt);
+  InitStyle isInit = findInitStyle(stmt);
 
   while (stmt != NULL) {
     if (BlockStmt* inner = toBlockStmt(stmt)) {
@@ -619,7 +543,7 @@ static bool loopAnalysis(BlockStmt*     loop,
         seenField[*index] = true;
         (*index)++;
         stmt = getNextStmt(stmt, loop, true);
-        isInit = getInitCall(stmt);
+        isInit = findInitStyle(stmt);
       } else if (curField && isLaterFieldAccess(curField, fieldname)) {
         (*index)++;
         curField = toDefExpr(curField->next);
@@ -628,17 +552,151 @@ static bool loopAnalysis(BlockStmt*     loop,
         // Should I also warn that it is occurring inside a loop?
         errorCases(t, curField, fieldname, seenField, stmt);
         stmt = getNextStmt(stmt, loop, true);
-        isInit = getInitCall(stmt);
+        isInit = findInitStyle(stmt);
       }
     } else {
       stmt = getNextStmt(stmt, loop, true);
-      isInit = getInitCall(stmt);
+      isInit = findInitStyle(stmt);
     }
   }
   // traverse the statements of the loop, diving into loops and blocks as
   // encountered
 
   return false;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Functions to detect uses of this.init(args) or super.init(args)             *
+*                                                                             *
+*   The 1st function iterates over statements in an FnSymbol.                 *
+*   The 2nd function tests a single stmt.                                     *
+*                                                                             *
+************************************** | *************************************/
+
+static InitStyle findInitStyleInner(CallExpr* expr);
+static bool      isStringLiteral(Expr* expr, const char* name);
+static bool      isUnresolvedSymbol(Expr* expr, const char* name);
+static bool      isSymbolThis(Expr* expr);
+
+static InitStyle findInitStyle(FnSymbol* fn) {
+  // Behavior is not yet correct for super/this.init() calls within
+  // if statements.  TODO: fix this
+  Expr*      curExpr = fn->body->body.head;
+  BlockStmt* block   = toBlockStmt(curExpr);
+  InitStyle  retval  = FOUND_NONE;
+
+  // Peel off nested top-level blocks
+  while (block != NULL && block->isLoopStmt() == false) {
+    curExpr = block->body.head;
+    block   = toBlockStmt(curExpr);
+  }
+
+  while (curExpr != NULL && retval == FOUND_NONE) {
+    if ((retval = findInitStyle(curExpr)) == FOUND_NONE) {
+      curExpr = getNextStmt(curExpr, fn->body, true);
+    }
+  }
+
+  return retval;
+}
+
+//
+// Determine if the current stmt is one of
+//
+//    this.init(args);
+//      => call(call(".", this,                     "init") .. args)
+//
+//    super.init(args)
+//      => call(call(".", unresolved("super"),      "init") .. args)  or
+//      => call(call(".", call(".", this, "super"), "init") .. args)
+//
+
+static InitStyle findInitStyle(Expr* stmt) {
+  InitStyle retval = FOUND_NONE;
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    if (CallExpr* inner = toCallExpr(call->baseExpr)) {
+      retval = findInitStyleInner(inner);
+    }
+  }
+
+  return retval;
+}
+
+//
+// Determine if the current expr is one of
+//
+//    this.init(args);
+//      => call(".", this,                     "init")
+//
+//    super.init(args)
+//      => call(".", unresolved("super"),      "init")     // records
+//      => call(".", call(".", this, "super"), "init")     // classes
+//
+
+static InitStyle findInitStyleInner(CallExpr* call) {
+  InitStyle retval = FOUND_NONE;
+
+  if (call->numActuals()                    ==    2 &&
+      call->isNamed(".")                    == true &&
+      isStringLiteral(call->get(2), "init") == true) {
+
+    if (isSymbolThis(call->get(1)) == true) {
+      retval = FOUND_THIS_INIT;
+
+    } else {
+      // "super" is an unresolved symbol for records
+      if (isUnresolvedSymbol(call->get(1), "super") == true) {
+        retval = FOUND_SUPER_INIT;
+
+      // "super" is a call to a field accessor for classes
+      } else if (CallExpr* subCall = toCallExpr(call->get(1))) {
+        if (subCall->numActuals()                     == 2    &&
+            subCall->isNamed(".")                     == true &&
+            isSymbolThis(subCall->get(1))             == true &&
+            isStringLiteral(subCall->get(2), "super") == true) {
+          retval = FOUND_SUPER_INIT;
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+static bool isStringLiteral(Expr* expr, const char* name) {
+  bool retval = false;
+
+  if (SymExpr* sym = toSymExpr(expr)) {
+    if (VarSymbol* var = toVarSymbol(sym->symbol())) {
+      if (var->immediate->const_kind == CONST_KIND_STRING) {
+        retval = strcmp(var->immediate->v_string, name) == 0;
+      }
+    }
+  }
+
+  return retval;
+}
+
+static bool isUnresolvedSymbol(Expr* expr, const char* name) {
+  bool retval = false;
+
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
+    retval = strcmp(sym->unresolved, name) == 0;
+  }
+
+  return retval;
+}
+
+static bool isSymbolThis(Expr* expr) {
+  bool retval = false;
+
+  if (SymExpr* sym = toSymExpr(expr)) {
+    retval = sym->symbol()->hasFlag(FLAG_ARG_THIS);
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
