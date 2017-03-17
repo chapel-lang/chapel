@@ -314,7 +314,8 @@ CallExpr* ErrorHandlingVisitor::haltExpr() {
 }
 
 void lowerErrorHandling() {
-  INT_ASSERT(dtError->inTree());
+  if (!fMinimalModules)
+    INT_ASSERT(dtError->inTree());
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     ArgSymbol*   outError = NULL;
