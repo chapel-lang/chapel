@@ -233,7 +233,10 @@ void resolveArgIntent(ArgSymbol* arg) {
         intent == INTENT_INOUT) {
       // Resolution already handled out/inout copying
       intent = INTENT_REF;
-    } else if (intent == INTENT_IN || intent == INTENT_CONST_IN) {
+    } else if (intent == INTENT_IN) {
+      // MPF note: check types/range/ferguson/range-begin.chpl
+      // if you try to add INTENT_CONST_IN here.
+
       // Resolution already handled copying for INTENT_IN for
       // records/unions.
       bool addedTmp = (isRecord(arg->type) || isUnion(arg->type));
