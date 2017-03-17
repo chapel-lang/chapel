@@ -1926,12 +1926,13 @@ module DefaultRectangular {
           yield info.theDataChunk(0)(i);
         }
       } else {
-        const stride = viewDom.ranges(1).stride: viewDom.idxType,
-              start  = viewDom.ranges(1).first,
+        const viewDomDim = viewDom.dsiDim(1),
+              stride = viewDomDim.stride: viewDom.idxType,
+              start  = viewDomDim.first,
               first  = info.getDataIndex(start),
               second = info.getDataIndex(start + stride),
               step   = (second-first):chpl__signedType(viewDom.idxType),
-              last   = first + (viewDom.ranges(1).length-1) * step:viewDom.idxType;
+              last   = first + (viewDomDim.length-1) * step:viewDom.idxType;
         if step > 0 then
           for i in first..last by step do
             yield info.data(i);
