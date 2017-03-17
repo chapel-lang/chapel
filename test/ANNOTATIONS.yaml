@@ -225,6 +225,14 @@ all:
     - Wide-pointer optimization for arrays (#5487)
   03/07/17:
     - make blank intent for arrays "ref-if-modified" (#5134)
+  03/13/17:
+    - Have qthreads use Chapel's allocator (#5637)
+  03/15/17:
+    - text: Increase QT_SPINCOUNT when running on a Cray (#5646)
+      config: 16 node XC
+  03/16/17:
+    - text: Stop limiting the number of ugni communication domains under slurm (#5653)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -257,6 +265,10 @@ array-of-strings-read:
 arr-forall:
   03/24/15:
     - with CCE, bug fix to avoid vectorizing when not valid
+
+arguments:
+  03/10/17:
+    - Three way refpair (#5561)
 
 assign.1024:
   01/22/15:
@@ -385,6 +397,9 @@ fasta:
     - Parallelize release version, make more use of randType and refactor for CLBG submissions (#5024)
   12/19/16:
     - Switch max number of tasks from 3 to 4 (#5078)
+  03/10/17:
+    - text: Re-enable binary IO optimization on NUMA (#5572)
+      config: chapcs
 
 fastaredux:
   01/14/14:
@@ -638,6 +653,8 @@ miniMD:
     - Increase parallelism, decrease comm (#3483)
   12/02/16:
     - RVF reference fields with record-wrapped type (#4925)
+  03/10/17:
+    - Three way refpair (#5561)
 
 nbody:
   03/17/14:
@@ -744,6 +761,9 @@ revcomp:
   08/12/16:
     - text: Discontinued performance testing (data invalid) (#4333)
       config: Single node XC
+  03/10/17:
+    - text: Re-enable binary IO optimization on NUMA (#5572)
+      config: chapcs
 
 sad:
   05/03/16:
@@ -785,6 +805,8 @@ stream-promoted.ml-perf:
 STREAM_study:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+  03/16/17:
+    - Optimize serial iteration for ArrayViews (#5668)
 
 STREAM_study_promote:
   10/21/16:
