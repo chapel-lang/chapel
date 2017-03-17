@@ -39,34 +39,18 @@ module ArrayViewRankChange {
 
   class ArrayViewRankChangeDist: BaseDist {
     const downdist;
-    const downdomPid;
-    const downdomInst;
     const collapsedDim;
-    const idx;
+    const idx;  // Does the dist really need to store this?
 
-    proc deinit() {
-      // This distribution "owns" downdom, so should destroy it when
-      // it's being destroyed.
-      _delete_dom(downdomInst, _isPrivatized(downdomInst));
-    }
-    
     proc dsiNewRectangularDom(param rank, type idxType, param stridable) {
       //      compilerWarning("rank arg = " + rank);
       //      compilerWarning("downrank = " + downrank);
       var newarr = new ArrayViewRankChangeDom(rank=rank,
                                               idxType=idxType,
                                               stridable=stridable,
-                                              //                                              downdomPid=downdomPid,
-                                              //                                              downdomInst=downdomInst,
                                               collapsedDim=collapsedDim,
                                               idx=idx,
                                               dist=this);
-      // Assign in case there are stridability differences
-      //      newarr.updom = updom;
-      /*
-      for d in 1..rank do
-        newarr.upinds(d) = upinds(d);
-      */
       return newarr;
     }
 
@@ -74,8 +58,6 @@ module ArrayViewRankChange {
     // TODO: Is this OK?  Probably not
     //
     proc dsiClone() return new ArrayViewRankChangeDist(downdist=downdist,
-                                                       downdomPid=downdomPid,
-                                                       downdomInst=downdomInst,
                                                        collapsedDim=collapsedDim,
                                                        idx=idx);
   }

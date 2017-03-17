@@ -136,6 +136,9 @@ module ChapelArray {
   use ChapelBase; // For opaque type.
   use ChapelTuple;
   use ChapelLocale;
+
+  // TODO: Can we move these uses into the routines that need them to
+  // speed up compile-time?
   use ArrayViewSlice;
   use ArrayViewRankChange;
   use ArrayViewReindex;
@@ -2124,8 +2127,6 @@ module ChapelArray {
       var updom = {(...upranges)};
       
       const dist = new ArrayViewRankChangeDist(downdist = this.domain.dist,
-                                               downdomPid = downdom._pid,
-                                               downdomInst = downdom._instance,
                                                collapsedDim=collapsedDim,
                                                idx = idx);
 
