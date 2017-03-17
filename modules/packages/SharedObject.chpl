@@ -87,12 +87,23 @@ module SharedObject {
    */
   record Shared {
     pragma "no doc"
-    var p;                 // contained pointer (class type)
+    type t;              // contained type (class type)
+
+    pragma "no doc"
+    var p:t;             // contained pointer (class type)
 
     forwarding p;
 
     pragma "no doc"
     var pn:ReferenceCount; // reference counter
+
+    /*
+       Default-initialize a :record:`Shared`.
+     */
+    proc Shared(type t) {
+      this.p = nil;
+      this.pn = nil;
+    }
 
     /*
        Initialize a :record:`Shared` with a class instance.
@@ -102,13 +113,13 @@ module SharedObject {
 
        :arg p: the class instance to manage. Must be of class type.
      */
-    proc Shared(p) {
+    proc Shared(p, type t=p.type) {
 
       // Boost version default-initializes px and pn
       // and then swaps in different values.
 
-      if !isClass(p.type) then
-        compilerError("RefCounted only works with classes");
+      if !isClass(p) then
+        compilerError("Shared only works with classes");
 
       this.p = p;
       this.pn = new ReferenceCount();
@@ -122,22 +133,29 @@ module SharedObject {
     }
 
     /*
+       Copy-initializer. Creates a new :record:`Shared`
+       that refers to the same class instance as `src`.
+       These will share responsibility for managing the instance.
+     */
+    proc Shared(src:Shared, type t=src.t) {
+      this.p = src.p;
+      this.pn = src.pn;
+
+      this.pn.retain();
+    }
+
+    /*
        The deinitializer for :record:`Shared` will destroy the class
        instance once there are no longer any copies of this
        :record:`Shared` that refer to it.
      */
-    proc ~Shared() {
+    proc deinit() {
       release();
-    }
-
-    pragma "no doc"
-    proc retain() {
-      pn.retain();
     }
 
     /*
        Change the instance managed by this class to `newPtr`.
-       If this class was the last :record:`Shared` managing a
+       If this record was the last :record:`Shared` managing a
        non-nil instance, that instance will be deleted.
      */
     proc ref reset(newPtr:p.type) {
@@ -157,15 +175,17 @@ module SharedObject {
        Equivalent to :proc:`Shared.reset(nil)`.
      */
     proc ref release() {
-      if p != nil && pn != nil {
-        var count = pn.release();
-        if count == 0 {
-          delete p;
-          delete pn;
+      if isClass(p) { // otherwise, let error happen on init call
+        if p != nil && pn != nil {
+          var count = pn.release();
+          if count == 0 {
+            delete p;
+            delete pn;
+          }
         }
+        p = nil;
+        pn = nil;
       }
-      p = nil;
-      pn = nil;
     }
 
     /*
@@ -182,28 +202,15 @@ module SharedObject {
     // copy-init should call retain
   }
 
+
+  // initCopy is here as a workaround for problems
+  // with generic initializers.
   pragma "init copy fn"
   pragma "no doc"
   proc chpl__initCopy(src: Shared) {
     // This pragma may be unnecessary.
-    pragma "no auto destroy"
-    var ret:src.type;
-    ret.p = src.p;
-    ret.pn = src.pn;
-    ret.retain();
-    return ret;
-  }
-
-  pragma "donor fn"
-  pragma "auto copy fn"
-  pragma "no doc"
-  proc chpl__autoCopy(src: Shared) {
-    // This pragma may be unnecessary.
-    pragma "no auto destroy"
-    var ret:src.type;
-    ret.p = src.p;
-    ret.pn = src.pn;
-    ret.retain();
+    //pragma "no auto destroy"
+    var ret = new Shared(src);
     return ret;
   }
 
@@ -215,10 +222,9 @@ module SharedObject {
    */
   proc =(ref lhs:Shared, rhs: Shared) {
     // retain-release
-    rhs.retain();
+    rhs.pn.retain();
     lhs.release();
     lhs.p = rhs.p;
     lhs.pn = rhs.pn;
   }
-
 }

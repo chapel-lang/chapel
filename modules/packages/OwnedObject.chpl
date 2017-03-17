@@ -46,11 +46,22 @@ module OwnedObject {
      the lifetime of the class instance.
    */
   pragma "no copy"
+  pragma "copy mutates"
   record Owned {
     pragma "no doc"
-    var p;                 // contained pointer (class type)
+    type t;                // contained type (class type)
+
+    pragma "no doc"
+    var p:t;               // contained pointer (class type)
 
     forwarding p;
+
+    /*
+       Default-initialize a :record:`Owned`.
+     */
+    proc Owned(type t) {
+      this.p = nil;
+    }
 
     /*
        Initialize a :record:`Owned` with a class instance.
@@ -62,29 +73,37 @@ module OwnedObject {
 
        :arg p: the class instance to manage. Must be of class type.
      */
-    proc Owned(p) {
-      if !isClass(p.type) then
+    proc Owned(p, type t=p.type) {
+      if !isClass(p) then
         compilerError("Owned only works with classes");
 
       this.p = p;
       //super.init();
     }
 
-    // No copy-init is defined
-    // no copy may be made
+    /*
+       Copy-initializer. Creates a new :record:`Owned`
+       that takes over ownership from `src`. `src` will
+       refer to `nil` after this call.
+     */
+    proc Owned(ref src:Owned, type t=src.t) {
+      this.p = src.release();
+    }
 
     /*
        The deinitializer for :record:`Owned` will destroy the class
        instance in manages when the :record:`Owned` goes out of scope.
      */
-    proc ~Owned() {
-      if p then
-        delete p;
+    proc deinit() {
+      if isClass(p) { // otherwise, let error happen on init call
+        if p != nil then
+          delete p;
+      }
     }
 
     /*
        Change the instance managed by this class to `newPtr`.
-       If this class was already managing a non-nil instance,
+       If this record was already managing a non-nil instance,
        that instance will be deleted.
      */ 
     proc ref reset(newPtr:p.type) {
@@ -117,16 +136,28 @@ module OwnedObject {
 
   pragma "no doc"
   proc =(ref lhs:Owned, ref rhs: Owned) {
-    compilerError("Owned may not be assigned. Use lhs.reset(rhs.release()).");
-    //lhs.reset(rhs.release());
+    lhs.reset(rhs.release());
   }
 
-  // workaround for problems with generic initializers
+  // initCopy is defined explicitly as a workaround
+  // for problems with generic initializers
   pragma "init copy fn"
   pragma "no doc"
-  pragma "erroneous initcopy"
-  proc chpl__initCopy(src: Owned) {
-    return src;
+  proc chpl__initCopy(ref src: Owned) {
+    var ret = new Owned(src);
+    return ret;
   }
 
+  // autoCopy is defined explicitly to create a
+  // compilation error if it is invoked
+  // (if we decided it was OK, we'd need to do const-checking
+  //  on the argument to this autoCopy call).
+  pragma "no doc"
+  pragma "donor fn"
+  pragma "auto copy fn"
+  pragma "erroneous autocopy"
+  proc chpl__autoCopy(src: Owned) {
+    halt("Owned autoCopy called");
+    return src;
+  }
 }
