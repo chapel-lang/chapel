@@ -2123,7 +2123,7 @@ module ChapelArray {
       pragma "no auto destroy"
       var updom = {(...upranges)};
       
-      const dist = new ArrayViewRankChangeDist(updom=updom._instance,
+      const dist = new ArrayViewRankChangeDist(downdist = this.domain.dist,
                                                downdomPid = downdom._pid,
                                                downdomInst = downdom._instance,
                                                collapsedDim=collapsedDim,

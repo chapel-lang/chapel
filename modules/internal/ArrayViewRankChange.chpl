@@ -38,7 +38,7 @@
 module ArrayViewRankChange {
 
   class ArrayViewRankChangeDist: BaseDist {
-    const updom;
+    const downdist;
     const downdomPid;
     const downdomInst;
     const collapsedDim;
@@ -62,7 +62,7 @@ module ArrayViewRankChange {
                                               idx=idx,
                                               dist=this);
       // Assign in case there are stridability differences
-      newarr.updom = updom;
+      //      newarr.updom = updom;
       /*
       for d in 1..rank do
         newarr.upinds(d) = upinds(d);
@@ -73,7 +73,7 @@ module ArrayViewRankChange {
     //
     // TODO: Is this OK?  Probably not
     //
-    proc dsiClone() return new ArrayViewRankChangeDist(updom=updom,
+    proc dsiClone() return new ArrayViewRankChangeDist(downdist=downdist,
                                                        downdomPid=downdomPid,
                                                        downdomInst=downdomInst,
                                                        collapsedDim=collapsedDim,
@@ -95,8 +95,8 @@ module ArrayViewRankChange {
     var updom: DefaultRectangularDom(rank, idxType, stridable);  // always a default rectangular -- is that OK?
 
     // the domain for the sliced array
-    const downdomPid;
-    const downdomInst;
+    var downdomPid;
+    var downdomInst;
 
     const collapsedDim;
     const idx;
@@ -117,8 +117,8 @@ module ArrayViewRankChange {
     proc dsiBuildArray(type eltType) {
       pragma "no auto destroy"
       const arr = _newArray(downdom.dsiBuildArray(eltType));
-      // TODO: Update once we start privatizing
       return new ArrayViewRankChangeArr(eltType  =eltType,
+      // TODO: Update once we start privatizing vvv
                                         _DomPid = nullPid,
                                         dom = this,
                                         downdomPid = downdomPid,
@@ -203,9 +203,27 @@ module ArrayViewRankChange {
     }
 
     proc dsiSetIndices(inds) {
+      pragma "no auto destroy"
+      var updomRec = {(...inds)};
+      updom = updomRec._value;
+      var downdomclass = dist.downdist.newRectangularDom(rank=downrank,
+                                                         idxType=idxType,
+                                                         stridable=stridable);
+      pragma "no auto destroy"
+      var downdomLoc = _newDomain(downdomclass);
+      downdomLoc = chpl_rankChangeConvertDom(inds, inds.size, collapsedDim, idx);
+      downdomLoc._value._free_when_no_arrs = true;
+      downdomPid = downdomLoc._pid;
+      downdomInst = downdomLoc._instance;
+
+      // TODO: Need to set downdom as well
+      /*
+      if updom == nil then
+        halt("dsiSetIndices not done yet!");
       for d in 1..rank do
         if (inds(d) != updom.dsiDim(d)) then
           halt("Can only support matching indices so far");
+      */
     }
 
     proc dsiMember(i) {
@@ -278,7 +296,10 @@ module ArrayViewRankChange {
           upDim += 1;
         }
       }
-      return upIdx;
+      if rank == 1 then
+        return upIdx(1);
+      else
+        return upIdx;
     }
 
     // TODO: Is there something we can re-use here?
@@ -330,6 +351,7 @@ module ArrayViewRankChange {
 
     // the representation of the slicing domain.  For a rank change
     // like A[lo..hi, 3] this is the lower-dimensional domain {lo..hi}.
+    // This is represented as an ArrayViewRankChangeDom.
     //
     // TODO: Can we privatize upon creation of the array-view slice and cache
     // the results?
@@ -557,10 +579,10 @@ module ArrayViewRankChange {
     }
 
     proc dsiHasSingleLocalSubdomain() param
-      return privDom.dsiHasSingleLocalSubdomain();
+      return privDom.updom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain() {
-      return privDom.dsiLocalSubdomain();
+      return privDom.updom.dsiLocalSubdomain();
     }
 
     proc dsiNoFluffView() {
