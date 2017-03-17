@@ -216,31 +216,51 @@ module ArrayViewRankChange {
     }
 
     iter these() {
-      for i in downdom do
-        yield downIdxToUpIdx(i);
+      if chpl__isDROrDRView(downdom) {
+        for i in updom do
+          yield i;
+      } else {
+        for i in downdom do
+          yield downIdxToUpIdx(i);
+      }
     }
 
     iter these(param tag: iterKind) where tag == iterKind.standalone {
       //      writeln("About to do a forall loop over ");
       //      downdom.dsiSerialWrite(stdout);
-      for i in downdom.these(tag) do
-        yield downIdxToUpIdx(i);
+      if chpl__isDROrDRView(downdom) {
+        for i in updom.these(tag) do
+          yield i;
+      } else {
+        for i in downdom.these(tag) do
+          yield downIdxToUpIdx(i);
+      }
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
-      for followThis in downdom.these(tag) do {
-        //        writeln("Leader wants to lead ", followThis);
-        const followThisLoD = chpl_rankChangeConvertHiDTupleToLoD(followThis);
-        //        writeln("Changed it to ", followThisLoD);
-        yield followThisLoD;
+      if chpl__isDROrDRView(downdom) {
+        for followThis in updom.these(tag) do
+          yield followThis;
+      } else {
+        for followThis in downdom.these(tag) {
+          //        writeln("Leader wants to lead ", followThis);
+          const followThisLoD = chpl_rankChangeConvertHiDTupleToLoD(followThis);
+          //        writeln("Changed it to ", followThisLoD);
+          yield followThisLoD;
+        }
       }
     }
 
     iter these(param tag: iterKind, followThis)
       where tag == iterKind.follower {
-      const followThisHiD = chpl_rankChangeConvertLoDTupleToHiD(followThis);
-      for i in downdom.these(tag, followThisHiD) {
-        yield chpl_rankChangeConvertIdxHiDToLoD(i, collapsedDim, idx, rank);
+      if chpl__isDROrDRView(downdom) {
+        for i in updom.these(tag, followThis) do
+          yield i;
+      } else {
+        const followThisHiD = chpl_rankChangeConvertLoDTupleToHiD(followThis);
+        for i in downdom.these(tag, followThisHiD) {
+          yield chpl_rankChangeConvertIdxHiDToLoD(i, collapsedDim, idx, rank);
+        }
       }
     }
 
@@ -272,7 +292,7 @@ module ArrayViewRankChange {
     }
 
 
-    proc downIdxToUpIdx(downIdx) {
+    inline proc downIdxToUpIdx(downIdx) {
       var upIdx: rank*idxType;
       var upDim = 1;
       for param downDim in 1..downrank {
@@ -321,6 +341,18 @@ module ArrayViewRankChange {
 
     proc dsiLocalSubdomain() {
       return downdom.dsiLocalSubdomain();
+    }
+
+    proc isRankChangeDomainView() param {
+      return true;
+    }
+
+    proc _getActualDomain() {
+      if chpl__isDomainView(downdom) {
+        return downdom._getActualDomain();
+      } else {
+        return downdom;
+      }
     }
 
 
