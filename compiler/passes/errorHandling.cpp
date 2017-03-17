@@ -78,6 +78,54 @@ proc propagate(out error_out: Error) {
     }
   }
 }
+
+nested try:
+try {
+  try {
+    throwingCall();
+  } catch e: SpecificError {
+    handleGracefully();
+  }
+  otherThrowingCall();
+} catch {
+  handleSomehow();
+}
+
+// out _e_out: Error
+{
+  var _e1: Error;
+  {
+    var _e2: Error;
+    throwingCall(_e2);
+    if _e2 then
+      goto handler2;
+
+    label handler2:
+    if _e2 {
+      var _cast = _e2: SpecificError;
+      if _cast {
+        handleGracefully();
+      } else {
+        _e1 = _e2;
+        goto handler1;
+      }
+    }
+  }
+  otherThrowingCall(_e1);
+  if _e1 then
+    goto handler1;
+
+  label handler1:
+  if _e1 {
+    handleSomehow();
+  }
+}
+
+TODO:
+- distinguishing handler labels
+  - concat number to the end
+- getting outer try's
+  - switch Stack to Vector
 */
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
@@ -203,6 +251,7 @@ AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
     }
   }
 
+  // TODO: nested try
   if (!hasCatchAll) {
     if (tryStmt->tryBang()) {
       currHandler->insertAtTail(haltExpr());
