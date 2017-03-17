@@ -2113,6 +2113,11 @@ module ChapelArray {
 
       // TODO: When can we destroy this downdom?  Probably when the
       // distribution 'dist' below is done with it?
+
+      // TODO: It seems like we're figuring out an awful lot of stuff
+      // here now that really ought to be handled in the build-style
+      // routines of the domain map class...
+
       pragma "no auto destroy"
       var downdom = _newDomain(downdomclass);
       downdom = {(...downranges)};
