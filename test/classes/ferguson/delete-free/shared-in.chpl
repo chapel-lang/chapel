@@ -7,23 +7,26 @@ class C {
   }
 }
 
-proc takeOwnershipAgain(in arg:Shared(C)) {
-  writeln("in takeOwnershipAgain with arg=", arg.borrow());
+proc shareOwnershipAgain(in arg:Shared(C)) {
+  writeln("in shareOwnershipAgain with arg=", arg.borrow());
 }
 
 
-proc takeOwnership(in arg:Shared(C)) {
-  writeln("in takeOwnership with arg=", arg.borrow());
-  takeOwnershipAgain(arg);
-  writeln("in takeOwnership, now arg=", arg.borrow());
+proc shareOwnership(in arg:Shared(C)) {
+  writeln("in shareOwnership with arg=", arg.borrow());
+  shareOwnershipAgain(arg);
+  writeln("in shareOwnership, now arg=", arg.borrow());
 }
 
-
+proc make() {
+  var x = new Shared(new C(1));
+  return x;
+}
 
 proc foo() {
-  var x = new Shared(new C(1));
+  var x = make();
 
-  takeOwnership(x);
+  shareOwnership(x);
 }
 
 

@@ -19,9 +19,14 @@ proc takeOwnership(in arg:Owned(C)) {
 }
 
 
+proc make() {
+  var x = new Owned(new C(1));
+  return x;
+}
+
 
 proc foo() {
-  var x = new Owned(new C(1));
+  var x = make();
 
   takeOwnership(x);
 }
