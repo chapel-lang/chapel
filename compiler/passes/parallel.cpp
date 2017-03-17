@@ -1275,7 +1275,10 @@ makeHeapAllocations() {
   Vec<Symbol*> heapAllocatedVars;
 
   forv_Vec(Symbol, var, varVec) {
-    INT_ASSERT(var->hasFlag(FLAG_REF_VAR) || !var->isRef());
+    // MPF: I'm disabling the below assert because PR #5692
+    // can create call_tmp variables that are refs. Since these
+    // are temps, they aren't marked with FLAG_REF_VAR.
+    //INT_ASSERT(var->hasFlag(FLAG_REF_VAR) || !var->isRef());
 
     if (var->hasFlag(FLAG_EXTERN)) {
       // don't widen external variables
