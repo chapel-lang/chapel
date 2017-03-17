@@ -1,4 +1,4 @@
 in Impl.init
-{field = 2}
-{field = 2}
+in Impl.foo()
+{field = 1}
 in Impl.~Impl

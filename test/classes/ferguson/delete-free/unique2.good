@@ -1,2 +1,1 @@
-unique2.chpl:9: In function 'foo':
-unique2.chpl:12: error: copy-initialization invoked for a type that does not have a copy initializer
+Destroying C

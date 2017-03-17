@@ -21,3 +21,5 @@ proc makeGlobalSharedObject() {
 }
 
 makeGlobalSharedObject();
+
+writeln(globalSharedObject.borrow().field);

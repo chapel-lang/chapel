@@ -15,6 +15,11 @@ owned4 = {x = 4}
 after assigning owned1 = owned4
 owned1 = {x = 4}
 owned4 = nil
+after reseting owned1 to C(100)
+owned1 = {x = 100}
+after releasing owned1
+owned1 = nil
+release returned = {x = 100}
 declaring owned5 storing C(5)
 in takesOwnership, arg = {x = 5}
 owned5 = nil

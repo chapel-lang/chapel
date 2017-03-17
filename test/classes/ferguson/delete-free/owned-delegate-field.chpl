@@ -1,4 +1,4 @@
-use SharedObject;
+use OwnedObject;
 
 class Impl {
   var field: int;
@@ -17,9 +17,9 @@ class Impl {
 }
 
 proc run() {
-  var x = new Shared(new Impl(1));
-  x.foo(); // calls x.borrow().foo()
-  writeln(x.borrow());
+  var x = new Owned(new Impl(1));
+  x.field = 34;
+  writeln(x.field);
 }
 
 run();

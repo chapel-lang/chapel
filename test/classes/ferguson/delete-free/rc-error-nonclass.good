@@ -1,0 +1,2 @@
+rc-error-nonclass.chpl:7: In function 'run':
+rc-error-nonclass.chpl:8: error: Shared only works with classes

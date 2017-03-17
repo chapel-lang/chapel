@@ -10,6 +10,10 @@ shared3 = {x = 3}
 after assigning shared1 = shared3
 shared1 = {x = 3}
 shared3 = {x = 3}
+after reseting shared1 to C(100)
+shared1 = {x = 100}
+after releasing shared1
+shared1 = nil
 declaring shared4 storing C(4)
 shared4 = {x = 4}
 declaring shared5 storing C(5)

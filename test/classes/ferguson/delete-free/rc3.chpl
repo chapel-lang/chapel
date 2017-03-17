@@ -14,13 +14,21 @@ class Impl {
 
 proc run() {
   var x = new Shared(new Impl(1));
-  var y: x.type;
+  var y: Shared(Impl);
 
   // check assignment
   y = x;
 
-  writeln(x.p);
-  writeln(y.p);
+  writeln(x.borrow());
+  writeln(y.borrow());
+
+
+  var z: y.type;
+  z = y;
+
+  writeln(x.borrow());
+  writeln(y.borrow());
+  writeln(z.borrow());
 }
 
 run();

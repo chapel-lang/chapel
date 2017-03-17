@@ -18,8 +18,12 @@ proc run() {
   // check initCopy
   var y = x;
 
-  writeln(x.p);
-  writeln(y.p);
+  // increment one of their fields so
+  // we know they refer to the same data
+  x.field += 1;
+
+  writeln(x.borrow());
+  writeln(y.borrow());
 }
 
 run();
