@@ -15,6 +15,10 @@ class Impl {
 proc run() {
   var x = new Shared(new Impl(1));
   writeln(x.borrow());
+
+  var c:Impl = nil;
+  var y = new Shared(c);
+  writeln(y.borrow());
 }
 
 run();

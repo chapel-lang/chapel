@@ -121,8 +121,13 @@ module SharedObject {
       if !isClass(p) then
         compilerError("Shared only works with classes");
 
+      var rc:ReferenceCount = nil;
+
+      if p != nil then
+        rc = new ReferenceCount();
+
       this.p = p;
-      this.pn = new ReferenceCount();
+      this.pn = rc;
 
       //super.init();
 
