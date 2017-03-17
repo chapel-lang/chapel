@@ -22,7 +22,8 @@
 A high-level interface to linear algebra operations and procedures.
 
 .. note::
-  This is
+  This is an early prototype package module. As a result, interfaces may change
+  over the next release.
 
 Compiling with Linear Algebra
 -----------------------------
@@ -32,8 +33,6 @@ many routines. In order to compile a Chapel program with this module, be sure
 to have BLAS and LAPACK implementations available on your system. See the BLAS
 and LAPACK documentation for further details.
 
-.. comment:
-  - native implementations some day
 
 Linear Algebra API
 ------------------
@@ -81,37 +80,62 @@ An outer product can be computed with the :proc:`outer` function.
 
 **Promotion flattening**
 
-``TODO``
+Promotion flattening is an unintended consequence of Chapel's
+:ref:`promotion feature <ug-promotion>`, when a multi-dimensional array assignment
+gets type-inferred as a 1-dimensional array of the same size, effectively
+flattening the array dimensionality. This can result in unexpected behavior in
+programs such as this:
 
-Discuss promotion flattening, and how to get around it, providing examples
-and helper functions like :proc:`matPlus`.
+.. code-block:: chapel
 
-.. note::
-    Promotion flattening is not an intended feature, and should be resolved in
-    future releases of Chapel.
+  var A = Matrix(4, 4),
+      B = Matrix(4, 4);
+  // A + B is a promoted operation, and C becomes a 1D array
+  var C = A + B;
+  // This code would then result in an error due to rank mismatch:
+  C += A;
 
-.. Examples:
+To get avoid this, you can avoid relying on inferred-types for new arrays:
 
-.. Features:
+.. code-block:: chapel
 
-.. Future directions:
+  var A = Matrix(4, 4),
+      B = Matrix(4, 4);
+  // C's type is not inferred and promotion flattening is not a problem
+  var C: [A.domain] A.eltType = A + B;
+  // Works as expected
+  C += A;
+
+Alternatively, you can use the LinearAlgebra helper routines, which create
+and return a new array:
+
+.. code-block:: chapel
+
+  var A = Matrix(4, 4),
+      B = Matrix(4, 4);
+  // matPlus will create a new array with an explicit type
+  var C = matPlus(A, B);
+  // Works as expected
+  C += A;
+
+Promotion flattening is not expected to be an issue in future releases.
+
+
+.. LinearAlgebra Module Future TODOs:
+  - Support non-matching domains and eltTypes in matOperations
+    - check that eltTypes are coercible
+    - check domain shapes are equal
+  - Add LinearAlgebra primer
+  - Add feature table, comparing to numpy and matlab
+  - performance testing
   - Domain maps
     - Distributed array support
-      - PBLAS
     - Sparse support
-      - suiteSparse
     - GPU support
-      - CuBLAS
   - Support fully native implementations
     - Only use the BLAS/LAPACK version when the libraries are installed
   - Provide MKL BLAS/LAPACK with Chapel installation
     - install with something like: CHPL_EXTRAS=MKL
-
-.. LinearAlgebra Module TODOs
-  - Support non-matching domains and eltTypes in matOperations
-    - check that eltTypes are coercible
-    - check domain shapes are equal
-  - performance testing
 
 */
 
