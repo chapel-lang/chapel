@@ -119,6 +119,7 @@ atomic           return processToken(yyscanner, TATOMIC);
 begin            return processToken(yyscanner, TBEGIN);
 break            return processToken(yyscanner, TBREAK);
 by               return processToken(yyscanner, TBY);
+catch            return processToken(yyscanner, TCATCH);
 class            return processToken(yyscanner, TCLASS);
 cobegin          return processToken(yyscanner, TCOBEGIN);
 coforall         return processToken(yyscanner, TCOFORALL);

@@ -1,6 +1,4 @@
-proc throwAnError() throws {
-  throw new Error();
-}
+use ThrowError;
 
 proc throwAnErrorToo() throws {
   try {
@@ -11,5 +9,5 @@ proc throwAnErrorToo() throws {
 try {
   throwAnErrorToo();
 } catch {
-  write("caught an error");
+  writeln("caught an error");
 }

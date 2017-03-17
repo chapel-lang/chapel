@@ -60,7 +60,8 @@ static WellKnownType sWellKnownTypes[] = {
   {"BaseDist",           &dtDist,          true},
   {"chpl_main_argument", &dtMainArgument, false},
   {"chpl_comm_on_bundle_t", &dtOnBundleRecord,   false},
-  {"chpl_task_bundle_t",    &dtTaskBundleRecord, false}
+  {"chpl_task_bundle_t",    &dtTaskBundleRecord, false},
+  {"Error",                 &dtError,            true}
 };
 
 

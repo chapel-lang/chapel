@@ -1,8 +1,8 @@
-use SomeError;
+use ThrowError;
 
 proc noPropError() {
   writeln("should not propagate");
-  try! throwAnError();
+  throwAnError();
   writeln("fail: propagated");
 }
 

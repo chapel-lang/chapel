@@ -1,4 +1,4 @@
-use SomeError;
+use ThrowError;
 
 proc propError() throws {
   try throwAnError();

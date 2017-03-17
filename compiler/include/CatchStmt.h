@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -17,43 +17,55 @@
  * limitations under the License.
  */
 
-#ifndef _TRY_STMT_H_
-#define _TRY_STMT_H_
+#ifndef _CATCH_STMT_H_
+#define _CATCH_STMT_H_
 
 #include "stmt.h"
 
-class TryStmt : public Stmt
-{
+/*
+try {
+  maybeError();
+} catch e: OtherError {
+  handleGracefully();
+}
+
+CatchStmt is implemented using a BlockStmt, which contains two parts:
+  1. filter expression
+    - e: OtherError
+    - the variable name following catch and the type following the colon
+    - DefExpr*
+  2. catch body
+    - { handleGracefully() }
+    - the code inside the block
+    - BlockStmt*
+
+This strategy enables other parts of the compiler to use the same
+scoping rules without needing to know about CatchStmt
+*/
+
+class CatchStmt : public Stmt {
 
 public:
+  static CatchStmt* build(Expr* expr, BlockStmt* body);
 
-  static BlockStmt*   build(bool tryBang, Expr*      expr);
-  static BlockStmt*   build(bool tryBang, BlockStmt* body);
-  static BlockStmt*   build(bool tryBang, BlockStmt* body, BlockStmt* catches);
+  CatchStmt(Expr* expr, BlockStmt* body);
+  ~CatchStmt();
 
-                      TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches);
-                      ~TryStmt();
-  BlockStmt*          body() const;
-  bool                tryBang() const;
+  DefExpr*   expr() const;
+  BlockStmt* body() const;
 
   void                accept(AstVisitor* visitor);
   void                replaceChild(Expr* old_ast, Expr* new_ast);
   Expr*               getFirstChild();
   Expr*               getFirstExpr();
-  Expr*               getNextExpr(Expr* expr);
   void                verify();
   GenRet              codegen();
-  DECLARE_COPY(TryStmt);
+  DECLARE_COPY(CatchStmt);
 
-  // intended to be private, but astutil.h macros need public access
-  BlockStmt*          _body;
-  AList               _catches;
+  BlockStmt* _body;
 
 private:
-  bool                _tryBang;
-
-  static BlockStmt*   buildChplStmt(Expr* expr);
-                      TryStmt();
+  CatchStmt();
 
 };
 
