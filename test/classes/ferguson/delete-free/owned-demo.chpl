@@ -62,14 +62,14 @@ proc examples() {
   writeln("after reseting owned1 to C(100)");
   writeln("owned1 = ", owned1.borrow());
 
-  // The release method can be used to extract the
+  // The take method can be used to extract the
   // owned pointer when something else will have responsibility
   // for freeing it. Whatever Owned has release() called on it
   // will contain nil after the call.
-  var ptr = owned1.release();
-  writeln("after releasing owned1");
+  var ptr = owned1.take();
+  writeln("after owned1.take()");
   writeln("owned1 = ", owned1.borrow());
-  writeln("release returned = ", ptr);
+  writeln("owned1.take() returned = ", ptr);
   delete ptr;
 
   // The `in` intent can be used to pass ownership from a call

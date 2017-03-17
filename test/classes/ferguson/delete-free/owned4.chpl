@@ -11,7 +11,7 @@ proc foo() {
   var x:Owned(C);
   var y = new Owned(new C(2));
 
-  x.reset(y.release());
+  x.reset(y.take());
 }
 
 

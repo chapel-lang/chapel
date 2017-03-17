@@ -17,9 +17,9 @@ owned1 = {x = 4}
 owned4 = nil
 after reseting owned1 to C(100)
 owned1 = {x = 100}
-after releasing owned1
+after owned1.take()
 owned1 = nil
-release returned = {x = 100}
+owned1.take() returned = {x = 100}
 declaring owned5 storing C(5)
 in takesOwnership, arg = {x = 5}
 owned5 = nil

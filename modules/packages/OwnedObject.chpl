@@ -87,7 +87,7 @@ module OwnedObject {
        refer to `nil` after this call.
      */
     proc Owned(ref src:Owned, type t=src.t) {
-      this.p = src.release();
+      this.p = src.take();
     }
 
     /*
@@ -117,7 +117,7 @@ module OwnedObject {
        Empty this :record:`Owned` so that it manages `nil`.
        Returns the instance previously managed by this :record:`Owned`.
      */
-    proc ref release():p.type {
+    proc ref take():p.type {
       var oldPtr = p;
       p = nil;
       return oldPtr;
@@ -136,7 +136,7 @@ module OwnedObject {
 
   pragma "no doc"
   proc =(ref lhs:Owned, ref rhs: Owned) {
-    lhs.reset(rhs.release());
+    lhs.reset(rhs.take());
   }
 
   // initCopy is defined explicitly as a workaround
