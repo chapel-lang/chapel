@@ -1,8 +1,11 @@
 use LinearAlgebra;
 
-/* LinearAlgebra correctness tests */
+/* LinearAlgebra correctness tests
 
-/* Nothing prints if tests are successful */
+   Any output denotes failure
+
+   Many of these tests are trivial and can be expanded upon in the future.
+*/
 
 //
 // Initializers
@@ -104,6 +107,18 @@ use LinearAlgebra;
     assertEqual(v.T, vT, "v.T");
   }
 
+  /* transpose - Nx1 , 1xN vectors */
+  {
+    var v31 = Matrix(3, 1);
+    var v13 = Matrix(1, 3);
+
+    v31 = 1;
+    v13 = 1;
+
+    assertEqual(v13, v31.T, "Matrix(3, 1).T");
+    assertEqual(v31, v13.T, "Matrix(1, 3).T");
+  }
+
   /* transpose - square matrix */
   {
 
@@ -173,9 +188,52 @@ use LinearAlgebra;
   test_dot(int(64));
 }
 
+/* dot scalars */
+
+{
+  var I = eye(3, 3);
+  var I2: [I.domain] real = 2*I;
+
+  assertEqual(I2, dot(2, I), "dot(2, I)");
+  assertEqual(I2, dot(I, 2), "dot(I, 2)");
+
+  var v = Vector(3);
+  var v2 = 2*v;
+
+  assertEqual(v2, dot(2, v), "dot(2, v)");
+  assertEqual(v2, dot(v, 2), "dot(v, 2)");
+}
+
+
+/* dot - Nx1 , 1xN vectors */
+{
+  var v31 = Matrix(3, 1);
+  var v13 = Matrix(1, 3);
+  var M = Matrix(3, 3);
+  var S = Matrix(1, 1);
+
+  v31 = 1;
+  v13 = 1;
+  M = 1;
+
+  S[0, 0] =  inner(v13[0, ..], v31[.., 0]);
+
+  // outer-product
+  assertEqual(dot(v31, v13), M, "dot(Matrix(3, 1), Matrix(1, 3))");
+  // inner-product
+  assertEqual(dot(v13, v31), S, "dot(Matrix(1, 3), Matrix(3, 1))");
+}
+
 /* outer */
 {
-  // TODO
+  var v = Vector(3);
+  var M = Matrix(3, 3);
+
+  v = 1;
+  M = 1;
+
+  // outer-product
+  assertEqual(outer(v, v), M, "outer(Vector(3), Vector(3))");
 }
 
 /* matPow scalar-matrix */
@@ -206,8 +264,6 @@ use LinearAlgebra;
   assertEqual(A3, B3, "matPow(A, 3)");
 }
 
-/* matSqrt */
-
 /* matExp */
 {
   var A = Matrix([1,2,3,4],[4,3,2,1], eltType=real);
@@ -220,7 +276,15 @@ use LinearAlgebra;
 
 /* cross */
 {
-  // TODO
+  var v1 = Vector(1,2,3);
+  var v2 = Vector(4,5,6);
+  var C = Vector(-3, 6, -3);
+  var C12 = cross(v1, v2);
+  var C21 = cross(v2, v1);
+
+  assertEqual(C, C12, "cross(v1, v2)");
+  C = -C;
+  assertEqual(C, C21, "cross(v2, v1)");
 }
 
 /* trace */
@@ -264,6 +328,29 @@ use LinearAlgebra;
   }
 }
 
+/* isDiag */
+{
+  var I = eye(3,3);
+  assertTrue(isDiag(I), "isDiag(I)");
+
+  var M = I;
+  M[0,2] = 1;
+  assertFalse(isDiag(I), "isDiag(M)");
+}
+
+// TODO
+/* isHermitian */
+
+/* isSymmetric */
+
+/* isTril */
+
+/* isTriu */
+
+/* isSquare */
+
+/* det */
+
 //
 // Helpers
 //
@@ -275,7 +362,9 @@ proc assertEqual(X, Y, msg="") {
   }
 }
 
-proc assertEqual(X: [], Y: [], msg="") {
+
+proc assertEqual(X: [], Y: [], msg="") where isArrayValue(X) && isArrayValue(Y)
+{
   if X.shape != Y.shape {
     writeln("Test Failed: ", msg);
     writeln(X, '\n!=\n', Y);
@@ -287,3 +376,33 @@ proc assertEqual(X: [], Y: [], msg="") {
   }
 }
 
+
+proc assertEqual(X: _tuple, Y: _tuple, msg="") {
+  if X.size != Y.size {
+    writeln("Test Failed: ", msg);
+    writeln(X, '\n!=\n', Y);
+    return;
+  } else {
+    for (x, y) in zip(X, Y) {
+      if x != y {
+        writeln("Test Failed: ", msg);
+        writeln(X, '\n!=\n', Y);
+        return;
+      }
+    }
+  }
+}
+
+proc assertTrue(x: bool, msg="") {
+  if !x {
+    writeln("Test Failed: ", msg);
+    writeln("boolean is false");
+  }
+}
+
+proc assertFalse(x: bool, msg="") {
+  if x {
+    writeln("Test Failed: ", msg);
+    writeln("boolean is true");
+  }
+}

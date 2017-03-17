@@ -17,14 +17,6 @@
  * limitations under the License.
  */
 
-/* TODO
-    - implementations
-    - testing
-    - documentation
-      - document types
-    - performance testing
-*/
-
 /* Linear Algebra Module
 
 A high-level interface to linear algebra operations and procedures.
@@ -115,17 +107,12 @@ and helper functions like :proc:`matPlus`.
   - Provide MKL BLAS/LAPACK with Chapel installation
     - install with something like: CHPL_EXTRAS=MKL
 
-.. Reviewer Notes:
- - naming scheme OK?
- - Should we support the promotion-helpers?
-    - matPlus, matMinus
- - Should we provide matMult, or just dot?
-  - dot as a method?
-
 .. LinearAlgebra Module TODOs
   - Support non-matching domains and eltTypes in matOperations
     - check that eltTypes are coercible
     - check domain shapes are equal
+  - performance testing
+
 */
 
 module LinearAlgebra {
@@ -163,7 +150,7 @@ proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
 pragma "no doc"
 proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
   type eltType = Scalars(1).type;
-  return Vector((...Scalars), eltType=eltType);
+  return Vector(x, (...Scalars), eltType=eltType);
 }
 
 
@@ -221,7 +208,7 @@ proc Matrix(Arrays...?n) {
 
     If `type` is omitted, it will be inferred from the first argument
 */
-proc Matrix(Arrays...?n, type eltType) {
+proc Matrix(const Arrays...?n, type eltType) {
   // TODO -- assert all array domains are same length
   //         Can this be done via type query?
 
@@ -281,11 +268,16 @@ proc _array.T where this.domain.rank == 1 { return transpose(this); }
 
 */
 proc transpose(A: [?Dom] ?eltType) where Dom.rank == 2 {
-  if isIntegralType(eltType) then return _transpose(A);
+  if !isBLASType(eltType) then
+    return _transpose(A);
+  else if Dom.shape(1) == 1 then
+    return reshape(A, {Dom.dim(2), Dom.dim(1)});
+  else if Dom.shape(2) == 1 then
+    return reshape(A, {Dom.dim(2), Dom.dim(1)});
   else {
     var B: [Dom] eltType = eye(Dom, eltType=eltType);
     var C: [{Dom.dim(2), Dom.dim(1)}] eltType;
-    // TODO -- more efficient algorithm (BLAS not necessary)
+    // TODO -- use native algorithm (BLAS not necessary or memory-efficient)
     gemm(A, B, C, 1:eltType, 0:eltType, opA=Op.T);
     return C;
   }
@@ -342,6 +334,7 @@ pragma "no doc"
 /* Element-wise scalar multiplication */
 proc dot(A: [?Adom] ?eltType, b) where isNumeric(b) {
   var C: [Adom] eltType = A*b;
+  return C;
 }
 
 
@@ -405,7 +398,7 @@ proc inner(A: [?Adom], B: [?Bdom]) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
 
-  return + reduce(A[..], B[..]);
+  return + reduce(A[..]*B[..]);
 }
 
 
@@ -414,9 +407,10 @@ proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
 
-  var C: eltType [Adom.dim(1), Bdom.dim(2)];
+  var C: [{Adom.dim(1), Bdom.dim(1)}] eltType;
   forall (i,j) in C.domain do
     C[i, j] = A[i]*B[j];
+  return C;
 }
 
 
@@ -509,13 +503,13 @@ proc cross(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   if Adom.size != 3 || Bdom.size != 3 then
     halt("cross() expects arrays of 3 elements");
 
-  var cross = Vector(Adom.size, eltType);
+  var C = Vector(Adom.size, eltType);
 
-  cross[0] = A[1]*B[2] - A[2]*B[1];
-  cross[1] = A[2]*B[0] - A[0]*B[2];
-  cross[2] = A[0]*B[1] - A[1]*B[0];
+  C[0] = A[1]*B[2] - A[2]*B[1];
+  C[1] = A[2]*B[0] - A[0]*B[2];
+  C[2] = A[0]*B[1] - A[1]*B[0];
 
-  return cross;
+  return C;
 }
 
 
@@ -539,8 +533,9 @@ proc triu(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
   var U = Matrix(A);
+  const zero = 0: eltType;
   forall (i, j) in D do
-    if (i > j-k) then U[i, j] = 0: eltType;
+    if (i > j-k) then U[i, j] = zero;
   return U;
 }
 
@@ -552,7 +547,7 @@ proc isDiag(A: [?D] ?eltType) {
 
   const zero = 0: eltType;
   for (i, j) in D do
-    if i != j && D[i, j] != zero return false
+    if i != j && D[i, j] != zero then return false;
   return true;
 }
 
@@ -571,7 +566,7 @@ proc isHermitian(A: [?D]) {
 
 
 /* Return `true` if matrix is symmetric */
-proc isSymmetric(A: [?D]) {
+proc isSymmetric(A: [?D]) : bool {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
   for (i, j) in D {
@@ -584,7 +579,7 @@ proc isSymmetric(A: [?D]) {
 
 
 /* Return `true` if matrix is lower triangular below the diagonal + ``k`` */
-proc isTril(A: [?D], k=0) {
+proc isTril(A: [?D] ?eltType, k=0) : bool {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
   const zero = 0: eltType;
@@ -596,7 +591,7 @@ proc isTril(A: [?D], k=0) {
 
 
 /* Return `true` if matrix is upper triangular */
-proc isTriu(A: [?D] ?eltType, k=0) {
+proc isTriu(A: [?D] ?eltType, k=0) : bool {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
   const zero = 0: eltType;
