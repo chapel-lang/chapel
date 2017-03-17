@@ -1155,10 +1155,8 @@ module ChapelArray {
       const rcdomclass = rcdist.dsiNewRectangularDom(rank = uprank,
                                                      idxType = upranges(1).idxType,
                                                      stridable = upranges(1).stridable);
-      pragma "no auto destroy"
       var rcdom = _newDomain(rcdomclass);
       rcdom = {(...upranges)};
-      rcdom._value._free_when_no_arrs = true;
 
       return rcdom;
     }
@@ -2165,7 +2163,7 @@ module ChapelArray {
 
       pragma "no auto destroy"
       const rcdom = this.domain[(...args)];
-      rcdom._value._free_when_no_arrs = true;
+      //      rcdom._value._free_when_no_arrs = true;
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what
