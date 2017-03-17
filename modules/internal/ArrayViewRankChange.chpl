@@ -106,8 +106,6 @@ module ArrayViewRankChange {
       // TODO: Update once we start privatizing vvv
                                         _DomPid = nullPid,
                                         dom = this,
-                                        downdomPid = downdomPid,
-                                        downdomInst = downdomInst,
                                         _ArrPid=arr._pid,
                                         _ArrInstance=arr._instance,
                                         collapsedDim=collapsedDim,
@@ -342,9 +340,6 @@ module ArrayViewRankChange {
     // the results?
     const _DomPid;
     const dom; // Seems like the compiler requires a field called 'dom'...
-
-    const downdomPid;
-    const downdomInst;
 
     // the representation of the sliced array
     const _ArrPid;
@@ -590,19 +585,17 @@ module ArrayViewRankChange {
       return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
-      return (_DomPid, dom, downdomPid, downdomInst, _ArrPid, _ArrInstance, collapsedDim, idx);
+      return (_DomPid, dom, _ArrPid, _ArrInstance, collapsedDim, idx);
     }
 
     proc dsiPrivatize(privatizeData) {
       return new ArrayViewRankChangeArr(eltType=this.eltType,
                                         _DomPid=privatizeData(1),
                                         dom=privatizeData(2),
-                                        downdomPid=privatizeData(3),
-                                        downdomInst=privatizeData(4),
-                                        _ArrPid=privatizeData(5),
-                                        _ArrInstance=privatizeData(6),
-                                        collapsedDim=privatizeData(7),
-                                        idx=privatizeData(8));
+                                        _ArrPid=privatizeData(3),
+                                        _ArrInstance=privatizeData(4),
+                                        collapsedDim=privatizeData(5),
+                                        idx=privatizeData(6));
     }
 
 
@@ -717,14 +710,6 @@ module ArrayViewRankChange {
         return dom;
       }
     }
-
-    inline proc downdom {
-      if _isPrivatized(downdomInst) then
-        return chpl_getPrivatizedCopy(downdomInst.type, downdomPid);
-      else
-        return downdomInst;
-    }
-
 
     inline proc arr {
       if _isPrivatized(_ArrInstance) {

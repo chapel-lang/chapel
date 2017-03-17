@@ -2133,73 +2133,9 @@ module ChapelArray {
       if boundsChecking then
         checkRankChange(args);
 
-      // TODO: Have the redundant code below use the domain rank change
-      // code above.
-      
-      //
-      // Compute which dimensions are collapsed and what the index
-      // (idx) is in the event that it is.  These will be stored in
-      // the array view to convert from lower-D indices to higher-.
-      //
-      var collapsedDim: rank*bool;
-      var idx: rank*idxType;
-
-      for param i in 1..rank {
-        if (isRange(args(i))) {
-          collapsedDim(i) = false;
-        } else {
-          collapsedDim(i) = true;
-          idx(i) = args(i);
-        }
-      }
-
-      // Create a domain of the current array's rank which represents
-      // the domain indicated by the rank-change slicing arguments
-      // distributed according to the original distribution.  Thus,
-      // for a slice of {3, 2..n} on a Block-distributed array,
-      // downdom would be {3..3, 2..n} Block-distributed in a way that
-      // aligned it with the original array ('this').
-      const downranges = _getRankChangeDownRanges(args, _value.dom);
-      //      writeln("downranges is: ", downranges);
-      const downdist = this.domain.dist;
-      const downdomclass = downdist.newRectangularDom(rank=this.rank,
-                                                      idxType=this.idxType,
-                                                      stridable=chpl__anyStridable(downranges));
-      //      compilerWarning("downdomclass.type is: " + downdomclass.type:string);
-
-      // TODO: When can we destroy this downdom?  Probably when the
-      // distribution 'dist' below is done with it?
-
-      // TODO: It seems like we're figuring out an awful lot of stuff
-      // here now that really ought to be handled in the build-style
-      // routines of the domain map class...
-
       pragma "no auto destroy"
-      var downdom = _newDomain(downdomclass);
-      downdom = {(...downranges)};
-      downdom._value._free_when_no_arrs = true;
-      //      writeln("downdom is: ", downdom);
-      //      compilerWarning("downdom.type is: " + downdom.type:string);
-
-      // Create distribution, domain, and array objects representing
-      // the array view
-      const upranges = _getRankChangeUpRanges(args, _value.dom);
-      pragma "no auto destroy"
-      var updom = {(...upranges)};
-      
-      const dist = new ArrayViewRankChangeDist(downdist = this.domain.dist,
-                                               collapsedDim=collapsedDim,
-                                               idx = idx);
-
-      const rcdomclass = dist.dsiNewRectangularDom(rank = upranges.size,
-                                                   idxType = upranges(1).idxType,
-                                                   stridable = upranges(1).stridable);
-      pragma "no auto destroy"
-      var rcdom = _newDomain(rcdomclass);
-      rcdom = updom;  // TODO: Does this actually do something?
+      const rcdom = this.domain[(...args)];
       rcdom._value._free_when_no_arrs = true;
-      //      compilerWarning("rcdom.type is: " + rcdom.type:string);
-      //      compilerWarning("rcdom.stridable is: " + rcdom.stridable:string);
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what
@@ -2210,12 +2146,12 @@ module ChapelArray {
       var a = new ArrayViewRankChangeArr(eltType=this.eltType,
                                          _DomPid = rcdom._pid,
                                          dom = rcdom._instance,
-                                         downdomPid = downdom._pid,
-                                         downdomInst = downdom._instance,
                                          _ArrPid=arrpid,
                                          _ArrInstance=arr,
-                                         collapsedDim=collapsedDim,
-                                         idx=idx);
+                                         // TODO: Should the array really store
+                                         // these redundantly?
+                                         collapsedDim=rcdom._value.collapsedDim,
+                                         idx=rcdom._value.idx);
 
       // this doesn't need to lock since we just created the domain d
       rcdom._value.add_arr(a, locking=false);
