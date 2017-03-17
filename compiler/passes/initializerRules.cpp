@@ -81,7 +81,7 @@ static Expr*       getNextStmt(Expr*      curExpr,
 ************************************** | *************************************/
 
 void initMethodPreNormalize(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_NO_PARENS)) {
+  if (fn->hasFlag(FLAG_NO_PARENS) == true) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
 
   } else if (isReturnVoid(fn) == false) {
@@ -89,60 +89,72 @@ void initMethodPreNormalize(FnSymbol* fn) {
 
   } else {
     AggregateType* at        = toAggregateType(fn->_this->type);
-    InitStyle      bodyStyle = findInitStyle(fn);
+    InitStyle      initStyle = findInitStyle(fn);
 
-    if (isClass(at) == true && at->isGeneric() == false) {
-      buildClassAllocator(fn);
-      fn->addFlag(FLAG_INLINE);
-    }
-
-    if (bodyStyle != FOUND_NONE) {
-      phase1Analysis(fn);
-
-      // Insert analysis of initCall here
-      if (bodyStyle == FOUND_SUPER_INIT && isRecord(at)) {
-        // Need to find and remove any and all super.init() statements
-        // if the type is a record, as they will not resolve (inheritance
-        // and records is still being ironed out).
-
-      }
-
-    } else {
-      // Adds default initialization of all fields and an argumentless
-      // super.init() call at the beginning of the body for Phase-2-only
-      // initializers.
+    // The body is pure phase 2
+    if (initStyle == FOUND_NONE) {
       SET_LINENO(fn->body);
 
-      // LYDIA NOTE (11/30/16): This would be a really good spot for a
-      // re-entrant compiler call on what I'd like to create, which is
-      // a much simpler CallExpr, instead of what I have to do today,
-      // which is insert a fragile copy of the super.init() calls I
-      // check for, entirely dependent on how such a user call gets
-      // transformed by the preceding passes.
-      CallExpr* superPortion = new CallExpr(".",
-                                            new SymExpr(fn->_this),
-                                            new_StringSymbol("super"));
-      SymExpr*  initPortion  = new SymExpr(new_StringSymbol("init"));
-      CallExpr* base         = new CallExpr(".", superPortion, initPortion);
-      CallExpr* superCall    = new CallExpr(base);
+      Symbol*   superSym  = new_CStringSymbol("super");
+      CallExpr* superCall = new CallExpr(".", fn->_this, superSym);
 
-      fn->body->insertAtHead(superCall);
+      Symbol*   initSym   = new_CStringSymbol("init");
+      CallExpr* initCall  = new CallExpr(".", superCall, initSym);
+
+      CallExpr* superInit = new CallExpr(initCall);
+
+      // For classes:  we need to insert super.init();
+      // For records:  this is a transient marker for phase 1 analysis
+      fn->body->insertAtHead(superInit);
 
       phase1Analysis(fn);
 
-      if (isRecord(at)) {
-        // We haven't finalized what inheritance means for records yet.
-        // Until we do, this call (while necessary for the divide between
-        // the phases), won't resolve.
-        superCall->remove();
+      // Records should not call super.init() so remove the phase1 marker
+      if (isRecord(at) == true) {
+        superInit->remove();
+      }
+
+    // One or more uses of this.init();
+    } else if (initStyle == FOUND_THIS_INIT) {
+      phase1Analysis(fn);
+
+    // At least one use of this.init();
+    } else {
+      phase1Analysis(fn);
+
+      // 2017/03/16: Record inheritance is not fully defined yet
+      //   The user may have added super.init() to a record initializer
+      //   to separate phase 1 from phase 2.  However this will not resolve.
+      //   Remove it/them now that preNormalize is complete.
+      if (isRecord(at) == true) {
+        std::vector<CallExpr*> calls;
+
+        collectMyCallExprs(fn, calls, fn);
+
+        for (size_t i = 0; i < calls.size(); i++) {
+          if (findInitStyle(calls[i]) == FOUND_SUPER_INIT) {
+            calls[i]->remove();
+          }
+        }
       }
     }
 
     // Insert phase 2 analysis here
 
+
+    // Mark the initializer as void return
     Symbol* voidType = dtVoid->symbol;
 
     fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
+
+
+    // If this is a non-generic class then create a type method
+    // to wrap this initializer
+    if (isClass(at) == true && at->isGeneric() == false) {
+      buildClassAllocator(fn);
+
+      fn->addFlag(FLAG_INLINE);
+    }
   }
 }
 
