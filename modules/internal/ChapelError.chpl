@@ -26,12 +26,7 @@ module ChapelError {
     }
   }
 
-  /* This is a work-around to prevent the compiler from
-     removing or not properly resolving the Error type. */
-  proc ensureErrorTypeRemains() {
-    var x = new Error();
-    delete x;
+  export proc chpl_delete_error(err: Error) {
+    delete err;
   }
-  ensureErrorTypeRemains();
-
 }

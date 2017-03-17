@@ -102,6 +102,7 @@ FnSymbol *gBuildTupleType = NULL;
 FnSymbol *gBuildStarTupleType = NULL;
 FnSymbol *gBuildTupleTypeNoRef = NULL;
 FnSymbol *gBuildStarTupleTypeNoRef = NULL;
+FnSymbol* gChplDeleteError = NULL;
 
 
 

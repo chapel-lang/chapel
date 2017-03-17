@@ -83,7 +83,8 @@ static WellKnownFn sWellKnownFns[] = {
   {"_build_tuple",            &gBuildTupleType, FLAG_BUILD_TUPLE_TYPE},
   {"_build_tuple_noref",      &gBuildTupleTypeNoRef, FLAG_BUILD_TUPLE_TYPE},
   {"*",                       &gBuildStarTupleType, FLAG_BUILD_TUPLE_TYPE},
-  {"_build_star_tuple_noref", &gBuildStarTupleTypeNoRef, FLAG_BUILD_TUPLE_TYPE}
+  {"_build_star_tuple_noref", &gBuildStarTupleTypeNoRef, FLAG_BUILD_TUPLE_TYPE},
+  {"chpl_delete_error",       &gChplDeleteError, FLAG_UNKNOWN}
 };
 
 void parse() {

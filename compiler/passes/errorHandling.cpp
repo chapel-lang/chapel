@@ -66,10 +66,12 @@ proc propagate(out error_out: Error) {
     var e = error: SubError;
     if _cast {
       f();
+      delete e;
     } else {
       var e = error: AnotherSubError;
       if e {
         g();
+        delete e;
       } else {
         // set and return
         error_out = error;
@@ -91,7 +93,6 @@ try {
   handleSomehow();
 }
 
-// out _e_out: Error
 {
   var _e1: Error;
   {
@@ -105,6 +106,7 @@ try {
       var _cast = _e2: SpecificError;
       if _cast {
         handleGracefully();
+        delete _cast;
       } else {
         _e1 = _e2;
         goto handler1;
@@ -118,14 +120,9 @@ try {
   label handler1:
   if _e1 {
     handleSomehow();
+    delete _e1;
   }
 }
-
-TODO:
-- distinguishing handler labels
-  - concat number to the end
-- getting outer try's
-  - switch Stack to Vector
 */
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
@@ -150,7 +147,7 @@ private:
   LabelSymbol*        epilogue;
   bool                insideCatch;
 
-  AList     tryHandler         (TryStmt*   tryStmt,  VarSymbol* errorVar);
+  AList     tryHandler         (TryStmt*   tryStmt,  VarSymbol* errorVar, TryInfo* outerTry);
   AList     setOutGotoEpilogue (VarSymbol* error);
   AList     errorCond          (VarSymbol* errorVar, BlockStmt* thenBlock,
                                 BlockStmt* elseBlock = NULL);
@@ -168,11 +165,6 @@ ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
   SET_LINENO(node);
 
-  // TODO: nested try
-  if (!tryStack.empty()) {
-    USR_FATAL(node, "nested try is not yet supported");
-  }
-
   VarSymbol*   errorVar     = newTemp("error", dtError);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
   TryInfo      info         = {errorVar, handlerLabel};
@@ -184,20 +176,25 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
 void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
   SET_LINENO(node);
 
-  TryInfo    info     = tryStack.top();
+  TryInfo info  = tryStack.top();
+  tryStack.pop();
+
+  TryInfo* outerTry = NULL;
+  if (!tryStack.empty())
+    outerTry = & tryStack.top();
+
   BlockStmt* tryBlock = node->body();
 
   tryBlock->insertAtHead(new DefExpr(info.errorVar));
 
   tryBlock->insertAtTail(new DefExpr(info.handlerLabel));
-  tryBlock->insertAtTail(tryHandler(node, info.errorVar));
+  tryBlock->insertAtTail(tryHandler(node, info.errorVar, outerTry));
 
   tryBlock->remove();
   node    ->replace(tryBlock);
-  tryStack.pop();
 }
 
-AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
+AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar, TryInfo* outerTry) {
   BlockStmt* handlers    = new BlockStmt();
 
   bool       hasCatchAll = false;
@@ -214,6 +211,7 @@ AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
     DefExpr*   errorDef  = catchStmt->expr();
     Type*      errorType = errorDef ? errorDef->sym->type : NULL;
 
+    catchBody->insertAtTail(new CallExpr(gChplDeleteError, errorVar));
     catchBody->remove();
 
     // catchall
@@ -251,11 +249,13 @@ AList ErrorHandlingVisitor::tryHandler(TryStmt* tryStmt, VarSymbol* errorVar) {
     }
   }
 
-  // TODO: nested try
   if (!hasCatchAll) {
     if (tryStmt->tryBang()) {
       currHandler->insertAtTail(haltExpr());
-    } else if (outError) {
+    } else if (outerTry != NULL) {
+      currHandler->insertAtTail(new CallExpr(PRIM_MOVE, outerTry->errorVar, errorVar));
+      currHandler->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING, outerTry->handlerLabel));
+    } else if (outError != NULL) {
       currHandler->insertAtTail(setOutGotoEpilogue(errorVar));
     } else {
       USR_FATAL(tryStmt, "try without a catchall in a non-throwing function");
