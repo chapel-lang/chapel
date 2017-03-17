@@ -1,3 +1,0 @@
-bug: compiler crashes upon 'ref D = fun();' where fun returns a domain.
-
-There is an unhandled case in functionResolution.cpp.

@@ -685,6 +685,13 @@ static void setupWorkStealing(void) {
     chpl_qt_setenv("STEAL_RATIO", "0", 0);
 }
 
+static void setupSpinWaiting(void) {
+  const char *crayPlatform = "cray-x";
+  if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
+    chpl_qt_setenv("SPINCOUNT", "3000000", 0);
+  }
+}
+
 void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
@@ -703,6 +710,7 @@ void chpl_task_init(void)
     setupCallStacks(hwpar);
     setupTasklocalStorage();
     setupWorkStealing();
+    setupSpinWaiting();
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 

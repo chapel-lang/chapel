@@ -22,6 +22,7 @@
 
 #include <cstdio>
 #include <map>
+#include <set>
 
 #include "expr.h"
 #include "foralls.h"
@@ -299,6 +300,50 @@ public:
 
   // Local interface
   const char*         c_code;
+};
+
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+class ForwardingStmt : public Stmt {
+public:
+                      ForwardingStmt(DefExpr* toFnDef);
+                      ForwardingStmt(DefExpr* toFnDef,
+                                   std::set<const char*>* args,
+                                   bool exclude,
+                                   std::map<const char*, const char*>* renames);
+
+  // Interface to BaseAST
+  virtual GenRet      codegen();
+  virtual void        verify();
+  virtual void        accept(AstVisitor* visitor);
+
+  DECLARE_COPY(ForwardingStmt);
+
+  // Interface to Expr
+  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
+
+  virtual Expr*       getFirstChild();
+  virtual Expr*       getFirstExpr();
+
+  // forwarding function - contains forwarding expression; used during parsing
+  DefExpr*            toFnDef;
+  // name of forwarding function; used before, during resolution
+  const char*         fnReturningForwarding;
+  // stores the type returned by the forwarding function
+  // (i.e. the type of the expression to forward to).
+  // Used during resolution to avoid repeated work.
+  Type*               type;
+
+  // The names of symbols from an 'except' or 'only' list
+  std::set<const char *> named;
+  // Map of newName: oldName
+  std::map<const char*, const char*> renamed;
+  // Is 'named' an 'except' list? (vs. 'only' list)
+  bool except;
 };
 
 

@@ -136,6 +136,7 @@ except           return processToken(yyscanner, TEXCEPT);
 extern           return processExtern(yyscanner);
 for              return processToken(yyscanner, TFOR);
 forall           return processToken(yyscanner, TFORALL);
+forwarding       return processToken(yyscanner, TFORWARDING);
 if               return processToken(yyscanner, TIF);
 in               return processToken(yyscanner, TIN);
 index            return processToken(yyscanner, TINDEX);
