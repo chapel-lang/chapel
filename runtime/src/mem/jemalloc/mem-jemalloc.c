@@ -461,7 +461,7 @@ void chpl_mem_layerExit(void) {
 }
 
 
-bool chpl_mem_impl_alloc_localizes(void) {
+chpl_bool chpl_mem_impl_alloc_localizes(void) {
   //
   // For now, we only NUMA-localize the comm layer desired shared heap
   // if we're using the ugni comm layer.  ugni is the simpler case

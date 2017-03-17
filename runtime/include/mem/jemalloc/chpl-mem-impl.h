@@ -26,6 +26,7 @@
 #include "chpl-mem-no-warning-macros.h"
 #include "jemalloc.h"
 #include "chpl-mem-warning-macros.h"
+#include "chpltypes.h"
 
 #define MALLOCX_NO_FLAGS 0
 
@@ -60,7 +61,7 @@ static inline size_t chpl_good_alloc_size(size_t minSize) {
 }
 
 
-bool chpl_mem_impl_alloc_localizes(void);
+chpl_bool chpl_mem_impl_alloc_localizes(void);
 
 #define CHPL_MEM_IMPL_ALLOC_LOCALIZES() chpl_mem_impl_alloc_localizes()
 
