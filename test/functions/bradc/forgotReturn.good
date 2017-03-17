@@ -1,1 +1,1 @@
-forgotReturn.chpl:5: error: illegal use of function that does not return a value: 'foo'
+forgotReturn.chpl:9: error: unresolved call '<<(2, void)'

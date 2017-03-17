@@ -29,6 +29,7 @@
 
 static int heapInitialized = 0;
 
+
 void chpl_mem_init(void) {
   chpl_mem_layerInit();
   heapInitialized = 1;

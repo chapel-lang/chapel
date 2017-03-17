@@ -369,7 +369,7 @@ module ArrayViewReindex {
     //
 
     proc shouldUseIndexCache() param {
-      return _ArrInstance.isDefaultRectangular();
+      return chpl__isDROrDRView(_ArrInstance);
     }
 
     proc buildIndexCache() {
@@ -415,8 +415,6 @@ module ArrayViewReindex {
     inline proc dsiGetBaseDom() {
       return dom;
     }
-
-    proc isDefaultRectangular() param return arr.isDefaultRectangular();
 
     proc _getActualArray() {
       if chpl__isArrayView(arr) {

@@ -4,8 +4,7 @@ use Random;
 use BLAS;
 
 config const errorThresholdDouble = 1.e-10;
-// note: sporadically failures occur with 1.e-5
-config const errorThresholdSingle = 1.e-4;
+config const errorThresholdSingle = 1.e-5;
 
 proc printErrors(name: string, passed, failed, tests) {
   writef("%5s : %i PASSED, %i FAILED\n".format(name, passed, failed));
@@ -228,9 +227,25 @@ proc transpose(A: [?D] ?t) where A.rank == 2 {
   return B;
 }
 
-/* Adjoint = transpose, then complex conjugate */
+/* Adjoint = transpose, then complex conjugate (Hermitian)*/
 proc adjoint(A: [?D] ?t) where A.rank == 2 {
   var B = transpose(A);
   B = conjg(A);
   return B;
+}
+
+/* Pseudo-random nonsingular matrix ((1/n**2)*A**2 + I) */
+proc makeRandomInvertible (A: [?Adom] ?t) {
+  var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+  rng.fillRandom(A);
+
+  var I: [Adom] t;
+  makeUnit(I);
+
+  var A2: [Adom] t;
+  forall (i,j) in A.domain do A2[i,j] = + reduce (A[i,..]*conjg(A[..,j]));
+
+  const n = Adom.shape(1);
+  const scale = (1/n**2) : t;
+  A = scale*A2 + I;
 }
