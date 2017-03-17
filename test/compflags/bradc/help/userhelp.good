@@ -120,6 +120,7 @@ Miscellaneous Options:
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning
   -s, --set <name>[=<value>]          Set config param value
+      --strict-errors                 Enable strict mode for error handling
       --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]warn-const-loops         Enable [disable] warnings for some
                                       'while' loops with constant conditions
@@ -129,7 +130,6 @@ Miscellaneous Options:
       --[no-]warn-tuple-iteration     Enable [disable] warnings for tuple
                                       iteration
       --[no-]warnings                 Enable [disable] output of warnings
-      --strict-errors                 Enable strict mode for error handling
 
 Compiler Configuration Options:
       --home <path>                   Path to Chapel's home directory
