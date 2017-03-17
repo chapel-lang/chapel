@@ -215,8 +215,11 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
     return c_sublocid_any;
   }
 
-  if ((cpuset = hwloc_bitmap_alloc()) == NULL
-      || (nodeset = hwloc_bitmap_alloc()) == NULL) {
+  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
+    report_error("hwloc_bitmap_alloc()", errno);
+  }
+
+  if ((nodeset = hwloc_bitmap_alloc()) == NULL) {
     report_error("hwloc_bitmap_alloc()", errno);
   }
 
