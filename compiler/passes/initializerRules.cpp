@@ -37,7 +37,7 @@ enum InitBody {
 
 static bool     isReturnVoid(FnSymbol* fn);
 static InitBody getInitCall(FnSymbol* fn);
-static void     phase1Analysis(BlockStmt* body, AggregateType* t);
+static void     phase1Analysis(FnSymbol* fn);
 
 /************************************* | **************************************
 *                                                                             *
@@ -62,7 +62,7 @@ void initMethodPreNormalize(FnSymbol* fn) {
     }
 
     if (bodyStyle != DID_NOT_FIND_INIT) {
-      phase1Analysis(fn->body, at);
+      phase1Analysis(fn);
 
       // Insert analysis of initCall here
       if (bodyStyle == FOUND_SUPER_INIT && isRecord(at)) {
@@ -93,7 +93,7 @@ void initMethodPreNormalize(FnSymbol* fn) {
 
       fn->body->insertAtHead(superCall);
 
-      phase1Analysis(fn->body, at);
+      phase1Analysis(fn);
 
       if (isRecord(at)) {
         // We haven't finalized what inheritance means for records yet.
@@ -259,21 +259,27 @@ void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t);
 static
 bool isParentField(AggregateType* t, const char* name);
 
-static
-void phase1Analysis(BlockStmt* body, AggregateType* t) {
-  DefExpr* curField = toDefExpr(t->fields.head);
-  bool *seenField = (bool*)calloc(t->fields.length, sizeof(bool));
-  if (curField) {
-    if (isClass(t)) {
-      INT_ASSERT(curField->sym->hasFlag(FLAG_SUPER_CLASS));
-      // the super field is always first
-      seenField[0] = true;
-    }
-  }
-  int index = 0;
+static void phase1Analysis(FnSymbol* fn) {
+  Symbol*        _this     = fn->_this;
+  AggregateType* at        = toAggregateType(_this->type);
 
-  Expr* curExpr = body->body.head;
-  InitBody isInit = getInitCall(curExpr);
+  bool*          seenField = (bool*) calloc(at->fields.length, sizeof(bool));
+
+  DefExpr*       curField  = toDefExpr(at->fields.head);
+
+  BlockStmt*     body      = fn->body;
+  Expr*          curExpr   = body->body.head;
+  InitBody       isInit    = getInitCall(curExpr);
+
+  int            index     = 0;
+
+  if (curField != NULL && isClass(at) == true) {
+    INT_ASSERT(curField->sym->hasFlag(FLAG_SUPER_CLASS));
+
+    // the super field is always first
+    seenField[0] = true;
+  }
+
   if (isInit == DID_NOT_FIND_INIT) {
     // solution to fence post issue of diving into nested block statements
     BlockStmt* block = toBlockStmt(curExpr);
@@ -282,6 +288,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
       block = toBlockStmt(curExpr);
     }
   }
+
   // We are guaranteed to never reach the end of the body, due to the
   // conditional surrounding the call to this function.
   while (curField != NULL || (isInit == DID_NOT_FIND_INIT)) {
@@ -303,23 +310,26 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
       if (BlockStmt* block = toBlockStmt(curExpr)) {
         if (block->isLoopStmt()) {
           // Special handling for loops.
-          bool foundInit = loopAnalysis(block, curField, seenField, &index, t);
+          bool foundInit = loopAnalysis(block,
+                                        curField,
+                                        seenField,
+                                        &index,
+                                        at);
+
           if (foundInit) {
-            // If the init call was in the loop body we just checked, any
-            // further action is incorrect (including the insertion of leftover
-            // omitted fields, since those fields would be inserted into the
-            // loop body and we don't allow that), so just exit the loop through
-            // the body and allow normal clean up to occur.
+            // If the init call was in the loop body we just checked,
+            // any further action is incorrect (including the insertion
+            // of leftover omitted fields, since those fields would be
+            // inserted into the loop body and we don't allow that),
+            // so just exit the loop through the body and allow normal
+            // clean up to occur.
             break;
           }
           curExpr = getNextStmt(curExpr, body, false);
           isInit = getInitCall(curExpr);
           continue;
         }
-      }/* else if (CondStmt* cond = toCondStmt(curExpr)) {
-        // Special handling for conditionals.
-        }*/
-
+      }
 
       if (const char* fieldname = getFieldName(curExpr)) {
         if (!strcmp(fieldname, curField->sym->name)) {
@@ -332,25 +342,29 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
           isInit = getInitCall(curExpr);
           seenField[index] = true;
           index++;
+
         } else if (isLaterFieldAccess(curField, fieldname)) {
-          insertOmittedField(curExpr, curField, t);
+          insertOmittedField(curExpr, curField, at);
           index++;
           curField = toDefExpr(curField->next);
+
         } else {
           // It's not a valid field access at all.  Error cases!
-          errorCases(t, curField, fieldname, seenField, curExpr);
+          errorCases(at, curField, fieldname, seenField, curExpr);
           curExpr = getNextStmt(curExpr, body, false);
           isInit = getInitCall(curExpr);
         }
+
       } else {
         // Wasn't a field access, only update curExpr;
         curExpr = getNextStmt(curExpr, body, false);
         isInit = getInitCall(curExpr);
       }
+
     } else if (curField != NULL) {
       // only fields left
 
-      insertOmittedField(curExpr, curField, t);
+      insertOmittedField(curExpr, curField, at);
       curField = toDefExpr(curField->next);
       index++;
     } else {
@@ -359,25 +373,33 @@ void phase1Analysis(BlockStmt* body, AggregateType* t) {
       if (BlockStmt* block = toBlockStmt(curExpr)) {
         if (block->isLoopStmt()) {
           // Special handling for loops.
-          bool foundInit = loopAnalysis(block, curField, seenField, &index, t);
+          bool foundInit = loopAnalysis(block,
+                                        curField,
+                                        seenField,
+                                        &index,
+                                        at);
+
           if (foundInit) {
-            // If the init call was in the loop body we just checked, any
-            // further action is incorrect (including the insertion of leftover
-            // omitted fields, since those fields would be inserted into the
-            // loop body and we don't allow that), so just exit the loop through
-            // the body and allow normal clean up to occur.
+            // If the init call was in the loop body we just checked,
+            // any further action is incorrect (including the insertion
+            // of leftover omitted fields, since those fields would be
+            // inserted into the loop body and we don't allow that),
+            // so just exit the loop through the body and allow normal
+            // clean up to occur.
             break;
           }
         }
+
       } else if (const char* fieldname = getFieldName(curExpr)) {
-        errorCases(t, curField, fieldname, seenField, curExpr);
+        errorCases(at, curField, fieldname, seenField, curExpr);
       }
+
       curExpr = getNextStmt(curExpr, body, false);
       isInit = getInitCall(curExpr);
     }
   }
 
-  free (seenField);
+  free(seenField);
 }
 
 // Checks if the current expression is a call expression that sets the value
