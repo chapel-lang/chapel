@@ -147,7 +147,7 @@ private:
   LabelSymbol*        epilogue;
   bool                insideCatch;
 
-  AList     handler           (TryStmt*   tryStmt,  VarSymbol* errorVar,
+  AList     lowerCatches      (TryStmt*   tryStmt,  VarSymbol* errorVar,
                                TryInfo*   outerTry);
   AList     setOutGotoEpilogue(VarSymbol* error);
   AList     errorCond         (VarSymbol* errorVar, BlockStmt* thenBlock,
@@ -189,14 +189,14 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
   tryBlock->insertAtHead(new DefExpr(info.errorVar));
 
   tryBlock->insertAtTail(new DefExpr(info.handlerLabel));
-  tryBlock->insertAtTail(handler(node, info.errorVar, outerTry));
+  tryBlock->insertAtTail(lowerCatches(node, info.errorVar, outerTry));
 
   tryBlock->remove();
   node    ->replace(tryBlock);
 }
 
-AList ErrorHandlingVisitor::handler(TryStmt* tryStmt, VarSymbol* errorVar,
-                                       TryInfo* outerTry) {
+AList ErrorHandlingVisitor::lowerCatches(TryStmt* tryStmt, VarSymbol* errorVar,
+                                         TryInfo* outerTry) {
   BlockStmt* handlers    = new BlockStmt();
 
   bool       hasCatchAll = false;
