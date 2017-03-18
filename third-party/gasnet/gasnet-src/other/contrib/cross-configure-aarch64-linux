@@ -39,7 +39,7 @@ EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --enable-backtrace-execinfo"
 
 # 2. Fill in the canonical target machine type. You can usually obtain this
 #   by running config-aux/config.guess on the target machine
-TARGET_ID='aarch64-unknown-linux-gnu'
+TARGET_ID='aarch64-cnl-linux-gnu'
 
 # 3. Review the automatically-detected settings below and make corrections as necessary.
 
@@ -116,4 +116,4 @@ if test "$HOST_ARG" = ""; then
   CC="$oldCC"
 fi
 # Now that everything is setup, run the actual configure script
-$SRCDIR/configure --enable-cross-compile $HOST_APPEND --build=$HOST_ID --target=$TARGET_ID --program-prefix='' $EXTRA_CONFIGURE_ARGS "$@"
+$SRCDIR/configure --enable-cross-compile $HOST_APPEND --build=$TARGET_ID --target=$TARGET_ID --program-prefix='' $EXTRA_CONFIGURE_ARGS "$@"
