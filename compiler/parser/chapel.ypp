@@ -733,15 +733,15 @@ catch_stmt_ls:
 ;
 
 catch_stmt:
-  TCATCH     catch_expr     block_stmt { $$ = CatchStmt::build($2, $3); }
+  TCATCH                    block_stmt { $$ = CatchStmt::build($2); }
+| TCATCH     catch_expr     block_stmt { $$ = CatchStmt::build($2, $3); }
 | TCATCH TLP catch_expr TRP block_stmt { $$ = CatchStmt::build($3, $5); }
 ;
 
 
 /* TODO: would be nice to parenthesize a catch */
 catch_expr:
-                    { $$ = new DefExpr(newTemp(dtVoid)); } /* for catch { } */
-| ident             { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
+  ident             { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
 | ident TCOLON expr { $$ = new DefExpr(new VarSymbol($1), NULL, $3);   }
 ;
 
