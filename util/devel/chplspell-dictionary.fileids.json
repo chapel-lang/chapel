@@ -441,11 +441,17 @@
   "8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-timers.c"
   ],
+  "9e8a4742-0c12-11e7-980e-10ddb1d4c3d5": [
+    "runtime/src/chpl-topo.c"
+  ],
   "726887c4-bc39-11e6-9740-843835579daa": [
     "runtime/src/chplsys.c"
   ],
   "847163aa-bc39-11e6-9740-843835579daa": [
     "runtime/src/comm/gasnet/comm-gasnet.c"
+  ],
+  "aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5": [
+    "runtime/src/comm/ugni/comm-ugni.c"
   ],
   "b7c60ac2-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/mpirun/launch-mpirun.c"

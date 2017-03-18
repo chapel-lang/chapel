@@ -4199,6 +4199,35 @@ toktext
 FILEID: 208f1cd2-0c12-11e7-980e-10ddb1d4c3d5
 cref
 
+FILEID: 9e8a4742-0c12-11e7-980e-10ddb1d4c3d5
+nbobjs
+
+FILEID: aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5
+blockhere
+cmpval
+cqmode
+cswap
+dbgf
+dbgsf
+dlvmode
+dlvr
+drpg
+fcswap
+ffpadd
+fiadd
+fpadd
+fswap
+fxor
+gdata
+iadd
+iptag
+nbdi
+nbdp
+nopnd
+opnd
+rfdpp
+xchgval
+
 NATURAL:
 abcd
 abcdefg
@@ -4206,6 +4235,7 @@ ablock
 achtung
 acknowledgements
 acosh
+acqs
 actuals
 addmul
 addons
@@ -4226,10 +4256,12 @@ aliasee
 alice
 alioth
 alist
+allgather
 alloced
 allocs
 alnum
 altix
+amos
 amudprun
 analyses
 anded
@@ -4366,13 +4398,16 @@ bsub
 bswap
 bucketize
 buettner
+bufcnt
 buffersize
+bufs
 buginese
 bugzilla
 buhid
 buildingdocs
 builtins
 bulleted
+bynodeset
 byref
 byteorder
 cairo
@@ -4462,6 +4497,7 @@ cloexec
 closefile
 clrbit
 cmpabs
+cmpxchg
 cmsg
 cname
 cnselect
@@ -4502,7 +4538,9 @@ cory
 coverity
 cppreference
 cproj
+cpubind
 cpus
+cpuset
 cpython
 craype
 crays
@@ -4542,6 +4580,7 @@ datastructures
 david
 davis
 dbase
+dbgstat
 dchpldoc
 dcopy
 ddata
@@ -4652,6 +4691,7 @@ dtor
 dubois
 dumler
 duncan
+dwords
 dygraphs
 dylan
 eacces
@@ -4912,6 +4952,7 @@ getcontext
 getcwd
 getdtablesize
 gethostname
+gethugepagesize
 getlimbn
 getnameinfo
 getnext
@@ -4993,6 +5034,7 @@ hillis
 hipa
 hiragana
 histograph
+hndl
 hoehrmann
 hoffswell
 hoistable
@@ -5032,6 +5074,7 @@ icpc
 idempotent
 idents
 ieee
+iface
 ified
 ifneq
 ignorecase
@@ -5325,6 +5368,7 @@ lview
 lycian
 lydia
 lydian
+lyield
 machinename
 mackale
 macosx
@@ -5381,14 +5425,19 @@ mellanox
 mellor
 memalign
 membername
+membind
 memcpys
 memleaks
 memleaksfull
+memlocation
+memmaps
 memmove
 memoize
+memreg
 mersenne
 mfac
 mferguson
+mgmt
 michael
 microsoft
 milano
@@ -5418,6 +5467,7 @@ monday
 mongolian
 monoid
 monte
+morecore
 moreso
 mosharaf
 moveprimitive
@@ -5425,9 +5475,12 @@ mpicc
 mpich
 mpiexec
 mpirun
+mpool
 mppdepth
 mppf
 mprotect
+mreg
+mregs
 mtarun
 muchnick
 multicast
@@ -5514,7 +5567,9 @@ nist
 nixos
 noakes
 noalias
+noblock
 nocapture
+nocopy
 noctty
 nodeid
 nodelay
@@ -5530,6 +5585,7 @@ nonascii
 nonblocking
 nondeterminism
 nondeterministic
+nonfetch
 nongnu
 nongreedy
 noninfringement
@@ -5566,6 +5622,7 @@ nrows
 nsync
 nthreads
 numa
+numanode
 numberofcells
 numberofpermutations
 numberofsides
@@ -5596,6 +5653,7 @@ onlinedocs
 onlinepubs
 oopsla
 opcode
+opcodes
 opencl
 openfd
 openfile
@@ -5651,6 +5709,7 @@ perfdat
 perfexecopts
 perfkeys
 performant
+perfstats
 perftimeout
 perl
 persian
@@ -5726,6 +5785,8 @@ proxyuserpwd
 przemys
 psahabu
 pseudocode
+pstats
+ptag
 pthread
 pthreads
 ptrans
@@ -5735,6 +5796,7 @@ publickey
 punny
 putchar
 pvalloc
+pvar
 pwritev
 pychapel
 pydoc
@@ -5746,6 +5808,7 @@ queueing
 quickack
 quicksort
 quickstart
+qword
 rachel
 rafael
 raii
@@ -5762,9 +5825,11 @@ raytrace
 raytracing
 rcpt
 rcvbuf
+rcvd
 rdma
 rdonly
 rdwr
+reacqs
 readahead
 readargsfrom
 readbits
@@ -5821,6 +5886,7 @@ replicand
 replicands
 reprivatization
 reprivatize
+reqs
 resized
 resizes
 resolveable
@@ -5832,6 +5898,7 @@ rettype
 retval
 revcomp
 rfind
+rfork
 richard
 riemann
 rint
@@ -6001,6 +6068,7 @@ spdomain
 spdx
 spectralnorm
 sphinxcontrib
+spincount
 spinlock
 spmd
 springfield
@@ -6197,6 +6265,7 @@ travis
 tridiagonal
 trigraphs
 tsiombikas
+tskyield
 tstbit
 tuesday
 tupled
@@ -6359,6 +6428,7 @@ wronly
 wsize
 wunused
 xargs
+xchg
 xcode
 xcodebuild
 xdigit
