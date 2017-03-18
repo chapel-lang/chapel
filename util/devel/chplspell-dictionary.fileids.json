@@ -417,6 +417,9 @@
   "ebcca246-1f2f-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Buffers.chpl"
   ],
+  "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
+    "modules/standard/DateTime.chpl"
+  ],
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"
   ],

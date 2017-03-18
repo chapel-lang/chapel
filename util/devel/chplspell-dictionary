@@ -4228,6 +4228,31 @@ opnd
 rfdpp
 xchgval
 
+FILEID: c0254978-0c13-11e7-980e-10ddb1d4c3d5
+adddays
+deltahour
+deltamin
+deltasec
+fromutc
+getdate
+leapyear
+maxyear
+minyear
+newday
+newhour
+newmicro
+newmicrosecond
+newmin
+newminute
+newsec
+newsecond
+pytz
+resultp
+uspms
+usps
+utcoff
+utcoffset
+
 NATURAL:
 abcd
 abcdefg
@@ -4301,6 +4326,7 @@ ashwin
 asinh
 asprintf
 astfalk
+astimezone
 astloc
 astlocs
 asts
@@ -4552,6 +4578,7 @@ crufty
 cspawn
 cstdlib
 ctags
+ctime
 ctor
 ctrunc
 cuda
@@ -4577,8 +4604,11 @@ dataparallel
 dataset
 datastart
 datastructures
+datetime
+datetimes
 david
 davis
+daystr
 dbase
 dbgstat
 dchpldoc
@@ -4878,6 +4908,7 @@ filepointer
 filerator
 filesystems
 findfiles
+findyear
 finfo
 fioretto
 firefox
@@ -4916,6 +4947,8 @@ freebsd
 freqs
 friday
 frobenius
+fromordinal
+fromtimestamp
 frontend
 fseek
 fsfns
@@ -4974,6 +5007,7 @@ globalattr
 globfree
 gmake
 gmplib
+gmtoff
 gnuplot
 godoc
 gokhberg
@@ -5152,6 +5186,9 @@ isfinite
 isgid
 isinf
 isnan
+isocalendar
+isoformat
+isoweekday
 isslice
 issubtype
 issuercert
@@ -5336,6 +5373,7 @@ localhost
 localport
 localportrange
 localtemp
+localtime
 locid
 lockless
 locs
@@ -5467,6 +5505,7 @@ monday
 mongolian
 monoid
 monte
+monthstr
 morecore
 moreso
 mosharaf
@@ -6109,9 +6148,11 @@ strchr
 strcmp
 strcmps
 strerror
+strftime
 stridable
 strided
 stringify
+strptime
 strrchr
 strs
 strstr
@@ -6232,8 +6273,11 @@ tibetan
 tifinagh
 tilera
 timecondition
+timedeltas
 timedexec
 timesteps
+timetuple
+timetz
 timeval
 timevalue
 titlecase
@@ -6255,6 +6299,7 @@ toml
 tommy
 tonum
 tooltip
+toordinal
 topdown
 toret
 traceback
@@ -6279,6 +6324,8 @@ typeinfo
 typeselect
 typesymbol
 tzakian
+tzinfo
+tzname
 ubuntu
 uchar
 ugaritic
@@ -6345,6 +6392,9 @@ usernames
 userpwd
 ushort
 usingchapel
+utcfromtimestamp
+utcnow
+utctimetuple
 valgrind
 valgrindexe
 valgrinds
@@ -6441,6 +6491,7 @@ yacc
 yale
 yaml
 yates
+yearstr
 yeoh
 ylabel
 ytype
