@@ -28,10 +28,10 @@ A high-level interface to linear algebra operations and procedures.
 Compiling with Linear Algebra
 -----------------------------
 
-The linear algebra module uses both `BLAS` and `LAPACK` for
-many routines. In order to compile a Chapel program with this module, be sure
-to have BLAS and LAPACK implementations available on your system. See the BLAS
-and LAPACK documentation for further details.
+The linear algebra module uses the :mod:`BLAS` module.
+In order to compile a Chapel program with this module, be sure
+to have a BLAS implementation available on your system. See the :mod:`BLAS`
+documentation for further details.
 
 
 Linear Algebra API
@@ -42,7 +42,7 @@ Linear Algebra API
 Matrices and vectors are represented as Chapel arrays, which means the
 convenience constructors provided in this module are not necessary to use this
 module's functions. This also means that matrices (2D arrays) and vectors (1D
-arrays) will work with any other Chapel library works with arrays.
+arrays) will work with any other Chapel library that works with arrays.
 
 .. note::
 
@@ -56,7 +56,7 @@ unless otherwise specified.
 
 **Matrix multiplication**
 
-``dot()`` is the general matrix multiplication function provided in this module.
+:proc:`dot` is the general matrix multiplication function provided in this module.
 This function supports any combination of scalars, vectors (1D arrays), and
 matrices (2D arrays). See the :proc:`dot` documentation for more information.
 
@@ -65,9 +65,6 @@ underlying functions: :proc:`matMult` and `inner`.
 
 The :proc:`dot` function, along with others may be given a matrix-specific
 operator in future releases.
-
-.. comment:
-  It is also less verbose than matrixMultiply, matMult, or mMult.
 
 **Row vs Column vectors**
 
@@ -272,6 +269,16 @@ proc eye(Dom: domain(2), type eltType=real) {
 //
 
 pragma "no doc"
+inline proc transpose(D: domain(1)) {
+  return D;
+}
+
+inline proc transpose(D: domain(2)) {
+  return {D.dim(2), D.dim(1)};
+}
+
+
+pragma "no doc"
 /* Transpose vector (no-op) */
 inline proc transpose(A: [?Dom]) where Dom.rank == 1 {
   return A;
@@ -295,12 +302,12 @@ proc transpose(A: [?Dom] ?eltType) where Dom.rank == 2 {
   if !isBLASType(eltType) then
     return _transpose(A);
   else if Dom.shape(1) == 1 then
-    return reshape(A, {Dom.dim(2), Dom.dim(1)});
+    return reshape(A, transpose(Dom));
   else if Dom.shape(2) == 1 then
-    return reshape(A, {Dom.dim(2), Dom.dim(1)});
+    return reshape(A, transpose(Dom));
   else {
     var B: [Dom] eltType = eye(Dom, eltType=eltType);
-    var C: [{Dom.dim(2), Dom.dim(1)}] eltType;
+    var C: [transpose(Dom)] eltType;
     // TODO -- use native algorithm (BLAS not necessary or memory-efficient)
     gemm(A, B, C, 1:eltType, 0:eltType, opA=Op.T);
     return C;
@@ -315,7 +322,7 @@ proc _array.T where this.domain.rank == 2 { return transpose(this); }
 /* Transpose matrix with native implementation */
 pragma "no doc"
 private proc _transpose(A: [?Dom] ?eltType) {
-  var C: [{Dom.dim(2), Dom.dim(1)}] eltType;
+  var C: [transpose(Dom)] eltType;
 
   // naive algorithm
   forall (i, j) in Dom do
@@ -327,7 +334,8 @@ private proc _transpose(A: [?Dom] ?eltType) {
 
 /* Add matrices, maintaining dimensions */
 proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
-  if Adom.size != Bdom.size then halt('Unmatched array size');
+  if Adom.rank != Bdom.rank then compilerError("Ranks to not match");
+  if Adom.size != Bdom.size then halt("Unmatched array size");
   var C: [Adom] eltType = A + B;
   return C;
 }
@@ -335,7 +343,8 @@ proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
 /* Subtract matrices, maintaining dimensions */
 proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
-  if Adom.size != Bdom.size then halt('Unmatched array size');
+  if Adom.rank != Bdom.rank then compilerError("Ranks to not match");
+  if Adom.size != Bdom.size then halt("Unmatched array size");
   var C: [Adom] eltType = A - B;
   return C;
 }
@@ -391,7 +400,7 @@ proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
 pragma "no doc"
 /* matrix-vector multiplication */
-proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType)
+private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType)
   where isBLASType(eltType)
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
@@ -405,7 +414,7 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType)
 
 pragma "no doc"
 /* matrix-matrix multiplication */
-proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
+private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   where isBLASType(eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
@@ -520,20 +529,34 @@ proc matExp(A: [?Dom] ?eltType) where isIntegralType(eltType) {
 }
 
 
-/* Return cross-product of vectors ``A`` and ``B`` with domains of size ``3`` */
+/* Return cross-product of 3-element vectors ``A`` and ``B`` with domain of
+  ``A`` */
 proc cross(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
   if Adom.size != 3 || Bdom.size != 3 then
     halt("cross() expects arrays of 3 elements");
 
-  var C = Vector(Adom.size, eltType);
+  var C = Vector(Adom, eltType);
 
-  C[0] = A[1]*B[2] - A[2]*B[1];
-  C[1] = A[2]*B[0] - A[0]*B[2];
-  C[2] = A[0]*B[1] - A[1]*B[0];
+  // TODO -- a better way to do 0-based indexing...
+  C[_raw(Adom, 0)] = A[_raw(Adom, 1)]*B[_raw(Bdom, 2)] -
+                     A[_raw(Adom, 2)]*B[_raw(Bdom, 1)];
+
+  C[_raw(Adom, 1)] = A[_raw(Adom, 2)]*B[_raw(Bdom, 0)] -
+                     A[_raw(Adom, 0)]*B[_raw(Bdom, 2)];
+
+  C[_raw(Adom, 2)] = A[_raw(Adom, 0)]*B[_raw(Bdom, 1)] -
+                     A[_raw(Adom, 1)]*B[_raw(Bdom, 0)];
 
   return C;
+}
+
+
+pragma "no doc"
+/* Compute 0-based index */
+private inline proc _raw(D: domain(1), i) {
+  return D.dim(1).orderToIndex(i);
 }
 
 
@@ -570,8 +593,9 @@ proc isDiag(A: [?D] ?eltType) {
     compilerError("Rank size is not 2");
 
   const zero = 0: eltType;
-  for (i, j) in D do
-    if i != j && D[i, j] != zero then return false;
+  for (i, j) in D {
+    if i != j && A[i, j] != zero then return false;
+  }
   return true;
 }
 
@@ -582,7 +606,7 @@ proc isHermitian(A: [?D]) {
     compilerError("Rank size is not 2");
   for (i, j) in D {
     if i > j {
-      if D[i, j] != conjg(D[j, i]) then return false;
+      if A[i, j] != conjg(A[j, i]) then return false;
     }
   }
   return true;

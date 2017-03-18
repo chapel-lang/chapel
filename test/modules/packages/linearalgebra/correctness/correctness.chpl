@@ -335,7 +335,7 @@ use LinearAlgebra;
 
   var M = I;
   M[0,2] = 1;
-  assertFalse(isDiag(I), "isDiag(M)");
+  assertFalse(isDiag(M), "isDiag(M)");
 }
 
 // TODO
