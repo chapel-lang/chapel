@@ -1120,7 +1120,7 @@ module ChapelArray {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
       var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d = {(...r)};
+      d.setIndices(r);
       return d;
     }
 
@@ -1470,7 +1470,7 @@ module ChapelArray {
       }
 
       var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d = {(...ranges)};
+      d.setIndices(ranges);
       return d;
     }
 
@@ -1482,7 +1482,7 @@ module ChapelArray {
       for i in 1..rank do
         ranges(i) = dim(i).expand(off);
       var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d = {(...ranges)};
+      d.setIndices(ranges);
       return d;
     }
 
@@ -1511,7 +1511,7 @@ module ChapelArray {
       for i in 1..rank do
         ranges(i) = dim(i).exterior(off(i));
       var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d = {(...ranges)};
+      d.setIndices(ranges);
       return d;
     }
 
@@ -1557,7 +1557,7 @@ module ChapelArray {
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
       var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d = {(...ranges)};
+      d.setIndices(ranges);
       return d;
     }
 
@@ -1604,7 +1604,7 @@ module ChapelArray {
       for i in 1..rank do
         ranges(i) = _value.dsiDim(i).translate(off(i));
       var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d = {(...ranges)};
+      d.setIndices(ranges);
       return d;
      }
 
@@ -1626,7 +1626,7 @@ module ChapelArray {
       for i in 1..rank do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
       var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d = {(...ranges)};
+      d.setIndices(ranges);
       return d;
     }
 
@@ -3666,7 +3666,7 @@ module ChapelArray {
     //    compilerWarning("a.dist.type is ", a.dist.type:string);
     var d = _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, true));
     //    compilerWarning("d.type is: " + d.type:string);
-    d = {(...r)};
+    d.setIndices(r);
     return d;
   }
 
@@ -3685,7 +3685,7 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) align t(i);
     var d = _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, a.stridable));
-    d = {(...r)};
+    d.setIndices(r);
     return d;
   }
 
