@@ -733,7 +733,8 @@ catch_stmt_ls:
 ;
 
 catch_stmt:
-  TCATCH catch_expr block_stmt { $$ = CatchStmt::build($2, $3); }
+  TCATCH     catch_expr     block_stmt { $$ = CatchStmt::build($2, $3); }
+| TCATCH TLP catch_expr TRP block_stmt { $$ = CatchStmt::build($3, $5); }
 ;
 
 
