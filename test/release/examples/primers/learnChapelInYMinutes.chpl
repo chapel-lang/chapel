@@ -316,7 +316,9 @@ var rangeNegInfTo1 = ..1; // ..., -4, -3, -2, -1, 0, 1
 
 // Ranges can be strided (and reversed) using the ``by`` operator.
 var range2to10by2: range(stridable=true) = 2..10 by 2; // 2, 4, 6, 8, 10
-var reverse2to10by2 = 10..2 by -2; // 10, 8, 6, 4, 2
+var reverse2to10by2 = 2..10 by -2; // 10, 8, 6, 4, 2
+
+var trapRange = 10..1 by -1; // Do not be fooled, this is still an empty range
 
 // Note: ``range(boundedType= ...)`` and ``range(stridable= ...)`` are only
 // necessary if we explicitly type the variable.
