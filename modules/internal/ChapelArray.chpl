@@ -2180,6 +2180,7 @@ module ChapelArray {
 
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
+      //      var myC = new CCC();
       return _newArray(a);
     }
 
@@ -2200,6 +2201,8 @@ module ChapelArray {
       // we do for slices.
       const (arr, arrpid)  = (this._value, this._pid);
 
+      //      var myA = new AAA();
+
       //      writeln("rcdom is: ", rcdom);
       var a = new ArrayViewRankChangeArr(eltType=this.eltType,
                                          _DomPid = rcdom._pid,
@@ -2210,6 +2213,8 @@ module ChapelArray {
                                          // these redundantly?
                                          collapsedDim=rcdom._value.collapsedDim,
                                          idx=rcdom._value.idx);
+
+      //      var b = new BBB();
 
       // this doesn't need to lock since we just created the domain d
       rcdom._value.add_arr(a, locking=false);

@@ -107,14 +107,14 @@ module ArrayViewRankChange {
     }
 
     proc dsiBuildArray(type eltType) {
-      //      pragma "no auto destroy"
-      const arr = _newArray(downdom.dsiBuildArray(eltType));
+      pragma "no auto destroy"
+      const downarr = _newArray(downdom.dsiBuildArray(eltType));
       return new ArrayViewRankChangeArr(eltType  =eltType,
       // TODO: Update once we start privatizing vvv
                                         _DomPid = nullPid,
                                         dom = this,
-                                        _ArrPid=arr._pid,
-                                        _ArrInstance=arr._instance,
+                                        _ArrPid=downarr._pid,
+                                        _ArrInstance=downarr._instance,
                                         collapsedDim=collapsedDim,
                                         idx=idx);
     }
