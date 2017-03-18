@@ -8928,8 +8928,8 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           FnSymbol* unrefFn = NULL;
           unrefFn = resolveNormalCall(unrefCall, true);
           if (unrefFn == NULL) {
-            // If the types are equal, we must be dealing with a non-view
-            // array, so we can remove the useless unref call.
+            // If the call cannot be resolved, we must be dealing with a
+            // non-view array, so we can remove the useless unref call.
             unrefCall->replace(origRHS->copy());
 
             // Remove now-useless AST
