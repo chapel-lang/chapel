@@ -81,7 +81,7 @@ export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS
 endif
 ifeq ($(CHPL_MAKE_COMM), gasnet)
 ifneq (,$(filter $(CHPL_MAKE_COMM_SUBSTRATE),gemini aries))
-export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
+export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-udreg:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
 endif
 endif
 

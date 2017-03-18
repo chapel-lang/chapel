@@ -178,6 +178,8 @@ extern bool fReportScalarReplace;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
 
+extern bool fStrictErrorHandling;
+
 extern bool debugCCode;
 extern bool optimizeCCode;
 extern bool specializeCCode;

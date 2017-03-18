@@ -30,6 +30,7 @@
 #include "error.h"
 
 #include <errno.h>
+#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,7 +49,7 @@
 // note: format arg 'f' must be a string constant
 #define _DBG_P(f, ...)                                                  \
         do {                                                            \
-          printf("%s:%d" f "\n", __FILE__, __LINE__, ## __VA_ARGS__);   \
+          printf("%s:%d: " f "\n", __FILE__, __LINE__, ## __VA_ARGS__); \
         } while (0)
 #else
 #define _DBG_P(f, ...)
@@ -67,8 +68,10 @@ static int numaLevel;
 static int numNumaDomains;
 
 
+static void alignAddrSize(void*, size_t, chpl_bool,
+                          size_t*, unsigned char**, size_t*);
 static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
-                                            hwloc_nodeset_t);
+                                            hwloc_obj_t numaObj);
 static void report_error(const char*, int);
 
 
@@ -106,6 +109,7 @@ void chpl_topo_init(void) {
   topoSupport = hwloc_topology_get_support(topology);
 
   //
+  // TODO: update comment
   // For now, don't support setting memory locality when comm=ugni or
   // comm=gasnet, seg!=everything.  Those are the two configurations in
   // which we use hugepages and/or memory registered with the comm
@@ -114,9 +118,8 @@ void chpl_topo_init(void) {
   // the future.
   //
   do_set_area_membind = true;
-  if (strcmp(CHPL_COMM, "ugni") == 0
-      || (strcmp(CHPL_COMM, "gasnet") == 0
-          && strcmp(CHPL_GASNET_SEGMENT, "everything") != 0)) {
+  if ((strcmp(CHPL_COMM, "gasnet") == 0
+       && strcmp(CHPL_GASNET_SEGMENT, "everything") != 0)) {
       do_set_area_membind = false;
   }
 
@@ -163,26 +166,156 @@ void chpl_topo_exit(void) {
 }
 
 
-void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
-                              chpl_bool doSubchunks, c_sublocid_t subloc) {
-  unsigned char* pCh;
-  size_t pgSize;
-  size_t pgMask;
-  unsigned char* pPgLo;
-  size_t nPages;
-  hwloc_obj_t numaObj;
+int chpl_topo_getNumNumaDomains(void) {
+  return numNumaDomains;
+}
 
-  _DBG_P("chpl_topo_setMemLocality(%p, %#zx, onlyIn=%s, doSub=%s, %d)\n",
-         p, size,
-         (onlyInside ? "T" : "F"), (doSubchunks ? "T" : "F"), (int) subloc);
+
+void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
+  hwloc_cpuset_t cpuset;
+  hwloc_obj_t numaObj;
+  int flags;
+
+  _DBG_P("chpl_topo_setThreadLocality(%d)\n", (int) subloc);
 
   if (!haveTopology) {
     return;
   }
 
-  pCh = (unsigned char*) p;
-  pgSize = chpl_getHeapPageSize();
-  pgMask = pgSize - 1;
+  if (!topoSupport->cpubind->set_thread_cpubind)
+    return;
+
+  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
+    report_error("hwloc_bitmap_alloc()", errno);
+  }
+
+  numaObj = hwloc_get_obj_by_depth(topology, numaLevel, subloc);
+  hwloc_cpuset_from_nodeset(topology, cpuset, numaObj->allowed_nodeset);
+
+  flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
+  if (hwloc_set_cpubind(topology, cpuset, flags)) {
+    report_error("hwloc_set_cpubind()", errno);
+  }
+
+  hwloc_bitmap_free(cpuset);
+}
+
+
+c_sublocid_t chpl_topo_getThreadLocality(void) {
+  hwloc_cpuset_t cpuset;
+  hwloc_nodeset_t nodeset;
+  int flags;
+  int node;
+
+  if (!haveTopology) {
+    return c_sublocid_any;
+  }
+
+  if (!topoSupport->cpubind->get_thread_cpubind) {
+    return c_sublocid_any;
+  }
+
+  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
+    report_error("hwloc_bitmap_alloc()", errno);
+  }
+
+  if ((nodeset = hwloc_bitmap_alloc()) == NULL) {
+    report_error("hwloc_bitmap_alloc()", errno);
+  }
+
+  flags = HWLOC_CPUBIND_THREAD;
+  if (hwloc_get_thread_cpubind(topology, pthread_self(), cpuset, flags)) {
+    report_error("hwloc_get_cpubind()", errno);
+  }
+
+  hwloc_cpuset_to_nodeset(topology, cpuset, nodeset);
+
+  node = hwloc_bitmap_first(nodeset);
+
+  hwloc_bitmap_free(nodeset);
+  hwloc_bitmap_free(cpuset);
+
+  return node;
+}
+
+
+void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
+                              c_sublocid_t subloc) {
+  size_t pgSize;
+  unsigned char* pPgLo;
+  size_t nPages;
+  hwloc_obj_t numaObj;
+
+  _DBG_P("chpl_topo_setMemLocality(%p, %#zx, onlyIn=%s, doSub=%s, %d)\n",
+         p, size, (onlyInside ? "T" : "F"), (int) subloc);
+
+  if (!haveTopology) {
+    return;
+  }
+
+  alignAddrSize(p, size, onlyInside, &pgSize, &pPgLo, &nPages);
+
+  _DBG_P("    localize %p, %#zx bytes (%#zx pages)\n",
+         pPgLo, nPages * pgSize, nPages);
+
+  if (nPages == 0)
+    return;
+
+  numaObj = hwloc_get_obj_by_depth(topology, numaLevel, subloc);
+  chpl_topo_setMemLocalityByPages(pPgLo, nPages * pgSize, numaObj);
+}
+
+
+void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
+                                      chpl_bool onlyInside,
+                                      size_t* subchunkSizes) {
+  size_t pgSize;
+  unsigned char* pPgLo;
+  size_t nPages;
+  hwloc_obj_t numaObj;
+  int i;
+  size_t pg;
+  size_t pgNext;
+
+  _DBG_P("chpl_topo_setMemSubchunkLocality(%p, %#zx, onlyIn=%s)\n",
+         p, size, (onlyInside ? "T" : "F"));
+
+  if (!haveTopology) {
+    return;
+  }
+
+  alignAddrSize(p, size, onlyInside, &pgSize, &pPgLo, &nPages);
+
+  _DBG_P("    localize %p, %#zx bytes (%#zx pages)\n",
+         pPgLo, nPages * pgSize, nPages);
+
+  if (nPages == 0)
+    return;
+
+  for (i = 0, pg = 0; i < numNumaDomains; i++, pg = pgNext) {
+    if (i == numNumaDomains - 1)
+      pgNext = nPages;
+    else
+      pgNext = 1 + (nPages * (i + 1) - 1) / numNumaDomains;
+    numaObj = hwloc_get_obj_by_depth(topology, numaLevel, i);
+    chpl_topo_setMemLocalityByPages(pPgLo + pg * pgSize,
+                                    (pgNext - pg) * pgSize, numaObj);
+    if (subchunkSizes != NULL) {
+      subchunkSizes[i] = (pgNext - pg) * pgSize;
+    }
+  }
+}
+
+
+static inline
+void alignAddrSize(void* p, size_t size, chpl_bool onlyInside,
+                   size_t* p_pgSize, unsigned char** p_pPgLo,
+                   size_t* p_nPages) {
+  unsigned char* pCh = (unsigned char*) p;
+  size_t pgSize = chpl_getHeapPageSize();
+  size_t pgMask = pgSize - 1;
+  unsigned char* pPgLo;
+  size_t nPages;
 
   if (onlyInside) {
     pPgLo = round_up_to_mask_ptr(pCh, pgMask);
@@ -195,32 +328,9 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
     nPages = round_up_to_mask(size + (pCh - pPgLo), pgMask) / pgSize;
   }
 
-  _DBG_P("    localize %p, %#zx bytes (%#zx pages)\n",
-         pPgLo, nPages * pgSize, nPages);
-
-  if (nPages == 0)
-    return;
-
-  if (doSubchunks) {
-    int i;
-    size_t pg;
-    size_t pgNext;
-
-    for (i = 0, pg = 0; i < numNumaDomains; i++, pg = pgNext) {
-      if (i == numNumaDomains - 1)
-        pgNext = nPages;
-      else
-        pgNext = 1 + (nPages * (i + 1) - 1) / numNumaDomains;
-      numaObj = hwloc_get_obj_by_depth(topology, numaLevel, i);
-      chpl_topo_setMemLocalityByPages(pPgLo + pg * pgSize,
-                                      (pgNext - pg) * pgSize,
-                                      numaObj->nodeset);
-    }
-  }
-  else if (subloc >= 0 && subloc < numNumaDomains) {
-    numaObj = hwloc_get_obj_by_depth(topology, numaLevel, subloc);
-    chpl_topo_setMemLocalityByPages(pPgLo, nPages * pgSize, numaObj->nodeset);
-  }
+  *p_pgSize = pgSize;
+  *p_pPgLo = pPgLo;
+  *p_nPages = nPages;
 }
 
 
@@ -229,8 +339,8 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
 //
 static
 void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
-                                     hwloc_nodeset_t nodeset) {
-  const int flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
+                                     hwloc_obj_t numaObj) {
+  int flags;
 
   if (!haveTopology) {
     return;
@@ -241,25 +351,27 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
     return;
 
   _DBG_P("hwloc_set_area_membind_nodeset(%p, %#zx, %d)\n", p, size,
-         (int) hwloc_bitmap_first(nodeset));
+         (int) hwloc_bitmap_first(numaObj->allowed_nodeset));
+
+  flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
   if (hwloc_set_area_membind_nodeset(topology, p, size,
-                                     nodeset, HWLOC_MEMBIND_BIND, flags)) {
+                                     numaObj->allowed_nodeset,
+                                     HWLOC_MEMBIND_BIND, flags)) {
     report_error("hwloc_set_area_membind_nodeset()", errno);
   }
 }
 
 
 c_sublocid_t chpl_topo_getMemLocality(void* p) {
-  const int flags = HWLOC_MEMBIND_STRICT;
+  int flags;
   hwloc_nodeset_t nodeset;
-  hwloc_membind_policy_t policy;
   int node;
 
   if (!haveTopology) {
     return c_sublocid_any;
   }
 
-  if (!topoSupport->membind->get_area_membind) {
+  if (!topoSupport->membind->get_area_memlocation) {
     return c_sublocid_any;
   }
 
@@ -271,12 +383,15 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
     report_error("hwloc_bitmap_alloc()", errno);
   }
 
-  if (hwloc_get_area_membind_nodeset(topology, p, 1,
-                                     nodeset, &policy, flags)) {
-    report_error("hwloc_get_area_membind_nodeset()", errno);
+  flags = HWLOC_MEMBIND_BYNODESET;
+  if (hwloc_get_area_memlocation(topology, p, 1, nodeset, flags)) {
+    report_error("hwloc_get_area_memlocation()", errno);
   }
 
   node = hwloc_bitmap_first(nodeset);
+  if (!isActualSublocID(node)) {
+    node = c_sublocid_any;
+  }
 
   hwloc_bitmap_free(nodeset);
 
@@ -300,8 +415,14 @@ void report_error(const char* what, int errnum) {
 
 void chpl_topo_init(void) { }
 void chpl_topo_exit(void) { }
+int chpl_topo_getNumNumaDomains(void) { return 1; }
+void chpl_topo_setThreadLocality(c_sublocid_t subloc) { }
+c_sublocid_t chpl_topo_getThreadLocality(void) { return c_sublocid_any; }
 void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
-                              chpl_bool doSubchunks, c_sublocid_t subloc) { }
+                              c_sublocid_t subloc) { }
+void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
+                                      chpl_bool onlyInside,
+                                      size_t* subchunkSizes) { }
 c_sublocid_t chpl_topo_getMemLocality(void* p) { return c_sublocid_any; }
 
 #endif // if defined(CHPL_HAS_HWLOC)

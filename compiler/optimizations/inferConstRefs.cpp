@@ -317,9 +317,7 @@ static bool canRHSBeConstRef(CallExpr* parent, SymExpr* use) {
       // Note that the get-*-value primitives may return a reference if the
       // field is a reference.
       if (LHS->isRef()) {
-        if (!inferConstRef(LHS->symbol())) {
-          return false;
-        }
+        return inferConstRef(LHS->symbol());
       }
     }
     default:

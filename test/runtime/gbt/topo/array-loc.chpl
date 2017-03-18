@@ -27,7 +27,6 @@ extern proc chpl_topo_getMemLocality(p: c_ptr): chpl_sublocID_t;
 
 
 {
-
   var locality: localityCheck_t;
   if A._value.oneDData {
     locality = checkMemLocalityParts(c_ptrTo(A), A.domain.numIndices,

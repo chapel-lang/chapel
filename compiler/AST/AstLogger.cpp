@@ -196,6 +196,14 @@ bool AstLogger::enterTryStmt(TryStmt* node) {
 void AstLogger::exitTryStmt(TryStmt* node) {
 }
 
+bool AstLogger::enterCatchStmt(CatchStmt* node) {
+  return true;
+}
+
+void AstLogger::exitCatchStmt(CatchStmt* node) {
+}
+
+
 bool AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {
   bool first = true;
   for_vector(const char, str, vec) {

@@ -35,6 +35,7 @@
 #include "ForLoop.h"
 #include "ParamForLoop.h"
 #include "TryStmt.h"
+#include "CatchStmt.h"
 
 AstDump::AstDump() {
   mName      =     0;
@@ -553,6 +554,24 @@ bool AstDump::enterTryStmt(TryStmt* node) {
 }
 
 void AstDump::exitTryStmt(TryStmt* node) {
+  --mIndent;
+  newline();
+  write("}");
+}
+
+//
+// CatchStmt
+//
+bool AstDump::enterCatchStmt(CatchStmt* node) {
+  newline();
+  write("Catch");
+  newline();
+  write("{");
+  ++mIndent;
+  return true;
+}
+
+void AstDump::exitCatchStmt(CatchStmt* node) {
   --mIndent;
   newline();
   write("}");
