@@ -2191,9 +2191,9 @@ module ChapelArray {
       if boundsChecking then
         checkRankChange(args);
 
-      //      pragma "no auto destroy"
+      pragma "no auto destroy"
       const rcdom = this.domain[(...args)];
-      //      rcdom._value._free_when_no_arrs = true;
+      rcdom._value._free_when_no_arrs = true;
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what
