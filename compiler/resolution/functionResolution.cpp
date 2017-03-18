@@ -8925,10 +8925,9 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
 
           CallExpr* unrefCall = new CallExpr("chpl__unref", tmp);
           call->insertAtTail(unrefCall);
-          FnSymbol* unrefFn = resolveNormalCall(unrefCall);
-          resolveFns(unrefFn);
-
-          if (unrefFn->retType == tmp->typeInfo()) {
+          FnSymbol* unrefFn = NULL;
+          unrefFn = resolveNormalCall(unrefCall, true);
+          if (unrefFn == NULL) {
             // If the types are equal, we must be dealing with a non-view
             // array, so we can remove the useless unref call.
             unrefCall->replace(origRHS->copy());
@@ -8937,6 +8936,9 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
             tmp->defPoint->remove();
             init_unref_tmp->remove();
             INT_ASSERT(unrefCall->inTree() == false);
+          } else {
+            unrefFn = resolveNormalCall(unrefCall);
+            resolveFns(unrefFn);
           }
         }
       }
