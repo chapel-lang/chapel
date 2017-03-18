@@ -1,4 +1,0 @@
-unimplemented: nested try blocks
-
-An inner try block should be able to propagate its error to
-the catch statements of an outer try block, if necessary.
