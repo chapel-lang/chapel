@@ -1200,30 +1200,36 @@ static void insertCallTemps(CallExpr* call) {
       tmp->addFlag(FLAG_SUPER_TEMP);
     }
 
-    call->replace(new SymExpr(tmp));
-
     // Define the tmp
     stmt->insertBefore(new DefExpr(tmp));
 
     // Is this a new-expression for a record with an initializer?
     if (Type* type = typeForNewNonGenericRecord(call)) {
-      // 2017/03/14: call has the form prim_new(MyRec(a, b, c))
-      CallExpr* initCall = toCallExpr(call->get(1));
-
       // Define the type for the tmp
       tmp->type = type;
 
-      // Convert the new-expression into an init call
-      initCall->setUnresolvedFunction("init");
+      // 2017/03/14: call has the form prim_new(MyRec(a, b, c))
+      // Extract the argument to the new expression
+      CallExpr* newArg = toCallExpr(call->get(1));
+
+      // Convert the argument for the new-expression into an init call
+      newArg->setUnresolvedFunction("init");
 
       // Add _mt and _this (insert at head in reverse order)
-      initCall->insertAtHead(tmp);
-      initCall->insertAtHead(gMethodToken);
+      newArg->insertAtHead(tmp);
+      newArg->insertAtHead(gMethodToken);
 
-      stmt->insertBefore(initCall->remove());
+      // Move the tmp.init(args) expession to before the call
+      stmt->insertBefore(newArg->remove());
+
+      // Replace the degenerate new-expression with a use of the tmp variable
+      call->replace(new SymExpr(tmp));
+
 
     // No.  The simple case
     } else {
+      call->replace(new SymExpr(tmp));
+
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
     }
   }

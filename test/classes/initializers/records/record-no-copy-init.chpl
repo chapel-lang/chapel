@@ -1,24 +1,34 @@
-record R {
-  var x:int;
+// This test verifies that the compiler does not attempt
+// to rely on a copy initializer for MyRec.
+//
+// There would be a compile time failure if the compiler attempted to
+// introduce a copy operation as MyRec does not define a copy initializer.
+
+
+record MyRec {
+  var x : int;
+
   proc init() {
-    writeln("in R's default-init");
+    writeln("default init");
   }
-  // no copy init
-}
-
-proc makeR() {
-  return new R();
 }
 
 
-proc foo() {
-  var x = new R(); // no copy
+proc main() {
+  var x = new MyRec();         // This is pure initialization
+
   writeln(x);
 
-  var y = makeR(); // no copy
+  var y = makeRecord();        // This is a "move" rather than a "copy"
+
   writeln(y);
 }
 
 
-foo();
+// A local record is "initialized" and then "moved" to the caller
+proc makeRecord() {
+  return new MyRec();
+}
+
+
 
