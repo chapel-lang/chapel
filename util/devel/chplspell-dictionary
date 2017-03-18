@@ -2591,6 +2591,7 @@ fifn
 llib
 noparens
 parloopexpr
+usex
 
 FILEID: e2d7df7c-1d0c-11e6-a3a6-10ddb1d4c3d5
 fock
@@ -2699,6 +2700,7 @@ FILEID: e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5
 hashset
 outervar
 urse
+wout
 
 FILEID: 0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5
 ppne
@@ -4190,6 +4192,12 @@ taskfn
 
 FILEID: 44484c44-fd7f-11e6-980e-10ddb1d4c3d5
 nucls
+
+FILEID: 12c3b64e-0c12-11e7-980e-10ddb1d4c3d5
+toktext
+
+FILEID: 208f1cd2-0c12-11e7-980e-10ddb1d4c3d5
+cref
 
 NATURAL:
 abcd
@@ -6043,6 +6051,7 @@ structs
 subarray
 subblock
 subcall
+subchunks
 subdiagonal
 subdirs
 subdomain
