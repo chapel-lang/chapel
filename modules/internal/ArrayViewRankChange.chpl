@@ -116,7 +116,8 @@ module ArrayViewRankChange {
                                         _ArrPid=downarr._pid,
                                         _ArrInstance=downarr._instance,
                                         collapsedDim=collapsedDim,
-                                        idx=idx);
+                                        idx=idx,
+                                        ownsArrInstance=true);
     }
 
     // TODO: Use delegation feature for these?
@@ -404,6 +405,8 @@ module ArrayViewRankChange {
     // accessing the array's ddata to avoid indirection overheads
     // through the array field above.
     const indexCache = buildIndexCache();
+
+    const ownsArrInstance = false;
 
 
     //
@@ -791,8 +794,10 @@ module ArrayViewRankChange {
       return this;
     }
 
-    proc dsiDestroyArr() {
-      _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
+    proc dsiDestroyArr(isalias:bool) {
+      if ownsArrInstance {
+        _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
+      }
     }
   }  // ArrayViewRankChangeArr
 
