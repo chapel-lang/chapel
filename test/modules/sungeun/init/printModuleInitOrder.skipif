@@ -1,3 +1,5 @@
+CHPL_LOCALE_MODEL != flat
+
 # Dead module elimination that is run with deadCodeElimination
 # removes some modules, meaning that they no longer get initialized.
 # This skips baseline testing so that we only test the
