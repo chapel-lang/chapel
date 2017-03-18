@@ -895,10 +895,13 @@ module ChapelArray {
     }
 
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
+      //      var myC = new CCC();
       var x = _value.dsiNewRectangularDom(rank, idxType, stridable);
+      //      var myD = new DDD();
       if x.linksDistribution() {
         _value.add_dom(x);
       }
+      //      var myE = new EEE();
       return x;
     }
 
@@ -985,6 +988,20 @@ module ChapelArray {
     return defaultComparator;
   }
 
+  class CCC {
+  }
+
+  class DDD {
+  }
+
+  class EEE {
+  }
+
+  class AAA {
+  }
+
+  class BBB {
+  }
 
   //
   // Domain wrapper record.
@@ -1151,12 +1168,19 @@ module ChapelArray {
       const rcdist = new ArrayViewRankChangeDist(downdist = dist,
                                                  collapsedDim=collapsedDim,
                                                  idx = idx);
+      const rcdistRec = _newDistribution(rcdist);
+      //      rcdist._free_when_no_doms = true;
 
-      const rcdomclass = rcdist.dsiNewRectangularDom(rank = uprank,
+      //      var myA = new AAA();
+      
+      const rcdomclass = rcdistRec.newRectangularDom(rank = uprank,
                                                      idxType = upranges(1).idxType,
                                                      stridable = upranges(1).stridable);
+
+      //      var myB = new BBB();
+      
       var rcdom = _newDomain(rcdomclass);
-      rcdom = {(...upranges)};
+      rcdom.setIndices(upranges);
 
       return rcdom;
     }
@@ -1960,9 +1984,15 @@ module ChapelArray {
     }
 
     inline proc _do_destroy() {
+      //      extern proc printf(x...);
+      //      printf("In array destroy\n");
       if ! _unowned {
         on _instance {
           var (arrToFree, domToRemove) = _instance.remove();
+          //          if arrToFree != nil then
+          //            printf("Got non-null arr to free\n");
+          //          else
+          //            printf("arr to free is nil\n");
           var domToFree:BaseDom = nil;
           var distToRemove:BaseDist = nil;
           var distToFree:BaseDist = nil;
@@ -2161,7 +2191,7 @@ module ChapelArray {
       if boundsChecking then
         checkRankChange(args);
 
-      pragma "no auto destroy"
+      //      pragma "no auto destroy"
       const rcdom = this.domain[(...args)];
       //      rcdom._value._free_when_no_arrs = true;
 

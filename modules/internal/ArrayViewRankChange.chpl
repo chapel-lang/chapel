@@ -84,10 +84,17 @@ module ArrayViewRankChange {
     const dist;
 
     var downdomPid:int;
-    var downdomInst: (dist.downdist.newRectangularDom(rank=downrank,
-                                                      idxType=idxType,
-                                                      stridable=stridable)).type;
+    var downdomInst: downdomtype(downrank, idxType, stridable);
 
+    //
+    // TODO: If we put this expression into the variable declaration
+    // above, we get a memory leak.  File a future against this?
+    //
+    proc downdomtype(param rank: int, type idxType, param stridable: bool) type {
+      var a = dist.downdist.newRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
+      return a.type;
+    }
+    
     proc downrank param {
       return collapsedDim.size;
     }
@@ -100,7 +107,7 @@ module ArrayViewRankChange {
     }
 
     proc dsiBuildArray(type eltType) {
-      pragma "no auto destroy"
+      //      pragma "no auto destroy"
       const arr = _newArray(downdom.dsiBuildArray(eltType));
       return new ArrayViewRankChangeArr(eltType  =eltType,
       // TODO: Update once we start privatizing vvv
@@ -353,6 +360,11 @@ module ArrayViewRankChange {
       }
     }
 
+    proc dsiDestroyDom() {
+      _delete_dom(updom, false);
+      _delete_dom(downdomInst, _isPrivatized(downdomInst));
+      //      delete this;  // need to update this when we privatize?
+    }
 
   } // ArrayViewRankChangeDom
   
@@ -778,7 +790,11 @@ module ArrayViewRankChange {
     proc _getRCREView() {
       return this;
     }
-  }
+
+    proc dsiDestroyArr() {
+      _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
+    }
+  }  // ArrayViewRankChangeArr
 
   // TODO: Move these into domain
   
