@@ -487,11 +487,11 @@ module ChapelBase {
   // a sync to read it or a sync returned from a function but not
   // explicitly captured.
   //
-  inline proc _statementLevelSymbol(a) { /*return a;*/  }
+  inline proc _statementLevelSymbol(a) { return true; }
   inline proc _statementLevelSymbol(a: sync)  { a.readFE(); }
   inline proc _statementLevelSymbol(a: single) { a.readFF(); }
-  inline proc _statementLevelSymbol(param a) param { /*return a;*/ }
-  inline proc _statementLevelSymbol(type a) type { /*return a;*/ }
+  inline proc _statementLevelSymbol(param a) param { return true; }
+  inline proc _statementLevelSymbol(type a) type { return true; }
 
   //
   // If an iterator is called without capturing the result, iterate over it
