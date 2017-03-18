@@ -370,6 +370,9 @@
   "6c8e8208-1f0f-11e6-a3a6-10ddb1d4c3d5": [
     "modules/dists/SparseBlockDist.chpl"
   ],
+  "edb63ad0-0c15-11e7-980e-10ddb1d4c3d5": [
+    "modules/dists/StencilDist.chpl"
+  ],
   "ab3bbeb6-1f10-11e6-a3a6-10ddb1d4c3d5": [
     "modules/dists/dims/BlockCycDim.chpl"
   ],
@@ -378,6 +381,9 @@
   ],
   "c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/AtomicsCommon.chpl"
+  ],
+  "5010068a-0c15-11e7-980e-10ddb1d4c3d5": [
+    "modules/internal/ChapelArray.chpl"
   ],
   "47cb0e3c-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/ChapelRange.chpl"
@@ -393,6 +399,9 @@
   ],
   "c3b7f950-1f15-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/DefaultRectangular.chpl"
+  ],
+  "5cb0944a-0c15-11e7-980e-10ddb1d4c3d5": [
+    "modules/internal/localeModels/knl/LocaleModel.chpl"
   ],
   "9c75ae66-1f18-11e6-a3a6-10ddb1d4c3d5": [
     "modules/layouts/LayoutCSR.chpl"

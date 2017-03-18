@@ -2871,6 +2871,7 @@ parenthesesless
 
 FILEID: 610c0354-1f11-11e6-a3a6-10ddb1d4c3d5
 mults
+sbac
 unum
 wayhi
 waylo
@@ -4287,6 +4288,20 @@ usps
 utcoff
 utcoffset
 
+FILEID: 5010068a-0c15-11e7-980e-10ddb1d4c3d5
+arrpid
+isview
+
+FILEID: 5cb0944a-0c15-11e7-980e-10ddb1d4c3d5
+hbwmalloc
+kindstr
+lmemkind
+memkind
+nmemb
+
+FILEID: edb63ad0-0c15-11e7-980e-10ddb1d4c3d5
+rview
+
 NATURAL:
 abcd
 abcdefg
@@ -4473,6 +4488,7 @@ byteorder
 cairo
 california
 callahan
+callchains
 callee
 callees
 callexpr
@@ -5523,6 +5539,7 @@ mitre
 mjolnir
 mkdir
 mkerror
+mklroot
 mkswap
 mmap
 mmread
