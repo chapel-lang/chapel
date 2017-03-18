@@ -3821,6 +3821,12 @@ module ChapelArray {
     return ret;
   }
 
+  pragma "no copy return"
+  inline proc chpl__unref(x: []) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
+
 
 
   // see comment on chpl__unalias for domains
