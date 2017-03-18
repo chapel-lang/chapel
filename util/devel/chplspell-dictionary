@@ -3598,6 +3598,7 @@ FILEID: 3277f5dc-4e3e-11e6-907f-843835579daa
 parenthesesless
 
 FILEID: b4520e6e-5076-11e6-b83e-bc5ff4765d0d
+adaptative
 binarytrees
 chapcs
 kace
@@ -5956,6 +5957,7 @@ refcnt
 refcount
 referencees
 refness
+refpair
 refvar
 regexdna
 regexp
