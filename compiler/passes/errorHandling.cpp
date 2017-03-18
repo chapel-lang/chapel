@@ -161,6 +161,7 @@ ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
                                            LabelSymbol* _epilogue) {
   outError = _outError;
   epilogue = _epilogue;
+  insideCatch = false;
 }
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
