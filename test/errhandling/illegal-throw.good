@@ -1,1 +1,0 @@
-compiler error: cannot throw an Error from a function not marked throws

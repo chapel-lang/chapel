@@ -1,4 +1,0 @@
-unimplemented: single statement try!
-
-If a statement that may throw an error is preceded by
-try!, an error will cause the program to halt(). 

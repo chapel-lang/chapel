@@ -26,6 +26,7 @@
 #include "AstDump.h"
 #include "AstDumpToNode.h"
 #include "CForLoop.h"
+#include "CatchStmt.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -180,7 +181,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   if (Symbol* sym = toSymbol(ast))
     list_sym(sym);
 
-  bool early_newline = toFnSymbol(ast) || toModuleSymbol(ast); 
+  bool early_newline = toFnSymbol(ast) || toModuleSymbol(ast);
   if (early_newline || is_C_loop)
     printf("\n");
 
@@ -678,7 +679,7 @@ void map_view(SymbolMap& map) {
   int cnt = 0;
   bool temp_log_need_space = log_need_space;
   log_need_space = true;
-  
+
   form_Map(SymbolMapElem, elm, map) {
     Symbol* key = elm->key;
     Symbol* val = elm->value;

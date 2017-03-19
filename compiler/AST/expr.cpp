@@ -1118,6 +1118,9 @@ void CallExpr::setUnresolvedFunction(const char* name) {
   } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(baseExpr)) {
     use->unresolved = astr(name);
 
+  } else if (SymExpr*           se  = toSymExpr(baseExpr)) {
+    se->replace(new UnresolvedSymExpr(name));
+
   } else {
     INT_ASSERT(false);
   }

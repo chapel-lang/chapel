@@ -58,6 +58,7 @@ module ChapelStandard {
   use ChapelTaskTable;
   use MemTracking;
   use ChapelUtil;
+  use ChapelError;
   use ChapelDynDispHack;
 
   // Standard modules.

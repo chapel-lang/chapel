@@ -471,6 +471,6 @@ chpl_bool chpl_mem_impl_alloc_localizes(void) {
   // some virtual-memory, and we can't just go touching all the pages.
   //
   return (get_num_heaps() > 1
-          && strcmp(CHPL_LOCALE_MODEL, "flat") != 0
+          && strcmp(CHPL_LOCALE_MODEL, "numa") == 0
           && strcmp(CHPL_COMM, "ugni") == 0);
 }
