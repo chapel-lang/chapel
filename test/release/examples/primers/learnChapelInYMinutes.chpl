@@ -68,6 +68,7 @@ var myCplx: complex = 10 + 9i; // Complex numbers
 myCplx = myInt + myImag; // Another way to form complex numbers
 var myBool: bool = false; // Booleans
 var myStr: string = "Some string..."; // Strings
+var singleQuoteStr = 'Another string...'; // String literal with single quotes
 
 // Some types can have sizes.
 var my8Int: int(8) = 10; // 8 bit (one byte) sized int;
@@ -223,26 +224,27 @@ if -1 < 1 then
 else
   writeln("Send mathematician, something's wrong");
 
+// You can use parentheses if you prefer.
 if (10 > 100) {
   writeln("Universe broken. Please reboot universe.");
 }
 
-if (a % 2 == 0) {
+if a % 2 == 0 {
   writeln(a, " is even.");
 } else {
   writeln(a, " is odd.");
 }
 
-if (a % 3 == 0) {
+if a % 3 == 0 {
   writeln(a, " is even divisible by 3.");
-} else if (a % 3 == 1) {
+} else if a % 3 == 1 {
   writeln(a, " is divided by 3 with a remainder of 1.");
 } else {
   writeln(b, " is divided by 3 with a remainder of 2.");
 }
 
 // Ternary: ``if`` - ``then`` - ``else`` in a statement.
-var maximum = if (thisInt < thatInt) then thatInt else thisInt;
+var maximum = if thisInt < thatInt then thatInt else thisInt;
 
 // ``select`` statements are much like switch statements in other languages.
 // However, ``select`` statements don't cascade like in C or Java.
@@ -319,6 +321,7 @@ var range2to10by2: range(stridable=true) = 2..10 by 2; // 2, 4, 6, 8, 10
 var reverse2to10by2 = 2..10 by -2; // 10, 8, 6, 4, 2
 
 var trapRange = 10..1 by -1; // Do not be fooled, this is still an empty range
+writeln("Size of range '", trapRange, "' = '", trapRange.length);
 
 // Note: ``range(boundedType= ...)`` and ``range(stridable= ...)`` are only
 // necessary if we explicitly type the variable.
@@ -347,6 +350,12 @@ var twoDimensions: domain(2) = {-2..2,0..2}; // 2D domain over product of ranges
 var thirdDim: range = 1..16;
 var threeDims: domain(3) = {thirdDim, 1..10, 5..10}; // using a range variable
 
+// Domains can also be resized
+var resizedDom = {1..10};
+writeln("before, resizedDom = ", resizedDom);
+resizedDom = {-10..#10};
+writeln("after, resizedDom = ", resizedDom);
+
 // Indices can be iterated over as tuples.
 for idx in twoDimensions do
   write(idx, ", ");
@@ -366,6 +375,9 @@ stringSet += "c";
 stringSet += "a"; // Redundant add "a"
 stringSet -= "c"; // Remove "c"
 writeln(stringSet.sorted());
+
+// Associative domains can also have a literal syntax
+var intSet = {1, 2, 4, 5, 100};
 
 // Both ranges and domains can be sliced to produce a range or domain with the
 // intersection of indices.
@@ -391,7 +403,7 @@ Arrays
 var intArray: [1..10] int;
 var intArray2: [{1..10}] int; // equivalent
 
-// They are accessed using bracket notation.
+// They can be accessed using either brackets or parentheses
 for i in 1..10 do
   intArray[i] = -i;
 writeln(intArray);
@@ -414,7 +426,7 @@ for i in 1..5 {
 
 // Arrays have domains as members, and can be iterated over as normal.
 for idx in realArray.domain {  // Again, idx is a 2*int tuple
-  realArray[idx] = 1 / realArray[idx[1],idx[2]]; // Access by tuple and list
+  realArray[idx] = 1 / realArray[idx[1], idx[2]]; // Access by tuple and list
 }
 
 writeln(realArray);
@@ -430,28 +442,29 @@ writeln(rSum, "\n", realArray);
 // Associative arrays (dictionaries) can be created using associative domains.
 var dictDomain: domain(string) = { "one", "two" };
 var dict: [dictDomain] int = [ "one" => 1, "two" => 2 ];
-dict["three"] = 3;
+dict["three"] = 3; // Adds 'three' to 'dictDomain' implicitly
 for key in dictDomain.sorted() do
   writeln(dict[key]);
 
 // Arrays can be assigned to each other in a few different ways.
 // These arrays will be used in the example.
-var thisArray : [{0..5}] int = [0,1,2,3,4,5];
-var thatArray : [{0..5}] int;
+var thisArray : [0..5] int = [0,1,2,3,4,5];
+var thatArray : [0..5] int;
 
-// First, simply assign one to the other. This copies ``thisArray`` into ``thatArray``,
-// instead of just creating a reference. Therefore, modifying ``thisArray`` does not
-// also modify ``thatArray``.
+// First, simply assign one to the other. This copies ``thisArray`` into
+// ``thatArray``, instead of just creating a reference. Therefore, modifying
+// ``thisArray`` does not also modify ``thatArray``.
 
 thatArray = thisArray;
 thatArray[1] = -1;
 writeln((thisArray, thatArray));
 
 // Assign a slice from one array to a slice (of the same size) in the other.
-thatArray[{4..5}] = thisArray[{1..2}];
+thatArray[4..5] = thisArray[1..2];
 writeln((thisArray, thatArray));
 
-// Operations can also be promoted to work on arrays.
+// Operations can also be promoted to work on arrays. 'thisPlusThat' is also
+// an array.
 var thisPlusThat = thisArray + thatArray;
 writeln(thisPlusThat);
 
@@ -472,13 +485,6 @@ var evensOrFivesAgain = [ i in 1..10 ] if (i % 2 == 0 || i % 5 == 0) then i;
 // They can also be written over the values of the array.
 arrayFromLoop = [ value in arrayFromLoop ] value + 1;
 
-// Note: This notation can get somewhat tricky. For example, this code would break,
-// for reasons to be explained when discussing zipped iterators.
-
-/* .. code-block:: chapel
-   
-      evensOrFives = [ i in 1..10 ] if (i % 2 == 0 || i % 5 == 0) then i;
-*/
 
 /*
 .. primers-yminutes-proc:
@@ -489,7 +495,7 @@ Procedures
 
 // Chapel procedures have similar syntax functions in other languages. 
 proc fibonacci(n : int) : int {
-  if (n <= 1) then return n;
+  if n <= 1 then return n;
   return fibonacci(n-1) + fibonacci(n-2);
 }
 
@@ -505,11 +511,11 @@ proc addThree(n) {
 
 doublePrint(addThree(fibonacci(20)));
 
-// It is also possible to take an 'unlimited' number of parameters.
+// It is also possible to take a variable number of parameters.
 proc maxOf(x ...?k) {
   // x refers to a tuple of one type, with k elements
   var maximum = x[1];
-  for i in 2..k do maximum = if (maximum < x[i]) then x[i] else maximum;
+  for i in 2..k do maximum = if maximum < x[i] then x[i] else maximum;
   return maximum;
 }
 writeln(maxOf(1, -10, 189, -9071982, 5, 17, 20001, 42));
@@ -527,8 +533,8 @@ writeln(defaultsProc(y=9.876, x=13));
 
 // The ``?`` operator is called the query operator, and is used to take
 // undetermined values like tuple or array sizes and generic types.
-// For example, taking arrays as parameters. The query operator is used to determine
-// the domain of ``A``. This is important for defining the return type,
+// For example, taking arrays as parameters. The query operator is used to
+// determine the domain of ``A``. This is uesful for defining the return type,
 // though it's not required.
 proc invertArray(A: [?D] int): [D] int{
   for a in A do a = -a;
@@ -574,6 +580,18 @@ whereProc(-1);
 // We could have defined a ``whereProc`` without a ``where`` clause
 // that would then have served as a catch all for all the other cases
 // (of which there is only one).
+
+// ``where`` clauses can also be used to constrain based on argument type.
+proc whereType(x: ?t) where t == int {
+  writeln("Inside 'int' version of 'whereType': ", x);
+}
+
+proc whereType(x: ?t) {
+  writeln("Inside general version of 'whereType': ", x);
+}
+
+whereType(42);
+whereType("hello");
 
 /*
 .. primers-yminutes-intent:
@@ -629,7 +647,7 @@ Operator Definitions
 --------------------
 */
 
-// Operator definitions are through procedures as well.
+// Chapel allows for operators to be overloaded.
 // We can define the unary operators:
 // ``+ - ! ~``
 // and the binary operators:
@@ -690,7 +708,7 @@ writeln();
 // Iterators can also yield conditionally, the result of which can be nothing
 iter absolutelyNothing(N): int {
   for i in 1..N {
-    if (N < i) { // Always false
+    if N < i { // Always false
       yield i;     // Yield statement never happens
     }
   }
@@ -1062,7 +1080,7 @@ proc main() {
   writeln("uranium was ", was, " but is now ", replaceWith);
 
   var isEqualTo = 235;
-  if (uranium.compareExchange(isEqualTo, replaceWith)) {
+  if uranium.compareExchange(isEqualTo, replaceWith) {
     writeln("uranium was equal to ", isEqualTo,
              " so replaced value with ", replaceWith);
   } else {
