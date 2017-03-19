@@ -28,6 +28,7 @@
 #include <cctype>
 #include <cstring>
 #include <cstdio>
+#include <sstream>
 
 #include "astutil.h"
 #include "driver.h"
@@ -1170,7 +1171,11 @@ void runClang(const char* just_parse_filename) {
   }
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
 
-  clangCCArgs.push_back(ccflags);
+  //split ccflags by spaces
+  std::stringstream ccArgsStream(ccflags);
+  std::string ccArg;
+  while(ccArgsStream >> ccArg)
+      clangCCArgs.push_back(ccArg);
 
   clangCCArgs.push_back("-pthread");
 

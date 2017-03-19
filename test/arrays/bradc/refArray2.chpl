@@ -7,3 +7,5 @@ proc foo(A: []) {
   writeln(A);
   writeln(AA);
 }
+
+foo(A);

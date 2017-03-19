@@ -437,6 +437,9 @@ proc Block.Block(boundingBox: domain,
   if rank != 2 && sparseLayoutType == CSR then 
     compilerError("CSR layout is only supported for 2 dimensional domains");
 
+  if boundingBox.size == 0 then
+    halt("Block() requires a non-empty boundingBox");
+
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
@@ -1119,7 +1122,7 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
       if radata(rlocIdx).shiftedDataChunk(0) != nil {
-        var dataIdx = radata(rlocIdx).getRADDataIndex(myLocArr.stridable, i);
+        var dataIdx = radata(rlocIdx).getDataIndex(i);
         return radata(rlocIdx).getDataElem(dataIdx);
       }
     }

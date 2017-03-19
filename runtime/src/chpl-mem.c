@@ -29,14 +29,10 @@
 
 static int heapInitialized = 0;
 
+
 void chpl_mem_init(void) {
   chpl_mem_layerInit();
   heapInitialized = 1;
-
-  // compute desired shared heap page size
-  // after this point, chpl_getHeapPageSize() will return
-  // a shared heap page size instead of 0.
-  chpl_computeHeapPageSize();
 }
 
 

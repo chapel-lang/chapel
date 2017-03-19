@@ -106,6 +106,8 @@ EXTRA_DIST += \
 			 barrier/array.c \
 			 barrier/log.c \
 			 barrier/sinc.c \
+			 alloc/base.c \
+			 alloc/chapel.c \
 			 affinity/common.c \
 			 affinity/hwloc.c \
 			 affinity/binders.c \

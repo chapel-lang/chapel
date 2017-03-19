@@ -19,6 +19,7 @@
 
 #include "astutil.h"
 #include "baseAST.h"
+#include "CatchStmt.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "expr.h"
@@ -874,7 +875,14 @@ static void removeVoidMoves()
     if (se->symbol()->type != dtVoid)
       continue;
 
-    call->remove();
+    // the RHS of the move could be a function with side effects.
+    // So, if it is a call, just remove the move, but leave the call.
+    if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+      rhsCall->remove();
+      call->replace(rhsCall);
+    } else {
+      call->remove();
+    }
   }
 }
 

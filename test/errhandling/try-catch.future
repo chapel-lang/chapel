@@ -1,4 +1,0 @@
-unimplemented: basic error handling
-
-A function that only throws an Error is called within the
-try block and should be handled by the catch block.

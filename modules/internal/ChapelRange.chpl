@@ -144,7 +144,7 @@ module ChapelRange {
   
     var _low: idxType = 1;                         // lower bound
     var _high: idxType = 0;                        // upper bound
-    var _stride: strType = 1;                      // signed stride of range
+    var _stride = if stridable then 1:strType else _void; // signed stride
     var _alignment: idxType = 0;                   // alignment
     var _aligned : bool = false;
 
@@ -280,7 +280,7 @@ module ChapelRange {
   /* Return the last element in the sequence the range represents */
   inline proc range.last {
     if ! stridable then return _high;
-    else return if _stride > 0 then this.alignedHigh else this.alignedLow;
+    else return if stride > 0 then this.alignedHigh else this.alignedLow;
   }
 
   /* Returns the range's aligned low bound. If the aligned low bound is
@@ -290,7 +290,7 @@ module ChapelRange {
     if ! stridable then return _low;
   
     // Adjust _low upward by the difference between _alignment and _low.
-    return _low + chpl__diffMod(_alignment, _low, _stride);
+    return _low + chpl__diffMod(_alignment, _low, stride);
   }
 
   /* Returns the range's aligned high bound. If the aligned high bound is
@@ -301,7 +301,7 @@ module ChapelRange {
     if ! stridable then return _high;
   
     // Adjust _high downward by the difference between _high and _alignment.
-    return _high - chpl__diffMod(_high, _alignment, _stride);
+    return _high - chpl__diffMod(_high, _alignment, stride);
   }
 
   /* If the sequence represented by the range is empty, return true.  An
@@ -592,7 +592,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                           s || this.stridable,
                           if other.hasLowBound() then other._low else _low,
                           if other.hasHighBound() then other._high else _high,
-                          other._stride,
+                          other.stride,
                           other._alignment,
                           true);
   
@@ -858,10 +858,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     if !s1 && s2 then
       compilerError("type mismatch in assignment of ranges with different stridable parameters"); 
+    else if s1 && s2 then
+      r1._stride = r2.stride;
+    else if s1 then
+      r1._stride = 1;
 
     r1._low = r2._low;
     r1._high = r2._high;
-    r1._stride = r2._stride;
+
     r1._alignment = r2._alignment;
     r1._aligned = r2._aligned;
   }
@@ -893,7 +897,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   
     return new range(resultType, b, s,
                      r._low - i, r._high - i,
-           r._stride : strType, r._alignment - i : resultType, r._aligned);
+           r.stride : strType, r._alignment - i : resultType, r._aligned);
   }
   
   inline proc chpl_check_step_integral(step) {
@@ -1104,7 +1108,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   
     if this.stride != other.stride && this.stride != -other.stride {
   
-      (g, x) = chpl__extendedEuclid(st1, st2);
+      const (tg, tx) = chpl__extendedEuclid(st1, st2);
+      (g, x) = (tg.safeCast(strType), tx.safeCast(strType));
       lcm = st1 / g * st2;        // The LCM of the two strides.
     // The division must be done first to prevent overflow.
   

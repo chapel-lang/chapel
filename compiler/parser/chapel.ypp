@@ -195,6 +195,7 @@
 
 %code {
   #include "build.h"
+  #include "CatchStmt.h"
   #include "DoWhileStmt.h"
   #include "driver.h"
   #include "flex-chapel.h"
@@ -285,10 +286,12 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TAS TATOMIC TBEGIN TBREAK TBY
+%token TALIGN TAS TATOMIC TBEGIN TBREAK TBY TCATCH
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXCEPT TEXPORT TEXTERN
-%token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
+%token TDELETE TDMAPPED TDO TDOMAIN
+%token TELSE TENUM TEXCEPT TEXPORT TEXTERN
+%token TFOR TFORALL TFORWARDING
+%token TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
@@ -377,10 +380,14 @@
 %type <pblockstmt> if_stmt loop_stmt
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
 %type <pblockstmt> private_decl
+%type <pblockstmt> forwarding_stmt
 %type <pblockstmt> extern_block_stmt
 %type <pblockstmt> return_stmt
 %type <pblockstmt> try_stmt
 %type <pblockstmt> throw_stmt
+%type <pblockstmt> catch_stmt_ls
+%type <pexpr>      catch_stmt
+%type <pexpr>      catch_expr
 
 %type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt
 %type <pblockstmt> enum_decl_stmt
@@ -613,11 +620,19 @@ class_level_stmt:
 | enum_decl_stmt
 | type_alias_decl_stmt
 | class_decl_stmt
+| forwarding_stmt
 ;
 
 private_decl:
   fn_decl_stmt
 | var_decl_stmt
+;
+
+forwarding_stmt:
+  TFORWARDING expr TSEMI  { $$ = buildForwardingStmt($2); }
+| TFORWARDING expr TEXCEPT except_ls TSEMI  { $$ = buildForwardingStmt($2, $4, true); }
+| TFORWARDING expr TONLY opt_only_ls TSEMI  { $$ = buildForwardingStmt($2, $4, false); }
+| TFORWARDING var_decl_stmt { $$ = buildForwardingDeclStmt($2); }
 ;
 
 extern_block_stmt:
@@ -704,8 +719,29 @@ if_stmt:
 ;
 
 try_stmt:
-  TTRY     stmt { $$ = TryStmt::build(false, $2); }
-| TTRYBANG stmt { $$ = TryStmt::build(true,  $2); }
+  TTRY     expr            TSEMI         { $$ = TryStmt::build(false, $2); }
+| TTRYBANG expr            TSEMI         { $$ = TryStmt::build(true,  $2); }
+| TTRY     assignment_stmt               { $$ = TryStmt::build(false, $2); }
+| TTRYBANG assignment_stmt               { $$ = TryStmt::build(true,  $2); }
+| TTRY     block_stmt      catch_stmt_ls { $$ = TryStmt::build(false, $2, $3); }
+| TTRYBANG block_stmt      catch_stmt_ls { $$ = TryStmt::build(true,  $2, $3); }
+;
+
+catch_stmt_ls:
+                           { $$ = buildChapelStmt(); }
+| catch_stmt_ls catch_stmt { $1->insertAtTail($2); }
+;
+
+catch_stmt:
+  TCATCH catch_expr block_stmt { $$ = CatchStmt::build($2, $3); }
+;
+
+
+/* TODO: would be nice to parenthesize a catch */
+catch_expr:
+                    { $$ = new DefExpr(newTemp(dtVoid)); } /* for catch { } */
+| ident             { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
+| ident TCOLON expr { $$ = new DefExpr(new VarSymbol($1), NULL, $3);   }
 ;
 
 throw_stmt:

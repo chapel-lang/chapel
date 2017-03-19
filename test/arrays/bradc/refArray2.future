@@ -1,3 +1,0 @@
-bug: Taking 'ref' to array formal not permitted
-
-Since arrays are passed by 'ref' by default, it seems like this should work?

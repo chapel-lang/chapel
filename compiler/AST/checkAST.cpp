@@ -109,7 +109,9 @@ void checkPrimitives()
 
       // These do not survive past resolution.
      case PRIM_INIT:
-     case PRIM_INITIALIZER_SET_FIELD:
+     case PRIM_INIT_FIELD:
+     case PRIM_INIT_VAR:
+
      case PRIM_TYPE_TO_STRING:
      case PRIM_TO_LEADER:
      case PRIM_TO_FOLLOWER:

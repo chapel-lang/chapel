@@ -259,8 +259,11 @@ public:
   bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
   bool            isPrimitive(const char*  primitiveName)                const;
 
+  void            setUnresolvedFunction(const char* name);
+
   FnSymbol*       isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
+  void            setResolvedFunction(FnSymbol* fn);
 
   FnSymbol*       theFnSymbol()                                          const;
 
@@ -269,7 +272,6 @@ public:
   int             numActuals()                                           const;
   Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
-
 
 private:
   GenRet          codegenPrimitive();

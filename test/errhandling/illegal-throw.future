@@ -1,4 +1,0 @@
-unimplemented: compiler error for illegal throw
-
-When a throw is improperly used in a function not marked throws, the
-compiler should raise an error.

@@ -84,8 +84,8 @@ module ArrayViewSlice {
     //
 
     iter these() ref {
-      for i in privDom do
-        yield arr.dsiAccess(i);
+      for elem in chpl__serialViewIter(this, privDom) do
+        yield elem;
     }
 
     iter these(param tag: iterKind) ref
@@ -151,7 +151,7 @@ module ArrayViewSlice {
     inline proc dsiAccess(i) ref {
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(i);
@@ -162,7 +162,7 @@ module ArrayViewSlice {
       where shouldReturnRvalueByValue(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(i);
@@ -173,7 +173,7 @@ module ArrayViewSlice {
       where shouldReturnRvalueByConstRef(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
+        const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(i);
@@ -317,7 +317,7 @@ module ArrayViewSlice {
     //
 
     proc shouldUseIndexCache() param {
-      return (_ArrInstance.isDefaultRectangular() &&
+      return (chpl__isDROrDRView(_ArrInstance) &&
               _containsRCRE());
     }
 
@@ -360,8 +360,6 @@ module ArrayViewSlice {
     inline proc dsiGetBaseDom() {
       return dom;
     }
-
-    proc isDefaultRectangular() param return arr.isDefaultRectangular();
 
     proc _getActualArray() {
       if chpl__isArrayView(arr) {

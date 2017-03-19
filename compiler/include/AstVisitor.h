@@ -50,7 +50,9 @@ class ParamForLoop;
 class ExternBlockStmt;
 class CondStmt;
 class GotoStmt;
+class ForwardingStmt;
 class TryStmt;
+class CatchStmt;
 
 class AstVisitor
 {
@@ -146,6 +148,9 @@ public:
   virtual bool   enterCondStmt       (CondStmt*          node) = 0;
   virtual void   exitCondStmt        (CondStmt*          node) = 0;
 
+  virtual bool   enterForwardingStmt (ForwardingStmt*    node) = 0;
+  virtual void   exitForwardingStmt  (ForwardingStmt*    node) = 0;
+
   virtual void   visitEblockStmt     (ExternBlockStmt*   node) = 0;
 
   virtual bool   enterGotoStmt       (GotoStmt*          node) = 0;
@@ -153,6 +158,9 @@ public:
 
   virtual bool   enterTryStmt        (TryStmt*           node) = 0;
   virtual void   exitTryStmt         (TryStmt*           node) = 0;
+
+  virtual bool   enterCatchStmt      (CatchStmt*         node) = 0;
+  virtual void   exitCatchStmt       (CatchStmt*         node) = 0;
 };
 
 #endif

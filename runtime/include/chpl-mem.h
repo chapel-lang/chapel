@@ -29,6 +29,7 @@
 #include "arg.h"
 #include "chpl-comm.h"
 #include "chpl-mem-hook.h"
+#include "chplsys.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-tasks.h"
@@ -64,6 +65,10 @@ void chpl_mem_exit(void);
 
 int chpl_mem_inited(void);
 
+// predeclared here because we need them below; actual definitions
+// are near the end
+static chpl_bool chpl_mem_alloc_localizes(void);
+static size_t chpl_mem_localizationThreshold(void);
 
 static inline
 void* chpl_mem_allocMany(size_t number, size_t size,
@@ -133,9 +138,17 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
                            int32_t lineno, int32_t filename) {
   void* p = chpl_mem_allocMany(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                                lineno, filename);
-  if (localizeSubchunks || isActualSublocID(subloc)) {
-    chpl_topo_setMemLocality(p, nmemb * eltSize,
-                             true, localizeSubchunks, subloc);
+  if (isActualSublocID(subloc)) {
+    if (!chpl_mem_alloc_localizes()
+        && nmemb * eltSize >= chpl_mem_localizationThreshold()) {
+      chpl_topo_setMemLocality(p, nmemb * eltSize, true, subloc);
+    }
+  }
+  else if (localizeSubchunks) {
+    if (!chpl_mem_alloc_localizes()
+        && nmemb * eltSize >= chpl_mem_localizationThreshold()) {
+      chpl_topo_setMemSubchunkLocality(p, nmemb * eltSize, true, NULL);
+    }
   }
   return p;
 }
@@ -210,6 +223,29 @@ void chpl_mem_layerExit(void);
 void* chpl_mem_layerAlloc(size_t, int32_t lineno, int32_t filename);
 void* chpl_mem_layerRealloc(void*, size_t, int32_t lineno, int32_t filename);
 void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
+
+//
+// Does the implementation provide allocated memory that is already
+// localized to the calling sublocale?  That is, when the locale model
+// has sublocales and an allocation is done while running on one, will
+// the allocated memory be localized to that sublocale?  (Note that the
+// answer doesn't have to be completely truthful; it really only matters
+// for allocations large enough that we'll try to force localization
+// where chpl_mem_doLocalization is true, above.)
+//
+#ifndef CHPL_MEM_IMPL_ALLOC_LOCALIZES
+  #define CHPL_MEM_IMPL_ALLOC_LOCALIZES() false
+#endif
+
+static inline
+chpl_bool chpl_mem_alloc_localizes(void) {
+  return CHPL_MEM_IMPL_ALLOC_LOCALIZES();
+}
+
+static inline
+size_t chpl_mem_localizationThreshold(void) {
+  return chpl_topo_getNumNumaDomains() * 2 * chpl_getHeapPageSize();
+}
 
 #else // LAUNCHER
 

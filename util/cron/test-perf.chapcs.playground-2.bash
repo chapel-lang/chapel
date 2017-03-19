@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground-2"
 
-# Test performance of qthreads 1.12 using chapel's allocator
+# Test performance of limiting qthread memory pools 
 GITHUB_USER=ronawho
-GITHUB_BRANCH=qt-use-chpl-alloc
-SHORT_NAME=qt-chpl-alloc
-START_DATE=03/09/17
+GITHUB_BRANCH=limit-qt-pool-size
+SHORT_NAME=limit-qt-pool-size
+START_DATE=03/18/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

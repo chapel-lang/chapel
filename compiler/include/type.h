@@ -161,6 +161,44 @@ enum Qualifier {
 class QualifiedType {
 public:
 
+  // Static methods for working with Qualifier
+  static bool qualifierIsConst(Qualifier q)
+  {
+    return (q == QUAL_CONST ||
+            q == QUAL_CONST_REF ||
+            q == QUAL_CONST_VAL ||
+            q == QUAL_CONST_NARROW_REF ||
+            q == QUAL_CONST_WIDE_REF);
+  }
+
+  static Qualifier qualifierToConst(Qualifier q)
+  {
+    switch (q) {
+      case QUAL_CONST:
+      case QUAL_CONST_REF:
+      case QUAL_CONST_NARROW_REF:
+      case QUAL_CONST_WIDE_REF:
+      case QUAL_CONST_VAL:
+      case QUAL_PARAM:
+        // already const
+        return q;
+      case QUAL_UNKNOWN:
+        return QUAL_CONST;
+      case QUAL_REF:
+        return QUAL_CONST_REF;
+      case QUAL_VAL:
+        return QUAL_CONST_VAL;
+      case QUAL_NARROW_REF:
+        return QUAL_CONST_NARROW_REF;
+      case QUAL_WIDE_REF:
+        return QUAL_CONST_WIDE_REF;
+      // no default: update as Qualifier is updated
+    }
+    return QUAL_UNKNOWN;
+  }
+
+  // QualifiedType methods
+
   explicit QualifiedType(Type* type)
     : _type(type), _qual(QUAL_UNKNOWN)
   {
@@ -196,11 +234,7 @@ public:
     return isRef() || isWideRef();
   }
   bool isConst() const {
-    return (_qual == QUAL_CONST ||
-            _qual == QUAL_CONST_REF ||
-            _qual == QUAL_CONST_VAL ||
-            _qual == QUAL_CONST_NARROW_REF ||
-            _qual == QUAL_CONST_WIDE_REF);
+    return qualifierIsConst(_qual);
   }
   // TODO: isImmutable
 
@@ -215,31 +249,7 @@ public:
     return QualifiedType(QUAL_VAL, _type->getValType());
   }
 
-  static Qualifier qualifierToConst(Qualifier q)
-  {
-    switch (q) {
-      case QUAL_CONST:
-      case QUAL_CONST_REF:
-      case QUAL_CONST_NARROW_REF:
-      case QUAL_CONST_WIDE_REF:
-      case QUAL_CONST_VAL:
-      case QUAL_PARAM:
-        // already const
-        return q;
-      case QUAL_UNKNOWN:
-        return QUAL_CONST;
-      case QUAL_REF:
-        return QUAL_CONST_REF;
-      case QUAL_VAL:
-        return QUAL_CONST_VAL;
-      case QUAL_NARROW_REF:
-        return QUAL_CONST_NARROW_REF;
-      case QUAL_WIDE_REF:
-        return QUAL_CONST_WIDE_REF;
-      // no default: update as Qualifier is updated
-    }
-    return QUAL_UNKNOWN;
-  }
+
 
   QualifiedType toConst() {
     return QualifiedType(qualifierToConst(_qual), _type);
@@ -421,6 +431,9 @@ public:
   // Attached only to iterator class/records
   IteratorInfo*               iteratorInfo;
 
+  // What to delegate to with 'forwarding'
+  AList                       forwardingTo;
+
   const char*                 doc;
 
 private:
@@ -525,8 +538,11 @@ TYPE_EXTERN PrimitiveType* dtCFnPtr;   // a C function pointer (unowned)
 TYPE_EXTERN AggregateType* dtOnBundleRecord;
 TYPE_EXTERN AggregateType* dtTaskBundleRecord;
 
+TYPE_EXTERN AggregateType* dtError;
+
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
+
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
@@ -573,6 +589,12 @@ bool isArrayClass(Type* type);
 
 bool isString(Type* type);
 bool isUserDefinedRecord(Type* type);
+
+bool isPrimitiveScalar(Type* type);
+bool isNonGenericClass(Type* type);
+
+bool isNonGenericClassWithInitializers (Type* type);
+bool isNonGenericRecordWithInitializers(Type* type);
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);

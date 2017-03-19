@@ -54,27 +54,27 @@ module LocaleModel {
   //
   class NumaDomain : AbstractLocaleModel {
     const sid: chpl_sublocID_t;
-    const name: string;
+    const ndName: string; // note: locale provides `proc name`
 
     proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
     proc chpl_localeid() {
       return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
                                 sid);
     }
-    proc chpl_name() return name;
+    proc chpl_name() return ndName;
 
     proc NumaDomain() {
     }
 
     proc NumaDomain(_sid, _parent) {
       sid = _sid;
-      name = "ND"+sid;
+      ndName = "ND"+sid;
       parent = _parent;
     }
 
     proc writeThis(f) {
       parent.writeThis(f);
-      f <~> '.'+name;
+      f <~> '.'+ndName;
     }
 
     proc getChildCount(): int { return 0; }

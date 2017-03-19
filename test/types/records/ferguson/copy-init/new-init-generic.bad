@@ -1,6 +1,0 @@
-new-init-generic.chpl:6: In initializer:
-new-init-generic.chpl:6: error: can't omit initialization of field "x", no type or default value provided
-new-init-generic.chpl:12: In initializer:
-new-init-generic.chpl:12: error: can't omit initialization of field "x", no type or default value provided
-new-init-generic.chpl:6: In initializer:
-new-init-generic.chpl:9: error: 'super' undeclared (first use this function)

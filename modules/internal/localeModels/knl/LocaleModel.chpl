@@ -173,13 +173,13 @@ module LocaleModel {
   // Memory (DDR or MCDRAM?)
   class MemoryLocale : AbstractLocaleModel {
     const sid: chpl_sublocID_t;
-    const name: string;
+    const mlName: string; // note: locale provides `proc name`
 
     proc chpl_id() return parent.chpl_id(); // top-level node id
     proc chpl_localeid() {
       return chpl_buildLocaleID(parent.chpl_id(), sid);
     }
-    proc chpl_name() return name;
+    proc chpl_name() return mlName;
 
     //
     // Support for different types of memory:
@@ -214,13 +214,13 @@ module LocaleModel {
         kindstr = "DDR";
       else if kind == memoryKindMCDRAM() then
         kindstr = "MCDRAM";
-      name = kindstr+whichNuma;
+      mlName = kindstr+whichNuma;
       parent = _parent;
     }
 
     proc writeThis(f) {
       parent.writeThis(f);
-      f <~> '.'+name;
+      f <~> '.'+mlName;
     }
 
     proc getChildCount(): int { return 0; }
@@ -232,7 +232,7 @@ module LocaleModel {
   //
   class NumaDomain : AbstractLocaleModel {
     const sid : chpl_sublocID_t;
-    const name : string;
+    const ndName : string; // note: locale provides `proc name`
     const ddr : MemoryLocale;
     const hbm : MemoryLocale;
 
@@ -240,7 +240,7 @@ module LocaleModel {
     proc chpl_localeid() {
       return chpl_buildLocaleID(parent.chpl_id(), sid);
     }
-    proc chpl_name() return name;
+    proc chpl_name() return ndName;
 
     //
     // Support for different types of memory:
@@ -270,7 +270,7 @@ module LocaleModel {
       var numSublocales = chpl_task_getNumSublocales();
       sid = packSublocID(numSublocales, _sid, defaultMemoryKind())
               : chpl_sublocID_t;
-      name = "ND"+_sid;
+      ndName = "ND"+_sid;
       parent = _parent;
 
       ddr = new MemoryLocale(sid, this);
@@ -292,7 +292,7 @@ module LocaleModel {
 
     proc writeThis(f) {
       parent.writeThis(f);
-      f <~> '.'+name;
+      f <~> '.'+ndName;
     }
 
     proc getChildCount(): int { return 0; }

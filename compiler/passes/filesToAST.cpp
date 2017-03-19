@@ -60,7 +60,8 @@ static WellKnownType sWellKnownTypes[] = {
   {"BaseDist",           &dtDist,          true},
   {"chpl_main_argument", &dtMainArgument, false},
   {"chpl_comm_on_bundle_t", &dtOnBundleRecord,   false},
-  {"chpl_task_bundle_t",    &dtTaskBundleRecord, false}
+  {"chpl_task_bundle_t",    &dtTaskBundleRecord, false},
+  {"Error",                 &dtError,            true}
 };
 
 
@@ -82,7 +83,8 @@ static WellKnownFn sWellKnownFns[] = {
   {"_build_tuple",            &gBuildTupleType, FLAG_BUILD_TUPLE_TYPE},
   {"_build_tuple_noref",      &gBuildTupleTypeNoRef, FLAG_BUILD_TUPLE_TYPE},
   {"*",                       &gBuildStarTupleType, FLAG_BUILD_TUPLE_TYPE},
-  {"_build_star_tuple_noref", &gBuildStarTupleTypeNoRef, FLAG_BUILD_TUPLE_TYPE}
+  {"_build_star_tuple_noref", &gBuildStarTupleTypeNoRef, FLAG_BUILD_TUPLE_TYPE},
+  {"chpl_delete_error",       &gChplDeleteError, FLAG_UNKNOWN}
 };
 
 void parse() {

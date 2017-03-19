@@ -26,25 +26,31 @@ class TryStmt : public Stmt
 {
 
 public:
-  static BlockStmt*   build(bool tryBang, BlockStmt* body);
 
-                      TryStmt(bool tryBang, BlockStmt* body);
+  static BlockStmt*   build(bool tryBang, Expr*      expr);
+  static BlockStmt*   build(bool tryBang, BlockStmt* body);
+  static BlockStmt*   build(bool tryBang, BlockStmt* body, BlockStmt* catches);
+
+                      TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches);
                       ~TryStmt();
   BlockStmt*          body() const;
   bool                tryBang() const;
 
   void                accept(AstVisitor* visitor);
-  Expr*               copy(SymbolMap* map = NULL, bool internal = false);
-  Expr*               copyInner(SymbolMap* map);
   void                replaceChild(Expr* old_ast, Expr* new_ast);
   Expr*               getFirstChild();
   Expr*               getFirstExpr();
   Expr*               getNextExpr(Expr* expr);
+  void                verify();
   GenRet              codegen();
+  DECLARE_COPY(TryStmt);
+
+  // intended to be private, but astutil.h macros need public access
+  BlockStmt*          _body;
+  AList               _catches;
 
 private:
   bool                _tryBang;
-  BlockStmt*          _body;
 
   static BlockStmt*   buildChplStmt(Expr* expr);
                       TryStmt();
