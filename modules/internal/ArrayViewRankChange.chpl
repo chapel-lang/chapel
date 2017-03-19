@@ -42,16 +42,17 @@ module ArrayViewRankChange {
     const collapsedDim;
     const idx;  // Does the dist really need to store this?
 
-    proc dsiNewRectangularDom(param rank, type idxType, param stridable) {
+    proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
       //      compilerWarning("rank arg = " + rank);
       //      compilerWarning("downrank = " + downrank);
-      var newarr = new ArrayViewRankChangeDom(rank=rank,
+      var newdom = new ArrayViewRankChangeDom(rank=rank,
                                               idxType=idxType,
                                               stridable=stridable,
                                               collapsedDim=collapsedDim,
                                               idx=idx,
                                               dist=this);
-      return newarr;
+      newdom.dsiSetIndices(inds);
+      return newdom;
     }
 
     //

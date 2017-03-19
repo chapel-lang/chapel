@@ -750,12 +750,13 @@ proc DimensionalDom.dsiSerialWrite(f): void {
 
 // create a new domain mapped with this distribution
 proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
-                                          type idxType,
-                                          param stridable: bool)
+                                            type idxType,
+                                            param stridable: bool,
+                                            inds)
 //  : DimensionalDom(rank, idxType, stridable, this.type, ...)
 {
   _traceddd(this, ".dsiNewRectangularDom ",
-           (rank, idxType:string, stridable));
+            (rank, idxType:string, stridable, inds));
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank:string, " dimensions");
@@ -794,6 +795,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
       locDdesc = new LocDimensionalDom(result.stoDomainT,
                        doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
                        doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
+  dsiSetIndices(inds);
   return result;
 }
 

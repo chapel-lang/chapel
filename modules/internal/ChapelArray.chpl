@@ -895,8 +895,13 @@ module ChapelArray {
     }
 
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
+      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+      return newRectangularDom(rank, idxType, stridable, ranges);
+    }
+
+    proc newRectangularDom(param rank: int, type idxType, param stridable: bool, ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
       //      var myC = new CCC();
-      var x = _value.dsiNewRectangularDom(rank, idxType, stridable);
+      var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
       //      var myD = new DDD();
       if x.linksDistribution() {
         _value.add_dom(x);
@@ -1119,9 +1124,7 @@ module ChapelArray {
       for param i in 1..rank {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
-      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d.setIndices(r);
-      return d;
+      return  _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, r));
     }
 
     proc this(i: integral ... rank) {
@@ -1469,6 +1472,7 @@ module ChapelArray {
         }
       }
 
+      // TODO: Change all calls like this over to fold setIndices in!!!
       var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
       d.setIndices(ranges);
       return d;

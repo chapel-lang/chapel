@@ -306,14 +306,14 @@ proc BlockCyclic._locsize {
 // create a new rectangular domain over this distribution
 //
 proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
-                           param stridable: bool) {
+                                      param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("BlockCyclic domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("BlockCyclic domain rank does not match distribution's");
 
   var dom = new BlockCyclicDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
-  dom.setup();
+  dom.dsiSetIndices(inds);
   return dom;
 }
 

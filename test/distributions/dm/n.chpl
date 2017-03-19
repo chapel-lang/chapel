@@ -299,11 +299,12 @@ proc WrapperRectDom.dsiGetIndices()  return whole.dims();
 //== creation, SetIndices, Access
 
 proc WrapperDist.dsiNewRectangularDom(param rank: int,
-                                          type idxType,
-                                          param stridable: bool)
+                                      type idxType,
+                                      param stridable: bool,
+                                      inds)
 {
   const origdom = origDist.dsiNewRectangularDom(this.origRank,
-                                                idxType, stridable);
+                                                idxType, stridable, inds);
   ensureHasBeenPrivatized(this);
   ensureHasBeenPrivatized(origdom);
 
@@ -312,6 +313,7 @@ proc WrapperDist.dsiNewRectangularDom(param rank: int,
                                     stridable=stridable, dist=this,
                                     origDom=origdom);
   reportNewDom("dsiNewRectangularDom", result);
+  result.dsiSetIndices(inds);
   return result;
 }
 

@@ -353,10 +353,11 @@ proc ReplicatedDist.dsiClone(): this.type {
 // create a new domain mapped with this distribution
 proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
                                          type idxType,
-                                         param stridable: bool)
+                                         param stridable: bool,
+                                         inds)
 {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiNewRectangularDom ",
-                                      (rank, idxType:string, stridable));
+                                      (rank, idxType:string, stridable, inds));
 
   // Have to call the default constructor because we need to initialize 'dist'
   // prior to initializing 'localDoms' (which needs a non-nil value for 'dist'.
@@ -367,6 +368,7 @@ proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
   coforall (loc, locDom) in zip(targetLocales, result.localDoms) do
     on loc do
       locDom = new LocReplicatedDom(rank, idxType, stridable);
+  dsiSetIndices(inds);
 
   return result;
 }

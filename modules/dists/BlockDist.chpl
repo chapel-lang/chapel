@@ -529,7 +529,7 @@ proc Block.dsiDisplayRepresentation() {
 }
 
 proc Block.dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool) {
+                                param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
@@ -537,7 +537,7 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 
   var dom = new BlockDom(rank=rank, idxType=idxType, dist=this,
       stridable=stridable, sparseLayoutType=sparseLayoutType);
-  dom.setup();
+  dom.dsiSetIndices(inds);
   if debugBlockDist {
     writeln("Creating new Block domain:");
     dom.dsiDisplayRepresentation();

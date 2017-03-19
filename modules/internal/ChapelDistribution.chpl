@@ -90,11 +90,13 @@ module ChapelDistribution {
       return (count==0);
     }
 
-    inline proc add_dom(x:BaseDom) {
+    inline proc add_dom(x:BaseDom, locking=true) {
       on this {
-        _lock_doms();
+        if locking then
+          _lock_doms();
         _doms.append(x);
-        _unlock_doms();
+        if locking then
+          _unlock_doms();
       }
     }
   
@@ -110,7 +112,7 @@ module ChapelDistribution {
       _domsLock.clear();
     }
   
-    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
+    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
   

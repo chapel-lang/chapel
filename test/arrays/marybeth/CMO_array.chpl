@@ -1,6 +1,8 @@
 class CMODist : BaseDist {
-  proc dsiNewRectangularDom(param rank: int, type dimensional_index_type, param stridable: bool) {
-    return new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable, dist=this);
+  proc dsiNewRectangularDom(param rank: int, type dimensional_index_type, param stridable: bool, inds) {
+    const dom = new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable, dist=this);
+    dom.dsiSetIndices(inds);
+    return dom;
   }
 
   proc dsiClone() return this;

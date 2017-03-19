@@ -475,14 +475,14 @@ proc Stencil.dsiDisplayRepresentation() {
 }
 
 proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool) {
+                                  param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Stencil domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Stencil domain rank does not match distribution's");
 
   var dom = new StencilDom(rank=rank, idxType=idxType, dist=this, stridable=stridable, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
-  dom.setup();
+  dom.dsiSetIndices(inds);
   if debugStencilDist {
     writeln("Creating new Stencil domain:");
     dom.dsiDisplayRepresentation();

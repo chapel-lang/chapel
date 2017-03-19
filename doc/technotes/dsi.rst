@@ -197,11 +197,11 @@ class ``GlobalDomain``
   Returns this domain's domain map. This procedure should be provided as shown.
   (Exception: see ``dsiLinksDistribution()``.)
 
-.. method:: proc GlobalDistribution.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) : GlobalDomain(rank, idxType, stridable)
+.. method:: proc GlobalDistribution.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) : GlobalDomain(rank, idxType, stridable)
 
-  This method is invoked when the Chapel program is creating an uninitialized
-  domain value of the type domain(rank, idxType, stridable)
-  mapped using the domain map `this`.
+  This method is invoked when the Chapel program is creating a domain
+  value of the type domain(rank, idxType, stridable) mapped using the
+  domain map `this` with initial indices `inds`.
 
   This method returns a new ``GlobalDomain`` instance that will correspond to
   that Chapel domain value, i.e., be that value's runtime representation.

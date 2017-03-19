@@ -48,8 +48,11 @@ module DefaultRectangular {
   inline proc defRectSimpleDData param return !localeModelHasSublocales;
 
   class DefaultDist: BaseDist {
-    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
-      return new DefaultRectangularDom(rank, idxType, stridable, this);
+    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+      const dom = new DefaultRectangularDom(rank, idxType, stridable, this);
+      dom.dsiSetIndices(inds);
+      return dom;
+    }
 
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
       return new DefaultAssociativeDom(idxType, parSafe, this);
