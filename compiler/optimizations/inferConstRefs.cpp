@@ -273,6 +273,8 @@ static bool isSafeRefPrimitive(SymExpr* use) {
     case PRIM_PTR_NOTEQUAL:
     case PRIM_SIZEOF:
     case PRIM_WIDE_GET_NODE:
+    case PRIM_GET_MEMBER_VALUE:
+    case PRIM_GET_SVEC_MEMBER_VALUE:
       return true;
     default:
       return false;
