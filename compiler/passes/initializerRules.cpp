@@ -142,12 +142,6 @@ void initMethodPreNormalize(FnSymbol* fn) {
     // Insert phase 2 analysis here
 
 
-    // Mark the initializer as void return
-    Symbol* voidType = dtVoid->symbol;
-
-    fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
-
-
     // If this is a non-generic class then create a type method
     // to wrap this initializer
     if (isClass(at) == true && at->isGeneric() == false) {
