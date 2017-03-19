@@ -383,8 +383,11 @@ Expr* modifyFieldAccess(Expr* fieldAccess, DefExpr* curField) {
 
 
   SET_LINENO(fieldAccess);
-  CallExpr* replacement = new CallExpr(PRIM_INITIALIZER_SET_FIELD, argThis,
+
+  CallExpr* replacement = new CallExpr(PRIM_INIT_FIELD,
+                                       argThis,
                                        new_CStringSymbol(curField->sym->name));
+
   for_actuals(actual, call) {
     if (actual == call->get(1)) {
       // The first arg is the this.field access, which we have already
@@ -481,9 +484,9 @@ static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
                    nextField);
 
   } else {
-    Symbol*   _this      = toFnSymbol(next->parentSymbol)->_this;
+    Symbol*   _this   = toFnSymbol(next->parentSymbol)->_this;
 
-    CallExpr* newInit = new CallExpr(PRIM_INITIALIZER_SET_FIELD,
+    CallExpr* newInit = new CallExpr(PRIM_INIT_FIELD,
                                      new SymExpr(_this),
                                      new_CStringSymbol(nextField));
 

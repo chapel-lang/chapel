@@ -239,9 +239,9 @@ static void resolveTupleExpand(CallExpr* call);
 static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
                                         SymExpr* rhs);
 static void resolveSetMember(CallExpr* call);
+static void resolveInitField(CallExpr* call);
 static void resolveInitVar(CallExpr* call);
 static void resolveMove(CallExpr* call);
-static void resolveFieldInit(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static bool formalRequiresTemp(ArgSymbol* formal);
@@ -4605,22 +4605,21 @@ void resolveCall(CallExpr* call) {
       resolveSetMember(call);
       break;
 
+    case PRIM_INIT:
+    case PRIM_NO_INIT:
+    case PRIM_TYPE_INIT:
+      resolveDefaultGenericType(call);
+      break;
+
+    case PRIM_INIT_FIELD:
+      resolveInitField(call);
+      break;
     case PRIM_INIT_VAR:
       resolveInitVar(call);
       break;
 
     case PRIM_MOVE:
       resolveMove(call);
-      break;
-
-    case PRIM_INITIALIZER_SET_FIELD:
-      resolveFieldInit(call);
-      break;
-
-    case PRIM_INIT:
-    case PRIM_NO_INIT:
-    case PRIM_TYPE_INIT:
-      resolveDefaultGenericType(call);
       break;
 
     case PRIM_COERCE:
@@ -5605,12 +5604,12 @@ static void resolveMove(CallExpr* call) {
 //
 // This function is a combination of resolveMove and resolveSetMember
 static void
-resolveFieldInit(CallExpr* call) {
+resolveInitField(CallExpr* call) {
   if (call->id == breakOnResolveID )
     gdbShouldBreakHere();
 
   INT_ASSERT(call->argList.length == 3);
-  // PRIM_INITIALIZER_SET_FIELD contains three args:
+  // PRIM_INIT_FIELD contains three args:
   // fn->_this, the name of the field, and the value/type it is to be given
 
   SymExpr* rhs = toSymExpr(call->get(3)); // the value/type to give the field
