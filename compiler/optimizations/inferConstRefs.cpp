@@ -273,8 +273,6 @@ static bool isSafeRefPrimitive(SymExpr* use) {
     case PRIM_PTR_NOTEQUAL:
     case PRIM_SIZEOF:
     case PRIM_WIDE_GET_NODE:
-    case PRIM_GET_MEMBER_VALUE:
-    case PRIM_GET_SVEC_MEMBER_VALUE:
       return true;
     default:
       return false;
@@ -301,10 +299,15 @@ static bool canRHSBeConstRef(CallExpr* parent, SymExpr* use) {
   CallExpr* rhs = toCallExpr(parent->get(2));
   INT_ASSERT(rhs);
   switch (rhs->primitive->tag) {
-    case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
-    case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_SVEC_MEMBER_VALUE:
+      if (LHS->isRef() == false &&
+          isClass(LHS->typeInfo()) == false) {
+        return true;
+      }
+      // fallthrough
+    case PRIM_GET_MEMBER:
+    case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG:
     case PRIM_ADDR_OF:
