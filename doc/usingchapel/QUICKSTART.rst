@@ -16,7 +16,7 @@ enable more features, such as distributed memory execution.
 0) See `doc/prereqs.rst`_ for more information about system tools and
    packages you may need to have installed to build and run Chapel.
 
-1) If you don't already have Chapel 1.14, see
+1) If you don't already have Chapel 1.15, see
    http://chapel.cray.com/download.html .
 
 2) If you are using a source release, build Chapel in a *quickstart*
@@ -28,14 +28,14 @@ enable more features, such as distributed memory execution.
 
       .. code-block:: bash
 
-         tar xzf chapel-1.14.0.tar.gz
+         tar xzf chapel-1.15.0.tar.gz
 
    b. Make sure that your shell is in the directory containing
       QUICKSTART.rst, for example:
 
       .. code-block:: bash
 
-         cd chapel-1.14.0
+         cd chapel-1.15.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than bash,
@@ -178,7 +178,7 @@ What's next?
 .. _doc/prereqs.rst: prereqs.html
 .. _doc/multilocale.rst: multilocale.html
 .. _platforms: ../platforms/index.html
-.. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.14/
+.. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.15/
 .. _doc/chplenv.rst: chplenv.html
 .. _doc/building.rst: building.html
 .. _doc/compiling.rst: compiling.html
