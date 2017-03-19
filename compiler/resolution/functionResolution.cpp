@@ -5308,6 +5308,117 @@ static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
 
 /************************************* | **************************************
 *                                                                             *
+* Resolves calls inserted into initializers during Phase 1,                   *
+* to fully determine the instantiated type.                                   *
+*                                                                             *
+* This function is a combination of resolveMove and resolveSetMember          *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveInitField(CallExpr* call) {
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
+  INT_ASSERT(call->argList.length == 3);
+  // PRIM_INIT_FIELD contains three args:
+  // fn->_this, the name of the field, and the value/type it is to be given
+
+  SymExpr* rhs = toSymExpr(call->get(3)); // the value/type to give the field
+
+  // Get the field name.
+  SymExpr* sym = toSymExpr(call->get(2));
+  if (!sym)
+    INT_FATAL(call, "bad initializer set field primitive");
+  VarSymbol* var = toVarSymbol(sym->symbol());
+  if (!var || !var->immediate)
+    INT_FATAL(call, "bad initializer set field primitive");
+  const char* name = var->immediate->v_string;
+
+  // Get the type
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
+  if (!ct)
+    INT_FATAL(call, "bad initializer set field primitive");
+
+  Symbol* fs = NULL;
+  int index = 1;
+  for_fields(field, ct) {
+    if (!strcmp(field->name, name)) {
+      fs = field; break;
+    }
+    index++;
+  }
+
+  if (!fs)
+    INT_FATAL(call, "bad initializer set field primitive");
+
+  Type* t = rhs->typeInfo();
+  // I think this never happens, so can be turned into an assert. <hilde>
+  if (t == dtUnknown)
+    INT_FATAL(call, "Unable to resolve field type");
+
+  if (t == dtNil && fs->type == dtUnknown)
+    USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
+  if (fs->type == dtUnknown) {
+    // Update the type of the field.  If necessary, update to a new
+    // instantiation of the overarching type (and replaces references to the
+    // fields from the old instantiation
+    if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
+        fs->hasFlag(FLAG_PARAM) ||
+        (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL)) {
+      AggregateType* instantiate = ct->getInstantiation(rhs, index);
+      if (instantiate != ct) {
+        // TODO: make this set of operations a helper function I can call
+        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(parentFn);
+        INT_ASSERT(parentFn->_this);
+        parentFn->_this->type = instantiate;
+
+        SymbolMap fieldTranslate;
+        for (int i = 1; i <= instantiate->fields.length; i++) {
+          fieldTranslate.put(ct->getField(i), instantiate->getField(i));
+        }
+        update_symbols(parentFn, &fieldTranslate);
+
+        ct = instantiate;
+        fs = instantiate->getField(index);
+      }
+    } else {
+      // The field is not generic.
+      if (fs->defPoint->exprType == NULL) {
+        fs->type = t;
+      } else if (fs->defPoint->exprType) {
+        fs->type = fs->defPoint->exprType->typeInfo();
+      }
+    }
+  }
+
+  if (t != fs->type && t != dtNil && t != dtObject) {
+    Symbol*   actual = rhs->symbol();
+    FnSymbol* fn     = toFnSymbol(call->parentSymbol);
+
+    if (canCoerceTuples(t, actual, fs->type, fn)) {
+      // Add a PRIM_MOVE so that insertCasts will take care of it later.
+      VarSymbol* tmp = newTemp("coerce_elt", fs->type);
+
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
+
+      call->insertAtTail(tmp);
+
+    } else {
+      USR_FATAL(userCall(call),
+                "cannot assign expression of type %s to field of type %s",
+                toString(t),
+                toString(fs->type));
+    }
+  }
+
+  call->primitive = primitives[PRIM_SET_MEMBER];
+}
+
+/************************************* | **************************************
+*                                                                             *
 * This handles expressions of the form                                        *
 *      CallExpr(PRIM_INIT_VAR, dst, src)                                      *
 *                                                                             *
@@ -5597,93 +5708,6 @@ static void resolveMove(CallExpr* call) {
       }
     }
   }
-}
-
-// Resolves calls inserted into initializers during Phase 1, to fully determine
-// the instantiated type
-//
-// This function is a combination of resolveMove and resolveSetMember
-static void
-resolveInitField(CallExpr* call) {
-  if (call->id == breakOnResolveID )
-    gdbShouldBreakHere();
-
-  INT_ASSERT(call->argList.length == 3);
-  // PRIM_INIT_FIELD contains three args:
-  // fn->_this, the name of the field, and the value/type it is to be given
-
-  SymExpr* rhs = toSymExpr(call->get(3)); // the value/type to give the field
-
-  // Get the field name.
-  SymExpr* sym = toSymExpr(call->get(2));
-  if (!sym)
-    INT_FATAL(call, "bad initializer set field primitive");
-  VarSymbol* var = toVarSymbol(sym->symbol());
-  if (!var || !var->immediate)
-    INT_FATAL(call, "bad initializer set field primitive");
-  const char* name = var->immediate->v_string;
-
-  // Get the type
-  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
-  if (!ct)
-    INT_FATAL(call, "bad initializer set field primitive");
-
-  Symbol* fs = NULL;
-  int index = 1;
-  for_fields(field, ct) {
-    if (!strcmp(field->name, name)) {
-      fs = field; break;
-    }
-    index++;
-  }
-
-  if (!fs)
-    INT_FATAL(call, "bad initializer set field primitive");
-
-  Type* t = rhs->typeInfo();
-  // I think this never happens, so can be turned into an assert. <hilde>
-  if (t == dtUnknown)
-    INT_FATAL(call, "Unable to resolve field type");
-
-  if (t == dtNil && fs->type == dtUnknown)
-    USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
-  if (fs->type == dtUnknown) {
-    // Update the type of the field.  If necessary, update to a new
-    // instantiation of the overarching type (and replaces references to the
-    // fields from the old instantiation
-    if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
-        fs->hasFlag(FLAG_PARAM) ||
-        (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL)) {
-      AggregateType* instantiate = ct->getInstantiation(rhs, index);
-      if (instantiate != ct) {
-        // TODO: make this set of operations a helper function I can call
-        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(parentFn);
-        INT_ASSERT(parentFn->_this);
-        parentFn->_this->type = instantiate;
-
-        SymbolMap fieldTranslate;
-        for (int i = 1; i <= instantiate->fields.length; i++) {
-          fieldTranslate.put(ct->getField(i), instantiate->getField(i));
-        }
-        update_symbols(parentFn, &fieldTranslate);
-
-        ct = instantiate;
-        fs = instantiate->getField(index);
-      }
-    } else {
-      // The field is not generic.
-      if (fs->defPoint->exprType == NULL) {
-        fs->type = t;
-      } else if (fs->defPoint->exprType) {
-        fs->type = fs->defPoint->exprType->typeInfo();
-      }
-    }
-  }
-
-  handleSetMemberTypeMismatch(t, fs, call, rhs);
-
-  call->primitive = primitives[PRIM_SET_MEMBER];
 }
 
 /************************************* | **************************************
