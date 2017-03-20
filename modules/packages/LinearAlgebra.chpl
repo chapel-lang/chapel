@@ -388,20 +388,16 @@ proc dot(a, B: []) where isNumeric(a) {
 }
 
 
-pragma "no doc"
 /* Explicit matrix-(matrix|vector) multiplication */
 private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   // matrix-vector
   if Adom.rank == 2 && Bdom.rank == 1 then
-    // TODO -- assert shapes are correct
     return _matvecMult(A, B);
   // vector-matrix
   else if Adom.rank == 1 && Bdom.rank == 2 then
-    // TODO -- assert shapes are correct
-    return _matvecMult(B, A);
+    return _matvecMult(B, A, trans=true);
   // matrix-matrix
   else if Adom.rank == 2 && Bdom.rank == 2 then
-    // TODO -- assert shapes are correct
     return _matmatMult(A, B);
   else
     compilerError("Rank sizes are not 1 or 2");
@@ -410,14 +406,19 @@ private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
 pragma "no doc"
 /* matrix-vector multiplication */
-private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType)
+private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   where isBLASType(eltType)
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Rank sizes are not 2 and 1");
+  if Adom.shape(2) != Xdom.shape(1) then
+    halt("Mismatched shape in matrix-vector multiplication");
+
+  var op = if trans then BLAS.Op.T
+           else BLAS.Op.N;
 
   var Y: [Xdom] eltType;
-  gemv(A, X, Y, 1:eltType, 0:eltType);
+  gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
   return Y;
 }
 
@@ -429,6 +430,8 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Rank sizes are not 2");
+  if Adom.shape(2) != Bdom.shape(1) then
+    halt("Mismatched shape in matrix-matrix multiplication");
 
   var C: [Adom.dim(1), Bdom.dim(2)] eltType;
   gemm(A, B, C, 1:eltType, 0:eltType);
@@ -440,6 +443,8 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 proc inner(A: [?Adom], B: [?Bdom]) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
+  if Adom.size != Bdom.size then
+    halt("Mismatched size in vector-vector multiplication");
 
   return + reduce(A[..]*B[..]);
 }
@@ -474,6 +479,7 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType)
   return C;
 }
 
+
 pragma "no doc"
 /* Generic matrix-matrix multiplication */
 proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
@@ -495,6 +501,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 /* Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
    integral type. */
 proc matPow(A: [], b) where isNumeric(b) {
+  // TODO -- flatten recursion into while-loop
   if !isIntegral(b) then
     // TODO -- support all reals with Sylvester's formula
     compilerError("matPow only support powers of integers");
@@ -524,6 +531,7 @@ proc matPow(a, B: [?Bdom] ?eltType) where isNumeric(a) {
 }
 
 
+// TODO -- matrix-exponential
 /* Return element-wise exponential: ``e**A[i,j]`` */
 proc matExp(A: [?Dom] ?eltType) {
   var B: [Dom] eltType = e**A;
