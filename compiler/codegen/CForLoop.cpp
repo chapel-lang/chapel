@@ -27,6 +27,23 @@
 
 #include <algorithm>
 
+namespace
+{
+  void addLoopVectorizationHint(llvm::Instruction* instruction)
+  {
+    GenInfo* info    = gGenInfo;
+    auto &C = info->module->getContext();
+    llvm::ArrayRef<llvm::Metadata*> loopVectorizeEnable({llvm::MDString::get(C, "loop.vectorize.enable"),
+                                      llvm::ValueAsMetadata::get(llvm::ConstantInt::getTrue(C))}) ;
+    llvm::MDTuple* loopVectorizeMetadata = llvm::MDNode::get(C, loopVectorizeEnable);
+
+    llvm::ArrayRef<llvm::Metadata*> MDs({loopVectorizeMetadata });
+    llvm::MDTuple* llvmLoopMetadata = llvm::MDNode::getDistinct(C, MDs);
+
+    instruction->setMetadata(llvm::StringRef("llvm.loop"), llvmLoopMetadata);
+  }
+}
+
 /************************************ | *************************************
 *                                                                           *
 * Instance methods                                                          *
@@ -129,8 +146,10 @@ GenRet CForLoop::codegen()
                                                llvm::ConstantInt::get(condValue0->getType(), 0),
                                                FNAME("condition"));
 
+
     // Create the conditional branch
     info->builder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
+
 
     // Now add the body.
     func->getBasicBlockList().push_back(blockStmtBody);
@@ -154,7 +173,12 @@ GenRet CForLoop::codegen()
                                                FNAME("condition"));
 
     // Create the conditional branch
-    info->builder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
+    llvm::Instruction* endLoopBranch = info->builder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
+
+    if(fNoVectorize == false && isOrderIndependent())
+    {
+        addLoopVectorizationHint(endLoopBranch);
+    }
 
     func->getBasicBlockList().push_back(blockStmtEnd);
 
