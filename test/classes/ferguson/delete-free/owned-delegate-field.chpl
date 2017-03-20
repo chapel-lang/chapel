@@ -1,4 +1,4 @@
-use ReferenceCounting;
+use OwnedObject;
 
 class Impl {
   var field: int;
@@ -7,20 +7,19 @@ class Impl {
     writeln("in Impl.init");
   }
 
-  proc ~Impl() {
+  proc deinit() {
     writeln("in Impl.~Impl");
+  }
+
+  proc foo() {
+    writeln("in Impl.foo()");
   }
 }
 
 proc run() {
-  var x = new RefCounted(new Impl(1));
-  var y: x.type;
-
-  // check assignment
-  y = x;
-
-  writeln(x.p);
-  writeln(y.p);
+  var x = new Owned(new Impl(1));
+  x.field = 34;
+  writeln(x.field);
 }
 
 run();
