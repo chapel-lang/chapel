@@ -1178,14 +1178,11 @@ module ChapelArray {
       
       const rcdomclass = rcdistRec.newRectangularDom(rank = uprank,
                                                      idxType = upranges(1).idxType,
-                                                     stridable = upranges(1).stridable);
+                                                     stridable = upranges(1).stridable, upranges);
 
       //      var myB = new BBB();
       
-      var rcdom = _newDomain(rcdomclass);
-      rcdom.setIndices(upranges);
-
-      return rcdom;
+      return _newDomain(rcdomclass);
     }
     
     // anything that is not covered by the above
