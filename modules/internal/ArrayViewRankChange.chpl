@@ -261,7 +261,7 @@ module ArrayViewRankChange {
       var i = 1;
       for param d in 1..downrank do
         if collapsedDim(d) then
-          tupHiD(d) = 0..0;  // TODO: This seems bogus/arbitrary... or is it?
+          tupHiD(d) = 0..0;
         else {
           tupHiD(d) = tup(i);
           i += 1;
