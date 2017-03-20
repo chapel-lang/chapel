@@ -738,8 +738,6 @@ catch_stmt:
 | TCATCH TLP catch_expr TRP block_stmt { $$ = CatchStmt::build($3, $5); }
 ;
 
-
-/* TODO: would be nice to parenthesize a catch */
 catch_expr:
   ident             { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
 | ident TCOLON expr { $$ = new DefExpr(new VarSymbol($1), NULL, $3);   }
