@@ -368,7 +368,7 @@ proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
   coforall (loc, locDom) in zip(targetLocales, result.localDoms) do
     on loc do
       locDom = new LocReplicatedDom(rank, idxType, stridable);
-  dsiSetIndices(inds);
+  result.dsiSetIndices(inds);
 
   return result;
 }

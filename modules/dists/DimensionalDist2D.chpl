@@ -795,7 +795,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
       locDdesc = new LocDimensionalDom(result.stoDomainT,
                        doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
                        doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
-  dsiSetIndices(inds);
+  result.dsiSetIndices(inds);
   return result;
 }
 
