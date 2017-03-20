@@ -20,13 +20,20 @@
 #include "CatchStmt.h"
 #include "AstVisitor.h"
 
+CatchStmt* CatchStmt::build(BlockStmt* body) {
+  return new CatchStmt(NULL, body);
+}
+
 CatchStmt* CatchStmt::build(Expr* expr, BlockStmt* body) {
   return new CatchStmt(expr, body);
 }
 
 CatchStmt::CatchStmt(Expr* expr, BlockStmt* body) : Stmt(E_CatchStmt) {
   _body = new BlockStmt();
-  _body->insertAtTail(expr);
+
+  if (expr != NULL)
+    _body->insertAtTail(expr);
+
   _body->insertAtTail(body);
 
   gCatchStmts.add(this);
