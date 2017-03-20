@@ -633,11 +633,21 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _newDomain(this);
+      if (this.locale == here) {
+        return _getDomain(this);
+      } else {
+        var a: domain(rank, idxType);
+        return a;
+      }
     }
 
     iter dsiLocalSubdomains() {
-      yield _newDomain(this);
+      if (this.locale == here) {
+        yield _getDomain(this);
+      } else {
+        var a: domain(rank, idxType);
+        yield a;
+      }
     }
   }
 
@@ -1867,11 +1877,21 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _newDomain(dom);
+      if (this.data.locale == here) {
+        return _getDomain(dom);
+      } else {
+        var a: domain(rank, idxType);
+        return a;
+      }
     }
 
     iter dsiLocalSubdomains() {
-      yield _newDomain(dom);
+      if (this.data.locale == here) {
+        yield _getDomain(dom);
+      } else {
+        var a: domain(rank, idxType);
+        yield a;
+      }
     }
   }
 
