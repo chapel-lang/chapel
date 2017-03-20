@@ -1416,9 +1416,8 @@ proc StencilArr.dsiNoFluffView() {
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity, ignoreFluff=true);
   pragma "no auto destroy" var newDist = _newDistribution(tempDist);
-  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
+  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable.dom.whole));
   newDist._value.add_dom(tempDom._value);
-  tempDom.setIndices(dom.whole);
 
   var newDom = tempDom._value;
 

@@ -1470,9 +1470,7 @@ module ChapelArray {
       }
 
       // TODO: Change all calls like this over to fold setIndices in!!!
-      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d.setIndices(ranges);
-      return d;
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
     /* Returns a new domain that is the current domain expanded by
@@ -1482,9 +1480,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).expand(off);
-      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d.setIndices(ranges);
-      return d;
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
     pragma "no doc"
@@ -1511,9 +1507,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).exterior(off(i));
-      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d.setIndices(ranges);
-      return d;
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
     /* Returns a new domain that is the exterior portion of the
@@ -1557,9 +1551,7 @@ module ChapelArray {
         }
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
-      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d.setIndices(ranges);
-      return d;
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
     /* Returns a new domain that is the interior portion of the
@@ -1604,9 +1596,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = _value.dsiDim(i).translate(off(i));
-      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d.setIndices(ranges);
-      return d;
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
      }
 
     /* Returns a new domain that is the current domain translated by
@@ -1626,9 +1616,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
-      var d = _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable));
-      d.setIndices(ranges);
-      return d;
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
     pragma "no doc"
@@ -3670,10 +3658,7 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
     //    compilerWarning("a.dist.type is ", a.dist.type:string);
-    var d = _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, true));
-    //    compilerWarning("d.type is: " + d.type:string);
-    d.setIndices(r);
-    return d;
+    return _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, true, r));
   }
 
   /*
@@ -3690,9 +3675,7 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) align t(i);
-    var d = _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, a.stridable));
-    d.setIndices(r);
-    return d;
+    return _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, a.stridable, r));
   }
 
   //
