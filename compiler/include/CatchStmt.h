@@ -46,6 +46,7 @@ scoping rules without needing to know about CatchStmt
 class CatchStmt : public Stmt {
 
 public:
+  static CatchStmt* build(BlockStmt* body);
   static CatchStmt* build(Expr* expr, BlockStmt* body);
 
   CatchStmt(Expr* expr, BlockStmt* body);

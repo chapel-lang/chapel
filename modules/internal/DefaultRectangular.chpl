@@ -47,6 +47,12 @@ module DefaultRectangular {
 
   inline proc defRectSimpleDData param return !localeModelHasSublocales;
 
+  // helper function to set the types of multi-ddata specific fields
+  // to 'void' when they are not needed
+  proc mdType(type baseType) type {
+    return if defRectSimpleDData then void else baseType;
+  }
+
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
       const dom = new DefaultRectangularDom(rank, idxType, stridable, this);
@@ -666,17 +672,17 @@ module DefaultRectangular {
 
     inline proc oneDData return defRectSimpleDData || mdNumChunks < 2;
 
-    var mdParDim: int;
-    var mdNumChunks: int;
-    var mdRLo: idxType;
-    var mdRHi: idxType;
-    var mdRStr: idxType;
-    var mdRLen: idxType;
-    var mdBlk: idxType;
-    var mdAlias: bool;
+    var mdParDim: mdType(int);
+    var mdNumChunks: mdType(int);
+    var mdRLo: mdType(idxType);
+    var mdRHi: mdType(idxType);
+    var mdRStr: mdType(idxType);
+    var mdRLen: mdType(idxType);
+    var mdBlk: mdType(idxType);
+    var mdAlias: mdType(bool);
 
-    var mData : experimentalMaxSublocales*_multiData(eltType=eltType,
-                                                     idxType=idxType);
+    var mData : mdType(experimentalMaxSublocales*_multiData(eltType=eltType,
+                                                     idxType=idxType));
 
     inline proc dataChunk(i) ref {
       if defRectSimpleDData then
@@ -1118,19 +1124,19 @@ module DefaultRectangular {
 
     inline proc oneDData return defRectSimpleDData || mdNumChunks < 2;
 
-                                 // these are only used if !defRectSimpleDData
-    var mdParDim: int;           //   array is chunked on this dimension
-    var mdNumChunks: int;        //   number of chunks
-    var mdRLo: idxType;          //   chunking dim .low
-    var mdRHi: idxType;          //       "     "  .high
-    var mdRStr: idxType;         //       "     "  .stride
-    var mdRLen: idxType;         //       "     "  .length
-    var mdBlk: idxType;          //       "     "  block factor when sliced
-    var mdAlias: bool;           //   is this an alias of another array?
+                                  // these are only used if !defRectSimpleDData
+    var mdParDim: mdType(int);    //   array is chunked on this dimension
+    var mdNumChunks: mdType(int); //   number of chunks
+    var mdRLo: mdType(idxType);   //   chunking dim .low
+    var mdRHi: mdType(idxType);   //       "     "  .high
+    var mdRStr: mdType(idxType);  //       "     "  .stride
+    var mdRLen: mdType(idxType);  //       "     "  .length
+    var mdBlk: mdType(idxType);   //       "     "  block factor when sliced
+    var mdAlias: mdType(bool);    //   is this an alias of another array?
 
     pragma "local field"
-      var mData : _ddata(_multiData(eltType=eltType,
-                                    idxType=idxType));
+      var mData : mdType(_ddata(_multiData(eltType=eltType,
+                                    idxType=idxType)));
 
     var noinit_data: bool = false;
 

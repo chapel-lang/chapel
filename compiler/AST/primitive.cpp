@@ -454,12 +454,12 @@ initPrimitive() {
   // dst, src. PRIM_MOVE can set a reference.
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);
 
-  prim_def(PRIM_INIT,      "init",      returnInfoFirstDeref);
-  prim_def(PRIM_INIT_VAR,  "initVar",   returnInfoVoid);
-  prim_def(PRIM_NO_INIT,   "no init",   returnInfoFirstDeref);
-  prim_def(PRIM_TYPE_INIT, "type init", returnInfoFirstDeref);
+  prim_def(PRIM_INIT,       "init",       returnInfoFirstDeref);
+  prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false, true);
+  prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
+  prim_def(PRIM_NO_INIT,    "no init",    returnInfoFirstDeref);
+  prim_def(PRIM_TYPE_INIT,  "type init",  returnInfoFirstDeref);
 
-  prim_def(PRIM_INITIALIZER_SET_FIELD, "initializer set field", returnInfoVoid, false, true);
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_THROW, "throw", returnInfoFirst, true, true);
