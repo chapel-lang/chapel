@@ -13,7 +13,6 @@ foo(A2[7, ..]);
 foo(A1.reindex({0..15 by 2}));
 
 proc foo(X: [?D] real) {
-  writeln("in foo");
   writeln("D is: ", D);
   forall i in D do
     X[i] = here.id / 10.0;
