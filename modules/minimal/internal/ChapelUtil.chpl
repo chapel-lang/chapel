@@ -38,4 +38,7 @@ module ChapelUtil {
   //
   extern proc chpl_rt_preUserCodeHook();
   extern proc chpl_rt_postUserCodeHook();
+
+  // Deinitialization of modules and global variables will not happen.
+  proc chpl_addModule(moduleName: c_string, deinitFun: c_fn_ptr) { }
 }

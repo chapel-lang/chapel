@@ -284,6 +284,7 @@ addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false);
 static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
 static void resolveUses(ModuleSymbol* mod);
+static void resolveSupportForModuleDeinits();
 static void resolveExports();
 static void resolveEnumTypes();
 static void resolveDynamicDispatches();
@@ -9641,6 +9642,8 @@ void resolve() {
   if (chpl_gen_main)
     resolveFns(chpl_gen_main);
 
+  resolveSupportForModuleDeinits();
+
   USR_STOP();
 
   resolveExports();
@@ -9779,10 +9782,27 @@ static void resolveUses(ModuleSymbol* mod)
   resolveFormals(fn);
   resolveFns(fn);
 
+  if (FnSymbol* defn = mod->deinitFn) {
+    resolveFormals(defn);
+    resolveFns(defn);
+  }
+
   if (fPrintModuleResolution)
     putc('\n', stderr);
 
   --module_resolution_depth;
+}
+
+static void resolveSupportForModuleDeinits() {
+  // We will need these in addInitGuards.cpp
+  SET_LINENO(chpl_gen_main);
+  Expr*    modNameDum = buildCStringLiteral("");
+  VarSymbol* fnPtrDum = newTemp("fnPtr", dtCFnPtr);
+  CallExpr* addModule = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
+  resolveUninsertedCall(chpl_gen_main->body, NULL, addModule, false);
+  gAddModuleFn = addModule->isResolved();
+  resolveFns(gAddModuleFn);
+  // Also in buildDefaultFunctions.cpp: new CallExpr("chpl_deinitModules")
 }
 
 static void resolveExports() {
@@ -10499,10 +10519,13 @@ static void cleanupAfterRemoves() {
     // How about fn->substitutions, basicBlocks, calledBy ?
   }
 
-  forv_Vec(ModuleSymbol, mod, gModuleSymbols)
-    // Zero the initFn pointer if the function is now dead.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    // Zero the initFn pointer if the function is now dead. Ditto deinitFn.
     if (mod->initFn && !isAlive(mod->initFn))
       mod->initFn = NULL;
+    if (mod->deinitFn && !isAlive(mod->deinitFn))
+      mod->deinitFn = NULL;
+  }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->instantiatedFrom != NULL)

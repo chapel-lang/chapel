@@ -32,4 +32,5 @@ CONFIG VARS:
                      memLog: string
                 memLeaksLog: string
              memLeaksByDesc: string
+     printModuleDeinitOrder: bool
                  numLocales: int(64)
