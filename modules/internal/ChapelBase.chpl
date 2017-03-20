@@ -111,7 +111,8 @@ module ChapelBase {
     compilerError("cannot assign void to a variable of non-void type");
   }
 
-  inline proc =(ref a: void, b: void) { }
+  // This needs to be param so calls to it are removed after they are resolved
+  inline proc =(ref a: void, b: void) param { }
 
   //
   // equality comparison on primitive types

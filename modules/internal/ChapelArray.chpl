@@ -3717,12 +3717,17 @@ module ChapelArray {
   // Relies on the return types being different to detect an ArrayView at
   // compile-time
   pragma "no copy return"
+  pragma "unref fn"
   inline proc chpl__unref(x: []) where chpl__isArrayView(x._value) {
     // intended to call initCopy
     pragma "no auto destroy" var ret = x;
     return ret;
   }
 
+  // Intended to return whatever it gets without copying
+  // Not marked with "unref fn" because this version shouldn't
+  // actually remain in the AST - it's just added temporarily
+  // during resolution.
   pragma "no copy return"
   inline proc chpl__unref(x: []) {
     pragma "no copy" var ret = x;
