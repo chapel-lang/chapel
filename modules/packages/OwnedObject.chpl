@@ -37,6 +37,18 @@
    It is an error to copy initialize from myOwnedObject or to assign
    it to another :record:`Owned`.
 
+   .. note::
+
+     The ways in which :record:`Owned` may be used are currently limited.
+     Copy-initialization, assignment, and `in` intent are expected to work.
+     However, it is an error to use a :record:`Owned` in a way that causes the
+     compiler to add an implicity copy, such as by returning a :record:`Owned`
+     that was passed by reference.
+
+   .. note::
+
+     :record:`Owned` arguments with `const in` intent do not work yet.
+
  */
 module OwnedObject {
 
