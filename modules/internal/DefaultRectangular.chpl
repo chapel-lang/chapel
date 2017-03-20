@@ -621,12 +621,10 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      // TODO: this should only return this way if this.locale == here
       return _getDomain(this);
     }
 
     iter dsiLocalSubdomains() {
-      // TODO: this should only return this way if this.locale == here
       yield _getDomain(this);
     }
   }
@@ -1857,12 +1855,10 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      // TODO: this should only return this way if this.locale == here
       return _getDomain(dom);
     }
 
     iter dsiLocalSubdomains() {
-      // TODO: this should only return this way if this.locale == here
       yield _getDomain(dom);
     }
   }
