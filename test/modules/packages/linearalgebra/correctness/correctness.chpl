@@ -273,15 +273,6 @@ use LinearAlgebra;
   assertEqual(A3, B3, "matPow(A, 3)");
 }
 
-/* matExp */
-{
-  var A = Matrix([1,2,3,4],[4,3,2,1], eltType=real);
-
-  var B = matExp(A);
-  var R: [A.domain] real = e**A;
-
-  assertEqual(B, R, "matExp(2, A)");
-}
 
 /* cross */
 {

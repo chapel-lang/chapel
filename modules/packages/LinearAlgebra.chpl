@@ -531,22 +531,6 @@ proc matPow(a, B: [?Bdom] ?eltType) where isNumeric(a) {
 }
 
 
-// TODO -- matrix-exponential
-/* Return element-wise exponential: ``e**A[i,j]`` */
-proc matExp(A: [?Dom] ?eltType) {
-  var B: [Dom] eltType = e**A;
-  return B;
-}
-
-
-pragma "no doc"
-/* Integer overload */
-proc matExp(A: [?Dom] ?eltType) where isIntegralType(eltType) {
-  var B: [Dom] real = e**A;
-  return B;
-}
-
-
 /* Return cross-product of 3-element vectors ``A`` and ``B`` with domain of
   ``A`` */
 proc cross(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
