@@ -308,18 +308,30 @@ use LinearAlgebra;
     var U = triu(M);
     var LU = matPlus(L, U);
     assertEqual(M, LU, "tril(M, -1) + triu(M)");
+    assertTrue(isTril(L, -1), "isTril(L, -1)");
+    assertTrue(isTriu(U), "isTriu(U)");
+    assertFalse(isTril(U, -1), "isTril(U, -1)");
+    assertFalse(isTriu(L), "isTriu(L)");
   }
   {
     var L = tril(M);
     var U = triu(M, 1);
     var LU = matPlus(L, U);
     assertEqual(M, LU, "tril(M) + triu(M, 1)");
+    assertTrue(isTril(L), "isTril(L)");
+    assertTrue(isTriu(U, 1), "isTriu(U, 1)");
+    assertFalse(isTril(U), "isTril(U)");
+    assertFalse(isTriu(L, 1), "isTriu(L, 1)");
   }
   {
     var L = tril(M, 1);
     var U = triu(M, 2);
     var LU = matPlus(L, U);
     assertEqual(M, LU, "tril(M, 1) + triu(M, 2)");
+    assertTrue(isTril(L, 1), "isTril(L, 1)");
+    assertTrue(isTriu(U, 2), "isTriu(U, 2)");
+    assertFalse(isTril(U, 1), "isTril(U, 1)");
+    assertFalse(isTriu(L, 2), "isTriu(L, 2)");
   }
 }
 
@@ -333,18 +345,38 @@ use LinearAlgebra;
   assertFalse(isDiag(M), "isDiag(M)");
 }
 
-// TODO
 /* isHermitian */
+{
+  var H = Matrix([2.0+0.0i, 2.0+1.0i, 4.0+0.0i],
+                 [2.0-1.0i, 3.0+0.0i, 0.0+1.0i],
+                 [4.0+0.0i, 0.0-1.0i, 1.0+0.0i],
+                 eltType=complex);
+  assertTrue(isHermitian(H), "isHermitian(H)");
+  H[0,1] += -2i;
+  assertFalse(isHermitian(H), "isHermitian(H')");
+}
 
 /* isSymmetric */
+{
+  var S = Matrix([2.0+0.0i, 2.0+1.0i, 4.0+0.0i],
+                 [2.0+1.0i, 3.0+0.0i, 0.0+1.0i],
+                 [4.0+0.0i, 0.0+1.0i, 1.0+0.0i],
+                 eltType=complex);
+  assertTrue(isSymmetric(S), "isSymmetric(S)");
+  S[0, 1] += 2;
+  assertFalse(isSymmetric(S), "isSymmetric(S')");
+}
 
-/* isTril */
-
-/* isTriu */
 
 /* isSquare */
+{
+  var Square = Matrix(3, 3);
+  var Rect = Matrix(4, 3);
 
-/* det */
+  assertTrue(isSquare(Square), "isSquare(Square)");
+  assertFalse(isSquare(Rect), "isSquare(Rect)");
+}
+
 
 //
 // Helpers

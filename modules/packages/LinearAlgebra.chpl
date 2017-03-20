@@ -621,7 +621,7 @@ proc isSymmetric(A: [?D]) : bool {
     compilerError("Rank size is not 2");
   for (i, j) in D {
     if i > j {
-      if D[i, j] != D[j, i] then return false;
+      if A[i, j] != A[j, i] then return false;
     }
   }
   return true;
@@ -661,38 +661,6 @@ proc isSquare(A: [?D]) {
 }
 
 
-/* Return the determinant of square matrix ``A`` */
-proc det(A: [?D] ?eltType) {
-  // Naive algorithm -
-  //    Better solution uses LU decomp: det M = det LU = det L * det U
-  if D.rank != 2 then
-    compilerError("Rank size not 2");
-
-  // Handle odd domains inefficiently:
-  if D.stridable {
-    var Atmp = Matrix(A);
-    return det(Atmp);
-  }
-  if D.first != 0 || D.last != D.shape(1) {
-    var Atmp = Matrix(A);
-    return det(Atmp);
-  }
-  // Assume 0-based non-strided domain below this point
-
-  if !isSquare(A) then
-    halt('non-square array passed to determinant. Aborting');
-
-  const n = D.shape(1);
-  if n == 1 then return A[0];
-
-  var d = 0: eltType;
-  forall j in 0..#n with (+ reduce d) do
-    d += (((-1)**(j))*(A[0,j])*det(_minor(A, j))): eltType;
-
-  return d;
-}
-
-
 pragma "no doc"
 /* Helper function for determinant */
 private proc _minor(A: [?Adom] ?eltType, j) {
@@ -719,7 +687,7 @@ private proc _minor(A: [?Adom] ?eltType, j) {
 }
 
 
-/* Return the trace of matrix square matrix ``A`` */
+/* Return the trace of square matrix ``A`` */
 proc trace(A: [?D] ?eltType) {
   if D.rank != 2 then compilerError("Rank size not 2");
   else
