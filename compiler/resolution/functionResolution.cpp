@@ -8951,9 +8951,11 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           call->insertAtTail(unrefCall);
           FnSymbol* unrefFn = resolveNormalCall(unrefCall);
           resolveFns(unrefFn);
-          if (unrefFn->where == NULL) {
-            // If the call cannot be resolved, we must be dealing with a
-            // non-view array, so we can remove the useless unref call.
+          // Relies on the ArrayView variant having the 'unref fn' flag in
+          // ChapelArray.
+          if (unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
+            // If the function does not have this flag, we must be dealing with
+            // a non-view array, so we can remove the useless unref call.
             unrefCall->replace(origRHS->copy());
 
             // Remove now-useless AST
