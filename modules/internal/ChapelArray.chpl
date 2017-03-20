@@ -1111,7 +1111,7 @@ module ChapelArray {
       //
       // Compute which dimensions are collapsed and what the index
       // (idx) is in the event that it is.  These will be stored in
-      // the array view to convert from lower-D indices to higher-.
+      // the array view to convert from lower-D indices to higher-D.
       //
       var collapsedDim: rank*bool;
       var idx: rank*idxType;
@@ -1144,7 +1144,6 @@ module ChapelArray {
                                                  collapsedDim=collapsedDim,
                                                  idx = idx);
       const rcdistRec = _newDistribution(rcdist);
-      //      rcdist._free_when_no_doms = true;
       const rcdomclass = rcdistRec.newRectangularDom(rank = uprank,
                                                      idxType = upranges(1).idxType,
                                                      stridable = upranges(1).stridable, upranges);
@@ -1161,7 +1160,6 @@ module ChapelArray {
     pragma "no doc"
     proc this(args ...?numArgs) {
       if numArgs == rank {
-        // Doing this just to get a better compiler error
         compilerError("invalid argument types for domain slicing");
       } else
         compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
@@ -2143,9 +2141,7 @@ module ChapelArray {
       if boundsChecking then
         checkRankChange(args);
 
-      pragma "no auto destroy"
       const rcdom = this.domain[(...args)];
-      rcdom._value._free_when_no_arrs = true;
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what
