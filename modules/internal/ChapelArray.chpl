@@ -2320,11 +2320,28 @@ module ChapelArray {
       // view on a higher-dimensional domain as in the original array
       // view attempt.
       //
-      pragma "no auto destroy" var newDom = {(...d.dims())};
+      const thisDomClass = this._value.dom;
+      const (dom, dompid) = (thisDomClass, thisDomClass.pid);
+
+      pragma "no auto destroy"
+      const updom = {(...d.dims())};
+
+      const redist = new ArrayViewReindexDist(downdist = _getDistribution(thisDomClass.dist),
+                                              updom = updom._value,
+                                              downdomPid = dompid,
+                                              downdomInst = dom);
+      const redistRec = _newDistribution(redist);
+      // redist._free_when_no_doms = true;
+      const redomclass = redistRec.newRectangularDom(rank=rank,
+                                                     idxType=d.idxType,
+                                                     stridable=d.stridable,
+                                                     d.dims());
+
+      pragma "no auto destroy" const newDom = _newDomain(redomclass);
       newDom._value._free_when_no_arrs = true;
 
-      // TODO: With additional effort, we could collapse rank changes of
-      // rank-change array views to a single array view, similar to what
+      // TODO: With additional effort, we could collapse reindexings of
+      // reindexed array views to a single array view, similar to what
       // we do for slices.
       const (arr, arrpid) = (this._value, this._pid);
 

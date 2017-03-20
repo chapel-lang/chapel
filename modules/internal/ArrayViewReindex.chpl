@@ -25,6 +25,254 @@
 module ArrayViewReindex {
 
   //
+  // This class represents a distribution that knows how to create
+  // reindexed domains and arrays similar to the one that caused
+  // it to be created.  It stores a pointer down to the distribution
+  // that it creates lower-dimensional views of, and two tuples
+  // indicating which dimensions were collapsed by the reindexed
+  // and what the indices of those dimensions are.
+  //
+  class ArrayViewReindexDist: BaseDist {
+    const downdist;
+    const updom;
+    const downdomPid;
+    const downdomInst;
+
+    proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
+      var newdom = new ArrayViewReindexDom(rank=rank,
+                                           idxType=idxType,
+                                           stridable=stridable,
+                                           updom=updom,
+                                           downdomPid=downdomPid,
+                                           downdomInst=downdomInst,
+                                           dist=this);
+      newdom.dsiSetIndices(inds);
+      return newdom;
+    }
+
+    proc dsiClone() return new ArrayViewReindexDist(downdist=downdist,
+                                                    updom=updom,
+                                                    downdomPid=downdomPid,
+                                                    downdomInst=downdomInst);
+  }
+
+  //
+  // This class represents the domain of a reindexed slice of an
+  // array.  Like other domain class implementations, it supports the
+  // standard dsi interface.  Note that reindexings only make sense
+  // for rectangular domains so this is a subclass of
+  // BaseRectangularDom.
+  //
+ class ArrayViewReindexDom: BaseRectangularDom {
+    param rank;
+    type idxType;
+    param stridable;
+
+    // the lower-dimensional index set that we represent upwards
+    var updom: DefaultRectangularDom(rank, idxType, stridable);
+
+    // the higher-dimensional domain that we're equivalent to
+    var downdomPid;
+    var downdomInst;
+
+    var dist;
+
+    //
+    // TODO: If we put this expression into the variable declaration
+    // above, we get a memory leak.  File a future against this?
+    //
+    proc downdomtype(param rank: int, type idxType, param stridable: bool) type {
+      var a = dist.downdist.newRectangularDom(rank=rank, idxType=idxType,
+                                              stridable=stridable);
+      return a.type;
+    }
+
+    inline proc downdom {
+      if _isPrivatized(downdomInst) then
+        return chpl_getPrivatizedCopy(downdomInst.type, downdomPid);
+      else
+        return downdomInst;
+    }
+
+    proc dsiBuildArray(type eltType) {
+      pragma "no auto destroy"
+      const downarr = _newArray(downdom.dsiBuildArray(eltType));
+      return new ArrayViewReindexArr(eltType  =eltType,
+      // TODO: Update once we start privatizing vvv
+                                        _DomPid = nullPid,
+                                        dom = this,
+                                        _ArrPid=downarr._pid,
+                                        _ArrInstance=downarr._instance,
+                                        ownsArrInstance=true);
+    }
+
+    // TODO: Use delegation feature for these?
+    // TODO: Can't all these be implemented in ChapelArray given dsiDim()?
+
+    proc dsiNumIndices {
+      return updom.dsiNumIndices;
+    }
+
+    proc dsiLow {
+      return updom.dsiLow;
+    }
+
+    proc dsiHigh {
+      return updom.dsiHigh;
+    }
+
+    proc dsiAlignedLow {
+      return updom.dsiAlignedLow;
+    }
+
+    proc dsiAlignedHigh {
+      return updom.dsiAlignedHigh;
+    }
+
+    proc dsiStride {
+      return updom.dsiStride;
+    }
+
+    proc dsiAlignment {
+      return updom.dsiAlignment;
+    }
+
+    proc dsiFirst {
+      return updom.dsiFirst;
+    }
+
+    proc dsiLast {
+      return updom.dsiLast;
+    }
+
+    proc dsiDim(d: int) {
+      return updom.dsiDim(d);
+    }
+
+    proc dsiDims() {
+      return updom.dsiDims();
+    }
+
+    proc dsiGetIndices() {
+      return updom.dsiGetIndices();
+    }
+
+    proc dsiSetIndices(inds) {
+      pragma "no auto destroy"
+      var updomRec = {(...inds)};
+      updom = updomRec._value;
+      var downdomclass = dist.downdist.newRectangularDom(rank=rank,
+                                                         idxType=idxType,
+                                                         stridable=stridable);
+      pragma "no auto destroy"
+      var downdomLoc = _newDomain(downdomclass);
+      downdomLoc = chpl_reindexConvertDom(inds, downdom);
+      downdomLoc._value._free_when_no_arrs = true;
+      downdomPid = downdomLoc._pid;
+      downdomInst = downdomLoc._instance;
+    }
+
+    proc dsiMember(i) {
+      return updom.dsiMember(i);
+    }
+
+    iter these() {
+      if chpl__isDROrDRView(downdom) {
+        for i in updom do
+          yield i;
+      } else {
+        for i in downdom do
+          yield downIdxToUpIdx(i);
+      }
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.standalone {
+      if chpl__isDROrDRView(downdom) {
+        for i in updom.these(tag) do
+          yield i;
+      } else {
+        for i in downdom.these(tag) do
+          yield downIdxToUpIdx(i);
+      }
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.leader {
+      if chpl__isDROrDRView(downdom) {
+        for followThis in updom.these(tag) do
+          yield followThis;
+      } else {
+        for followThis in downdom.these(tag) {
+          const followThisLoD = chpl_reindexConvertHiDTupleToLoD(followThis);
+          yield followThisLoD;
+        }
+      }
+    }
+
+    iter these(param tag: iterKind, followThis)
+      where tag == iterKind.follower {
+      for i in updom.these(tag, followThis) do
+        yield i;
+    }
+
+    proc chpl_reindexConvertLoDTupleToHiD(tup) {
+      compilerError("Unimplemented routine");
+    }
+
+    proc chpl_reindexConvertHiDTupleToLoD(tup) {
+      compilerError("Unimplemented routine");
+    }
+
+
+    inline proc downIdxToUpIdx(downIdx) {
+      compilerError("Unimplemented routine");
+    }
+
+    // TODO: Is there something we can re-use here?
+    proc dsiSerialWrite(f) {
+      updom.dsiSerialWrite(f);
+    }
+
+    proc dsiMyDist() {
+      return dist;
+    }
+
+    proc dsiTargetLocales() {
+      //
+      // BLC: To tighten this up, we'd need to query the distribution to
+      // see what subset of target locales the reindexed slice hit vs.
+      // not.
+      //
+      //      compilerWarning("Calls to .targetLocales() on reindexed slices may currently return a superset of the locales targeted.");
+      return downdom.dsiTargetLocales();
+    }
+
+    proc dsiHasSingleLocalSubdomain() param
+      return downdom.dsiHasSingleLocalSubdomain();
+
+    proc dsiLocalSubdomain() {
+      return downdom.dsiLocalSubdomain();
+    }
+
+    proc isReindexDomainView() param {
+      return true;
+    }
+
+    proc _getActualDomain() {
+      if chpl__isDomainView(downdom) {
+        return downdom._getActualDomain();
+      } else {
+        return downdom;
+      }
+    }
+
+    proc dsiDestroyDom() {
+      _delete_dom(updom, false);
+      _delete_dom(downdomInst, _isPrivatized(downdomInst));
+    }
+
+  } // end of class ArrayViewReindexDom
+
+  //
   // The class representing a slice of an array.  Like other array
   // class implementations, it supports the standard dsi interface.
   //
@@ -79,44 +327,6 @@ module ArrayViewReindex {
     }
 
 
-    //
-    // Helper routines to convert incoming new/reindex
-    // indices/domains back into the original index set.
-    //
-
-    inline proc chpl_reindexConvertIdx(i: integral) {
-      compilerAssert(arr.rank == 1, arr.rank:string);
-      return arr.dom.dsiDim(1).orderToIndex(dom.dsiDim(1).indexOrder(i));
-    }
-
-    inline proc chpl_reindexConvertIdx(i) {
-      var ind: arr.rank*arr.idxType;
-      for param d in 1..arr.rank {
-        ind(d) = arr.dom.dsiDim(d).orderToIndex(dom.dsiDim(d).indexOrder(i(d)));
-      }
-      return ind;
-    }
-
-    inline proc chpl_reindexConvertDom(dims) {
-      if dom.rank != dims.size {
-        compilerError("Called chpl_reindexConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", dom.rank:string);
-      }
-
-      var ranges : arr.dom.dsiDims().type;
-      var low , high : arr.rank*arr.idxType;
-      for param d in 1..dims.size do low(d) = dims(d).first;
-      for param d in 1..dims.size do high(d) = dims(d).last;
-
-      var actualLow = chpl_reindexConvertIdx(low);
-      var actualHigh = chpl_reindexConvertIdx(high);
-      for param d in 1..arr.rank {
-        var lowered = actualLow(d)..actualHigh(d);
-        // TODO: does it matter which range slices the other?
-        ranges(d) = arr.dom.dsiDim(d)[lowered];
-      }
-      return {(...ranges)};
-    }
-
 
     //
     // standard iterators
@@ -134,7 +344,7 @@ module ArrayViewReindex {
           const dataIdx = indexCache.getDataIndex(i);
           yield indexCache.getDataElem(dataIdx);
         } else {
-          yield arr.dsiAccess(chpl_reindexConvertIdx(i));
+          yield arr.dsiAccess(chpl_reindexConvertIdx(i, dom, downdom));
         }
       }
     }
@@ -152,7 +362,7 @@ module ArrayViewReindex {
           const dataIdx = indexCache.getDataIndex(i);
           yield indexCache.getDataElem(dataIdx);
         } else {
-          yield arr.dsiAccess(chpl_reindexConvertIdx(i));
+          yield arr.dsiAccess(chpl_reindexConvertIdx(i, dom, downdom));
         }
       }
     }
@@ -205,7 +415,7 @@ module ArrayViewReindex {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
-        return arr.dsiAccess(chpl_reindexConvertIdx(i));
+        return arr.dsiAccess(chpl_reindexConvertIdx(i, dom, downdom));
       }
     }
 
@@ -216,7 +426,7 @@ module ArrayViewReindex {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
-        return arr.dsiAccess(chpl_reindexConvertIdx(i));
+        return arr.dsiAccess(chpl_reindexConvertIdx(i, dom, downdom));
       }
     }
 
@@ -227,20 +437,20 @@ module ArrayViewReindex {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
-        return arr.dsiAccess(chpl_reindexConvertIdx(i));
+        return arr.dsiAccess(chpl_reindexConvertIdx(i, dom, downdom));
       }
     }
 
     inline proc dsiLocalAccess(i) ref
-      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
+      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, dom, downdom));
 
     inline proc dsiLocalAccess(i)
       where shouldReturnRvalueByValue(eltType)
-      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
+      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, dom, downdom));
 
     inline proc dsiLocalAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType)
-      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
+      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, dom, downdom));
 
     inline proc checkBounds(i) {
       if boundsChecking then
@@ -310,7 +520,7 @@ module ArrayViewReindex {
       if dims.size != dom.rank {
         compilerError("Error while composing view domain for reindex view.");
       }
-      const goodDims = chpl_reindexConvertDom(dims).dims();
+      const goodDims = chpl_reindexConvertDom(dims, dom).dims();
       if _containsRCRE() {
         var nextView = arr._getRCREView();
         return nextView._viewHelper(goodDims);
@@ -442,4 +652,43 @@ module ArrayViewReindex {
     }
   }
 
+
+    //
+    // Helper routines to convert incoming new/reindex
+    // indices/domains back into the original index set.
+    //
+
+    inline proc chpl_reindexConvertIdx(i: integral, dom, downdom) {
+      compilerAssert(dom.rank == 1, dom.rank:string);
+      return downdom.dsiDim(1).orderToIndex(dom.dsiDim(1).indexOrder(i));
+    }
+
+    inline proc chpl_reindexConvertIdx(i, dom, downdom) {
+      var ind: dom.rank*dom.idxType;
+      for param d in 1..dom.rank {
+        ind(d) = downdom.dom.dsiDim(d).orderToIndex(dom.dsiDim(d).indexOrder(i(d)));
+      }
+      return ind;
+    }
+
+
+  inline proc chpl_reindexConvertDom(dims, dom) {
+    if dom.rank != dims.size {
+      compilerError("Called chpl_reindexConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", dom.rank:string);
+    }
+
+    var ranges : dom.dsiDims().type;
+    var low , high : dom.rank*dom.idxType;
+    for param d in 1..dims.size do low(d) = dims(d).first;
+    for param d in 1..dims.size do high(d) = dims(d).last;
+
+    var actualLow = chpl_reindexConvertIdx(low, dom, downdom);
+    var actualHigh = chpl_reindexConvertIdx(high, dom, downdom);
+    for param d in 1..dom.rank {
+      var lowered = actualLow(d)..actualHigh(d);
+      // TODO: does it matter which range slices the other?
+      ranges(d) = dom.dsiDim(d)[lowered];
+    }
+    return {(...ranges)};
+  }
 }
