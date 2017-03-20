@@ -87,7 +87,7 @@ module OwnedObject {
        refer to `nil` after this call.
      */
     proc Owned(ref src:Owned, type t=src.t) {
-      this.p = src.take();
+      this.p = src.release();
     }
 
     /*
@@ -102,11 +102,23 @@ module OwnedObject {
     }
 
     /*
+       Empty this :record:`Owned` so that it stores `nil`.
+       Deletes the previously managed object, if any.
+     */
+    proc ref clear() {
+      if p != nil {
+        delete p;
+        p = nil;
+      }
+    }
+
+
+    /*
        Change the instance managed by this class to `newPtr`.
        If this record was already managing a non-nil instance,
        that instance will be deleted.
      */ 
-    proc ref reset(newPtr:p.type) {
+    proc ref retain(newPtr:p.type) {
       var oldPtr = p;
       p = newPtr;
       if oldPtr then
@@ -117,7 +129,7 @@ module OwnedObject {
        Empty this :record:`Owned` so that it manages `nil`.
        Returns the instance previously managed by this :record:`Owned`.
      */
-    proc ref take():p.type {
+    proc ref release():p.type {
       var oldPtr = p;
       p = nil;
       return oldPtr;
@@ -136,7 +148,7 @@ module OwnedObject {
 
   pragma "no doc"
   proc =(ref lhs:Owned, ref rhs: Owned) {
-    lhs.reset(rhs.take());
+    lhs.retain(rhs.release());
   }
 
   // initCopy is defined explicitly as a workaround
@@ -155,9 +167,10 @@ module OwnedObject {
   pragma "no doc"
   pragma "donor fn"
   pragma "auto copy fn"
-  pragma "erroneous autocopy"
-  proc chpl__autoCopy(src: Owned) {
-    halt("Owned autoCopy called");
-    return src;
+  //pragma "erroneous autocopy"
+  proc chpl__autoCopy(ref src: Owned) {
+    //halt("Owned autoCopy called");
+    var ret = new Owned(src);
+    return ret;
   }
 }

@@ -37,21 +37,21 @@ proc examples() {
   writeln("shared1 = ", shared1.borrow());
   writeln("shared3 = ", shared3.borrow());
 
-  // The reset method can be used to provide a new value
+  // The retain method can be used to provide a new value
   // for a Shared to point to.
   // After this line:
   //  shared1 will contain C(100)
-  shared1.reset(new C(100));
-  writeln("after reseting shared1 to C(100)");
+  shared1.retain(new C(100));
+  writeln("after shared1.retain C(100)");
   writeln("shared1 = ", shared1.borrow());
 
-  // The release method can be used to empty a Shared immediately.
+  // The clear method can be used to empty a Shared immediately.
   // If the Shared record is the last one referring to the object
   // it contains, that object will be deleted.
   // For Shared, release does not return a value. That is because
   // it could still be managed by other Shared record instances.
-  shared1.release();
-  writeln("after releasing shared1");
+  shared1.clear();
+  writeln("after shared1.clear()");
   writeln("shared1 = ", shared1.borrow());
 
   writeln("declaring shared4 storing C(4)");

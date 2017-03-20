@@ -155,7 +155,7 @@ module SharedObject {
        :record:`Shared` that refer to it.
      */
     proc deinit() {
-      release();
+      clear();
     }
 
     /*
@@ -163,8 +163,8 @@ module SharedObject {
        If this record was the last :record:`Shared` managing a
        non-nil instance, that instance will be deleted.
      */
-    proc ref reset(newPtr:p.type) {
-      release();
+    proc ref retain(newPtr:p.type) {
+      clear();
       this.p = newPtr;
       if newPtr != nil {
         this.pn = new ReferenceCount();
@@ -177,9 +177,9 @@ module SharedObject {
        last :record:`Shared` managing that object.
        Does not return a value.
 
-       Equivalent to :proc:`Shared.reset(nil)`.
+       Equivalent to :proc:`Shared.retain(nil)`.
      */
-    proc ref release() {
+    proc ref clear() {
       if isClass(p) { // otherwise, let error happen on init call
         if p != nil && pn != nil {
           var count = pn.release();
@@ -228,7 +228,7 @@ module SharedObject {
   proc =(ref lhs:Shared, rhs: Shared) {
     // retain-release
     rhs.pn.retain();
-    lhs.release();
+    lhs.clear();
     lhs.p = rhs.p;
     lhs.pn = rhs.pn;
   }

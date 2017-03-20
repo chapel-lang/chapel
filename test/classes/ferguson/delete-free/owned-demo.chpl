@@ -54,22 +54,32 @@ proc examples() {
   writeln("owned1 = ", owned1.borrow());
   writeln("owned4 = ", owned4.borrow());
 
-  // The reset method can be used to provide a new value for
+  writeln("declaring owned5 storing C(5)");
+  var owned5 = new Owned(new C(5));
+  writeln("owned5 = ", owned5.borrow());
+
+  // The clear method can be used to delete the
+  // managed object, if any.
+  owned5.clear(); // deletes C(5)
+  writeln("after owned5.clear()");
+  writeln("owned5 = ", owned5.borrow());
+
+  // The retain method can be used to provide a new value for
   // an Owned to point to.
   // After this line:
   //  'owned1' will contain C(100); previous object C(4) will be destroyed
-  owned1.reset(new C(100));
-  writeln("after reseting owned1 to C(100)");
+  owned1.retain(new C(100));
+  writeln("after owned1.retain C(100)");
   writeln("owned1 = ", owned1.borrow());
 
-  // The take method can be used to extract the
+  // The release method can be used to extract the
   // owned pointer when something else will have responsibility
   // for freeing it. Whatever Owned has release() called on it
   // will contain nil after the call.
-  var ptr = owned1.take();
-  writeln("after owned1.take()");
+  var ptr = owned1.release();
+  writeln("after owned1.release()");
   writeln("owned1 = ", owned1.borrow());
-  writeln("owned1.take() returned = ", ptr);
+  writeln("owned1.release() returned = ", ptr);
   delete ptr;
 
   // The `in` intent can be used to pass ownership from a call
@@ -79,11 +89,11 @@ proc examples() {
     // arg's contained pointer will be deleted at the end of this function
   }
 
-  writeln("declaring owned5 storing C(5)");
-  var owned5 = new Owned(new C(5));
-  takesOwnership(owned5);
-  // After that call, owned5 contains nil
-   writeln("owned5 = ", owned5.borrow());
+  writeln("declaring owned6 storing C(6)");
+  var owned6 = new Owned(new C(6));
+  takesOwnership(owned6);
+  // After that call, owned6 contains nil
+   writeln("owned6 = ", owned6.borrow());
 }
 
 examples();
