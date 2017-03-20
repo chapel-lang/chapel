@@ -179,9 +179,8 @@ module OwnedObject {
   pragma "no doc"
   pragma "donor fn"
   pragma "auto copy fn"
-  //pragma "erroneous autocopy"
+  pragma "erroneous autocopy"
   proc chpl__autoCopy(ref src: Owned) {
-    //halt("Owned autoCopy called");
     var ret = new Owned(src);
     return ret;
   }
