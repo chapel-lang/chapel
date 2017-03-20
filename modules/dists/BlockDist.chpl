@@ -778,9 +778,8 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
 
 
 iter BlockDom.these() {
-  for i in whole do {
+  for i in whole do
     yield i;
-  }
 }
 
 iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {

@@ -472,7 +472,6 @@ module ArrayViewRankChange {
     //
 
     proc dsiSerialWrite(f) {
-
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
 

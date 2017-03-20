@@ -985,6 +985,7 @@ module ChapelArray {
     return defaultComparator;
   }
 
+
   //
   // Domain wrapper record.
   //
@@ -1127,7 +1128,7 @@ module ChapelArray {
 
       // Create distribution, domain, and array objects representing
       // the array view
-      var upranges = _getRankChangeUpRanges(args, this._value);
+      var upranges = _getRankChangeRanges(args, this._value);
       const emptyrange: upranges(1).type;
       param uprank = upranges.size;
       //
@@ -3146,7 +3147,7 @@ module ChapelArray {
     //return help(1);
   }
 
-  proc _getRankChangeUpRanges(args, downdom) {
+  proc _getRankChangeRanges(args, downdom) {
     return collectRanges(1);
 
     proc collectRanges(param dim: int) {
@@ -3173,40 +3174,6 @@ module ChapelArray {
           return ((...x), newRange);
         } else {
           return x;
-        }
-      }
-    }
-  }
-
-  proc _getRankChangeDownRanges(args, downdom) {
-    return collectRanges(1);
-
-    proc collectRanges(param dim: int) {
-      if dim > args.size then
-        compilerError("domain slice requires a range in at least one dimension");
-      if isRange(args(dim)) {
-        const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
-        return collectRanges(dim+1, (newRange,));
-      } else
-        return collectRanges(dim+1, (args(dim)..args(dim),));
-    }
-
-    proc collectRanges(param dim: int, x: _tuple) {
-      if dim > args.size {
-        return x;
-      } else if dim < args.size {
-        if isRange(args(dim)) {
-          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
-          return collectRanges(dim+1, ((...x), newRange));
-        } else {
-          return collectRanges(dim+1, ((...x), args(dim)..args(dim)));
-        }
-      } else {
-        if isRange(args(dim)) {
-          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
-          return ((...x), newRange);
-        } else {
-          return ((...x), args(dim)..args(dim));
         }
       }
     }
