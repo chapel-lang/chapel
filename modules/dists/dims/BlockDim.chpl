@@ -182,19 +182,6 @@ proc BlockDim.BlockDim(numLocales, boundingBoxLow, boundingBoxHigh, type idxType
 proc BlockDim.toString()
   return "BlockDim(" + numLocales:string + ", " + boundingBox:string + ")";
 
-proc BlockDim.dsiCreateReindexDist1d(newRange: range(?), oldRange: range(?)) {
-  const oldDesc = this;
-  if oldRange.stride != newRange.stride then
-    halt("reindexing from ", oldRange, " to ", newRange,
-         " is not supported by ", oldDesc.toString,
-         " due to a change in stride");
-  // TODO: this is overflow-oblivious. See Block.dsiCreateReindexDist().
-  const delta = newRange.first - oldRange.first;
-  return new BlockDim(idxType     = oldDesc.idxType,
-                   numLocales  = oldDesc.numLocales,
-                   boundingBox = oldDesc.boundingBox + delta);
-}
-
 proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
                                   type stoIndexT)
 {
