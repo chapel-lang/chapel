@@ -50,7 +50,10 @@ module DefaultRectangular {
   // helper function to set the types of multi-ddata specific fields
   // to 'void' when they are not needed
   proc mdType(type baseType) type {
-    return if defRectSimpleDData then void else baseType;
+    if defRectSimpleDData then
+      return void;
+    else
+      return baseType;
   }
 
   class DefaultDist: BaseDist {
