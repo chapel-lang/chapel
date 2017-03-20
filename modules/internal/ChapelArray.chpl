@@ -136,9 +136,6 @@ module ChapelArray {
   use ChapelBase; // For opaque type.
   use ChapelTuple;
   use ChapelLocale;
-
-  // TODO: Can we move these uses into the routines that need them to
-  // speed up compile-time?
   use ArrayViewSlice;
   use ArrayViewRankChange;
   use ArrayViewReindex;
@@ -418,11 +415,8 @@ module ChapelArray {
   // Support for array types
   //
   pragma "runtime type init fn"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
-    extern proc printf(x...);
-    //    printf("In buildArrayRuntimeType\n");
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType)
     return dom.buildArray(eltType);
-  }
 
   proc _getLiteralType(type t) type {
     if t != c_string then return t;
@@ -894,20 +888,18 @@ module ChapelArray {
       return _newDistribution(_value.dsiClone());
     }
 
-    proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
-      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
-      return newRectangularDom(rank, idxType, stridable, ranges);
-    }
-
-    proc newRectangularDom(param rank: int, type idxType, param stridable: bool, ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
-      //      var myC = new CCC();
+    proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
+                           ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
       var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
-      //      var myD = new DDD();
       if x.linksDistribution() {
         _value.add_dom(x);
       }
-      //      var myE = new EEE();
       return x;
+    }
+
+    proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
+      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+      return newRectangularDom(rank, idxType, stridable, ranges);
     }
 
     proc newAssociativeDom(type idxType, param parSafe: bool=true) {
@@ -991,21 +983,6 @@ module ChapelArray {
   proc chpl_defaultComparator() {
     use Sort;
     return defaultComparator;
-  }
-
-  class CCC {
-  }
-
-  class DDD {
-  }
-
-  class EEE {
-  }
-
-  class AAA {
-  }
-
-  class BBB {
   }
 
   //
@@ -1124,13 +1101,9 @@ module ChapelArray {
       for param i in 1..rank {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
-      return  _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, r));
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, r));
     }
 
-    proc this(i: integral ... rank) {
-      compilerError("domain slice requires a range in at least one dimension");
-    }
-    
     // domain rank change
     pragma "no doc"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
@@ -1152,8 +1125,6 @@ module ChapelArray {
         }
       }
 
-      //      writeln("will test membership of ", idx, " at ", this);
-      
       // Create distribution, domain, and array objects representing
       // the array view
       var upranges = _getRankChangeUpRanges(args, this._value);
@@ -1167,24 +1138,24 @@ module ChapelArray {
         for param d in 1..uprank do
           upranges(d) = emptyrange;
       }
-        
+
       const rcdist = new ArrayViewRankChangeDist(downdist = dist,
                                                  collapsedDim=collapsedDim,
                                                  idx = idx);
       const rcdistRec = _newDistribution(rcdist);
       //      rcdist._free_when_no_doms = true;
-
-      //      var myA = new AAA();
-      
       const rcdomclass = rcdistRec.newRectangularDom(rank = uprank,
                                                      idxType = upranges(1).idxType,
                                                      stridable = upranges(1).stridable, upranges);
 
-      //      var myB = new BBB();
-      
       return _newDomain(rcdomclass);
     }
-    
+
+    // error case for all-int access
+    proc this(i: integral ... rank) {
+      compilerError("domain slice requires a range in at least one dimension");
+    }
+
     // anything that is not covered by the above
     pragma "no doc"
     proc this(args ...?numArgs) {
@@ -1241,8 +1212,6 @@ module ChapelArray {
     pragma "no doc"
     pragma "no copy return"
     proc buildArray(type eltType) {
-      extern proc printf(x...);
-      //      printf("In buildArray\n");
       if eltType == void {
         compilerError("array element type cannot be void");
       }
@@ -1469,7 +1438,6 @@ module ChapelArray {
         }
       }
 
-      // TODO: Change all calls like this over to fold setIndices in!!!
       return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
@@ -1973,15 +1941,9 @@ module ChapelArray {
     }
 
     inline proc _do_destroy() {
-      //      extern proc printf(x...);
-      //      printf("In array destroy\n");
       if ! _unowned {
         on _instance {
           var (arrToFree, domToRemove) = _instance.remove();
-          //          if arrToFree != nil then
-          //            printf("Got non-null arr to free\n");
-          //          else
-          //            printf("arr to free is nil\n");
           var domToFree:BaseDom = nil;
           var distToRemove:BaseDist = nil;
           var distToFree:BaseDist = nil;
@@ -2169,7 +2131,6 @@ module ChapelArray {
 
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
-      //      var myC = new CCC();
       return _newArray(a);
     }
 
@@ -2190,9 +2151,6 @@ module ChapelArray {
       // we do for slices.
       const (arr, arrpid)  = (this._value, this._pid);
 
-      //      var myA = new AAA();
-
-      //      writeln("rcdom is: ", rcdom);
       var a = new ArrayViewRankChangeArr(eltType=this.eltType,
                                          _DomPid = rcdom._pid,
                                          dom = rcdom._instance,
@@ -2202,8 +2160,6 @@ module ChapelArray {
                                          // these redundantly?
                                          collapsedDim=rcdom._value.collapsedDim,
                                          idx=rcdom._value.idx);
-
-      //      var b = new BBB();
 
       // this doesn't need to lock since we just created the domain d
       rcdom._value.add_arr(a, locking=false);
@@ -3657,7 +3613,6 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
-    //    compilerWarning("a.dist.type is ", a.dist.type:string);
     return _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, true, r));
   }
 
@@ -3810,7 +3765,6 @@ module ChapelArray {
     pragma "no copy" var ret = x;
     return ret;
   }
-
 
 
   // see comment on chpl__unalias for domains

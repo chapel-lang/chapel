@@ -90,13 +90,15 @@ module ChapelDistribution {
       return (count==0);
     }
 
-    inline proc add_dom(x:BaseDom, locking=true) {
+    //
+    // TODO: Are there opportunities to optimize out the locking here,
+    // as on the add_arr() case?
+    //
+    inline proc add_dom(x:BaseDom) {
       on this {
-        if locking then
-          _lock_doms();
+        _lock_doms();
         _doms.append(x);
-        if locking then
-          _unlock_doms();
+        _unlock_doms();
       }
     }
   
