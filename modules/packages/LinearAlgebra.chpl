@@ -149,6 +149,7 @@ module LinearAlgebra {
 
 /* Return a vector (1D array) over domain ``{0..#length}``*/
 proc Vector(length, type eltType=real) {
+  //if (length <= 0) then compilerError("Vector length must be > 0");
   var V: [0..#length] eltType;
   return V;
 }
@@ -194,15 +195,24 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
 }
 
 
+/* Return a square matrix (2D array) over domain ``{0..#rows, 0..#rows}``*/
+proc Matrix(rows, type eltType=real) where isIntegral(rows) {
+  if rows <= 0 then halt("Matrix dimensions must be > 0");
+  var M: [0..#rows, 0..#rows] eltType;
+  return M;
+}
+
+
 /* Return a matrix (2D array) over domain ``{0..#rows, 0..#cols}``*/
 proc Matrix(rows, cols, type eltType=real) where isIntegral(rows) && isIntegral(cols) {
+  if rows <= 0 || cols <= 0 then halt("Matrix dimensions must be > 0");
   var M: [0..#rows, 0..#cols] eltType;
   return M;
 }
 
 
 /* Return a matrix (2D array) over domain ``Dom`` */
-proc Matrix(Dom, type eltType=real) where Dom.rank == 2 {
+proc Matrix(Dom: domain(2), type eltType=real) where Dom.rank == 2 {
   var M: [Dom] eltType;
   return M;
 }
@@ -334,8 +344,8 @@ private proc _transpose(A: [?Dom] ?eltType) {
 
 /* Add matrices, maintaining dimensions */
 proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
-  if Adom.rank != Bdom.rank then compilerError("Ranks to not match");
-  if Adom.size != Bdom.size then halt("Unmatched array size");
+  if Adom.rank != Bdom.rank then compilerError("Unmatched ranks");
+  if Adom.shape != Bdom.shape then halt("Unmatched shapes");
   var C: [Adom] eltType = A + B;
   return C;
 }
@@ -343,8 +353,8 @@ proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
 /* Subtract matrices, maintaining dimensions */
 proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
-  if Adom.rank != Bdom.rank then compilerError("Ranks to not match");
-  if Adom.size != Bdom.size then halt("Unmatched array size");
+  if Adom.rank != Bdom.rank then compilerError("Unmatched ranks");
+  if Adom.shape != Bdom.shape then halt("Unmatched shapes");
   var C: [Adom] eltType = A - B;
   return C;
 }
@@ -380,7 +390,7 @@ proc dot(a, B: []) where isNumeric(a) {
 
 pragma "no doc"
 /* Explicit matrix-(matrix|vector) multiplication */
-proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
+private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   // matrix-vector
   if Adom.rank == 2 && Bdom.rank == 1 then
     // TODO -- assert shapes are correct
@@ -717,17 +727,15 @@ private proc _minor(A: [?Adom] ?eltType, j) {
 }
 
 
-/* Return the trace of ``A`` */
+/* Return the trace of matrix square matrix ``A`` */
 proc trace(A: [?D] ?eltType) {
-  if D.rank == 1 then return + reduce A[..];
-  else if D.rank == 2 {
+  if D.rank != 2 then compilerError("Rank size not 2");
+  else
+    if !isSquare(A) then halt("Trace only supports square matrices");
     var trace = 0: eltType;
     forall (i, j) in zip(D.dim(1), D.dim(2)) with (+ reduce trace) do
       trace += A[i, j];
     return trace;
-  } else {
-    compilerError("Rank size not 1 or 2");
-  }
 }
 
 } // module LinearAlgebra

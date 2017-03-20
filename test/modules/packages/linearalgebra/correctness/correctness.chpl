@@ -27,12 +27,21 @@ use LinearAlgebra;
     assertEqual(v.domain, Dom, "Vector(Dom)");
   }
 
+
   /* Array */
   {
     var A: [Dom] real;
     var v = Vector(A);
     assertEqual(v.domain, Dom, "Vector(A)");
   }
+
+
+  /* Rows */
+  {
+    var M = Matrix(3);
+    assertEqual(M.domain, MDom, "Matrix(3)");
+  }
+
 
   /* Dimensions */
   {
@@ -296,11 +305,6 @@ use LinearAlgebra;
   var Mtrace = 15.0;
   var t = trace(M);
   assertEqual(Mtrace, t);
-
-  var v = Vector([1,2,3], eltType=real);
-  var vtrace = 6.0;
-  t = trace(v);
-  assertEqual(vtrace, t);
 }
 
 /* tril & triu */
