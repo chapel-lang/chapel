@@ -52,6 +52,10 @@
  */
 module SharedObject {
 
+
+  // TODO unify with RefCountBase. Even though that one is for
+  // intrusive ref-counting and this one isn't, there's no fundamental
+  // reason it couldn't be one class.
   pragma "no doc"
   class ReferenceCount {
     var count: atomic int;
