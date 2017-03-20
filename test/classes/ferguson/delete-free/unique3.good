@@ -1,0 +1,2 @@
+unique3.chpl:9: In function 'foo':
+unique3.chpl:13: error: Owned may not be assigned. Use lhs.reset(rhs.release()).
