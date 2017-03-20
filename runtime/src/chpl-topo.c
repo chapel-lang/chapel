@@ -153,24 +153,9 @@ void chpl_topo_init(void) {
   // is memory-only, no CPUs.
   //
   {
-    hwloc_cpuset_t cpuset;
-    hwloc_obj_t obj;
-
-    if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
-      report_error("hwloc_bitmap_alloc()", errno);
-    }
-
-    numNumaDomains = 0;
-    for (obj = hwloc_get_next_obj_by_depth(topology, numaLevel, NULL);
-         obj != NULL;
-         obj = hwloc_get_next_obj_by_depth(topology, numaLevel, obj)) {
-      hwloc_bitmap_and(cpuset, obj->online_cpuset, obj->allowed_cpuset);
-      if (!hwloc_bitmap_iszero(cpuset)) {
-        numNumaDomains++;
-      }
-    }
-
-    hwloc_bitmap_free(cpuset);
+    const hwloc_cpuset_t cpusetAll = hwloc_get_root_obj(topology)->cpuset;
+    numNumaDomains =
+      hwloc_get_nbobjs_inside_cpuset_by_depth(topology, cpusetAll, numaLevel);
   }
 }
 
