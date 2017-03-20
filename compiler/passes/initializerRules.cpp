@@ -25,6 +25,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
+#include "typeSpecifier.h"
 
 #include <map>
 
@@ -76,11 +77,40 @@ static Expr*       getNextStmt(Expr*      curExpr,
 
 /************************************* | **************************************
 *                                                                             *
+* Attempt to assign a type to the symbol for each field in some of the        *
+* simpler cases.                                                              *
+*                                                                             *
+* 2017/03/20 Noakes: This may set a direction for refactoring resolution      *
+* in a subsequent release.                                                    *
+*                                                                             *
+************************************** | *************************************/
+
+void preNormalizeFields(AggregateType* at) {
+  for_alist(field, at->fields) {
+    if (DefExpr* defExpr = toDefExpr(field)) {
+      if (Type* type = typeForTypeSpecifier(defExpr->exprType)) {
+        Symbol* sym = defExpr->sym;
+
+        if (sym->hasFlag(FLAG_CONST) == true) {
+          sym->qual = QUAL_CONST_VAL;
+          sym->type = type;
+
+        } else {
+          sym->qual = QUAL_VAL;
+          sym->type = type;
+        }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-void initMethodPreNormalize(FnSymbol* fn) {
+void preNormalizeInitMethod(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_PARENS) == true) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
 

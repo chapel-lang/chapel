@@ -4615,6 +4615,7 @@ void resolveCall(CallExpr* call) {
     case PRIM_INIT_FIELD:
       resolveInitField(call);
       break;
+
     case PRIM_INIT_VAR:
       resolveInitVar(call);
       break;

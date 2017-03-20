@@ -129,6 +129,13 @@ void normalize() {
 
   lowerReduceAssign();
 
+  forv_Vec(AggregateType, at, gAggregateTypes) {
+    if (isNonGenericClassWithInitializers(at)  == true ||
+        isNonGenericRecordWithInitializers(at) == true) {
+      preNormalizeFields(at);
+    }
+  }
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
 
@@ -1756,17 +1763,19 @@ static void normRefVar(DefExpr* defExpr) {
 
   if (SymExpr* sym = toSymExpr(varLocation)) {
     Symbol* symbol = sym->symbol();
+    bool    error  = var->hasFlag(FLAG_CONST) == false &&
+                     symbol->isConstant()     == true;
 
-    bool error = (!var->hasFlag(FLAG_CONST) && symbol->isConstant());
-
-    // This is a workaround for the fact tha isConstant for an ArgSymbol with
-    // blank intent and type dtUnknown returns true, but blank intent isn't
-    // necessarily const.
-    if (ArgSymbol* arg = toArgSymbol(symbol))
-      if (arg->intent == INTENT_BLANK && arg->type == dtUnknown)
+    // This is a workaround for the fact that isConstant for an
+    // ArgSymbol with blank intent and type dtUnknown returns true,
+    // but blank intent isn't necessarily const.
+    if (ArgSymbol* arg = toArgSymbol(symbol)) {
+      if (arg->intent == INTENT_BLANK && arg->type == dtUnknown) {
         error = false;
+      }
+    }
 
-    if (error) {
+    if (error == true) {
       USR_FATAL_CONT(sym,
                      "Cannot set a non-const reference to a const variable.");
     }
@@ -2498,7 +2507,7 @@ static void updateConstructor(FnSymbol* fn) {
 
 static void updateInitMethod(FnSymbol* fn) {
   if (isAggregateType(fn->_this->type) == true) {
-    initMethodPreNormalize(fn);
+    preNormalizeInitMethod(fn);
 
   } else if (fn->_this->type == dtUnknown) {
     INT_FATAL(fn, "'this' argument has unknown type");
