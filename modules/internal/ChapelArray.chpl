@@ -2355,47 +2355,6 @@ module ChapelArray {
       return _newArray(x);
     }
 
-    /*
-    pragma "no doc"
-    pragma "fn returns aliasing array"
-    proc reindex(d: domain)
-    where isRectangularDom(this.domain) && isRectangularDom(d)
-    {
-      if rank != d.rank then
-        compilerError("rank mismatch: cannot reindex() from " + rank +
-                      " dimension(s) to " + d.rank);
-
-      for param i in 1..rank do
-        if d.dim(i).length != _value.dom.dsiDim(i).length then
-          halt("extent in dimension ", i, " does not match actual");
-
-      //                                                                        
-      // TODO: Currently, the domain created to represent the                   
-      // rank-change domain is non-distributed.  Ultimately, we need            
-      // to create a domain view class that supports a rank-change              
-      // view on a higher-dimensional domain as in the original array           
-      // view attempt.                                                          
-      //                                                                        
-      pragma "no auto destroy" var newDom = {(...d.dims())};
-      newDom._value._free_when_no_arrs = true;
-
-      // TODO: With additional effort, we could collapse rank changes of        
-      // rank-change array views to a single array view, similar to what        
-      // we do for slices.                                                      
-      const (arr, arrpid) = (this._value, this._pid);
-
-      var x = new ArrayViewReindexArr(eltType=this.eltType,
-                                      _DomPid = newDom._pid,
-                                      dom = newDom._instance,
-                                      _ArrPid=arrpid,
-                                      _ArrInstance=arr);
-      // this doesn't need to lock since we just created the domain d           
-      newDom._value.add_arr(x, locking=false);
-      return _newArray(x);
-    }
-    */
-
-
     // reindex for all non-rectangular domain types.
     // See above for the rectangular version.
     pragma "no doc"
