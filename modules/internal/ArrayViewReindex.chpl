@@ -296,6 +296,13 @@ module ArrayViewReindex {
     // through the array field above.
     const indexCache = buildIndexCache();
 
+    proc downdom {
+      var arr = if _isPrivatized(_ArrInstance) then
+        chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid)
+      else
+        _ArrInstance;
+      return arr.dom;
+    }
 
     //
     // standard generic aspects of arrays
@@ -520,7 +527,7 @@ module ArrayViewReindex {
       if dims.size != dom.rank {
         compilerError("Error while composing view domain for reindex view.");
       }
-      const goodDims = chpl_reindexConvertDom(dims, dom).dims();
+      const goodDims = chpl_reindexConvertDom(dims, dom, downdom).dims();
       if _containsRCRE() {
         var nextView = arr._getRCREView();
         return nextView._viewHelper(goodDims);
@@ -658,36 +665,36 @@ module ArrayViewReindex {
     // indices/domains back into the original index set.
     //
 
-    inline proc chpl_reindexConvertIdx(i: integral, dom, downdom) {
-      compilerAssert(dom.rank == 1, dom.rank:string);
-      return downdom.dsiDim(1).orderToIndex(dom.dsiDim(1).indexOrder(i));
+    inline proc chpl_reindexConvertIdx(i: integral, updom, downdom) {
+      compilerAssert(downdom.rank == 1, downdom.rank:string);
+      return downdom.dsiDim(1).orderToIndex(updom.dsiDim(1).indexOrder(i));
     }
 
-    inline proc chpl_reindexConvertIdx(i, dom, downdom) {
-      var ind: dom.rank*dom.idxType;
-      for param d in 1..dom.rank {
-        ind(d) = downdom.dom.dsiDim(d).orderToIndex(dom.dsiDim(d).indexOrder(i(d)));
+    inline proc chpl_reindexConvertIdx(i, updom, downdom) {
+      var ind: downdom.rank*downdom.idxType;
+      for param d in 1..downdom.rank {
+        ind(d) = downdom.dsiDim(d).orderToIndex(updom.dsiDim(d).indexOrder(i(d)));
       }
       return ind;
     }
 
 
-  inline proc chpl_reindexConvertDom(dims, dom) {
-    if dom.rank != dims.size {
-      compilerError("Called chpl_reindexConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", dom.rank:string);
+    inline proc chpl_reindexConvertDom(dims, updom, downdom) {
+    if updom.rank != dims.size {
+      compilerError("Called chpl_reindexConvertDom with incorrect rank. Got " + dims.size:string + ", expecting " + updom.rank:string);
     }
 
-    var ranges : dom.dsiDims().type;
-    var low , high : dom.rank*dom.idxType;
+    var ranges : updom.dsiDims().type;
+    var low , high : updom.rank*updom.idxType;
     for param d in 1..dims.size do low(d) = dims(d).first;
     for param d in 1..dims.size do high(d) = dims(d).last;
 
-    var actualLow = chpl_reindexConvertIdx(low, dom, downdom);
-    var actualHigh = chpl_reindexConvertIdx(high, dom, downdom);
-    for param d in 1..dom.rank {
+    var actualLow = chpl_reindexConvertIdx(low, updom, downdom);
+    var actualHigh = chpl_reindexConvertIdx(high, updom, downdom);
+    for param d in 1..updom.rank {
       var lowered = actualLow(d)..actualHigh(d);
       // TODO: does it matter which range slices the other?
-      ranges(d) = dom.dsiDim(d)[lowered];
+      ranges(d) = updom.dsiDim(d)[lowered];
     }
     return {(...ranges)};
   }
