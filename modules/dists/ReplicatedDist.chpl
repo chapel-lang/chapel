@@ -353,10 +353,11 @@ proc ReplicatedDist.dsiClone(): this.type {
 // create a new domain mapped with this distribution
 proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
                                          type idxType,
-                                         param stridable: bool)
+                                         param stridable: bool,
+                                         inds)
 {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiNewRectangularDom ",
-                                      (rank, idxType:string, stridable));
+                                      (rank, idxType:string, stridable, inds));
 
   // Have to call the default constructor because we need to initialize 'dist'
   // prior to initializing 'localDoms' (which needs a non-nil value for 'dist'.
@@ -367,22 +368,8 @@ proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
   coforall (loc, locDom) in zip(targetLocales, result.localDoms) do
     on loc do
       locDom = new LocReplicatedDom(rank, idxType, stridable);
+  result.dsiSetIndices(inds);
 
-  return result;
-}
-
-// create a new domain mapped with this distribution representing 'ranges'
-proc ReplicatedDom.dsiBuildRectangularDom(param rank: int,
-                                          type idxType,
-                                          param stridable: bool,
-                                          ranges: rank * range(idxType,
-                                                BoundedRangeType.bounded,
-                                                               stridable))
-{
-  // could be made more efficient to avoid visiting each locale twice
-  // but perhaps not a big deal, for now anyways
-  var result = dist.dsiNewRectangularDom(rank, idxType, stridable);
-  result.dsiSetIndices(ranges);
   return result;
 }
 
@@ -689,4 +676,3 @@ proc ReplicatedArr.dsiLocalSubdomain() {
 
 // todo? these two seem to work (written by analogy with DefaultRectangular)
 proc ReplicatedDist.dsiCreateReindexDist(newSpace, oldSpace) return this;
-proc ReplicatedDist.dsiCreateRankChangeDist(param newRank, args) return this;
