@@ -1944,9 +1944,9 @@ module DefaultRectangular {
               start  = viewDomDim.first,
               second = info.getDataIndex(start + stride);
 
-        var   first  = info.getDataIndex(start),
-              step   = (second-first):chpl__signedType(viewDom.idxType),
-              last   = first + (viewDomDim.length-1) * step:viewDom.idxType;
+        var   first  = info.getDataIndex(start);
+        const step   = (second-first):chpl__signedType(viewDom.idxType);
+        var   last   = first + (viewDomDim.length-1) * step:viewDom.idxType;
 
         if step < 0 then
           last <=> first;
