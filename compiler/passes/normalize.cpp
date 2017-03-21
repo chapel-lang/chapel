@@ -42,6 +42,8 @@
 bool normalized = false;
 
 static void insertModuleInit();
+static FnSymbol* toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
+static void handleModuleDeinitFn(ModuleSymbol* mod);
 static void transformLogicalShortCircuit();
 static void lowerReduceAssign();
 
@@ -250,12 +252,8 @@ void normalize(FnSymbol* fn) {
 *                                                                             *
 * Insert the module initFn in to every module in allModules.  The current     *
 * implementation pulls the entire module in to the prototypical initFn and    *
-* then lets the reset of normalize sort things out.  The module looks         *
-* reasonable by the end of the pass but odd in the middle.                    *
-*                                                                             *
-* Noakes 2014/07/25 At some point this transformation should be reworked to   *
-* be more delicate e.g. insert an empty init function and then carefully      *
-* populate it so that the AST is well-behaved at all points.                  *
+* then lets the rest of normalize sort things out.                            *
+* Also stash away the module deinitFn, if the user has written one.           *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -274,11 +272,16 @@ static void insertModuleInit() {
     // move module-level statements into module's init function
     //
     for_alist(stmt, mod->block->body) {
-      if (stmt->isModuleDefinition() == false)
-        mod->initFn->insertAtTail(stmt->remove());
+      if (stmt->isModuleDefinition() == false) {
+        if (FnSymbol* deinitFn = toModuleDeinitFn(mod, stmt))
+          mod->deinitFn = deinitFn; // the rest is in handleModuleDeinitFn()
+        else
+          mod->initFn->insertAtTail(stmt->remove());
+      }
     }
 
     mod->block->insertAtHead(new DefExpr(mod->initFn));
+    handleModuleDeinitFn(mod);
 
     //
     // If the module has the EXPORT_INIT flag then
@@ -289,8 +292,45 @@ static void insertModuleInit() {
       mod->initFn->addFlag(FLAG_LOCAL_ARGS);
     }
   }
+  USR_STOP();
 }
 
+static FnSymbol* toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt) {
+  if (DefExpr* def = toDefExpr(stmt))
+    if (FnSymbol* fn = toFnSymbol(def->sym))
+      // When we retire ~classname naming for deinits,
+      // we can replace this strcmp with a check for FLAG_DESTRUCTOR.
+      if (!strcmp(fn->name, "deinit"))
+        if (fn->numFormals() == 0) {
+          if (mod->deinitFn) {
+            // Already got one deinit() before.
+            // We could allow multiple deinit() fns and merge their contents.
+            // If so, beware of possible 'return' stmts in each.
+            USR_FATAL_CONT(def,
+              "an additional module deinit() function is not allowed");
+            USR_PRINT(mod->deinitFn,
+              "the first deinit() function is declared here");
+            // Let the duplicate play like an ordinary function until USR_STOP.
+            return NULL;
+          }
+
+        return fn;
+        }
+
+  // Not a deinit.
+  return NULL;
+}
+
+static void handleModuleDeinitFn(ModuleSymbol* mod) {
+  FnSymbol* deinitFn = mod->deinitFn;
+  if (!deinitFn)
+    // We could alternatively create an empty function here.
+    return;
+
+  deinitFn->name = astr("chpl__deinit_", mod->name);
+  deinitFn->removeFlag(FLAG_DESTRUCTOR);
+  // For now leave deinitFn->defPoint wherever the user put it.
+}
 
 
 /************************************* | **************************************

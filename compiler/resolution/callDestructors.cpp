@@ -1004,34 +1004,52 @@ fixupDestructors() {
 }
 
 
+static void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
+  if (anchor)
+    return;
+
+  SET_LINENO(mod);
+  FnSymbol* deinitFn = mod->deinitFn;
+  if (!deinitFn) {
+    deinitFn = new FnSymbol(astr("chpl__deinit_", mod->name));
+    mod->block->insertAtTail(new DefExpr(deinitFn));
+    normalize(deinitFn);
+    resolveFns(deinitFn);
+    mod->deinitFn = deinitFn;
+  }
+
+  anchor = new CallExpr(PRIM_NOOP);
+  deinitFn->insertIntoEpilogue(anchor);
+}
+
+static void cleanupModuleDeinitAnchor(Expr*& anchor) {
+  if (anchor) {
+    anchor->remove();
+    anchor = NULL;
+  }
+}
+
 static void insertGlobalAutoDestroyCalls() {
   // --ipe does not build chpl_gen_main
   if (chpl_gen_main == NULL)
     return;
 
-  SET_LINENO(baseModule);
-
-  const char* name = "chpl__autoDestroyGlobals";
-  FnSymbol*   fn   = new FnSymbol(name);
-
-  fn->retType = dtVoid;
-
-  chpl_gen_main->defPoint->insertBefore(new DefExpr(fn));
-  chpl_gen_main->insertIntoEpilogue(new CallExpr(fn));
-
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (isModuleSymbol(def->parentSymbol))
-      if (def->parentSymbol != rootModule)
-        if (VarSymbol* var = toVarSymbol(def->sym))
-          if (!var->isParameter() && !var->isType())
-            if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
-              if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
-                SET_LINENO(var);
-                fn->insertAtTail(new CallExpr(autoDestroy, var));
-              }
-  }
-
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols)
+    if (isAlive(mod)) {
+      Expr* anchor = NULL;
+      for_alist(expr, mod->block->body)
+        if (DefExpr* def = toDefExpr(expr))
+          if (VarSymbol* var = toVarSymbol(def->sym))
+            if (!var->isParameter() && !var->isType())
+              if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
+                if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
+                  SET_LINENO(var);
+                  ensureModuleDeinitFnAnchor(mod, anchor);
+                  // destroys go after anchor in reverse order of decls
+                  anchor->insertAfter(new CallExpr(autoDestroy, var));
+                }
+      cleanupModuleDeinitAnchor(anchor);
+    }
 }
 
 
