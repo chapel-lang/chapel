@@ -441,7 +441,7 @@ writeln(rSum, "\n", realArray);
 
 // Associative arrays (dictionaries) can be created using associative domains.
 var dictDomain: domain(string) = { "one", "two" };
-var dict: [dictDomain] int = [ "one" => 1, "two" => 2 ];
+var dict: [dictDomain] int = ["one" => 1, "two" => 2];
 dict["three"] = 3; // Adds 'three' to 'dictDomain' implicitly
 for key in dictDomain.sorted() do
   writeln(dict[key]);
@@ -480,10 +480,10 @@ writeln(arrayFromLoop);
 
 // Array expressions can also be written with a bracket notation.
 // Note: this syntax uses the ``forall`` parallel concept discussed later.
-var evensOrFivesAgain = [ i in 1..10 ] if (i % 2 == 0 || i % 5 == 0) then i;
+var evensOrFivesAgain = [i in 1..10] if (i % 2 == 0 || i % 5 == 0) then i;
 
 // They can also be written over the values of the array.
-arrayFromLoop = [ value in arrayFromLoop ] value + 1;
+arrayFromLoop = [value in arrayFromLoop] value + 1;
 
 
 /*
@@ -629,7 +629,7 @@ writeln("Outside After: ", (inVar, outVar, inoutVar, refVar));
 // This makes more practical sense for class methods where references to
 // elements in a data-structure are returned via a method or iterator.
 proc refElement(array : [?D] ?T, idx) ref : T {
-  return array[ idx ];
+  return array[idx];
 }
 
 var myChangingArray : [1..5] int = [1,2,3,4,5];
@@ -734,11 +734,11 @@ var toThisArray : [100..#5] int;
 // The first statement and the loop are equivalent.
 toThisArray = fromThatArray;
 for (i,j) in zip(toThisArray.domain, fromThatArray.domain) {
-  toThisArray[ i ] = fromThatArray[ j ];
+  toThisArray[i] = fromThatArray[j];
 }
 
 // These two chunks are also equivalent.
-toThisArray = [ j in -100..#5 ] j;
+toThisArray = [j in -100..#5] j;
 writeln(toThisArray);
 
 for (i, j) in zip(toThisArray.domain, -100..#5) {
@@ -750,7 +750,7 @@ writeln(toThisArray);
 
 /* .. code-block:: chapel
 
-      var iterArray : [1..10] int = [ i in 1..10 ] if (i % 2 == 1) then j;
+      var iterArray : [1..10] int = [i in 1..10] if (i % 2 == 1) then j;
 */
 
 // Even though the domain of the array and the loop-expression are
@@ -862,14 +862,14 @@ class GenericClass {
                      type classType = otherType) {
     this.classDomain = other.classDomain;
     // Copy and cast
-    for idx in this.classDomain do this[ idx ] = other[ idx ] : classType;
+    for idx in this.classDomain do this[idx] = other[idx] : classType;
   }
 
 // Define bracket notation on a GenericClass
 // object so it can behave like a normal array
-// i.e. ``objVar[ i ]`` or ``objVar(i)``
+// i.e. ``objVar[i]`` or ``objVar(i)``
   proc this(i : int) ref : classType {
-    return this.classArray[ i ];
+    return this.classArray[i];
   }
 
 // Define an implicit iterator for the class
@@ -1060,7 +1060,7 @@ proc main() {
 
 // The bracket style loop-expression described
 // much earlier implicitly uses a ``forall`` loop.
-  [ val in myBigArray ] val = 1 / val; // Parallel operation
+  [val in myBigArray] val = 1 / val; // Parallel operation
 
 // Atomic variables, common to many languages, are ones whose operations
 // occur uninterrupted. Multiple threads can therefore modify atomic
@@ -1180,7 +1180,7 @@ proc main() {
   var (theMaxValue, idxOfMax) = maxloc reduce zip(listOfValues,
                                                   listOfValues.domain);
 
-  writeln((sumOfValues, maxValue, idxOfMax, listOfValues[ idxOfMax ]));
+  writeln((sumOfValues, maxValue, idxOfMax, listOfValues[idxOfMax]));
 
 // Scans apply the operation incrementally and return an array with the
 // values of the operation at that index as it progressed through the
