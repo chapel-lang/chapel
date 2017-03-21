@@ -162,14 +162,14 @@ module ArrayViewReindex {
       pragma "no auto destroy"
       var updomRec = {(...inds)};
       updom = updomRec._value;
-      writeln("updom is: ", updomRec);
+      //      writeln("updom is: ", updomRec);
       var downdomclass = dist.downdist.newRectangularDom(rank=rank,
                                                          idxType=idxType,
                                                          stridable=dist.downdomInst.stridable);
       pragma "no auto destroy"
       var downdomLoc = _newDomain(downdomclass);
       downdomLoc = chpl_reindexConvertDom(inds, updom, downdom);
-      writeln("downdom is: ", downdomLoc);
+      //      writeln("downdom is: ", downdomLoc);
       downdomLoc._value._free_when_no_arrs = true;
       downdomPid = downdomLoc._pid;
       downdomInst = downdomLoc._instance;
@@ -710,18 +710,18 @@ module ArrayViewReindex {
     for param d in 1..dims.size do low(d) = dims(d).first;
     for param d in 1..dims.size do high(d) = dims(d).last;
 
-    writeln("low, high = ", (low, high));
+    //    writeln("low, high = ", (low, high));
 
     var actualLow = chpl_reindexConvertIdx(low, updom, downdom);
     var actualHigh = chpl_reindexConvertIdx(high, updom, downdom);
 
-    writeln("actuals = ", (actualLow, actualHigh));
+    //    writeln("actuals = ", (actualLow, actualHigh));
 
     for param d in 1..updom.rank {
       // TODO: What about stride?
       ranges(d) = actualLow(d)..actualHigh(d);
     }
-    writeln("ranges = ", ranges);
+    //    writeln("ranges = ", ranges);
     return {(...ranges)};
   }
 }
