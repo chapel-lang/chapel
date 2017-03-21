@@ -317,11 +317,18 @@ module ArrayViewRankChange {
 
     proc dsiTargetLocales() {
       //
-      // BLC: To tighten this up, we'd need to query the distribution to
-      // see what subset of target locales the rank-change slice hit vs.
-      // not.
+      // BLC: there's a bit of a question in my mind about whether
+      // rank-change slices (and regular slices for that matter) ought
+      // to be expected to list only the subset of locales that have
+      // non-empty subdomains for a given domain/array, or whether all
+      // locales in the domain's/distribution's target locale set
+      // should be listed since they are part of the target locale
+      // set.  Both seem like they could be useful, though the former
+      // seems as though it could be challenging to compute precisely
+      // for less regular distributions.  Here I've done the easy
+      // thing and simply returned all the locales that own the domain
+      // below us, as slicing does.
       //
-      //      compilerWarning("Calls to .targetLocales() on rank-change slices may currently return a superset of the locales targeted.");
       return downDom.dsiTargetLocales();
     }
 
@@ -566,11 +573,8 @@ module ArrayViewRankChange {
 
     proc dsiTargetLocales() {
       //
-      // BLC: To tighten this up, we'd need to query the distribution to
-      // see what subset of target locales the rank-change slice hit vs.
-      // not.
+      // See commentary on ArrayViewRankChangeDom.dsiTargetLocales() above.
       //
-      //      compilerWarning("Calls to .targetLocales() on rank-change slices may currently return a superset of the locales targeted.");
       return arr.dsiTargetLocales();
     }
 
