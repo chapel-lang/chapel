@@ -741,7 +741,7 @@ effect as passing that option once.
 BUGS
 ----
 
-$CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
+See $CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
 
 SEE ALSO
 --------

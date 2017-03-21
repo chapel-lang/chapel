@@ -24,5 +24,6 @@ The goals of this release are as follows:
   (ii) a multi-threaded, multi-locale implementation of regular
        domains and arrays using some standard distributions.
 
-For more detailed notes on what is or is not supported in this
-release, refer to the Issues list on GitHub.
+For more detailed notes on what is or is not supported
+in this release, refer to the Issues list on GitHub
+(https://github.com/chapel-lang/chapel/issues).
