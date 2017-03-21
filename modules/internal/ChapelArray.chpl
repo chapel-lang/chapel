@@ -2300,7 +2300,6 @@ module ChapelArray {
              "  Actual domain is: ", this.domain);
     }
 
-    /*
     pragma "no doc"
     pragma "fn returns aliasing array"
     proc reindex(d: domain)
@@ -2355,8 +2354,8 @@ module ChapelArray {
       newDom._value.add_arr(x, locking=false);
       return _newArray(x);
     }
-    */
 
+    /*
     pragma "no doc"
     pragma "fn returns aliasing array"
     proc reindex(d: domain)
@@ -2394,6 +2393,7 @@ module ChapelArray {
       newDom._value.add_arr(x, locking=false);
       return _newArray(x);
     }
+    */
 
 
     // reindex for all non-rectangular domain types.

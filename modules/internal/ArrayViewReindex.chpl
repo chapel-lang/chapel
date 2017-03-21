@@ -41,6 +41,7 @@ module ArrayViewReindex {
     proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
       var newdom = new ArrayViewReindexDom(rank=rank,
                                            idxType=idxType,
+                                           //                                           stridable=true,
                                            stridable=stridable,
                                            updom=updom,
                                            downdomPid=downdomPid,
@@ -66,14 +67,14 @@ module ArrayViewReindex {
  class ArrayViewReindexDom: BaseRectangularDom {
     param rank;
     type idxType;
-    param stridable;
+    param stridable=true;  // TODO: relax this when possible?
 
     // the lower-dimensional index set that we represent upwards
     var updom: DefaultRectangularDom(rank, idxType, stridable);
 
     // the higher-dimensional domain that we're equivalent to
     var downdomPid;
-    var downdomInst;
+    var downdomInst; //: downdomtype(rank, idxType, stridable);
 
     var dist;
 
@@ -161,12 +162,14 @@ module ArrayViewReindex {
       pragma "no auto destroy"
       var updomRec = {(...inds)};
       updom = updomRec._value;
+      writeln("updom is: ", updomRec);
       var downdomclass = dist.downdist.newRectangularDom(rank=rank,
                                                          idxType=idxType,
-                                                         stridable=stridable);
+                                                         stridable=dist.downdomInst.stridable);
       pragma "no auto destroy"
       var downdomLoc = _newDomain(downdomclass);
-      downdomLoc = chpl_reindexConvertDom(inds, downdom);
+      downdomLoc = chpl_reindexConvertDom(inds, updom, downdom);
+      writeln("downdom is: ", downdomLoc);
       downdomLoc._value._free_when_no_arrs = true;
       downdomPid = downdomLoc._pid;
       downdomInst = downdomLoc._instance;
@@ -202,8 +205,7 @@ module ArrayViewReindex {
           yield followThis;
       } else {
         for followThis in downdom.these(tag) {
-          const followThisLoD = chpl_reindexConvertHiDTupleToLoD(followThis);
-          yield followThisLoD;
+          yield followThis;
         }
       }
     }
@@ -223,8 +225,17 @@ module ArrayViewReindex {
     }
 
 
-    inline proc downIdxToUpIdx(downIdx) {
-      compilerError("Unimplemented routine");
+    inline proc downIdxToUpIdx(downIdx: integral) {
+      compilerAssert(updom.rank == 1, updom.rank:string);
+      return updom.dsiDim(1).orderToIndex(downdom.dsiDim(1).indexOrder(downIdx));
+    }
+
+    inline proc downIdxToUpIdx(i) {
+      var ind: updom.rank*updom.idxType;
+      for param d in 1..updom.rank {
+        ind(d) = updom.dsiDim(d).orderToIndex(downdom.dsiDim(d).indexOrder(i(d)));
+      }
+      return ind;
     }
 
     // TODO: Is there something we can re-use here?
@@ -295,6 +306,8 @@ module ArrayViewReindex {
     // accessing the array's ddata to avoid indirection overheads
     // through the array field above.
     const indexCache = buildIndexCache();
+
+    const ownsArrInstance = false;
 
     proc downdom {
       var arr = if _isPrivatized(_ArrInstance) then
@@ -380,11 +393,13 @@ module ArrayViewReindex {
     //
 
     proc dsiSerialWrite(f) {
-      chpl_serialReadWriteRectangular(f, this, privDom);
+      //      writeln("Trying to write using: ", privDom.updom);
+      chpl_serialReadWriteRectangular(f, this, privDom.updom);
     }
 
     proc dsiSerialRead(f) {
-      chpl_serialReadWriteRectangular(f, this, privDom);
+      //      writeln("Trying to write using: ", privDom.updom);
+      chpl_serialReadWriteRectangular(f, this, privDom.updom);
     }
 
     proc dsiDisplayRepresentation() {
@@ -657,6 +672,12 @@ module ArrayViewReindex {
     proc _getRCREView() {
       return this;
     }
+
+    proc dsiDestroyArr(isalias:bool) {
+      if ownsArrInstance {
+        _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
+      }
+    }
   }
 
 
@@ -684,18 +705,23 @@ module ArrayViewReindex {
       compilerError("Called chpl_reindexConvertDom with incorrect rank. Got " + dims.size:string + ", expecting " + updom.rank:string);
     }
 
-    var ranges : updom.dsiDims().type;
+    var ranges : downdom.dsiDims().type;
     var low , high : updom.rank*updom.idxType;
     for param d in 1..dims.size do low(d) = dims(d).first;
     for param d in 1..dims.size do high(d) = dims(d).last;
 
+    writeln("low, high = ", (low, high));
+
     var actualLow = chpl_reindexConvertIdx(low, updom, downdom);
     var actualHigh = chpl_reindexConvertIdx(high, updom, downdom);
+
+    writeln("actuals = ", (actualLow, actualHigh));
+
     for param d in 1..updom.rank {
-      var lowered = actualLow(d)..actualHigh(d);
-      // TODO: does it matter which range slices the other?
-      ranges(d) = updom.dsiDim(d)[lowered];
+      // TODO: What about stride?
+      ranges(d) = actualLow(d)..actualHigh(d);
     }
+    writeln("ranges = ", ranges);
     return {(...ranges)};
   }
 }
