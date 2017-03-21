@@ -55,6 +55,11 @@ module ArrayViewReindex {
                                                     updom=updom,
                                                     downdomPid=downdomPid,
                                                     downdomInst=downdomInst);
+
+    proc dsiDestroyDist() {
+      _delete_dom(updom, false);
+      //      _delete_dom(downdomInst, _isPrivatized(downdomInst));
+    }
   }
 
   //
