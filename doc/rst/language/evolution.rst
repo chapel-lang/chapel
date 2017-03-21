@@ -8,6 +8,120 @@ capture significant language changes that have the possibility of breaking
 existing user codes or code samples from old presentations or papers that
 predated the changes.
 
+version 1.15, April 2017
+------------------------
+
+array blank intent
+******************
+
+Before 1.15, the default intent for arrays was `ref`. The rationale for
+this feature was that it was a convenience for programmers who are used
+to modifying array formal arguments in their functions. Unfortunately, it
+interacted poorly with the `ref-pair` feature in the language.
+Additionally, the implementation had several bugs in this area.
+
+The following example shows how it might be suprising that the `ref-pair`
+feature behaves very differently for arrays than for other types. As
+the example shows, this issue affects program behavior and not just
+const-checking error messages from the compiler.
+
+.. code-block:: chapel
+
+  // First, let's try some of these things with an
+  // associative array of ints:
+  {
+    var D:domain(int);
+    var A:[D] int;
+
+    // This adds index 1 to the domain, implicitly
+    A[1] = 10;
+    writeln(D.member(1)); // outputs `true`
+
+    // This will halt, because index 2 is not in the domain
+    //var tmp = A[2];
+
+    // This will also halt, for the same reason
+    //writeln(A[3]);
+  }
+
+  // Now, let's try the same things with an array of arrays:
+  {
+    var D:domain(int);
+    var AA:[D] [1..4] int;
+    var value:[1..4] int = [10,20,30,40];
+
+    // This adds index 4 to the domain, implicitly
+    AA[4] = value;
+    writeln(D.member(4)); // outputs `true`
+
+    // This will halt, because index 5 is not in the domain
+    //var tmp = AA[5];
+
+    // It seems that this *should* halt, but it does not (pre 1.15)
+    // Instead, it adds index 6 to the domain
+    writeln(AA[6]);
+    writeln(D.member(6)); // outputs `true` !
+  }
+
+See GitHub issue #5217 for more examples and discussion.
+
+In order to make such programs less suprising, version 1.15 changes the default
+intent for arrays to `ref` if the formal argument is modified in the function
+and `const ref` if not. As a result, the above example behaves similarly for an
+associative array of integers and an associative array of dense arrays.
+
+For example, in the following program, the default intent for the formal
+argument `x` is `ref`:
+
+.. code-block:: chapel
+
+  proc f(x) {
+    // x is modified, so as if formal was ref x
+    x[1] = 1;
+  }
+  var A:[1..10] int;
+  f(A);
+
+In contrast, in the following program, the default intent for the formal argument `y` is `const ref`:
+
+.. code-block:: chapel
+
+  proc g(y) {
+    // y is not modified, so as if formal was const ref y
+    var tmp = y[1];
+  }
+  const B:[1..10] int;
+  g(B);
+
+
+record `this` default intent
+****************************
+
+Before 1.15, the default intent for the implicit `this`
+argument for record methods was implemented as `ref` but specified as `const ref`. In 1.15, this changed to `ref` if the formal `this` argument is modified in the body of the function and `const ref` if not.
+
+See GitHub issue #5266 for more details and discussion.
+
+.. code-block:: chapel
+
+  record R {
+    var field: int;
+
+    proc setFieldToOne() {
+      // since this is not modified, as if
+      // this intent was ref
+      this.field = 1;
+    }
+
+    proc printField() {
+      // since this is not modified, as if
+      // this intent was const ref
+      writeln(this.field);
+    }
+  }
+
+
+
 version 1.13, April 2016
 ------------------------
 
