@@ -18,7 +18,6 @@ further information about the files and directories that they contain.
   PERFORMANCE.md       : notes about Chapel performance
   QUICKSTART.rst       : quick-start instructions
   README.files         : this file
-  STATUS               : a list of unimplemented features and known bugs
   Makefile             : top-level Makefile for building things
   bin/                 : location of the compiler (chpl) once it's been built
   compiler/            : source code for the compiler

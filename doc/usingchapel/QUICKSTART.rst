@@ -169,7 +169,6 @@ What's next?
     executing Chapel programs                   `doc/executing.rst`_
     debugging Chapel programs                   `doc/debugging.rst`_
     reporting bugs                              `doc/bugs.rst`_
-    implementation status                       ``STATUS``
     performance status                          ``PERFORMANCE.md``
     Chapel modes for emacs and vim              ``highlight/README.md``
     Chapel's file and directory structure       ``README.files``
