@@ -23,7 +23,9 @@ amudprun: configure-amudprun build-amudprun install-amudprun
 configure-amudprun: FORCE
 	mkdir -p $(AMUDPRUN_BUILD_DIR)
 	cp $(AMUDPRUN_SRC_DIR)/Makefile* $(AMUDPRUN_BUILD_DIR)
-	cp $(AMUDPRUN_SRC_DIR)/*.{c,cpp,h} $(AMUDPRUN_BUILD_DIR)
+	cp $(AMUDPRUN_SRC_DIR)/*.c $(AMUDPRUN_BUILD_DIR)
+	cp $(AMUDPRUN_SRC_DIR)/*.cpp $(AMUDPRUN_BUILD_DIR)
+	cp $(AMUDPRUN_SRC_DIR)/*.h $(AMUDPRUN_BUILD_DIR)
 	cp $(AMUDPRUN_SRC_DIR)/../portable_*.h $(AMUDPRUN_BUILD_DIR)
 
 build-amudprun: FORCE
