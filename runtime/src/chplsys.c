@@ -486,8 +486,10 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
     cpuCores = 1;
   if (siblings == 0)
     siblings = 1;
-  *p_numPhysCpus = procs / (siblings / cpuCores);
-  *p_numLogCpus = procs;
+  if ((*p_numPhysCpus = procs / (siblings / cpuCores)) <= 0)
+    *p_numPhysCpus = 1;
+  if ((*p_numLogCpus = procs) <= 0)
+    *p_numLogCpus = 1;
 }
 #endif
 
@@ -554,6 +556,9 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
         numLogCpusAcc = 1;
       numCpus = (numPhysCpus * numLogCpusAcc) / numLogCpus;
 #endif
+
+      if (numCpus <= 0)
+        numCpus = 1;
     }
     return numCpus;
   }
@@ -625,6 +630,9 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
         numLogCpusAcc = 1;
       numCpus = (numLogCpusAcc < numLogCpus) ? numLogCpusAcc : numLogCpus;
 #endif
+
+      if (numCpus <= 0)
+        numCpus = 1;
     }
     return numCpus;
   }

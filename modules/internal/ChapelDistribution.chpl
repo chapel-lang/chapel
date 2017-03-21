@@ -91,8 +91,16 @@ module ChapelDistribution {
     }
 
     //
-    // TODO: Are there opportunities to optimize out the locking here,
-    // as on the add_arr() case?
+    // TODO: There may be some opportunities to optimize out the
+    // locking here, as in the add_arr() case.  For example, the
+    // construction of the distriution and domain used for rank change
+    // slicing could use an unlocked version because that operation
+    // creates a new distribution followed immediately by a domain
+    // over the distribution. It's unclear how important this
+    // optimization is, though, because rank change slices are
+    // arguably less common (and already more expensive in most cases
+    // due to the creation of distribution and domain objects) than
+    // rank-preserving slicing.
     //
     inline proc add_dom(x:BaseDom) {
       on this {

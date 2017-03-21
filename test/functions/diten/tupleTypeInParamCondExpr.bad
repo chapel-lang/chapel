@@ -1,0 +1,2 @@
+tupleTypeInParamCondExpr.chpl:3: In function 'getType':
+tupleTypeInParamCondExpr.chpl:4: error: illegal return of value where type is expected

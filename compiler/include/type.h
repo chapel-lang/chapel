@@ -443,11 +443,14 @@ private:
   void                        addDeclaration(DefExpr* defExpr);
 
   std::vector<AggregateType*> instantiations;
+
   // genericField stores the index of the first generic field in the
-  // AggregateType which does not have a substitution, but only if the
-  // AggregateType defines an initializer.  If the type has no generic
-  // fields without substitutions, or if setNextGenericField has not been called
-  // on the base AggregateType, this will be set to 0.
+  // AggregateType which does not have a substitution,
+  // but only if the AggregateType defines an initializer.
+  //
+  // If the type has no generic fields without substitutions,
+  // or if setNextGenericField has not been called on the base AggregateType,
+  // this will be set to 0.
   int                         genericField;
 
   bool                        mIsGeneric;
@@ -591,7 +594,9 @@ bool isString(Type* type);
 bool isUserDefinedRecord(Type* type);
 
 bool isPrimitiveScalar(Type* type);
-bool isNonGenericClass(Type* type);
+
+bool isNonGenericClass (Type* type);
+bool isNonGenericRecord(Type* type);
 
 bool isNonGenericClassWithInitializers (Type* type);
 bool isNonGenericRecordWithInitializers(Type* type);

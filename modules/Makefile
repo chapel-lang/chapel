@@ -103,11 +103,14 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
+	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
 	packages/Norm.chpl \
+	packages/OwnedObject.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/Search.chpl \
+	packages/SharedObject.chpl \
 	packages/Sort.chpl \
 	packages/VisualDebug.chpl \
 	packages/ZMQ.chpl

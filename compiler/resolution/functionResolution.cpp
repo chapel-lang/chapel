@@ -239,9 +239,9 @@ static void resolveTupleExpand(CallExpr* call);
 static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
                                         SymExpr* rhs);
 static void resolveSetMember(CallExpr* call);
+static void resolveInitField(CallExpr* call);
 static void resolveInitVar(CallExpr* call);
 static void resolveMove(CallExpr* call);
-static void resolveFieldInit(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static bool formalRequiresTemp(ArgSymbol* formal);
@@ -284,6 +284,7 @@ addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false);
 static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
 static void resolveUses(ModuleSymbol* mod);
+static void resolveSupportForModuleDeinits();
 static void resolveExports();
 static void resolveEnumTypes();
 static void resolveDynamicDispatches();
@@ -613,8 +614,9 @@ resolveAutoCopyEtc(Type* type) {
     if (isUserDefinedRecord(type) &&
         !type->symbol->hasFlag(FLAG_TUPLE) &&
         !isRecordWrappedType(type) &&
-        !isSyncType(type) &
-        !isSingleType(type)) {
+        !isSyncType(type) &&
+        !isSingleType(type) &&
+        !type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
       // Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
       // for user-defined records. This way, if the type does not
       // support copying, the autoCopyMap will store a function
@@ -4605,22 +4607,22 @@ void resolveCall(CallExpr* call) {
       resolveSetMember(call);
       break;
 
+    case PRIM_INIT:
+    case PRIM_NO_INIT:
+    case PRIM_TYPE_INIT:
+      resolveDefaultGenericType(call);
+      break;
+
+    case PRIM_INIT_FIELD:
+      resolveInitField(call);
+      break;
+
     case PRIM_INIT_VAR:
       resolveInitVar(call);
       break;
 
     case PRIM_MOVE:
       resolveMove(call);
-      break;
-
-    case PRIM_INITIALIZER_SET_FIELD:
-      resolveFieldInit(call);
-      break;
-
-    case PRIM_INIT:
-    case PRIM_NO_INIT:
-    case PRIM_TYPE_INIT:
-      resolveDefaultGenericType(call);
       break;
 
     case PRIM_COERCE:
@@ -5000,13 +5002,20 @@ void lvalueCheck(CallExpr* call)
     bool errorMsg = false;
     switch (formal->intent) {
      case INTENT_BLANK:
-     case INTENT_IN:
      case INTENT_CONST:
-     case INTENT_CONST_IN:
      case INTENT_PARAM:
      case INTENT_TYPE:
      case INTENT_REF_MAYBE_CONST:
       // not checking them here
+      break;
+
+     case INTENT_IN:
+     case INTENT_CONST_IN:
+      // generally, not checking them here
+      // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
+      if (formal->type->symbol->hasFlag(FLAG_COPY_MUTATES))
+        if (!isLegalLvalueActualArg(formal, actual))
+          errorMsg = true;
       break;
 
      case INTENT_INOUT:
@@ -5309,6 +5318,117 @@ static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
 
 /************************************* | **************************************
 *                                                                             *
+* Resolves calls inserted into initializers during Phase 1,                   *
+* to fully determine the instantiated type.                                   *
+*                                                                             *
+* This function is a combination of resolveMove and resolveSetMember          *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveInitField(CallExpr* call) {
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
+  INT_ASSERT(call->argList.length == 3);
+  // PRIM_INIT_FIELD contains three args:
+  // fn->_this, the name of the field, and the value/type it is to be given
+
+  SymExpr* rhs = toSymExpr(call->get(3)); // the value/type to give the field
+
+  // Get the field name.
+  SymExpr* sym = toSymExpr(call->get(2));
+  if (!sym)
+    INT_FATAL(call, "bad initializer set field primitive");
+  VarSymbol* var = toVarSymbol(sym->symbol());
+  if (!var || !var->immediate)
+    INT_FATAL(call, "bad initializer set field primitive");
+  const char* name = var->immediate->v_string;
+
+  // Get the type
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
+  if (!ct)
+    INT_FATAL(call, "bad initializer set field primitive");
+
+  Symbol* fs = NULL;
+  int index = 1;
+  for_fields(field, ct) {
+    if (!strcmp(field->name, name)) {
+      fs = field; break;
+    }
+    index++;
+  }
+
+  if (!fs)
+    INT_FATAL(call, "bad initializer set field primitive");
+
+  Type* t = rhs->typeInfo();
+  // I think this never happens, so can be turned into an assert. <hilde>
+  if (t == dtUnknown)
+    INT_FATAL(call, "Unable to resolve field type");
+
+  if (t == dtNil && fs->type == dtUnknown)
+    USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
+  if (fs->type == dtUnknown) {
+    // Update the type of the field.  If necessary, update to a new
+    // instantiation of the overarching type (and replaces references to the
+    // fields from the old instantiation
+    if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
+        fs->hasFlag(FLAG_PARAM) ||
+        (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL)) {
+      AggregateType* instantiate = ct->getInstantiation(rhs, index);
+      if (instantiate != ct) {
+        // TODO: make this set of operations a helper function I can call
+        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(parentFn);
+        INT_ASSERT(parentFn->_this);
+        parentFn->_this->type = instantiate;
+
+        SymbolMap fieldTranslate;
+        for (int i = 1; i <= instantiate->fields.length; i++) {
+          fieldTranslate.put(ct->getField(i), instantiate->getField(i));
+        }
+        update_symbols(parentFn, &fieldTranslate);
+
+        ct = instantiate;
+        fs = instantiate->getField(index);
+      }
+    } else {
+      // The field is not generic.
+      if (fs->defPoint->exprType == NULL) {
+        fs->type = t;
+      } else if (fs->defPoint->exprType) {
+        fs->type = fs->defPoint->exprType->typeInfo();
+      }
+    }
+  }
+
+  if (t != fs->type && t != dtNil && t != dtObject) {
+    Symbol*   actual = rhs->symbol();
+    FnSymbol* fn     = toFnSymbol(call->parentSymbol);
+
+    if (canCoerceTuples(t, actual, fs->type, fn)) {
+      // Add a PRIM_MOVE so that insertCasts will take care of it later.
+      VarSymbol* tmp = newTemp("coerce_elt", fs->type);
+
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
+
+      call->insertAtTail(tmp);
+
+    } else {
+      USR_FATAL(userCall(call),
+                "cannot assign expression of type %s to field of type %s",
+                toString(t),
+                toString(fs->type));
+    }
+  }
+
+  call->primitive = primitives[PRIM_SET_MEMBER];
+}
+
+/************************************* | **************************************
+*                                                                             *
 * This handles expressions of the form                                        *
 *      CallExpr(PRIM_INIT_VAR, dst, src)                                      *
 *                                                                             *
@@ -5598,93 +5718,6 @@ static void resolveMove(CallExpr* call) {
       }
     }
   }
-}
-
-// Resolves calls inserted into initializers during Phase 1, to fully determine
-// the instantiated type
-//
-// This function is a combination of resolveMove and resolveSetMember
-static void
-resolveFieldInit(CallExpr* call) {
-  if (call->id == breakOnResolveID )
-    gdbShouldBreakHere();
-
-  INT_ASSERT(call->argList.length == 3);
-  // PRIM_INITIALIZER_SET_FIELD contains three args:
-  // fn->_this, the name of the field, and the value/type it is to be given
-
-  SymExpr* rhs = toSymExpr(call->get(3)); // the value/type to give the field
-
-  // Get the field name.
-  SymExpr* sym = toSymExpr(call->get(2));
-  if (!sym)
-    INT_FATAL(call, "bad initializer set field primitive");
-  VarSymbol* var = toVarSymbol(sym->symbol());
-  if (!var || !var->immediate)
-    INT_FATAL(call, "bad initializer set field primitive");
-  const char* name = var->immediate->v_string;
-
-  // Get the type
-  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
-  if (!ct)
-    INT_FATAL(call, "bad initializer set field primitive");
-
-  Symbol* fs = NULL;
-  int index = 1;
-  for_fields(field, ct) {
-    if (!strcmp(field->name, name)) {
-      fs = field; break;
-    }
-    index++;
-  }
-
-  if (!fs)
-    INT_FATAL(call, "bad initializer set field primitive");
-
-  Type* t = rhs->typeInfo();
-  // I think this never happens, so can be turned into an assert. <hilde>
-  if (t == dtUnknown)
-    INT_FATAL(call, "Unable to resolve field type");
-
-  if (t == dtNil && fs->type == dtUnknown)
-    USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
-  if (fs->type == dtUnknown) {
-    // Update the type of the field.  If necessary, update to a new
-    // instantiation of the overarching type (and replaces references to the
-    // fields from the old instantiation
-    if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
-        fs->hasFlag(FLAG_PARAM) ||
-        (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL)) {
-      AggregateType* instantiate = ct->getInstantiation(rhs, index);
-      if (instantiate != ct) {
-        // TODO: make this set of operations a helper function I can call
-        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(parentFn);
-        INT_ASSERT(parentFn->_this);
-        parentFn->_this->type = instantiate;
-
-        SymbolMap fieldTranslate;
-        for (int i = 1; i <= instantiate->fields.length; i++) {
-          fieldTranslate.put(ct->getField(i), instantiate->getField(i));
-        }
-        update_symbols(parentFn, &fieldTranslate);
-
-        ct = instantiate;
-        fs = instantiate->getField(index);
-      }
-    } else {
-      // The field is not generic.
-      if (fs->defPoint->exprType == NULL) {
-        fs->type = t;
-      } else if (fs->defPoint->exprType) {
-        fs->type = fs->defPoint->exprType->typeInfo();
-      }
-    }
-  }
-
-  handleSetMemberTypeMismatch(t, fs, call, rhs);
-
-  call->primitive = primitives[PRIM_SET_MEMBER];
 }
 
 /************************************* | **************************************
@@ -8928,9 +8961,11 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           call->insertAtTail(unrefCall);
           FnSymbol* unrefFn = resolveNormalCall(unrefCall);
           resolveFns(unrefFn);
-          if (unrefFn->where == NULL) {
-            // If the call cannot be resolved, we must be dealing with a
-            // non-view array, so we can remove the useless unref call.
+          // Relies on the ArrayView variant having the 'unref fn' flag in
+          // ChapelArray.
+          if (unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
+            // If the function does not have this flag, we must be dealing with
+            // a non-view array, so we can remove the useless unref call.
             unrefCall->replace(origRHS->copy());
 
             // Remove now-useless AST
@@ -9609,6 +9644,8 @@ void resolve() {
   if (chpl_gen_main)
     resolveFns(chpl_gen_main);
 
+  resolveSupportForModuleDeinits();
+
   USR_STOP();
 
   resolveExports();
@@ -9747,10 +9784,27 @@ static void resolveUses(ModuleSymbol* mod)
   resolveFormals(fn);
   resolveFns(fn);
 
+  if (FnSymbol* defn = mod->deinitFn) {
+    resolveFormals(defn);
+    resolveFns(defn);
+  }
+
   if (fPrintModuleResolution)
     putc('\n', stderr);
 
   --module_resolution_depth;
+}
+
+static void resolveSupportForModuleDeinits() {
+  // We will need these in addInitGuards.cpp
+  SET_LINENO(chpl_gen_main);
+  Expr*    modNameDum = buildCStringLiteral("");
+  VarSymbol* fnPtrDum = newTemp("fnPtr", dtCFnPtr);
+  CallExpr* addModule = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
+  resolveUninsertedCall(chpl_gen_main->body, NULL, addModule, false);
+  gAddModuleFn = addModule->isResolved();
+  resolveFns(gAddModuleFn);
+  // Also in buildDefaultFunctions.cpp: new CallExpr("chpl_deinitModules")
 }
 
 static void resolveExports() {
@@ -10467,10 +10521,13 @@ static void cleanupAfterRemoves() {
     // How about fn->substitutions, basicBlocks, calledBy ?
   }
 
-  forv_Vec(ModuleSymbol, mod, gModuleSymbols)
-    // Zero the initFn pointer if the function is now dead.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    // Zero the initFn pointer if the function is now dead. Ditto deinitFn.
     if (mod->initFn && !isAlive(mod->initFn))
       mod->initFn = NULL;
+    if (mod->deinitFn && !isAlive(mod->deinitFn))
+      mod->deinitFn = NULL;
+  }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->instantiatedFrom != NULL)

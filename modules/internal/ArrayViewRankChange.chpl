@@ -26,6 +26,10 @@
 // array/domain/distribution that's been rank-changed in this view,
 // while 'up*' refers to the lower-dimensional, user-facing view.
 //
+// Note that because only rectangular domains have a notion of having
+// rank > 1, rank-change views are only supported for rectangular
+// domains and arrays.
+//
 // TODOs for this file:
 //
 // * the dist, dom, and arr classes store a certain amount of
@@ -40,13 +44,21 @@ module ArrayViewRankChange {
   //
   // This class represents a distribution that knows how to create
   // rank-change domains and arrays similar to the one that caused
-  // it to be created.  It stores a pointer down to the distribution
-  // that it creates lower-dimensional views of, and two tuples
-  // indicating which dimensions were collapsed by the rank-change
-  // and what the indices of those dimensions are.
+  // it to be created.
   //
   class ArrayViewRankChangeDist: BaseDist {
+    // a pointer down to the distribution that this class is creating
+    // lower-dimensional views of
     const downdist;
+    
+    // These two fields represent whether or not each dimension was
+    // collapsed as part of the rank-change; and if so, what the
+    // index of that collapsed dimension was.  So for A[lo..hi, 3]
+    // these would be (false, true) and (?, 3) respectively.
+    //
+    // As future work (TODO), note that collapsedDim ought to be able
+    // to be changed into a param tuple rather than an execution-time
+    // one.
     const collapsedDim;
     const idx;
 
@@ -70,8 +82,8 @@ module ArrayViewRankChange {
   // This class represents the domain of a rank-change slice of an
   // array.  Like other domain class implementations, it supports the
   // standard dsi interface.  Note that rank changes only make sense
-  // for rectangular domains so this is a subclass of
-  // BaseRectangularDom.
+  // for rectangular domains (because they're the only ones with
+  // rank>1), so this is a subclass of BaseRectangularDom.
   //
  class ArrayViewRankChangeDom: BaseRectangularDom {
     param rank;
@@ -79,23 +91,26 @@ module ArrayViewRankChange {
     param stridable;
 
     // the lower-dimensional index set that we represent upwards
-    var updom: DefaultRectangularDom(rank, idxType, stridable);
+    var upDom: DefaultRectangularDom(rank, idxType, stridable);
 
     // the collapsed dimensions and indices in those dimensions
+    //
+    // Note that these are the same as in the distribution and could
+    // potentially be pulled from there.
     const collapsedDim;
     const idx;
 
     const dist;  // a reference back to our ArrayViewRankChangeDist
 
     // the higher-dimensional domain that we're equivalent to
-    var downdomPid:int;
-    var downdomInst: downdomtype(downrank, idxType, stridable);
+    var downDomPid:int;
+    var downDomInst: downDomType(downrank, idxType, stridable);
 
     //
     // TODO: If we put this expression into the variable declaration
     // above, we get a memory leak.  File a future against this?
     //
-    proc downdomtype(param rank: int, type idxType, param stridable: bool) type {
+    proc downDomType(param rank: int, type idxType, param stridable: bool) type {
       var a = dist.downdist.newRectangularDom(rank=rank, idxType=idxType,
                                               stridable=stridable);
       return a.type;
@@ -105,16 +120,16 @@ module ArrayViewRankChange {
       return collapsedDim.size;
     }
 
-    inline proc downdom {
-      if _isPrivatized(downdomInst) then
-        return chpl_getPrivatizedCopy(downdomInst.type, downdomPid);
+    inline proc downDom {
+      if _isPrivatized(downDomInst) then
+        return chpl_getPrivatizedCopy(downDomInst.type, downDomPid);
       else
-        return downdomInst;
+        return downDomInst;
     }
 
     proc dsiBuildArray(type eltType) {
       pragma "no auto destroy"
-      const downarr = _newArray(downdom.dsiBuildArray(eltType));
+      const downarr = _newArray(downDom.dsiBuildArray(eltType));
       return new ArrayViewRankChangeArr(eltType  =eltType,
       // TODO: Update once we start privatizing vvv
                                         _DomPid = nullPid,
@@ -130,114 +145,98 @@ module ArrayViewRankChange {
     // TODO: Can't all these be implemented in ChapelArray given dsiDim()?
 
     proc dsiNumIndices {
-      return updom.dsiNumIndices;
+      return upDom.dsiNumIndices;
     }
 
     proc dsiLow {
-      return updom.dsiLow;
+      return upDom.dsiLow;
     }
 
     proc dsiHigh {
-      return updom.dsiHigh;
+      return upDom.dsiHigh;
     }
 
     proc dsiAlignedLow {
-      return updom.dsiAlignedLow;
+      return upDom.dsiAlignedLow;
     }
 
     proc dsiAlignedHigh {
-      return updom.dsiAlignedHigh;
+      return upDom.dsiAlignedHigh;
     }
 
     proc dsiStride {
-      return updom.dsiStride;
+      return upDom.dsiStride;
     }
 
     proc dsiAlignment {
-      return updom.dsiAlignment;
+      return upDom.dsiAlignment;
     }
 
     proc dsiFirst {
-      return updom.dsiFirst;
+      return upDom.dsiFirst;
     }
 
     proc dsiLast {
-      return updom.dsiLast;
+      return upDom.dsiLast;
     }
 
     proc dsiDim(upDim: int) {
-      var downDim = 0;
-      for d in 1..downrank {
-        if !collapsedDim(d) {
-          downDim += 1;
-          if (upDim == downDim) then
-            return downdom.dsiDim(d);
-        }
-      }
-      halt("Fell out of loop in dsiDim():", (upDim, downDim));
+      return upDom.dsiDim(upDim);
     }
 
     proc dsiDims() {
-      var upDims: rank*range(idxType, stridable=stridable);
-      var upDim = 1;
-      for param downDim in 1..downrank {
-        if !collapsedDim(downDim) {
-          upDims(upDim) = downdom.dsiDim(downDim);
-          upDim += 1;
-        }
-      }
-      return upDims;
+      return upDom.dsiDims();
     }
 
     proc dsiGetIndices() {
-      return updom.dsiGetIndices();
+      return upDom.dsiGetIndices();
     }
 
     proc dsiSetIndices(inds) {
       pragma "no auto destroy"
-      var updomRec = {(...inds)};
-      updom = updomRec._value;
-      var downdomclass = dist.downdist.newRectangularDom(rank=downrank,
+      var upDomRec = {(...inds)};
+      upDom = upDomRec._value;
+      var downDomclass = dist.downdist.newRectangularDom(rank=downrank,
                                                          idxType=idxType,
                                                          stridable=stridable);
       pragma "no auto destroy"
-      var downdomLoc = _newDomain(downdomclass);
-      downdomLoc = chpl_rankChangeConvertDom(inds, inds.size, collapsedDim, idx);
-      downdomLoc._value._free_when_no_arrs = true;
-      downdomPid = downdomLoc._pid;
-      downdomInst = downdomLoc._instance;
+      var downDomLoc = _newDomain(downDomclass);
+      downDomLoc = chpl_rankChangeConvertDom(inds, inds.size, collapsedDim, idx);
+      downDomLoc._value._free_when_no_arrs = true;
+      downDomPid = downDomLoc._pid;
+      downDomInst = downDomLoc._instance;
     }
 
     proc dsiMember(i) {
-      return downdom.dsiMember(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
+      return upDom.dsiMember(i);
     }
 
     iter these() {
-      if chpl__isDROrDRView(downdom) {
-        for i in updom do
+      if chpl__isDROrDRView(downDom) {
+        for i in upDom do
           yield i;
       } else {
-        for i in downdom do
+        for i in downDom do
           yield downIdxToUpIdx(i);
       }
     }
 
     iter these(param tag: iterKind) where tag == iterKind.standalone {
-      if chpl__isDROrDRView(downdom) {
-        for i in updom.these(tag) do
+      if chpl__isDROrDRView(downDom) {
+        for i in upDom.these(tag) do
           yield i;
       } else {
-        for i in downdom.these(tag) do
+        for i in downDom.these(tag) do
           yield downIdxToUpIdx(i);
       }
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
-      if chpl__isDROrDRView(downdom) {
-        for followThis in updom.these(tag) do
+      if chpl__isDROrDRView(downDom) {
+        for followThis in upDom.these(tag) do
           yield followThis;
       } else {
-        for followThis in downdom.these(tag) {
+        for followThis in downDom.these(tag) {
           const followThisLoD = chpl_rankChangeConvertHiDTupleToLoD(followThis);
           yield followThisLoD;
         }
@@ -246,12 +245,12 @@ module ArrayViewRankChange {
 
     iter these(param tag: iterKind, followThis)
       where tag == iterKind.follower {
-      if chpl__isDROrDRView(downdom) {
-        for i in updom.these(tag, followThis) do
+      if chpl__isDROrDRView(downDom) {
+        for i in upDom.these(tag, followThis) do
           yield i;
       } else {
         const followThisHiD = chpl_rankChangeConvertLoDTupleToHiD(followThis);
-        for i in downdom.these(tag, followThisHiD) {
+        for i in downDom.these(tag, followThisHiD) {
           yield chpl_rankChangeConvertIdxHiDToLoD(i, collapsedDim, idx, rank);
         }
       }
@@ -262,7 +261,7 @@ module ArrayViewRankChange {
       var i = 1;
       for param d in 1..downrank do
         if collapsedDim(d) then
-          tupHiD(d) = 0..0;  // TODO: This seems bogus/arbitrary... or is it?
+          tupHiD(d) = 0..0;
         else {
           tupHiD(d) = tup(i);
           i += 1;
@@ -307,7 +306,7 @@ module ArrayViewRankChange {
             first = false;
           } else
             write(", ");
-          write(downdom.dsiDim(d));
+          write(downDom.dsiDim(d));
         }
       write("}");
     }
@@ -323,14 +322,14 @@ module ArrayViewRankChange {
       // not.
       //
       //      compilerWarning("Calls to .targetLocales() on rank-change slices may currently return a superset of the locales targeted.");
-      return downdom.dsiTargetLocales();
+      return downDom.dsiTargetLocales();
     }
 
     proc dsiHasSingleLocalSubdomain() param
-      return downdom.dsiHasSingleLocalSubdomain();
+      return downDom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain() {
-      return downdom.dsiLocalSubdomain();
+      return downDom.dsiLocalSubdomain();
     }
 
     proc isRankChangeDomainView() param {
@@ -338,16 +337,16 @@ module ArrayViewRankChange {
     }
 
     proc _getActualDomain() {
-      if chpl__isDomainView(downdom) {
-        return downdom._getActualDomain();
+      if chpl__isDomainView(downDom) {
+        return downDom._getActualDomain();
       } else {
-        return downdom;
+        return downDom;
       }
     }
 
     proc dsiDestroyDom() {
-      _delete_dom(updom, false);
-      _delete_dom(downdomInst, _isPrivatized(downdomInst));
+      _delete_dom(upDom, false);
+      _delete_dom(downDomInst, _isPrivatized(downDomInst));
     }
 
   } // end of class ArrayViewRankChangeDom
@@ -576,10 +575,10 @@ module ArrayViewRankChange {
     }
 
     proc dsiHasSingleLocalSubdomain() param
-      return privDom.updom.dsiHasSingleLocalSubdomain();
+      return privDom.upDom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain() {
-      return privDom.updom.dsiLocalSubdomain();
+      return privDom.upDom.dsiLocalSubdomain();
     }
 
     proc dsiNoFluffView() {
