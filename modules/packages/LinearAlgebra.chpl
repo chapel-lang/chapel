@@ -60,9 +60,6 @@ unless otherwise specified.
 This function supports any combination of scalars, vectors (1D arrays), and
 matrices (2D arrays). See the :proc:`dot` documentation for more information.
 
-If you find this convenient notation confusing, you can opt to calling the
-underlying functions: :proc:`matMult` and `inner`.
-
 The :proc:`dot` function, along with others may be given a matrix-specific
 operator in future releases.
 
@@ -149,7 +146,7 @@ module LinearAlgebra {
 
 /* Return a vector (1D array) over domain ``{0..#length}``*/
 proc Vector(length, type eltType=real) {
-  //if (length <= 0) then compilerError("Vector length must be > 0");
+  if (length <= 0) then halt("Vector length must be > 0");
   var V: [0..#length] eltType;
   return V;
 }
@@ -233,11 +230,26 @@ proc Matrix(Arrays...?n) {
 
 
 /*
-    Return a matrix (2D array), given 2 or more vectors. Vectors are
+    Return a matrix (2D array), given 2 or more vectors, such that the vectors
+    form the rows of the matrix. In other words, the vectors are
     concatenated such that the ``ith`` vector corresponds to the matrix slice:
     ``A[i, ..]``
 
-    If `type` is omitted, it will be inferred from the first argument
+    If `type` is omitted, it will be inferred from the first array.
+
+    For example:
+
+    .. code-block:: chapel
+
+        var A = Matrix([1, 2, 3],
+                       [4, 5, 6],
+                       [7, 8, 9]);
+        /* Produces the 3x3 matrix of integers:
+             1 2 3
+             4 5 6
+             7 8 9
+         */
+
 */
 proc Matrix(const Arrays...?n, type eltType) {
   // TODO -- assert all array domains are same length
@@ -254,6 +266,14 @@ proc Matrix(const Arrays...?n, type eltType) {
     M[i, ..] = Arrays(i+1)[..]: eltType;
 
   return M;
+}
+
+
+/* Return a square identity matrix over domain ``{0..#m, 0..m}`` */
+proc eye(m, type eltType=real) {
+  var A: [{0..#m, 0..#m}] eltType;
+  for i in 0..#m do A[i, i] = 1: eltType;
+  return A;
 }
 
 
@@ -361,7 +381,11 @@ proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
 /*
     Generic matrix multiplication, ``A`` and ``B`` can be a matrix, vector, or
-    scalar
+    scalar.
+
+    When ``A`` is a vector and ``B`` is a matrix, this function implicitly
+    computes ``dot(transpose(A), B)``, which may not be as efficient as
+    passing ``A`` and ``B`` in the reverse order.
 */
 proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   // vector-vector
@@ -411,8 +435,14 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Rank sizes are not 2 and 1");
-  if Adom.shape(2) != Xdom.shape(1) then
-    halt("Mismatched shape in matrix-vector multiplication");
+  if !trans {
+    if Adom.shape(2) != Xdom.shape(1) then
+      halt("Mismatched shape in matrix-vector multiplication");
+  } else {
+    if Adom.shape(1) != Xdom.shape(1) then
+      halt("Mismatched shape in matrix-vector multiplication");
+  }
+
 
   var op = if trans then BLAS.Op.T
            else BLAS.Op.N;
@@ -444,7 +474,7 @@ proc inner(A: [?Adom], B: [?Bdom]) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
   if Adom.size != Bdom.size then
-    halt("Mismatched size in vector-vector multiplication");
+    halt("Mismatched size in inner multiplication");
 
   return + reduce(A[..]*B[..]);
 }
@@ -464,7 +494,7 @@ proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
 pragma "no doc"
 /* Generic matrix-vector multiplication */
-proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType)
+proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   where !isBLASType(eltType)
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
@@ -473,8 +503,18 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType)
   var C: [Xdom] eltType;
 
   // naive algorithm
-  forall i in Xdom do
-    C[i] = + reduce (A[i,..]*X[..]);
+  if !trans {
+    if Adom.shape(2) != Xdom.shape(1) then
+      halt("Mismatched shape in matrix-vector multiplication");
+    forall i in Xdom do
+      C[i] = + reduce (A[i,..]*X[..]);
+  } else {
+    if Adom.shape(1) != Xdom.shape(1) then
+      halt("Mismatched shape in matrix-vector multiplication");
+    forall i in Xdom do
+      C[i] = + reduce (A[.., i]*X[..]);
+  }
+
 
   return C;
 }
@@ -524,13 +564,6 @@ private proc _expBySquaring(x: ?t, n): t {
 }
 
 
-/* Return element-wise power: ``a**B`` */
-proc matPow(a, B: [?Bdom] ?eltType) where isNumeric(a) {
-  var C: [Bdom] eltType = a**B;
-  return C;
-}
-
-
 /* Return cross-product of 3-element vectors ``A`` and ``B`` with domain of
   ``A`` */
 proc cross(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
@@ -566,7 +599,11 @@ private inline proc _raw(D: domain(1), i) {
 // Matrix Structure
 //
 
-/* Return lower triangular part of matrix, below the diagonal + ``k`` */
+/*
+   Return lower triangular part of matrix, below the diagonal + ``k``,
+   where ``k = 0`` does *not* include the diagonal, and ``k = 1`` includes the
+   diagonal
+ */
 proc tril(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
@@ -577,7 +614,11 @@ proc tril(A: [?D] ?eltType, k=0) {
 }
 
 
-/* Return upper triangular part of matrix, above the diagonal + ``k`` */
+/*
+   Return upper triangular part of matrix, above the diagonal + ``k``,
+   where ``k = 0`` does *not* include the diagonal, and ``k = -1`` includes the
+   diagonal
+ */
 proc triu(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
@@ -628,7 +669,11 @@ proc isSymmetric(A: [?D]) : bool {
 }
 
 
-/* Return `true` if matrix is lower triangular below the diagonal + ``k`` */
+/*
+   Return `true` if matrix is lower triangular below the diagonal + ``k``,
+   where ``k = 0`` does *not* include the diagonal, and ``k = 1`` includes the
+   diagonal
+ */
 proc isTril(A: [?D] ?eltType, k=0) : bool {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
@@ -640,7 +685,10 @@ proc isTril(A: [?D] ?eltType, k=0) : bool {
 }
 
 
-/* Return `true` if matrix is upper triangular */
+/* Return `true` if matrix is upper triangular above the diagonal + ``k``,
+   where ``k = 0`` does *not* include the diagonal, and ``k = -1`` includes the
+   diagonal
+ */
 proc isTriu(A: [?D] ?eltType, k=0) : bool {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
@@ -658,32 +706,6 @@ proc isSquare(A: [?D]) {
     compilerError("Rank size is not 2");
   const (M, N) = A.shape;
   return M == N;
-}
-
-
-pragma "no doc"
-/* Helper function for determinant */
-private proc _minor(A: [?Adom] ?eltType, j) {
-  const n = Adom.dim(1).size;
-  var a : [0..#n-1, 0..#n-1] eltType;
-  var K = 0,
-      L = 0,
-      i = 0;
-
-  for k in 0..#n {
-    for l in 0..#n  {
-      // K
-      if k == i || l == j then continue;
-      if k < i then K = k;
-      else K = k-1;
-      // L
-      if l < j then L = l;
-      else L = l-1;
-      // a[K, L]
-      a[K,L] = A[k,l];
-    }
-  }
-  return a;
 }
 
 

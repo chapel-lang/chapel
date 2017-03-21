@@ -241,19 +241,9 @@ use LinearAlgebra;
   v = 1;
   M = 1;
 
-  // outer-product
   assertEqual(outer(v, v), M, "outer(Vector(3), Vector(3))");
 }
 
-/* matPow scalar-matrix */
-{
-  var A = Matrix([1,2,3,4],[4,3,2,1], eltType=real);
-
-  var B = matPow(2, A);
-  var R: [A.domain] real = 2**A;
-
-  assertEqual(B, R, "matPow(2, A)");
-}
 
 /* matPow matrix-scalar */
 {
