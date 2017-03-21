@@ -1942,16 +1942,17 @@ module DefaultRectangular {
         const viewDomDim = viewDom.dsiDim(1),
               stride = viewDomDim.stride: viewDom.idxType,
               start  = viewDomDim.first,
-              first  = info.getDataIndex(start),
-              second = info.getDataIndex(start + stride),
+              second = info.getDataIndex(start + stride);
+
+        var   first  = info.getDataIndex(start),
               step   = (second-first):chpl__signedType(viewDom.idxType),
               last   = first + (viewDomDim.length-1) * step:viewDom.idxType;
-        if step > 0 then
-          for i in first..last by step do
-            yield info.data(i);
-        else
-          for i in last..first by step do
-            yield info.data(i);
+
+        if step < 0 then
+          last <=> first;
+
+        for i in first..last by step do
+          yield info.data(i);
       }
     } else if useCache {
       for i in viewDom {
