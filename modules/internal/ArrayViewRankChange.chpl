@@ -50,7 +50,7 @@ module ArrayViewRankChange {
     // a pointer down to the distribution that this class is creating
     // lower-dimensional views of
     const downdist;
-    
+
     // These two fields represent whether or not each dimension was
     // collapsed as part of the rank-change; and if so, what the
     // index of that collapsed dimension was.  So for A[lo..hi, 3]
@@ -68,7 +68,8 @@ module ArrayViewRankChange {
                                               stridable=stridable,
                                               collapsedDim=collapsedDim,
                                               idx=idx,
-                                              dist=this);
+                                              distPid=this.pid,
+                                              distInst=this);
       newdom.dsiSetIndices(inds);
       return newdom;
     }
@@ -76,6 +77,22 @@ module ArrayViewRankChange {
     proc dsiClone() return new ArrayViewRankChangeDist(downdist=downdist,
                                                        collapsedDim=collapsedDim,
                                                        idx=idx);
+
+    // Don't want to privatize a DefaultRectangular, so pass the query on to
+    // the wrapped array
+    proc dsiSupportsPrivatization() param
+      return downdist._value.dsiSupportsPrivatization();
+
+    proc dsiGetPrivatizeData() {
+      return (downdist, collapsedDim, idx);
+    }
+
+    proc dsiPrivatize(privatizeData) {
+      return new ArrayViewRankChangeDist(downdist = privatizeData(1),
+                                         collapsedDim = privatizeData(2),
+                                         idx = privatizeData(3));
+    }
+
   }
 
   //
@@ -100,7 +117,15 @@ module ArrayViewRankChange {
     const collapsedDim;
     const idx;
 
-    const dist;  // a reference back to our ArrayViewRankChangeDist
+    const distPid;  // a reference back to our ArrayViewRankChangeDist
+    const distInst;
+
+    inline proc dist {
+      if _isPrivatized(distInst) then
+        return chpl_getPrivatizedCopy(distInst.type, distPid);
+      else
+        return downDomInst;
+    }
 
     // the higher-dimensional domain that we're equivalent to
     var downDomPid:int;
@@ -131,8 +156,7 @@ module ArrayViewRankChange {
       pragma "no auto destroy"
       const downarr = _newArray(downDom.dsiBuildArray(eltType));
       return new ArrayViewRankChangeArr(eltType  =eltType,
-      // TODO: Update once we start privatizing vvv
-                                        _DomPid = nullPid,
+                                        _DomPid = this.pid,
                                         dom = this,
                                         _ArrPid=downarr._pid,
                                         _ArrInstance=downarr._instance,
@@ -349,7 +373,43 @@ module ArrayViewRankChange {
       _delete_dom(downDomInst, _isPrivatized(downDomInst));
     }
 
-  } // end of class ArrayViewRankChangeDom
+    // Don't want to privatize a DefaultRectangular, so pass the query on to
+    // the wrapped array
+    proc dsiSupportsPrivatization() param
+      return downDomInst.dsiSupportsPrivatization();
+
+    proc dsiGetPrivatizeData() {
+      return (upDom, collapsedDim, idx, distPid, distInst, downDomPid, downDomInst);
+    }
+
+    proc dsiPrivatize(privatizeData) {
+      return new ArrayViewRankChangeDom(rank = this.rank,
+                                        idxType = this.idxType,
+                                        stridable = this.stridable,
+                                        upDom = privatizeData(1),
+                                        collapsedDim = privatizeData(2),
+                                        idx = privatizeData(3),
+                                        distPid = privatizeData(4),
+                                        distInst = privatizeData(5),
+                                        downDomPid = privatizeData(6),
+                                        downDomInst = privatizeData(7));
+    }
+
+    proc dsiGetReprivatizeData() {
+      return (upDom, downDomPid, downDomInst);
+    }
+
+    proc dsiReprivatize(other, reprivatizeData) {
+      upDom = reprivatizeData(1);
+      //      collapsedDim = other.collapsedDim;
+      //      idx = other.idx;
+      //      distPid = other.distPid;
+      //      distInst = other.distInst;
+      downDomPid = reprivatizeData(2);
+      downDomInst = reprivatizeData(3);
+    }
+
+ } // end of class ArrayViewRankChangeDom
 
   //
   // The class representing a rank-change slice of an array.  Like
