@@ -36,13 +36,13 @@ record Panel2D {
     const cols : int;
 
     proc panel {
-        var pnl : [1..rows, 1..cols] =>
-            matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1];
+        ref pnl : [1..rows, 1..cols] =
+            matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1].reindex({1..rows, 1..cols});
         return pnl;
     }
 
-    //var panel : [1..rows, 1..cols] =>
-        //matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1];
+    //ref panel =
+        //matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1].reindex({1..rows, 1..cols});
 };
 
 
@@ -68,12 +68,12 @@ proc dgemm(A : Panel2D, B : Panel2D, C : Panel2D)
 // pivot vector accordingly
 proc panelSolve(pnl : Panel2D, piv : [1..pnl.rows] int)
 {
-    var matrix => pnl.matrix;
-    var panel  => pnl.panel;
+    ref matrix = pnl.matrix;
+    ref panel  = pnl.panel;
 
     // iterate through the columns
     for k in 1..pnl.cols {
-        var col => panel[k.., k];
+        ref col = panel[k.., k];
 
         // The pivot is the element with the largest absolute value.  Note, I
         // can't assign pivot in the maxloc expression, something like: (pivot,
@@ -97,7 +97,7 @@ proc panelSolve(pnl : Panel2D, piv : [1..pnl.rows] int)
 
         // update all other values below the pivot
         if k+1 <= pnl.rows && k+1 <= pnl.cols {
-            var pnlBlwPiv => panel[k+1.., k+1..];
+            ref pnlBlwPiv = panel[k+1.., k+1..];
             forall (i,j) in pnlBlwPiv.domain {
                 panel[i,j] -= panel[i,k] * panel[k,j];
             }
@@ -111,8 +111,8 @@ proc panelSolve(pnl : Panel2D, piv : [1..pnl.rows] int)
 // block.
 proc updateBlockRow(blockPnl : Panel2D, blockRow : Panel2D) {
     assert(blockPnl.rows == blockPnl.cols);
-    const block => blockPnl.panel;
-    const panel => blockRow.panel;
+    const ref block = blockPnl.panel;
+    const ref panel = blockRow.panel;
 
     for i in 1..blockRow.rows {
         forall j in 1..blockRow.cols {

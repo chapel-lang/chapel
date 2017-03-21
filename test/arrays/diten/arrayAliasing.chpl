@@ -6,28 +6,28 @@ proc main {
   var A: [notAliasDom] int = [i in notAliasDom] i;
 
   {
-  var B: [aliasDom] => A(1..5);
+  ref B = A(1..5).reindex(aliasDom);
   writeArr(B);
   B = 1;
   writeArr(A);
   reset(A);
   }
   {
-  var B: [aliasDom] => A(6..10);
+  ref B = A(6..10).reindex(aliasDom);
   writeArr(B);
   B = 2;
   writeArr(A);
   reset(A);
   }
   {
-  var B: [aliasDom] => A(1..20 by 4);
+  ref B = A(1..20 by 4).reindex(aliasDom);
   writeArr(B);
   B = 3;
   writeArr(A);
   reset(A);
   }
   {
-  var B: [aliasDom] => A(7.. by 2 #5);
+  ref B = A(7.. by 2 #5).reindex(aliasDom);
   writeArr(B);
   B = 4;
   writeArr(A);
@@ -35,28 +35,28 @@ proc main {
   }
 
   {
-  var C: [aliasDom.translate(1)] => A(1..5);
+  ref C = A(1..5).reindex(aliasDom.translate(1));
   writeArr(C);
   C = 1;
   writeArr(A);
   reset(A);
   }
   {
-  var C: [aliasDom.translate(1)] => A(6..10);
+  ref C = A(6..10).reindex(aliasDom.translate(1));
   writeArr(C);
   C = 2;
   writeArr(A);
   reset(A);
   }
   {
-  var C: [aliasDom.translate(1)] => A(1..20 by 4);
+  ref C = A(1..20 by 4).reindex(aliasDom.translate(1));
   writeArr(C);
   C = 3;
   writeArr(A);
   reset(A);
   }
   {
-  var C: [aliasDom.translate(1)] => A(7.. by 2 #5);
+  ref C = A(7.. by 2 #5).reindex(aliasDom.translate(1));
   writeArr(C);
   C = 4;
   writeArr(A);

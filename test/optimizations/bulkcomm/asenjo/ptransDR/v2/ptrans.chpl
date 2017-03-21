@@ -90,7 +90,7 @@ proc transpose() {
   // local transpose
   forall dat in Data {
     local {
-      var B => dat.B, C => dat.C;
+      ref B = dat.B, C = dat.C;
       forall (i,j) in dat.domB do C[j,i] = B[i,j];
     }
   }  

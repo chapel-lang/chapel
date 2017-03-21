@@ -164,7 +164,7 @@ module test_elemental_explicitly_strided_cholesky {
           mat_rows = A.domain.dim(1),
           n        = A.domain.dim(1).length;
 
-    var L : [ mat_dom ] => L_formal;
+    ref L = L_formal.reindex(mat_dom);
 
     print_lower_triangle ( L );
 
