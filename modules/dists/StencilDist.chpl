@@ -475,14 +475,14 @@ proc Stencil.dsiDisplayRepresentation() {
 }
 
 proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool) {
+                                  param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Stencil domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Stencil domain rank does not match distribution's");
 
   var dom = new StencilDom(rank=rank, idxType=idxType, dist=this, stridable=stridable, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
-  dom.setup();
+  dom.dsiSetIndices(inds);
   if debugStencilDist {
     writeln("Creating new Stencil domain:");
     dom.dsiDisplayRepresentation();
@@ -714,49 +714,6 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(1);
 }
 
-
-proc Stencil.dsiCreateRankChangeDist(param newRank: int, args) {
-  var collapsedDimLocs: rank*idxType;
-  var newFluff : newRank*idxType;
-
-  {
-    // Create a fluff that skips a dimension.
-    var curdim = 1;
-    for param i in 1..rank {
-      if !isCollapsedDimension(args(i)) {
-        newFluff(curdim) = fluff(i);
-        curdim += 1;
-      }
-    }
-  }
-  for param i in 1..rank {
-    if isCollapsedDimension(args(i)) {
-      collapsedDimLocs(i) = args(i);
-    } else {
-      collapsedDimLocs(i) = 0;
-    }
-  }
-  const collapsedLocInd = targetLocsIdx(collapsedDimLocs);
-  var collapsedBbox: _matchArgsShape(range(idxType=idxType), idxType, args);
-  var collapsedLocs: _matchArgsShape(range(idxType=int), int, args);
-
-  for param i in 1..rank {
-    if isCollapsedDimension(args(i)) {
-      // set indices that are out of bounds to the bounding box low or high.
-      collapsedBbox(i) = if args(i) < boundingBox.dim(i).low then boundingBox.dim(i).low else if args(i) > boundingBox.dim(i).high then boundingBox.dim(i).high else args(i);
-      collapsedLocs(i) = collapsedLocInd(i);
-    } else {
-      collapsedBbox(i) = boundingBox.dim(i);
-      collapsedLocs(i) = targetLocDom.dim(i);
-    }
-  }
-
-  const newBbox = boundingBox[(...collapsedBbox)];
-  const newTargetLocales = targetLocales((...collapsedLocs));
-  return new Stencil(newBbox, newTargetLocales,
-                   dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity, fluff=newFluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
-}
 
 iter StencilDom.these() {
   for i in whole do
@@ -1012,26 +969,6 @@ proc StencilDom.dsiMember(i) {
 
 proc StencilDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
-}
-
-//
-// build a new rectangular domain using the given range
-//
-proc StencilDom.dsiBuildRectangularDom(param rank: int, type idxType,
-                                   param stridable: bool,
-                                   ranges: rank*range(idxType,
-                                                      BoundedRangeType.bounded,
-                                                      stridable)) {
-  if idxType != dist.idxType then
-    compilerError("Stencil domain index type does not match distribution's");
-  if rank != dist.rank then
-    compilerError("Stencil domain rank does not match distribution's");
-
-  var dom = new StencilDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable, fluff=fluff,
-                         periodic=periodic, ignoreFluff=this.ignoreFluff);
-  dom.dsiSetIndices(ranges);
-  return dom;
 }
 
 //
@@ -1479,9 +1416,8 @@ proc StencilArr.dsiNoFluffView() {
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity, ignoreFluff=true);
   pragma "no auto destroy" var newDist = _newDistribution(tempDist);
-  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
+  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable, dom.whole.dims()));
   newDist._value.add_dom(tempDom._value);
-  tempDom.setIndices(dom.whole);
 
   var newDom = tempDom._value;
 

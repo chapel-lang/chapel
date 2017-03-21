@@ -148,12 +148,15 @@ void chpl_topo_init(void) {
   }
 
   //
-  // Note: This will find not only traditional CPU+memory NUMA nodes
-  //       but also memory-only nodes, so for example on KNL it may
-  //       not match chpl_task_getNumSublocales().  We will need to
-  //       revisit this in the future.
+  // Find the NUMA nodes, that is, the objects at numaLevel that also
+  // have CPUs.  This is as opposed to things like Xeon Phi HBM, which
+  // is memory-only, no CPUs.
   //
-  numNumaDomains = hwloc_get_nbobjs_by_depth(topology, numaLevel);
+  {
+    const hwloc_cpuset_t cpusetAll = hwloc_get_root_obj(topology)->cpuset;
+    numNumaDomains =
+      hwloc_get_nbobjs_inside_cpuset_by_depth(topology, cpusetAll, numaLevel);
+  }
 }
 
 
@@ -246,7 +249,7 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
   size_t nPages;
   hwloc_obj_t numaObj;
 
-  _DBG_P("chpl_topo_setMemLocality(%p, %#zx, onlyIn=%s, doSub=%s, %d)\n",
+  _DBG_P("chpl_topo_setMemLocality(%p, %#zx, onlyIn=%s, %d)\n",
          p, size, (onlyInside ? "T" : "F"), (int) subloc);
 
   if (!haveTopology) {

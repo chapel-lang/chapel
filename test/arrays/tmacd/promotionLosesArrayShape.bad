@@ -1,7 +1,7 @@
 ====== N ======
 0 0
 0 0
-[domain(2,int(64),false)] int(64)
+[ArrayViewRankChangeDom(2,int(64),false,3*bool,3*int(64),ArrayViewRankChangeDist(DefaultDist,3*bool,3*int(64)))] int(64)
 ====== NN =====
 0 0 0 0
 [domain(1,int(64),false)] int(64)

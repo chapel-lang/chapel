@@ -50,12 +50,18 @@ module DefaultRectangular {
   // helper function to set the types of multi-ddata specific fields
   // to 'void' when they are not needed
   proc mdType(type baseType) type {
-    return if defRectSimpleDData then void else baseType;
+    if defRectSimpleDData then
+      return void;
+    else
+      return baseType;
   }
 
   class DefaultDist: BaseDist {
-    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
-      return new DefaultRectangularDom(rank, idxType, stridable, this);
+    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+      const dom = new DefaultRectangularDom(rank, idxType, stridable, this);
+      dom.dsiSetIndices(inds);
+      return dom;
+    }
 
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
       return new DefaultAssociativeDom(idxType, parSafe, this);
@@ -75,7 +81,6 @@ module DefaultRectangular {
     proc dsiAssign(other: this.type) { }
 
     proc dsiCreateReindexDist(newSpace, oldSpace) return this;
-    proc dsiCreateRankChangeDist(param newRank, args) return this;
 
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
@@ -115,6 +120,8 @@ module DefaultRectangular {
 
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
+
+    proc isDefaultRectangular() param return true;
 
     proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
       this.dist = dist;
@@ -610,16 +617,6 @@ module DefaultRectangular {
     proc dsiBuildArray(type eltType) {
       return new DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
                                       stridable=stridable, dom=this);
-    }
-
-    proc dsiBuildRectangularDom(param rank: int, type idxType, param stridable: bool,
-                              ranges: rank*range(idxType,
-                                                 BoundedRangeType.bounded,
-                                                 stridable)) {
-      var dom = new DefaultRectangularDom(rank, idxType, stridable, dist);
-      for i in 1..rank do
-        dom.ranges(i) = ranges(i);
-      return dom;
     }
 
     proc dsiLocalSlice(ranges) {
@@ -1962,12 +1959,13 @@ module DefaultRectangular {
           yield info.theDataChunk(0)(i);
         }
       } else {
-        const stride = viewDom.ranges(1).stride: viewDom.idxType,
-              start  = viewDom.ranges(1).first,
+        const viewDomDim = viewDom.dsiDim(1),
+              stride = viewDomDim.stride: viewDom.idxType,
+              start  = viewDomDim.first,
               first  = info.getDataIndex(start),
               second = info.getDataIndex(start + stride),
               step   = (second-first):chpl__signedType(viewDom.idxType),
-              last   = first + (viewDom.ranges(1).length-1) * step:viewDom.idxType;
+              last   = first + (viewDomDim.length-1) * step:viewDom.idxType;
         if step > 0 then
           for i in first..last by step do
             yield info.data(i);
@@ -1992,7 +1990,7 @@ module DefaultRectangular {
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
     for i in viewDom {
       const dataIdx = if arr.isReindexArrayView() then arr.chpl_reindexConvertIdx(i)
-                      else if arr.isRankChangeArrayView() then arr.chpl_rankChangeConvertIdx(i)
+                      else if arr.isRankChangeArrayView() then chpl_rankChangeConvertIdx(i, arr.collapsedDim, arr.idx)
                       else i;
       const info = if chpl__isArrayView(arr) then arr.arr else arr;
       yield info.dsiAccess(dataIdx);

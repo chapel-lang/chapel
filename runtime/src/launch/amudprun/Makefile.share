@@ -22,7 +22,7 @@ LAUNCHER_SRCS = \
 # is this the right time to set this variable?  Or is user code
 # compile time
 #
-RUNTIME_CFLAGS += -DLAUNCH_PATH="$(THIRD_PARTY_DIR)/gasnet/$(GASNET_INSTALL_SUBDIR)/bin/"
+RUNTIME_CFLAGS += -DLAUNCH_PATH="$(THIRD_PARTY_DIR)/amudprun/$(AMUDPRUN_INSTALL_SUBDIR)/bin/"
 
 SVN_SRCS = $(LAUNCHER_SRCS)
 SRCS = $(SVN_SRCS)

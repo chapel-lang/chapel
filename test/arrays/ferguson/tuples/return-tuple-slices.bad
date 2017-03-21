@@ -1,0 +1,2 @@
+return-tuple-slices.chpl:9: In function 'g':
+return-tuple-slices.chpl:10: error: type mismatch in assignment from [domain(1,int(64),false)] int(64) to [domain(1,int(64),false)] int(64)
