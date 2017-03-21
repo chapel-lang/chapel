@@ -321,7 +321,7 @@ var range2to10by2: range(stridable=true) = 2..10 by 2; // 2, 4, 6, 8, 10
 var reverse2to10by2 = 2..10 by -2; // 10, 8, 6, 4, 2
 
 var trapRange = 10..1 by -1; // Do not be fooled, this is still an empty range
-writeln("Size of range '", trapRange, "' = '", trapRange.length);
+writeln("Size of range '", trapRange, "' = ", trapRange.length);
 
 // Note: ``range(boundedType= ...)`` and ``range(stridable= ...)`` are only
 // necessary if we explicitly type the variable.
@@ -666,6 +666,7 @@ writeln(false ^ false);
 
 // Define a ``*`` operator on any two types that returns a tuple of those types.
 proc *(left : ?ltype, right : ?rtype): (ltype, rtype) {
+  writeln("\tIn our '*' overload!");
   return (left, right);
 }
 
@@ -689,12 +690,13 @@ Iterators
 ---------
 */
 
-// Iterators are sisters to the procedure, and almost everything about procedures
-// also applies to iterators. However, instead of returning a single value,
-// iterators yield many values to a loop.
+// Iterators are sisters to the procedure, and almost everything about
+// procedures also applies to iterators. However, instead of returning a single
+// value, iterators may yield multiple values to a loop.
 //
-// This is useful when a complicated set or order of iterations is needed, as it
-// allows the code defining the iterations to be separate from the loop body.
+// This is useful when a complicated set or order of iterations is needed, as
+// it allows the code defining the iterations to be separate from the loop
+// body.
 iter oddsThenEvens(N: int): int {
   for i in 1..N by 2 do
     yield i; // yield values instead of returning.
@@ -750,7 +752,7 @@ writeln(toThisArray);
 
 /* .. code-block:: chapel
 
-      var iterArray : [1..10] int = [i in 1..10] if (i % 2 == 1) then j;
+      var iterArray : [1..10] int = [i in 1..10] if (i % 2 == 1) then i;
 */
 
 // Even though the domain of the array and the loop-expression are
@@ -968,7 +970,8 @@ Parallelism
 // complicated libraries and strange class structure hierarchies.
 // Chapel has it baked right into the language.
 
-// We can declare a main procedure, but all the code above main still gets executed.
+// We can declare a main procedure, but all the code above main still gets
+// executed.
 proc main() {
   writeln("PARALLELISM START");
 
@@ -991,8 +994,9 @@ proc main() {
     writeln("fibonacci(",n,") = ", fibonacci(n));
   }
 
-// A ``cobegin`` statement will spin each statement of the body into one new task
-// Notice here that the prints from each statement may happen in any order.
+// A ``cobegin`` statement will spin each statement of the body into one new
+// task. Notice here that the prints from each statement may happen in any
+// order.
   cobegin {
     printFibb(20); // new task
     printFibb(10); // new task
