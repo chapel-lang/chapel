@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,13 +23,22 @@
 #include "rdma/fabric.h"
 #include "rdma/fi_domain.h"
 #include "rdma/fi_endpoint.h"
+#include "rdma/fi_cm.h"
 #include "rdma/fi_errno.h"
+
+struct gather_info {
+  int node;
+  char info[0];
+};
 
 /* libfabric stuff */
 struct ofi_stuff {
   struct fid_fabric* fabric;
   struct fid_domain* domain;
-  struct fid_av** av;
+  struct fid_av* av;
+  fi_addr_t* fi_addrs;
+  fi_addr_t** rx_addrs;
+  struct fid_mr* mr;
 
   struct fid_ep* ep; /* scalable endpoint */
   int rx_ctx_bits;
@@ -73,11 +82,13 @@ void chpl_commDiagnosticsInc(atomic_uint_least64_t *val);
 #define CHPL_COMM_DIAGS_INC(comm_type)					\
     chpl_commDiagnosticsInc(&(chpl_getCommDiagnostics()->comm_type))
 
-#define OFICHKERR(fncall) do {                   \
+#define OFICHKRET(fncall, err) do {		 \
     int retval;                                  \
-    if ((retval = fncall) != FI_SUCCESS) {       \
+    if ((retval = (fncall)) != err) {		  \
       chpl_internal_error(fi_strerror(-retval));  \
     }                                            \
   } while (0)
+
+#define OFICHKERR(fncall) OFICHKRET(fncall, FI_SUCCESS)
 
 #endif

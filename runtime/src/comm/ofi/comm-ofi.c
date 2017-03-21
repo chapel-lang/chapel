@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -172,7 +172,7 @@ static int get_comm_concurrency() {
 }
 
 static void libfabric_init() {
-  int i;
+  int i, j;
   struct fi_info *info = NULL;
   struct fi_info *hints = fi_allocinfo();
   struct fi_av_attr av_attr = {0};
@@ -181,6 +181,13 @@ static void libfabric_init() {
   int comm_concurrency;
   int rx_ctx_cnt;
   int rx_ctx_bits = 0;
+  struct gather_info* my_addr_info;
+  void* addr_infos;
+  void* addrs;
+  char* ta;
+  char* tai;
+  size_t my_addr_len=0;
+  size_t addr_info_len;
 
   hints->mode = ~0;
 
@@ -255,31 +262,26 @@ static void libfabric_init() {
   OFICHKERR(fi_fabric(info->fabric_attr, &ofi.fabric, NULL));
   OFICHKERR(fi_domain(ofi.fabric, info, &ofi.domain, NULL));
 
-  ofi.av = (struct fid_av **) chpl_mem_allocMany(chpl_numNodes,
-						sizeof(&ofi.av[0]),
-						CHPL_RT_MD_COMM_PER_LOC_INFO,
-						0, 0);
-
   rx_ctx_cnt = ofi.num_rx_ctx + ofi.num_am_ctx;
   while (rx_ctx_cnt >> ++rx_ctx_bits);
   av_attr.rx_ctx_bits = rx_ctx_bits;
   av_attr.type = FI_AV_TABLE;
   av_attr.count = chpl_numNodes;
-  OFICHKERR(fi_av_open(ofi.domain, &av_attr, &ofi.av[chpl_nodeID], NULL));
+  OFICHKERR(fi_av_open(ofi.domain, &av_attr, &ofi.av, NULL));
 
   OFICHKERR(fi_scalable_ep(ofi.domain, info, &ofi.ep, NULL));
-  OFICHKERR(fi_scalable_ep_bind(ofi.ep, &ofi.av[chpl_nodeID]->fid, 0));
+  OFICHKERR(fi_scalable_ep_bind(ofi.ep, &ofi.av->fid, 0));
 
   /* set up tx and rx contexts */
   cq_attr.format = FI_CQ_FORMAT_CONTEXT;
   cq_attr.size = 1024; /* ??? */
   cq_attr.wait_obj = FI_WAIT_NONE;
   ofi.tx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_tx_ctx,
-						   sizeof(&ofi.tx_ep[0]),
+						   sizeof(ofi.tx_ep[0]),
 						   CHPL_RT_MD_COMM_PER_LOC_INFO,
 						   0, 0);
   ofi.tx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_tx_ctx,
-						   sizeof(&ofi.tx_cq[0]),
+						   sizeof(ofi.tx_cq[0]),
 						   CHPL_RT_MD_COMM_PER_LOC_INFO,
 						   0, 0);
   for (i = 0; i < ofi.num_tx_ctx; i++) {
@@ -290,11 +292,11 @@ static void libfabric_init() {
   }
 
   ofi.rx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_rx_ctx,
-						   sizeof(&ofi.rx_ep[0]),
+						   sizeof(ofi.rx_ep[0]),
 						   CHPL_RT_MD_COMM_PER_LOC_INFO,
 						   0, 0);
   ofi.rx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_rx_ctx,
-						   sizeof(&ofi.rx_cq[0]),
+						    sizeof(ofi.rx_cq[0]),
 						   CHPL_RT_MD_COMM_PER_LOC_INFO,
 						   0, 0);
   for (i = 0; i < ofi.num_rx_ctx; i++) {
@@ -305,11 +307,11 @@ static void libfabric_init() {
   }
 
   ofi.am_tx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_am_ctx,
-						       sizeof(&ofi.am_tx_ep[0]),
+						       sizeof(ofi.am_tx_ep[0]),
 						       CHPL_RT_MD_COMM_PER_LOC_INFO,
 						       0, 0);
   ofi.am_tx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_am_ctx,
-						      sizeof(&ofi.am_tx_cq[0]),
+						      sizeof(ofi.am_tx_cq[0]),
 						      CHPL_RT_MD_COMM_PER_LOC_INFO,
 						      0, 0);
 
@@ -322,11 +324,11 @@ static void libfabric_init() {
   }
 
   ofi.am_rx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_am_ctx,
-						       sizeof(&ofi.am_rx_ep[0]),
+						       sizeof(ofi.am_rx_ep[0]),
 						       CHPL_RT_MD_COMM_PER_LOC_INFO,
 						       0, 0);
   ofi.am_rx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_am_ctx,
-						      sizeof(&ofi.am_rx_cq[0]),
+						      sizeof(ofi.am_rx_cq[0]),
 						      CHPL_RT_MD_COMM_PER_LOC_INFO,
 						      0, 0);
   for (i = 0; i < ofi.num_am_ctx; i++) {
@@ -335,6 +337,73 @@ static void libfabric_init() {
     OFICHKERR(fi_ep_bind(ofi.am_rx_ep[i], &ofi.am_rx_cq[i]->fid, FI_RECV));
     OFICHKERR(fi_enable(ofi.am_rx_ep[i]));
   }
+
+  OFICHKERR(fi_enable(ofi.ep));
+
+  // Set up address vector
+  // Assumes my_addr_len is the same on all nodes
+  OFICHKRET(fi_getname(&ofi.ep->fid, NULL, &my_addr_len), -FI_ETOOSMALL);
+  addr_info_len = sizeof(struct gather_info) + my_addr_len;
+  my_addr_info =  chpl_mem_allocMany(1, addr_info_len,
+				     CHPL_RT_MD_COMM_PER_LOC_INFO,
+				     0, 0);
+  my_addr_info->node = chpl_nodeID;
+  OFICHKERR(fi_getname(&ofi.ep->fid, &my_addr_info->info, &my_addr_len));
+
+  addr_infos =  chpl_mem_allocMany(chpl_numNodes, addr_info_len,
+				   CHPL_RT_MD_COMM_PER_LOC_INFO,
+				   0, 0);
+
+#ifdef CHPL_TARGET_PLATFORM_CRAY_XC
+  // Use PMI_AllGather
+  if (PMI_Allgather(my_addr_info, addr_infos, addr_info_len) != PMI_SUCCESS) {
+    chpl_internal_error("PMI_Allgather() failed");
+  }
+
+  addrs =  chpl_mem_allocMany(chpl_numNodes, my_addr_len,
+			      CHPL_RT_MD_COMM_PER_LOC_INFO,
+			      0, 0);
+
+  for (tai = addr_infos, ta = addrs, i = 0; i < chpl_numNodes; i++) {
+    struct gather_info* ai = (struct gather_info*) tai;
+    assert(i >= 0);
+    assert(i < chpl_numNodes);
+    memcpy(ta, ai->info, my_addr_len);
+    tai += addr_info_len;
+    ta += my_addr_len;
+  }
+
+#else /* CHPL_TARGET_PLATFORM_CRAY_XC */
+#error "Global address exchange not supported"
+#endif
+
+  ofi.fi_addrs = chpl_mem_allocMany(chpl_numNodes, sizeof(ofi.fi_addrs[0]),
+				    CHPL_RT_MD_COMM_PER_LOC_INFO,
+				    0, 0);
+  OFICHKRET(fi_av_insert(ofi.av, addrs, chpl_numNodes,
+			 ofi.fi_addrs, 0, NULL), chpl_numNodes);
+
+  ofi.rx_addrs = chpl_mem_allocMany(chpl_numNodes, sizeof(ofi.rx_addrs[0]),
+				    CHPL_RT_MD_COMM_PER_LOC_INFO,
+				    0, 0);
+  for (i = 0; i < chpl_numNodes; i++) {
+    ofi.rx_addrs[i] = chpl_mem_allocMany(rx_ctx_cnt, sizeof(ofi.rx_addrs[i][0]),
+					 CHPL_RT_MD_COMM_PER_LOC_INFO,
+					 0, 0);
+    for (j = 0; j < rx_ctx_cnt; j++) {
+      ofi.rx_addrs[i][j] = fi_rx_addr(ofi.fi_addrs[i], j, rx_ctx_bits);
+    }
+  }
+
+  chpl_mem_free(my_addr_info, 0, 0);
+  chpl_mem_free(addr_infos, 0, 0);
+  chpl_mem_free(addrs, 0, 0);
+
+  OFICHKERR(fi_mr_reg(ofi.domain, 0, SIZE_MAX,
+		      FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE |
+		      FI_SEND | FI_RECV, 0,
+		      (uint64_t) chpl_nodeID, 0, &ofi.mr, NULL));
+
 
   fi_freeinfo(info);  /* No error returned */
   fi_freeinfo(hints); /* No error returned */
@@ -431,11 +500,16 @@ static void exit_all(int status) {
   }
 
   OFICHKERR(fi_close(&ofi.ep->fid));
-  OFICHKERR(fi_close(&ofi.av[chpl_nodeID]->fid));
+  OFICHKERR(fi_close(&ofi.av->fid));
+  OFICHKERR(fi_close(&ofi.mr->fid));
   OFICHKERR(fi_close(&ofi.domain->fid));
   OFICHKERR(fi_close(&ofi.fabric->fid));
 
-  chpl_mem_free(ofi.av, 0, 0);
+  chpl_mem_free(ofi.fi_addrs, 0, 0);
+  for (i = 0; i < chpl_numNodes; i++) {
+    chpl_mem_free(ofi.rx_addrs[i], 0, 0);
+  }
+  chpl_mem_free(ofi.rx_addrs, 0, 0);
   chpl_mem_free(ofi.tx_ep, 0, 0);
   chpl_mem_free(ofi.tx_cq, 0, 0);
   chpl_mem_free(ofi.rx_ep, 0, 0);
