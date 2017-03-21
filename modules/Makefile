@@ -103,6 +103,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
+	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
 	packages/Norm.chpl \
 	packages/OwnedObject.chpl \
