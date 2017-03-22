@@ -209,8 +209,12 @@ module MPI {
 
   pragma "no doc"
   var _doinit : bool = false;
+
+  pragma "no doc"
   var _freeChplComm : bool = false;
-  // Module level deinit
+
+  pragma "no doc"
+  /* Module level deinit */
   proc deinit() {
     if _freeChplComm {
       coforall loc in Locales do on loc {
