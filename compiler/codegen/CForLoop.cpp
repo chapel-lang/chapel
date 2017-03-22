@@ -33,12 +33,17 @@ namespace
   {
     GenInfo* info    = gGenInfo;
     auto &C = info->module->getContext();
-    llvm::ArrayRef<llvm::Metadata*> loopVectorizeEnable({llvm::MDString::get(C, "loop.vectorize.enable"),
+    llvm::ArrayRef<llvm::Metadata*> loopVectorizeEnable({llvm::MDString::get(C, "llvm.loop.vectorize.enable"),
                                       llvm::ValueAsMetadata::get(llvm::ConstantInt::getTrue(C))}) ;
-    llvm::MDTuple* loopVectorizeMetadata = llvm::MDNode::get(C, loopVectorizeEnable);
+    llvm::MDTuple* loopVectorizeEnableMetadata = llvm::MDNode::get(C, loopVectorizeEnable);
 
-    llvm::ArrayRef<llvm::Metadata*> MDs({loopVectorizeMetadata });
-    llvm::MDTuple* llvmLoopMetadata = llvm::MDNode::getDistinct(C, MDs);
+    //llvm::MDNode* nullNode = nullptr;
+    llvm::TempMDTuple dummy = llvm::MDNode::getTemporary(C, {});
+    llvm::ArrayRef<llvm::Metadata*> MDs({dummy.get(), loopVectorizeEnableMetadata});
+    llvm::MDNode* llvmLoopMetadata = llvm::MDNode::get(C, MDs);
+
+    dummy->replaceAllUsesWith(llvmLoopMetadata);
+    //llvm::MDNode::deleteTemporary(dummy.get());
 
     instruction->setMetadata(llvm::StringRef("llvm.loop"), llvmLoopMetadata);
   }
