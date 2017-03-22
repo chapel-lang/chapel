@@ -27,6 +27,7 @@
 
 #include <algorithm>
 
+#ifdef HAVE_LLVM
 namespace
 {
   void addLoopVectorizationHint(llvm::Instruction* instruction)
@@ -45,6 +46,7 @@ namespace
     instruction->setMetadata(llvm::StringRef("llvm.loop"), llvmLoopMetadata);
   }
 }
+#endif
 
 /************************************ | *************************************
 *                                                                           *
