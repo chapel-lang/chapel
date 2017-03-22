@@ -15,6 +15,7 @@ TARGETS = \
 	pidigits \
 	pidigits-fast \
 	regexdna \
+	regexdna-redux \
 	revcomp \
 	spectralnorm \
 	threadring
@@ -85,6 +86,16 @@ regexdna: regexdna.chpl
 	else \
 	echo "";\
 	echo "Can't build regexdna without CHPL_REGEXP being enabled. See for details:"; \
+	echo "http://chapel.cray.com/docs/latest/usingchapel/chplenv.html#chpl-regexp"; \
+	echo ""; \
+	fi
+
+regexdna-redux: regexdna-redux.chpl
+	@+if [ "$(CHPL_REGEXP)" != "none" ]; then \
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
+	else \
+	echo "";\
+	echo "Can't build regexdna-redux without CHPL_REGEXP being enabled. See for details:"; \
 	echo "http://chapel.cray.com/docs/latest/usingchapel/chplenv.html#chpl-regexp"; \
 	echo ""; \
 	fi
