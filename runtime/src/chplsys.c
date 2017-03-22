@@ -58,7 +58,7 @@
 #include <sys/mman.h>
 #include <sys/utsname.h>
 
-#if defined(__APPLE__) || defined(__NetBSD__)
+#if defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 #include <sys/sysctl.h>
 #endif
 
@@ -521,6 +521,15 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
   if (numCpus == 0)
     numCpus = chpl_getNumLogicalCpus(true);
   return numCpus;
+#elif defined  __FreeBSD__
+  //
+  // FreeBSD
+  //
+  static int numCpus = 0;
+  if (numCpus == 0)
+    numCpus = chpl_getNumLogicalCpus(true);
+  return numCpus;
+
 #elif defined(__linux__) || defined(__NetBSD__)
   //
   // Linux
@@ -604,6 +613,18 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
   if (numCpus == 0)
     numCpus = sysconf(_SC_NPROCESSORS_ONLN);
   return numCpus;
+#elif defined __FreeBSD__
+  //
+  // FreeBSD
+  //
+  static int32_t numCpus = 0;
+  if (numCpus == 0) {
+    size_t len = sizeof(numCpus);
+    if (sysctlbyname("hw.ncpu", &numCpus, &len, NULL, 0))
+      chpl_internal_error("query of number of PUs failed");
+  }
+  return (int) numCpus;
+
 #elif defined(__linux__) || defined(__NetBSD__)
   //
   // Linux
