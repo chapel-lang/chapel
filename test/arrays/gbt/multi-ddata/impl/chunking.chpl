@@ -11,7 +11,7 @@ ref A_slice_2toNm1 = A_1toN[1+1..N-1];
 reportChunking('A[...] => A[1+1..N-1]',
                A_slice_2toNm1);
 
-ref A_reindex_1toN = A_1toN.reindex({1..5..N+5});
+ref A_reindex_1toN = A_1toN.reindex({1+5..N+5});
 reportChunking('A[1+5..N+5] => A[1..N]',
                A_reindex_1toN);
 
