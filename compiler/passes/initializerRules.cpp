@@ -37,8 +37,8 @@ enum InitStyle {
   STYLE_BOTH
 };
 
-static InitStyle   findInitStyle(FnSymbol* fn);
-static InitStyle   findInitStyle(Expr*     expr);
+static InitStyle findInitStyle(FnSymbol* fn);
+static InitStyle findInitStyle(Expr*     expr);
 
 
 
@@ -98,10 +98,50 @@ void preNormalizeFields(AggregateType* at) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool isReturnVoid(FnSymbol* fn);
+
+//
+// Initializers cannot
+//   1) Declare a return type other than void
+//   2) Contain a return expression with a value
+
+static bool isReturnVoid(FnSymbol* fn) {
+  bool retval = true;
+
+  if (fn->retExprDefinesNonVoid() == true) {
+    USR_FATAL(fn, "initializers cannot declare a return type");
+    retval = false;
+
+  } else {
+    std::vector<CallExpr*> calls;
+
+    collectCallExprs(fn->body, calls);
+
+    for (size_t i = 0; i < calls.size() && retval == true; i++) {
+      if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
+        SymExpr* value = toSymExpr(calls[i]->get(1));
+
+        if (value == NULL || value->symbol()->type != dtVoid) {
+          USR_FATAL(calls[i], "initializers cannot return a value");
+          retval = false;
+        }
+      }
+    }
+  }
+
+  fn->retType = dtVoid;
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void        phase1Analysis(FnSymbol* fn);
 
-
-static bool        isReturnVoid(FnSymbol* fn);
 
 static void        errorCases(AggregateType* at,
                             DefExpr*       curField,
@@ -764,45 +804,6 @@ static bool isSymbolThis(Expr* expr) {
   if (SymExpr* sym = toSymExpr(expr)) {
     retval = sym->symbol()->hasFlag(FLAG_ARG_THIS);
   }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Initializers cannot                                                         *
-*                                                                             *
-*   1) Declare a return type other than void                                  *
-*                                                                             *
-*   2) Contain a return expression with a value                               *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isReturnVoid(FnSymbol* fn) {
-  bool retval = true;
-
-  if (fn->retExprDefinesNonVoid() == true) {
-    USR_FATAL(fn, "initializers cannot declare a return type");
-    retval = false;
-
-  } else {
-    std::vector<CallExpr*> calls;
-
-    collectCallExprs(fn->body, calls);
-
-    for (size_t i = 0; i < calls.size() && retval == true; i++) {
-      if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
-        SymExpr* value = toSymExpr(calls[i]->get(1));
-
-        if (value == NULL || value->symbol()->type != dtVoid) {
-          USR_FATAL(calls[i], "initializers cannot return a value");
-          retval = false;
-        }
-      }
-    }
-  }
-
-  fn->retType = dtVoid;
 
   return retval;
 }
