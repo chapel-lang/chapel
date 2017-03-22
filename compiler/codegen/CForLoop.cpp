@@ -31,20 +31,17 @@ namespace
 {
   void addLoopVectorizationHint(llvm::Instruction* instruction)
   {
-    GenInfo* info    = gGenInfo;
-    auto &C = info->module->getContext();
-    llvm::ArrayRef<llvm::Metadata*> loopVectorizeEnable({llvm::MDString::get(C, "llvm.loop.vectorize.enable"),
-                                      llvm::ValueAsMetadata::get(llvm::ConstantInt::getTrue(C))}) ;
-    llvm::MDTuple* loopVectorizeEnableMetadata = llvm::MDNode::get(C, loopVectorizeEnable);
+    GenInfo* info                  = gGenInfo;
+    auto &C                        = info->module->getContext();
+    llvm::ArrayRef<llvm::Metadata*> loopVectorizeEnable({llvm::MDString::get(C, "llvm.loop.vectorize.enable"), llvm::ValueAsMetadata::get(llvm::ConstantInt::getTrue(C))});
+    llvm::MDTuple*                  loopVectorizeEnableMetadata = llvm::MDNode::get(C, loopVectorizeEnable);
 
-    //llvm::MDNode* nullNode = nullptr;
-    llvm::TempMDTuple dummy = llvm::MDNode::getTemporary(C, {});
+    //Try to make cyclic reference to itself, since that's how llvm.loop parameters are supposed to be passed
+    llvm::TempMDTuple dummy        = llvm::MDNode::getTemporary(C, {});
     llvm::ArrayRef<llvm::Metadata*> MDs({dummy.get(), loopVectorizeEnableMetadata});
     llvm::MDNode* llvmLoopMetadata = llvm::MDNode::get(C, MDs);
 
     dummy->replaceAllUsesWith(llvmLoopMetadata);
-    //llvm::MDNode::deleteTemporary(dummy.get());
-
     instruction->setMetadata(llvm::StringRef("llvm.loop"), llvmLoopMetadata);
   }
 }
@@ -151,10 +148,8 @@ GenRet CForLoop::codegen()
                                                llvm::ConstantInt::get(condValue0->getType(), 0),
                                                FNAME("condition"));
 
-
     // Create the conditional branch
     info->builder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
-
 
     // Now add the body.
     func->getBasicBlockList().push_back(blockStmtBody);
