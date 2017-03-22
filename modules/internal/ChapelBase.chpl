@@ -422,7 +422,7 @@ module ChapelBase {
   //
   // bitwise operations on primitive types
   //
-  inline proc ~(a: bool) return __primitive("u~", a);
+  inline proc ~(a: bool) return __primitive("!", a);
   inline proc ~(a: int(?w)) return __primitive("u~", a);
   inline proc ~(a: uint(?w)) return __primitive("u~", a);
 
