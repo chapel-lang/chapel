@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "LoopStmt.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -30,19 +31,77 @@
 #include <map>
 
 enum InitStyle {
-  FOUND_NONE,
-  FOUND_SUPER_INIT,
-  FOUND_THIS_INIT,
-  FOUND_BOTH
+  STYLE_NONE,
+  STYLE_SUPER_INIT,
+  STYLE_THIS_INIT,
+  STYLE_BOTH
 };
+
+static InitStyle   findInitStyle(FnSymbol* fn);
+static InitStyle   findInitStyle(Expr*     expr);
+
+
+
+
+/************************************* | **************************************
+*                                                                             *
+* Attempt to assign a type to the symbol for each field in some of the        *
+* simpler cases.                                                              *
+*                                                                             *
+* 2017/03/20 Noakes: This may set a direction for refactoring resolution in   *
+* a subsequent release.                                                       *
+*                                                                             *
+************************************** | *************************************/
+
+void preNormalizeFields(AggregateType* at) {
+  for_alist(field, at->fields) {
+    if (DefExpr* defExpr = toDefExpr(field)) {
+      if (Expr* typeExpr = defExpr->exprType) {
+        Type* type = typeForTypeSpecifier(typeExpr);
+
+        // var x, y : Foo
+        //   =>
+        // var x : Foo;
+        // var y : typeof(x);       // Handle this case
+        if (type == NULL) {
+          if (CallExpr* callExpr = toCallExpr(typeExpr)) {
+            if (callExpr->isPrimitive(PRIM_TYPEOF) == true) {
+              if (SymExpr* varExpr = toSymExpr(callExpr->get(1))) {
+                Type* t = varExpr->symbol()->type;
+
+                type = (t != dtUnknown) ? t : NULL;
+              }
+            }
+          }
+        }
+
+        if (type != NULL) {
+          Symbol* sym = defExpr->sym;
+
+          if (sym->hasFlag(FLAG_CONST) == true) {
+            sym->qual = QUAL_CONST_VAL;
+            sym->type = type;
+
+          } else {
+            sym->qual = QUAL_VAL;
+            sym->type = type;
+          }
+        }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void        phase1Analysis(FnSymbol* fn);
 
 
 static bool        isReturnVoid(FnSymbol* fn);
-
-static InitStyle   findInitStyle(FnSymbol* fn);
-static InitStyle   findInitStyle(Expr* expr);
 
 static void        errorCases(AggregateType* at,
                             DefExpr*       curField,
@@ -77,35 +136,6 @@ static Expr*       getNextStmt(Expr*      curExpr,
 
 /************************************* | **************************************
 *                                                                             *
-* Attempt to assign a type to the symbol for each field in some of the        *
-* simpler cases.                                                              *
-*                                                                             *
-* 2017/03/20 Noakes: This may set a direction for refactoring resolution      *
-* in a subsequent release.                                                    *
-*                                                                             *
-************************************** | *************************************/
-
-void preNormalizeFields(AggregateType* at) {
-  for_alist(field, at->fields) {
-    if (DefExpr* defExpr = toDefExpr(field)) {
-      if (Type* type = typeForTypeSpecifier(defExpr->exprType)) {
-        Symbol* sym = defExpr->sym;
-
-        if (sym->hasFlag(FLAG_CONST) == true) {
-          sym->qual = QUAL_CONST_VAL;
-          sym->type = type;
-
-        } else {
-          sym->qual = QUAL_VAL;
-          sym->type = type;
-        }
-      }
-    }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -122,7 +152,7 @@ void preNormalizeInitMethod(FnSymbol* fn) {
     InitStyle      initStyle = findInitStyle(fn);
 
     // The body is pure phase 2
-    if (initStyle == FOUND_NONE) {
+    if (initStyle == STYLE_NONE) {
       SET_LINENO(fn->body);
 
       Symbol*   superSym  = new_CStringSymbol("super");
@@ -145,7 +175,7 @@ void preNormalizeInitMethod(FnSymbol* fn) {
       }
 
     // One or more uses of this.init();
-    } else if (initStyle == FOUND_THIS_INIT) {
+    } else if (initStyle == STYLE_THIS_INIT) {
       phase1Analysis(fn);
 
     // At least one use of this.init();
@@ -162,7 +192,7 @@ void preNormalizeInitMethod(FnSymbol* fn) {
         collectMyCallExprs(fn, calls, fn);
 
         for (size_t i = 0; i < calls.size(); i++) {
-          if (findInitStyle(calls[i]) == FOUND_SUPER_INIT) {
+          if (findInitStyle(calls[i]) == STYLE_SUPER_INIT) {
             calls[i]->remove();
           }
         }
@@ -242,7 +272,7 @@ static void phase1Analysis(FnSymbol* fn) {
     seenField[0] = true;
   }
 
-  if (isInit == FOUND_NONE) {
+  if (isInit == STYLE_NONE) {
     // solution to fence post issue of diving into nested block statements
     BlockStmt* block = toBlockStmt(curExpr);
     while (block && !block->isLoopStmt()) {
@@ -253,7 +283,7 @@ static void phase1Analysis(FnSymbol* fn) {
 
   // We are guaranteed to never reach the end of the body, due to the
   // conditional surrounding the call to this function.
-  while (curField != NULL || (isInit == FOUND_NONE)) {
+  while (curField != NULL || (isInit == STYLE_NONE)) {
     // Verify that:
     // - fields are initialized in declaration order
     // - The "this" instance is only used to clarify a field initialization (or
@@ -266,7 +296,7 @@ static void phase1Analysis(FnSymbol* fn) {
 
     // Additionally, perform the following actions:
     // - add initialization for omitted fields
-    if (curField != NULL && (isInit == FOUND_NONE)) {
+    if (curField != NULL && (isInit == STYLE_NONE)) {
       // still have phase 1 statements and fields left to traverse
 
       if (BlockStmt* block = toBlockStmt(curExpr)) {
@@ -563,12 +593,12 @@ static bool loopAnalysis(BlockStmt*     loop,
         return sawInit;
       }
     }
-    if (isInit == FOUND_SUPER_INIT || isInit == FOUND_THIS_INIT) {
+    if (isInit == STYLE_SUPER_INIT || isInit == STYLE_THIS_INIT) {
       // We encountered the .init() call while traversing this loop.  Stop
       // performing Phase 1 analysis and return.
       USR_FATAL_CONT(stmt,
                      "use of %s.init() call in loop body",
-                     isInit == FOUND_SUPER_INIT ? "super" : "this");
+                     isInit == STYLE_SUPER_INIT ? "super" : "this");
 
       return true;
     }
@@ -623,7 +653,7 @@ static InitStyle findInitStyle(FnSymbol* fn) {
   // if statements.  TODO: fix this
   Expr*      curExpr = fn->body->body.head;
   BlockStmt* block   = toBlockStmt(curExpr);
-  InitStyle  retval  = FOUND_NONE;
+  InitStyle  retval  = STYLE_NONE;
 
   // Peel off nested top-level blocks
   while (block != NULL && block->isLoopStmt() == false) {
@@ -631,8 +661,8 @@ static InitStyle findInitStyle(FnSymbol* fn) {
     block   = toBlockStmt(curExpr);
   }
 
-  while (curExpr != NULL && retval == FOUND_NONE) {
-    if ((retval = findInitStyle(curExpr)) == FOUND_NONE) {
+  while (curExpr != NULL && retval == STYLE_NONE) {
+    if ((retval = findInitStyle(curExpr)) == STYLE_NONE) {
       curExpr = getNextStmt(curExpr, fn->body, true);
     }
   }
@@ -652,7 +682,7 @@ static InitStyle findInitStyle(FnSymbol* fn) {
 //
 
 static InitStyle findInitStyle(Expr* stmt) {
-  InitStyle retval = FOUND_NONE;
+  InitStyle retval = STYLE_NONE;
 
   if (CallExpr* call = toCallExpr(stmt)) {
     if (CallExpr* inner = toCallExpr(call->baseExpr)) {
@@ -675,19 +705,19 @@ static InitStyle findInitStyle(Expr* stmt) {
 //
 
 static InitStyle findInitStyleInner(CallExpr* call) {
-  InitStyle retval = FOUND_NONE;
+  InitStyle retval = STYLE_NONE;
 
   if (call->numActuals()                    ==    2 &&
       call->isNamed(".")                    == true &&
       isStringLiteral(call->get(2), "init") == true) {
 
     if (isSymbolThis(call->get(1)) == true) {
-      retval = FOUND_THIS_INIT;
+      retval = STYLE_THIS_INIT;
 
     } else {
       // "super" is an unresolved symbol for records
       if (isUnresolvedSymbol(call->get(1), "super") == true) {
-        retval = FOUND_SUPER_INIT;
+        retval = STYLE_SUPER_INIT;
 
       // "super" is a call to a field accessor for classes
       } else if (CallExpr* subCall = toCallExpr(call->get(1))) {
@@ -695,7 +725,7 @@ static InitStyle findInitStyleInner(CallExpr* call) {
             subCall->isNamed(".")                     == true &&
             isSymbolThis(subCall->get(1))             == true &&
             isStringLiteral(subCall->get(2), "super") == true) {
-          retval = FOUND_SUPER_INIT;
+          retval = STYLE_SUPER_INIT;
         }
       }
     }
