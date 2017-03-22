@@ -88,7 +88,7 @@ typedef enum {
 static bool symExprIsSet(SymExpr* sym);
 static bool symbolIsUsedAsConstRef(Symbol* sym);
 static void lowerContextCall(ContextCallExpr* cc, choose_type_t which);
-static void makeRefReturnIfExprsIntoRefPairs();
+//static void makeRefReturnIfExprsIntoRefPairs();
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst);
 
@@ -258,6 +258,7 @@ bool symExprIsSet(SymExpr* se)
   return ret;
 }
 
+/*
 static
 bool callPassesSymbolRefMaybeConst(Symbol* sym, CallExpr* call)
 {
@@ -273,7 +274,7 @@ bool callPassesSymbolRefMaybeConst(Symbol* sym, CallExpr* call)
   }
   return ret;
 }
-
+*/
 
 static
 bool callSetsSymbol(Symbol* sym, CallExpr* call)
@@ -304,10 +305,10 @@ bool contextCallItDepends(Symbol* sym, ContextCallExpr* cc) {
   // If any of the calls involved are ref-if-modified,
   // return true, since we can't know yet if the
   // argument is ref or const ref.
-  if ((refCall && callPassesSymbolRefMaybeConst(sym, refCall)) ||
-      (valueCall && callPassesSymbolRefMaybeConst(sym, valueCall)) ||
-      (constRefCall && callPassesSymbolRefMaybeConst(sym, constRefCall)))
-    return true;
+  //if ((refCall && callPassesSymbolRefMaybeConst(sym, refCall)) ||
+  //    (valueCall && callPassesSymbolRefMaybeConst(sym, valueCall)) ||
+  //    (constRefCall && callPassesSymbolRefMaybeConst(sym, constRefCall)))
+  //  return true;
 
   bool ref = refCall?callSetsSymbol(sym, refCall):false;
   bool val = valueCall?callSetsSymbol(sym, valueCall):false;
@@ -1184,7 +1185,7 @@ void cullOverReferences() {
   // tidy up representation of if-exprs so that
   // e.g. proc f(a,b) return if x then a else b;
   // can work, when a and b are arrays.
-  makeRefReturnIfExprsIntoRefPairs();
+  //makeRefReturnIfExprsIntoRefPairs();
 
   // forward-flow constness for FLAG_REF_TO_CONST_WHEN_CONST_THIS
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -1743,7 +1744,7 @@ void cullOverReferences() {
   lateConstCheck(reasonNotConst);
 }
 
-
+/*
 static
 void makeRefReturnIfExprsIntoRefPairs()
 {
@@ -1790,6 +1791,7 @@ void makeRefReturnIfExprsIntoRefPairs()
     }
   }
 }
+*/
 
 // Handle certain degenerate cases, such as when a
 // ContextCallExpr is not in a PRIM_MOVE.
@@ -2048,6 +2050,10 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
         // TODO: remove this limitation
         //if (formal->hasFlag(FLAG_ARG_THIS))
         //  error = false;
+
+        // For now, ignore errors with if-expr functions
+//        if (calledFn->hasFlag(FLAG_IF_EXPR_FN))
+//          error = false;
 
         if (error) {
           USR_FATAL_CONT(actual,
