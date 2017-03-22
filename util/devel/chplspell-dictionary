@@ -2591,6 +2591,7 @@ fifn
 llib
 noparens
 parloopexpr
+usex
 
 FILEID: e2d7df7c-1d0c-11e6-a3a6-10ddb1d4c3d5
 fock
@@ -2699,6 +2700,7 @@ FILEID: e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5
 hashset
 outervar
 urse
+wout
 
 FILEID: 0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5
 ppne
@@ -2869,6 +2871,7 @@ parenthesesless
 
 FILEID: 610c0354-1f11-11e6-a3a6-10ddb1d4c3d5
 mults
+sbac
 unum
 wayhi
 waylo
@@ -3322,17 +3325,25 @@ FILEID: 7e15c372-4027-11e6-907f-843835579daa
 forloops
 
 FILEID: 71a525f2-43ff-11e6-907f-843835579daa
+acfc
 adom
+aeaa
 amax
 asum
 axpy
+badf
 bdom
+becc
 caxpy
 cblas
+ccbb
 cdom
 cdotc
 cdotu
+cefc
 cefea
+cfaa
+cfef
 cgbmv
 cgemm
 cgemv
@@ -3358,9 +3369,13 @@ ctrmm
 ctrmv
 ctrsm
 ctrsv
+dabbd
+daea
 dasum
 daxpy
+dceaa
 ddot
+deaa
 dfec
 dgbmv
 dgemm
@@ -3393,12 +3408,23 @@ dtrsm
 dtrsv
 dzasum
 dznrm
+eaac
+ecdcb
+fabda
 fbbd
 gade
+gbmv
 gemm
+gemv
+gerc
+hbmv
+hemv
 herk
+hpmv
 icamax
 idamax
+incx
+incy
 isamax
 izamax
 latlas
@@ -3408,6 +3434,7 @@ rotm
 rotmg
 sasum
 saxpy
+sbmv
 scasum
 scnrm
 sdcz
@@ -3418,6 +3445,7 @@ sgemm
 sgemv
 sger
 snrm
+spmv
 srot
 srotg
 srotm
@@ -3439,9 +3467,18 @@ strmm
 strmv
 strsm
 strsv
+symv
 syrk
+tbmv
+tbsv
+tpmv
+tpsv
 trmm
+trmv
 trsm
+trsv
+xdom
+ydom
 zaxpy
 zcopy
 zdotc
@@ -3561,6 +3598,7 @@ FILEID: 3277f5dc-4e3e-11e6-907f-843835579daa
 parenthesesless
 
 FILEID: b4520e6e-5076-11e6-b83e-bc5ff4765d0d
+adaptative
 binarytrees
 chapcs
 kace
@@ -4191,6 +4229,80 @@ taskfn
 FILEID: 44484c44-fd7f-11e6-980e-10ddb1d4c3d5
 nucls
 
+FILEID: 12c3b64e-0c12-11e7-980e-10ddb1d4c3d5
+toktext
+
+FILEID: 208f1cd2-0c12-11e7-980e-10ddb1d4c3d5
+cref
+
+FILEID: 9e8a4742-0c12-11e7-980e-10ddb1d4c3d5
+nbobjs
+
+FILEID: aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5
+blockhere
+cmpval
+cqmode
+cswap
+dbgf
+dbgsf
+dlvmode
+dlvr
+drpg
+fcswap
+ffpadd
+fiadd
+fpadd
+fswap
+fxor
+gdata
+iadd
+iptag
+nbdi
+nbdp
+nopnd
+opnd
+rfdpp
+xchgval
+
+FILEID: c0254978-0c13-11e7-980e-10ddb1d4c3d5
+adddays
+deltahour
+deltamin
+deltasec
+fromutc
+getdate
+leapyear
+maxyear
+minyear
+newday
+newhour
+newmicro
+newmicrosecond
+newmin
+newminute
+newsec
+newsecond
+pytz
+resultp
+uspms
+usps
+utcoff
+utcoffset
+
+FILEID: 5010068a-0c15-11e7-980e-10ddb1d4c3d5
+arrpid
+isview
+
+FILEID: 5cb0944a-0c15-11e7-980e-10ddb1d4c3d5
+hbwmalloc
+kindstr
+lmemkind
+memkind
+nmemb
+
+FILEID: edb63ad0-0c15-11e7-980e-10ddb1d4c3d5
+rview
+
 NATURAL:
 abcd
 abcdefg
@@ -4198,6 +4310,7 @@ ablock
 achtung
 acknowledgements
 acosh
+acqs
 actuals
 addmul
 addons
@@ -4218,10 +4331,12 @@ aliasee
 alice
 alioth
 alist
+allgather
 alloced
 allocs
 alnum
 altix
+amos
 amudprun
 analyses
 anded
@@ -4261,6 +4376,7 @@ ashwin
 asinh
 asprintf
 astfalk
+astimezone
 astloc
 astlocs
 asts
@@ -4358,18 +4474,22 @@ bsub
 bswap
 bucketize
 buettner
+bufcnt
 buffersize
+bufs
 buginese
 bugzilla
 buhid
 buildingdocs
 builtins
 bulleted
+bynodeset
 byref
 byteorder
 cairo
 california
 callahan
+callchains
 callee
 callees
 callexpr
@@ -4454,6 +4574,7 @@ cloexec
 closefile
 clrbit
 cmpabs
+cmpxchg
 cmsg
 cname
 cnselect
@@ -4494,7 +4615,9 @@ cory
 coverity
 cppreference
 cproj
+cpubind
 cpus
+cpuset
 cpython
 craype
 crays
@@ -4506,6 +4629,7 @@ crufty
 cspawn
 cstdlib
 ctags
+ctime
 ctor
 ctrunc
 cuda
@@ -4531,9 +4655,13 @@ dataparallel
 dataset
 datastart
 datastructures
+datetime
+datetimes
 david
 davis
+daystr
 dbase
+dbgstat
 dchpldoc
 dcopy
 ddata
@@ -4644,6 +4772,7 @@ dtor
 dubois
 dumler
 duncan
+dwords
 dygraphs
 dylan
 eacces
@@ -4830,6 +4959,7 @@ filepointer
 filerator
 filesystems
 findfiles
+findyear
 finfo
 fioretto
 firefox
@@ -4868,6 +4998,8 @@ freebsd
 freqs
 friday
 frobenius
+fromordinal
+fromtimestamp
 frontend
 fseek
 fsfns
@@ -4904,6 +5036,7 @@ getcontext
 getcwd
 getdtablesize
 gethostname
+gethugepagesize
 getlimbn
 getnameinfo
 getnext
@@ -4925,6 +5058,7 @@ globalattr
 globfree
 gmake
 gmplib
+gmtoff
 gnuplot
 godoc
 gokhberg
@@ -4985,6 +5119,7 @@ hillis
 hipa
 hiragana
 histograph
+hndl
 hoehrmann
 hoffswell
 hoistable
@@ -5024,6 +5159,7 @@ icpc
 idempotent
 idents
 ieee
+iface
 ified
 ifneq
 ignorecase
@@ -5101,6 +5237,9 @@ isfinite
 isgid
 isinf
 isnan
+isocalendar
+isoformat
+isoweekday
 isslice
 issubtype
 issuercert
@@ -5285,6 +5424,7 @@ localhost
 localport
 localportrange
 localtemp
+localtime
 locid
 lockless
 locs
@@ -5317,6 +5457,7 @@ lview
 lycian
 lydia
 lydian
+lyield
 machinename
 mackale
 macosx
@@ -5373,14 +5514,19 @@ mellanox
 mellor
 memalign
 membername
+membind
 memcpys
 memleaks
 memleaksfull
+memlocation
+memmaps
 memmove
 memoize
+memreg
 mersenne
 mfac
 mferguson
+mgmt
 michael
 microsoft
 milano
@@ -5394,6 +5540,7 @@ mitre
 mjolnir
 mkdir
 mkerror
+mklroot
 mkswap
 mmap
 mmread
@@ -5410,6 +5557,8 @@ monday
 mongolian
 monoid
 monte
+monthstr
+morecore
 moreso
 mosharaf
 moveprimitive
@@ -5417,9 +5566,12 @@ mpicc
 mpich
 mpiexec
 mpirun
+mpool
 mppdepth
 mppf
 mprotect
+mreg
+mregs
 mtarun
 muchnick
 multicast
@@ -5506,7 +5658,9 @@ nist
 nixos
 noakes
 noalias
+noblock
 nocapture
+nocopy
 noctty
 nodeid
 nodelay
@@ -5522,6 +5676,7 @@ nonascii
 nonblocking
 nondeterminism
 nondeterministic
+nonfetch
 nongnu
 nongreedy
 noninfringement
@@ -5558,6 +5713,7 @@ nrows
 nsync
 nthreads
 numa
+numanode
 numberofcells
 numberofpermutations
 numberofsides
@@ -5588,6 +5744,7 @@ onlinedocs
 onlinepubs
 oopsla
 opcode
+opcodes
 opencl
 openfd
 openfile
@@ -5643,6 +5800,7 @@ perfdat
 perfexecopts
 perfkeys
 performant
+perfstats
 perftimeout
 perl
 persian
@@ -5718,6 +5876,8 @@ proxyuserpwd
 przemys
 psahabu
 pseudocode
+pstats
+ptag
 pthread
 pthreads
 ptrans
@@ -5727,6 +5887,7 @@ publickey
 punny
 putchar
 pvalloc
+pvar
 pwritev
 pychapel
 pydoc
@@ -5738,6 +5899,7 @@ queueing
 quickack
 quicksort
 quickstart
+qword
 rachel
 rafael
 raii
@@ -5754,9 +5916,11 @@ raytrace
 raytracing
 rcpt
 rcvbuf
+rcvd
 rdma
 rdonly
 rdwr
+reacqs
 readahead
 readargsfrom
 readbits
@@ -5793,6 +5957,7 @@ refcnt
 refcount
 referencees
 refness
+refpair
 refvar
 regexdna
 regexp
@@ -5813,6 +5978,7 @@ replicand
 replicands
 reprivatization
 reprivatize
+reqs
 resized
 resizes
 resolveable
@@ -5824,6 +5990,7 @@ rettype
 retval
 revcomp
 rfind
+rfork
 richard
 riemann
 rint
@@ -5993,6 +6160,7 @@ spdomain
 spdx
 spectralnorm
 sphinxcontrib
+spincount
 spinlock
 spmd
 springfield
@@ -6033,9 +6201,11 @@ strchr
 strcmp
 strcmps
 strerror
+strftime
 stridable
 strided
 stringify
+strptime
 strrchr
 strs
 strstr
@@ -6043,6 +6213,7 @@ structs
 subarray
 subblock
 subcall
+subchunks
 subdiagonal
 subdirs
 subdomain
@@ -6155,8 +6326,11 @@ tibetan
 tifinagh
 tilera
 timecondition
+timedeltas
 timedexec
 timesteps
+timetuple
+timetz
 timeval
 timevalue
 titlecase
@@ -6178,6 +6352,7 @@ toml
 tommy
 tonum
 tooltip
+toordinal
 topdown
 toret
 traceback
@@ -6188,6 +6363,7 @@ travis
 tridiagonal
 trigraphs
 tsiombikas
+tskyield
 tstbit
 tuesday
 tupled
@@ -6201,6 +6377,8 @@ typeinfo
 typeselect
 typesymbol
 tzakian
+tzinfo
+tzname
 ubuntu
 uchar
 ugaritic
@@ -6267,6 +6445,9 @@ usernames
 userpwd
 ushort
 usingchapel
+utcfromtimestamp
+utcnow
+utctimetuple
 valgrind
 valgrindexe
 valgrinds
@@ -6350,6 +6531,7 @@ wronly
 wsize
 wunused
 xargs
+xchg
 xcode
 xcodebuild
 xdigit
@@ -6362,6 +6544,7 @@ yacc
 yale
 yaml
 yates
+yearstr
 yeoh
 ylabel
 ytype

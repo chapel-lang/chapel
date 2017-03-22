@@ -61,6 +61,10 @@
   "57076cb0-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/codegen.h"
   ],
+  "12c3b64e-0c12-11e7-980e-10ddb1d4c3d5": [
+    "compiler/include/countTokens.h",
+    "compiler/parser/countTokens.cpp"
+  ],
   "b9f0367c-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/list.h"
   ],
@@ -135,6 +139,9 @@
   ],
   "7e73d6b2-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/callDestructors.cpp"
+  ],
+  "208f1cd2-0c12-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/cullOverReferences.cpp"
   ],
   "8983f3ac-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/functionResolution.cpp"
@@ -363,6 +370,9 @@
   "6c8e8208-1f0f-11e6-a3a6-10ddb1d4c3d5": [
     "modules/dists/SparseBlockDist.chpl"
   ],
+  "edb63ad0-0c15-11e7-980e-10ddb1d4c3d5": [
+    "modules/dists/StencilDist.chpl"
+  ],
   "ab3bbeb6-1f10-11e6-a3a6-10ddb1d4c3d5": [
     "modules/dists/dims/BlockCycDim.chpl"
   ],
@@ -371,6 +381,9 @@
   ],
   "c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/AtomicsCommon.chpl"
+  ],
+  "5010068a-0c15-11e7-980e-10ddb1d4c3d5": [
+    "modules/internal/ChapelArray.chpl"
   ],
   "47cb0e3c-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/ChapelRange.chpl"
@@ -386,6 +399,9 @@
   ],
   "c3b7f950-1f15-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/DefaultRectangular.chpl"
+  ],
+  "5cb0944a-0c15-11e7-980e-10ddb1d4c3d5": [
+    "modules/internal/localeModels/knl/LocaleModel.chpl"
   ],
   "9c75ae66-1f18-11e6-a3a6-10ddb1d4c3d5": [
     "modules/layouts/LayoutCSR.chpl"
@@ -409,6 +425,9 @@
   ],
   "ebcca246-1f2f-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Buffers.chpl"
+  ],
+  "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
+    "modules/standard/DateTime.chpl"
   ],
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"
@@ -434,11 +453,17 @@
   "8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-timers.c"
   ],
+  "9e8a4742-0c12-11e7-980e-10ddb1d4c3d5": [
+    "runtime/src/chpl-topo.c"
+  ],
   "726887c4-bc39-11e6-9740-843835579daa": [
     "runtime/src/chplsys.c"
   ],
   "847163aa-bc39-11e6-9740-843835579daa": [
     "runtime/src/comm/gasnet/comm-gasnet.c"
+  ],
+  "aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5": [
+    "runtime/src/comm/ugni/comm-ugni.c"
   ],
   "b7c60ac2-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/mpirun/launch-mpirun.c"
