@@ -1051,7 +1051,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // Composition
   // Return the intersection of this and other.
   pragma "no doc"
-  proc range.this(other: range(?))
+  proc const range.this(other: range(?))
   {
     // Two cases to consider:
     //  1) Both ranges unambiguously aligned
