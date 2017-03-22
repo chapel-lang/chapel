@@ -636,18 +636,13 @@ module DefaultRectangular {
       if (this.locale == here) {
         return _getDomain(this);
       } else {
-        var a: domain(rank, idxType);
+        var a: domain(rank, idxType, stridable);
         return a;
       }
     }
 
     iter dsiLocalSubdomains() {
-      if (this.locale == here) {
-        yield _getDomain(this);
-      } else {
-        var a: domain(rank, idxType);
-        yield a;
-      }
+      yield dsiLocalSubdomain();
     }
   }
 
@@ -1880,18 +1875,13 @@ module DefaultRectangular {
       if (this.data.locale == here) {
         return _getDomain(dom);
       } else {
-        var a: domain(rank, idxType);
+        var a: domain(rank, idxType, stridable);
         return a;
       }
     }
 
     iter dsiLocalSubdomains() {
-      if (this.data.locale == here) {
-        yield _getDomain(dom);
-      } else {
-        var a: domain(rank, idxType);
-        yield a;
-      }
+      yield dsiLocalSubdomain();
     }
   }
 
