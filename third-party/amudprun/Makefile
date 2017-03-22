@@ -5,6 +5,11 @@ endif
 CHPL_MAKE_HOST_TARGET = --host
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
+platform_defines = -DAMUDP_ENV_PREFIX=GASNET -Dif_pf=if -Dif_pt=if
+ifneq (,$(shell grep getifaddrs /usr/include/ifaddrs.h 2>/dev/null))
+platform_defines += -DHAVE_GETIFADDRS -DHAVE_IFADDRS_H
+endif
+
 default: all
 
 all: amudprun
@@ -29,7 +34,7 @@ configure-amudprun: FORCE
 	cp $(AMUDPRUN_SRC_DIR)/../portable_*.h $(AMUDPRUN_BUILD_DIR)
 
 build-amudprun: FORCE
-	cd $(AMUDPRUN_BUILD_DIR) && $(MAKE) -f Makefile.standalone CC="$(CC)" CXX="$(CXX)" platform_defines="-DAMUDP_ENV_PREFIX=GASNET -Dif_pf=if -Dif_pt=if"
+	cd $(AMUDPRUN_BUILD_DIR) && $(MAKE) -f Makefile.standalone CC="$(CC)" CXX="$(CXX)" platform_defines="$(platform_defines)"
 
 install-amudprun: FORCE
 	mkdir -p $(AMUDPRUN_INSTALL_DIR)/bin
