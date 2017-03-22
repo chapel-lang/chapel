@@ -49,7 +49,8 @@ module ArrayViewRankChange {
   class ArrayViewRankChangeDist: BaseDist {
     // a pointer down to the distribution that this class is creating
     // lower-dimensional views of
-    const downdist;
+    var downDistPid:int;
+    var downDistInst;
     
     // These two fields represent whether or not each dimension was
     // collapsed as part of the rank-change; and if so, what the
@@ -62,6 +63,13 @@ module ArrayViewRankChange {
     const collapsedDim;
     const idx;
 
+    inline proc downDist {
+      if _isPrivatized(downDistInst) then
+        return chpl_getPrivatizedCopy(downDistInst.type, downDistPid);
+      else
+        return downDistInst;
+    }
+
     proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
       var newdom = new ArrayViewRankChangeDom(rank=rank,
                                               idxType=idxType,
@@ -73,9 +81,15 @@ module ArrayViewRankChange {
       return newdom;
     }
 
-    proc dsiClone() return new ArrayViewRankChangeDist(downdist=downdist,
+    proc dsiClone() return new ArrayViewRankChangeDist(downDistPid=this.downDistPid,
+                                                       downDistInst=this.downDistInst,
                                                        collapsedDim=collapsedDim,
                                                        idx=idx);
+
+    proc dsiDestroyDist() {
+    }
+
+    // TODO: privatization
   }
 
   //
@@ -111,8 +125,9 @@ module ArrayViewRankChange {
     // above, we get a memory leak.  File a future against this?
     //
     proc downDomType(param rank: int, type idxType, param stridable: bool) type {
-      var a = dist.downdist.newRectangularDom(rank=rank, idxType=idxType,
-                                              stridable=stridable);
+      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+      var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType,
+                                                 stridable=stridable, ranges);
       return a.type;
     }
 
@@ -193,14 +208,20 @@ module ArrayViewRankChange {
     }
 
     proc dsiSetIndices(inds) {
+      // Free underlying domains if necessary
+      this.dsiDestroyDom();
+
       pragma "no auto destroy"
       var upDomRec = {(...inds)};
       upDom = upDomRec._value;
-      var downDomclass = dist.downdist.newRectangularDom(rank=downrank,
-                                                         idxType=idxType,
-                                                         stridable=stridable);
+
+      var ranges: downrank*range(idxType, BoundedRangeType.bounded, stridable);
+      var downDomClass = dist.downDist.dsiNewRectangularDom(rank=downrank,
+                                                           idxType,
+                                                           stridable=stridable,
+                                                           ranges);
       pragma "no auto destroy"
-      var downDomLoc = _newDomain(downDomclass);
+      var downDomLoc = _newDomain(downDomClass);
       downDomLoc = chpl_rankChangeConvertDom(inds, inds.size, collapsedDim, idx);
       downDomLoc._value._free_when_no_arrs = true;
       downDomPid = downDomLoc._pid;
@@ -352,8 +373,10 @@ module ArrayViewRankChange {
     }
 
     proc dsiDestroyDom() {
-      _delete_dom(upDom, false);
-      _delete_dom(downDomInst, _isPrivatized(downDomInst));
+      if upDom != nil then
+        _delete_dom(upDom, false);
+      if downDomInst != nil then
+        _delete_dom(downDomInst, _isPrivatized(downDomInst));
     }
 
   } // end of class ArrayViewRankChangeDom

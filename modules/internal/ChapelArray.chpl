@@ -1140,9 +1140,13 @@ module ChapelArray {
           upranges(d) = emptyrange;
       }
 
-      const rcdist = new ArrayViewRankChangeDist(downdist = dist,
+      const rcdist = new ArrayViewRankChangeDist(downDistPid=dist._pid,
+                                                 downDistInst=dist._instance,
                                                  collapsedDim=collapsedDim,
                                                  idx = idx);
+      // TODO: Should this be set?
+      //rcdist._free_when_no_doms = true;
+
       const rcdistRec = _newDistribution(rcdist);
       const rcdomclass = rcdistRec.newRectangularDom(rank = uprank,
                                                      idxType = upranges(1).idxType,
