@@ -258,7 +258,7 @@ module RunVectorizeOnlyRawLoops {
 
             ref fy4 = ydot.reindex({0..#(ydot.numElements)});
             ref fy1 = fy4[1..].reindex({0..#(ydot.numElements-1)});
-            ref fy2 = fy1[dom.jp..].reindex(0..#(ydot.numElements-1-dom.jp){});
+            ref fy2 = fy1[dom.jp..].reindex({0..#(ydot.numElements-1-dom.jp)});
             ref fy3 = fy4[dom.jp..].reindex({0..#(ydot.numElements-dom.jp)});
 
             const ptiny = 1.0e-20;
