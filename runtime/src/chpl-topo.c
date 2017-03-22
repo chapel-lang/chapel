@@ -68,10 +68,11 @@ static int numaLevel;
 static int numNumaDomains;
 
 
+static hwloc_obj_t getNumaObj(c_sublocid_t);
 static void alignAddrSize(void*, size_t, chpl_bool,
                           size_t*, unsigned char**, size_t*);
 static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
-                                            hwloc_obj_t numaObj);
+                                            hwloc_obj_t);
 static void report_error(const char*, int);
 
 
@@ -176,7 +177,6 @@ int chpl_topo_getNumNumaDomains(void) {
 
 void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
   hwloc_cpuset_t cpuset;
-  hwloc_obj_t numaObj;
   int flags;
 
   _DBG_P("chpl_topo_setThreadLocality(%d)\n", (int) subloc);
@@ -192,8 +192,8 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
     report_error("hwloc_bitmap_alloc()", errno);
   }
 
-  numaObj = hwloc_get_obj_by_depth(topology, numaLevel, subloc);
-  hwloc_cpuset_from_nodeset(topology, cpuset, numaObj->allowed_nodeset);
+  hwloc_cpuset_from_nodeset(topology, cpuset,
+                            getNumaObj(subloc)->allowed_nodeset);
 
   flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
   if (hwloc_set_cpubind(topology, cpuset, flags)) {
@@ -247,7 +247,6 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
   size_t pgSize;
   unsigned char* pPgLo;
   size_t nPages;
-  hwloc_obj_t numaObj;
 
   _DBG_P("chpl_topo_setMemLocality(%p, %#zx, onlyIn=%s, %d)\n",
          p, size, (onlyInside ? "T" : "F"), (int) subloc);
@@ -264,8 +263,7 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
   if (nPages == 0)
     return;
 
-  numaObj = hwloc_get_obj_by_depth(topology, numaLevel, subloc);
-  chpl_topo_setMemLocalityByPages(pPgLo, nPages * pgSize, numaObj);
+  chpl_topo_setMemLocalityByPages(pPgLo, nPages * pgSize, getNumaObj(subloc));
 }
 
 
@@ -275,7 +273,6 @@ void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
   size_t pgSize;
   unsigned char* pPgLo;
   size_t nPages;
-  hwloc_obj_t numaObj;
   int i;
   size_t pg;
   size_t pgNext;
@@ -300,13 +297,23 @@ void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
       pgNext = nPages;
     else
       pgNext = 1 + (nPages * (i + 1) - 1) / numNumaDomains;
-    numaObj = hwloc_get_obj_by_depth(topology, numaLevel, i);
     chpl_topo_setMemLocalityByPages(pPgLo + pg * pgSize,
-                                    (pgNext - pg) * pgSize, numaObj);
+                                    (pgNext - pg) * pgSize, getNumaObj(i));
     if (subchunkSizes != NULL) {
       subchunkSizes[i] = (pgNext - pg) * pgSize;
     }
   }
+}
+
+
+static inline
+hwloc_obj_t getNumaObj(c_sublocid_t subloc) {
+  // could easily imagine this being a bit slow, but it's okay for now
+  return
+    hwloc_get_obj_inside_cpuset_by_depth(topology,
+                                         hwloc_get_root_obj(topology)->cpuset,
+                                         numaLevel,
+                                         subloc);
 }
 
 

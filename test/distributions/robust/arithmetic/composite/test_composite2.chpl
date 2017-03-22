@@ -14,35 +14,35 @@ proc writeToString() {
     s += "  ";
 }
 
-var AA => MyA3D;                    // alias [1..5, 1..5, 1..5]
+ref AA = MyA3D;                    // alias [1..5, 1..5, 1..5]
 [aa in AA] aa = 1;
 writeToString();
 
-var AA2 => AA({10001..10005, 10001..10005, 10001..10005}.expand(-1));   // slice [2..4, 2..4, 2..4]
+ref AA2 = AA({10001..10005, 10001..10005, 10001..10005}.expand(-1));   // slice [2..4, 2..4, 2..4]
 [aa2 in AA2] aa2 = 2;
 writeToString();
 
-var AA3: [91..93, 94..96, 97..99] => AA2; // reindex [2..4, 2..4, 2..4]
+ref AA3 = AA2.reindex({91..93, 94..96, 97..99}); // reindex [2..4, 2..4, 2..4]
 [aa3 in AA3] aa3 = 3;
 writeToString();
 
-var AA4 => AA3(92, 94..96, 97..99);      // collapse [3, 2..4, 2..4]
+ref AA4 = AA3(92, 94..96, 97..99);      // collapse [3, 2..4, 2..4]
 [aa4 in AA4] aa4 = 4;
 writeToString();
 
-var AA5 => AA4;                     // alias [3, 2..4, 2..4]
+ref AA5 = AA4;                     // alias [3, 2..4, 2..4]
 [aa5 in AA5] aa5 = 5;
 writeToString();
 
-var AA6 => AA5(95..96, 98..99);         // slice [3, 3..4, 3..4]
+ref AA6 = AA5(95..96, 98..99);         // slice [3, 3..4, 3..4]
 [aa6 in AA6] aa6 = 6;
 writeToString();
 
-var AA7: [1..2, 1..2] => AA6;     // reindex [3, 3..4, 3..4]
+ref AA7 = AA6.reindex({1..2, 1..2});     // reindex [3, 3..4, 3..4]
 [aa7 in AA7] aa7 = 7;
 writeToString();
 
-var AA8 => AA7(1..2, 2);          // collapse [3, 3..4, 4]
+ref AA8 = AA7(1..2, 2);          // collapse [3, 3..4, 4]
 [aa8 in AA8] aa8 = 8;
 writeToString();
 

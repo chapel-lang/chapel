@@ -17,7 +17,6 @@ tags
 # Top level ignores.
 /BUILD_VERSION
 /Chapel.xcodeproj
-/STATUS
 /SVNLOG
 /.SVNLOG-revnum
 /bin
