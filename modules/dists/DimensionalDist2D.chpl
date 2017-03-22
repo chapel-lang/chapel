@@ -750,12 +750,13 @@ proc DimensionalDom.dsiSerialWrite(f): void {
 
 // create a new domain mapped with this distribution
 proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
-                                          type idxType,
-                                          param stridable: bool)
+                                            type idxType,
+                                            param stridable: bool,
+                                            inds)
 //  : DimensionalDom(rank, idxType, stridable, this.type, ...)
 {
   _traceddd(this, ".dsiNewRectangularDom ",
-           (rank, idxType:string, stridable));
+            (rank, idxType:string, stridable, inds));
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank:string, " dimensions");
@@ -794,6 +795,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
       locDdesc = new LocDimensionalDom(result.stoDomainT,
                        doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
                        doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
+  result.dsiSetIndices(inds);
   return result;
 }
 
@@ -847,68 +849,6 @@ proc DimensionalDom.dsiGetIndices(): rank * range(idxType,
                                                  stridable) {
   _traceddd(this, ".dsiGetIndices");
   return whole.dims();
-}
-
-// create a new domain mapped with this's distribution + initialize to 'ranges'
-//
-// dsiBuildRectangularDom   = dsiNewRectangularDom   + dsiSetIndices
-// dsiBuildRectangularDom1d = dsiNewRectangularDom1d + dsiSetIndices1d
-// dsiBuildLocalDom1d       = dsiNewLocalDom1d       + dsiSetLocalIndices1d
-//
-proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
-                                           type idxType,
-                                           param stridable: bool,
-                                           ranges: rank * range(idxType,
-                                                 BoundedRangeType.bounded,
-                                                                stridable))
-{
-  _traceddd(this, ".dsiBuildRectangularDom ",
-           (rank, idxType:string, stridable), ranges);
-  if rank != 2 then
-    compilerError("DimensionalDist2D presently supports only 2 dimensions,",
-                  " got ", rank, " dimensions");
-
-  // todo: ideally, this will not be required;
-  // furthermore, DimensionalDist2D shouldn't be specific to idxType.
-  if idxType != this.idxType then
-    compilerError("The domain index type ", idxType:string,
-                  " does not match the index type ",this.idxType:string,
-                  " of the DimensionalDom used to create this domain");
-  if rank != this.rank then
-    compilerError("The rank of the domain (", rank,
-                  ") does not match the rank (", this.rank,
-                  ") of the DimensionalDom used to create this domain");
-
-  const dist = this.dist;
-
-  const dom1 = this.dom1.dsiBuildRectangularDom1d(dist.di1,
-                                                  stridable, ranges(1));
-  _passLocalLocIDsDom1d(dom1, dist.di1);
-
-  const dom2 = this.dom2.dsiBuildRectangularDom1d(dist.di2,
-                                                  stridable, ranges(2));
-  _passLocalLocIDsDom1d(dom2, dist.di2);
-
-  const result = new DimensionalDom(rank=rank, idxType=idxType,
-                                    stridable=stridable, dist=dist,
-                                    dom1 = dom1, dom2 = dom2,
-                                    whole = {(...ranges)});
-
-  // Not including 'targetLocales' in zippering for now -
-  // obtain the locale/locId from 'this' and its components instead.
-  // (Is that more efficient?)
-  coforall (oldLocDdesc, newLocDdesc, locIds)
-   in zip(this.localDdescs, result.localDdescs, this.targetIds) do
-    on oldLocDdesc {
-      var (doml1, myRange1) = oldLocDdesc.doml1.dsiBuildLocalDom1d(dom1, locIds(1));
-      var (doml2, myRange2) = oldLocDdesc.doml2.dsiBuildLocalDom1d(dom2, locIds(2));
-
-      newLocDdesc = new LocDimensionalDom(result.stoDomainT,
-                                          myStorageDom = {myRange1, myRange2},
-                                          doml1 = doml1, doml2 = doml2);
-    }
-
-  return result;
 }
 
 
@@ -1085,10 +1025,6 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
 
 proc DimensionalDist2D.dsiCreateReindexDist(newSpace, oldSpace) {
   return genericDsiCreateReindexDist(this, this.rank, newSpace, oldSpace);
-}
-
-proc DimensionalDist2D.dsiCreateRankChangeDist(param newRank: int, args) {
-  return genericDsiCreateRankChangeDist(this, newRank, args);
 }
 
 */

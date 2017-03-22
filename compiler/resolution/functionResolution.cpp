@@ -284,6 +284,7 @@ addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false);
 static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
 static void resolveUses(ModuleSymbol* mod);
+static void resolveSupportForModuleDeinits();
 static void resolveExports();
 static void resolveEnumTypes();
 static void resolveDynamicDispatches();
@@ -613,8 +614,9 @@ resolveAutoCopyEtc(Type* type) {
     if (isUserDefinedRecord(type) &&
         !type->symbol->hasFlag(FLAG_TUPLE) &&
         !isRecordWrappedType(type) &&
-        !isSyncType(type) &
-        !isSingleType(type)) {
+        !isSyncType(type) &&
+        !isSingleType(type) &&
+        !type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
       // Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
       // for user-defined records. This way, if the type does not
       // support copying, the autoCopyMap will store a function
@@ -4614,6 +4616,7 @@ void resolveCall(CallExpr* call) {
     case PRIM_INIT_FIELD:
       resolveInitField(call);
       break;
+
     case PRIM_INIT_VAR:
       resolveInitVar(call);
       break;
@@ -4999,13 +5002,20 @@ void lvalueCheck(CallExpr* call)
     bool errorMsg = false;
     switch (formal->intent) {
      case INTENT_BLANK:
-     case INTENT_IN:
      case INTENT_CONST:
-     case INTENT_CONST_IN:
      case INTENT_PARAM:
      case INTENT_TYPE:
      case INTENT_REF_MAYBE_CONST:
       // not checking them here
+      break;
+
+     case INTENT_IN:
+     case INTENT_CONST_IN:
+      // generally, not checking them here
+      // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
+      if (formal->type->symbol->hasFlag(FLAG_COPY_MUTATES))
+        if (!isLegalLvalueActualArg(formal, actual))
+          errorMsg = true;
       break;
 
      case INTENT_INOUT:
@@ -8951,10 +8961,11 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           call->insertAtTail(unrefCall);
           FnSymbol* unrefFn = resolveNormalCall(unrefCall);
           resolveFns(unrefFn);
-
-          if (unrefFn->retType == tmp->typeInfo()) {
-            // If the types are equal, we must be dealing with a non-view
-            // array, so we can remove the useless unref call.
+          // Relies on the ArrayView variant having the 'unref fn' flag in
+          // ChapelArray.
+          if (unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
+            // If the function does not have this flag, we must be dealing with
+            // a non-view array, so we can remove the useless unref call.
             unrefCall->replace(origRHS->copy());
 
             // Remove now-useless AST
@@ -9633,6 +9644,8 @@ void resolve() {
   if (chpl_gen_main)
     resolveFns(chpl_gen_main);
 
+  resolveSupportForModuleDeinits();
+
   USR_STOP();
 
   resolveExports();
@@ -9771,10 +9784,27 @@ static void resolveUses(ModuleSymbol* mod)
   resolveFormals(fn);
   resolveFns(fn);
 
+  if (FnSymbol* defn = mod->deinitFn) {
+    resolveFormals(defn);
+    resolveFns(defn);
+  }
+
   if (fPrintModuleResolution)
     putc('\n', stderr);
 
   --module_resolution_depth;
+}
+
+static void resolveSupportForModuleDeinits() {
+  // We will need these in addInitGuards.cpp
+  SET_LINENO(chpl_gen_main);
+  Expr*    modNameDum = buildCStringLiteral("");
+  VarSymbol* fnPtrDum = newTemp("fnPtr", dtCFnPtr);
+  CallExpr* addModule = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
+  resolveUninsertedCall(chpl_gen_main->body, NULL, addModule, false);
+  gAddModuleFn = addModule->isResolved();
+  resolveFns(gAddModuleFn);
+  // Also in buildDefaultFunctions.cpp: new CallExpr("chpl_deinitModules")
 }
 
 static void resolveExports() {
@@ -10491,10 +10521,13 @@ static void cleanupAfterRemoves() {
     // How about fn->substitutions, basicBlocks, calledBy ?
   }
 
-  forv_Vec(ModuleSymbol, mod, gModuleSymbols)
-    // Zero the initFn pointer if the function is now dead.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    // Zero the initFn pointer if the function is now dead. Ditto deinitFn.
     if (mod->initFn && !isAlive(mod->initFn))
       mod->initFn = NULL;
+    if (mod->deinitFn && !isAlive(mod->deinitFn))
+      mod->deinitFn = NULL;
+  }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->instantiatedFrom != NULL)

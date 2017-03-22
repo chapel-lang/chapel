@@ -1,0 +1,21 @@
+declaring shared1 storing C(1)
+shared1 = {x = 1}
+declaring shared2 storing nil
+shared2 = nil
+after assigning shared2 = shared1
+shared2 = {x = 1}
+shared1 = {x = 1}
+declaring shared3 storing C(3)
+shared3 = {x = 3}
+after assigning shared1 = shared3
+shared1 = {x = 3}
+shared3 = {x = 3}
+after shared1.retain C(100)
+shared1 = {x = 100}
+after shared1.clear()
+shared1 = nil
+declaring shared4 storing C(4)
+shared4 = {x = 4}
+declaring shared5 storing C(5)
+in sharesOwnership, arg = {x = 5}
+shared5 = {x = 5}

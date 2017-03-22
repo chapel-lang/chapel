@@ -1647,6 +1647,15 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_SPACE:int;
   extern const QIO_TUPLE_FORMAT_JSON:int;
 
+  // Support for module deinit functions.
+  class chpl_ModuleDeinit {
+    const moduleName: c_string;          // for debugging; non-null, not owned
+    const deinitFun:  c_fn_ptr;          // module deinit function
+    const prevModule: chpl_ModuleDeinit; // singly-linked list / LIFO queue
+    proc writeThis(ch) {ch.writef("chpl_ModuleDeinit(%s)",moduleName:string);}
+  }
+  var chpl_moduleDeinitFuns = nil: chpl_ModuleDeinit;
+
   // What follows are the type _defaultOf methods, used to initialize types
   // Booleans
   pragma "no doc"

@@ -592,6 +592,7 @@ static void build_chpl_entry_points() {
   //
   if (fMinimalModules == false) {
     chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount"));
+    chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
   }
 
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));

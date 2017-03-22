@@ -664,7 +664,7 @@ module ChapelArray {
   // 'arr' can be a full-fledged array type or a class that inherits from
   // BaseArr
   //
-  proc chpl__isDROrDRView(arr) param {
+  proc chpl__isDROrDRView(arr) param where isArray(arr) || arr : BaseArr {
     const value = if isArray(arr) then arr._value else arr;
     param isDR = value.isDefaultRectangular();
     param isDRView = chpl__isArrayView(value) && chpl__getActualArray(value).isDefaultRectangular();
@@ -672,6 +672,36 @@ module ChapelArray {
   }
   //
   // End of array-view utility functions
+  //
+
+  //
+  // DomainView utility functions
+  //
+  proc chpl__isDomainView(dom) param {
+    const value = if isDomain(dom) then dom._value else dom;
+
+    param isSlice      = value.isSliceDomainView();
+    param isRankChange = value.isRankChangeDomainView();
+    param isReindex    = value.isReindexDomainView();
+
+    return isSlice || isRankChange || isReindex;
+  }
+
+  proc chpl__getActualDomain(dom) {
+    var value = if isDomain(dom) then dom._value else dom;
+    var ret = if chpl__isDomainView(value) then value._getActualDomain() else value;
+    return ret;
+  }
+
+  proc chpl__isDROrDRView(dom) param where isDomain(dom) || dom : BaseDom {
+    const value = if isDomain(dom) then dom._value else dom;
+    param isDR  = value.isDefaultRectangular();
+    param isDRView = chpl__isDomainView(value) && chpl__getActualDomain(value).isDefaultRectangular();
+    return isDR || isDRView;
+  }
+
+  //
+  // End of DomainView utility functions
   //
 
   proc chpl__isRectangularDomType(type domainType) param {
@@ -858,12 +888,18 @@ module ChapelArray {
       return _newDistribution(_value.dsiClone());
     }
 
-    proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
-      var x = _value.dsiNewRectangularDom(rank, idxType, stridable);
+    proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
+                           ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
+      var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
       if x.linksDistribution() {
         _value.add_dom(x);
       }
       return x;
+    }
+
+    proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
+      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+      return newRectangularDom(rank, idxType, stridable, ranges);
     }
 
     proc newAssociativeDom(type idxType, param parSafe: bool=true) {
@@ -1066,59 +1102,64 @@ module ChapelArray {
       for param i in 1..rank {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType, stridable, r);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, r));
     }
 
     // domain rank change
     pragma "no doc"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
-      var ranges = _getRankChangeRanges(args);
-      param newRank = ranges.size,
-            stridable = chpl__anyStridable(ranges) || this.stridable;
-      var newRanges: newRank*range(idxType=_value.idxType, stridable=stridable);
-      var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
-      var sameDist = (newDistVal == _value.dist);
-      var newDist = if sameDist then
-                       _getDistribution(newDistVal)
-                    else
-                       _newDistribution(newDistVal);
-      if ! sameDist && ! _value.dist.trackDomains() {
-        // Otherwise, we don't have a way for the var d below
-        // to extend the lifetime of the distribution...
-        halt("Distribution must use trackDomains or be singleton");
-      }
-      var j = 1;
-      var makeEmpty = false;
+      //
+      // Compute which dimensions are collapsed and what the index
+      // (idx) is in the event that it is.  These will be stored in
+      // the array view to convert from lower-D indices to higher-D.
+      //
+      var collapsedDim: rank*bool;
+      var idx: rank*idxType;
 
       for param i in 1..rank {
-        if !isCollapsedDimension(args(i)) {
-          newRanges(j) = dim(i)(args(i));
-          j += 1;
+        if (isRange(args(i))) {
+          collapsedDim(i) = false;
+          idx(i) = dim(i).alignedLow;
         } else {
-          if !dim(i).member(args(i)) then
-            makeEmpty = true;
+          collapsedDim(i) = true;
+          idx(i) = args(i);
         }
       }
-      if makeEmpty {
-        for param i in 1..newRank {
-          newRanges(i) = 1..0;
-        }
+
+      // Create distribution, domain, and array objects representing
+      // the array view
+      var upranges = _getRankChangeRanges(args, this._value);
+      const emptyrange: upranges(1).type;
+      param uprank = upranges.size;
+      //
+      // If idx isn't in the original domain, we need to generate an
+      // empty upward facing domain (intersection is empty)
+      //
+      if !member(idx) {
+        for param d in 1..uprank do
+          upranges(d) = emptyrange;
       }
-      var d = {(...newRanges)} dmapped newDist;
-      return d;
+
+      const rcdist = new ArrayViewRankChangeDist(downdist = dist,
+                                                 collapsedDim=collapsedDim,
+                                                 idx = idx);
+      const rcdistRec = _newDistribution(rcdist);
+      const rcdomclass = rcdistRec.newRectangularDom(rank = uprank,
+                                                     idxType = upranges(1).idxType,
+                                                     stridable = upranges(1).stridable, upranges);
+
+      return _newDomain(rcdomclass);
+    }
+
+    // error case for all-int access
+    proc this(i: integral ... rank) {
+      compilerError("domain slice requires a range in at least one dimension");
     }
 
     // anything that is not covered by the above
     pragma "no doc"
     proc this(args ...?numArgs) {
       if numArgs == rank {
-        // Doing this just to get a better compiler error
-        var ranges = _getRankChangeRanges(args);
         compilerError("invalid argument types for domain slicing");
       } else
         compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
@@ -1396,14 +1437,7 @@ module ChapelArray {
         }
       }
 
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-
-      return _newDomain(d);
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
     /* Returns a new domain that is the current domain expanded by
@@ -1413,13 +1447,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).expand(off);
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
     pragma "no doc"
@@ -1446,13 +1474,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).exterior(off(i));
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
     /* Returns a new domain that is the exterior portion of the
@@ -1496,13 +1518,7 @@ module ChapelArray {
         }
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
     /* Returns a new domain that is the interior portion of the
@@ -1547,13 +1563,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = _value.dsiDim(i).translate(off(i));
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
      }
 
     /* Returns a new domain that is the current domain translated by
@@ -1573,13 +1583,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
-      var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
-                                           _value.stridable, ranges);
-      // Since we've created a new domain, the distribution needs to
-      // live at least as long as this new domain.
-      if d.linksDistribution() then
-        d.dist.add_dom(d);
-      return _newDomain(d);
+      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
     }
 
     pragma "no doc"
@@ -2136,34 +2140,8 @@ module ChapelArray {
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
       if boundsChecking then
         checkRankChange(args);
-      var newD = _dom((...args));
-      var ranges = _getRankChangeRanges(newD.dims());
-      //
-      // TODO: Currently, the domain created to represent the
-      // rank-change domain is non-distributed.  Ultimately, we need
-      // to create a domain view class that supports a rank-change
-      // view on a higher-dimensional domain as in the original array
-      // view attempt.
-      //
-      pragma "no auto destroy" var d = {(...ranges)};
-      d._value._free_when_no_arrs = true;
 
-      //
-      // Compute which dimensions are collapsed and what the index
-      // (idx) is in the event that it is.  These will be stored in
-      // the array view to convert from lower-D indices to higher-.
-      //
-      var collapsedDim: rank*bool;
-      var idx: rank*idxType;
-
-      for param i in 1..rank {
-        if (isRange(args(i))) {
-          collapsedDim(i) = false;
-        } else {
-          collapsedDim(i) = true;
-          idx(i) = args(i);
-        }
-      }
+      const rcdom = this.domain[(...args)];
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what
@@ -2171,15 +2149,17 @@ module ChapelArray {
       const (arr, arrpid)  = (this._value, this._pid);
 
       var a = new ArrayViewRankChangeArr(eltType=this.eltType,
-                                         _DomPid = d._pid,
-                                         dom = d._instance,
+                                         _DomPid = rcdom._pid,
+                                         dom = rcdom._instance,
                                          _ArrPid=arrpid,
                                          _ArrInstance=arr,
-                                         collapsedDim=collapsedDim,
-                                         idx=idx);
+                                         // TODO: Should the array really store
+                                         // these redundantly?
+                                         collapsedDim=rcdom._value.collapsedDim,
+                                         idx=rcdom._value.idx);
 
       // this doesn't need to lock since we just created the domain d
-      d._value.add_arr(a, locking=false);
+      rcdom._value.add_arr(a, locking=false);
       return _newArray(a);
     }
 
@@ -3163,36 +3143,36 @@ module ChapelArray {
     //return help(1);
   }
 
-  proc _getRankChangeRanges(args) {
-    proc _tupleize(x) {
-      var y: 1*x.type;
-      y(1) = x;
-      return y;
-    }
+  proc _getRankChangeRanges(args, downdom) {
+    return collectRanges(1);
+
     proc collectRanges(param dim: int) {
-      if dim > args.size then
-        compilerError("domain slice requires a range in at least one dimension");
-      if isRange(args(dim)) then
-        return collectRanges(dim+1, _tupleize(args(dim)));
-      else
+      if isRange(args(dim)) {
+        const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
+        return collectRanges(dim+1, (newRange,));
+      } else
         return collectRanges(dim+1);
     }
+
     proc collectRanges(param dim: int, x: _tuple) {
       if dim > args.size {
         return x;
       } else if dim < args.size {
-        if isRange(args(dim)) then
-          return collectRanges(dim+1, ((...x), args(dim)));
-        else
+        if isRange(args(dim)) {
+          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
+          return collectRanges(dim+1, ((...x), newRange));
+        } else {
           return collectRanges(dim+1, x);
+        }
       } else {
-        if isRange(args(dim)) then
-          return ((...x), args(dim));
-        else
+        if isRange(args(dim)) {
+          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
+          return ((...x), newRange);
+        } else {
           return x;
+        }
       }
     }
-    return collectRanges(1);
   }
 
   //
@@ -3596,10 +3576,7 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
-    var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
-    if d.linksDistribution() then
-      d.dist.add_dom(d);
-    return _newDomain(d);
+    return _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, true, r));
   }
 
   /*
@@ -3616,10 +3593,7 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) align t(i);
-    var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, a.stridable, r);
-    if d.linksDistribution() then
-      d.dist.add_dom(d);
-    return _newDomain(d);
+    return _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, a.stridable, r));
   }
 
   //
@@ -3743,6 +3717,7 @@ module ChapelArray {
   // Relies on the return types being different to detect an ArrayView at
   // compile-time
   pragma "no copy return"
+  pragma "unref fn"
   inline proc chpl__unref(x: []) where chpl__isArrayView(x._value) {
     // intended to call initCopy
     pragma "no auto destroy" var ret = x;
@@ -3750,6 +3725,9 @@ module ChapelArray {
   }
 
   // Intended to return whatever it gets without copying
+  // Not marked with "unref fn" because this version shouldn't
+  // actually remain in the AST - it's just added temporarily
+  // during resolution.
   pragma "no copy return"
   inline proc chpl__unref(x: []) {
     pragma "no copy" var ret = x;

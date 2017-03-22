@@ -33,5 +33,6 @@ Built-in config vars:
                      memLog: string
                 memLeaksLog: string
              memLeaksByDesc: string
+     printModuleDeinitOrder: bool
                  numLocales: int(64)
 

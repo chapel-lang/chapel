@@ -8,7 +8,7 @@ on Locales[numLocales-1] {
   testit("testing A from locale "+ (numLocales-1), A);
 
   var B: [D] real;
-  testit("testing B from locale "+ (numLocales-1), A);
+  testit("testing B from locale "+ (numLocales-1), B);
 
   on Locales[0] {
     testit("testing B from locale 0", B);

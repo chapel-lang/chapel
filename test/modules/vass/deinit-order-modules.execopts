@@ -1,0 +1,2 @@
+--printModuleDeinitOrder=false  # deinit-order-modules.good
+--printModuleDeinitOrder=true   # deinit-order-modules.verbose.good

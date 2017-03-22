@@ -1,0 +1,25 @@
+use SharedObject;
+
+class Impl {
+  var field: int;
+  proc init(arg:int) {
+    field = arg;
+    writeln("in Impl.init ", field);
+  }
+
+  proc deinit() {
+    writeln("in Impl.~Impl ", field);
+  }
+}
+
+var globalSharedObject:Shared(Impl);
+
+proc makeGlobalSharedObject() {
+  var x = new Shared(new Impl(1));
+
+  globalSharedObject = x;
+}
+
+makeGlobalSharedObject();
+
+writeln(globalSharedObject.borrow().field);

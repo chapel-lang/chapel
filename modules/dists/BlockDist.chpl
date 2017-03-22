@@ -529,7 +529,7 @@ proc Block.dsiDisplayRepresentation() {
 }
 
 proc Block.dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool) {
+                                param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
@@ -537,7 +537,7 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 
   var dom = new BlockDom(rank=rank, idxType=idxType, dist=this,
       stridable=stridable, sparseLayoutType=sparseLayoutType);
-  dom.setup();
+  dom.dsiSetIndices(inds);
   if debugBlockDist {
     writeln("Creating new Block domain:");
     dom.dsiDisplayRepresentation();
@@ -777,38 +777,6 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 
-proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
-  var collapsedDimLocs: rank*idxType;
-
-  for param i in 1..rank {
-    if isCollapsedDimension(args(i)) {
-      collapsedDimLocs(i) = args(i);
-    } else {
-      collapsedDimLocs(i) = 0;
-    }
-  }
-  const collapsedLocInd = targetLocsIdx(collapsedDimLocs);
-  var collapsedBbox: _matchArgsShape(range(idxType=idxType), idxType, args);
-  var collapsedLocs: _matchArgsShape(range(idxType=int), int, args);
-
-  for param i in 1..rank {
-    if isCollapsedDimension(args(i)) {
-      // set indices that are out of bounds to the bounding box low or high.
-      collapsedBbox(i) = if args(i) < boundingBox.dim(i).low then boundingBox.dim(i).low else if args(i) > boundingBox.dim(i).high then boundingBox.dim(i).high else args(i);
-      collapsedLocs(i) = collapsedLocInd(i);
-    } else {
-      collapsedBbox(i) = boundingBox.dim(i);
-      collapsedLocs(i) = targetLocDom.dim(i);
-    }
-  }
-
-  const newBbox = boundingBox[(...collapsedBbox)];
-  const newTargetLocales = targetLocales((...collapsedLocs));
-  return new Block(newBbox, newTargetLocales,
-                   dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity);
-}
-
 iter BlockDom.these() {
   for i in whole do
     yield i;
@@ -986,26 +954,6 @@ proc BlockDom.dsiMember(i) {
 
 proc BlockDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
-}
-
-//
-// build a new rectangular domain using the given range
-//
-proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
-                                   param stridable: bool,
-                                   ranges: rank*range(idxType,
-                                                      BoundedRangeType.bounded,
-                                                      stridable)) {
-  if idxType != dist.idxType then
-    compilerError("Block domain index type does not match distribution's");
-  if rank != dist.rank then
-    compilerError("Block domain rank does not match distribution's");
-
-  var dom = new BlockDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable,
-                         sparseLayoutType=sparseLayoutType);
-  dom.dsiSetIndices(ranges);
-  return dom;
 }
 
 //
