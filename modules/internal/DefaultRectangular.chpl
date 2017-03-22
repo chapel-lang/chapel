@@ -630,11 +630,16 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _getDomain(this);
+      if (this.locale == here) {
+        return _getDomain(this);
+      } else {
+        var a: domain(rank, idxType, stridable);
+        return a;
+      }
     }
 
     iter dsiLocalSubdomains() {
-      yield _getDomain(this);
+      yield dsiLocalSubdomain();
     }
   }
 
@@ -1864,11 +1869,16 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _getDomain(dom);
+      if (this.data.locale == here) {
+        return _getDomain(dom);
+      } else {
+        var a: domain(rank, idxType, stridable);
+        return a;
+      }
     }
 
     iter dsiLocalSubdomains() {
-      yield _getDomain(dom);
+      yield dsiLocalSubdomain();
     }
   }
 
