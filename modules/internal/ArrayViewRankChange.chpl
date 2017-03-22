@@ -221,7 +221,7 @@ module ArrayViewRankChange {
       }
     }
 
-    iter these(param tag: iterKind) where tag == iterKind.standalone {
+    iter these(param tag: iterKind) where tag == iterKind.standalone && !localeModelHasSublocales {
       if chpl__isDROrDRView(downDom) {
         for i in upDom.these(tag) do
           yield i;
