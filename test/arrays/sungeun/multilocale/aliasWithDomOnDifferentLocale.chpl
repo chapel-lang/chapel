@@ -4,7 +4,7 @@ on Locales(numLocales-1) {
   on Locales(0) {
     var A: [D] int;
     A = -1;
-    var Aa => A[D2];
+    ref Aa = A[D2];
     Aa = 1;
     writeln(A);
   }
@@ -16,7 +16,7 @@ on Locales(0) {
   on Locales(numLocales-1) {
     var A: [D] int;
     A = -1;
-    var Aa => A[D2];
+    ref Aa = A[D2];
     Aa = 1;
     writeln(A);
   }
@@ -28,7 +28,7 @@ on Locales(0) {
   on Locales(numLocales-1) {
     var A: [D] int;
     A = -1;
-    var Aa => A[D2];
+    ref Aa = A[D2];
     Aa = 1;
     writeln(A);
   }
@@ -39,7 +39,7 @@ on Locales(numLocales-1) {
   var D2 = {2..5}; 
   var A: [D] int;
   A = -1;
-  var Aa => A[D2];
+  ref Aa = A[D2];
   Aa = 1;
   writeln(A);
 }
@@ -49,7 +49,7 @@ on Locales(numLocales-1) {
   var D = {1..6}; 
   var A: [D] int;
   A = -1;
-  var Aa => A[D2];
+  ref Aa = A[D2];
   Aa = 1;
   writeln(A);
 }

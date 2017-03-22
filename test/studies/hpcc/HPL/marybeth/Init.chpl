@@ -181,8 +181,8 @@ proc init(A:[?D]) {
 //  This is to match the previous version of benchmark where
 //  A and b were stored separately. 
   var n = D.dim(1).length;
-  var Asquare => A(..,1..n);
-  var b => A(..,n+1);
+  ref Asquare = A(..,1..n);
+  ref b = A(..,n+1);
   var rstream = new RandomStream(real, seed=1234567891);
 
   rstream.fillRandom(Asquare);

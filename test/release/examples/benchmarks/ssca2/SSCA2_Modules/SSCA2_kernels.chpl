@@ -285,7 +285,7 @@ module SSCA2_kernels
         // Initialize task private variables
         const tid = TPVM.gettid();
         const tpv = TPVM.getTPV(tid);
-        var BCaux => tpv.BCaux;
+        ref BCaux = tpv.BCaux;
         pragma "dont disable remote value forwarding"
         inline proc f1(BCaux, v) {
           BCaux[v].path_count$.write(0.0);
@@ -320,7 +320,7 @@ module SSCA2_kernels
         // will only contain nodes that are physically allocated on that
         // particular locale.
         //
-        var Active_Level => tpv.Active_Level;
+        ref Active_Level = tpv.Active_Level;
         pragma "dont disable remote value forwarding"
         inline proc f2(BCaux, s) {
           BCaux[s].path_count$.write(1.0);

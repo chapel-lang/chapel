@@ -15,9 +15,9 @@ module RunCRawLoops {
         select iloop {
           when LoopKernelID.HYDRO_1D {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0],
-                y => loop_data.RealArray_1D[1],
-                z => loop_data.RealArray_1D[2];
+            ref x = loop_data.RealArray_1D[0],
+                y = loop_data.RealArray_1D[1],
+                z = loop_data.RealArray_1D[2];
 
             const q = loop_data.RealArray_scalars[0],
                   r = loop_data.RealArray_scalars[1],
@@ -33,8 +33,8 @@ module RunCRawLoops {
           }
           when LoopKernelID.ICCG {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D_Nx4[0],
-                v => loop_data.RealArray_1D_Nx4[1];
+            ref x = loop_data.RealArray_1D_Nx4[0],
+                v = loop_data.RealArray_1D_Nx4[1];
             var ii, ipnt, ipntp, i: int;
             ltimer.start();
             for 0..#num_samples {
@@ -56,8 +56,8 @@ module RunCRawLoops {
           }
           when LoopKernelID.INNER_PROD {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0],
-                z => loop_data.RealArray_1D[1];
+            ref x = loop_data.RealArray_1D[0],
+                z = loop_data.RealArray_1D[1];
             var q = 0.0, val = 0.0;
             ltimer.start();
             for isamp in 0..#num_samples {
@@ -73,8 +73,8 @@ module RunCRawLoops {
           }
           when LoopKernelID.BAND_LIN_EQ {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0],
-                y => loop_data.RealArray_1D[1];
+            ref x = loop_data.RealArray_1D[0],
+                y = loop_data.RealArray_1D[1];
             var lw = 0, temp = 0.0;
 
             ltimer.start();
@@ -95,9 +95,9 @@ module RunCRawLoops {
           }
           when LoopKernelID.TRIDIAG_ELIM {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0],
-                y => loop_data.RealArray_1D[1],
-                z => loop_data.RealArray_1D[2];
+            ref x = loop_data.RealArray_1D[0],
+                y = loop_data.RealArray_1D[1],
+                z = loop_data.RealArray_1D[2];
             ltimer.start();
             for 0..#num_samples {
               for i in 1..len-1 {
@@ -109,10 +109,10 @@ module RunCRawLoops {
           }
           when LoopKernelID.EOS {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0],
-                y => loop_data.RealArray_1D[1],
-                z => loop_data.RealArray_1D[2],
-                u => loop_data.RealArray_1D[3];
+            ref x = loop_data.RealArray_1D[0],
+                y = loop_data.RealArray_1D[1],
+                z = loop_data.RealArray_1D[2],
+                u = loop_data.RealArray_1D[3];
 
             const q = loop_data.RealArray_scalars[0],
                   r = loop_data.RealArray_scalars[1],
@@ -130,9 +130,9 @@ module RunCRawLoops {
           }
           when LoopKernelID.ADI {
             loopInit(iloop, stat);
-            var du1 => loop_data.RealArray_1D[0],
-                du2 => loop_data.RealArray_1D[1],
-                du3 => loop_data.RealArray_1D[2];
+            ref du1 = loop_data.RealArray_1D[0],
+                du2 = loop_data.RealArray_1D[1],
+                du3 = loop_data.RealArray_1D[2];
 
             var u1 = loop_data.RealArray_3D_2xNx4[0],
                 u2 = loop_data.RealArray_3D_2xNx4[1],
@@ -176,7 +176,7 @@ module RunCRawLoops {
           }
           when LoopKernelID.INT_PREDICT {
             loopInit(iloop, stat);
-            var px => loop_data.RealArray_2D_Nx25[0];
+            ref px = loop_data.RealArray_2D_Nx25[0];
 
             const dm22 = loop_data.RealArray_scalars[0],
                   dm23 = loop_data.RealArray_scalars[1],
@@ -199,8 +199,8 @@ module RunCRawLoops {
           }
           when LoopKernelID.DIFF_PREDICT {
             loopInit(iloop, stat);
-            var px => loop_data.RealArray_2D_Nx25[0];
-            var cx => loop_data.RealArray_2D_Nx25[1];
+            ref px = loop_data.RealArray_2D_Nx25[0];
+            ref cx = loop_data.RealArray_2D_Nx25[1];
             ltimer.start();
             for 0..#num_samples {
               for i in 0..#len {
@@ -231,8 +231,8 @@ module RunCRawLoops {
           }
           when LoopKernelID.FIRST_SUM {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0],
-                y => loop_data.RealArray_1D[1];
+            ref x = loop_data.RealArray_1D[0],
+                y = loop_data.RealArray_1D[1];
             ltimer.start();
             for 0..#num_samples {
               x[0] = y[0];
@@ -245,8 +245,8 @@ module RunCRawLoops {
           }
           when LoopKernelID.FIRST_DIFF {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0],
-                y => loop_data.RealArray_1D[1];
+            ref x = loop_data.RealArray_1D[0],
+                y = loop_data.RealArray_1D[1];
             ltimer.start();
             for 0..#num_samples {
               for k in 0..#len {
@@ -258,17 +258,17 @@ module RunCRawLoops {
           }
           when LoopKernelID.PIC_2D {
             loopInit(iloop, stat);
-            var p => loop_data.RealArray_2D_Nx25[0],
-                b => loop_data.RealArray_2D_Nx25[1],
-                c => loop_data.RealArray_2D_Nx25[2];
+            ref p = loop_data.RealArray_2D_Nx25[0],
+                b = loop_data.RealArray_2D_Nx25[1],
+                c = loop_data.RealArray_2D_Nx25[2];
 
-            var y => loop_data.RealArray_1D[0],
-                z => loop_data.RealArray_1D[1];
+            ref y = loop_data.RealArray_1D[0],
+                z = loop_data.RealArray_1D[1];
 
-            var e => loop_data.IndxArray_1D[0],
-                f => loop_data.IndxArray_1D[1];
+            ref e = loop_data.IndxArray_1D[0],
+                f = loop_data.IndxArray_1D[1];
 
-            var h => loop_data.RealArray_2D_64x64[0];
+            ref h = loop_data.RealArray_2D_64x64[0];
             ltimer.start();
             proc overIndexMapper(i,j) {
               /* The reference version of this kernel is over-indexing a
@@ -308,20 +308,20 @@ module RunCRawLoops {
           }
           when LoopKernelID.PIC_1D {
             loopInit(iloop, stat);
-            var vx => loop_data.RealArray_1D[0],
-                xx => loop_data.RealArray_1D[1],
-                xi => loop_data.RealArray_1D[2],
-                ex => loop_data.RealArray_1D[3],
-                ex1 => loop_data.RealArray_1D[4],
-                dex => loop_data.RealArray_1D[5],
-                dex1 => loop_data.RealArray_1D[6],
-                rh => loop_data.RealArray_1D[7],
-                rx => loop_data.RealArray_1D[8];
+            ref vx = loop_data.RealArray_1D[0],
+                xx = loop_data.RealArray_1D[1],
+                xi = loop_data.RealArray_1D[2],
+                ex = loop_data.RealArray_1D[3],
+                ex1 = loop_data.RealArray_1D[4],
+                dex = loop_data.RealArray_1D[5],
+                dex1 = loop_data.RealArray_1D[6],
+                rh = loop_data.RealArray_1D[7],
+                rx = loop_data.RealArray_1D[8];
 
             const flx = loop_data.RealArray_scalars[0];
-            var ix => loop_data.IndxArray_1D[2],
-                ir => loop_data.IndxArray_1D[3],
-                grd => loop_data.IndxArray_1D[4];
+            ref ix = loop_data.IndxArray_1D[2],
+                ir = loop_data.IndxArray_1D[3],
+                grd = loop_data.IndxArray_1D[4];
             ltimer.start();
             for 0..#num_samples {
               for k in 0..#len {
@@ -350,18 +350,18 @@ module RunCRawLoops {
           }
           when LoopKernelID.HYDRO_2D {
             loopInit(iloop, stat);
-            var za => loop_data.RealArray_2D_7xN[0],
-                zb => loop_data.RealArray_2D_7xN[1],
-                zm => loop_data.RealArray_2D_7xN[2],
-                zp => loop_data.RealArray_2D_7xN[3],
-                zq => loop_data.RealArray_2D_7xN[4],
-                zr => loop_data.RealArray_2D_7xN[5],
-                zu => loop_data.RealArray_2D_7xN[6],
-                zv => loop_data.RealArray_2D_7xN[7],
-                zz => loop_data.RealArray_2D_7xN[8];
+            ref za = loop_data.RealArray_2D_7xN[0],
+                zb = loop_data.RealArray_2D_7xN[1],
+                zm = loop_data.RealArray_2D_7xN[2],
+                zp = loop_data.RealArray_2D_7xN[3],
+                zq = loop_data.RealArray_2D_7xN[4],
+                zr = loop_data.RealArray_2D_7xN[5],
+                zu = loop_data.RealArray_2D_7xN[6],
+                zv = loop_data.RealArray_2D_7xN[7],
+                zz = loop_data.RealArray_2D_7xN[8];
 
-            var zrout => loop_data.RealArray_2D_7xN[9],
-                zzout => loop_data.RealArray_2D_7xN[10];
+            ref zrout = loop_data.RealArray_2D_7xN[9],
+                zzout = loop_data.RealArray_2D_7xN[10];
 
             const t = 0.0037;
             const s = 0.0041;
@@ -398,9 +398,9 @@ module RunCRawLoops {
           }
           when LoopKernelID.GEN_LIN_RECUR {
             loopInit(iloop, stat);
-            var b5 => loop_data.RealArray_1D[0],
-                sa => loop_data.RealArray_1D[1],
-                sb => loop_data.RealArray_1D[2];
+            ref b5 = loop_data.RealArray_1D[0],
+                sa = loop_data.RealArray_1D[1],
+                sb = loop_data.RealArray_1D[2];
 
             var stb5 = loop_data.RealArray_scalars[0];
             var kb5i = 0;
@@ -421,15 +421,15 @@ module RunCRawLoops {
           }
           when LoopKernelID.DISC_ORD {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0],
-                y => loop_data.RealArray_1D[1],
-                z => loop_data.RealArray_1D[2],
-                u => loop_data.RealArray_1D[3],
-                v => loop_data.RealArray_1D[4],
-                w => loop_data.RealArray_1D[5],
-                g => loop_data.RealArray_1D[6],
-                xx => loop_data.RealArray_1D[7],
-                vx => loop_data.RealArray_1D[9];
+            ref x = loop_data.RealArray_1D[0],
+                y = loop_data.RealArray_1D[1],
+                z = loop_data.RealArray_1D[2],
+                u = loop_data.RealArray_1D[3],
+                v = loop_data.RealArray_1D[4],
+                w = loop_data.RealArray_1D[5],
+                g = loop_data.RealArray_1D[6],
+                xx = loop_data.RealArray_1D[7],
+                vx = loop_data.RealArray_1D[9];
             const s = loop_data.RealArray_scalars[0],
                   t = loop_data.RealArray_scalars[1],
                   dk = loop_data.RealArray_scalars[2];
@@ -452,9 +452,9 @@ module RunCRawLoops {
           }
           when LoopKernelID.MAT_X_MAT {
             loopInit(iloop, stat);
-            var px => loop_data.RealArray_2D_Nx25[0],
-                cx => loop_data.RealArray_2D_Nx25[1],
-                vy => loop_data.RealArray_2D_64x64[0];
+            ref px = loop_data.RealArray_2D_Nx25[0],
+                cx = loop_data.RealArray_2D_Nx25[1],
+                vy = loop_data.RealArray_2D_64x64[0];
             ltimer.start();
             for 0..#num_samples {
               for k in 0..#25 {
@@ -470,11 +470,11 @@ module RunCRawLoops {
           }
           when LoopKernelID.PLANCKIAN {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0],
-                y => loop_data.RealArray_1D[1],
-                u => loop_data.RealArray_1D[2],
-                v => loop_data.RealArray_1D[3],
-                w => loop_data.RealArray_1D[4];
+            ref x = loop_data.RealArray_1D[0],
+                y = loop_data.RealArray_1D[1],
+                u = loop_data.RealArray_1D[2],
+                v = loop_data.RealArray_1D[3],
+                w = loop_data.RealArray_1D[4];
             var expmax = 20.0;
             u[len-1] = 0.99 * expmax*v[len-1];
             ltimer.start();
@@ -489,12 +489,12 @@ module RunCRawLoops {
           }
           when LoopKernelID.IMP_HYDRO_2D {
             loopInit(iloop, stat);
-            var za => loop_data.RealArray_2D_7xN[0],
-                zb => loop_data.RealArray_2D_7xN[1],
-                zr => loop_data.RealArray_2D_7xN[2],
-                zu => loop_data.RealArray_2D_7xN[3],
-                zv => loop_data.RealArray_2D_7xN[4],
-                zz => loop_data.RealArray_2D_7xN[5];
+            ref za = loop_data.RealArray_2D_7xN[0],
+                zb = loop_data.RealArray_2D_7xN[1],
+                zr = loop_data.RealArray_2D_7xN[2],
+                zu = loop_data.RealArray_2D_7xN[3],
+                zv = loop_data.RealArray_2D_7xN[4],
+                zz = loop_data.RealArray_2D_7xN[5];
 
             ltimer.start();
             for 0..#num_samples {
@@ -511,7 +511,7 @@ module RunCRawLoops {
           }
           when LoopKernelID.FIND_FIRST_MIN {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0];
+            ref x = loop_data.RealArray_1D[0];
             var m, val = 0;
             ltimer.start();
             for isamp in 0..#num_samples {

@@ -1,8 +1,8 @@
 
 proc chooseArray(A:[] int, B:[] int, chooseA:bool)
 {
-  var AA => A;
-  var BB => B;
+  ref AA = A;
+  ref BB = B;
   if chooseA then return AA;
   else return BB;
 }
