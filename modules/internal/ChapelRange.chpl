@@ -1913,19 +1913,20 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if x.stride != 1 then
       ret += " by " + x.stride;
 
+    var alignCheckRange = x;
+    alignCheckRange.normalizeAlignment();
+
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
-    if !(x.isNaturallyAligned()) then
+    if !(alignCheckRange.isNaturallyAligned()) then
         ret += " align " + chpl__mod(x._alignment, x.stride);
     return ret;
   }
 
-  // Write implementation for ranges
   pragma "no doc"
-  proc ref range.readWriteThis(f)
+  proc ref range.normalizeAlignment()
   {
-    if f.writing && !aligned {
-      // set things up so alignment does not get printed out
+    if !aligned {
       _alignment =
         if isBoundedRange(this) then
           (if stride > 0 then _low else _high)
@@ -1937,6 +1938,18 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           0;
       // could verify that we succeeded:
       //assert(isNaturallyAligned());
+    }
+  }
+
+  // Write implementation for ranges
+  pragma "no doc"
+  proc range.readWriteThis(f)
+  {
+    // a range with a more normalized alignment
+    // a separate variable so 'this' can be const
+    var alignCheckRange = this;
+    if f.writing {
+      alignCheckRange.normalizeAlignment();
     }
 
     if hasLowBound() then
@@ -1950,7 +1963,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if f.writing {
-      if ! isNaturallyAligned() then
+      if ! alignCheckRange.isNaturallyAligned() then
         f <~> new ioLiteral(" align ") <~> chpl__mod(_alignment, stride);
     } else {
       // try reading an 'align'
