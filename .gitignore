@@ -299,6 +299,7 @@ tags
 /test/modules/standard/FileSystem/lydia/sameFile/moveMe.txt
 /test/modules/standard/FileSystem/lydia/symlink/bar.txt
 /test/modules/standard/Path/lydia/realpath/blahblahblah.txt
+/test/modules/standard/Spawn/stdout-stderr_real
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/modules/standard/machine/numPUs.good
 /test/modules/standard/memory/countMemory/countMemory.*.good
