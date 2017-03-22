@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-// addInitCalls.c
 //////////////////////////////////////////////////////////////////////////////////
 // Add module initialization calls and  guards to the module init functions.
 //
@@ -56,12 +55,21 @@ void addModuleInitBlocks() {
     if (mod == rootModule) continue;
 
     FnSymbol* fn = toFnSymbol(mod->initFn);
-    if (!fn)
+    if (!fn) {
+      INT_ASSERT(!mod->deinitFn); // otherwise need to reinstate initFn
       // Sometimes a module parsed on the command line
       // is not actually used, so its initializer is pruned during resolution.
       continue;
+    }
 
     SET_LINENO(mod);
+    if (mod->deinitFn)
+      // This needs to go after initBlock: we want addModule(mod)
+      // to be called *after* addModule on modules used by mod.
+      fn->insertAtHead(new CallExpr(gAddModuleFn,
+                                    buildCStringLiteral(mod->name),
+                                    mod->deinitFn));
+
     BlockStmt* initBlock = new BlockStmt();
 
     // If I have a parent, I need it initialized first,

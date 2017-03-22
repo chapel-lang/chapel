@@ -4,7 +4,7 @@ var A: [D] int;
 for (i,j) in D do
   A(i,j) = 4 + 5*i + j;
 
-var AA => A;
+ref AA = A;
 
 AA(3,3) = 99;
 

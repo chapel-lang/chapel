@@ -42,6 +42,8 @@
 bool normalized = false;
 
 static void insertModuleInit();
+static FnSymbol* toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
+static void handleModuleDeinitFn(ModuleSymbol* mod);
 static void transformLogicalShortCircuit();
 static void lowerReduceAssign();
 
@@ -128,6 +130,13 @@ void normalize() {
   transformLogicalShortCircuit();
 
   lowerReduceAssign();
+
+  forv_Vec(AggregateType, at, gAggregateTypes) {
+    if (isNonGenericClassWithInitializers(at)  == true ||
+        isNonGenericRecordWithInitializers(at) == true) {
+      preNormalizeFields(at);
+    }
+  }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
@@ -243,12 +252,8 @@ void normalize(FnSymbol* fn) {
 *                                                                             *
 * Insert the module initFn in to every module in allModules.  The current     *
 * implementation pulls the entire module in to the prototypical initFn and    *
-* then lets the reset of normalize sort things out.  The module looks         *
-* reasonable by the end of the pass but odd in the middle.                    *
-*                                                                             *
-* Noakes 2014/07/25 At some point this transformation should be reworked to   *
-* be more delicate e.g. insert an empty init function and then carefully      *
-* populate it so that the AST is well-behaved at all points.                  *
+* then lets the rest of normalize sort things out.                            *
+* Also stash away the module deinitFn, if the user has written one.           *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -267,11 +272,16 @@ static void insertModuleInit() {
     // move module-level statements into module's init function
     //
     for_alist(stmt, mod->block->body) {
-      if (stmt->isModuleDefinition() == false)
-        mod->initFn->insertAtTail(stmt->remove());
+      if (stmt->isModuleDefinition() == false) {
+        if (FnSymbol* deinitFn = toModuleDeinitFn(mod, stmt))
+          mod->deinitFn = deinitFn; // the rest is in handleModuleDeinitFn()
+        else
+          mod->initFn->insertAtTail(stmt->remove());
+      }
     }
 
     mod->block->insertAtHead(new DefExpr(mod->initFn));
+    handleModuleDeinitFn(mod);
 
     //
     // If the module has the EXPORT_INIT flag then
@@ -282,8 +292,45 @@ static void insertModuleInit() {
       mod->initFn->addFlag(FLAG_LOCAL_ARGS);
     }
   }
+  USR_STOP();
 }
 
+static FnSymbol* toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt) {
+  if (DefExpr* def = toDefExpr(stmt))
+    if (FnSymbol* fn = toFnSymbol(def->sym))
+      // When we retire ~classname naming for deinits,
+      // we can replace this strcmp with a check for FLAG_DESTRUCTOR.
+      if (!strcmp(fn->name, "deinit"))
+        if (fn->numFormals() == 0) {
+          if (mod->deinitFn) {
+            // Already got one deinit() before.
+            // We could allow multiple deinit() fns and merge their contents.
+            // If so, beware of possible 'return' stmts in each.
+            USR_FATAL_CONT(def,
+              "an additional module deinit() function is not allowed");
+            USR_PRINT(mod->deinitFn,
+              "the first deinit() function is declared here");
+            // Let the duplicate play like an ordinary function until USR_STOP.
+            return NULL;
+          }
+
+        return fn;
+        }
+
+  // Not a deinit.
+  return NULL;
+}
+
+static void handleModuleDeinitFn(ModuleSymbol* mod) {
+  FnSymbol* deinitFn = mod->deinitFn;
+  if (!deinitFn)
+    // We could alternatively create an empty function here.
+    return;
+
+  deinitFn->name = astr("chpl__deinit_", mod->name);
+  deinitFn->removeFlag(FLAG_DESTRUCTOR);
+  // For now leave deinitFn->defPoint wherever the user put it.
+}
 
 
 /************************************* | **************************************
@@ -1200,30 +1247,36 @@ static void insertCallTemps(CallExpr* call) {
       tmp->addFlag(FLAG_SUPER_TEMP);
     }
 
-    call->replace(new SymExpr(tmp));
-
     // Define the tmp
     stmt->insertBefore(new DefExpr(tmp));
 
     // Is this a new-expression for a record with an initializer?
     if (Type* type = typeForNewNonGenericRecord(call)) {
-      // 2017/03/14: call has the form prim_new(MyRec(a, b, c))
-      CallExpr* initCall = toCallExpr(call->get(1));
-
       // Define the type for the tmp
       tmp->type = type;
 
-      // Convert the new-expression into an init call
-      initCall->setUnresolvedFunction("init");
+      // 2017/03/14: call has the form prim_new(MyRec(a, b, c))
+      // Extract the argument to the new expression
+      CallExpr* newArg = toCallExpr(call->get(1));
+
+      // Convert the argument for the new-expression into an init call
+      newArg->setUnresolvedFunction("init");
 
       // Add _mt and _this (insert at head in reverse order)
-      initCall->insertAtHead(tmp);
-      initCall->insertAtHead(gMethodToken);
+      newArg->insertAtHead(tmp);
+      newArg->insertAtHead(gMethodToken);
 
-      stmt->insertBefore(initCall->remove());
+      // Move the tmp.init(args) expession to before the call
+      stmt->insertBefore(newArg->remove());
+
+      // Replace the degenerate new-expression with a use of the tmp variable
+      call->replace(new SymExpr(tmp));
+
 
     // No.  The simple case
     } else {
+      call->replace(new SymExpr(tmp));
+
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
     }
   }
@@ -1750,17 +1803,19 @@ static void normRefVar(DefExpr* defExpr) {
 
   if (SymExpr* sym = toSymExpr(varLocation)) {
     Symbol* symbol = sym->symbol();
+    bool    error  = var->hasFlag(FLAG_CONST) == false &&
+                     symbol->isConstant()     == true;
 
-    bool error = (!var->hasFlag(FLAG_CONST) && symbol->isConstant());
-
-    // This is a workaround for the fact tha isConstant for an ArgSymbol with
-    // blank intent and type dtUnknown returns true, but blank intent isn't
-    // necessarily const.
-    if (ArgSymbol* arg = toArgSymbol(symbol))
-      if (arg->intent == INTENT_BLANK && arg->type == dtUnknown)
+    // This is a workaround for the fact that isConstant for an
+    // ArgSymbol with blank intent and type dtUnknown returns true,
+    // but blank intent isn't necessarily const.
+    if (ArgSymbol* arg = toArgSymbol(symbol)) {
+      if (arg->intent == INTENT_BLANK && arg->type == dtUnknown) {
         error = false;
+      }
+    }
 
-    if (error) {
+    if (error == true) {
       USR_FATAL_CONT(sym,
                      "Cannot set a non-const reference to a const variable.");
     }
@@ -2492,7 +2547,7 @@ static void updateConstructor(FnSymbol* fn) {
 
 static void updateInitMethod(FnSymbol* fn) {
   if (isAggregateType(fn->_this->type) == true) {
-    initMethodPreNormalize(fn);
+    preNormalizeInitMethod(fn);
 
   } else if (fn->_this->type == dtUnknown) {
     INT_FATAL(fn, "'this' argument has unknown type");

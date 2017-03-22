@@ -602,6 +602,7 @@ public:
 
   BlockStmt*           block;
   FnSymbol*            initFn;
+  FnSymbol*            deinitFn;
 
   Vec<ModuleSymbol*>   modUseList;
 
@@ -780,12 +781,14 @@ extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern FnSymbol *gPrintModuleInitFn;
+extern FnSymbol *gAddModuleFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
 extern FnSymbol *gChplDoDirectExecuteOn;
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gGenericTupleDestroy;
+extern FnSymbol *gChplDeleteError;
 
 // These global symbols point to generic functions that
 // will be instantiated.

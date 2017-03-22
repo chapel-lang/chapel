@@ -299,10 +299,15 @@ static bool canRHSBeConstRef(CallExpr* parent, SymExpr* use) {
   CallExpr* rhs = toCallExpr(parent->get(2));
   INT_ASSERT(rhs);
   switch (rhs->primitive->tag) {
-    case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
-    case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_SVEC_MEMBER_VALUE:
+      if (LHS->isRef() == false &&
+          isClass(LHS->typeInfo()) == false) {
+        return true;
+      }
+      // fallthrough
+    case PRIM_GET_MEMBER:
+    case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG:
     case PRIM_ADDR_OF:
@@ -317,9 +322,7 @@ static bool canRHSBeConstRef(CallExpr* parent, SymExpr* use) {
       // Note that the get-*-value primitives may return a reference if the
       // field is a reference.
       if (LHS->isRef()) {
-        if (!inferConstRef(LHS->symbol())) {
-          return false;
-        }
+        return inferConstRef(LHS->symbol());
       }
     }
     default:

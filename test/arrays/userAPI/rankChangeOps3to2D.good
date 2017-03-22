@@ -1,5 +1,3 @@
-./arrayAPItest.chpl:7: In function 'testArrayAPI2D':
-./arrayAPItest.chpl:92: warning: Calls to .targetLocales() on rank-change slices may currently return a superset of the locales targeted.
 rank change slice (dims 1-2)
 ----------------
 eltType is: real(64)

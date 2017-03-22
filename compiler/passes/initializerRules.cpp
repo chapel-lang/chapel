@@ -25,6 +25,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
+#include "typeSpecifier.h"
 
 #include <map>
 
@@ -76,11 +77,40 @@ static Expr*       getNextStmt(Expr*      curExpr,
 
 /************************************* | **************************************
 *                                                                             *
+* Attempt to assign a type to the symbol for each field in some of the        *
+* simpler cases.                                                              *
+*                                                                             *
+* 2017/03/20 Noakes: This may set a direction for refactoring resolution      *
+* in a subsequent release.                                                    *
+*                                                                             *
+************************************** | *************************************/
+
+void preNormalizeFields(AggregateType* at) {
+  for_alist(field, at->fields) {
+    if (DefExpr* defExpr = toDefExpr(field)) {
+      if (Type* type = typeForTypeSpecifier(defExpr->exprType)) {
+        Symbol* sym = defExpr->sym;
+
+        if (sym->hasFlag(FLAG_CONST) == true) {
+          sym->qual = QUAL_CONST_VAL;
+          sym->type = type;
+
+        } else {
+          sym->qual = QUAL_VAL;
+          sym->type = type;
+        }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-void initMethodPreNormalize(FnSymbol* fn) {
+void preNormalizeInitMethod(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_PARENS) == true) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
 
@@ -140,12 +170,6 @@ void initMethodPreNormalize(FnSymbol* fn) {
     }
 
     // Insert phase 2 analysis here
-
-
-    // Mark the initializer as void return
-    Symbol* voidType = dtVoid->symbol;
-
-    fn->retExprType = new BlockStmt(new SymExpr(voidType), BLOCK_SCOPELESS);
 
 
     // If this is a non-generic class then create a type method
@@ -383,8 +407,11 @@ Expr* modifyFieldAccess(Expr* fieldAccess, DefExpr* curField) {
 
 
   SET_LINENO(fieldAccess);
-  CallExpr* replacement = new CallExpr(PRIM_INITIALIZER_SET_FIELD, argThis,
+
+  CallExpr* replacement = new CallExpr(PRIM_INIT_FIELD,
+                                       argThis,
                                        new_CStringSymbol(curField->sym->name));
+
   for_actuals(actual, call) {
     if (actual == call->get(1)) {
       // The first arg is the this.field access, which we have already
@@ -481,9 +508,9 @@ static void insertOmittedField(Expr* next, DefExpr* field, AggregateType* t) {
                    nextField);
 
   } else {
-    Symbol*   _this      = toFnSymbol(next->parentSymbol)->_this;
+    Symbol*   _this   = toFnSymbol(next->parentSymbol)->_this;
 
-    CallExpr* newInit = new CallExpr(PRIM_INITIALIZER_SET_FIELD,
+    CallExpr* newInit = new CallExpr(PRIM_INIT_FIELD,
                                      new SymExpr(_this),
                                      new_CStringSymbol(nextField));
 

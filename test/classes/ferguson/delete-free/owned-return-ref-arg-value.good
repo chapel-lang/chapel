@@ -1,0 +1,2 @@
+owned-return-ref-arg-value.chpl:10: In function 'returnByValue':
+owned-return-ref-arg-value.chpl:13: error: implicit copy-initialization invoked for a type that does not allow it

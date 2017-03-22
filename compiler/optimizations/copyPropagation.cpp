@@ -766,6 +766,9 @@ static bool maybeVolatile(SymExpr* se)
   if (defScope != fn)
     return true;
 
+  if (se->symbol()->type->symbol->hasFlag(FLAG_COPY_MUTATES))
+    return true;
+
   return false;
 }
 
@@ -1440,7 +1443,7 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
   }
 
   forv_Vec(Symbol, var, refVec) { // ack! note: order matters
-    if (var) {
+    if (var && !var->type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
       eliminateSingleAssignmentReference(defMap, useMap, var);
     }
   }

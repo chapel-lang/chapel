@@ -504,6 +504,10 @@ OPTIONS
     For boolean configuration variables, the value can be omitted, causing
     the default value to be toggled.
 
+**--strict-errors**
+
+    Enable strict mode for error handling.
+
 **--[no-]task-tracking**
 
     Enable [disable] the Chapel-implemented task tracking table that
@@ -737,8 +741,7 @@ effect as passing that option once.
 BUGS
 ----
 
-See $CHPL\_HOME/STATUS for a list of known bugs and
-$CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
+See $CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
 
 SEE ALSO
 --------

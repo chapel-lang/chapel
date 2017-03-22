@@ -273,6 +273,12 @@ void chpl_executable_init(void) {
 
 }
 
+void chpl_execute_module_deinit(c_fn_ptr deinitFun) {
+  void (*deinitFn)(void);
+  deinitFn = deinitFun;
+  deinitFn();
+}
+
 //
 // A program using Chapel as a library might look like:
 //

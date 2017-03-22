@@ -4,6 +4,12 @@ to the runtime.
 To implement a new comm layer called "speedy", add comm/speedy to the
 build as described in adding-a-runtime-component.txt.
 
+The comm layer is responsible for setting the linker (LD) for the
+generated code, and should do so in runtime/etc/Makefile.comm-speedy.
+Typically LD should be set to CXX or a C++-compatible linker in order
+to ensure that standard C++ libraries are linked in to support
+third-party packages that may use C++ (like re2).
+
 The following header files define the comm layer API and also serve as
 documentation for the core API:
 

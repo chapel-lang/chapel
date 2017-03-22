@@ -48,4 +48,5 @@ Generated code:
 
 - runtime/etc/Makefile.<component>-<name>: This makefile includes
   flags for the Chapel generated code, e.g., GEN_LFLAGS, LIBS.
-
+  The Makefile.comm-<name> file in particular is responsible for
+  setting LD.

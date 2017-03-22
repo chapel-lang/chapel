@@ -20,6 +20,18 @@ chpl-venv/
   Website: Varies, see chpl-venv/README.md
 
 
+amudprun/
+  Summary: the launcher for the UDP conduit of GASNet (see below),
+           built for the host machine rather than the target machine.
+
+  License: No actual third-party code is in this directory.  Rather,
+           the Makefile uses what is already in the GASNet directory,
+           so GASNet's license applies.
+
+  Website: http://gasnet.cs.berkeley.edu
+
+  See also: amudprun/README
+
 gasnet/
   Summary: the Berkeley GASNet library for one-sided communication
            which we use as a communication layer to implement Chapel's

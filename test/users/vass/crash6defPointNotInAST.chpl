@@ -38,7 +38,7 @@ proc backwardSubVerifyLocal(Ab, xToCheck, n: indexType) {
 
 
 proc verifyResults(x) {
-  var ABglobal => Ab;
+  ref ABglobal = Ab;
   var checkOK: bool;
  { // hide global Ab
   var Ab: [1..n, 1..n+1] elemType;
