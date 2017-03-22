@@ -5082,6 +5082,14 @@ void lvalueCheck(CallExpr* call)
       if (SymExpr* aSE = toSymExpr(actual)) {
         Symbol* aVar = aSE->symbol();
         if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+          printTaskOrForallConstErrorNote(aVar);
+        }
+      }
+    }
+  }
+}
+
+void printTaskOrForallConstErrorNote(Symbol* aVar) {
           const char* varname = aVar->name;
           if (!strncmp(varname, "_formal_tmp_", 12))
             varname += 12;
@@ -5102,12 +5110,7 @@ void lvalueCheck(CallExpr* call)
             Expr* enclLoop = aVar->defPoint->parentExpr;
             USR_PRINT(enclLoop, "The shadow variable '%s' is constant due to forall intents in this loop", varname);
           }
-        }
-      }
-    }
-  }
 }
-
 
 // We do some const-related work upon PRIM_MOVE
 static void setConstFlagsAndCheckUponMove(Symbol* lhs, Expr* rhs) {
