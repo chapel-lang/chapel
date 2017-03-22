@@ -88,6 +88,7 @@ typedef enum {
 static bool symExprIsSet(SymExpr* sym);
 static bool symbolIsUsedAsConstRef(Symbol* sym);
 static void lowerContextCall(ContextCallExpr* cc, choose_type_t which);
+static void makeRefReturnIfExprsIntoRefPairs();
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst);
 
@@ -258,6 +259,23 @@ bool symExprIsSet(SymExpr* se)
 }
 
 static
+bool callPassesSymbolRefMaybeConst(Symbol* sym, CallExpr* call)
+{
+  bool ret = false;
+  for_alist(expr, call->argList) {
+    if (SymExpr* se = toSymExpr(expr)) {
+      if (se->symbol() == sym) {
+        ArgSymbol* formal = actual_to_formal(se);
+        if (formal && formal->intent ==  INTENT_REF_MAYBE_CONST)
+          return true;
+      }
+    }
+  }
+  return ret;
+}
+
+
+static
 bool callSetsSymbol(Symbol* sym, CallExpr* call)
 {
   bool ret = false;
@@ -282,6 +300,14 @@ bool contextCallItDepends(Symbol* sym, ContextCallExpr* cc) {
   CallExpr* constRefCall = NULL;
 
   cc->getCalls(refCall, valueCall, constRefCall);
+
+  // If any of the calls involved are ref-if-modified,
+  // return true, since we can't know yet if the
+  // argument is ref or const ref.
+  if ((refCall && callPassesSymbolRefMaybeConst(sym, refCall)) ||
+      (valueCall && callPassesSymbolRefMaybeConst(sym, valueCall)) ||
+      (constRefCall && callPassesSymbolRefMaybeConst(sym, constRefCall)))
+    return true;
 
   bool ref = refCall?callSetsSymbol(sym, refCall):false;
   bool val = valueCall?callSetsSymbol(sym, valueCall):false;
@@ -1155,6 +1181,40 @@ void cullOverReferences() {
 
   revisitGraph_t revisitGraph;
 
+  // tidy up representation of if-exprs so that
+  // e.g. proc f(a,b) return if x then a else b;
+  // can work, when a and b are arrays.
+  makeRefReturnIfExprsIntoRefPairs();
+
+  // forward-flow constness for FLAG_REF_TO_CONST_WHEN_CONST_THIS
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
+      for_SymbolSymExprs(se, fn) {
+        if (CallExpr* call = toCallExpr(se->parentExpr))
+          if (fn == call->isResolved()) {
+            //gdbShouldBreakHere();
+            //printf("FLAG_REF_TO_CONST_WHEN_CONST_THIS call\n");
+            //nprint_view(call->parentExpr);
+
+            SymExpr* thisActual = toSymExpr(call->get(1));
+            Symbol* actualSymbol = thisActual->symbol();
+
+            if (CallExpr* parentCall = toCallExpr(call->parentExpr))
+              if (parentCall->isPrimitive(PRIM_MOVE)) {
+                SymExpr* lhs = toSymExpr(parentCall->get(1));
+                Symbol* lhsSym = lhs->symbol();
+
+                if (actualSymbol->qualType().isConst())
+                  markSymbolConst(lhsSym);
+
+              //collectedSymbols.push_back(makeNode(actualSymbol,0));
+              }
+          }
+      }
+    }
+  }
+
+  // Determine const-ness of ArgSymbols with INTENT_REF_MAYBE_CONST
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
 
     DEBUG_SYMBOL(arg);
@@ -1182,6 +1242,7 @@ void cullOverReferences() {
     }
   }
 
+  // Determine const-ness of the results of a ContextCallExpr
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
     CallExpr* move = toCallExpr(cc->parentExpr);
     INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
@@ -1417,6 +1478,12 @@ void cullOverReferences() {
             // since lhs->symbol() is the result of a move from
             // a ContextCallExpr, it will already be in the list
             // of collectedSymbols.
+            //
+            // TODO: This isn't quite right, since the called ref-pair
+            // could still use a ref-if-modified argument by ref in
+            // both branches... or the ref-return version could
+            // be const ref on the actual, while the const-ref-return
+            // version is ref on the actual.
             revisit = true;
             CallExpr* move = toCallExpr(cc->parentExpr);
             SymExpr* lhs = toSymExpr(move->get(1));
@@ -1433,12 +1500,9 @@ void cullOverReferences() {
         if (FnSymbol* calledFn = call->isResolved()) {
           ArgSymbol* formal = actual_to_formal(se);
 
-          // Check for the case that sym is the _this
-          // actual for a function marked with the flag
-          // FLAG_REF_TO_CONST_WHEN_CONST_THIS
-          // (which is used for field accessors among other things).
-          // In that event, it depends on how the returned
-          // value is used.
+          // Check for the case that sym is in a call
+          // to a tuple cast function. We consider it
+          // const if the result of the tuple cast is const.
           if (calledFn->hasFlag(FLAG_TUPLE_CAST_FN)) {
             CallExpr* move = toCallExpr(call->parentExpr);
             if (move && move->isPrimitive(PRIM_MOVE)) {
@@ -1680,6 +1744,53 @@ void cullOverReferences() {
 }
 
 
+static
+void makeRefReturnIfExprsIntoRefPairs()
+{
+  std::vector<FnSymbol*> refIfExprFns;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_IF_EXPR_FN) &&
+        (fn->retTag == RET_REF || fn->retType->symbol->hasFlag(FLAG_REF))) {
+      refIfExprFns.push_back(fn);
+    }
+  }
+
+  for_vector(FnSymbol, refFn, refIfExprFns) {
+
+    // If it's an if-expr returning a ref, create a ref-pair for it,
+    // and update calls to it to become ContextCallExprs.
+    //
+    // It would be preferable to not have to do this here...
+    // it would be nicer to not have special if-expr functions at
+    // all.
+    SET_LINENO(refFn);
+    FnSymbol* constRefFn = refFn->copy();
+    constRefFn->retTag = RET_CONST_REF;
+
+    refFn->defPoint->insertAfter(new DefExpr(constRefFn));
+
+    // Now update calls to fn to be ContextCallExprs.
+    for_SymbolSymExprs(se, refFn) {
+      if (CallExpr* refCall = toCallExpr(se->parentExpr)) {
+        if (refFn == refCall->isResolved()) {
+          SET_LINENO(refCall);
+          ContextCallExpr* cc = new ContextCallExpr();
+          refCall->replace(cc);
+          CallExpr* constRefCall = refCall->copy();
+          SymExpr* baseSe = toSymExpr(constRefCall->baseExpr);
+          INT_ASSERT(baseSe->symbol() == refFn);
+          baseSe->setSymbol(constRefFn);
+
+          cc->setRefRValueOptions(refCall, constRefCall);
+
+          //nprint_view(cc->parentExpr);
+        }
+      }
+    }
+  }
+}
+
 // Handle certain degenerate cases, such as when a
 // ContextCallExpr is not in a PRIM_MOVE.
 static
@@ -1875,13 +1986,11 @@ static void printReason(BaseAST* reason)
  */
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 {
-
   forv_Vec(CallExpr, call, gCallExprs) {
 
     // Ignore calls removed earlier by this pass.
     if (call->parentExpr == NULL)
       continue;
-
 
     if (FnSymbol* calledFn = call->isResolved()) {
       char cn1 = calledFn->name[0];
@@ -1911,7 +2020,8 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
             }
           // Or, if passing a 'const' thing into an 'in' formal,
           // that's OK
-          } else if (formal->intent == INTENT_IN) {
+          } else if (formal->intent == INTENT_IN &&
+                     !formal->type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
             // OK
           } else {
             error = true;
@@ -1928,10 +2038,16 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
              calledFn->retType->symbol->hasFlag(FLAG_TUPLE)))
           error = false;
 
+        // For now, ignore errors with default constructors
+        if (calledFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)
+//            ||calledFn->hasFlag(FLAG_CONSTRUCTOR)
+            )
+          error = false;
+
         // For now, ignore errors with `this` formal
         // TODO: remove this limitation
-        if (formal->hasFlag(FLAG_ARG_THIS))
-          error = false;
+        //if (formal->hasFlag(FLAG_ARG_THIS))
+        //  error = false;
 
         if (error) {
           USR_FATAL_CONT(actual,
@@ -1940,6 +2056,13 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
                         formal->intentDescrString(),
                         formal->name,
                         calledFn->name, calleeParens);
+
+          SymExpr* actSe = toSymExpr(actual);
+          if (actSe != NULL &&
+              actSe->symbol()->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+            printTaskOrForallConstErrorNote(actSe->symbol());
+
+          }
 
           printReason(formal);
 
