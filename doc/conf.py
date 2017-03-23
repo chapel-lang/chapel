@@ -54,15 +54,15 @@ master_doc = 'index'
 # built documents.
 #
 # The short X.Y version.
-# version = '1.14'
+# version = '1.15'
 
 # We use a custom version variable (shortversion) instead, because setting
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
-shortversion = 1.14
+shortversion = 1.15
 
 # The full version, including alpha/beta/rc tags.
-release = '1.14.0'
+release = '1.15.0'
 
 # General information about the project.
 project = u'Chapel Documentation {0}'.format(shortversion)
