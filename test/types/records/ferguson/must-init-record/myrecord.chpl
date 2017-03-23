@@ -44,7 +44,7 @@ proc R.deinit() {
   }
 }
 
-proc ref R.verify() {
+proc R.verify() {
   extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
 
   if canary != 42 {
