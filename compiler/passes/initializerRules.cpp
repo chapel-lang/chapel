@@ -168,6 +168,7 @@ static void      fieldInitFromField(Expr*     insertBefore,
 
 static DefExpr*  toSuperFieldInit(AggregateType* at, CallExpr* callExpr);
 static DefExpr*  toLocalFieldInit(AggregateType* at, CallExpr* callExpr);
+static CallExpr* createFieldAccess(FnSymbol* fn, DefExpr* field);
 
 /************************************* | **************************************
 *                                                                             *
@@ -600,21 +601,204 @@ static void fieldInitFromField(Expr*     insertBefore,
 static void fieldInitTypeWoutInit(Expr*     stmt,
                                   FnSymbol* fn,
                                   DefExpr*  field) {
+  SET_LINENO(stmt);
 
+  Type* type = field->sym->type;
+
+  if (isPrimitiveScalar(type) == true) {
+    CallExpr*  defVal = new CallExpr("_defaultOf", type->symbol);
+    CallExpr*  access = createFieldAccess(fn, field);
+
+    stmt->insertBefore(new CallExpr("=",       access,   defVal));
+
+  } else if (isNonGenericClass(type) == true) {
+    CallExpr*  defVal = new CallExpr("_defaultOf", type->symbol);
+    CallExpr*  access = createFieldAccess(fn, field);
+
+    stmt->insertBefore(new CallExpr("=",       access,   defVal));
+
+
+  } else if (isNonGenericRecordWithInitializers(type) == true) {
+#if 0
+    defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
+#endif
+
+    INT_ASSERT(false);
+
+  } else {
+    VarSymbol* typeTemp = newTemp("type_tmp");
+    SymExpr*   temp     = new SymExpr(typeTemp);
+
+    Expr*      typeExpr = field->exprType->copy();
+    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+    Symbol*    _this    = fn->_this;
+    Symbol*    name     = new_CStringSymbol(field->sym->name);
+
+    if (field->sym->hasFlag(FLAG_PARAM) == true) {
+      typeTemp->addFlag(FLAG_PARAM);
+    }
+
+    stmt->insertBefore(new DefExpr(typeTemp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, typeTemp, initCall));
+    stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, temp));
+  }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void fieldInitTypeWithInit(Expr*     stmt,
                                   FnSymbol* fn,
                                   DefExpr*  field,
                                   Expr*     initExpr) {
+  SET_LINENO(stmt);
 
+  Type* type     = field->sym->type;
+
+  //
+  // e.g. const x : int     = 10;
+  //      var   y : int(32) = 20;
+  //
+  //      var   x : MyCls   = new MyCls(1, 2);
+  //
+  // Noakes 2017/03/21
+  //    Use a temp to compute the value for the init-expression and
+  //    use PRIM_MOVE to initialize x.  This simplifies const checking
+  //    for the first case and supports a current limitation for RVF
+  //
+  if (isPrimitiveScalar(type) == true ||
+      isNonGenericClass(type) == true) {
+    CallExpr* fieldAccess = createFieldAccess(fn, field);
+
+    stmt->insertBefore(new CallExpr("=", fieldAccess, initExpr->copy()));
+
+  } else if (isNonGenericRecordWithInitializers(type) == true) {
+#if 0
+    if (isNewExpr(initExpr) == true) {
+      Symbol*   var     = defExpr->sym;
+      Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
+      CallExpr* argExpr = toCallExpr(arg);
+
+      // Insert the arg portion of the initExpr back into tree
+      defExpr->insertAfter(argExpr);
+
+      // Convert it in to a use of the init method
+      argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+
+      // Add _mt and _this (insert at head in reverse order)
+      argExpr->insertAtHead(var);
+      argExpr->insertAtHead(gMethodToken);
+
+    } else {
+      Symbol*   var    = defExpr->sym;
+      CallExpr* init   = new CallExpr("init", gMethodToken, var);
+      CallExpr* assign = new CallExpr("=",    var,          initExpr);
+
+      defExpr->insertAfter(init);
+      init->insertAfter(assign);
+    }
+#endif
+
+    INT_ASSERT(false);
+
+  } else {
+#if 0
+    Symbol*    var      = defExpr->sym;
+    VarSymbol* typeTemp = newTemp("type_tmp");
+    DefExpr*   typeDefn = new DefExpr(typeTemp);
+    Expr*      typeExpr = defExpr->exprType->remove();
+    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
+    CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
+
+    defExpr ->insertAfter(typeDefn);
+    typeDefn->insertAfter(initMove);
+    initMove->insertAfter(assign);
+    assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+#endif
+
+    INT_ASSERT(false);
+  }
 }
 
-static void fieldInitTypeInference(Expr*     insertBefore,
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void fieldInitTypeInference(Expr*     stmt,
                                    FnSymbol* fn,
                                    DefExpr*  field,
                                    Expr*     initExpr) {
+  SET_LINENO(stmt);
 
+  // e.g.
+  //   var x = <immediate>;
+  //   var y = <identifier>;
+  if (SymExpr* initSym = toSymExpr(initExpr)) {
+    Type* type = initSym->symbol()->type;
+
+    if (isPrimitiveScalar(type) == true) {
+      CallExpr* fieldAccess = createFieldAccess(fn, field);
+
+      stmt->insertBefore(new CallExpr("=", fieldAccess, initExpr->copy()));
+
+    } else {
+      Symbol* _this = fn->_this;
+      Symbol* name  = new_CStringSymbol(field->sym->name);
+      Expr*   value = initExpr->copy();
+
+      stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, value));
+    }
+
+  // e.g.
+  //   var x = f(...);
+  //   var y = new MyRecord(...);
+  } else if (CallExpr* initCall = toCallExpr(initExpr)) {
+    if (initCall->isPrimitive(PRIM_NEW) == true) {
+#if 0
+      AggregateType* type = typeForNewExpr(initCall);
+
+      if (isNonGenericRecordWithInitializers(type) == true) {
+        Expr*     arg1    = initCall->get(1)->remove();
+        CallExpr* argExpr = toCallExpr(arg1);
+
+        // Insert the arg portion of the initExpr back into tree
+        defExpr->insertAfter(argExpr);
+
+        // Convert it in to a use of the init method
+        argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+
+        // Add _mt and _this (insert at head in reverse order)
+        argExpr->insertAtHead(var);
+        argExpr->insertAtHead(gMethodToken);
+
+      } else {
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+      }
+
+      if (type != NULL && type->isGeneric() == false) {
+        var->type = type;
+      }
+#endif
+
+      INT_ASSERT(false);
+
+    } else {
+      Symbol* _this = fn->_this;
+      Symbol* name  = new_CStringSymbol(field->sym->name);
+      Expr*   value = initExpr->copy();
+
+      stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, value));
+    }
+
+  } else {
+    INT_ASSERT(false);
+  }
 }
 
 /************************************* | **************************************
@@ -628,6 +812,10 @@ static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
 }
 
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
+  return NULL;
+}
+
+static CallExpr* createFieldAccess(FnSymbol* fn, DefExpr* field) {
   return NULL;
 }
 
