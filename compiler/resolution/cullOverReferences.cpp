@@ -1969,14 +1969,18 @@ static void printReason(BaseAST* reason)
   if (developer || mod->modTag == MOD_USER) {
     if (isArgSymbol(reason) || isFnSymbol(reason))
       USR_PRINT(reason, "to ref formal here");
+    else if (TypeSymbol* ts = toTypeSymbol(reason))
+      USR_PRINT(reason, "to formal of type %s", ts->name);
     else
       USR_PRINT(reason, "passed as ref here");
 
     // useful for debugging this pass
     if (developer)
       USR_PRINT(reason, "id %i", reason->id);
+  } else {
+    if (TypeSymbol* ts = toTypeSymbol(reason))
+      USR_PRINT("to formal of type %s", ts->name);
   }
-
 }
 
 
@@ -2072,6 +2076,9 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
                         formal->intentDescrString(),
                         formal->name,
                         calledFn->name, calleeParens);
+
+
+          printReason(formal->type->symbol);
 
           SymExpr* actSe = toSymExpr(actual);
           if (actSe != NULL &&
