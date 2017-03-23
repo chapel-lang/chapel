@@ -158,8 +158,223 @@ static bool isReturnVoid(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void      fieldInitFromStmt(CallExpr* stmt,
+                                   FnSymbol* fn,
+                                   DefExpr*  field);
+
+static void      fieldInitFromField(Expr*     insertBefore,
+                                    FnSymbol* fn,
+                                    DefExpr*  field);
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+class IterState {
+public:
+                  IterState(FnSymbol* fn);
+                  IterState(CondStmt* cond, const IterState& curr);
+                  IterState(LoopStmt* loop, const IterState& curr);
+
+  AggregateType*  type()                                                 const;
+  bool            isRecord()                                             const;
+  bool            isClass()                                              const;
+
+  bool            isPhase1()                                             const;
+  bool            isPhase2()                                             const;
+  Expr*           completePhase1(Expr* insertBefore);
+  void            initializeFieldsBefore(Expr* insertBefore);
+
+  bool            isFieldReinitialized(DefExpr* field)                   const;
+  bool            inLoopBody()                                           const;
+  bool            inCondStmt()                                           const;
+
+  DefExpr*        currField()                                            const;
+
+  void            fieldInitFromInitStmt(DefExpr*  field,
+                                        CallExpr* callExpr);
+
+private:
+  enum BlockType {
+    cBlockNormal,
+    cBlockCond,
+    cBlockLoop,
+  };
+
+                  IterState();
+
+  bool            startsInPhase1(FnSymbol* fn)                           const;
+  DefExpr*        firstField(FnSymbol* fn)                               const;
+
+  FnSymbol*       mFn;
+  DefExpr*        mCurrField;
+  bool            mIsPhase1;
+  BlockType       mBlockType;
+};
+
+IterState::IterState(FnSymbol* fn) {
+  mFn         = fn;
+  mCurrField  = firstField(fn);
+  mIsPhase1   = startsInPhase1(fn);
+  mBlockType  = cBlockNormal;
+}
+
+// Only used to generate error messages
+IterState::IterState(CondStmt* cond, const IterState& curr) {
+  mFn         = curr.mFn;
+  mCurrField  = curr.mCurrField;
+  mIsPhase1   = curr.mIsPhase1;
+  mBlockType  = cBlockCond;
+}
+
+// Only used to generate error messages
+IterState::IterState(LoopStmt* loop, const IterState& curr) {
+  mFn         = curr.mFn;
+  mCurrField  = curr.mCurrField;
+  mIsPhase1   = curr.mIsPhase1;
+  mBlockType  = cBlockLoop;
+}
+
+AggregateType* IterState::type() const {
+  return mFn != NULL ? toAggregateType(mFn->_this->type) : NULL;
+}
+
+bool IterState::isRecord() const {
+  return ::isRecord(type());
+}
+
+bool IterState::isClass() const {
+  return ::isClass(type());
+}
+
+bool IterState::isPhase1() const {
+  return mIsPhase1;
+}
+
+bool IterState::isPhase2() const {
+  return !mIsPhase1;
+}
+
+bool IterState::isFieldReinitialized(DefExpr* field) const {
+  AggregateType* at     = toAggregateType(mFn->_this->type);
+  Expr*          ptr    = at->fields.head;
+  bool           retval = false;
+
+  while (ptr != NULL && ptr != mCurrField && retval == false) {
+    if (field == ptr) {
+      retval = true;
+    } else {
+      ptr    = ptr->next;
+    }
+  }
+
+  INT_ASSERT(ptr != NULL);
+
+  return retval;
+}
+
+bool IterState::inLoopBody() const {
+  return mBlockType == cBlockLoop;
+}
+
+bool IterState::inCondStmt() const {
+  return mBlockType == cBlockCond;
+}
+
+Expr* IterState::completePhase1(Expr* initStmt) {
+  Expr* retval = initStmt->next;
+
+  initializeFieldsBefore(initStmt);
+
+  if (isRecord() == true) {
+    initStmt->remove();
+  }
+
+  mIsPhase1 = false;
+
+  return retval;
+}
+
+void IterState::initializeFieldsBefore(Expr* insertBefore) {
+  while (mCurrField != NULL) {
+    fieldInitFromField(insertBefore, mFn, mCurrField);
+
+    mCurrField = toDefExpr(mCurrField->next);
+  }
+}
+
+DefExpr* IterState::currField() const {
+  return mCurrField;
+}
+
+bool IterState::startsInPhase1(FnSymbol* fn) const {
+  InitStyle initStyle = findInitStyle(fn);
+
+  return initStyle != STYLE_NONE ? true : false;
+}
+
+DefExpr* IterState::firstField(FnSymbol* fn) const {
+  AggregateType* at   = toAggregateType(fn->_this->type);
+  Expr*          head = at->fields.head;
+
+  // Skip the psuedo-field "super"
+  if (::isClass(at) == true) {
+    head = head->next;
+  }
+
+  return toDefExpr(head);
+}
+
+void IterState::fieldInitFromInitStmt(DefExpr* field, CallExpr* callExpr) {
+  // This is the initializer for the current field
+  if (field == mCurrField) {
+    fieldInitFromStmt(callExpr, mFn, field);
+
+    mCurrField = toDefExpr(mCurrField->next);
+
+  } else {
+    INT_ASSERT(isFieldReinitialized(field) == false);
+
+    while (field != mCurrField) {
+      fieldInitFromField(callExpr, mFn, mCurrField);
+
+      mCurrField = toDefExpr(mCurrField->next);
+    }
+
+    fieldInitFromStmt(callExpr, mFn, field);
+
+    mCurrField = toDefExpr(mCurrField->next);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void preNormalizeNonGenericInit(FnSymbol* fn) {
   preNormalizeGenericInit(fn);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void fieldInitFromStmt(CallExpr* stmt,
+                              FnSymbol* fn,
+                              DefExpr*  field) {
+
+}
+
+static void fieldInitFromField(Expr*     insertBefore,
+                               FnSymbol* fn,
+                               DefExpr*  field) {
+
 }
 
 /************************************* | **************************************
