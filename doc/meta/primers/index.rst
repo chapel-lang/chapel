@@ -15,6 +15,7 @@ Language Basics
    Generic Classes <primers/genericClasses>
    Variadic Arguments (var args) <primers/varargs>
    Modules <primers/modules>
+   Void Variables <primers/voidVariables>
 
 Iterators
 ---------
