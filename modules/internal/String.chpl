@@ -928,7 +928,7 @@ module String {
     // TODO: I could make this and other routines that use find faster by
     // making a version of search helper that only takes in local strings and
     // localizing in the calling function
-    proc partition(sep: string) : 3*string {
+    proc const partition(sep: string) : 3*string {
       const idx = this.find(sep);
       if idx != 0 {
         return (this[..idx-1], sep, this[idx+sep.length..]);

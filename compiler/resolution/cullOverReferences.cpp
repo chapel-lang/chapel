@@ -120,10 +120,6 @@ symExprIsSetByUse(SymExpr* use) {
       if (FnSymbol* fn = call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
 
-        // added in f2bc2b27
-        //if (formal->defPoint->getFunction()->_this == formal)
-        //  return true;
-
         if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
           // Shouldn't this be a Def, not a Use, then?
           INT_ASSERT(0);
@@ -561,43 +557,7 @@ bool isChplIterOrLoopIterator(Symbol* sym, ForLoop*& loop)
   }
 
   return false;
-
-  // Alternative implementation
-  /*
-  if (iterator->hasFlag(FLAG_CHPL__ITER) ||
-      iterator->type->symbol->hasFlag(FLAG_ITERATOR_CLASS))
-    return true;
-  if (iterator->type->symbol->hasFlag(FLAG_TUPLE)) {
-    int nIteratorClass = 0;
-    int nFields = 0;
-    for_fields(field, iterator->type) {
-      if (field->type->symbol->hasFlag(FLAG_ITERATOR_CLASS))
-        nIteratorClass++;
-      nFields++;
-    }
-    if (nIteratorClass == nFields)
-      return true;
-  }
-  return false;*/
 }
-
-/*
-static
-bool inBuildTupleForChplIter(SymExpr* se)
-{
-  ForLoop* loop = NULL;
-  if (CallExpr* maybeBuildTuple = toCallExpr(se->parentExpr))
-    if (CallExpr* maybeMove = toCallExpr(maybeBuildTuple->parentExpr))
-      if (FnSymbol* maybeBuildTupleFn = maybeBuildTuple->isResolved())
-        if (maybeBuildTupleFn->hasFlag(FLAG_BUILD_TUPLE))
-          if (maybeMove->isPrimitive(PRIM_MOVE)) {
-            SymExpr* lhs = toSymExpr(maybeMove->get(1));
-            if (isChplIterOrLoopIterator(lhs->symbol(), loop))
-              return true;
-          }
-  return false;
-}
-*/
 
 // Get the non-fast-follower Follower
 static
@@ -1155,6 +1115,29 @@ void cullOverReferences() {
 
   revisitGraph_t revisitGraph;
 
+  // forward-flow constness for FLAG_REF_TO_CONST_WHEN_CONST_THIS
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
+      for_SymbolSymExprs(se, fn) {
+        if (CallExpr* call = toCallExpr(se->parentExpr))
+          if (fn == call->isResolved()) {
+            SymExpr* thisActual = toSymExpr(call->get(1));
+            Symbol* actualSymbol = thisActual->symbol();
+
+            if (CallExpr* parentCall = toCallExpr(call->parentExpr))
+              if (parentCall->isPrimitive(PRIM_MOVE)) {
+                SymExpr* lhs = toSymExpr(parentCall->get(1));
+                Symbol* lhsSym = lhs->symbol();
+
+                if (actualSymbol->qualType().isConst())
+                  markSymbolConst(lhsSym);
+              }
+          }
+      }
+    }
+  }
+
+  // Determine const-ness of ArgSymbols with INTENT_REF_MAYBE_CONST
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
 
     DEBUG_SYMBOL(arg);
@@ -1182,6 +1165,7 @@ void cullOverReferences() {
     }
   }
 
+  // Determine const-ness of the results of a ContextCallExpr
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
     CallExpr* move = toCallExpr(cc->parentExpr);
     INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
@@ -1361,13 +1345,6 @@ void cullOverReferences() {
 
         if (FnSymbol* calledFn = call->isResolved()) {
           if (calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
-            // Workaround for inaccurate tuple analysis: exclude the
-            // _build_tuple call with a LHS that is setting a
-            // chpl__iter variable.
-            //if (inBuildTupleForChplIter(se)) {
-            //  continue;
-            //}
-
             if (CallExpr* move = toCallExpr(call->parentExpr)) {
               if (move->isPrimitive(PRIM_MOVE) &&
                   // workaround for compiler-introduced
@@ -1417,6 +1394,12 @@ void cullOverReferences() {
             // since lhs->symbol() is the result of a move from
             // a ContextCallExpr, it will already be in the list
             // of collectedSymbols.
+            //
+            // TODO: This isn't quite right, since the called ref-pair
+            // could still use a ref-if-modified argument by ref in
+            // both branches... or the ref-return version could
+            // be const ref on the actual, while the const-ref-return
+            // version is ref on the actual.
             revisit = true;
             CallExpr* move = toCallExpr(cc->parentExpr);
             SymExpr* lhs = toSymExpr(move->get(1));
@@ -1433,12 +1416,9 @@ void cullOverReferences() {
         if (FnSymbol* calledFn = call->isResolved()) {
           ArgSymbol* formal = actual_to_formal(se);
 
-          // Check for the case that sym is the _this
-          // actual for a function marked with the flag
-          // FLAG_REF_TO_CONST_WHEN_CONST_THIS
-          // (which is used for field accessors among other things).
-          // In that event, it depends on how the returned
-          // value is used.
+          // Check for the case that sym is in a call
+          // to a tuple cast function. We consider it
+          // const if the result of the tuple cast is const.
           if (calledFn->hasFlag(FLAG_TUPLE_CAST_FN)) {
             CallExpr* move = toCallExpr(call->parentExpr);
             if (move && move->isPrimitive(PRIM_MOVE)) {
@@ -1679,7 +1659,6 @@ void cullOverReferences() {
   lateConstCheck(reasonNotConst);
 }
 
-
 // Handle certain degenerate cases, such as when a
 // ContextCallExpr is not in a PRIM_MOVE.
 static
@@ -1846,26 +1825,62 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
     }
 }
 
-static void printReason(BaseAST* reason)
+static bool isTupleOfTuples(Type* t)
 {
+  AggregateType* at = toAggregateType(t->getValType());
+
+  if (at && at->symbol->hasFlag(FLAG_TUPLE)) {
+    for_fields(field, at) {
+      if (field->getValType()->symbol->hasFlag(FLAG_TUPLE))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+
+static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
+{
+  // First, figure out the module and function it's in
   Expr* expr = toExpr(reason);
   if (Symbol* s = toSymbol(reason))
     expr = s->defPoint;
-  ModuleSymbol* mod = expr->getModule();
+  ModuleSymbol* inModule = expr->getModule();
+  FnSymbol* inFunction = NULL;
 
-  if (developer || mod->modTag == MOD_USER) {
+  if (FnSymbol* fn = toFnSymbol(reason))
+    inFunction = fn;
+  else
+    inFunction = expr->getFunction();
+
+  // We'll output differently based upon whether it's
+  // in a user-defined module or a compiler-generated function.
+  bool user = inModule->modTag == MOD_USER;
+  bool compilerGenerated = inFunction->hasFlag(FLAG_COMPILER_GENERATED);
+  BaseAST* last = *lastPrintedReason;
+  bool same = (last != NULL &&
+               reason->fname() == last->fname() &&
+               reason->linenum() == last->linenum());
+
+  if (developer || (user && !compilerGenerated && !same)) {
     if (isArgSymbol(reason) || isFnSymbol(reason))
       USR_PRINT(reason, "to ref formal here");
+    else if (TypeSymbol* ts = toTypeSymbol(reason))
+      USR_PRINT(reason, "to formal of type %s", ts->name);
     else
       USR_PRINT(reason, "passed as ref here");
 
     // useful for debugging this pass
     if (developer)
       USR_PRINT(reason, "id %i", reason->id);
+  } else {
+    if (TypeSymbol* ts = toTypeSymbol(reason))
+      USR_PRINT("to formal of type %s", ts->name);
   }
 
+  *lastPrintedReason = reason;
 }
-
 
 /* Since const-checking can depend on ref-pair determination
    or upon the determination of whether an array formal with
@@ -1875,13 +1890,11 @@ static void printReason(BaseAST* reason)
  */
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 {
-
   forv_Vec(CallExpr, call, gCallExprs) {
 
     // Ignore calls removed earlier by this pass.
     if (call->parentExpr == NULL)
       continue;
-
 
     if (FnSymbol* calledFn = call->isResolved()) {
       char cn1 = calledFn->name[0];
@@ -1892,12 +1905,21 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 
         if (actual->qualType().isConst() && ! formal->qualType().isConst()) {
 
-          // But... it's OK if we're calling a function marked
+          // But... there are exceptions
+
+          // If the formal intent is INTENT_REF_MAYBE_CONST,
+          // earlier cullOverReferences should have changed it
+          // to INTENT_REF or INTENT_CONST_REF. If not, it's something
+          // that was ignored by earlier portions of this pass.
+          if (formal->intent == INTENT_REF_MAYBE_CONST) {
+            // OK, not an error
+
+          // it's OK if we're calling a function marked
           // FLAG_REF_TO_CONST_WHEN_CONST_THIS and the result is
           // marked const. In that case, we pretend that the `this`
           // argument would be marked const too.
-          if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
-              formal->hasFlag(FLAG_ARG_THIS)) {
+          } else if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
+                     formal->hasFlag(FLAG_ARG_THIS)) {
             CallExpr* move = toCallExpr(call->parentExpr);
             if (move && move->isPrimitive(PRIM_MOVE)) {
               SymExpr* lhs = toSymExpr(move->get(1));
@@ -1909,10 +1931,12 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
               else
                 error = true; // l-value error
             }
+
           // Or, if passing a 'const' thing into an 'in' formal,
           // that's OK
-          } else if (formal->intent == INTENT_IN) {
-            // OK
+          } else if (formal->intent == INTENT_IN &&
+                     !formal->type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
+            // OK, not an error
           } else {
             error = true;
           }
@@ -1921,6 +1945,13 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
         // TODO: check tuple const-ness:
         //   make analysis above more complete
         //   work with toSymExpr(actual)->symbol()->fieldQualifiers
+        //   handle tuples containing tuples properly
+
+        FnSymbol* inFn = call->parentSymbol->getFunction();
+
+        // Ignore errors in functions marked with FLAG_SUPPRESS_LVALUE_ERRORS.
+        if (inFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
+          error = false;
 
         // For now, ignore errors with tuple construction/build_tuple
         if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
@@ -1928,9 +1959,23 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
              calledFn->retType->symbol->hasFlag(FLAG_TUPLE)))
           error = false;
 
-        // For now, ignore errors with `this` formal
-        // TODO: remove this limitation
-        if (formal->hasFlag(FLAG_ARG_THIS))
+        // For now, ignore errors with tuples-of-tuples.
+        // Otherwise errors with e.g.
+        //   const tup = (("a", 1), ("b", 2));
+        //   for x in tup { writeln(x); }
+        if (isTupleOfTuples(formal->type))
+          error = false;
+
+        // For now, ignore errors with default constructors
+        if (calledFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)
+            //do we need this? || calledFn->hasFlag(FLAG_CONSTRUCTOR)
+            )
+          error = false;
+
+        // For now, ignore errors with calls to promoted functions.
+        // To turn this off, get this example working:
+        //   test/functions/ferguson/ref-pair/plus-reduce-field-in-const.chpl
+        if (calledFn->hasFlag(FLAG_PROMOTION_WRAPPER))
           error = false;
 
         if (error) {
@@ -1941,7 +1986,18 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
                         formal->name,
                         calledFn->name, calleeParens);
 
-          printReason(formal);
+          BaseAST* lastPrintedReason = NULL;
+
+          printReason(formal->getValType()->symbol, &lastPrintedReason);
+
+          SymExpr* actSe = toSymExpr(actual);
+          if (actSe != NULL &&
+              actSe->symbol()->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+            printTaskOrForallConstErrorNote(actSe->symbol());
+
+          }
+
+          printReason(formal, &lastPrintedReason);
 
           BaseAST* reason = reasonNotConst[formal];
           BaseAST* lastReason = formal;
@@ -1959,7 +2015,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
                 if (CallExpr* parentCall = toCallExpr(se->parentExpr))
                   if (parentCall->isResolved())
                     if (curFormal == actual_to_formal(se)) {
-                      printReason(se);
+                      printReason(se, &lastPrintedReason);
                       break;
                     }
               }
@@ -1973,8 +2029,8 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
                   if (parentCall->isPrimitive(PRIM_MOVE))
                     if (CallExpr* rhsCall = toCallExpr(parentCall->get(2)))
                       if (FnSymbol* rhsCalledFn = rhsCall->isResolved()) {
-                        printReason(def);
-                        printReason(rhsCalledFn);
+                        printReason(def, &lastPrintedReason);
+                        printReason(rhsCalledFn, &lastPrintedReason);
                         printCause = NULL;
                         break;
                       }
@@ -1983,7 +2039,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 
             if (printCause) {
               // Print out an annotation line
-              printReason(printCause);
+              printReason(printCause, &lastPrintedReason);
             }
 
             if (reasonNotConst.count(reason) != 0) {

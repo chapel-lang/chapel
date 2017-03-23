@@ -449,7 +449,7 @@ proc ReplicatedDom.dsiSerialWrite(f): void {
   redirectee()._value.dsiSerialWrite(f);
   if printReplicatedLocales {
     f.write(" replicated over ");
-    const temp : [1..0] locale;
+    var temp : [1..0] locale;
     for idx in dist.targetLocDom.sorted() {
       temp.push_back(dist.targetLocales[idx]);
     }

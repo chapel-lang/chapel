@@ -23,7 +23,7 @@ module NetworkAtomics {
   // int(64)
   pragma "insert line file info"
   extern proc chpl_comm_atomic_get_int64(ref result:int(64),
-                                         l:int(32), ref obj:int(64));
+                                         l:int(32), const ref obj:int(64));
   pragma "insert line file info"
   extern proc chpl_comm_atomic_put_int64(ref desired:int(64),
                                          l:int(32), ref obj:int(64));
@@ -76,7 +76,7 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomic_int64 {
     var _v: int(64);
-    inline proc read(order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):int(64) {
       var ret: int(64);
       chpl_comm_atomic_get_int64(ret, this.locale.id:int(32), this._v);
       return ret;
@@ -164,7 +164,7 @@ module NetworkAtomics {
       chpl_comm_atomic_xor_int64(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         // After waiting for the value, do a thread fence
@@ -174,19 +174,19 @@ module NetworkAtomics {
       }
     }
 
-    inline proc peek():int(64) {
+    inline proc const peek():int(64) {
       return _v;
     }
     inline proc poke(value:int(64)) {
       _v = value;
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
 
-  inline proc =(ref a:ratomic_int64, b:ratomic_int64) {
+  inline proc =(ref a:ratomic_int64, const b:ratomic_int64) {
     a.write(b.read());
   }
   inline proc =(ref a:ratomic_int64, b) {
@@ -217,7 +217,7 @@ module NetworkAtomics {
   // int(32)
   pragma "insert line file info"
   extern proc chpl_comm_atomic_get_int32(ref result:int(32),
-                                         l:int(32), ref obj:int(32));
+                                         l:int(32), const ref obj:int(32));
   pragma "insert line file info"
   extern proc chpl_comm_atomic_put_int32(ref desired:int(32),
                                          l:int(32), ref obj:int(32));
@@ -270,7 +270,7 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomic_int32 {
     var _v: int(32);
-    inline proc read(order:memory_order = memory_order_seq_cst):int(32) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):int(32) {
       var ret: int(32);
       chpl_comm_atomic_get_int32(ret, this.locale.id:int(32), this._v);
       return ret;
@@ -358,7 +358,7 @@ module NetworkAtomics {
       chpl_comm_atomic_xor_int32(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc waitFor(val:int(32), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:int(32), order:memory_order = memory_order_seq_cst) {
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         atomic_thread_fence(order);
@@ -368,16 +368,16 @@ module NetworkAtomics {
     inline proc peek():int(32) {
       return _v;
     }
-    inline proc poke(value:int(32)) {
+    inline proc const poke(value:int(32)) {
       _v = value;
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
 
-  inline proc =(ref a:ratomic_int32, b:ratomic_int32) {
+  inline proc =(ref a:ratomic_int32, const b:ratomic_int32) {
     a.write(b.read());
   }
   inline proc =(ref a:ratomic_int32, b) {
@@ -408,7 +408,7 @@ module NetworkAtomics {
   // uint(64)
   pragma "insert line file info"
   extern proc chpl_comm_atomic_get_uint64(ref result:uint(64),
-                                         l:int(32), ref obj:uint(64));
+                                         l:int(32), const ref obj:uint(64));
   pragma "insert line file info"
   extern proc chpl_comm_atomic_put_uint64(ref desired:uint(64),
                                          l:int(32), ref obj:uint(64));
@@ -461,7 +461,7 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomic_uint64 {
     var _v: uint(64);
-    inline proc read(order:memory_order = memory_order_seq_cst):uint(64) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):uint(64) {
       var ret: uint(64);
       chpl_comm_atomic_get_uint64(ret, this.locale.id:int(32), this._v);
       return ret;
@@ -549,26 +549,26 @@ module NetworkAtomics {
       chpl_comm_atomic_xor_uint64(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc waitFor(val:uint(64), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:uint(64), order:memory_order = memory_order_seq_cst) {
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         atomic_thread_fence(order);
       }
     }
 
-    inline proc peek():uint(64) {
+    inline proc const peek():uint(64) {
       return _v;
     }
     inline proc poke(value:uint(64)) {
       _v = value;
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
 
-  inline proc =(ref a:ratomic_uint64, b:ratomic_uint64) {
+  inline proc =(ref a:ratomic_uint64, const b:ratomic_uint64) {
     a.write(b.read());
   }
   inline proc =(ref a:ratomic_uint64, b) {
@@ -599,7 +599,7 @@ module NetworkAtomics {
   // uint(32)
   pragma "insert line file info"
   extern proc chpl_comm_atomic_get_uint32(ref result:uint(32),
-                                         l:int(32), ref obj:uint(32));
+                                         l:int(32), const ref obj:uint(32));
   pragma "insert line file info"
   extern proc chpl_comm_atomic_put_uint32(ref desired:uint(32),
                                          l:int(32), ref obj:uint(32));
@@ -652,7 +652,7 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomic_uint32 {
     var _v: uint(32);
-    inline proc read(order:memory_order = memory_order_seq_cst):uint(32) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):uint(32) {
       var ret: uint(32);
       chpl_comm_atomic_get_uint32(ret, this.locale.id:int(32), this._v);
       return ret;
@@ -740,26 +740,26 @@ module NetworkAtomics {
       chpl_comm_atomic_xor_uint32(v, this.locale.id:int(32), this._v);
     }
 
-    inline proc waitFor(val:uint(32), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:uint(32), order:memory_order = memory_order_seq_cst) {
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         atomic_thread_fence(order);
       }
     }
 
-    inline proc peek():uint(32) {
+    inline proc const peek():uint(32) {
       return _v;
     }
     inline proc poke(value:uint(32)) {
       _v = value;
     }
 
-    proc writeThis(x) {
+    proc writeThis(const x) {
       x.write(read());
     }
   }
 
-  inline proc =(ref a:ratomic_uint32, b:ratomic_uint32) {
+  inline proc =(ref a:ratomic_uint32, const b:ratomic_uint32) {
     a.write(b.read());
   }
   inline proc =(ref a:ratomic_uint32, b) {
@@ -791,7 +791,7 @@ module NetworkAtomics {
   pragma "atomic type"
   record ratomicbool {
     var _v: int(64);
-    inline proc read(order:memory_order = memory_order_seq_cst):bool {
+    inline proc const read(order:memory_order = memory_order_seq_cst):bool {
       var ret: int(64);
       chpl_comm_atomic_get_int64(ret, this.locale.id:int(32), this._v);
       return ret:bool;
@@ -831,26 +831,26 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
       this.write(false);
     }
 
-    inline proc waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         atomic_thread_fence(order);
       }
     }
 
-    inline proc peek():bool {
+    inline proc const peek():bool {
       return _v:bool;
     }
     inline proc poke(value:bool) {
       _v = value:int(64);
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
 
-  inline proc =(ref a:ratomicbool, b:ratomicbool) {
+  inline proc =(ref a:ratomicbool, const b:ratomicbool) {
     a.write(b.read());
   }
   inline proc =(ref a:ratomicbool, b) {
@@ -881,7 +881,7 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
   // real(64)
   pragma "insert line file info"
   extern proc chpl_comm_atomic_get_real64(ref result:real(64),
-                                          l:int(32), ref obj:real(64));
+                                          l:int(32), const ref obj:real(64));
   pragma "insert line file info"
   extern proc chpl_comm_atomic_put_real64(ref desired:real(64),
                                           l:int(32), ref obj:real(64));
@@ -912,7 +912,7 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
   pragma "atomic type"
   record ratomic_real64 {
     var _v: real(64);
-    inline proc read(order:memory_order = memory_order_seq_cst):real(64) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):real(64) {
       var ret: real(64);
       chpl_comm_atomic_get_real64(ret, this.locale.id:int(32), this._v);
       return ret;
@@ -989,26 +989,26 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
     }
 
 
-    inline proc waitFor(val:real(64), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:real(64), order:memory_order = memory_order_seq_cst) {
       on this {
         while (read(memory_order_relaxed) != val) do chpl_task_yield();
         atomic_thread_fence(order);
       }
     }
 
-    inline proc peek():real(64) {
+    inline proc const peek():real(64) {
       return _v;
     }
     inline proc poke(value:real(64)) {
       _v = value;
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
 
-  inline proc =(ref a:ratomic_real64, b:ratomic_real64) {
+  inline proc =(ref a:ratomic_real64, const b:ratomic_real64) {
     a.write(b.read());
   }
   inline proc =(ref a:ratomic_real64, b) {
