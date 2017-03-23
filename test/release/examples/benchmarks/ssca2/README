@@ -12,7 +12,9 @@ FILES
 =====
 
 SSCA2_main.chpl      : The main module
+
 SSCA2_Modules/       : Directory of additional modules
+
   SSCA2_compilation_config_params.chpl      : Config params
   SSCA2_execution_config_consts.chpl        : Config consts
   SSCA2_driver.chpl                         : Calls to kernels 2-4
@@ -27,6 +29,11 @@ SSCA2_Modules/       : Directory of additional modules
   analyze_torus_graphs_stencil_rep_v1.chpl  : Torus graph infrastructures
   analyze_torus_graphs_stencil_rep_v2.chpl
   analyze_torus_graphs_stencil_rep_v3.chpl
+
+Other files with the same base filename as the Chapel test program but
+different filename extensions, are for use by the automated test system.
+For example, file SSCA2_main.execopts supports automated testing of
+SSCA2_main.chpl. $CHPL_HOME/examples/README.testing contains more information.
 
 
 BUILDING
