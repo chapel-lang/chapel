@@ -40,7 +40,7 @@ enum InitStyle {
 static InitStyle findInitStyle(FnSymbol* fn);
 static InitStyle findInitStyle(Expr*     expr);
 
-
+static void      preNormalizeNonGenericInit(FnSymbol* fn);
 static void      preNormalizeGenericInit(FnSymbol* fn);
 
 /************************************* | **************************************
@@ -181,15 +181,31 @@ static Expr*       getNextStmt(Expr*      curExpr,
 ************************************** | *************************************/
 
 void preNormalizeInitMethod(FnSymbol* fn) {
+  AggregateType* at = toAggregateType(fn->_this->type);
+
   if (fn->hasFlag(FLAG_NO_PARENS) == true) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
 
   } else if (isReturnVoid(fn) == false) {
     USR_FATAL(fn, "an initializer cannot return a non-void result");
 
+  } else if (isNonGenericRecord(at) == true ||
+             isNonGenericClass(at)  == true) {
+    preNormalizeNonGenericInit(fn);
+
   } else {
     preNormalizeGenericInit(fn);
   }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void preNormalizeNonGenericInit(FnSymbol* fn) {
+  preNormalizeGenericInit(fn);
 }
 
 /************************************* | **************************************
