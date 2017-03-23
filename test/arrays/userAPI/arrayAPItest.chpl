@@ -57,10 +57,12 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln("X is:\n", X);
   writeln();
 
+  const domForLowHigh = if X.hasSingleLocalSubdomain() then X.localSubdomain()
+                        else X.domain;
   // Test read access via tuples and varargs
-  writeln("low element is: ", X.localAccess[X.domain.alignedLow]);
+  writeln("low element is: ", X.localAccess[domForLowHigh.alignedLow]);
   if (X.rank > 1) then
-    writeln("high element is: ", X.localAccess[(...X.domain.alignedHigh)]);
+    writeln("high element is: ", X.localAccess[(...domForLowHigh.alignedHigh)]);
   writeln();
 
   // Test serial iteration
