@@ -1,4 +1,5 @@
-tuple-args3.chpl:19: error: const actual is passed to 'ref' formal 'tup' of writesOneNested()
-note: to formal of type 2*2*[domain(1,int(64),false)] int(64)
-tuple-args3.chpl:13: note: to ref formal here
-tuple-args3.chpl:15: note: passed as ref here
+writesOneNested
+REF
+REF
+CONST REF
+CONST REF
