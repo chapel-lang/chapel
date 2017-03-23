@@ -1,0 +1,2 @@
+plus-reduce-field-in-const.chpl:9: error: const actual is passed to 'ref' formal 'this' of x()
+note: to formal of type [domain(1,int(64),false)] R
