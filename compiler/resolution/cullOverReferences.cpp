@@ -1959,14 +1959,30 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
     }
 }
 
-static void printReason(BaseAST* reason)
+static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
 {
+  // First, figure out the module and function it's in
   Expr* expr = toExpr(reason);
   if (Symbol* s = toSymbol(reason))
     expr = s->defPoint;
-  ModuleSymbol* mod = expr->getModule();
+  ModuleSymbol* inModule = expr->getModule();
+  FnSymbol* inFunction = NULL;
 
-  if (developer || mod->modTag == MOD_USER) {
+  if (FnSymbol* fn = toFnSymbol(reason))
+    inFunction = fn;
+  else
+    inFunction = expr->getFunction();
+
+  // We'll output differently based upon whether it's
+  // in a user-defined module or a compiler-generated function.
+  bool user = inModule->modTag == MOD_USER;
+  bool compilerGenerated = inFunction->hasFlag(FLAG_COMPILER_GENERATED);
+  BaseAST* last = *lastPrintedReason;
+  bool same = (last != NULL &&
+               reason->fname() == last->fname() &&
+               reason->linenum() == last->linenum());
+
+  if (developer || (user && !compilerGenerated && !same)) {
     if (isArgSymbol(reason) || isFnSymbol(reason))
       USR_PRINT(reason, "to ref formal here");
     else if (TypeSymbol* ts = toTypeSymbol(reason))
@@ -1981,6 +1997,8 @@ static void printReason(BaseAST* reason)
     if (TypeSymbol* ts = toTypeSymbol(reason))
       USR_PRINT("to formal of type %s", ts->name);
   }
+
+  *lastPrintedReason = reason;
 }
 
 
@@ -2077,8 +2095,9 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
                         formal->name,
                         calledFn->name, calleeParens);
 
+          BaseAST* lastPrintedReason = NULL;
 
-          printReason(formal->type->symbol);
+          printReason(formal->getValType()->symbol, &lastPrintedReason);
 
           SymExpr* actSe = toSymExpr(actual);
           if (actSe != NULL &&
@@ -2087,7 +2106,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 
           }
 
-          printReason(formal);
+          printReason(formal, &lastPrintedReason);
 
           BaseAST* reason = reasonNotConst[formal];
           BaseAST* lastReason = formal;
@@ -2105,7 +2124,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
                 if (CallExpr* parentCall = toCallExpr(se->parentExpr))
                   if (parentCall->isResolved())
                     if (curFormal == actual_to_formal(se)) {
-                      printReason(se);
+                      printReason(se, &lastPrintedReason);
                       break;
                     }
               }
@@ -2119,8 +2138,8 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
                   if (parentCall->isPrimitive(PRIM_MOVE))
                     if (CallExpr* rhsCall = toCallExpr(parentCall->get(2)))
                       if (FnSymbol* rhsCalledFn = rhsCall->isResolved()) {
-                        printReason(def);
-                        printReason(rhsCalledFn);
+                        printReason(def, &lastPrintedReason);
+                        printReason(rhsCalledFn, &lastPrintedReason);
                         printCause = NULL;
                         break;
                       }
@@ -2129,7 +2148,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 
             if (printCause) {
               // Print out an annotation line
-              printReason(printCause);
+              printReason(printCause, &lastPrintedReason);
             }
 
             if (reasonNotConst.count(reason) != 0) {
