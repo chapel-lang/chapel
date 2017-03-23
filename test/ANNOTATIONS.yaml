@@ -233,6 +233,10 @@ all:
   03/16/17:
     - text: Stop limiting the number of ugni communication domains under slurm (#5653)
       config: 16 node XC
+  03/17/17:
+    - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
+  03/20/17:
+    - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
 
 
 AllCompTime:
@@ -256,7 +260,6 @@ arrayPerformance-1d:
   03/22/17:
     - Inline DefaultRectangular 1D strided iter (#5771)
 
-
 arrayPerformance-2d:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
@@ -272,8 +275,6 @@ arr-forall:
 arguments:
   03/10/17:
     - Three way refpair (#5561)
-  03/17/17:
-    - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
 
 assign.1024:
   01/22/15:
@@ -644,10 +645,6 @@ memleaksfull:
     - Fix gasnet config for recent memory leak updates (#4375)
   02/08/17:
     - Add Futures package module - lambda functions leaking (#5135)
-  03/17/17:
-    - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
-  03/20/17:
-    - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
   03/21/17:
     - Rank change dom dist view (#5694)
   03/23/17:
@@ -740,8 +737,6 @@ ptrans: &ptrans-base
     - Make BlockCyclic more parallel (#5224)
   01/27/17:
     - Fix bug in BlockCyclic indexing, convert arrays to tuples(#5229)
-  03/17/17:
-    - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
 ptrans.ml-perf:
   <<: *ptrans-base
 ptrans.ml-time:
@@ -868,8 +863,6 @@ temporary-copies:
 testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
-  03/20/17:
-    - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
 
 thread-ring:
   03/19/15:
@@ -919,12 +912,6 @@ timeVectorArray:
     - upgrade jemalloc to 4.2.0 (#3919)
   01/31/17:
     - upgrade jemalloc to 4.4.0 (#5278)
-  03/17/17:
-    - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
-
-twopt-paircount:
-  03/20/17:
-    - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
 
 dynamic:
   02/28/17:
