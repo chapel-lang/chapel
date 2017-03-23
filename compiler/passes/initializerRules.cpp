@@ -28,8 +28,6 @@
 #include "type.h"
 #include "typeSpecifier.h"
 
-#include "AstDumpToNode.h"
-
 #include <map>
 
 enum InitStyle {
@@ -166,7 +164,7 @@ static bool isReturnVoid(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void      fieldInitFromStmt(CallExpr* stmt,
+static Expr*     fieldInitFromStmt(CallExpr* stmt,
                                    FnSymbol* fn,
                                    DefExpr*  field);
 
@@ -205,7 +203,7 @@ public:
 
   DefExpr*        currField()                                            const;
 
-  void            fieldInitFromInitStmt(DefExpr*  field,
+  Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr);
 
 private:
@@ -382,26 +380,25 @@ DefExpr* IterState::firstField(FnSymbol* fn) const {
   return toDefExpr(head);
 }
 
-void IterState::fieldInitFromInitStmt(DefExpr* field, CallExpr* callExpr) {
-  // This is the initializer for the current field
-  if (field == mCurrField) {
-    fieldInitFromStmt(callExpr, mFn, field);
+Expr* IterState::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
+  Expr* retval = NULL;
 
-    mCurrField = toDefExpr(mCurrField->next);
-
-  } else {
+  // Either a redefinition, fields out of order, or omitted fields
+  if (field != mCurrField) {
     INT_ASSERT(isFieldReinitialized(field) == false);
 
     while (field != mCurrField) {
-      fieldInitFromField(callExpr, mFn, mCurrField);
+      fieldInitFromField(initStmt, mFn, mCurrField);
 
       mCurrField = toDefExpr(mCurrField->next);
     }
-
-    fieldInitFromStmt(callExpr, mFn, field);
-
-    mCurrField = toDefExpr(mCurrField->next);
   }
+
+  // Now handle this field
+  retval     = fieldInitFromStmt(initStmt, mFn, field);
+  mCurrField = toDefExpr(mCurrField->next);
+
+  return retval;
 }
 
 /************************************* | **************************************
@@ -525,6 +522,8 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
                       field->sym->name);
           }
 
+          stmt = stmt->next;
+
         } else if (isCompoundAssignment(callExpr) == true) {
           USR_FATAL(stmt,
                     "cannot apply compound assignment to field \"%s\" "
@@ -550,10 +549,8 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
                     field->sym->name);
 
         } else {
-          state.fieldInitFromInitStmt(field, callExpr);
+          stmt = state.fieldInitFromInitStmt(field, callExpr);
         }
-
-        stmt = stmt->next;
 
       // Stmt is assignment to a super field
       } else if (DefExpr* field = toSuperFieldInit(state.type(), callExpr)) {
@@ -646,15 +643,25 @@ static void fieldInitTypeInference(Expr*     insertBefore,
                                    DefExpr*  field,
                                    Expr*     initExpr);
 
-static void fieldInitFromStmt(CallExpr* stmt,
-                              FnSymbol* fn,
-                              DefExpr*  field) {
+static Expr* fieldInitFromStmt(CallExpr* stmt,
+                               FnSymbol* fn,
+                               DefExpr*  field) {
+  Expr* insertBefore = stmt;
+  Expr* initExpr     = stmt->get(2)->remove();
+  Expr* retval       = stmt->next;
+
+  // Initialize the field using the RHS of the source stmt
   if (field->exprType != NULL) {
-    fieldInitTypeWithInit (stmt, fn, field, stmt->get(2));
+    fieldInitTypeWithInit (insertBefore, fn, field, initExpr);
 
   } else {
-    fieldInitTypeInference(stmt, fn, field, stmt->get(2));
+    fieldInitTypeInference(insertBefore, fn, field, initExpr);
   }
+
+  // Remove the (degenerate) source version of the field assignment
+  stmt->remove();
+
+  return retval;
 }
 
 static void fieldInitFromField(Expr*     insertBefore,
@@ -667,10 +674,10 @@ static void fieldInitFromField(Expr*     insertBefore,
     fieldInitTypeWoutInit(insertBefore, fn, field);
 
   } else if (field->exprType != NULL && field->init != NULL) {
-    fieldInitTypeWithInit(insertBefore, fn, field, field->init);
+    fieldInitTypeWithInit(insertBefore, fn, field, field->init->copy());
 
   } else if (field->exprType == NULL && field->init != NULL) {
-    fieldInitTypeInference(insertBefore, fn, field, field->init);
+    fieldInitTypeInference(insertBefore, fn, field, field->init->copy());
 
   } else {
     INT_ASSERT(false);
@@ -758,7 +765,7 @@ static void fieldInitTypeWithInit(Expr*     stmt,
       isNonGenericClass(type) == true) {
     CallExpr* fieldAccess = createFieldAccess(fn, field);
 
-    stmt->insertBefore(new CallExpr("=", fieldAccess, initExpr->copy()));
+    stmt->insertBefore(new CallExpr("=", fieldAccess, initExpr));
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
 #if 0
@@ -830,14 +837,13 @@ static void fieldInitTypeInference(Expr*     stmt,
     if (isPrimitiveScalar(type) == true) {
       CallExpr* fieldAccess = createFieldAccess(fn, field);
 
-      stmt->insertBefore(new CallExpr("=", fieldAccess, initExpr->copy()));
+      stmt->insertBefore(new CallExpr("=", fieldAccess, initExpr));
 
     } else {
       Symbol* _this = fn->_this;
       Symbol* name  = new_CStringSymbol(field->sym->name);
-      Expr*   value = initExpr->copy();
 
-      stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, value));
+      stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr));
     }
 
   // e.g.
@@ -876,9 +882,8 @@ static void fieldInitTypeInference(Expr*     stmt,
     } else {
       Symbol* _this = fn->_this;
       Symbol* name  = new_CStringSymbol(field->sym->name);
-      Expr*   value = initExpr->copy();
 
-      stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, value));
+      stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr));
     }
 
   } else {
