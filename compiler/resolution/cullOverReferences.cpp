@@ -2105,6 +2105,12 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
             )
           error = false;
 
+        // For now, ignore errors with calls to promoted functions.
+        // To turn this off, get this example working:
+        //   test/functions/ferguson/ref-pair/plus-reduce-field-in-const.chpl
+        if (calledFn->hasFlag(FLAG_PROMOTION_WRAPPER))
+          error = false;
+
         // For now, ignore errors with `this` formal
         // TODO: remove this limitation
         //if (formal->hasFlag(FLAG_ARG_THIS))
