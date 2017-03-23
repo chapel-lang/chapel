@@ -121,10 +121,6 @@ symExprIsSetByUse(SymExpr* use) {
       if (FnSymbol* fn = call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
 
-        // added in f2bc2b27
-        //if (formal->defPoint->getFunction()->_this == formal)
-        //  return true;
-
         if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
           // Shouldn't this be a Def, not a Use, then?
           INT_ASSERT(0);
@@ -258,24 +254,6 @@ bool symExprIsSet(SymExpr* se)
   return ret;
 }
 
-/*
-static
-bool callPassesSymbolRefMaybeConst(Symbol* sym, CallExpr* call)
-{
-  bool ret = false;
-  for_alist(expr, call->argList) {
-    if (SymExpr* se = toSymExpr(expr)) {
-      if (se->symbol() == sym) {
-        ArgSymbol* formal = actual_to_formal(se);
-        if (formal && formal->intent ==  INTENT_REF_MAYBE_CONST)
-          return true;
-      }
-    }
-  }
-  return ret;
-}
-*/
-
 static
 bool callSetsSymbol(Symbol* sym, CallExpr* call)
 {
@@ -301,14 +279,6 @@ bool contextCallItDepends(Symbol* sym, ContextCallExpr* cc) {
   CallExpr* constRefCall = NULL;
 
   cc->getCalls(refCall, valueCall, constRefCall);
-
-  // If any of the calls involved are ref-if-modified,
-  // return true, since we can't know yet if the
-  // argument is ref or const ref.
-  //if ((refCall && callPassesSymbolRefMaybeConst(sym, refCall)) ||
-  //    (valueCall && callPassesSymbolRefMaybeConst(sym, valueCall)) ||
-  //    (constRefCall && callPassesSymbolRefMaybeConst(sym, constRefCall)))
-  //  return true;
 
   bool ref = refCall?callSetsSymbol(sym, refCall):false;
   bool val = valueCall?callSetsSymbol(sym, valueCall):false;
@@ -588,43 +558,7 @@ bool isChplIterOrLoopIterator(Symbol* sym, ForLoop*& loop)
   }
 
   return false;
-
-  // Alternative implementation
-  /*
-  if (iterator->hasFlag(FLAG_CHPL__ITER) ||
-      iterator->type->symbol->hasFlag(FLAG_ITERATOR_CLASS))
-    return true;
-  if (iterator->type->symbol->hasFlag(FLAG_TUPLE)) {
-    int nIteratorClass = 0;
-    int nFields = 0;
-    for_fields(field, iterator->type) {
-      if (field->type->symbol->hasFlag(FLAG_ITERATOR_CLASS))
-        nIteratorClass++;
-      nFields++;
-    }
-    if (nIteratorClass == nFields)
-      return true;
-  }
-  return false;*/
 }
-
-/*
-static
-bool inBuildTupleForChplIter(SymExpr* se)
-{
-  ForLoop* loop = NULL;
-  if (CallExpr* maybeBuildTuple = toCallExpr(se->parentExpr))
-    if (CallExpr* maybeMove = toCallExpr(maybeBuildTuple->parentExpr))
-      if (FnSymbol* maybeBuildTupleFn = maybeBuildTuple->isResolved())
-        if (maybeBuildTupleFn->hasFlag(FLAG_BUILD_TUPLE))
-          if (maybeMove->isPrimitive(PRIM_MOVE)) {
-            SymExpr* lhs = toSymExpr(maybeMove->get(1));
-            if (isChplIterOrLoopIterator(lhs->symbol(), loop))
-              return true;
-          }
-  return false;
-}
-*/
 
 // Get the non-fast-follower Follower
 static
@@ -1182,21 +1116,12 @@ void cullOverReferences() {
 
   revisitGraph_t revisitGraph;
 
-  // tidy up representation of if-exprs so that
-  // e.g. proc f(a,b) return if x then a else b;
-  // can work, when a and b are arrays.
-  //makeRefReturnIfExprsIntoRefPairs();
-
   // forward-flow constness for FLAG_REF_TO_CONST_WHEN_CONST_THIS
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
       for_SymbolSymExprs(se, fn) {
         if (CallExpr* call = toCallExpr(se->parentExpr))
           if (fn == call->isResolved()) {
-            //gdbShouldBreakHere();
-            //printf("FLAG_REF_TO_CONST_WHEN_CONST_THIS call\n");
-            //nprint_view(call->parentExpr);
-
             SymExpr* thisActual = toSymExpr(call->get(1));
             Symbol* actualSymbol = thisActual->symbol();
 
@@ -1207,8 +1132,6 @@ void cullOverReferences() {
 
                 if (actualSymbol->qualType().isConst())
                   markSymbolConst(lhsSym);
-
-              //collectedSymbols.push_back(makeNode(actualSymbol,0));
               }
           }
       }
@@ -1423,13 +1346,6 @@ void cullOverReferences() {
 
         if (FnSymbol* calledFn = call->isResolved()) {
           if (calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
-            // Workaround for inaccurate tuple analysis: exclude the
-            // _build_tuple call with a LHS that is setting a
-            // chpl__iter variable.
-            //if (inBuildTupleForChplIter(se)) {
-            //  continue;
-            //}
-
             if (CallExpr* move = toCallExpr(call->parentExpr)) {
               if (move->isPrimitive(PRIM_MOVE) &&
                   // workaround for compiler-introduced
@@ -1744,55 +1660,6 @@ void cullOverReferences() {
   lateConstCheck(reasonNotConst);
 }
 
-/*
-static
-void makeRefReturnIfExprsIntoRefPairs()
-{
-  std::vector<FnSymbol*> refIfExprFns;
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_IF_EXPR_FN) &&
-        (fn->retTag == RET_REF || fn->retType->symbol->hasFlag(FLAG_REF))) {
-      refIfExprFns.push_back(fn);
-    }
-  }
-
-  for_vector(FnSymbol, refFn, refIfExprFns) {
-
-    // If it's an if-expr returning a ref, create a ref-pair for it,
-    // and update calls to it to become ContextCallExprs.
-    //
-    // It would be preferable to not have to do this here...
-    // it would be nicer to not have special if-expr functions at
-    // all.
-    SET_LINENO(refFn);
-    FnSymbol* constRefFn = refFn->copy();
-    constRefFn->retTag = RET_CONST_REF;
-
-    refFn->defPoint->insertAfter(new DefExpr(constRefFn));
-
-    // Now update calls to fn to be ContextCallExprs.
-    for_SymbolSymExprs(se, refFn) {
-      if (CallExpr* refCall = toCallExpr(se->parentExpr)) {
-        if (refFn == refCall->isResolved()) {
-          SET_LINENO(refCall);
-          ContextCallExpr* cc = new ContextCallExpr();
-          refCall->replace(cc);
-          CallExpr* constRefCall = refCall->copy();
-          SymExpr* baseSe = toSymExpr(constRefCall->baseExpr);
-          INT_ASSERT(baseSe->symbol() == refFn);
-          baseSe->setSymbol(constRefFn);
-
-          cc->setRefRValueOptions(refCall, constRefCall);
-
-          //nprint_view(cc->parentExpr);
-        }
-      }
-    }
-  }
-}
-*/
-
 // Handle certain degenerate cases, such as when a
 // ContextCallExpr is not in a PRIM_MOVE.
 static
@@ -2079,6 +1946,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
         // TODO: check tuple const-ness:
         //   make analysis above more complete
         //   work with toSymExpr(actual)->symbol()->fieldQualifiers
+        //   handle tuples containing tuples properly
 
         FnSymbol* inFn = call->parentSymbol->getFunction();
 
@@ -2101,7 +1969,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 
         // For now, ignore errors with default constructors
         if (calledFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)
-//            ||calledFn->hasFlag(FLAG_CONSTRUCTOR)
+            //do we need this? || calledFn->hasFlag(FLAG_CONSTRUCTOR)
             )
           error = false;
 
@@ -2110,15 +1978,6 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
         //   test/functions/ferguson/ref-pair/plus-reduce-field-in-const.chpl
         if (calledFn->hasFlag(FLAG_PROMOTION_WRAPPER))
           error = false;
-
-        // For now, ignore errors with `this` formal
-        // TODO: remove this limitation
-        //if (formal->hasFlag(FLAG_ARG_THIS))
-        //  error = false;
-
-        // For now, ignore errors with if-expr functions
-//        if (calledFn->hasFlag(FLAG_IF_EXPR_FN))
-//          error = false;
 
         if (error) {
           USR_FATAL_CONT(actual,
