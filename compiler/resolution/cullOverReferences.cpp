@@ -2066,6 +2066,15 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
         //   make analysis above more complete
         //   work with toSymExpr(actual)->symbol()->fieldQualifiers
 
+        FnSymbol* inFn = call->parentSymbol->getFunction();
+
+        // Ignore errors in functions marked with FLAG_SUPPRESS_LVALUE_ERRORS.
+        // e.g. _getIterator is marked so; this seems to be needed for e.g.
+        //   const tup = (("a", 1), ("b", 2));
+        //   for x in tup { writeln(x); }
+        if (inFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
+          error = false;
+
         // For now, ignore errors with tuple construction/build_tuple
         if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
             (calledFn->hasFlag(FLAG_CONSTRUCTOR) &&
