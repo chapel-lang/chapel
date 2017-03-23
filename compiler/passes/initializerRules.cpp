@@ -37,6 +37,8 @@ enum InitStyle {
   STYLE_BOTH
 };
 
+static bool      isInitStmt(Expr* stmt);
+
 static InitStyle findInitStyle(FnSymbol* fn);
 static InitStyle findInitStyle(Expr*     expr);
 
@@ -209,7 +211,9 @@ private:
 
                   IterState();
 
-  bool            startsInPhase1(FnSymbol* fn)                           const;
+  bool            startsInPhase1(FnSymbol*  fn)                          const;
+  bool            startsInPhase1(BlockStmt* block)                       const;
+
   DefExpr*        firstField(FnSymbol* fn)                               const;
 
   FnSymbol*       mFn;
@@ -313,10 +317,67 @@ DefExpr* IterState::currField() const {
   return mCurrField;
 }
 
-bool IterState::startsInPhase1(FnSymbol* fn) const {
-  InitStyle initStyle = findInitStyle(fn);
 
-  return initStyle != STYLE_NONE ? true : false;
+
+
+
+
+
+
+
+bool IterState::startsInPhase1(FnSymbol* fn) const {
+  return startsInPhase1(fn->body);
+}
+
+
+bool IterState::startsInPhase1(BlockStmt* block) const {
+  Expr* stmt   = block->body.head;
+  bool  retval = false;
+
+  while (stmt != NULL && retval == false) {
+    if (isDefExpr(stmt) == true) {
+      stmt = stmt->next;
+
+    } else if (CallExpr* callExpr = toCallExpr(stmt)) {
+      if (isInitStmt(callExpr) == true) {
+        retval = true;
+
+      } else {
+        stmt = stmt->next;
+      }
+
+    } else if (CondStmt* cond = toCondStmt(stmt)) {
+      if (startsInPhase1(cond->thenStmt) == true) {
+        retval = true;
+
+      } else if (cond->elseStmt                 != NULL &&
+                 startsInPhase1(cond->elseStmt) == true) {
+        retval = true;
+
+      } else {
+        stmt = stmt->next;
+      }
+
+    } else if (LoopStmt* loop = toLoopStmt(stmt)) {
+      if (startsInPhase1((BlockStmt*) stmt) == true) {
+        retval = true;
+      } else {
+        stmt   = stmt->next;
+      }
+
+    } else if (BlockStmt* block = toBlockStmt(stmt)) {
+      if (startsInPhase1(block) == true) {
+        retval = true;
+      } else {
+        stmt   = stmt->next;
+      }
+
+    } else {
+      stmt = stmt->next;
+    }
+  }
+
+  return retval;
 }
 
 DefExpr* IterState::firstField(FnSymbol* fn) const {
@@ -364,7 +425,6 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* start);
 
 static CallExpr* createCallToSuperInit(FnSymbol* fn);
 
-static bool      isInitStmt(Expr* stmt);
 static bool      isSuperInit(Expr* stmt);
 static bool      isThisInit(Expr* stmt);
 
@@ -449,7 +509,17 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
           }
 
         } else if (state.inCondStmt() == true) {
-          INT_ASSERT(false);
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of super.init() in a conditional stmt in phase 1");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of this.init() in a conditional stmt in phase 1");
+
+          } else {
+            INT_ASSERT(false);
+          }
 
         } else {
           stmt = state.completePhase1(stmt);
