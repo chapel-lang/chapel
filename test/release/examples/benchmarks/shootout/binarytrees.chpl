@@ -67,16 +67,17 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  const item: int;
-  const left, right: Tree;
+  var item: int;
+  var left, right: Tree;
 
   //
   // A Tree-building initializer
   //
   proc init(item, depth) {
     this.item = item;
+
     if depth > 0 {
-      left = new Tree(2*item-1, depth-1);
+      left  = new Tree(2*item-1, depth-1);
       right = new Tree(2*item, depth-1);
     }
   }
