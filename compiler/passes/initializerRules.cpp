@@ -28,6 +28,8 @@
 #include "type.h"
 #include "typeSpecifier.h"
 
+#include "AstDumpToNode.h"
+
 #include <map>
 
 enum InitStyle {
@@ -37,11 +39,17 @@ enum InitStyle {
   STYLE_BOTH
 };
 
+static bool      isInitStmt(Expr* stmt);
+
 static InitStyle findInitStyle(FnSymbol* fn);
 static InitStyle findInitStyle(Expr*     expr);
 
 static void      preNormalizeNonGenericInit(FnSymbol* fn);
 static void      preNormalizeGenericInit(FnSymbol* fn);
+
+static bool      isAssignment(CallExpr* callExpr);
+static bool      isSimpleAssignment(CallExpr* callExpr);
+static bool      isCompoundAssignment(CallExpr* callExpr);
 
 /************************************* | **************************************
 *                                                                             *
@@ -209,7 +217,9 @@ private:
 
                   IterState();
 
-  bool            startsInPhase1(FnSymbol* fn)                           const;
+  bool            startsInPhase1(FnSymbol*  fn)                          const;
+  bool            startsInPhase1(BlockStmt* block)                       const;
+
   DefExpr*        firstField(FnSymbol* fn)                               const;
 
   FnSymbol*       mFn;
@@ -314,9 +324,50 @@ DefExpr* IterState::currField() const {
 }
 
 bool IterState::startsInPhase1(FnSymbol* fn) const {
-  InitStyle initStyle = findInitStyle(fn);
+  return startsInPhase1(fn->body);
+}
 
-  return initStyle != STYLE_NONE ? true : false;
+bool IterState::startsInPhase1(BlockStmt* block) const {
+  Expr* stmt   = block->body.head;
+  bool  retval = false;
+
+  while (stmt != NULL && retval == false) {
+    if (isDefExpr(stmt) == true) {
+      stmt = stmt->next;
+
+    } else if (CallExpr* callExpr = toCallExpr(stmt)) {
+      if (isInitStmt(callExpr) == true) {
+        retval = true;
+
+      } else {
+        stmt = stmt->next;
+      }
+
+    } else if (CondStmt* cond = toCondStmt(stmt)) {
+      if (startsInPhase1(cond->thenStmt) == true) {
+        retval = true;
+
+      } else if (cond->elseStmt                 != NULL &&
+                 startsInPhase1(cond->elseStmt) == true) {
+        retval = true;
+
+      } else {
+        stmt = stmt->next;
+      }
+
+    } else if (BlockStmt* block = toBlockStmt(stmt)) {
+      if (startsInPhase1(block) == true) {
+        retval = true;
+      } else {
+        stmt   = stmt->next;
+      }
+
+    } else {
+      stmt = stmt->next;
+    }
+  }
+
+  return retval;
 }
 
 DefExpr* IterState::firstField(FnSymbol* fn) const {
@@ -364,7 +415,6 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* start);
 
 static CallExpr* createCallToSuperInit(FnSymbol* fn);
 
-static bool      isInitStmt(Expr* stmt);
 static bool      isSuperInit(Expr* stmt);
 static bool      isThisInit(Expr* stmt);
 
@@ -433,6 +483,7 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
+      // Stmt is super.init() or this.init()
       if (isInitStmt(callExpr) == true) {
         if (state.isPhase2() == true) {
           INT_ASSERT(false);
@@ -449,14 +500,37 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
           }
 
         } else if (state.inCondStmt() == true) {
-          INT_ASSERT(false);
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of super.init() in a conditional stmt in phase 1");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of this.init() in a conditional stmt in phase 1");
+
+          } else {
+            INT_ASSERT(false);
+          }
 
         } else {
           stmt = state.completePhase1(stmt);
         }
 
+      // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
         if (state.isPhase2() == true) {
+          if (field->sym->hasFlag(FLAG_CONST) == true) {
+            USR_FATAL(stmt,
+                      "cannot update a const field, \"%s\", in phase 2",
+                      field->sym->name);
+          }
+
+        } else if (isCompoundAssignment(callExpr) == true) {
+          USR_FATAL(stmt,
+                    "cannot apply compound assignment to field \"%s\" "
+                    "in phase 1",
+                    field->sym->name);
+
 
         } else if (state.isFieldReinitialized(field) == true) {
           USR_FATAL(stmt,
@@ -481,12 +555,14 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
 
         stmt = stmt->next;
 
+      // Stmt is assignment to a super field
       } else if (DefExpr* field = toSuperFieldInit(state.type(), callExpr)) {
         USR_FATAL(stmt,
                   "can't set value of field \"%s\" from parent type "
                   "during phase 1 of initialization",
                   field->sym->name);
 
+      // No action required
       } else {
         stmt = stmt->next;
       }
@@ -838,7 +914,7 @@ static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
   DefExpr* retval = NULL;
 
   // The outer call has assignment syntax
-  if (at != NULL && callExpr->isNamed("=") == true) {
+  if (at != NULL && isAssignment(callExpr) == true) {
     if (CallExpr* lhs = toCallExpr(callExpr->get(1))) {
 
       // The inner call has dot syntax
@@ -890,6 +966,50 @@ static CallExpr* createFieldAccess(FnSymbol* fn, DefExpr* field) {
   Symbol*            name  = new_CStringSymbol(field->sym->name);
 
   return new CallExpr(dot, _this, name);
+}
+
+static bool isAssignment(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (isSimpleAssignment(callExpr)   == true ||
+      isCompoundAssignment(callExpr) == true) {
+    retval = true;
+  }
+
+  return retval;
+}
+
+static bool isSimpleAssignment(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (callExpr->isNamed("=") == true) {
+    retval = true;
+  }
+
+  return retval;
+}
+
+static bool isCompoundAssignment(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (callExpr->isNamed("+=")  == true ||
+      callExpr->isNamed("+=")  == true ||
+      callExpr->isNamed("-=")  == true ||
+      callExpr->isNamed("*=")  == true ||
+      callExpr->isNamed("/=")  == true ||
+      callExpr->isNamed("**=") == true ||
+      callExpr->isNamed("%=")  == true ||
+      callExpr->isNamed("&=")  == true ||
+      callExpr->isNamed("|=")  == true ||
+      callExpr->isNamed("^=")  == true ||
+      callExpr->isNamed("&&=") == true ||
+      callExpr->isNamed("||=") == true ||
+      callExpr->isNamed("<<=") == true ||
+      callExpr->isNamed(">>=") == true) {
+    retval = true;
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
