@@ -2,6 +2,184 @@
 Release Changes List
 ====================
 
+stopped at 5a6476a
+
+TODO:
+* query-replace docs/latest to docs/master
+
+==============
+version 1.15.0
+==============
+
+Eighteenth public release of Chapel, April 6, 2017
+
+Highlights (see subsequent sections for more details)
+-----------------------------------------------------
+
+Packaging
+---------
+* extended the Docker image to include a GASNet-based configuration
+* moved object files for the compiler and runtime into $CHPL_HOME/build
+
+Configuration Changes
+---------------------
+* extended CHPL_LLVM to support new modes: llvm-minimal and system[-minimal]
+  (see TODO)
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+* improved 'require' statements to accept 'param' strings
+  (see TODO: bradc document)
+* we now only process 'require' statements in code that is active
+  (see TODO: bradc document)
+* made functions return array expressions by-value by default
+  (see TODO)
+* made tuple semantics more closely follow the behavior of their element types
+  (see TODO)
+* removed support for having first-class functions capture outer variables
+* added support for casts between c_void_ptr and class objects/c_string
+
+Syntactic/Naming Changes
+------------------------
+
+New Features
+------------
+* added initial support for copy initializers
+
+Feature Improvements
+--------------------
+* improved the default hash functions used by associative domains
+* reduced opportunities for races on set operations for associative arrays
+
+Interoperability Improvements
+-----------------------------
+
+Standard Modules/Library
+------------------------
+* added support for passing comparators to the domain.sorted() iterator
+  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=sorted#ChapelArray.sorted)
+
+Package Modules
+---------------
+* improved support for the 'MatrixMarket' module
+  (see )
+
+Domain Maps (Layouts and Distributions)
+---------------------------------------
+
+Performance Optimizations/Improvements
+--------------------------------------
+* improved the performance of casts from strings to numeric types
+* improved support for remote value forwarding to handle more cases
+
+Memory Improvements
+-------------------
+* fixed most memory leaks caused by arrays, domains, and domain maps
+
+Example Codes
+-------------
+* made readability and correctness improvements to our 'pidigits' benchmark
+* fixed an off-by-one error in our 'binarytrees' benchmark
+* made a number of LCALS cleanups and fixes including support for a SPMD mode
+* made a number of improvements to our 'fasta' benchmark for speed and clarity
+* added missing Makefiles and fixed support for 'make -j'
+
+Tool Changes
+------------
+
+Documentation
+-------------
+* documented added dim() and dims() on arrays
+  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=dims#ChapelArray.dims)
+* strived to clarify QUICKSTART instructions
+  (see $CHPL_HOME/QUICKSTART.rst)
+* updated documents to refer to install.html rather than download.html
+* added an indication that IO is a module that is used by default
+* improved the Docker README information
+
+Compiler Flags (see 'man chpl' for details)
+-------------------------------------------
+* added a '--[no-]print-callgraph flag to print a Chapel program's callgraph
+
+Portability Improvements
+------------------------
+
+Cray-specific Changes
+---------------------
+
+Syntax Highlighting
+-------------------
+
+Error Message Improvements
+--------------------------
+* removed warnings for serialized assignments in some cases
+
+Runtime Error Checks
+--------------------
+
+Bug Fixes
+---------
+* fixed a bug in reading null bytes into strings when lengths are specified
+
+Launchers
+---------
+
+Runtime Library Changes
+-----------------------
+* changed our use of qthreads to initialize them in detached state
+
+Generated Code
+--------------
+
+Third-Party Software Changes
+----------------------------
+* updated to GASNet 1.28.0
+* updated to jemalloc 4.4.0
+
+Testing System
+--------------
+* added a '-dirs' option to paratest.server to specify directories to test
+
+Removal of Deprecated Features
+------------------------------
+* removed deprecated functions from the 'Sort' and 'Search' modules
+
+Developer-oriented changes: Module changes
+------------------------------------------
+* moved c_void_ptr comparisons from CPtr to ChapelBase
+* added 'export' to locale model routines to avoid widening arguments
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+* made PRIM_GETCID return an int(32) rather than a bool
+* replaced four FnSymbol fields and a flag with a std::map
+* improved the compiler's verification pass
+* udpated the compiler's representation of 'ref' types to use qualified types
+* fiexd a segfault in list_ast() for type-less symbols
+* changed more compiler data structures over to their STL equivalents
+* made PRIM_WIDE_GET_ADDR return a c_void_ptr
+* each symbol now stores a list of associated SymExprs
+* made some fixes to for_vector, for_set, and for_queue
+* fixed a bug in getVisibleFunctions relating to forall intents
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+* fixed some issues in how privatization works
+* updated some interfaces to use c_nodeid_t rather than int32_t
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+
+Developer-oriented changes: Third-party improvements
+----------------------------------------------------
+
+
 ==============
 version 1.14.0
 ==============
