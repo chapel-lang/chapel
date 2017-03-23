@@ -1192,7 +1192,7 @@ module ChapelArray {
    /* Returns a tuple of ``idxType`` describing the size of each dimension.
       For a sparse domain, returns the shape of the parent domain.*/
     proc shape where isRectangularDom(this) || isSparseDom(this) {
-      var s: rank*(idxType);
+      var s: rank*(dim(1).idxType);
       for (i, r) in zip(1..s.size, dims()) do
         s(i) = r.size;
       return s;
@@ -1201,7 +1201,7 @@ module ChapelArray {
     pragma "no doc"
     /* Associative and Opaque domains assumed to be 1-D. */
     proc shape where isAssociativeDom(this) || isOpaqueDom(this) {
-      var s: (idxType,);
+      var s: (size.type,);
       s[1] = size;
       return s;
     }
