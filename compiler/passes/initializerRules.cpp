@@ -366,6 +366,7 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn);
 
 static bool      isInitStmt(Expr* stmt);
 static bool      isSuperInit(Expr* stmt);
+static bool      isThisInit(Expr* stmt);
 
 static void preNormalizeNonGenericInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
@@ -439,8 +440,12 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
         } else if (state.inLoopBody() == true) {
           if (isSuperInit(callExpr) == true) {
             USR_FATAL(stmt, "use of super.init() call in loop body");
-          } else {
+
+          } else if (isThisInit(callExpr) == true) {
             USR_FATAL(stmt, "use of this.init() call in loop body");
+
+          } else {
+            INT_ASSERT(false);
           }
 
         } else if (state.inCondStmt() == true) {
@@ -539,6 +544,10 @@ static bool isInitStmt(Expr* stmt) {
 
 static bool isSuperInit(Expr* stmt) {
   return findInitStyle(stmt) == STYLE_SUPER_INIT ? true : false;
+}
+
+static bool isThisInit(Expr* stmt) {
+  return findInitStyle(stmt) == STYLE_THIS_INIT  ? true : false;
 }
 
 /************************************* | **************************************
@@ -803,20 +812,84 @@ static void fieldInitTypeInference(Expr*     stmt,
 
 /************************************* | **************************************
 *                                                                             *
+* Determine if the callExpr represents an initialization for a field i.e.     *
 *                                                                             *
+*   call("=", call(".", <this>, <fieldName>), <value>);                       *
+*                                                                             *
+* If so return the field                                                      *
 *                                                                             *
 ************************************** | *************************************/
 
+static DefExpr* fieldByName(AggregateType* at, const char* name);
+
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
+  forv_Vec(Type, t, at->dispatchParents) {
+    AggregateType* pt = toAggregateType(t);
+
+    if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
+      return field;
+    }
+  }
+
   return NULL;
 }
 
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
-  return NULL;
+  DefExpr* retval = NULL;
+
+  // The outer call has assignment syntax
+  if (at != NULL && callExpr->isNamed("=") == true) {
+    if (CallExpr* lhs = toCallExpr(callExpr->get(1))) {
+
+      // The inner call has dot syntax
+      if (lhs->isNamed(".") == true) {
+        SymExpr* base = toSymExpr(lhs->get(1));
+        SymExpr* name = toSymExpr(lhs->get(2));
+
+        if (base != NULL && name != NULL) {
+          VarSymbol* var = toVarSymbol(name->symbol());
+
+          // The base is <this> and the slot is a fieldName
+          if (base->symbol()->hasFlag(FLAG_ARG_THIS) == true &&
+
+              var                                    != NULL &&
+              var->immediate                         != NULL &&
+              var->immediate->const_kind             == CONST_KIND_STRING) {
+            retval = fieldByName(at, var->immediate->v_string);
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+// Return the field with the given name
+static DefExpr* fieldByName(AggregateType* at, const char* name) {
+  Expr*    currField = at->fields.head;
+  DefExpr* retval    = NULL;
+
+  while (currField != NULL && retval == NULL) {
+    DefExpr*   defExpr = toDefExpr(currField);
+    VarSymbol* var     = toVarSymbol(defExpr->sym);
+
+    if (strcmp(var->name, name) == 0) {
+      retval    = defExpr;
+    } else {
+      currField = currField->next;
+    }
+  }
+
+  return retval;
 }
 
 static CallExpr* createFieldAccess(FnSymbol* fn, DefExpr* field) {
-  return NULL;
+  UnresolvedSymExpr* dot   = new UnresolvedSymExpr(".");
+  Symbol*            _this = fn->_this;
+  Symbol*            name  = new_CStringSymbol(field->sym->name);
+
+  return new CallExpr(dot, _this, name);
 }
 
 /************************************* | **************************************
