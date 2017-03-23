@@ -68,10 +68,8 @@ record voidRecord {
   }
 }
 
-/*
-  ``vr1`` doesn't contain the fields ``impl2Var1`` or ``impl2Var2``
-  ``vr2`` doesn't contain the fields ``impl1Var1`` or ``impl1Var2``
-*/
+// - ``vr1`` doesn't contain the fields ``impl2Var1`` or ``impl2Var2``
+// - ``vr2`` doesn't contain the fields ``impl1Var1`` or ``impl1Var2``
 var vr1 = new voidRecord(useImpl2=false),
     vr2 = new voidRecord(useImpl2=true);
 
