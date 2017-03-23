@@ -166,6 +166,9 @@ static void      fieldInitFromField(Expr*     insertBefore,
                                     FnSymbol* fn,
                                     DefExpr*  field);
 
+static DefExpr*  toSuperFieldInit(AggregateType* at, CallExpr* callExpr);
+static DefExpr*  toLocalFieldInit(AggregateType* at, CallExpr* callExpr);
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -355,8 +358,186 @@ void IterState::fieldInitFromInitStmt(DefExpr* field, CallExpr* callExpr) {
 *                                                                             *
 ************************************** | *************************************/
 
+static IterState preNormalize(BlockStmt* block, IterState state);
+static IterState preNormalize(BlockStmt* block, IterState state, Expr* start);
+
+static CallExpr* createCallToSuperInit(FnSymbol* fn);
+
+static bool      isInitStmt(Expr* stmt);
+static bool      isSuperInit(Expr* stmt);
+
 static void preNormalizeNonGenericInit(FnSymbol* fn) {
-  preNormalizeGenericInit(fn);
+  AggregateType* at = toAggregateType(fn->_this->type);
+  IterState      state(fn);
+
+  // This implies the body contains at least one instance of super.init()
+  // and/or this.init() i.e. the body is not empty and we do not need to
+  // insert super.init()
+  if (state.isPhase1() == true) {
+    preNormalize(fn->body, state);
+
+  // 1) Insert super.init()
+  // 2) Insert field initializers before super.init()
+  // 3) Pre-normalize the phase2 statements
+  } else if (isClass(at) == true) {
+    CallExpr* superInit = createCallToSuperInit(fn);
+
+    fn->body->insertAtHead(superInit);
+
+    state.initializeFieldsBefore(superInit);
+
+    preNormalize(fn->body, state, superInit->next);
+
+  // 1) Insert field initializers before the first statement
+  // 2) Pre-normalize the phase2 statements
+  } else if (isRecord(at) == true && fn->body->body.head != NULL) {
+    Expr* head = fn->body->body.head;
+
+    state.initializeFieldsBefore(head);
+
+    preNormalize(fn->body, state, head);
+
+  // A degenerate initializer with no body
+  // 1) Insert a NO-OP as an anchor
+  // 2) Insert field initializers before the NO-OP
+  // 3) Remove the NO-OP
+  } else if (isRecord(at) == true && fn->body->body.head == NULL) {
+    Expr* noop = new CallExpr(PRIM_NOOP);
+
+    state.initializeFieldsBefore(noop);
+
+    noop->remove();
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  // If this is a non-generic class then create a type method
+  // to wrap this initializer
+  if (isClass(at) == true && at->isGeneric() == false) {
+    buildClassAllocator(fn);
+
+    fn->addFlag(FLAG_INLINE);
+  }
+}
+
+static IterState preNormalize(BlockStmt* block, IterState state) {
+  return preNormalize(block, state, block->body.head);
+}
+
+static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
+  while (stmt != NULL) {
+    if (isDefExpr(stmt) == true) {
+      stmt = stmt->next;
+
+    } else if (CallExpr* callExpr = toCallExpr(stmt)) {
+      if (isInitStmt(callExpr) == true) {
+        if (state.isPhase2() == true) {
+          INT_ASSERT(false);
+
+        } else if (state.inLoopBody() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of super.init() call in loop body");
+          } else {
+            USR_FATAL(stmt, "use of this.init() call in loop body");
+          }
+
+        } else if (state.inCondStmt() == true) {
+          INT_ASSERT(false);
+
+        } else {
+          stmt = state.completePhase1(stmt);
+        }
+
+      } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
+        if (state.isPhase2() == true) {
+
+        } else if (state.isFieldReinitialized(field) == true) {
+          USR_FATAL(stmt,
+                    "multiple initializations of field \"%s\"",
+                    field->sym->name);
+
+        } else if (state.inLoopBody() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside a "
+                    "loop during phase 1 of initialization",
+                    field->sym->name);
+
+        } else if (state.inCondStmt() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside a "
+                    "conditional during phase 1 of initialization",
+                    field->sym->name);
+
+        } else {
+          state.fieldInitFromInitStmt(field, callExpr);
+        }
+
+        stmt = stmt->next;
+
+      } else if (DefExpr* field = toSuperFieldInit(state.type(), callExpr)) {
+        USR_FATAL(stmt,
+                  "can't set value of field \"%s\" from parent type "
+                  "during phase 1 of initialization",
+                  field->sym->name);
+
+      } else {
+        stmt = stmt->next;
+      }
+
+    } else if (CondStmt* cond = toCondStmt(stmt)) {
+      // Focus on phase 1
+      if (state.isPhase1() == true) {
+        preNormalize(cond->thenStmt, IterState(cond, state));
+
+        if (cond->elseStmt != NULL) {
+          preNormalize(cond->elseStmt, IterState(cond, state));
+        }
+      }
+
+      stmt = stmt->next;
+
+    } else if (LoopStmt* loop = toLoopStmt(stmt)) {
+      // Focus on phase 1
+      if (state.isPhase1() == true) {
+        preNormalize((BlockStmt*) stmt, IterState(loop, state));
+      }
+
+      stmt = stmt->next;
+
+    } else if (BlockStmt* block = toBlockStmt(stmt)) {
+      state = preNormalize(block, state);
+      stmt  = stmt->next;
+
+    } else {
+      // Focus on phase 1
+      if (state.isPhase1() == true) {
+        INT_ASSERT(false);
+      }
+
+      stmt = stmt->next;
+    }
+  }
+
+  return state;
+}
+
+// Pre-normalized call to the function super.init with no arguments
+static CallExpr* createCallToSuperInit(FnSymbol* fn) {
+  Symbol*   superSym  = new_CStringSymbol("super");
+  CallExpr* superCall = new CallExpr(".", fn->_this, superSym);
+
+  Symbol*   initSym   = new_CStringSymbol("init");
+
+  return new CallExpr(new CallExpr(".", superCall, initSym));
+}
+
+static bool isInitStmt(Expr* stmt) {
+  return findInitStyle(stmt) != STYLE_NONE       ? true : false;
+}
+
+static bool isSuperInit(Expr* stmt) {
+  return findInitStyle(stmt) == STYLE_SUPER_INIT ? true : false;
 }
 
 /************************************* | **************************************
@@ -375,6 +556,20 @@ static void fieldInitFromField(Expr*     insertBefore,
                                FnSymbol* fn,
                                DefExpr*  field) {
 
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
+  return NULL;
+}
+
+static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
+  return NULL;
 }
 
 /************************************* | **************************************
