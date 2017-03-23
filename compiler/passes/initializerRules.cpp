@@ -41,7 +41,7 @@ static InitStyle findInitStyle(FnSymbol* fn);
 static InitStyle findInitStyle(Expr*     expr);
 
 
-
+static void      preNormalizeGenericInit(FnSymbol* fn);
 
 /************************************* | **************************************
 *                                                                             *
@@ -188,6 +188,17 @@ void preNormalizeInitMethod(FnSymbol* fn) {
     USR_FATAL(fn, "an initializer cannot return a non-void result");
 
   } else {
+    preNormalizeGenericInit(fn);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void preNormalizeGenericInit(FnSymbol* fn) {
     AggregateType* at        = toAggregateType(fn->_this->type);
     InitStyle      initStyle = findInitStyle(fn);
 
@@ -249,7 +260,6 @@ void preNormalizeInitMethod(FnSymbol* fn) {
 
       fn->addFlag(FLAG_INLINE);
     }
-  }
 }
 
 /************************************* | **************************************
