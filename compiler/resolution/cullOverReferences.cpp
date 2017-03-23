@@ -2003,12 +2003,21 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 
         if (actual->qualType().isConst() && ! formal->qualType().isConst()) {
 
-          // But... it's OK if we're calling a function marked
+          // But... there are exceptions
+
+          // If the formal intent is INTENT_REF_MAYBE_CONST,
+          // earlier cullOverReferences should have changed it
+          // to INTENT_REF or INTENT_CONST_REF. If not, it's something
+          // that was ignored by earlier portions of this pass.
+          if (formal->intent == INTENT_REF_MAYBE_CONST) {
+            // OK, not an error
+
+          // it's OK if we're calling a function marked
           // FLAG_REF_TO_CONST_WHEN_CONST_THIS and the result is
           // marked const. In that case, we pretend that the `this`
           // argument would be marked const too.
-          if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
-              formal->hasFlag(FLAG_ARG_THIS)) {
+          } else if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
+                     formal->hasFlag(FLAG_ARG_THIS)) {
             CallExpr* move = toCallExpr(call->parentExpr);
             if (move && move->isPrimitive(PRIM_MOVE)) {
               SymExpr* lhs = toSymExpr(move->get(1));
@@ -2020,11 +2029,12 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
               else
                 error = true; // l-value error
             }
+
           // Or, if passing a 'const' thing into an 'in' formal,
           // that's OK
           } else if (formal->intent == INTENT_IN &&
                      !formal->type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
-            // OK
+            // OK, not an error
           } else {
             error = true;
           }
