@@ -78,7 +78,7 @@ module LocaleModelHelpSetup {
   proc helpSetupRootLocaleNUMA(dst:RootLocale) {
     var root_accum:chpl_root_locale_accum;
 
-    forall locIdx in dst.chpl_initOnLocales() {
+    forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_any);
       const node = new LocaleModel(dst);
       dst.myLocales[locIdx] = node;
