@@ -1959,6 +1959,21 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
     }
 }
 
+static bool isTupleOfTuples(Type* t)
+{
+  AggregateType* at = toAggregateType(t->getValType());
+
+  if (at && at->symbol->hasFlag(FLAG_TUPLE)) {
+    for_fields(field, at) {
+      if (field->getValType()->symbol->hasFlag(FLAG_TUPLE))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+
 static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
 {
   // First, figure out the module and function it's in
@@ -2000,7 +2015,6 @@ static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
 
   *lastPrintedReason = reason;
 }
-
 
 /* Since const-checking can depend on ref-pair determination
    or upon the determination of whether an array formal with
@@ -2069,9 +2083,6 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
         FnSymbol* inFn = call->parentSymbol->getFunction();
 
         // Ignore errors in functions marked with FLAG_SUPPRESS_LVALUE_ERRORS.
-        // e.g. _getIterator is marked so; this seems to be needed for e.g.
-        //   const tup = (("a", 1), ("b", 2));
-        //   for x in tup { writeln(x); }
         if (inFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
           error = false;
 
@@ -2079,6 +2090,13 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
         if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
             (calledFn->hasFlag(FLAG_CONSTRUCTOR) &&
              calledFn->retType->symbol->hasFlag(FLAG_TUPLE)))
+          error = false;
+
+        // For now, ignore errors with tuples-of-tuples.
+        // Otherwise errors with e.g.
+        //   const tup = (("a", 1), ("b", 2));
+        //   for x in tup { writeln(x); }
+        if (isTupleOfTuples(formal->type))
           error = false;
 
         // For now, ignore errors with default constructors
