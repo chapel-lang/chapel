@@ -1595,6 +1595,10 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
     initCall = new CallExpr("init", gMethodToken, newInstance);
   }
 
+  if (initMethod->where != NULL) {
+    fn->where = initMethod->where->copy();
+  }
+
   type->addFlag(FLAG_TYPE_VARIABLE);
 
   fn->addFlag(FLAG_METHOD);
@@ -1620,6 +1624,12 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
       fn->insertFormalAtTail(arg);
       initCall->insertAtTail(new SymExpr(arg));
+
+      // Don't want to be referencing the argument in the initializer, want to
+      // reference our new argument.
+      if (fn->where != NULL) {
+        subSymbol(fn->where, formal, arg);
+      }
     }
 
     count = count + 1;
