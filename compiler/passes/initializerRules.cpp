@@ -546,15 +546,74 @@ static bool isSuperInit(Expr* stmt) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void fieldInitTypeWoutInit(Expr*     stmt,
+                                  FnSymbol* fn,
+                                  DefExpr*  field);
+
+static void fieldInitTypeWithInit(Expr*     stmt,
+                                  FnSymbol* fn,
+                                  DefExpr*  field,
+                                  Expr*     initExpr);
+
+static void fieldInitTypeInference(Expr*     insertBefore,
+                                   FnSymbol* fn,
+                                   DefExpr*  field,
+                                   Expr*     initExpr);
+
 static void fieldInitFromStmt(CallExpr* stmt,
                               FnSymbol* fn,
                               DefExpr*  field) {
+  if (field->exprType != NULL) {
+    fieldInitTypeWithInit (stmt, fn, field, stmt->get(2));
 
+  } else {
+    fieldInitTypeInference(stmt, fn, field, stmt->get(2));
+  }
 }
 
 static void fieldInitFromField(Expr*     insertBefore,
                                FnSymbol* fn,
                                DefExpr*  field) {
+  if        (field->exprType == NULL && field->init == NULL) {
+    INT_ASSERT(false);
+
+  } else if (field->exprType != NULL && field->init == NULL) {
+    fieldInitTypeWoutInit(insertBefore, fn, field);
+
+  } else if (field->exprType != NULL && field->init != NULL) {
+    fieldInitTypeWithInit(insertBefore, fn, field, field->init);
+
+  } else if (field->exprType == NULL && field->init != NULL) {
+    fieldInitTypeInference(insertBefore, fn, field, field->init);
+
+  } else {
+    INT_ASSERT(false);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void fieldInitTypeWoutInit(Expr*     stmt,
+                                  FnSymbol* fn,
+                                  DefExpr*  field) {
+
+}
+
+static void fieldInitTypeWithInit(Expr*     stmt,
+                                  FnSymbol* fn,
+                                  DefExpr*  field,
+                                  Expr*     initExpr) {
+
+}
+
+static void fieldInitTypeInference(Expr*     insertBefore,
+                                   FnSymbol* fn,
+                                   DefExpr*  field,
+                                   Expr*     initExpr) {
 
 }
 
