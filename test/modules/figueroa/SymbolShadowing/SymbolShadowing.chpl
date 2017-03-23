@@ -10,9 +10,9 @@ proc main () {
   // Each point consists of two coordinates.
   const numberOfPoints = arraySize/2;
   var r = Random (),
-      rArray: [1..arraySize] real,
-      x => rArray[1..numberOfPoints],
-      y => rArray[numberOfPoints+1 ..];
+      rArray: [1..arraySize] real;
+  ref x = rArray[1..numberOfPoints],
+      y = rArray[numberOfPoints+1 ..];
   // Fill rArray with random numbers between 0 and 1.
   rArray = r.RandomNumber(arraySize);
   // Count how many points fall within the unit circle.

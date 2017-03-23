@@ -280,27 +280,6 @@ proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
   return result;
 }
 
-proc BlockCyclic1dom.dsiBuildRectangularDom1d(DD,
-                                   param stridable:bool,
-                                   rangeArg: range(idxType,
-                                                   BoundedRangeType.bounded,
-                                                   stridable))
-{
-  // There does not seem to be any optimizations from merging the two calls.
-  const result = DD.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
-  result.dsiSetIndices1d(rangeArg);
-  return result;
-}
-
-proc BlockCyclic1locdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
-  assert(locId == this.locId);
-  // There does not seem to be any optimizations from merging the two calls.
-  const newLocDD = newGlobDD.dsiNewLocalDom1d(this.stoIndexT, locId);
-  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
-  return (newLocDD, newStoRng);
-}
-
-
 /////////////////////////////////
 
 /* The following comment:

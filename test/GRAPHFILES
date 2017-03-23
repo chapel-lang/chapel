@@ -25,6 +25,7 @@ studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/nbody/nbody.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/regex-dna/regexdna.graph
+studies/shootout/regexdna-redux/regexdna-redux.graph
 studies/shootout/reverse-complement/revcomp.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/thread-ring/thread-ring.graph
@@ -53,6 +54,7 @@ studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/nbody/nbody.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/regex-dna/regexdna.graph
+studies/shootout/regexdna-redux/regexdna-redux.graph
 studies/shootout/reverse-complement/revcomp.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/thread-ring/thread-ring.graph
@@ -127,6 +129,7 @@ studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/nbody/nbody.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/regex-dna/regexdna.graph
+studies/shootout/regexdna-redux/regexdna-redux.graph
 studies/shootout/reverse-complement/revcomp.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/thread-ring/thread-ring.graph
@@ -141,6 +144,7 @@ studies/shootout/submitted/meteor-submitted.graph
 studies/shootout/submitted/nbody-submitted.graph
 studies/shootout/submitted/pidigits-submitted.graph
 studies/shootout/submitted/regexdna-submitted.graph
+studies/shootout/submitted/regexdnaredux-submitted.graph
 studies/shootout/submitted/revcomp-submitted.graph
 studies/shootout/submitted/spectralnorm-submitted.graph
 studies/shootout/submitted/threadring-submitted.graph

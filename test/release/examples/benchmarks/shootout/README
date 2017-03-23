@@ -23,6 +23,7 @@ At present, this directory contains the following codes:
     pidigits.chpl       : Computes digits of pi using bigints (if available)
     pidigits-fast.chpl  : An optimized version of the above
     regexdna.chpl       : Performs DNA matching
+    regexdna-redux.chpl : Performs DNA matching
     revcomp.chpl        : Calculate the strand to bind with a given DNA strand
     spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
     threadring.chpl     : Passes a token between a large number of threads
@@ -211,6 +212,11 @@ o tmp1/tmp2 could be declared in extract_digit(), but with a
 
 regexdna
 --------
+o no current TODOs
+
+
+regexdna-redux
+--------------
 o no current TODOs
 
 

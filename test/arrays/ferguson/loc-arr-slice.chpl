@@ -18,26 +18,26 @@ proc badReturnSliceByRef(A: []) ref {
 
 proc badReturnAliasLocal() {
   var A: [1..100] int;
-  var B => A;
+  ref B = A;
   return B;
 }
 
 proc badReturnAliasSliceLocal() {
   var A: [1..100] int;
-  var B => A[1..5];
+  ref B = A[1..5];
   return B;
 }
 
 proc badReturnAliasAliasLocal() {
   var A: [1..100] int;
-  var B => A;
-  var C => B;
+  ref B = A;
+  ref C = B;
   return C;
 }
 
 proc badReturnSliceSliceLocal() {
   var A: [1..100] int;
-  var B => A[1..5];
+  ref B = A[1..5];
   return B[1..2];
 }
 

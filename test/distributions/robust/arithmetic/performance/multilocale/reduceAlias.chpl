@@ -6,7 +6,7 @@ const n = next()-1;
 
 resetCommDiagnostics();
 startCommDiagnostics();
-var AA => A;
+ref AA = A;
 stopCommDiagnostics();
 writeln(getCommDiagnostics());
 resetCommDiagnostics();

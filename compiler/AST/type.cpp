@@ -1885,6 +1885,7 @@ bool isPrimitiveScalar(Type* type) {
       type == dtBools[BOOL_SIZE_16]        ||
       type == dtBools[BOOL_SIZE_32]        ||
       type == dtBools[BOOL_SIZE_64]        ||
+      type == dtBools[BOOL_SIZE_SYS]       ||
 
       type == dtInt[INT_SIZE_8]            ||
       type == dtInt[INT_SIZE_16]           ||
@@ -1915,8 +1916,8 @@ bool isNonGenericClass(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isGeneric()                  == false &&
-        at->isClass()                    ==  true &&
+    if (at->isClass()                    ==  true &&
+        at->isGeneric()                  == false &&
         at->symbol->hasFlag(FLAG_EXTERN) == false) {
       retval = true;
     }
@@ -1928,24 +1929,35 @@ bool isNonGenericClass(Type* type) {
 bool isNonGenericClassWithInitializers(Type* type) {
   bool retval = false;
 
+  if (isNonGenericClass(type) == true) {
+    if (AggregateType* at = toAggregateType(type)) {
+      retval = at->initializerStyle == DEFINES_INITIALIZER;
+    }
+  }
+
+  return retval;
+}
+
+bool isNonGenericRecord(Type* type) {
+  bool retval = false;
+
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isGeneric()      == false &&
-        at->isClass()        == true  &&
-        at->initializerStyle == DEFINES_INITIALIZER) {
+    if (at->isRecord()                   == true  &&
+        at->isGeneric()                  == false &&
+        at->symbol->hasFlag(FLAG_EXTERN) == false) {
       retval = true;
     }
   }
 
   return retval;
 }
+
 bool isNonGenericRecordWithInitializers(Type* type) {
   bool retval = false;
 
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->isGeneric()      == false &&
-        at->isRecord()       == true  &&
-        at->initializerStyle == DEFINES_INITIALIZER) {
-      retval = true;
+  if (isNonGenericRecord(type) == true) {
+    if (AggregateType* at = toAggregateType(type)) {
+      retval = at->initializerStyle == DEFINES_INITIALIZER;
     }
   }
 

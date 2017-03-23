@@ -4,7 +4,7 @@ var A: [D] int;
 for (i,j) in D do
   A(i,j) = 4 + 5*i + j;
 
-var AA: [7..9,7..9] => A[2..4,2..4];
+ref AA = A[2..4,2..4].reindex({7..9, 7..9});
 
 AA(8,8) = 99;
 

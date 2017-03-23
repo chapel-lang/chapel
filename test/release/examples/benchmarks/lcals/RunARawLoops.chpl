@@ -17,11 +17,11 @@ module RunARawLoops {
           when LoopKernelID.PRESSURE_CALC {
             loopInit(iloop, stat);
 
-            var compression => loop_data.RealArray_1D[0];
-            var bvc => loop_data.RealArray_1D[1];
-            var p_new => loop_data.RealArray_1D[2];
-            var e_old => loop_data.RealArray_1D[3];
-            var vnewc => loop_data.RealArray_1D[4];
+            ref compression = loop_data.RealArray_1D[0];
+            ref bvc = loop_data.RealArray_1D[1];
+            ref p_new = loop_data.RealArray_1D[2];
+            ref e_old = loop_data.RealArray_1D[3];
+            ref vnewc = loop_data.RealArray_1D[4];
 
             const cls = loop_data.RealArray_scalars[0];
             const p_cut = loop_data.RealArray_scalars[1];
@@ -48,21 +48,21 @@ module RunARawLoops {
           }
           when LoopKernelID.ENERGY_CALC {
             loopInit(iloop, stat);
-            var e_new => loop_data.RealArray_1D[0];
-            var e_old => loop_data.RealArray_1D[1];
-            var delvc => loop_data.RealArray_1D[2];
-            var p_new => loop_data.RealArray_1D[3];
-            var p_old => loop_data.RealArray_1D[4];
-            var q_new => loop_data.RealArray_1D[5];
-            var q_old => loop_data.RealArray_1D[6];
-            var work => loop_data.RealArray_1D[7];
-            var compHalfStep => loop_data.RealArray_1D[8];
-            var pHalfStep => loop_data.RealArray_1D[9];
-            var bvc => loop_data.RealArray_1D[10];
-            var pbvc => loop_data.RealArray_1D[11];
-            var ql_old => loop_data.RealArray_1D[12];
-            var qq_old => loop_data.RealArray_1D[13];
-            var vnewc => loop_data.RealArray_1D[14];
+            ref e_new = loop_data.RealArray_1D[0];
+            ref e_old = loop_data.RealArray_1D[1];
+            ref delvc = loop_data.RealArray_1D[2];
+            ref p_new = loop_data.RealArray_1D[3];
+            ref p_old = loop_data.RealArray_1D[4];
+            ref q_new = loop_data.RealArray_1D[5];
+            ref q_old = loop_data.RealArray_1D[6];
+            ref work = loop_data.RealArray_1D[7];
+            ref compHalfStep = loop_data.RealArray_1D[8];
+            ref pHalfStep = loop_data.RealArray_1D[9];
+            ref bvc = loop_data.RealArray_1D[10];
+            ref pbvc = loop_data.RealArray_1D[11];
+            ref ql_old = loop_data.RealArray_1D[12];
+            ref qq_old = loop_data.RealArray_1D[13];
+            ref vnewc = loop_data.RealArray_1D[14];
 
             const rho0 = loop_data.RealArray_scalars[0];
             const e_cut = loop_data.RealArray_scalars[1];
@@ -134,39 +134,39 @@ module RunARawLoops {
           }
           when LoopKernelID.VOL3D_CALC {
             loopInit(iloop, stat);
-            var x   => loop_data.RealArray_1D[0];
-            var y   => loop_data.RealArray_1D[1];
-            var z   => loop_data.RealArray_1D[2];
-            var vol => loop_data.RealArray_1D[3];
+            ref x   = loop_data.RealArray_1D[0];
+            ref y   = loop_data.RealArray_1D[1];
+            ref z   = loop_data.RealArray_1D[2];
+            ref vol = loop_data.RealArray_1D[3];
 
             var dom = new ADomain(ilength, 3);
 
-            var x0                         => x;
-            var x1: [0..#x0.numElements-1]      => x0[1..];
-            var x2: [0..#x0.numElements-dom.jp] => x0[dom.jp..];
-            var x3: [0..#x1.numElements-dom.jp] => x1[dom.jp..];
-            var x4: [0..#x0.numElements-dom.kp] => x0[dom.kp..];
-            var x5: [0..#x1.numElements-dom.kp] => x1[dom.kp..];
-            var x6: [0..#x2.numElements-dom.kp] => x2[dom.kp..];
-            var x7: [0..#x3.numElements-dom.kp] => x3[dom.kp..];
+            ref x0 = x;
+            ref x1 = x0[1..].reindex({0..#x0.numElements-1});
+            ref x2 = x0[dom.jp..].reindex({0..#x0.numElements-dom.jp});
+            ref x3 = x1[dom.jp..].reindex({0..#x1.numElements-dom.jp});
+            ref x4 = x0[dom.kp..].reindex({0..#x0.numElements-dom.kp});
+            ref x5 = x1[dom.kp..].reindex({0..#x1.numElements-dom.kp});
+            ref x6 = x2[dom.kp..].reindex({0..#x2.numElements-dom.kp});
+            ref x7 = x3[dom.kp..].reindex({0..#x3.numElements-dom.kp});
 
-            var y0                         => y;
-            var y1: [0..#y0.numElements-1]      => y0[1..];
-            var y2: [0..#y0.numElements-dom.jp] => y0[dom.jp..];
-            var y3: [0..#y1.numElements-dom.jp] => y1[dom.jp..];
-            var y4: [0..#y0.numElements-dom.kp] => y0[dom.kp..];
-            var y5: [0..#y1.numElements-dom.kp] => y1[dom.kp..];
-            var y6: [0..#y2.numElements-dom.kp] => y2[dom.kp..];
-            var y7: [0..#y3.numElements-dom.kp] => y3[dom.kp..];
+            ref y0 = y;
+            ref y1 = y0[1..].reindex({0..#y0.numElements-1});
+            ref y2 = y0[dom.jp..].reindex({0..#y0.numElements-dom.jp});
+            ref y3 = y1[dom.jp..].reindex({0..#y1.numElements-dom.jp});
+            ref y4 = y0[dom.kp..].reindex({0..#y0.numElements-dom.kp});
+            ref y5 = y1[dom.kp..].reindex({0..#y1.numElements-dom.kp});
+            ref y6 = y2[dom.kp..].reindex({0..#y2.numElements-dom.kp});
+            ref y7 = y3[dom.kp..].reindex({0..#y3.numElements-dom.kp});
 
-            var z0                         => z;
-            var z1: [0..#z0.numElements-1]      => z0[1..];
-            var z2: [0..#z0.numElements-dom.jp] => z0[dom.jp..];
-            var z3: [0..#z1.numElements-dom.jp] => z1[dom.jp..];
-            var z4: [0..#z0.numElements-dom.kp] => z0[dom.kp..];
-            var z5: [0..#z1.numElements-dom.kp] => z1[dom.kp..];
-            var z6: [0..#z2.numElements-dom.kp] => z2[dom.kp..];
-            var z7: [0..#z3.numElements-dom.kp] => z3[dom.kp..];
+            ref z0 = z;
+            ref z1 = z0[1..].reindex({0..#z0.numElements-1});
+            ref z2 = z0[dom.jp..].reindex({0..#z0.numElements-dom.jp});
+            ref z3 = z1[dom.jp..].reindex({0..#z1.numElements-dom.jp});
+            ref z4 = z0[dom.kp..].reindex({0..#z0.numElements-dom.kp});
+            ref z5 = z1[dom.kp..].reindex({0..#z1.numElements-dom.kp});
+            ref z6 = z2[dom.kp..].reindex({0..#z2.numElements-dom.kp});
+            ref z7 = z3[dom.kp..].reindex({0..#z3.numElements-dom.kp});
 
             const vnormq = 0.083333333333333333;
             ltimer.start();
@@ -229,33 +229,33 @@ module RunARawLoops {
           }
           when LoopKernelID.DEL_DOT_VEC_2D {
             loopInit(iloop, stat);
-            var x    => loop_data.RealArray_1D[0];
-            var y    => loop_data.RealArray_1D[1];
-            var xdot => loop_data.RealArray_1D[2];
-            var ydot => loop_data.RealArray_1D[3];
-            var div  => loop_data.RealArray_1D[4];
+            ref x    = loop_data.RealArray_1D[0];
+            ref y    = loop_data.RealArray_1D[1];
+            ref xdot = loop_data.RealArray_1D[2];
+            ref ydot = loop_data.RealArray_1D[3];
+            ref div  = loop_data.RealArray_1D[4];
 
             var dom = new ADomain(ilength, 2);
 
-            var x4:[0..#(x.numElements)] => x;
-            var x1:[0..#(x.numElements-1)] => x4[1..];
-            var x2:[0..#(x.numElements-1-dom.jp)] => x1[dom.jp..];
-            var x3:[0..#(x.numElements-dom.jp)] => x4[dom.jp..];
+            ref x4 = x.reindex({0..#(x.numElements)});
+            ref x1 = x4[1..].reindex({0..#(x.numElements-1)});
+            ref x2 = x1[dom.jp..].reindex({0..#(x.numElements-1-dom.jp)});
+            ref x3 = x4[dom.jp..].reindex({0..#(x.numElements-dom.jp)});
 
-            var y4:[0..#(y.numElements)] => y;
-            var y1:[0..#(y.numElements-1)] => y4[1..];
-            var y2:[0..#(y.numElements-1-dom.jp)] => y1[dom.jp..];
-            var y3:[0..#(y.numElements-dom.jp)] => y4[dom.jp..];
+            ref y4 = y.reindex({0..#(y.numElements)});
+            ref y1 = y4[1..].reindex({0..#(y.numElements-1)});
+            ref y2 = y1[dom.jp..].reindex({0..#(y.numElements-1-dom.jp)});
+            ref y3 = y4[dom.jp..].reindex({0..#(y.numElements-dom.jp)});
 
-            var fx4:[0..#(xdot.numElements)] => xdot;
-            var fx1:[0..#(xdot.numElements-1)] => fx4[1..];
-            var fx2:[0..#(xdot.numElements-1-dom.jp)] => fx1[dom.jp..];
-            var fx3:[0..#(xdot.numElements-dom.jp)] => fx4[dom.jp..];
+            ref fx4 = xdot.reindex({0..#(xdot.numElements)});
+            ref fx1 = fx4[1..].reindex({0..#(xdot.numElements-1)});
+            ref fx2 = fx1[dom.jp..].reindex({0..#(xdot.numElements-1-dom.jp)});
+            ref fx3 = fx4[dom.jp..].reindex({0..#(xdot.numElements-dom.jp)});
 
-            var fy4:[0..#(ydot.numElements)] => ydot;
-            var fy1:[0..#(ydot.numElements-1)] => fy4[1..];
-            var fy2:[0..#(ydot.numElements-1-dom.jp)] => fy1[dom.jp..];
-            var fy3:[0..#(ydot.numElements-dom.jp)] => fy4[dom.jp..];
+            ref fy4 = ydot.reindex({0..#(ydot.numElements)});
+            ref fy1 = fy4[1..].reindex({0..#(ydot.numElements-1)});
+            ref fy2 = fy1[dom.jp..].reindex({0..#(ydot.numElements-1-dom.jp)});
+            ref fy3 = fy4[dom.jp..].reindex({0..#(ydot.numElements-dom.jp)});
 
             const ptiny = 1.0e-20;
             const half = 0.5;
@@ -293,11 +293,11 @@ module RunARawLoops {
           }
           when LoopKernelID.COUPLE {
             loopInit(iloop, stat);
-            var t0 => loop_data.ComplexArray_1D[0];
-            var t1 => loop_data.ComplexArray_1D[1];
-            var t2 => loop_data.ComplexArray_1D[2];
-            var denac => loop_data.ComplexArray_1D[3];
-            var denlw => loop_data.ComplexArray_1D[4];
+            ref t0 = loop_data.ComplexArray_1D[0];
+            ref t1 = loop_data.ComplexArray_1D[1];
+            ref t2 = loop_data.ComplexArray_1D[2];
+            ref denac = loop_data.ComplexArray_1D[3];
+            ref denlw = loop_data.ComplexArray_1D[4];
 
             var dom = new ADomain(ilength, 3);
 
@@ -362,8 +362,8 @@ module RunARawLoops {
           }
           when LoopKernelID.FIR {
             loopInit(iloop, stat);
-            var output => loop_data.RealArray_1D[0];
-            var input => loop_data.RealArray_1D[1];
+            ref output = loop_data.RealArray_1D[0];
+            ref input = loop_data.RealArray_1D[1];
             const coefflen = 16;
             const coeff = [3.0, -1.0, -1.0, -1.0,
                            -1.0, 3.0, -1.0, -1.0,

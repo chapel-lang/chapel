@@ -266,31 +266,6 @@ proc Block1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
 
 /////////////////////////////////
 
-proc Block1dom.dsiBuildRectangularDom1d(DD,
-                                   param stridable:bool,
-                                   rangeArg: range(idxType,
-                                                   BoundedRangeType.bounded,
-                                                   stridable))
-{
-  // There does not seem to be any optimizations from merging the two calls.
-  type dummy_stoIndexT = int;
-  const result = DD.dsiNewRectangularDom1d(this.idxType, stridable,
-                                           dummy_stoIndexT);
-  result.dsiSetIndices1d(rangeArg);
-  return result;
-}
-
-proc Block1locdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
-  type  old_stoIndexT = this.myRange.idxType; // essentially 'this.stoIndexT'
-
-  const newLocDD = newGlobDD.dsiNewLocalDom1d(old_stoIndexT, locId);
-  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
-
-  return (newLocDD, newStoRng);
-}
-
-/////////////////////////////////
-
 proc Block1dom.dsiStorageUsesUserIndices() param return true;
 
 proc Block1dom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {

@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+"""
+LinearAlgebra requires BLAS module (and will eventually require LAPACK)
+
+Testing BLAS module requires cray-libsci for compiling. The following flags are
+implicitly passed via the back-end 'cc' wrapper:
+
+    -I $CRAY_LIBSCI_PREFIX_DIR/include
+    -L $CRAY_LIBSCI_PREFIX_DIR/lib
+    -l sci_gnu
+
+Since this is a long-running test and Cray machines guarantee BLAS availability,
+we only test on XC, cray-prgenv-gnu target platform, non-whitebox,
+and non-llvm configurations.
+"""
+
+from os import getenv, path
+
+isXC = getenv('CHPL_TARGET_PLATFORM') == 'cray-xc'
+isGNU = 'gnu' in str(getenv('CHPL_TARGET_COMPILER'))
+isWB = not path.exists('/etc/opt/cray/release') or not path.exists('/etc/opt/cray/release/CLEinfo')
+isLLVM = '--llvm' in str(getenv('COMPOPTS'))
+
+if isXC and isGNU and not isWB and not isLLVM:
+  print(False) # Don't skip
+else:
+  print(True) # Do skip

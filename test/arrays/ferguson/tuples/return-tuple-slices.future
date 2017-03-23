@@ -1,0 +1,4 @@
+bug: returning tuple of slices results in compilation error
+
+It should return a tuple of copies of the slices.
+

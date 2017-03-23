@@ -1,2 +1,34 @@
+hpl.hpcc2012.chpl:183: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:219: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:345: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:348: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:349: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:407: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:409: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:503: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:553: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:554: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:588: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:589: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:594: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:608: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:670: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:671: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:764: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:786: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:803: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:804: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:813: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:818: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:841: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:842: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:914: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:915: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:968: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:998: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:1008: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:1033: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:1043: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
+hpl.hpcc2012.chpl:1080: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
 HPL  n 62  blkSize 8  blk/node 4*4  locs 2*2  dPTPL 0
 Validation: success

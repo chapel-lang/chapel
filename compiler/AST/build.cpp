@@ -2130,7 +2130,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
-  fn->insertAtTail("compilerWarning('scan has been serialized (see note in $CHPL_HOME/STATUS)')");
+  fn->insertAtTail("compilerWarning('scan has been serialized (see issue #5760)')");
 
   if( !zippered ) {
     fn->insertAtTail("'return'(chpl__scanIterator(%S, %S))", globalOp, data);

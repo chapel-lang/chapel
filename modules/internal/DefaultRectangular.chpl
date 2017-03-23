@@ -47,9 +47,21 @@ module DefaultRectangular {
 
   inline proc defRectSimpleDData param return !localeModelHasSublocales;
 
+  // helper function to set the types of multi-ddata specific fields
+  // to 'void' when they are not needed
+  proc mdType(type baseType) type {
+    if defRectSimpleDData then
+      return void;
+    else
+      return baseType;
+  }
+
   class DefaultDist: BaseDist {
-    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
-      return new DefaultRectangularDom(rank, idxType, stridable, this);
+    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+      const dom = new DefaultRectangularDom(rank, idxType, stridable, this);
+      dom.dsiSetIndices(inds);
+      return dom;
+    }
 
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
       return new DefaultAssociativeDom(idxType, parSafe, this);
@@ -69,7 +81,6 @@ module DefaultRectangular {
     proc dsiAssign(other: this.type) { }
 
     proc dsiCreateReindexDist(newSpace, oldSpace) return this;
-    proc dsiCreateRankChangeDist(param newRank, args) return this;
 
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
@@ -109,6 +120,8 @@ module DefaultRectangular {
 
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
+
+    proc isDefaultRectangular() param return true;
 
     proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
       this.dist = dist;
@@ -606,16 +619,6 @@ module DefaultRectangular {
                                       stridable=stridable, dom=this);
     }
 
-    proc dsiBuildRectangularDom(param rank: int, type idxType, param stridable: bool,
-                              ranges: rank*range(idxType,
-                                                 BoundedRangeType.bounded,
-                                                 stridable)) {
-      var dom = new DefaultRectangularDom(rank, idxType, stridable, dist);
-      for i in 1..rank do
-        dom.ranges(i) = ranges(i);
-      return dom;
-    }
-
     proc dsiLocalSlice(ranges) {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
@@ -627,11 +630,16 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _newDomain(this);
+      if (this.locale == here) {
+        return _getDomain(this);
+      } else {
+        var a: domain(rank, idxType, stridable);
+        return a;
+      }
     }
 
     iter dsiLocalSubdomains() {
-      yield _newDomain(this);
+      yield dsiLocalSubdomain();
     }
   }
 
@@ -672,17 +680,17 @@ module DefaultRectangular {
 
     inline proc oneDData return defRectSimpleDData || mdNumChunks < 2;
 
-    var mdParDim: int;
-    var mdNumChunks: int;
-    var mdRLo: idxType;
-    var mdRHi: idxType;
-    var mdRStr: idxType;
-    var mdRLen: idxType;
-    var mdBlk: idxType;
-    var mdAlias: bool;
+    var mdParDim: mdType(int);
+    var mdNumChunks: mdType(int);
+    var mdRLo: mdType(idxType);
+    var mdRHi: mdType(idxType);
+    var mdRStr: mdType(idxType);
+    var mdRLen: mdType(idxType);
+    var mdBlk: mdType(idxType);
+    var mdAlias: mdType(bool);
 
-    var mData : experimentalMaxSublocales*_multiData(eltType=eltType,
-                                                     idxType=idxType);
+    var mData : mdType(experimentalMaxSublocales*_multiData(eltType=eltType,
+                                                     idxType=idxType));
 
     inline proc dataChunk(i) ref {
       if defRectSimpleDData then
@@ -1124,19 +1132,19 @@ module DefaultRectangular {
 
     inline proc oneDData return defRectSimpleDData || mdNumChunks < 2;
 
-                                 // these are only used if !defRectSimpleDData
-    var mdParDim: int;           //   array is chunked on this dimension
-    var mdNumChunks: int;        //   number of chunks
-    var mdRLo: idxType;          //   chunking dim .low
-    var mdRHi: idxType;          //       "     "  .high
-    var mdRStr: idxType;         //       "     "  .stride
-    var mdRLen: idxType;         //       "     "  .length
-    var mdBlk: idxType;          //       "     "  block factor when sliced
-    var mdAlias: bool;           //   is this an alias of another array?
+                                  // these are only used if !defRectSimpleDData
+    var mdParDim: mdType(int);    //   array is chunked on this dimension
+    var mdNumChunks: mdType(int); //   number of chunks
+    var mdRLo: mdType(idxType);   //   chunking dim .low
+    var mdRHi: mdType(idxType);   //       "     "  .high
+    var mdRStr: mdType(idxType);  //       "     "  .stride
+    var mdRLen: mdType(idxType);  //       "     "  .length
+    var mdBlk: mdType(idxType);   //       "     "  block factor when sliced
+    var mdAlias: mdType(bool);    //   is this an alias of another array?
 
     pragma "local field"
-      var mData : _ddata(_multiData(eltType=eltType,
-                                    idxType=idxType));
+      var mData : mdType(_ddata(_multiData(eltType=eltType,
+                                    idxType=idxType)));
 
     var noinit_data: bool = false;
 
@@ -1861,11 +1869,16 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _newDomain(dom);
+      if (this.data.locale == here) {
+        return _getDomain(dom);
+      } else {
+        var a: domain(rank, idxType, stridable);
+        return a;
+      }
     }
 
     iter dsiLocalSubdomains() {
-      yield _newDomain(dom);
+      yield dsiLocalSubdomain();
     }
   }
 
@@ -1936,18 +1949,20 @@ module DefaultRectangular {
           yield info.theDataChunk(0)(i);
         }
       } else {
-        const stride = viewDom.ranges(1).stride: viewDom.idxType,
-              start  = viewDom.ranges(1).first,
-              first  = info.getDataIndex(start),
-              second = info.getDataIndex(start + stride),
-              step   = (second-first):chpl__signedType(viewDom.idxType),
-              last   = first + (viewDom.ranges(1).length-1) * step:viewDom.idxType;
-        if step > 0 then
-          for i in first..last by step do
-            yield info.data(i);
-        else
-          for i in last..first by step do
-            yield info.data(i);
+        const viewDomDim = viewDom.dsiDim(1),
+              stride = viewDomDim.stride: viewDom.idxType,
+              start  = viewDomDim.first,
+              second = info.getDataIndex(start + stride);
+
+        var   first  = info.getDataIndex(start);
+        const step   = (second-first):chpl__signedType(viewDom.idxType);
+        var   last   = first + (viewDomDim.length-1) * step:viewDom.idxType;
+
+        if step < 0 then
+          last <=> first;
+
+        for i in first..last by step do
+          yield info.data(i);
       }
     } else if useCache {
       for i in viewDom {
@@ -1966,7 +1981,7 @@ module DefaultRectangular {
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
     for i in viewDom {
       const dataIdx = if arr.isReindexArrayView() then arr.chpl_reindexConvertIdx(i)
-                      else if arr.isRankChangeArrayView() then arr.chpl_rankChangeConvertIdx(i)
+                      else if arr.isRankChangeArrayView() then chpl_rankChangeConvertIdx(i, arr.collapsedDim, arr.idx)
                       else i;
       const info = if chpl__isArrayView(arr) then arr.arr else arr;
       yield info.dsiAccess(dataIdx);
