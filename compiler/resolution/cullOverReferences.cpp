@@ -88,7 +88,6 @@ typedef enum {
 static bool symExprIsSet(SymExpr* sym);
 static bool symbolIsUsedAsConstRef(Symbol* sym);
 static void lowerContextCall(ContextCallExpr* cc, choose_type_t which);
-//static void makeRefReturnIfExprsIntoRefPairs();
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst);
 
