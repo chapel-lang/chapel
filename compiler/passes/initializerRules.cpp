@@ -215,67 +215,67 @@ static void preNormalizeNonGenericInit(FnSymbol* fn) {
 ************************************** | *************************************/
 
 static void preNormalizeGenericInit(FnSymbol* fn) {
-    AggregateType* at        = toAggregateType(fn->_this->type);
-    InitStyle      initStyle = findInitStyle(fn);
+  AggregateType* at        = toAggregateType(fn->_this->type);
+  InitStyle      initStyle = findInitStyle(fn);
 
-    // The body is pure phase 2
-    if (initStyle == STYLE_NONE) {
-      SET_LINENO(fn->body);
+  // The body is pure phase 2
+  if (initStyle == STYLE_NONE) {
+    SET_LINENO(fn->body);
 
-      Symbol*   superSym  = new_CStringSymbol("super");
-      CallExpr* superCall = new CallExpr(".", fn->_this, superSym);
+    Symbol*   superSym  = new_CStringSymbol("super");
+    CallExpr* superCall = new CallExpr(".", fn->_this, superSym);
 
-      Symbol*   initSym   = new_CStringSymbol("init");
-      CallExpr* initCall  = new CallExpr(".", superCall, initSym);
+    Symbol*   initSym   = new_CStringSymbol("init");
+    CallExpr* initCall  = new CallExpr(".", superCall, initSym);
 
-      CallExpr* superInit = new CallExpr(initCall);
+    CallExpr* superInit = new CallExpr(initCall);
 
-      // For classes:  we need to insert super.init();
-      // For records:  this is a transient marker for phase 1 analysis
-      fn->body->insertAtHead(superInit);
+    // For classes:  we need to insert super.init();
+    // For records:  this is a transient marker for phase 1 analysis
+    fn->body->insertAtHead(superInit);
 
-      phase1Analysis(fn);
+    phase1Analysis(fn);
 
-      // Records should not call super.init() so remove the phase1 marker
-      if (isRecord(at) == true) {
-        superInit->remove();
-      }
+    // Records should not call super.init() so remove the phase1 marker
+    if (isRecord(at) == true) {
+      superInit->remove();
+    }
 
-    // One or more uses of this.init();
-    } else if (initStyle == STYLE_THIS_INIT) {
-      phase1Analysis(fn);
+  // One or more uses of this.init();
+  } else if (initStyle == STYLE_THIS_INIT) {
+    phase1Analysis(fn);
 
-    // At least one use of this.init();
-    } else {
-      phase1Analysis(fn);
+  // At least one use of this.init();
+  } else {
+    phase1Analysis(fn);
 
-      // 2017/03/16: Record inheritance is not fully defined yet
-      //   The user may have added super.init() to a record initializer
-      //   to separate phase 1 from phase 2.  However this will not resolve.
-      //   Remove it/them now that preNormalize is complete.
-      if (isRecord(at) == true) {
-        std::vector<CallExpr*> calls;
+    // 2017/03/16: Record inheritance is not fully defined yet
+    //   The user may have added super.init() to a record initializer
+    //   to separate phase 1 from phase 2.  However this will not resolve.
+    //   Remove it/them now that preNormalize is complete.
+    if (isRecord(at) == true) {
+      std::vector<CallExpr*> calls;
 
-        collectMyCallExprs(fn, calls, fn);
+      collectMyCallExprs(fn, calls, fn);
 
-        for (size_t i = 0; i < calls.size(); i++) {
-          if (findInitStyle(calls[i]) == STYLE_SUPER_INIT) {
-            calls[i]->remove();
-          }
+      for (size_t i = 0; i < calls.size(); i++) {
+        if (findInitStyle(calls[i]) == STYLE_SUPER_INIT) {
+          calls[i]->remove();
         }
       }
     }
+  }
 
-    // Insert phase 2 analysis here
+  // Insert phase 2 analysis here
 
 
-    // If this is a non-generic class then create a type method
-    // to wrap this initializer
-    if (isClass(at) == true && at->isGeneric() == false) {
-      buildClassAllocator(fn);
+  // If this is a non-generic class then create a type method
+  // to wrap this initializer
+  if (isClass(at) == true && at->isGeneric() == false) {
+    buildClassAllocator(fn);
 
-      fn->addFlag(FLAG_INLINE);
-    }
+    fn->addFlag(FLAG_INLINE);
+  }
 }
 
 /************************************* | **************************************
