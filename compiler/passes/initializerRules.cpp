@@ -177,9 +177,15 @@ static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
 static DefExpr* toLocalField    (AggregateType* at, CallExpr* expr);
 
+static DefExpr* toLocalField    (AggregateType* at, SymExpr*  expr);
+
 static SymExpr* createFieldAccess(Expr*     insertBefore,
                                   FnSymbol* fn,
                                   DefExpr*  field);
+
+static SymExpr* normalizeExpr(Expr*      insertBefore,
+                              IterState& state,
+                              Expr*      expr);
 
 static bool     isAssignment(CallExpr* callExpr);
 static bool     isSimpleAssignment(CallExpr* callExpr);
@@ -198,6 +204,8 @@ public:
                   IterState(LoopStmt* loop, const IterState& curr);
 
   AggregateType*  type()                                                 const;
+  FnSymbol*       theFn()                                                const;
+
   bool            isRecord()                                             const;
   bool            isClass()                                              const;
 
@@ -260,6 +268,10 @@ IterState::IterState(LoopStmt* loop, const IterState& curr) {
 
 AggregateType* IterState::type() const {
   return mFn != NULL ? toAggregateType(mFn->_this->type) : NULL;
+}
+
+FnSymbol* IterState::theFn() const {
+  return mFn;
 }
 
 bool IterState::isRecord() const {
@@ -539,7 +551,6 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
                     "in phase 1",
                     field->sym->name);
 
-
         } else if (state.isFieldReinitialized(field) == true) {
           USR_FATAL(stmt,
                     "multiple initializations of field \"%s\"",
@@ -768,7 +779,7 @@ static void fieldInitTypeWithInit(Expr*      stmt,
                                   Expr*      initExpr) {
   SET_LINENO(stmt);
 
-  Type* type     = field->sym->type;
+  Type* type = field->sym->type;
 
   //
   // e.g. const x : int     = 10;
@@ -784,8 +795,9 @@ static void fieldInitTypeWithInit(Expr*      stmt,
   if (isPrimitiveScalar(type) == true ||
       isNonGenericClass(type) == true) {
     SymExpr* fieldAccess = createFieldAccess(stmt, fn, field);
+    SymExpr* rhs         = normalizeExpr(stmt, state, initExpr);
 
-    stmt->insertBefore(new CallExpr("=", fieldAccess, initExpr));
+    stmt->insertBefore(new CallExpr("=", fieldAccess, rhs));
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
 #if 0
@@ -973,6 +985,24 @@ static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
   return retval;
 }
 
+static DefExpr* toLocalField(AggregateType* at, SymExpr* expr) {
+  Expr*    currField = at->fields.head;
+  Symbol*  sym       = expr->symbol();
+  DefExpr* retval    = NULL;
+
+  while (currField != NULL && retval == NULL) {
+    DefExpr*   defExpr = toDefExpr(currField);
+
+    if (sym == defExpr->sym) {
+      retval    = defExpr;
+    } else {
+      currField = currField->next;
+    }
+  }
+
+  return retval;
+}
+
 // Return the field with the given name
 static DefExpr* fieldByName(AggregateType* at, const char* name) {
   Expr*    currField = at->fields.head;
@@ -1046,6 +1076,61 @@ static bool isCompoundAssignment(CallExpr* callExpr) {
       callExpr->isNamed(">>=") == true) {
     retval = true;
   }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static SymExpr* normalizeExpr(Expr*      insertBefore,
+                              IterState& state,
+                              Expr*      expr) {
+  SymExpr* retval = NULL;
+
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    Symbol* sym = symExpr->symbol();
+
+    if (sym->isImmediate() == true) {
+      retval = symExpr;
+
+    } else if (DefExpr* field = toLocalField(state.type(), symExpr)) {
+      retval = createFieldAccess(insertBefore, state.theFn(), field);
+
+    } else {
+      retval = symExpr;
+    }
+
+  } else if (CallExpr* callExpr = toCallExpr(expr)) {
+    if (DefExpr* field = toLocalField(state.type(), callExpr)) {
+      retval = createFieldAccess(insertBefore, state.theFn(), field);
+
+    } else {
+      VarSymbol*         tmp      = newTemp("call_tmp");
+      std::vector<Expr*> actuals;
+
+      while (callExpr->numActuals() > 0) {
+        actuals.push_back(callExpr->get(1)->remove());
+      }
+
+      for (size_t i = 0; i < actuals.size(); i++) {
+        callExpr->insertAtTail(normalizeExpr(insertBefore, state, actuals[i]));
+      }
+
+      insertBefore->insertBefore(new DefExpr(tmp));
+      insertBefore->insertBefore(new CallExpr(PRIM_MOVE, tmp, callExpr));
+
+      retval = new SymExpr(tmp);
+    }
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  INT_ASSERT(retval != NULL);
 
   return retval;
 }
