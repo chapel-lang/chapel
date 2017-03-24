@@ -30,7 +30,7 @@
 #ifdef HAVE_LLVM
 namespace
 {
-  void addLoopVectorizationHint(llvm::Instruction* instruction)
+  llvm::MDNode* addLoopVectorizationHint(llvm::Instruction* instruction)
   {
     GenInfo* info                  = gGenInfo;
     auto &C                        = info->module->getContext();
@@ -44,6 +44,7 @@ namespace
 
     dummy->replaceAllUsesWith(llvmLoopMetadata);
     instruction->setMetadata(llvm::StringRef("llvm.loop"), llvmLoopMetadata);
+    return llvmLoopMetadata;
   }
 }
 #endif
@@ -179,7 +180,14 @@ GenRet CForLoop::codegen()
 
     if(fNoVectorize == false && isOrderIndependent())
     {
-        addLoopVectorizationHint(endLoopBranch);
+        llvm::MDNode* llvmLoopMetadata = addLoopVectorizationHint(endLoopBranch);
+        for(auto it = blockStmtBody->begin(); it != blockStmtBody->end(); it++)
+        {
+            if(it->mayReadOrWriteMemory())
+            {
+                it->setMetadata(llvm::StringRef("llvm.mem.parallel_loop_access"), llvmLoopMetadata);
+            }
+        }
     }
 
     func->getBasicBlockList().push_back(blockStmtEnd);
