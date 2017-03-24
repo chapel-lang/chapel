@@ -57,16 +57,22 @@ of type ``void``. Initializing a variable without a specified type with
 a function that doesn't return will infer the variable type to be
 ``void``. The variables will be removed by the compiler.
 
+A function may also explicitly return the ``void`` value ``_void``.
+Functions that have no return and functions that return the value ``_void``
+both have a return type of ``void``. Functions that have no return and
+functions that return ``_void`` can both optionally specify their return
+types as ``void``.
+
 .. code-block:: chapel
 
-  proc noReturn() {
+  proc noReturn(): void {
     writeln("Hello from noReturn");
   }
 
   var v1: void = noReturn();
   var v2 = noReturn();
 
-  proc explicitReturn() {
+  proc explicitReturn(): void {
     writeln("Hello from explicitReturn");
     return _void;
   }
