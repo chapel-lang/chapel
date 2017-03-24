@@ -8538,6 +8538,13 @@ resolveExpr(Expr* expr) {
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
             ct->defaultTypeConstructor) {
+          if (ct->initializerStyle == DEFINES_INITIALIZER &&
+              (ct->isGeneric() ||
+               (isAggregateType(ct->instantiatedFrom) &&
+                toAggregateType(ct->instantiatedFrom)->isGeneric()))) {
+            USR_FATAL(ct, "Sorry, type constructors aren't generated properly for generic types that define initializers");
+          }
+
           resolveFormals(ct->defaultTypeConstructor);
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
             if (getPartialCopyInfo(ct->defaultTypeConstructor))
