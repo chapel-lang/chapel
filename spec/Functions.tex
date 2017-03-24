@@ -593,7 +593,7 @@ type & default intent \\
 \chpl{sync}    & \chpl{ref}   \\
 \chpl{single}  & \chpl{ref}   \\
 \chpl{atomic}  & \chpl{ref}   \\
-\chpl{record}  & \chpl{const} \\
+\chpl{record}  & \chpl{const} (but see below) \\
 \chpl{class}   & \chpl{const} \\
 \chpl{union}   & \chpl{const} \\
 \chpl{dmap}    & \chpl{const} \\
@@ -603,12 +603,16 @@ array          & \chpl{ref} / \chpl{const ref} \\
 \end{tabular}
 \end{center}
 
-The blank intent for arrays is \chpl{ref} or \chpl{const ref} - meaning
+The default intent for arrays is \chpl{ref} or \chpl{const ref} - meaning
 that the array is not copied by default. The compiler will choose
 \chpl{ref} or \chpl{const ref} based upon whether or not the formal
 argument is modified inside of the function. The choice between
 \chpl{ref} and \chpl{const ref} is similar to and interacts with the
 ref-pair feature (see \rsec{Ref_Pair}).
+
+The default intent for the implicit \chpl{this} argument for records is
+\chpl{ref} or \chpl{const ref} depending on whether the formal argument
+is modified inside of the function.
 
 \begin{openissue}
 How tuples should be handled under default intents is an open issue;
