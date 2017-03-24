@@ -16,6 +16,12 @@ test_assoc(real(64));
 test_assoc(complex(64));
 test_assoc(complex(128));
 
+/* (AB)^t = B^t A^t */
+test_transpose_product(real(32));
+test_transpose_product(real(64));
+test_transpose_product(complex(64));
+test_transpose_product(complex(128));
+
 /* tr(AB) = tr(BA) */
 test_trace_rotate(real(32));
 test_trace_rotate(real(64));
@@ -37,7 +43,7 @@ test_trace_vector_rotate(complex(128));
 /* A(BC) = (AB)C */
 // Do an elementwise comparison
 proc test_assoc(type t) {
-  const testName="trace_assoc [%s]".format(t:string);
+  const testName="assoc [%s]".format(t:string);
   const eps = threshold(t);
   var A = Matrix(L, M, t);
   var B = Matrix(M, N, t);
@@ -50,6 +56,31 @@ proc test_assoc(type t) {
     rng.fillRandom(C);
     var r1 = dot(A,dot(B,C));
     var r2 = dot(dot(A,B),C);
+    var t1 = max reduce abs(r1/r2); 
+    if verbose && (ii==0) {
+      writef("%s : %n, %n\n",testName, t1, t1-1.0);
+    }
+    testRelCompare(t1,1.0,eps,testName);
+  }
+  if verbose {
+    writef("Test %s passed!\n", testName);
+  }
+}
+
+/* (AB)^t = B^t A^t */
+// Do an elementwise comparison
+proc test_transpose_product(type t) {
+  const testName="transpose_product [%s]".format(t:string);
+  const eps = threshold(t);
+  var A = Matrix(L, M, t);
+  var B = Matrix(M, N, t);
+
+  var rng=new RandomStream(t, seed=seed);
+  for ii in 0.. #nIters {
+    rng.fillRandom(A);
+    rng.fillRandom(B);
+    var r1 = transpose(dot(A,B));
+    var r2 = dot(transpose(B),transpose(A));
     var t1 = max reduce abs(r1/r2); 
     if verbose && (ii==0) {
       writef("%s : %n, %n\n",testName, t1, t1-1.0);
