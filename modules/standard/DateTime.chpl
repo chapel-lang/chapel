@@ -87,7 +87,7 @@ module DateTime {
     return (tv.tv_sec, tv.tv_usec);
   }
 
-  private proc tm_zoneType() type {
+  private proc tm_zoneType type {
     if CHPL_TARGET_PLATFORM == "darwin" then
       return c_ptr(c_char); // char *
     else
@@ -106,7 +106,7 @@ module DateTime {
     var tm_yday:   c_int;         // day of year [0,365]
     var tm_isdst:  c_int;         // daylight savings flag
     var tm_gmtoff: c_long;        // Seconds east of UTC
-    var tm_zone:   tm_zoneType(); // Timezone abbreviation
+    var tm_zone:   tm_zoneType; // Timezone abbreviation
   }
 
   private proc getLocalTime(t: 2*int) {
@@ -636,11 +636,11 @@ module DateTime {
 
     if tzinfo != nil {
       timeStruct.tm_gmtoff = abs(utcoffset()).seconds: c_long;
-      timeStruct.tm_zone = __primitive("cast", tm_zoneType(), tzname().c_str());
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
       timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
       timeStruct.tm_gmtoff = 0;
-      timeStruct.tm_zone = __primitive("cast", tm_zoneType(), "".c_str());
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, "".c_str());
       timeStruct.tm_isdst = -1;
     }
 
