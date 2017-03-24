@@ -40,7 +40,7 @@ class GradientFlagger: Flagger {
     
     for grid in level_solution.level.grids {
 
-      const value => current_data(grid).value;
+      const ref value = current_data(grid).value;
       
       for cell in grid.cells {
         
@@ -195,7 +195,7 @@ proc main {
 
   //<=== Generate output <===
   
-  
+  delete bc;
+  delete hierarchy;
+  delete flagger;
 }
-
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -117,6 +117,10 @@ typedef int64_t c_localeid_t;
 static const c_sublocid_t c_sublocid_none = c_sublocid_none_val;
 static const c_sublocid_t c_sublocid_any  = c_sublocid_any_val;
 
+static inline int isActualSublocID(c_sublocid_t subloc) {
+  return subloc >= 0;
+}
+
 #ifndef LAUNCHER
 
 // The type for wide-pointer-to-void. This is used in the runtime in order to
@@ -190,6 +194,13 @@ typedef int64_t chpl_bool64;
 
 typedef void (*chpl_fn_p)(void*); // function pointer for runtime ftable
 typedef int16_t chpl_fn_int_t;    // int type for ftable indexing
+
+// Function table names and information, for VisualDebug use
+typedef struct _chpl_fn_info {
+  const char *name;
+  int fileno;
+  int lineno;
+} chpl_fn_info;
 
 // It is tempting to #undef true and false and then #define them just to be sure
 // they expand correctly, but future versions of the C standard may not allow this!

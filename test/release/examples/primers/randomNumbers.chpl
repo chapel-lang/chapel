@@ -1,24 +1,31 @@
+// Random
+
 /*
- * Standard Module: Random primer
- *
- * This primer demonstrates usage of the standard module Random.chpl.
- *
- */
+   This primer demonstrates usage of the standard module Random.chpl.
+*/
 
 use Random;
 
 //
-// There are two ways to generate a sequence of random numbers:
-// The first is by creating an array of random numbers using the fillRandom
-// function
+// This primer shows two ways to generate a sequence of random numbers:
+// The first is by creating an array of random numbers using the
+// :proc:`Random.fillRandom` function. The second way is to use
+// a :class:`RandomStream` instance.
 //
+
+// Using fillRandom
+// ----------------
+
+// Call :proc:`Random.fillRandom` with an array argument. The array
+// will be filled with random numbers.
 var rands: [1..10] real;
 fillRandom(rands);
-//writeln(rands); // Commented out for deterministic testing output.
+// Now ``writeln(rands)`` would output these random values, but
+// then this program's output would not be deterministic.
 
 //
-// In this case, you can specify the starting seed to use when filling the
-// array.  This seed must be a an odd integer between 0 and 2**46
+// To produce deterministic output, specify the starting seed to use when
+// filling the array.
 //
 var randsSeeded: [1..10] real;
 var seed = 17;
@@ -33,28 +40,33 @@ writeln("rand16s = ", rand16s); // Here the output is deterministic
 writeln();
 
 
-//
-// The second way to generate a sequence of random numbers is by creating
-// a RandomStream class instance.  If one is desired, the seed must be
-// specified upon creation of this instance.
-//
-var randStream:       RandomStream(real) = new RandomStream();
-var randStreamSeeded: RandomStream(real) = new RandomStream(seed);
+// Using RandomStream
+// ------------------
 
 //
-// Then the instance can be used to obtain the numbers.
-// This can be done in a large chunk...
+// The second way to generate a sequence of random numbers is by creating a
+// :class:`RandomStream` class instance.  The first argument is the type
+// of the elements that the instance should generate. If a particular
+// seed is desired, it should be specified upon creation of this instance.
+//
+var randStream:       RandomStream(real) = new RandomStream(real);
+var randStreamSeeded: RandomStream(real) = new RandomStream(real, seed);
+
+//
+// Then the instance can be used to obtain the numbers.  This can be done in a
+// large chunk by calling :proc:`RandomStream.fillRandom`:
 //
 var randsFromStream: [1..10] real;
 randStream.fillRandom(randsFromStream);
-//writeln(randsFromStream); // Commented out for deterministic testing output.
 
 //
-// ... or individually.  Since we are using the same seed, the
-// numbers generated will match the contents of randsSeeded.
+// Or random numbers can be requested one at a a time.
 //
 var nextRand = randStreamSeeded.getNext();
 writeln(nextRand == randsSeeded[1]);
+
+// Note that since since we are using the same seed, the numbers generated will
+// match those generated earlier by ``fillRandom(randsSeeded, seed)``.
 
 //
 // The next random number generated will follow the most
@@ -71,7 +83,7 @@ writeln(seventhRand == randsSeeded[7]);
 //
 // A specific random number in the stream can be obtained by
 // specifying the position.  This argument must be greater
-// than 0.
+// than ``0``.
 //
 var secondRand2 = randStreamSeeded.getNth(2);
 writeln(secondRand2 == secondRand);
@@ -92,18 +104,21 @@ for i in randStreamSeeded.iterate({5..10}, real) {
 
 
 //
-// By default, access using the RandomStream instance will be safe in the
-// presence of parallelism. This can be changed for the entire stream during
+// By default, access using the :class:`RandomStream` instance will be safe in
+// the presence of parallelism. This can be changed for the entire stream during
 // class creation.  As a result, two parallel accesses or updates to the
 // position from which reading is intended may conflict.
 //
-var parallelUnsafe       = new RandomStream(parSafe=false);
-var parallelSeededUnsafe = new RandomStream(seed, false);
+var parallelUnsafe       = new RandomStream(real, parSafe=false);
+var parallelSeededUnsafe = new RandomStream(real, seed, false);
 
-// Commented out for deterministic testing output.
-//writeln(parallelUnsafe.getNext());
-//writeln(parallelSeededUnsafe.getNext());
+// Now :class:`RandomStream` functions, such as ``parallelUnsafe.getNext()``
+// and ``parallelSeededUnsafe.getNext()`` can be called.
 
+//
+// At present, RandomStream instances are classes and so they must be
+// deleted.
+//
 delete parallelSeededUnsafe;
 delete parallelUnsafe;
 delete randStreamSeeded;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -109,14 +109,18 @@ bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
+bool fNoDivZeroChecks = false;
 bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
+bool fNoInferLocalFields = false;
+bool fReplaceArrayAccessesWithRefTemps = false;
 bool fUserSetStackChecks = false;
 bool fNoCastChecks = false;
 bool fMungeUserIdents = true;
 bool fEnableTaskTracking = false;
+bool fStrictErrorHandling = false;
 
 bool  printPasses     = false;
 FILE* printPassesFile = NULL;
@@ -156,9 +160,11 @@ bool report_inlining = false;
 char fExplainCall[256] = "";
 int explainCallID = -1;
 int breakOnResolveID = -1;
+bool fDenormalize = true;
 char fExplainInstantiation[256] = "";
 bool fExplainVerbose = false;
 bool fParseOnly = false;
+bool fPrintCallGraph = false;
 bool fPrintCallStackOnError = false;
 bool fPrintIDonError = false;
 bool fPrintModuleResolution = false;
@@ -476,6 +482,7 @@ static void turnOffChecks(const ArgumentDescription* desc, const char* unused) {
   fNoLocalChecks  = true;
   fNoStackChecks  = true;
   fNoCastChecks = true;
+  fNoDivZeroChecks = true;
 }
 
 static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
@@ -500,8 +507,10 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoTupleCopyOpt = false;
   fNoPrivatization = false;
   fNoChecks = true;
+  fNoInferLocalFields = false;
   fIgnoreLocalClasses = false;
   fNoOptimizeOnClauses = false;
+  //fReplaceArrayAccessesWithRefTemps = true; // don't tie this to --fast yet
   optimizeCCode = true;
   specializeCCode = true;
   turnOffChecks(desc, unused);
@@ -526,23 +535,27 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   //
   // disable all chapel compiler optimizations
   //
-  fBaseline = true;
-  fNoCopyPropagation = true;
-  fNoDeadCodeElimination = true;
-  fNoFastFollowers = true;
-  fNoloopInvariantCodeMotion = true;
-  fNoInline = true;
-  fNoInlineIterators = true;
-  fNoLiveAnalysis = true;
-  fNoOptimizeLoopIterators = true;
-  fNoVectorize = true;
-  fNoRemoteValueForwarding = true;
-  fNoRemoveCopyCalls = true;
-  fNoScalarReplacement = true;
-  fNoTupleCopyOpt = true;
-  fNoPrivatization = true;
-  fNoOptimizeOnClauses = true;
-  fIgnoreLocalClasses = true;
+  fBaseline = true;                   // --baseline
+
+  fNoCopyPropagation = true;          // --no-copy-propagation
+  fNoDeadCodeElimination = true;      // --no-dead-code-elimination
+  fNoFastFollowers = true;            // --no-fast-followers
+  fNoloopInvariantCodeMotion = true;  // --no-loop-invariant-code-motion
+  fNoInline = true;                   // --no-inline
+  fNoInlineIterators = true;          // --no-inline-iterators
+  fNoLiveAnalysis = true;             // --no-live-analysis
+  fNoOptimizeLoopIterators = true;    // --no-optimize-loop-iterators
+  fNoVectorize = true;                // --no-vectorize
+  fNoRemoteValueForwarding = true;    // --no-remote-value-forwarding
+  fNoRemoveCopyCalls = true;          // --no-remove-copy-calls
+  fNoScalarReplacement = true;        // --no-scalar-replacement
+  fNoTupleCopyOpt = true;             // --no-tuple-copy-opt
+  fNoPrivatization = true;            // --no-privatization
+  fNoOptimizeOnClauses = true;        // --no-optimize-on-clauses
+  fIgnoreLocalClasses = true;         // --ignore-local-classes
+  fNoInferLocalFields = true;         // --no-infer-local-fields
+  //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
+  fDenormalize = false;               // --no-denormalize
   fConditionalDynamicDispatchLimit = 0;
 }
 
@@ -550,7 +563,6 @@ static void setCacheEnable(const ArgumentDescription* desc, const char* unused) 
   const char *val = fCacheRemote ? "true" : "false";
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
-
 
 static void setHtmlUser(const ArgumentDescription* desc, const char* unused) {
   fdump_html = true;
@@ -655,11 +667,14 @@ static ArgumentDescription arg_desc[] = {
  {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
  {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
  {"use-noinit", ' ', NULL, "Enable [disable] ability to skip default initialization through the keyword noinit", "N", &fUseNoinit, NULL, NULL},
+ {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records (experimental)", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
+ {"cast-checks", ' ', NULL, "Enable [disable] safeCast() value checks", "n", &fNoCastChecks, NULL, NULL},
+ {"div-by-zero-checks", ' ', NULL, "Enable [disable] divide-by-zero checks", "n", &fNoDivZeroChecks, NULL, NULL},
  {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
@@ -704,8 +719,10 @@ static ArgumentDescription arg_desc[] = {
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"explain-verbose", ' ', NULL, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
+ {"print-callgraph", ' ', NULL, "Print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", NULL},
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
+ {"strict-errors", ' ', NULL, "Enable strict mode for error handling", "F", &fStrictErrorHandling, NULL, NULL},
  {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
  {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
@@ -781,6 +798,7 @@ static ArgumentDescription arg_desc[] = {
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
+ {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  DRIVER_ARG_DEBUGGERS,
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
@@ -794,6 +812,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"remove-unreachable-blocks", ' ', NULL, "[Don't] remove unreachable blocks after resolution", "N", &fRemoveUnreachableBlocks, "CHPL_REMOVE_UNREACHABLE_BLOCKS", NULL},
+ {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  DRIVER_ARG_PRINT_CHPL_HOME,
@@ -1035,6 +1054,15 @@ static void checkTargetArch() {
   }
 }
 
+static void checkIncrementalAndOptimized() {
+  std::size_t optimizationsEnabled = ccflags.find("-O");
+  if(fIncrementalCompilation && ( optimizeCCode ||
+      optimizationsEnabled!=std::string::npos ))
+    USR_WARN("Compiling with --incremental along with optimizations enabled"
+              " may lead to a slower execution time compared to --fast or"
+              " using -O optimizations directly.");
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1055,6 +1083,8 @@ static void postprocess_args() {
   checkLLVMCodeGen();
 
   checkTargetArch();
+
+  checkIncrementalAndOptimized();
 }
 
 int main(int argc, char* argv[]) {

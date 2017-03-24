@@ -1,5 +1,3 @@
-../../../release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_kernels.chpl:97: In function 'rooted_heavy_subgraphs':
-../../../release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_kernels.chpl:152: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 =========================================================
 Problem Dimensions
                    Scale: 6

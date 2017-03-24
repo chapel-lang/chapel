@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -75,7 +75,7 @@ hwloc_info_show_obj(hwloc_obj_t obj, const char *type, const char *prefix, int v
   if (obj->name)
     printf("%s name = %s\n", prefix, obj->name);
   if (obj->depth != (unsigned) -1)
-    printf("%s depth = %u\n", prefix, obj->depth);
+    printf("%s depth = %d\n", prefix, (int) obj->depth); /* special levels have negative values */
   printf("%s sibling rank = %u\n", prefix, obj->sibling_rank);
   printf("%s children = %u\n", prefix, obj->arity);
   if (obj->memory.local_memory)
@@ -453,12 +453,12 @@ main (int argc, char *argv[])
     DO(membind, get_thisthread_membind);
     DO(membind, set_area_membind);
     DO(membind, get_area_membind);
+    DO(membind, alloc_membind);
     DO(membind, firsttouch_membind);
     DO(membind, bind_membind);
     DO(membind, interleave_membind);
     DO(membind, nexttouch_membind);
     DO(membind, migrate_membind);
-    DO(membind, firsttouch_membind);
     DO(membind, get_area_memlocation);
 
   } else if (mode == HWLOC_INFO_MODE_OBJECTS) {

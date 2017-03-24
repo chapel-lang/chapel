@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,6 @@ AUXFS_CURL_SUBDIR = src/qio/auxFilesys/curl
 
 ALL_SRCS += $(CURDIR)/$(AUXFS_CURL_SUBDIR)/*.c
 
-AUXFS_CURL_OBJDIR = $(RUNTIME_ROOT)/$(AUXFS_CURL_SUBDIR)/$(RUNTIME_OBJDIR)
+AUXFS_CURL_OBJDIR = $(RUNTIME_BUILD)/$(AUXFS_CURL_SUBDIR)
 
 include $(RUNTIME_ROOT)/$(AUXFS_CURL_SUBDIR)/Makefile.share

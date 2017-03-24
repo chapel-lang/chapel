@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -177,8 +177,6 @@ class Cyclic: BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
 
-  var pid: int = -1;
-
   proc Cyclic(startIdx,
              targetLocales: [] locale = Locales,
              dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -190,6 +188,10 @@ class Cyclic: BaseDist {
     var tupleStartIdx: rank*idxType;
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;
+
+    // MPF - why isn't it:
+    //setupTargetLocalesArray(targetLocDom, targetLocs, targetLocales);
+
     if rank == 1  {
       targetLocDom = {0..#targetLocales.numElements};
       targetLocs = targetLocales;
@@ -236,16 +238,6 @@ class Cyclic: BaseDist {
       for loc in locDist do writeln(loc);
   }
 
-  proc Cyclic(param rank, type idxType, other: Cyclic(rank, idxType)) {
-    targetLocDom = other.targetLocDom;
-    targetLocs = other.targetLocs;
-    startIdx = other.startIdx;
-    locDist = other.locDist;
-    dataParTasksPerLocale = other.dataParTasksPerLocale;
-    dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
-    dataParMinGranularity = other.dataParMinGranularity;
-  }
-
   proc dsiAssign(other: this.type) {
     coforall locid in targetLocDom do
       on targetLocs(locid) do
@@ -270,7 +262,20 @@ class Cyclic: BaseDist {
     return false;
   }
 
-  proc dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
+  proc dsiClone() {
+    return new Cyclic(startIdx, targetLocs,
+                      dataParTasksPerLocale,
+                      dataParIgnoreRunningTasks,
+                      dataParMinGranularity);
+  }
+
+  proc dsiDestroyDist() {
+    coforall ld in locDist do {
+      on ld do
+        delete ld;
+    }
+  }
+
 }
 
 
@@ -312,7 +317,10 @@ proc Cyclic.dsiSupportsPrivatization() param return true;
 proc Cyclic.dsiGetPrivatizeData() return 0;
 
 proc Cyclic.dsiPrivatize(privatizeData) {
-  return new Cyclic(rank=rank, idxType=idxType, other=this);
+  return new Cyclic(startIdx, targetLocs,
+                    dataParTasksPerLocale,
+                    dataParIgnoreRunningTasks,
+                    dataParMinGranularity);
 }
 
 proc Cyclic.dsiGetReprivatizeData() return 0;
@@ -327,13 +335,13 @@ proc Cyclic.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
+proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Cyclic domain rank does not match distribution's");
   var dom = new CyclicDom(rank=rank, idxType=idxType, dist = this, stridable=stridable);
-  dom.setup();
+  dom.dsiSetIndices(inds);
   return dom;
 } 
 
@@ -379,34 +387,6 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
     }
   }
   return helper(1);
-}
-
-proc Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
-  var collapsedDimInds: rank*idxType;
-  var collapsedLocs: _cyclic_matchArgsShape(range(int), int, args);
-  var newLow: newRank*idxType;
-
-  var j: int = 1;
-  for param i in 1..args.size {
-    if isCollapsedDimension(args(i)) then
-      collapsedDimInds(i) = args(i);
-    else {
-      newLow(j) = startIdx(i);
-      j += 1;
-    }
-  }
-  const partialLocIdx = targetLocsIdx(collapsedDimInds);
-
-
-  for param i in 1..args.size {
-    if isCollapsedDimension(args(i)) {
-      collapsedLocs(i) = partialLocIdx(i);
-} else {
-      collapsedLocs(i) = targetLocDom.dim(i);
-    }
-  }
-  var newTargetLocales = targetLocs[(...collapsedLocs)];
-  return new Cyclic(rank=newRank, idxType=idxType, startIdx=newLow, targetLocales=newTargetLocales);
 }
 
 proc Cyclic.writeThis(x) {
@@ -487,8 +467,6 @@ class CyclicDom : BaseRectangularDom {
   var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
 
   var whole: domain(rank, idxType, stridable);
-
-  var pid: int = -1;
 }
 
 
@@ -506,6 +484,13 @@ proc CyclicDom.setup() {
       }
     }
   }
+}
+
+proc CyclicDom.dsiDestroyDom() {
+    coforall localeIdx in dist.targetLocDom {
+      on dist.targetLocs(localeIdx) do
+        delete locDoms(localeIdx);
+    }
 }
 
 proc CyclicDom.dsiBuildArray(type eltType) {
@@ -663,23 +648,6 @@ proc CyclicDom.dsiReprivatize(other, reprivatizeData) {
   whole = other.whole;
 }
 
-proc CyclicDom.dsiBuildRectangularDom(param rank, type idxType,
-                                    param stridable: bool,
-                                    ranges: rank*range(idxType,
-                                                       BoundedRangeType.bounded,
-                                                       stridable)) {
-  if idxType != dist.idxType then
-    compilerError("Cyclic domain index type does not match distribution's");
-  if rank != dist.rank then
-    compilerError("Cyclic domain rank does not match distribution's");
-
-  var dom = new CyclicDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable);
-  dom.dsiSetIndices(ranges);
-  return dom;
-
-}
-
 proc CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }
@@ -709,116 +677,17 @@ class CyclicArr: BaseArr {
 
   var locArr: [dom.dist.targetLocDom] LocCyclicArr(eltType, rank, idxType, stridable);
   var myLocArr: LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1;
   const SENTINEL = max(rank*idxType);
 }
 
-proc CyclicArr.dsiSlice(d: CyclicDom) {
-  var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType,
-                            stridable=d.stridable, dom=d);
-  var thisid = this.locale.id;
-  for i in dom.dist.targetLocDom {
-    on dom.dist.targetLocs(i) {
-      alias.locArr[i] =
-        new LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType,
-                         stridable=d.stridable, locDom=d.locDoms[i],
-                         myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-    }
-  }
-  if doRADOpt then alias.setupRADOpt();
-  return alias;
-}
-
-proc CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
-  var alias = new CyclicArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom = d);
-  var thisid = this.locale.id;
-  coforall ind in d.dist.targetLocDom {
-    on d.dist.targetLocs(ind) {
-      const locDom = d.getLocDom(ind);
-      var collapsedDims: rank*idxType;
-      var locSlice: _cyclic_matchArgsShape(range(idxType=idxType, stridable=true), idxType, args);
-      var locArrInd: rank*int;
-      var j = 1;
-      for param i in 1..args.size {
-        if isCollapsedDimension(args(i)) {
-          locSlice(i) = args(i);
-          collapsedDims(i) = args(i);
-        } else {
-          locSlice(i) = locDom.myBlock.dim(j)(args(i));
-          j += 1;
-        }
-      }
-      locArrInd = dom.dist.targetLocsIdx(collapsedDims);
-      j = 1;
-      // Now that the locArrInd values are known for the collapsed dimensions
-      // Pull the rest of the dimensions values from ind
-      for param i in 1..args.size {
-        if !isCollapsedDimension(args(i)) {
-          if newRank > 1 then
-            locArrInd(i) = ind(j);
-          else
-            locArrInd(i) = ind;
-          j += 1;
-        }
-      }
-      alias.locArr[ind] =
-        new LocCyclicArr(eltType=eltType, rank=newRank, idxType=d.idxType,
-                         stridable=d.stridable, locDom=locDom,
-                         myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
-      if here.id == thisid then
-        alias.myLocArr = alias.locArr[ind];
-    }
-  }
-  if doRADOpt then alias.setupRADOpt();
-  return alias;
-}
-
-proc CyclicArr.dsiReindex(d: CyclicDom) {
-  var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=d.idxType,
-                            stridable=d.stridable, dom=d);
-  const sameDom = d==dom;
-  var thisid = this.locale.id;
-  coforall i in dom.dist.targetLocDom {
-    on dom.dist.targetLocs(i) {
-      const locDom = d.getLocDom(i);
-      const locAlias: [locDom.myBlock] => locArr[i].myElems;
-      alias.locArr[i] = new LocCyclicArr(eltType=eltType, idxType=idxType,
-                                         locDom=locDom, stridable=d.stridable,
-                                         rank=rank, myElems=>locAlias);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-      if doRADOpt {
-        if sameDom {
-          // If we the reindex domain is the same as that of this array,
-          //  the RAD cache will be the same you can just copy the values
-          //  directly into the alias's RAD cache
-          if locArr[i].locRAD {
-            alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
-                                                     dom.dist.targetLocDom);
-            alias.locArr[i].locCyclicRAD = new LocCyclicRADCache(rank, idxType,
-                                                                 dom.dist.startIdx,
-                                                                 dom.dist.targetLocDom);
-            alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
-          }
-        }
-      }
-    }
-  }
-  if doRADOpt then
-    if !sameDom then alias.setupRADOpt();
-  return alias;
-}
-
+pragma "no copy return"
 proc CyclicArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
     low(i) = ranges(i).low;
   }
 
-  var A => locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
-  return A;
+  return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 
 proc CyclicArr.dsiDisplayRepresentation() {
@@ -846,7 +715,7 @@ proc CyclicArr.setupRADOpt() {
           myLocArr.locRAD = nil;
         }
         if disableCyclicLazyRAD {
-          myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+          myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
           myLocArr.locCyclicRAD = new LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
           for l in dom.dist.targetLocDom {
             if l != localeIdx {
@@ -870,6 +739,14 @@ proc CyclicArr.setup() {
   if doRADOpt && disableCyclicLazyRAD then setupRADOpt();
 }
 
+proc CyclicArr.dsiDestroyArr(isslice:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
+}
+
 proc CyclicArr.dsiSupportsPrivatization() param return true;
 
 proc CyclicArr.dsiGetPrivatizeData() return 0;
@@ -885,7 +762,12 @@ proc CyclicArr.dsiPrivatize(privatizeData) {
 }
 
 
-inline proc _remoteAccessData.getDataIndex(param stridable, myStr: rank*idxType, ind: rank*idxType, startIdx, dimLen) {
+inline proc _remoteAccessData.getDataIndex(
+    param stridable,
+    myStr: rank*chpl__signedType(idxType),
+    ind: rank*idxType,
+    startIdx,
+    dimLen) {
   // modified from DefaultRectangularArr
   var sum = origin;
   if stridable {
@@ -895,7 +777,16 @@ inline proc _remoteAccessData.getDataIndex(param stridable, myStr: rank*idxType,
       sum += (((ind(i) - off(i)) * blk(i))-startIdx(i))/dimLen(i);
     }
   }
-  return sum;
+  if defRectSimpleDData {
+    return sum;
+  } else {
+    if mdNumChunks == 1 {
+      return (0, sum);
+    } else {
+      const chunk = mdInd2Chunk(ind(mdParDim));
+      return (chunk, sum - mData(chunk).dataOff);
+    }
+  }
 }
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
@@ -913,35 +804,35 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
         if myLocArr.locRAD == nil {
           myLocArr.lockLocRAD();
           if myLocArr.locRAD == nil {
-            var tempLocRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+            var tempLocRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
             myLocArr.locCyclicRAD = new LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr.locRAD = tempLocRAD;
           }
           myLocArr.unlockLocRAD();
         }
-        // NOTE: This is a known, benign race.  Multiple tasks may be
-        // initializing the RAD cache entries at once, but our belief is
-        // that this is infrequent enough that the potential extra gets
-        // are worth *not* having to synchronize.  If this turns out to be
-        // an incorrect assumption, we can add an atomic variable and use
-        // a fetchAdd to decide which task does the update.
         if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr.locRAD.RAD(rlocIdx) = locArr(rlocIdx).myElems._value.dsiGetRAD();
-        }  
+          myLocArr.locRAD.lockRAD(rlocIdx);
+          if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
+            myLocArr.locRAD.RAD(rlocIdx) =
+              locArr(rlocIdx).myElems._value.dsiGetRAD();
+          }
+          myLocArr.locRAD.unlockRAD(rlocIdx);
+        }
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if radata(rlocIdx).data != nil {
+      if radata(rlocIdx).dataChunk(0) != nil {
         const startIdx = myLocArr.locCyclicRAD.startIdx;
         const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
-        var str: rank*idxType;
+        type strType = chpl__signedType(idxType);
+        var str: rank*strType;
         for param i in 1..rank {
           pragma "no copy" pragma "no auto destroy" var whole = dom.whole;
           str(i) = whole.dim(i).stride;
         }
         var dataIdx = radata(rlocIdx).getDataIndex(stridable, str, i, startIdx, dimLength);
-        return radata(rlocIdx).data(dataIdx);
+        return radata(rlocIdx).dataElem(dataIdx);
       }
     }
   }
@@ -976,9 +867,15 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
 
   var t: rank*range(idxType=idxType, stridable=true);
   for param i in 1..rank {
-    // NOTE: unsigned idxType with negative stride will not work
+    type strType = chpl__signedType(idxType);
     const wholestride = dom.whole.dim(i).stride:chpl__signedType(idxType);
-    t(i) = ((followThis(i).low*wholestride):idxType..(followThis(i).high*wholestride):idxType by (followThis(i).stride*wholestride)) + dom.whole.dim(i).low;
+    if wholestride < 0 && idxType != strType then
+      halt("negative stride with unsigned idxType not supported");
+    const iStride = wholestride:idxType;
+    const      lo = (followThis(i).low * iStride):idxType,
+               hi = (followThis(i).high * iStride):idxType,
+           stride = (followThis(i).stride*wholestride):strType;
+    t(i) = (lo..hi by stride) + dom.whole.dim(i).low;
   }
   const myFollowThis = {(...t)};
   if fast {
@@ -992,7 +889,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     //
     // TODO: Can myLocArr be used here to simplify things?
     //
-    var chunk => arrSection.myElems(myFollowThis);
+    ref chunk = arrSection.myElems(myFollowThis);
     if arrSection.locale.id == here.id then local {
       for i in chunk do yield i;
     } else {
@@ -1066,13 +963,13 @@ class LocCyclicArr {
 
   const locDom: LocCyclicDom(rank, idxType, stridable);
 
-  var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
+  var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   var locCyclicRAD: LocCyclicRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: atomicflag; // This will only be accessed locally, so
+  var locRADLock: atomicbool; // This will only be accessed locally, so
                               // force the use of processor atomics
 
-  // These function will always be called on this.locale, and so we do
+  // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
   // the repeated on's from calling testAndSet()).
   inline proc lockLocRAD() {
@@ -1112,182 +1009,179 @@ class LocCyclicRADCache /* : LocRADCache */ {
 
 proc CyclicArr.dsiSupportsBulkTransferInterface() param return true;
 
-proc CyclicArr.doiCanBulkTransferStride() param {
+proc CyclicArr.doiCanBulkTransferStride(viewDom) param {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiCanBulkTransferStride");
 
-  // A CyclicArr is a bunch of DefaultRectangular arrays,
-  // so strided bulk transfer gotta be always possible.
-  return true;
+  return useBulkTransferDist;
 }
 
-//For assignments of the form: "any = Cyclic"
-//Currently not used, instead we use: doiBulkTransferFrom()
-proc CyclicArr.doiBulkTransferTo(Barg)
+proc CyclicArr.oneDData {
+  if defRectSimpleDData {
+    return true;
+  } else {
+    // TODO: do this when we create the array?  if not, then consider:
+    // TODO: use locRad oneDData, if available
+    // TODO: with more coding complexity we could get a much quicker
+    //       answer in the 'false' case, but how to avoid penalizing
+    //       the 'true' case at scale?
+    var allBlocksOneDData: bool;
+    on this {
+      var myAllBlocksOneDData: atomic bool;
+      myAllBlocksOneDData.write(true);
+      forall la in locArr {
+        if !la.myElems._value.oneDData then
+          myAllBlocksOneDData.write(false);
+      }
+      allBlocksOneDData = myAllBlocksOneDData.read();
+    }
+    return allBlocksOneDData;
+  }
+}
+
+proc CyclicArr.doiUseBulkTransferStride(B) {
+  if debugCyclicDistBulkTransfer then
+    writeln("In CyclicArr.doiUseBulkTransferStride()");
+
+  //
+  // Absent multi-ddata, for the array as a whole, say bulk transfer
+  // is possible.
+  //
+  // If multi-ddata is possible then we can only do strided bulk
+  // transfer when all the blocks have but a single ddata chunk.
+  //
+  if this.rank != B.rank then return false;
+  return defRectSimpleDData
+         || (oneDData && chpl__getActualArray(B).oneDData);
+}
+
+//For assignments of the form: "Cyclic = any" 
+//where "any" means any array that implements the bulk transfer interface
+proc CyclicArr.doiBulkTransferFrom(Barg, viewDom)
 {
   if debugCyclicDistBulkTransfer then
-    writeln("In CyclicArr.doiBulkTransferTo()");
+    writeln("In CyclicArr.doiBulkTransferFrom()");
   
-  const B = this, A = Barg._value;
-  type el = B.idxType;
-  coforall i in B.dom.dist.targetLocDom do // for all locales
-    on B.dom.dist.targetLocs(i)
-      {
-        var regionA = B.dom.locDoms(i).myBlock;
-        if regionA.numIndices>0
+  if this.rank == Barg.rank {
+    const Dest = this;
+    const Src = chpl__getActualArray(Barg);
+    const srcView = chpl__getViewDom(Barg);
+    type el = Dest.idxType;
+    coforall i in Dest.dom.dist.targetLocDom do // for all locales
+      on Dest.dom.dist.targetLocs(i)
+      { 
+        var regionDest = Dest.dom.locDoms(i).myBlock[viewDom];
+        const regionSrc = Src.dom.locDoms(i).myBlock[srcView];
+        if regionDest.numIndices>0
         {
-          const ini=bulkCommConvertCoordinate(regionA.first, B, A);
-          const end=bulkCommConvertCoordinate(regionA.last, B, A);
-          const sb=chpl__tuplify(A.dom.locDoms(i).myBlock.stride);
-          
+          const ini=bulkCommConvertCoordinate(regionDest.first, viewDom, srcView);
+          const end=bulkCommConvertCoordinate(regionDest.last, viewDom, srcView);
+          const sb=chpl__tuplify(regionSrc.stride);
+        
           var r1,r2: rank * range(idxType = el,stridable = true);
-          r2=regionA.dims();
-           //In the case that the number of elements in dimension t for r1 and r2
-           //were different, we need to calculate the correct stride in r1
+          r2=regionDest.dims();
+          //In the case that the number of elements in dimension t for r1 and r2
+          //were different, we need to calculate the correct stride in r1
           for param t in 1..rank
           {
             r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
             if r1[t].length != r2[t].length then
               r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
           }
-        
+         
           if debugCyclicDistBulkTransfer then
-            writeln("A",(...r1),".FromDR",regionA);
-    
-          Barg[(...r1)]._value.doiBulkTransferFromDR(B.locArr[i].myElems);
+            writeln("B[",(...r1),"] ToDR A[",regionDest, "] ");
+
+          Barg._value.doiBulkTransferToDR(Dest.locArr[i].myElems[regionDest], Barg.domain[(...r1)]);
         }
       }
-}
-
-
-//For assignments of the form: "Cyclic = any" 
-//where "any" means any array that implements the bulk transfer interface
-proc CyclicArr.doiBulkTransferFrom(Barg)
-{
-  if debugCyclicDistBulkTransfer then
-    writeln("In CyclicArr.doiBulkTransferFrom()");
-  
-  const A = this, B = Barg._value;
-  type el = A.idxType;
-  coforall i in A.dom.dist.targetLocDom do // for all locales
-    on A.dom.dist.targetLocs(i)
-    { 
-      var regionA = A.dom.locDoms(i).myBlock;    
-      if regionA.numIndices>0
-      {
-        const ini=bulkCommConvertCoordinate(regionA.first, A, B);
-        const end=bulkCommConvertCoordinate(regionA.last, A, B);
-        const sb=chpl__tuplify(B.dom.locDoms(i).myBlock.stride);
-      
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        r2=regionA.dims();
-        //In the case that the number of elements in dimension t for r1 and r2
-        //were different, we need to calculate the correct stride in r1
-        for param t in 1..rank
-        {
-          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
-          if r1[t].length != r2[t].length then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
-        }
-       
-        if debugCyclicDistBulkTransfer then
-          writeln("B[",(...r1),"] ToDR A[",regionA, "] ");
-        
-        Barg[(...r1)]._value.doiBulkTransferToDR(A.locArr[i].myElems[regionA]);
-      }
-    }
+  }
 }
 
 //For assignments of the form: DR = Cyclic 
 //(default rectangular array = cyclic distributed array)
-proc CyclicArr.doiBulkTransferToDR(Barg)
+proc CyclicArr.doiBulkTransferToDR(Barg, viewDom)
 {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferToDR()");
   
-  const A = this, B = Barg._value;
-  type el = A.idxType;
-  coforall j in A.dom.dist.targetLocDom do // for all locales
-    on A.dom.dist.targetLocs(j)
-    {
-      const inters=A.dom.locDoms(j).myBlock;
-      if(inters.numIndices>0)
+  if this.rank == Barg.rank {
+    const Src = this;
+    const Dest = chpl__getActualArray(Barg);
+    const destView = chpl__getViewDom(Barg);
+    type el = Src.idxType;
+    coforall j in Src.dom.dist.targetLocDom do // for all locales
+      on Src.dom.dist.targetLocs(j)
       {
-        const ini=bulkCommConvertCoordinate(inters.first, A, B);
-        const end=bulkCommConvertCoordinate(inters.last, A, B);
-        const sa = chpl__tuplify(B.dom.dsiStride); //return a tuple
-        
-        //r2 is the domain to refer the elements of A in locale j
-        //r1 is the domain to refer the corresponding elements of B
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        r2=inters.dims();
-        //In the case that the number of elements in dimension t for r1 and r2
-        //were different, we need to calculate the correct stride in r1
-        for param t in 1..rank
+        const inters=Src.dom.locDoms(j).myBlock[viewDom];
+        if(inters.numIndices>0)
         {
-          r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
-          if r1[t].length != r2[t].length then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          const ini=bulkCommConvertCoordinate(inters.first, viewDom, destView);
+          const end=bulkCommConvertCoordinate(inters.last, viewDom, destView);
+          const sa = chpl__tuplify(destView.stride); //return a tuple
+          
+          //r2 is the domain to refer the elements of A in locale j
+          //r1 is the domain to refer the corresponding elements of B
+          var r1,r2: rank * range(idxType = el,stridable = true);
+          r2=inters.dims();
+          //In the case that the number of elements in dimension t for r1 and r2
+          //were different, we need to calculate the correct stride in r1
+          for param t in 1..rank
+          {
+            r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
+            if r1[t].length != r2[t].length then
+              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          }
+              
+          if debugCyclicDistBulkTransfer then 
+            writeln(" A[",(...r1),"] = B[",(...r2), "]");
+
+          Barg[(...r1)] = Src.locArr[j].myElems[(...r2)];
         }
-            
-        const d ={(...r1)};
-        const slice = B.dsiSlice(d._value);
-        //Necessary to calculate the value of blk variable in DR
-        //with the new domain r1
-        slice.adjustBlkOffStrForNewDomain(d._value, slice);
-     
-        if debugCyclicDistBulkTransfer then 
-          writeln(" A[",(...r1),"] = B[",(...r2), "]");
-      
-        slice.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
-        delete slice;
       }
-    }
+  }
 }
 
 //For assignments of the form: Cyclic = DR 
 //(cyclic distributed array = default rectangular)
-proc CyclicArr.doiBulkTransferFromDR(Barg)
+proc CyclicArr.doiBulkTransferFromDR(Barg, viewDom)
 {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferFromDR()");
   
-  const A = this, B = Barg._value;
-  type el = A.idxType;
-  coforall j in A.dom.dist.targetLocDom do // for all locales
-    on A.dom.dist.targetLocs(j)
-    {
-      const inters=A.dom.locDoms(j).myBlock;
-      if(inters.numIndices>0)
+  if this.rank == Barg.rank {
+    const Dest = this;
+    const Src = chpl__getActualArray(Barg);
+    const srcView = chpl__getViewDom(Barg);
+    type el = Dest.idxType;
+    coforall j in Dest.dom.dist.targetLocDom do // for all locales
+      on Dest.dom.dist.targetLocs(j)
       {
-        const ini=bulkCommConvertCoordinate(inters.first, A, B);
-        const end=bulkCommConvertCoordinate(inters.last, A, B);
-        const sb = chpl__tuplify(B.dom.dsiStride); //return a tuple
-        
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        r2=inters.dims();
-        //In the case that the number of elements in dimension t for r1 and r2
-        //were different, we need to calculate the correct stride in r1
-        for param t in 1..rank
+        const inters=Dest.dom.locDoms(j).myBlock[viewDom];
+        if(inters.numIndices>0)
         {
-          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
-          if r1[t].length != r2[t].length then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          const ini=bulkCommConvertCoordinate(inters.first, viewDom, srcView);
+          const end=bulkCommConvertCoordinate(inters.last, viewDom, srcView);
+          const sb = chpl__tuplify(srcView.stride); //return a tuple
+          
+          var r1,r2: rank * range(idxType = el,stridable = true);
+          r2=inters.dims();
+          //In the case that the number of elements in dimension t for r1 and r2
+          //were different, we need to calculate the correct stride in r1
+          for param t in 1..rank
+          {
+            r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+            if r1[t].length != r2[t].length then
+              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          }
+          
+          if debugCyclicDistBulkTransfer then
+              writeln("A[",(...r2),"] = B[",(...r1), "] ");
+
+          Dest.locArr[j].myElems[(...r2)] = Barg[(...r1)];
         }
-        
-        if debugCyclicDistBulkTransfer then
-            writeln("A[",(...r2),"] = B[",(...r1), "] ");
-        
-        const d ={(...r1)};
-        const slice = B.dsiSlice(d._value);
-        //this step it's necessary to calculate the value of blk variable in DR
-        //with the new domain r1
-        slice.adjustBlkOffStrForNewDomain(d._value, slice);
-      
-        A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice);
-        delete slice;
       }
-    }
+  }
 }
 
 proc CyclicArr.dsiTargetLocales() {

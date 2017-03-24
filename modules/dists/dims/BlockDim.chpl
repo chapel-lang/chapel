@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -262,31 +262,6 @@ proc Block1dom._dsiComputeMyRange(locId): rangeT {
 proc Block1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
   myRange = globDD._dsiComputeMyRange(locId);
   return myRange;
-}
-
-/////////////////////////////////
-
-proc Block1dom.dsiBuildRectangularDom1d(DD,
-                                   param stridable:bool,
-                                   rangeArg: range(idxType,
-                                                   BoundedRangeType.bounded,
-                                                   stridable))
-{
-  // There does not seem to be any optimizations from merging the two calls.
-  type dummy_stoIndexT = int;
-  const result = DD.dsiNewRectangularDom1d(this.idxType, stridable,
-                                           dummy_stoIndexT);
-  result.dsiSetIndices1d(rangeArg);
-  return result;
-}
-
-proc Block1locdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
-  type  old_stoIndexT = this.myRange.idxType; // essentially 'this.stoIndexT'
-
-  const newLocDD = newGlobDD.dsiNewLocalDom1d(old_stoIndexT, locId);
-  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
-
-  return (newLocDD, newStoRng);
 }
 
 /////////////////////////////////

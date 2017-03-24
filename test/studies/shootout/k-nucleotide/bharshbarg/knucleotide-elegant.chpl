@@ -63,8 +63,8 @@ proc write_frequencies(data : string, size : int) {
   for (s, e, f) in zip(sorted, freqs.domain, freqs) do
     s = (f.read(), e);
 
-  // QuickSort will sort starting at the tuple's first element.
-  QuickSort(sorted, reverse=true);
+  // quickSort will sort starting at the tuple's first element.
+  quickSort(sorted, comparator=reverseComparator);
 
   const sum = data.length - size;
   for (f, e) in sorted do

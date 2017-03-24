@@ -9,7 +9,7 @@ class foo {
 
   var  x : bar(t) = new bar(t);
 
-  proc ~foo() {
+  proc deinit() {
     delete x;
   }
 

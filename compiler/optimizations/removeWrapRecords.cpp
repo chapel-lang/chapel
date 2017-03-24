@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,6 +38,15 @@ static Type* getWrapRecordBaseType(Type* type);
 //
 void
 removeWrapRecords() {
+
+  return; // disabled
+          // TODO -- delete this pass
+          // I don't think it makes sense to continue removing wrapper
+          // records, because e.g. ownership bit exists at runtime.
+          // However, the fields in these records are constant, so
+          // the record itself can be passed instead of
+          // a ref(the record).
+
   //
   // do not remove wrap records if dead code elimination is disabled
   // (or weakened because inlining or copy propagation is disabled)
@@ -65,7 +74,7 @@ removeWrapRecords() {
         call->isPrimitive(PRIM_GET_MEMBER) ||
         call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       if (SymExpr* se = toSymExpr(call->get(2))) {
-        if (!strcmp(se->var->name, "_valueType")) {
+        if (!strcmp(se->symbol()->name, "_valueType")) {
           se->getStmtExpr()->remove();
         }
       }
@@ -135,7 +144,7 @@ removeWrapRecords() {
           if (se->parentSymbol == NULL)
             continue;
           // Weed out all but the formal we're interested in.
-          if (se->var != formal)
+          if (se->symbol() != formal)
             continue;
           // OK, remove the entire statement accessing the _valueType formal.
           Expr* stmt = se->getStmtExpr();
@@ -156,24 +165,24 @@ removeWrapRecords() {
 
     if (call->isPrimitive(PRIM_SET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (isRecordWrappedType(se->var->type)) {
+        if (isRecordWrappedType(se->symbol()->type)) {
           call->primitive = primitives[PRIM_MOVE];
           call->get(2)->remove();
         }
       }
     } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (isRecordWrappedType(se->var->type)) {
+        if (isRecordWrappedType(se->symbol()->type)) {
           call->primitive = primitives[PRIM_ADDR_OF];
           call->get(2)->remove();
         }
       }
     } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (isRecordWrappedType(se->var->type)) {
+        if (isRecordWrappedType(se->symbol()->type)) {
           call->replace(se->remove());
         }
-        if (se->var->type->symbol->hasFlag(FLAG_REF)) {
+        if (se->symbol()->type->symbol->hasFlag(FLAG_REF)) {
           Type* vt = se->getValType();
           if (isRecordWrappedType(vt)) {
             SET_LINENO(call);
@@ -197,12 +206,19 @@ removeWrapRecords() {
         // TODO: Domains don't work generally due to some case in Sparse.
         // What about dist classes?
         //
+        // TODO: When a record is bit-copied across locales, this optimization
+        // should not be applied. For now, simply do not apply the pragma to
+        // arrays inside records. Ongoing work on memory-management semantics
+        // should shed some light on whether or not we should be allowed to
+        // mark such a field with this pragma.
+        //
         if (TypeSymbol* ts = toTypeSymbol(var->defPoint->parentSymbol)) {
           if (!(ts->hasFlag(FLAG_REF) ||
                 ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE) ||
                 ts->hasEitherFlag(FLAG_TUPLE, FLAG_STAR_TUPLE) ||
                 ts->hasEitherFlag(FLAG_ITERATOR_CLASS, FLAG_ITERATOR_RECORD) ||
-                ts->hasFlag(FLAG_HEAP))) {
+                ts->hasFlag(FLAG_HEAP) ||
+                isRecord(ts->type))) {
               const char* bundlePrefix = "_class_locals";
               if (strncmp(ts->name, bundlePrefix, strlen(bundlePrefix))) {
                 if (isArrayClass(type)) {

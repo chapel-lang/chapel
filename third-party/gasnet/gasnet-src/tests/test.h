@@ -30,6 +30,8 @@
   #include <pthread.h>
 #endif
 
+GASNETT_BEGIN_EXTERNC
+
 #if !defined(DEBUG) && !defined(NDEBUG)
   #ifdef GASNET_DEBUG
     #define DEBUG 1
@@ -60,8 +62,6 @@
   #define srand(seed) srand_deterministic(seed)
 #endif
 
-GASNETT_BEGIN_EXTERNC
-
 #define assert_always(expr) \
     ((expr) ? (void)0 : (void)FATALERR("Assertion failure: %s", #expr))
 
@@ -80,11 +80,18 @@ GASNETT_BEGIN_EXTERNC
      msgeval - expression which is evaluated in a critical section, 
                immediately before each message output (or 0 for none)
  */
+#if PLATFORM_COMPILER_PATHSCALE
+  typedef void (*_testformatter_fn_t)(const char *format, ...);
+  #define BUG3343_WORKAROUND(expr) ((_testformatter_fn_t)(expr))
+#else
+  #define BUG3343_WORKAROUND(expr) expr
+#endif
 #define test_makeMsg(baseformatargs, msgpred, isfatal, msgeval)     \
+  BUG3343_WORKAROUND(                                               \
   ( _test_makeErrMsg baseformatargs ,                               \
     ( (msgpred) ? (void)(msgeval) : (void)(_test_squashmsg = 1) ) , \
     (void)(_test_fatalmsg = (isfatal)),                             \
-    _test_doErrMsg )
+    _test_doErrMsg ) )
 
 /* define several useful messaging macros */
 static int test_errs = 0;
@@ -177,6 +184,7 @@ static void _test_makeErrMsg(const char *format, ...)) {
 #define alignup_ptr(a,b) ((void *)(((((uintptr_t)(a))+(b)-1)/(b))*(b)))
 #define aligndown(a,b) (((a)/(b))*(b))
 
+GASNETT_UNUSED /* not used by every test */
 static int _test_rand(int low, int high) {
   int result;
   assert(low <= high);
@@ -211,9 +219,9 @@ static int _test_rand(int low, int high) {
   if_pf(!_retval) FATALERR(#op": %s(%i)",strerror(_retval), _retval); \
 } while (0)
 
-GASNETI_UNUSED /* not used by every test */
+GASNETT_UNUSED /* not used by every test */
 static char test_section;
-GASNETI_UNUSED /* not used by every test */
+GASNETT_UNUSED /* not used by every test */
 static char test_sections[255];
 
 #define TEST_SECTION_BEGIN()        ((void)(!test_section ? test_section = 'A' : test_section++))
@@ -246,6 +254,7 @@ static char test_sections[255];
   #define test_resume_interrupts()  ((void)0)
 #endif
 
+GASNETT_UNUSED /* not used by every test */
 static void *_test_malloc(size_t sz, const char *curloc) {
   void *ptr;
   test_hold_interrupts();
@@ -254,6 +263,7 @@ static void *_test_malloc(size_t sz, const char *curloc) {
   if (ptr == NULL) FATALERR("Failed to malloc(%lu) bytes at %s\n",(unsigned long)sz,curloc);
   return ptr;
 }
+GASNETT_UNUSED /* not used by every test */
 static void *_test_calloc(size_t sz, const char *curloc) {
   void *retval = _test_malloc(sz, curloc);
   if (retval) memset(retval, 0, sz);
@@ -438,9 +448,7 @@ GASNETT_IDENT(GASNetT_TiCompiler_IdentString,
 #endif
 #ifndef TEST_MAXTHREADS
   /* TEST_MAXTHREADS is a compile-time constant */
-  #if defined(GASNETI_MAX_THREADS_CONFIGURE)
-    #define TEST_MAXTHREADS_SYSTEM GASNETI_MAX_THREADS_CONFIGURE
-  #elif defined(GASNETT_MAX_THREADS)
+  #if GASNETT_MAX_THREADS > 1  /* may be missing for tools-only */
     #define TEST_MAXTHREADS_SYSTEM GASNETT_MAX_THREADS
   #else
     #define TEST_MAXTHREADS_SYSTEM 256
@@ -448,6 +456,7 @@ GASNETT_IDENT(GASNetT_TiCompiler_IdentString,
   #define TEST_MAXTHREADS (TEST_MAXTHREADS_SYSTEM + TEST_USE_PRIMORDIAL_THREAD - 1)
 #endif
 /* Runtime enforcement of TEST_MAXTHREADS, GASNET_TEST_THREAD_LIMIT, or platform-specific limits */
+GASNETT_UNUSED /* not used by every test */
 static int test_thread_limit(int numthreads) {
     int limit = gasnett_getenv_int_withdefault("GASNET_TEST_THREAD_LIMIT", TEST_MAXTHREADS, 0);
     limit = MIN(limit, TEST_MAXTHREADS); /* Ignore attempt to raise above TEST_MAXTHREADS */
@@ -465,7 +474,7 @@ static void test_createandjoin_pthreads(int numthreads, void *(*start_routine)(v
     int jointhreads = 0;
     uint8_t *threadarg_pos = (uint8_t *)threadarg_arr;
     pthread_t *threadid = (pthread_t *)test_malloc(sizeof(pthread_t)*numthreads);
-    #ifdef HAVE_PTHREAD_SETCONCURRENCY
+    #if HAVE_PTHREAD_SETCONCURRENCY && !GASNETT_CONFIGURE_MISMATCH
       pthread_setconcurrency(numthreads);
     #endif
 
@@ -608,7 +617,7 @@ static void test_createandjoin_pthreads(int numthreads, void *(*start_routine)(v
   } while (0)
 #endif
 
-GASNETI_UNUSED /* test_collinit not used in all tests */
+GASNETT_UNUSED /* test_collinit not used in all tests */
 static int test_collinit = 0;
 #define TEST_COLL_INIT() do {          \
     if (!test_collinit) {              \
@@ -843,6 +852,7 @@ static void TEST_DEBUGPERFORMANCE_WARNING(void) {
 /* ------------------------------------------------------------------------------------ */
 /* segment alignment */
 #if defined(GASNET_SEGMENT_EVERYTHING) || !GASNET_ALIGNED_SEGMENTS
+  GASNETT_UNUSED /* not used by every test */
   static int TEST_ALIGNED_SEGMENTS(void) {
     static volatile int is_aligned = -1;
     if_pf (is_aligned < 0) {
@@ -887,6 +897,7 @@ static int _test_localprocs(void) { /* First call is not thread safe */
 }
 #define TEST_LOCALPROCS() (_test_localprocs())
 
+GASNETT_UNUSED /* not used by every test */
 static void _test_set_waitmode(int threads) {
   const int local_procs = TEST_LOCALPROCS();
   if (gasnett_getenv_yesno_withdefault("GASNET_TEST_POLITE_SYNC",0)) return;
@@ -1051,8 +1062,7 @@ static void _test_init(const char *testname, int reports_performance, int early,
 #define TEST_BACKTRACE_DECLS()                              \
   static int test_my_backtrace = 0;                         \
   static volatile int test_my_backtrace_ran = 0;            \
-  GASNETT_BEGIN_EXTERNC                                     \
-  static int test_my_backtrace_fn(int fd) {                 \
+  GASNETT_EXTERNC int test_my_backtrace_fn(int fd) {        \
     if (test_my_backtrace_ran != -1) {                      \
       /* Indicate FAILURE if we were not testing */         \
       /* So the next available mechanism will run. */       \
@@ -1061,7 +1071,6 @@ static void _test_init(const char *testname, int reports_performance, int early,
     test_my_backtrace_ran = 1;                              \
     return 0;                                               \
   }                                                         \
-  GASNETT_END_EXTERNC                                       \
   gasnett_backtrace_type_t gasnett_backtrace_user = {       \
     "USER", &test_my_backtrace_fn, 1                        \
   }
@@ -1085,8 +1094,8 @@ static void _test_init(const char *testname, int reports_performance, int early,
 
 #define TEST_TRACING_MACROS() do {                                                 \
   /* 'file' and 'line' unused in tools-only or when srclines disabled */           \
-  GASNETI_UNUSED const char *file;                                                 \
-  GASNETI_UNUSED unsigned int line;                                                \
+  GASNETT_UNUSED const char *file;                                                 \
+  GASNETT_UNUSED unsigned int line;                                                \
   GASNETT_TRACE_GETSOURCELINE(&file, &line);                                       \
   GASNETT_TRACE_SETSOURCELINE(file, line);                                         \
   GASNETT_TRACE_FREEZESOURCELINE();                                                \

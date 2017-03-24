@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,7 @@
 // Removes gotos where the label immediately follows the goto and
 // unused labels
 //
-void removeUnnecessaryGotos(FnSymbol* fn) {
+void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
   std::vector<BaseAST*> asts;
   std::set<BaseAST*> labels;
   collect_asts(fn, asts);
@@ -38,17 +38,18 @@ void removeUnnecessaryGotos(FnSymbol* fn) {
       DefExpr* def = toDefExpr(gotoStmt->next);
       SymExpr* label = toSymExpr(gotoStmt->label);
       INT_ASSERT(label);
-      if (def && def->sym == label->var)
+      if (def && def->sym == label->symbol())
         gotoStmt->remove();
       else
-        labels.insert(label->var);
+        labels.insert(label->symbol());
     }
   }
 
   for_vector(BaseAST, ast2, asts) {
     if (DefExpr* def = toDefExpr(ast2))
       if (LabelSymbol* label = toLabelSymbol(def->sym))
-        if (labels.find(label) == labels.end())
-          def->remove();
+        if (!label->hasFlag(FLAG_EPILOGUE_LABEL) || removeEpilogueLabel)
+          if (labels.find(label) == labels.end())
+            def->remove();
   }
 }

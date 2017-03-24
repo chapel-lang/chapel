@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -90,6 +90,8 @@ public:
   virtual bool   enterBlockStmt      (BlockStmt*         node);
   virtual void   exitBlockStmt       (BlockStmt*         node);
 
+  virtual void   visitForallIntents  (ForallIntents*   clause);
+
   virtual bool   enterWhileDoStmt    (WhileDoStmt*       node);
   virtual void   exitWhileDoStmt     (WhileDoStmt*       node);
 
@@ -112,6 +114,15 @@ public:
 
   virtual bool   enterGotoStmt       (GotoStmt*          node);
   virtual void   exitGotoStmt        (GotoStmt*          node);
+
+  virtual bool   enterForwardingStmt (ForwardingStmt*    node);
+  virtual void   exitForwardingStmt  (ForwardingStmt*    node);
+
+  virtual bool   enterTryStmt        (TryStmt*           node);
+  virtual void   exitTryStmt         (TryStmt*           node);
+
+  virtual bool   enterCatchStmt      (CatchStmt*         node);
+  virtual void   exitCatchStmt       (CatchStmt*         node);
 
 protected:
   bool outputVector (FILE* fp, std::vector<const char*> vec);

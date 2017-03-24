@@ -1,13 +1,5 @@
 #include "test/jemalloc_test.h"
 
-#ifdef JEMALLOC_FILL
-#  ifndef JEMALLOC_TEST_JUNK_OPT
-#    define JEMALLOC_TEST_JUNK_OPT "junk:true"
-#  endif
-const char *malloc_conf =
-    "abort:false,zero:false,redzone:true,quarantine:0," JEMALLOC_TEST_JUNK_OPT;
-#endif
-
 static arena_dalloc_junk_small_t *arena_dalloc_junk_small_orig;
 static arena_dalloc_junk_large_t *arena_dalloc_junk_large_orig;
 static huge_dalloc_junk_t *huge_dalloc_junk_orig;
@@ -53,10 +45,10 @@ arena_dalloc_junk_large_intercept(void *ptr, size_t usize)
 }
 
 static void
-huge_dalloc_junk_intercept(tsdn_t *tsdn, void *ptr, size_t usize)
+huge_dalloc_junk_intercept(void *ptr, size_t usize)
 {
 
-	huge_dalloc_junk_orig(tsdn, ptr, usize);
+	huge_dalloc_junk_orig(ptr, usize);
 	/*
 	 * The conditions under which junk filling actually occurs are nuanced
 	 * enough that it doesn't make sense to duplicate the decision logic in

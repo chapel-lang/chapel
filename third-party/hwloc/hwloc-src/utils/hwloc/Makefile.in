@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # Copyright © 2009-2016 Inria.  All rights reserved.
-# Copyright © 2009-2012, 2014 Université Bordeaux
+# Copyright © 2009-2012, 2014, 2016 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 #
 # See COPYING in top-level directory.
@@ -109,6 +109,8 @@ bin_PROGRAMS = hwloc-annotate$(EXEEXT) hwloc-assembler$(EXEEXT) \
 @HWLOC_HAVE_MINGW32_FALSE@@HWLOC_HAVE_PLUGINS_TRUE@am__append_3 = test-fake-plugin.sh
 @HWLOC_HAVE_LINUX_TRUE@am__append_4 = $(hgt_page)
 @HWLOC_HAVE_WINDOWS_FALSE@am__append_5 = $(hps_page)
+# WARNING: The SEDMAN line below isn't portable ($(subst ...) is GNU-make only).
+# Keep this rule Linux-only, or stop using $(subst ...). See issue #187.
 @HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_X86_TRUE@am__append_6 = $(hdh_page)
 subdir = utils/hwloc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -602,7 +604,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PDFLATEX = @PDFLATEX@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
-RMPATH = @RMPATH@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -707,6 +708,10 @@ bin_SCRIPTS = hwloc-assembler-remote hwloc-compress-dir \
 @HWLOC_HAVE_MINGW32_FALSE@	test-hwloc-distances.sh \
 @HWLOC_HAVE_MINGW32_FALSE@	test-hwloc-distrib.sh \
 @HWLOC_HAVE_MINGW32_FALSE@	test-hwloc-info.sh $(am__append_3)
+SEDMAN = $(SED) -e 's/\#PACKAGE_NAME\#/@PACKAGE_NAME@/g' \
+	  -e 's/\#PACKAGE_VERSION\#/@PACKAGE_VERSION@/g' \
+	  -e 's/\#HWLOC_DATE\#/@HWLOC_RELEASE_DATE@/g'
+
 
 # Only install man pages if we're building in standalone mode
 man7_pages = hwloc.7
@@ -1575,27 +1580,25 @@ uninstall-man: uninstall-man1 uninstall-man7
 
 .PRECIOUS: Makefile
 
+@HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_X86_TRUE@hwloc-dump-hwdata.1: hwloc-dump-hwdata.1in
+@HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_X86_TRUE@	@ echo Creating $@ man page...
+@HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_X86_TRUE@	@ $(SEDMAN) \
+@HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_X86_TRUE@	  -e 's/#RUNSTATEDIR#/$(subst /,\/,$(HWLOC_runstatedir))/g' \
+@HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_X86_TRUE@	  > $@ < $<
 
 .1in.1:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
-	  -e 's/#RUNSTATEDIR#/$(subst /,\/,$(HWLOC_runstatedir))/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 .3in.3:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 .7in.7:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 install-exec-hook:

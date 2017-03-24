@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -388,8 +388,8 @@ extern record qio_regexp_string_piece_t {
 
 private extern proc qio_regexp_string_piece_isnull(ref sp:qio_regexp_string_piece_t):bool;
 
-private extern proc qio_regexp_match(ref re:qio_regexp_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
-private extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string_copy, ref replaced_len:int(64)):int(64);
+private extern proc qio_regexp_match(const ref re:qio_regexp_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
+private extern proc qio_regexp_replace(const ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string_copy, ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied
@@ -418,7 +418,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   if ! qio_regexp_ok(ret._regexp) {
     var err_str = qio_regexp_error(ret._regexp);
 
-    var err_msg = "Error " + err_str + " when compiling regexp '" + pattern + "'";
+    var err_msg = "Error " + err_str:string + " when compiling regexp '" + pattern + "'";
     __primitive("chpl_error", err_msg.c_str());
   }
   return ret;
@@ -593,7 +593,7 @@ record regexp {
 
   // note - more = overloads are below.
   pragma "no doc"
-  proc ref ~regexp() {
+  proc ref deinit() {
     qio_regexp_release(_regexp);
     _regexp = qio_regexp_null();
   }

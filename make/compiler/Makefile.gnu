@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -22,8 +22,8 @@
 #
 # Tools
 #
-CXX = g++
-CC = gcc
+CXX = $(CROSS_COMPILER_PREFIX)g++
+CC = $(CROSS_COMPILER_PREFIX)gcc
 
 RANLIB = ranlib
 
@@ -49,9 +49,7 @@ endif
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = $(CFLAGS)
-RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 RUNTIME_CXXFLAGS = $(CFLAGS)
-RUNTIME_GEN_CXXFLAGS = $(RUNTIME_CXXFLAGS)
 GEN_CFLAGS =
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
@@ -82,7 +80,6 @@ endif
 ifeq ($(CHPL_MAKE_PLATFORM), aix)
 GEN_CFLAGS += -maix64
 RUNTIME_CFLAGS += -maix64
-RUNTIME_GEN_CFLAGS += -maix64
 GEN_CFLAGS += -maix64
 COMP_GEN_LFLAGS += -maix64
 endif
@@ -96,60 +93,33 @@ endif
 ifndef GNU_GCC_MINOR_VERSION
 export GNU_GCC_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
 endif
-ifndef GNU_GCC_SUPPORTS_STDATOMICS
-export GNU_GCC_SUPPORTS_STDATOMICS = $(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4 || (test $(GNU_GCC_MAJOR_VERSION) -eq 4 && test $(GNU_GCC_MINOR_VERSION) -lt 9); echo "$$?")
-endif
 ifndef GNU_GPP_MAJOR_VERSION
 export GNU_GPP_MAJOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
 endif
 ifndef GNU_GPP_MINOR_VERSION
 export GNU_GPP_MINOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
 endif
-ifndef GNU_GPP_SUPPORTS_STDATOMICS
-export GNU_GPP_SUPPORTS_STDATOMICS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -lt 5); echo "$$?")
-endif
 ifndef GNU_GPP_SUPPORTS_MISSING_DECLS
 export GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
 endif
-ifndef GNU_GPP_SUPPORTS_STRICT_OVERFLOW
-export GNU_GPP_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
+ifndef GNU_GCC_SUPPORTS_STRICT_OVERFLOW
+export GNU_GCC_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4 || (test $(GNU_GCC_MAJOR_VERSION) -eq 4 && test $(GNU_GCC_MINOR_VERSION) -le 2); echo "$$?")
 endif
 
 #
-# Specifying the language standard for gcc/g++ to use
+# If the compiler's default C version is less than C99, force C99 mode.
 #
-# If the gcc and g++ versions both support standard atomics:
-#   For gcc version >= 5, just use the default, which is at least C11.
-#   For g++ version >= 6, just use the default, which is at least C++14.
-#   Otherwise the defaults are C90/C++98, so specify C11 and C++11.
-# If one or both don't support standard atomics:
-#   Specify C99/C++98.
+# If the default C version is at least C11, force the C++ version to
+# be at least C++11 to match.
 #
-ifeq ($(GNU_GCC_SUPPORTS_STDATOMICS),$(GNU_GPP_SUPPORTS_STDATOMICS))
-  ifeq ($(GNU_GCC_SUPPORTS_STDATOMICS),1)
-    ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 5; echo "$$?"),0)
-      GCC_STD = -std=c11
-    else
-      GCC_STD =
-    endif
-    ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -lt 6; echo "$$?"),0)
-      GPP_STD = -std=c++11
-    else
-      GPP_STD =
-    endif
-  else
-    GCC_STD = -std=c99
-    GPP_STD = -std=c++98
-  endif
-else
-  GCC_STD = -std=c99
-  GPP_STD = -std=c++98
-endif
-RUNTIME_CFLAGS += $(GCC_STD)
-RUNTIME_GEN_CFLAGS += $(GCC_STD)
-RUNTIME_CXXFLAGS += $(GPP_STD)
-RUNTIME_GEN_CXXFLAGS += $(GPP_STD)
-GEN_CFLAGS += $(GCC_STD)
+DEF_C_VER := $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__STDC_VERSION__/0/')
+DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/')
+C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
+CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+
+RUNTIME_CFLAGS += $(C_STD)
+RUNTIME_CXXFLAGS += $(CXX_STD)
+GEN_CFLAGS += $(C_STD)
 
 #
 # Flags for turning on warnings for C++/C code
@@ -163,8 +133,15 @@ SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
 #
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4; echo "$$?"),1)
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4; echo "$$?"),1)
 SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
+endif
+
+#
+# Don't warn/error for tautological compares (ex. x == x)
+#
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 6; echo "$$?"),1)
+SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 endif
 
 #
@@ -188,7 +165,7 @@ else
 WARN_CFLAGS += -Wmissing-declarations
 endif
 
-ifeq ($(GNU_GPP_SUPPORTS_STRICT_OVERFLOW),1)
+ifeq ($(GNU_GCC_SUPPORTS_STRICT_OVERFLOW),1)
 # -Wno-strict-overflow is needed only because the way we code range iteration
 # (ChapelRangeBase.chpl:793) generates code which can overflow.
 GEN_CFLAGS += -Wno-strict-overflow
@@ -205,8 +182,6 @@ COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
-RUNTIME_GEN_CFLAGS += -Wno-unused
-RUNTIME_GEN_CXXFLAGS += -Wno-unused
 #WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 

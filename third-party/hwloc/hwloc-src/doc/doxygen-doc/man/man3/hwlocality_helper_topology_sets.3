@@ -1,8 +1,8 @@
-.TH "CPU and node sets of entire topologies" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_topology_sets" 3 "Thu Feb 23 2017" "Version 1.11.6" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-CPU and node sets of entire topologies \- 
+hwlocality_helper_topology_sets \- CPU and node sets of entire topologies
 .SS "Functions"
 
 .in +1c
@@ -33,7 +33,7 @@ CPU and node sets of entire topologies \-
 
 .SH "Function Documentation"
 .PP 
-.SS "static \fBhwloc_const_cpuset_t\fP hwloc_topology_get_allowed_cpuset (\fBhwloc_topology_t\fPtopology)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_const_cpuset_t\fP hwloc_topology_get_allowed_cpuset (\fBhwloc_topology_t\fP topology)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get allowed CPU set\&. 
@@ -49,7 +49,7 @@ The returned cpuset is not newly allocated and should thus not be changed or fre
 .RE
 .PP
 
-.SS "static \fBhwloc_const_nodeset_t\fP hwloc_topology_get_allowed_nodeset (\fBhwloc_topology_t\fPtopology)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_const_nodeset_t\fP hwloc_topology_get_allowed_nodeset (\fBhwloc_topology_t\fP topology)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get allowed node set\&. 
@@ -65,7 +65,7 @@ The returned nodeset is not newly allocated and should thus not be changed or fr
 .RE
 .PP
 
-.SS "static \fBhwloc_const_cpuset_t\fP hwloc_topology_get_complete_cpuset (\fBhwloc_topology_t\fPtopology)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_const_cpuset_t\fP hwloc_topology_get_complete_cpuset (\fBhwloc_topology_t\fP topology)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get complete CPU set\&. 
@@ -81,7 +81,7 @@ The returned cpuset is not newly allocated and should thus not be changed or fre
 .RE
 .PP
 
-.SS "static \fBhwloc_const_nodeset_t\fP hwloc_topology_get_complete_nodeset (\fBhwloc_topology_t\fPtopology)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_const_nodeset_t\fP hwloc_topology_get_complete_nodeset (\fBhwloc_topology_t\fP topology)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get complete node set\&. 
@@ -97,7 +97,7 @@ The returned nodeset is not newly allocated and should thus not be changed or fr
 .RE
 .PP
 
-.SS "static \fBhwloc_const_cpuset_t\fP hwloc_topology_get_online_cpuset (\fBhwloc_topology_t\fPtopology)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_const_cpuset_t\fP hwloc_topology_get_online_cpuset (\fBhwloc_topology_t\fP topology)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get online CPU set\&. 
@@ -113,7 +113,7 @@ The returned cpuset is not newly allocated and should thus not be changed or fre
 .RE
 .PP
 
-.SS "static \fBhwloc_const_cpuset_t\fP hwloc_topology_get_topology_cpuset (\fBhwloc_topology_t\fPtopology)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_const_cpuset_t\fP hwloc_topology_get_topology_cpuset (\fBhwloc_topology_t\fP topology)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get topology CPU set\&. 
@@ -129,7 +129,7 @@ The returned cpuset is not newly allocated and should thus not be changed or fre
 .RE
 .PP
 
-.SS "static \fBhwloc_const_nodeset_t\fP hwloc_topology_get_topology_nodeset (\fBhwloc_topology_t\fPtopology)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_const_nodeset_t\fP hwloc_topology_get_topology_nodeset (\fBhwloc_topology_t\fP topology)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get topology node set\&. 

@@ -113,9 +113,9 @@ module SSCA2_RMAT_graph_generator
       // Random Numbers return in the range [0.0, 1.0)
 
       var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
-	               new NPBRandomStream (seed = 0556707007)
+	               new NPBRandomStream (real, seed = 0556707007)
 		     else
-		       new NPBRandomStream ();
+		       new NPBRandomStream (real);
 
       var   Noisy_a     : [edge_range] real, 
 	    Noisy_b     : [edge_range] real, 
@@ -237,10 +237,10 @@ module SSCA2_RMAT_graph_generator
 	       "edge end vertices out of high end of range");
 
       assert ( Edge_Weight > 0, 
-	       "edge weightd out of low end of range");
+	       "edge weight out of low end of range");
 
       assert ( Edge_Weight <= MAX_EDGE_WEIGHT,  
-	       "edge weightd out of high end of range");
+	       "edge weight out of high end of range");
 
       writeln (); writeln ("Vertex Set in G:", G.vertices);
 
@@ -389,7 +389,7 @@ module SSCA2_RMAT_graph_generator
 
   //
   // For debugging, we are making these errors non-fatal.
-  // Especially usefil with --checkOnlyOnRead.
+  // Especially useful with --checkOnlyOnRead.
   //
   proc myerror(args...) {
     stderr.writeln("ERROR: ", (...args));
@@ -442,7 +442,7 @@ module SSCA2_RMAT_graph_generator
       if dEdge then writeln(dstyle, " vertex ", u);
       writeNum(sta, startIx);
 
-      for v in G.Neighbors(u) {
+      for v in G.Neighbors(u).sorted() {
         const w = G.Row(u).Weight(v);
         if dRow then write((v, w));
         if dEdge then writeln(dstyle, " ", u, " ", v, " ", w);

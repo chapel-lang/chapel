@@ -1,8 +1,8 @@
-.TH "Interoperability with glibc sched affinity" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_glibc_sched" 3 "Thu Feb 23 2017" "Version 1.11.6" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Interoperability with glibc sched affinity \- 
+hwlocality_glibc_sched \- Interoperability with glibc sched affinity
 .SS "Functions"
 
 .in +1c
@@ -25,13 +25,13 @@ Topology \fCtopology\fP must match the current machine\&.
 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_cpuset_from_glibc_sched_affinity (\fBhwloc_topology_t\fPtopology, \fBhwloc_cpuset_t\fPhwlocset, const cpu_set_t *schedset, size_tschedsetsize)\fC [inline]\fP, \fC [static]\fP"
+.SS "static int hwloc_cpuset_from_glibc_sched_affinity (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP hwlocset, const cpu_set_t * schedset, size_t schedsetsize)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Convert glibc sched affinity CPU set \fCschedset\fP into hwloc CPU set\&. This function may be used before calling sched_setaffinity or any other function that takes a cpu_set_t as input parameter\&.
 .PP
 \fCschedsetsize\fP should be sizeof(cpu_set_t) unless \fCschedset\fP was dynamically allocated with CPU_ALLOC 
-.SS "static int hwloc_cpuset_to_glibc_sched_affinity (\fBhwloc_topology_t\fPtopology, \fBhwloc_const_cpuset_t\fPhwlocset, cpu_set_t *schedset, size_tschedsetsize)\fC [inline]\fP, \fC [static]\fP"
+.SS "static int hwloc_cpuset_to_glibc_sched_affinity (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP hwlocset, cpu_set_t * schedset, size_t schedsetsize)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Convert hwloc CPU set \fCtoposet\fP into glibc sched affinity CPU set \fCschedset\fP\&. This function may be used before calling sched_setaffinity or any other function that takes a cpu_set_t as input parameter\&.

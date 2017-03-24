@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -47,7 +47,6 @@ OPT_CFLAGS = -O3
 
 COMP_CFLAGS = $(CFLAGS) $(CRAYPE_COMP_CFLAGS)
 RUNTIME_CFLAGS += $(CFLAGS)
-RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 GEN_CFLAGS += $(CFLAGS) $(CRAYPE_GEN_CFLAGS)
 GEN_LFLAGS += $(LFLAGS)
 GEN_STATIC_FLAG = -static
@@ -55,8 +54,15 @@ GEN_DYNAMIC_FLAG = -dynamic
 LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 
+# With locale models other than 'flat' we will need libnuma.  That is
+# so far available only in .so form, but the PrgEnv compilers default
+# to forcing static linking.  So, override them in this case.
+ifneq ($(CHPL_MAKE_LOCALE_MODEL), flat)
+RUNTIME_LFLAGS += -dynamic
+endif
+
 # Don't throw e.g. -march with a PrgEnv compiler since the PrgEnv environment
-# will take care of that Since we want to be able to get other flags from e.g.
+# will take care of that. Since we want to be able to get other flags from e.g.
 # Makefile.intel, here we replace SPECIALIZE_CFLAGS with nothing.
 SPECIALIZE_CFLAGS =
 
@@ -75,7 +81,7 @@ export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS
 endif
 ifeq ($(CHPL_MAKE_COMM), gasnet)
 ifneq (,$(filter $(CHPL_MAKE_COMM_SUBSTRATE),gemini aries))
-export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
+export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-udreg:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
 endif
 endif
 

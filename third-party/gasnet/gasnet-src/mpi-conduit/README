@@ -4,6 +4,24 @@ Dan Bonachea <bonachea@cs.berkeley.edu>
 User Information:
 -----------------
 
+mpi-conduit is a portable implementation of GASNet over MPI, the Message
+Passing Interface (http://mpi-forum.org/), which is implemented on most
+HPC systems.
+
+Where this conduit runs:
+-----------------------
+
+mpi-conduit is fully portable and should work correctly on any POSIX-like
+system with a working MPI implementation (compliant with specification MPI 1.1
+or later) and a functional C99 compiler.  mpi-conduit does not exploit the MPI
+RMA interfaces introduced in MPI 2.0/3.0.
+
+mpi-conduit is primarily intended as a migration tool for systems where a native GASNet
+implementation is not yet available.  It is not intended for production use on
+networks that expose a high-performance network API, where an appropriate
+GASNet native conduit implementation should be preferred. It is not intended
+for use on Ethernet harware, where udp-conduit should usually be preferred.
+
 Recognized environment variables:
 ---------------------------------
 
@@ -30,6 +48,14 @@ Recognized environment variables:
   non-blocking MPI sends, a workaround for buggy MPI implementations on a
   few platforms. 0 means always use synchronous sends, -1 means never use them
   (the default on most platforms).
+
+* AMMPI_MPI_THREAD - can be set to one of the values:
+    "SINGLE", "FUNNELED", "SERIALIZED" or "MULTIPLE" 
+  to request the MPI library be initialized with a specific threading support
+  level, for use in mixed-mode threaded applications that directly call MPI. 
+  mpi-conduit itself requires at least "SINGLE" when built in GASNET_SEQ mode,
+  and at least "SERIALIZED" to ensure correctness when built in GASNET_PAR mode.
+  See MPI documentation for detailed explanation of the threading levels.
 
 Configuration-time variables:
 ---------------------------------
@@ -100,7 +126,7 @@ Design Overview:
 
 The core API implementation is a very thin wrapper around the AMMPI
 implementation by Dan Bonachea. See documentation in the other/ammpi directory
-or the AMMPI webpage (http://www.cs.berkeley.edu/~bonachea/ammpi) for details.
+or the AMMPI webpage (http://gasnet.lbl.gov/ammpi) for details.
 AMMPI requires an MPI 1.1 or newer compliant MPI implementation, and performance 
 varies widely across MPI implementations (based primarily on their performance
 for non-blocking sends and recvs - MPI_ISend/MPI_IRecv).

@@ -1,8 +1,8 @@
-.TH "Modifying a loaded Topology" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_tinker" 3 "Thu Feb 23 2017" "Version 1.11.6" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Modifying a loaded Topology \- 
+hwlocality_tinker \- Modifying a loaded Topology
 .SS "Enumerations"
 
 .in +1c
@@ -46,7 +46,7 @@ Move Misc objects to ancestors if their parents are removed during restriction\&
 Move I/O objects to ancestors if their parents are removed during restriction\&. If this flag is not set, I/O devices and bridges are removed when their parents are removed\&. 
 .SH "Function Documentation"
 .PP 
-.SS "\fBhwloc_obj_t\fP hwloc_topology_insert_misc_object_by_cpuset (\fBhwloc_topology_t\fPtopology, \fBhwloc_const_cpuset_t\fPcpuset, const char *name)"
+.SS "\fBhwloc_obj_t\fP hwloc_topology_insert_misc_object_by_cpuset (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP cpuset, const char * name)"
 
 .PP
 Add a MISC object to the topology\&. A new MISC object will be created and inserted into the topology at the position given by bitmap \fCcpuset\fP\&. This offers a way to add new intermediate levels to the topology hierarchy\&.
@@ -66,7 +66,7 @@ If \fCname\fP contains some non-printable characters, they will be dropped when 
 .RE
 .PP
 
-.SS "\fBhwloc_obj_t\fP hwloc_topology_insert_misc_object_by_parent (\fBhwloc_topology_t\fPtopology, \fBhwloc_obj_t\fPparent, const char *name)"
+.SS "\fBhwloc_obj_t\fP hwloc_topology_insert_misc_object_by_parent (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP parent, const char * name)"
 
 .PP
 Add a MISC object as a leaf of the topology\&. A new MISC object will be created and inserted into the topology at the position given by parent\&. It is appended to the list of existing children, without ever adding any intermediate hierarchy level\&. This is useful for annotating the topology without actually changing the hierarchy\&.
@@ -84,7 +84,7 @@ If \fCname\fP contains some non-printable characters, they will be dropped when 
 .RE
 .PP
 
-.SS "int hwloc_topology_restrict (\fBhwloc_topology_t\fP restricttopology, \fBhwloc_const_cpuset_t\fPcpuset, unsigned longflags)"
+.SS "int hwloc_topology_restrict (\fBhwloc_topology_t\fP restrict topology, \fBhwloc_const_cpuset_t\fP cpuset, unsigned long flags)"
 
 .PP
 Restrict the topology to the given CPU set\&. Topology \fCtopology\fP is modified so as to remove all objects that are not included (or partially included) in the CPU set \fCcpuset\fP\&. All objects CPU and node sets are restricted accordingly\&.

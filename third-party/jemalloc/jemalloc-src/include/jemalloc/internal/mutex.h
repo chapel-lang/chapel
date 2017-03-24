@@ -5,6 +5,9 @@ typedef struct malloc_mutex_s malloc_mutex_t;
 
 #ifdef _WIN32
 #  define MALLOC_MUTEX_INITIALIZER
+#elif (defined(JEMALLOC_OS_UNFAIR_LOCK))
+#  define MALLOC_MUTEX_INITIALIZER					\
+     {OS_UNFAIR_LOCK_INIT, WITNESS_INITIALIZER(WITNESS_RANK_OMIT)}
 #elif (defined(JEMALLOC_OSSPIN))
 #  define MALLOC_MUTEX_INITIALIZER {0, WITNESS_INITIALIZER(WITNESS_RANK_OMIT)}
 #elif (defined(JEMALLOC_MUTEX_INIT_CB))
@@ -35,6 +38,8 @@ struct malloc_mutex_s {
 #  else
 	CRITICAL_SECTION	lock;
 #  endif
+#elif (defined(JEMALLOC_OS_UNFAIR_LOCK))
+	os_unfair_lock		lock;
 #elif (defined(JEMALLOC_OSSPIN))
 	OSSpinLock		lock;
 #elif (defined(JEMALLOC_MUTEX_INIT_CB))
@@ -80,35 +85,39 @@ JEMALLOC_INLINE void
 malloc_mutex_lock(tsdn_t *tsdn, malloc_mutex_t *mutex)
 {
 
+	witness_assert_not_owner(tsdn, &mutex->witness);
 	if (isthreaded) {
-		witness_assert_not_owner(tsdn, &mutex->witness);
 #ifdef _WIN32
 #  if _WIN32_WINNT >= 0x0600
 		AcquireSRWLockExclusive(&mutex->lock);
 #  else
 		EnterCriticalSection(&mutex->lock);
 #  endif
+#elif (defined(JEMALLOC_OS_UNFAIR_LOCK))
+		os_unfair_lock_lock(&mutex->lock);
 #elif (defined(JEMALLOC_OSSPIN))
 		OSSpinLockLock(&mutex->lock);
 #else
 		pthread_mutex_lock(&mutex->lock);
 #endif
-		witness_lock(tsdn, &mutex->witness);
 	}
+	witness_lock(tsdn, &mutex->witness);
 }
 
 JEMALLOC_INLINE void
 malloc_mutex_unlock(tsdn_t *tsdn, malloc_mutex_t *mutex)
 {
 
+	witness_unlock(tsdn, &mutex->witness);
 	if (isthreaded) {
-		witness_unlock(tsdn, &mutex->witness);
 #ifdef _WIN32
 #  if _WIN32_WINNT >= 0x0600
 		ReleaseSRWLockExclusive(&mutex->lock);
 #  else
 		LeaveCriticalSection(&mutex->lock);
 #  endif
+#elif (defined(JEMALLOC_OS_UNFAIR_LOCK))
+		os_unfair_lock_unlock(&mutex->lock);
 #elif (defined(JEMALLOC_OSSPIN))
 		OSSpinLockUnlock(&mutex->lock);
 #else
@@ -121,16 +130,14 @@ JEMALLOC_INLINE void
 malloc_mutex_assert_owner(tsdn_t *tsdn, malloc_mutex_t *mutex)
 {
 
-	if (isthreaded)
-		witness_assert_owner(tsdn, &mutex->witness);
+	witness_assert_owner(tsdn, &mutex->witness);
 }
 
 JEMALLOC_INLINE void
 malloc_mutex_assert_not_owner(tsdn_t *tsdn, malloc_mutex_t *mutex)
 {
 
-	if (isthreaded)
-		witness_assert_not_owner(tsdn, &mutex->witness);
+	witness_assert_not_owner(tsdn, &mutex->witness);
 }
 #endif
 

@@ -101,11 +101,9 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "LICENSE.chapel",
        "Makefile",
        "PERFORMANCE.md",
-       "QUICKSTART.rst",
        "README.rst",
        "README.files",
-       "STATUS",
-       "compiler/passes/reservedSymbolNames",
+       "compiler/codegen/reservedSymbolNames",
        "highlight/README.md",
        "util/README",
        "util/build_configs.py",
@@ -156,9 +154,19 @@ $ENV{'CHPL_HOME'} = "$archive_dir";
 $ENV{'CHPL_COMM'} = "none";
 print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
-print "Building the man module-docs...\n";
+print "Building the html docs...\n";
 SystemOrDie("make -j docs");
-SystemOrDie("mv doc/sphinx/build/html doc/release");
+
+# TODO - make this more elegant / maintainable
+print "Pruning the docs directory...\n";
+SystemOrDie("cd doc && make clean-symlinks");
+SystemOrDie("cd doc && rm -f Makefile*");
+SystemOrDie("cd doc && rm -f conf.py");
+SystemOrDie("cd doc && rm -f index.rst");
+SystemOrDie("cd doc && rm -f */index.rst");
+SystemOrDie("cd doc && rm -rf developer");
+SystemOrDie("cd doc && rm -rf util");
+SystemOrDie("cd doc && rm -rf meta"); # Remove all dot files/directories
 
 print "Building the man pages...\n";
 SystemOrDie("make man");
@@ -166,17 +174,10 @@ SystemOrDie("make man-chpldoc");
 SystemOrDie("make clobber");
 
 print "Creating the examples directory...\n";
+SystemOrDie("rm examples"); # remove examples symbolic link
 SystemOrDie("cp -r test/release/examples .");
 SystemOrDie("cd util && cp start_test ../examples/");
 SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
-
-print "Building the STATUS file...\n";
-SystemOrDie("make STATUS");
-
-print "Creating the docs directory...\n";
-SystemOrDie("mv doc doctmp");
-SystemOrDie("mv doctmp/release doc");
-SystemOrDie("rm -r doctmp");
 
 print "Removing Makefiles that are not intended for release...\n";
 SystemOrDie("cd make/platform && rm Makefile.sunos_old");
@@ -191,6 +192,11 @@ SystemOrDie("cd runtime/include && rm -r sunos_old");
 
 print "Removing third-party directories that are not intended for release...\n";
 SystemOrDie("cd third-party && rm *.devel*");
+SystemOrDie("cd third-party/chpl-venv && rm *.devel*");
+SystemOrDie("cd third-party/chpl-venv && rm chplspell-requirements.txt");
+
+print "Removing Git metadata files not intended for release...\n";
+SystemOrDie('find . -type f \( -name .gitignore -o -name .gitattributes \) -exec rm -f {} \; -print');
 
 chdir "$archive_dir";
 

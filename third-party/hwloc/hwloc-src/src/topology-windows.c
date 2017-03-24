@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -741,7 +741,7 @@ hwloc_look_windows(struct hwloc_backend *backend)
   GetSystemInfo(&SystemInfo);
 
   if (!GetLogicalProcessorInformationExProc && GetLogicalProcessorInformationProc) {
-      PSYSTEM_LOGICAL_PROCESSOR_INFORMATION procInfo;
+      PSYSTEM_LOGICAL_PROCESSOR_INFORMATION procInfo, tmpprocInfo;
       unsigned id;
       unsigned i;
       struct hwloc_obj *obj;
@@ -755,7 +755,12 @@ hwloc_look_windows(struct hwloc_backend *backend)
 	  break;
 	if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
 	  return -1;
-	procInfo = realloc(procInfo, length);
+	tmpprocInfo = realloc(procInfo, length);
+	if (!tmpprocInfo) {
+	  free(procInfo);
+	  goto out;
+	}
+	procInfo = tmpprocInfo;
       }
 
       assert(!length || procInfo);
@@ -811,7 +816,7 @@ hwloc_look_windows(struct hwloc_backend *backend)
 	      memset(obj->memory.page_types, 0, 2 * sizeof(*obj->memory.page_types));
 	      obj->memory.page_types_len = 1;
 	      obj->memory.page_types[0].size = SystemInfo.dwPageSize;
-#ifdef HAVE__SC_LARGE_PAGESIZE
+#if HAVE_DECL__SC_LARGE_PAGESIZE
 	      obj->memory.page_types_len++;
 	      obj->memory.page_types[1].size = sysconf(_SC_LARGE_PAGESIZE);
 #endif
@@ -850,8 +855,7 @@ hwloc_look_windows(struct hwloc_backend *backend)
   }
 
   if (GetLogicalProcessorInformationExProc) {
-      PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX procInfoTotal, procInfo;
-
+      PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX procInfoTotal, tmpprocInfoTotal, procInfo;
       unsigned id;
       struct hwloc_obj *obj;
       hwloc_obj_type_t type;
@@ -864,7 +868,12 @@ hwloc_look_windows(struct hwloc_backend *backend)
 	  break;
 	if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
 	  return -1;
-        procInfoTotal = realloc(procInfoTotal, length);
+        tmpprocInfoTotal = realloc(procInfoTotal, length);
+	if (!tmpprocInfoTotal) {
+	  free(procInfoTotal);
+	  goto out;
+	}
+	procInfoTotal = tmpprocInfoTotal;
       }
 
       for (procInfo = procInfoTotal;
@@ -952,7 +961,7 @@ hwloc_look_windows(struct hwloc_backend *backend)
 	      memset(obj->memory.page_types, 0, 2 * sizeof(*obj->memory.page_types));
 	      obj->memory.page_types_len = 1;
 	      obj->memory.page_types[0].size = SystemInfo.dwPageSize;
-#ifdef HAVE__SC_LARGE_PAGESIZE
+#if HAVE_DECL__SC_LARGE_PAGESIZE
 	      obj->memory.page_types_len++;
 	      obj->memory.page_types[1].size = sysconf(_SC_LARGE_PAGESIZE);
 #endif
@@ -1018,6 +1027,7 @@ hwloc_look_windows(struct hwloc_backend *backend)
       }
   }
 
+ out:
   hwloc_obj_add_info(topology->levels[0][0], "Backend", "Windows");
   if (topology->is_thissystem)
     hwloc_add_uname_info(topology, NULL);

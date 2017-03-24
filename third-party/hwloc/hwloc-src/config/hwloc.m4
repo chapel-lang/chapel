@@ -1,7 +1,7 @@
 dnl -*- Autoconf -*-
 dnl
 dnl Copyright © 2009-2016 Inria.  All rights reserved.
-dnl Copyright © 2009-2012, 2015-2016 Université Bordeaux
+dnl Copyright © 2009-2012, 2015-2017 Université Bordeaux
 dnl Copyright © 2004-2005 The Trustees of Indiana University and Indiana
 dnl                         University Research and Technology
 dnl                         Corporation.  All rights reserved.
@@ -9,7 +9,7 @@ dnl Copyright © 2004-2012 The Regents of the University of California.
 dnl                         All rights reserved.
 dnl Copyright © 2004-2008 High Performance Computing Center Stuttgart,
 dnl                         University of Stuttgart.  All rights reserved.
-dnl Copyright © 2006-2015 Cisco Systems, Inc.  All rights reserved.
+dnl Copyright © 2006-2017 Cisco Systems, Inc.  All rights reserved.
 dnl Copyright © 2012  Blue Brain Project, BBP/EPFL. All rights reserved.
 dnl Copyright © 2012       Oracle and/or its affiliates.  All rights reserved.
 dnl See COPYING in top-level directory.
@@ -263,7 +263,8 @@ EOF])
         AC_MSG_WARN([***********************************************************])
         AC_MSG_WARN([*** hwloc does not support this system.])
         AC_MSG_WARN([*** hwloc will *attempt* to build (but it may not work).])
-        AC_MSG_WARN([*** hwloc run-time results may be reduced to showing just one processor.])
+        AC_MSG_WARN([*** hwloc run-time results may be reduced to showing just one processor,])
+        AC_MSG_WARN([*** and binding will likely not be supported.])
         AC_MSG_WARN([*** You have been warned.])
         AC_MSG_WARN([*** Pausing to give you time to read this message...])
         AC_MSG_WARN([***********************************************************])
@@ -412,9 +413,11 @@ EOF])
     ])
 
     AC_CHECK_HEADERS([sys/lgrp_user.h], [
-      AC_CHECK_LIB([lgrp], [lgrp_latency_cookie],
+      AC_CHECK_LIB([lgrp], [lgrp_init],
                    [HWLOC_LIBS="-llgrp $HWLOC_LIBS"
-                    AC_DEFINE([HAVE_LIBLGRP], 1, [Define to 1 if we have -llgrp])])
+                    AC_DEFINE([HAVE_LIBLGRP], 1, [Define to 1 if we have -llgrp])
+                    AC_CHECK_DECLS([lgrp_latency_cookie],,,[[#include <sys/lgrp_user.h>]])
+      ])
     ])
     AC_CHECK_HEADERS([kstat.h], [
       AC_CHECK_LIB([kstat], [main],
@@ -663,7 +666,8 @@ EOF])
       AC_DEFINE([HWLOC_HAVE_CLZL], [1], [Define to 1 if you have the `clzl' function.])
     ])
 
-    AC_CHECK_FUNCS([openat], [hwloc_have_openat=yes])
+    AS_IF([test "$hwloc_c_vendor" != "android"], [AC_CHECK_FUNCS([openat], [hwloc_have_openat=yes])])
+
 
     AC_CHECK_HEADERS([malloc.h])
     AC_CHECK_FUNCS([getpagesize memalign posix_memalign])
@@ -671,8 +675,19 @@ EOF])
     AC_CHECK_HEADERS([sys/utsname.h])
     AC_CHECK_FUNCS([uname])
 
-    AC_CHECK_HEADERS([valgrind/valgrind.h])
-    AC_CHECK_DECLS([RUNNING_ON_VALGRIND],,[:],[[#include <valgrind/valgrind.h>]])
+    dnl Don't check for valgrind in embedded mode because this may conflict
+    dnl with the embedder projects also checking for it.
+    dnl We only use Valgrind to nicely disable the x86 backend with a warning,
+    dnl but we can live without it in embedded mode (it auto-disables itself
+    dnl because of invalid CPUID outputs).
+    dnl Non-embedded checks usually go to hwloc_internal.m4 but this one is
+    dnl is really for the core library.
+    AS_IF([test "$hwloc_mode" != "embedded"],
+        [AC_CHECK_HEADERS([valgrind/valgrind.h])
+         AC_CHECK_DECLS([RUNNING_ON_VALGRIND],,[:],[[#include <valgrind/valgrind.h>]])
+	],[
+	 AC_DEFINE([HAVE_DECL_RUNNING_ON_VALGRIND], [0], [Embedded mode; just assume we do not have Valgrind support])
+	])
 
     AC_CHECK_HEADERS([pthread_np.h])
     AC_CHECK_DECLS([pthread_setaffinity_np],,[:],[[
@@ -736,7 +751,10 @@ EOF])
     # Linux libudev support
     if test "x$enable_libudev" != xno; then
       AC_CHECK_HEADERS([libudev.h], [
-	AC_CHECK_LIB([udev], [udev_device_new_from_subsystem_sysname], [HWLOC_LIBS="$HWLOC_LIBS -ludev"])
+	AC_CHECK_LIB([udev], [udev_device_new_from_subsystem_sysname], [
+	  HWLOC_LIBS="$HWLOC_LIBS -ludev"
+	  AC_DEFINE([HWLOC_HAVE_LIBUDEV], [1], [Define to 1 if you have libudev.])
+	])
       ])
     fi
 
@@ -747,6 +765,10 @@ EOF])
     if test "x$enable_pci" != xno; then
       hwloc_pci_happy=yes
       HWLOC_PKG_CHECK_MODULES([PCIACCESS], [pciaccess], [pci_slot_match_iterator_create], [pciaccess.h], [:], [hwloc_pci_happy=no])
+
+      # Only add the REQUIRES if we got pciaccess through pkg-config.
+      # Otherwise we don't know if pciaccess.pc is installed
+      AS_IF([test "$hwloc_pci_happy" = "yes"], [HWLOC_PCIACCESS_REQUIRES=pciaccess])
 
       # Just for giggles, if we didn't find a pciaccess pkg-config,
       # just try looking for its header file and library.
@@ -759,8 +781,7 @@ EOF])
          ])
 
       AS_IF([test "$hwloc_pci_happy" = "yes"],
-         [HWLOC_PCIACCESS_REQUIRES=pciaccess
-          hwloc_pci_lib=pciaccess
+         [hwloc_pci_lib=pciaccess
           hwloc_components="$hwloc_components pci"
           hwloc_pci_component_maybeplugin=1])
     fi
@@ -934,6 +955,8 @@ EOF])
             AC_DEFINE([HWLOC_HAVE_GL], [1], [Define to 1 if you have the GL module components.])
 	    HWLOC_GL_LIBS="-lXNVCtrl -lXext -lX11"
 	    AC_SUBST(HWLOC_GL_LIBS)
+	    # FIXME we actually don't know if xext.pc and x11.pc are installed
+	    # since we didn't look for Xext and X11 using pkg-config
 	    HWLOC_GL_REQUIRES="xext x11"
             hwloc_have_gl=yes
 	    hwloc_components="$hwloc_components gl"
@@ -1292,8 +1315,8 @@ AC_DEFUN([_HWLOC_CHECK_DECL], [
     AC_MSG_CHECKING([whether function $1 has a complete prototype])
     AC_REQUIRE([AC_PROG_CC])
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-         [AC_INCLUDES_DEFAULT([$4])]
-         [$1(1,2,3,4,5,6,7,8,9,10);],
+         [AC_INCLUDES_DEFAULT([$4])],
+         [$1(1,2,3,4,5,6,7,8,9,10);]
       )],
       [AC_MSG_RESULT([no])
        $3],

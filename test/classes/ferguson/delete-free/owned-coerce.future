@@ -1,0 +1,4 @@
+feature request: coerce Owned(C) to C
+
+Note that this is probably only a good idea once
+owned-borrow-check.future is addressed.

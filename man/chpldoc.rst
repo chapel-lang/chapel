@@ -126,8 +126,7 @@ effect as passing that option once.
 BUGS
 ----
 
-See $CHPL\_HOME/STATUS for a list of known bugs and
-$CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
+See $CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
 
 SEE ALSO
 --------
@@ -143,5 +142,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-Copyright (c) 2004-2016 Cray Inc. (See $CHPL\_HOME/LICENSE for more
+Copyright (c) 2004-2017 Cray Inc. (See $CHPL\_HOME/LICENSE for more
 details.)

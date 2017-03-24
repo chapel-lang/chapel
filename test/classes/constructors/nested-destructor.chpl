@@ -2,7 +2,7 @@ record R
 {
   class C
   {
-    proc ~C()
+    proc deinit()
     {
       writeln("in ~C");
     }
@@ -15,7 +15,7 @@ record R
     c = new C();
   }
 
-  proc ~R()
+  proc deinit()
   {
     writeln("in ~R");
     delete c;

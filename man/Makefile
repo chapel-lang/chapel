@@ -9,7 +9,9 @@ MANPAGE = man1/$(PROGRAM).1
 CHPLDOC_MANPAGE = man1/$(CHPLDOC).1
 TARGETS = $(MANPAGE) $(PROGRAM).pdf $(CHPLDOC).pdf
 
-RST2MAN = $(CHPL_MAKE_HOME)/third-party/chpl-venv/install/*/chpl-virtualenv/bin/rst2man.py
+PYTHON_VERSION_DIR = py$(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py)
+
+RST2MAN = $(shell which rst2man.py || echo $(CHPL_MAKE_HOME)/third-party/chpl-venv/install/*/$(PYTHON_VERSION_DIR)/chpl-virtualenv/bin/rst2man.py)
 
 STARS = \*\*\*\*\*
 

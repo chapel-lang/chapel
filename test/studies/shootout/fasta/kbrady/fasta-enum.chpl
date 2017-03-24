@@ -13,7 +13,7 @@ config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newLine: int(8) = ascii("\n");
+param newLine = ascii("\n");
 
 enum Ntide {
   A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),
@@ -66,14 +66,14 @@ record Freq {
   var p: real;
 }
 
-const IUB : [0..14] Freq = [
+var IUB : [0..14] Freq = [
   new Freq(a, 0.27), new Freq(c, 0.12), new Freq(g, 0.12), new Freq(t, 0.27),
   new Freq(B, 0.02), new Freq(D, 0.02), new Freq(H, 0.02), new Freq(K, 0.02),
   new Freq(M, 0.02), new Freq(N, 0.02), new Freq(R, 0.02), new Freq(S, 0.02),
   new Freq(V, 0.02), new Freq(W, 0.02), new Freq(Y, 0.02)
 ];
 
-const HomoSapiens : [0..3] Freq = [
+var HomoSapiens : [0..3] Freq = [
   new Freq(a, 0.3029549426680),
   new Freq(c, 0.1979883004921),
   new Freq(g, 0.1975473066391),

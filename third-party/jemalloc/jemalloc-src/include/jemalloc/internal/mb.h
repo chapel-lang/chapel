@@ -76,7 +76,7 @@ mb_write(void)
 	    : "memory" /* Clobbers. */
 	    );
 }
-#elif defined(__sparc64__)
+#elif defined(__sparc__) && defined(__arch64__)
 JEMALLOC_INLINE void
 mb_write(void)
 {
@@ -105,8 +105,8 @@ mb_write(void)
 	malloc_mutex_t mtx;
 
 	malloc_mutex_init(&mtx, "mb", WITNESS_RANK_OMIT);
-	malloc_mutex_lock(NULL, &mtx);
-	malloc_mutex_unlock(NULL, &mtx);
+	malloc_mutex_lock(TSDN_NULL, &mtx);
+	malloc_mutex_unlock(TSDN_NULL, &mtx);
 }
 #endif
 #endif

@@ -35,7 +35,7 @@ proc ref R.increment() {
 }
 
 
-proc R.~R() {
+proc R.deinit() {
   if debug then writeln("In record destructor");
 
   if canary != 42 {
@@ -44,7 +44,7 @@ proc R.~R() {
   }
 }
 
-proc ref R.verify() {
+proc R.verify() {
   extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
 
   if canary != 42 {

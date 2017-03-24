@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,3 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#
+# Conservatively use CXX as the linker, in case regexp (or other C++
+# code) is being linked in.
+#
+LD = $(CXX)

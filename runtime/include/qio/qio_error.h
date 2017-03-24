@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -133,7 +133,9 @@ qioerr qio_mkerror_errno(void);
   return qio_err_local_ptr_to_err(&qio_macro_tmp_err__); \
 }
 
-// EEOF 
+// custom errors
+// if you update these, also update the extended_errors array.
+
 #ifndef EEOF
 #define EEOF (EXTEND_ERROR_OFFSET+0)
 #endif
@@ -146,17 +148,18 @@ qioerr qio_mkerror_errno(void);
 #define EFORMAT (EXTEND_ERROR_OFFSET+2)
 #endif
 
-// Make sure we have an EILSEQ
+// These are errors not available on every platform.
 #ifndef EILSEQ
 #define EILSEQ (EXTEND_ERROR_OFFSET+3)
 #endif
-
-// Make sure we have EOVERFLOW
 #ifndef EOVERFLOW
 #define EOVERFLOW (EXTEND_ERROR_OFFSET+4)
 #endif
+#ifndef ENODATA
+#define ENODATA (EXTEND_ERROR_OFFSET+5)
+#endif
 
-#define EXTEND_ERROR_NUM 5
+#define EXTEND_ERROR_NUM 6
 
 
 #define QIO_ENOMEM (qio_int_to_err(ENOMEM))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -65,5 +65,18 @@ static inline
 c_sublocid_t chpl_rt_sublocFromLocaleID(chpl_localeID_t loc) {
   return loc.subloc;
 }
+
+//
+// These functions are exported from the locale model for use by
+// the tasking layer to convert between a full sublocale and an
+// execution sublocale.
+//
+extern
+c_sublocid_t chpl_localeModel_sublocToExecutionSubloc(
+                  c_sublocid_t full_subloc);
+
+extern
+c_sublocid_t chpl_localeModel_sublocMerge(c_sublocid_t full_subloc,
+                  c_sublocid_t execution_subloc);
 
 #endif // _chpl_locale_model_h_

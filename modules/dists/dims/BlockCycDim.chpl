@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@
 //
 
 use DimensionalDist2D;
-
+use RangeChunk only ;
 
 config const BlockCyclicDim_allowParLeader = true;
 config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing
@@ -279,27 +279,6 @@ proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
                              locId = locId);
   return result;
 }
-
-proc BlockCyclic1dom.dsiBuildRectangularDom1d(DD,
-                                   param stridable:bool,
-                                   rangeArg: range(idxType,
-                                                   BoundedRangeType.bounded,
-                                                   stridable))
-{
-  // There does not seem to be any optimizations from merging the two calls.
-  const result = DD.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
-  result.dsiSetIndices1d(rangeArg);
-  return result;
-}
-
-proc BlockCyclic1locdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
-  assert(locId == this.locId);
-  // There does not seem to be any optimizations from merging the two calls.
-  const newLocDD = newGlobDD.dsiNewLocalDom1d(this.stoIndexT, locId);
-  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
-  return (newLocDD, newStoRng);
-}
-
 
 /////////////////////////////////
 
@@ -685,7 +664,8 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
       halt("range with non-unit stride is cast to non-stridable range");
     r1._low       = r2._low: r1.idxType;
     r1._high      = r2._high: r1.idxType;
-    r1._stride    = r2._stride: r1.strType;
+    if r1.stridable then
+      r1._stride  = r2.stride: r1.strType;
     r1._alignment = r2._alignment: r1.idxType;
     r1._aligned = r2._aligned;
   }
@@ -775,25 +755,9 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
 
   // Here is the densified range for all indices on this locale.
   const hereDenseInds = 0:resultIdxType..#wholeR.length by nLocs align AL;
-  const hereNumInds   = hereDenseInds.length;
-  const hereFirstInd  = hereDenseInds.first;
 
-  // This is our piece of hereNumInds
-  const (begNo,endNo) = _computeChunkStartEnd(hereNumInds, numTasks, taskid+1);
-
-  // Pick the corresponding part of hereDenseInds
-  const begIx = ( hereFirstInd + (begNo - 1) * nLocs ):resultIdxType;
-  const endIx = ( hereFirstInd + (endNo - 1) * nLocs ):resultIdxType;
-  assert(hereDenseInds.member(begIx));
-  assert(hereDenseInds.member(endIx));
-
-//writeln("MyDensifiedRangeForTaskID(", globDD.name, ") on ", locId,
-//        "  taskid ", taskid, " of ", numTasks, "  ", begIx, "...", endIx,
-//        "   fl=", firstLoc, " al=", AL,
-//        "  fullR ", hereDenseInds, " myR ", begIx .. endIx by nLocs,
-//        "");
-
-  return begIx .. endIx by nLocs;
+  // This is our chunk of hereDenseInds
+  return chunk(hereDenseInds, numTasks, taskid);
 }
 
 proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type

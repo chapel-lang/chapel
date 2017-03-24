@@ -6,4 +6,4 @@ member((5, 5)) = true
 member((6, 6)) = true
 member((4, 4)) = false
 member((4, 4)) = true
-add_remove2.chpl:26: error: halt reached - index not in domain: (53, 0)
+# ind removed: 0

@@ -4,6 +4,20 @@ Copyright (c) 2014-2015 Intel Corporation. All rights reserved.
 User Information:
 -----------------
 
+This conduit is designed to communicate for the Intel(R) Omni-Path Fabric
+through the Intel(r) Performance Scaled Messaging 2 (PSM2) Linux user space
+library Application Programming Interface (API). Mainly intended to use the
+Active Messaging PSM2 API, but will use PSM2 matched queues for long messages
+(review GASNET_LONG_MSG_THRESHOLD below).
+
+Where this conduit runs:
+-----------------------
+
+Intel(R) Omni-Path Fabric
+
+Using psm-conduit with MPI:
+---------------------------
+
 PSM has a restriction in which only one endpoint may be opened per process.
 For users of this conduit, this means that if an MPI is used for process
 spawning, that MPI must NOT also attempt to use PSM for communication.
@@ -65,6 +79,37 @@ Known problems:
 ---------------
 
 * See the Berkeley UPC Bugzilla server for details on known bugs.
+
+* Bug 3333
+  At the time of this release, there is a known bug in the AM interface of
+  the shared-memory device in (at least) the 0.7-244 release of the PSM2
+  libraries.  This bug can manifest with psm-conduit only if GASNet's own
+  process-shared memory (PSHM) support is not in use, as can happen if PSHM
+  was disabled at configure time or has been limited to subsets of processes
+  by setting GASNET_SUPERNODE_MAXSIZE.  Under those conditions, you will
+  receive an error message which directs you here.
+  The most up-to-date information on this bug is maintained at:
+    http://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3333
+  If, after reviewing that bug report, you wish to run psm-conduit over the
+  PSM2 shared-memory device, please set GASNET_PSM_ENABLE_SHM=1 in your
+  environment to disable the error message.  We strongly recommend you set
+  this variable only if you have determined that you have a fixed release of
+  PSM2, or if you apply a patch (in the bug report) that works-around the
+  problem (at the cost of reduced performance).
+
+* Bug 3342
+  This release disables the "put_long" protocol previously used for Puts
+  over some threshold, which defaults to 16KB.  This results in a significant
+  reduction in performance, but is preferred to the alternative of sometimes
+  producing incorrect results.  Intel is actively working on correcting the
+  "put_long" protocol for a future patch release to restore the previous
+  level of performance without sacrificing correctness.
+  The most up-to-date information on this bug is maintained at:
+    http://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3342
+  Until this issue can be resolved, users of Omni-Path networks may wish to
+  consider use of ofi-conduit (with libfabric's psm2 provider) as an
+  alternative to psm-conduit if performance of Puts over 16KB is critical
+  to your application.
 
 Future work:
 ------------

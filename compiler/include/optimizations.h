@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,8 +42,7 @@ class FnSymbol;
 class Symbol;
 class SymExpr;
 
-void removeUnnecessaryGotos(FnSymbol* fn);
-void removeUnusedLabels(FnSymbol* fn);
+void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel = false);
 size_t localCopyPropagation(FnSymbol* fn);
 size_t globalCopyPropagation(FnSymbol* fn);
 void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
@@ -69,6 +68,8 @@ void freeDefUseChains(std::map<SymExpr*, Vec<SymExpr*>*>& DU,
                       std::map<SymExpr*, Vec<SymExpr*>*>& UD);
 
 void remoteValueForwarding();
+
+void inferConstRefs();
 
 
 #endif

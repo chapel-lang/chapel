@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -119,6 +119,7 @@ atomic           return processToken(yyscanner, TATOMIC);
 begin            return processToken(yyscanner, TBEGIN);
 break            return processToken(yyscanner, TBREAK);
 by               return processToken(yyscanner, TBY);
+catch            return processToken(yyscanner, TCATCH);
 class            return processToken(yyscanner, TCLASS);
 cobegin          return processToken(yyscanner, TCOBEGIN);
 coforall         return processToken(yyscanner, TCOFORALL);
@@ -136,6 +137,7 @@ except           return processToken(yyscanner, TEXCEPT);
 extern           return processExtern(yyscanner);
 for              return processToken(yyscanner, TFOR);
 forall           return processToken(yyscanner, TFORALL);
+forwarding       return processToken(yyscanner, TFORWARDING);
 if               return processToken(yyscanner, TIF);
 in               return processToken(yyscanner, TIN);
 index            return processToken(yyscanner, TINDEX);
@@ -173,6 +175,10 @@ sparse           return processToken(yyscanner, TSPARSE);
 subdomain        return processToken(yyscanner, TSUBDOMAIN);
 sync             return processToken(yyscanner, TSYNC);
 then             return processToken(yyscanner, TTHEN);
+throw            return processToken(yyscanner, TTHROW);
+throws           return processToken(yyscanner, TTHROWS);
+try              return processToken(yyscanner, TTRY);
+"try!"           return processToken(yyscanner, TTRYBANG);
 type             return processToken(yyscanner, TTYPE);
 union            return processToken(yyscanner, TUNION);
 use              return processToken(yyscanner, TUSE);
@@ -200,6 +206,7 @@ zip              return processToken(yyscanner, TZIP);
 "||="            return processToken(yyscanner, TASSIGNLOR);
 "<<="            return processToken(yyscanner, TASSIGNSL);
 ">>="            return processToken(yyscanner, TASSIGNSR);
+"reduce="        return processToken(yyscanner, TASSIGNREDUCE);
 
 "=>"             return processToken(yyscanner, TALIAS);
 
@@ -291,13 +298,11 @@ zip              return processToken(yyscanner, TZIP);
 static void  newString();
 static void  addString(const char* str);
 static void  addChar(char c);
-static void  addCharString(char c);
+static void  addCharEscape(char c);
 
 static int   getNextYYChar(yyscan_t scanner);
 
-static int   stringBuffLen = 0;
-static int   stringLen     = 0;
-static char* stringBuffer  = NULL;
+static std::string stringBuffer;
 
 int processNewline(yyscan_t scanner) {
   YYLTYPE* yyLloc = yyget_lloc(scanner);
@@ -322,10 +327,7 @@ int processNewline(yyscan_t scanner) {
 ************************************* | ************************************/
 
 void stringBufferInit() {
-  if (stringBuffer == NULL) {
-    stringBuffer  = (char*) malloc(1024);
-    stringBuffer[0] = '\0';
-  }
+  stringBuffer.clear();
 }
 
 static int  processIdentifier(yyscan_t scanner) {
@@ -339,7 +341,6 @@ static int  processIdentifier(yyscan_t scanner) {
 
 static int processToken(yyscan_t scanner, int t) {
   YYSTYPE* yyLval = yyget_lval(scanner);
-  size_t   remain = sizeof(captureString) - 1;
 
   countToken(yyget_text(scanner));
 
@@ -348,13 +349,11 @@ static int processToken(yyscan_t scanner, int t) {
   if (captureTokens) {
     if (t == TASSIGN ||
         t == TDOTDOTDOT) {
-      strncat(captureString, " ",                 remain);
-      remain = remain - 1;
+      captureString.push_back(' ');
     }
 
     if (t != TLCBR) {
-      strncat(captureString, yyget_text(scanner), remain);
-      remain = remain - strlen(yyget_text(scanner));
+      captureString.append(yyget_text(scanner));
     }
 
     if (t == TCOMMA  ||
@@ -369,8 +368,7 @@ static int processToken(yyscan_t scanner, int t) {
         t == TCOLON  ||
         t == TASSIGN ||
         t == TRSBR) {
-      strncat(captureString, " ",                 remain);
-      remain = remain - 1;
+      captureString.push_back(' ');
     }
   }
 
@@ -389,33 +387,26 @@ static int processToken(yyscan_t scanner, int t) {
 *                                                                           *
 ************************************* | ************************************/
 
-static char* eatStringLiteral(yyscan_t scanner, const char* startChar);
+static const char* eatStringLiteral(yyscan_t scanner, const char* startChar);
 
 static int processStringLiteral(yyscan_t scanner, const char* q, int type) {
   const char* yyText = yyget_text(scanner);
   YYSTYPE*    yyLval = yyget_lval(scanner);
 
-  yyLval->pch = astr(eatStringLiteral(scanner, q));
+  yyLval->pch = eatStringLiteral(scanner, q);
 
-  countToken(astr(q, yyLval->pch, q));
+  countToken(q, yyLval->pch, q);
 
   if (captureTokens) {
-    size_t remain = sizeof(captureString) - 1;
-
-    strncat(captureString, yyText,      remain);
-    remain = remain - strlen(yyText);
-
-    strncat(captureString, yyLval->pch, remain);
-    remain = remain - strlen(yyLval->pch);
-
-    strncat(captureString, yyText,      remain);
-    remain = remain - strlen(yyText);
+    captureString.append(yyText);
+    captureString.append(yyLval->pch);
+    captureString.append(yyText);
   }
 
   return type;
 }
 
-static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
+static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
   char*      yyText  = yyget_text(scanner);
   YYLTYPE*   yyLloc  = yyget_lloc(scanner);
   const char startCh = *startChar;
@@ -431,14 +422,14 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
       yyerror(yyLloc, &context, "end-of-line in a string literal without a preceding backslash");
     } else {
       if (startCh == '\'' && c == '\"') {
-        addCharString('\\');
+        addCharEscape('\\');
       }
 
       // \ escape ? to avoid C trigraphs
       if (c == '?')
-        addCharString('\\');
+        addCharEscape('\\');
 
-      addCharString(c);
+      addCharEscape(c);
     }
 
     if (c == '\\') {
@@ -446,7 +437,7 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
 
       if (c == '\n') {
         processNewline(scanner);
-        addCharString('n');
+        addCharEscape('n');
       } else if (c == 'u' || c == 'U') {
         ParserContext context(scanner);
         yyerror(yyLloc, &context, "universal character name not yet supported in string literal");
@@ -454,7 +445,7 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
         ParserContext context(scanner);
         yyerror(yyLloc, &context, "octal escape not supported in string literal");
       } else if (c != 0) {
-        addCharString(c);
+        addCharEscape(c);
       }
       else
         break;
@@ -467,7 +458,7 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
     yyerror(yyLloc, &context, "EOF in string");
   }
 
-  return stringBuffer;
+  return astr(stringBuffer);
 }
 
 /************************************ | *************************************
@@ -485,7 +476,7 @@ static int processExtern(yyscan_t scanner) {
   countToken(yyText);
 
   if (captureTokens) {
-    strncat(captureString, yyText, sizeof(captureString) - 1);
+    captureString.append(yyText);
   }
 
   // Push a state to record that "extern" has been seen
@@ -500,7 +491,7 @@ static int processExtern(yyscan_t scanner) {
 *                                                                           *
 ************************************* | ************************************/
 
-static char* eatExternCode(yyscan_t scanner);
+static const char* eatExternCode(yyscan_t scanner);
 
 // When the lexer calls this function, it has already consumed the first '{'
 static int processExternCode(yyscan_t scanner) {
@@ -511,13 +502,13 @@ static int processExternCode(yyscan_t scanner) {
   countToken(astr(yyLval->pch));
 
   if (captureTokens) {
-    strncat(captureString, yyLval->pch, sizeof(captureString) - 1);
+    captureString.append(yyLval->pch);
   }
 
   return EXTERNCODE;
 }
 
-static char* eatExternCode(yyscan_t scanner) {
+static const char* eatExternCode(yyscan_t scanner) {
   const int in_code                          = 0;
   const int in_single_quote                  = 1;
   const int in_single_quote_backslash        = 2;
@@ -656,12 +647,10 @@ static char* eatExternCode(yyscan_t scanner) {
 
   //save the C String
   //eliminate the final '{'
-  if (stringLen >= 1)
-    stringLen -= 1;
+  if (stringBuffer.size() >= 1)
+    stringBuffer.resize(stringBuffer.size()-1);
 
-  stringBuffer[stringLen] = '\0';
-
-  return stringBuffer;
+  return astr(stringBuffer);
 }
 
 /************************************ | *************************************
@@ -693,7 +682,7 @@ static int processSingleLineComment(yyscan_t scanner) {
     addChar(c);
   }
 
-  countSingleLineComment(stringBuffer);
+  countSingleLineComment(stringBuffer.c_str());
 
   if (c != 0) {
     processNewline(scanner);
@@ -736,7 +725,7 @@ static int processBlockComment(yyscan_t scanner) {
     c     = getNextYYChar(scanner);
 
     if (c == '\n') {
-      countMultiLineComment(stringBuffer);
+      countMultiLineComment(stringBuffer.c_str());
       processNewline(scanner);
 
       if (fDocs && labelIndex == len) {
@@ -779,14 +768,12 @@ static int processBlockComment(yyscan_t scanner) {
   }
 
   // back up two to not print */ again.
-  if (stringLen >= 2)
-    stringLen -= 2;
+  if (stringBuffer.size() >= 2)
+    stringBuffer.resize(stringBuffer.size()-2);
 
   // back up further if the user has specified a special form of commenting
   if (len > 2 && labelIndex == len)
-    stringLen -= (len - 2);
-
-  stringBuffer[stringLen] = '\0';
+    stringBuffer.resize(stringBuffer.size() - (len - 2));
 
   // Saves the comment grabbed to the comment field of the location struct,
   // for use when the --docs flag is implemented
@@ -815,7 +802,7 @@ static int processBlockComment(yyscan_t scanner) {
     yyLval->pch = NULL;
   }
 
-  countMultiLineComment(stringBuffer);
+  countMultiLineComment(stringBuffer.c_str());
 
   newString();
 
@@ -841,50 +828,34 @@ static void processInvalidToken(yyscan_t scanner) {
 *                                                                           *
 ************************************* | ************************************/
 
-static void addCharMaybeEscape(char c, bool canEscape);
 static char toHex(char c);
 
 static void newString() {
-  stringLen = 0;
-
-  if (stringBuffLen) {
-    stringBuffer[0] = '\0';
-  }
+  stringBuffer.clear();
 }
 
+// Does not escape
 static void addString(const char* str) {
-  for (int i = 0; str[i]; i++)
-    addChar(str[i]);
+  stringBuffer.append(str);
 }
 
+// Does not escape
 static void addChar(char c) {
-  addCharMaybeEscape(c, false);
+  stringBuffer.push_back(c);
 }
 
-static void addCharString(char c) {
-  addCharMaybeEscape(c, true);
-}
-
-static void addCharMaybeEscape(char c, bool canEscape) {
-  int escape  = canEscape && !(isascii(c) && isprint(c));
-  int charlen = escape ? 4 : 1; // convert nonascii to \xNN
-
-  if (stringLen + charlen + 1 > stringBuffLen) {
-    stringBuffLen = 2 * (stringBuffLen + charlen);
-    stringBuffer  = (char*) realloc(stringBuffer,
-                                    stringBuffLen * sizeof(char));
-  }
+// Escapes
+static void addCharEscape(char c) {
+  int escape  = !(isascii(c) && isprint(c));
 
   if (escape) {
-    stringBuffer[stringLen++] = '\\';
-    stringBuffer[stringLen++] = 'x';
-    stringBuffer[stringLen++] = toHex(((unsigned char)c) >> 4);
-    stringBuffer[stringLen++] = toHex(c & 0xf);
+    stringBuffer.push_back('\\');
+    stringBuffer.push_back('x');
+    stringBuffer.push_back(toHex(((unsigned char)c) >> 4));
+    stringBuffer.push_back(toHex(c & 0xf));
   } else {
-    stringBuffer[stringLen++] = c;
+    stringBuffer.push_back(c);
   }
-
-  stringBuffer[stringLen] = '\0';
 }
 
 // Returns the hexadecimal character for 0-16.

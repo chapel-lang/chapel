@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,15 +17,14 @@
  * limitations under the License.
  */
 
-// addInitCalls.c
 //////////////////////////////////////////////////////////////////////////////////
 // Add module initialization calls and  guards to the module init functions.
 //
-// Initially, the module initialization functions contain only the "loose" 
-// statements found within the body of the corresponding module.  
-// This pass adds calls to the module initialization functions for 
+// Initially, the module initialization functions contain only the "loose"
+// statements found within the body of the corresponding module.
+// This pass adds calls to the module initialization functions for
 // parent modules as well as modules mentioned in "use" statements within
-// the module.  Then, it wraps the entire initialization function in a guard 
+// the module.  Then, it wraps the entire initialization function in a guard
 // to ensure that it is run just once.
 //
 // This pass must be run after parallel().
@@ -56,12 +55,21 @@ void addModuleInitBlocks() {
     if (mod == rootModule) continue;
 
     FnSymbol* fn = toFnSymbol(mod->initFn);
-    if (!fn)
+    if (!fn) {
+      INT_ASSERT(!mod->deinitFn); // otherwise need to reinstate initFn
       // Sometimes a module parsed on the command line
       // is not actually used, so its initializer is pruned during resolution.
       continue;
+    }
 
     SET_LINENO(mod);
+    if (mod->deinitFn)
+      // This needs to go after initBlock: we want addModule(mod)
+      // to be called *after* addModule on modules used by mod.
+      fn->insertAtHead(new CallExpr(gAddModuleFn,
+                                    buildCStringLiteral(mod->name),
+                                    mod->deinitFn));
+
     BlockStmt* initBlock = new BlockStmt();
 
     // If I have a parent, I need it initialized first,
@@ -97,7 +105,7 @@ void addModuleInitBlocks() {
 // The guard code is added only if the initialization function has a
 // nontrivial body.
 //
-// This pass also creates the function "chpl__init_preInit()", which 
+// This pass also creates the function "chpl__init_preInit()", which
 // initializes all of the initialization flags to false.
 //
 // It also adds code that will print the module names as they are
@@ -152,7 +160,7 @@ static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn)
     // is added at the end of chpl__init_preInit().
     // This means the module has not yet been initialized.
     Expr* asgnExprFalse = new CallExpr(PRIM_MOVE, var, new SymExpr(gFalse));
-    preInitFn->insertBeforeReturn(asgnExprFalse);
+    preInitFn->insertBeforeEpilogue(asgnExprFalse);
 
     // The assignment:
     //      <init_fn_name>_p = true;
@@ -169,7 +177,7 @@ static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn)
     // Precedes everything in the module initialization function,
     // including the assignment we just added.
     LabelSymbol* label = new LabelSymbol(astr("_exit_", fn->name));
-    fn->insertBeforeReturnAfterLabel(new DefExpr(label));
+    fn->insertIntoEpilogue(new DefExpr(label));
     Expr* gotoExit = new GotoStmt(GOTO_NORMAL, label);
     Expr* ifStmt = new CondStmt(new SymExpr(var), gotoExit);
     fn->insertAtHead(ifStmt);
@@ -216,9 +224,7 @@ static void addPrintModInitOrder(FnSymbol* fn)
 
   // += and -+ take ref args, so we must first get a reference to the
   // indent level variable
-  Type* refIndentLevelType = gModuleInitIndentLevel->typeInfo()->refType;
-  INT_ASSERT(refIndentLevelType);
-  VarSymbol* refIndentLevel = newTemp("refIndentLevel",refIndentLevelType);
+  VarSymbol* refIndentLevel = newTemp("refIndentLevel",gModuleInitIndentLevel->qualType().toRef());
   CallExpr *getAddr = new CallExpr(PRIM_MOVE,
                                    new SymExpr(refIndentLevel),
                                    new CallExpr(PRIM_ADDR_OF,
@@ -237,7 +243,7 @@ static void addPrintModInitOrder(FnSymbol* fn)
   fn->insertAtHead(new DefExpr(refIndentLevel));
   fn->insertAtHead(new DefExpr(s2tmp));
   fn->insertAtHead(new DefExpr(s1tmp));
-  fn->insertBeforeReturn(decIndentLevel);
+  fn->insertBeforeEpilogue(decIndentLevel);
 }
 
 

@@ -118,6 +118,12 @@ enum memory_mode
     HYBRID = 4
 };
 
+enum hybrid_cache
+{
+    H25 = 1,
+    H50 = 2,
+    H100 = 4 /* Incorrect but possible value */
+};
 
 static int get_file_buffer(const char *file, char *buffer, int size)
 {
@@ -295,6 +301,35 @@ static int process_knl_entry(const char *input_fsroot, char *dir_name, struct pa
 
     return 0;
 }
+static char* get_memory_mode_str(int memory_mode, int hybrid_cache_size)
+{
+    switch (memory_mode) {
+        case CACHE: return "Cache";
+        case FLAT: return "Flat";
+        case HYBRID:
+            if (hybrid_cache_size == H25) {
+                return "Hybrid25";
+            } else if (hybrid_cache_size == H50) {
+                return "Hybrid50";
+            }
+            return "Unknown";
+        default:
+            return "Unknown";
+    }
+}
+
+static char* get_cluster_mode_str(int cluster_mode)
+{
+    switch (cluster_mode) {
+        case QUADRANT: return "Quadrant";
+        case HEMISPHERE: return "Hemisphere";
+        case ALL2ALL: return "All2All";
+        case SNC2: return "SNC2";
+        case SNC4: return "SNC4";
+        default:
+            return "Unknown";
+    }
+}
 
 static int print_result(struct parser_data *data, const char *out_file)
 {
@@ -304,24 +339,19 @@ static int print_result(struct parser_data *data, const char *out_file)
 
     switch (data->cluster_mode) {
         case QUADRANT:
-        node_count = 1;
-            printf("  Cluster mode: Quadrant\n");
+            node_count = 1;
             break;
         case HEMISPHERE:
             node_count = 1;
-            printf("  Cluster mode: Hemisphere\n");
             break;
         case ALL2ALL:
             node_count = 1;
-            printf("  Cluster mode: All2All\n");
             break;
         case SNC2:
             node_count = 2;
-            printf("  Cluster mode: SNC-2\n");
             break;
         case SNC4:
             node_count = 4;
-            printf("  Cluster mode: SNC-4\n");
             break;
         default:
             fprintf(stderr, "Incorrect cluster mode %d\n", data->cluster_mode);
@@ -330,25 +360,18 @@ static int print_result(struct parser_data *data, const char *out_file)
 
     switch (data->memory_mode) {
         case CACHE:
-            printf("  Memory Mode: Cache\n");
             data->mcdram_cache = data->mcdram_regular;
             data->mcdram_regular = 0;
             break;
         case FLAT:
-            printf("  Memory Mode: Flat\n");
-            printf("  Flat Mode: No MCDRAM cache available, nothing to dump.\n");
-            return 0;
+            data->mcdram_cache = 0;
+            break;
         case HYBRID:
-            printf("  Memory Mode: Hybrid");
-
-            if (data->cache_info == 0x1) {
-                printf("25\n");
+            if (data->cache_info == H25) {
                 data->mcdram_cache = data->mcdram_regular/4;
-            } else if (data->cache_info == 0x2) {
-                printf("50\n");
+            } else if (data->cache_info == H50) {
                 data->mcdram_cache = data->mcdram_regular/2;
-            } else if (data->cache_info == 0x4) {
-                printf("100\n");
+            } else if (data->cache_info == H100) {
                 data->mcdram_cache = data->mcdram_regular;
             } else {
                 fprintf(stderr, "SMBIOS reserved cache info value %d\n", data->cache_info);
@@ -361,13 +384,17 @@ static int print_result(struct parser_data *data, const char *out_file)
             return -1;
     }
 
+    printf("  Cluster Mode: %s Memory Mode: %s\n",
+            get_cluster_mode_str(data->cluster_mode),
+            get_memory_mode_str(data->memory_mode, data->cache_info));
     printf("  MCDRAM total = %llu bytes, cache = %llu bytes\n",
            (long long unsigned int)data->mcdram_regular,
            (long long unsigned int)data->mcdram_cache);
     data->mcdram_regular /= node_count;
     data->mcdram_cache /= node_count;
     printf("  MCDRAM total = %llu bytes, cache = %llu bytes per node\n",
-           (long long unsigned int)data->mcdram_regular, (long long unsigned int)data->mcdram_cache);
+           (long long unsigned int)data->mcdram_regular,
+           (long long unsigned int)data->mcdram_cache);
 
     /* Now we can start printing stuff */
     /* use open+fdopen so that we can specify the file creation mode */
@@ -383,13 +410,15 @@ static int print_result(struct parser_data *data, const char *out_file)
         return -1;
     }
 
-    fprintf(f, "version: 1\n");
+    fprintf(f, "version: 2\n");
     /* We cache is equal for node */
     fprintf(f, "cache_size: %llu\n",
                 (long long unsigned int)data->mcdram_cache);
     fprintf(f, "associativity: 1\n");// direct-mapped cache
     fprintf(f, "inclusiveness: 1\n");// inclusive cache
     fprintf(f, "line_size: 64\n");
+    fprintf(f, "cluster_mode: %s\n", get_cluster_mode_str(data->cluster_mode));
+    fprintf(f, "memory_mode: %s\n", get_memory_mode_str(data->memory_mode, data->cache_info));
     fflush(f);
     fclose(f);
     close(fd);
@@ -416,8 +445,10 @@ int hwloc_dump_hwdata_knl_smbios(const char *input_fsroot, const char *outfile)
     path[PATH_SIZE-1] = 0;
 
     d = opendir(path);
-    if (!d)
+    if (!d) {
+        fprintf(stderr, "Unable to open dmi-sysfs dir: %s", path);
         return -1;
+    }
 
     /* process KNL entries
      * start with group (type 14, dash os to omit 140 types) then find SMBIOS types for
@@ -434,9 +465,9 @@ int hwloc_dump_hwdata_knl_smbios(const char *input_fsroot, const char *outfile)
     }
 
     if (!data.type_count) {
-      printf ("  Couldn't find any KNL information.\n");
+      fprintf (stderr, "  Couldn't find any KNL information.\n");
       closedir(d);
-      return 0;
+      return -1;
     }
 
     /* We probably have KNL type identifiers here */

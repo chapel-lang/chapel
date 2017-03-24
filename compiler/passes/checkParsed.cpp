@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -24,16 +24,19 @@
 #include "stmt.h"
 #include "expr.h"
 #include "astutil.h"
+#include "stringutil.h"
 #include "stlUtil.h"
 #include "docsDriver.h"
 
 
 static void checkNamedArguments(CallExpr* call);
+static void checkExplicitDeinitCalls(CallExpr* call);
 static void checkPrivateDecls(DefExpr* def);
 static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
 static void checkModule(ModuleSymbol* mod);
+static void setupForCheckExplicitDeinitCalls();
 
 void
 checkParsed() {
@@ -50,12 +53,15 @@ checkParsed() {
     return;
   }
 
+  setupForCheckExplicitDeinitCalls();
+
   forv_Vec(CallExpr, call, gCallExprs) {
     checkNamedArguments(call);
+    checkExplicitDeinitCalls(call);
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (toVarSymbol(def->sym))
+    if (toVarSymbol(def->sym)) {
       // The test for FLAG_TEMP allows compiler-generated (temporary) variables
       // to be declared without an explicit type or initializer expression.
       if ((!def->init || def->init->isNoInitExpr())
@@ -66,6 +72,25 @@ checkParsed() {
               USR_FATAL_CONT(def->sym,
                              "Variable '%s' is not initialized or has no type",
                              def->sym->name);
+    }
+
+    //
+    // This test checks to see if query domains (e.g., '[?D]') are
+    // used in places other than formal argument type specifiers.
+    //
+    if (!isFnSymbol(def->parentSymbol)) {
+      if (CallExpr* type = toCallExpr(def->exprType)) {
+        if (type->isNamed("chpl__buildArrayRuntimeType")) {
+          if (CallExpr* domainExpr = toCallExpr(type->get(1))) {
+            DefExpr* queryDomain = toDefExpr(domainExpr->get(1));
+            if (queryDomain) {
+              USR_FATAL_CONT(queryDomain,
+                             "Domain query expressions may currently only be used in formal argument types");
+            }
+          }
+        }
+      }
+    }
 
     checkPrivateDecls(def);
   }
@@ -102,6 +127,40 @@ checkNamedArguments(CallExpr* call) {
 
       names.add(named->name);
     }
+  }
+}
+
+static const char* dotAstr;
+static const char* deinitAstr;
+static VarSymbol*  deinitStrLiteral;
+
+static void setupForCheckExplicitDeinitCalls() {
+  SET_LINENO(rootModule); // for --minimal-modules
+  dotAstr = astr(".");
+  deinitAstr = astr("deinit");
+  deinitStrLiteral = new_CStringSymbol("deinit");
+}
+
+//
+// Report error for the following cases:
+//
+// * non-method call e.g. deinit(args...)
+//     ==> CallExpr(UnresolvedSymExpr("deinit"), args...)
+//
+// * method call e.g. cc.deinit(args...)
+//     ==> CallExpr(UnresolvedSymExpr("."), CString("deinit"), args...)
+//
+static void checkExplicitDeinitCalls(CallExpr* call) {
+  if (UnresolvedSymExpr* target = toUnresolvedSymExpr(call->baseExpr)) {
+    if (target->unresolved == deinitAstr)
+      USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
+    else if (target->unresolved == dotAstr)
+      if (SymExpr* arg2 = toSymExpr(call->get(2)))
+        if (arg2->symbol() == deinitStrLiteral)
+          // OK to invoke explicitly from chpl__delete()
+          // which is our internal implementation of 'delete' statements.
+          if (strcmp(call->parentSymbol->name, "chpl__delete"))
+            USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
   }
 }
 
@@ -161,12 +220,6 @@ static void checkPrivateDecls(DefExpr* def) {
 
 static void
 checkParsedVar(VarSymbol* var) {
-  if (var->isParameter() && !var->immediate)
-    if (!var->defPoint->init &&
-        (toFnSymbol(var->defPoint->parentSymbol) ||
-         toModuleSymbol(var->defPoint->parentSymbol)))
-      USR_FATAL_CONT(var, "Top-level params must be initialized.");
-
   if (var->defPoint->init && var->defPoint->init->isNoInitExpr()) {
     if (var->hasFlag(FLAG_CONST))
       USR_FATAL_CONT(var, "const variables specified with noinit must be explicitly initialized.");
@@ -211,6 +264,12 @@ checkFunction(FnSymbol* fn) {
     USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
   }
 
+#if 0 // Do not issue the warning yet.
+  if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
+    USR_WARN(fn, "\"~classname\" naming of deinitializers is deprecated");
+  }
+#endif
+
   std::vector<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
   bool isIterator = fn->isIterator();
@@ -223,7 +282,7 @@ checkFunction(FnSymbol* fn) {
         USR_FATAL_CONT(call, "return statement is not in a function or iterator");
       else {
         SymExpr* sym = toSymExpr(call->get(1));
-        if (sym && sym->var == gVoid)
+        if (sym && sym->symbol() == gVoid)
           numVoidReturns++;
         else {
           if (isIterator)

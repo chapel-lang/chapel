@@ -1,4 +1,4 @@
-module bradModule() {
+module bradModule {
   config const n: int = 10;
 
   writeln("n is: ", n);

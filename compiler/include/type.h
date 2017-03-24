@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,6 +29,7 @@
 
 #include <cstdio>
 #include <map>
+#include <vector>
 
 /*
   Things which must be changed if instance variables are added
@@ -60,7 +61,7 @@ public:
   // Interface for BaseAST
   virtual GenRet   codegen();
   virtual bool     inTree();
-  virtual Type*    typeInfo();
+  virtual QualifiedType qualType();
   virtual void     verify();
 
   virtual void     codegenDef();
@@ -113,6 +114,198 @@ private:
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
+
+// a Qualifier allows the compiler to distinguish between
+// different properties of a variable (const or ref-ness in particular)
+// without changing its type to a ref or wide ref type.
+enum Qualifier {
+  // The abstract qualifiers
+  QUAL_UNKNOWN,
+  QUAL_CONST,
+  QUAL_REF,
+  QUAL_CONST_REF,
+  QUAL_PARAM,
+
+  // The concrete qualifiers
+
+  // We expect we will need QUAL_PARAM
+  // QUAL_TYPE has also been proposed
+  // As we add those, we expect to add methods
+  // e.g. isParam() to QualifiedType.
+
+  // QUAL_VAL applies to local or global variables
+  // as well as to compiler-introduced temporaries.
+  // Something with Qualifier QUAL_VAL is mutable, but
+  // something with Qualifier QUAL_CONST_VAL is not.
+  QUAL_VAL,
+  QUAL_NARROW_REF,
+  QUAL_WIDE_REF,
+
+  QUAL_CONST_VAL,
+  QUAL_CONST_NARROW_REF,
+  QUAL_CONST_WIDE_REF
+};
+
+// A QualifiedType is basically a tuple of (qualifier, type).
+// Shorter names, such as QualType and QualT have been proposed.
+// A QualifiedType is only expected to be meaningful during and
+// after resolution.
+//
+// For example
+//   var aVar:int;
+//   ref aRef = aVar;
+//
+//   SymExpr(aVar) and Symbol(aVar) have QualifiedType(int, QUAL_VAL)
+//   SymExpr(aRef) and Symbol(aRef) have QualifiedType(int, QUAL_REF)
+//
+class QualifiedType {
+public:
+
+  // Static methods for working with Qualifier
+  static bool qualifierIsConst(Qualifier q)
+  {
+    return (q == QUAL_CONST ||
+            q == QUAL_CONST_REF ||
+            q == QUAL_CONST_VAL ||
+            q == QUAL_CONST_NARROW_REF ||
+            q == QUAL_CONST_WIDE_REF);
+  }
+
+  static Qualifier qualifierToConst(Qualifier q)
+  {
+    switch (q) {
+      case QUAL_CONST:
+      case QUAL_CONST_REF:
+      case QUAL_CONST_NARROW_REF:
+      case QUAL_CONST_WIDE_REF:
+      case QUAL_CONST_VAL:
+      case QUAL_PARAM:
+        // already const
+        return q;
+      case QUAL_UNKNOWN:
+        return QUAL_CONST;
+      case QUAL_REF:
+        return QUAL_CONST_REF;
+      case QUAL_VAL:
+        return QUAL_CONST_VAL;
+      case QUAL_NARROW_REF:
+        return QUAL_CONST_NARROW_REF;
+      case QUAL_WIDE_REF:
+        return QUAL_CONST_WIDE_REF;
+      // no default: update as Qualifier is updated
+    }
+    return QUAL_UNKNOWN;
+  }
+
+  // QualifiedType methods
+
+  explicit QualifiedType(Type* type)
+    : _type(type), _qual(QUAL_UNKNOWN)
+  {
+  }
+
+  QualifiedType(Qualifier qual, Type* type)
+    : _type(type), _qual(qual)
+  {
+  }
+
+  QualifiedType(Type* type, Qualifier qual)
+    : _type(type), _qual(qual)
+  {
+  }
+
+  bool isAbstract() const {
+    return (_qual == QUAL_UNKNOWN || _qual == QUAL_CONST ||
+            _qual == QUAL_REF || _qual == QUAL_CONST_REF);
+  }
+  bool isVal() const {
+    return (_qual == QUAL_VAL || _qual == QUAL_CONST_VAL);
+  }
+  bool isRef() const {
+    return (_qual == QUAL_REF || _qual == QUAL_CONST_REF ||
+            _qual == QUAL_NARROW_REF || _qual == QUAL_CONST_NARROW_REF ||
+            isRefType());
+  }
+  bool isWideRef() const {
+    return (_qual == QUAL_WIDE_REF || _qual == QUAL_CONST_WIDE_REF ||
+            isWideRefType());
+  }
+  bool isRefOrWideRef() const {
+    return isRef() || isWideRef();
+  }
+  bool isConst() const {
+    return qualifierIsConst(_qual);
+  }
+  // TODO: isImmutable
+
+  bool isRefType() const;
+  bool isWideRefType() const;
+
+  QualifiedType toRef() {
+    return QualifiedType(QUAL_REF, _type->getValType());
+  }
+
+  QualifiedType toVal() {
+    return QualifiedType(QUAL_VAL, _type->getValType());
+  }
+
+
+
+  QualifiedType toConst() {
+    return QualifiedType(qualifierToConst(_qual), _type);
+  }
+
+  Type* type() const {
+    return _type;
+  }
+  Qualifier getQual() const {
+    return _qual;
+  }
+
+  const char* qualStr() const {
+    Qualifier q = _qual;
+
+    if (isRefType()) {
+      q = QUAL_REF;
+    } else if (isWideRefType()) {
+      q = QUAL_WIDE_REF;
+    }
+
+    switch (q) {
+      case QUAL_UNKNOWN:
+        return "unknown";
+      case QUAL_CONST:
+        return "const";
+      case QUAL_REF:
+        return "ref";
+      case QUAL_CONST_REF:
+        return "const-ref";
+      case QUAL_PARAM:
+        return "param";
+      case QUAL_VAL:
+        return "val";
+      case QUAL_NARROW_REF:
+        return "narrow-ref";
+      case QUAL_WIDE_REF:
+        return "wide-ref";
+
+      case QUAL_CONST_VAL:
+        return "const-val";
+      case QUAL_CONST_NARROW_REF:
+        return "const-narrow-ref";
+      case QUAL_CONST_WIDE_REF:
+        return "const-wide-ref";
+    }
+    INT_FATAL("Unhandled Qualifier");
+    return "UNKNOWN-QUAL";
+  }
+
+
+private:
+  Type*      _type;
+  Qualifier  _qual;
+};
+
 class EnumType : public Type {
  public:
   AList constants; // EnumSymbols
@@ -146,54 +339,128 @@ private:
 };
 
 
+/************************************* | **************************************
+*                                                                             *
+* A base type for union, class, and record.                                   *
+*                                                                             *
+************************************** | *************************************/
+
 enum AggregateTag {
   AGGREGATE_CLASS,
   AGGREGATE_RECORD,
   AGGREGATE_UNION
 };
 
-class AggregateType : public Type {
- public:
-  AggregateTag aggregateTag;
-  AList fields;
-  AList inherits; // used from parsing, sets dispatchParents
-  Symbol* outer;  // pointer to an outer class if this is an inner class
-
-  IteratorInfo* iteratorInfo; // Attached only to iterator class/records
-
-  const char *doc;
-
-  AggregateType(AggregateTag initTag);
-  ~AggregateType();
-  void verify();
-  virtual void    accept(AstVisitor* visitor);
-  DECLARE_COPY(AggregateType);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void addDeclarations(Expr* expr, bool tail = true);
-
-  GenRet codegenClassStructType();
-  void codegenDef();
-  void codegenPrototype();
-  const char* classStructName(bool standalone);
-  int codegenStructure(FILE* outfile, const char* baseoffset);
-  int codegenFieldStructure(FILE* outfile, bool nested, const char* baseoffset);
-
-  int getMemberGEP(const char *name);
-
-  int getFieldPosition(const char* name, bool fatal = true);
-  Symbol* getField(const char* name, bool fatal = true);
-  Symbol* getField(int i);
-  bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
-  bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }
-  bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
-
-  virtual void printDocs(std::ostream *file, unsigned int tabs);
-
-private:
-  virtual std::string docsDirective();
-  std::string docsSuperClass();
+enum InitializerStyle {
+  DEFINES_CONSTRUCTOR,
+  DEFINES_INITIALIZER,
+  DEFINES_NONE_USE_DEFAULT
 };
 
+
+class AggregateType : public Type {
+public:
+  AggregateType(AggregateTag initTag);
+  ~AggregateType();
+
+  DECLARE_COPY(AggregateType);
+
+  virtual void                replaceChild(BaseAST* oldAst, BaseAST* newAst);
+
+  virtual void                verify();
+  virtual void                accept(AstVisitor* visitor);
+  virtual void                printDocs(std::ostream* file, unsigned int tabs);
+
+  void                        addDeclarations(Expr* expr);
+
+  void                        codegenDef();
+
+  void                        codegenPrototype();
+
+  GenRet                      codegenClassStructType();
+
+  int                         codegenStructure(FILE*       outfile,
+                                               const char* baseoffset);
+
+  int                         codegenFieldStructure(FILE*       outfile,
+                                                    bool        nested,
+                                                    const char* baseOffset);
+
+  // The following two methods are used for types which define initializers
+  bool                        setNextGenericField();
+  AggregateType*              getInstantiation(SymExpr* t, int index);
+
+
+  const char*                 classStructName(bool standalone);
+
+  int                         getMemberGEP(const char* name);
+
+  int                         getFieldPosition(const char* name,
+                                               bool        fatal = true);
+
+  Symbol*                     getField(const char* name, bool fatal = true);
+  Symbol*                     getField(int i);
+
+  // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
+  QualifiedType               getFieldType(Expr* e);
+
+  int                         numFields()                                const;
+
+  bool                        isClass()                                  const;
+  bool                        isRecord()                                 const;
+  bool                        isUnion()                                  const;
+
+  bool                        isGeneric()                                const;
+  void                        markAsGeneric();
+
+
+
+  AggregateTag                aggregateTag;
+  InitializerStyle            initializerStyle;
+
+  bool                        initializerResolved;
+
+  AList                       fields;
+
+  // used from parsing, sets dispatchParents
+  AList                       inherits;
+
+  // pointer to an outer class if this is an inner class
+  Symbol*                     outer;
+
+  // Attached only to iterator class/records
+  IteratorInfo*               iteratorInfo;
+
+  // What to delegate to with 'forwarding'
+  AList                       forwardingTo;
+
+  const char*                 doc;
+
+private:
+  virtual std::string         docsDirective();
+
+  std::string                 docsSuperClass();
+  void                        addDeclaration(DefExpr* defExpr);
+
+  std::vector<AggregateType*> instantiations;
+
+  // genericField stores the index of the first generic field in the
+  // AggregateType which does not have a substitution,
+  // but only if the AggregateType defines an initializer.
+  //
+  // If the type has no generic fields without substitutions,
+  // or if setNextGenericField has not been called on the base AggregateType,
+  // this will be set to 0.
+  int                         genericField;
+
+  bool                        mIsGeneric;
+};
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class PrimitiveType : public Type {
  public:
@@ -211,6 +478,12 @@ private:
   virtual std::string docsDirective();
 };
 
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 #ifndef TYPE_EXTERN
 #define TYPE_EXTERN extern
@@ -265,8 +538,14 @@ TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
 TYPE_EXTERN PrimitiveType* dtCVoidPtr; // the type of a C void* (unowned)
 TYPE_EXTERN PrimitiveType* dtCFnPtr;   // a C function pointer (unowned)
 
+TYPE_EXTERN AggregateType* dtOnBundleRecord;
+TYPE_EXTERN AggregateType* dtTaskBundleRecord;
+
+TYPE_EXTERN AggregateType* dtError;
+
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
+
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
@@ -288,6 +567,7 @@ bool is_imag_type(Type*);
 bool is_complex_type(Type*);
 bool is_enum_type(Type*);
 #define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_real_type(t) || is_imag_type(t) || is_complex_type(t))
+bool isLegalParamType(Type*);
 int  get_width(Type*);
 bool isClass(Type* t);
 bool isRecord(Type* t);
@@ -312,6 +592,14 @@ bool isArrayClass(Type* type);
 
 bool isString(Type* type);
 bool isUserDefinedRecord(Type* type);
+
+bool isPrimitiveScalar(Type* type);
+
+bool isNonGenericClass (Type* type);
+bool isNonGenericRecord(Type* type);
+
+bool isNonGenericClassWithInitializers (Type* type);
+bool isNonGenericRecordWithInitializers(Type* type);
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);

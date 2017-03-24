@@ -1,2 +1,25 @@
-CHPL_HOST_PLATFORM <= cygwin
-CHPL_HOST_PLATFORM == darwin
+#!/usr/bin/env bash
+
+if [[ $CHPL_HOST_PLATFORM == *cygwin* \
+      || $CHPL_HOST_PLATFORM == darwin ]] ; then
+  #
+  # Can't do static/dynamic linking on these platforms
+  #
+  echo True
+elif $CHPL_HOME/util/printchplenv --make \
+     | grep CHPL_MAKE_THIRD_PARTY_LINK_ARGS \
+     | grep -q -e '-lnuma' ; then
+  #
+  # If user programs will be linked with libnuma then skip this test,
+  # because we can't test static linking since libnuma is available
+  # only as a shared object.  Ideally we'd be able to decide this on
+  # a compopts-by-compopts basis, but we can't do that yet.
+  #
+  echo True
+elif [[ "$COMPOPTS" == *"--llvm"* ]] ; then
+  # Skip in --llvm configurations because either this test or
+  # static/dynamic linking doesn't work yet.
+  echo True
+else
+  echo False
+fi

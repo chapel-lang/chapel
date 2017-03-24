@@ -1,9 +1,6 @@
 {0..0, 0..0}
 LOCALE0
 locale 0 owns blocks: (1.. by 4, 0.. by 8)
-{0..0, 0..0}
-LOCALE0
-locale 0 owns blocks: (1.. by 4, 0.. by 8)
 Declaring D:
 0: {1..4, 0..7}
 0: {1..4, 8..15}

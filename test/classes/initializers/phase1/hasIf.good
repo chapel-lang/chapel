@@ -1,1 +1,2 @@
-{f1 = true, f2 = 10}
+hasIf.chpl:5: In initializer:
+hasIf.chpl:9: error: can't initialize field "f2" inside a conditional during phase 1 of initialization

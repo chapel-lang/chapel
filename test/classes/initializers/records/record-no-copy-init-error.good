@@ -1,0 +1,2 @@
+record-no-copy-init-error.chpl:18: In function 'foo':
+record-no-copy-init-error.chpl:28: error: No copy constructor for initializer

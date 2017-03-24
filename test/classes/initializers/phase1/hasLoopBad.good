@@ -1,2 +1,2 @@
-hasLoopBad.chpl:7: error: illegal initialization of field "highestNum" in loop context (not permitted in Phase 1)
-hasLoopBad.chpl:10: error: illegal initialization of field "highestNum" in loop context (not permitted in Phase 1)
+hasLoopBad.chpl:4: In initializer:
+hasLoopBad.chpl:7: error: can't initialize field "highestNum" inside a conditional during phase 1 of initialization

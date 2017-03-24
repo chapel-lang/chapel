@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -193,32 +193,6 @@ void chpl_check_nil(void* ptr, int32_t lineno, int32_t filename)
 {
   if (ptr == nil)
     chpl_error("attempt to dereference nil", lineno, filename);
-}
-
-static inline
-void* chpl_array_alloc(size_t nmemb, size_t eltSize, int32_t lineno, int32_t filename) {
-  return chpl_mem_allocMany(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename);
-}
-
-static inline
-void* chpl_wide_array_alloc(int32_t dstNode, size_t nmemb, size_t eltSize, int32_t lineno, int32_t filename) {
-  if (dstNode != chpl_nodeID)
-    chpl_error("array vector data is not local", lineno, filename);;
-  return chpl_array_alloc(nmemb, eltSize, lineno, filename);
-}
-
-static inline
-void chpl_array_free(void* x, int32_t lineno, int32_t filename)
-{
-  chpl_mem_free(x, lineno, filename);
-}
-
-static inline
-void chpl_wide_array_free(int32_t dstNode, void* x, int32_t lineno, int32_t filename)
-{
-  if (dstNode != chpl_nodeID)
-    chpl_error("array vector data is not local", lineno, filename);
-  chpl_array_free(x, lineno, filename);
 }
 
 // Include LLVM support functions for --llvm-wide-opt

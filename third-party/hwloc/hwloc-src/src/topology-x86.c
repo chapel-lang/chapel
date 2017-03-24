@@ -1,5 +1,5 @@
 /*
- * Copyright © 2010-2016 Inria.  All rights reserved.
+ * Copyright © 2010-2017 Inria.  All rights reserved.
  * Copyright © 2010-2013 Université Bordeaux
  * Copyright © 2010-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -81,7 +81,7 @@ enum cpuid_type {
 
 static void fill_amd_cache(struct procinfo *infos, unsigned level, int type, unsigned cpuid)
 {
-  struct cacheinfo *cache;
+  struct cacheinfo *cache, *tmpcaches;
   unsigned cachenum;
   unsigned long size = 0;
 
@@ -94,8 +94,13 @@ static void fill_amd_cache(struct procinfo *infos, unsigned level, int type, uns
   if (!size)
     return;
 
+  tmpcaches = realloc(infos->cache, (infos->numcaches+1)*sizeof(*infos->cache));
+  if (!tmpcaches)
+    /* failed to allocated, ignore that cache */
+    return;
+  infos->cache = tmpcaches;
   cachenum = infos->numcaches++;
-  infos->cache = realloc(infos->cache, infos->numcaches*sizeof(*infos->cache));
+
   cache = &infos->cache[cachenum];
 
   cache->type = type;
@@ -178,8 +183,9 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
   }
   infos->cpustepping = eax & 0xf;
 
-  if (cpuid_type == intel && infos->cpufamilynumber == 0x6 && infos->cpumodelnumber == 0x57)
-    data->is_knl = 1;
+  if (cpuid_type == intel && infos->cpufamilynumber == 0x6 &&
+      (infos->cpumodelnumber == 0x57 || infos->cpumodelnumber == 0x85))
+    data->is_knl = 1; /* KNM is the same as KNL */
 
   /* Get cpu vendor string from cpuid 0x00 */
   memset(regs, 0, sizeof(regs));
@@ -240,19 +246,37 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
    * (AMD topology extension)
    */
   if (cpuid_type != intel && has_topoext(features)) {
-    unsigned apic_id, node_id, nodes_per_proc, unit_id, cores_per_unit;
+    unsigned apic_id, node_id, nodes_per_proc;
 
     eax = 0x8000001e;
     hwloc_x86_cpuid(&eax, &ebx, &ecx, &edx);
     infos->apicid = apic_id = eax;
-    infos->nodeid = node_id = ecx & 0xff;
-    nodes_per_proc = ((ecx >> 8) & 7) + 1;
-    if (nodes_per_proc > 2) {
-      hwloc_debug("warning: undefined value %d, assuming it means %d\n", nodes_per_proc, nodes_per_proc);
+
+    if (infos->cpufamilynumber == 0x16) {
+      /* ecx is reserved */
+      node_id = 0;
+      nodes_per_proc = 1;
+    } else {
+      node_id = ecx & 0xff;
+      nodes_per_proc = ((ecx >> 8) & 7) + 1;
     }
-    infos->unitid = unit_id = ebx & 0xff;
-    cores_per_unit = ((ebx >> 8) & 3) + 1;
-    hwloc_debug("x2APIC %08x, %d nodes, node %d, %d cores in unit %d\n", apic_id, nodes_per_proc, node_id, cores_per_unit, unit_id);
+    infos->nodeid = node_id;
+    if ((infos->cpufamilynumber == 0x15 && nodes_per_proc > 2)
+	|| (infos->cpufamilynumber == 0x17 && nodes_per_proc > 4)) {
+      hwloc_debug("warning: undefined nodes_per_proc value %d, assuming it means %d\n", nodes_per_proc, nodes_per_proc);
+    }
+
+    if (infos->cpufamilynumber <= 0x16) { /* topoext appeared in 0x15 and compute-units were only used in 0x15 and 0x16 */
+      unsigned unit_id, cores_per_unit;
+      infos->unitid = unit_id = ebx & 0xff;
+      cores_per_unit = ((ebx >> 8) & 0xff) + 1;
+      hwloc_debug("topoext %08x, %d nodes, node %d, %d cores in unit %d\n", apic_id, nodes_per_proc, node_id, cores_per_unit, unit_id);
+    } else {
+      unsigned core_id, threads_per_core;
+      infos->coreid = core_id = ebx & 0xff;
+      threads_per_core = ((ebx >> 8) & 0xff) + 1;
+      hwloc_debug("topoext %08x, %d nodes, node %d, %d threads in core %d\n", apic_id, nodes_per_proc, node_id, threads_per_core, core_id);
+    }
 
     for (cachenum = 0; ; cachenum++) {
       unsigned type;
@@ -731,6 +755,7 @@ static int summarize(struct hwloc_backend *backend, struct procinfo *infos, int 
     hwloc_bitmap_copy(remaining_cpuset, complete_cpuset);
     while ((i = hwloc_bitmap_first(remaining_cpuset)) != (unsigned) -1) {
       unsigned packageid = infos[i].packageid;
+      unsigned nodeid = infos[i].nodeid;
       unsigned coreid = infos[i].coreid;
 
       if (coreid == (unsigned) -1) {
@@ -745,7 +770,7 @@ static int summarize(struct hwloc_backend *backend, struct procinfo *infos, int 
 	  continue;
 	}
 
-        if (infos[j].packageid == packageid && infos[j].coreid == coreid) {
+        if (infos[j].packageid == packageid && infos[j].nodeid == nodeid && infos[j].coreid == coreid) {
           hwloc_bitmap_set(core_cpuset, j);
           hwloc_bitmap_clr(remaining_cpuset, j);
         }

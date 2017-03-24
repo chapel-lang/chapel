@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -149,7 +149,7 @@ void AstToText::appendClassName(FnSymbol* fn)
 
         else if (SymExpr* sel = toSymExpr(expr))
         {
-          if (TypeSymbol* typeSym = toTypeSymbol(sel->var))
+          if (TypeSymbol* typeSym = toTypeSymbol(sel->symbol()))
           {
             appendExpr(typeSym->name);
           }
@@ -308,6 +308,10 @@ void AstToText::appendFormalIntent(ArgSymbol* arg)
       mText += "const ref ";
       break;
 
+    case INTENT_REF_MAYBE_CONST:
+      mText += "const? ref ";
+      break;
+
     case INTENT_PARAM:
       mText += "param ";
       break;
@@ -450,7 +454,7 @@ bool AstToText::exprTypeHackEqual(Expr* expr0, Expr* expr1) const
     SymExpr* sym0 = toSymExpr(expr0);
     SymExpr* sym1 = toSymExpr(expr1);
 
-    retval = (sym0->var == sym1->var);
+    retval = (sym0->symbol() == sym1->symbol());
   }
 
   else if (isCallExpr(expr0) && isCallExpr(expr1))
@@ -480,7 +484,7 @@ bool AstToText::exprTypeHackEqual(Expr* expr0, Expr* expr1) const
   else if (isSymExpr(expr0) && isUnresolvedSymExpr(expr1))
   {
     SymExpr*           sym0 = toSymExpr(expr0);
-    FnSymbol*          fn   = toFnSymbol(sym0->var);
+    FnSymbol*          fn   = toFnSymbol(sym0->symbol());
 
     UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr1);
 
@@ -633,7 +637,7 @@ bool AstToText::isTypeDefault(Expr* expr) const
 
   if (SymExpr* symExpr = toSymExpr(expr))
   {
-    if (VarSymbol* var = toVarSymbol(symExpr->var))
+    if (VarSymbol* var = toVarSymbol(symExpr->symbol()))
       retval = (strcmp(var->name, "_typeDefaultT") == 0) ? true : false;
   }
 
@@ -748,7 +752,7 @@ void AstToText::appendExpr(UnresolvedSymExpr* expr)
 
 void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
 {
-  if (VarSymbol* var = toVarSymbol(expr->var))
+  if (VarSymbol* var = toVarSymbol(expr->symbol()))
   {
     if (var->immediate != 0)
     {
@@ -807,17 +811,17 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
     }
   }
 
-  else if (ArgSymbol*  sym = toArgSymbol(expr->var))
+  else if (ArgSymbol*  sym = toArgSymbol(expr->symbol()))
   {
     appendExpr(sym->name);
   }
 
-  else if (TypeSymbol* sym = toTypeSymbol(expr->var))
+  else if (TypeSymbol* sym = toTypeSymbol(expr->symbol()))
   {
     appendExpr(sym->name);
   }
 
-  else if (EnumSymbol* sym = toEnumSymbol(expr->var))
+  else if (EnumSymbol* sym = toEnumSymbol(expr->symbol()))
   {
     if (EnumType* type = toEnumType(sym->type))
     {
@@ -862,16 +866,23 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         appendExpr(expr->get(1), printingType);
       }
 
-      else if (strcmp(fnName, "_cast")                        == 0)
+      else if (expr->isCast())
       {
-        appendExpr(expr->get(2), printingType);
+        appendExpr(expr->castFrom(), printingType);
         mText += ": ";
-        appendExpr(expr->get(1), printingType);
+        appendExpr(expr->castTo(), printingType);
       }
 
       else if (strcmp(fnName, "chpl__atomicType")             == 0)
       {
         mText += "atomic";
+        appendExpr(expr->get(1), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl__distributed")             == 0)
+      {
+        appendExpr(expr->get(2), printingType);
+        mText += " dmapped ";
         appendExpr(expr->get(1), printingType);
       }
 
@@ -927,8 +938,8 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
             SymExpr*   sym1 = toSymExpr(expr->get(1));
             SymExpr*   sym2 = toSymExpr(expr->get(2));
 
-            VarSymbol* arg1 = toVarSymbol(sym1->var);
-            ArgSymbol* arg2 = toArgSymbol(sym2->var);
+            VarSymbol* arg1 = toVarSymbol(sym1->symbol());
+            ArgSymbol* arg2 = toArgSymbol(sym2->symbol());
 
             if (arg1 != 0 && arg2 != 0 && strcmp(arg1->name, "defaultDist") == 0)
             {
@@ -1034,9 +1045,9 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
         if (symExpr1 != 0 && symExpr2 != 0)
         {
-          if (isArgSymbol(symExpr1->var) && isVarSymbol(symExpr2->var))
+          if (isArgSymbol(symExpr1->symbol()) && isVarSymbol(symExpr2->symbol()))
           {
-            ArgSymbol* sym1 = toArgSymbol(symExpr1->var);
+            ArgSymbol* sym1 = toArgSymbol(symExpr1->symbol());
 
             if (strcmp(sym1->name, "this") == 0)
             {
@@ -1050,9 +1061,9 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
             }
           }
 
-          else if (isVarSymbol(symExpr1->var) && isVarSymbol(symExpr2->var))
+          else if (isVarSymbol(symExpr1->symbol()) && isVarSymbol(symExpr2->symbol()))
           {
-            VarSymbol* sym1 = toVarSymbol(symExpr1->var);
+            VarSymbol* sym1 = toVarSymbol(symExpr1->symbol());
 
             if (strcmp(sym1->name, "this") == 0)
             {
@@ -1096,7 +1107,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         UnresolvedSymExpr* name     = toUnresolvedSymExpr(expr->baseExpr);
         SymExpr*           symClass = toSymExpr(expr->get(2));
 
-        mText += symClass->var->name;
+        mText += symClass->symbol()->name;
         mText += '.';
         mText += name->unresolved;
       }
@@ -1182,6 +1193,11 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     {
       appendExpr(expr->get(1), printingType);
       mText += ".type ";
+    }
+    else if (expr->isPrimitive(PRIM_NEW))
+    {
+      mText += "new ";
+      appendExpr(expr->get(1), printingType);
     }
     else
     {
@@ -1396,8 +1412,8 @@ bool AstToText::isMtArg(CallExpr* expr, bool expectThis) const
 
         if (symMt != NULL && symTarget != 0)
         {
-          VarSymbol* varMt     = toVarSymbol(symMt->var);
-          ArgSymbol* argTarget = toArgSymbol(symTarget->var);
+          VarSymbol* varMt     = toVarSymbol(symMt->symbol());
+          ArgSymbol* argTarget = toArgSymbol(symTarget->symbol());
 
           if (varMt                             != NULL          &&
               argTarget                         != NULL          &&

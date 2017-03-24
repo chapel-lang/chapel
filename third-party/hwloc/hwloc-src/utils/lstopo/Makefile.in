@@ -591,7 +591,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PDFLATEX = @PDFLATEX@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
-RMPATH = @RMPATH@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -700,6 +699,10 @@ nodist_man_MANS = $(man1_pages)
 # so that no terminal is required
 @HWLOC_HAVE_CAIRO_TRUE@APPLICATIONSdir = @datarootdir@/applications
 @HWLOC_HAVE_CAIRO_TRUE@dist_APPLICATIONS_DATA = lstopo.desktop
+SEDMAN = $(SED) -e 's/\#PACKAGE_NAME\#/@PACKAGE_NAME@/g' \
+	  -e 's/\#PACKAGE_VERSION\#/@PACKAGE_VERSION@/g' \
+	  -e 's/\#HWLOC_DATE\#/@HWLOC_RELEASE_DATE@/g'
+
 all: all-am
 
 .SUFFIXES:
@@ -1660,9 +1663,7 @@ uninstall-man: uninstall-man1
 
 .1in.1:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 install-exec-hook:

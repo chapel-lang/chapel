@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,8 +22,10 @@
 
 #include <cstdio>
 #include <map>
+#include <set>
 
 #include "expr.h"
+#include "foralls.h"
 
 #ifdef HAVE_LLVM
 
@@ -113,14 +115,16 @@ class UseStmt : public Stmt {
 ************************************* | ************************************/
 
 enum BlockTag {
-// Bits:
+  // Bits:
   BLOCK_NORMAL      = 0,
   BLOCK_SCOPELESS   = 1<<0, ///< does not introduce a new scope
   BLOCK_TYPE_ONLY   = 1<<1, ///< deleted after type resolution
   BLOCK_EXTERN      = 1<<2, ///< init block for an extern var
   BLOCK_C_FOR_LOOP  = 1<<3, ///< init/test/incr block for a CForLoop
-// Bit masks:
+
+  // Bit masks:
   BLOCK_TYPE        = BLOCK_SCOPELESS | BLOCK_TYPE_ONLY,
+  BLOCK_EXTERN_TYPE = BLOCK_EXTERN    | BLOCK_TYPE
 };
 
 class BlockStmt : public Stmt {
@@ -155,6 +159,7 @@ public:
   virtual bool        isCForLoop()                                 const;
 
   virtual void        checkConstLoops();
+  void                removeForallIntents();
 
   virtual bool        deadBlockCleanup();
 
@@ -163,6 +168,9 @@ public:
   void                insertAtHead(Expr* ast);
   void                insertAtTail(Expr* ast);
   void                insertAtTailBeforeFlow(Expr* ast);
+
+  void                insertAtHead(AList exprs);
+  void                insertAtTail(AList exprs);
 
   void                insertAtHead(const char* format, ...);
   void                insertAtTail(const char* format, ...);
@@ -187,7 +195,8 @@ public:
   AList               body;
   CallExpr*           modUses;       // module uses
   const char*         userLabel;
-  CallExpr*           byrefVars; //ref-clause in begin/cobegin/coforall/forall
+  CallExpr*           byrefVars;     // task intents - task constructs only
+  ForallIntents*      forallIntents; // only for forall-body blocks
 
 private:
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
@@ -236,7 +245,8 @@ enum GotoTag {
   GOTO_RETURN,
   GOTO_GETITER_END,
   GOTO_ITER_RESUME,
-  GOTO_ITER_END
+  GOTO_ITER_END,
+  GOTO_ERROR_HANDLING
 };
 
 
@@ -298,6 +308,50 @@ public:
 *                                                                           *
 ************************************* | ************************************/
 
+class ForwardingStmt : public Stmt {
+public:
+                      ForwardingStmt(DefExpr* toFnDef);
+                      ForwardingStmt(DefExpr* toFnDef,
+                                   std::set<const char*>* args,
+                                   bool exclude,
+                                   std::map<const char*, const char*>* renames);
+
+  // Interface to BaseAST
+  virtual GenRet      codegen();
+  virtual void        verify();
+  virtual void        accept(AstVisitor* visitor);
+
+  DECLARE_COPY(ForwardingStmt);
+
+  // Interface to Expr
+  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
+
+  virtual Expr*       getFirstChild();
+  virtual Expr*       getFirstExpr();
+
+  // forwarding function - contains forwarding expression; used during parsing
+  DefExpr*            toFnDef;
+  // name of forwarding function; used before, during resolution
+  const char*         fnReturningForwarding;
+  // stores the type returned by the forwarding function
+  // (i.e. the type of the expression to forward to).
+  // Used during resolution to avoid repeated work.
+  Type*               type;
+
+  // The names of symbols from an 'except' or 'only' list
+  std::set<const char *> named;
+  // Map of newName: oldName
+  std::map<const char*, const char*> renamed;
+  // Is 'named' an 'except' list? (vs. 'only' list)
+  bool except;
+};
+
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 extern Vec<LabelSymbol*>         removedIterResumeLabels;
 extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 
@@ -306,14 +360,15 @@ extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 // statement-level expression.
 void         codegenStmt(Expr* stmt);
 
+bool isDirectlyUnderBlockStmt(const Expr* expr);
+
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,
 // if possible; NULL otherwise.
 LabelSymbol* getGotoLabelSymbol(GotoStmt* gs);
 GotoStmt*    getGotoLabelsIterResumeGoto(GotoStmt* gs);
 
 void         removeDeadIterResumeGotos();
-void         verifyNcleanRemovedIterResumeGotos();
-
-void         verifyNcleanCopiedIterResumeGotos();
+void         verifyRemovedIterResumeGotos();
+void         verifyCopiedIterResumeGotos();
 
 #endif

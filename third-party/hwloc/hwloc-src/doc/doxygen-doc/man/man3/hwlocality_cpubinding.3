@@ -1,8 +1,8 @@
-.TH "CPU binding" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_cpubinding" 3 "Thu Feb 23 2017" "Version 1.11.6" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-CPU binding \- 
+hwlocality_cpubinding \- CPU binding
 .SS "Enumerations"
 
 .in +1c
@@ -127,17 +127,17 @@ Avoid any effect on memory binding\&. On some operating systems, some CPU bindin
 This flag is only meaningful when used with functions that set the CPU binding\&. It is ignored when used with functions that get CPU binding information\&. 
 .SH "Function Documentation"
 .PP 
-.SS "int hwloc_get_cpubind (\fBhwloc_topology_t\fPtopology, \fBhwloc_cpuset_t\fPset, intflags)"
+.SS "int hwloc_get_cpubind (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP set, int flags)"
 
 .PP
 Get current process or thread binding\&. Writes into \fCset\fP the physical cpuset which the process or thread (according to \fIflags\fP) was last bound to\&. 
-.SS "int hwloc_get_last_cpu_location (\fBhwloc_topology_t\fPtopology, \fBhwloc_cpuset_t\fPset, intflags)"
+.SS "int hwloc_get_last_cpu_location (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP set, int flags)"
 
 .PP
 Get the last physical CPU where the current process or thread ran\&. The operating system may move some tasks from one processor to another at any time according to their binding, so this function may return something that is already outdated\&.
 .PP
 \fCflags\fP can include either \fBHWLOC_CPUBIND_PROCESS\fP or \fBHWLOC_CPUBIND_THREAD\fP to specify whether the query should be for the whole process (union of all CPUs on which all threads are running), or only the current thread\&. If the process is single-threaded, flags can be set to zero to let hwloc use whichever method is available on the underlying OS\&. 
-.SS "int hwloc_get_proc_cpubind (\fBhwloc_topology_t\fPtopology, hwloc_pid_tpid, \fBhwloc_cpuset_t\fPset, intflags)"
+.SS "int hwloc_get_proc_cpubind (\fBhwloc_topology_t\fP topology, hwloc_pid_t pid, \fBhwloc_cpuset_t\fP set, int flags)"
 
 .PP
 Get the current physical binding of process \fCpid\fP\&. 
@@ -152,7 +152,7 @@ On non-Linux systems, \fBHWLOC_CPUBIND_THREAD\fP can not be used in \fCflags\fP\
 .RE
 .PP
 
-.SS "int hwloc_get_proc_last_cpu_location (\fBhwloc_topology_t\fPtopology, hwloc_pid_tpid, \fBhwloc_cpuset_t\fPset, intflags)"
+.SS "int hwloc_get_proc_last_cpu_location (\fBhwloc_topology_t\fP topology, hwloc_pid_t pid, \fBhwloc_cpuset_t\fP set, int flags)"
 
 .PP
 Get the last physical CPU where a process ran\&. The operating system may move some tasks from one processor to another at any time according to their binding, so this function may return something that is already outdated\&.
@@ -167,7 +167,7 @@ On non-Linux systems, \fBHWLOC_CPUBIND_THREAD\fP can not be used in \fCflags\fP\
 .RE
 .PP
 
-.SS "int hwloc_get_thread_cpubind (\fBhwloc_topology_t\fPtopology, hwloc_thread_tthread, \fBhwloc_cpuset_t\fPset, intflags)"
+.SS "int hwloc_get_thread_cpubind (\fBhwloc_topology_t\fP topology, hwloc_thread_t thread, \fBhwloc_cpuset_t\fP set, int flags)"
 
 .PP
 Get the current physical binding of thread \fCtid\fP\&. 
@@ -180,7 +180,7 @@ Get the current physical binding of thread \fCtid\fP\&.
 .RE
 .PP
 
-.SS "int hwloc_set_cpubind (\fBhwloc_topology_t\fPtopology, \fBhwloc_const_cpuset_t\fPset, intflags)"
+.SS "int hwloc_set_cpubind (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, int flags)"
 
 .PP
 Bind current process or thread on cpus given in physical bitmap \fCset\fP\&. 
@@ -193,7 +193,7 @@ Bind current process or thread on cpus given in physical bitmap \fCset\fP\&.
 .RE
 .PP
 
-.SS "int hwloc_set_proc_cpubind (\fBhwloc_topology_t\fPtopology, hwloc_pid_tpid, \fBhwloc_const_cpuset_t\fPset, intflags)"
+.SS "int hwloc_set_proc_cpubind (\fBhwloc_topology_t\fP topology, hwloc_pid_t pid, \fBhwloc_const_cpuset_t\fP set, int flags)"
 
 .PP
 Bind a process \fCpid\fP on cpus given in physical bitmap \fCset\fP\&. 
@@ -208,7 +208,7 @@ On non-Linux systems, \fBHWLOC_CPUBIND_THREAD\fP can not be used in \fCflags\fP\
 .RE
 .PP
 
-.SS "int hwloc_set_thread_cpubind (\fBhwloc_topology_t\fPtopology, hwloc_thread_tthread, \fBhwloc_const_cpuset_t\fPset, intflags)"
+.SS "int hwloc_set_thread_cpubind (\fBhwloc_topology_t\fP topology, hwloc_thread_t thread, \fBhwloc_const_cpuset_t\fP set, int flags)"
 
 .PP
 Bind a thread \fCthread\fP on cpus given in physical bitmap \fCset\fP\&. 

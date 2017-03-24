@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,11 +29,9 @@ module ChapelBase {
   // Is the cache for remote data enabled at compile time?
   config param CHPL_CACHE_REMOTE: bool = false;
 
-  config param noRefCount = false;
-
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
-  proc _throwOpError(param op: c_string) {
+  proc _throwOpError(param op: string) {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
 
@@ -41,56 +39,45 @@ module ChapelBase {
     halt("Pure virtual function called.");
   }
 
-  proc compilerError(param x:c_string ...?n, param errorDepth:int) {
-    __primitive("error", (...x));
+
+  //
+  // compile-time diagnostics
+  //
+  // Note: the message printed by "error" and "warning" primitives
+  // consists of the formals of the enclosing function, not their own args.
+  //
+
+  proc compilerError(param msg: string ...?n, param errorDepth: int) {
+    __primitive("error");
   }
 
-  proc compilerError(param x:c_string ...?n) {
-    __primitive("error", (...x));
+  proc compilerError(param msg: string ...?n) {
+    __primitive("error");
   }
 
-  proc compilerWarning(param x:c_string ...?n, param errorDepth:int) {
-    __primitive("warning", (...x));
+  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
+    __primitive("warning");
   }
 
-  proc compilerWarning(param x:c_string ...?n) {
-    __primitive("warning", (...x));
+  proc compilerWarning(param msg: string ...?n) {
+    __primitive("warning");
   }
-
-  // for compilerAssert, as param tuples do not de-tuple into params yet,
-  // we handle only up to 5 message args and omit the rest
 
   proc compilerAssert(param test: bool)
   { if !test then compilerError("assert failed"); }
 
-  proc compilerAssert(param test: bool, param arg1:integral)
-  { if !test then compilerError("assert failed", arg1:int); }
+  proc compilerAssert(param test: bool, param errorDepth: int)
+  { if !test then compilerError("assert failed", errorDepth + 1); }
 
-  proc compilerAssert(param test: bool, param arg1) where !isIntegralType(arg1.type)
-  { if !test then compilerError("assert failed - ", arg1); }
+  proc compilerAssert(param test: bool, param msg: string ...?n)
+  { if !test then compilerError("assert failed - ", (...msg)); }
 
-  proc compilerAssert(param test: bool, param arg1, param arg2)
-  { if !test then compilerError("assert failed - ", arg1, arg2); }
+  proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
+  { if !test then compilerError("assert failed - ", (...msg), errorDepth + 1); }
 
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, param arg6: integral)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, arg6:int); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest..., param arglast: integral)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]", arglast:int); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
 
   enum iterKind {leader, follower, standalone};
+
 
   //
   // assignment on primitive types
@@ -116,6 +103,16 @@ module ChapelBase {
     __primitive("=", a, nil);
   }
 
+  inline proc =(ref a: void, b: ?t) where t != void {
+    compilerError("a void variable cannot be assigned");
+  }
+
+  inline proc =(ref a: ?t, b: void) where t != void {
+    compilerError("cannot assign void to a variable of non-void type");
+  }
+
+  // This needs to be param so calls to it are removed after they are resolved
+  inline proc =(ref a: void, b: void) param { }
 
   //
   // equality comparison on primitive types
@@ -265,8 +262,18 @@ module ChapelBase {
   inline proc *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex(w*2);
   inline proc *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2r(b), a.re*_i2r(b)):complex(w);
 
-  inline proc /(a: int(?w), b: int(w)) return __primitive("/", a, b);
-  inline proc /(a: uint(?w), b: uint(w)) return __primitive("/", a, b);
+  inline proc /(a: int(?w), b: int(w)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline proc /(a: uint(?w), b: uint(w)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
   inline proc /(a: real(?w), b: real(w)) return __primitive("/", a, b);
   inline proc /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
   inline proc /(a: complex(?w), b: complex(w)) return __primitive("/", a, b);
@@ -289,11 +296,11 @@ module ChapelBase {
   inline proc *(param a: uint(?w), param b: uint(w)) param return __primitive("*", a, b);
 
   inline proc /(param a: int(?w), param b: int(w)) param {
-    if b == 0 then compilerError("param divide by zero");
+    if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
   inline proc /(param a: uint(?w), param b: uint(w)) param {
-    if b == 0 then compilerError("param divide by zero");
+    if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
 
@@ -311,9 +318,13 @@ module ChapelBase {
   //
 
   inline proc _intExpHelp(a: integral, b) where a.type == b.type {
-    if b < 0 then
+    if isIntType(b.type) && b < 0 then
       if a == 0 then
         halt("cannot compute ", a, " ** ", b);
+      else if a == 1 then
+        return 1;
+      else if a == -1 then
+        return if b % 2 == 0 then 1 else -1;
       else
         return 0;
     var i = b, y:a.type = 1, z = a;
@@ -363,11 +374,34 @@ module ChapelBase {
       compilerError("unexpected case in exponentiation optimization");
   }
 
+  inline proc _expBaseHelp(param a: int, b) where _basePowerTwo(a) {
+    if b == 0 then 
+      return 1:a.type;
+    if b < 0 then
+      if a == 1 then // "where _basePowerTwo(a)" means 'a' cannot be <= 0
+        return 1;
+      else
+        return 0;
+    var c = 0;
+    var x: int = a;
+    while (x > 1) // shift right to count the power
+    {
+      c += 1;
+      x = x >> 1;
+    }
+    var exp = c * (b-1);
+    return a << exp;
+  }
+
   proc _canOptimizeExp(param b: integral) param return b >= 0 && b <= 8 && b != 7;
+
+  // complement and compare is an efficient way to test for a power of 2
+  proc _basePowerTwo(param a: integral) param return (a > 0 && ((a & (~a + 1)) == a));
 
   inline proc **(a: int(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
   inline proc **(a: uint(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
   inline proc **(a: real(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+  inline proc **(param a: integral, b: int) where _basePowerTwo(a) return _expBaseHelp(a, b);
 
   //
   // logical operations on primitive types
@@ -564,6 +598,16 @@ module ChapelBase {
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));
 
+  inline proc min(param x: int(?w), param y: int(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: int(?w), param y: int(w)) param
+    return if x > y then x else y;
+
+  inline proc min(param x: uint(?w), param y: uint(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: uint(?w), param y: uint(w)) param
+    return if x > y then x else y;
+
   inline proc min(x, y) where isAtomic(x) || isAtomic(y) {
     compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
   }
@@ -579,9 +623,81 @@ module ChapelBase {
     __primitive("chpl_exit_any", status);
   }
 
-  config param parallelInitElts=true;
+  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
+  config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
+
+  config param chpl_arrayInitMethodRuntimeSelectable = false;
+  private var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
+
+  inline proc chpl_setArrayInitMethod(initMethod: ArrayInit) {
+    if chpl_arrayInitMethodRuntimeSelectable == false {
+      compilerWarning("must set 'chpl_arrayInitMethodRuntimeSelectable' for ",
+                      "'chpl_setArrayInitMethod' to have any effect");
+    }
+    const oldInit = chpl_arrayInitMethod;
+    chpl_arrayInitMethod = initMethod;
+    return oldInit;
+  }
+
+  inline proc chpl_getArrayInitMethod() {
+    if chpl_arrayInitMethodRuntimeSelectable == false {
+      return chpl_defaultArrayInitMethod;
+    } else {
+      return chpl_arrayInitMethod;
+    }
+  }
+
   proc init_elts(x, s, type t) : void {
-    //
+    var initMethod = chpl_getArrayInitMethod();
+
+    // for uints, check that s > 0, so the `s-1` below doesn't overflow
+    if isUint(s) && s == 0 {
+      initMethod = ArrayInit.noInit;
+    } else if initMethod == ArrayInit.heuristicInit {
+      // Heuristically determine if we should do parallel initialization. The
+      // current heuristic really just checks that we have a numeric array that's
+      // at least 2MB. This value was chosen experimentally: Any smaller and the
+      // cost of a forall (mostly the task creation) outweighs the benefit of
+      // using multiple tasks. This was tested on a 2 core laptop, 8 core
+      // workstation, and 24 core XC40.
+      //
+      // Ideally we want to be able to do parallel initialization for all types,
+      // but we're currently blocked by an issue with arrays of arrays and thus
+      // arrays of aggregate types where at one field is an array. The issue is
+      // basically that an array's domain stores a linked list of all its arrays
+      // and removal becomes expensive when addition and removal occur in
+      // different orders. We don't currently have a good way to check if an
+      // aggregate type contains arrays, so we limit parallel init to numeric
+      // types.
+      //
+      // Long term we probably want to store the domain's arrays as an
+      // associative domain or some data structure with < log(n) find/add/remove
+      // times. Currently we can't do that because the domain's arrays are part
+      // of the base domain, so we have a circular reference. As a stepping
+      // stone, we could do parallel init for plain old data (POD) types.
+      if !isNumericType(t) {
+        initMethod = ArrayInit.serialInit;
+      } else {
+        param elemsizeInBytes = numBytes(t);
+        const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
+        param heuristicThresh = 2 * 1024 * 1024;
+        const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
+
+        if heuristicWantsPar {
+          initMethod = ArrayInit.parallelInit;
+        } else {
+          initMethod = ArrayInit.serialInit;
+        }
+      }
+    }
+
+    // need a real `here` since it's used in the range parallel iters
+    if initMethod == ArrayInit.parallelInit {
+      if here == dummyLocale {
+        initMethod = ArrayInit.serialInit;
+      }
+    }
+
     // Q: why is the declaration of 'y' in the following loops?
     //
     // A: so that if the element type is something like an array,
@@ -589,64 +705,28 @@ module ChapelBase {
     // One effect of having it in the loop is that the reference
     // count for an array element's domain gets bumped once per
     // element.  Is this good, bad, necessary?  Unclear.
-    //
-
-    //
-    // Heuristically determine if we should do parallel initialization. The
-    // current heuristic really just checks that we have a numeric array that's
-    // at least 2MB. This value was chosen experimentally: Any smaller and the
-    // cost of a forall (mostly the task creation) outweighs the benefit of
-    // using multiple tasks. This was tested on a 2 core laptop, 8 core
-    // workstation, and 24 core XC40.
-    //
-    // Ideally we want to be able to do parallel initialization for all types,
-    // but we're currently blocked by an issue with arrays of arrays and thus
-    // arrays of aggregate types where at one field is an array. The issue is
-    // basically that an array's domain stores a linked list of all its arrays
-    // and removal becomes expensive when addition and removal occur in
-    // different orders. We don't currently have a good way to check if an
-    // aggregate type contains arrays, so we limit parallel init to numeric
-    // types.
-    //
-    // Long term we probably want to store the domain's arrays as an
-    // associative domain or some data structure with < log(n) find/add/remove
-    // times. Currently we can't do that because the domain's arrays are part
-    // of the base domain, so we have a circular reference. As a stepping
-    // stone, we could do parallel init for plain old data (POD) types.
-    //
-
-    // for uints we need to check that s > 0, so the `s-1` in the following
-    // loops doesn't overflow.
-    if isUint(s) && s == 0 {
-      return;
-    }
-
-    if parallelInitElts && isNumericType(t) {
-
-      param elemsizeInBytes = numBytes(t);
-      const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
-      param heuristicThresh = 2 * 1024 * 1024;
-      const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
-
-      if heuristicWantsPar && here != dummyLocale {
-        forall i in 0..s-1 {
-          pragma "no auto destroy" var y: t;
-          __primitive("array_set_first", x, i, y);
-        }
-
-      } else {
+    select initMethod {
+      when ArrayInit.noInit {
+        return;
+      }
+      when ArrayInit.serialInit {
         for i in 0..s-1 {
           pragma "no auto destroy" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }
-    } else {
-      for i in 0..s-1 {
-        pragma "no auto destroy" var y: t;
-        __primitive("array_set_first", x, i, y);
+      when ArrayInit.parallelInit {
+        forall i in 0..s-1 {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i, y);
+        }
+      }
+      otherwise {
+        halt("ArrayInit.heuristicInit should have been made concrete");
       }
     }
   }
+
 
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
@@ -680,9 +760,14 @@ module ChapelBase {
     return ret;
   }
 
-  inline proc _ddata_allocate(type eltType, size: integral) {
+  enum localizationStyle_t { locNone, locWhole, locSubchunks };
+
+  inline proc _ddata_allocate(type eltType, size: integral,
+                              locStyle = localizationStyle_t.locNone,
+                              subloc = c_sublocid_none) {
     var ret:_ddata(eltType);
-    __primitive("array_alloc", ret, eltType, size);
+    __primitive("array_alloc", ret, eltType, size,
+                locStyle == localizationStyle_t.locSubchunks, subloc);
     init_elts(ret, size, eltType);
     return ret;
   }
@@ -797,6 +882,15 @@ module ChapelBase {
     }
   }
 
+  pragma "dont disable remote value forwarding"
+  pragma "no remote memory fence"
+  proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
+    e.i.add(numTasks:int, memory_order_release);
+    if countRunningTasks {
+      here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
+    }
+  }
+
   // This function is called once by each newly initiated task.  No on
   // statement is needed because the call to sub() will do a remote
   // fork (on) if needed.
@@ -827,6 +921,19 @@ module ChapelBase {
     } else {
       // re-add the task that was waiting for others to finish
       here.runningTaskCntAdd(1);
+    }
+  }
+
+  pragma "dont disable remote value forwarding"
+  proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
+    // See if we can help with any of the started tasks
+    chpl_taskListExecute(e.taskList);
+
+    // Wait for all tasks to finish
+    e.i.waitFor(0, memory_order_acquire);
+
+    if countRunningTasks {
+      here.runningTaskCntSub(numTasks:int-1);
     }
   }
 
@@ -949,12 +1056,8 @@ module ChapelBase {
   inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
 
-  inline proc chpl__typeAliasInit(type t) type return t;
-  inline proc chpl__typeAliasInit(v) {
-    compilerError("illegal assignment of value to type");
-  }
-
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -962,6 +1065,7 @@ module ChapelBase {
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, param init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -969,6 +1073,7 @@ module ChapelBase {
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "no copy return"
   inline proc _createFieldDefault(type t, init: _nilType) {
     pragma "no auto destroy" var x: t;
     return x;
@@ -988,32 +1093,10 @@ module ChapelBase {
   // Catch-all initCopy implementation:
   pragma "compiler generated"
   pragma "init copy fn"
-  inline proc chpl__initCopy(x) return x;
-
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn" proc chpl__autoCopy(x: _distribution) {
-    if !noRefCount then x._value.incRefCount();
+  inline proc chpl__initCopy(const x) {
+    // body adjusted during generic instantiation
     return x;
   }
-
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn"  proc chpl__autoCopy(x: domain) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
-  pragma "dont disable remote value forwarding"
-  pragma "removable auto copy"
-  pragma "donor fn"
-  pragma "auto copy fn" proc chpl__autoCopy(x: []) {
-    if !noRefCount then x._value.incRefCount();
-    return x;
-  }
-
 
   pragma "compiler generated"
   pragma "donor fn"
@@ -1021,6 +1104,14 @@ module ChapelBase {
   inline proc chpl__autoCopy(x: _tuple) {
     // body inserted during generic instantiation
   }
+
+  pragma "compiler generated"
+  pragma "donor fn"
+  pragma "unref fn"
+  inline proc chpl__unref(x: _tuple) {
+    // body inserted during generic instantiation
+  }
+
 
   pragma "donor fn"
   pragma "auto copy fn"
@@ -1032,7 +1123,28 @@ module ChapelBase {
   pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(x) return chpl__initCopy(x);
+  inline proc chpl__autoCopy(const x) return chpl__initCopy(x);
+
+  pragma "compiler generated"
+  pragma "unalias fn"
+  inline proc chpl__unalias(x) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
+
+  // Returns an array storing the result of the iterator
+  pragma "unalias fn"
+  inline proc chpl__unalias(x:_iteratorClass) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
+
+  // Returns an array storing the result of the iterator
+  pragma "unalias fn"
+  inline proc chpl__unalias(const ref x:_iteratorRecord) {
+    pragma "no copy" var ret = x;
+    return ret;
+  }
 
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
@@ -1040,36 +1152,69 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: object) { }
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(type t)  { }
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }
+
+  // These might seem the same as the generic version
+  // but they currently necessary to prevent resolution from
+  // using promotion (for example with an array of sync variables)
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: _distribution) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: domain) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
   }
 
-  // = for c_void_ptr
+  // implements 'delete' statement
+  inline proc chpl__delete(arg) {
+    if chpl_isDdata(arg.type) then
+      compilerError("cannot delete data class");
+    // Todo: enable this check. Can't do it now because
+    // isClassType() returns 'false' on extern class types.
+    //if !isClassType(arg.type) then
+    //  compilerError("can delete only class types: ", arg.type:string);
+    if (isRecord(arg)) then
+      compilerError("delete not allowed on records");
+
+    arg.deinit();
+    on arg do
+      chpl_here_free(__primitive("_wide_get_addr", arg));
+  }
+
+  // c_void_ptr operations
   inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+  inline proc ==(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_eq", a, b);
+  }
+  inline proc !=(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_neq", a, b);
+  }
 
   // Type functions for representing function types
   inline proc func() type { return __primitive("create fn type", void); }
@@ -1129,9 +1274,15 @@ module ChapelBase {
   }
 
   inline proc /=(ref lhs:int(?w), rhs:int(w)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
   inline proc /=(ref lhs:uint(?w), rhs:uint(w)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
   inline proc /=(ref lhs:real(?w), rhs:real(w)) {
@@ -1300,14 +1451,17 @@ module ChapelBase {
   // The int version is only defined so we can catch the divide by zero error
   // at compile time
   inline proc /(a: int(64), param b: int(64)) {
-    if b == 0 then compilerError("param divide by zero");
+    if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
   inline proc /(a: uint(64), param b: uint(64)) {
-    if b == 0 then compilerError("param divide by zero");
+    if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
   inline proc /(param a: uint(64), b: uint(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
 
@@ -1445,23 +1599,6 @@ module ChapelBase {
     if a == 0 then return true; else return __primitive("<=", a, b);
   }
 
-  // numFields moved to Reflection
-
-  pragma "no doc"
-  proc fieldNumToName(type t, param i) param {
-    compilerError("fieldNumToName deprecated. Use getFieldName");
-  }
-
-  pragma "no doc"
-  proc fieldValueByNum(x, param i) {
-    compilerError("fieldValueByNum deprecated. Use getField");
-  }
-
-  pragma "no doc"
-  proc fieldValueByName(x, param name) {
-    compilerError("fieldValueByName deprecated. Use getField");
-  }
-
   proc isClassType(type t) param where t:object return true;
   proc isClassType(type t) param return false;
 
@@ -1509,6 +1646,15 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_CHPL:int;
   extern const QIO_TUPLE_FORMAT_SPACE:int;
   extern const QIO_TUPLE_FORMAT_JSON:int;
+
+  // Support for module deinit functions.
+  class chpl_ModuleDeinit {
+    const moduleName: c_string;          // for debugging; non-null, not owned
+    const deinitFun:  c_fn_ptr;          // module deinit function
+    const prevModule: chpl_ModuleDeinit; // singly-linked list / LIFO queue
+    proc writeThis(ch) {ch.writef("chpl_ModuleDeinit(%s)",moduleName:string);}
+  }
+  var chpl_moduleDeinitFuns = nil: chpl_ModuleDeinit;
 
   // What follows are the type _defaultOf methods, used to initialize types
   // Booleans

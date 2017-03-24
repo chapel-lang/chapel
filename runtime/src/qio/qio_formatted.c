@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -984,6 +984,7 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
       break;
     case QIO_BINARY_STRING_STYLE_TOEOF:
       // Just don't worry about the length - write len bytes.
+      break;
     default:
       if( str_style >= 0 ) {
         // MPF - perhaps we should allow writing a string

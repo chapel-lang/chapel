@@ -10,7 +10,7 @@ class A {
 
   var b = new B(T=t, v=min(t), c=1);
 
-  proc ~A() {
+  proc deinit() {
     delete b;
   }
 }

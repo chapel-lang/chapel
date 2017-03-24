@@ -1,6 +1,6 @@
 record myR {
   var x: int;
-  proc ~myR() { writeln("bye"); }
+  proc deinit() { writeln("bye"); }
 }
 
 var r: myR;

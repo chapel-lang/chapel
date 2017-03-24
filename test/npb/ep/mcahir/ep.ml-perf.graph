@@ -1,0 +1,5 @@
+perfkeys:  Mop/s total     =
+files: ep-D.dat
+graphkeys: ep Mop/s - D
+graphtitle: NPB: EP Perf (Mop/s) - size D
+ylabel: Mops/s

@@ -11,7 +11,7 @@ class myseq {
   var  first  : myseq_node(elementType);
   var  last   : myseq_node(elementType);
 
-  proc ~myseq() {
+  proc deinit() {
     var ptr = first;
 
     while ptr != nil {

@@ -43,6 +43,12 @@ The Chapel implementation is composed of two categories of code:
                                                                    Python
                                                                    BSD
                                                                    GPL 3
+       scspell        Spell-checking utility (developer-only)      GPL 2
+       scspell SCOWL word lists
+                      Spell-checking dictionaries (developer-only) MIT-like
+                                                                   BSD
+                                                                   other (UKACD)
+                                                                   public domain
 
      gasnet           portable communication library               BSD-like
      gmp              optional multi-precision math library        L-GPL
@@ -70,7 +76,8 @@ The Chapel implementation is composed of two categories of code:
      vim              only used if a user modifies their vim environment
 
    third-party/
-     chpl-venv        only used when running 'chpldoc' or 'start_test'
+     chpl-venv        only used when running 'chpldoc', 'start_test',
+                        or the developer-only 'chplspell'
      gasnet           only used when CHPL_COMM is 'gasnet'
      gmp              only used when CHPL_GMP is 'gmp'
      hwloc            only used when CHPL_HWLOC is 'hwloc'

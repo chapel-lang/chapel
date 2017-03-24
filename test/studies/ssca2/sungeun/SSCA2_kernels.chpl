@@ -168,7 +168,7 @@ module SSCA2_kernels
   // For task-private temporary variables
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
-  // Would be nice to use PriavteDist, but aliasing is not supported (yet)
+  // Would be nice to use PrivateDist, but aliasing is not supported (yet)
   const PrivateSpace = {LocaleSpace} dmapped Block(boundingBox={LocaleSpace});
 
   // ==================================================================
@@ -285,7 +285,7 @@ module SSCA2_kernels
         // Initialize task private variables
         const tid = TPVM.gettid();
         const tpv = TPVM.getTPV(tid);
-        var BCaux => tpv.BCaux;
+        ref BCaux = tpv.BCaux;
         pragma "dont disable remote value forwarding"
         inline proc f1(BCaux, v) {
           BCaux[v].path_count$.write(0.0);
@@ -320,7 +320,7 @@ module SSCA2_kernels
         // will only contain nodes that are physically allocated on that
         // particular locale.
         //
-        var Active_Level => tpv.Active_Level;
+        ref Active_Level = tpv.Active_Level;
         pragma "dont disable remote value forwarding"
         inline proc f2(BCaux, s) {
           BCaux[s].path_count$.write(1.0);
@@ -466,7 +466,7 @@ module SSCA2_kernels
 
         TPVM.releaseTPV(tid);
 
-      }; // closure of outer embarassingly parallel forall
+      }; // closure of outer embarrassingly parallel forall
 
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
@@ -659,7 +659,7 @@ module SSCA2_kernels
       }
     }
   
-    inline proc try() {
+    inline proc check() {
       return tasksFinished[here.id].read();
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,6 +76,11 @@ module CPtr {
   inline proc _cast(type t, x) where t:c_ptr && x:_nilType {
     return __primitive("cast", t, x);
   }
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:c_void_ptr && x:_nilType {
+    return c_nil;
+  }
+
 
   pragma "no doc"
   inline proc _cast(type t, x) where t:c_ptr && x.type:c_ptr {
@@ -87,6 +92,22 @@ module CPtr {
   }
   pragma "no doc"
   inline proc _cast(type t, x) where t:c_ptr && x.type:c_void_ptr {
+    return __primitive("cast", t, x);
+  }
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:string && x.type:c_void_ptr {
+    return __primitive("ref to string", x):string;
+  }
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:string && x.type:c_ptr {
+    return __primitive("ref to string", x):string;
+  }
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:object && x.type:c_void_ptr {
+    return __primitive("cast", t, x);
+  }
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:c_void_ptr && x.type:object {
     return __primitive("cast", t, x);
   }
 
@@ -196,12 +217,32 @@ module CPtr {
     Note that the existence of this c_ptr has no impact on the lifetime of the
     array. The returned pointer will be invalid if the original array is
     freed or even reallocated. Any domain assignment will probably make
-    this c_ptr invalid.
+    this c_ptr invalid. If the array's data is stored in more than one chunk
+    the procedure will halt the program with an error message.
 
     :arg arr: the array for which we should retrieve a pointer
     :returns: a pointer to the array data
   */
-  inline proc c_ptrTo(arr: []) where isRectangularArr(arr) {
+  inline proc c_ptrTo(arr: []) where isRectangularArr(arr) && !chpl__isDROrDRView(arr) {
+    if !chpl__getActualArray(arr).oneDData then halt("error: c_ptrTo(multi_ddata array");
+    return c_pointer_return(arr[arr.domain.low]);
+  }
+
+  pragma "no doc"
+  inline proc c_ptrTo(arr: []) where chpl__isDROrDRView(arr) {
+    const val = arr._value;
+    if chpl__isArrayView(val) {
+      // BHARSH TODO: there *has* to be a cleaner way to do this sort of thing...
+      const cache = if val.shouldUseIndexCache() then
+                      val.indexCache
+                    else if val.isSliceArrayView() then
+                      val._getActualArray().dsiGetRAD().toSlice(val.dom)
+                    else
+                      val._getActualArray().dsiGetRAD(); // Should never get here
+      if !cache.oneDData then halt("error: c_ptrTo(multi_ddata array");
+    } else {
+      if !chpl__getActualArray(arr).oneDData then halt("error: c_ptrTo(multi_ddata array");
+    }
     return c_pointer_return(arr[arr.domain.low]);
   }
 

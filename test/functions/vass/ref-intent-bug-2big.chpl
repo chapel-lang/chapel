@@ -43,8 +43,8 @@ config const ldx=2, ldy=3;
 type elType = real;
 
 // for neighbor-cache pointers
-var auxArr: [1..1] elType;
-type cacheType = auxArr._value.type; // a class type, so it can be nil
+var auxArr: [1..1, 1..1] elType;
+type cacheType = auxArr[1,..]._value.type; // a class type, so it can be nil
 
 class LocalInfo {
   // our coordinates on the grid (perhaps not strictly needed)
@@ -123,9 +123,9 @@ proc GlobalData.GlobalData(nameArg: string) {
       const nbr = datas[ind]; // our neighbor
       on nbr {
 	msg1("  ", ind, "  slice at [", slicex, ",", slicey, "]");
-	var slice => nbr.ldata[slicex, slicey];
+        pragma "no auto destroy"
+	ref slice = nbr.ldata[slicex, slicey];
 	cache = slice._value;
-	if !noRefCount then cache._arrCnt.inc(1);  // this is a bit low-level
       }
     }  // storecache()
   }  // forall

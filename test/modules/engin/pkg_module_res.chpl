@@ -16,8 +16,8 @@ writeln(isSorted(arr));
 writeln(Sort.isSorted(arr));
 
 use Search;
-writeln(LinearSearch(arr,1));
+writeln(linearSearch(arr,1));
 
 //compilation doesn't come to this point but following line also fails when run
 //standalone
-writeln(Search.LinearSearch(arr,1));
+writeln(Search.linearSearch(arr,1));

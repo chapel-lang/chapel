@@ -1,0 +1,92 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0303 
+header_name {.h} 
+code_name {.cxx}
+decl {\#include "Fl_MultiGroup.H"} {public global
+} 
+
+decl {\#include <FL/Fl_Button.H>} {private local
+} 
+
+decl {\#include <string.h>} {selected private local
+} 
+
+decl {\#include <stdio.h>} {private local
+} 
+
+decl {int n=0;} {private local
+} 
+
+Function {} {open
+} {
+  Fl_Window {} {open
+    xywh {1003 192 342 346} type Double color 7 visible
+  } {
+    Fl_Menu_Button {} {
+      label Select open
+      xywh {25 15 85 25}
+    } {
+      MenuItem {} {
+        label 1
+        callback {Main_MG->selectChild(0);}
+        xywh {0 0 100 20}
+      }
+      MenuItem {} {
+        label 2
+        callback {Main_MG->selectChild(1);}
+        xywh {0 0 100 20}
+      }
+      MenuItem {} {
+        label 3
+        callback {Main_MG->selectChild(2);}
+        xywh {0 0 100 20}
+      }
+      MenuItem {} {
+        label P1
+        callback {Main_MG->pushChild(0);}
+        xywh {10 10 100 20}
+      }
+      MenuItem {} {
+        label P2
+        callback {Main_MG->pushChild(1);}
+        xywh {10 10 100 20}
+      }
+      MenuItem {} {
+        label P3
+        callback {Main_MG->pushChild(2);}
+        xywh {10 10 100 20}
+      }
+      MenuItem {} {
+        label Pop
+        callback {Main_MG->popChild();}
+        xywh {0 0 100 20}
+      }
+      MenuItem {} {
+        label Insert
+        callback {char lab[100];
+n++;
+snprintf(lab,100,"New Button %d", n);
+Fl_Button *oo = new Fl_Button(1,1,1,1,strdup(lab));
+Main_MG->insert(*oo,1);}
+        xywh {0 0 100 20}
+      }
+    }
+    Fl_Group Main_MG {open
+      xywh {10 80 320 245}
+      class Fl_MultiGroup
+    } {
+      Fl_Button {} {
+        label {Button 1}
+        xywh {25 130 180 30}
+      }
+      Fl_Button {} {
+        label {Button 2}
+        xywh {25 175 180 30}
+      }
+      Fl_Button {} {
+        label {button 3}
+        xywh {25 215 180 30}
+      }
+    }
+  }
+} 

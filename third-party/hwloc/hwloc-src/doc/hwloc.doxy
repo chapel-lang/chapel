@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2013 Université Bordeaux
  * Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -33,22 +33,11 @@ hwloc primarily aims at helping high-performance computing (HPC)
 applications, but is also applicable to any project seeking to exploit
 code and/or data locality on modern computing platforms.
 
-*** Note that the hwloc project represents the merger of the
-libtopology project from inria and the Portable Linux Processor
-Affinity (PLPA) sub-project from Open MPI.  <em>Both of these prior
-projects are now deprecated.</em> The first hwloc release was
-essentially a "re-branding" of the libtopology code base, but with
-both a few genuinely new features and a few PLPA-like features added
-in.  Prior releases of hwloc included documentation about switching
-from PLPA to hwloc; this documentation has been dropped on the
-assumption that everyone who was using PLPA has already switched to
-hwloc.
-
 hwloc supports the following operating systems:
 
 <ul>
 <li>Linux (including old kernels not having sysfs topology
-information, with knowledge of cpusets, offline CPUs, ScaleMP vSMP and Kerrighed support)
+information, with knowledge of cpusets, ScaleMP vSMP and Kerrighed support, etc.)
 on all supported hardware, including Intel Xeon Phi
 (KNL and KNC, either standalone or as a coprocessor)
 and NumaScale NumaConnect.</li>
@@ -80,8 +69,10 @@ For development and debugging purposes, hwloc also offers the ability to
 work on "fake" topologies:
 
 <ul>
-  <li> Symmetrical tree of resources generated from a list of level arities</li>
-  <li> Remote machine simulation through the gathering of Linux sysfs topology files</li>
+  <li> Symmetrical tree of resources generated from a list of level arities,
+  see \ref synthetic.</li>
+  <li> Remote machine simulation through the gathering of topology as XML files,
+  see \ref xml.</li>
 </ul>
 
 hwloc can display the topology in a human-readable format, either in
@@ -162,9 +153,15 @@ The hwloc core may also benefit from the following development packages:
 </li>
 <li>the NVIDIA CUDA Toolkit for CUDA device discovery.
 </li>
-<li>the NVIDIA Tesla Development Kit for NVML device discovery.
+<li>the NVIDIA Management Library (NVML) for NVML device discovery.
+  It is available within the NVIDIA GPU Deployment Kit from
+  https://developer.nvidia.com/gpu-deployment-kit .
 </li>
 <li>the NV-CONTROL X extension library (NVCtrl) for NVIDIA display discovery.
+  The relevant development package is usually <tt>libXNVCtrl-devel</tt>
+  or <tt>libxnvctrl-dev</tt>.
+  It is also available within nvidia-settings from ftp://download.nvidia.com/XFree86/nvidia-settings/
+  and https://github.com/NVIDIA/nvidia-settings/ .
 </li>
 <li>libxml2 for full XML import/export support (otherwise, the
     internal minimalistic parser will only be able to import
@@ -208,7 +205,7 @@ PKG_CONFIG_PATH to the ./configure command line, like this:
 \htmlonly
 </div><div class="section" id="cli_examples">
 \endhtmlonly
-\section cli_examples CLI Examples
+\section cli_examples Command-line Examples
 
 On a 4-package 2-core machine with hyper-threading, the \c lstopo tool
 may show the following graphical output:
@@ -411,9 +408,8 @@ element may exist between a core and a PU.
 
 \subsection interface_example API Example
 
-The following small C example (named ``hwloc-hello.c'') prints the
-topology of the machine and bring the process to the first logical processor
-of the second core of the machine.
+The following small C example (available in the source tree as ``doc/examples/hwloc-hello.c'')
+prints the topology of the machine and performs some thread and memory binding.
 More examples are available in the doc/examples/ directory of the source
 tree.
 
@@ -902,6 +898,20 @@ following environment variables.
   This can be used for efficiency reasons to first detect the topology once,
   save it to an XML file, and quickly reload it later through the XML
   backend, but still having binding functions actually do bind.
+  This also enables support for the variable HWLOC_THISSYSTEM_ALLOWED_RESOURCES.
+  </dd>
+
+<dt>HWLOC_THISSYSTEM_ALLOWED_RESOURCES=1</dt>
+  <dd>Get the set of allowed resources from the native operating system
+  even if the topology was loaded from XML or synthetic description,
+  as if ::HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES was set
+  with hwloc_topology_set_flags().
+  This variable requires the topology to match the current system
+  (see the variable HWLOC_THISSYSTEM).
+  This is useful when the topology is not loaded directly from the
+  local machine (e.g. for performance reason) and it comes with all
+  resources, but the running process is restricted to only a part
+  of the machine (for instance because of Linux Cgroup/Cpuset).
   </dd>
 
 <dt>HWLOC_HIDE_ERRORS=0</dt>
@@ -1696,6 +1706,17 @@ Currently only available on Linux.
 Usually added to Package objects, but can be in Machine instead if
 hwloc failed to discover any package.
 </dd>
+<dt>MemoryMode, ClusterMode (topology root object)</dt>
+<dd>
+Intel Knights Landing configuration modes, only available if
+hwloc-dump-hwdata was used (see \ref faq_knl_dump).
+The memory mode may be <em>Cache</em>, <em>Flat</em>,
+<em>Hybrid50</em> (half the MCDRAM is used as a cache)
+or <em>Hybrid25</em> (25% of MCDRAM as cache).
+The cluster mode may be <em>Quadrant</em>, <em>Hemisphere</em>, <em>All2All</em>,
+<em>SNC2</em> or <em>SNC4</em>.
+See doc/examples/get-knl-modes.c in the source directory for an example of retrieving these attributes.
+</dd>
 <dt>Inclusive (Caches)</dt>
 <dd>The inclusiveness of a cache (1 if inclusive, 0 otherwise).
 Currently only available on x86 processors.
@@ -1833,6 +1854,12 @@ topology may not correspond to the physical machine that loads it.
 This behavior may be reverted by asserting that loaded file really
 matches the underlying system with the HWLOC_THISSYSTEM environment
 variable or the ::HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM topology flag.
+
+\note The topology flag ::HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES
+may be used to load a XML topology that contains the entire machine
+and restrict it to the part that is actually available to the current
+process (e.g. when Linux Cgroup/Cpuset are used to restrict the set
+of resources).
 
 \note hwloc also offers the ability to export/import \ref hwlocality_diff.
 
@@ -2671,9 +2698,50 @@ than any system-provided copy of hwloc.
 
 
 
+
 \page faq Frequently Asked Questions
 
-\section faq_indexes Should I use logical or physical/OS indexes? and how?
+
+\section faq1 Concepts
+
+
+\subsection faq_why I only need binding, why should I use hwloc ?
+
+hwloc is its portable API that works on a variety of operating
+systems.
+It supports binding of threads, processes and memory buffers
+(see \ref hwlocality_cpubinding and \ref hwlocality_membinding).
+Even if some features are not supported on some systems,
+using hwloc is much easier than reimplementing your own portability layer.
+
+Moreover, hwloc provides knowledge of cores and hardware threads.
+It offers easy ways to bind tasks to individual hardware threads,
+or to entire multithreaded cores, etc.
+See \ref faq_smt.
+Most alternative software for binding do not even know whether each
+core is single-threaded, multithreaded or hyper-threaded.
+They would bind to individual threads without any way to know whether
+multiple tasks are in the same physical core.
+
+However, using hwloc comes with an overhead since a topology must
+be loaded before gathering information and binding tasks or memory.
+This overhead may be reduced by filtering useless information out
+of the topology.
+For instance the following code builds a topology that may only
+contain Cores, hardware threads (PUs), and NUMA nodes
+(Packages, Caches and Group objects are ignored).
+
+\verbatim
+hwloc_topology_t topology;
+hwloc_topology_init(&topology);
+hwloc_topology_ignore_type(topology, HWLOC_OBJ_PACKAGE);
+hwloc_topology_ignore_type(topology, HWLOC_OBJ_CACHE);
+hwloc_topology_ignore_type(topology, HWLOC_OBJ_GROUP);
+hwloc_topology_load(topology);
+\endverbatim
+
+
+\subsection faq_indexes Should I use logical or physical/OS indexes? and how?
 
 One of the original reasons why hwloc was created is that <b>physical/OS indexes</b>
 (<tt>obj->os_index</tt>) are often crazy and unpredictable:
@@ -2716,164 +2784,36 @@ $ hwloc-calc -I numa --logical-input --physical-output numa:2-3 numa:7
 \endverbatim
 
 
-\section faq_xml I do not want hwloc to rediscover my enormous machine topology every time I rerun a process
+\subsection faq_structural hwloc is only a structural model, it ignores performance models, memory bandwidth, etc.?
 
-Although the topology discovery is not expensive on common machines,
-its overhead may become significant when multiple processes repeat
-the discovery on large machines (for instance when starting one process
-per core in a parallel application).
-The machine topology usually does not vary much, except if some cores
-are stopped/restarted or if the administrator restrictions are modified.
-Thus rediscovering the whole topology again and again may look useless.
+hwloc is indeed designed to provide applications with a structural model
+of the platform. This is an orthogonal approach to describing the
+machine with performance models, for instance using memory bandwidth
+or latencies measured by benchmarks.
+We believe that both approaches are important for helping application
+make the most of the hardware.
 
-For this purpose, hwloc offers XML import/export features. It lets you
-save the discovered topology to a file (for instance with the lstopo program)
-and reload it later by setting the HWLOC_XMLFILE environment variable.
-The HWLOC_THISSYSTEM environment variable should also be set to 1 to
-assert that loaded file is really the underlying system.
+For instance, on a dual-processor host with four cores each, hwloc
+clearly shows which four cores are together.
+Latencies between all pairs of cores of the same processor are likely
+identical, and also likely lower than the latency between cores of
+different processors.
+However the structural model cannot guarantee such implementation
+details.
+On the other side, performance models would reveal such details
+without always clearly identifying which cores are in the same
+processor.
 
-Loading a XML topology is usually much faster than querying multiple
-files or calling multiple functions of the operating system.
-It is also possible to manipulate such XML files with the C programming
-interface, and the import/export may also be directed to memory buffer
-(that may for instance be transmitted between applications through a package).
-See also \ref xml.
-
-
-\section faq_multitopo How many topologies may I use in my program?
-
-hwloc lets you manipulate multiple topologies at the same time.
-However these topologies consume memory and system resources
-(for instance file descriptors) until they are destroyed.
-It is therefore discouraged to open the same topology multiple
-times.
-
-Sharing a single topology between threads is easy (see \ref threadsafety)
-since the vast majority of accesses are read-only.
-
-If multiple topologies of different (but similar) nodes are needed
-in your program, have a look at \ref faq_diff.
+The focus of hwloc is mainly of the structural modeling side.
+However, hwloc lets user adds performance information to the topology
+through distances
+(see ::hwloc_distances_s and hwloc_topology_set_distance_matrix())
+or even custom annotations (see \ref faq_annotate).
+hwloc may also use such distance information for grouping objects
+together (see \ref faq_onedim and \ref faq_groups).
 
 
-\section faq_diff How to avoid memory waste when manipulating multiple similar topologies?
-
-hwloc does not share information between topologies.
-If multiple similar topologies are loaded in memory, for instance
-the topologies of different identical nodes of a cluster,
-lots of information will be duplicated.
-
-hwloc/diff.h (see also \ref hwlocality_diff) offers the ability to
-compute topology differences, apply or unapply them, or export/import
-to/from XML.
-However this feature is limited to basic differences such as attribute changes.
-It does not support complex modifications such as adding or removing some objects.
-
-
-\section faq_slow_lstopo Why is lstopo slow?
-
-lstopo enables most hwloc discovery flags by default so that the output
-topology is as precise as possible (while hwloc disables many of them
-by default).
-This includes I/O device discovery through PCI libraries as well as external
-libraries such as NVML.
-To speed up lstopo, you may disable such features with command-line
-options such as <tt>\--no-io</tt>.
-
-When NVIDIA GPU probing is enabled with CUDA or NVML, one should make sure that
-the <em>Persistent</em> mode is enabled (with <tt>nvidia-smi -pm 1</tt>)
-to avoid significant GPU initialization overhead.
-
-When AMD GPU discovery is enabled with OpenCL and hwloc is used remotely
-over ssh, some spurious round-trips on the network may significantly
-increase the discovery time.
-Forcing the <tt>DISPLAY</tt> environment variable to the remote X server
-display (usually <tt>:0</tt>) instead of only setting the <tt>COMPUTE</tt>
-variable may avoid this.
-
-Also remember that these components may be disabled at build-time with
-configure flags such as <tt>\--disable-opencl</tt>, <tt>\--disable-cuda</tt> or <tt>\--disable-nvml</tt>,
-and at runtime with the environment variable
-<tt>HWLOC_COMPONENTS=-opencl,cuda,nvml</tt>.
-
-If loading topologies is slow because the machine contains tons of
-processors, one should also consider using XML (see \ref faq_xml).
-
-
-\section faq_os_error What should I do when hwloc reports "operating system" warnings?
-
-When the operating system reports invalid locality information (because
-of either software or hardware bugs), hwloc may fail to insert some objects
-in the topology because they cannot fit in the already built tree of resources.
-If so, hwloc will report a warning like the following.
-The object causing this error is ignored, the discovery continues but the
-resulting topology will miss some objects and may be asymmetric
-(see also \ref faq_asymmetric).
-
-\verbatim
-****************************************************************************
-* hwloc has encountered what looks like an error from the operating system.
-*
-* L3 (cpuset 0x000003f0) intersects with NUMANode (P#0 cpuset 0x0000003f) without inclusion!
-* Error occurred in topology.c line 940
-*
-* Please report this error message to the hwloc user's mailing list,
-* along with the output from the hwloc-gather-topology script.
-****************************************************************************
-\endverbatim
-
-These errors are common on large AMD platforms because of BIOS and/or Linux
-kernel bugs causing invalid L3 cache information.
-In the above example, the hardware reports
-a L3 cache that is shared by 2 cores in the first NUMA node and 4 cores
-in the second NUMA node. That's wrong, it should actually be shared by all 6
-cores in a single NUMA node.
-The resulting topology will miss some L3 caches.
-
-If your application not care about cache sharing, or if you do not plan to
-request cache-aware binding in your process launcher, you may likely ignore
-this error (and hide it by setting HWLOC_HIDE_ERRORS=1 in your environment).
-
-Some platforms report similar warnings about conflicting Packages and NUMANodes.
-Upgrading the BIOS and/or the operating system may help.
-Otherwise, as explained in the message, reporting this issue to the hwloc developers
-(by sending the tarball that is generated by the hwloc-gather-topology script
- on this platform) is a good way to make sure that this is a software
-(operating system) or hardware bug (BIOS, etc).
-
-
-\section faq_privileged Does hwloc require privileged access?
-
-hwloc discovers the topology by querying the operating system.
-Some minor features may require privileged access to the operation
-system.
-For instance memory module and PCI link speed discovery on Linux
-is reserved to root,
-and the entire PCI discovery on Solaris and BSDs requires access to
-some special files that are usually restricted to root
-(/dev/pci* or /devices/pci*).
-
-To workaround this limitation, it is recommended to export the
-topology as a XML file generated by the administrator (with the
-lstopo program) and make it available to all users
-(see \ref xml).
-It will offer all discovery information to any application without
-requiring any privileged access anymore.
-Only the necessary hardware characteristics will be exported, no
-sensitive information will be disclosed through this XML export.
-
-This XML-based model also has the advantage of speeding up the
-discovery because reading a XML topology is usually much faster
-than querying the operating system again.
-
-The utility <tt>hwloc-dump-hwdata</tt> is also involved in gathering
-privileged information at boot time and making it available to
-non-privileged users. However it only applies to Intel Knights Landing
-Xeon Phi for now (see \ref faq_knl_dump).
-See also <tt>HWLOC_DUMPED_HWDATA_DIR</tt> in \ref envvar for details
-about the location of dumped files.
-
-
-\section faq_onedim hwloc only has a one-dimensional view of the architecture, it ignores distances
+\subsection faq_onedim hwloc only has a one-dimensional view of the architecture, it ignores distances?
 
 hwloc places all objects in a tree. Each level is a one-dimensional
 view of a set of similar objects. All children of the same object (siblings)
@@ -2890,8 +2830,82 @@ For instance, the root object may contain a distance matrix that represents
 the latencies between any pairs of NUMA nodes if the BIOS and/or operating
 system reports them.
 
+For more information about the distance API, see ::hwloc_distances_s
+and hwloc_topology_set_distance_matrix().
 
-\section faq_nosmt What happens to my topology if I disable symmetric multithreading, hyper-threading, etc. ?
+
+\subsection faq_groups What are these Group objects in my topology?
+
+hwloc comes with a set of predefined object types (Core, Package, NUMA node, Caches)
+that match the vast majority of hardware platforms.
+The ::HWLOC_OBJ_GROUP type was designed for cases where this set is not sufficient.
+Groups may be used anywhere to add more structure information to the topology,
+for instance to show that 2 out of 4 NUMA nodes are actually closer than the others.
+When applicable, the <tt>Type</tt> info attribute describes why a Group
+was actually added (see also \ref attributes_info).
+
+hwloc currently uses Groups for the following reasons:
+<ul>
+<li>AMD dual-core compute units (<tt>Type=ComputeUnit</tt>, in the x86 backend),
+ but these objects are usually merged with the L2 caches.</li>
+<li>Intel x2APIC non-core and non-package levels (in the x86 backend).</li>
+<li>Windows processor groups.</li>
+<li>IBM S/390 "Books" on Linux (<tt>Type=Book</tt>).</li>
+<li>AIX unknown hierarchy levels.</li>
+<li>Distance-based groups made of close objects.</li>
+<li>I/O parents when I/O locality does not match any existing object.</li>
+</ul>
+
+
+\subsection faq_asymmetric What happens if my topology is asymmetric?
+
+hwloc supports asymmetric topologies even if most platforms are usually
+symmetric. For example, there could be different types of processors
+in a single machine, each with different numbers of cores, symmetric
+multithreading, or levels of caches.
+
+In practice, asymmetric topologies mostly appear when intermediate groups
+are added for I/O affinity: on a 4-package machine, an I/O bus may be
+connected to 2 packages. These packages are below an additional Group
+object, while the other packages are not (see also \ref faq_groups).
+
+Before hwloc v2.0, hwloc_topology_ignore_type_keep_structure() and
+hwloc_topology_ignore_all_keep_structure() may also make topologies
+assymetric by removing parts of levels, especially when part of the
+machine is disallowed by administrator restrictions
+(e.g. Linux cgroups).
+
+To understand how hwloc manages such cases, one should first remember
+the meaning of levels and cousin objects. All objects of the same type
+are gathered as horizontal levels with a given depth. They are also
+connected through the cousin pointers of the ::hwloc_obj structure.
+Some types, such as Caches or Groups, are annotated with a depth or
+level attribute (for instance L2 cache or Group1). Moreover caches
+have a type attribute (for instance L1i or L1d). Such
+attributes are also taken in account when gathering objects as
+horizontal levels.  To be clear: there will be one level for L1i
+caches, another level for L1d caches, another one for L2, etc.
+
+If the topology is asymmetric (e.g., if a group is missing above some
+processors), a given horizontal level will still exist if there
+exist any objects of that type.  However, some branches of the overall
+tree may not have an object located in that horizontal level.  Note
+that this specific hole within one horizontal level does not imply
+anything for other levels.  All objects of the same type are gathered
+in horizontal levels even if their parents or children have different
+depths and types.
+
+See the diagram in \ref termsanddefs for a graphical representation
+of such topologies.
+
+Moreover, it is important to understand that a same parent object may
+have children of different types (and therefore, different
+depths). <strong>These children are therefore siblings (because they
+have the same parent), but they are <em>not</em> cousins (because they
+do not belong to the same horizontal level).</strong>
+
+
+\subsection faq_nosmt What happens to my topology if I disable symmetric multithreading, hyper-threading, etc. in the system?
 
 hwloc creates one PU (processing unit) object per hardware thread.
 If your machine supports symmetric multithreading, for instance Hyper-Threading,
@@ -2928,7 +2942,7 @@ $ lstopo -
 \endverbatim
 
 
-\section faq_smt How may I ignore symmetric multithreading, hyper-threading, etc. ?
+\subsection faq_smt How may I ignore symmetric multithreading, hyper-threading, etc. in hwloc?
 
 First, see \ref faq_nosmt for more information about multithreading.
 
@@ -2979,78 +2993,70 @@ hello from a single thread on core #3
 \endverbatim
 
 
-\section faq_groups What are these Group objects in my topology?
 
-hwloc comes with a set of predefined object types (Core, Package, NUMA node, Caches)
-that match the vast majority of hardware platforms.
-The ::HWLOC_OBJ_GROUP type was designed for cases where this set is not sufficient.
-Groups may be used anywhere to add more structure information to the topology,
-for instance to show that 2 out of 4 NUMA nodes are actually closer than the others.
-When applicable, the <tt>Type</tt> info attribute describes why a Group
-was actually added (see also \ref attributes_info).
-
-hwloc currently uses Groups for the following reasons:
-<ul>
-<li>AMD dual-core compute units (<tt>Type=ComputeUnit</tt>, in the x86 backend),
- but these objects are usually merged with the L2 caches.</li>
-<li>Intel x2APIC non-core and non-package levels (in the x86 backend).</li>
-<li>Windows processor groups.</li>
-<li>IBM S/390 "Books" on Linux (<tt>Type=Book</tt>).</li>
-<li>AIX unknown hierarchy levels.</li>
-<li>Distance-based groups made of close objects.</li>
-<li>I/O parents when I/O locality does not match any existing object.</li>
-</ul>
+\section faq2 Advanced
 
 
-\section faq_asymmetric What happens if my topology is asymmetric?
+\subsection faq_xml I do not want hwloc to rediscover my enormous machine topology every time I rerun a process
 
-hwloc supports asymmetric topologies even if most platforms are usually
-symmetric. For example, there could be different types of processors
-in a single machine, each with different numbers of cores, symmetric
-multithreading, or levels of caches.
+Although the topology discovery is not expensive on common machines,
+its overhead may become significant when multiple processes repeat
+the discovery on large machines (for instance when starting one process
+per core in a parallel application).
+The machine topology usually does not vary much, except if some cores
+are stopped/restarted or if the administrator restrictions are modified.
+Thus rediscovering the whole topology again and again may look useless.
 
-In practice, asymmetric topologies mostly appear when intermediate groups
-are added for I/O affinity: on a 4-package machine, an I/O bus may be
-connected to 2 packages. These packages are below an additional Group
-object, while the other packages are not (see also \ref faq_groups).
+For this purpose, hwloc offers XML import/export features. It lets you
+save the discovered topology to a file (for instance with the lstopo program)
+and reload it later by setting the HWLOC_XMLFILE environment variable.
+The HWLOC_THISSYSTEM environment variable should also be set to 1 to
+assert that loaded file is really the underlying system.
 
-Before hwloc v2.0, hwloc_topology_ignore_type_keep_structure() and
-hwloc_topology_ignore_all_keep_structure() may also make topologies
-assymetric by removing parts of levels, especially when part of the
-machine is disallowed by administrator restrictions
-(e.g. Linux cgroups).
+Loading a XML topology is usually much faster than querying multiple
+files or calling multiple functions of the operating system.
+It is also possible to manipulate such XML files with the C programming
+interface, and the import/export may also be directed to memory buffer
+(that may for instance be transmitted between applications through a package).
+See also \ref xml.
 
-To understand how hwloc manages such cases, one should first remember
-the meaning of levels and cousin objects. All objects of the same type
-are gathered as horizontal levels with a given depth. They are also
-connected through the cousin pointers of the ::hwloc_obj structure.
-Some types, such as Caches or Groups, are annotated with a depth or
-level attribute (for instance L2 cache or Group1). Moreover caches
-have a type attribute (for instance L1i or L1d). Such
-attributes are also taken in account when gathering objects as
-horizontal levels.  To be clear: there will be one level for L1i
-caches, another level for L1d caches, another one for L2, etc.
-
-If the topology is asymmetric (e.g., if a group is missing above some
-processors), a given horizontal level will still exist if there
-exist any objects of that type.  However, some branches of the overall
-tree may not have an object located in that horizontal level.  Note
-that this specific hole within one horizontal level does not imply
-anything for other levels.  All objects of the same type are gathered
-in horizontal levels even if their parents or children have different
-depths and types.
-
-See the diagram in \ref termsanddefs for a graphical representation
-of such topologies.
-
-Moreover, it is important to understand that a same parent object may
-have children of different types (and therefore, different
-depths). <strong>These children are therefore siblings (because they
-have the same parent), but they are <em>not</em> cousins (because they
-do not belong to the same horizontal level).</strong>
+\note The environment variable HWLOC_THISSYSTEM_ALLOWED_RESOURCES
+may be used to load a XML topology that contains the entire machine
+and restrict it to the part that is actually available to the current
+process (e.g. when Linux Cgroup/Cpuset are used to restrict the set
+of resources). See \ref envvar.
 
 
-\section faq_annotate How do I annotate the topology with private notes?
+\subsection faq_multitopo How many topologies may I use in my program?
+
+hwloc lets you manipulate multiple topologies at the same time.
+However these topologies consume memory and system resources
+(for instance file descriptors) until they are destroyed.
+It is therefore discouraged to open the same topology multiple
+times.
+
+Sharing a single topology between threads is easy (see \ref threadsafety)
+since the vast majority of accesses are read-only.
+
+If multiple topologies of different (but similar) nodes are needed
+in your program, have a look at \ref faq_diff.
+
+
+\subsection faq_diff How to avoid memory waste when manipulating multiple similar topologies?
+
+hwloc does not share information between topologies.
+If multiple similar topologies are loaded in memory, for instance
+the topologies of different identical nodes of a cluster,
+lots of information will be duplicated.
+
+hwloc/diff.h (see also \ref hwlocality_diff) offers the ability to
+compute topology differences, apply or unapply them, or export/import
+to/from XML.
+However this feature is limited to basic differences such as attribute changes.
+It does not support complex modifications such as adding or removing some objects.
+
+
+\subsection faq_annotate How do I annotate the topology with private notes?
 
 Each hwloc object contains a <tt>userdata</tt> field that may be used by
 applications to store private pointers. This field is only valid
@@ -3087,7 +3093,119 @@ It may be manipulated with <tt>hwloc_topology_set_userdata()</tt>
 and <tt>hwloc_topology_get_userdata()</tt>.
 
 
-\section faq_valgrind Why does Valgrind complain about hwloc memory leaks?
+
+\section faq3 Caveats
+
+
+\subsection faq_slow_lstopo Why is hwloc slow?
+
+Building a hwloc topology on a large machine may be slow because
+the discovery of hundreds of hardware cores or threads takes time
+(especially when reading thousands of sysfs files on Linux).
+One should consider using XML (see \ref faq_xml) to work
+around such issues.
+
+Additionally, lstopo enables most hwloc objects and discovery flags
+by default so that the output topology is as precise as possible
+(while hwloc disables many of them by default).
+This includes I/O device discovery through PCI libraries as well as external
+libraries such as NVML.
+To speed up lstopo, you may disable such features with command-line
+options such as <tt>\--no-io</tt>.
+
+When NVIDIA GPU probing is enabled with CUDA or NVML, one should make sure that
+the <em>Persistent</em> mode is enabled (with <tt>nvidia-smi -pm 1</tt>)
+to avoid significant GPU initialization overhead.
+
+When AMD GPU discovery is enabled with OpenCL and hwloc is used remotely
+over ssh, some spurious round-trips on the network may significantly
+increase the discovery time.
+Forcing the <tt>DISPLAY</tt> environment variable to the remote X server
+display (usually <tt>:0</tt>) instead of only setting the <tt>COMPUTE</tt>
+variable may avoid this.
+
+Also remember that these components may be disabled at build-time with
+configure flags such as <tt>\--disable-opencl</tt>, <tt>\--disable-cuda</tt> or <tt>\--disable-nvml</tt>,
+and at runtime with the environment variable
+<tt>HWLOC_COMPONENTS=-opencl,cuda,nvml</tt>.
+
+
+\subsection faq_privileged Does hwloc require privileged access?
+
+hwloc discovers the topology by querying the operating system.
+Some minor features may require privileged access to the operation
+system.
+For instance memory module and PCI link speed discovery on Linux
+is reserved to root,
+and the entire PCI discovery on Solaris and BSDs requires access to
+some special files that are usually restricted to root
+(/dev/pci* or /devices/pci*).
+
+To workaround this limitation, it is recommended to export the
+topology as a XML file generated by the administrator (with the
+lstopo program) and make it available to all users
+(see \ref xml).
+It will offer all discovery information to any application without
+requiring any privileged access anymore.
+Only the necessary hardware characteristics will be exported, no
+sensitive information will be disclosed through this XML export.
+
+This XML-based model also has the advantage of speeding up the
+discovery because reading a XML topology is usually much faster
+than querying the operating system again.
+
+The utility <tt>hwloc-dump-hwdata</tt> is also involved in gathering
+privileged information at boot time and making it available to
+non-privileged users (note that this may require a specific SELinux
+MLS policy module). However it only applies to Intel Knights Landing
+Xeon Phi for now (see \ref faq_knl_dump).
+See also <tt>HWLOC_DUMPED_HWDATA_DIR</tt> in \ref envvar for details
+about the location of dumped files.
+
+
+\subsection faq_os_error What should I do when hwloc reports "operating system" warnings?
+
+When the operating system reports invalid locality information (because
+of either software or hardware bugs), hwloc may fail to insert some objects
+in the topology because they cannot fit in the already built tree of resources.
+If so, hwloc will report a warning like the following.
+The object causing this error is ignored, the discovery continues but the
+resulting topology will miss some objects and may be asymmetric
+(see also \ref faq_asymmetric).
+
+\verbatim
+****************************************************************************
+* hwloc has encountered what looks like an error from the operating system.
+*
+* L3 (cpuset 0x000003f0) intersects with NUMANode (P#0 cpuset 0x0000003f) without inclusion!
+* Error occurred in topology.c line 940
+*
+* Please report this error message to the hwloc user's mailing list,
+* along with the output from the hwloc-gather-topology script.
+****************************************************************************
+\endverbatim
+
+These errors are common on large AMD platforms because of BIOS and/or Linux
+kernel bugs causing invalid L3 cache information.
+In the above example, the hardware reports
+a L3 cache that is shared by 2 cores in the first NUMA node and 4 cores
+in the second NUMA node. That's wrong, it should actually be shared by all 6
+cores in a single NUMA node.
+The resulting topology will miss some L3 caches.
+
+If your application not care about cache sharing, or if you do not plan to
+request cache-aware binding in your process launcher, you may likely ignore
+this error (and hide it by setting HWLOC_HIDE_ERRORS=1 in your environment).
+
+Some platforms report similar warnings about conflicting Packages and NUMANodes.
+Upgrading the BIOS and/or the operating system may help.
+Otherwise, as explained in the message, reporting this issue to the hwloc developers
+(by sending the tarball that is generated by the hwloc-gather-topology script
+ on this platform) is a good way to make sure that this is a software
+(operating system) or hardware bug (BIOS, etc).
+
+
+\subsection faq_valgrind Why does Valgrind complain about hwloc memory leaks?
 
 If you are debugging your application with Valgrind, you want to
 avoid memory leak reports that are caused by hwloc and not by your
@@ -3110,7 +3228,7 @@ You should pass the following command-line option to Valgrind to use it:
 \endverbatim
 
 
-\section faq_upgrade How do I handle ABI breaks and API upgrades?
+\subsection faq_upgrade How do I handle ABI breaks and API upgrades?
 
 The hwloc interface is extended with every new major release.
 Any application using the hwloc API should be prepared to check at
@@ -3165,35 +3283,11 @@ Also do not use the old cpuset API since it was deprecated and superseded
 by the bitmap API in 1.1, and later removed in 1.5.
 
 
-\section faq_bgq How do I build hwloc for BlueGene/Q?
 
-IBM BlueGene/Q machines run a standard Linux on the I/O node and a
-custom CNK (<em>Compute Node Kernel</em>) on the compute nodes.
-To run on the compute node, hwloc must be cross-compiled from the I/O
-node with the following configuration line:
-\verbatim
-./configure --host=powerpc64-bgq-linux --disable-shared --enable-static \
-  CPPFLAGS='-I/bgsys/drivers/ppcfloor -I/bgsys/drivers/ppcfloor/spi/include/kernel/cnk/'
-\endverbatim
-
-CPPFLAGS may have to be updated if your platform headers are installed
-in a different directory.
+\section faq4 Platform-specific
 
 
-\section faq_netbsd_bind How to get useful topology information on NetBSD?
-
-The NetBSD (and FreeBSD) backend uses x86-specific topology discovery
-(through the x86 component).
-This implementation requires CPU binding so as to query topology
-information from each individual logical processor.
-This means that hwloc cannot find any useful topology information
-unless user-level process binding is allowed by the NetBSD kernel.
-The <tt>security.models.extensions.user_set_cpu_affinity</tt>
-sysctl variable must be set to 1 to do so.
-Otherwise, only the number of logical processors will be detected.
-
-
-\section faq_knl_numa How do I find the local MCDRAM NUMA node on Intel Knights Landing Xeon Phi?
+\subsection faq_knl_numa How do I find the local MCDRAM NUMA node on Intel Knights Landing Xeon Phi?
 
 Intel Knights Landing Xeon Phi processors introduce a new memory architecture by
 possibly having two distinct local memories:
@@ -3201,6 +3295,9 @@ some normal memory (DDR) and some high-bandwidth on-package memory (MCDRAM).
 Processors can be configured in various clustering modes to have up to 4 <em>Clusters</em>.
 Moreover, each <em>Cluster</em> (quarter, half or whole processor) of the processor may have its own local
 parts of the DDR and of the MCDRAM.
+This memory and clustering configuration may be probed by looking at MemoryMode
+and ClusterMode attributes, see \ref attributes_info and doc/examples/get-knl-modes.c
+in the source directory.
 
 The upcoming hwloc 2.0 will address this new architecture by presenting memory
 in an improved way.
@@ -3227,17 +3324,25 @@ The MCDRAM NUMA nodes may also be identified thanks to the <tt>Type</tt> info at
 which is set to <tt>MCDRAM</tt>.
 
 
-\section faq_knl_dump Why do I need hwloc-dump-hwdata for caches on Intel Knights Landing Xeon Phi?
+\subsection faq_knl_dump Why do I need hwloc-dump-hwdata for memory on Intel Knights Landing Xeon Phi?
 
 Intel Knights Landing Xeon Phi processors may use the on-package memory (MCDRAM)
 as either memory or a memory-side cache (currently reported as a L3 cache by hwloc).
-Details about this cache (especially its size) are currently only available to privileged users.
+There are also several clustering modes that significantly affect the memory organization
+(see \ref faq_knl_numa for more information about these modes).
+Details about these are currently only available to privileged users.
 
 The hwloc-dump-hwdata utility may be used to dump this privileged binary information
 into human-readable and world-accessible files that the hwloc library will later load.
 The utility should usually run as root once during boot, in order to update dumped
-information (stored under /var/run/hwloc by default) in case the MCDRAM configuration
+information (stored under /var/run/hwloc by default) in case the MCDRAM or clustering configuration
 changed between reboots.
+
+When SELinux MLS policy is enabled, a specific hwloc policy module may be required
+so that all users get access to the dumped files (in /var/run/hwloc by default).
+One may use hwloc policy files from the SELinux Reference Policy at
+https://github.com/TresysTechnology/refpolicy-contrib
+(see also the documentation at https://github.com/TresysTechnology/refpolicy/wiki/GettingStarted).
 
 hwloc-dump-hwdata requires <tt>dmi-sysfs</tt> kernel module loaded.
 
@@ -3247,7 +3352,7 @@ See <tt>HWLOC_DUMPED_HWDATA_DIR</tt> in \ref envvar for details
 about the location of dumped files.
 
 
-\section faq_phi How do I build for Intel Xeon Phi coprocessor?
+\subsection faq_phi How do I build for Intel Xeon Phi coprocessor?
 
 \note This section does not apply to standalone Intel Knights Landing Xeon Phi.
 
@@ -3267,6 +3372,39 @@ for instance <tt>/usr/linux-k1om-4.7/bin/x86_64-k1om-linux-gcc</tt>:
 export PATH=$PATH:/usr/linux-k1om-4.7/bin/
 ./configure --host=x86_64-k1om-linux --build=x86_64-unknown-linux-gnu
 \endverbatim
+
+
+\subsection faq_bgq How do I build hwloc for BlueGene/Q?
+
+IBM BlueGene/Q machines run a standard Linux on the login/frontend nodes
+and a custom CNK (<em>Compute Node Kernel</em>) on the compute nodes.
+
+To discover the topology of a login/frontend node, hwloc should be
+configured as usual, without any BlueGene/Q-specific option.
+
+However, one would likely rather discover the topology of the compute nodes
+where parallel jobs are actually running.
+If so, hwloc must be cross-compiled with the following configuration line:
+\verbatim
+./configure --host=powerpc64-bgq-linux --disable-shared --enable-static \
+  CPPFLAGS='-I/bgsys/drivers/ppcfloor -I/bgsys/drivers/ppcfloor/spi/include/kernel/cnk/'
+\endverbatim
+
+CPPFLAGS may have to be updated if your platform headers are installed
+in a different directory.
+
+
+\subsection faq_netbsd_bind How to get useful topology information on NetBSD?
+
+The NetBSD (and FreeBSD) backend uses x86-specific topology discovery
+(through the x86 component).
+This implementation requires CPU binding so as to query topology
+information from each individual logical processor.
+This means that hwloc cannot find any useful topology information
+unless user-level process binding is allowed by the NetBSD kernel.
+The <tt>security.models.extensions.user_set_cpu_affinity</tt>
+sysctl variable must be set to 1 to do so.
+Otherwise, only the number of logical processors will be detected.
 
 
 */

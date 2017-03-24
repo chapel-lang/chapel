@@ -46,11 +46,11 @@ module LCALSDataTypes {
 
     var loop_test_stats: [loop_variant_dom] [loop_kernel_dom] LoopStat;
 
-    proc getLoopStats(loop_variant: LoopVariantID) {
+    proc getLoopStats(loop_variant: LoopVariantID) ref {
       return loop_test_stats[loop_variant];
     }
 
-    proc ~LoopSuiteRunInfo() {
+    proc deinit() {
       if ref_loop_stat != nil then delete ref_loop_stat;
 
       for idx in loop_variant_dom {
@@ -84,7 +84,7 @@ module LCALSDataTypes {
         loop_run_time[i] = new vector(real);
     }
 
-    proc ~LoopStat() {
+    proc deinit() {
       for lrt in loop_run_time do
         if lrt != nil then delete lrt;
     }
@@ -260,14 +260,14 @@ module LCALSDataTypes {
     // This is how this array *seems* like it should be declared, making
     // it an array of 3D arrays of 2xNx4 elements.  However, the reference
     // LCALS uses a bunch of pointers into a data vector that cause many
-    // indices to overlap with eachother. The LCALS_Overlapping_Array_3D
+    // indices to overlap with each other. The LCALS_Overlapping_Array_3D
     // class implements the same pattern used in the LCALS reference.
     //
     // var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays][0..#2, 0..#aligned_chunksize, 0..#4] real;
     var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays] LCALS_Overlapping_Array_3D(real) = [i in 0..s_num_3D_2xNx4_Real_arrays] new LCALS_Overlapping_Array_3D(real, 2*4*aligned_chunksize); // 2 X loop_length X 4 array size
 
     var RealArray_scalars: [0..#s_num_Real_scalars] real;
-    proc ~LoopData() {
+    proc deinit() {
       for arr in RealArray_3D_2xNx4 do delete arr;
     }
   }
@@ -280,7 +280,7 @@ module LCALSDataTypes {
      A[i,j] = &data[i*j*4]
 
      This means that many of these 4 element pointers will overlap,
-     for example i==0 or j==0, will always point to the begining of
+     for example i==0 or j==0, will always point to the beginning of
      "data".
 
      data:

@@ -10,6 +10,8 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_HWLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
+else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
+CHPL_HWLOC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
 endif
 
 #
@@ -25,9 +27,14 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-cairo \
                           --disable-libxml2 \
                           --disable-libudev \
-                          --disable-libnuma \
                           --disable-opencl \
                           --disable-pci
+
+# Libnuma requires dynamic linking, so for the flat locale model where
+# we have no need for NUMA info, disable it so we can link statically.
+ifeq ($(CHPL_MAKE_LOCALE_MODEL),flat)
+CHPL_HWLOC_CFG_OPTIONS += --disable-libnuma
+endif
 
 CHPL_HWLOC_CFG_OPTIONS += $(CHPL_HWLOC_MORE_CFG_OPTIONS)
 
@@ -70,7 +77,10 @@ hwloc-config: FORCE
 # Then configure
 #
 	mkdir -p $(HWLOC_BUILD_DIR)
-	cd $(HWLOC_BUILD_DIR) && $(HWLOC_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CFLAGS)' --prefix=$(HWLOC_INSTALL_DIR) $(CHPL_HWLOC_CFG_OPTIONS)
+	cd $(HWLOC_BUILD_DIR) && $(HWLOC_SUBDIR)/configure CC='$(CC)' \
+		CFLAGS='$(CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CFLAGS)' \
+		LDFLAGS='$(RUNTIME_LFLAGS)' --prefix=$(HWLOC_INSTALL_DIR) \
+		$(CHPL_HWLOC_CFG_OPTIONS)
 
 hwloc-build: FORCE
 	cd $(HWLOC_BUILD_DIR) && $(MAKE)

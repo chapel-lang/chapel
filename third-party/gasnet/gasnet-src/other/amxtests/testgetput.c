@@ -19,8 +19,6 @@ int main(int argc, char **argv) {
 
   TEST_STARTUP(argc, argv, networkpid, eb, ep, 1, 1, "iters");
 
-  TEST_32BIT_ONLY();
-
   /* setup handlers */
   setupUtilHandlers(ep, eb);
 

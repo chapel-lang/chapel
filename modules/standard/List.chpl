@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,23 @@ class listNode {
   var data: eltType;
   var next: listNode(eltType);
 }
+
+
+  pragma "no doc"
+  pragma "init copy fn"
+  proc chpl__initCopy(l: list(?t)) {
+    var newL: list(t);
+    for i in l do
+      newL.append(i);
+    return newL;
+  }
+
+  pragma "no doc"
+  proc =(ref l1: list(?t), const ref l2: list(?t2)) {
+    l1.destroy();
+    for i in l2 do
+      l1.append(i);
+  }
 
 
 /*
@@ -134,6 +151,7 @@ record list {
 
   /*
     Remove the first encountered instance of `x` from the list.
+    Does nothing if `x` is not present in the list.
    */
   proc ref remove(x: eltType) {
     var tmp = first,
@@ -172,7 +190,6 @@ record list {
   /*
     Delete every node in the list.
    */
-  // TODO: call from a destructor?
   proc destroy() {
     var current = first;
     while (current != nil) {
@@ -183,6 +200,13 @@ record list {
     first = nil;
     last = nil;
     length = 0;
+  }
+
+  /*
+    Destructor
+   */
+  proc deinit(){
+    destroy();
   }
 
   pragma "no doc"

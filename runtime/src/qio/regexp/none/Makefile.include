@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,6 @@ REGEXP_SUBDIR = src/qio/regexp/none
 
 ALL_SRCS += $(CURDIR)/$(REGEXP_SUBDIR)/*.c
 
-REGEXP_OBJDIR = $(RUNTIME_ROOT)/$(REGEXP_SUBDIR)/$(RUNTIME_OBJDIR)
+REGEXP_OBJDIR = $(RUNTIME_BUILD)/$(REGEXP_SUBDIR)
 
 include $(RUNTIME_ROOT)/$(REGEXP_SUBDIR)/Makefile.share

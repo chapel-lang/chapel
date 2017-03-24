@@ -203,11 +203,24 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
 
   initAB();
 
+  if printArrays then
+    writeln("after initAB, Ab=\n", Ab);
+
   const startTime = getCurrentTime();     // capture the start time
 
   LUFactorize(n, piv);                 // compute the LU factorization
 
-  var x => backwardSub(n);  // perform the back substitution
+  if printArrays then
+    writeln("after LUFactorize, Ab=\n", Ab);
+
+  // Note: store result of backwardSub in xtemp instead of
+  // returning a slice of a local variable (which is not supported).
+  var xTemp = backwardSub(n); // perform the back substitution
+  var x => xTemp[0, 1..n];
+
+  if printArrays then
+    writeln("after backwardSub, Ab=\n", Ab, "\nx=\n", x);
+
 
   var execTime = getCurrentTime() - startTime;  // store the elapsed time
   if execTime < 0 then execTime += 24*3600;          // adjust for date change
@@ -335,24 +348,15 @@ proc schurComplement(blk, AD, BD, Rest) {
                 var h1 => Ab._value.dsiLocalSlice1((outerRange, innerRange)),
                     h3 => replB._value.dsiLocalSlice1((blkRange, innerRange));
                 for a in outerRange {
-                  const
-                    h2dd = h2._value.data,
-                    h2off = hoistOffset(h2, a, blkRange);
                   for w in blkRange  {
-                    const h2aw = h2dd(h2off+w); // h2[a,w];
+                    const h2aw = h2[a,w];
                     // The code below hoists loop-invariant computations in
                     // dsiAccess() out of the 'for innerRange' loop by hand.
                     // We are using tuples instead of objects because
                     // the generated code is more efficient, which is
                     // also a needed compiler optimization.
-                    const
-                      h1dd  = h1._value.data,
-                      h1off = hoistOffset(h1, a, innerRange),
-                      h3dd  = h3._value.data,
-                      h3off = hoistOffset(h3, w, innerRange);
                     for b in innerRange do
-                      // Ab[a,b] -= replA[a,w] * replB[w,b];
-                      h1dd(h1off+b) -= h2aw * h3dd(h3off+b);
+                      h1[a,b] -= h2aw * h3[w,b];
                   } // for w
                 } // for a
               } // forall j2
@@ -365,6 +369,7 @@ proc schurComplement(blk, AD, BD, Rest) {
 // NB works only when storage indices for sliceDim1,2 are contiguous
 // Each sliceDim1,2 can be either a range or an int
 
+pragma "no copy return"
 proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
   // might be more elegant to replace the explicit arg tuple with 'slice'
   proc toScalar(slice)
@@ -398,14 +403,10 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
     else
       if origScalar(2) then (sliceDim1,)
       else (sliceDim1, sliceDim2);
-  var result: [(...reindexExpr)] => locAdesc.myStorageArr[r1, r2];
-  return result;
-}
-
-inline proc hoistOffset(A: [], i1, slice2) {
-  const d = A._value;
-  compilerAssert(d.rank == 2);
-  const result = d.origin + i1 * d.blk(1) - d.factoredOffs;
+  pragma "no auto destroy"
+  var slice => locAdesc.myStorageArr[r1, r2];
+  pragma "no auto destroy"
+  var result: [(...reindexExpr)] => slice;
   return result;
 }
 
@@ -752,7 +753,7 @@ proc backwardSub(n: indexType) {
   // the error 'zippered iterations have non-equal lengths'.
   //forall (repl,locl) in zip(replX,x) do locl = repl;
 
-  return xTemp[0, 1..n];
+  return xTemp;
 }
 
 proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
@@ -996,28 +997,22 @@ proc replicateA(abIx, dim2) {
 
         var locReplA =>
           replA._value.localAdescs[lid1,fromLocId2].myStorageArr;
-        const locReplAdd = locReplA._value.data;
 
         // (A) copy from the local portion of A[1..n, dim2] into replA[..,..]
-        local {
+        /*local*/ {
           const myStarts = 1..n by blkSize*tl1 align 1+blkSize*lid1;
 
           forall iStart in myStarts {
             const iEnd = min(iStart + blkSize - 1, n),
                   iRange = iStart..iEnd;
             var locAB => Ab._value.dsiLocalSlice1((iRange, dim2));
-            const locABdd = locAB._value.data;
 
             // locReplA[iRange,..] = locAB[iRange, dim2];
             const jStart = dim2.alignedLow,
                   rStart = replA._value.dom.dom1._dsiStorageIdx(iStart);
             for i in iRange {
-              const locReplAoff = hoistOffset(locReplA,
-                                              i - iStart + rStart, 1..blkSize),
-                    locABoff    = hoistOffset(locAB, i, dim2);
               for j in dim2 do
-                //locReplA[i - iStart + rStart, j - jStart + 1] = locAB[i,j];
-                locReplAdd(locReplAoff + j - jStart + 1) = locABdd(locABoff+j);
+                locReplA[i - iStart + rStart, j - jStart + 1] = locAB[i,j];
             } // for i
 
           } // forall iStart
@@ -1037,28 +1032,22 @@ proc replicateB(abIx, dim1) {
 
         var locReplB =>
           replB._value.localAdescs[fromLocId1,lid2].myStorageArr;
-        const locReplBdd = locReplB._value.data;
 
         // (A) copy from the local portion of A[dim1, 1..n+1] into replB[..,..]
-        local {
+        /*local*/ {
           const myStarts = 1..n+1 by blkSize*tl2 align 1+blkSize*lid2;
 
           forall jStart in myStarts {
             const jEnd = min(jStart + blkSize - 1, n+1),
                   jRange = jStart..jEnd;
             var locAB => Ab._value.dsiLocalSlice1((dim1, jRange));
-            const locABdd = locAB._value.data;
 
             // locReplB[..,jRange] = locAB[dim1, jRange];
             const iStart = dim1.alignedLow,
                   rStart = replB._value.dom.dom2._dsiStorageIdx(jStart);
             for i in dim1 {
-              const locReplBoff = hoistOffset(locReplB, i - iStart + 1,
-                                           rStart..rStart /*do not bother*/),
-                    locABoff    = hoistOffset(locAB, i, jRange);
               for j in jRange do
-                //locReplB[i - iStart + 1, j - jStart + rStart] = locAB[i,j];
-                locReplBdd(locReplBoff+j-jStart+rStart) = locABdd(locABoff+j);
+                locReplB[i - iStart + 1, j - jStart + rStart] = locAB[i,j];
             } // for i
 
           } // forall jStart
@@ -1157,7 +1146,7 @@ proc gaxpyMinus(A: [],
 proc ensureDR(value, param msg) {
   proc etest(type t) param where t : DefaultRectangularArr return true;
   proc etest(type t) param return false;
-  compilerAssert(etest(value.type), "ensureDR ", msg, 2);
+  compilerAssert(etest(chpl__getActualArray(value).type), "ensureDR ", msg, 2);
 }
 
 proc makeLocalCopyOfAb() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,12 +17,11 @@
  * limitations under the License.
  */
 
+
+// TODO -- performance test sort routines and optimize (see other TODO's)
 /*
 
-This module supports a variety of standard sorting routines on 1D arrays.
-
-The current interface is minimal and should be expected to
-grow and evolve over time.
+The Sort module is designed to support standard sort routines.
 
 .. _comparators:
 
@@ -30,22 +29,18 @@ Comparators
 -----------
 
 Comparators allow sorting data by a mechanism other than the
-default comparison of array elements. To use a comparator, define a
-record with either a ``key(a)`` or ``compare(a, b)`` method, and pass an
-instance of that record to the sort function (examples shown below).
+default comparison operations between array elements. To use a comparator,
+define a record with either a ``key(a)`` or ``compare(a, b)`` method, and pass
+an instance of that record to the sort function (examples shown below).
 
 If both methods are implemented on the record passed as the comparator, the
 ``key(a)`` method will take priority over the ``compare(a, b)`` method.
-
-Nearly all sort routines support comparators, which is denoted by their
-function signature.
 
 Key Comparator
 ~~~~~~~~~~~~~~
 
 The ``key(a)`` method accepts 1 argument, which will be an element from the
-array being sorted. The return type should support the ``<`` operator, since
-that is what the base ``compare`` method of all sort algorithms uses by default.
+array being sorted.
 
 The default key method would look like this:
 
@@ -76,17 +71,33 @@ elements, the user can define a comparator with a key method as follows:
   // This will output: -1, 2, 3, -4
   writeln(Array);
 
+The return type of ``key(a)`` must support the ``<``
+operator, which is used by the base compare method of all sort routines. If the
+``<`` operator is not defined for the return type, the user may define it
+themselves like so:
+
+.. code-block:: chapel
+
+  proc op<(a: returnType, b: returnType): bool {
+    ...
+  }
+
 
 Compare Comparator
 ~~~~~~~~~~~~~~~~~~
 
 The ``compare(a, b)`` method accepts 2 arguments, which will be 2 elements from
-the array being sorted. The return value should be an integer indicating how a
-and b compare to each other, as shown below:
+the array being sorted. The return value should be a numeric signed type
+indicating how a and b compare to each other. The conditions between ``a`` and
+``b`` should result in the following return values for ``compare(a, b)``:
 
-  * > 0 if ``a > b``
-  * 0 if ``a == b``
-  * < 0 if ``a < b``
+  ============ ==========
+  Return Value Condition
+  ============ ==========
+  ``> 0``      ``a > b``
+  ``0``        ``a == b``
+  ``< 0``      ``a < b``
+  ============ ==========
 
 The default compare method for a numeric signed type would look like this:
 
@@ -185,7 +196,23 @@ const reverseComparator: ReverseComparator(DefaultComparator);
 /* Private methods */
 
 pragma "no doc"
-/* Base compare method of all sort functions */
+/*
+   Base compare method of all sort functions.
+
+   By default, it returns the value of defaultComparator.compare(a, b).
+
+   If a comparator with a key method is passed, it will return the value of
+   defaultComparator(comparator.key(a), comparator.key(b)).
+
+   If a comparator with a compare method is passed, it will return the value of
+   comparator.compare(a, b).
+
+   Return values conventions:
+
+     a < b : returns value < 0
+     a > b : returns value > 0
+     a == b: returns 0
+*/
 inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
   use Reflection;
 
@@ -208,7 +235,7 @@ pragma "no doc"
     Check if a comparator was passed and confirm that it will work, otherwise
     throw a compile-time error.
 
-    :arg a: Sample data passed to confirm that comparator methods can resolve
+   :arg a: Sample data passed to confirm that comparator methods can resolve
    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
       data is sorted.
 
@@ -222,18 +249,18 @@ proc chpl_check_comparator(comparator, type eltType) {
 
   if comparator.type == DefaultComparator {}
   // Check for valid comparator methods
-  else if canResolveMethod(comparator, "compare", data, data) {
-    // Check return type of compare
-    type comparetype = comparator.compare(data, data).type;
-    if !(isNumericType(comparetype)) then
-      compilerError("The compare method must return a numeric type");
-  }
   else if canResolveMethod(comparator, "key", data) {
     // Check return type of key
     const keydata = comparator.key(data);
     type keytype = keydata.type;
     if !(canResolve("<", keydata, keydata)) then
       compilerError("The key method must return an object that supports the '<' function");
+  }
+  else if canResolveMethod(comparator, "compare", data, data) {
+    // Check return type of compare
+    type comparetype = comparator.compare(data, data).type;
+    if !(isNumericType(comparetype)) then
+      compilerError("The compare method must return a numeric type");
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
@@ -256,8 +283,16 @@ proc chpl_check_comparator(comparator, type eltType) {
       data is sorted.
 
  */
-proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   quickSort(Data, comparator=comparator);
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("sort() requires 1-D array");
 }
 
 
@@ -273,10 +308,20 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.ra
  */
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   chpl_check_comparator(comparator, eltType);
-  for i in Dom.low..Dom.high-1 do
-    if chpl_compare(Data(i+1), Data(i), comparator) < 0 then
+  const stride = if Dom.stridable then abs(Dom.stride) else 1;
+
+  for i in Dom.low..Dom.high-stride by stride do
+    if chpl_compare(Data[i+stride], Data[i], comparator) < 0 then
       return false;
   return true;
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("isSorted() requires 1-D array");
 }
 
 
@@ -330,21 +375,31 @@ iter sorted(x, comparator:?rec=defaultComparator) {
       data is sorted.
 
  */
-proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
+  const low = Dom.low,
+        high = Dom.high,
+        stride = abs(Dom.stride);
+
   var swapped = true;
 
   while (swapped) {
     swapped = false;
-    for i in lo..hi-1 {
-      if chpl_compare(Data(i), Data(i+1), comparator) > 0 {
-        Data(i) <=> Data(i+1);
+    for i in low..high-stride by stride {
+      if chpl_compare(Data(i), Data(i+stride), comparator) > 0 {
+        Data(i) <=> Data(i+stride);
         swapped = true;
       }
     }
   }
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("bubbleSort() requires 1-D array");
 }
 
 
@@ -357,34 +412,43 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where 
       data is sorted.
 
  */
-proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
-  const len = Dom.dim(1).size;
+  const low = Dom.low,
+        high = Dom.high,
+        size = Dom.size,
+        stride = abs(Dom.stride);
 
-  // heapify
-  var start = (len - 2) / 2 + lo;
-  while (start >= lo) {
-    SiftDown(start, hi, comparator);
-    start = start - 1;
+  // Heapify
+  var start = if high == low then high
+              else if size % 2 then low + ((size - 1)/2) * stride
+              else low + (size/2 - 1) * stride;
+
+  while (start >= low) {
+    SiftDown(start, high, comparator);
+    start = start - stride;
   }
 
-  // sort, moving max element to end and re-heapifying the rest
-  var end = hi;
-  while (end > lo) {
-    Data(end) <=> Data(lo);
-    end = end - 1;
-    SiftDown(lo, end, comparator);
+  // Sort, moving max element to end and re-heapifying the rest
+  var end = high;
+  while (end > low) {
+    Data(end) <=> Data(low);
+    end = end - stride;
+    SiftDown(low, end, comparator);
   }
 
-  proc SiftDown(start, end, comparator:?rec=defaultComparator) where isRecord(rec) {
+  proc SiftDown(start, end, comparator:?rec=defaultComparator) {
     var root = start;
-    while (root * 2 + 1 - lo <= end) {
-      const child = root * 2 + 1 - lo;
+    while ((2*root - low + stride) <= end) {
+      const child = 2*root - low + stride;
       var swap = root;
-      if chpl_compare(Data(swap), Data(child), comparator) < 0 then swap = child;
-      if (child + 1 <= end) && (chpl_compare(Data(swap), Data(child + 1), comparator) < 0) then swap = child + 1;
+
+      if chpl_compare(Data(swap), Data(child), comparator) < 0 then
+        swap = child;
+
+      if (child + stride <= end) && (chpl_compare(Data(swap), Data(child + stride), comparator) < 0) then
+        swap = child + stride;
+
       if swap != root {
         Data(root) <=> Data(swap);
         root = swap;
@@ -393,6 +457,14 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Do
       }
     }
   }
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("heapSort() requires 1-D array");
 }
 
 
@@ -405,25 +477,36 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Do
       data is sorted.
 
  */
-proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  const lo = Dom.low;
-  for i in Dom {
-    const ithVal = Data(i);
+  const low = Dom.low,
+        high = Dom.high,
+        stride = abs(Dom.stride);
+
+  for i in low..high by stride {
+    var ithVal = Data[i];
     var inserted = false;
-    for j in lo..i-1 by -1 {
-      if chpl_compare(ithVal, Data(j), comparator) < 0 {
-        Data(j+1) = Data(j);
+    for j in low..i-stride by -stride {
+      if chpl_compare(ithVal, Data[j], comparator) < 0 {
+        Data[j+stride] = Data[j];
       } else {
-        Data(j+1) = ithVal;
+        Data[j+stride] = ithVal;
         inserted = true;
         break;
       }
     }
     if (!inserted) {
-      Data(lo) = ithVal;
+      Data[low] = ithVal;
     }
   }
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("insertionSort() requires 1-D array");
 }
 
 
@@ -438,12 +521,13 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) whe
       data is sorted.
 
  */
-proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
   _MergeSort(Data, minlen, comparator);
 }
 
-private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultComparator)
+  where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   if hi-lo < minlen {
@@ -488,6 +572,14 @@ private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=def
 }
 
 
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc mergeSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("mergeSort() requires 1-D array");
+}
+
+
 /*
    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
 
@@ -499,8 +591,62 @@ private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=def
       data is sorted.
 
  */
-proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
+  // grab obvious indices
+  const stride = abs(Dom.stride),
+        lo = Dom.low,
+        hi = Dom.high,
+        size = Dom.size,
+        mid = if hi == lo then hi
+              else if size % 2 then lo + ((size - 1)/2) * stride
+              else lo + (size/2 - 1) * stride;
+
+  // base case -- use insertion sort
+  if (hi - lo < minlen) {
+    insertionSort(Data, comparator=comparator);
+    return;
+  }
+
+  // find pivot using median-of-3 method
+  if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
+    Data(mid) <=> Data(lo);
+  if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
+    Data(hi) <=> Data(lo);
+  if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
+    Data(hi) <=> Data(mid);
+
+  const pivotVal = Data(mid);
+  Data(mid) = Data(hi-stride);
+  Data(hi-stride) = pivotVal;
+  // end median-of-3 partitioning
+
+  var loptr = lo,
+      hiptr = hi-stride;
+  while (loptr < hiptr) {
+    do { loptr += stride; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
+    do { hiptr -= stride; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
+    if (loptr < hiptr) {
+      Data(loptr) <=> Data(hiptr);
+    }
+  }
+
+  Data(hi-stride) = Data(loptr);
+  Data(loptr) = pivotVal;
+
+  // TODO -- Get this cobegin working and tested
+  //  cobegin {
+    quickSort(Data[..loptr-stride], minlen, comparator);  // could use unbounded ranges here
+    quickSort(Data[loptr+stride..], minlen, comparator);
+  //  }
+}
+
+pragma "no doc"
+/* Non-stridable quickSort */
+proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
+  where !Dom.stridable {
+  chpl_check_comparator(comparator, eltType);
+
   // grab obvious indices
   const lo = Dom.low,
         hi = Dom.high,
@@ -542,35 +688,50 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
   //  cobegin {
     quickSort(Data[..loptr-1], minlen, comparator);  // could use unbounded ranges here
     quickSort(Data[loptr+1..], minlen, comparator);
-    //  }
+  //  }
 }
 
 
-// TODO -- support comparators by implementing a reduce intent w/ comparators
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("quickSort() requires 1-D array");
+}
+
+
 /*
    Sort the 1D array `Data` in-place using a sequential selection sort
    algorithm.
 
-   .. warning::
-        SelectionSort will be deprecated for a comparator-supported
-        ``selectionSort`` in the future.
-
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
  */
-proc SelectionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
-  for i in lo..hi-1 {
-    var (_, loc) = if reverse then maxloc reduce zip(Data[i..hi], {i..hi})
-      else minloc reduce zip(Data[i..hi], {i..hi});
-    Data(i) <=> Data(loc);
+proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  const low = Dom.low,
+        high = Dom.high,
+        stride = abs(Dom.stride);
+
+  for i in low..high-stride by stride {
+    var jMin = i;
+    // TODO -- should be a minloc reduction, when they can support comparators
+    for j in i..high by stride {
+      if chpl_compare(Data[j], Data[jMin], comparator) < 0 then
+        jMin = j;
+    }
+    Data(i) <=> Data(jMin);
   }
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("selectionSort() requires 1-D array");
 }
 
 
@@ -645,174 +806,6 @@ record ReverseComparator {
     } else {
       compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
     }
-  }
-}
-
-
-/*
-   Deprecated Functions
-   TODO - print deprecation msg and possibly remove by 1.14.0
- */
-
-pragma "no doc"
-/*
-
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`bubbleSort`
-
-   Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: BubbleSort replaced by bubbleSort");
-  var comparator = if reverse then reverseComparator else defaultComparator;
-  bubbleSort(Data, comparator);
-  if doublecheck then
-    if !isSorted(Data) then
-      halt("BubbleSort failed to sort: ", Data);
-}
-
-
-pragma "no doc"
-/*
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`quickSort`
-
-   Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
-   :type minlen: `integral`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: QuickSort replaced by quickSort");
-  var comparator = if reverse then reverseComparator else defaultComparator;
-  quickSort(Data, minlen, comparator);
-  if doublecheck then
-    if !isSorted(Data) then
-      halt("QuickSort failed to sort: ", Data);
-}
-
-
-pragma "no doc"
-/*
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`heapSort`
-
-   Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: HeapSort replaced by heapSort");
-  var comparator = if reverse then reverseComparator else defaultComparator;
-  heapSort(Data, comparator);
-  if doublecheck then
-    if !isSorted(Data) then
-      halt("HeapSort failed to sort: ", Data);
-}
-
-
-pragma "no doc"
-/*
-
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`insertionSort`
-
-   Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: InsertionSort replaced by insertionSort");
-  var comparator = if reverse then reverseComparator else defaultComparator;
-  insertionSort(Data, comparator);
-  if doublecheck then
-    if !isSorted(Data) then
-      halt("InsertionSort failed to sort: ", Data);
-}
-
-
-pragma "no doc"
-/*
-
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`mergeSort`
-
-   Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg minlen: When the array size is less than `minlen` use insertion sort algorithm
-   :type minlen: `integral`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: MergeSort replaced by mergeSort");
-  var comparator = if reverse then reverseComparator else defaultComparator;
-  mergeSort(Data, minlen, comparator);
-  if doublecheck then
-    if !isSorted(Data) then
-      halt("MergeSort failed to sort: ", Data);
-}
-
-
-pragma "no doc"
-/*
-
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`isSorted`
-
-   Verify that the array `Data` is in sorted order and halt if any element is
-   out of order.
-
-   :arg Data: The array to verify
-   :type Data: [] `eltType`
-   :arg str: string to print while halting if an element is out of order
-   :type str: string
-   :arg reverse: if true, expect the values to be sorted in reverse.
-   :type reverse: `bool`
-
- */
-proc VerifySort(Data: [?Dom] ?eltType, str: string, param reverse=false) {
-  //writeln("Deprecation warning: VerifySort replaced by isSorted");
-  if reverse {
-    for i in Dom.low..Dom.high-1 do
-      if Data[i] < Data[i+1] then
-        halt(str, " did not sort properly (", i, "): ", Data);
-  } else {
-    for i in Dom.low..Dom.high-1 do
-      if Data[i+1] < Data[i] then
-        halt(str, " did not sort properly (", i, "): ", Data);
   }
 }
 } // Sort Module

@@ -1,9 +1,0 @@
-#!/usr/bin/env python
-
-# skip this test for numa perf testing, it takes too long in that config
-import os
-
-numa = os.getenv('CHPL_LOCALE_MODEL', '') == 'numa'
-perf_test = os.getenv('CHPL_TEST_PERF', '') == 'on'
-
-print(numa and perf_test)

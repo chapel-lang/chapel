@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,7 +20,7 @@
 module NetworkAtomicTypes {
 
   proc chpl__networkAtomicType(type base_type) type {
-    if base_type==bool then return ratomicflag;
+    if base_type==bool then return ratomicbool;
     else if base_type==uint(32) then return ratomic_uint32;
     else if base_type==uint(64) then return ratomic_uint64;
     else if base_type==int(32) then return ratomic_int32;

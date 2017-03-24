@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -133,6 +133,13 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
   // Do not recurse
   return false;
 }
+
+void CollapseBlocks::visitForallIntents(ForallIntents* clause) {
+  // Need to define this so CollapseBlocks is not abstract.
+  // However, it should not be invoked.
+  INT_ASSERT(false);
+}
+
 
 // The c for loop primitive is of the form:
 //   __primitive("C for loop", {inits}, {test}, {incrs})
@@ -371,6 +378,36 @@ bool CollapseBlocks::enterGotoStmt(GotoStmt* node)
 }
 
 void CollapseBlocks::exitGotoStmt(GotoStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterForwardingStmt(ForwardingStmt* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitForwardingStmt(ForwardingStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterTryStmt(TryStmt* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitTryStmt(TryStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterCatchStmt(CatchStmt* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitCatchStmt(CatchStmt* node)
 {
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -59,14 +59,8 @@ static void add_env_options(int* argc, char** argv[]) {
   // Add a -E option for each environment variable.
   //
   for (i = 0; i < envc; i++) {
-    // except don't add -E for variables containing a `
-    // this is a workaround for poor quoting
-    // in amudprun (see amudp_spawn.cpp AMUDP_SPMDSshSpawn
-    // which just passes all the arguments to 'system')
-    if( ! strchr(environ[i], '`' ) ) {
-      new_argv[*argc + 2 * i + 0] = (char*) "-E";
-      new_argv[*argc + 2 * i + 1] = environ[i];
-    }
+    new_argv[*argc + 2 * i + 0] = (char*) "-E";
+    new_argv[*argc + 2 * i + 1] = environ[i];
   }
 
   //

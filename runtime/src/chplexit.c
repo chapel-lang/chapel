@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,7 @@
 #include "chplexit.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
+#include "chpl-topo.h"
 #include "gdb.h"
 
 #include <stdio.h>
@@ -44,6 +45,7 @@ static void chpl_exit_common(int status, int all) {
   }
   chpl_mem_exit();
   chpl_comm_exit(all, status);
+  chpl_topo_exit();
   exit(status);
 }
 

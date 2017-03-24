@@ -8,16 +8,16 @@ class MyClass {
 
 record NotPod1 {
   var x:int;
-  proc ~NotPod1() { writeln("custom destructor"); }
+  proc deinit() { writeln("custom destructor"); }
 }
 
 record NotPod2 {
   var x:int;
-}
-
-pragma "auto copy fn" proc chpl__autoCopy(x:NotPod2) {
-  writeln("custom auto copy");
-  return x;
+  proc init() { x = 0; }
+  proc init(from:NotPod2) {
+    writeln("custom auto copy");
+    x = from.x;
+  }
 }
 
 record NotPod3 {

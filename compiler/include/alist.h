@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -128,11 +128,11 @@ class AList {
   Expr * actual = (call)->argList.head;                                 \
   if (_alist_fn) {                                                      \
     if (_alist_fn->numFormals() != (call)->argList.length)              \
-      INT_FATAL(call, "number of actuals does not match number of formals"); \
+      INT_FATAL(call, "number of actuals does not match number of formals in %s()", _alist_fn->name); \
   } else if ((call)->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {           \
-    _alist_fn = toFnSymbol(toSymExpr(call->get(1))->var);               \
+    _alist_fn = toFnSymbol(toSymExpr(call->get(1))->symbol());          \
     if (_alist_fn->numFormals() != (call)->argList.length - 2)          \
-      INT_FATAL(call, "number of actuals does not match number of formals"); \
+      INT_FATAL(call, "number of actuals does not match number of formals in %s()", _alist_fn->name); \
     actual = actual->next->next;                                        \
   }                                                                     \
   Expr* _alist_actual_next = (actual) ? actual->next : NULL;            \

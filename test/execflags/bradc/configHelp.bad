@@ -1,0 +1,4 @@
+  -h, --help            : print this message
+CONFIG VARS:
+                 numLocales: int(64)
+                       help: bool

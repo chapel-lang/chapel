@@ -25,7 +25,7 @@
 /*returns the implementation of the collectives including all the parameters to the algorithm*/
 struct gasnete_coll_implementation_t_{
   struct gasnete_coll_implementation_t_ *next;
-  void* fn_ptr;
+  gasnet_coll_handle_t (*fn_ptr)();
   int fn_idx;
   gasnet_team_handle_t team;
   gasnet_coll_optype_t optype;
@@ -366,21 +366,14 @@ struct gasnet_coll_tuning_parameter_t {
 };
 
 /* Macro to initialize a 1-element array of gasnet_coll_tuning_parameter_t.
-   Must deal w/ the fact that pre-C99 compilers don't allow initializers for
-   auto aggregates to contain non-constant expressions (which we may want for
-   start and end members).
+ * GASNet coding standards prohibit the use of non-const struct initializers
+   (which we may need for start and end members).
 */
-#if HAVE_NONCONST_STRUCT_INIT
-  #define GASNETE_COLL_TUNING_PARAMETER(_name,_param,_start,_end,_stride,_flags) \
-    struct gasnet_coll_tuning_parameter_t _name[1] = \
-       { { _param,_start,_end,_stride,_flags } } /* no semicolon */
-#else
-  #define GASNETE_COLL_TUNING_PARAMETER(_name,_param,_start,_end,_stride,_flags) \
+#define GASNETE_COLL_TUNING_PARAMETER(_name,_param,_start,_end,_stride,_flags) \
     struct gasnet_coll_tuning_parameter_t _name[1] = \
        { { _param,0,0,_stride,_flags } };\
     _name[0].start = _start; \
     _name[0].end   = _end /* no semicolon */
-#endif
 
 /*contains an entry in the function table*/
 typedef struct gasnete_coll_allgorithm_t_ {
@@ -420,7 +413,7 @@ typedef struct gasnete_coll_allgorithm_t_ {
   struct gasnet_coll_tuning_parameter_t *parameter_list;
   
   union {
-    void *generic_coll_fn_ptr;
+    gasnet_coll_handle_t (*generic_coll_fn_ptr)();
     gasnete_coll_bcast_fn_ptr_t bcast_fn;
     gasnete_coll_bcastM_fn_ptr_t bcastM_fn;
     gasnete_coll_scatter_fn_ptr_t scatter_fn;
@@ -511,7 +504,7 @@ gasnete_coll_algorithm_t gasnete_coll_autotune_register_algorithm(gasnet_team_ha
                                                                   uint32_t tree_alg,
                                                                   uint32_t num_params,
                                                                   struct gasnet_coll_tuning_parameter_t *param_list,
-                                                                  void *coll_fnptr,
+                                                                  gasnet_coll_handle_t (*coll_fnptr)(),
                                                                   const char *name_str);
 
 size_t gasnete_coll_get_dissem_limit(gasnete_coll_autotune_info_t* autotune_info, gasnet_coll_optype_t op_type, int flags);

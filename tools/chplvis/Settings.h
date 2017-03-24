@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Cray Inc.
+ * Copyright 2016-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,12 +17,14 @@
  * limitations under the License.
  */
 
-#include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Group.H>
 
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
 class SettingsData {
+ private:
+  bool didReadFile;
 
  public:
   double minR;
@@ -31,6 +33,12 @@ class SettingsData {
   double maxR;
   double maxG;
   double maxB;
+  double file_minR;
+  double file_minG;
+  double file_minB;
+  double file_maxR;
+  double file_maxG;
+  double file_maxB;
   bool   save_WH;
   int    mainW;
   int    mainH;
@@ -45,16 +53,16 @@ class SettingsData {
     maxR = 255;
     maxG = 0;
     maxB = 0;
-    save_WH = false;
-    mainW = 500;
-    mainH = 590;
+    save_WH = true;
+    mainW = 560;
+    mainH = 600;
   }
 
-  void saveToFile (void);
+  void saveToFile (bool);
   void readFromFile (void);
 };
 
-class Settings : public Fl_Double_Window {
+class Settings : public Fl_Group {
   public: 
     Settings (int x, int y, int W, int H, const char *l=0);
 

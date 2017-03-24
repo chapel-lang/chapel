@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -470,9 +470,17 @@ hwloc_pci_find_linkspeed(const unsigned char *config,
   /* PCIe Gen1 = 2.5GT/s signal-rate per lane with 8/10 encoding    = 0.25GB/s data-rate per lane
    * PCIe Gen2 = 5  GT/s signal-rate per lane with 8/10 encoding    = 0.5 GB/s data-rate per lane
    * PCIe Gen3 = 8  GT/s signal-rate per lane with 128/130 encoding = 1   GB/s data-rate per lane
+   * PCIe Gen4 = 16 GT/s signal-rate per lane with 128/130 encoding = 2   GB/s data-rate per lane
    */
-  lanespeed = speed <= 2 ? 2.5f * speed * 0.8f : 8.0f * 128/130; /* Gbit/s per lane */
-  *linkspeed = lanespeed * width / 8; /* GB/s */
+
+  /* lanespeed in Gbit/s */
+  if (speed <= 2)
+    lanespeed = 2.5f * speed * 0.8f;
+  else
+    lanespeed = 8.0f * (1<<(speed-3)) * 128/130; /* assume Gen5 will be 32 GT/s and so on */
+
+  /* linkspeed in GB/s */
+  *linkspeed = lanespeed * width / 8;
   return 0;
 }
 

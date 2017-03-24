@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -285,8 +285,13 @@ void hwloc__add_info(struct hwloc_obj_info_s **infosp, unsigned *countp, const c
 #define OBJECT_INFO_ALLOC 8
   /* nothing allocated initially, (re-)allocate by multiple of 8 */
   unsigned alloccount = (count + 1 + (OBJECT_INFO_ALLOC-1)) & ~(OBJECT_INFO_ALLOC-1);
-  if (count != alloccount)
-    infos = realloc(infos, alloccount*sizeof(*infos));
+  if (count != alloccount) {
+    struct hwloc_obj_info_s *tmpinfos = realloc(infos, alloccount*sizeof(*infos));
+    if (!tmpinfos)
+      /* failed to allocate, ignore this info */
+      return;
+    infos = tmpinfos;
+  }
   infos[count].name = strdup(name);
   infos[count].value = value ? strdup(value) : NULL;
   *infosp = infos;
@@ -315,8 +320,13 @@ void hwloc__move_infos(struct hwloc_obj_info_s **dst_infosp, unsigned *dst_count
 #define OBJECT_INFO_ALLOC 8
   /* nothing allocated initially, (re-)allocate by multiple of 8 */
   unsigned alloccount = (dst_count + src_count + (OBJECT_INFO_ALLOC-1)) & ~(OBJECT_INFO_ALLOC-1);
-  if (dst_count != alloccount)
-    dst_infos = realloc(dst_infos, alloccount*sizeof(*dst_infos));
+  if (dst_count != alloccount) {
+    struct hwloc_obj_info_s *tmp_infos = realloc(dst_infos, alloccount*sizeof(*dst_infos));
+    if (!tmp_infos)
+      /* Failed to realloc, ignore the appended infos */
+      goto drop;
+    dst_infos = tmp_infos;
+  }
   for(i=0; i<src_count; i++, dst_count++) {
     dst_infos[dst_count].name = src_infos[i].name;
     dst_infos[dst_count].value = src_infos[i].value;
@@ -326,6 +336,17 @@ void hwloc__move_infos(struct hwloc_obj_info_s **dst_infosp, unsigned *dst_count
   free(src_infos);
   *src_infosp = NULL;
   *src_countp = 0;
+  return;
+
+ drop:
+  for(i=0; i<src_count; i++, dst_count++) {
+    free(src_infos[i].name);
+    free(src_infos[i].value);
+  }
+  free(src_infos);
+  *src_infosp = NULL;
+  *src_countp = 0;
+  /* dst_infos not modified */
 }
 
 void hwloc_obj_add_info(hwloc_obj_t obj, const char *name, const char *value)
@@ -520,7 +541,7 @@ hwloc_topology_dup(hwloc_topology_t *newp,
   unsigned i;
 
   if (!old->is_loaded) {
-    errno = -EINVAL;
+    errno = EINVAL;
     return -1;
   }
 
@@ -889,10 +910,17 @@ merge_insert_equal(hwloc_obj_t new, hwloc_obj_t old)
 
   if (new->distances_count) {
     if (old->distances_count) {
-      old->distances_count += new->distances_count;
-      old->distances = realloc(old->distances, old->distances_count * sizeof(*old->distances));
-      memcpy(old->distances + new->distances_count, new->distances, new->distances_count * sizeof(*old->distances));
-      free(new->distances);
+      struct hwloc_distances_s **tmpdists;
+      tmpdists = realloc(old->distances, (old->distances_count+new->distances_count) * sizeof(*old->distances));
+      if (!tmpdists) {
+	/* failed to realloc, ignore new distances */
+	hwloc_clear_object_distances(new);
+      } else {
+	old->distances = tmpdists;
+	old->distances_count += new->distances_count;
+	memcpy(old->distances + new->distances_count, new->distances, new->distances_count * sizeof(*old->distances));
+	free(new->distances);
+      }
     } else {
       old->distances_count = new->distances_count;
       old->distances = new->distances;
@@ -1479,7 +1507,7 @@ add_default_object_sets(hwloc_obj_t obj, int parent_has_sets)
 }
 
 /* Setup object cpusets/nodesets by OR'ing its children. */
-HWLOC_DECLSPEC int
+int
 hwloc_fill_object_sets(hwloc_obj_t obj)
 {
   hwloc_obj_t child;
@@ -2233,15 +2261,17 @@ hwloc_build_level_from_list(struct hwloc_obj *first, struct hwloc_obj ***levelp)
   }
   nb = i;
 
-  /* allocate and fill level */
-  *levelp = malloc(nb * sizeof(struct hwloc_obj *));
-  obj = first;
-  i = 0;
-  while (obj) {
-    obj->logical_index = i;
-    (*levelp)[i] = obj;
-    i++;
-    obj = obj->next_cousin;
+  if (nb) {
+    /* allocate and fill level */
+    *levelp = malloc(nb * sizeof(struct hwloc_obj *));
+    obj = first;
+    i = 0;
+    while (obj) {
+      obj->logical_index = i;
+      (*levelp)[i] = obj;
+      i++;
+      obj = obj->next_cousin;
+    }
   }
 
   return nb;
@@ -2527,6 +2557,13 @@ next_cpubackend:
   hwloc_debug("%s", "\nRestrict topology cpusets to existing PU and NODE objects\n");
   collect_proc_cpuset(topology->levels[0][0], NULL);
 
+  if (topology->binding_hooks.get_allowed_resources && topology->is_thissystem) {
+    const char *env = getenv("HWLOC_THISSYSTEM_ALLOWED_RESOURCES");
+    if ((env && atoi(env))
+	|| (topology->flags & HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES))
+      topology->binding_hooks.get_allowed_resources(topology);
+  }
+
   hwloc_debug("%s", "\nPropagate offline and disallowed cpus down and up\n");
   propagate_unused_cpuset(topology->levels[0][0], NULL);
 
@@ -2655,12 +2692,6 @@ next_noncpubackend:
     }
   }
 
-  /*
-   * Now set binding hooks according to topology->is_thissystem
-   * what the native OS backend offers.
-   */
-  hwloc_set_binding_hooks(topology);
-
   return 0;
 }
 
@@ -2693,7 +2724,7 @@ hwloc_topology_setup_defaults(struct hwloc_topology *topology)
   topology->first_pcidev = topology->last_pcidev = NULL;
   topology->first_osdev = topology->last_osdev = NULL;
   /* sane values to type_depth */
-  for (l = HWLOC_OBJ_SYSTEM; l < HWLOC_OBJ_MISC; l++)
+  for (l = HWLOC_OBJ_SYSTEM; l <= HWLOC_OBJ_MISC; l++)
     topology->type_depth[l] = HWLOC_TYPE_DEPTH_UNKNOWN;
   topology->type_depth[HWLOC_OBJ_BRIDGE] = HWLOC_TYPE_DEPTH_BRIDGE;
   topology->type_depth[HWLOC_OBJ_PCI_DEVICE] = HWLOC_TYPE_DEPTH_PCI_DEVICE;
@@ -2984,6 +3015,11 @@ hwloc_topology_load (struct hwloc_topology *topology)
   hwloc_disc_components_enable_others(topology);
   /* now that backends are enabled, update the thissystem flag */
   hwloc_backends_is_thissystem(topology);
+  /*
+   * Now set binding hooks according to topology->is_thissystem
+   * and what the native OS backend offers.
+   */
+  hwloc_set_binding_hooks(topology);
 
   /* get distance matrix from the environment are store them (as indexes) in the topology.
    * indexes will be converted into objects later once the tree will be filled
@@ -3015,6 +3051,11 @@ int
 hwloc_topology_restrict(struct hwloc_topology *topology, hwloc_const_cpuset_t cpuset, unsigned long flags)
 {
   hwloc_bitmap_t droppedcpuset, droppednodeset;
+
+  if (!topology->is_loaded) {
+    errno = EINVAL;
+    return -1;
+  }
 
   /* make sure we'll keep something in the topology */
   if (!hwloc_bitmap_intersects(cpuset, topology->levels[0][0]->cpuset)) {
@@ -3229,11 +3270,13 @@ hwloc_topology_check(struct hwloc_topology *topology)
       /* check that PUs and NUMA nodes have cpuset/nodeset */
       if (obj->type == HWLOC_OBJ_PU) {
 	assert(obj->cpuset);
+	assert(obj->complete_cpuset);
 	assert(hwloc_bitmap_weight(obj->complete_cpuset) == 1);
 	assert(hwloc_bitmap_first(obj->complete_cpuset) == (int) obj->os_index);
       }
       if (obj->type == HWLOC_OBJ_NUMANODE) {
 	assert(obj->nodeset);
+	assert(obj->complete_nodeset);
 	assert(hwloc_bitmap_weight(obj->complete_nodeset) == 1);
 	assert(hwloc_bitmap_first(obj->complete_nodeset) == (int) obj->os_index);
       }

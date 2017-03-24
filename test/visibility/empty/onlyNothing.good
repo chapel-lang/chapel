@@ -1,0 +1,2 @@
+onlyNothing.chpl:12: In function 'main':
+onlyNothing.chpl:16: error: unresolved call 'foo()'

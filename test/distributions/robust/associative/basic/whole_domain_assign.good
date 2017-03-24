@@ -1,11 +1,3 @@
-whole_domain_assign.chpl:29: In function 'testWhole':
-whole_domain_assign.chpl:33: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-whole_domain_assign.chpl:29: In function 'testWhole':
-whole_domain_assign.chpl:33: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-whole_domain_assign.chpl:29: In function 'testWhole':
-whole_domain_assign.chpl:33: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-whole_domain_assign.chpl:29: In function 'testWhole':
-whole_domain_assign.chpl:33: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 Whole domain assignment (int(64)) : SUCCESS
 Whole domain assignment (uint(64)) : SUCCESS
 Whole domain assignment (real(32)) : SUCCESS

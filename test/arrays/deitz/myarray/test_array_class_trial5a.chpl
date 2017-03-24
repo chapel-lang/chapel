@@ -27,7 +27,7 @@ class array2d {
   type t;
   var data : array1d(t) = new array1d(t);
 
-  proc ~array2d() {
+  proc deinit() {
     delete data;
   }
 

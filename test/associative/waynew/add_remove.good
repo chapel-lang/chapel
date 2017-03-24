@@ -6,4 +6,4 @@ member(5) = false
 member(6) = true
 member(4) = false
 member(4) = true
-add_remove.chpl:18: error: halt reached - index not in domain: 53
+# ind removed: 0

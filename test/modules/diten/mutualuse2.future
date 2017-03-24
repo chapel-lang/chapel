@@ -1,6 +1,3 @@
-bug: out-of-order resolution
+bug: Failure to generate a good error message for use before definition
 
-bug: modules that mutually use each other can have some types lost
-
-This is very similar to mutualuse.chpl, except in this test, the types for the
-variables M1.a and M2.n are given explicitly. This causes a different error.
+Please see the comment in mutualuse2.chpl

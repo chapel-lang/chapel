@@ -1,0 +1,2 @@
+noReturnInInit.chpl:86: In initializer:
+noReturnInInit.chpl:88: error: initializers cannot return a value

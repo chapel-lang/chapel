@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -31,7 +31,7 @@ void chpl_rt_init(int argc, char* argv[]);
 void chpl_rt_finalize(int return_value);
 
 void chpl_executable_init(void);
-//   chpl_executable_finalize(...) equivalent is done by main.c:main(...)
+void chpl_execute_module_deinit(c_fn_ptr deinitFun);
 
 void chpl_library_init(int argc, char* argv[]);
 void chpl_library_finalize(void);

@@ -1,8 +1,8 @@
-.TH "Interoperability with Myrinet Express" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_myriexpress" 3 "Thu Feb 23 2017" "Version 1.11.6" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Interoperability with Myrinet Express \- 
+hwlocality_myriexpress \- Interoperability with Myrinet Express
 .SS "Functions"
 
 .in +1c
@@ -18,7 +18,7 @@ Interoperability with Myrinet Express \-
 This interface offers ways to retrieve topology information about Myrinet Express hardware\&. 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_mx_board_get_device_cpuset (\fBhwloc_topology_t\fPtopology, unsignedid, \fBhwloc_cpuset_t\fPset)\fC [inline]\fP, \fC [static]\fP"
+.SS "static int hwloc_mx_board_get_device_cpuset (\fBhwloc_topology_t\fP topology, unsigned id, \fBhwloc_cpuset_t\fP set)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the CPU set of logical processors that are physically close the MX board \fCid\fP\&. Return the CPU set describing the locality of the Myrinet Express board whose index is \fCid\fP\&.
@@ -26,7 +26,7 @@ Get the CPU set of logical processors that are physically close the MX board \fC
 Topology \fCtopology\fP and device \fCid\fP must match the local machine\&. I/O devices detection is not needed in the topology\&.
 .PP
 The function only returns the locality of the device\&. No additional information about the device is available\&. 
-.SS "static int hwloc_mx_endpoint_get_device_cpuset (\fBhwloc_topology_t\fPtopology, mx_endpoint_tendpoint, \fBhwloc_cpuset_t\fPset)\fC [inline]\fP, \fC [static]\fP"
+.SS "static int hwloc_mx_endpoint_get_device_cpuset (\fBhwloc_topology_t\fP topology, mx_endpoint_t endpoint, \fBhwloc_cpuset_t\fP set)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the CPU set of logical processors that are physically close the MX endpoint \fCendpoint\fP\&. Return the CPU set describing the locality of the Myrinet Express board that runs the MX endpoint \fCendpoint\fP\&.

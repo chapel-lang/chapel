@@ -1,0 +1,2 @@
+# shows a double-free, so skip if not valgrind
+CHPL_TEST_VGRND_EXE!=on

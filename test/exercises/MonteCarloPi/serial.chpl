@@ -12,7 +12,7 @@ use Random;
 //   n: the number of random points to generate
 //   seed: the seed for the random number generator
 // As with all configuration constants and variables,
-// these default values can be overrideen on the
+// these default values can be overridden on the
 // executable's command line (using --n and --seed).
 //
 config const n = 100000,
@@ -29,7 +29,7 @@ writeln("Random number seed  = ", seed);
 // accesses to this object by distinct tasks, parSafe can be set to
 // false to avoid thread safety overheads.
 // 
-var rs = new NPBRandomStream(seed, parSafe=false);
+var rs = new NPBRandomStream(real, seed, parSafe=false);
 
 //
 // Run the Monte Carlo simulation.  'count' is the number of random

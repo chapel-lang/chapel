@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define _chpl_tasks_callbacks_h_
 
 #include <stdint.h>
+#include "chpltypes.h"
 
 #ifdef __cplusplus
 extern "C" {

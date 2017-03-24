@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +30,13 @@ module ChapelBase {
   pragma "no object"
   class _ref {
     var _val;
+  }
+
+  pragma "compiler generated"
+  pragma "unalias fn"
+  inline proc chpl__unalias(x) {
+    pragma "no copy" var ret = x;
+    return x;
   }
 
 }

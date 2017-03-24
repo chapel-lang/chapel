@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -81,6 +81,23 @@ astr(const char* s1, const char* s2, const char* s3, const char* s4,
   if (s != t)
     free(s);
   return t;
+}
+
+const char* astr(const char* s1)
+{
+  int len;
+  len = strlen(s1);
+  char* s = (char*)malloc(len+1);
+  strcpy(s, s1);
+  const char* t = canonicalize_string(s);
+  if (s != t)
+    free(s);
+  return t;
+}
+
+const char* astr(const std::string& s)
+{
+  return astr(s.c_str());
 }
 
 const char*

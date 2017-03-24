@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,7 +38,7 @@ public:
   // Interface for BaseAST
   virtual bool    inTree();
   virtual bool    isStmt()                                           const;
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual void    verify();
 
   // New interface
@@ -54,6 +54,11 @@ public:
 
   virtual void    prettyPrint(std::ostream* o);
 
+
+  bool            isRef();
+  bool            isWideRef();
+  bool            isRefOrWideRef();
+
   /* Returns true if the given expression is contained by this one. */
   bool            contains(const Expr* expr)                         const;
 
@@ -62,6 +67,9 @@ public:
   void            insertBefore(Expr* new_ast);
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
+
+  void            insertBefore(AList exprs);
+  void            insertAfter(AList exprs);
 
   void            insertBefore(const char* format, ...);
   void            insertAfter(const char* format, ...);
@@ -99,7 +107,7 @@ public:
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
 
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual void    prettyPrint(std::ostream* o);
 
   virtual GenRet  codegen();
@@ -117,8 +125,16 @@ public:
 
 
 class SymExpr : public Expr {
- public:
+ private:
   Symbol* var;
+
+ public:
+  // List entries to support enumerating SymExprs in a Symbol
+  // These are public because:
+  //  * they are managed in Symbol (but could friend class Symbol)
+  //  * they are used in for_SymbolSymExprs (but could create a real iterator)
+  SymExpr* symbolSymExprsPrev;
+  SymExpr* symbolSymExprsNext;
 
   SymExpr(Symbol* init_var);
 
@@ -128,7 +144,7 @@ class SymExpr : public Expr {
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
 
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual bool    isNoInitExpr() const;
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
@@ -136,6 +152,12 @@ class SymExpr : public Expr {
   virtual Expr*   getFirstChild();
 
   virtual Expr*   getFirstExpr();
+
+  Symbol* symbol() {
+    return var;
+  }
+
+  void setSymbol(Symbol* s);
 };
 
 
@@ -150,7 +172,7 @@ class UnresolvedSymExpr : public Expr {
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
 
@@ -216,7 +238,7 @@ public:
 
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
 
   virtual Expr*   getFirstChild();
 
@@ -229,12 +251,19 @@ public:
   // True if the callExpr has been emptied (aka dead)
   bool            isEmpty()                                              const;
 
+  bool            isCast();
+  Expr*           castFrom();
+  Expr*           castTo();
+
   bool            isPrimitive()                                          const;
   bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
   bool            isPrimitive(const char*  primitiveName)                const;
 
+  void            setUnresolvedFunction(const char* name);
+
   FnSymbol*       isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
+  void            setResolvedFunction(FnSymbol* fn);
 
   FnSymbol*       theFnSymbol()                                          const;
 
@@ -244,11 +273,9 @@ public:
   Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
 
-
 private:
   GenRet          codegenPrimitive();
   GenRet          codegenPrimMove();
-  bool            codegenPrimMoveRhsIsSpecialPrimop();
 
   void            codegenInvokeOnFun();
   void            codegenInvokeTaskFun(const char* name);
@@ -265,7 +292,7 @@ private:
 // A ContextCall has a designated call.
 // The designated call will be returned if toCallExpr() is called
 // on the context call.
-// typeInfo on the context call will return the type info for
+// typeInfo/qualType on the context call will return the type info for
 // the designated call.
 // isCallExpr() will return true for a ContextCallExpr.
 class ContextCallExpr : public Expr {
@@ -285,7 +312,7 @@ class ContextCallExpr : public Expr {
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
 
@@ -294,8 +321,38 @@ class ContextCallExpr : public Expr {
   virtual Expr*   getFirstExpr();
 
   void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
+  void            setRefValueConstRefOptions(CallExpr* refCall, CallExpr* valueCall, CallExpr* constRefCall);
   CallExpr*       getRefCall();
   CallExpr*       getRValueCall();
+  void            getCalls(CallExpr*& refCall, CallExpr*& valueCall, CallExpr*& constRefCall);
+};
+
+
+class ForallExpr : public Expr {
+public:
+  Expr* indices;
+  Expr* iteratorExpr;
+  Expr* expr;
+  Expr* cond;
+  bool maybeArrayType;
+  bool zippered;
+
+  ForallExpr(Expr* indices,
+             Expr* iteratorExpr,
+             Expr* expr,
+             Expr* cond,
+             bool maybeArrayType,
+             bool zippered);
+
+  DECLARE_COPY(ForallExpr);
+
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    verify();
+  virtual void    accept(AstVisitor* visitor);
+  virtual GenRet  codegen();
+
+  virtual Expr*   getFirstChild();
+  virtual Expr*   getFirstExpr();
 };
 
 
@@ -312,7 +369,7 @@ class NamedExpr : public Expr {
 
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
 
@@ -335,13 +392,11 @@ static inline bool isAliveQuick(Symbol* symbol) {
 }
 
 static inline bool isAlive(Symbol* symbol) {
-  if (symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL)) return true;
-  if (! symbol->defPoint) return false;
-  return isAliveQuick(symbol);
+  return symbol->defPoint && isAlive(symbol->defPoint);
 }
 
 static inline bool isAlive(Type* type) {
-  return isAliveQuick(type->symbol);
+  return isAlive(type->symbol->defPoint);
 }
 
 #define isRootModule(ast)  \
@@ -379,13 +434,19 @@ static inline bool needsCapture(FnSymbol* taskFn) {
          taskFn->hasFlag(FLAG_NON_BLOCKING);
 }
 
+// E.g. NamedExpr::actual, DefExpr::init.
+static inline void verifyNotOnList(Expr* expr) {
+  if (expr && expr->list)
+    INT_FATAL(expr, "Expr is in a list incorrectly");
+}
+
 
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure
 const char* get_string(Expr* e); // fatal on failure
 
-CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md = NULL);
+CallExpr* callChplHereAlloc(Type* type, VarSymbol* md = NULL);
 void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
                          Type* t, VarSymbol* md = NULL);
 CallExpr* callChplHereFree(BaseAST* p);
@@ -400,6 +461,8 @@ CallExpr* callChplHereFree(BaseAST* p);
        e = (e != last) ? getNextExpr(e) : NULL)
 
 Expr* getNextExpr(Expr* expr);
+
+CallExpr* createCast(BaseAST* src, BaseAST* toType);
 
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);

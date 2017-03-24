@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,7 +28,7 @@ module ChapelUtil {
   }
 
   // required by resolveAutoCopies()
-  proc chpl__autoCopy(arg: chpl_main_argument) return arg;
+  proc chpl__initCopy(arg: chpl_main_argument) return arg;
   proc chpl__autoDestroy(arg: chpl_main_argument) {}
   
 
@@ -38,4 +38,7 @@ module ChapelUtil {
   //
   extern proc chpl_rt_preUserCodeHook();
   extern proc chpl_rt_postUserCodeHook();
+
+  // Deinitialization of modules and global variables will not happen.
+  proc chpl_addModule(moduleName: c_string, deinitFun: c_fn_ptr) { }
 }

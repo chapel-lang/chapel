@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -147,9 +147,9 @@ proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
 {
   var targetLocales = _rcTargetLocalesHelper(replicatedVar);
   assert(replicatedVar.domain == rcDomainBase);
-  assert(collected.domain == targetLocales.domain);
-  coforall (loc, col) in zip(targetLocales, collected) do
-    on loc do
+  for idx in collected.domain do assert(targetLocales.domain.member(idx));
+  coforall (idx, col) in zip(targetLocales.domain.sorted(), collected) do
+    on targetLocales[idx] do
       col = replicatedVar[rcDomainIx];
 }
 

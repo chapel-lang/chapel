@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -68,14 +68,14 @@ void TransformLogicalShortCircuit::exitCallExpr(CallExpr* call)
 
           if (isLogicalAnd)
           {
-            eMsg = new_CStringSymbol("cannot promote short-circuiting && operator");
+            eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
             ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                new CallExpr("isTrue", right),
                                new SymExpr(gFalse));
           }
           else
           {
-            eMsg = new_CStringSymbol("cannot promote short-circuiting || operator");
+            eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
             ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                new SymExpr(gTrue),
                                new CallExpr("isTrue", right));

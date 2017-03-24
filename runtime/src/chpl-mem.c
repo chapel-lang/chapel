@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 #include "chplsys.h"
 
 static int heapInitialized = 0;
+
 
 void chpl_mem_init(void) {
   chpl_mem_layerInit();

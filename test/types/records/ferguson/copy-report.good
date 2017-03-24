@@ -1,0 +1,123 @@
+
+VARIABLE INITIALIZATION -- VALUE CALL
+ variable initialization / value call
+   blank return intent, untyped variable
+   const return intent, untyped variable
+   blank return intent, typed variable
+    assign
+   const return intent, typed variable
+    assign
+ call in arg / call
+    initCopy
+ field initialization / value call
+   default constructor
+    initCopy
+
+VARIABLE INITIALIZATION -- LOCAL VAR
+ variable initialization / local var
+   untyped variable
+    initCopy
+   typed variable
+    assign
+ field initialization / local var
+   default constructor
+    initCopy
+
+VARIABLE INITIALIZATION -- GLOBAL / REF
+ variable initialization / global var
+   untyped variable
+    initCopy
+   typed variable
+    assign
+ variable initialization / global ref
+   untyped variable
+    initCopy
+   typed variable
+    assign
+ variable initialization / local ref
+   untyped variable
+    initCopy
+   typed variable
+    assign
+ variable initialization / blank-intent arg
+   untyped variable
+    initCopy
+   typed variable
+    assign
+ variable initialization / const-ref arg
+   untyped variable
+    initCopy
+   typed variable
+    assign
+ variable initialization / blank-intent arg
+   untyped variable
+    initCopy
+   typed variable
+    assign
+    initCopy
+ variable initialization / in-intent arg
+   untyped variable
+    initCopy
+   typed variable
+    assign
+    initCopy
+ variable initialization / inout-intent arg
+   untyped variable
+    initCopy
+   typed variable
+    assign
+    assign
+ field initialization / global var
+   default constructor
+    initCopy
+ field initialization / global ref
+   default constructor
+    initCopy
+ field initialization / local ref
+   default constructor
+    initCopy
+ field initialization / blank-intent arg
+   default constructor
+    initCopy
+ field initialization / const-ref arg
+   default constructor
+    initCopy
+ field initialization / ref arg
+   default constructor
+    initCopy
+    initCopy
+ field initialization / in arg
+   default constructor
+    initCopy
+    initCopy
+ field initialization / inout arg
+   default constructor
+    initCopy
+    assign
+
+VALUE RETURN -- VALUE CALL
+ return / value call
+ return / value call const
+
+VALUE RETURN -- LOCAL VAR
+ return / local variable
+
+VALUE RETURN -- GLOBAL/REF
+ return / global variable
+    initCopy
+ return / ref global variable
+    initCopy
+ return / blank intent arg
+    initCopy
+ return / ref intent arg
+ return / const ref intent arg
+ return / call returning ref
+    initCopy
+ return / call returning const ref
+    initCopy
+
+REF USE -- REF VALUE
+ return ref / global variable
+ return ref / global variable
+ return const ref / global variable
+ return ref / ref arg

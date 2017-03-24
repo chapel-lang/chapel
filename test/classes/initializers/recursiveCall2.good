@@ -1,0 +1,2 @@
+recursiveCall2.chpl:86: In initializer:
+recursiveCall2.chpl:88: error: use of this.init() in a conditional stmt in phase 1

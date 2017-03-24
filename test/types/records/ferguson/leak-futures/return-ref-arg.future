@@ -1,0 +1,1 @@
+bug: copy initialization should be added when returning ref arg

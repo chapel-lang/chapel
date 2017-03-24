@@ -1,11 +1,22 @@
+"""Utility functions for chplenv modules"""
 import os
-import re
 import subprocess
-from collections import namedtuple
-from distutils.spawn import find_executable
+import sys
+
+
+def error(msg, exception=Exception):
+    """Exception raising wrapper that differentiates developer-mode output"""
+    if os.environ.get('CHPL_DEVELOPER'):
+        raise exception(msg)
+    else:
+        sys.stderr.write('\nError: ')
+        sys.stderr.write(msg)
+        sys.stderr.write('\n')
+        sys.exit(1)
 
 
 def memoize(func):
+    """Function memoizing decorator"""
     cache = func.cache = {}
 
     def memoize_wrapper(*args, **kwargs):
@@ -17,64 +28,29 @@ def memoize(func):
     return memoize_wrapper
 
 
-@memoize
-def get_chpl_home():
-    chpl_home = os.environ.get('CHPL_HOME', '')
-    if not chpl_home:
-        dirname = os.path.dirname
-        chpl_home = dirname(dirname(dirname(os.path.realpath(__file__))))
-    return chpl_home
-
-@memoize
-def using_chapel_module():
-    chpl_home = os.environ.get('CHPL_HOME', '')
-    if chpl_home != '':
-        return chpl_home == os.environ.get('CHPL_MODULE_HOME', '')
-    return False
-
-@memoize
-def get_compiler_version(compiler):
-    version_string = '0'
-    if 'gnu' in compiler:
-        # Asssuming the 'compiler' version matches the gcc version
-        # e.g., `mpicc -dumpversion == gcc -dumpversion`
-        version_string = run_command(['gcc', '-dumpversion'])
-    elif 'cray-prgenv-cray' == compiler:
-        version_string = os.environ.get('CRAY_CC_VERSION', '0')
-    return CompVersion(version_string)
-
-# Takes a version string of the form 'major', 'major.minor',
-# 'major.minor.revision', or 'major.minor,revision.build' and returns the named
-# tuple (major, minor, revision, build). If minor, revision, or build are not
-# specified, 0 will be used for their value(s)
-@memoize
-def CompVersion(version_string):
-    CompVersionT = namedtuple('CompVersion', ['major', 'minor', 'revision', 'build'])
-    match = re.search(u'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', version_string)
-    if match:
-        major    = int(match.group(1))
-        minor    = int(match.group(3) or 0)
-        revision = int(match.group(5) or 0)
-        build    = int(match.group(7) or 0)
-        return CompVersionT(major=major, minor=minor, revision=revision, build=build)
-    else:
-        raise ValueError("Could not convert version '{0}' to "
-                         "a tuple".format(version_string))
-
 class CommandError(Exception):
+    """Custom exception for run_command errors"""
     pass
 
-# This could be replaced by subprocess.check_output, but that isn't available
-# until python 2.7 and we only have 2.6 on most machines :(
-def run_command(command, stdout=True, stderr=False):
-    process = subprocess.Popen(command,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-    output = process.communicate()
+
+def run_command(command, stdout=True, stderr=False, cmd_input=None):
+    """Command subprocess wrapper.
+       This should be the only invocation of subprocess in all chplenv scripts.
+       This could be replaced by subprocess.check_output, but that
+       is only available after Python 2.7, and we still support 2.6 :("""
+    try:
+        process = subprocess.Popen(command,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   stdin=subprocess.PIPE)
+    except OSError:
+        error("command not found: {0}".format(command[0]), OSError)
+
+    byte_cmd_input = str.encode(cmd_input) if cmd_input else None
+    output = process.communicate(input=byte_cmd_input)
     if process.returncode != 0:
-        raise CommandError(
-            "command `{0}` failed - output was \n{1}".format(command,
-                                                             output[1]))
+        error("command failed: {0}\noutput was:\n{1}".format(
+            command, output[1]), CommandError)
     else:
         output = (output[0].decode(), output[1].decode())
         if stdout and stderr:
@@ -86,6 +62,3 @@ def run_command(command, stdout=True, stderr=False):
         else:
             return ''
 
-def compiler_is_prgenv(compiler_val):
-  return (compiler_val.startswith('cray-prgenv') or
-     os.environ.get('CHPL_ORIG_TARGET_COMPILER','').startswith('cray-prgenv'))

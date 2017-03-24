@@ -87,7 +87,7 @@ var numAtoms : int;
 // default mass
 var mass : real = 1.0; 
 
-// number of bins that define our piece of the continguous space
+// number of bins that define our piece of the contiguous space
 var numBins : v3int;
 
 // constants from c++ version, used in neighboring
@@ -162,7 +162,7 @@ if generating {
   var mass_type: int; 
   dataReader.readln(mass_type, mass);
   
-  // density overriden if data file provided
+  // density overridden if data file provided
   density = numAtoms / (volume);
   const nbs : real = (density * 16) ** (1.0/3.0 : real);
   for i in 1..3 do
@@ -222,16 +222,16 @@ const NeighDom = {-1..1, -1..1, -1..1};
 
 // atom positions
 var Pos: [DistSpace] [perBinSpace] v3;
-var RealPos => if useStencilDist then Pos.noFluffView()
-               else Pos[binSpace];
+ref RealPos = if useStencilDist then Pos.noFluffView()
+              else Pos[binSpace];
 
 // atom velocity, force, and neighbor lists
 var Bins: [Space] [perBinSpace] atom;
 
 // bin counts
 var Count: [DistSpace] int(32);
-var RealCount => if useStencilDist then Count.noFluffView()
-                 else Count[binSpace];
+ref RealCount = if useStencilDist then Count.noFluffView()
+                else Count[binSpace];
 
 // offsets used to wrap ghosts
 var PosOffset: [NeighDom] v3;
@@ -288,7 +288,7 @@ proc setupComms() {
   forall (P, D, S, N) in zip(PosOffset, Dest, Src, NeighDom) {
     P = N * box;
 
-    if !useStencilDist {
+    if !useStencilDist && N != (0,0,0) {
       D = binSpace.exterior(N * numNeed); // section of ghosts
       S = D.translate(-N * numBins); // map to binSpace
 
@@ -337,7 +337,7 @@ proc inputFile() {
   // starting temperature
   initialTemp = r.readln(real);
 
-  // start density (overriden if data file), used in EAM
+  // start density (overridden if data file), used in EAM
   density = r.readln(real);
 
   // recompute neighbors every N iterations

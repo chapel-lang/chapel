@@ -136,14 +136,18 @@ sub mysystem {
         $status = $status / 256;
 	print "Error $_[1]: $status\n";
 
-	if ($mailmsg != 0) {
-	    open(MAIL, $mailcommand);
-	    print MAIL "=== Summary ===================================================\n";
-	    print MAIL "ERROR $_[1]: $status\n";
-	    print MAIL "(workspace left at $tmpdir)\n";
-	    print MAIL "===============================================================\n";
-	    close(MAIL);
-	}
+    if ($mailmsg != 0) {
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+            open(MAIL, $mailcommand);
+            print MAIL "=== Summary ===================================================\n";
+            print MAIL "ERROR $_[1]: $status\n";
+            print MAIL "(workspace left at $tmpdir)\n";
+            print MAIL "===============================================================\n";
+            close(MAIL);
+        } else {
+            print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+        }
+    }
 
 #	    exit 1;
 	}

@@ -22,13 +22,13 @@ module RunBRawLoops {
         select iloop {
           when LoopKernelID.INIT3 {
             loopInit(iloop, stat);
-            var out1 => loop_data.RealArray_1D[0];
-            var out2 => loop_data.RealArray_1D[1];
-            var out3 => loop_data.RealArray_1D[2];
-            var in1  => loop_data.RealArray_1D[3];
-            var in2  => loop_data.RealArray_1D[4];
+            ref out1 = loop_data.RealArray_1D[0];
+            ref out2 = loop_data.RealArray_1D[1];
+            ref out3 = loop_data.RealArray_1D[2];
+            ref in1  = loop_data.RealArray_1D[3];
+            ref in2  = loop_data.RealArray_1D[4];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for i in 0..#len {
                 const res = -in1[i] - in2[i];
                 out3[i] = res;
@@ -41,13 +41,13 @@ module RunBRawLoops {
           }
           when LoopKernelID.MULADDSUB {
             loopInit(iloop, stat);
-            var out1 => loop_data.RealArray_1D[0];
-            var out2 => loop_data.RealArray_1D[1];
-            var out3 => loop_data.RealArray_1D[2];
-            var in1  => loop_data.RealArray_1D[3];
-            var in2  => loop_data.RealArray_1D[4];
+            ref out1 = loop_data.RealArray_1D[0];
+            ref out2 = loop_data.RealArray_1D[1];
+            ref out3 = loop_data.RealArray_1D[2];
+            ref in1  = loop_data.RealArray_1D[3];
+            ref in2  = loop_data.RealArray_1D[4];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for i in 0..#len {
                 out1[i] = in1[i] * in2[i];
                 out2[i] = in1[i] + in2[i];
@@ -59,13 +59,13 @@ module RunBRawLoops {
           }
           when LoopKernelID.IF_QUAD {
             loopInit(iloop, stat);
-            var a  => loop_data.RealArray_1D[0];
-            var b  => loop_data.RealArray_1D[1];
-            var c  => loop_data.RealArray_1D[2];
-            var x1 => loop_data.RealArray_1D[3];
-            var x2 => loop_data.RealArray_1D[4];
+            ref a  = loop_data.RealArray_1D[0];
+            ref b  = loop_data.RealArray_1D[1];
+            ref c  = loop_data.RealArray_1D[2];
+            ref x1 = loop_data.RealArray_1D[3];
+            ref x2 = loop_data.RealArray_1D[4];
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for i in 0..#len {
                 var s = b[i]*b[i] - 4.0*a[i]*c[i];
                 if s >= 0 {
@@ -96,8 +96,8 @@ module RunBRawLoops {
                               trap_int_func(xn, y, xp, yp));
             var val = 0.0;
             ltimer.start();
-            for isamp in 0..#num_samples {
-              for i in 0..#len {
+            for 0..#num_samples {
+              for i in 0..(len-1):int(32) {
                 var x = x0 + i*h;
                 sumx += trap_int_func(x, y, xp, yp);
               }

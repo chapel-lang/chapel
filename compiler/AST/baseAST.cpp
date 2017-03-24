@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,7 @@
 
 #include "astutil.h"
 #include "CForLoop.h"
+#include "CatchStmt.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "log.h"
@@ -35,10 +36,9 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "type.h"
 #include "WhileStmt.h"
-
-static void cleanModuleList();
 
 //
 // declare global vectors gSymExprs, gCallExprs, gFnSymbols, ...
@@ -53,6 +53,10 @@ static int uid = 1;
 
 #define sum_gvecs(type) g##type##s.n
 
+//
+// Throughout printStatistics(), "n" indicates the number of nodes;
+// "k" indicates how many KiB memory they occupy: k = n * sizeof(node) / 1024.
+//
 void printStatistics(const char* pass) {
   static int last_nasts = -1;
   static int maxK = -1, maxN = -1;
@@ -73,12 +77,12 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt;
+  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt + nTryStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kTryStmt + kForwardingStmt + kCatchStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
-    nContextCallExpr + nNamedExpr;
+    nContextCallExpr + nForallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
-    kContextCallExpr + kNamedExpr;
+    kContextCallExpr + kForallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nAggregateType;
@@ -103,14 +107,14 @@ void printStatistics(const char* pass) {
             kStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Named %9d\n",
-            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nNamedExpr);
+    fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d\n",
+            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nForallExpr, nNamedExpr);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Named %9dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
+    fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK\n",
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kForallExpr, kNamedExpr);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Named %6dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
+    fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK\n",
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kForallExpr, kNamedExpr);
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
@@ -168,15 +172,14 @@ void trace_remove(BaseAST* ast, char flag) {
 static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
   int aliveMods = 0;
   forv_Vec(ModuleSymbol, mod, modvec) {
-    if (isAlive(mod) || isRootModuleWithType(mod, ModuleSymbol)) { 
-      modvec.v[aliveMods++] = mod;            
-    }                                           
-  } 
+    if (isAlive(mod) || isRootModuleWithType(mod, ModuleSymbol)) {
+      modvec.v[aliveMods++] = mod;
+    }
+  }
   modvec.n = aliveMods;
 }
 
 void cleanAst() {
-  cleanModuleList();
   //
   // clear back pointers to dead ast instances
   //
@@ -199,33 +202,18 @@ void cleanAst() {
     }
   }
 
-  // check iterator-resume-label/goto data before nodes are free'd
-  verifyNcleanRemovedIterResumeGotos();
-  verifyNcleanCopiedIterResumeGotos();
+  removedIterResumeLabels.clear();
+  copiedIterResumeGotos.clear();
 
   // clean the other module vectors, without deleting the ast instances (they
-  // will be deleted with the clean_gvec call for ModuleSymbols.) 
+  // will be deleted with the clean_gvec call for ModuleSymbols.)
   clean_modvec(allModules);
   clean_modvec(userModules);
- 
+
   //
   // clean global vectors and delete dead ast instances
   //
   foreach_ast(clean_gvec);
-}
-
-
-// ModuleSymbols cache a pointer to their initialization function
-// This pointer has to be zeroed out specially before the matching function
-// definition is deleted from module body.
-static void cleanModuleList()
-{
-  // Walk the module list.
-  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-    // Zero the initFn pointer if the function is now dead.
-    if (mod->initFn && !isAlive(mod->initFn))
-      mod->initFn = NULL;
-  }
 }
 
 
@@ -241,11 +229,19 @@ void destroyAst() {
 
 void
 verify() {
+  verifyRemovedIterResumeGotos();
+  verifyCopiedIterResumeGotos();
+
   #define verify_gvec(type)                       \
     forv_Vec(type, ast, g##type##s) {             \
+     if (isAlive(ast)) {                          \
       ast->verify();                              \
+     }                                            \
     }
   foreach_ast(verify_gvec);
+
+  // rootModule does not pass isAlive(), yet is "alive" - needs to be  verified
+  rootModule->verify();
 }
 
 
@@ -333,6 +329,22 @@ ModuleSymbol* BaseAST::getModule() {
   return retval;
 }
 
+Type* BaseAST::typeInfo() {
+  QualifiedType qt = this->qualType();
+  return qt.type();
+}
+
+bool BaseAST::isRef() {
+  return this->qualType().isRef();
+}
+
+bool BaseAST::isWideRef() {
+  return this->qualType().isWideRef();
+}
+
+bool BaseAST::isRefOrWideRef() {
+  return this->qualType().isRefOrWideRef();
+}
 
 FnSymbol* BaseAST::getFunction() {
   if (ModuleSymbol* x = toModuleSymbol(this))
@@ -408,6 +420,10 @@ const char* BaseAST::astTagAsString() const {
       retval = "ContextCallExpr";
       break;
 
+    case E_ForallExpr:
+      retval = "ForallExpr";
+      break;
+
     case E_NamedExpr:
       retval = "NamedExpr";
       break;
@@ -438,8 +454,20 @@ const char* BaseAST::astTagAsString() const {
       retval = "GotoStmt";
       break;
 
+    case E_ForwardingStmt:
+      retval = "ForwardingStmt";
+      break;
+
     case E_ExternBlockStmt:
       retval = "ExternBlockStmt";
+      break;
+
+    case E_TryStmt:
+      retval = "TryStmt";
+      break;
+
+    case E_CatchStmt:
+      retval = "CatchStmt";
       break;
 
     case E_ModuleSymbol:
@@ -550,7 +578,10 @@ void registerModule(ModuleSymbol* mod) {
 
 void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
-    SUB_SYMBOL(sym_expr->var);
+    if (sym_expr->symbol())
+      if (Symbol* y = map->get(sym_expr->symbol()))
+        sym_expr->setSymbol(y);
+
 
   } else if (DefExpr* defExpr = toDefExpr(ast)) {
     SUB_TYPE(defExpr->sym->type);
@@ -590,7 +621,8 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
 GenRet baseASTCodegen(BaseAST* ast)
 {
   GenRet ret = ast->codegen();
-  ret.chplType = ast->typeInfo();
+  if (!ret.chplType)
+    ret.chplType = ast->typeInfo();
   ret.isUnsigned = ! is_signed(ret.chplType);
   return ret;
 }

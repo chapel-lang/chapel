@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -109,14 +109,23 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 //
 
 /*
+  The Stencil distribution is a variant of the :mod:`Block <BlockDist>`
+  distribution that attempts to improve performance for stencil computations by
+  reducing the amount of communication necessary during array accesses. From
+  the user's perspective, it behaves very similarly to the Block distribution
+  where reads, writes, and iteration are concerned.
 
-  .. warning::
-
-    As of 1.13 the Stencil distribution is neither heavily documented nor tested.
-    We aim to improve this situation in the future.
-
-  For information on how indices are partitioned, see the Block distribution
-  documentation. The Stencil distribution re-uses that same logic.
+  This distribution reduces communication by creating read-only caches for
+  elements adjacent to the block of elements owned by each locale. This
+  documentation may refer to these cached regions as 'ghost cells' or 'fluff'.
+  This approach can avoid many fine-grained GETs and PUTs when performing a
+  stencil computation near the boundary of the current locale's chunk of array
+  elements. The user must manually refresh these caches after writes by calling
+  the ``updateFluff`` method. Otherwise, reading and writing array elements
+  behaves the same as a Block-distributed array.
+  
+  The indices are partitioned in the same way as the :mod:`Block <BlockDist>`
+  distribution.
 
   The ``Stencil`` class constructor is defined as follows:
 
@@ -133,22 +142,47 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
         fluff: rank*idxType       = makeZero(rank),
         periodic: bool            = false)
 
-  The ``fluff`` argument indicates the requested space for ghost cells. ``fluff``
-  will be used to expand the ``boundingBox`` in each direction to increase the
-  index space that can be accessed. The default for each component of the tuple
-  is zero.
+  The ``fluff`` argument indicates the requested number of cached elements in
+  each dimension. If an element of ``fluff`` is greater than zero, the user can
+  use indices outside of ``boundingBox`` to index into the array. If the domain
+  is not strided, you can consider indices for dimension ``i`` to be:
 
-  The ``periodic`` argument indicates whether or not the stencil should treat
-  the array as a discrete chunk in a larger system. When enabled, the ghost cells
-  outside of ``boundingBox`` will contain values as if the array data were
-  replicated on all sides of the array. The ``periodic`` feature is disabled by
-  default.
+  .. code-block:: chapel
 
-  ** Updating the Ghost Cache **
+     boundingBox.dim(i).expand(fluff(i))
+
+  If the domain is strided:
+
+  .. code-block:: chapel
+
+     const bb = boundingBox.dim(i);
+     bb.expand(fluff(i) * abs(bb.stride));
+
+  The same logic is used when determining the cached index set on each locale,
+  except you can imagine ``boundingBox`` to be replaced with the returned
+  value from :proc:`~ChapelArray.localSubdomain`.
+
+  The ``periodic`` argument indicates whether or not the stencil distribution
+  should treat the array as a discrete chunk in a larger space. When enabled,
+  the ghost cells outside of ``boundingBox`` will contain values as if the
+  array was replicated on all sides of the space. When disabled, the outermost
+  ghost cells will be initialized with the default value of the element's type.
+  The ``periodic`` functionality is disabled by default.
+
+  .. note::
+  
+     Note that this domain does not currently handle indices outside of
+     the expanded bounding box, so a user must manually wrap periodic indices
+     themselves.
+  
+  Iterating directly over a Stencil-distributed domain or array will only yield
+  indices and elements within the ``boundingBox``.
+
+  **Updating the Cached Elements**
 
   Once you have completed a series of writes to the array, you will need to
-  call the special ``updateFluff`` function to update the ghost cache for each
-  locale:
+  call the ``updateFluff`` function to update the cached elements for each
+  locale. Here is a simple example:
 
   .. code-block:: chapel
 
@@ -160,23 +194,27 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
     [(i,j) in Space] A[i,j] = i*10 + j;
 
+    // At this point, the ghost cell caches are out of date
+
     A.updateFluff();
 
-  After updating, any read from the array should be up-to-date. The ``updateFluff``
-  function does not currently accept any arguments.
+    // ghost caches are now up-to-date
 
-  ** Reading and Writing to Array Elements **
+  After updating, any read from the array should be up-to-date. The
+  ``updateFluff`` function does not currently accept any arguments.
 
-  The Stencil distribution uses ghost cells as cached read-only values from other
-  locales. When reading from a Stencil-distributed array, the distribution will
-  attempt to read from the local ghost cache first. If the index is not owned by
-  the ghost space, then a remote read from the owner locale occurs.
+  **Reading and Writing to Array Elements**
 
-  Any write to array data will be applied to the 'actual', non-ghost-cache data.
-  If you do write to the ghost cache, that value will be overwritten during the
-  next ``updateFluff`` call.
+  The Stencil distribution uses ghost cells as cached read-only values from
+  other locales. When reading from a Stencil-distributed array, the
+  distribution will attempt to read from the local ghost cache first. If the
+  index is not within the cached index set of the current locale, then we
+  default to a remote read from the locale on which the element is located.
 
-  ** Modifying Exterior Ghost Cells **
+  Any write to array data will be applied to the actual element, the same as if
+  you were using a Block-distributed array.
+
+  **Modifying Exterior Ghost Cells**
 
   Updating the outermost ghost cells can be useful when working with a periodic
   stencil-distributed array. If your array contains position information, you may
@@ -186,9 +224,10 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   stencil-distributed array. This iterator yields a tuple where the first component
   is the ghost cell element to be modified, and the second component is a tuple
   indicating the side on which this ghost cell lives. This direction tuple will
-  contain values in the range "-1..1".
+  contain values in the range ``-1..1``.
 
-  See miniMD for an example of how to use this iterator.
+  The release benchmark 'miniMD' contains an example of how one might use this
+  iterator.
 
   .. warning::
 
@@ -199,6 +238,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 class Stencil : BaseDist {
   param rank: int;
   type idxType = int;
+  param ignoreFluff: bool;
   var boundingBox: domain(rank, idxType);
   var targetLocDom: domain(rank);
   var targetLocales: [targetLocDom] locale;
@@ -206,7 +246,6 @@ class Stencil : BaseDist {
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
-  var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
   var periodic: bool = false;
 }
@@ -238,10 +277,10 @@ class StencilDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  const dist: Stencil(rank, idxType);
+  param ignoreFluff : bool;
+  const dist: Stencil(rank, idxType, ignoreFluff);
   var locDoms: [dist.targetLocDom] LocStencilDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
   var periodic: bool = false;
   var wholeFluff : domain(rank=rank, idxType=idxType, stridable=stridable);
@@ -281,11 +320,11 @@ class StencilArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
+  param ignoreFluff: bool;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: StencilDom(rank, idxType, stridable);
+  var dom: StencilDom(rank, idxType, stridable, ignoreFluff);
   var locArr: [dom.dist.targetLocDom] LocStencilArr(eltType, rank, idxType, stridable);
   var myLocArr: LocStencilArr(eltType, rank, idxType, stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
 
@@ -305,12 +344,12 @@ class LocStencilArr {
   type idxType;
   param stridable: bool;
   const locDom: LocStencilDom(rank, idxType, stridable);
-  var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
+  var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   var myElems: [locDom.myFluff] eltType;
-  var locRADLock: atomicflag; // This will only be accessed locally
+  var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
-  // These function will always be called on this.locale, and so we do
+  // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
   // the repeated on's from calling testAndSet()).
   inline proc lockLocRAD() {
@@ -337,7 +376,8 @@ proc Stencil.Stencil(boundingBox: domain,
                 param rank = boundingBox.rank,
                 type idxType = boundingBox.idxType,
                 fluff: rank*idxType = makeZero(rank), 
-                periodic: bool = false) {
+                periodic: bool = false,
+                param ignoreFluff = false) {
   if rank != boundingBox.rank then
     compilerError("specified Stencil rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
@@ -413,10 +453,10 @@ proc Stencil.dsiEqualDMaps(that) param {
 proc Stencil.dsiClone() {
   return new Stencil(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity, fluff=fluff, periodic=periodic);
+                   dataParMinGranularity, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
 }
 
-proc Stencil.dsiDestroyDistClass() {
+proc Stencil.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
@@ -435,14 +475,14 @@ proc Stencil.dsiDisplayRepresentation() {
 }
 
 proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool) {
+                                  param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Stencil domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Stencil domain rank does not match distribution's");
 
-  var dom = new StencilDom(rank=rank, idxType=idxType, dist=this, stridable=stridable, fluff=fluff, periodic=periodic);
-  dom.setup();
+  var dom = new StencilDom(rank=rank, idxType=idxType, dist=this, stridable=stridable, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
+  dom.dsiSetIndices(inds);
   if debugStencilDist {
     writeln("Creating new Stencil domain:");
     dom.dsiDisplayRepresentation();
@@ -602,7 +642,7 @@ proc Stencil.dsiCreateReindexDist(newSpace, oldSpace) {
   var d = {(...myNewBbox)};
   var newDist = new Stencil(d, targetLocales, 
                           dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                          dataParMinGranularity, fluff=fluff, periodic=periodic);
+                          dataParMinGranularity, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
   return newDist;
 }
 
@@ -674,49 +714,6 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(1);
 }
 
-
-proc Stencil.dsiCreateRankChangeDist(param newRank: int, args) {
-  var collapsedDimLocs: rank*idxType;
-  var newFluff : newRank*idxType;
-
-  {
-    // Create a fluff that skips a dimension.
-    var curdim = 1;
-    for param i in 1..rank {
-      if !isCollapsedDimension(args(i)) {
-        newFluff(curdim) = fluff(i);
-        curdim += 1;
-      }
-    }
-  }
-  for param i in 1..rank {
-    if isCollapsedDimension(args(i)) {
-      collapsedDimLocs(i) = args(i);
-    } else {
-      collapsedDimLocs(i) = 0;
-    }
-  }
-  const collapsedLocInd = targetLocsIdx(collapsedDimLocs);
-  var collapsedBbox: _matchArgsShape(range(idxType=idxType), idxType, args);
-  var collapsedLocs: _matchArgsShape(range(idxType=int), int, args);
-
-  for param i in 1..rank {
-    if isCollapsedDimension(args(i)) {
-      // set indices that are out of bounds to the bounding box low or high.
-      collapsedBbox(i) = if args(i) < boundingBox.dim(i).low then boundingBox.dim(i).low else if args(i) > boundingBox.dim(i).high then boundingBox.dim(i).high else args(i);
-      collapsedLocs(i) = collapsedLocInd(i);
-    } else {
-      collapsedBbox(i) = boundingBox.dim(i);
-      collapsedLocs(i) = targetLocDom.dim(i);
-    }
-  }
-
-  const newBbox = boundingBox[(...collapsedBbox)];
-  const newTargetLocales = targetLocales((...collapsedLocs));
-  return new Stencil(newBbox, newTargetLocales,
-                   dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity, fluff=newFluff, periodic=periodic);
-}
 
 iter StencilDom.these() {
   for i in whole do
@@ -806,7 +803,7 @@ proc StencilDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc StencilDom.dsiBuildArray(type eltType) {
-  var arr = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  var arr = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this, ignoreFluff=this.ignoreFluff);
   arr.setup();
   return arr;
 }
@@ -959,32 +956,19 @@ proc StencilDom.setup() {
   }
 }
 
+proc StencilDom.dsiDestroyDom() {
+  coforall localeIdx in dist.targetLocDom {
+    on locDoms(localeIdx) do
+      delete locDoms(localeIdx);
+  }
+}
+
 proc StencilDom.dsiMember(i) {
-  return whole.member(i);
+  return wholeFluff.member(i);
 }
 
 proc StencilDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
-}
-
-//
-// build a new rectangular domain using the given range
-//
-proc StencilDom.dsiBuildRectangularDom(param rank: int, type idxType,
-                                   param stridable: bool,
-                                   ranges: rank*range(idxType,
-                                                      BoundedRangeType.bounded,
-                                                      stridable)) {
-  if idxType != dist.idxType then
-    compilerError("Stencil domain index type does not match distribution's");
-  if rank != dist.rank then
-    compilerError("Stencil domain rank does not match distribution's");
-
-  var dom = new StencilDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable, fluff=fluff,
-                         periodic=periodic);
-  dom.dsiSetIndices(ranges);
-  return dom;
 }
 
 //
@@ -1003,7 +987,7 @@ proc StencilArr.dsiDisplayRepresentation() {
 proc StencilArr.dsiGetBaseDom() return dom;
 
 //
-// NOTE: Each locale's myElems array be initialized prior to setting up
+// NOTE: Each locale's myElems array must be initialized prior to setting up
 // the RAD cache.
 //
 proc StencilArr.setupRADOpt() {
@@ -1015,7 +999,7 @@ proc StencilArr.setupRADOpt() {
         myLocArr.locRAD = nil;
       }
       if disableStencilLazyRAD {
-        myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+        myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
         for l in dom.dist.targetLocDom {
           if l != localeIdx {
             myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
@@ -1042,6 +1026,15 @@ proc StencilArr.setup() {
   if doRADOpt && disableStencilLazyRAD then setupRADOpt();
 }
 
+proc StencilArr.dsiDestroyArr(isslice : bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      if !ignoreFluff then
+        delete locArr(localeIdx);
+    }
+  }
+}
+
 // Re-use _remoteAccessData.getDataIndex from BlockDist
 
 
@@ -1054,11 +1047,15 @@ inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
+// BHARSH TODO: Like BlockDist, 'idx' should probably have a 'const in' or 'in'
+// intent
+//
 inline
-proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
+proc StencilArr.do_dsiAccess(param setter, idx: rank*idxType) ref {
+  var i = idx;
   local {
     if myLocArr != nil {
-      if setter {
+      if setter || this.ignoreFluff {
         // A write: return from actual data and not fluff
         if myLocArr.locDom.member(i) then return myLocArr.this(i);
       } else {
@@ -1086,27 +1083,26 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
         if myLocArr.locRAD == nil {
           myLocArr.lockLocRAD();
           if myLocArr.locRAD == nil {
-            var tempLocRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+            var tempLocRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr.locRAD = tempLocRAD;
           }
           myLocArr.unlockLocRAD();
         }
-        // NOTE: This is a known, benign race.  Multiple tasks may be
-        // initializing the RAD cache entries at once, but our belief is
-        // that this is infrequent enough that the potential extra gets
-        // are worth *not* having to synchronize.  If this turns out to be
-        // an incorrect assumption, we can add an atomic variable and use
-        // a fetchAdd to decide which task does the update.
         if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr.locRAD.RAD(rlocIdx) = locArr(rlocIdx).myElems._value.dsiGetRAD();
+          myLocArr.locRAD.lockRAD(rlocIdx);
+          if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
+            myLocArr.locRAD.RAD(rlocIdx) =
+              locArr(rlocIdx).myElems._value.dsiGetRAD();
+          }
+          myLocArr.locRAD.unlockRAD(rlocIdx);
         }
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if radata(rlocIdx).shiftedData != nil {
-        var dataIdx = radata(rlocIdx).getDataIndex(myLocArr.stridable, i);
-        return radata(rlocIdx).shiftedData(dataIdx);
+      if radata(rlocIdx).shiftedDataChunk(0) != nil {
+        var dataIdx = radata(rlocIdx).getDataIndex(i);
+        return radata(rlocIdx).getDataElem(dataIdx);
       }
     }
   }
@@ -1119,7 +1115,7 @@ inline proc StencilArr.dsiAccess(i: rank*idxType) ref {
 }
 // value version for POD types
 inline proc StencilArr.dsiAccess(i: rank*idxType)
-where !shouldReturnRvalueByConstRef(eltType) {
+where shouldReturnRvalueByValue(eltType) {
   return do_dsiAccess(false, i);
 }
 // const ref version for types with copy-ctor
@@ -1134,7 +1130,7 @@ inline proc StencilArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 // value version for POD types
 inline proc StencilArr.dsiAccess(i: idxType...rank)
-where !shouldReturnRvalueByConstRef(eltType)
+where shouldReturnRvalueByValue(eltType)
   return dsiAccess(i);
 // const ref version for types with copy-ctor
 inline proc StencilArr.dsiAccess(i: idxType...rank) const ref
@@ -1216,7 +1212,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     // live on a different locale and require communication for reference
     // counting. Simply put: don't slice inside a local block.
     //
-    var chunk => arrSection.myElems(myFollowThisDom);
+    ref chunk = arrSection.myElems(myFollowThisDom);
     local {
       for i in chunk do yield i;
     }
@@ -1261,30 +1257,13 @@ proc StencilArr.dsiSerialWrite(f) {
   }
 }
 
-proc StencilArr.dsiSlice(d: StencilDom) {
-  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d);
-  var thisid = this.locale.id;
-  coforall i in d.dist.targetLocDom {
-    on d.dist.targetLocales(i) {
-      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank,
-                                          idxType=idxType, stridable=d.stridable,
-                                          locDom=d.locDoms[i],
-                                          myElems=>locArr[i].myElems[d.locDoms[i].myFluff]);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-    }
-  }
-  if doRADOpt then alias.setupRADOpt();
-  return alias;
-}
-
+pragma "no copy return"
 proc StencilArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
     low(i) = ranges(i).low;
   }
-  var A => locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
-  return A;
+  return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 
 proc _extendTuple(type t, idx: _tuple, args) {
@@ -1316,62 +1295,6 @@ proc _extendTuple(type t, idx, args) {
     }
   }
   return tup;
-}
-
-
-proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
-  var alias = new StencilArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
-  var thisid = this.locale.id;
-  coforall ind in d.dist.targetLocDom {
-    on d.dist.targetLocales(ind) {
-      const locDom = d.getLocDom(ind);
-      // locSlice is a tuple of ranges and scalars. It will match the basic
-      // shape of the args argument. 
-      var locSlice: _matchArgsShape(range(idxType=idxType, stridable=stridable), idxType, args);
-      // collapsedDims stores the value any collapsed dimension is down to.
-      // For any non-collapsed dimension, that position is ignored.
-      // This tuple is then passed to the targetLocsIdx function to build up a
-      // partial index into this.targetLocDom with correct values set for all
-      // collapsed dimensions. The rest of the dimensions get their values from
-      // ind - an index into the new rank changed targetLocDom.
-      var collapsedDims: rank*idxType;
-      var locArrInd: rank*int;
-
-      var j = 1;
-      for param i in 1..args.size {
-        if isCollapsedDimension(args(i)) {
-          locSlice(i) = args(i);
-          collapsedDims(i) = args(i);
-        } else {
-          locSlice(i) = locDom.myFluff.dim(j)(args(i));
-          j += 1;
-        }
-      }
-      locArrInd = dom.dist.targetLocsIdx(collapsedDims);
-      j = 1;
-      // Now that the locArrInd values are known for the collapsed dimensions
-      // Pull the rest of the dimensions values from ind
-      for param i in 1..args.size {
-        if !isCollapsedDimension(args(i)) {
-          if newRank > 1 then
-            locArrInd(i) = ind(j);
-          else
-            locArrInd(i) = ind;
-          j += 1;
-        }
-      }
-
-      alias.locArr[ind] =
-        new LocStencilArr(eltType=eltType, rank=newRank, idxType=d.idxType,
-                        stridable=d.stridable, locDom=locDom,
-                        myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
-
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[ind];
-    }
-  }
-  if doRADOpt then alias.setupRADOpt();
-  return alias;
 }
 
 private inline proc zeroTuple(t) {
@@ -1478,39 +1401,31 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 //
 // Copies the range slice function in ChapelArray.
 //
+// TODO: Return an ArrayView instead of something that looks like a normal
+// array
+//
+pragma "no copy return"
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
   a._arrAlias = _value;
-  if !noRefCount then a._arrAlias.incRefCount();
   return _newArray(a);
 }
 
 proc StencilArr.dsiNoFluffView() {
   var tempDist = new Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
-                             dom.dist.dataParMinGranularity);
-  var newDist = _newDistribution(tempDist);
-  var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
+                             dom.dist.dataParMinGranularity, ignoreFluff=true);
+  pragma "no auto destroy" var newDist = _newDistribution(tempDist);
+  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable, dom.whole.dims()));
   newDist._value.add_dom(tempDom._value);
-  if !noRefCount then newDist._value.incRefCount();
-  tempDom.setIndices(dom.whole);
 
   var newDom = tempDom._value;
 
-  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=newDom.stridable, dom=newDom);
-  var thisid = this.locale.id;
-  coforall i in newDom.dist.targetLocDom {
-    on newDom.dist.targetLocales(i) {
-      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank,
-                                          idxType=idxType, stridable=newDom.stridable,
-                                          locDom=newDom.locDoms[i],
-                                          myElems=>locArr[i].myElems[newDom.locDoms[i].myFluff]);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-    }
-  }
-  if doRADOpt then alias.setupRADOpt();
-  if !noRefCount then tempDom._value.incRefCount();
+  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=newDom.stridable, dom=newDom, ignoreFluff=true);
+  alias.locArr = this.locArr;
+  alias.myLocArr = this.myLocArr;
+
+  newDom.add_arr(alias, locking=false);
   return alias;
 }
 
@@ -1536,44 +1451,6 @@ proc StencilArr.dsiUpdateFluff() {
       }
     }
   }
-}
-
-proc StencilArr.dsiReindex(d: StencilDom) {
-  var alias = new StencilArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
-                           stridable=d.stridable, dom=d);
-  const sameDom = d==dom;
-
-  var thisid = this.locale.id;
-  coforall i in d.dist.targetLocDom {
-    on d.dist.targetLocales(i) {
-      const locDom = d.getLocDom(i);
-      var locAlias: [locDom.myBlock] => locArr[i].myElems;
-      alias.locArr[i] = new LocStencilArr(eltType=eltType,
-                                        rank=rank, idxType=d.idxType,
-                                        stridable=d.stridable,
-                                        locDom=locDom,
-                                        myElems=>locAlias);
-      if thisid == here.id then
-        alias.myLocArr = alias.locArr[i];
-      if doRADOpt {
-        if sameDom {
-          // If we the reindex domain is the same as that of this array,
-          //  the RAD cache will be the same you can just copy the values
-          //  directly into the alias's RAD cache
-          if locArr[i].locRAD {
-            alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
-                                                     dom.dist.targetLocDom);
-            alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
-          }
-        }
-      }
-    }
-  }
-
-  if doRADOpt then
-    if !sameDom then alias.setupRADOpt();
-
-  return alias;
 }
 
 proc StencilArr.dsiReallocate(d: domain) {
@@ -1612,7 +1489,8 @@ proc LocStencilArr.this(i) ref {
 //
 proc Stencil.Stencil(other: Stencil, privateData,
                 param rank = other.rank,
-                type idxType = other.idxType) {
+                type idxType = other.idxType,
+                param ignoreFluff = other.ignoreFluff) {
   boundingBox = {(...privateData(1))};
   targetLocDom = {(...privateData(2))};
   dataParTasksPerLocale = privateData(3);
@@ -1657,7 +1535,7 @@ proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc StencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new StencilDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic);
+  var c = new StencilDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
@@ -1692,7 +1570,7 @@ proc StencilArr.dsiGetPrivatizeData() return dom.pid;
 
 proc StencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
-  var c = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  var c = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom, ignoreFluff=this.ignoreFluff);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale.id == here.id then
@@ -1704,13 +1582,13 @@ proc StencilArr.dsiPrivatize(privatizeData) {
 proc StencilArr.dsiSupportsBulkTransfer() param return true;
 proc StencilArr.dsiSupportsBulkTransferInterface() param return true;
 
-proc StencilArr.doiCanBulkTransfer() {
+proc StencilArr.doiCanBulkTransfer(viewDom) {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiCanBulkTransfer");
 
   if dom.stridable then
     for param i in 1..rank do
-      if dom.whole.dim(i).stride != 1 then return false;
+      if viewDom.dim(i).stride != 1 then return false;
 
   // See above note regarding aliased arrays
   if disableAliasedBulkTransfer then
@@ -1719,95 +1597,103 @@ proc StencilArr.doiCanBulkTransfer() {
   return true;
 }
 
-proc StencilArr.doiCanBulkTransferStride() param {
+proc StencilArr.doiCanBulkTransferStride(viewDom) param {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiCanBulkTransferStride");
 
-  // A StencilArr is a bunch of DefaultRectangular arrays,
-  // so strided bulk transfer gotta be always possible.
-  return true;
+  return useBulkTransferDist;
 }
 
-proc StencilArr.doiBulkTransfer(B) {
+proc StencilArr.oneDData {
+  if defRectSimpleDData {
+    return true;
+  } else {
+    // TODO: do this when we create the array?  if not, then consider:
+    // TODO: use locRad oneDData, if available
+    // TODO: with more coding complexity we could get a much quicker
+    //       answer in the 'false' case, but how to avoid penalizing
+    //       the 'true' case at scale?
+    var allBlocksOneDData: bool;
+    on this {
+      var myAllBlocksOneDData: atomic bool;
+      myAllBlocksOneDData.write(true);
+      forall la in locArr {
+        if !la.myElems._value.oneDData then
+          myAllBlocksOneDData.write(false);
+      }
+      allBlocksOneDData = myAllBlocksOneDData.read();
+    }
+    return allBlocksOneDData;
+  }
+}
+
+proc StencilArr.doiUseBulkTransfer(B) {
+  if debugStencilDistBulkTransfer then
+    writeln("In StencilArr.doiUseBulkTransfer()");
+
+  //
+  // Absent multi-ddata, for the array as a whole, say bulk transfer
+  // is possible.  We'll make a final determination for each block in
+  // doiBulkTransfer(), based on the characteristics of the blocks
+  // themselves.
+  //
+  // If multi-ddata is possible then we can only do bulk transfer when
+  // either the domains are identical (so we can defer the decision as
+  // above) or all the blocks of both arrays have but a single ddata
+  // chunk.
+  //
+  if this.rank != B.rank then return false;
+  return defRectSimpleDData
+         || dom == B._value.dom
+         || (oneDData && chpl__getActualArray(B).oneDData);
+}
+
+proc StencilArr.doiUseBulkTransferStride(B) {
+  if debugStencilDistBulkTransfer then
+    writeln("In StencilArr.doiUseBulkTransferStride()");
+
+  //
+  // Absent multi-ddata, for the array as a whole, say bulk transfer
+  // is possible even though as things are currently coded we'll always
+  // do regular bulk transfer and never even ask about strided.
+  //
+  // If multi-ddata is possible then we can only do strided bulk
+  // transfer when all the blocks have but a single ddata chunk.
+  //
+  if this.rank != B.rank then return false;
+  return defRectSimpleDData
+         || (oneDData && chpl__getActualArray(B).oneDData);
+}
+
+proc StencilArr.doiBulkTransfer(B, viewDom) {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransfer");
+  const actual = chpl__getActualArray(B);
+  const actDom = chpl__getViewDom(B);
 
   if debugStencilDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;
   // We need to do the following on the locale where 'this' was allocated,
   //  but hopefully, most of the time we are initiating the transfer
   //  from the same locale (local on clauses are optimized out).
-  on this do sameDomain = dom==B._value.dom;
+  on this do sameDomain = viewDom==actDom;
   // Use zippered iteration to piggyback data movement with the remote
   //  fork.  This avoids remote gets for each access to locArr[i] and
-  //  B._value.locArr[i]
-  coforall (i, myLocArr, BmyLocArr) in zip(dom.dist.targetLocDom,
+  //  actual.locArr[i]
+  coforall (i, myLocArr, BmyLocArr) in zip(this.dom.dist.targetLocDom,
                                         locArr,
-                                        B._value.locArr) do
-    on dom.dist.targetLocales(i) {
+                                        actual.locArr) do
+    on this.dom.dist.targetLocales(i) {
 
-    if sameDomain &&
-      chpl__useBulkTransfer(myLocArr.myElems, BmyLocArr.myElems) {
+    if this.rank == B.rank {
       // Take advantage of DefaultRectangular bulk transfer
       if debugStencilDistBulkTransfer then startCommDiagnosticsHere();
-      local {
-        myLocArr.myElems._value.doiBulkTransfer(BmyLocArr.myElems);
-      }
+      const lview = myLocArr.locDom.myBlock[viewDom];
+      const rview = BmyLocArr.locDom.myBlock[actDom];
+      myLocArr.myElems[lview] = BmyLocArr.myElems[rview];
       if debugStencilDistBulkTransfer then stopCommDiagnosticsHere();
     } else {
-      if debugStencilDistBulkTransfer then startCommDiagnosticsHere();
-      if (rank==1) {
-        var lo=dom.locDoms[i].myBlock.low;
-        const start=lo;
-        //use divCeilPos(i,j) to know the limits
-        //but i and j have to be positive.
-        for (rid, rlo, size) in ConsecutiveChunks(dom,B._value.dom,i,start) {
-          if debugStencilDistBulkTransfer then writeln("Local Locale id=",i,
-                                            "; Remote locale id=", rid,
-                                            "; size=", size,
-                                            "; lo=", lo,
-                                            "; rlo=", rlo
-                                            );
-          // NOTE: This does not work with --heterogeneous, but heterogeneous
-          // compilation does not work right now.  This call should be changed
-          // once that is fixed.
-          var dest = myLocArr.myElems._value.theData;
-          const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_array_get",
-                      __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo)),
-                      rid,
-                      __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
-                      size);
-          lo+=size;
-        }
-      } else {
-        var orig=dom.locDoms[i].myBlock.low(dom.rank);
-        for coord in dropDims(dom.locDoms[i].myBlock, dom.locDoms[i].myBlock.rank) {
-          var lo=if rank==2 then (coord,orig) else ((...coord), orig);
-          const start=lo;
-          for (rid, rlo, size) in ConsecutiveChunksD(dom,B._value.dom,i,start) {
-            if debugStencilDistBulkTransfer then writeln("Local Locale id=",i,
-                                        "; Remote locale id=", rid,
-                                        "; size=", size,
-                                        "; lo=", lo,
-                                        "; rlo=", rlo
-                                        );
-          var dest = myLocArr.myElems._value.theData;
-          const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_array_get",
-                      __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo)),
-                      dom.dist.targetLocales(rid).id,
-                      __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
-                      size);
-            lo(rank)+=size;
-          }
-        }
-      }
-      if debugStencilDistBulkTransfer then stopCommDiagnosticsHere();
+      halt("bulk-transfer called with Stencil of differing rank!");
     }
   }
   if debugStencilDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
@@ -1860,163 +1746,123 @@ proc StencilDom.numRemoteElems(rlo,rid){
   return(bhi - (rlo - 1):idxType);
 }
 
-//For assignments of the form: "any = Stencil"
-//Currently not used, instead we use: doiBulkTransferFrom()
-proc StencilArr.doiBulkTransferTo(Barg)
-{
-  if debugStencilDistBulkTransfer then
-    writeln("In StencilArr.doiBulkTransferTo()");
-  
-  const B = this, A = Barg._value;
-  type el = B.idxType;
-  coforall i in B.dom.dist.targetLocDom do // for all locales
-    on B.dom.dist.targetLocales(i)
-      {
-        var regionB = B.dom.locDoms(i).myBlock;
-        if regionB.numIndices>0
-        {
-          const ini=bulkCommConvertCoordinate(regionB.first, B, A);
-          const end=bulkCommConvertCoordinate(regionB.last, B, A);
-          const sa=chpl__tuplify(A.dom.locDoms(i).myBlock.stride);
-          
-          var r1,r2: rank * range(idxType = el,stridable = true);
-          r2=regionB.dims();
-           //In the case that the number of elements in dimension t for r1 and r2
-           //were different, we need to calculate the correct stride in r1
-          for param t in 1..rank {
-            r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
-            if r1[t].length != r2[t].length then
-              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
-          }
-        
-          if debugStencilDistBulkTransfer then
-            writeln("A",(...r1),".FromDR",regionB);
-    
-          Barg[(...r1)]._value.doiBulkTransferFromDR(B.locArr[i].myElems);
-        }
-      }
-}
-
-//For assignments of the form: "Stencil = any" 
+//For assignments of the form: "Stencil = any"
 //where "any" means any array that implements the bulk transfer interface
-proc StencilArr.doiBulkTransferFrom(Barg)
+proc StencilArr.doiBulkTransferFrom(Barg, viewDom)
 {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferFrom()");
- 
-  const A = this, B = Barg._value;
-  type el = A.idxType;
-  coforall i in A.dom.dist.targetLocDom do // for all locales
-    on A.dom.dist.targetLocales(i)
-    {
-      var regionA = A.dom.locDoms(i).myBlock;
-      if regionA.numIndices>0
+
+  if this.rank == Barg.rank {
+    const Dest = this;
+    const Src = chpl__getActualArray(Barg);
+    const srcView = chpl__getViewDom(Barg);
+    type el = Dest.idxType;
+    coforall i in Dest.dom.dist.targetLocDom do // for all locales
+      on Dest.dom.dist.targetLocales(i)
       {
-        const ini=bulkCommConvertCoordinate(regionA.first, A, B);
-        const end=bulkCommConvertCoordinate(regionA.last, A, B);
-        const sb=chpl__tuplify(B.dom.locDoms(i).myBlock.stride);
+        var regionDest = Dest.dom.locDoms(i).myBlock[viewDom];
+        var regionSrc = Src.dom.locDoms(i).myBlock[srcView];
+        if regionDest.numIndices>0
+        {
+          const ini=bulkCommConvertCoordinate(regionDest.first, viewDom, srcView);
+          const end=bulkCommConvertCoordinate(regionDest.last, viewDom, srcView);
+          const sb=chpl__tuplify(regionSrc.stride);
+
+          var r1,r2: rank * range(idxType = el,stridable = true);
+          r2=regionDest.dims();
+           //In the case that the number of elements in dimension t for r1 and r2
+           //were different, we need to calculate the correct stride in r1
+          for param t in 1..rank{
+              r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+              if r1[t].length != r2[t].length then
+                r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          }
         
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        r2=regionA.dims();
-         //In the case that the number of elements in dimension t for r1 and r2
-         //were different, we need to calculate the correct stride in r1
-        for param t in 1..rank{
-            r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
-            if r1[t].length != r2[t].length then
-              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          if debugStencilDistBulkTransfer then
+              writeln("B{",(...r1),"}.ToDR",regionDest);
+
+          Barg._value.doiBulkTransferToDR(Dest.locArr[i].myElems[regionDest], Barg.domain[(...r1)]);
         }
-      
-        if debugStencilDistBulkTransfer then
-            writeln("B{",(...r1),"}.ToDR",regionA);
-   
-        Barg[(...r1)]._value.doiBulkTransferToDR(A.locArr[i].myElems[regionA]);
       }
-    }
+  }
 }
  
 //For assignments of the form: DR = Stencil 
 //(default rectangular array = block distributed array)
-proc StencilArr.doiBulkTransferToDR(Barg)
+proc StencilArr.doiBulkTransferToDR(Barg, viewDom)
 {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferToDR()");
 
-  const A = this, B = Barg._value; //Always it is a DR
-  type el = A.idxType;
-  coforall j in A.dom.dist.targetLocDom do
-    on A.dom.dist.targetLocales(j)
-    {
-      const inters=A.dom.locDoms(j).myBlock;
-      if(inters.numIndices>0)
+  if this.rank == Barg.rank {
+    const Src = this;
+    const Dest = chpl__getActualArray(Barg);
+    const destView = chpl__getViewDom(Barg);
+    type el = Src.idxType;
+    coforall j in Src.dom.dist.targetLocDom do
+      on Src.dom.dist.targetLocales(j)
       {
-        const ini=bulkCommConvertCoordinate(inters.first, A, B);
-        const end=bulkCommConvertCoordinate(inters.last, A, B);
-        const sa = chpl__tuplify(B.dom.dsiStride);
-  
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        for param t in 1..rank
+        const inters=Src.dom.locDoms(j).myBlock[viewDom];
+        if(inters.numIndices>0)
         {
-          r2[t] = (chpl__tuplify(inters.first)[t]
-                   ..chpl__tuplify(inters.last)[t]
-                   by chpl__tuplify(inters.stride)[t]);
-          r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
+          const ini=bulkCommConvertCoordinate(inters.first, viewDom, destView);
+          const end=bulkCommConvertCoordinate(inters.last, viewDom, destView);
+          const sa = chpl__tuplify(destView.stride);
+
+          var r1,r2: rank * range(idxType = el,stridable = true);
+          for param t in 1..rank
+          {
+            r2[t] = (chpl__tuplify(inters.first)[t]
+                     ..chpl__tuplify(inters.last)[t]
+                     by chpl__tuplify(inters.stride)[t]);
+            r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
+          }
+
+          if debugStencilDistBulkTransfer then
+            writeln("A[",r1,"] = B[",r2,"]");
+        
+          Barg[(...r1)] = Src.locArr[j].myElems[(...r2)];
         }
-        
-        if debugStencilDistBulkTransfer then
-          writeln("A[",r1,"] = B[",r2,"]");
-      
-        const d ={(...r1)};
-        const slice = B.dsiSlice(d._value);
-        //Necessary to calculate the value of blk variable in DR
-        //with the new domain r1
-        slice.adjustBlkOffStrForNewDomain(d._value, slice);
-        
-        slice.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
-        
-        delete slice;
       }
-    }
+  }
 }
 
 //For assignments of the form: Stencil = DR 
 //(block distributed array = default rectangular)
-proc StencilArr.doiBulkTransferFromDR(Barg) 
+proc StencilArr.doiBulkTransferFromDR(Barg, viewDom)
 {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferFromDR");
 
-  const A = this, B = Barg._value;
-  type el = A.idxType;
-  coforall j in A.dom.dist.targetLocDom do
-    on A.dom.dist.targetLocales(j)
-    {
-      const inters=A.dom.locDoms(j).myBlock;
-      if(inters.numIndices>0)
+  if this.rank == Barg.rank {
+    const Dest = this;
+    const srcView = chpl__getViewDom(Barg);
+    type el = Dest.idxType;
+    coforall j in Dest.dom.dist.targetLocDom do
+      on Dest.dom.dist.targetLocales(j)
       {
-        const ini=bulkCommConvertCoordinate(inters.first, A, B);
-        const end=bulkCommConvertCoordinate(inters.last, A, B);
-        const sb = chpl__tuplify(B.dom.dsiStride);
-        
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        for param t in 1..rank
+        const inters=Dest.dom.locDoms(j).myBlock[viewDom];
+        if(inters.numIndices>0)
         {
-          r2[t] = (chpl__tuplify(inters.first)[t]
-                   ..chpl__tuplify(inters.last)[t]
-                   by chpl__tuplify(inters.stride)[t]);
-          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+          const ini=bulkCommConvertCoordinate(inters.first, viewDom, srcView);
+          const end=bulkCommConvertCoordinate(inters.last, viewDom, srcView);
+          const sb = chpl__tuplify(srcView.stride);
+
+          var r1,r2: rank * range(idxType = el,stridable = true);
+          for param t in 1..rank
+          {
+            r2[t] = (chpl__tuplify(inters.first)[t]
+                     ..chpl__tuplify(inters.last)[t]
+                     by chpl__tuplify(inters.stride)[t]);
+            r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+          }
+
+          if debugStencilDistBulkTransfer then
+            writeln("A[",r2,"] = B[",r1,"]");
+
+          Dest.locArr[j].myElems[(...r2)] = Barg[(...r1)];
         }
-        
-        if debugStencilDistBulkTransfer then
-          writeln("A[",r2,"] = B[",r1,"]");
-          
-        const d ={(...r1)};
-        const slice = B.dsiSlice(d._value);
-        //this step it's necessary to calculate the value of blk variable in DR
-        //with the new domain r1
-        slice.adjustBlkOffStrForNewDomain(d._value, slice);
-        
-        A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice);
-        delete slice;
       }
-    }
+  }
 }

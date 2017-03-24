@@ -19,8 +19,17 @@ var b = new B();
 on Locales(1) {
   var a2 = new A();
   var b2 = new B();
+
   a.foo();
   b.foo();
+
   a2.foo();
   b2.foo();
+
+  delete b2;
+  delete a2;
 }
+
+delete b;
+delete a;
+

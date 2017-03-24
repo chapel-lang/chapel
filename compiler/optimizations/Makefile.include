@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-OPTIMIZATIONS_OBJDIR = $(COMPILER_ROOT)/optimizations/$(OBJ_SUBDIR)
+OPTIMIZATIONS_OBJDIR = $(COMPILER_BUILD)/optimizations
 
 ALL_SRCS += optimizations/*.cpp
 

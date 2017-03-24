@@ -91,7 +91,7 @@ proc main(args:[] string) {
 
 
 
-proc run(todo:list(string), Pairs) {
+proc run(ref todo:list(string), ref Pairs) {
   var t:Timer;
   t.start();
 
@@ -109,7 +109,7 @@ proc run(todo:list(string), Pairs) {
   parseAndMakeSetTime.start();
 
 
-  forall f in allfiles {
+  forall f in allfiles with (ref Pairs) {
     // TODO -- performance/scalability
     // we don't want to lock/unlock the hashtable
     // every time we add an entry. Appends could
@@ -175,7 +175,7 @@ record Empty {
 }
 
 
-proc process_json(logfile:channel, fname:string, Pairs) {
+proc process_json(logfile:channel, fname:string, ref Pairs) {
   var tweet:Tweet;
   var empty:Empty;
   var err:syserr;
@@ -243,7 +243,7 @@ proc process_json(logfile:channel, fname:string, Pairs) {
   }
 }
 
-proc process_json(fname: string, Pairs)
+proc process_json(fname: string, ref Pairs)
 {
 
   var last3chars = fname[fname.length-2..fname.length];

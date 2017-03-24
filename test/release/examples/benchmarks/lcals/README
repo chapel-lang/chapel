@@ -25,8 +25,9 @@ This directory's contents are as follows:
 
   RunARawLoops.chpl             :\
   RunBRawLoops.chpl             : \
-  RunCRawLoops.chpl             :  | The kernel implementations
-  RunParallelRawLoops.chpl      : /
+  RunCRawLoops.chpl             :  \ The kernel implementations
+  RunParallelRawLoops.chpl      :  /
+  RunSPMDRawLoops.chpl          : /
   RunVectorizeOnlyRawLoops.chpl :/
 
   LCALSConfiguration.chpl : Configuration constants to define what to run
@@ -48,15 +49,16 @@ This directory's contents are as follows:
   Makefile       : Build LCALS
 
   *.notest               :\
-  LCALSMain.graph        : \
-  LCALSMain.perfexecopts :  \
-  LCALSMain.perfkeys     :   | Used by the Chapel testing system
+  LCALS-*.graph          : \
+  LCALSMain.perfcompopts :  \
+  LCALSMain.perfexecopts :   \ Used by the Chapel testing system
+  LCALSMain.perfkeys     :   /
   LCALSMain.perftimeout  :  /
-  LCALSMain.prediff      : /
-  LCALSMain.skipif       :/
+  LCALSMain.skipif       : /
+  LCALSMain.timeout      :/
 
   README                   : This file
-  README-LCALS_license.txt : The 
+  README-LCALS_license.txt : The LCALS reference license
 
 -----------------
 Execution Options
@@ -66,11 +68,11 @@ Execution Options
   configuration constants with names starting with "run". To see the full
   list, type './LCALSMain --help'.
 
-* checkSumTolerence : allow computed checksums to be off by this amount from
+* checksumTolerance : allow computed checksums to be off by this amount from
   the expected values.
 
 * noisyChecksumChecks : Print computed checksums and differences from expected
-  values even if they are within 'checkSumTolerence'.
+  values even if they are within 'checksumTolerance'.
 
 
 -----

@@ -1,8 +1,8 @@
-.TH "Distributing items over a topology" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_distribute" 3 "Thu Feb 23 2017" "Version 1.11.6" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Distributing items over a topology \- 
+hwlocality_helper_distribute \- Distributing items over a topology
 .SS "Enumerations"
 
 .in +1c
@@ -34,7 +34,7 @@ Flags to be given to \fBhwloc_distrib()\fP\&.
 Distrib in reverse order, starting from the last objects\&. 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_distrib (\fBhwloc_topology_t\fPtopology, \fBhwloc_obj_t\fP *roots, unsignedn_roots, \fBhwloc_cpuset_t\fP *set, unsignedn, unsigneduntil, unsigned longflags)\fC [inline]\fP, \fC [static]\fP"
+.SS "static int hwloc_distrib (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP * roots, unsigned n_roots, \fBhwloc_cpuset_t\fP * set, unsigned n, unsigned until, unsigned long flags)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Distribute \fCn\fP items over the topology under \fCroots\fP\&. Array \fCset\fP will be filled with \fCn\fP cpusets recursively distributed linearly over the topology under objects \fCroots\fP, down to depth \fCuntil\fP (which can be INT_MAX to distribute down to the finest level)\&.

@@ -5,24 +5,20 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_compiler, chpl_platform, utils
+import chpl_platform, overrides
+from chpl_home_utils import using_chapel_module
 from utils import memoize
 
 
 @memoize
 def get():
-    comm_val = os.environ.get('CHPL_COMM')
+    comm_val = overrides.get('CHPL_COMM')
     if not comm_val:
         platform_val = chpl_platform.get('target')
-        compiler_val = chpl_compiler.get('target')
-
-        # use ugni on cray-x* machines using the module and supported compiler
-        ugni_comp = ('cray-prgenv-gnu', 'cray-prgenv-intel', 'cray-prgenv-cray')
-        if (platform_val.startswith('cray-x') and
-                utils.using_chapel_module() and
-                compiler_val in ugni_comp):
+        # Use ugni on cray-x* series
+        if platform_val.startswith('cray-x'):
             comm_val = 'ugni'
-        # automatically uses gasnet when on a cray-x* or cray-cs machine
+        # Use gasnet on cray-cs
         elif platform_val.startswith('cray-'):
             comm_val = 'gasnet'
         else:

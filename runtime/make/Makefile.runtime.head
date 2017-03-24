@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -42,8 +42,6 @@ include $(RUNTIME_ROOT)/../make/Makefile.base
 
 LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
 LAUNCHER_INCLS = \
-        -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_HOST_COMPILER) \
-        -I$(RUNTIME_ROOT)/include/$(subst -sim,,$(CHPL_MAKE_HOST_PLATFORM)) \
         -I$(RUNTIME_ROOT)/include/comm/$(CHPL_MAKE_COMM) \
         -I$(RUNTIME_ROOT)/include/comm \
         -I$(RUNTIME_ROOT)/include
@@ -52,10 +50,10 @@ LAUNCHER_INCLS = \
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
 include $(RUNTIME_ROOT)/make/Makefile.runtime.include
 
-RUNTIME_OBJ_DIR = ./$(RUNTIME_OBJDIR)
+RUNTIME_OBJ_DIR = $(RUNTIME_BUILD)/$(RUNTIME_SUBDIR)
 RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
 
-LAUNCHER_OBJ_DIR = ./$(LAUNCHER_OBJDIR)
+LAUNCHER_OBJ_DIR = $(LAUNCHER_BUILD)/$(RUNTIME_SUBDIR)
 LAUNCHER_OBJ_DIR_STAMP = $(LAUNCHER_OBJ_DIR)/.timestamp
 
 ifneq ($(MAKE_LAUNCHER),1)
@@ -75,7 +73,9 @@ SVN_DEPENDS = ./$(DEPEND_DIR)/*.d
 #
 CLEAN_TARGS = \
 	./$(RUNTIME_OBJ_DIR)/*.o \
+	./$(RUNTIME_OBJ_DIR)/*.d \
 	./$(LAUNCHER_OBJ_DIR)/*.o \
+	./$(LAUNCHER_OBJ_DIR)/*.d \
 	core \
 	*.core \
 	*.gmon \

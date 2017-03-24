@@ -8,11 +8,10 @@ var int2string : [IntDom] string =
      11=>"eleven", 13=>"thirteen", 17=>"seventeen", 19=>"nineteen",
      23=>"twenty-three"];
 
-writeln("String => Int Map");
-for keyval in zip(string2int.domain, string2int) do 
-    writeln(keyval);
-writeln();
+writeln("A  String => Int Map");
+for keyval in zip(string2int.domain, string2int) do
+    writeln("A ", keyval);
 
-writeln("Sparse Int => String Map");
+writeln("B  Sparse Int => String Map");
 for keyval in zip(int2string.domain, int2string) do
-    writeln(keyval);
+    writeln("B ", keyval);

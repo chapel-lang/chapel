@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -38,7 +38,7 @@ module MatrixMarket {
       return d.high;
   }
 
-  proc initMMInfo(const headerfields:[] string) {
+  proc initMMInfo(ref headerfields:[] string) {
     assert(headerfields(1) == "%%MatrixMarket", "Improperly formatted MatrixMarket file");
     assert(headerfields(2) == "matrix", "Improperly formatted MatrixMarket file");
 
@@ -156,7 +156,7 @@ module MatrixMarket {
       }
 
       proc close() { fout.close(); fd.close(); }
-      proc ~MMWriter() { this.close(); }
+      proc deinit() { this.close(); }
    }
 
 proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
@@ -202,7 +202,7 @@ class MMReader {
      var header:string;
      assert(fin.readline(header) == true, "MMReader I/O error!");
 
-     const headerfields = [ s in header.split(" ") ] s;
+     var headerfields = [ s in header.split(" ") ] s;
      this.finfo = initMMInfo(headerfields);
 
      // test for files that have a % beneath the matrix market format header
@@ -235,7 +235,8 @@ class MMReader {
       return (nrows, ncols);
    }
 
-   proc read_sparse_data(toret:[] ?T, spDom:domain) {
+   proc read_sparse_data(toret:[] ?T, ref spDom:domain) {
+      param isSparse = isSparseDom(toret.domain);
       var done:bool = true;
       var tfmt :string;
 
@@ -247,7 +248,11 @@ class MMReader {
           var wr, wi:real;
           done = fin.readf(fmtstr, i, j, wr, wi);
           const w:complex = (wr, wi):complex;
-          if done { spDom += (i,j); toret(i,j) = w; }
+          if done {
+            if isSparse then
+              spDom += (i,j);
+            toret(i,j) = w;
+          }
         }
 
       }
@@ -264,22 +269,32 @@ class MMReader {
           var i, j:int;
           var w: T;
           done = fin.readf(fmtstr, i, j, w);
-          if done { spDom += (i,j); toret(i,j) = w; }
+          if done {
+            if isSparse then
+              spDom += (i,j);
+            toret(i,j) = w;
+          }
         }
       }
    }
 
-   proc read_dense_data(toret:[] ?T) {
+   proc read_dense_data(toret:[] ?T, ref spDom:domain) {
+      param isSparse = isSparseDom(toret.domain);
       var tfmt :string;
 
       if T == complex {
         tfmt = "%r %r";
-        for i in toret.domain {
-          var wr:real;
-          var wi:real;
-          fin.readf(tfmt, wr, wi);
-          var w:complex = (wr, wi):complex;
-          toret(i) = w;
+        // double-loop to ensure correct ordering
+        for col in toret.domain.dim(2) {
+          for row in toret.domain.dim(1) {
+            var wr:real;
+            var wi:real;
+            fin.readf(tfmt, wr, wi);
+            var w:complex = (wr, wi):complex;
+            if isSparse then
+              spDom += (row,col);
+            toret(row,col) = w;
+          }
         }
       }
       else {
@@ -290,15 +305,20 @@ class MMReader {
           tfmt = "%d";
         }
 
-        for i in toret.domain {
-          var w:T;
-          fin.readf(tfmt, w);
-          toret(i) = w;
+        // double-loop to ensure correct ordering
+        for col in toret.domain.dim(2) {
+          for row in toret.domain.dim(1) {
+            var w:T;
+            fin.readf(tfmt, w);
+            if isSparse then
+              spDom += (row,col);
+            toret(row,col) = w;
+          }
         }
       }
    }
 
-   proc read_domain_from_file(type eltype) {
+   proc read_array_from_file(type eltype) {
      read_header();
      var nrows, ncols:int;
 
@@ -318,11 +338,17 @@ class MMReader {
      if finfo.mm_types == MMTypes.Complex { assert(eltype == complex, "expected complex, data in file is not complex"); }
      if finfo.mm_types == MMTypes.Pattern { assert(eltype == int, "expected int, data in file is not int"); }
 
-     read_dense_data(toret);
+     if finfo.mm_coordfmt == MMCoordFormat.Array {
+       read_dense_data(toret, Dtoret);
+     }
+     else if finfo.mm_coordfmt == MMCoordFormat.Coordinate {
+       read_sparse_data(toret, Dtoret);
+     }
+
      return toret;
    }
 
-   proc read_spdomain_from_file(type eltype) {
+   proc read_sp_array_from_file(type eltype) {
      read_header();
      var nrows, ncols:int;
 
@@ -344,7 +370,13 @@ class MMReader {
      if finfo.mm_types == MMTypes.Complex { assert(eltype == complex, "expected complex, data in file is not complex"); }
      if finfo.mm_types == MMTypes.Pattern { assert(eltype == int, "expected int, data in file is not int"); }
 
-     read_sparse_data(toret, spDom);
+     if finfo.mm_coordfmt == MMCoordFormat.Array {
+       read_dense_data(toret, spDom);
+     }
+     else if finfo.mm_coordfmt == MMCoordFormat.Coordinate {
+       read_sparse_data(toret, spDom);
+     }
+
      return toret;
    }
 
@@ -353,7 +385,7 @@ class MMReader {
       fd.close(); 
    }
 
-   proc ~MMReader() { this.close(); }
+   proc deinit() { this.close(); }
 }
 
 /* Read a dense Matrix Market file
@@ -362,7 +394,7 @@ class MMReader {
  */
 proc mmread(type eltype, const fname:string) {
    var mr = new MMReader(fname);
-   var toret = mr.read_domain_from_file(eltype);
+   var toret = mr.read_array_from_file(eltype);
    delete mr;
    return toret;
 }
@@ -373,7 +405,7 @@ proc mmread(type eltype, const fname:string) {
  */
 proc mmreadsp(type eltype, const fname:string) {
    var mr = new MMReader(fname);
-   var toret = mr.read_spdomain_from_file(eltype);
+   var toret = mr.read_sp_array_from_file(eltype);
    delete mr;
    return toret;
 }

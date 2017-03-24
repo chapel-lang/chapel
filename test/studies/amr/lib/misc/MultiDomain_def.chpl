@@ -68,7 +68,7 @@ class MultiDomain
   }
 
 
-  proc ~MultiDomain () { root.clearChildren();  delete root; }
+  proc deinit () { root.clearChildren();  delete root; }
 
 
   proc copy ()
@@ -153,6 +153,8 @@ class MultiDomain
         if node.right then q.enqueue( node.right );
       }
     }
+
+    delete q;
   }
   
   
@@ -173,6 +175,8 @@ class MultiDomain
       if node.left  then q.enqueue( node.left );
       if node.right then q.enqueue( node.right );
     }
+
+    delete q;
   }
     
 
@@ -227,7 +231,7 @@ class MDNode
 
 
 
-  proc ~MDNode () {}  // Can't clear children here or node merging breaks
+  proc deinit () {}  // Can't clear children here or node merging breaks
   
 
   proc clearChildren ()

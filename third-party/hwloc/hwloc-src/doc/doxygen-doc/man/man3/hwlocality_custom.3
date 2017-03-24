@@ -1,8 +1,8 @@
-.TH "Building Custom Topologies" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_custom" 3 "Thu Feb 23 2017" "Version 1.11.6" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Building Custom Topologies \- 
+hwlocality_custom \- Building Custom Topologies
 .SS "Functions"
 
 .in +1c
@@ -18,7 +18,7 @@ Building Custom Topologies \-
 A custom topology may be initialized by calling \fBhwloc_topology_set_custom()\fP after \fBhwloc_topology_init()\fP\&. It may then be modified by inserting objects or entire topologies\&. Once done assembling, \fBhwloc_topology_load()\fP should be invoked as usual to finalize the topology\&. 
 .SH "Function Documentation"
 .PP 
-.SS "\fBhwloc_obj_t\fP hwloc_custom_insert_group_object_by_parent (\fBhwloc_topology_t\fPtopology, \fBhwloc_obj_t\fPparent, intgroupdepth)"
+.SS "\fBhwloc_obj_t\fP hwloc_custom_insert_group_object_by_parent (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP parent, int groupdepth)"
 
 .PP
 Insert a new group object inside a custom topology\&. An object with type \fBHWLOC_OBJ_GROUP\fP is inserted as a new child of object \fCparent\fP\&.
@@ -37,7 +37,7 @@ The cpuset and nodeset of the \fCparent\fP object are not modified\&.
 .RE
 .PP
 
-.SS "int hwloc_custom_insert_topology (\fBhwloc_topology_t\fPnewtopology, \fBhwloc_obj_t\fPnewparent, \fBhwloc_topology_t\fPoldtopology, \fBhwloc_obj_t\fPoldroot)"
+.SS "int hwloc_custom_insert_topology (\fBhwloc_topology_t\fP newtopology, \fBhwloc_obj_t\fP newparent, \fBhwloc_topology_t\fP oldtopology, \fBhwloc_obj_t\fP oldroot)"
 
 .PP
 Insert an existing topology inside a custom topology\&. Duplicate the existing topology \fColdtopology\fP inside a new custom topology \fCnewtopology\fP as a leaf of object \fCnewparent\fP\&.

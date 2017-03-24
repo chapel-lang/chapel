@@ -274,9 +274,9 @@ module SSCA2_RMAT_graph_generator
       // Random Numbers return in the range [0.0, 1.0)
 
       var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
-	               new NPBRandomStream (seed = 0556707007)
+	               new NPBRandomStream (real, seed = 0556707007)
 		     else
-		       new NPBRandomStream ();
+		       new NPBRandomStream (real);
 
       var   Noisy_a     : [edge_domain] real,
             Noisy_b     : [edge_domain] real,
@@ -399,10 +399,10 @@ module SSCA2_RMAT_graph_generator
 	       "edge end vertices out of high end of range");
 
           if !(w > 0) then halt( 
-	       "edge weightd out of low end of range");
+	       "edge weight out of low end of range");
 
           if !(w <= MAX_EDGE_WEIGHT) then halt(  
-	       "edge weightd out of high end of range");
+	       "edge weight out of high end of range");
         }
         // exit the scope to enable memory deallocation, if any
       }

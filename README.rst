@@ -6,7 +6,7 @@ The Chapel Language
 
 What is Chapel?
 ---------------
-Chapel is an emerging programming language designed for productive
+Chapel is a modern programming language designed for productive
 parallel computing at scale. Chapel's design and implementation have
 been undertaken with portability in mind, permitting Chapel to run on
 multicore desktops and laptops, commodity clusters, and the cloud, in
@@ -26,8 +26,8 @@ For more information about Chapel, please refer to the following resources:
 
 =====================  ========================================
 Project homepage:      http://chapel.cray.com
-Installing Chapel:     http://chapel.cray.com/install.html
-Building from source:  `QUICKSTART.rst <QUICKSTART.rst>`_ (in this directory)
+Installing Chapel:     http://chapel.cray.com/download.html
+Building from source:  `QUICKSTART.rst <doc/usingchapel/QUICKSTART.rst>`_ 
 Sample computations:   http://chapel.cray.com/hellos.html
 Learning Chapel:       http://chapel.cray.com/learning.html
 Reporting bugs:        http://chapel.cray.com/bugs.html

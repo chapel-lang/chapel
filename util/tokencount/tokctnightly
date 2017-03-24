@@ -297,18 +297,22 @@ sub mysystem {
         $status = $status / 256;
 	print "Error $_[1]: $status\n";
 
-	if ($mailmsg != 0) {
-            $mailsubject = "$subjectid Failure";
-            $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
+    if ($mailmsg != 0) {
+        $mailsubject = "$subjectid Failure";
+        $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
             print "Trying to mail message... using $mailcommand\n";
-	    open(MAIL, $mailcommand);
-	    print MAIL "=== Summary ===================================================\n";
-	    print MAIL "ERROR $_[1]: $status\n";
-	    print MAIL "===============================================================\n";
-	    print MAIL "Build: ", $buildurl, "\n";
-	    close(MAIL);
-	}
+            open(MAIL, $mailcommand);
+            print MAIL "=== Summary ===================================================\n";
+            print MAIL "ERROR $_[1]: $status\n";
+            print MAIL "===============================================================\n";
+            print MAIL "Build: ", $buildurl, "\n";
+            close(MAIL);
+        } else {
+            print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+        }
+    }
 
 	if ($fatal != 0) {
 	    `echo "$statdate\t-" >> $statfile`;

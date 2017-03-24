@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,6 +47,8 @@ static IntentTag constIntentForType(Type* t) {
              t == dtStringCopy ||
              t == dtCVoidPtr ||
              t == dtCFnPtr ||
+             t == dtVoid ||
+             // TODO: t->symbol->hasFlag(FLAG_RANGE) ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
     return INTENT_CONST_IN;
   }
@@ -54,15 +56,40 @@ static IntentTag constIntentForType(Type* t) {
   return INTENT_CONST;
 }
 
+// Detect tuples containing e.g. arrays by reference
+// These should be const / not const element-by-element.
+static
+bool isTupleContainingRefMaybeConst(Type* t)
+{
+  AggregateType* at = toAggregateType(t);
+  if (t->symbol->hasFlag(FLAG_TUPLE)) {
+    for_fields(field, at) {
+      Type* fieldType = field->getValType();
+      if (field->isRef()) {
+        if (fieldType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
+          return true;
+      }
+      if (isTupleContainingRefMaybeConst(fieldType))
+        return true;
+    }
+  }
+  return false;
+}
+
+
 IntentTag blankIntentForType(Type* t) {
   IntentTag retval = INTENT_BLANK;
 
-  if (isSyncType(t)                                  ||
+  if (/*isSyncType(t)                                  ||
       isSingleType(t)                                ||
+        these should have FLAG_DEFAULT_INTENT_IS_REF) */
       isAtomicType(t)                                ||
-      t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) ||
-      t->symbol->hasFlag(FLAG_ARRAY)) {
+      t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)) {
     retval = INTENT_REF;
+
+  } else if(t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
+            || isTupleContainingRefMaybeConst(t)) {
+    retval = INTENT_REF_MAYBE_CONST;
 
   } else if (is_bool_type(t)                         ||
              is_int_type(t)                          ||
@@ -82,6 +109,7 @@ IntentTag blankIntentForType(Type* t) {
              t == dtFile                             ||
              t == dtNil                              ||
              t == dtOpaque                           ||
+             t == dtVoid                             ||
              t->symbol->hasFlag(FLAG_DOMAIN)         ||
              t->symbol->hasFlag(FLAG_DISTRIBUTION)   ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
@@ -95,30 +123,162 @@ IntentTag blankIntentForType(Type* t) {
 }
 
 IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
-  if (existingIntent == INTENT_BLANK) {
-    return blankIntentForType(t);
-  } else if (existingIntent == INTENT_CONST) {
-    return constIntentForType(t);
-  } else {
-    return existingIntent;
+  if (existingIntent == INTENT_BLANK || existingIntent == INTENT_CONST) {
+    if (t->symbol->hasFlag(FLAG_REF)) {
+      // Handle REF type
+      // A formal with a ref type should always have some ref-intent.
+      // This is will hopefully be a short-lived fix
+      // while converting entirely over to QualifiedType.
+      //
+      // TODO: Are there cases where we should handle const-ref intent? Should
+      // a QualifiedType be used instead of a Type* ?
+
+      IntentTag baseIntent = INTENT_TYPE;
+      Type* valType = t->getValType();
+      if (existingIntent == INTENT_BLANK)
+        baseIntent = blankIntentForType(valType);
+      else if (existingIntent == INTENT_CONST)
+        baseIntent = constIntentForType(valType);
+      if ( (baseIntent & INTENT_FLAG_REF) )
+        return baseIntent; // it's already REF/CONST_REF/REF_MAYBE_CONST
+      else if (baseIntent == INTENT_CONST_IN)
+        return INTENT_CONST_REF;
+      else
+        INT_ASSERT(0); // unhandled case
+    }
+
+    if (existingIntent == INTENT_BLANK) {
+      return blankIntentForType(t);
+    } else if (existingIntent == INTENT_CONST) {
+      return constIntentForType(t);
+    }
   }
+
+  return existingIntent;
+}
+
+static IntentTag constIntentForThisArg(Type* t) {
+  if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
+    return INTENT_CONST_REF;
+  else
+    return INTENT_CONST_IN;
 }
 
 static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
-  return INTENT_CONST_IN;
+
+  Type* valType = t->getValType();
+
+  // For user records or types with FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST,
+  // the intent for this is INTENT_REF_MAYBE_CONST
+  //
+  // This applies to both arguments of type _ref(t) and t
+  if (isRecord(valType) || isUnion(valType) ||
+      valType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
+    return INTENT_REF_MAYBE_CONST;
+
+  if (isRecordWrappedType(t))  // domain / distribution
+    // array, domain, distribution wrapper records are immutable
+    return INTENT_CONST_REF;
+  else if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
+    // TODO - see issue #5266; also note workaround in resolveFormals
+    // makes all blank-intent _this arguments for records use INTENT_REF.
+    return INTENT_REF;
+  else
+    return INTENT_CONST_IN;
+}
+
+
+IntentTag concreteIntentForArg(ArgSymbol* arg) {
+
+  if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
+    return blankIntentForThisArg(arg->type);
+  else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
+    return constIntentForThisArg(arg->type);
+  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN) &&
+           arg->intent == INTENT_BLANK)
+    return INTENT_CONST_IN;
+  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_ALLOW_REF) &&
+           arg->type->symbol->hasFlag(FLAG_REF))
+
+    // This is a workaround for an issue with RVF erroneously forwarding a
+    // reduce variable. The workaround adjusts the build_tuple_always_allow_ref
+    // call to take all _ref arguments by `ref` intent regardless of
+    // the type. It would be better to rely on task/forall intents
+    // to correctly mark const / not const / maybe const.
+    return INTENT_REF;
+
+  else
+    return concreteIntent(arg->intent, arg->type);
+
 }
 
 void resolveArgIntent(ArgSymbol* arg) {
-  if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
-    arg->intent = blankIntentForThisArg(arg->type);
-  else
-    arg->intent = concreteIntent(arg->intent, arg->type);
+  if (!resolved) {
+    if (arg->type == dtMethodToken ||
+        arg->type == dtTypeDefaultToken ||
+        arg->type == dtVoid ||
+        arg->type == dtUnknown ||
+        arg->hasFlag(FLAG_TYPE_VARIABLE) ||
+        arg->hasFlag(FLAG_PARAM)) {
+      return; // Leave these alone during resolution.
+    }
+  }
+
+  IntentTag intent = concreteIntentForArg(arg);
+
+  if (resolved) {
+    // After resolution, change out/inout/in to ref
+    // to be more accurate to the generated code.
+
+    if (intent == INTENT_OUT ||
+        intent == INTENT_INOUT) {
+      // Resolution already handled out/inout copying
+      intent = INTENT_REF;
+    } else if (intent == INTENT_IN) {
+      // MPF note: check types/range/ferguson/range-begin.chpl
+      // if you try to add INTENT_CONST_IN here.
+
+      // Resolution already handled copying for INTENT_IN for
+      // records/unions.
+      bool addedTmp = (isRecord(arg->type) || isUnion(arg->type));
+      if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN))
+        // Q - should this check arg->type->symbol->hasFlag(FLAG_EXTERN)?
+        addedTmp = false;
+
+      if (addedTmp) {
+        if (arg->type->symbol->hasFlag(FLAG_COPY_MUTATES))
+          intent = INTENT_REF;
+        else
+          intent = constIntentForType(arg->type);
+      } else {
+        // In this case, C can copy for 'in' e.g. for ints
+        // There, we leave the intent alone rather than making it 'const in',
+        // since an 'in' formal can still be modified in the body of the
+        // function.
+      }
+    }
+  }
+
+  arg->intent = intent;
 }
 
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     resolveArgIntent(arg);
+  }
+
+  // BHARSH TODO: This shouldn't be necessary, but will be until we fully
+  // switch over to qualified types.
+  forv_Vec(VarSymbol, sym, gVarSymbols) {
+    QualifiedType q = sym->qualType();
+    if (q.getQual() == QUAL_UNKNOWN) {
+      if (sym->isRef()) {
+        sym->qual = QUAL_REF;
+      } else {
+        sym->qual = QUAL_VAL;
+      }
+    }
   }
 
   intentsResolved = true;

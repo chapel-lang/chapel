@@ -1,8 +1,8 @@
-.TH "Interoperability with OpenCL" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_opencl" 3 "Thu Feb 23 2017" "Version 1.11.6" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Interoperability with OpenCL \- 
+hwlocality_opencl \- Interoperability with OpenCL
 .SS "Functions"
 
 .in +1c
@@ -23,7 +23,7 @@ This interface offers ways to retrieve topology information about OpenCL devices
 Only the AMD OpenCL interface currently offers useful locality information about its devices\&. 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_opencl_get_device_cpuset (\fBhwloc_topology_t\fPtopology, cl_device_iddevice, \fBhwloc_cpuset_t\fPset)\fC [inline]\fP, \fC [static]\fP"
+.SS "static int hwloc_opencl_get_device_cpuset (\fBhwloc_topology_t\fP topology, cl_device_id device, \fBhwloc_cpuset_t\fP set)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the CPU set of logical processors that are physically close to OpenCL device \fCdevice\fP\&. Return the CPU set describing the locality of the OpenCL device \fCdevice\fP\&.
@@ -33,7 +33,7 @@ Topology \fCtopology\fP and device \fCdevice\fP must match the local machine\&. 
 The function only returns the locality of the device\&. If more information about the device is needed, OS objects should be used instead, see \fBhwloc_opencl_get_device_osdev()\fP and \fBhwloc_opencl_get_device_osdev_by_index()\fP\&.
 .PP
 This function is currently only implemented in a meaningful way for Linux with the AMD OpenCL implementation; other systems will simply get a full cpuset\&. 
-.SS "static \fBhwloc_obj_t\fP hwloc_opencl_get_device_osdev (\fBhwloc_topology_t\fPtopology, cl_device_iddevice)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_obj_t\fP hwloc_opencl_get_device_osdev (\fBhwloc_topology_t\fP topology, cl_device_id device)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the hwloc OS device object corresponding to OpenCL device \fCdevice\fP\&. Return the hwloc OS device object that describes the given OpenCL device \fCdevice\fP\&. Return NULL if there is none\&.
@@ -46,7 +46,7 @@ The corresponding hwloc PCI device may be found by looking at the result parent 
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_opencl_get_device_osdev_by_index (\fBhwloc_topology_t\fPtopology, unsignedplatform_index, unsigneddevice_index)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_obj_t\fP hwloc_opencl_get_device_osdev_by_index (\fBhwloc_topology_t\fP topology, unsigned platform_index, unsigned device_index)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the hwloc OS device object corresponding to the OpenCL device for the given indexes\&. Return the OS device object describing the OpenCL device whose platform index is \fCplatform_index\fP, and whose device index within this platform if \fCdevice_index\fP\&. Return NULL if there is none\&.

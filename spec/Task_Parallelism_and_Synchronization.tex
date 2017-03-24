@@ -11,7 +11,7 @@ to introduce concurrency into a program.
 \item \rsec{Synchronization_Variables} describes synchronization
 variables, an unstructured mechanism for synchronizing tasks.
 \item \rsec{Atomic_Variables} describes atomic variables, a mechanism
-for supporting atomic operations. 
+for supporting atomic operations.
 \item \rsec{Cobegin} describes the cobegin statement, a structured way to
 introduce concurrency into a program.
 \item \rsec{Coforall} describes the coforall loop, another structured way to
@@ -198,7 +198,7 @@ class Tree {
   var value: int;
 
   proc sum():int {
-    if (isLeaf) then 
+    if (isLeaf) then
        return value;
 
     var x(*\texttt{\$}*): sync int;
@@ -214,7 +214,7 @@ var tree: Tree = new Tree(false, new Tree(false, new Tree(true, nil, nil, 1),
                                  new Tree(false, new Tree(true, nil, nil, 1),
                                                  new Tree(true, nil, nil, 1), 1), 1);
 writeln(tree.sum());
-proc Tree.~Tree() {
+proc Tree.deinit() {
   if isLeaf then return;
   delete left;
   delete right;
@@ -260,6 +260,7 @@ before either had written its updated value, causing one of the
 increments to be lost.
 \end{chapelexample}
 
+\pagebreak
 \begin{chapelexample}{singleVar.chpl}
 The following code implements a simple split-phase barrier using a
 single variable.
@@ -349,6 +350,7 @@ single variable remains full when this method completes.
 This method implements the normal read of a \chpl{single} variable.
 \end{protobody}
 
+\pagebreak
 \index{readXX (sync var)@\chpl{readXX} (sync var)}
 \index{predefined functions!readXX (sync var)@\chpl{readXX} (sync var)}
 \begin{protohead}
@@ -477,7 +479,7 @@ writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*).readFF(), z));
 
 Atomic variables are variables that support atomic operations. Chapel
 currently supports atomic operations for bools, all supported sizes of
-signed and unsigned integers, as well as all supported sizes of reals. 
+signed and unsigned integers, as well as all supported sizes of reals.
 
 \begin{rationale}
 The choice of supported atomic variable types as well as the atomic
@@ -486,9 +488,9 @@ operations was strongly influenced by the C11 standard.
 
 Atomic is a type qualifier that precedes the variable's type in
 the declaration. Atomic operations are supported for bools, and all
-sizes of ints, uints, and reals.  
+sizes of ints, uints, and reals.
 
-An atomic variable is specified with an atomic type given by the 
+An atomic variable is specified with an atomic type given by the
 following syntax:
 
 \begin{syntax}
@@ -502,7 +504,7 @@ atomic-type:
 
 The following methods are defined for variables of atomic type. Note
 that not all operations are supported for all atomic types. The
-supported types are listed for each method.  
+supported types are listed for each method.
 
 \index{atomic types!memory order}
 Most of the predefined atomic methods accept an optional argument
@@ -539,9 +541,10 @@ conservative ordering than specified.
 proc (atomic t).read(memory_order order): t
 \end{protohead}
 \begin{protobody}
-Reads and returns the stored value. Defined for all atomic types.  
+Reads and returns the stored value. Defined for all atomic types.
 \end{protobody}
 
+\pagebreak
 \index{peek (atomic var)@\chpl{peek} (atomic var)}
 \index{predefined functions!peek (atomic var)@\chpl{peek} (atomic var)}
 \begin{protohead}
@@ -558,7 +561,7 @@ Defined for all atomic types.
 proc (atomic t).write(v: t, memory_order order)
 \end{protohead}
 \begin{protobody}
-Stores \chpl{v} as the new value. Defined for all atomic types.  
+Stores \chpl{v} as the new value. Defined for all atomic types.
 \end{protobody}
 
 \index{poke (atomic var)@\chpl{poke} (atomic var)}
@@ -578,7 +581,7 @@ proc (atomic t).exchange(v: t, memory_order order): t
 \end{protohead}
 \begin{protobody}
 Stores \chpl{v} as the new value and returns the original
-value. Defined for all atomic types. 
+value. Defined for all atomic types.
 \end{protobody}
 
 \index{compareExchangWeak (atomic var)@\chpl{compareExchangeWeak} (atomic var)}
@@ -834,7 +837,7 @@ the last line until all of the tasks have completed.
 If a variable is referenced within the lexical scope of a
 \chpl{begin}, \chpl{cobegin}, or \chpl{coforall} statement
 and is declared outside that statement, it is considered
-to be passed as an actual argument to the corresponding task function 
+to be passed as an actual argument to the corresponding task function
 at task creation time. All references to the variable
 within the task function implicitly refer to the task function's
 corresponding formal argument.
@@ -932,7 +935,7 @@ race-avoidance benefit available to more code.
 
 We decided to apply task intents to module level variables, in addition
 to local variables. Again, this is for consistency. One could view module
-level variables differently than local variables (e.g. a module level 
+level variables differently than local variables (e.g. a module level
 variable is ``always available''), but we favored consistency over such
 an approach.
 
@@ -1200,7 +1203,7 @@ while (head) {
   next = head.next;
   delete head;
   head = next;
-} 
+}
 \end{chapelpost}
 \begin{chapeloutput}
 atomic.chpl:13: warning: atomic keyword is ignored (not implemented)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,7 @@
 #include "callInfo.h"
 #include "expr.h"
 
-CallInfo::CallInfo(CallExpr* icall, bool checkonly) :
+CallInfo::CallInfo(CallExpr* icall, bool checkonly, bool initOkay) :
   call(icall),
   scope(NULL),
   name(NULL),
@@ -30,16 +30,16 @@ CallInfo::CallInfo(CallExpr* icall, bool checkonly) :
   badcall(false)
 {
   if (SymExpr* se = toSymExpr(call->baseExpr))
-    name = se->var->name;
+    name = se->symbol()->name;
   else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(call->baseExpr))
     name = use->unresolved;
   if (call->numActuals() >= 2) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
-      if (se->var == gModuleToken) {
+      if (se->symbol() == gModuleToken) {
         se->remove();
         se = toSymExpr(call->get(1));
         INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
+        ModuleSymbol* mod = toModuleSymbol(se->symbol());
         INT_ASSERT(mod);
         se->remove();
         scope = mod->block;
@@ -47,25 +47,38 @@ CallInfo::CallInfo(CallExpr* icall, bool checkonly) :
     }
   }
   for_actuals(actual, call) {
+    bool isThis = false;
     if (NamedExpr* named = toNamedExpr(actual)) {
       actualNames.add(named->name);
+      if (initOkay && !strcmp(named->name, "this"))
+        isThis = true;
       actual = named->actual;
     } else {
       actualNames.add(NULL);
     }
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
-    Type* t = se->var->type;
-    if (t == dtUnknown && ! se->var->hasFlag(FLAG_TYPE_VARIABLE) ) {
-      if (checkonly) badcall = true;
-      else USR_FATAL(call, "use of '%s' before encountering its definition, "
-                           "type unknown", se->var->name);
+    Type* t = se->symbol()->type;
+    if (t == dtUnknown && ! se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) ) {
+      if (checkonly) {
+        badcall = true;
+      } else {
+        USR_FATAL(call, "use of '%s' before encountering its definition, "
+                  "type unknown", se->symbol()->name);
+      }
     }
     if (t->symbol->hasFlag(FLAG_GENERIC)) {
-      if (checkonly) badcall = true;
-      else INT_FATAL(call, "the type of the actual argument '%s' is generic",
-                            se->var->name);
+      if (initOkay && isThis) {
+        // initOkay is only used when resolving an initializer call, so we
+        // allow the this argument to be generic, as we will perform the work
+        // necessary to instantiate it.
+      } else if (checkonly) {
+        badcall = true;
+      } else {
+        INT_FATAL(call, "the type of the actual argument '%s' is generic",
+                  se->symbol()->name);
+      }
     }
-    actuals.add(se->var);
+    actuals.add(se->symbol());
   }
 }

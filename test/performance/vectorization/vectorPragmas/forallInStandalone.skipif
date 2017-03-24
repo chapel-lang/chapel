@@ -4,4 +4,5 @@
 # for this test, but it doesn't seem worthwhile since numa really only affects
 # the leader iterators, and thus the number of loops that might be marked, I
 # don't think it provides any additional benefit to test this.
-CHPL_LOCALE_MODEL==numa
+# Other non-flat locale models are likely to have similar issues.
+CHPL_LOCALE_MODEL!=flat

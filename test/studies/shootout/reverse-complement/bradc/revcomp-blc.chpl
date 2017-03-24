@@ -5,35 +5,38 @@
    derived from the GNU C version by Mr Ledrug
 */
 
+config param columns = 61;
+
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 proc main(args: [] string) {
   const consoleIn = openfd(0),
         stdinNoLock = consoleIn.reader(locking=false);
+
   var data: [1..consoleIn.length()] uint(8),
       idx = 1,
       start = 0;
 
-  //
-  // wait for all process() tasks complete
-  //
-  sync {
+  sync {     // wait for all process() tasks to complete before continuing
     var numRead: int;
 
     while stdinNoLock.readline(data, numRead, idx) {
-      // Look for the start of a section
-      if data[idx] == ascii(">") {
-        if start then 
-          // Spawn a task to work on the previous section
-          begin process(data, start, idx-2);
-        
-        start = idx;
+      if data[idx] == ascii(">") {       // is this the start of a section?
+
+        // spawn a task to process the previous sequence, if there was one
+        if start then
+          begin process(data, start, idx-2);     // -2 == rewind past "\n>"
+
+        // capture the start of this sequence
+        start = idx + numRead;
       }
+
       idx += numRead; 
     }
 
-    // work on the final section
-    process(data, start, idx-2);
+    // process the final sequence
+    if start then
+      process(data, start, idx-2);
   }
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
@@ -42,18 +45,11 @@ proc main(args: [] string) {
 }
 
 
-proc process(data, in start, end) {
-  //
-  // Skip the header information
-  //
-  while data[start] != ascii("\n") do 
-    start += 1;
-  start += 1;
-
-  param columns = 61;
+proc process(data, start, end) {
   const extra = (end - start) % columns,
         off = columns - extra - 1;
 
+  // shift the data
   if off then
     for m in (start+extra)..(end-1) by columns {
       for i in 1..off-1 by -1 do
@@ -61,6 +57,7 @@ proc process(data, in start, end) {
       data[m+1] = ascii("\n");
     }
 
+  // replace the data items with their table entries
   for i in 0..(end-start)/2 {
     ref d1 = data[start+i],
         d2 = data[end-i];
@@ -73,9 +70,9 @@ proc initTable(param pairs) {
 
   for param i in 1..pairs.length do
     if i%2 {
-      table[ascii(pairs[i])] = ascii(pairs[i+1]):uint(8);
+      table[ascii(pairs[i])] = ascii(pairs[i+1]);
       if pairs[i] != "\n" then
-        table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]):uint(8);
+        table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]);
     }
 
   return table;

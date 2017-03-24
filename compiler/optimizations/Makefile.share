@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@ OPTIMIZATIONS_SRCS = \
 	copyPropagation.cpp \
 	deadCodeElimination.cpp \
 	inlineFunctions.cpp \
+	inferConstRefs.cpp \
 	liveVariableAnalysis.cpp \
 	localizeGlobals.cpp \
 	loopInvariantCodeMotion.cpp \
@@ -30,6 +31,7 @@ OPTIMIZATIONS_SRCS = \
 	removeUnnecessaryAutoCopyCalls.cpp \
 	removeUnnecessaryGotos.cpp \
 	removeWrapRecords.cpp \
+	replaceArrayAccessesWithRefTemps.cpp \
 	scalarReplace.cpp
 
 SVN_SRCS = $(OPTIMIZATIONS_SRCS)

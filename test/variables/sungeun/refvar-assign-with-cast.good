@@ -1,1 +1,1 @@
-FIX ME!
+refvar-assign-with-cast.chpl:2: error: Cannot set a non-const reference to a const variable.

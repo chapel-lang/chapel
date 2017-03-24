@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -16,4 +16,4 @@
 # limitations under the License.
 
 RUNTIME_INCLS += -I$(MASSIVETHREADS_INCLUDE_DIR)
-CHPL_MAKE_THREADS=none
+CHPL_MAKE_THREADS=pthreads

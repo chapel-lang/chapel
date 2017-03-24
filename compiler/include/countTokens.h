@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,9 @@ void startCountingFileTokens(const char* filename);
 void stopCountingFileTokens(yyscan_t scanner);
 void finishCountingTokens();
 
-void countToken(const char* tokentext);
+void countToken(const char* toktext1,
+                const char* toktext2 = NULL,
+                const char* toktext3 = NULL);
 void countNewline();
 void countCommentLine();
 void countSingleLineComment(const char* comment);

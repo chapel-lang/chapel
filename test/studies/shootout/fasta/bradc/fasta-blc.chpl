@@ -1,16 +1,36 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Casey Battaglino, Kyle Brady, Preston Sahabu,
-               and Brad Chamberlain
-   derived from the GNU C version by Petr Prokhorenkov
+   contributed by Brad Chamberlain
+   derived from the GNU C version by Аноним Легионов and Jeremy Zerfas
+     as well as previous Chapel versions by Casey Battaglino, Kyle Brady,
+     and Preston Sahabu.
 */
 
-config const n = 1000,   // controls the length of the generated strings
+config const n = 1000,            // the length of the generated strings
+             lineLength = 60,     // the number of columns in the output
+             blockSize = 1024,    // the parallelization granularity
+             numTasks = min(4, here.maxTaskPar);  // how many tasks to use?
+//
+// the computational pipeline has 3 distinct stages, so ideally, we'd
+// like to use 3 tasks.  However, there is one stage which does not
+// require any coordination and it tends to be the slowest stage, so
+// we could have multiple tasks working on it simultaneously.  In
+// practice, though, that phase is not that much slower than the sum
+// of the other two, and using too many tasks can just add overhead
+// that isn't helpful.  So we go with 4 tasks to pick up some slack,
+// and because it seems to work best on all the machine we've tried in
+// practice.  If the locale can't support that much parallelism, we'll
+// use a number of tasks equal to its maximum degree of task
+// parallelism to avoid oversubscription.
+//
 
-             lineLength = 60,
-             lookupSize = 4096,
-             lookupScale = lookupSize - 1.0;
+config type randType = uint(32);  // type to use for random numbers
+
+config param IM = 139968,         // parameters for random number generation
+             IA = 3877,
+             IC = 29573,
+             seed: randType = 42;
 
 //
 // Nucleotide definitions
@@ -64,25 +84,10 @@ const HomoSapiens = [(a, 0.3029549426680),
                      (g, 0.1975473066391),
                      (t, 0.3015094502008)];
 
-
 proc main() {
-  sumAndScale(IUB);
-  sumAndScale(HomoSapiens);
-  repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
-  randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
-  randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
-}
-
-//
-// Scan the alphabets' probabilities to compute cut-offs
-//
-proc sumAndScale(alphabet: [?D]) {
-  var p = 0.0;
-  for letter in alphabet {
-    p += letter(prob);
-    letter(prob) = p * lookupScale;
-  }
-  alphabet[D.high](prob) = lookupScale;
+  repeatMake(">ONE Homo sapiens alu\n", ALU, 2*n);
+  randomMake(">TWO IUB ambiguity codes\n", IUB, 3*n);
+  randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, 5*n);
 }
 
 //
@@ -92,10 +97,10 @@ const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newline = ascii("\n"): int(8);
 
 //
-// Repeat sequence "alu" for n characters
+// Repeat 'alu' to generate a sequence of length 'n'
 //
 proc repeatMake(desc, alu, n) {
-  stdout.writef("%s", desc);
+  stdout.write(desc);
 
   const r = alu.size,
         s = [i in 0..(r+lineLength)] alu[i % r];
@@ -108,57 +113,87 @@ proc repeatMake(desc, alu, n) {
 }
 
 //
-// Output a random sequence of length 'n' using distribution a
+// Use 'nuclInfo's probability distribution to generate a random
+// sequence of length 'n'
 //
-proc randomMake(desc, a, n) {
-  var lookup = initLookup();
-  var line_buff: [0..lineLength] int(8);
-    
-  stdout.writef("%s", desc);
-  for i in 1..n by lineLength do
-    addLine(min(lineLength, n-i+1));
+proc randomMake(desc, nuclInfo, n) {
+  stdout.write(desc);
 
-  iter initLookup() {
-    var j = 1;
-    for i in 0..#lookupSize {
-      while (a[j](prob) < i) do
-        j += 1;
-      
-      yield a[j];
-    }
+  // compute the cumulative probabilities of the nucleotides
+  const numNucls = nuclInfo.size;
+  var cumulProb: [1..numNucls] randType,
+      p = 0.0;
+  for i in 1..numNucls {
+    p += nuclInfo[i](prob);
+    cumulProb[i] = 1 + (p*IM):randType;
   }
 
-  //
-  // Add a line of random sequence
-  //
-  proc addLine(bytes) {
-    for (r, i) in zip(getRands(bytes), 0..) {
-      var ai = r: int + 1;
-      while (lookup[ai](prob) < r) do
-        ai += 1;
-      
-      line_buff[i] = lookup[ai](nucl);
-    }
-    line_buff[bytes] = newline;
+  // guard when tasks can access the random numbers or output stream
+  var randGo, outGo: [0..#numTasks] atomic int;
 
-    stdout.write(line_buff[0..bytes]);
+  randGo.write(0);
+  outGo.write(0);
+
+  // create tasks to pipeline the RNG, computation, and output
+  coforall tid in 0..#numTasks {
+    const chunkSize = lineLength*blockSize,
+          nextTid = (tid + 1) % numTasks;
+
+    var myBuff: [0..#(lineLength+1)*blockSize] int(8),
+        myRands: [0..chunkSize] randType;
+
+    // iterate over 0..n-1 in a round-robin fashion across tasks
+    for i in tid*chunkSize..n-1 by numTasks*chunkSize {
+      const bytes = min(chunkSize, n-i);
+
+      // Get 'bytes' random numbers in a coordinated manner
+      randGo[tid].waitFor(i);
+      getRands(bytes, myRands);
+      randGo[nextTid].write(i+chunkSize);
+
+      // Compute 'bytes' nucleotides and store in 'myBuff'
+      var col = 0,
+          off = 0;
+
+      for j in 0..#bytes {
+        const r = myRands[j];
+        var nid = 1;
+        for k in 1..numNucls do
+          if r >= cumulProb[k] then
+            nid += 1;
+
+        myBuff[off] = nuclInfo[nid](nucl);
+        off += 1;
+        col += 1;
+
+        if (col == lineLength) {
+          col = 0;
+          myBuff[off] = newline;
+          off += 1;
+        }
+      }
+      if (col != 0) {
+        myBuff[off] = newline;
+        off += 1;
+      }
+
+      // Write the output in a coordinated manner
+      outGo[tid].waitFor(i);
+      stdout.write(myBuff[0..#off]);
+      outGo[nextTid].write(i+chunkSize);
+    }
   }
 }
 
-
 //
 // Deterministic random number generator
+// (lastRand really wants to be a local static...)
 //
-var lastRand = 42;
+var lastRand = seed;
 
-iter getRands(n) {
-  param IA = 3877,
-        IC = 29573,
-        IM = 139968;
-  const SCALE = lookupScale / IM;
-
-  for 0..#n {
+proc getRands(n, arr) {
+  for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
-    yield SCALE * lastRand;
+    arr[i] = lastRand;
   }
 }

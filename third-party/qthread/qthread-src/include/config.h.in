@@ -1,0 +1,767 @@
+/* include/config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define if bitfields are in forward order */
+#undef BITFIELD_ORDER_FORWARD
+
+/* Define if bitfields are in reverse order */
+#undef BITFIELD_ORDER_REVERSE
+
+/* The cacheline width */
+#undef CACHELINE_WIDTH
+
+/* Support dynamic profile of CAS steal infomation */
+#undef CAS_STEAL_PROFILE
+
+/* if the compiler supports inline assembly, we can prevent reordering */
+#undef COMPILER_FENCE
+
+/* solaris 8 requires argc be one larger than the actual count of arguments */
+#undef EXTRA_MAKECONTEXT_ARGC
+
+/* define if compiler supports __builtin_prefetch */
+#undef HAS_BUILTIN_PREFETCH
+
+/* Define if `calloc'ing more than 16 bytes always returns a 16-byte-aligned
+   address (common practice on MacOS X). */
+#undef HAVE_16ALIGNED_CALLOC
+
+/* Define if `malloc'ing more than 16 bytes always returns a 16-byte-aligned
+   address (common practice on MacOS X). */
+#undef HAVE_16ALIGNED_MALLOC
+
+/* Define to 1 if you have the <assert.h> header file. */
+#undef HAVE_ASSERT_H
+
+/* Define if the compiler supports GNU-style __FUNCTION__. */
+#undef HAVE_C99_FUNC
+
+/* Define if the compiler supports C99 variadic macros. */
+#undef HAVE_C99_VAMACROS
+
+/* Define to 1 if you have the declaration of `MADV_ACCESS_LWP', and to 0 if
+   you don't. */
+#undef HAVE_DECL_MADV_ACCESS_LWP
+
+/* Define to 1 if you have the declaration of `SYS_accept', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_ACCEPT
+
+/* Define to 1 if you have the declaration of `SYS_connect', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_CONNECT
+
+/* Define to 1 if you have the declaration of `SYS_nanosleep', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_NANOSLEEP
+
+/* Define to 1 if you have the declaration of `SYS_poll', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_POLL
+
+/* Define to 1 if you have the declaration of `SYS_pread', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_PREAD
+
+/* Define to 1 if you have the declaration of `SYS_pwrite', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_PWRITE
+
+/* Define to 1 if you have the declaration of `SYS_read', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_READ
+
+/* Define to 1 if you have the declaration of `SYS_select', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_SELECT
+
+/* Define to 1 if you have the declaration of `SYS_sleep', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_SLEEP
+
+/* Define to 1 if you have the declaration of `SYS_system', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_SYSTEM
+
+/* Define to 1 if you have the declaration of `SYS_usleep', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_USLEEP
+
+/* Define to 1 if you have the declaration of `SYS_wait4', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_WAIT4
+
+/* Define to 1 if you have the declaration of `SYS_write', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SYS_WRITE
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
+#undef HAVE_DOPRNT
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#undef HAVE_FCNTL_H
+
+/* Define to 1 if you have the `fstat64' function. */
+#undef HAVE_FSTAT64
+
+/* Whether C compiler supports GCC style inline assembly */
+#undef HAVE_GCC_INLINE_ASSEMBLY
+
+/* Define to 1 if you have the `getcontext' function. */
+#undef HAVE_GETCONTEXT
+
+/* Define to 1 if you have the `getpagesize' function. */
+#undef HAVE_GETPAGESIZE
+
+/* Define to 1 if you have the `getrlimit' function. */
+#undef HAVE_GETRLIMIT
+
+/* Define if the compiler supports GNU-style __FUNCTION__. */
+#undef HAVE_GNU_FUNCTION
+
+/* Define if the compiler supports GNU-style variadic macros. */
+#undef HAVE_GNU_VAMACROS
+
+/* Define to 1 if you have the <hwloc.h> header file. */
+#undef HAVE_HWLOC_H
+
+/* define if you have HW_NCPU and CTL_HW */
+#undef HAVE_HW_NCPU
+
+/* Define to 1 if you have the <ia32intrin.h> header file. */
+#undef HAVE_IA32INTRIN_H
+
+/* Define to 1 if you have the <ia64intrin.h> header file. */
+#undef HAVE_IA64INTRIN_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Have math library */
+#undef HAVE_LIBM
+
+/* Define to 1 if you have the <linux/mmtimer.h> header file. */
+#undef HAVE_LINUX_MMTIMER_H
+
+/* Define to 1 if you have the `lseek64' function. */
+#undef HAVE_LSEEK64
+
+/* Define to 1 if you have the <mach/mach_init.h> header file. */
+#undef HAVE_MACH_MACH_INIT_H
+
+/* Define to 1 if you have the <mach/mach_time.h> header file. */
+#undef HAVE_MACH_MACH_TIME_H
+
+/* Define to 1 if you have the <mach/thread_policy.h> header file. */
+#undef HAVE_MACH_THREAD_POLICY_H
+
+/* Define to 1 if you have the `madvise' function. */
+#undef HAVE_MADVISE
+
+/* Define to 1 if you have the `makecontext' function. */
+#undef HAVE_MAKECONTEXT
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#undef HAVE_MALLOC_H
+
+/* Define to 1 if you have the <math.h> header file. */
+#undef HAVE_MATH_H
+
+/* Define to 1 if you have the `memalign' function. */
+#undef HAVE_MEMALIGN
+
+/* Define to 1 if you have the `memcpy' function. */
+#undef HAVE_MEMCPY
+
+/* Define to 1 if you have the `memmove' function. */
+#undef HAVE_MEMMOVE
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the `memset' function. */
+#undef HAVE_MEMSET
+
+/* Define to 1 if you have a working `mmap' system call. */
+#undef HAVE_MMAP
+
+/* Define to 1 if you have the `munmap' function. */
+#undef HAVE_MUNMAP
+
+/* The system provides functional native make/swap/get-context functions */
+#undef HAVE_NATIVE_MAKECONTEXT
+
+/* Define to 1 if you have the `numa_bitmask_nbytes' function. */
+#undef HAVE_NUMA_BITMASK_NBYTES
+
+/* Define to 1 if you have the `numa_distance' function. */
+#undef HAVE_NUMA_DISTANCE
+
+/* Define to 1 if you have the <numa.h> header file. */
+#undef HAVE_NUMA_H
+
+/* Define to 1 if you have the `numa_num_configured_cpus' function. */
+#undef HAVE_NUMA_NUM_CONFIGURED_CPUS
+
+/* Define to 1 if you have the `numa_num_thread_cpus' function. */
+#undef HAVE_NUMA_NUM_THREAD_CPUS
+
+/* Define if `malloc'ing more than one page always returns a page-aligned
+   address. */
+#undef HAVE_PAGE_ALIGNED_MALLOC
+
+/* Define to 1 if you have the `posix_memalign' function. */
+#undef HAVE_POSIX_MEMALIGN
+
+/* Define to 1 if you have the `processor_bind' function. */
+#undef HAVE_PROCESSOR_BIND
+
+/* have access to the PTHREAD_PROCESS_PRIVATE constant */
+#undef HAVE_PTHREAD_PROCESS_PRIVATE
+
+/* Define to 1 if you have the `pthread_spin_init' function. */
+#undef HAVE_PTHREAD_SPIN_INIT
+
+/* Define to 1 if you have the `pthread_yield' function. */
+#undef HAVE_PTHREAD_YIELD
+
+/* Define to 1 if you have the `qsort_r' function. */
+#undef HAVE_QSORT_R
+
+/* Define to 1 if you have the <sched.h> header file. */
+#undef HAVE_SCHED_H
+
+/* Define to 1 if you have the `sched_yield' function. */
+#undef HAVE_SCHED_YIELD
+
+/* Define if _SC_CLK_TCK is available. */
+#undef HAVE_SC_CLK_TCK
+
+/* define if you have _SC_NPROCESSORS_CONF */
+#undef HAVE_SC_NPROCESSORS_CONF
+
+/* Define to 1 if you have the `setrlimit' function. */
+#undef HAVE_SETRLIMIT
+
+/* Define to 1 if you have the <signal.h> header file. */
+#undef HAVE_SIGNAL_H
+
+/* Define to 1 if you have the <sn/mmtimer.h> header file. */
+#undef HAVE_SN_MMTIMER_H
+
+/* Define to 1 if you have the <stdarg.h> header file. */
+#undef HAVE_STDARG_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the `strtol' function. */
+#undef HAVE_STRTOL
+
+/* Define to 1 if you have the `swapcontext' function. */
+#undef HAVE_SWAPCONTEXT
+
+/* Define to 1 if you have the `syscall' function. */
+#undef HAVE_SYSCALL
+
+/* Define to 1 if you have the `sysconf' function. */
+#undef HAVE_SYSCONF
+
+/* Define to 1 if you have the `sysctl' function. */
+#undef HAVE_SYSCTL
+
+/* Define to 1 if you have the <sys/inttypes.h> header file. */
+#undef HAVE_SYS_INTTYPES_H
+
+/* Define to 1 if you have the <sys/ioctl.h> header file. */
+#undef HAVE_SYS_IOCTL_H
+
+/* Define to 1 if you have the <sys/lgrp_user.h> header file. */
+#undef HAVE_SYS_LGRP_USER_H
+
+/* Define to 1 if you have the <sys/mman.h> header file. */
+#undef HAVE_SYS_MMAN_H
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#undef HAVE_SYS_PARAM_H
+
+/* Define to 1 if you have the <sys/resource.h> header file. */
+#undef HAVE_SYS_RESOURCE_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/syscall.h> header file. */
+#undef HAVE_SYS_SYSCALL_H
+
+/* Define to 1 if you have the <sys/sysctl.h> header file. */
+#undef HAVE_SYS_SYSCTL_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/ucontext.h> header file. */
+#undef HAVE_SYS_UCONTEXT_H
+
+/* Define to 1 if you have the <sys/utsname.h> header file. */
+#undef HAVE_SYS_UTSNAME_H
+
+/* Define to 1 if you have <sys/wait.h> that is POSIX.1 compatible. */
+#undef HAVE_SYS_WAIT_H
+
+/* Define to 1 if you have the <tmc/cpus.h> header file. */
+#undef HAVE_TMC_CPUS_H
+
+/* Define to 1 if you have the <ucontext.h> header file. */
+#undef HAVE_UCONTEXT_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* compiler understands __attribute__((unused)) */
+#undef HAVE_UNUSED
+
+/* Define to 1 if you have the <valgrind/memcheck.h> header file. */
+#undef HAVE_VALGRIND_MEMCHECK_H
+
+/* Define to 1 if you have the `vprintf' function. */
+#undef HAVE_VPRINTF
+
+/* Define if `valloc'ed memory can be `free'd. */
+#undef HAVE_WORKING_VALLOC
+
+/* make the ss_sp member of uc_stack be the high-address of the stack, rather
+   than the low-address of the stack */
+#undef INVERSE_STACK_POINTER
+
+/* Define to use a lock-free hash table for FEB metadata. */
+#undef LOCK_FREE_FEBS
+
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
+#undef LT_OBJDIR
+
+/* if the compiler supports __sync_synchronize (fallback to COMPILER_FENCE) */
+#undef MACHINE_FENCE
+
+/* Whether the library should use get/set rlimit functions */
+#undef NEED_RLIMIT
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* this signifies that pthread_mutex_t is small enough to fit in the existing
+   data structures */
+#undef PTHREAD_MUTEX_SMALL_ENOUGH
+
+/* Allow function inlining to be toggled */
+#undef QINLINE
+
+/* specifying data alignment is allowed */
+#undef QTHREAD_ALIGNEDDATA_ALLOWED
+
+/* alignment of aligned_t */
+#undef QTHREAD_ALIGNMENT_ALIGNED_T
+
+/* Support HPCToolkit stack unwinding */
+#undef QTHREAD_ALLOW_HPCTOOLKIT_STACK_UNWINDING
+
+/* Architecture type of assembly to use */
+#undef QTHREAD_ASSEMBLY_ARCH
+
+/* if the compiler supports __sync_val_compare_and_swap */
+#undef QTHREAD_ATOMIC_CAS
+
+/* if the compiler supports __sync_val_compare_and_swap on 32-bit ints */
+#undef QTHREAD_ATOMIC_CAS32
+
+/* if the compiler supports __sync_val_compare_and_swap on 64-bit ints */
+#undef QTHREAD_ATOMIC_CAS64
+
+/* if the compiler supports __sync_val_compare_and_swap on pointers */
+#undef QTHREAD_ATOMIC_CAS_PTR
+
+/* if the compiler supports __sync_fetch_and_add */
+#undef QTHREAD_ATOMIC_INCR
+
+/* use pthread-based condwait for lf queue */
+#undef QTHREAD_CONDWAIT_BLOCKING_QUEUE
+
+/* keeps track of the number of threads */
+#undef QTHREAD_COUNT_THREADS
+
+/* enables printing debugging information at runtime */
+#undef QTHREAD_DEBUG
+
+/* prints out affinity debugging information at runtime */
+#undef QTHREAD_DEBUG_AFFINITY
+
+/* prints out barrier debugging information at runtime */
+#undef QTHREAD_DEBUG_BARRIER
+
+/* prints out core debugging information at runtime */
+#undef QTHREAD_DEBUG_CORE
+
+/* prints out feb debugging information at runtime */
+#undef QTHREAD_DEBUG_FEBS
+
+/* prints out futurelib debugging information at runtime */
+#undef QTHREAD_DEBUG_FUTURELIB
+
+/* prints out I/O debugging information at runtime */
+#undef QTHREAD_DEBUG_IO
+
+/* prints out loop debugging information at runtime */
+#undef QTHREAD_DEBUG_LOOPS
+
+/* prints out memory pool debugging information at runtime */
+#undef QTHREAD_DEBUG_MPOOL
+
+/* prints out multinode debugging information at runtime */
+#undef QTHREAD_DEBUG_MULTINODE
+
+/* prints out qarray debugging information at runtime */
+#undef QTHREAD_DEBUG_QARRAY
+
+/* prints out rcrtool debugging information at runtime */
+#undef QTHREAD_DEBUG_RCRTOOL
+
+/* prints out shepherd debugging information at runtime */
+#undef QTHREAD_DEBUG_SHEPHERD
+
+/* prints out syncvar debugging information at runtime */
+#undef QTHREAD_DEBUG_SYNCVARS
+
+/* prints out syscall debugging information at runtime */
+#undef QTHREAD_DEBUG_SYSCALLS
+
+/* prints out team debugging information at runtime */
+#undef QTHREAD_DEBUG_TEAM
+
+/* prints out threadqueue debugging information at runtime */
+#undef QTHREAD_DEBUG_THREADQUEUES
+
+/* prints out thread debugging information at runtime */
+#undef QTHREAD_DEBUG_THREADS
+
+/* prints out xomp debugging information at runtime */
+#undef QTHREAD_DEBUG_XOMP
+
+/* What size stacks to use by default */
+#undef QTHREAD_DEFAULT_STACK_SIZE
+
+/* If __builtin_expect can be used */
+#undef QTHREAD_EXPECT_OKAY
+
+/* adds code to monitor how much time is spent waiting for FEB states */
+#undef QTHREAD_FEB_PROFILING
+
+/* Use guard pages to detect stack overruns */
+#undef QTHREAD_GUARD_PAGES
+
+/* if I can use the hwloc topology interface */
+#undef QTHREAD_HAVE_HWLOC
+
+/* Hwloc has distances */
+#undef QTHREAD_HAVE_HWLOC_DISTS
+
+/* if the machine has a Solaris-style liblgrp topology interface */
+#undef QTHREAD_HAVE_LGRP
+
+/* if libnuma is available */
+#undef QTHREAD_HAVE_LIBNUMA
+
+/* if the machine has a MacOS-style Mach topology interface */
+#undef QTHREAD_HAVE_MACHTOPO
+
+/* if the machine has a Tilera-style topology interface */
+#undef QTHREAD_HAVE_TILETOPO
+
+/* if libnuma provides numa_allocate_nodemask */
+#undef QTHREAD_LIBNUMA_V2
+
+/* Enable multiple-dequeuer support for lifo scheduler */
+#undef QTHREAD_LIFO_MULTI_DEQUEUER
+
+/* makecontext()passes args as int-size, not long-size */
+#undef QTHREAD_MAKECONTEXT_SPLIT
+
+/* turns on memory scribbling */
+#undef QTHREAD_MEMORY_SCRIBBLING
+
+/* Defined if multinode support desired */
+#undef QTHREAD_MULTINODE
+
+/* Use mutexes instead of assembly for atomic increment */
+#undef QTHREAD_MUTEX_INCREMENT
+
+/* if this header is necessary for builtin atomics */
+#undef QTHREAD_NEEDS_IA64INTRIN
+
+/* Do not check the alignment of synchronization addresses */
+#undef QTHREAD_NOALIGNCHECK
+
+/* makes sure every thread gets an id at creation time */
+#undef QTHREAD_NONLAZY_THREADIDS
+
+/* removes sanity checks from most qthread functions */
+#undef QTHREAD_NO_ASSERTS
+
+/* if libnuma's numa_distance() function works */
+#undef QTHREAD_NUMA_DISTANCE_WORKING
+
+/* Enable experimental OpenMP affinity extensions. Under development */
+#undef QTHREAD_OMP_AFFINITY
+
+/* call into the OS scheduler when possible */
+#undef QTHREAD_OVERSUBSCRIPTION
+
+/* expensive sanity checks */
+#undef QTHREAD_PARANOIA
+
+/* Define to specify the PPC ABI */
+#undef QTHREAD_PPC_ABI
+
+/* Constant for the AIX PPC ABI */
+#undef QTHREAD_PPC_ABI_AIX
+
+/* Constant for the Darwin PPC ABI */
+#undef QTHREAD_PPC_ABI_DARWIN
+
+/* Constant for the SysV PPC ABI */
+#undef QTHREAD_PPC_ABI_SYSV
+
+/* Constant for an unknown PPC ABI */
+#undef QTHREAD_PPC_ABI_UNKNOWN
+
+/* Precache guard pages in pooled stacks */
+#undef QTHREAD_PRECACHE_GUARD_PAGES
+
+/* Define for BSD-style qsort_r */
+#undef QTHREAD_QSORT_BSD
+
+/* Define for glibc-style qsort_r */
+#undef QTHREAD_QSORT_GLIBC
+
+/* enables RCR logging and scheduling */
+#undef QTHREAD_RCRTOOL
+
+/* logs RCR stats */
+#undef QTHREAD_RCRTOOL_STAT
+
+/* adds code to monitor how much time shepherds spend idle */
+#undef QTHREAD_SHEPHERD_PROFILING
+
+/* use a shift-based gcd algorithm */
+#undef QTHREAD_SHIFT_GCD
+
+/* size of aligned_t */
+#undef QTHREAD_SIZEOF_ALIGNED_T
+
+/* How to align the stacks. */
+#undef QTHREAD_STACK_ALIGNMENT
+
+/* If __builtin_trap can be used */
+#undef QTHREAD_TRAP_OKAY
+
+/* the uc_stack structure in ucontext_t has an ss_flags structure that needs
+   to be initialized */
+#undef QTHREAD_UCSTACK_HAS_SSFLAGS
+
+/* Define to use eurekas */
+#undef QTHREAD_USE_EUREKAS
+
+/* define to 1 if PLPA is available and works */
+#undef QTHREAD_USE_PLPA
+
+/* Define to enable ROSE extensions */
+#undef QTHREAD_USE_ROSE_EXTENSIONS
+
+/* Define to use worker-specific spawn cache */
+#undef QTHREAD_USE_SPAWNCACHE
+
+/* Use Valgrind Macros */
+#undef QTHREAD_USE_VALGRIND
+
+/* socklen_t compatible uint */
+#undef QT_SOCKLENTYPE_T
+
+/* if the compiler supports __attribute__((deprecated)) */
+#undef Q_DEPRECATED
+
+/* if the compiler supports __attribute__((malloc)) */
+#undef Q_MALLOC
+
+/* if the compiler supports __attribute__((NOINLINE)) */
+#undef Q_NOINLINE
+
+/* most gcc compilers know a function __attribute__((unused)) */
+#undef Q_UNUSED
+
+/* Support dynamic profile of sincs infomation */
+#undef SINCS_PROFILE
+
+/* The size of `char', as computed by sizeof. */
+#undef SIZEOF_CHAR
+
+/* The size of `int', as computed by sizeof. */
+#undef SIZEOF_INT
+
+/* The size of `long', as computed by sizeof. */
+#undef SIZEOF_LONG
+
+/* The size of `pthread_mutex_t', as computed by sizeof. */
+#undef SIZEOF_PTHREAD_MUTEX_T
+
+/* The size of `short', as computed by sizeof. */
+#undef SIZEOF_SHORT
+
+/* The size of `socklen_t', as computed by sizeof. */
+#undef SIZEOF_SOCKLEN_T
+
+/* The size of `void*', as computed by sizeof. */
+#undef SIZEOF_VOIDP
+
+/* The size of `void *', as computed by sizeof. */
+#undef SIZEOF_VOID_P
+
+/* Support dynamic profile of SPR infomation */
+#undef SPR_PROFILE
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Support dynamic profile of steal infomation */
+#undef STEAL_PROFILE
+
+/* Support dynamic profile of teams infomation */
+#undef TEAM_PROFILE
+
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+#undef TIME_WITH_SYS_TIME
+
+/* If the compiler supports a TLS storage class define it to that here */
+#undef TLS
+
+/* prevents most uses of memory pools */
+#undef UNPOOLED
+
+/* Define to allow blocking syscalls to be mangled into qthread-specific
+   variants */
+#undef USE_HEADER_SYSCALLS
+
+/* Use Porterfield spinlock */
+#undef USE_INTERNAL_SPINLOCK
+
+/* Enable extensions on AIX 3, Interix.  */
+#ifndef _ALL_SOURCE
+# undef _ALL_SOURCE
+#endif
+/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# undef _GNU_SOURCE
+#endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# undef _POSIX_PTHREAD_SEMANTICS
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+# undef _TANDEM_SOURCE
+#endif
+/* Enable general extensions on Solaris.  */
+#ifndef __EXTENSIONS__
+# undef __EXTENSIONS__
+#endif
+
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#undef _FILE_OFFSET_BITS
+
+/* Define for large files, on AIX-style hosts. */
+#undef _LARGE_FILES
+
+/* Define to 1 if on MINIX. */
+#undef _MINIX
+
+/* Define to 2 if the system does not provide POSIX.1 features except with
+   this defined. */
+#undef _POSIX_1_SOURCE
+
+/* Define to 1 if you need to in order for `stat' and other things to work. */
+#undef _POSIX_SOURCE
+
+/* Last resort, if no function name macros can be found */
+#undef __FUNCTION__
+
+/* force the Sun makecontext to behave correctly */
+#undef __MAKECONTEXT_V2_SOURCE
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+#undef inline
+#endif
+
+/* Define to `long int' if <sys/types.h> does not define. */
+#undef off_t
+
+/* Define to `int' if <sys/types.h> does not define. */
+#undef pid_t
+
+/* Define to the equivalent of the C99 'restrict' keyword, or to
+   nothing if this is not supported.  Do not define if restrict is
+   supported directly.  */
+#undef restrict
+/* Work around a bug in Sun C++: it does not support _Restrict or
+   __restrict__, even though the corresponding Sun C compiler ends up with
+   "#define restrict _Restrict" or "#define restrict __restrict__" in the
+   previous line.  Perhaps some future version of Sun C++ will work with
+   restrict; if so, hopefully it defines __RESTRICT like Sun C does.  */
+#if defined __SUNPRO_CC && !defined __RESTRICT
+# define _Restrict
+# define __restrict__
+#endif
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t
+
+/* Define to empty if the keyword `volatile' does not work. Warning: valid
+   code using `volatile' can become incorrect without. Disable with care. */
+#undef volatile

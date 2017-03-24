@@ -1,0 +1,2 @@
+init-type4.chpl:20: error: unresolved call 'init(A)'
+init-type4.chpl:20: note: candidates are: 'init(A, xVal)'

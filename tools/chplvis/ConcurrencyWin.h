@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Cray Inc.
+ * Copyright 2015-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,81 +20,30 @@
 #ifndef CONCURRENCYWIN_H
 #define CONCURRENCYWIN_H
 
+class ConcurrencyWin; 
+
 #include <FL/Fl_Double_Window.H>
-#include <FL/Fl_Box.H>
-#include <FL/Fl_Group.H>
-#include <FL/Fl_Scroll.H>
-#include <FL/Fl_Text_Display.H>
-#include <FL/Fl_Button.H>
-
-#include "DataModel.h"
-
-class ConcurrencyWin;
-
-// Data (Box) class for the concurrency window
-
-struct drawData {
-  int startLine;
-  int column;
-  int endLine;
-  bool isEndTask;
-};
-
-class ConcurrencyData : public Fl_Group {
-
-  private:
-    ConcurrencyWin *parent;
-    std::list<drawData> drawDB;
-
-  public:
-    void draw (void);
-    int handle (int event);
-
-    ConcurrencyData (int x, int y, int W, int H, const char *l=0) : Fl_Group(x,y,W,H,l){};
-
-    void setParent(ConcurrencyWin *p) { parent = p; }
-
-    void buildData (void);
-  
-};
+#include "ConcurrencyView.h"
 
 // Window for showing concurrency details.
 
 class ConcurrencyWin : public Fl_Double_Window {
 
- friend class ConcurrencyData;
-
   private:
-    Fl_Box *title;
-    Fl_Scroll *scroll;
-    ConcurrencyData *dataBox;
-    Fl_Text_Display *commBox;
-    Fl_Button *backBtn;
-
-    long localeNum;
-    long tagNum;
-
-    DataModel::tagData *curTag;  
+    ConcurrencyView *dataView;
 
   public:
     ConcurrencyWin (int x, int y, int W, int H, const char *l=0);
 
-    void setMembers (Fl_Box *ttl, Fl_Scroll *scrl, ConcurrencyData *data) {
-      title = ttl;
-      scroll = scrl;
-      dataBox = data;
-      curTag = NULL;
-      tagNum = -3;
-      localeNum = 0;
-      dataBox->setParent(this);
-      commBox = NULL;
+    void setMembers (ConcurrencyView *v) {
+       dataView = v;
     }
 
-    void updateData (long loc, long tag);
+    void updateData (long loc, long tag) { dataView->updateData(loc,tag); }
 
-    void showCommBoxFor(taskData *task);
+    void showCommListFor(taskData *task) { dataView->showCommListFor(task); }
 
-    void showTaskBox();
+    void showTaskBox() { dataView->showTaskBox(); }
 
 };
 

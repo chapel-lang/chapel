@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,7 @@
 #include "passes.h"
 
 #include "bison-chapel.h"
+#include "build.h"
 #include "config.h"
 #include "countTokens.h"
 #include "docsDriver.h"
@@ -57,7 +58,10 @@ static WellKnownType sWellKnownTypes[] = {
   {"BaseArr",            &dtBaseArr,       true},
   {"BaseDom",            &dtBaseDom,       true},
   {"BaseDist",           &dtDist,          true},
-  {"chpl_main_argument", &dtMainArgument, false}
+  {"chpl_main_argument", &dtMainArgument, false},
+  {"chpl_comm_on_bundle_t", &dtOnBundleRecord,   false},
+  {"chpl_task_bundle_t",    &dtTaskBundleRecord, false},
+  {"Error",                 &dtError,            true}
 };
 
 
@@ -75,7 +79,12 @@ struct WellKnownFn
 static WellKnownFn sWellKnownFns[] = {
   {"chpl_here_alloc",         &gChplHereAlloc, FLAG_LOCALE_MODEL_ALLOC},
   {"chpl_here_free",          &gChplHereFree,  FLAG_LOCALE_MODEL_FREE},
-  {"chpl_doDirectExecuteOn",  &gChplDoDirectExecuteOn, FLAG_UNKNOWN}
+  {"chpl_doDirectExecuteOn",  &gChplDoDirectExecuteOn, FLAG_UNKNOWN},
+  {"_build_tuple",            &gBuildTupleType, FLAG_BUILD_TUPLE_TYPE},
+  {"_build_tuple_noref",      &gBuildTupleTypeNoRef, FLAG_BUILD_TUPLE_TYPE},
+  {"*",                       &gBuildStarTupleType, FLAG_BUILD_TUPLE_TYPE},
+  {"_build_star_tuple_noref", &gBuildStarTupleTypeNoRef, FLAG_BUILD_TUPLE_TYPE},
+  {"chpl_delete_error",       &gChplDeleteError, FLAG_UNKNOWN}
 };
 
 void parse() {
@@ -147,6 +156,7 @@ void parse() {
   }
 
   checkConfigs();
+  convertForallExpressions();
 
   finishCountingTokens();
 

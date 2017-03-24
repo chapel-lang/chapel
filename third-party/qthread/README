@@ -2,13 +2,10 @@
 Qthreads README for Chapel
 ==========================
 
-This copy of Qthreads is being released with Chapel for convenience
-and uses a snapshot of obtained from the Qthreads team at:
+This copy of Qthreads 1.12 is being released with Chapel for
+convenience and was obtained from:
 
-  https://code.google.com/p/qthreads/downloads/list
+  https://github.com/qthreads/qthreads
 
 Any Chapel issues that seem to be related to Qthreads should be
 directed to the Chapel team at chapel-bugs@lists.sourceforge.net.
-
-This version of Qthreads includes changes to the Chapel-Qthreads
-interface to better support emerging hierarchical locale work.

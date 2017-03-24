@@ -1,1 +1,1 @@
-invalidMode.chpl:2: error: unresolved enumerated type symbol "q"
+invalidMode.chpl:2: error: unresolved enumerated type symbol or call 'type iomode.q'

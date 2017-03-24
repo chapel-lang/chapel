@@ -59,7 +59,7 @@ proc ref R.increment() {
 }
 
 
-proc R.~R() {
+proc R.deinit() {
   extern proc printf(fmt:c_string, arg:C);
   if debug {
     printf("in destructor for c=%p ", c);
@@ -70,7 +70,7 @@ proc R.~R() {
   delete c;
 }
 
-proc ref R.verify() {
+proc R.verify() {
   extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
 
   // default initialized records have nil ptr, OK

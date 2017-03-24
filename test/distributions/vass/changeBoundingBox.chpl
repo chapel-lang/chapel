@@ -6,7 +6,7 @@ on an instance of a Block distribution.
 
 use BlockDist;
 
-const dummyBB: domain(1); // or whatever bounding box type you want eventually
+const dummyBB: domain(1) = {1..1}; // or whatever bounding box type you want eventually
 
 // Create a distribution without knowing its bounding box dimensions.
 const dist = new Block(dummyBB);
@@ -73,10 +73,6 @@ created using 'this' - it will not redistribute already-existing
 domains/arrays.
 */
 proc Block.changeBoundingBox(newBB) {
-  // A weak guard against accessing already-deleted Block objects.
-  if _distCnt.read() < 0 then
-    halt("changeBoundingBox: negative reference count");
-
   // Comment out this check if desired. NB Block-distributed domains created
   // using 'this' will not be re-distributed upon changeBoundingBox().
   if _doms.length != 0 then

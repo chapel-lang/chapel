@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -73,6 +73,7 @@ module ChapelEnv {
   /* See :ref:`readme-chplenv.CHPL_TIMERS` for more information. */
   param CHPL_TIMERS:string          = __primitive("get compiler variable", "CHPL_TIMERS");
 
+  /* See :ref:`readme-chplenv.CHPL_UNWIND` for more information. */
   param CHPL_UNWIND:string          = __primitive("get compiler variable", "CHPL_UNWIND");
 
   /* See :ref:`readme-chplenv.CHPL_MEM` for more information. */

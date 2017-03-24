@@ -1,7 +1,7 @@
 class C {
-  proc ~C() { writeln("In ~C #1"); }
+  proc deinit() { writeln("In deinit #1"); }
 }
-proc C.~C() { writeln("In ~C #2"); }
+proc C.deinit() { writeln("In deinit #2"); }
 
 proc main {
   var c = new C();

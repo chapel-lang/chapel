@@ -300,7 +300,7 @@ proc initLulesh() {
   initYSyms(YSym);
   initZSyms(ZSym);
 
-  /* embed hexehedral elements in nodal point lattice */
+  /* embed hexahedral elements in nodal point lattice */
   //calculated on the fly using: elemToNodes(i: index(Elems)): index(Nodes)
 
   // initialize the masses
@@ -1126,7 +1126,7 @@ proc CalcQForElems() {
   CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta, 
                                   delx_xi, delx_eta, delx_zeta);
 
-  /* Transfer veloctiy gradients in the first order elements */
+  /* Transfer velocity gradients in the first order elements */
   /* problem->commElements->Transfer(CommElements::monoQ) ; */
   CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
                          delx_xi, delx_eta, delx_zeta);
@@ -1162,7 +1162,7 @@ proc ApplyMaterialPropertiesForElems() {
     if eosvmin != 0.0 && vc < eosvmin then vc = eosvmin;
     if eosvmax != 0.0 && vc > eosvmax then vc = eosvmax;
     if vc <= 0.0 {
-      writeln("Volume error (in ApplyMaterialProperiesForElems).");
+      writeln("Volume error (in ApplyMaterialPropertiesForElems).");
       exit(1);
     }
   }

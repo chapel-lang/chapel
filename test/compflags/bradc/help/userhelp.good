@@ -52,12 +52,17 @@ Optimization Control Options:
       --[no-]use-noinit               Enable [disable] ability to skip default
                                       initialization through the keyword
                                       noinit
+      --[no-]infer-local-fields       Enable [disable] analysis to infer local
+                                      fields in classes and records
+                                      (experimental)
       --[no-]vectorize                Enable [disable] generation of
                                       vectorization hints
 
 Run-time Semantic Check Options:
       --no-checks                     Disable all following run-time checks
       --[no-]bounds-checks            Enable [disable] bounds checking
+      --[no-]cast-checks              Enable [disable] safeCast() value checks
+      --[no-]div-by-zero-checks       Enable [disable] divide-by-zero checks
       --[no-]formal-domain-checks     Enable [disable] formal domain checking
       --[no-]local-checks             Enable [disable] local block checking
       --[no-]nil-checks               Enable [disable] nil checking
@@ -110,9 +115,12 @@ Miscellaneous Options:
       --[no-]explain-verbose          Enable [disable] tracing of
                                       disambiguation with 'explain' options
       --instantiate-max <max>         Limit number of instantiations
+      --[no-]print-callgraph          Print a representation of the callgraph
+                                      for the program
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning
   -s, --set <name>[=<value>]          Set config param value
+      --strict-errors                 Enable strict mode for error handling
       --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]warn-const-loops         Enable [disable] warnings for some
                                       'while' loops with constant conditions

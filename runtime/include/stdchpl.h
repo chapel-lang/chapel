@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -59,6 +59,7 @@
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpltimers.h"
+#include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-vector-macros.h"
 #include "chpl-visual-debug.h"

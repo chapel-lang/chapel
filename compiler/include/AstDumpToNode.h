@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,8 +27,10 @@
 class BaseAST;
 class Expr;
 class ModuleSymbol;
+class QualifiedType;
 class Symbol;
 class Type;
+
 
 class AstDumpToNode : public AstLogger
 {
@@ -142,9 +144,11 @@ private:
   void             ast_symbol(const char* tag, Symbol* sym, bool def);
   void             ast_symbol(Symbol* sym, bool def);
 
-  void             writeSymbol(Symbol* sym)                             const;
-  void             writeSymbolCompact(Symbol* sym)                      const;
-  int              writeType(Type* type, bool announce = true)          const;
+  void             writeSymbol(Symbol* sym)                              const;
+  void             writeSymbolCompact(Symbol* sym)                       const;
+
+  int              writeQual(QualifiedType type)                         const;
+  int              writeType(Type*         type, bool announce = true)   const;
 
   void             write(const char* text);
   void             write(bool spaceBefore, const char* text, bool spaceAfter);

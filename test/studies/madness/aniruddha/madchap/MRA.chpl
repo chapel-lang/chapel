@@ -49,9 +49,9 @@ class Function {
     const quad_w : [quadDom] real; // weights
 
     const quad_phiDom: domain(2);
-    const quad_phi   : [quad_phiDom] real; // phi[point,i]
-    const quad_phiT  : [quad_phiDom] real; // phi[point,i] transpose
-    const quad_phiw  : [quad_phiDom] real; // phi[point,i]*weight[point]
+    var   quad_phi   : [quad_phiDom] real; // phi[point,i]
+    var   quad_phiT  : [quad_phiDom] real; // phi[point,i] transpose
+    var   quad_phiw  : [quad_phiDom] real; // phi[point,i]*weight[point]
 
     // blocks of the block tridiagonal derivative operator
     const dcDom: domain(2);
@@ -95,7 +95,7 @@ class Function {
     }
 
 
-    proc ~Function() {
+    proc deinit() {
         delete sumC;
         delete diffC;
     }
@@ -195,8 +195,8 @@ class Function {
     proc refine(curNode: Node) {
         // project f(x) at next level
         var sc : [0..2*k-1] real;
-        var s0 : [0..k-1] => sc[0..k-1];
-        var s1 : [0..k-1] => sc[k..2*k-1];
+        ref s0 = sc[0..k-1];
+        ref s1 = sc[k..2*k-1];
 
         const child = curNode.get_children();
         s0 = project(child(1));
@@ -571,7 +571,8 @@ class Function {
     inline proc truncate(x) {
       const eps = 1e-8;
       if abs(x) < eps then return 0.0;
-      else return x;
+      if abs(x) > 1.0/eps then return trunc(x/10) * 10;
+      return x;
     }
     
     /** Mostly for debugging, print summary of coefficients,

@@ -1,0 +1,5 @@
+feature request: const in intent works for Owned
+
+Since 'in' for Owned does an ownership transfer, 'const in' just means to
+do that ownership transfer but not allow the Owned argument to be
+modified in the body of the function.
