@@ -45,10 +45,6 @@ static InitStyle findInitStyle(Expr*     expr);
 static void      preNormalizeNonGenericInit(FnSymbol* fn);
 static void      preNormalizeGenericInit(FnSymbol* fn);
 
-static bool      isAssignment(CallExpr* callExpr);
-static bool      isSimpleAssignment(CallExpr* callExpr);
-static bool      isCompoundAssignment(CallExpr* callExpr);
-
 /************************************* | **************************************
 *                                                                             *
 * Attempt to assign a type to the symbol for each field in some of the        *
@@ -173,8 +169,15 @@ static void      fieldInitFromField(Expr*     insertBefore,
                                     DefExpr*  field);
 
 static DefExpr*  toSuperFieldInit(AggregateType* at, CallExpr* callExpr);
+
 static DefExpr*  toLocalFieldInit(AggregateType* at, CallExpr* callExpr);
+static DefExpr*  toLocalField    (AggregateType* at, CallExpr* callExpr);
+
 static CallExpr* createFieldAccess(FnSymbol* fn, DefExpr* field);
+
+static bool      isAssignment(CallExpr* callExpr);
+static bool      isSimpleAssignment(CallExpr* callExpr);
+static bool      isCompoundAssignment(CallExpr* callExpr);
 
 /************************************* | **************************************
 *                                                                             *
@@ -921,24 +924,30 @@ static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
   // The outer call has assignment syntax
   if (at != NULL && isAssignment(callExpr) == true) {
     if (CallExpr* lhs = toCallExpr(callExpr->get(1))) {
+      retval = toLocalField(at, lhs);
+    }
+  }
 
-      // The inner call has dot syntax
-      if (lhs->isNamed(".") == true) {
-        SymExpr* base = toSymExpr(lhs->get(1));
-        SymExpr* name = toSymExpr(lhs->get(2));
+  return retval;
+}
 
-        if (base != NULL && name != NULL) {
-          VarSymbol* var = toVarSymbol(name->symbol());
+static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
+  DefExpr* retval = NULL;
 
-          // The base is <this> and the slot is a fieldName
-          if (base->symbol()->hasFlag(FLAG_ARG_THIS) == true &&
+  if (expr->isNamed(".") == true) {
+    SymExpr* base = toSymExpr(expr->get(1));
+    SymExpr* name = toSymExpr(expr->get(2));
 
-              var                                    != NULL &&
-              var->immediate                         != NULL &&
-              var->immediate->const_kind             == CONST_KIND_STRING) {
-            retval = fieldByName(at, var->immediate->v_string);
-          }
-        }
+    if (base != NULL && name != NULL) {
+      VarSymbol* var = toVarSymbol(name->symbol());
+
+      // The base is <this> and the slot is a fieldName
+      if (base->symbol()->hasFlag(FLAG_ARG_THIS) == true &&
+
+          var                                    != NULL &&
+          var->immediate                         != NULL &&
+          var->immediate->const_kind             == CONST_KIND_STRING) {
+        retval = fieldByName(at, var->immediate->v_string);
       }
     }
   }
@@ -998,7 +1007,6 @@ static bool isCompoundAssignment(CallExpr* callExpr) {
   bool retval = false;
 
   if (callExpr->isNamed("+=")  == true ||
-      callExpr->isNamed("+=")  == true ||
       callExpr->isNamed("-=")  == true ||
       callExpr->isNamed("*=")  == true ||
       callExpr->isNamed("/=")  == true ||
