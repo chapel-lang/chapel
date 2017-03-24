@@ -1857,7 +1857,10 @@ static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
   // We'll output differently based upon whether it's
   // in a user-defined module or a compiler-generated function.
   bool user = inModule->modTag == MOD_USER;
-  bool compilerGenerated = inFunction->hasFlag(FLAG_COMPILER_GENERATED);
+  bool compilerGenerated = false;
+  if (inFunction != NULL)
+    compilerGenerated = inFunction->hasFlag(FLAG_COMPILER_GENERATED);
+
   BaseAST* last = *lastPrintedReason;
   bool same = (last != NULL &&
                reason->fname() == last->fname() &&
