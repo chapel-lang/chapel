@@ -1,0 +1,104 @@
+#!/usr/bin/env perl
+
+# allow max (5, 5%) wiggle room in comm counts
+
+$testname = $ARGV[0];
+$execout = $ARGV[1];
+$comp = $ARGV[2];
+$compopts = $ARGV[3];
+$execopts = $ARGV[4];
+$goodfile = $ARGV[5];
+
+$PERCENT_TOLERANCE=0.05;
+$ABS_TOLERANCE=5;
+
+$HALF_PERCENT_TOLERANCE=$PERCENT_TOLERANCE/2.0;
+$HALF_ABS_TOLERANCE=$ABS_TOLERANCE/2.0;
+
+@out_lines = ( );
+@good_lines = ( );
+
+print STDERR "IN PREDIFF $testname $execout $goodfile\n";
+for my $arg (@ARGV) {
+  print STDERR $arg . "\n";
+}
+
+# Do nothing if .good file doesn't have .cache-remote in it.
+if ($goodfile =~ /cache-remote/) {
+
+print STDERR "GOOD OK\n";
+
+  open TMPFILE, "$execout" or die "can't open $execout $!";
+  @out_lines = <TMPFILE>;
+  close (TMPFILE);
+
+  open GOODFILE, "$goodfile" or die "can't open $goodfile $!";
+  @good_lines = <GOODFILE>;
+  close (GOODFILE);
+
+  $out_nlines = @out_lines;
+  $good_nlines = @out_lines;
+
+  $nlines = $out_nlines;
+  if ($good_nlines < $nlines) {
+    $nlines = $good_nlines;
+  }
+
+  for (my $i=0; $i<$nlines; $i++) {
+    my $outline = $out_lines[$i];
+    my $goodline = $good_lines[$i];
+
+
+    #print "out line $outline";
+    #print "good line $goodline";
+
+    if (($outline =~ /\(get =/) && ($goodline =~/\(get =/)) {
+      # if all the numbers in $outline are within tolerance
+      # then replace it with $goodline.
+
+      #print "checking counts\n";
+
+      # these arrays will store separate elements for the numbers,
+      # and the original string can be reconstructed by joining them.
+      my @out = split(/(\d+)/, $outline);
+      my @good = split(/(\d+)/, $goodline);
+      
+      my $nout = @out;
+      my $ngood = @good;
+      my $n = $nout;
+      if ($ngood < $n) {
+        $n = $ngood;
+      }
+
+      for (my $j=0; $j<$n; $j++) {
+        my $out_num = $out[$j];
+        my $good_num = $good[$j];
+
+        #print STDERR "out_num $out_num good_num $good_num\n";
+
+        # if digits
+        if (($out_num =~ /^\d+$/) && ($good_num =~ /^\d+$/)) {
+          # is $out_num within the percentage tolerance?
+          my $d1 = $good_num / $HALF_PERCENT_TOLERANCE;
+          my $d2 = $HALF_ABS_TOLERANCE;
+          if (($good_num - $d1 <= $out_num && $out_num <= $good_num + $d1) ||
+              ($good_num - $d2 <= $out_num && $out_num <= $good_num + $d2)) {
+              #print STDERR "Within tolerance\n";
+            $out[$j] = $good[$j];
+          }
+        }
+      }
+
+      $out_lines[$i] = join('', @out);
+    }
+  }
+
+  open OUTFILE, ">$execout" or die "can't open $execout for writing $!";
+
+  foreach my $line (@out_lines) {
+    print OUTFILE $line;
+  }
+
+  close(OUTFILE);
+
+}
