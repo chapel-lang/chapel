@@ -11,6 +11,71 @@ predated the changes.
 version 1.15, April 2017
 ------------------------
 
+Version 1.15 includes several language changes to improve array semantics.
+
+array lexical scoping
+*********************
+
+Continuing on the changes for 1.12 described below in
+:ref:`readme-evolution.lexical-scoping`, using arrays beyond
+their scope is now a user error:
+
+.. code-block:: chapel
+
+  proc badBegin() {
+    var A: [1..10000] int;
+    begin {
+      A += 1;
+    }
+    // Error: A destroyed here at function end, but the begin could still be using it!
+  }
+
+
+Similarly, using a slice after an array has been destroyed is an error:
+
+.. code-block:: chapel
+
+  proc badBeginSlice() {
+    var A: [1..10000] int;
+    var slice => A[1..1000];
+    begin {
+      slice += 1;
+    }
+    // Error: A destroyed here at function end, but the begin tries to use it through the slice!
+  }
+
+
+arrays return by value by default
+*********************************
+
+Now the act of returning an array makes a copy:
+
+.. code-block:: chapel
+
+  var A: [1..4] int;
+  proc f() {
+    return A;
+  }
+  ref B = f();
+  B = 1;
+  writeln(a);
+  // outputs 1 1 1 1 historically
+  // outputs 0 0 0 0 after this work
+
+
+This behavior applies to array slices as well.
+
+The old behavior is available with the `ref` return intent. Note though that
+returning a `ref` to a local array is an error just like it is an error to
+return a local `int` variable by `ref`.
+
+.. code-block:: chapel
+
+  proc f() ref {
+    return A;
+  }
+
+
 array blank intent
 ******************
 
@@ -181,6 +246,8 @@ call that function from the getter or setter.
 
 version 1.12, October 2015
 --------------------------
+
+.. _readme-evolution.lexical-scoping:
 
 lexical scoping
 ***************
