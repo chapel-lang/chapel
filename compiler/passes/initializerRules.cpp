@@ -162,26 +162,28 @@ static bool isReturnVoid(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Expr*     fieldInitFromStmt(CallExpr*  stmt,
+static Expr*    fieldInitFromStmt(CallExpr*  stmt,
+                                  FnSymbol*  fn,
+                                  IterState& state,
+                                  DefExpr*   field);
+
+static void     fieldInitFromField(Expr*      insertBefore,
                                    FnSymbol*  fn,
                                    IterState& state,
                                    DefExpr*   field);
 
-static void      fieldInitFromField(Expr*      insertBefore,
-                                    FnSymbol*  fn,
-                                    IterState& state,
-                                    DefExpr*   field);
+static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
 
-static DefExpr*  toSuperFieldInit(AggregateType* at, CallExpr* callExpr);
+static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
+static DefExpr* toLocalField    (AggregateType* at, CallExpr* expr);
 
-static DefExpr*  toLocalFieldInit(AggregateType* at, CallExpr* callExpr);
-static DefExpr*  toLocalField    (AggregateType* at, CallExpr* callExpr);
+static SymExpr* createFieldAccess(Expr*     insertBefore,
+                                  FnSymbol* fn,
+                                  DefExpr*  field);
 
-static CallExpr* createFieldAccess(FnSymbol* fn, DefExpr* field);
-
-static bool      isAssignment(CallExpr* callExpr);
-static bool      isSimpleAssignment(CallExpr* callExpr);
-static bool      isCompoundAssignment(CallExpr* callExpr);
+static bool     isAssignment(CallExpr* callExpr);
+static bool     isSimpleAssignment(CallExpr* callExpr);
+static bool     isCompoundAssignment(CallExpr* callExpr);
 
 /************************************* | **************************************
 *                                                                             *
@@ -715,14 +717,14 @@ static void fieldInitTypeWoutInit(Expr*      stmt,
   Type* type = field->sym->type;
 
   if (isPrimitiveScalar(type) == true) {
-    CallExpr*  defVal = new CallExpr("_defaultOf", type->symbol);
-    CallExpr*  access = createFieldAccess(fn, field);
+    CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
+    SymExpr*  access = createFieldAccess(stmt, fn, field);
 
     stmt->insertBefore(new CallExpr("=",       access,   defVal));
 
   } else if (isNonGenericClass(type) == true) {
-    CallExpr*  defVal = new CallExpr("_defaultOf", type->symbol);
-    CallExpr*  access = createFieldAccess(fn, field);
+    CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
+    SymExpr*  access = createFieldAccess(stmt, fn, field);
 
     stmt->insertBefore(new CallExpr("=",       access,   defVal));
 
@@ -781,7 +783,7 @@ static void fieldInitTypeWithInit(Expr*      stmt,
   //
   if (isPrimitiveScalar(type) == true ||
       isNonGenericClass(type) == true) {
-    CallExpr* fieldAccess = createFieldAccess(fn, field);
+    SymExpr* fieldAccess = createFieldAccess(stmt, fn, field);
 
     stmt->insertBefore(new CallExpr("=", fieldAccess, initExpr));
 
@@ -854,7 +856,7 @@ static void fieldInitTypeInference(Expr*      stmt,
     Type* type = initSym->symbol()->type;
 
     if (isPrimitiveScalar(type) == true) {
-      CallExpr* fieldAccess = createFieldAccess(fn, field);
+      SymExpr* fieldAccess = createFieldAccess(stmt, fn, field);
 
       stmt->insertBefore(new CallExpr("=", fieldAccess, initExpr));
 
@@ -990,12 +992,19 @@ static DefExpr* fieldByName(AggregateType* at, const char* name) {
   return retval;
 }
 
-static CallExpr* createFieldAccess(FnSymbol* fn, DefExpr* field) {
-  UnresolvedSymExpr* dot   = new UnresolvedSymExpr(".");
-  Symbol*            _this = fn->_this;
-  Symbol*            name  = new_CStringSymbol(field->sym->name);
+static SymExpr* createFieldAccess(Expr*     insertBefore,
+                                  FnSymbol* fn,
+                                  DefExpr*  field) {
+  VarSymbol*         tmp   = newTemp("call_tmp");
 
-  return new CallExpr(dot, _this, name);
+  UnresolvedSymExpr* name   = new UnresolvedSymExpr(field->sym->name);
+  Symbol*            _this  = fn->_this;
+  CallExpr*          access = new CallExpr(name, gMethodToken, _this);
+
+  insertBefore->insertBefore(new DefExpr(tmp));
+  insertBefore->insertBefore(new CallExpr(PRIM_MOVE, tmp, access));
+
+  return new SymExpr(tmp);
 }
 
 static bool isAssignment(CallExpr* callExpr) {
