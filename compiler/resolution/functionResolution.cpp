@@ -7146,15 +7146,21 @@ static Expr* preFold(Expr* expr) {
         }
       }
     } else if (call->isCast()) {
+      SymExpr* toSE = toSymExpr(call->castTo());
+      // TODO: we could just bail out aka 'return (result=call)' if !toSE.
+      if (toSE && !toSE->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        // TODO: here, also replace 'call' with toSE so it does not trigger
+        // the same USR_FATAL_CONT in printResolutionErrorUnresolved().
+        USR_FATAL_CONT(call, "illegal cast to non-type");
       result = dropUnnecessaryCast(call);
       if (result == call) {
         // The cast was not dropped.  Remove integer casts on immediate values.
         if (SymExpr* sym = toSymExpr(call->castFrom())) {
           if (VarSymbol* var = toVarSymbol(sym->symbol())) {
             if (var->immediate) {
-              if (SymExpr* sym = toSymExpr(call->castTo())) {
+              if (toSE) {
                 Type* oldType = var->type;
-                Type* newType = sym->symbol()->type;
+                Type* newType = toSE->symbol()->type;
                 if ((is_int_type(oldType) || is_uint_type(oldType) ||
                      is_bool_type(oldType)) &&
                     (is_int_type(newType) || is_uint_type(newType) ||
@@ -7211,8 +7217,8 @@ static Expr* preFold(Expr* expr) {
               }
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->symbol())) {
-            if (SymExpr* sym = toSymExpr(call->castTo())) {
-              Type* newType = sym->symbol()->type;
+            if (toSE) {
+              Type* newType = toSE->symbol()->type;
               if (newType == dtString) {
                 result = new SymExpr(new_StringSymbol(enumSym->name));
                 call->replace(result);
@@ -8265,7 +8271,17 @@ postFold(Expr* expr) {
       }
 
       if (sym->symbol()->type != dtUnknown && sym->symbol()->type != val->type) {
-        CallExpr* cast = createCast(val, sym->symbol());
+        Symbol* toSym = sym->symbol();
+        if (!toSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+          // This assertion is here to ensure compatibility with old code.
+          // Todo: remove after 1.15 release.
+          Symbol* newToSym = toSym->type->symbol;
+          INT_ASSERT(toSym->type       // cast machinery used this previously
+                  == newToSym->type);  // now it will use this
+          toSym = newToSym;
+        }
+        INT_ASSERT(toSym->hasFlag(FLAG_TYPE_VARIABLE));
+        CallExpr* cast = createCast(val, toSym);
         sym->replace(cast);
 
         // see whether preFold will fold this _cast call
