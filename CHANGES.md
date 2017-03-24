@@ -1,11 +1,24 @@
-====================
+n====================
 Release Changes List
 ====================
 
-stopped at 5a6476a
+stopped at 95d6297
 
 TODO:
 * query-replace docs/latest to docs/master
+
+BenA:
+* can we get docs/ directory better?
+
+Preston:
+* what will we do for error-handling documentation for this release?
+
+Michael:
+* type aliases for generic classes?
+* help with 0c70c80?  Documented?  (should it be?)
+
+Greg:
+* documentation for numa changes?
 
 ==============
 version 1.15.0
@@ -20,11 +33,14 @@ Packaging
 ---------
 * extended the Docker image to include a GASNet-based configuration
 * moved object files for the compiler and runtime into $CHPL_HOME/build
+* changed the naming/structure of directories used to store binary files
+* enabled GitHub issues as a means of filing Chapel bugs and feature requests
 
 Configuration Changes
 ---------------------
 * extended CHPL_LLVM to support new modes: llvm-minimal and system[-minimal]
   (see TODO)
+* fixed a problem when using 'muxed' tasking with 'gasnet' but no hugepages
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -41,15 +57,27 @@ Semantic Changes / Changes to Chapel Language
 
 Syntactic/Naming Changes
 ------------------------
+* renamed the 'Error' module to 'SysError'
 
 New Features
 ------------
+* improved support for new-style initializers
 * added initial support for copy initializers
+* added prototype support for error-handling in Chapel
+* added the ability to define secondary methods on instantiated types
+  (e.g., 'proc (R(int)).foo() { ... }' defines foo on R(int) but not R(real))
+* added support for defining type aliases for generic classes
+  (e.g., 'type Vect = Vector;' for generic type 'Vector')
+* enabled 'param's and 'config param's to be specified without initializers
+* added min() and max() overloads that accept and generate 'param' values
+* added support for a deinit() routine that will replace destructors
 
 Feature Improvements
 --------------------
 * improved the default hash functions used by associative domains
 * reduced opportunities for races on set operations for associative arrays
+* vastly improved the stability, generality, and precision of 'where' clauses
+  (see TODO)
 
 Interoperability Improvements
 -----------------------------
@@ -58,11 +86,16 @@ Standard Modules/Library
 ------------------------
 * added support for passing comparators to the domain.sorted() iterator
   (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=sorted#ChapelArray.sorted)
+* converted the 'barrier' type from a class into a record
+  (see http://chapel.cray.com/docs/master/modules/standard/Barrier.html)
 
 Package Modules
 ---------------
 * improved support for the 'MatrixMarket' module
-  (see )
+  (see TODO)
+* added BLAS level 1 and 2 routines to the previous support for level 3
+  (see TODO)
+  
 
 Domain Maps (Layouts and Distributions)
 ---------------------------------------
@@ -70,18 +103,26 @@ Domain Maps (Layouts and Distributions)
 Performance Optimizations/Improvements
 --------------------------------------
 * improved the performance of casts from strings to numeric types
-* improved support for remote value forwarding to handle more cases
+* improved the cases handled by, and accuracy of, remote value forwarding
+* improved parallel tasking performance using a hybrid spin/condwait strategy
+* removed redundant field initializations in init() routines
+* moved argument bundles for tasks an on-clauses from the heap to task stacks
+* optimized the creation of tasks for certain coforalls with known trip counts
+* optimized '<~>' overloads to avoid unnecessary reference counting
+* optimized a costly temporary array out of the BlockCyclic distribution
+* added intra-locale parallelism for iterations over BlockCyclic distributions
 
 Memory Improvements
 -------------------
 * fixed most memory leaks caused by arrays, domains, and domain maps
+* fixed a memory leak in the push_back() routine
 
 Example Codes
 -------------
 * made readability and correctness improvements to our 'pidigits' benchmark
 * fixed an off-by-one error in our 'binarytrees' benchmark
 * made a number of LCALS cleanups and fixes including support for a SPMD mode
-* made a number of improvements to our 'fasta' benchmark for speed and clarity
+* made a number of speed and clarity improvements to the 'fasta' benchmark
 * added missing Makefiles and fixed support for 'make -j'
 
 Tool Changes
@@ -96,23 +137,49 @@ Documentation
 * updated documents to refer to install.html rather than download.html
 * added an indication that IO is a module that is used by default
 * improved the Docker README information
+* reorganized the doc/ directory
+* updated bugs.rst to refer users to GitHub issues
+* reorganized the platform-specific documentation pages into categories
+  (see http://chapel.cray.com/docs/master/platforms/index.html)
+* added new users guide sections on promotion, constants, type aliases, configs
+* fixed the documentation for string.strip()
 
 Compiler Flags (see 'man chpl' for details)
 -------------------------------------------
 * added a '--[no-]print-callgraph flag to print a Chapel program's callgraph
 
-Portability Improvements
-------------------------
+Locale Models
+-------------
+* for 'numa', arrays are now allocted using multiple per-numa-domain chunks
+
+Portability
+-----------
+* verified that Chapel works with the Windows 10 bash shell
+  (no platform-specific notes required... works like any other *nix)
+* added Chapel support for AWS EC2
+  (see TODO)
 
 Cray-specific Changes
 ---------------------
+* removed extraneous/incorrect -On flags from cray-prgenv-cray command lines
+
+Platform-specific Changes
+-------------------------
+* fixed an occasional cygwin failure caused by pthread_attr_init()
+
 
 Syntax Highlighting
 -------------------
 
-Error Message Improvements
---------------------------
+Error Messages
+--------------
 * removed warnings for serialized assignments in some cases
+* added an error message for re-assigning a 'param' after its initialization
+* added a user error when 'inline' is applied to a recursive function
+* improved error messages for the $CHPL_HOME/util/chplenv/ scripts
+* added support for printing multiple 'param' errors before halting compilation
+* made the compiler flag illegal 'param' types more clearly
+* added an error when using domain queries in field declarations
 
 Runtime Error Checks
 --------------------
@@ -120,6 +187,18 @@ Runtime Error Checks
 Bug Fixes
 ---------
 * fixed a bug in reading null bytes into strings when lengths are specified
+* fixed a bug in 'Spawn' when one sub-process consumes another's output
+* fixed a bug in casting reference expressions
+* fixed a race condition in initializing locale models
+* fixed bugs in the standalone parallel iterator for CSR domains
+* fixed a 'chplvis' bug that caused segmentation faults
+* fixed a bug in which type methods were overly generic w.r.t. their receiver
+* fixed a bug in which the --cpp-lines flag was sometimes ignored
+* fixed a bug in resetting size when clearing sparse block-distributed domains
+* fixed a bug in pop_front() which caused the array to grow
+* fixed a bug in which 'uint **= uint' failed to resolve
+* fixed a bug in BlockCyclic indexing
+* fixed a bug in which type methods did not support default arguments well
 
 Launchers
 ---------
@@ -127,30 +206,44 @@ Launchers
 Runtime Library Changes
 -----------------------
 * changed our use of qthreads to initialize them in detached state
+* updated massivethreads to make use of stack-allocated task bundles
 
 Generated Code
 --------------
+* improved formatting of formal arguments in generated code for --gen-ids
+* turned on --normalize by default, resulting in shorter, cleaner code
 
 Third-Party Software Changes
 ----------------------------
 * updated to GASNet 1.28.0
 * updated to jemalloc 4.4.0
+* updated hwloc to 1.11.6
+* made libunwind's optional LZMA dependency work better (TODO: ???)
 
 Testing System
 --------------
 * added a '-dirs' option to paratest.server to specify directories to test
+* added --multi-locale-only and --max-locales flags to 'start_test'
+* added the ability to filter on graph names in the performance tracker
 
-Removal of Deprecated Features
-------------------------------
+Removed Features
+----------------
 * removed deprecated functions from the 'Sort' and 'Search' modules
+* removed the 'noRefCount' config const which is no longer necessary
 
 Developer-oriented changes: Module changes
 ------------------------------------------
 * moved c_void_ptr comparisons from CPtr to ChapelBase
 * added 'export' to locale model routines to avoid widening arguments
+* refactored locale models code
+* refactored rectangular I/O into a single helper routine
+* added a developer feature for specifying arrays' initialization approaches
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
+* worked around a race condition in GASNet's Makefiles
+* cleaned up the runtime include paths
+* improved linking of libnuma when using the memkind library
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -159,7 +252,7 @@ Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * made PRIM_GETCID return an int(32) rather than a bool
 * replaced four FnSymbol fields and a flag with a std::map
-* improved the compiler's verification pass
+* improved the compiler's opt-in verification pass
 * udpated the compiler's representation of 'ref' types to use qualified types
 * fiexd a segfault in list_ast() for type-less symbols
 * changed more compiler data structures over to their STL equivalents
@@ -167,11 +260,33 @@ Developer-oriented changes: Compiler improvements/changes
 * each symbol now stores a list of associated SymExprs
 * made some fixes to for_vector, for_set, and for_queue
 * fixed a bug in getVisibleFunctions relating to forall intents
+* added an ADT for representing forall intents
+* removed unnecessary code from inlineFunctions
+* refactored codegen-related methods from AST/expr.cpp to codegen/expr.cpp
+* minor improvements to the AstDumpToNode debugging output
+* made compute_call_sites() re-entrant
+* refactored code implementing inlining
+* improved the implementation of destructors/deinitializers
+* rewrote buildDefUseMaps and compute_call_sites to use SymExpr info in Symbols
+* eliminated an unnecessary vector computed in flattenClasses
+* refactored FnSymbol::tag_generic(), renaming to tagIfGeneric() for clarity
+* cleaned up and simplified normalize, particularly w.r.t. constructors/init()
+* improved modifying code around a function's epilogue label
+* fixed a minor bug in printResolutionErrorUnresolved()
+* unified the number of memory descriptors created for --devel vs. --no-devel
+* significantly refactored build_record_init_function()
+* fixed a bug in which copies of AggregateTypes lost their initializerStyles
+* reduced the degree to which init was implemented similar to constructors
+* added a type method to be used to initialize object init() methods
+* removed unused FLAG_SPECIFIED_RETURN_TYPE
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * fixed some issues in how privatization works
 * updated some interfaces to use c_nodeid_t rather than int32_t
+* removed some dead code in the qthreads tasking layer
+* added an API for performing task ID comparisons
+* improved chpl_task_idToString()
 
 Developer-oriented changes: Documentation
 -----------------------------------------
