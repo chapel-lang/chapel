@@ -357,7 +357,18 @@ module ArrayViewRankChange {
       return downDom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain() {
-      return downDom.dsiLocalSubdomain();
+      const dims = downDom.dsiLocalSubdomain().dims();
+      const empty : domain(rank, idxType, chpl__anyStridable(dims));
+
+      // If the rank-changed dimension's index is not a member of the range
+      // in the same dimension of 'dims', then this locale does not have a
+      // local subdomain.
+      for param d in 1..dims.size {
+        if collapsedDim(d) && !dims(d).member(idx(d)) then
+          return empty;
+      }
+
+      return chpl_rankChangeConvertDownToUp(dims, rank, collapsedDim);
     }
 
     proc isRankChangeDomainView() param {
@@ -602,10 +613,10 @@ module ArrayViewRankChange {
     }
 
     proc dsiHasSingleLocalSubdomain() param
-      return privDom.upDom.dsiHasSingleLocalSubdomain();
+      return privDom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain() {
-      return privDom.upDom.dsiLocalSubdomain();
+      return privDom.dsiLocalSubdomain();
     }
 
     proc dsiNoFluffView() {
@@ -840,7 +851,19 @@ module ArrayViewRankChange {
     return ind;
   }
 
-    inline proc chpl_rankChangeConvertDom(dims, param uprank, collapsedDim, idx) {
+  inline proc chpl_rankChangeConvertDownToUp(dims, param uprank, collapsedDim) {
+    var ranges : uprank*dims(1).type;
+    var j = 1;
+    for param d in 1..dims.size {
+      if !collapsedDim(d) {
+        ranges(j) = dims(d);
+        j += 1;
+      }
+    }
+    return {(...ranges)};
+  }
+
+  inline proc chpl_rankChangeConvertDom(dims, param uprank, collapsedDim, idx) {
     param downrank = collapsedDim.size;
     if uprank != dims.size then
       compilerError("Called chpl_rankChangeConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", uprank:string);
