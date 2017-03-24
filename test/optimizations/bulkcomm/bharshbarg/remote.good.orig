@@ -11,33 +11,6 @@ Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
 Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
 LBlk = (10, 1)
 RBlk = (10, 1)
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 0
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 0
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=2, elemSize=8
-	local get() from 0
 BulkTransferStride with values:
 	Locale        = 0
 	Stride levels = 1
@@ -56,33 +29,6 @@ Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
 Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
 LBlk = (10, 1)
 RBlk = (10, 1)
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 0
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 0
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=2, elemSize=8
-	local get() from 0
 BulkTransferStride with values:
 	Locale        = 0
 	Stride levels = 1
@@ -105,33 +51,6 @@ Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
 Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
 LBlk = (10, 1)
 RBlk = (10, 1)
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 1
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 1
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=2, elemSize=8
-	local get() from 1
 BulkTransferStride with values:
 	Locale        = 1
 	Stride levels = 1
@@ -150,33 +69,6 @@ Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
 Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
 LBlk = (10, 1)
 RBlk = (10, 1)
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 1
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 1
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=2, elemSize=8
-	local get() from 1
 BulkTransferStride with values:
 	Locale        = 1
 	Stride levels = 1
@@ -200,33 +92,6 @@ Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
 Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
 LBlk = (10, 1)
 RBlk = (10, 1)
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 0
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 0
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=2, elemSize=8
-	local get() from 0
 BulkTransferStride with values:
 	Locale        = 0
 	Stride levels = 1
@@ -246,33 +111,6 @@ Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
 Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
 LBlk = (10, 1)
 RBlk = (10, 1)
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 1
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=1, elemSize=8
-	local get() from 1
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiCanBulkTransfer()
-isDataContiguous(): origin=0 off=(1) blk=(1)
-	YES!
-In DefaultRectangularArr.doiUseBulkTransfer()
-In DefaultRectangularArr.doiBulkTransfer(): Alo=(1), Blo=(1), len=2, elemSize=8
-	local get() from 1
 BulkTransferStride with values:
 	Locale        = 1
 	Stride levels = 1
