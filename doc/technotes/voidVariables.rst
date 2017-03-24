@@ -39,10 +39,12 @@ fields will be removed by the compiler.
     param isAccelerator: bool;
     var accelVar: if isAccelerator then real else void;
 
-    if isAccelerator {
-      ... accelVar ...
-    } else {
-      // non-accelerator version
+    proc doComputation() {
+      if isAccelerator {
+        ... accelVar ...
+      } else {
+        // non-accelerator version
+      }
     }
   }
 
@@ -57,10 +59,23 @@ a function that doesn't return will infer the variable type to be
 
 .. code-block:: chapel
 
+  proc noReturn() {
+    writeln("Hello from noReturn");
+  }
+
   var v1: void = noReturn();
   var v2 = noReturn();
 
+  proc explicitReturn() {
+    writeln("Hello from explicitReturn");
+    return _void;
+  }
+
+  var v3: void = explicitReturn();
+  var v4 = explicitReturn();
+
 In the future, a function that does not return may be differentiated from
-a function that explicitly returns a ``void`` value. In that case, the
-example above would be an error, but a function that returns a ``void``
-value explicitly would still be assignable to a variable of type ``void``
+a function that explicitly returns a ``void`` value. In that case, both
+the ``v1`` and ``v2`` examples above would be errors, but a function that
+returns a ``void`` value explicitly would still be assignable to a variable
+of type ``void``, as is the case for ``v3`` and ``v4``.
