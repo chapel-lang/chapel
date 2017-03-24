@@ -1,6 +1,16 @@
 Parallel Iterators On Irregular Arrays and Domains
 ==================================================
 
+Status
+  Draft
+
+Authors
+  Engin Kayraklioglu,
+  Michael Ferguson
+
+Abstract
+--------
+
 This document covers semantics of zippering regular and irregular domains and
 arrays defined on them. Rather than going into rigorous details, it covers
 what an intended behaviour could be and what are possible ways of implementing
