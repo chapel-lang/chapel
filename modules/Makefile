@@ -37,7 +37,7 @@ SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
-DOC=${CHPL_MAKE_HOME}/doc
+DOC=${CHPL_MAKE_HOME}/doc/rst
 
 default: all
 

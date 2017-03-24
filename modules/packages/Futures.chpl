@@ -36,7 +36,7 @@ the function to be executed and all arguments to that function.
 The following example demonstrates a trivial use of futures. Three computations
 are executed asynchronously.
 
-.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-simple.chpl
+.. literalinclude:: ../../../../test/modules/packages/Futures/futures-doc-simple.chpl
    :language: chapel
 
 .. _valid-futures:
@@ -52,7 +52,7 @@ invalid future will :proc:`halt()`.  If such a future object is subsequently
 assigned to by a call to :proc:`async()` or :proc:`Future.andThen()`, then
 the future will become valid.
 
-.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-validity.chpl
+.. literalinclude:: ../../../../test/modules/packages/Futures/futures-doc-validity.chpl
    :language: chapel
 
 Task Arguments
@@ -67,7 +67,7 @@ type of the `this()` method.  (The requirement for the `retType` method is
 a currently limitation that is intended to be resolved in the future.)
 For example:
 
-.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-taskfn.chpl
+.. literalinclude:: ../../../../test/modules/packages/Futures/futures-doc-taskfn.chpl
    :language: chapel
 
 Future Chaining
@@ -81,10 +81,10 @@ function takes a single argument, the result of the parent future.
 
 The following examples demonstrate such chaining of futures.
 
-.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-chaining1.chpl
+.. literalinclude:: ../../../../test/modules/packages/Futures/futures-doc-chaining1.chpl
    :language: chapel
 
-.. literalinclude:: ../../../test/modules/packages/Futures/futures-doc-chaining2.chpl
+.. literalinclude:: ../../../../test/modules/packages/Futures/futures-doc-chaining2.chpl
    :language: chapel
 
  */
