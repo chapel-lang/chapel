@@ -1109,12 +1109,17 @@ static void call_constructor_for_class(CallExpr* call) {
       primNewToFix = parentParent;
       INT_ASSERT(primNewToFix->get(1) == parent);
     } else if (ct) {
-      if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+      if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
         // Call chpl__buildDistType for syntactic distributions.
         se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
-      else
+      } else {
+        if (ct->initializerStyle == DEFINES_INITIALIZER && ct->isGeneric()) {
+          USR_FATAL_CONT(se, "Sorry, type constructors aren't generated properly for generic types that define initializers");
+        }
+
         // Transform C ( ... ) into _type_construct_C ( ... ) .
         se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
+      }
     }
 
     if (primNewToFix) {
