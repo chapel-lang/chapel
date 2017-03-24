@@ -573,12 +573,14 @@ CHPL_LLVM
        Value          Description
        ============== ======================================================
        llvm           use the llvm/clang distribution in third-party
-       llvm-minimal   as above, but only build and link LLVM ADTs
        system         find a compatible LLVM in system libraries;
                       note: the LLVM must be a version supported by Chapel
-       system-minimal as above, but only link LLVM ADTs
        none           do not support llvm-/clang-related features
        ============== ======================================================
+
+   .. (comment) -minimal can be used but is only interesting for developers
+       llvm-minimal   as above, but only build and link LLVM ADTs
+       system-minimal as above, but only link LLVM ADTs
 
    If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
    llvm in third-party and ``none`` otherwise.
