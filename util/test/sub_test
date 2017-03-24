@@ -467,6 +467,13 @@ def GetTimer(f):
 def FindGoodFile(basename, commExecNums=['']):
     
     goodfile = ''
+
+    addCompOpts = ''
+    if '--cache-remote' in envCompopts:
+        addCompOpts += ".cache-remote"
+    if '--llvm-wide-opt' in envCompopts:
+        addCompOpts += ".llvm-wide-opt"
+
     for commExecNum in commExecNums:
         # Try the machine specific .good
         if not os.path.isfile(goodfile):
@@ -475,6 +482,11 @@ def FindGoodFile(basename, commExecNums=['']):
         if not os.path.isfile(goodfile):
             if '--no-local' in envCompopts:
                 goodfile=basename+'.no-local'+commExecNum+'.good'
+        # Else try comm-related compiler opts .good file
+        # e.g. .cache-remote.llvm-wide-opt
+        if not os.path.isfile(goodfile):
+            if addCompOpts != '':
+                goodfile=basename+addCompOpts+commExecNum+'.good'
         # Else try comm and locale model specific .good file.
         if not os.path.isfile(goodfile):
             goodfile=basename+chplcommstr+chpllmstr+commExecNum+'.good'
@@ -1464,6 +1476,14 @@ for testname in testsrc:
             # Save original output
             origoutput = output;
 
+            # Find goodfile for use in PREDIFFs
+            # This is re-done below in case the PREDIFF changes .good files
+            basename = test_filename
+            if len(clist) != 0:
+                explicitcompgoodfile = clist[0].split('#')[1].strip()
+                basename = explicitcompgoodfile.replace('.good', '')
+            goodfile = FindGoodFile(basename)
+
             # Compare compiler output with expected program output
             if catfiles:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
@@ -1484,7 +1504,8 @@ for testname in testsrc:
                 p = subprocess.Popen([systemPrediff,
                                       execname,complog,compiler,
                                       ' '.join(envCompopts)+' '+compopts,
-                                      ' '.join(args)],
+                                      ' '.join(args),
+                                      goodfile],
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
                 sys.stdout.write(p.communicate()[0])
@@ -1496,7 +1517,8 @@ for testname in testsrc:
                 p = subprocess.Popen(['./PREDIFF',
                                       execname,complog,compiler,
                                       ' '.join(envCompopts)+' '+compopts,
-                                      ' '.join(args)],
+                                      ' '.join(args),
+                                      goodfile],
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
                 sys.stdout.write(p.communicate()[0])
@@ -1508,7 +1530,8 @@ for testname in testsrc:
                 p = subprocess.Popen(['./'+test_filename+'.prediff',
                                       execname,complog,compiler,
                                       ' '.join(envCompopts)+' '+compopts,
-                                      ' '.join(args)],
+                                      ' '.join(args),
+                                      goodfile],
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
                 sys.stdout.write(p.communicate()[0])
@@ -1519,7 +1542,7 @@ for testname in testsrc:
             # .good file can be of the form testname.<configuration>.good or
             # explicitname.<configuration>.good. It's not currently setup to
             # handle testname.<configuration>.<compoptsnum>.good, but that
-            # would be easy to add. 
+            # would be easy to add.
             basename = test_filename 
             if len(clist) != 0:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
@@ -1982,6 +2005,25 @@ for testname in testsrc:
                     execlogfile.write(output)
 
                 if not exectimeout and not launcher_error:
+                    # compute .good file for use in PREDIFFs
+                    # recomputed below in case PREDIFF changes .good files
+                    # find the good file
+
+                    basename = test_filename
+                    commExecNum = ['']
+
+                    # if there were multiple compopts/execopts find the
+                    # .good file that corresponds to that run
+                    if not onlyone:
+                        commExecNum.insert(0,'.'+str(compoptsnum)+'-'+str(execoptsnum))
+
+                    if explicitexecgoodfile != None:
+                        basename  = explicitexecgoodfile.replace('.good', '')
+                        commExecNum = ['']
+
+                    execgoodfile = FindGoodFile(basename, commExecNum)
+
+
                     if systemPrediff:
                         sys.stdout.write('[Executing system-wide prediff]\n')
                         sys.stdout.flush()
@@ -1989,7 +2031,8 @@ for testname in testsrc:
                                                           execname,execlog,compiler,
                                                           ' '.join(envCompopts)+
                                                           ' '+compopts,
-                                                          ' '.join(args)],
+                                                          ' '.join(args),
+                                                          execgoodfile],
                                                           stdout=subprocess.PIPE,
                                                           stderr=subprocess.STDOUT).
                                         communicate()[0])
@@ -2001,7 +2044,8 @@ for testname in testsrc:
                                                           execname,execlog,compiler,
                                                           ' '.join(envCompopts)+
                                                           ' '+compopts,
-                                                          ' '.join(args)],
+                                                          ' '.join(args),
+                                                          execgoodfile],
                                                           stdout=subprocess.PIPE,
                                                           stderr=subprocess.STDOUT).
                                         communicate()[0])
@@ -2013,13 +2057,14 @@ for testname in testsrc:
                                                           execname,execlog,compiler,
                                                           ' '.join(envCompopts)+
                                                           ' '+compopts,
-                                                          ' '.join(args)],
+                                                          ' '.join(args),
+                                                          execgoodfile],
                                                           stdout=subprocess.PIPE,
                                                           stderr=subprocess.STDOUT).
                                         communicate()[0])
 
                     if not perftest:
-                        # find the good file 
+                        # find the good file
 
                         basename = test_filename
                         commExecNum = ['']
@@ -2031,7 +2076,7 @@ for testname in testsrc:
 
                         # if the .good file was explicitly specified, look for
                         # that version instead of the multiple
-                        # compopts/execopts or just the base .good file 
+                        # compopts/execopts or just the base .good file
                         if explicitexecgoodfile != None:
                             basename  = explicitexecgoodfile.replace('.good', '')
                             commExecNum = ['']
