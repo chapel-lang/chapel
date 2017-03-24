@@ -6,15 +6,30 @@ stopped at 6294676
 
 TODO:
 * query-replace docs/latest to docs/master
-* what else was wrapped up in array views
-* compiler flags
-* examples/
+* what else was wrapped up in array views?
+* check compiler flags
+* check examples/
+
+Lydia/Mike:
+* initializers
+
+Vass:
+* class/record deinit
+* module deinit
+
+Elliot:
+* where clauses
+
+DIten:
+* void
 
 DavidK:
 * KNL docs
+* ARM docs?
 
 BenA:
 * can we get docs/ directory better?
+* AWS pointers
 
 Preston:
 * what will we do for error-handling documentation for this release?
@@ -38,10 +53,12 @@ Highlights (see subsequent sections for more details)
 
 Packaging
 ---------
+* enabled GitHub issues as a means of filing Chapel bugs and feature requests
+  (see TODO)
 * extended the Docker image to include a GASNet-based configuration
+  (see TODO)
 * moved object files for the compiler and runtime into $CHPL_HOME/build
 * changed the naming/structure of directories used to store binary files
-* enabled GitHub issues as a means of filing Chapel bugs and feature requests
 
 Configuration Changes
 ---------------------
@@ -52,10 +69,6 @@ Configuration Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-* improved 'require' statements to accept 'param' strings
-  (see TODO: bradc document)
-* we now only process 'require' statements in code that is active
-  (see TODO: bradc document)
 * made functions return array expressions by-value by default
   (see TODO)
 * made tuple semantics more closely follow the behavior of their element types
@@ -71,10 +84,11 @@ Semantic Changes / Changes to Chapel Language
 Syntactic/Naming Changes
 ------------------------
 * renamed the 'Error' module to 'SysError'
+  (see TODO)
 
 New Features
 ------------
-* improved support for new-style initializers
+* dramatically improved support for initializers
 * added initial support for copy initializers
 * added prototype support for error-handling in Chapel
 * added the ability to define secondary methods on instantiated types
@@ -82,6 +96,7 @@ New Features
 * added support for defining type aliases for generic classes
   (e.g., 'type Vect = Vector;' for generic type 'Vector')
 * enabled 'param's and 'config param's to be specified without initializers
+  (TODO: bradc document)
 * added min() and max() overloads that accept and generate 'param' values
 * added support for deinit() as a replacement for destructors
 * added support for using 'const' and 'const ref' as 'this' intents
@@ -99,6 +114,7 @@ Feature Improvements
   (see TODO)
 * improved array slice, rank change, and reindexing support across domain maps
 * added support for 'targetLocales' query to default rectangular arrays/domains
+  (see TODO)
 
 Feature Slips
 -------------
@@ -106,6 +122,10 @@ Feature Slips
 
 Interoperability Improvements
 -----------------------------
+* improved 'require' statements to accept 'param' strings
+  (see TODO: bradc document)
+* we now only process 'require' statements in code that is active
+  (see TODO: bradc document)
 
 Standard Modules/Library
 ------------------------
@@ -116,7 +136,9 @@ Standard Modules/Library
 * added support for a .shape query on domains and arrays
   (see TODO)
 * improved the initializer argument list and order for RandomStream
+  (see TODO)
 * made conjg() generate the same type as its argument
+  (see TODO)
 * added support for a 'DateTime' module for operating on dates and times
   (see TODO)
 * improved memory management for the 'List' module
@@ -132,7 +154,7 @@ Package Modules
   (see TODO)
 * added support for choosing between FFT implementations in the FFTW module
   (see TODO)
-* removed support for the 'ldA' argument in the BLAS module
+* removed support for the 'ldA' arguments in the BLAS module
 * added initial support for some class-owning record patterns, Owned and Shared
   (see TODO and TODO)
 * added a early-draft LinearAlgebra module
@@ -183,16 +205,19 @@ Documentation
 * documented added dim() and dims() on arrays
   (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=dims#ChapelArray.dims)
 * strived to clarify QUICKSTART instructions
-  (see $CHPL_HOME/QUICKSTART.rst)
+  (see $CHPL_HOME/QUICKSTART.rst -- TODO: is this right?)
 * updated documents to refer to install.html rather than download.html
 * added an indication that IO is a module that is used by default
 * improved the Docker README information
 * reorganized the doc/ directory
+  (see TODO)
 * updated bugs.rst to refer users to GitHub issues
 * reorganized the platform-specific documentation pages into categories
   (see http://chapel.cray.com/docs/master/platforms/index.html)
 * added new users guide sections on promotion, constants, type aliases, configs
+  (see TODO)
 * fixed the documentation for string.strip()
+  (see TODO)
 * updated documentation regarding reference counting of files and channels
 * removed $CHPL_HOME/STATUS in favor of GitHub issues
 * updated the "quick reference" document
