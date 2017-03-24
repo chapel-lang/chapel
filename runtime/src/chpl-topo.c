@@ -227,7 +227,7 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
   }
 
   flags = HWLOC_CPUBIND_THREAD;
-  if (hwloc_get_thread_cpubind(topology, pthread_self(), cpuset, flags)) {
+  if (hwloc_get_cpubind(topology, cpuset, flags)) {
     report_error("hwloc_get_cpubind()", errno);
   }
 
@@ -340,7 +340,7 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
   }
 
   flags = HWLOC_CPUBIND_THREAD;
-  if (hwloc_get_thread_cpubind(topology, pthread_self(), cpuset, flags)) {
+  if (hwloc_get_cpubind(topology, cpuset, flags)) {
     report_error("hwloc_get_cpubind()", errno);
   }
 
