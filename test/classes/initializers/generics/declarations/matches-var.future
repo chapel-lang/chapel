@@ -1,0 +1,7 @@
+semantic: how to declare var instantiation in new generics world?
+
+With generic fields no longer tied to a guaranteed specific argument, how does
+one declare an instantiation when the class or record has a generic var or const
+field?  Type and param fields can only be initialized with an argument that is
+of the same kind.  But the var instantiation is based on the type of what is
+given to it.
