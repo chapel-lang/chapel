@@ -16,12 +16,13 @@ further information about the files and directories that they contain.
   LICENSE              : license information for the Chapel release as a whole
   LICENSE.chapel       : license statement for the Chapel implementation itself
   PERFORMANCE.md       : notes about Chapel performance
-  QUICKSTART.rst       : quick-start instructions
   README.files         : this file
   Makefile             : top-level Makefile for building things
   bin/                 : location of the compiler (chpl) once it's been built
   compiler/            : source code for the compiler
-  doc/                 : documentation and READMEs
+  doc/                 : documentation and READMEs; especially,
+    language/            : introduction to the Chapel language
+    usingchapel/         : other topics of interest to new users
   examples/            : example Chapel codes
   highlight/           : syntax coloring modes for emacs, vim, source-highlight
   lib/                 : stores the runtime and launcher libraries, once built
