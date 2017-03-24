@@ -130,7 +130,7 @@ module ChapelUtil {
   extern proc chpl_rt_postUserCodeHook();
 
   // Support for module deinit functions.
-  config var printModuleDeinitOrder = false;
+  config param printModuleDeinitOrder = false;
 
   proc chpl_addModule(moduleName: c_string, deinitFun: c_fn_ptr) {
     chpl_moduleDeinitFuns =
