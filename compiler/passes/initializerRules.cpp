@@ -37,6 +37,8 @@ enum InitStyle {
   STYLE_BOTH
 };
 
+class IterState;
+
 static bool      isInitStmt(Expr* stmt);
 
 static InitStyle findInitStyle(FnSymbol* fn);
@@ -160,13 +162,15 @@ static bool isReturnVoid(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Expr*     fieldInitFromStmt(CallExpr* stmt,
-                                   FnSymbol* fn,
-                                   DefExpr*  field);
+static Expr*     fieldInitFromStmt(CallExpr*  stmt,
+                                   FnSymbol*  fn,
+                                   IterState& state,
+                                   DefExpr*   field);
 
-static void      fieldInitFromField(Expr*     insertBefore,
-                                    FnSymbol* fn,
-                                    DefExpr*  field);
+static void      fieldInitFromField(Expr*      insertBefore,
+                                    FnSymbol*  fn,
+                                    IterState& state,
+                                    DefExpr*   field);
 
 static DefExpr*  toSuperFieldInit(AggregateType* at, CallExpr* callExpr);
 
@@ -314,7 +318,7 @@ Expr* IterState::completePhase1(Expr* initStmt) {
 
 void IterState::initializeFieldsBefore(Expr* insertBefore) {
   while (mCurrField != NULL) {
-    fieldInitFromField(insertBefore, mFn, mCurrField);
+    fieldInitFromField(insertBefore, mFn, *this, mCurrField);
 
     mCurrField = toDefExpr(mCurrField->next);
   }
@@ -391,14 +395,14 @@ Expr* IterState::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
     INT_ASSERT(isFieldReinitialized(field) == false);
 
     while (field != mCurrField) {
-      fieldInitFromField(initStmt, mFn, mCurrField);
+      fieldInitFromField(initStmt, mFn, *this, mCurrField);
 
       mCurrField = toDefExpr(mCurrField->next);
     }
   }
 
   // Now handle this field
-  retval     = fieldInitFromStmt(initStmt, mFn, field);
+  retval     = fieldInitFromStmt(initStmt, mFn, *this, field);
   mCurrField = toDefExpr(mCurrField->next);
 
   return retval;
@@ -632,33 +636,37 @@ static bool isThisInit(Expr* stmt) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void fieldInitTypeWoutInit(Expr*     stmt,
-                                  FnSymbol* fn,
-                                  DefExpr*  field);
+static void fieldInitTypeWoutInit(Expr*      stmt,
+                                  FnSymbol*  fn,
+                                  IterState& state,
+                                  DefExpr*   field);
 
-static void fieldInitTypeWithInit(Expr*     stmt,
-                                  FnSymbol* fn,
-                                  DefExpr*  field,
-                                  Expr*     initExpr);
+static void fieldInitTypeWithInit(Expr*      stmt,
+                                  FnSymbol*  fn,
+                                  IterState& state,
+                                  DefExpr*   field,
+                                  Expr*      initExpr);
 
-static void fieldInitTypeInference(Expr*     insertBefore,
-                                   FnSymbol* fn,
-                                   DefExpr*  field,
-                                   Expr*     initExpr);
+static void fieldInitTypeInference(Expr*      insertBefore,
+                                   FnSymbol*  fn,
+                                   IterState& state,
+                                   DefExpr*   field,
+                                   Expr*      initExpr);
 
-static Expr* fieldInitFromStmt(CallExpr* stmt,
-                               FnSymbol* fn,
-                               DefExpr*  field) {
+static Expr* fieldInitFromStmt(CallExpr*  stmt,
+                               FnSymbol*  fn,
+                               IterState& state,
+                               DefExpr*   field) {
   Expr* insertBefore = stmt;
   Expr* initExpr     = stmt->get(2)->remove();
   Expr* retval       = stmt->next;
 
   // Initialize the field using the RHS of the source stmt
   if (field->exprType != NULL) {
-    fieldInitTypeWithInit (insertBefore, fn, field, initExpr);
+    fieldInitTypeWithInit (insertBefore, fn, state, field, initExpr);
 
   } else {
-    fieldInitTypeInference(insertBefore, fn, field, initExpr);
+    fieldInitTypeInference(insertBefore, fn, state, field, initExpr);
   }
 
   // Remove the (degenerate) source version of the field assignment
@@ -667,20 +675,25 @@ static Expr* fieldInitFromStmt(CallExpr* stmt,
   return retval;
 }
 
-static void fieldInitFromField(Expr*     insertBefore,
-                               FnSymbol* fn,
-                               DefExpr*  field) {
+static void fieldInitFromField(Expr*      insertBefore,
+                               FnSymbol*  fn,
+                               IterState& state,
+                               DefExpr*   field) {
   if        (field->exprType == NULL && field->init == NULL) {
     INT_ASSERT(false);
 
   } else if (field->exprType != NULL && field->init == NULL) {
-    fieldInitTypeWoutInit(insertBefore, fn, field);
+    fieldInitTypeWoutInit (insertBefore, fn, state, field);
 
   } else if (field->exprType != NULL && field->init != NULL) {
-    fieldInitTypeWithInit(insertBefore, fn, field, field->init->copy());
+    Expr* initCopy = field->init->copy();
+
+    fieldInitTypeWithInit (insertBefore, fn, state, field, initCopy);
 
   } else if (field->exprType == NULL && field->init != NULL) {
-    fieldInitTypeInference(insertBefore, fn, field, field->init->copy());
+    Expr* initCopy = field->init->copy();
+
+    fieldInitTypeInference(insertBefore, fn, state, field, initCopy);
 
   } else {
     INT_ASSERT(false);
@@ -693,9 +706,10 @@ static void fieldInitFromField(Expr*     insertBefore,
 *                                                                             *
 ************************************** | *************************************/
 
-static void fieldInitTypeWoutInit(Expr*     stmt,
-                                  FnSymbol* fn,
-                                  DefExpr*  field) {
+static void fieldInitTypeWoutInit(Expr*      stmt,
+                                  FnSymbol*  fn,
+                                  IterState& state,
+                                  DefExpr*   field) {
   SET_LINENO(stmt);
 
   Type* type = field->sym->type;
@@ -745,10 +759,11 @@ static void fieldInitTypeWoutInit(Expr*     stmt,
 *                                                                             *
 ************************************** | *************************************/
 
-static void fieldInitTypeWithInit(Expr*     stmt,
-                                  FnSymbol* fn,
-                                  DefExpr*  field,
-                                  Expr*     initExpr) {
+static void fieldInitTypeWithInit(Expr*      stmt,
+                                  FnSymbol*  fn,
+                                  IterState& state,
+                                  DefExpr*   field,
+                                  Expr*      initExpr) {
   SET_LINENO(stmt);
 
   Type* type     = field->sym->type;
@@ -825,10 +840,11 @@ static void fieldInitTypeWithInit(Expr*     stmt,
 *                                                                             *
 ************************************** | *************************************/
 
-static void fieldInitTypeInference(Expr*     stmt,
-                                   FnSymbol* fn,
-                                   DefExpr*  field,
-                                   Expr*     initExpr) {
+static void fieldInitTypeInference(Expr*      stmt,
+                                   FnSymbol*  fn,
+                                   IterState& state,
+                                   DefExpr*   field,
+                                   Expr*      initExpr) {
   SET_LINENO(stmt);
 
   // e.g.
@@ -1033,12 +1049,11 @@ static bool isCompoundAssignment(CallExpr* callExpr) {
 
 static void        phase1Analysis(FnSymbol* fn);
 
-
 static void        errorCases(AggregateType* at,
-                            DefExpr*       curField,
-                            const char*    fieldName,
-                            bool           seenField[],
-                            Expr*          call);
+                              DefExpr*       curField,
+                              const char*    fieldName,
+                              bool           seenField[],
+                              Expr*          call);
 
 static const char* getFieldName(Expr* curExpr);
 
