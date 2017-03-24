@@ -831,7 +831,9 @@ module String {
     }
 
     proc _join(const ref S) : string where isTuple(S) || isArray(S) {
-      if S.size == 1 {
+      if S.size == 0 {
+        return '';
+      } else if S.size == 1 {
         // TODO: ensures copy, clean up when no longer needed
         var ret = S[S.domain.low];
         return ret;
